@@ -1233,14 +1233,13 @@ def vernum(s) -> tuple[int, ...]:
 
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
-def exec_pkgconfig(*pkgs_options, **ekw):
+def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
     if verbose_ENABLED:
         print(f"exec_pkgconfig({pkgs_options}, {ekw})")
     kw = dict(ekw)
-    if "INCLUDE_DIRS" in os.environ:
-        for d in INCLUDE_DIRS:
-            add_to_keywords(kw, 'extra_compile_args', "-I", d)
-    optimize = kw.pop("optimize", None)
+    for d in os.environ.get("INCLUDE_DIRS", "").split(os.pathsep):
+        add_to_keywords(kw, 'extra_compile_args', "-I", d)
+    optimize = kw.pop("optimize", 0)
     if Os_ENABLED:
         optimize = "s"
     if optimize and not debug_ENABLED and not cython_tracing_ENABLED:
@@ -1316,33 +1315,13 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         if sys.version_info >= (3, 12):
             addcflags("-Wno-deprecated-declarations")
     if strict_ENABLED:
-        if CC.find("clang") >= 0:
-            # clang emits too many warnings with cython code,
-            # so we can't enable Werror without turning off some warnings:
-            # this list of flags should allow clang to build the whole source tree,
-            # as of Cython 0.26 + clang 4.0. Other version combinations may require
-            # (un)commenting other switches.
-            if not hascflag("-Wno-error"):
-                addcflags("-Werror")
-            addcflags(
-                "-Wno-deprecated-register",
-                "-Wno-unused-command-line-argument",
-                # "-Wno-unneeded-internal-declaration",
-                # "-Wno-unknown-attributes",
-                # "-Wno-unused-function",
-                # "-Wno-self-assign",
-                # "-Wno-sometimes-uninitialized",
-                # cython adds rpath to the compilation command??
-                # and the "-specs=/usr/lib/rpm/redhat/redhat-hardened-cc1" is also ignored by clang:
-            )
-        else:
-            if not hascflag("-Wno-error"):
-                addcflags("-Werror")
-            if NETBSD:
-                # see: http://trac.cython.org/ticket/395
-                addcflags("-fno-strict-aliasing")
-            elif FREEBSD:
-                addcflags("-Wno-error=unused-function")
+        if not hascflag("-Wno-error"):
+            addcflags("-Werror")
+        if NETBSD:
+            # see: http://trac.cython.org/ticket/395
+            addcflags("-fno-strict-aliasing")
+        elif FREEBSD:
+            addcflags("-Wno-error=unused-function")
         remove_from_keywords(kw, 'extra_compile_args', "-fpermissive")
     if PIC_ENABLED:
         addcflags("-fPIC")
@@ -2275,62 +2254,68 @@ else:
             self.install_base = self.install_platbase = None
             install_data.finalize_options(self)
 
-        def run(self) -> None:
+        def _get_install_dir(self):
             install_dir = self.install_dir
             if install_dir.endswith("egg"):
                 install_dir = install_dir.split("egg")[1] or sys.prefix
-            else:
-                install_data.run(self)
-            print("install_data_override.run()")
             print(f"  install_dir={install_dir!r}")
-            root_prefix = None
+            return install_dir
+
+        def _get_root_prefix(self) -> str:
+            root_prefix = ""
             for x in sys.argv:
+                if x.startswith("--root="):
+                    return x[len("--root="):]
                 if x.startswith("--prefix="):
                     root_prefix = x[len("--prefix="):]
             if not root_prefix:
+                install_dir = self._get_install_dir()
                 root_prefix = install_dir.rstrip("/")
             if root_prefix.endswith("/usr"):
                 # ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
                 root_prefix = root_prefix[:-4]
-            for x in sys.argv:
-                if x.startswith("--root="):
-                    root_prefix = x[len("--root="):]
             print(f"  root_prefix={root_prefix!r}")
-            build_xpra_conf(root_prefix)
+            return root_prefix
 
-            def copytodir(src: str, dst_dir: str, dst_name="", chmod=0o644, subs: dict | None=None) -> None:
-                # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
-                # convert absolute paths:
-                dst_prefix = root_prefix if dst_dir.startswith("/") else install_dir
-                dst_dir = dst_prefix.rstrip("/")+"/"+dst_dir.lstrip("/")
-                # make sure the target directory exists:
-                self.mkpath(dst_dir)
-                # generate the target filename:
-                filename = os.path.basename(src)
-                dst_file = os.path.join(dst_dir, dst_name or filename)
-                # copy it
-                print(f"  {src!r:<50} -> {dst_dir!r} (%s)" % oct(chmod))
-                data = load_binary_file(src)
-                if subs:
-                    for k,v in subs.items():
-                        data = data.replace(k, v)
-                with open(dst_file, "wb") as f:
-                    f.write(data)
-                if chmod:
-                    # print(f"  chmod({dst_file!r}, %s)" % oct(chmod))
-                    os.chmod(dst_file, chmod)
+        def copytodir(self, src: str, dst_dir: str, dst_name="", chmod=0o644, subs: dict | None=None) -> None:
+            # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
+            # convert absolute paths:
+            root_prefix = self._get_root_prefix()
+            dst_prefix = root_prefix if dst_dir.startswith("/") else self._get_install_dir()
+            dst_dir = dst_prefix.rstrip("/")+"/"+dst_dir.lstrip("/")
+            # make sure the target directory exists:
+            self.mkpath(dst_dir)
+            # generate the target filename:
+            filename = os.path.basename(src)
+            dst_file = os.path.join(dst_dir, dst_name or filename)
+            # copy it
+            print(f"  {src!r:<50} -> {dst_dir!r} (%s)" % oct(chmod))
+            data = load_binary_file(src)
+            if subs:
+                for k,v in subs.items():
+                    data = data.replace(k, v)
+            with open(dst_file, "wb") as f:
+                f.write(data)
+            if chmod:
+                # print(f"  chmod({dst_file!r}, %s)" % oct(chmod))
+                os.chmod(dst_file, chmod)
 
-            def dirtodir(src_dir: str, dst_dir: str) -> None:
-                print(f"{src_dir!r}:")
-                for f in os.listdir(src_dir):
-                    copytodir(os.path.join(src_dir, f), dst_dir)
+        def dirtodir(self, src_dir: str, dst_dir: str) -> None:
+            print(f"{src_dir!r}:")
+            for f in os.listdir(src_dir):
+                self.copytodir(os.path.join(src_dir, f), dst_dir)
+
+        def run(self) -> None:
+            if not self.install_dir.endswith("egg"):
+                install_data.run(self)
+            print("install_data_override.run()")
 
             if printing_ENABLED and POSIX:
                 # install "/usr/lib/cups/backend" with 0700 permissions:
                 lib_cups = "lib/cups"
                 if FREEBSD:
                     lib_cups = "libexec/cups"
-                copytodir("fs/lib/cups/backend/xpraforwarder", f"{lib_cups}/backend", chmod=0o700)
+                self.copytodir("fs/lib/cups/backend/xpraforwarder", f"{lib_cups}/backend", chmod=0o700)
 
             etc_xpra_files = {}
 
@@ -2349,18 +2334,18 @@ else:
                 # install xpra_Xdummy if we need it:
                 xvfb_command = detect_xorg_setup()
                 if any(x.find("xpra_Xdummy") >= 0 for x in xvfb_command) or Xdummy_wrapper_ENABLED is True:
-                    copytodir("fs/bin/xpra_Xdummy", "bin", chmod=0o755)
+                    self.copytodir("fs/bin/xpra_Xdummy", "bin", chmod=0o755)
                 # install xorg*.conf, cuda.conf and nvenc.keys:
 
                 if uinput_ENABLED:
                     addconf("xorg-uinput.conf")
                 addconf("xorg.conf")
                 for src, dst_name in etc_xpra_files.items():
-                    copytodir(f"fs/etc/xpra/{src}", "/etc/xpra", dst_name=dst_name)
-                copytodir("fs/etc/X11/xorg.conf.d/90-xpra-virtual.conf", "/etc/X11/xorg.conf.d/")
+                    self.copytodir(f"fs/etc/xpra/{src}", "/etc/xpra", dst_name=dst_name)
+                self.copytodir("fs/etc/X11/xorg.conf.d/90-xpra-virtual.conf", "/etc/X11/xorg.conf.d/")
 
             if pam_ENABLED:
-                copytodir("fs/etc/pam.d/xpra", "/etc/pam.d")
+                self.copytodir("fs/etc/pam.d/xpra", "/etc/pam.d")
 
             systemd_dir = "/lib/systemd/system"
             if is_openSUSE():
@@ -2381,34 +2366,35 @@ else:
                     cdir = "__FILLUPDIR__"
                     shutil.copy("fs/etc/sysconfig/xpra", "fs/etc/sysconfig/sysconfig.xpra")
                     os.chmod("fs/etc/sysconfig/sysconfig.xpra", 0o644)
-                    copytodir("fs/etc/sysconfig/sysconfig.xpra", cdir)
+                    self.copytodir("fs/etc/sysconfig/sysconfig.xpra", cdir)
                 else:
-                    copytodir("fs/etc/sysconfig/xpra", cdir)
+                    self.copytodir("fs/etc/sysconfig/xpra", cdir)
                 if cdir!="/etc/sysconfig":
                     # also replace the reference to it in the service file below
                     subs[b"/etc/sysconfig"] = cdir.encode()
                 if os.path.exists("/bin/systemctl") or os.path.exists("/usr/bin/systemctl") or sd_listen_ENABLED:
                     if sd_listen_ENABLED:
-                        copytodir("fs/lib/systemd/system/xpra.service", systemd_dir, subs=subs)
-                        copytodir("fs/lib/systemd/system/xpra-encoder.service", systemd_dir, subs=subs)
+                        self.copytodir("fs/lib/systemd/system/xpra.service", systemd_dir, subs=subs)
+                        self.copytodir("fs/lib/systemd/system/xpra-encoder.service", systemd_dir, subs=subs)
                     else:
-                        copytodir("fs/lib/systemd/system/xpra-nosocketactivation.service", systemd_dir,
-                                  dst_name="xpra.service", subs=subs)
+                        self.copytodir("fs/lib/systemd/system/xpra-nosocketactivation.service", systemd_dir,
+                                       dst_name="xpra.service", subs=subs)
                 else:
-                    copytodir("fs/etc/init.d/xpra", "/etc/init.d")
+                    self.copytodir("fs/etc/init.d/xpra", "/etc/init.d")
             if sd_listen_ENABLED:
-                copytodir("fs/lib/systemd/system/xpra.socket", systemd_dir)
-                copytodir("fs/lib/systemd/system/xpra-encoder.socket", systemd_dir)
+                self.copytodir("fs/lib/systemd/system/xpra.socket", systemd_dir)
+                self.copytodir("fs/lib/systemd/system/xpra-encoder.socket", systemd_dir)
             if POSIX and dbus_ENABLED and proxy_ENABLED:
-                copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
+                self.copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
 
             if docs_ENABLED:
+                install_dir = self._get_install_dir()
                 doc_dir = f"{install_dir}/share/doc/xpra/"
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
                 for etc_dir in ("http-headers", "content-type", "content-categories", "content-parent"):
-                    dirtodir(f"fs/etc/xpra/{etc_dir}", f"/etc/xpra/{etc_dir}")
+                    self.dirtodir(f"fs/etc/xpra/{etc_dir}", f"/etc/xpra/{etc_dir}")
 
     # add build_conf to build step
     cmdclass |= {
