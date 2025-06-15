@@ -36,8 +36,8 @@ class MdnsServer(StubServerMixin):
         self.display = os.environ.get("DISPLAY", "")
 
     def init(self, opts) -> None:
-        log("ServerCore.init(%s)", opts)
         self.mdns = opts.mdns
+        log("ServerCore.init(..) mdns=%s", self.mdns)
 
     def setup(self) -> None:
         if self.mdns:
