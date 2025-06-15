@@ -58,7 +58,7 @@ class NotificationForwarder(StubServerMixin):
         log("init_notification_forwarder() enabled=%s", self.notifications)
         if self.notifications and POSIX and not OSX:
             try:
-                from xpra.dbus.notifications_forwarder import register
+                from xpra.dbus.notifications import register
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
                 if self.notifications_forwarder:
                     log.info("D-Bus notification forwarding is available")
