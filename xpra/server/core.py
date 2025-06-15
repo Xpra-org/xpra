@@ -38,7 +38,7 @@ from xpra.net.common import (
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
-    hosts, peek_connection, )
+    peek_connection, )
 from xpra.net.bytestreams import (
     Connection, SSLSocketConnection, SocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT
@@ -686,9 +686,14 @@ class ServerCore(ControlHandler, GLibPacketHandler):
                     iport = get_ssh_port()
                     if not iport:
                         continue
+                    hosts = ["0.0.0.0"]
+                    import socket
+                    if socket.has_ipv6:
+                        hosts.append("::")
                 else:
                     host, iport = info
-                for h in hosts(host):
+                    hosts = [host]
+                for h in hosts:
                     rec = (h, iport)
                     if rec not in recs:
                         recs.append(rec)
