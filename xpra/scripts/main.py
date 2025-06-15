@@ -3854,9 +3854,9 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
                 if i == 0:
                     print(f"* user {username!r} on {host!r}")
                     if session:
-                        print(f" {dtype} session {session!r}, uuid={uuid}")
+                        print(f" {dtype} session {session!r}, {uuid=!r}")
                     elif uuid:
-                        print(f" uuid={uuid}")
+                        print(f" {uuid=!r}")
                 iinfo = ""
                 if iface:
                     iinfo = f", interface {iface}"
