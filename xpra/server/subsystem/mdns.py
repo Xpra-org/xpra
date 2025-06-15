@@ -11,6 +11,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.common import FULL_INFO
+from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.net.socket_util import hosts
 from xpra.net.common import get_ssh_port
@@ -29,6 +30,7 @@ class MdnsServer(StubServerMixin):
     """
 
     def __init__(self):
+        self.uuid = ""
         self.mdns = False
         self.mdns_publishers = {}
         # relies on these attributes duplicated from ServerCore:
@@ -41,7 +43,10 @@ class MdnsServer(StubServerMixin):
 
     def setup(self) -> None:
         if self.mdns:
-            add_work_item(self.mdns_publish)
+            # ugly: use idle_add to wait for run()
+            # which is where the server uuid is set:
+            GLib = gi_import("GLib")
+            GLib.idle_add(add_work_item, self.mdns_publish)
 
     def cleanup(self) -> None:
         self.mdns_cleanup()
