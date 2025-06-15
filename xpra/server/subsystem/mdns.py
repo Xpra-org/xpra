@@ -13,7 +13,6 @@ from collections.abc import Sequence
 from xpra.common import FULL_INFO
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
-from xpra.net.socket_util import hosts
 from xpra.net.common import get_ssh_port
 from xpra.scripts.config import str_to_bool
 from xpra.platform.info import get_username
@@ -80,13 +79,17 @@ class MdnsServer(StubServerMixin):
                     if st != "ssh":
                         log.error(f"Error: unexpected {st!r} socket type for {socktype}")
                         continue
-                    host = "*"
                     iport = get_ssh_port()
                     if not iport:
                         continue
+                    hosts = ["0.0.0.0"]
+                    import socket
+                    if socket.has_ipv6:
+                        hosts.append("::")
                 else:
                     host, iport = address
-                for h in hosts(host):
+                    hosts = [host]
+                for h in hosts:
                     rec = (h, iport)
                     if rec not in recs:
                         recs.append(rec)
