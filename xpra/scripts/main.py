@@ -3701,7 +3701,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
             shown.add(uq)
 
     def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text) -> None:
-        text = typedict(text or {})
+        text = typedict((bytestostr(k), bytestostr(v)) for k,v in (text or {}).items())
         iface = interface
         if iface is not None:
             try:
