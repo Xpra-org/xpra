@@ -246,6 +246,8 @@ class ServerCore(ServerBaseClass):
             self.ssl_upgrade = opts.ssl_upgrade
 
     def setup(self) -> None:
+        for bc in SERVER_BASES:
+            bc.setup(self)
         self.start_listen_sockets()
         self.init_control_commands()
         self.init_packet_handlers()
