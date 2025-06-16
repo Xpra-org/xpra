@@ -1232,6 +1232,53 @@ def vernum(s) -> tuple[int, ...]:
     return tuple(int(v) for v in s.split("-", 1)[0].split("."))
 
 
+def add_pkgconfig_tokens(kw: dict, s: str, add_to="extra_link_args") -> None:
+    if not s:
+        return
+    flag_map = {
+        '-I': 'include_dirs',
+        '-L': 'library_dirs',
+        '-l': 'libraries',
+    }
+    ignored_flags = kw.get("ignored_flags", ())
+    ignored_tokens = kw.get("ignored_tokens", ())
+    for token in shlex.split(s):
+        if token in ignored_tokens:
+            continue
+        if token[:2] in ignored_flags:
+            continue
+        if token[:2] in flag_map:
+            # this overrules 'add_to' - is this still needed?
+            if len(token)>2:
+                add_to_keywords(kw, flag_map[token[:2]], token[2:])
+            else:
+                print(f"Warning: invalid token {token!r}")
+        else:
+            add_to_keywords(kw, add_to, token)
+
+
+def add_pkgconfig(kw: dict, *pkgs_options):
+    if not pkgs_options:
+        return
+    if verbose_ENABLED:
+        print(f"add_pkgconfig_tokens will try to add packages {pkgs_options}")
+    for pc_arg, add_to in {
+        "--libs": "extra_link_args",
+        "--cflags": "extra_compile_args",
+    }.items():
+        pkg_config_cmd = ["pkg-config", pc_arg] + list(pkgs_options)
+        if verbose_ENABLED:
+            print(f"pkg_config_cmd={pkg_config_cmd}")
+        r, pkg_config_out, err = get_status_output(pkg_config_cmd)
+        if r!=0:
+            raise ValueError("ERROR: call to %r failed (err=%s)" % (shlex.join(pkg_config_cmd), err))
+        if verbose_ENABLED:
+            print(f"pkg-config output: {pkg_config_out!r}")
+        add_pkgconfig_tokens(kw, pkg_config_out, add_to)
+        if verbose_ENABLED:
+            print(f"pkg-config kw={kw}")
+
+
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
     if verbose_ENABLED:
@@ -1246,8 +1293,6 @@ def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
         if isinstance(optimize, bool):
             optimize = int(optimize)*3
         add_to_keywords(kw, 'extra_compile_args', f"-O{optimize}")
-    ignored_flags = kw.pop("ignored_flags", [])
-    ignored_tokens = kw.pop("ignored_tokens", [])
 
     # for distros that don't patch distutils,
     # we have to add the python cflags:
@@ -1260,28 +1305,6 @@ def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
     if OSX:
         add_to_keywords(kw, 'extra_compile_args', "-Wno-nullability-completeness")
 
-    def add_tokens(s: str, add_to="extra_link_args") -> None:
-        if not s:
-            return
-        flag_map = {
-            '-I': 'include_dirs',
-            '-L': 'library_dirs',
-            '-l': 'libraries',
-        }
-        for token in shlex.split(s):
-            if token in ignored_tokens:
-                continue
-            if token[:2] in ignored_flags:
-                continue
-            if token[:2] in flag_map:
-                # this overrules 'add_to' - is this still needed?
-                if len(token)>2:
-                    add_to_keywords(kw, flag_map[token[:2]], token[2:])
-                else:
-                    print(f"Warning: invalid token {token!r}")
-            else:
-                add_to_keywords(kw, add_to, token)
-
     def hascflag(s: str) -> bool:
         return s in kw.get("extra_compile_args", [])
 
@@ -1291,24 +1314,8 @@ def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
     def addldflags(*s: str):
         add_to_keywords(kw, "extra_link_args", *s)
 
-    if verbose_ENABLED:
-        print(f"exec_pkg_config will try to add {pkgs_options}")
-    if pkgs_options:
-        for pc_arg, add_to in {
-            "--libs" : "extra_link_args",
-            "--cflags" : "extra_compile_args",
-        }.items():
-            pkg_config_cmd = ["pkg-config", pc_arg] + list(pkgs_options)
-            if verbose_ENABLED:
-                print(f"pkg_config_cmd={pkg_config_cmd}")
-            r, pkg_config_out, err = get_status_output(pkg_config_cmd)
-            if r!=0:
-                raise ValueError("ERROR: call to %r failed (err=%s)" % (shlex.join(pkg_config_cmd), err))
-            if verbose_ENABLED:
-                print(f"pkg-config output: {pkg_config_out!r}")
-            add_tokens(pkg_config_out, add_to)
-            if verbose_ENABLED:
-                print(f"pkg-config kw={kw}")
+    add_pkgconfig(kw, *pkgs_options)
+
     if warn_ENABLED:
         addcflags("-Wall")
         addldflags("-Wall")
@@ -1339,13 +1346,16 @@ def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
     if verbose_ENABLED:
         print(f"adding CFLAGS={CFLAGS}")
         print(f"adding LDFLAGS={LDFLAGS}")
-    add_tokens(CFLAGS, "extra_compile_args")
-    add_tokens(LDFLAGS, "extra_link_args")
+    add_pkgconfig_tokens(kw, CFLAGS, "extra_compile_args")
+    add_pkgconfig_tokens(kw, LDFLAGS, "extra_link_args")
     # add_to_keywords(kw, 'include_dirs', '.')
     if debug_ENABLED and WIN32 and MINGW_PREFIX:
         add_to_keywords(kw, 'extra_compile_args', "-DDEBUG")
     if verbose_ENABLED:
         print(f"exec_pkgconfig({pkgs_options}, {ekw})={kw}")
+    # done using these:
+    kw.pop("ignored_flags", None)
+    kw.pop("ignored_tokens", None)
     return kw
 
 
@@ -2253,12 +2263,15 @@ else:
         def finalize_options(self) -> None:
             self.install_base = self.install_platbase = None
             install_data.finalize_options(self)
+            self.actual_install_dir = self._get_install_dir()
+            self.actual_root_prefix = self._get_root_prefix()
 
         def _get_install_dir(self):
             install_dir = self.install_dir
             if install_dir.endswith("egg"):
                 install_dir = install_dir.split("egg")[1] or sys.prefix
-            print(f"  install_dir={install_dir!r}")
+            if verbose_ENABLED:
+                print(f"  install_dir={install_dir!r}")
             return install_dir
 
         def _get_root_prefix(self) -> str:
@@ -2274,14 +2287,14 @@ else:
             if root_prefix.endswith("/usr"):
                 # ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
                 root_prefix = root_prefix[:-4]
-            print(f"  root_prefix={root_prefix!r}")
+            if verbose_ENABLED:
+                print(f"  root_prefix={root_prefix!r}")
             return root_prefix
 
         def copytodir(self, src: str, dst_dir: str, dst_name="", chmod=0o644, subs: dict | None=None) -> None:
             # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
             # convert absolute paths:
-            root_prefix = self._get_root_prefix()
-            dst_prefix = root_prefix if dst_dir.startswith("/") else self._get_install_dir()
+            dst_prefix = self.actual_root_prefix if dst_dir.startswith("/") else self.actual_install_dir
             dst_dir = dst_prefix.rstrip("/")+"/"+dst_dir.lstrip("/")
             # make sure the target directory exists:
             self.mkpath(dst_dir)
@@ -2329,6 +2342,8 @@ else:
                 addconf("nvenc.keys")
             if nvfbc_ENABLED:
                 addconf("nvfbc.keys")
+
+            build_xpra_conf(self.actual_root_prefix)
 
             if x11_ENABLED:
                 # install xpra_Xdummy if we need it:
@@ -2388,8 +2403,7 @@ else:
                 self.copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
 
             if docs_ENABLED:
-                install_dir = self._get_install_dir()
-                doc_dir = f"{install_dir}/share/doc/xpra/"
+                doc_dir = f"{self.actual_install_dir}/share/doc/xpra/"
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
