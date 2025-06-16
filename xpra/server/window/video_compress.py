@@ -2528,7 +2528,7 @@ class WindowVideoSource(WindowSource):
             return self.video_fallback(image, options, warn=True, info="no data")
         data, client_options = ret
         end = monotonic()
-        if LOG_ENCODERS or compresslog.is_debug_enabled() and "csc-type" not in client_options:
+        if (LOG_ENCODERS or compresslog.is_debug_enabled()) and "csc-type" not in client_options:
             client_options["csc-type"] = csce.get_type() if csce else "none"
 
         # populate client options:
