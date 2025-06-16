@@ -22,6 +22,11 @@ OLD_CONFIGURE_TOOL_CONFIG = "99_configure_tool.conf"
 CONFIGURE_TOOL_CONFIG = "90_configure_tool.conf"
 
 
+def get_system_conf_file(dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> str:
+    from xpra.platform.paths import get_system_conf_dirs
+    return osexpand(os.path.join(get_system_conf_dirs()[0], dirname, filename))
+
+
 def get_user_config_file(dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> str:
     from xpra.platform.paths import get_user_conf_dirs
     return osexpand(os.path.join(get_user_conf_dirs()[0], dirname, filename))

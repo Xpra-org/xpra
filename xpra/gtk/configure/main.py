@@ -6,15 +6,19 @@
 import os.path
 from importlib import import_module
 
+from xpra.os_util import is_admin
 from xpra.platform import program_context
-from xpra.util.config import get_user_config_file
+from xpra.util.config import get_user_config_file, get_system_conf_file
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode, ExitValue
 
 
 def main(args) -> ExitValue:
     with program_context("Configure", "Configure"):
-        conf = get_user_config_file()
+        if is_admin():
+            conf = get_system_conf_file()
+        else:
+            conf = get_user_config_file()
         subcommand = args[0] if args else "home"
         if subcommand == "reset":
             import datetime
