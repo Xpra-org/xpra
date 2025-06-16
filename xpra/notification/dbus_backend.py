@@ -11,7 +11,7 @@ from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.os_util import gi_import
 from xpra.dbus.helper import native_to_dbus
-from xpra.notification.notifier_base import NotifierBase, log, NID
+from xpra.notification.base import NotifierBase, log, NID
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop, threads_init
 from dbus.exceptions import DBusException
@@ -23,7 +23,7 @@ NOTIFICATION_APP_NAME = os.environ.get("XPRA_NOTIFICATION_APP_NAME", "%s (via Xp
 FD_NOTIFICATIONS = "org.freedesktop.Notifications"
 
 
-class DBUS_Notifier(NotifierBase):
+class DBUSNotifier(NotifierBase):
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -215,9 +215,9 @@ class DBUS_Notifier(NotifierBase):
                                           error_handler=CloseNotificationError)
 
 
-def DBUS_Notifier_factory(*args) -> DBUS_Notifier | None:
+def DBUS_Notifier_factory(*args) -> DBUSNotifier | None:
     try:
-        return DBUS_Notifier(*args)
+        return DBUSNotifier(*args)
     except Exception as e:
         log.warn("Warning: failed to instantiate the dbus notification handler")
         if str(e).startswith("org.freedesktop.DBus.Error.ServiceUnknown:"):

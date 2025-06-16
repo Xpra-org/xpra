@@ -8,10 +8,16 @@ import sys
 from typing import Any
 import notify2
 
-from xpra.notification.notifier_base import NotifierBase, NID
+from xpra.notification.base import NotifierBase, NID
 
 
-class PyNotify_Notifier(NotifierBase):
+def close_notify(nid: NID) -> None:
+    n = PyNotifyNotifier.CACHE.pop(int(nid), None)
+    if n:
+        n.close()
+
+
+class PyNotifyNotifier(NotifierBase):
     CACHE: dict[int, Any] = {}
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
@@ -23,7 +29,7 @@ class PyNotify_Notifier(NotifierBase):
         if not notify2.is_initted():
             notify2.init(app_name or "Xpra", "glib")
         n = notify2.Notification(summary, body, icon_string)
-        PyNotify_Notifier.CACHE[int(nid)] = n
+        PyNotifyNotifier.CACHE[int(nid)] = n
         n.set_urgency(notify2.URGENCY_LOW)
         n.set_timeout(timeout)
         n.show()
@@ -34,13 +40,8 @@ class PyNotify_Notifier(NotifierBase):
             n.connect("closed", notification_closed)
 
     def clean_notification(self, nid: int) -> None:
-        PyNotify_Notifier.CACHE.pop(nid, None)
+        PyNotifyNotifier.CACHE.pop(nid, None)
         super().clean_notification(nid)
-
-    def close_notify(self, nid: NID) -> None:
-        n = PyNotify_Notifier.CACHE.pop(int(nid), None)
-        if n:
-            n.close()
 
 
 def main(args):
@@ -56,9 +57,9 @@ def main(args):
 
     def show() -> bool:
         nid = 1
-        n = PyNotify_Notifier()
+        n = PyNotifyNotifier()
         n.show_notify("", None, nid, "Test", 0, "", summary, body, ["0", "Hello", "1", "Bye"], {}, 0, "")
-        GLib.timeout_add(5000, n.close_notify, nid)
+        GLib.timeout_add(5000, close_notify, nid)
         return False
 
     GLib.idle_add(show)

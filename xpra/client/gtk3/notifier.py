@@ -6,7 +6,7 @@
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.notification.notifier_base import NotifierBase, NID
+from xpra.notification.base import NotifierBase, NID
 
 Notify = gi_import("Notify")
 

@@ -7,9 +7,9 @@ nid = 1
 
 def notify(*_args) -> bool:
     global nid
-    from xpra.notification.dbus_notifier import DBUS_Notifier, log
+    from xpra.notification.dbus_backend import DBUSNotifier, log
     log.enable_debug()
-    notifier = DBUS_Notifier()
+    notifier = DBUSNotifier()
     notifier.app_name_format = "%s"
     # ensure we can send the image-path hint:
     notifier.parse_hints = notifier.noparse_hints

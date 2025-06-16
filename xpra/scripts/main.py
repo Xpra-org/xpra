@@ -4717,9 +4717,9 @@ def run_notify(_options, args) -> ExitValue:
         raise InitException("specify notification text")
     title = args[0]
     body = args[1] if len(args) >= 2 else ""
-    from xpra.notification.dbus_notifier import DBUS_Notifier, log
+    from xpra.notification.dbus_backend import DBUSNotifier, log
     log.enable_debug()
-    notifier = DBUS_Notifier()
+    notifier = DBUSNotifier()
     notifier.app_name_format = "%s"
     # ensure we can send the image-path hint:
     notifier.parse_hints = notifier.noparse_hints
