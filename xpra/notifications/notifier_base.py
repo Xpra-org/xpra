@@ -7,11 +7,13 @@ import os
 import tempfile
 from typing import TypeAlias
 
-from xpra.util.env import osexpand
+from xpra.util.env import osexpand, envint
 from xpra.log import Logger
 from xpra.common import NotificationID
 
 log = Logger("notify")
+
+AUTO_DELETE_DELAY = envint("XPRA_AUTO_DELETE_DELAY", 60)
 
 NID: TypeAlias = int | NotificationID
 
@@ -61,6 +63,10 @@ class NotifierBase:
             temp.write(icon_data)
             temp.close()
             self.temp_files[int(nid)] = temp.name
+            if AUTO_DELETE_DELAY > 0:
+                from xpra.os_util import gi_import
+                GLib = gi_import("GLib")
+                GLib.timeout_add(AUTO_DELETE_DELAY, self.clean_notification, nid)
             return temp.name
         return ""
 
