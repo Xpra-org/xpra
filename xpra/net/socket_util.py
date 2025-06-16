@@ -126,6 +126,8 @@ def hosts(host_str:str) -> List[str]:
         if has_dual_stack():
             #IPv6 will also listen for IPv4:
             return ["::"]
+        if not socket.has_ipv6:
+            return ["0.0.0.0"]
         #no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
         return ["0.0.0.0", "::"]
     return [host_str]
