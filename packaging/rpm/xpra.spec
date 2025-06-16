@@ -1008,16 +1008,28 @@ fi
 
 
 %changelog
-* Wed Jun 11 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
+* Mon Jun 16 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
 - Platforms, build and packaging:
    Cython compilation warnings in macOS bindings and procps library
    exit-with-children not honoured in polling mode (ie: MS Windows)
+   `named-pipe` connection errors
+   enable mDNS by default on Fedora
 - Major:
+   missing ssh mDNS records with zeroconf
+   pam module errors
    xvfb fails to resize after a while
    always update desktop geometry attributes on resize
    client should run even if local sockets cannot be created
+   error code path returns invalid type
+   xpra supports 'show-desktop', so expose the feature
+   don't use IPv6 if not supported
 - Minor:
    strict type in `webp` encoder
+   show mdns records as strings
+   can run `xpra configure` as root
+   clean notification temporary files more aggressively
+- Cosmetic:
+   `csc-type` debug metadata may be overwritten
 
 * Sat May 31 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:
