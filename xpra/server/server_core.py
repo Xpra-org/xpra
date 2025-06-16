@@ -28,7 +28,7 @@ from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PacketType
 from xpra.net.socket_util import (
-    hosts, mdns_publish, peek_connection,
+    mdns_publish, peek_connection,
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
     ssl_wrap_socket,
@@ -920,9 +920,14 @@ class ServerCore:
                     iport = get_ssh_port()
                     if not iport:
                         continue
+                    hosts = ["0.0.0.0"]
+                    import socket
+                    if socket.has_ipv6:
+                        hosts.append("::")
                 else:
                     host, iport = info
-                for h in hosts(host):
+                    hosts = [host]
+                for h in hosts:
                     rec = (h, iport)
                     if rec not in recs:
                         recs.append(rec)
