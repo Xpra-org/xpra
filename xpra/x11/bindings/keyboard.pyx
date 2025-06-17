@@ -695,7 +695,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XFree(keyboard_map)
         return mappings
 
-    def get_keycode_mappings(self) -> Dict[str, List[str]]:
+    def get_keycode_mappings(self) -> Dict[int, List[str]]:
         """
         the mappings from _get_raw_keycode_mappings are in raw format
         (keysyms as numbers), so here we convert into names:

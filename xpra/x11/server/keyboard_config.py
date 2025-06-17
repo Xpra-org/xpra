@@ -72,7 +72,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.mod_pointermissing: list[str] = []
         self.mod_nuisance: set[str] = set(DEFAULT_MODIFIER_NUISANCE)
         self.keycodes = ()
-        self.x11_keycodes = []
+        self.x11_keycodes = {}
         self.layout = ""
         self.variant = ""
         self.options = ""

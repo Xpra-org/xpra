@@ -157,24 +157,21 @@ def apply_xmodmap(instructions: list[tuple]) -> list[tuple]:
     return unset
 
 
-def get_keycode_mappings() -> dict[str, list[str]]:
+def get_keycode_mappings() -> dict[int, list[str]]:
     X11Keyboard = X11KeyboardBindings()
     if XKB and X11Keyboard.hasXkb():
         return X11Keyboard.get_xkb_keycode_mappings()
     return X11Keyboard.get_keycode_mappings()
 
 
-def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
-    """
-        Translate the given keycodes into the existing keymap
-    """
-    # get the list of keycodes (either from x11 keycodes or gtk keycodes):
+def set_keycode_translation(xkbmap_x11_keycodes: dict, xkbmap_keycodes: Iterable) -> dict[str | tuple[int, str], int]:
+    x11_keycodes = get_keycode_mappings()
+    keycodes: dict[int, set]
     if xkbmap_x11_keycodes:
         dump_dict(xkbmap_x11_keycodes)
         keycodes = indexed_mappings(xkbmap_x11_keycodes)
     else:
         keycodes = gtk_keycodes_to_mappings(xkbmap_keycodes)
-    x11_keycodes = get_keycode_mappings()
     log("set_keycode_translation(%s, %s)", Ellipsizer(xkbmap_x11_keycodes), Ellipsizer(xkbmap_keycodes))
     log(" keycodes=%s", Ellipsizer(keycodes))
     log(" x11_keycodes=%s", Ellipsizer(x11_keycodes))
@@ -196,15 +193,40 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
     ```
     create faster lookup table:
     """
-    x11_keycodes_for_keysym = {}
+    trans = do_set_keycode_translation(keycodes)
+
+    if not xkbmap_x11_keycodes:
+        # now add all the keycodes we may not have mapped yet
+        # (present in the `x11_keycodes` mappings but not the `trans`lation table)
+        for keycode, keysyms in x11_keycodes.items():
+            for i, keysym in enumerate(keysyms):
+                if keysym in DEBUG_KEYSYMS:
+                    log.info("x11 keycode %s: %s", keycode, keysym)
+                # record under `keysym` and also `(keysym, index)`:
+                for trans_key in (keysym, (keysym, i)):
+                    if trans_key not in trans:
+                        trans[trans_key] = keycode
+    log("set_keycode_translation(..)=%s", Ellipsizer(trans))
+    verboselog("set_keycode_translation(..)=%s", trans)
+    return trans
+
+
+def do_set_keycode_translation(keycodes: dict[int, set]) -> dict[str | tuple[int, str], int]:
+    """
+        Translate the given keycodes into a keymap,
+        and try to preserve the existing keymap
+    """
+    x11_keycodes = get_keycode_mappings()
+    # create faster keysym lookup table:
+    x11_keycodes_for_keysym: dict[str, set[int]] = {}
     for keycode, keysyms in x11_keycodes.items():
         for keysym in keysyms:
             x11_keycodes_for_keysym.setdefault(keysym, set()).add(keycode)
 
-    def find_keycode(kc: int, keysym, i: int) -> tuple | None:
+    def find_keycode(kc: int, keysym, i: int) -> tuple:
         keycodes = tuple(x11_keycodes_for_keysym.get(keysym, set()))
         if not keycodes:
-            return None
+            return ()
 
         rlog = noop
         debug_keysym = keysym in DEBUG_KEYSYMS
@@ -232,33 +254,22 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
         keycode = keycodes[0]
         rlog(keycode, "using first match")
         return keycode, False
+
     # generate the translation map:
-    trans = {}
+    trans: dict[str | tuple[int, str], int] = {}
     for keycode, defs in keycodes.items():
         if bool(set(DEBUG_KEYSYMS) & set(bytestostr(d[0]) for d in defs)):
             log.info("client keycode=%i, defs=%s", keycode, defs)
         for bkeysym, i in tuple(defs):             # ie: (b'1', 0) or (b'A', 1), etc
             keysym = bytestostr(bkeysym)
             m = find_keycode(keycode, keysym, i)
-            if m:
-                x11_keycode, index_matched = m
-                trans[(keycode, keysym)] = x11_keycode
-                trans[keysym] = x11_keycode
-                if index_matched:
-                    trans[(keysym, i)] = x11_keycode
-    if not xkbmap_x11_keycodes:
-        # now add all the keycodes we may not have mapped yet
-        # (present in x11_keycodes but not keycodes)
-        for keycode, keysyms in x11_keycodes.items():
-            for i, keysym in enumerate(keysyms):
-                if keysym in DEBUG_KEYSYMS:
-                    log.info("x11 keycode %s: %s", keycode, keysym)
-                # record under `keysym` and also `(keysym, index)`:
-                for trans_key in (keysym, (keysym, i)):
-                    if trans_key not in trans:
-                        trans[trans_key] = keycode
-    log("set_keycode_translation(..)=%s", Ellipsizer(trans))
-    verboselog("set_keycode_translation(..)=%s", trans)
+            if not m:
+                continue
+            x11_keycode, index_matched = m
+            trans[(keycode, keysym)] = x11_keycode
+            trans[keysym] = x11_keycode
+            if index_matched:
+                trans[(keysym, i)] = x11_keycode
     return trans
 
 
