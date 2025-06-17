@@ -2351,7 +2351,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
             raise InitException(f"{mode} is not supported on this platform")
         if mode != "expand" and not find_spec("xpra.x11"):
             raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
-    display = None
+    display_name = ""
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
     with_display = mode in ("seamless", "desktop", "monitor", "expand")
     if with_display and str_to_bool(options.attach, False) and args and not display_is_remote:
@@ -2363,7 +2363,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
             pass
         else:
             dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
-            display_name = display.get("display_name")
+            display_name = display.get("display_name", "")
             if display_name:
                 state = dotxpra.get_display_state(display_name)
                 if state == SocketState.LIVE:
@@ -2387,7 +2387,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
     except ImportError:
         error_cb("`xpra-server` is not installed")
         sys.exit(1)
-    return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, str(display or ""), defaults)
+    return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, display_name, defaults)
 
 
 def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
