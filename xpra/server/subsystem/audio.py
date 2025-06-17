@@ -139,7 +139,7 @@ class AudioServer(StubServerMixin):
         audio_control(*packet[1:])
 
     def _process_sound_data(self, proto, packet: Packet) -> None:
-        self._process_sound_data(proto, packet)
+        self._process_audio_data(proto, packet)
 
     def _process_audio_data(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
