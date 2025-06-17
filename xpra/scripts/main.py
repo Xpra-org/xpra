@@ -1089,7 +1089,7 @@ def pick_vnc_display(error_cb, vnc_arg: str) -> dict[str, Any]:
     return {}
 
 
-def pick_display(error_cb, opts, extra_args, cmdline: Sequence[str]=()) -> dict[str, Any]:
+def pick_display(error_cb, opts, extra_args, cmdline: Sequence[str] = ()) -> dict[str, Any]:
     if len(extra_args) == 1 and extra_args[0].startswith("vnc"):
         vnc_display = pick_vnc_display(error_cb, extra_args[0])
         if vnc_display:
@@ -1098,7 +1098,7 @@ def pick_display(error_cb, opts, extra_args, cmdline: Sequence[str]=()) -> dict[
     return do_pick_display(error_cb, opts, extra_args, cmdline)
 
 
-def do_pick_display(error_cb, opts, extra_args, cmdline: Sequence[str]=()) -> dict[str, Any]:
+def do_pick_display(error_cb, opts, extra_args, cmdline: Sequence[str] = ()) -> dict[str, Any]:
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     if not extra_args:
         # Pick a default server
@@ -2450,7 +2450,7 @@ def match_client_display_size(options, display_is_remote=True) -> None:
         options.resize_display = f"{scaled_w}x{scaled_h}"
 
 
-def run_server(script_file, cmdline: list[str], error_cb, options, args, full_mode: str, defaults) -> ExitValue:
+def run_server(script_file, cmdline: list[str], error_cb, options, args: list[str], full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     if mode in (
@@ -2461,23 +2461,23 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args, full_mo
             raise InitException(f"{mode} is not supported on this platform")
         if mode != "expand" and not find_spec("xpra.x11"):
             raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
-    display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
+    display = ""
     with_display = mode in ("seamless", "desktop", "monitor", "expand")
     if with_display and str_to_bool(options.attach, False) and args and not display_is_remote:
         # maybe the server is already running for the display specified
         # then we don't even need to bother trying to start it:
         try:
-            display = pick_display(error_cb, options, args, cmdline)
+            display_desc = pick_display(error_cb, options, args, cmdline)
         except (ValueError, InitException):
             pass
         else:
             dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
-            display_name = display.get("display_name")
-            if display_name:
-                state = dotxpra.get_display_state(display_name)
+            display = display_desc.get("display_name")
+            if display:
+                state = dotxpra.get_display_state(display)
                 if state == SocketState.LIVE:
-                    get_logger().info(f"existing live display found on {display_name}, attaching")
+                    get_logger().info(f"existing live display found on {display}, attaching")
                     # we're connecting locally, so no need for these:
                     options.csc_modules = ["none"]
                     options.video_decoders = ["none"]
@@ -2497,7 +2497,7 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args, full_mo
     except ImportError:
         error_cb("`xpra-server` is not installed")
         sys.exit(1)
-    return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, str(display or ""), defaults)
+    return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
 
 
 def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:

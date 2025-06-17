@@ -17,7 +17,7 @@ import os.path
 import datetime
 from typing import Any, NoReturn
 from subprocess import Popen  # pylint: disable=import-outside-toplevel
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 
 from xpra import __version__
 from xpra.scripts.session import (
@@ -629,55 +629,49 @@ def start_cupsd() -> None:
                 warn("started system cupsd daemon\n")
 
 
-def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mode: str,
-                  display_name: str, defaults) -> ExitValue:
-    mode_parts = full_mode.split(",", 1)
-    mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
-    assert mode in (
-        "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
-        "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
-        "proxy",
-        "encoder",
-        "runner"
-    )
-    validate_encryption(opts)
-    if opts.encoding == "help" or "help" in opts.encodings:
-        return show_encoding_help(opts)
-    ################################################################################
-    # splash screen:
-    splash_process: Popen | None = None
-    if is_splash_enabled(mode, opts.daemon, opts.splash, display_name):
+def get_splash_progress(mode: str, daemon: bool, splash: bool, display: str) -> tuple[Popen | None, Callable]:
+    # this should be moved to the SplashServer class,
+    # once we initialize servers earlier
+    progress: Callable[[int, str], None] = noop
+    splash_process = None
+    if is_splash_enabled(mode, daemon, splash, display):
         # use splash screen to show server startup progress:
         mode_str = MODE_TO_NAME.get(mode, "").split(" Upgrade")[0]
         title = f"Xpra {mode_str} Server {__version__}"
         splash_process = make_progress_process(title)
         progress = splash_process.progress
+        from atexit import register
+
+        def progress_exit() -> None:
+            progress(100, "exiting")
+        register(progress_exit)
     else:
         if PROGRESS_TO_STDERR:
             def progress_to_stderr(*args) -> None:
                 stderr_print(" ".join(str(x) for x in args))
 
             progress = progress_to_stderr
-        else:
-            def noprogressshown(*_args) -> None:
-                """ messages aren't shown """
-
-            progress = noprogressshown
     progress(10, "initializing environment")
-    try:
-        return _do_run_server(script_file, cmdline,
-                              error_cb, opts, extra_args, full_mode, display_name, defaults,
-                              splash_process, progress)
-    except Exception as e:
-        progress(100, f"error: {e}")
-        import time
-        time.sleep(1)
-        raise
+    return splash_process, progress
 
 
-def _do_run_server(script_file: str, cmdline,
-                   error_cb, opts, extra_args, full_mode: str, display_name: str, defaults,
-                   splash_process, progress) -> ExitValue:
+def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts,
+                  extra_args: list[str], full_mode: str, defaults) -> ExitValue:
+    mode_parts = full_mode.split(",", 1)
+    mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
+    if mode not in (
+        "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
+        "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
+        "proxy",
+        "encoder",
+        "runner"
+    ):
+        raise ValueError(f"unsupported server mode {mode}")
+
+    validate_encryption(opts)
+    if opts.encoding == "help" or "help" in opts.encodings:
+        return show_encoding_help(opts)
+
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     mode_attrs: dict[str, str] = {}
@@ -792,6 +786,8 @@ def _do_run_server(script_file: str, cmdline,
                 # We will try to find one automatically
                 # Use the temporary magic value "S" as marker:
                 display_name = "S" + str(os.getpid())
+
+    splash_process, progress = get_splash_progress(mode, opts.daemon, opts.splash, display_name)
 
     if upgrading:
         assert display_name, "no display found to upgrade"
