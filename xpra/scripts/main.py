@@ -1907,7 +1907,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
                 assert x11
             except ImportError:
                 raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use `{mode}")
-    display = None
+    display_name = ""
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
     if mode in (
         "seamless",
@@ -1924,7 +1924,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
                 pass
             else:
                 dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
-                display_name = display.get("display_name")
+                display_name = display.get("display_name", "")
                 if display_name:
                     state = dotxpra.get_display_state(display_name)
                     if state==DotXpra.LIVE:
@@ -1958,7 +1958,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
     except ImportError:
         error_cb("Xpra server is not installed")
         sys.exit(1)
-    return do_run_server(script_file, cmdline, error_cb, options, args, mode, str(display or ""), defaults)
+    return do_run_server(script_file, cmdline, error_cb, options, args, mode, display_name, defaults)
 
 def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mode:str) -> Union[int,None]:
     start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
