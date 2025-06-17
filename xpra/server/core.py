@@ -764,6 +764,9 @@ class ServerCore(ServerBaseClass):
     def handle_new_connection(self, listener: SocketListener, conn) -> None:
         try:
             self.do_handle_new_connection(listener, conn)
+        except ValueError as e:
+            sock = conn._socket
+            self.new_conn_err(conn, sock, conn.socktype, conn.remote, "", str(e))
         except OSError as e:
             netlog("handle_new_connection(%s, %s) socket wrapping failed", listener, conn, exc_info=True)
             sock = conn._socket
@@ -791,15 +794,6 @@ class ServerCore(ServerBaseClass):
         netlog("socket peek=%s", Ellipsizer(peek_data, limit=512))
         packet_type = self.guess_packet_type(peek_data)
 
-        def ssl_wrap() -> SSLSocketConnection | None:
-            ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
-            ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
-            if ssl_sock is None:
-                return None
-            ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype, socket_options=socket_options)
-            ssllog("ssl_wrap()=%s", ssl_conn)
-            return ssl_conn
-
         def can_upgrade_to(to_socktype: str) -> bool:
             return self.can_upgrade(socktype, to_socktype, socket_options)
 
@@ -813,7 +807,7 @@ class ServerCore(ServerBaseClass):
                 conn_err(f"packet is {packet_type!r} and not ssl")
                 return
             # always start by wrapping with SSL:
-            ssl_conn = ssl_wrap()
+            ssl_conn = self.ssl_wrap(conn, socket_options)
             if not ssl_conn:
                 return
             http = socktype == "wss"
@@ -840,29 +834,14 @@ class ServerCore(ServerBaseClass):
             return
 
         if socktype == "ws":
-            if peek_data:
-                if packet_type == "ssl" and can_upgrade_to("wss"):
-                    ssllog("ws socket receiving ssl, upgrading to wss")
-                    conn = ssl_wrap()
-                    if conn is None:
-                        return
-                elif packet_type not in (None, "http"):
-                    conn_err(f"packet type is {packet_type!r} and not http")
-                    return
-            self.start_http_socket(socktype, conn, socket_options, False, peek_data)
+            self.handle_ws_socket(conn, socket_options, peek_data)
             return
 
         if socktype == "rfb":
-            if peek_data and peek_data[:4] != b"RFB " and can_upgrade_to("rfb"):
-                conn_err("packet type is not RFB")
-                return
             self.handle_rfb_connection(conn)
             return
 
         if socktype == "rdp":
-            if peek_data and peek_data[:2] != b"\x03\x00":
-                conn_err("packet type is not RDP")
-                return
             self.handle_rdp_connection(conn)
             return
 
@@ -881,10 +860,6 @@ class ServerCore(ServerBaseClass):
                 return
             packet_type = guess_packet_type(peek_data)
 
-        if packet_type not in ("xpra", ""):
-            conn_err("packet type is not xpra")
-            return
-
         # get the new socket object as we may have wrapped it with ssl:
         pre_read = []
         if socktype == "socket" and not peek_data:
@@ -896,6 +871,12 @@ class ServerCore(ServerBaseClass):
                 force_close_connection(conn)
                 return
             pre_read.append(pre)
+            packet_type = guess_packet_type(pre)
+
+        if packet_type not in ("xpra", ""):
+            conn_err("packet type is not xpra")
+            return
+
         sock = getattr(conn, "_socket", sock)
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, address)
@@ -903,6 +884,21 @@ class ServerCore(ServerBaseClass):
         if socktype == "tcp" and not peek_data and self._rfb_upgrade > 0:
             t = GLib.timeout_add(self._rfb_upgrade * 1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
+
+    def ssl_wrap(self, conn, socket_options: dict[str, Any]) -> SSLSocketConnection | None:
+        sock = conn._socket
+        socktype = conn.socktype
+        ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
+        ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
+        if ssl_sock is None:
+            return None
+        address = conn.remote
+        peername = conn.endpoint
+        sockname = sock.getsockname()
+        target = peername or sockname
+        ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype, socket_options=socket_options)
+        ssllog("ssl_wrap(%s, %s)=%s", conn, socket_options, ssl_conn)
+        return ssl_conn
 
     def get_ssl_socket_options(self, socket_options: dict) -> dict[str, Any]:
         ssllog(f"get_ssl_socket_options({socket_options})")
@@ -941,6 +937,18 @@ class ServerCore(ServerBaseClass):
             log_fn(" %s", e)
             noerr(sock.close)
             return None
+
+    def handle_ws_socket(self, conn, socket_options: dict[str, Any], peek_data: bytes) -> None:
+        packet_type = self.guess_packet_type(peek_data)
+        if peek_data:
+            if packet_type == "ssl" and self.can_upgrade(conn.socktype, "wss", socket_options):
+                ssllog("ws socket receiving ssl, upgrading to wss")
+                conn = self.ssl_wrap(conn, socket_options)
+                if conn is None:
+                    return
+            elif packet_type not in (None, "http"):
+                raise ValueError(f"packet type is {packet_type!r} and not http")
+        self.start_http_socket(conn.socktype, conn, socket_options, False, peek_data)
 
     def handle_ssh_connection(self, conn, socket_options: dict[str, Any]):
         from xpra.server.ssh import make_ssh_server_connection, log as sshlog
@@ -1817,6 +1825,8 @@ class ServerCore(ServerBaseClass):
         force_close_connection(conn)
 
     def handle_rdp_connection(self, conn, data: bytes = b"") -> None:
+        if data and data[:2] != b"\x03\x00":
+            raise ValueError("packet is not valid RDP")
         log.error("Error: RDP protocol is not supported by this server")
         log("handle_rdp_connection%s", (conn, data))
         force_close_connection(conn)

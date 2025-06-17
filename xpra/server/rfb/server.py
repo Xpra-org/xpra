@@ -70,7 +70,10 @@ class RFBServer:
             return None
         return ids[0]
 
-    def handle_rfb_connection(self, conn, data=b""):
+    def handle_rfb_connection(self, conn, data=b"") -> None:
+        if data and data[:4] != b"RFB ":
+            raise ValueError("packet is not a valid RFB connection")
+
         model = self._get_rfb_desktop_model()
         log("handle_rfb_connection(%s) model=%s", conn, model)
         if not model:
