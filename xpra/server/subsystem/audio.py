@@ -7,7 +7,7 @@
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.common import noop
+from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import first_time
@@ -150,5 +150,6 @@ class AudioServer(StubServerMixin):
         if self.supports_speaker or self.supports_microphone:
             self.add_packets(f"{AudioServer.PREFIX}-control", main_thread=True)
             self.add_packets(f"{AudioServer.PREFIX}-data")
-            self.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")
-            self.add_legacy_alias("sound-data", f"{AudioServer.PREFIX}-data")
+            if BACKWARDS_COMPATIBLE:
+                self.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")
+                self.add_legacy_alias("sound-data", f"{AudioServer.PREFIX}-data")
