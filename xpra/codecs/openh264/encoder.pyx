@@ -229,7 +229,7 @@ cdef extern from "wels/codec_api.h":
     cdef cppclass ISVCEncoder:
         long Initialize(const SEncParamBase* pParam) nogil
         long Uninitialize()
-        int InitializeExt(const SEncParamExt* pParam)
+        int InitializeExt(const SEncParamExt* pParam) nogil
         int GetDefaultParams(SEncParamExt* pParam)
         int SetOption(ENCODER_OPTION eOptionId, void* pOption)
         int EncodeFrame(const SSourcePicture* kpSrcPic, SFrameBSInfo* pBsInfo) nogil
@@ -359,7 +359,7 @@ cdef class Encoder:
         cdef int level = LEVEL_4_1
         self.context.SetOption(ENCODER_OPTION_LEVEL, &level)
 
-        cdef SEncParamBase param
+        cdef SEncParamExt param
         memset(&param, 0, sizeof(SEncParamBase))
         param.iUsageType    = SCREEN_CONTENT_REAL_TIME
         param.fMaxFrameRate = 30
@@ -370,7 +370,7 @@ cdef class Encoder:
         param.sSpatialLayers[0].bFullRange = True
         #param.iTargetBitrate = 5000000
         with nogil:
-            self.context.Initialize(&param)
+            self.context.InitializeExt(&param)
         #cdef int profile = PRO_MAIN
         #self.context.SetOption(ENCODER_OPTION_PROFILE, &profile)
         #a void (*)(void* context, int level, const char* message) function which receives log messages
