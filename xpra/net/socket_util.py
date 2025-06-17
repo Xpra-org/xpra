@@ -200,7 +200,7 @@ def add_listen_socket(listener: SocketListener, server, new_connection_cb: Calla
         if socktype == "named-pipe":
             # named pipe listener uses a thread:
             listener.socket.new_connection_cb = new_connection_cb
-            listener.socket.listener.start()
+            listener.socket.start()
             return None
         if socktype == "quic":
             from xpra.net.quic.listener import listen_quic
