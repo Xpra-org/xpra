@@ -2427,7 +2427,18 @@ class WindowVideoSource(WindowSource):
         return ret
 
     def video_encode(self, encoding: str, image: ImageWrapper, options: typedict) -> tuple:
+        if self.is_cancelled():
+            return ()
+        if SAVE_VIDEO_FRAMES:
+            save_video_frame(self.wid, image)
+        depth = image.get_depth()
         try:
+            if depth not in (24, 30, 32):
+                return self.video_fallback(image, options, info=f"depth {depth} not supported")
+            if not self.common_video_encodings:
+                # we have to send using a non-video encoding as that's all we have!
+                return self.video_fallback(image, options, info="no common video encodings")
+
             return self.do_video_encode(encoding, image, options)
         finally:
             free_image_wrapper(image)
@@ -2444,8 +2455,6 @@ class WindowVideoSource(WindowSource):
         videolog("do_video_encode(%s, %s, %s)", encoding, image, options)
         x, y, w, h = image.get_geometry()[:4]
         src_format = image.get_pixel_format()
-        if self.is_cancelled():
-            return ()
         if self.pixel_format != src_format:
             videolog.warn("Warning: image pixel format unexpectedly changed from %s to %s",
                           self.pixel_format, src_format)
@@ -2457,18 +2466,9 @@ class WindowVideoSource(WindowSource):
             # ie: "BGRA" -> "BGRX"
             src_format = src_format.replace("A", "X")
 
-        if SAVE_VIDEO_FRAMES:
-            save_video_frame(self.wid, image)
-
         if self.may_use_scrolling(image, options):
             # scroll encoding has dealt with this image
             return ()
-
-        if not self.common_video_encodings:
-            # we have to send using a non-video encoding as that's all we have!
-            return self.video_fallback(image, options, info="no common video encodings")
-        if self.image_depth not in (24, 30, 32):
-            return self.video_fallback(image, options, info=f"depth {self.image_depth} not supported")
 
         if self.encoding == "grayscale":
             from xpra.codecs.csc_libyuv.converter import argb_to_gray
