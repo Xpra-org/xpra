@@ -488,7 +488,7 @@ def load_server_host_keys(host_keyfile: str) -> dict[Any, str]:
 
 def make_ssh_server_connection(conn, socket_options: dict,
                                none_auth: bool = False,
-                               password_auth: Callable | None = None,
+                               password_auth: Callable[[str, str], bool] | None = None,
                                display_name: str = ""):
     log("make_ssh_server_connection%s", (conn, socket_options, none_auth, password_auth))
     ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth, options=socket_options,
