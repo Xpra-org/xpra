@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.2] 2025-06-16
+## [6.3.2] 2025-06-18
 * Platforms, build and packaging:
     * Cython compilation warnings: [in macOS bindings](https://github.com/Xpra-org/xpra/commit/db8e44ee7b5267b2abc829d020c4ac6f3e9ebed7) and [procps library](https://github.com/Xpra-org/xpra/commit/38e598fed94f74a3d727043086aafd152b2d7144)
     * [exit-with-children not honoured in polling mode (ie: MS Windows)](https://github.com/Xpra-org/xpra/commit/c83d08e97c63a78f5e71217d5fdc3ed8605f0280)
@@ -20,6 +20,7 @@
     * [show mdns records as strings](https://github.com/Xpra-org/xpra/commit/2ffed9301e9a8e80d6e8922c6997daecc2d0f86c)
     * [can run `xpra configure` as root](https://github.com/Xpra-org/xpra/commit/eaeb94f9012333049a4aade310871c00c78d3ffb)
     * [clean notification temporary files more aggressively](https://github.com/Xpra-org/xpra/commit/b28a846c1db2d23af06a15e2036fc8f491559c2b)
+    * [starting servers with remote display can error out](https://github.com/Xpra-org/xpra/commit/1e2e8addfd985414251f00de21a6a5451f429d77)
 * Cosmetic:
     * [`csc-type` debug metadata may be overwritten](https://github.com/Xpra-org/xpra/commit/7909400c952735d6cf4642eb59ec70e45d30a73c)
 

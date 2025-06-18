@@ -1008,7 +1008,7 @@ fi
 
 
 %changelog
-* Mon Jun 16 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
+* Wed Jun 18 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
 - Platforms, build and packaging:
    Cython compilation warnings in macOS bindings and procps library
    exit-with-children not honoured in polling mode (ie: MS Windows)
@@ -1028,6 +1028,7 @@ fi
    show mdns records as strings
    can run `xpra configure` as root
    clean notification temporary files more aggressively
+   starting servers with remote display can error out
 - Cosmetic:
    `csc-type` debug metadata may be overwritten
 
