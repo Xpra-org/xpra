@@ -739,6 +739,7 @@ rm -rf $RPM_BUILD_ROOT
 %pycached %{python3_sitearch}/xpra/codecs/image.py
 %pycached %{python3_sitearch}/xpra/codecs/loader.py
 %pycached %{python3_sitearch}/xpra/codecs/rgb_transform.py
+%pycached %{python3_sitearch}/xpra/codecs/protocols.py
 %pycached %{python3_sitearch}/xpra/codecs/video.py
 %{python3_sitearch}/xpra/dbus/
 %{python3_sitearch}/xpra/gtk/
