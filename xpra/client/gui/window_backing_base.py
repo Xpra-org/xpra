@@ -20,6 +20,7 @@ from xpra.codecs.loader import get_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
 from xpra.codecs.constants import TransientCodecException, CodecStateException
+from xpra.codecs.protocols import VideoDecoder, ColorspaceConverter
 from xpra.common import Gravity, PaintCallbacks
 from xpra.log import Logger
 
@@ -138,8 +139,8 @@ class WindowBackingBase:
         self.gravity: int = 0
         self._alpha_enabled = window_alpha
         self._backing = None
-        self._video_decoder = None
-        self._csc_decoder = None
+        self._video_decoder: VideoDecoder | None = None
+        self._csc_decoder: ColorspaceConverter | None = None
         self._decoder_lock = Lock()
         self._PIL_encodings = []
         self.default_paint_box_line_width = PAINT_BOX or 1

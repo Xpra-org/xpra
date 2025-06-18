@@ -17,6 +17,7 @@ from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, COMPRESS_FMT_PREFIX, \
     COMPRESS_FMT_SUFFIX, COMPRESS_FMT
 from xpra.codecs.image import ImageWrapper
+from xpra.codecs.protocols import ColorspaceConverter
 from xpra.server.window.compress import (
     WindowSource, DelayedRegions, get_encoder_type, free_image_wrapper,
     STRICT_MODE, LOSSLESS_WINDOW_TYPES,
@@ -28,6 +29,7 @@ from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder, CSCSpec
+from xpra.codecs.protocols import VideoEncoder
 from xpra.codecs.loader import has_codec
 from xpra.common import roundup, MIN_VREFRESH, MAX_VREFRESH, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import parse_scaling_value
@@ -227,8 +229,8 @@ class WindowVideoSource(WindowSource):
         self.stream_mode = STREAM_MODE
         self.gstreamer_pipeline = None
 
-        self._csc_encoder = None
-        self._video_encoder = None
+        self._csc_encoder: ColorspaceConverter | None = None
+        self._video_encoder: VideoEncoder | None = None
         self._last_pipeline_check = 0
 
     def do_init_encoders(self) -> None:
