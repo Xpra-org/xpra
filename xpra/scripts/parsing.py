@@ -30,7 +30,7 @@ from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
 from xpra.scripts.config import (
     XpraConfig,
-    OPTION_TYPES, TRUE_OPTIONS,
+    OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS,
     InitException, InitInfo, InitExit,
     fixup_debug_option, fixup_options,
     find_docs_path, find_html5_path,
@@ -590,8 +590,9 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
         host, port = add_host_port(DEFAULT_PORTS.get(protocol, DEFAULT_PORT))
         add_path()
         add_query()
-        # always parse ssl options so we can auto-upgrade:
-        desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
+        if opts.ssl.lower() not in FALSE_OPTIONS:
+            # always parse ssl options so we can auto-upgrade:
+            desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
         if protocol in ("ssl", "wss", "quic"):
             alt_scheme = "https"
         else:
