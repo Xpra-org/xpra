@@ -131,6 +131,52 @@ cdef extern from "wels/codec_app_def.h":
         SCREEN_CONTENT_NON_REAL_TIME,
         INPUT_CONTENT_TYPE_ALL
 
+    ctypedef enum EColorPrimaries:
+        CP_RESERVED0
+        CP_BT709
+        CP_UNDEF
+        CP_RESERVED3
+        CP_BT470M
+        CP_BT470BG
+        CP_SMPTE170M
+        CP_SMPTE240M
+        CP_FILM
+        CP_BT2020
+        CP_NUM_ENUM
+
+    ctypedef enum ETransferCharacteristics:
+        TRC_RESERVED0
+        TRC_BT709
+        TRC_UNDEF
+        TRC_RESERVED3
+        TRC_BT470M
+        TRC_BT470BG
+        TRC_SMPTE170M
+        TRC_SMPTE240M
+        TRC_LINEAR
+        TRC_LOG100
+        TRC_LOG316
+        TRC_IEC61966_2_4
+        TRC_BT1361E
+        TRC_IEC61966_2_1
+        TRC_BT2020_10
+        TRC_BT2020_12
+        TRC_NUM_ENUM
+
+    ctypedef enum EColorMatrix:
+        CM_GBR
+        CM_BT709
+        CM_UNDEF
+        CM_RESERVED3
+        CM_FCC
+        CM_BT470BG
+        CM_SMPTE170M
+        CM_SMPTE240M
+        CM_YCGCO
+        CM_BT2020NC
+        CM_BT2020C
+        CM_NUM_ENUM
+
     ctypedef struct SEncParamBase:
         EUsageType  iUsageType      #application type; please refer to the definition of EUsageType
         int       iPicWidth         #width of picture in luminance samples (the maximum of all layers if multiple spatial layers presents)
@@ -167,7 +213,6 @@ cdef extern from "wels/codec_app_def.h":
         unsigned short sAspectRatioExtWidth     # use if aspect ratio idc == 255
         unsigned short sAspectRatioExtHeight    # use if aspect ratio idc == 255
 
-
     ctypedef struct SEncParamExt:
         EUsageType iUsageType               # same as in TagEncParamBase
         int       iPicWidth                 # same as in TagEncParamBase
@@ -179,6 +224,47 @@ cdef extern from "wels/codec_app_def.h":
         int       iTemporalLayerNum         # temporal layer number, max temporal layer = 4
         int       iSpatialLayerNum          # spatial layer number,1<= iSpatialLayerNum <= MAX_SPATIAL_LAYER_NUM, MAX_SPATIAL_LAYER_NUM = 4
         SSpatialLayerConfig sSpatialLayers[MAX_SPATIAL_LAYER_NUM]
+
+        # ECOMPLEXITY_MODE iComplexityMode
+        unsigned int      uiIntraPeriod     # period of Intra frame
+        int               iNumRefFrame      # number of reference frame used
+        # EParameterSetStrategy eSpsPpsIdStrategy     # different stategy in adjust ID in SPS/PPS: 0- constant ID, 1-additional ID, 6-mapping and additional
+        bool_t    bPrefixNalAddingCtrl        # false:not use Prefix NAL; true: use Prefix NAL
+        bool_t    bEnableSSEI                 # false:not use SSEI; true: use SSEI
+        bool_t    bSimulcastAVC               # (when encoding more than 1 spatial layer) false: use SVC syntax for higher layers; true: use Simulcast AVC
+        int     iPaddingFlag                # 0:disable padding;1:padding
+        int     iEntropyCodingModeFlag      # 0:CAVLC  1:CABAC.
+
+        # rc control
+        bool_t    bEnableFrameSkip            # False: don't skip frame even if VBV buffer overflow.True: allow skipping frames to keep the bitrate within limits
+        int     iMaxBitrate                 # the maximum bitrate, in unit of bps, set it to UNSPECIFIED_BIT_RATE if not needed
+        int     iMaxQp                      # the maximum QP encoder supports
+        int     iMinQp                      # the minmum QP encoder supports
+        unsigned int uiMaxNalSize           # the maximum NAL size.  This value should be not 0 for dynamic slice mode
+
+        # LTR settings
+        bool_t     bEnableLongTermReference   # 1: on, 0: off
+        int      iLTRRefNum                 # the number of LTR(long term reference)
+        unsigned int      iLtrMarkPeriod    # the LTR marked period that is used in feedback.
+        # multi-thread settings
+        unsigned short iMultipleThreadIdc   # 1 # 0: auto(dynamic imp. internal encoder); 1: multiple threads imp. disabled; lager than 1: count number of threads;
+        bool_t  bUseLoadBalancing             # only used when uiSliceMode=1 or 3, will change slicing of a picture during the run-time of multi-thread encoding, so the result of each run may be different
+
+        # Deblocking loop filter
+        int       iLoopFilterDisableIdc     # 0: on, 1: off, 2: on except for slice boundaries
+        int       iLoopFilterAlphaC0Offset  # AlphaOffset: valid range [-6, 6], default 0
+        int       iLoopFilterBetaOffset     # BetaOffset: valid range [-6, 6], default 0
+
+        # pre-processing feature
+        bool_t    bEnableDenoise              # denoise control
+        bool_t    bEnableBackgroundDetection  # background detection control //VAA_BACKGROUND_DETECTION //BGD cmd
+        bool_t    bEnableAdaptiveQuant        # adaptive quantization control
+        bool_t    bEnableFrameCroppingFlag    # enable frame cropping flag: TRUE always in application
+        bool_t    bEnableSceneChangeDetect
+
+        bool_t    bIsLosslessLink             # LTR advanced setting
+        bool_t    bFixRCOverShoot             # fix rate control overshooting
+        int     iIdrBitrateRatio            # the target bits of IDR is (idr_bitrate_ratio/100) * average target bit per frame.
 
     ctypedef struct SLayerBSInfo:
         unsigned char uiTemporalId
@@ -248,15 +334,15 @@ cdef extern from "wels/codec_api.h":
     ctypedef void *WelsTraceCallback(void* ctx, int level, const char* string)
     cdef cppclass ISVCEncoder:
         long Initialize(const SEncParamBase* pParam) nogil
-        long Uninitialize()
+        long Uninitialize() nogil
         int InitializeExt(const SEncParamExt* pParam) nogil
-        int GetDefaultParams(SEncParamExt* pParam)
+        int GetDefaultParams(SEncParamExt* pParam) nogil
         int SetOption(ENCODER_OPTION eOptionId, void* pOption)
         int EncodeFrame(const SSourcePicture* kpSrcPic, SFrameBSInfo* pBsInfo) nogil
 
     void WelsGetCodecVersionEx(OpenH264Version* pVersion)
-    int WelsCreateSVCEncoder(ISVCEncoder** ppDecoder)
-    void WelsDestroySVCEncoder(ISVCEncoder* pDecoder)
+    int WelsCreateSVCEncoder(ISVCEncoder** ppDecoder) nogil
+    void WelsDestroySVCEncoder(ISVCEncoder* pDecoder) nogil
 
 
 FRAME_TYPES = {
@@ -365,8 +451,10 @@ cdef class Encoder:
     def is_ready(self):
         return bool(self.ready)
 
-    cdef init_encoder(self, options:typedict):
-        cdef int r = WelsCreateSVCEncoder(&self.context)
+    cdef void init_encoder(self, options:typedict):
+        cdef int r = 0
+        with nogil:
+            r = WelsCreateSVCEncoder(&self.context)
         log("WelsCreateSVCEncoder context=%#x", <uintptr_t> self.context)
         if r or self.context==NULL:
             raise RuntimeError(f"failed to create openh264 svc encoder, error {r}")
@@ -380,7 +468,11 @@ cdef class Encoder:
         self.context.SetOption(ENCODER_OPTION_LEVEL, &level)
 
         cdef SEncParamExt param
-        memset(&param, 0, sizeof(SEncParamBase))
+        memset(&param, 0, sizeof(SEncParamExt))
+        with nogil:
+            r = self.context.GetDefaultParams(&param)
+        if r:
+            raise RuntimeError("failed to get default openh264 encoder parameters")
         param.iUsageType    = SCREEN_CONTENT_REAL_TIME
         param.fMaxFrameRate = 30
         param.iPicWidth     = self.width
@@ -390,7 +482,9 @@ cdef class Encoder:
         param.sSpatialLayers[0].bFullRange = True
         #param.iTargetBitrate = 5000000
         with nogil:
-            self.context.InitializeExt(&param)
+            r = self.context.InitializeExt(&param)
+        if r:
+            raise RuntimeError("failed to initialize openh264 encoder context")
         #cdef int profile = PRO_MAIN
         #self.context.SetOption(ENCODER_OPTION_PROFILE, &profile)
         #a void (*)(void* context, int level, const char* message) function which receives log messages
@@ -493,8 +587,13 @@ cdef class Encoder:
                     PyBuffer_Release(&py_buf[i])
         if r:
             raise RuntimeError(f"openh264 failed to encode frame, error {r}")
+        client_options = {
+            "frame": self.frames,
+        }
+        self.frames += 1
         if frame_info.eFrameType==videoFrameTypeSkip:
-            return b"", {"skip" : True}
+            client_options["skip"] = True
+            return b"", client_options
         data = []
         cdef SLayerBSInfo* layer_info
         for layer in range(frame_info.iLayerNum):
@@ -516,10 +615,7 @@ cdef class Encoder:
             bdata = b"".join(data)
         log(f"openh264 compress_image: {len(bdata)} bytes")
         self.frames += 1
-        return bdata, {
-            "frame": self.frames,
-            "full-range": image.get_full_range(),
-        }
+        return bdata, client_options
 
 
 def selftest(full=False):
