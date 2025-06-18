@@ -17,6 +17,7 @@ from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import video_spec
 from collections import deque
 
+from libcpp cimport bool as bool_t
 from libc.string cimport memset
 from libc.stdint cimport uint8_t, uintptr_t
 
@@ -147,6 +148,25 @@ cdef extern from "wels/codec_app_def.h":
         EProfileIdc  uiProfileIdc   # value of profile IDC (PRO_UNKNOWN for auto-detection)
         ELevelIdc    uiLevelIdc     # value of profile IDC (0 for auto-detection)
         int          iDLayerQp      # value of level IDC (0 for auto-detection)
+
+        # SSliceArgument sSliceArgument
+
+        # Note: members bVideoSignalTypePresent through uiColorMatrix below are also defined in SWelsSPS in parameter_sets.h.
+        bool_t      bVideoSignalTypePresent       # false => do not write any of the following information to the header
+        unsigned char uiVideoFormat             # EVideoFormatSPS; 3 bits in header; 0-5 => component, kpal, ntsc, secam, mac, undef
+        bool_t      bFullRange                    # false => analog video data range [16, 235]; true => full data range [0,255]
+        bool_t      bColorDescriptionPresent      # false => do not write any of the following three items to the header
+        unsigned char uiColorPrimaries          # EColorPrimaries; 8 bits in header; 0 - 9 => ???, bt709, undef, ???, bt470m, bt470bg,
+                                                # smpte170m, smpte240m, film, bt2020
+        unsigned char uiTransferCharacteristics # ETransferCharacteristics; 8 bits in header; 0 - 15 => ???, bt709, undef, ???, bt470m, bt470bg, smpte170m,
+                                                # smpte240m, linear, log100, log316, iec61966-2-4, bt1361e, iec61966-2-1, bt2020-10, bt2020-12
+        unsigned char uiColorMatrix             # EColorMatrix; 8 bits in header (corresponds to FFmpeg "colorspace"); 0 - 10 => GBR, bt709,
+                                                # undef, ???, fcc, bt470bg, smpte170m, smpte240m, YCgCo, bt2020nc, bt2020c
+        bool_t bAspectRatioPresent                # aspect ratio present in VUI
+        # ESampleAspectRatio eAspectRatio         # aspect ratio idc
+        unsigned short sAspectRatioExtWidth     # use if aspect ratio idc == 255
+        unsigned short sAspectRatioExtHeight    # use if aspect ratio idc == 255
+
 
     ctypedef struct SEncParamExt:
         EUsageType iUsageType               # same as in TagEncParamBase
