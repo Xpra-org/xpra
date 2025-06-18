@@ -25,10 +25,14 @@ xpra (5.1.1-1) UNRELEASED; urgency=low
    - desktop geometry attributes not always updated
    - opaque region parsing errors
    - client should run even if local sockets cannot be created
+   - error code path returns invalid type
+   - don't use IPv6 if not supported
+   - missing ssh mDNS records with zeroconf backend
   * Monitor and Desktop modes:
    - event receiver setup errors
    - monitor mode does work in 8-bit palette mode
    - always update desktop geometry attributes on resize
+   - xpra supports 'show-desktop', so expose the feature
   * Minor:
    - keys used to break the moveresize should not propagate
    - servers should always honour `cursors` flag
@@ -39,13 +43,16 @@ xpra (5.1.1-1) UNRELEASED; urgency=low
    - don't discard Xwayland displays as xvfb options
    - shadow servers don't stop the refresh loop
    - strict type in `webp` encoder
+   - starting servers with remote display can error out
   * Cosmetic:
    - avoid empty OpenGL validation error message
    - add `id` subcommand to man page
    - avoid scary uinput message
    - remove unused and misnamed attribute
+   - skip failing CI test
+   - show mdns records as strings
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 11 Apr 2025 10:04:17 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 18 Apr 2025 12:43:04 +0700
 
 xpra (5.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

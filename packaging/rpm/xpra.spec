@@ -804,7 +804,7 @@ fi
 
 
 %changelog
-* Wed Jun 11 2025 Antoine Martin <antoine@xpra.org> 5.1.1-10
+* Wed Jun 18 2025 Antoine Martin <antoine@xpra.org> 5.1.1-10
 - Platforms, build and packaging:
    improved MS Windows signtool compatibility
    duplicated tag in python3-pycuda spec file
@@ -831,10 +831,14 @@ fi
    desktop geometry attributes not always updated
    opaque region parsing errors
    client should run even if local sockets cannot be created
+   error code path returns invalid type
+   don't use IPv6 if not supported
+   missing ssh mDNS records with zeroconf backend
 - Monitor and Desktop modes:
    event receiver setup errors
    monitor mode does work in 8-bit palette mode
    always update desktop geometry attributes on resize
+   xpra supports 'show-desktop', so expose the feature
 - Minor:
    keys used to break the moveresize should not propagate
    servers should always honour `cursors` flag
@@ -845,11 +849,14 @@ fi
    don't discard Xwayland displays as xvfb options
    shadow servers don't stop the refresh loop
    strict type in `webp` encoder
+   starting servers with remote display can error out
 - Cosmetic:
    avoid empty OpenGL validation error message
    add `id` subcommand to man page
    avoid scary uinput message
    remove unused and misnamed attribute
+   skip failing CI test
+   show mdns records as strings
 
 * Sun Mar 30 2025 Antoine Martin <antoine@xpra.org> 5.1-10
 - Platforms, build and packaging:

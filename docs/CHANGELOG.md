@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.1] 2025-06-11
+## [5.1.1] 2025-06-18
 * Platforms, build and packaging:
     * [improved](https://github.com/Xpra-org/xpra/commit/8d2b3f670bc9ce73159a085a99bf6f6d085b4939) [MS Windows signtool compatibility](https://github.com/Xpra-org/xpra/commit/b8224c7a8db65900f99dc1fd72e4a11bfdb1bf4d)
     * [duplicated tag in python3-pycuda spec file](https://github.com/Xpra-org/xpra/commit/9215ee38ab0c6faf1316d6c3ab8ed02b21db56da)
@@ -27,10 +27,14 @@
     * [desktop geometry attributes not always updated](https://github.com/Xpra-org/xpra/commit/780656124a1cac5730425f3a8752eba865cd62ec)
     * [opaque region parsing errors](https://github.com/Xpra-org/xpra/commit/3667a4868ffe5aee9d2b9fd4b8facbb5fba2cf0d)
     * [client should run even if local sockets cannot be created](https://github.com/Xpra-org/xpra/commit/67f0808dae54d482f106cee4258b0489bd285755)
+    * [error code path returns invalid type](https://github.com/Xpra-org/xpra/commit/624de099b28c1d91c31d402a266f136c2b8216be)
+    * [don't use IPv6 if not supported](https://github.com/Xpra-org/xpra/commit/9158b2e81002fae93b293b327bee49b46c26fcdb)
+    * [missing ssh mDNS records with zeroconf backend](https://github.com/Xpra-org/xpra/commit/860a202fe63569d208652bfa1c65e3453b86b856)
 * Monitor and Desktop modes:
     * [event receiver setup errors](https://github.com/Xpra-org/xpra/commit/80f871bc3c2ee482643ebd873a2c7784475497e8)
     * [monitor mode does work in 8-bit palette mode](https://github.com/Xpra-org/xpra/commit/8fa9dcb91cf9395563a0881a2a9951fe79e0e87e)
     * [always update desktop geometry attributes on resize](https://github.com/Xpra-org/xpra/commit/518d8d2b88ffc77405ebbb98158a6a901b836603)
+    * [xpra supports 'show-desktop', so expose the feature](https://github.com/Xpra-org/xpra/commit/3d190d3c606a7e7154b5ab00d2e53ee036e710af)
 * Minor:
     * [keys used to break the moveresize should not propagate](https://github.com/Xpra-org/xpra/commit/68e1c649623e1f93787f2c0d132eee1333a28e33)
     * [servers should always honour `cursors` flag](https://github.com/Xpra-org/xpra/commit/c841e08203727fe72d7f6c663677f3fc98630f60)
@@ -41,11 +45,14 @@
     * [don't discard Xwayland displays as xvfb options](https://github.com/Xpra-org/xpra/commit/18fddeef91e736947b264b86d86c83219ec3e315)
     * [shadow servers don't stop the refresh loop](https://github.com/Xpra-org/xpra/commit/8ecbcddd50a6a01fc3d539e14c6143a778bba7c6)
     * [strict type in `webp` encoder](https://github.com/Xpra-org/xpra/commit/5e24d79f2cb829e94a04e7f1a2cdf35ec3f1cb27)
+    * [starting servers with remote display can error out](https://github.com/Xpra-org/xpra/commit/646bb802a07e4d5e0eb85d38c74f882f2a4b1e0d)
 * Cosmetic:
     * [avoid empty OpenGL validation error message](https://github.com/Xpra-org/xpra/commit/3847f50ef5c40f722571a8586d0cda46d96da57e)
     * [add `id` subcommand to man page](https://github.com/Xpra-org/xpra/commit/d36d53c6e9baf55631ca186ad5c19f25d4c4be85)
     * [avoid scary uinput message](https://github.com/Xpra-org/xpra/commit/c3b25a0d38b4b368d33189937137ade1390646d7)
     * [remove unused and misnamed attribute](https://github.com/Xpra-org/xpra/commit/dd4ee1bb100654f1e9ee71f67603cda4d210373e)
+    * [skip failing CI test](https://github.com/Xpra-org/xpra/commit/8d0b5495a7819deff3d17a437e02409181d96c32)
+    * [show mdns records as strings](https://github.com/Xpra-org/xpra/commit/dcff4458c37f080a1665c7b7ea372d0648056e96)
 
 ## [5.1] 2025-04-09
 * Platforms, build and packaging:
