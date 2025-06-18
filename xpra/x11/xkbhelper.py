@@ -5,7 +5,7 @@
 
 import os
 from typing import Any
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 from xpra.common import noop
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
@@ -273,8 +273,8 @@ def do_set_keycode_translation(keycodes: dict[int, set]) -> dict[str | tuple[int
     return trans
 
 
-def get_keysym_to_modifier_map(modifiers: dict[str, Iterable]) -> dict:
-    keysym_to_modifier = {}
+def get_keysym_to_modifier_map(modifiers: dict[str, Iterable]) -> dict[str, str]:
+    keysym_to_modifier: dict[str, str] = {}
     for modifier, keysyms in modifiers.items():
         for keysym in keysyms:
             existing_mod = keysym_to_modifier.get(keysym)
@@ -392,8 +392,8 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     for try_harder in (False, True):
         filtered_preserve_keycode_entries = filter_mappings(indexed_mappings(preserve_keycode_entries), try_harder)
         log("filtered_preserve_keycode_entries=%s", filtered_preserve_keycode_entries)
-        trans, new_keycodes, missing_keycodes = translate_keycodes(kcmin, kcmax, keycodes,
-                                                                   filtered_preserve_keycode_entries,
+        trans, new_keycodes, missing_keycodes = translate_keycodes(kcmin, kcmax,
+                                                                   keycodes, filtered_preserve_keycode_entries,
                                                                    keysym_to_modifier,
                                                                    try_harder)
         if not missing_keycodes:
@@ -404,7 +404,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     return trans
 
 
-def dump_dict(d) -> None:
+def dump_dict(d: dict) -> None:
     for k, v in d.items():
         log("%s\t\t=\t%s", k, v)
 
@@ -461,7 +461,9 @@ def x11_keycodes_to_list(x11_mappings: dict[int, Iterable]) -> list[tuple[str, i
     return entries
 
 
-def translate_keycodes(kcmin: int, kcmax: int, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder=False):
+def translate_keycodes(kcmin: int, kcmax: int, keycodes: dict[int, set],
+                       preserve_keycode_entries: dict[int, set], keysym_to_modifier: dict[str, str],
+                       try_harder=False) -> tuple[dict, dict, Sequence]:
     """
         The keycodes given may not match the range that the server supports,
         or some of those keycodes may not be usable (only one modifier can
@@ -477,9 +479,9 @@ def translate_keycodes(kcmin: int, kcmax: int, keycodes, preserve_keycode_entrie
     log("translate_keycodes(%s, %s, %s, %s, %s, %s)",
         kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
     # list of free keycodes we can use:
-    free_keycodes = [i for i in range(kcmin, kcmax+1) if i not in preserve_keycode_entries]
-    keycode_trans = {}              # translation map from client keycode to our server keycode
-    server_keycodes = {}            # the new keycode definitions
+    free_keycodes: list[int] = [i for i in range(kcmin, kcmax+1) if i not in preserve_keycode_entries]
+    keycode_trans: dict[str | tuple[int, str], int] = {}              # translation map from client keycode to our server keycode
+    server_keycodes: dict[int, Any] = {}            # the new keycode definitions
     missing_keycodes = []           # the groups of entries we failed to map due to lack of free keycodes
 
     # to do faster lookups:
@@ -490,7 +492,7 @@ def translate_keycodes(kcmin: int, kcmax: int, keycodes, preserve_keycode_entrie
     for k in DEBUG_KEYSYMS:
         log.info("preserve_keysyms_map[%s]=%s", k, preserve_keysyms_map.get(k))
 
-    def do_assign(keycode, server_keycode, entries, override_server_keycode=False) -> int:
+    def do_assign(keycode: int, server_keycode: int, entries, override_server_keycode=False) -> int:
         """ may change the keycode if needed
             in which case we update the entries and populate 'keycode_trans'
         """
@@ -533,7 +535,7 @@ def translate_keycodes(kcmin: int, kcmax: int, keycodes, preserve_keycode_entrie
             server_keycodes[server_keycode] = entries
         return server_keycode
 
-    def assign(client_keycode, entries) -> int:
+    def assign(client_keycode: int, entries) -> int:
         if not entries:
             return 0
         # all the keysyms for this keycode:
