@@ -9,7 +9,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.util.str_fn import csv, print_nested_dict, pver, strtobytes, bytestostr
+from xpra.util.str_fn import csv, print_nested_dict, pver, bytestostr
 from xpra.util.env import envbool
 from xpra.os_util import POSIX
 from xpra.util.io import load_binary_file
@@ -238,9 +238,9 @@ def identify_cards() -> dict[int, dict[str, Any]]:
                     return i
 
                 for prefix, prop, fn_name, args, conv in (
-                        ("", "name", "nvmlDeviceGetName", (), strtobytes),
-                        ("", "serial", "nvmlDeviceGetSerial", (), strtobytes),
-                        ("", "uuid", "nvmlDeviceGetUUID", (), strtobytes),
+                        ("", "name", "nvmlDeviceGetName", (), bytestostr),
+                        ("", "serial", "nvmlDeviceGetSerial", (), bytestostr),
+                        ("", "uuid", "nvmlDeviceGetUUID", (), bytestostr),
                         ("", "pci", "nvmlDeviceGetPciInfo", (), pciinfo),
                         ("", "memory", "nvmlDeviceGetMemoryInfo", (), meminfo),
                         ("pcie-link", "generation-max", "nvmlDeviceGetMaxPcieLinkGeneration", (), int),
@@ -256,7 +256,7 @@ def identify_cards() -> dict[int, dict[str, Any]]:
                         ("", "fan-speed", "nvmlDeviceGetFanSpeed", (), int),
                         ("", "temperature", "nvmlDeviceGetTemperature", (0,), int),
                         ("", "power-state", "nvmlDeviceGetPowerState", (), int),
-                        ("", "vbios-version", "nvmlDeviceGetVbiosVersion", (), strtobytes),
+                        ("", "vbios-version", "nvmlDeviceGetVbiosVersion", (), bytestostr),
                 ):
                     try:
                         fn = getattr(pynvml, fn_name)
