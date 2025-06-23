@@ -512,7 +512,7 @@ cdef class Encoder:
         else:
             self.init_device(options)
 
-    cdef _get_profile(self, options):
+    cdef str _get_profile(self, options):
         #convert the pixel format into a "colourspace" string:
         csc_mode = "YUV420P"
         if self.pixel_format in ("BGRX", "YUV444P"):
@@ -578,9 +578,9 @@ cdef class Encoder:
     def is_ready(self) -> bool:
         return bool(self.ready)
 
-    def get_target_pixel_format(self, int quality):
+    def get_target_pixel_format(self, int quality) -> str:
         global NATIVE_RGB, YUV420_ENABLED, YUV444_ENABLED, LOSSLESS_ENABLED, YUV444_THRESHOLD, YUV444_CODEC_SUPPORT
-        v = None
+        v = ""
         hasyuv444 = YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED) and "YUV444P" in self.dst_formats
         nativergb = NATIVE_RGB and hasyuv444
         if nativergb and self.src_format in ("BGRX", ):
@@ -605,13 +605,13 @@ cdef class Encoder:
             quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, csv(self.dst_formats))
         return v
 
-    def get_target_lossless(self, pixel_format: str, quality : int):
+    def get_target_lossless(self, pixel_format: str, quality : int) -> bool:
         global LOSSLESS_ENABLED, LOSSLESS_CODEC_SUPPORT
         if pixel_format not in ("YUV444P", "r210"):
             return False
         if not LOSSLESS_CODEC_SUPPORT.get(self.encoding, LOSSLESS_ENABLED):
             return False
-        return quality>=LOSSLESS_THRESHOLD
+        return quality >= LOSSLESS_THRESHOLD
 
     def init_cuda(self, cuda_context) -> None:
         cdef int result
@@ -810,7 +810,7 @@ cdef class Encoder:
         log("get_chroma_format(%s)=%s", self.pixel_format, chroma)
         return chroma
 
-    cdef tune_preset(self, NV_ENC_CONFIG *config):
+    cdef void tune_preset(self, NV_ENC_CONFIG *config):
         config.gopLength = NVENC_INFINITE_GOPLENGTH
         config.frameIntervalP = 1
         config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
@@ -824,7 +824,7 @@ cdef class Encoder:
         else:
             raise ValueError(f"invalid codec name {self.codec_name}")
 
-    cdef tune_qp(self, NV_ENC_RC_PARAMS *rc):
+    cdef void tune_qp(self, NV_ENC_RC_PARAMS *rc):
         if self.lossless:
             rc.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
             rc.constQP.qpInterB = 0
@@ -893,7 +893,7 @@ cdef class Encoder:
         #vui.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
         #vui.colourMatrix = 5    #AVCOL_SPC_BT470BG  - switch to AVCOL_SPC_BT709?
 
-    cdef tune_hevc(self, NV_ENC_CONFIG_HEVC *hevc, int gopLength):
+    cdef void tune_hevc(self, NV_ENC_CONFIG_HEVC *hevc, int gopLength):
         hevc.chromaFormatIDC = self.get_chroma_format()
         #hevc.level = NV_ENC_LEVEL_HEVC_5
         hevc.idrPeriod = gopLength
@@ -910,7 +910,7 @@ cdef class Encoder:
         #vui.transferCharacteristics = 1
         #vui.colourMatrix = 5
 
-    def init_buffers(self) -> None:
+    cdef void init_buffers(self):
         log("init_buffers()")
         cdef NV_ENC_REGISTER_RESOURCE registerResource
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
@@ -1046,7 +1046,7 @@ cdef class Encoder:
         with device_lock:
             self.do_clean()
 
-    def do_clean(self) -> None:
+    cdef void do_clean(self):
         cdc = self.cuda_device_context
         log("clean() cuda_context=%s, encoder context=%#x", cdc, <uintptr_t> self.context)
         if cdc:
@@ -1126,7 +1126,7 @@ cdef class Encoder:
             log("skipping encoder context cleanup")
         self.cuda_context_ptr = <void *> 0
 
-    def buffer_clean(self) -> None:
+    cdef void buffer_clean(self):
         if self.inputHandle!=NULL and self.context!=NULL:
             log("buffer_clean() unregistering CUDA output buffer input handle %#x", <uintptr_t> self.inputHandle)
             if DEBUG_API:
@@ -1194,7 +1194,7 @@ cdef class Encoder:
         #best to just tear down the encoder context and create a new one
         return
 
-    def update_bitrate(self) -> None:
+    cdef void update_bitrate(self):
         #use an exponential scale so for a 1Kx1K image (after scaling), roughly:
         #speed=0   -> 1Mbit/s
         #speed=50  -> 10Mbit/s
@@ -1778,7 +1778,7 @@ cdef class Encoder:
         log("codecs=%s", csv(codecs.keys()))
         return codecs
 
-    def open_encode_session(self) -> None:
+    cdef void open_encode_session(self):
         global context_counter, context_gen_counter, last_context_failure
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
 
