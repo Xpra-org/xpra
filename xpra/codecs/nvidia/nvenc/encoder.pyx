@@ -44,6 +44,8 @@ from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, uint64_t   # py
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset, memcpy
 
+from xpra.codecs.nvidia.nvenc.nvencode cimport init_nvencode_library, create_nvencode_instance, get_current_cuda_context
+
 from xpra.codecs.nvidia.nvenc.api cimport (
     MIN, MAX, nvencStatusInfo, guidstr, c_parseguid, presetstr,
     GUID,
@@ -125,52 +127,6 @@ LOSSLESS_CODEC_SUPPORT: Dict[str, bool] = {}
 
 # so we can warn just once per unknown preset:
 UNKNOWN_PRESETS: List[str] = []
-
-
-CUresult = ctypes.c_int
-CUcontext = ctypes.c_void_p
-
-
-NvEncodeAPICreateInstance = None
-cuCtxGetCurrent = None
-
-
-def init_nvencode_library() -> None:
-    global NvEncodeAPICreateInstance, cuCtxGetCurrent
-    if WIN32:
-        load = ctypes.WinDLL
-        nvenc_libname = "nvencodeapi64.dll"
-        cuda_libname = "nvcuda.dll"
-    else:
-        #assert os.name=="posix"
-        load = cdll.LoadLibrary
-        nvenc_libname = "libnvidia-encode.so.1"
-        cuda_libname = "libcuda.so"
-    #CUDA:
-    log("init_nvencode_library() will try to load %s", cuda_libname)
-    try:
-        x = load(cuda_libname)
-        log("init_nvencode_library() %s(%s)=%s", load, cuda_libname, x)
-    except Exception as e:
-        log("failed to load '%s'", cuda_libname, exc_info=True)
-        raise ImportError("nvenc: the required library %s cannot be loaded: %s" % (cuda_libname, e)) from None
-    cuCtxGetCurrent = x.cuCtxGetCurrent
-    cuCtxGetCurrent.restype = ctypes.c_int          # CUresult == int
-    cuCtxGetCurrent.argtypes = [POINTER(CUcontext)] # CUcontext *pctx
-    log("init_nvencode_library() %s.cuCtxGetCurrent=%s", os.path.splitext(cuda_libname)[0], cuCtxGetCurrent)
-    #nvidia-encode:
-    log("init_nvencode_library() will try to load %s", nvenc_libname)
-    try:
-        x = load(nvenc_libname)
-        log("init_nvencode_library() %s(%s)=%s", load, nvenc_libname, x)
-    except Exception as e:
-        log("failed to load '%s'", nvenc_libname, exc_info=True)
-        raise ImportError("nvenc: the required library %s cannot be loaded: %s" % (nvenc_libname, e)) from None
-    NvEncodeAPICreateInstance = x.NvEncodeAPICreateInstance
-    NvEncodeAPICreateInstance.restype = ctypes.c_int
-    NvEncodeAPICreateInstance.argtypes = [ctypes.c_void_p]
-    log("init_nvencode_library() NvEncodeAPICreateInstance=%s", NvEncodeAPICreateInstance)
-    #NVENCSTATUS NvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList)
 
 
 def parseguid(s) -> GUID:
@@ -520,7 +476,6 @@ cdef class Encoder:
 
     def init_context(self, encoding: str, unsigned int width, unsigned int height, src_format: str,
                      options: typedict) -> None:
-        assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
         log("init_context%s", (encoding, width, height, src_format, options))
         options = options or typedict()
         cuda_device_context = options.get("cuda-device-context")
@@ -687,16 +642,7 @@ cdef class Encoder:
                 log("init_cuda pycuda info=%s", self.pycuda_info)
                 self.cuda_device_info = self.cuda_device_context.get_info()
 
-            #get the CUDA context (C pointer):
-            #a bit of magic to pass a cython pointer to ctypes:
-            context_pointer = <uintptr_t> (&self.cuda_context_ptr)
-            result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
-            estr = get_error_name(result)
-            if DEBUG_API:
-                log(f"cuCtxGetCurrent() returned {estr!r}, context_pointer=%#x, cuda context pointer=%#x",
-                    context_pointer, <uintptr_t> self.cuda_context_ptr)
-            if result:
-                raise RuntimeError(f"failed to get current cuda context, cuCtxGetCurrent returned {estr!r}")
+            self.cuda_context_ptr = <void *> get_current_cuda_context()
             if (<uintptr_t> self.cuda_context_ptr)==0:
                 raise RuntimeError("invalid null cuda context pointer")
         except driver.MemoryError as e:
@@ -1863,9 +1809,7 @@ cdef class Encoder:
         #get NVENC function pointers:
         memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))
         self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
-        if DEBUG_API:
-            log("NvEncodeAPICreateInstance(%#x)", <uintptr_t> self.functionList)
-        cdef NVENCSTATUS r = NvEncodeAPICreateInstance(<uintptr_t> self.functionList)
+        cdef NVENCSTATUS r = create_nvencode_instance(self.functionList)
         raiseNVENC(r, "getting API function list")
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
@@ -1920,7 +1864,7 @@ def init_module(options: dict) -> None:
     #raiseNVENC(r, "querying max version")
     #log(" maximum supported version: %s", max_version)
 
-    #load the library / DLL:
+    # load the library / DLL:
     init_nvencode_library()
 
     #make sure we have devices we can use:

@@ -2772,6 +2772,7 @@ toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
 # platform: ie: `linux2` -> `linux`, `win32` -> `win`
 fbcplatform = sys.platform.rstrip("0123456789")
 tace(nvfbc_ENABLED, f"xpra.codecs.nvidia.nvfbc.capture_{fbcplatform}", "nvfbc", language="c++")
+tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.nvencode", "nvenc")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.api", "nvenc")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 
