@@ -26,7 +26,7 @@ cdef object guidstr(GUID guid):
     return s
 
 
-cdef GUID c_parseguid(src) except *:
+cdef GUID parseguid(src) except *:
     #just as ugly as above - shoot me now
     #only this format is allowed:
     sample_guid = b"CE788D20-AAA9-4318-92BB-AC7E858C8D36"
@@ -51,7 +51,7 @@ cdef GUID c_parseguid(src) except *:
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
         part = parts[i]
         binv = binascii.unhexlify(part)
-        #log("c_parseguid bytes(%s)=%r", part, binv)
+        #log("parseguid bytes(%s)=%r", part, binv)
         v = 0
         for j in range(s):
             c = binv[j]
@@ -345,7 +345,7 @@ cdef str get_picture_type(NV_ENC_PIC_TYPE ptype):
 
 def test_parse() -> None:
     sample_guid = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
-    x = c_parseguid(sample_guid)
+    x = parseguid(sample_guid)
     v = guidstr(x)
     print("FOO: %s" % (v, ))
     assert v==sample_guid, "expected %s but got %s" % (sample_guid, v)

@@ -47,7 +47,7 @@ from libc.string cimport memset, memcpy
 from xpra.codecs.nvidia.nvenc.nvencode cimport init_nvencode_library, create_nvencode_instance, get_current_cuda_context
 
 from xpra.codecs.nvidia.nvenc.api cimport (
-    MIN, MAX, nvencStatusInfo, guidstr, c_parseguid, presetstr,
+    MIN, MAX, nvencStatusInfo, guidstr, parseguid, presetstr,
     GUID,
     get_profile_guids, get_profile_name, is_transient_error,
     get_all_caps, get_caps_name,
@@ -129,20 +129,6 @@ LOSSLESS_CODEC_SUPPORT: Dict[str, bool] = {}
 UNKNOWN_PRESETS: List[str] = []
 
 
-def parseguid(s) -> GUID:
-    return c_parseguid(s)
-
-
-def test_parse() -> None:
-    sample_guid = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
-    x = c_parseguid(sample_guid)
-    v = guidstr(x)
-    assert v==sample_guid, "expected %s but got %s" % (sample_guid, v)
-
-
-test_parse()
-
-
 cdef GUID CLIENT_KEY_GUID
 memset(&CLIENT_KEY_GUID, 0, sizeof(GUID))
 CLIENT_KEYS_STR = get_license_keys(NVENCAPI_MAJOR_VERSION) + get_license_keys()
@@ -152,7 +138,7 @@ if CLIENT_KEYS_STR:
     for x in CLIENT_KEYS_STR:
         if x:
             try:
-                CLIENT_KEY_GUID = c_parseguid(x)
+                CLIENT_KEY_GUID = parseguid(x)
                 validated.append(x)
             except Exception as e:
                 log.error("invalid nvenc client key specified: '%s' (%s)", x, e)
@@ -412,7 +398,7 @@ cdef class Encoder:
         internal_name = {"H265" : "HEVC"}.get(self.codec_name.upper(), self.codec_name.upper())
         guid_str = codecs.get(internal_name, {}).get("guid")
         assert guid_str, "%s not supported! (only available: %s)" % (self.codec_name, csv(codecs.keys()))
-        self.codec = c_parseguid(guid_str)
+        self.codec = parseguid(guid_str)
         return self.codec
 
     cdef GUID get_codec(self):
@@ -427,7 +413,7 @@ cdef class Encoder:
             guid = presets.get(DESIRED_PRESET, "")
             log(f"preset override {DESIRED_PRESET!r}={guid}")
             if guid:
-                return c_parseguid(guid)
+                return parseguid(guid)
         #new style presets (P1 - P7),
         #we only care about the quality here,
         #the speed is set using the "tuning"
@@ -471,7 +457,7 @@ cdef class Encoder:
 
                 if preset and (preset in presets.keys()):
                     log("using preset '%s' for speed=%s, quality=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
-                    return c_parseguid(preset_guid)
+                    return parseguid(preset_guid)
         raise ValueError("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
     def init_context(self, encoding: str, unsigned int width, unsigned int height, src_format: str,
@@ -780,7 +766,7 @@ cdef class Encoder:
         profile_guidstr = profiles.get(self.profile_name)
         cdef GUID profile
         if profile_guidstr:
-            profile = c_parseguid(profile_guidstr)
+            profile = parseguid(profile_guidstr)
         else:
             profile = NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID
         log("using profile=%s", get_profile_name(guidstr(profile)))
@@ -1892,7 +1878,7 @@ def init_module(options: dict) -> None:
             #this will set the global key object used by all encoder contexts:
             log("init_module(%s) testing with key '%s'", options, client_key)
             global CLIENT_KEY_GUID
-            CLIENT_KEY_GUID = c_parseguid(client_key)
+            CLIENT_KEY_GUID = parseguid(client_key)
 
         for device_id in tuple(devices):
             log("testing encoder with device %s", device_id)
@@ -2025,7 +2011,7 @@ def init_module(options: dict) -> None:
         if len(valid_keys)>0:
             x = valid_keys[0]
             log("using the license key '%s'", x)
-            CLIENT_KEY_GUID = c_parseguid(x)
+            CLIENT_KEY_GUID = parseguid(x)
         else:
             log("no license keys are required")
         ENCODINGS[:] = [x for x in TEST_ENCODINGS if x not in FAILED_ENCODINGS]

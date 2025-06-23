@@ -936,7 +936,7 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
 }
 
 cdef object guidstr(GUID guid)
-cdef GUID c_parseguid(src) except *
+cdef GUID parseguid(src) except *
 cdef object presetstr(GUID preset)
 cdef nvencStatusInfo(NVENCSTATUS ret)
 
