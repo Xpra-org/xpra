@@ -9,7 +9,7 @@ import os
 from typing import Dict, Tuple
 
 from xpra.util import pver, print_nested_dict, envbool, csv
-from xpra.os_util import bytestostr, strtobytes, load_binary_file, POSIX
+from xpra.os_util import bytestostr, load_binary_file, POSIX
 from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
 from xpra.log import Logger
 
@@ -203,9 +203,9 @@ def identify_cards():
                         pass
                     return i
                 for prefix, prop, fn_name, args, conv in (
-                       ("", "name",                     "nvmlDeviceGetName",                    (),     strtobytes),
-                       ("", "serial",                   "nvmlDeviceGetSerial",                  (),     strtobytes),
-                       ("", "uuid",                     "nvmlDeviceGetUUID",                    (),     strtobytes),
+                       ("", "name",                     "nvmlDeviceGetName",                    (),     bytestostr),
+                       ("", "serial",                   "nvmlDeviceGetSerial",                  (),     bytestostr),
+                       ("", "uuid",                     "nvmlDeviceGetUUID",                    (),     bytestostr),
                        ("", "pci",                      "nvmlDeviceGetPciInfo",                 (),     pciinfo),
                        ("", "memory",                   "nvmlDeviceGetMemoryInfo",              (),     meminfo),
                        ("pcie-link", "generation-max",  "nvmlDeviceGetMaxPcieLinkGeneration",   (),     int),
@@ -221,7 +221,7 @@ def identify_cards():
                        ("", "fan-speed",                "nvmlDeviceGetFanSpeed",                (),     int),
                        ("", "temperature",              "nvmlDeviceGetTemperature",             (0,),   int),
                        ("", "power-state",              "nvmlDeviceGetPowerState",              (),     int),
-                       ("", "vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     strtobytes),
+                       ("", "vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     bytestostr),
                        ):
                     try:
                         fn = getattr(pynvml, fn_name)
