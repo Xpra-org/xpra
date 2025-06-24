@@ -360,10 +360,9 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
 }
 
 # flatten it:
-KNOWN_FILTERS: dict[str, str] = {}
+KNOWN_FILTERS: list[str] = []
 for d in STRUCT_KNOWN_FILTERS.values():
-    for k, v in d.items():
-        KNOWN_FILTERS[k] = v
+    KNOWN_FILTERS += list(d.keys())
 
 
 def isenvdebug(category: str) -> bool:
