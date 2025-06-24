@@ -105,6 +105,8 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 # NVENC requires compute capability value 0x30 or above:
 DESIRED_TUNING = os.environ.get("XPRA_NVENC_TUNING", "")
 
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
+
 cdef int SUPPORT_30BPP = envbool("XPRA_NVENC_SUPPORT_30BPP", True)
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
@@ -399,6 +401,8 @@ cdef class Encoder:
     cdef uint16_t datagram
     cdef uint8_t threaded_init
 
+    cdef object file
+
     cdef object __weakref__
 
     cdef GUID init_codec(self) except *:
@@ -521,6 +525,12 @@ cdef class Encoder:
             start_thread(self.threaded_init_device, "threaded-init-device", daemon=True, args=(options,))
         else:
             self.init_device(options)
+
+        if SAVE_TO_FILE:
+            gen = context_gen_counter.get()
+            filename = SAVE_TO_FILE+"nvenc-"+str(gen)+f".{encoding}"
+            self.file = open(filename, "wb")
+            log.info(f"saving {encoding} stream to {filename!r}")
 
     cdef str _get_profile(self, options):
         #convert the pixel format into a "colourspace" string:
@@ -1592,8 +1602,9 @@ cdef class Encoder:
         log("compress_image(..) %5s %3s returning %9s bytes (%.1f%%) for %4s %s-frame no %6i took %3.1fms",
             get_type(), get_version(),
             size, 100.0*size/input_size, self.encoding, get_picture_type(pic.pictureType), self.frames, 1000.0*elapsed)
+        if self.file:
+            self.file.write(data)
         return data, client_options
-
 
     cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID) except *:
         """ you must free it after use! """
@@ -2092,11 +2103,7 @@ def selftest(full=False) -> None:
         raise ImportError("no nvidia GPU device found")
     v = get_nvidia_module_version(True)
     assert NVENCAPI_MAJOR_VERSION>=9, "unsupported NVENC version %i" % NVENCAPI_MAJOR_VERSION
-    if v:
-        NVENC_UNSUPPORTED_DRIVER_VERSION = envbool("XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION", False)
-        if v<(400, 0):
-            if not NVENC_UNSUPPORTED_DRIVER_VERSION:
-                raise ImportError("unsupported NVidia driver version %s\nuse XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION=1 to force enable it" % pver(v))
+    log("nvidia module version: %s", v)
     #this is expensive, so don't run it unless "full" is set:
     if full:
         from xpra.codecs.checks import get_encoder_max_sizes
