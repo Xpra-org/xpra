@@ -8,7 +8,7 @@ import cython
 from collections.abc import Callable, Sequence
 
 from xpra.x11.bindings.xlib cimport (
-    Display, Time, Bool, Status,
+    Display, Time, Bool, Status, Atom,
     XInternAtom, XInternAtoms,
     XGetAtomName,
     XFree,
