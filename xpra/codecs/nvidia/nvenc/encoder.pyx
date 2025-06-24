@@ -92,7 +92,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NVENC_INFINITE_GOPLENGTH,
     NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME,
     NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL_H264_5,
-    NV_ENC_LEVEL_AV1_AUTOSELECT, NV_ENC_TIER_AV1_0, NV_ENC_AV1_PART_SIZE_AUTOSELECT,
+    NV_ENC_LEVEL_AV1_AUTOSELECT, NV_ENC_TIER_AV1_1, NV_ENC_AV1_PART_SIZE_AUTOSELECT,
     NV_ENC_VUI_COLOR_PRIMARIES_BT709, NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709, NV_ENC_VUI_MATRIX_COEFFS_BT709,
     NV_ENC_BIT_DEPTH_8,
 )
@@ -936,7 +936,7 @@ cdef class Encoder:
     cdef void tune_av1(self, NV_ENC_CONFIG_AV1 *av1, int gopLength):
         memset(av1, 0, sizeof(NV_ENC_CONFIG_AV1))
         av1.level = NV_ENC_LEVEL_AV1_AUTOSELECT
-        av1.tier = NV_ENC_TIER_AV1_0
+        av1.tier = NV_ENC_TIER_AV1_1
         av1.minPartSize = NV_ENC_AV1_PART_SIZE_AUTOSELECT
         av1.maxPartSize = NV_ENC_AV1_PART_SIZE_AUTOSELECT
         av1.outputAnnexBFormat = 1
@@ -945,16 +945,9 @@ cdef class Encoder:
         av1.enableFrameIdNumbers = 1
         av1.disableSeqHdr = 0
         av1.repeatSeqHdr = 1
-        av1.enableIntraRefresh = INTRA_REFRESH
         av1.chromaFormatIDC = self.get_chroma_format()
-        av1.enableBitstreamPadding = 0
-        av1.enableCustomTileConfig = 0
-        av1.enableFilmGrainParams = 0
-        av1.enableLTR = 0
-        av1.enableTemporalSVC = 0
-        av1.outputMaxCll = 0
-        av1.outputMasteringDisplay = 0
         av1.idrPeriod = NVENC_INFINITE_GOPLENGTH
+        av1.enableIntraRefresh = INTRA_REFRESH
         if INTRA_REFRESH:
             av1.intraRefreshPeriod = 16
             av1.intraRefreshCnt = 4
@@ -962,12 +955,11 @@ cdef class Encoder:
         av1.colorPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_BT709
         av1.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709
         av1.matrixCoefficients = NV_ENC_VUI_MATRIX_COEFFS_BT709
-        av1.colorRange = 1  # full-range
+        av1.colorRange = 1  # full-range=1
         av1.chromaSamplePosition = 0
         av1.outputBitDepth = NV_ENC_BIT_DEPTH_8
         av1.inputBitDepth = NV_ENC_BIT_DEPTH_8
         av1.idrPeriod = gopLength
-        av1.enableIntraRefresh = INTRA_REFRESH
 
     cdef void init_buffers(self):
         log("init_buffers()")
