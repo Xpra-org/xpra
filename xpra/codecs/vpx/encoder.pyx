@@ -720,7 +720,7 @@ def selftest(full=False) -> None:
     temp = SAVE_TO_FILE
     try:
         SAVE_TO_FILE = None
-        CODECS = testencoder(encoder, full)
+        CODECS = testencoder(encoder, full, typedict())
         #this is expensive, so don't run it unless "full" is set:
         if full and POSIX and not OSX:
             #but first, try to figure out if we have enough memory to do this
