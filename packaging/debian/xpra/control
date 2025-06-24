@@ -29,6 +29,7 @@ Build-Depends: debhelper (>= 8)
               ,libopenh264-dev
               ,libwebp-dev
               ,libturbojpeg-dev
+              ,libdav1d-dev
 #noble:              ,libspng-dev
 #oracular:              ,libspng-dev
 #plucky:              ,libspng-dev
@@ -313,6 +314,12 @@ Depends: xpra-common (= ${binary:Version})
 #bookworm:              ,libopenh264-7
 #trixie:              ,libopenh264-8
 #sid:              ,libopenh264-8
+#noble:              ,libdav1d6
+#oracular:              ,libdav1d7
+#plucky:              ,libdav1d7
+#bookworm:              ,libdav1d6
+#trixie:              ,libdav1d7
+#sid:              ,libdav1d7
 #noble:              ,libspng0
 #oracular:              ,libspng0
 #plucky:              ,libspng0

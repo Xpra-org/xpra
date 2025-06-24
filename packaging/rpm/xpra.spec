@@ -251,6 +251,8 @@ BuildRequires:		pkgconfig(libturbojpeg)
 Requires:			turbojpeg
 BuildRequires:		pkgconfig(libyuv)
 Requires:			libyuv
+BuildRequires:      libdav1d-devel
+Requires:           libdav1d
 %ifnarch %{riscv}
 BuildRequires:		pkgconfig(openh264)
 Requires:			openh264
@@ -756,6 +758,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n %{package_prefix}-codecs
 %{python3_sitearch}/xpra/codecs/csc_cython
+%{python3_sitearch}/xpra/codecs/dav1d
 %{python3_sitearch}/xpra/codecs/drm
 #/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/jpeg
