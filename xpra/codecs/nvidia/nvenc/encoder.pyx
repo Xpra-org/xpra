@@ -1085,6 +1085,10 @@ cdef class Encoder:
             self.clean()
 
     def clean(self) -> None:
+        f = self.file
+        if f:
+            self.file = None
+            f.close()
         if not self.closed:
             self.closed = 1
             if self.threaded_init:
@@ -1278,8 +1282,10 @@ cdef class Encoder:
     def compress_image(self, image: ImageWrapper, options: typedict, int retry=0) -> Tuple[bytes, Dict]:
         options = options or {}
         cuda_device_context = options.get("cuda-device-context")
-        assert cuda_device_context, "no cuda device context"
-        #cuda_device_context.__enter__ does self.context.push()
+        if not cuda_device_context:
+            log.error("Error: no 'cuda-device-context' in %s", options)
+            raise RuntimeError("no cuda device context")
+        # cuda_device_context.__enter__ does self.context.push()
         with cuda_device_context as cuda_context:
             quality = options.get("quality", -1)
             if quality>=0:
@@ -1596,6 +1602,7 @@ cdef class Encoder:
             size, 100.0*size/input_size, self.encoding, get_picture_type(pic.pictureType), self.frames, 1000.0*elapsed)
         if self.file:
             self.file.write(data)
+            self.file.flush()
         return data, client_options
 
     cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID) except *:
@@ -1998,9 +2005,11 @@ def init_module(options: dict) -> None:
                     log(f"testing {encoding} using {src_format} from {colorspaces}")
                     encoder_options["dst-formats"] = get_COLORSPACES(encoding).get(src_format, ())
                     test_encoder = None
+                    W = 1920
+                    H = 1080
                     try:
                         test_encoder = Encoder()
-                        test_encoder.init_context(encoding, 1920, 1080, src_format, encoder_options)
+                        test_encoder.init_context(encoding, W, H, src_format, encoder_options)
                         success = True
                         if client_key:
                             log("the license key '%s' is valid", client_key)
@@ -2028,6 +2037,14 @@ def init_module(options: dict) -> None:
                         # check intra refresh:
                         intra = test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_INTRA_REFRESH)
                         log("%s intra refresh: %s", encoding, intra)
+                        # test compress:
+                        if options.get("full", False):
+                            from xpra.codecs.checks import make_test_image
+                            image = make_test_image(src_format, W, H)
+                            out = test_encoder.compress_image(image, encoder_options)
+                            if not out:
+                                raise RuntimeError("failed to compress test image %s" % (image, ))
+
                     except NVENCException as e:
                         log("encoder %s failed: %s", test_encoder, e)
                         #special handling for license key issues:
@@ -2096,9 +2113,9 @@ def selftest(full=False) -> None:
     v = get_nvidia_module_version(True)
     assert NVENCAPI_MAJOR_VERSION>=9, "unsupported NVENC version %i" % NVENCAPI_MAJOR_VERSION
     log("nvidia module version: %s", v)
-    #this is expensive, so don't run it unless "full" is set:
     if full:
-        from xpra.codecs.checks import get_encoder_max_sizes
+        from xpra.codecs.checks import testencoder, get_encoder_max_sizes
         from xpra.codecs.nvidia.nvenc import encoder
-        init_module({})
+        init_module({"full": full})
+        # assert testencoder(encoder, False, options)
         log.info("%s max dimensions: %s", encoder, get_encoder_max_sizes(encoder))
