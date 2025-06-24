@@ -64,6 +64,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NV_ENC_RC_PARAMS,
     NV_ENC_CODEC_H264_GUID, NV_ENC_CONFIG_H264, NV_ENC_CONFIG_H264_VUI_PARAMETERS,
     NV_ENC_CODEC_HEVC_GUID, NV_ENC_CONFIG_HEVC, NV_ENC_CONFIG_HEVC_VUI_PARAMETERS,
+    NV_ENC_CODEC_AV1_GUID, NV_ENC_CONFIG_AV1,
     NV_ENC_INPUT_PTR,
     NV_ENC_PRESET_CONFIG, NV_ENC_PRESET_CONFIG_VER,
     NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID,
@@ -91,11 +92,14 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NVENC_INFINITE_GOPLENGTH,
     NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME,
     NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL_H264_5,
+    NV_ENC_LEVEL_AV1_AUTOSELECT, NV_ENC_TIER_AV1_0, NV_ENC_AV1_PART_SIZE_AUTOSELECT,
+    NV_ENC_VUI_COLOR_PRIMARIES_BT709, NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709, NV_ENC_VUI_MATRIX_COEFFS_BT709,
+    NV_ENC_BIT_DEPTH_8,
 )
 
 
-TEST_ENCODINGS = os.environ.get("XPRA_NVENC_ENCODINGS", "h264,h265").split(",")
-assert (x for x in TEST_ENCODINGS in ("h264", "h265")), "invalid list of encodings: %s" % (TEST_ENCODINGS,)
+TEST_ENCODINGS = os.environ.get("XPRA_NVENC_ENCODINGS", "h264,h265,av1").split(",")
+assert (x for x in TEST_ENCODINGS in ("h264", "h265", "av1")), "invalid list of encodings: %s" % (TEST_ENCODINGS,)
 assert len(TEST_ENCODINGS)>0, "no encodings enabled!"
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 # NVENC requires compute capability value 0x30 or above:
@@ -121,8 +125,13 @@ device_lock = Lock()
 YUV444_CODEC_SUPPORT: Dict[str, bool] = {
     "h264"  : True,
     "h265"  : True,
+    "av1"   : False,
 }
-LOSSLESS_CODEC_SUPPORT: Dict[str, bool] = {}
+LOSSLESS_CODEC_SUPPORT: Dict[str, bool] = {
+    "h264" : True,
+    "h265" : True,
+    "av1" : False,
+}
 
 
 # so we can warn just once per unknown preset:
@@ -148,9 +157,10 @@ if CLIENT_KEYS_STR:
 CODEC_GUIDS: Dict[str, str] = {
     guidstr(NV_ENC_CODEC_H264_GUID)         : "H264",
     guidstr(NV_ENC_CODEC_HEVC_GUID)         : "HEVC",
+    guidstr(NV_ENC_CODEC_AV1_GUID)          : "AV1",
 }
 
-cdef codecstr(GUID guid):
+cdef str codecstr(GUID guid):
     s = guidstr(guid)
     return CODEC_GUIDS.get(s, s)
 
@@ -817,10 +827,13 @@ cdef class Encoder:
         self.tune_qp(&config.rcParams)
         cdef NV_ENC_CONFIG_H264 *h264 = &config.encodeCodecConfig.h264Config
         cdef NV_ENC_CONFIG_HEVC *hevc = &config.encodeCodecConfig.hevcConfig
+        cdef NV_ENC_CONFIG_AV1 *av1 = &config.encodeCodecConfig.av1Config
         if self.codec_name=="H264":
             self.tune_h264(&config.encodeCodecConfig.h264Config, config.gopLength)
         elif self.codec_name=="H265":
             self.tune_hevc(&config.encodeCodecConfig.hevcConfig, config.gopLength)
+        elif self.codec_name=="AV1":
+            self.tune_av1(&config.encodeCodecConfig.av1Config, config.gopLength)
         else:
             raise ValueError(f"invalid codec name {self.codec_name}")
 
@@ -909,6 +922,42 @@ cdef class Encoder:
         #vui.colourPrimaries = 1
         #vui.transferCharacteristics = 1
         #vui.colourMatrix = 5
+
+    cdef void tune_av1(self, NV_ENC_CONFIG_AV1 *av1, int gopLength):
+        memset(av1, 0, sizeof(NV_ENC_CONFIG_AV1))
+        av1.level = NV_ENC_LEVEL_AV1_AUTOSELECT
+        av1.tier = NV_ENC_TIER_AV1_0
+        av1.minPartSize = NV_ENC_AV1_PART_SIZE_AUTOSELECT
+        av1.maxPartSize = NV_ENC_AV1_PART_SIZE_AUTOSELECT
+        av1.outputAnnexBFormat = 1
+        av1.enableTimingInfo = 1
+        av1.enableDecoderModelInfo = 1
+        av1.enableFrameIdNumbers = 1
+        av1.disableSeqHdr = 0
+        av1.repeatSeqHdr = 1
+        av1.enableIntraRefresh = INTRA_REFRESH
+        av1.chromaFormatIDC = self.get_chroma_format()
+        av1.enableBitstreamPadding = 0
+        av1.enableCustomTileConfig = 0
+        av1.enableFilmGrainParams = 0
+        av1.enableLTR = 0
+        av1.enableTemporalSVC = 0
+        av1.outputMaxCll = 0
+        av1.outputMasteringDisplay = 0
+        av1.idrPeriod = NVENC_INFINITE_GOPLENGTH
+        if INTRA_REFRESH:
+            av1.intraRefreshPeriod = 16
+            av1.intraRefreshCnt = 4
+        av1.maxNumRefFramesInDPB = 16
+        av1.colorPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_BT709
+        av1.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709
+        av1.matrixCoefficients = NV_ENC_VUI_MATRIX_COEFFS_BT709
+        av1.colorRange = 1  # full-range
+        av1.chromaSamplePosition = 0
+        av1.outputBitDepth = NV_ENC_BIT_DEPTH_8
+        av1.inputBitDepth = NV_ENC_BIT_DEPTH_8
+        av1.idrPeriod = gopLength
+        av1.enableIntraRefresh = INTRA_REFRESH
 
     cdef void init_buffers(self):
         log("init_buffers()")
@@ -1431,7 +1480,7 @@ cdef class Encoder:
     cdef void unmap_input_resource(self, NV_ENC_INPUT_PTR mappedResource):
         if DEBUG_API:
             log("nvEncUnmapInputResource(%#x)", <uintptr_t> mappedResource)
-        cdef int r = self.functionList.nvEncUnmapInputResource(self.context, mappedResource)
+        cdef NVENCSTATUS r = self.functionList.nvEncUnmapInputResource(self.context, mappedResource)
         raiseNVENC(r, "unmapping input resource")
 
     cdef Tuple nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0, full_range=True):
@@ -1915,6 +1964,7 @@ def init_module(options: dict) -> None:
                     nvenc_encoding_name = {
                                            "h264"   : "H264",
                                            "h265"   : "HEVC",
+                                           "av1"    : "AV1",
                                            }.get(e, e)
                     codec_query = codecs.get(nvenc_encoding_name)
                     if not codec_query:
@@ -1953,18 +2003,20 @@ def init_module(options: dict) -> None:
                             log("the license key '%s' is valid", client_key)
                             valid_keys.append(client_key)
                         #check for YUV444 support
-                        yuv444_support = YUV444_ENABLED and test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)
-                        YUV444_CODEC_SUPPORT[encoding] = bool(yuv444_support)
-                        if YUV444_ENABLED and not yuv444_support:
+                        yuv444_support = YUV444_ENABLED and bool(test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE))
+                        current = YUV444_CODEC_SUPPORT.get(encoding, YUV444_ENABLED)
+                        YUV444_CODEC_SUPPORT[encoding] = yuv444_support
+                        if YUV444_ENABLED and current != yuv444_support:
                             wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "YUV444")
                             if first_time(wkey):
                                 device_warnings.setdefault(device_id, {}).setdefault(encoding, []).append("YUV444")
                             log("no support for YUV444 with %s", encoding)
                         log("%s YUV444 support: %s", encoding, YUV444_CODEC_SUPPORT.get(encoding, YUV444_ENABLED))
                         #check for lossless:
-                        lossless_support = yuv444_support and LOSSLESS_ENABLED and test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE)
+                        lossless_support = yuv444_support and LOSSLESS_ENABLED and bool(test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE))
+                        current = LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
                         LOSSLESS_CODEC_SUPPORT[encoding] = lossless_support
-                        if LOSSLESS_ENABLED and not lossless_support:
+                        if current != lossless_support:
                             wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "lossless")
                             if first_time(wkey):
                                 device_warnings.setdefault(device_id, {}).setdefault(encoding, []).append("lossless")
@@ -2023,7 +2075,8 @@ def init_module(options: dict) -> None:
             raise RuntimeError("you may need to provide a license key")
     global _init_message
     if ENCODINGS and not _init_message:
-        log.info("NVENC v%i successfully initialized with codecs: %s", NVENCAPI_MAJOR_VERSION, csv(ENCODINGS))
+        pretty_strs = tuple({"h265": "hevc"}.get(encoding, encoding) for encoding in ENCODINGS)
+        log.info("NVENC v%i successfully initialized with codecs: %s", NVENCAPI_MAJOR_VERSION, csv(pretty_strs))
         _init_message = True
 
 

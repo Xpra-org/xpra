@@ -77,11 +77,13 @@ cdef nvencStatusInfo(NVENCSTATUS ret):
 
 
 CODEC_PROFILES_GUIDS: dict[str, dict[str, str]] = {
-    guidstr(NV_ENC_CODEC_H264_GUID) : {
+    guidstr(NV_ENC_CODEC_H264_GUID): {
         guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
         guidstr(NV_ENC_H264_PROFILE_BASELINE_GUID)          : "baseline",
         guidstr(NV_ENC_H264_PROFILE_MAIN_GUID)              : "main",
         guidstr(NV_ENC_H264_PROFILE_HIGH_GUID)              : "high",
+        guidstr(NV_ENC_H264_PROFILE_HIGH_10_GUID)           : "high10",
+        guidstr(NV_ENC_H264_PROFILE_HIGH_422_GUID)          : "high422",
         guidstr(NV_ENC_H264_PROFILE_STEREO_GUID)            : "stereo",
         #guidstr(NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY): "temporal",
         guidstr(NV_ENC_H264_PROFILE_PROGRESSIVE_HIGH_GUID)  : "progressive-high",
@@ -89,14 +91,17 @@ CODEC_PROFILES_GUIDS: dict[str, dict[str, str]] = {
         #new in SDK v4:
         guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)          : "high-444",
     },
-    guidstr(NV_ENC_CODEC_HEVC_GUID) : {
+    guidstr(NV_ENC_CODEC_HEVC_GUID): {
         guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
         guidstr(NV_ENC_HEVC_PROFILE_MAIN_GUID)              : "main",
         guidstr(NV_ENC_HEVC_PROFILE_MAIN10_GUID)            : "main10",
         guidstr(NV_ENC_HEVC_PROFILE_FREXT_GUID)             : "frext",
     },
+    guidstr(NV_ENC_CODEC_AV1_GUID): {
+        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
+        guidstr(NV_ENC_AV1_PROFILE_MAIN_GUID)               : "main",
+    }
 }
-
 
 
 PROFILE_STR = {}
@@ -162,6 +167,21 @@ CAPS_NAMES: Dict[int, str] = {
     NV_ENC_CAPS_DYNAMIC_QUERY_ENCODER_CAPACITY  : "DYNAMIC_QUERY_ENCODER_CAPACITY",
     NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE     : "SUPPORT_BFRAME_REF_MODE",
     NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP  : "SUPPORT_EMPHASIS_LEVEL_MAP",
+    NV_ENC_CAPS_WIDTH_MIN                   : "WIDTH_MIN",
+    NV_ENC_CAPS_HEIGHT_MIN                  : "HEIGHT_MIN",
+    NV_ENC_CAPS_SUPPORT_MULTIPLE_REF_FRAMES : "SUPPORT_MULTIPLE_REF_FRAMES",
+    NV_ENC_CAPS_SUPPORT_ALPHA_LAYER_ENCODING : "SUPPORT_ALPHA_LAYER_ENCODING",
+    NV_ENC_CAPS_NUM_ENCODER_ENGINES         : "NUM_ENCODER_ENGINES",
+    NV_ENC_CAPS_SINGLE_SLICE_INTRA_REFRESH  : "SINGLE_SLICE_INTRA_REFRESH",
+    NV_ENC_CAPS_DISABLE_ENC_STATE_ADVANCE   : "DISABLE_ENC_STATE_ADVANCE",
+    NV_ENC_CAPS_OUTPUT_RECON_SURFACE        : "OUTPUT_RECON_SURFACE",
+    NV_ENC_CAPS_OUTPUT_BLOCK_STATS          : "OUTPUT_BLOCK_STATS",
+    NV_ENC_CAPS_OUTPUT_ROW_STATS            : "OUTPUT_ROW_STATS",
+    NV_ENC_CAPS_SUPPORT_TEMPORAL_FILTER     : "SUPPORT_TEMPORAL_FILTER",
+    NV_ENC_CAPS_SUPPORT_LOOKAHEAD_LEVEL     : "SUPPORT_LOOKAHEAD_LEVEL",
+    NV_ENC_CAPS_SUPPORT_UNIDIRECTIONAL_B    : "SUPPORT_UNIDIRECTIONAL_B",
+    NV_ENC_CAPS_SUPPORT_MVHEVC_ENCODE       : "SUPPORT_MVHEVC_ENCODE",
+    NV_ENC_CAPS_SUPPORT_YUV422_ENCODE       : "SUPPORT_YUV422_ENCODE",
 }
 
 
@@ -224,6 +244,9 @@ BUFFER_FORMAT: Dict[int, str] = {
     NV_ENC_BUFFER_FORMAT_AYUV                   : "AYUV",
     NV_ENC_BUFFER_FORMAT_ABGR                   : "ABGR",
     NV_ENC_BUFFER_FORMAT_ABGR10                 : "ABGR10",
+    NV_ENC_BUFFER_FORMAT_U8                     : "U8",
+    NV_ENC_BUFFER_FORMAT_NV16                   : "NV12",
+    NV_ENC_BUFFER_FORMAT_P210                   : "P210",
 }
 
 
@@ -279,6 +302,8 @@ PIC_TYPES: Dict[int, str] = {
     NV_ENC_PIC_TYPE_BI             : "BI",
     NV_ENC_PIC_TYPE_SKIPPED        : "SKIPPED",
     NV_ENC_PIC_TYPE_INTRA_REFRESH  : "INTRA_REFRESH",
+    NV_ENC_PIC_TYPE_NONREF_P       : "NONREF_P",
+    NV_ENC_PIC_TYPE_SWITCH         : "SWITCH",
     NV_ENC_PIC_TYPE_UNKNOWN        : "UNKNOWN",
 }
 

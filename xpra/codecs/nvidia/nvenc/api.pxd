@@ -23,7 +23,6 @@ cdef inline int MAX(int a, int b):
 
 
 cdef extern from "nvEncodeAPI.h":
-    ctypedef int NVENCSTATUS
     ctypedef void* NV_ENC_INPUT_PTR
     ctypedef void* NV_ENC_OUTPUT_PTR
     ctypedef void* NV_ENC_REGISTERED_PTR
@@ -76,11 +75,21 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CAPS_DYNAMIC_QUERY_ENCODER_CAPACITY
         NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE
         NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP
-        #added in 9.1:
-        #NV_ENC_CAPS_WIDTH_MIN
-        #NV_ENC_CAPS_HEIGHT_MIN
-        #NV_ENC_CAPS_SUPPORT_MULTIPLE_REF_FRAMES
-
+        NV_ENC_CAPS_WIDTH_MIN
+        NV_ENC_CAPS_HEIGHT_MIN
+        NV_ENC_CAPS_SUPPORT_MULTIPLE_REF_FRAMES
+        NV_ENC_CAPS_SUPPORT_ALPHA_LAYER_ENCODING
+        NV_ENC_CAPS_NUM_ENCODER_ENGINES
+        NV_ENC_CAPS_SINGLE_SLICE_INTRA_REFRESH
+        NV_ENC_CAPS_DISABLE_ENC_STATE_ADVANCE
+        NV_ENC_CAPS_OUTPUT_RECON_SURFACE
+        NV_ENC_CAPS_OUTPUT_BLOCK_STATS
+        NV_ENC_CAPS_OUTPUT_ROW_STATS
+        NV_ENC_CAPS_SUPPORT_TEMPORAL_FILTER
+        NV_ENC_CAPS_SUPPORT_LOOKAHEAD_LEVEL
+        NV_ENC_CAPS_SUPPORT_UNIDIRECTIONAL_B
+        NV_ENC_CAPS_SUPPORT_MVHEVC_ENCODE
+        NV_ENC_CAPS_SUPPORT_YUV422_ENCODE
 
     ctypedef enum NV_ENC_DEVICE_TYPE:
         NV_ENC_DEVICE_TYPE_DIRECTX
@@ -147,12 +156,17 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_BUFFER_FORMAT_AYUV
         NV_ENC_BUFFER_FORMAT_ABGR
         NV_ENC_BUFFER_FORMAT_ABGR10
+        NV_ENC_BUFFER_FORMAT_U8
+        NV_ENC_BUFFER_FORMAT_NV16
+        NV_ENC_BUFFER_FORMAT_P210
 
     ctypedef enum NV_ENC_PIC_FLAGS:
         NV_ENC_PIC_FLAG_FORCEINTRA
         NV_ENC_PIC_FLAG_FORCEIDR
         NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
         NV_ENC_PIC_FLAG_EOS
+        NV_ENC_PIC_FLAG_DISABLE_ENC_STATE_ADVANCE
+        NV_ENC_PIC_FLAG_OUTPUT_RECON_FRAME
 
     ctypedef enum NV_ENC_PIC_STRUCT:
         NV_ENC_PIC_STRUCT_FRAME
@@ -167,6 +181,8 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_PIC_TYPE_BI
         NV_ENC_PIC_TYPE_SKIPPED
         NV_ENC_PIC_TYPE_INTRA_REFRESH
+        NV_ENC_PIC_TYPE_NONREF_P
+        NV_ENC_PIC_TYPE_SWITCH
         NV_ENC_PIC_TYPE_UNKNOWN
 
     ctypedef enum NV_ENC_SLICE_TYPE:
@@ -181,6 +197,7 @@ cdef extern from "nvEncodeAPI.h":
 
     ctypedef enum NV_ENC_LEVEL:
         NV_ENC_LEVEL_AUTOSELECT
+        # H264:
         NV_ENC_LEVEL_H264_1
         NV_ENC_LEVEL_H264_1b
         NV_ENC_LEVEL_H264_11
@@ -198,6 +215,10 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_LEVEL_H264_5
         NV_ENC_LEVEL_H264_51
         NV_ENC_LEVEL_H264_52
+        NV_ENC_LEVEL_H264_60
+        NV_ENC_LEVEL_H264_61
+        NV_ENC_LEVEL_H264_62
+        # HEVC:
         NV_ENC_LEVEL_HEVC_1
         NV_ENC_LEVEL_HEVC_2
         NV_ENC_LEVEL_HEVC_21
@@ -211,6 +232,37 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_LEVEL_HEVC_6
         NV_ENC_LEVEL_HEVC_61
         NV_ENC_LEVEL_HEVC_62
+        NV_ENC_TIER_HEVC_MAIN
+        NV_ENC_TIER_HEVC_HIGH
+        # AV1:
+        NV_ENC_LEVEL_AV1_2
+        NV_ENC_LEVEL_AV1_21
+        NV_ENC_LEVEL_AV1_22
+        NV_ENC_LEVEL_AV1_23
+        NV_ENC_LEVEL_AV1_3
+        NV_ENC_LEVEL_AV1_31
+        NV_ENC_LEVEL_AV1_32
+        NV_ENC_LEVEL_AV1_33
+        NV_ENC_LEVEL_AV1_4
+        NV_ENC_LEVEL_AV1_41
+        NV_ENC_LEVEL_AV1_42
+        NV_ENC_LEVEL_AV1_43
+        NV_ENC_LEVEL_AV1_5
+        NV_ENC_LEVEL_AV1_51
+        NV_ENC_LEVEL_AV1_52
+        NV_ENC_LEVEL_AV1_53
+        NV_ENC_LEVEL_AV1_6
+        NV_ENC_LEVEL_AV1_61
+        NV_ENC_LEVEL_AV1_62
+        NV_ENC_LEVEL_AV1_63
+        NV_ENC_LEVEL_AV1_7
+        NV_ENC_LEVEL_AV1_71
+        NV_ENC_LEVEL_AV1_72
+        NV_ENC_LEVEL_AV1_73
+        NV_ENC_LEVEL_AV1_AUTOSELECT
+
+        NV_ENC_TIER_AV1_0
+        NV_ENC_TIER_AV1_1
 
     ctypedef enum NV_ENC_PARAMS_RC_MODE:
         NV_ENC_PARAMS_RC_CONSTQP            #Constant QP mode
@@ -314,12 +366,15 @@ cdef extern from "nvEncodeAPI.h":
     #Encode Codec GUIDS supported by the NvEncodeAPI interface.
     GUID NV_ENC_CODEC_H264_GUID
     GUID NV_ENC_CODEC_HEVC_GUID
+    GUID NV_ENC_CODEC_AV1_GUID
 
     #Profiles:
     GUID NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID
     GUID NV_ENC_H264_PROFILE_BASELINE_GUID
     GUID NV_ENC_H264_PROFILE_MAIN_GUID
     GUID NV_ENC_H264_PROFILE_HIGH_GUID
+    GUID NV_ENC_H264_PROFILE_HIGH_10_GUID
+    GUID NV_ENC_H264_PROFILE_HIGH_422_GUID
     GUID NV_ENC_H264_PROFILE_HIGH_444_GUID
     GUID NV_ENC_H264_PROFILE_STEREO_GUID
     #GUID NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY
@@ -329,6 +384,8 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_HEVC_PROFILE_MAIN_GUID
     GUID NV_ENC_HEVC_PROFILE_MAIN10_GUID
     GUID NV_ENC_HEVC_PROFILE_FREXT_GUID
+
+    GUID NV_ENC_AV1_PROFILE_MAIN_GUID
 
     #Presets:
     GUID NV_ENC_PRESET_P1_GUID  #FC0A8D3E-45F8-4CF8-80C7-298871590EBF
@@ -509,10 +566,154 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved1[218]                      #[in]: Reserved and must be set to 0.
         void*       reserved2[64]                       #[in]: Reserved and must be set to NULL
 
+    ctypedef enum NV_ENC_BFRAME_REF_MODE:
+        NV_ENC_BFRAME_REF_MODE_DISABLED
+        NV_ENC_BFRAME_REF_MODE_EACH
+        NV_ENC_BFRAME_REF_MODE_MIDDLE
+
+    ctypedef struct NV_ENC_FILM_GRAIN_PARAMS_AV1:
+        pass
+
+    ctypedef enum NV_ENC_AV1_PART_SIZE:
+        NV_ENC_AV1_PART_SIZE_AUTOSELECT
+        NV_ENC_AV1_PART_SIZE_4x4
+        NV_ENC_AV1_PART_SIZE_8x8
+        NV_ENC_AV1_PART_SIZE_16x16
+        NV_ENC_AV1_PART_SIZE_32x32
+        NV_ENC_AV1_PART_SIZE_64x64
+
+    ctypedef enum NV_ENC_VUI_COLOR_PRIMARIES:
+        NV_ENC_VUI_COLOR_PRIMARIES_UNDEFINED
+        NV_ENC_VUI_COLOR_PRIMARIES_BT709
+        NV_ENC_VUI_COLOR_PRIMARIES_UNSPECIFIED
+        NV_ENC_VUI_COLOR_PRIMARIES_RESERVED
+        NV_ENC_VUI_COLOR_PRIMARIES_BT470M
+        NV_ENC_VUI_COLOR_PRIMARIES_BT470BG
+        NV_ENC_VUI_COLOR_PRIMARIES_SMPTE170M
+        NV_ENC_VUI_COLOR_PRIMARIES_SMPTE240M
+        NV_ENC_VUI_COLOR_PRIMARIES_FILM
+        NV_ENC_VUI_COLOR_PRIMARIES_BT2020
+        NV_ENC_VUI_COLOR_PRIMARIES_SMPTE428
+        NV_ENC_VUI_COLOR_PRIMARIES_SMPTE431
+        NV_ENC_VUI_COLOR_PRIMARIES_SMPTE432
+        NV_ENC_VUI_COLOR_PRIMARIES_JEDEC_P22
+
+    ctypedef enum NV_ENC_VUI_TRANSFER_CHARACTERISTIC:
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_UNDEFINED
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_UNSPECIFIED
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_RESERVED
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT470M
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT470BG
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SMPTE170M
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SMPTE240M
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_LINEAR
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_LOG
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_LOG_SQRT
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_IEC61966_2_4
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT1361_ECG
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SRGB
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT2020_10
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT2020_12
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SMPTE2084
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SMPTE428
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC_ARIB_STD_B67
+
+    ctypedef enum NV_ENC_VUI_MATRIX_COEFFS:
+        NV_ENC_VUI_MATRIX_COEFFS_RGB
+        NV_ENC_VUI_MATRIX_COEFFS_BT709
+        NV_ENC_VUI_MATRIX_COEFFS_UNSPECIFIED
+        NV_ENC_VUI_MATRIX_COEFFS_RESERVED
+        NV_ENC_VUI_MATRIX_COEFFS_FCC
+        NV_ENC_VUI_MATRIX_COEFFS_BT470BG
+        NV_ENC_VUI_MATRIX_COEFFS_SMPTE170M
+        NV_ENC_VUI_MATRIX_COEFFS_SMPTE240M
+        NV_ENC_VUI_MATRIX_COEFFS_YCGCO
+        NV_ENC_VUI_MATRIX_COEFFS_BT2020_NCL
+        NV_ENC_VUI_MATRIX_COEFFS_BT2020_CL
+        NV_ENC_VUI_MATRIX_COEFFS_SMPTE2085
+
+    ctypedef enum NV_ENC_NUM_REF_FRAMES:
+        NV_ENC_NUM_REF_FRAMES_AUTOSELECT
+        NV_ENC_NUM_REF_FRAMES_1
+        NV_ENC_NUM_REF_FRAMES_2
+        NV_ENC_NUM_REF_FRAMES_3
+        NV_ENC_NUM_REF_FRAMES_4
+        NV_ENC_NUM_REF_FRAMES_5
+        NV_ENC_NUM_REF_FRAMES_6
+        NV_ENC_NUM_REF_FRAMES_7
+
+    ctypedef enum NV_ENC_BIT_DEPTH:
+        NV_ENC_BIT_DEPTH_INVALID
+        NV_ENC_BIT_DEPTH_8
+        NV_ENC_BIT_DEPTH_10
+
+    ctypedef enum NV_ENC_TEMPORAL_FILTER_LEVEL:
+        NV_ENC_TEMPORAL_FILTER_LEVEL_0
+        NV_ENC_TEMPORAL_FILTER_LEVEL_4
+
+    ctypedef struct NV_ENC_CONFIG_AV1:
+        uint32_t level                                  #[in]: Specifies the level of the encoded bitstream
+        uint32_t tier                                   #[in]: Specifies the level tier of the encoded bitstream
+        NV_ENC_AV1_PART_SIZE minPartSize                #[in]: Specifies the minimum size of luma coding block partition
+        NV_ENC_AV1_PART_SIZE maxPartSize                #[in]: Specifies the maximum size of luma coding block partition
+        uint32_t outputAnnexBFormat                     #[in]: Set 1 to use Annex B format for bitstream output
+        uint32_t enableTimingInfo                       #[in]: Set 1 to write Timing Info into sequence/frame headers
+        uint32_t enableDecoderModelInfo                 #[in]: Set 1 to write Decoder Model Info into sequence/frame headers
+        uint32_t enableFrameIdNumbers                   #[in]: Set 1 to write Frame id numbers in  bitstream
+        uint32_t disableSeqHdr                          #[in]: Set 1 to disable Sequence Header signaling in the bitstream
+        uint32_t repeatSeqHdr                           #[in]: Set 1 to output Sequence Header for every Key frame
+        uint32_t enableIntraRefresh                     #[in]: Set 1 to enable gradual decoder refresh or intra refresh. If the GOP structure uses B frames this will be ignored
+        uint32_t chromaFormatIDC                        #[in]: Specifies the chroma format. Should be set to 1 for yuv420 input (yuv444 input currently not supported)
+        uint32_t enableBitstreamPadding                 #[in]: Set 1 to enable bitstream padding
+        uint32_t enableCustomTileConfig                 #[in]: Set 1 to enable custom tile configuration: numTileColumns and numTileRows must have non zero values and tileWidths and tileHeights must point to a valid address
+        uint32_t enableFilmGrainParams                  #[in]: Set 1 to enable custom film grain parameters: filmGrainParams must point to a valid address
+        uint32_t enableLTR                              #[in]: Set to 1 to enable LTR (Long Term Reference) frame support. LTR can be used in "LTR Per Picture" mode
+        uint32_t enableTemporalSVC                      #[in]: Set to 1 to enable SVC temporal
+        uint32_t outputMaxCll                           #[in]: Set to 1 to write Content Light Level metadata for Av1
+        uint32_t outputMasteringDisplay                 #[in]: Set to 1 to write Mastering displays metadata for Av1
+        uint32_t reserved4                              #[in]: Reserved and must be set to 0
+        uint32_t reserved                               #[in]: Reserved bitfields
+        uint32_t idrPeriod                              #[in]: Specifies the IDR/Key frame interval. If not set, this is made equal to gopLength in NV_ENC_CONFIG.Low latency application client can set IDR interval to NVENC_INFINITE_GOPLENGTH so that IDR frames are not inserted automatically
+        uint32_t intraRefreshPeriod                     #[in]: Specifies the interval between successive intra refresh if enableIntrarefresh is set. Requires enableIntraRefresh to be set
+        uint32_t intraRefreshCnt                        #[in]: Specifies the length of intra refresh in number of frames for periodic intra refresh. This value should be smaller than intraRefreshPeriod
+        uint32_t maxNumRefFramesInDPB                   #[in]: Specifies the maximum number of references frames in the DPB
+        uint32_t numTileColumns                         #[in]: This parameter in conjunction with the flag enableCustomTileConfig and the array tileWidths[] specifies the way in which the picture is divided into tile columns
+        uint32_t numTileRows                            #[in]: This parameter in conjunction with the flag enableCustomTileConfig and the array tileHeights[] specifies the way in which the picture is divided into tiles rows
+        uint32_t reserved2                              #[in]: Reserved and must be set to 0
+        uint32_t *tileWidths                            #[in]: If enableCustomTileConfig == 1, tileWidths[i] specifies the width of tile column i in 64x64 CTU unit, with 0 <= i <= numTileColumns -1
+        uint32_t *tileHeights                           #[in]: If enableCustomTileConfig == 1, tileHeights[i] specifies the height of tile row i in 64x64 CTU unit, with 0 <= i <= numTileRows -1
+        uint32_t maxTemporalLayersMinus1                #[in]: Specifies the max temporal layer used for hierarchical coding. Cannot be reconfigured and must be specified during encoder creation if temporal layer is considered
+        NV_ENC_VUI_COLOR_PRIMARIES colorPrimaries       #[in]: as defined in section of ISO/IEC 23091-4/ITU-T H.273
+        NV_ENC_VUI_TRANSFER_CHARACTERISTIC transferCharacteristics  #[in]: as defined in section of ISO/IEC 23091-4/ITU-T H.273
+        NV_ENC_VUI_MATRIX_COEFFS matrixCoefficients     #[in]: as defined in section of ISO/IEC 23091-4/ITU-T H.273
+        uint32_t colorRange                             #[in]: 0: studio swing representation - 1: full swing representation
+        uint32_t chromaSamplePosition                   #[in]: 0: unknown
+        NV_ENC_BFRAME_REF_MODE useBFramesAsRef          #[in]: Specifies the B-Frame as reference mode. Check support for useBFramesAsRef mode using  ::NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE caps
+        NV_ENC_FILM_GRAIN_PARAMS_AV1 *filmGrainParams   #[in]: If enableFilmGrainParams == 1, filmGrainParams must point to a valid NV_ENC_FILM_GRAIN_PARAMS_AV1 structure
+        NV_ENC_NUM_REF_FRAMES  numFwdRefs               #[in]: Specifies max number of forward reference frame used for prediction of a frame. It must be in range 1-4 (Last, Last2, last3 and Golden). It's a suggestive value not necessarily be honored always
+        NV_ENC_NUM_REF_FRAMES  numBwdRefs               #[in]: Specifies max number of L1 list reference frame used for prediction of a frame. It must be in range 1-3 (Backward, Altref2, Altref). It's a suggestive value not necessarily be honored always
+        NV_ENC_BIT_DEPTH outputBitDepth                 #[in]: Specifies pixel bit depth of encoded video. Should be set to NV_ENC_BIT_DEPTH_8 for 8 bit, NV_ENC_BIT_DEPTH_10 for 10 bit
+        NV_ENC_BIT_DEPTH inputBitDepth                  #[in]: Specifies pixel bit depth of video input. Should be set to NV_ENC_BIT_DEPTH_8 for 8 bit input, NV_ENC_BIT_DEPTH_10 for 10 bit input
+        uint32_t ltrNumFrames                           #[in]: In "LTR Per Picture" mode (ltrMarkFrame = 1), ltrNumFrames specifies maximum number of LTR frames in DPB.
+        uint32_t numTemporalLayers                      #[in]: Specifies the number of temporal layers to be used for hierarchical coding
+        NV_ENC_TEMPORAL_FILTER_LEVEL tfLevel            #[in]: Specifies the strength of temporal filtering. Check support for temporal filter using ::NV_ENC_CAPS_SUPPORT_TEMPORAL_FILTER caps
+        uint32_t reserved1[230]                         #[in]: Reserved and must be set to 0
+        void*    reserved3[62]                          #[in]: Reserved and must be set to NULL
+
+    ctypedef struct NV_ENC_CONFIG_H264_MEONLY:
+        pass
+
+    ctypedef struct NV_ENC_CONFIG_HEVC_MEONLY:
+        pass
+
     ctypedef struct NV_ENC_CODEC_CONFIG:
         NV_ENC_CONFIG_H264  h264Config                  #[in]: Specifies the H.264-specific encoder configuration
-        NV_ENC_CONFIG_HEVC  hevcConfig                  #[in]: Specifies the HEVC-specific encoder configuration. Currently unsupported and must not to be used.
-        uint32_t            reserved[256]               #[in]: Reserved and must be set to 0
+        NV_ENC_CONFIG_HEVC  hevcConfig                  #[in]: Specifies the HEVC-specific encoder configuration
+        NV_ENC_CONFIG_AV1   av1Config
+        NV_ENC_CONFIG_H264_MEONLY h264MeOnlyConfig
+        NV_ENC_CONFIG_HEVC_MEONLY hevcMeOnlyConfig
+        uint32_t            reserved[320]               #[in]: Reserved and must be set to 0
 
     ctypedef struct NV_ENC_RC_PARAMS:
         uint32_t    version
@@ -756,6 +957,35 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved1[259]      #[in]: Reserved and must be set to 0
         void*       reserved2[63]       #[in]: Reserved and must be set to NULL
 
+    ctypedef enum NVENCSTATUS:
+        NV_ENC_SUCCESS
+        NV_ENC_ERR_NO_ENCODE_DEVICE
+        NV_ENC_ERR_UNSUPPORTED_DEVICE
+        NV_ENC_ERR_INVALID_ENCODERDEVICE
+        NV_ENC_ERR_INVALID_DEVICE
+        NV_ENC_ERR_DEVICE_NOT_EXIST
+        NV_ENC_ERR_INVALID_PTR
+        NV_ENC_ERR_INVALID_EVENT
+        NV_ENC_ERR_INVALID_PARAM
+        NV_ENC_ERR_INVALID_CALL
+        NV_ENC_ERR_OUT_OF_MEMORY
+        NV_ENC_ERR_ENCODER_NOT_INITIALIZED
+        NV_ENC_ERR_UNSUPPORTED_PARAM
+        NV_ENC_ERR_LOCK_BUSY
+        NV_ENC_ERR_NOT_ENOUGH_BUFFER
+        NV_ENC_ERR_INVALID_VERSION
+        NV_ENC_ERR_MAP_FAILED
+        NV_ENC_ERR_NEED_MORE_INPUT
+        NV_ENC_ERR_ENCODER_BUSY
+        NV_ENC_ERR_EVENT_NOT_REGISTERD
+        NV_ENC_ERR_GENERIC
+        NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY
+        NV_ENC_ERR_UNIMPLEMENTED
+        NV_ENC_ERR_RESOURCE_REGISTER_FAILED
+        NV_ENC_ERR_RESOURCE_NOT_REGISTERED
+        NV_ENC_ERR_RESOURCE_NOT_MAPPED
+        NV_ENC_ERR_NEED_MORE_OUTPUT
+
     #NVENCSTATUS NvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList)
 
     ctypedef NVENCSTATUS (*PNVENCOPENENCODESESSION)         (void* device, uint32_t deviceType, void** encoder) nogil
@@ -850,39 +1080,12 @@ cdef extern from "nvEncodeAPI.h":
     unsigned int NV_ENC_RC_PARAMS_VER
     unsigned int NV_ENC_REGISTER_RESOURCE_VER
     unsigned int NV_ENC_MAP_INPUT_RESOURCE_VER
-    unsigned int NVENC_INFINITE_GOPLENGTH
-    unsigned int NV_ENC_SUCCESS
-    unsigned int NV_ENC_ERR_NO_ENCODE_DEVICE
-    unsigned int NV_ENC_ERR_UNSUPPORTED_DEVICE
-    unsigned int NV_ENC_ERR_INVALID_ENCODERDEVICE
-    unsigned int NV_ENC_ERR_INVALID_DEVICE
-    unsigned int NV_ENC_ERR_DEVICE_NOT_EXIST
-    unsigned int NV_ENC_ERR_INVALID_PTR
-    unsigned int NV_ENC_ERR_INVALID_EVENT
-    unsigned int NV_ENC_ERR_INVALID_PARAM
-    unsigned int NV_ENC_ERR_INVALID_CALL
-    unsigned int NV_ENC_ERR_OUT_OF_MEMORY
-    unsigned int NV_ENC_ERR_ENCODER_NOT_INITIALIZED
-    unsigned int NV_ENC_ERR_UNSUPPORTED_PARAM
-    unsigned int NV_ENC_ERR_LOCK_BUSY
-    unsigned int NV_ENC_ERR_NOT_ENOUGH_BUFFER
-    unsigned int NV_ENC_ERR_INVALID_VERSION
-    unsigned int NV_ENC_ERR_MAP_FAILED
-    unsigned int NV_ENC_ERR_NEED_MORE_INPUT
-    unsigned int NV_ENC_ERR_ENCODER_BUSY
-    unsigned int NV_ENC_ERR_EVENT_NOT_REGISTERD
-    unsigned int NV_ENC_ERR_GENERIC
-    unsigned int NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY
-    unsigned int NV_ENC_ERR_UNIMPLEMENTED
-    unsigned int NV_ENC_ERR_RESOURCE_REGISTER_FAILED
-    unsigned int NV_ENC_ERR_RESOURCE_NOT_REGISTERED
-    unsigned int NV_ENC_ERR_RESOURCE_NOT_MAPPED
-
-    unsigned int NV_ENC_CAPS_MB_PER_SEC_MAX
     unsigned int NV_ENC_RECONFIGURE_PARAMS_VER
+    unsigned int NV_ENC_CAPS_MB_PER_SEC_MAX
+    unsigned int NVENC_INFINITE_GOPLENGTH
 
 
-NV_ENC_STATUS_TXT: Dict[int, str] = {
+NV_ENC_STATUS_TXT: Dict[NVENCSTATUS, str] = {
     NV_ENC_SUCCESS : "This indicates that API call returned with no errors.",
     NV_ENC_ERR_NO_ENCODE_DEVICE       : "This indicates that no encode capable devices were detected",
     NV_ENC_ERR_UNSUPPORTED_DEVICE     : "This indicates that devices pass by the client is not supported.",
