@@ -410,12 +410,12 @@ def testdecoding(decoder_module, encoding: str, cs: str, full: bool) -> None:
             decoder.clean()
 
 
-def testencoder(encoder_module, full: bool) -> Sequence[str]:
+def testencoder(encoder_module, full: bool, options: typedict) -> Sequence[str]:
     etype = encoder_module.get_type()
     codecs = list(encoder_module.get_encodings())
     for encoding in tuple(codecs):
         try:
-            testencoding(encoder_module, encoding, full)
+            testencoding(encoder_module, encoding, full, options)
         except EncodingNotSupported as e:
             log(f"{etype}: {encoding} encoding failed", exc_info=True)
             del e
@@ -431,10 +431,10 @@ def testencoder(encoder_module, full: bool) -> Sequence[str]:
     return tuple(codecs)
 
 
-def testencoding(encoder_module, encoding: str, full: bool) -> None:
+def testencoding(encoder_module, encoding: str, full: bool, options: typedict) -> None:
     # test a bit bigger so we exercise more code:
     W, H = DEFAULT_TEST_SIZE
-    do_testencoding(encoder_module, encoding, W, H, full)
+    do_testencoding(encoder_module, encoding, W, H, full, options=options)
 
 
 def get_encoder_max_sizes(encoder_module) -> tuple[int, int]:
@@ -507,28 +507,30 @@ def get_encoder_max_size(encoder_module, encoding: str,
     return MAX_WIDTH, MAX_HEIGHT
 
 
-def do_testencoding(encoder_module, encoding, W: int, H: int, full: bool = False,
+def do_testencoding(encoder_module, encoding, W: int, H: int, full: bool, options: typedict,
                     limit_w: int = TEST_LIMIT_W, limit_h: int = TEST_LIMIT_H) -> None:
     for spec in encoder_module.get_specs():
         if spec.encoding != encoding:
             continue
         for out_cs in spec.output_colorspaces:
-            test_encoder_spec(spec.codec_class, encoding, spec.input_colorspace, out_cs, W, H, full, limit_w, limit_h)
+            test_encoder_spec(spec.codec_class, encoding, spec.input_colorspace, out_cs, W, H, full, options, limit_w, limit_h)
 
 
-def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out: str, W:int, H:int, full:bool=False,
+def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out: str, W:int, H:int,
+                      full: bool, options: typedict,
                       limit_w: int = TEST_LIMIT_W, limit_h: int = TEST_LIMIT_H) -> None:
-    log(f"testing {encoding} using {encoder_class}: {cs_in} to {cs_out}")
+    log(f"testing {encoding} using {encoder_class}: {cs_in} to {cs_out}, {options=}")
     e = encoder_class()
     try:
-        options = typedict({
+        coptions = typedict(options)
+        coptions.update({
             # "b-frames": True,
             "dst-formats": [cs_out],
             "quality": 50,
             "speed": 50,
         })
-        log("calling %s%s", e.init_context, (encoding, W, H, cs_in, options))
-        e.init_context(encoding, W, H, cs_in, options)
+        log("calling %s%s", e.init_context, (encoding, W, H, cs_in, coptions))
+        e.init_context(encoding, W, H, cs_in, coptions)
     except Exception:
         log("encoder context initialization failed", exc_info=True)
         raise
@@ -536,10 +538,10 @@ def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out
         N = 5
         data = meta = None
         for i in range(N):
-            options = typedict()
             image = make_test_image(cs_in, W, H)
             log(f"test {i}/{N} with {image}")
-            v = e.compress_image(image, options)
+            coptions = typedict(options)
+            v = e.compress_image(image, coptions)
             if v is None:
                 raise RuntimeError(f"{encoding} compression failed on image {i+1} of {N}")
             data, meta = v
@@ -565,7 +567,8 @@ def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out
                 wrong_format = wrong_formats[0]
                 try:
                     image = make_test_image(wrong_format, W, H)
-                    out = e.compress_image(image, options=options)
+                    coptions = typedict(options)
+                    out = e.compress_image(image, options=coptions)
                 except Exception:
                     out = None
                 if out is not None:
@@ -575,7 +578,8 @@ def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out
                     continue
                 try:
                     image = make_test_image(cs_in, w, h)
-                    out = e.compress_image(image, options=options)
+                    coptions = typedict(options)
+                    out = e.compress_image(image, options=coptions)
                 except Exception:
                     out = None
                 if out is not None:

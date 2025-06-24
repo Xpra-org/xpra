@@ -285,7 +285,7 @@ class Encoder(VideoPipeline):
 GObject.type_register(Encoder)
 
 
-def selftest(_full=False):
+def selftest(full=False):
     log("gstreamer encoder selftest: %s", get_info())
     from xpra.codecs.checks import test_encoder_spec, DEFAULT_TEST_SIZE
     W, H = DEFAULT_TEST_SIZE
@@ -297,7 +297,7 @@ def selftest(_full=False):
             for spec in specs:
                 try:
                     for cs_out in spec.output_colorspaces:
-                        test_encoder_spec(spec.codec_class, encoding, cs_in, cs_out, W, H)
+                        test_encoder_spec(spec.codec_class, encoding, cs_in, cs_out, W, H, full, typedict())
                         log(f"{spec.gstreamer_element} {encoding} {cs_in} -> {spec.output_colorspaces} passed")
                 except Exception as e:
                     log("test_encoder_spec", exc_info=True)
