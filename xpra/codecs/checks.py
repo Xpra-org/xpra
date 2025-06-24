@@ -467,7 +467,7 @@ def get_encoder_max_size(encoder_module, encoding: str,
     maxw = w = 512
     while w<=limit_w:
         try:
-            do_testencoding(encoder_module, encoding, w, 128)
+            do_testencoding(encoder_module, encoding, w, 128, full=False, options=typedict())
             maxw = w
             w *= 2
         except Exception as e:
@@ -479,7 +479,7 @@ def get_encoder_max_size(encoder_module, encoding: str,
     maxh = h = 512
     while h <= limit_h:
         try:
-            do_testencoding(encoder_module, encoding, 128, h)
+            do_testencoding(encoder_module, encoding, 128, h, full=False, options=typedict())
             maxh = h
             h *= 2
         except Exception as e:
@@ -500,7 +500,7 @@ def get_encoder_max_size(encoder_module, encoding: str,
             try:
                 w = min(maxw, tw)
                 h = min(maxh, th)
-                do_testencoding(encoder_module, encoding, w, h)
+                do_testencoding(encoder_module, encoding, w, h, full=False, options=typedict())
                 elog(f"can handle {w}x{h} for {encoding}")
                 MAX_WIDTH, MAX_HEIGHT = w, h
             except Exception as e:
@@ -621,7 +621,8 @@ def get_csc_max_size(converter, test_cs_in=None, test_cs_out=None,
                 do_testcsc(cs, tw, th, tw, th, False, test_cs_in, test_cs_out, limit_w, limit_h)
                 log(f"{cs} can handle {tw}x{th}")
                 MAX_WIDTH, MAX_HEIGHT = tw, th
-            except Exception:
+            except Exception as e:
+                log(f"get_csc_max_size: {e}")
                 log(f"{cs} is limited to {MAX_WIDTH}x{MAX_HEIGHT} for {test_cs_in} -> {test_cs_out}")
                 break
         v *= 2
