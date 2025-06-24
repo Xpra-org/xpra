@@ -989,7 +989,7 @@ cdef class Encoder:
         if i_nals==0:
             if self.delayed_frames>0:
                 log("x264 encode %i delayed frames after %i", self.delayed_frames, self.frames)
-                return None, {
+                return b"", {
                     "delayed" : self.delayed_frames,
                     "frame"   : self.frames,
                     }
