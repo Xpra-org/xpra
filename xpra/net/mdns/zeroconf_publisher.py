@@ -8,7 +8,7 @@ import socket
 from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version
 
 from xpra.log import Logger
-from xpra.util.env import envbool, first_time
+from xpra.util.env import envbool, envint, first_time
 from xpra.net.net_util import get_interfaces_addresses
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 from xpra.net.net_util import get_iface
@@ -18,6 +18,7 @@ log("python-zeroconf version %s", zeroconf_version)
 
 IPV6 = envbool("XPRA_ZEROCONF_IPV6", True)
 IPV6_LO = envbool("XPRA_ZEROCONF_IPV6_LOOPBACK", False)
+IPV4_LO = envint("XPRA_ZEROCONF_IPV4_LOOPBACK", 1)
 
 LOOPBACK_AFAM: dict[str, socket.AddressFamily] = {
     "0.0.0.0": socket.AddressFamily.AF_INET,
@@ -94,7 +95,9 @@ class ZeroconfPublishers:
                 loopback = iaddr.pop("lo", {})
                 for iface, addresses in iaddr.items():
                     add_iface(iface, addresses)
-                if loopback:
+                # with IPV4_LO=2, always publish loopback,
+                # with IPV4_LO=1, only publish it if we don't have other addresses:
+                if loopback and (IPV4_LO == 2) or (IPV4_LO == 1 and not iaddr):
                     add_iface("lo", loopback)
                 continue
             if host == "":
