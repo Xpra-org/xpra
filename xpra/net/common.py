@@ -235,6 +235,9 @@ init()
 
 
 def get_ssh_port() -> int:
+    port = envint("XPRA_SSH_PORT", 0)
+    if 0 < port < 2**16:
+        return port
     # on Linux, we can run "ssh -T | grep port"
     # but this usually requires root permissions to access /etc/ssh/sshd_config
     if WIN32:
