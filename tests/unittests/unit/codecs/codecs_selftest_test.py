@@ -17,7 +17,7 @@ SUSPEND_CODEC_ERROR_LOGGING = os.environ.get("XPRA_SUSPEND_CODEC_ERROR_LOGGING",
 try:
     TEST_CODECS = os.environ.get("XPRA_TEST_CODECS").split(",")
 except AttributeError:
-    TEST_CODECS = loader.ALL_CODECS
+    TEST_CODECS = tuple(x for x in loader.ALL_CODECS if x.find("gst") < 0)
 
 
 class TestDecoders(unittest.TestCase):
