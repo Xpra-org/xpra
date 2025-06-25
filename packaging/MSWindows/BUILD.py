@@ -632,7 +632,7 @@ def delete_dlls(light: bool) -> None:
             # no dbus:
             "libdbus*",
             # no AV1:
-            "libaom*", "rav1e*", "libdav1d*", "libheif*",
+            "libaom*", "rav1e*", "libheif*",
             # no avif:
             "libavif*", "libSvt*",
             # remove h264 encoder:
