@@ -38,6 +38,7 @@ if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
 with numpy_import_context("CUDA context import"):
     import pycuda
     log(f"loaded pycuda successfully: {pycuda}")
+    from pycuda import driver
     from pycuda.driver import (
         get_version, get_driver_version, mem_get_info,
         init,
@@ -220,10 +221,15 @@ def driver_init() -> bool:
                 cuda_v = ".".join(str(x) for x in get_version())
                 log.info(f"CUDA {cuda_v} / PyCUDA {pycuda.VERSION_TEXT}, no devices found")
             driver_init_done = True
-        except Exception as e:
+        except driver.LogicError as e:
             log("driver_init()", exc_info=True)
             log.warn("Warning: cannot initialize CUDA")
             log.warn(f" {e}")
+            driver_init_done = False
+        except Exception as e:
+            log("driver_init()", exc_info=True)
+            log.error("Error: cannot initialize CUDA")
+            log.estr(e)
             driver_init_done = False
     return driver_init_done
 
