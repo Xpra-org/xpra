@@ -45,14 +45,14 @@ iface_ipmasks = {}
 bind_IPs = None
 
 
-def get_interfaces():
+def get_interfaces() -> Sequence[str]:
     netifaces = import_netifaces()
     if not netifaces:
         return []
     return netifaces.interfaces()  # @UndefinedVariable pylint: disable=no-member
 
 
-def get_interfaces_addresses() -> dict:
+def get_interfaces_addresses() -> dict[str, dict]:
     d = {}
     netifaces = import_netifaces()
     if netifaces:
@@ -95,7 +95,7 @@ def get_all_ips() -> Sequence[str]:
     return ips
 
 
-def get_gateways() -> dict:
+def get_gateways() -> dict[str, dict]:
     netifaces = import_netifaces()
     if not netifaces:
         return {}
@@ -106,11 +106,11 @@ def get_gateways() -> dict:
             if k.startswith("AF_"):
                 v = getattr(netifaces, k)
                 AF_NAMES[v] = k[3:]
-        gateways = {}
+        gateways: dict[str, dict] = {}
         for family, gws in d.items():
             if family == "default":
                 continue
-            gateways[AF_NAMES.get(family, family)] = gws
+            gateways[AF_NAMES.get(family, str(family))] = gws
         return gateways
     except Exception:
         log("get_gateways() failed", exc_info=True)
@@ -154,7 +154,7 @@ def do_get_bind_IPs() -> Sequence[str]:
     return ips
 
 
-def do_get_bind_ifacemask(iface) -> Sequence[tuple[str, str]]:
+def do_get_bind_ifacemask(iface: str) -> Sequence[tuple[str, str]]:
     ipmasks = []
     netifaces = import_netifaces()
     assert netifaces
@@ -462,7 +462,7 @@ def get_info() -> dict[str, Any]:
     return i
 
 
-def print_interface_info(iface) -> None:
+def print_interface_info(iface: str) -> None:
     try:
         print("* %s (index=%s)" % (iface.ljust(20), socket.if_nametoindex(iface)))
     except OSError:
