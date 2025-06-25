@@ -78,15 +78,24 @@ class ZeroconfPublishers:
                     # at time of writing, https://pypi.org/project/zeroconf/ says:
                     # _listening on localhost (::1) does not work. Help with understanding why is appreciated._
                     continue
+
                 # annoying: we have to enumerate all interfaces
                 iaddr = get_interfaces_addresses()
-                log(f"interface addresses: {iaddr!r}")
-                for iface, addresses in iaddr.items():
+
+                def add_iface(iface: str, addresses: dict) -> None:
                     log("%r %s: %s", iface, af, addresses.get(af, {}))
                     for defs in addresses.get(af, ()):
                         addr = defs.get("addr")
                         if addr:
                             add_address(addr, port, af)
+
+                log(f"interface addresses: {iaddr!r}")
+                # ensure loopback is done last, as it may conflict:
+                loopback = iaddr.pop("lo", {})
+                for iface, addresses in iaddr.items():
+                    add_iface(iface, addresses)
+                if loopback:
+                    add_iface("lo", loopback)
                 continue
             if host == "":
                 host = "127.0.0.1"
