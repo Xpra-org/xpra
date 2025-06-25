@@ -719,7 +719,7 @@ def selftest(full=False) -> None:
     temp = SAVE_TO_FILE
     try:
         SAVE_TO_FILE = None
-        CODECS = testencoder(encoder, full)
+        CODECS = testencoder(encoder, full, typedict())
         log("AMF specs()=%s", get_specs())
     finally:
         SAVE_TO_FILE = temp

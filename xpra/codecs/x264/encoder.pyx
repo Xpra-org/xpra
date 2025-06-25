@@ -1106,7 +1106,7 @@ def selftest(full=False) -> None:
     temp = SAVE_TO_FILE
     try:
         SAVE_TO_FILE = None
-        assert testencoder(encoder, full)
+        assert testencoder(encoder, full, typedict())
         #this is expensive, so don't run it unless "full" is set:
         if full:
             global MAX_WIDTH, MAX_HEIGHT

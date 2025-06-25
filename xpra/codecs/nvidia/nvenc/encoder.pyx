@@ -2117,5 +2117,5 @@ def selftest(full=False) -> None:
         from xpra.codecs.checks import testencoder, get_encoder_max_sizes
         from xpra.codecs.nvidia.nvenc import encoder
         init_module({"full": full})
-        # assert testencoder(encoder, False, options)
+        # assert testencoder(encoder, False, typedict())
         log.info("%s max dimensions: %s", encoder, get_encoder_max_sizes(encoder))

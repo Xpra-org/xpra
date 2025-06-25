@@ -622,6 +622,6 @@ def selftest(full=False) -> None:
     temp = SAVE_TO_FILE
     try:
         SAVE_TO_FILE = None
-        assert testencoder(encoder, full)
+        assert testencoder(encoder, full, typedict())
     finally:
         SAVE_TO_FILE = temp
