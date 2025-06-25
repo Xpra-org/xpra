@@ -8,7 +8,7 @@ import socket
 from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version
 
 from xpra.log import Logger
-from xpra.util.env import envbool, first_time
+from xpra.util.env import envbool, envint, first_time
 from xpra.net.net_util import get_interfaces_addresses
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 from xpra.net.net_util import get_iface
@@ -18,6 +18,8 @@ log("python-zeroconf version %s", zeroconf_version)
 
 IPV6 = envbool("XPRA_ZEROCONF_IPV6", True)
 IPV6_LO = envbool("XPRA_ZEROCONF_IPV6_LOOPBACK", False)
+IPV4_LO = envint("XPRA_ZEROCONF_IPV4_LOOPBACK", 1)
+
 
 LOOPBACK_AFAM = {
     "0.0.0.0": socket.AF_INET,
@@ -104,14 +106,28 @@ class ZeroconfPublishers:
                     # at time of writing, https://pypi.org/project/zeroconf/ says:
                     # _listening on localhost (::1) does not work. Help with understanding why is appreciated._
                     continue
+
                 # annoying: we have to enumerate all interfaces
-                for iface, addresses in get_interfaces_addresses().items():
-                    log("%s %s: %s", iface, af, addresses.get(af, {}))
+                iaddr = get_interfaces_addresses()
+
+                def add_iface(iface: str, addresses: dict) -> None:
+                    log("%r %s: %s", iface, af, addresses.get(af, {}))
                     for defs in addresses.get(af, ()):
                         addr = defs.get("addr")
                         if addr:
                             add_address(addr, port, af)
+
+                log(f"interface addresses: {iaddr!r}")
+                # ensure loopback is done last, as it may conflict:
+                loopback = iaddr.pop("lo", {})
+                for iface, addresses in iaddr.items():
+                    add_iface(iface, addresses)
+                # with IPV4_LO=2, always publish loopback,
+                # with IPV4_LO=1, only publish it if we don't have other addresses:
+                if loopback and (IPV4_LO == 2) or (IPV4_LO == 1 and not iaddr):
+                    add_iface("lo", loopback)
                 continue
+
             if host == "":
                 host = "127.0.0.1"
             af = socket.AF_INET
