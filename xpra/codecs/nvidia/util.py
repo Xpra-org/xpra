@@ -146,21 +146,26 @@ def get_proc_driver_version() -> Sequence[str]:
         log.warn("Warning: NVidia kernel module not installed?")
         log.warn(f" cannot load {NVIDIA_PROC_FILE!r}")
         return ()
-    KSTR = b"Kernel Module"
-    p = v.find(KSTR)
     version = ()
-    if not p:
-        log.warn("Warning: unable to parse NVidia kernel module version")
-        log_fn = log.warn
-    else:
+    # ie: "NVRM version: NVIDIA UNIX x86_64 Kernel Module  565.77  Wed Nov 27 23:33:08 UTC 2024"
+    # or: "NVIDIA UNIX Open Kernel Module for x86_64  575.57.08  Release Build  (dvs-builder@U22-I3-H04-01-5)  ..."
+    KSTR = "Kernel Module"
+    for line in bytestostr(v).splitlines():
+        if line.find(KSTR) < 0:
+            continue
+        # try to split on double space:
+        parts = line.split("  ")
+        if len(parts) >= 3:
+            version = parts[1].split(".")
+            break
+    if version:
         log_fn = log.debug
-        # ie: "NVRM version: NVIDIA UNIX x86_64 Kernel Module  565.77  Wed Nov 27 23:33:08 UTC 2024"
-        # -> "565.77"
-        kmodstr = bytestostr(v[p + len(KSTR):].strip().split(b" ", 1)[0])
-        version = kmodstr.split(".")
+    else:
+        log_fn = log.warn
+        log_fn("Warning: unable to parse NVidia kernel module version")
     log_fn(f" {NVIDIA_PROC_FILE!r} contents:")
     for line in v.splitlines():
-        log_fn(f"  {bytestostr(line)!r}")
+        log_fn(f"   {bytestostr(line)!r}")
     log(f"get_proc_driver_version()={version}")
     return version
 
