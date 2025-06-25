@@ -98,6 +98,7 @@ class MdnsServer(StubServerMixin):
             return
         mdns_info = self.get_mdns_info()
         self.mdns_publishers = {}
+        log(f"mdns_publish() will publish: {mdns_recs=}")
         from xpra.net.mdns.util import mdns_publish
         for mdns_mode, listen_on in mdns_recs.items():
             info = dict(mdns_info)

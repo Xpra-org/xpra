@@ -59,7 +59,7 @@ class ZeroconfPublishers:
         self.services: list[ZeroconfPublisher] = []
         self.ports: dict[str, set[int]] = {}
 
-        def add_address(host, port, af):
+        def add_address(host: str, port: int, af: socket.AddressFamily) -> None:
             self.add_address(host, port, af, service_name, service_type, text_dict)
 
         for host, port in listen_on:
@@ -79,8 +79,10 @@ class ZeroconfPublishers:
                     # _listening on localhost (::1) does not work. Help with understanding why is appreciated._
                     continue
                 # annoying: we have to enumerate all interfaces
-                for iface, addresses in get_interfaces_addresses().items():
-                    log("%s %s: %s", iface, af, addresses.get(af, {}))
+                iaddr = get_interfaces_addresses()
+                log(f"interface addresses: {iaddr!r}")
+                for iface, addresses in iaddr.items():
+                    log("%r %s: %s", iface, af, addresses.get(af, {}))
                     for defs in addresses.get(af, ()):
                         addr = defs.get("addr")
                         if addr:
