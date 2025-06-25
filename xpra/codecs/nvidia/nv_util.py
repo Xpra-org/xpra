@@ -127,13 +127,28 @@ def get_proc_driver_version():
         log.warn("Warning: NVidia kernel module not installed?")
         log.warn(f" cannot open {NVIDIA_PROC_FILE!r}")
         return ()
-    KSTR = b"Kernel Module"
-    p = v.find(KSTR)
-    if not p:
-        log.warn("unknown NVidia kernel module version")
-        return ""
-    v = bytestostr(v[p+len(KSTR):].strip().split(b" ")[0])
-    return v.split(".")
+    version = ()
+    # ie: "NVRM version: NVIDIA UNIX x86_64 Kernel Module  565.77  Wed Nov 27 23:33:08 UTC 2024"
+    # or: "NVIDIA UNIX Open Kernel Module for x86_64  575.57.08  Release Build  (dvs-builder@U22-I3-H04-01-5)  ..."
+    KSTR = "Kernel Module"
+    for line in bytestostr(v).splitlines():
+        if line.find(KSTR) < 0:
+            continue
+        # try to split on double space:
+        parts = line.split("  ")
+        if len(parts) >= 3:
+            version = parts[1].split(".")
+            break
+    if version:
+        log_fn = log.debug
+    else:
+        log_fn = log.warn
+        log_fn("Warning: unable to parse NVidia kernel module version")
+    log_fn(f" {NVIDIA_PROC_FILE!r} contents:")
+    for line in v.splitlines():
+        log_fn(f"   {bytestostr(line)!r}")
+    log(f"get_proc_driver_version()={version}")
+    return version
 
 
 def identify_nvidia_module_version():
