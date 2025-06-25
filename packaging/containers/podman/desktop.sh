@@ -97,7 +97,7 @@ else
     install winbar
     # configure winbar:
     run setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
-    copy "../fs/winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
+    copy "../fs/winbar/settings.conf" "../fs/winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
     run winbar --create-cache
   fi
   if [ "${DESKTOP}" == "xfce4" ] || [ "${DESKTOP}" == "all" ]; then
