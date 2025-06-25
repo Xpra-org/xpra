@@ -33,10 +33,10 @@ class TestDecoders(unittest.TestCase):
             if not codec:
                 missing.append(codec_name)
                 continue
+            log = getattr(codec, "log", None)
             try:
                 # try to suspend error logging for full tests,
                 # as those may cause errors
-                log = getattr(codec, "log", None)
                 if SUSPEND_CODEC_ERROR_LOGGING and log and not log.is_debug_enabled():
                     log.setLevel(logging.CRITICAL)
                 init_module = getattr(codec, "init_module", noop)
