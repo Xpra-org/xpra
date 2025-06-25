@@ -372,7 +372,6 @@ def test_parse() -> None:
     sample_guid = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
     x = parseguid(sample_guid)
     v = guidstr(x)
-    print("FOO: %s" % (v, ))
     assert v==sample_guid, "expected %s but got %s" % (sample_guid, v)
 
 
