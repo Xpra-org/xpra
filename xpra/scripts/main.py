@@ -4153,18 +4153,9 @@ def run_displays(options, args) -> ExitValue:
     return 0
 
 
-def run_clean_displays(options, args) -> ExitValue:
-    if not POSIX or OSX:
-        raise InitExit(ExitCode.UNSUPPORTED, "clean-displays is not supported on this platform")
-    displays = get_displays_info(sessions_dir=options.sessions_dir)
-    dead_displays = tuple(display for display, descr in displays.items() if descr.get("state") == "DEAD")
-    if not dead_displays:
-        print("No dead displays found")
-        if args:
-            print(" matching %s" % csv(args))
-        return 0
-    inodes_display = {}
-    for display in sorted_nicely(dead_displays):
+def get_display_inodes(*displays: str) -> dict[int, str]:
+    inodes_display: dict[int, str] = {}
+    for display in sorted_nicely(displays):
         # find the X11 server PID
         inodes = []
         sockpath = os.path.join(X11_SOCKET_DIR, "X%s" % display.lstrip(":"))
@@ -4182,47 +4173,68 @@ def run_clean_displays(options, args) -> ExitValue:
                     else:
                         inodes.append(inode)
                         inodes_display[inode] = display
+    return inodes_display
+
+
+def get_display_pids(*displays: str) -> dict[str, tuple[int, str]]:
+    inodes_display = get_display_inodes(*displays)
     # now find the processes that own these inodes
-    display_pids = {}
-    if inodes_display:
-        for f in os.listdir("/proc"):
+    display_pids: dict[str, tuple[int, str]] = {}
+    if not inodes_display:
+        return display_pids
+    for f in os.listdir("/proc"):
+        try:
+            pid = int(f)
+        except ValueError:
+            continue
+        if pid == 1:
+            # pid 1 is our friend, don't try to kill it
+            continue
+        procpath = os.path.join("/proc", f)
+        if not os.path.isdir(procpath):
+            continue
+        fddir = os.path.join(procpath, "fd")
+        if not os.path.exists(fddir) or not os.path.isdir(fddir):
+            continue
+        try:
+            fds = os.listdir(fddir)
+        except PermissionError:
+            continue
+        for fd in fds:
+            fdpath = os.path.join(fddir, fd)
+            if not os.path.islink(fdpath):
+                continue
             try:
-                pid = int(f)
-            except ValueError:
-                continue
-            if pid == 1:
-                # pid 1 is our friend, don't try to kill it
-                continue
-            procpath = os.path.join("/proc", f)
-            if not os.path.isdir(procpath):
-                continue
-            fddir = os.path.join(procpath, "fd")
-            if not os.path.exists(fddir) or not os.path.isdir(fddir):
-                continue
-            try:
-                fds = os.listdir(fddir)
+                ref = os.readlink(fdpath)
             except PermissionError:
                 continue
-            for fd in fds:
-                fdpath = os.path.join(fddir, fd)
-                if not os.path.islink(fdpath):
-                    continue
-                try:
-                    ref = os.readlink(fdpath)
-                except PermissionError:
-                    continue
-                if not ref:
-                    continue
-                for inode, display in inodes_display.items():
-                    if ref == "socket:[%i]" % inode:
-                        cmd = ""
-                        try:
-                            proc_cmdline = os.path.join(procpath, "cmdline")
-                            cmd = open(proc_cmdline, encoding="utf8").read()
-                            cmd = shlex.join(cmd.split("\0"))
-                        except Exception:
-                            pass
-                        display_pids[display] = (pid, cmd)
+            if not ref:
+                continue
+            for inode, display in inodes_display.items():
+                if ref == "socket:[%i]" % inode:
+                    cmd = ""
+                    try:
+                        proc_cmdline = os.path.join(procpath, "cmdline")
+                        cmd = open(proc_cmdline, encoding="utf8").read()
+                        cmd = shlex.join(cmd.split("\0"))
+                    except OSError:
+                        pass
+                    display_pids[display] = (pid, cmd)
+    return display_pids
+
+
+def run_clean_displays(options, args) -> ExitValue:
+    if not POSIX or OSX:
+        raise InitExit(ExitCode.UNSUPPORTED, "clean-displays is not supported on this platform")
+    displays = get_displays_info(sessions_dir=options.sessions_dir)
+    dead_displays = tuple(display for display, descr in displays.items() if descr.get("state") == "DEAD")
+    if not dead_displays:
+        print("No dead displays found")
+        if args:
+            print(" matching %s" % csv(args))
+        return 0
+    # now find the processes that own these dead displays:
+    display_pids = get_display_pids(*dead_displays)
     if not display_pids:
         print("No pids found for dead displays " + csv(sorted_nicely(dead_displays)))
         if args:
