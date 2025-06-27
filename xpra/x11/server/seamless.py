@@ -137,7 +137,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         from xpra.x11.gtk.bindings import add_event_receiver
         add_event_receiver(xid, self)
 
-    def save_server_version(self):
+    @staticmethod
+    def save_server_version():
         from xpra.util.version import XPRA_VERSION
         root_prop_set("XPRA_SERVER", "latin1", XPRA_VERSION)
 
@@ -843,7 +844,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         metadatalog("set_window_state: changes=%s", changes)
         return tuple(changes.keys())
 
-    def get_window_position(self, window) -> tuple[int, int] | None:
+    @staticmethod
+    def get_window_position(window) -> tuple[int, int] | None:
         # used to adjust the pointer position with multiple clients
         if window is None or window.is_OR() or window.is_tray():
             return None
@@ -854,7 +856,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 return None
         return pos[0], pos[1]
 
-    def client_configure_window(self, win, geometry, resize_counter: int = 0) -> None:
+    @staticmethod
+    def client_configure_window(win, geometry, resize_counter: int = 0) -> None:
         log("client_configure_window(%s, %s, %s)", win, geometry, resize_counter)
         old_geom = win.get_property("client-geometry")
         update_geometry = geometry != old_geom
@@ -1248,14 +1251,14 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         log("overlaywin: %s", overlaywin.get_geometry())
         cr = overlaywin.cairo_create()
 
-        def fill_grey_rect(shade, x, y, w, h):
+        def fill_grey_rect(shade: tuple[float, float, float], x: int, y: int, w: int, h: int):
             log("paint_grey_rect%s", (shade, x, y, w, h))
             cr.new_path()
             cr.set_source_rgb(*shade)
             cr.rectangle(x, y, w, h)
             cr.fill()
 
-        def paint_grey_rect(shade, x, y, w, h):
+        def paint_grey_rect(shade: tuple[float, float, float], x: int, y: int, w: int, h: int):
             log("paint_grey_rect%s", (shade, x, y, w, h))
             cr.new_path()
             cr.set_line_width(2)
@@ -1301,42 +1304,10 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 except ValueError:
                     pass  # not in focus history!
             order[(prio, wid)] = window
-        log("do_repaint_root_overlay() has_focus=%s, has_grab=%s, windows in order=%s",
-            self._has_focus, self._has_grab, order)
-        for k in sorted(order):
-            window = order[k]
-            x, y, w, h = window.get_property("geometry")[:4]
-            image = window.get_image(0, 0, w, h)
-            if image:
-                self.update_root_overlay(window, 0, 0, image)
-                frame = window.get_property("frame")
-                if frame and tuple(frame) != (0, 0, 0, 0):
-                    left, right, top, bottom = frame
-                    # always add a little something, so we can see the edge:
-                    left = max(1, left)
-                    right = max(1, right)
-                    top = max(1, top)
-                    bottom = max(1, bottom)
-                    rectangles = (
-                        (x - left, y, left, h, True),  # left side
-                        (x - left, y - top, w + left + right, top, True),  # top
-                        (x + w, y, right, h, True),  # right
-                        (x - left, y + h, w + left + right, bottom, True),  # bottom
-                    )
-                else:
-                    rectangles = (
-                        (x, y, w, h, False),
-                    )
-                log("rectangles for window frame=%s and geometry=%s : %s", frame, (x, y, w, h), rectangles)
-                for x, y, w, h, fill in rectangles:
-                    cr.new_path()
-                    cr.set_source_rgb(0.1, 0.1, 0.1)
-                    cr.set_line_width(1)
-                    cr.rectangle(x, y, w, h)
-                    if fill:
-                        cr.fill()
-                    else:
-                        cr.stroke()
+        windows = []
+        for key in sorted(order):
+            windows.append(order[key])
+        self.paint_root_overlay_windows(cr, windows)
         # FIXME: use server mouse position, and use current cursor shape
         if ss:
             mlp = getattr(ss, "mouse_last_position", (0, 0))
@@ -1348,6 +1319,44 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 cr.stroke_preserve()
                 cr.set_source_rgb(0.3, 0.4, 0.6)
                 cr.fill()
+
+    def paint_root_overlay_windows(self, cr, windows: Sequence):
+        log("paint_root_overlay_windows(%s) has_focus=%s, has_grab=%s",
+            windows, self._has_focus, self._has_grab)
+        for window in windows:
+            x, y, w, h = window.get_property("geometry")[:4]
+            image = window.get_image(0, 0, w, h)
+            if not image:
+                continue
+            self.update_root_overlay(window, 0, 0, image)
+            frame = window.get_property("frame")
+            if frame and tuple(frame) != (0, 0, 0, 0):
+                left, right, top, bottom = frame
+                # always add a little something, so we can see the edge:
+                left = max(1, left)
+                right = max(1, right)
+                top = max(1, top)
+                bottom = max(1, bottom)
+                rectangles = (
+                    (x - left, y, left, h, True),  # left side
+                    (x - left, y - top, w + left + right, top, True),  # top
+                    (x + w, y, right, h, True),  # right
+                    (x - left, y + h, w + left + right, bottom, True),  # bottom
+                )
+            else:
+                rectangles = (
+                    (x, y, w, h, False),
+                )
+            log("rectangles for window frame=%s and geometry=%s : %s", frame, (x, y, w, h), rectangles)
+            for x, y, w, h, fill in rectangles:
+                cr.new_path()
+                cr.set_source_rgb(0.1, 0.1, 0.1)
+                cr.set_line_width(1)
+                cr.rectangle(x, y, w, h)
+                if fill:
+                    cr.fill()
+                else:
+                    cr.stroke()
         return False
 
     def do_make_screenshot_packet(self) -> Packet:
