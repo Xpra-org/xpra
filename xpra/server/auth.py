@@ -161,6 +161,7 @@ class AuthenticatedServer(StubServerMixin):
                 return
         except ImportError as e:
             log(f"unable to call setup_encryption: {e}")
+            auth_caps = {}
 
         def send_fake_challenge() -> None:
             # fake challenge so the client will send the real hello:
