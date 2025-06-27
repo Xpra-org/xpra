@@ -26,7 +26,7 @@ MDNS_WARNING = False
 
 def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
     global MDNS_WARNING
-    if MDNS_WARNING is True:
+    if MDNS_WARNING:
         return ()
     from xpra.log import Logger
     log = Logger("mdns")

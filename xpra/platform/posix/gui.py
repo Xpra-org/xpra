@@ -52,7 +52,7 @@ def X11RandRBindings():
     return RandRBindings()
 
 
-device_bell = None
+device_bell: bool | None = None
 RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
 

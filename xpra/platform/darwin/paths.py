@@ -33,7 +33,7 @@ def do_get_resources_dir() -> str:
             debug("get_resources_dir() %s.get_resource_path=%s", macapp, rsc)
         except Exception:
             global _gtkosx_warning_
-            if _gtkosx_warning_ is False:
+            if not _gtkosx_warning_:
                 _gtkosx_warning_ = True
                 # delayed import to prevent cycles:
                 get_util_logger().error("Error: gtkosx_application module is missing - trying to continue anyway")

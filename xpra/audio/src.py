@@ -100,8 +100,6 @@ class AudioSource(AudioPipeline):
         self.jitter_queue = None
         self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
         self.stream_compressor = stream_compressor
-        if src_options is None:
-            src_options = {}
         src_options["name"] = "src"
         source_str = plugin_str(src_type, src_options)
         # FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!

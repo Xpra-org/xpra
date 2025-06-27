@@ -256,7 +256,7 @@ def do_set_keycode_translation(keycodes: dict[int, set]) -> dict[str | tuple[int
         return keycode, False
 
     # generate the translation map:
-    trans: dict[str | tuple[int, str], int] = {}
+    trans: dict[str | tuple[int, str] | tuple[str, int], int] = {}
     for keycode, defs in keycodes.items():
         if bool(set(DEBUG_KEYSYMS) & set(bytestostr(d[0]) for d in defs)):
             log.info("client keycode=%i, defs=%s", keycode, defs)

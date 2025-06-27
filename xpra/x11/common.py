@@ -219,7 +219,7 @@ def send_client_message(window, message_type: str, *values) -> None:
         log.warn(f"Warning: failed to send client message {message_type!r} with values={values}: {e}")
 
 
-device_bell = None
+device_bell: bool | None = None
 
 
 def system_bell(xid: int, device: int, percent: int, _pitch, _duration: int, bell_class, bell_id, bell_name: str) -> bool:

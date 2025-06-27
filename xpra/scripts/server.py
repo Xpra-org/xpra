@@ -487,7 +487,7 @@ def load_options() -> dict[str, Any]:
     return read_config(config_file)
 
 
-def apply_config(opts, mode: str, cmdline: str) -> str:
+def apply_config(opts, mode: str, cmdline: list[str]) -> str:
     # if we had saved the start / start-desktop config, reload it:
     options = load_options()
     if not options:

@@ -69,24 +69,23 @@ gdk_win32_window_get_handle.restype = HWND
 log("gdkdll=%s", gdkdll)
 
 shell32 = WinDLL("shell32", use_last_error=True)
-set_window_group: Callable = noop
-try:
-    from xpra.platform.win32 import propsys
+dwmapi = WinDLL("dwmapi", use_last_error=True)
 
-    set_window_group = propsys.set_window_group
-except ImportError as e:
-    log("propsys missing", exc_info=True)
-    log.warn("Warning: propsys support missing:")
-    log.warn(" %s", e)
-    log.warn(" window grouping is not available")
 
-DwmGetWindowAttribute: Callable = noop
-try:
-    dwmapi = WinDLL("dwmapi", use_last_error=True)
-    DwmGetWindowAttribute = dwmapi.DwmGetWindowAttribute
-except Exception:
-    # win XP:
-    pass
+def get_swg() -> Callable:
+    try:
+        from xpra.platform.win32 import propsys
+        return propsys.set_window_group
+    except ImportError as e:
+        log("propsys missing", exc_info=True)
+        log.warn("Warning: propsys support missing:")
+        log.warn(" %s", e)
+        log.warn(" window grouping is not available")
+        return noop
+
+
+set_window_group: Callable = get_swg()
+
 
 WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
 GROUP_LEADER = WINDOW_HOOKS and envbool("XPRA_WIN32_GROUP_LEADER", True)
@@ -230,23 +229,6 @@ def get_session_type() -> str:
     return ""
 
 
-# alternative code:
-#    try:
-#        # Vista & 7 stuff
-#        hwnd = GetDesktopWindow()
-#        DwmGetWindowAttribute = dwmapi.DwmGetWindowAttribute
-#        DWMWA_NCRENDERING_ENABLED = 1
-#        b = BOOL()
-#        DwmGetWindowAttribute(HWND(hwnd), DWORD(DWMWA_NCRENDERING_ENABLED), byref(b), sizeof(b))
-#        #wx1,wy1,wx2,wy2 = rect.left, rect.top, rect.right, rect.bottom
-#        log("DwmGetWindowAttribute: DWMWA_NCRENDERING_ENABLED(%i)=%s", hwnd, b)
-#        if b:
-#            return "aero"
-#    except WindowsError as e:           #@UndefinedVariable
-#        log("no DwmGetWindowAttribute: %s", e)
-#    return ""
-
-
 def win32_propsys_set_group_leader(self, leader):
     """ implements set group leader using propsys """
     hwnd = get_window_handle(self)
@@ -313,14 +295,13 @@ def pointer_grab(window, *args) -> bool:
     wrect = RECT()
     GetWindowRect(hwnd, byref(wrect))  # NOSONAR
     grablog("GetWindowRect(%i)=%s", hwnd, wrect)
-    if DwmGetWindowAttribute != noop:
-        # Vista & 7 stuff
-        rect = RECT()
-        DWMWA_EXTENDED_FRAME_BOUNDS = 9
-        DwmGetWindowAttribute(HWND(hwnd), DWORD(DWMWA_EXTENDED_FRAME_BOUNDS), byref(rect), sizeof(rect))  # NOSONAR
-        # wx1,wy1,wx2,wy2 = rect.left, rect.top, rect.right, rect.bottom
-        grablog("DwmGetWindowAttribute: DWMWA_EXTENDED_FRAME_BOUNDS(%i)=%s", hwnd,
-                (rect.left, rect.top, rect.right, rect.bottom))
+    # Vista & 7 stuff
+    rect = RECT()
+    DWMWA_EXTENDED_FRAME_BOUNDS = 9
+    dwmapi.DwmGetWindowAttribute(HWND(hwnd), DWORD(DWMWA_EXTENDED_FRAME_BOUNDS), byref(rect), sizeof(rect))  # NOSONAR
+    # wx1,wy1,wx2,wy2 = rect.left, rect.top, rect.right, rect.bottom
+    grablog("DwmGetWindowAttribute: DWMWA_EXTENDED_FRAME_BOUNDS(%i)=%s", hwnd,
+            (rect.left, rect.top, rect.right, rect.bottom))
     bx = GetSystemMetrics(win32con.SM_CXSIZEFRAME)
     by = GetSystemMetrics(win32con.SM_CYSIZEFRAME)
     top = by
