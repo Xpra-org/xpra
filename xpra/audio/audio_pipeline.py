@@ -31,7 +31,7 @@ class AudioPipeline(Pipeline):
     generation = AtomicInteger()
     __generic_signals__ = Pipeline.__generic_signals__.copy()
 
-    def __init__(self, codec):
+    def __init__(self, codec: str):
         super().__init__()
         self.stream_compressor = None
         self.codec = codec
@@ -123,9 +123,8 @@ class AudioPipeline(Pipeline):
 
     def cleanup(self) -> None:
         super().cleanup()
-        self.codec = None
+        self.codec = ""
         self.bitrate = -1
-        self.state = None
         self.volume = None
 
     def onstart(self) -> None:
