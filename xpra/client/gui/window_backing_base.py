@@ -499,10 +499,11 @@ class WindowBackingBase:
             log(f"nv_decode failed: {e} - will retry")
             return None
         except RuntimeError as e:
-            self.nvdec_decode = self.nvjpeg_decode = None
+            self.nvdec_decoder = self.nvjpeg_decoder = None
             log(f"nv_decode {encoding=}", exc_info=True)
             log.warn("Warning: nv decode error, disabling hardware accelerated decoding for this window")
             log.warn(f" {e}")
+            return None
 
     def do_paint_jpeg(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
                       options: typedict, callbacks: PaintCallbacks) -> None:
