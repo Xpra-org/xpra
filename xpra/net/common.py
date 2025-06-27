@@ -92,70 +92,70 @@ class Packet(Sequence):
             raise ValueError(f"invalid window id value {v!r}")
         return v
 
-    def get_bool(self, i) -> bool:
+    def get_bool(self, i: int) -> bool:
         return bool(self.data[i])
 
-    def get_i8(self, i) -> int:
+    def get_i8(self, i: int) -> int:
         v = int(self.data[i])
         if v < -2**7 or v >= 2**7:
             raise ValueError(f"invalid i8 value {v!r}")
         return v
 
-    def get_u8(self, i) -> int:
+    def get_u8(self, i: int) -> int:
         v = int(self.data[i])
         if v < 0 or v >= 2**8:
             raise ValueError(f"invalid u8 value {v!r}")
         return v
 
-    def get_i16(self, i) -> int:
+    def get_i16(self, i: int) -> int:
         v = int(self.data[i])
         if v < -2**15 or v >= 2**15:
             raise ValueError(f"invalid i16 value {v!r}")
         return v
 
-    def get_u16(self, i) -> int:
+    def get_u16(self, i: int) -> int:
         v = int(self.data[i])
         if v < 0 or v >= 2**16:
             raise ValueError(f"invalid u16 value {v!r}")
         return v
 
-    def get_i32(self, i) -> int:
+    def get_i32(self, i: int) -> int:
         v = int(self.data[i])
         if v < -2**31 or v >= 2**31:
             raise ValueError(f"invalid i32 value {v!r}")
         return v
 
-    def get_u32(self, i) -> int:
+    def get_u32(self, i: int) -> int:
         v = int(self.data[i])
         if v < 0 or v >= 2**32:
             raise ValueError(f"invalid u32 value {v!r}")
         return v
 
-    def get_i64(self, i) -> int:
+    def get_i64(self, i: int) -> int:
         v = int(self.data[i])
         if v < -2**63 or v >= 2**63:
             raise ValueError(f"invalid i64 value {v!r}")
         return v
 
-    def get_u64(self, i) -> int:
+    def get_u64(self, i: int) -> int:
         v = int(self.data[i])
         if v < 0 or v >= 2**64:
             raise ValueError(f"invalid u64 value {v!r}")
         return v
 
-    def get_str(self, i) -> str:
+    def get_str(self, i: int) -> str:
         v = self.data[i]
         if isinstance(v, bytes):
             return v.decode("utf8")
         return str(v)
 
-    def get_bytes(self, i) -> bytes:
+    def get_bytes(self, i: int) -> bytes:
         v = self.data[i]
         if isinstance(v, bytes):
             return v
         return bytes(v)
 
-    def get_buffer(self, i) -> SizedBuffer:
+    def get_buffer(self, i: int) -> SizedBuffer:
         v = self.data[i]
         if isinstance(v, (memoryview, bytes, bytearray)):
             return v
@@ -164,19 +164,19 @@ class Packet(Sequence):
             return v.encode("utf8")
         return bytes(v)
 
-    def get_dict(self, i) -> dict:
+    def get_dict(self, i: int) -> dict:
         v = self.data[i]
         if isinstance(v, dict):
             return v
         raise TypeError("expected dictionary at index %i but got a %s" % (i, type(v)))
 
-    def get_strs(self, i) -> Sequence[str]:
+    def get_strs(self, i: int) -> Sequence[str]:
         v = self.data[i]
         if isinstance(v, Sequence):
             return tuple(str(x) for x in v)
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
-    def get_ints(self, i) -> Sequence[int]:
+    def get_ints(self, i: int) -> Sequence[int]:
         v = self.data[i]
         if isinstance(v, Sequence):
             return tuple(int(x) for x in v)
