@@ -412,10 +412,7 @@ def use_systemd_run(s) -> bool:
     except TimeoutExpired:  # pragma: no cover
         r = None
     if r is None:
-        try:
-            proc.terminate()
-        except Exception:
-            pass
+        noerr(proc.terminate)
         try:
             proc.communicate(timeout=1)
         except TimeoutExpired:  # pragma: no cover
@@ -2383,10 +2380,7 @@ def make_client(opts):
 
     except Exception:
         if progress_process:
-            try:
-                progress_process.terminate()
-            except Exception:
-                pass
+            noerr(progress_process.terminate)
         raise
     return app
 
