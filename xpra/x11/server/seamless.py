@@ -1251,14 +1251,14 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         log("overlaywin: %s", overlaywin.get_geometry())
         cr = overlaywin.cairo_create()
 
-        def fill_grey_rect(shade: tuple[float, float, float], x: int, y: int, w: int, h: int):
+        def fill_grey_rect(shade: tuple[float, float, float], x: int, y: int, w: int, h: int) -> None:
             log("paint_grey_rect%s", (shade, x, y, w, h))
             cr.new_path()
             cr.set_source_rgb(*shade)
             cr.rectangle(x, y, w, h)
             cr.fill()
 
-        def paint_grey_rect(shade: tuple[float, float, float], x: int, y: int, w: int, h: int):
+        def paint_grey_rect(shade: tuple[float, float, float], x: int, y: int, w: int, h: int) -> None:
             log("paint_grey_rect%s", (shade, x, y, w, h))
             cr.new_path()
             cr.set_line_width(2)
@@ -1319,8 +1319,9 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 cr.stroke_preserve()
                 cr.set_source_rgb(0.3, 0.4, 0.6)
                 cr.fill()
+        return False
 
-    def paint_root_overlay_windows(self, cr, windows: Sequence):
+    def paint_root_overlay_windows(self, cr, windows: Sequence) -> None:
         log("paint_root_overlay_windows(%s) has_focus=%s, has_grab=%s",
             windows, self._has_focus, self._has_grab)
         for window in windows:
@@ -1357,7 +1358,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     cr.fill()
                 else:
                     cr.stroke()
-        return False
 
     def do_make_screenshot_packet(self) -> Packet:
         log("grabbing screenshot")

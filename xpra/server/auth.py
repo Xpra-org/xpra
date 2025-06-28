@@ -154,6 +154,7 @@ class AuthenticatedServer(StubServerMixin):
         digest_modes = c.strtupleget("digest", ("hmac",))
         salt_digest_modes = c.strtupleget("salt-digest", ("xor",))
         # client may have requested encryption:
+        auth_caps: dict[str, Any] = {}
         try:
             from xpra.server.subsystem.encryption import setup_encryption
             auth_caps = setup_encryption(proto, c)
@@ -161,7 +162,6 @@ class AuthenticatedServer(StubServerMixin):
                 return
         except ImportError as e:
             log(f"unable to call setup_encryption: {e}")
-            auth_caps = {}
 
         def send_fake_challenge() -> None:
             # fake challenge so the client will send the real hello:

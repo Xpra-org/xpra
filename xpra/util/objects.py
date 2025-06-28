@@ -2,7 +2,7 @@
 # Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+from collections.abc import Callable
 from typing import Any
 
 from xpra.util.str_fn import strtobytes, bytestostr
@@ -206,7 +206,7 @@ class typedict(dict):
         v = self._listget(k, default_value, item_type, min_items, max_items)
         return tuple(v or ())
 
-    def _listget(self, k: str, default_value, item_type=None,
+    def _listget(self, k: str, default_value, item_type: Callable | None = None,
                  min_items: int | None = None, max_items: int | None = None) -> list[Any] | tuple[Any, ...]:
         v = self.get(k)
         if v is None:
@@ -236,7 +236,7 @@ class typedict(dict):
                     if callable(item_type):
                         try:
                             return item_type(x)
-                        except Exception:
+                        except (ValueError, TypeError):
                             self._warn("invalid item type for %s %s: %s cannot be used with %s",
                                        type(v), k, item_type, type(x))
                             return default_value
