@@ -1015,14 +1015,20 @@ fi
    `named-pipe` connection errors
    enable mDNS by default on Fedora
 - Major:
-   missing ssh mDNS records with zeroconf
    pam module errors
    xvfb fails to resize after a while
    always update desktop geometry attributes on resize
    client should run even if local sockets cannot be created
    error code path returns invalid type
    xpra supports 'show-desktop', so expose the feature
+   nvidia kernel module version parsing
+   client nvdec / nvjpeg decoding error should disable the decoder
+- Network:
    don't use IPv6 if not supported
+   client should run even if local sockets cannot be created
+   missing ssh mDNS records with zeroconf
+   missing mDNS records with zeroconf
+   override option for ssh port number
 - Minor:
    strict type in `webp` encoder
    show mdns records as strings
@@ -1031,6 +1037,10 @@ fi
    starting servers with remote display can error out
 - Cosmetic:
    `csc-type` debug metadata may be overwritten
+   expose GPU attributes as strings
+   unused / confusing attribute
+   return type consistency
+   import Cython type referenced
 
 * Sat May 31 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:

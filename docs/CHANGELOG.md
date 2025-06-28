@@ -7,22 +7,32 @@
     * [`named-pipe` connection errors](https://github.com/Xpra-org/xpra/commit/344222922f78694123eb05839c7ecf19de5556d8)
     * [enable mDNS by default on Fedora](https://github.com/Xpra-org/xpra/commit/1b76f88d9558a684290cfc3a11505a15a9740f3d)
 * Major:
-    * [missing ssh mDNS records with zeroconf](https://github.com/Xpra-org/xpra/commit/4f7f7192359a09d6bb3a5a76df9b401920a7c2f8)
     * [pam module errors](https://github.com/Xpra-org/xpra/commit/36da181aae942407b17f658abb75b4a62b197691)
     * [xvfb fails to resize after a while](https://github.com/Xpra-org/xpra/commit/73fd712bb9fffc033b705c61b4ca408f42e4c8c6)
     * [always update desktop geometry attributes on resize](https://github.com/Xpra-org/xpra/commit/95902db90bc9f742f19c33c210f4d3d2c9fde905)
-    * [client should run even if local sockets cannot be created](https://github.com/Xpra-org/xpra/commit/a34447d5f7e9ad9f7cf9f81ed8ab84b23a0fd521)
     * [error code path returns invalid type](https://github.com/Xpra-org/xpra/commit/3817e06344339a9789c6a780a747987a2af94df3)
     * [xpra supports 'show-desktop', so expose the feature](https://github.com/Xpra-org/xpra/commit/5a4cbc4cd7f4a0af41fd2c00f7cd889fe84e04f1)
+    * [nvidia kernel module version parsing](https://github.com/Xpra-org/xpra/commit/006bed31aa8ab51f9ef72ce4da54d6235c068e81)
+    * [client nvdec / nvjpeg decoding error should disable the decoder](https://github.com/Xpra-org/xpra/commit/2509d373f1c3f45371c113a66acfee3255ce73e4)
+* Network:
     * [don't use IPv6 if not supported](https://github.com/Xpra-org/xpra/commit/914d13b9ce29e6f6b8b56d3cd8651edd0f2a811c)
+    * [client should run even if local sockets cannot be created](https://github.com/Xpra-org/xpra/commit/a34447d5f7e9ad9f7cf9f81ed8ab84b23a0fd521)
+    * [missing ssh mDNS records with zeroconf](https://github.com/Xpra-org/xpra/commit/4f7f7192359a09d6bb3a5a76df9b401920a7c2f8)
+    * [missing mDNS records with zeroconf](https://github.com/Xpra-org/xpra/commit/911e8ce631a0f091e63e431f9603ce97b2cd107e)
+    * [override option for ssh port number](https://github.com/Xpra-org/xpra/commit/a77ddd67e8b073b40026384f6650a0dcb40baff5)
 * Minor:
     * [strict type in `webp` encoder](https://github.com/Xpra-org/xpra/commit/c278cf0965889acfbc3ad4c477202ee34d977832)
     * [show mdns records as strings](https://github.com/Xpra-org/xpra/commit/2ffed9301e9a8e80d6e8922c6997daecc2d0f86c)
     * [can run `xpra configure` as root](https://github.com/Xpra-org/xpra/commit/eaeb94f9012333049a4aade310871c00c78d3ffb)
     * [clean notification temporary files more aggressively](https://github.com/Xpra-org/xpra/commit/b28a846c1db2d23af06a15e2036fc8f491559c2b)
     * [starting servers with remote display can error out](https://github.com/Xpra-org/xpra/commit/1e2e8addfd985414251f00de21a6a5451f429d77)
+    * [system trays can use regular encodings](https://github.com/Xpra-org/xpra/commit/7f70ce62b7a4fa8494c7fbe3c13661ad04089097)
 * Cosmetic:
     * [`csc-type` debug metadata may be overwritten](https://github.com/Xpra-org/xpra/commit/7909400c952735d6cf4642eb59ec70e45d30a73c)
+    * [expose GPU attributes as strings](https://github.com/Xpra-org/xpra/commit/f06f0ce26a8afd7faf373d962bb30d7f17183dab)
+    * [unused / confusing attribute](https://github.com/Xpra-org/xpra/commit/cca2e2a18f1e41d31040bea1e9030e168c726535)
+    * [return type consistency](https://github.com/Xpra-org/xpra/commit/04aacedb4bcd4e4fbef9f7f2f0cb1aae4ca8388c)
+    * [import Cython type referenced](https://github.com/Xpra-org/xpra/commit/dd763ccda00965c81d0ff276a914af855e299789)
 
 ## [6.3.1] 2025-05-31
 * Platforms, build and packaging:
