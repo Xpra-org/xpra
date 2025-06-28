@@ -283,7 +283,7 @@ Recommends: gstreamer1.0-tools
 #                  ^^ removesilence
         ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
-        ,xpra-audio-server
+Suggests: xpra-audio-server
 Description: Components required for xpra audio forwarding,
  used by both client and servers.
 
