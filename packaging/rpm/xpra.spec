@@ -196,12 +196,7 @@ Suggests:			%{python3}-ldap
 Suggests:			%{python3}-ldap3
 Suggests:           %{python3}-cpuinfo
 Recommends:			%{python3}-aioquic
-%if 0%{?el9}%{?el10}
-Recommends:			%{python3}-avahi
-%endif
-%if 0%{?fedora}
 Recommends:			%{python3}-zeroconf
-%endif
 BuildRequires:		pkgconfig(liblz4)
 Requires:			lz4-libs
 BuildRequires:		xxhash-devel

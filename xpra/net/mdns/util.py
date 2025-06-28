@@ -4,21 +4,9 @@
 # later version. See the file COPYING for details.
 
 import socket
-from typing import Callable, Any
 from collections.abc import Sequence
 
 from xpra.os_util import OSX, WIN32
-from xpra.util.env import envbool
-
-
-def import_zeroconf() -> tuple[Any, Callable]:
-    from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers, get_interface_index
-    return ZeroconfPublishers, get_interface_index
-
-
-def import_avahi() -> tuple[Any, Callable]:
-    from xpra.net.mdns.avahi_publisher import AvahiPublishers, get_interface_index
-    return AvahiPublishers, get_interface_index
 
 
 MDNS_WARNING = False
@@ -38,25 +26,12 @@ def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
     except ImportError as e:
         log(f"mdns support is not installed: {e}")
         return ()
-    PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", True)
-    imports = (import_zeroconf, import_avahi)
-    if not PREFER_ZEROCONF:
-        imports = (import_avahi, import_zeroconf)
-    MDNSPublishers = get_interface_index = None
-    exceptions = []
-    for i in imports:
-        try:
-            MDNSPublishers, get_interface_index = i()
-            break
-        except ImportError as e:
-            log("mdns import failure", exc_info=True)
-            exceptions.append(e)
-    if not MDNSPublishers or not get_interface_index:
+    try:
+        from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers, get_interface_index
+    except ImportError:
         MDNS_WARNING = True
-        log.warn("Warning: failed to load the mdns publishers")
-        for exc in exceptions:
-            log.warn(" %s", str(exc) or type(exc))
-        log.warn(" install 'python-avahi', 'python-zeroconf'")
+        log.warn("Warning: failed to load the mdns module")
+        log.warn(" install 'python-zeroconf'")
         log.warn(" or use the 'mdns=no' option")
         return ()
     d = dict(text_dict or {})
@@ -87,5 +62,5 @@ def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
             sn += f" ({mode_str})"
         listen = ((host, port),)
         index += 1
-        aps.append(MDNSPublishers(listen, sn, service_type=service_type, text_dict=d))
+        aps.append(ZeroconfPublishers(listen, sn, service_type=service_type, text_dict=d))
     return aps

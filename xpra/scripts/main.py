@@ -3819,14 +3819,9 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
         error_cb("too many arguments for `list-mdns` mode")
     from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
     try:
-        from xpra.net.mdns.avahi_listener import Avahilistener
-        listener_class: type = Avahilistener
+        from xpra.net.mdns.zeroconf_listener import ZeroconfListener
     except ImportError:
-        try:
-            from xpra.net.mdns.zeroconf_listener import ZeroconfListener
-            listener_class = ZeroconfListener
-        except ImportError:
-            error_cb("sorry, 'list-mdns' requires an mdns module")
+        error_cb("'list-mdns' requires python-zeroconf")
     from xpra.dbus.common import loop_init
     GLib = gi_import("GLib")
     loop_init()
@@ -3878,7 +3873,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
     listeners = []
 
     def add(service_type: str) -> None:
-        listener = listener_class(service_type, mdns_add=mdns_add)
+        listener = ZeroconfListener(service_type, mdns_add=mdns_add)
         listeners.append(listener)
 
         def start() -> None:
