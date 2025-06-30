@@ -3647,7 +3647,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
                     print(" run clean-displays to terminate it")
                 print(" cowardly refusing to clean the session")
                 continue
-        clean_session_dir(display, session_dir)
+        clean_session_dir(session_dir)
         # remove the other sockets:
         socket_paths = dotxpra.socket_paths(check_uid=uid, matching_display=display)
         for filename in socket_paths:
@@ -3682,14 +3682,22 @@ def get_xvfb_pid(display: str, session_dir: str) -> int:
     return load_session_pid("xvfb.pid")
 
 
-def clean_session_dir(display: str, session_dir: str) -> bool:
+def clean_session_dir(session_dir: str) -> bool:
     def load_session_pid(pidfile: str) -> int:
         return load_pid(os.path.join(session_dir, pidfile))
+
+    def pidexists(pid: int):
+        if pid <= 0:
+            return False
+        if not os.path.exists("/proc/%s" % os.getpid()):
+            return True
+        return os.path.exists("/proc/%s" % pid)
 
     # print("session_dir: %s : %s" % (session_dir, state))
     for pid_filename in ("dbus.pid", "pulseaudio.pid",):
         pid = load_session_pid(pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
-        kill_pid(pid, pid_filename.split(".")[0])
+        if pidexists(pid):
+            kill_pid(pid, pid_filename.split(".")[0])
     try:
         session_files = os.listdir(session_dir)
     except OSError as e:
@@ -3702,16 +3710,35 @@ def clean_session_dir(display: str, session_dir: str) -> bool:
         "server.env", "server.pid", "server.log",
         "socket", "xauthority", "Xorg.log", "xvfb.pid",
         "pulseaudio.pid",
+        "ibus-daemon.pid",
     ]
     KNOWN_SERVER_DIRS = [
         "pulse",
         "ssh",
+        "tmp",
     ]
     ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
     unknown_files = [x for x in session_files if x not in ALL_KNOWN]
-    if unknown_files:
+    remaining = unknown_files
+    if unknown_files and POSIX and os.path.exists("/proc/%s" % os.getpid()):
+        # try to ignore pidfiles for dead processes:
+        remaining = []
+        for fname in unknown_files:
+            if fname.endswith(".pid"):
+                pid = load_session_pid(fname)
+                if not pidexists(pid):
+                    # safe to remove:
+                    os.unlink(os.path.join(session_dir, fname))
+                    continue
+                from xpra.util.io import load_binary_file
+                command = (load_binary_file("/proc/%i/cmdline" % pid) or b"").decode() or "unknown"
+                error("Error: %r is still running" % (command, ))
+                error(" with pid %i stored in %s" % (pid, fname))
+                return False
+            remaining.append(fname)
+    if remaining:
         error("Error: found some unexpected session files:")
-        error(" " + csv(unknown_files))
+        error(" " + csv(remaining))
         error(f" the session directory {session_dir!r} has not been removed")
         return False
     for x in session_files:
@@ -3719,15 +3746,17 @@ def clean_session_dir(display: str, session_dir: str) -> bool:
         try:
             if x in KNOWN_SERVER_FILES:
                 os.unlink(pathname)
-            else:
-                assert x in KNOWN_SERVER_DIRS
+            elif x in KNOWN_SERVER_DIRS:
                 rmtree(pathname)
+            else:
+                error(f"Error: unexpected session file {x!r}")
+                return False
         except OSError as e:
             error(f"Error removing {pathname!r}: {e}")
     try:
         os.rmdir(session_dir)
     except OSError as rme:
-        error(f"Error session directory {session_dir!r}: {rme}")
+        error(f"Error removing session directory {session_dir!r}: {rme}")
         return False
     return True
 
