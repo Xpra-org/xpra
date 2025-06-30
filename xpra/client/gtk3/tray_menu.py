@@ -20,7 +20,7 @@ from xpra.client.gtk3.menu_helper import (
     SPEED_OPTIONS, MIN_SPEED_OPTIONS,
     get_appimage,
     ll, set_sensitive, ensure_item_selected,
-    make_encodingsmenu, make_min_auto_menu,
+    make_encodingsmenu, MinAutoMenu,
 )
 from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
@@ -807,11 +807,8 @@ class GTKTrayMenu(MenuHelper):
         return self.quality
 
     def make_qualitysubmenu(self) -> Gtk.ImageMenuItem:
-        quality_submenu = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
-                                             self.get_min_quality, self.get_quality,
-                                             self.set_min_quality, self.set_quality)
-        quality_submenu.show_all()
-        return quality_submenu
+        return MinAutoMenu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
+                           self.get_min_quality, self.get_quality, self.set_min_quality, self.set_quality)
 
     def get_min_quality(self) -> int:
         return self.client.min_quality
@@ -862,8 +859,8 @@ class GTKTrayMenu(MenuHelper):
         return self.speed
 
     def make_speedsubmenu(self) -> Gtk.ImageMenuItem:
-        return make_min_auto_menu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
-                                  self.get_min_speed, self.get_speed, self.set_min_speed, self.set_speed)
+        return MinAutoMenu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
+                           self.get_min_speed, self.get_speed, self.set_min_speed, self.set_speed)
 
     def get_min_speed(self) -> int:
         return self.client.min_speed

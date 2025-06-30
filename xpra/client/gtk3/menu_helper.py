@@ -192,111 +192,117 @@ def ensure_item_selected(submenu, item, recurse=True):
     return item
 
 
-def make_min_auto_menu(title, min_options, options,
-                       get_current_min_value,
-                       get_current_value,
-                       set_min_value_cb,
-                       set_value_cb):
-    # note: we must keep references to the parameters on the submenu
-    # (closures and gtk callbacks don't mix so well!)
-    submenu = Gtk.Menu()
-    submenu.get_current_min_value = get_current_min_value
-    submenu.get_current_value = get_current_value
-    submenu.set_min_value_cb = set_min_value_cb
-    submenu.set_value_cb = set_value_cb
-    fstitle = Gtk.MenuItem()
-    fstitle.set_label(f"Fixed {title}")
-    set_sensitive(fstitle, False)
-    submenu.append(fstitle)
-    submenu.menu_items = {}
-    submenu.min_menu_items = {}
-    submenu.updating = False
+class MinAutoMenu(Gtk.Menu):
+    def __init__(self, title: str, min_options: dict[int, str], options: dict[int, str],
+                 get_current_min_value: Callable[[], int],
+                 get_current_value: Callable[[], int],
+                 set_min_value_cb: Callable[[int], None],
+                 set_value_cb: Callable[[int], None]):
+        super().__init__()
+        self.title = title
+        self.min_options = min_options
+        self.options = options
+        self.get_current_min_value = get_current_min_value
+        self.get_current_value = get_current_value
+        self.set_min_value_cb = set_min_value_cb
+        self.set_value_cb = set_value_cb
+        self.updating = False
+        self.found_match = False
 
-    def populate_menu(options, value, set_fn):
-        found_match = False
-        items = {}
+        self.menu_items = self.gen_menuitems(options, get_current_value(), self.value_selected)
+        mv = -1
+        if get_current_value() <= 0:
+            mv = self.get_current_min_value()
+        self.min_menu_items = self.gen_menuitems(min_options, mv, self.minvalue_selected)
+
+        fstitle = Gtk.MenuItem()
+        fstitle.set_label(f"Fixed {title}")
+        set_sensitive(fstitle, False)
+        self.append(fstitle)
+        self.append(Gtk.SeparatorMenuItem())
+        for qi in self.menu_items.values():
+            self.append(qi)
+        mstitle = Gtk.MenuItem()
+        mstitle.set_label(f"Minimum {title}:")
+        set_sensitive(mstitle, False)
+        self.append(mstitle)
+        for qi in self.min_menu_items.values():
+            self.append(qi)
+
+        self.show_all()
+
+    def gen_menuitems(self, options: dict[int, str],
+                      value: int | None,
+                      menu_selected_cb: Callable[[Gtk.Menu], None]
+                      ) -> dict[int, Gtk.CheckMenuItem]:
+        items: dict[int, Gtk.CheckMenuItem] = {}
         if value and value > 0 and value not in options:
             options[value] = f"{value}%"
         for s in sorted(options.keys()):
             t = options.get(s)
             qi = Gtk.CheckMenuItem(label=t)
+            qi.connect("activate", menu_selected_cb)
             qi.set_draw_as_radio(True)
             candidate_match = s >= max(0, value)
-            qi.set_active(not found_match and candidate_match)
-            found_match |= candidate_match
-            qi.connect('activate', set_fn, submenu)
+            qi.set_active(not self.found_match and candidate_match)
+            self.found_match |= candidate_match
             if s > 0:
                 qi.set_tooltip_text(f"{s}%")
-            submenu.append(qi)
             items[s] = qi
         return items
 
-    def set_value(item, ss) -> None:
-        if not item.get_active() or submenu.updating:
+    def value_selected(self, item: Gtk.CheckMenuItem) -> None:
+        if not item.get_active() or self.updating:
             return
         try:
-            submenu.updating = True
+            self.updating = True
             # user selected a new value from the menu:
             s = -1
-            for ts, tl in options.items():
+            for ts, tl in self.options.items():
                 if tl == item.get_label():
                     s = ts
                     break
-            if s >= 0 and s != ss.get_current_value():
-                log("setting %s to %s", title, s)
-                ss.set_value_cb(s)
+            if s >= 0 and s != self.get_current_value():
+                log(f"setting {self.title} to {s}")
+                self.set_value_cb(s)
                 # deselect other items:
-                for x in ss.menu_items.values():
+                for x in self.menu_items.values():
                     if x != item:
                         x.set_active(False)
                 # min is only relevant in auto-mode:
                 if s != 0:
-                    for v, x in ss.min_menu_items.items():
+                    for v, x in self.min_menu_items.items():
                         x.set_active(v == 0)
         finally:
-            submenu.updating = False
+            self.updating = False
 
-    submenu.menu_items.update(populate_menu(options, get_current_value(), set_value))
-    submenu.append(Gtk.SeparatorMenuItem())
-    mstitle = Gtk.MenuItem()
-    mstitle.set_label(f"Minimum {title}:")
-    set_sensitive(mstitle, False)
-    submenu.append(mstitle)
-
-    def set_min_value(item, ss) -> None:
-        if not item.get_active() or submenu.updating:
+    def minvalue_selected(self, item: Gtk.CheckMenuItem) -> None:
+        if not item.get_active() or self.updating:
             return
         try:
-            submenu.updating = True
+            self.updating = True
             # user selected a new min-value from the menu:
             s = -1
-            for ts, tl in min_options.items():
+            for ts, tl in self.min_options.items():
                 if tl == item.get_label():
                     s = ts
                     break
-            if s >= 0 and s != ss.get_current_min_value():
-                log(f"setting min-{title} to {s}")
-                ss.set_min_value_cb(s)
+            if s >= 0 and s != self.get_current_min_value():
+                log(f"setting min-{self.title} to {s}")
+                self.set_min_value_cb(s)
                 # deselect other min items:
-                for x in ss.min_menu_items.values():
+                for x in self.min_menu_items.values():
                     if x != item:
                         x.set_active(False)
                 # min requires auto-mode:
-                for x in ss.menu_items.values():
+                for x in self.menu_items.values():
                     if x.get_label() == "Auto":
                         if not x.get_active():
                             x.activate()
                     else:
                         x.set_active(False)
         finally:
-            submenu.updating = False
-
-    mv = -1
-    if get_current_value() <= 0:
-        mv = get_current_min_value()
-    submenu.min_menu_items.update(populate_menu(min_options, mv, set_min_value))
-    submenu.show_all()
-    return submenu
+            self.updating = False
 
 
 def make_encodingsmenu(get_current_encoding: Callable, set_encoding: Callable,
