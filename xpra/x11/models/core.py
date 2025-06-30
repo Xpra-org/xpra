@@ -722,6 +722,14 @@ class CoreX11WindowModel(WindowModelStub):
         metalog("_NET_WM_OPAQUE_REGION(%s)=%s (OPAQUE_REGION=%s)", v, rectangles, OPAQUE_REGION)
         self._updateprop("opaque-region", tuple(rectangles))
 
+    def _handle_user_time_window(self) -> None:
+        xid = self.prop_get("_NET_WM_USER_TIME_WINDOW", "window") or -1
+        log("_NET_WM_USER_TIME_WINDOW=%#x", xid)
+        time = -1
+        if xid > 0:
+            time = prop_get(xid, "_NET_WM_USER_TIME", "u32") or -1
+        log("_NET_WM_USER_TIME(%#x)=%i", xid, time)
+
     # these handlers must not generate X11 errors (must use XSync)
     _x11_property_handlers: dict[str, Callable] = {
         "_NET_WM_PID": _handle_pid_change,
@@ -733,6 +741,7 @@ class CoreX11WindowModel(WindowModelStub):
         "WM_COMMAND": _handle_command_change,
         "WM_CLASS": _handle_class_change,
         "_NET_WM_OPAQUE_REGION": _handle_opaque_region_change,
+        "_NET_WM_USER_TIME_WINDOW": _handle_user_time_window,
     }
 
     #########################################
