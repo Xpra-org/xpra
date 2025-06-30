@@ -42,7 +42,7 @@ def make_window():
         X11Core.UngrabPointer()
         X11Window = X11WindowBindings()
         X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",
-                                    x_root, y_root, direction, button, source_indication)
+                                    int(x_root), int(y_root), int(direction), button, source_indication)
 
     def cancel():
         initiate(0, 0, MoveResize.CANCEL, 0, 1)
