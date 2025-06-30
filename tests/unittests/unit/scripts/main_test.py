@@ -23,11 +23,10 @@ from xpra.scripts.main import (
     nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
     isdisplaytype,
     check_display,
-    get_host_target_string,
     find_session_by_name,
-    connect_to,
     find_mode_pos,
 )
+from xpra.net.connect import connect_to, get_host_target_string
 
 
 def _get_test_socket_dir():

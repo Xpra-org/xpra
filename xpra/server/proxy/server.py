@@ -30,7 +30,8 @@ from xpra.auth.common import SessionData
 from xpra.util.child_reaper import get_child_reaper
 from xpra.scripts.parsing import str_to_bool, MODE_ALIAS
 from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
-from xpra.scripts.main import parse_display_name, connect_to, start_server_subprocess
+from xpra.scripts.main import parse_display_name, start_server_subprocess
+from xpra.net.connect import connect_to
 from xpra.util.thread import start_thread
 from xpra.log import Logger
 

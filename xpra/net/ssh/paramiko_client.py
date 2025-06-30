@@ -11,7 +11,8 @@ from time import sleep, monotonic
 from typing import Any, NoReturn
 from collections.abc import Sequence
 
-from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
+from xpra.scripts.main import InitException, InitExit, shellquote
+from xpra.net.connect import host_target_string
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
 from xpra.scripts.config import str_to_bool, TRUE_OPTIONS

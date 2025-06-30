@@ -17,7 +17,7 @@ from xpra.util.io import is_socket, load_binary_file
 from xpra.util.env import envint, osexpand
 from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
-from xpra.scripts.main import connect_to
+from xpra.net.connect import connect_to
 from xpra.scripts.parsing import parse_display_name
 from xpra.scripts.config import InitExit, make_defaults_struct
 from xpra.net.common import PacketElement, Packet

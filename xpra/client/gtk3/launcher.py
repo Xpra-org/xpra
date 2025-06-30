@@ -35,9 +35,10 @@ from xpra.util.thread import start_thread
 from xpra.gtk.dialogs.about import about
 from xpra.gtk.dialogs.util import hb_button
 from xpra.scripts.main import (
-    connect_to, make_client, bypass_no_gtk,
+    make_client, bypass_no_gtk,
     configure_network, configure_env, configure_logging,
 )
+from xpra.net.connect import connect_to
 from xpra.common import noop
 from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args, get_ssl_options
 from xpra.exit_codes import RETRY_EXIT_CODES, ExitCode, ExitValue, exit_str
