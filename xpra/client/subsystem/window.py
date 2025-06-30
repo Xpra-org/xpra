@@ -1220,6 +1220,7 @@ class WindowClient(StubClientMixin):
         return self._process_new_common(packet, True)
 
     def _process_initiate_moveresize(self, packet: Packet) -> None:
+        geomlog("%s", packet)
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         if window:
