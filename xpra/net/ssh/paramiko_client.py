@@ -441,7 +441,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             log("ssh proxy command connect to %s", (host, port, sock))
             ssh_client.connect(host, port, sock=sock)
             transport = ssh_client.get_transport()
-            do_connect_to(transport, host,
+            do_connect_to(transport, host, port,
                           username, password,
                           host_config,
                           proxy_keys,
@@ -468,14 +468,14 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         sock = socket_connect(proxy_host, proxy_port)
         if not sock:
             fail(f"SSH proxy transport failed to connect to {proxy_host}:{proxy_port}")
-        middle_transport = do_connect(sock, proxy_host,
+        middle_transport = do_connect(sock, proxy_host, proxy_port,
                                       proxy_username, proxy_password,
                                       ssh_lookup(host) or ssh_lookup("*"),
                                       proxy_keys,
                                       paramiko_config)
         log("Opening proxy channel")
         chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
-        transport = do_connect(chan_to_middle, host,
+        transport = do_connect(chan_to_middle, host, port,
                                username, password,
                                host_config,
                                keys,
@@ -504,7 +504,8 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         peername = sock.getpeername()
         log(f"paramiko socket_connect: sockname={sockname}, peername={peername}")
         try:
-            transport = do_connect(sock, host, username, password,
+            transport = do_connect(sock, host, port,
+                                   username, password,
                                    host_config,
                                    keys,
                                    paramiko_config,
@@ -599,7 +600,8 @@ class IAuthHandler:
         return p
 
 
-def do_connect(chan, host: str, username: str, password: str,
+def do_connect(chan, host: str, port: int,
+               username: str, password: str,
                host_config: dict, keyfiles: list[str], paramiko_config: dict, auth_modes=AUTH_MODES):
     transport = Transport(chan)
     transport.use_compression(False)
@@ -609,13 +611,16 @@ def do_connect(chan, host: str, username: str, password: str,
     except SSHException as e:
         log("SSH negotiation failed", exc_info=True)
         raise InitExit(ExitCode.SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
-    return do_connect_to(transport, host, username, password,
+    return do_connect_to(transport, host, port,
+                         username, password,
                          host_config, keyfiles, paramiko_config, auth_modes)
 
 
-def do_connect_to(transport, host: str, username: str, password: str,
+def do_connect_to(transport, host: str, port: int,
+                  username: str, password: str,
                   host_config, keyfiles: Sequence[str], paramiko_config: dict, auth_modes=AUTH_MODES):
-    AuthenticationManager(transport, host, username, password, host_config, keyfiles, paramiko_config, auth_modes).run()
+    AuthenticationManager(transport, host, port,
+                          username, password, host_config, keyfiles, paramiko_config, auth_modes).run()
     return transport
 
 
@@ -758,11 +763,12 @@ def save_host_key(host_keys, host_keys_filename: str) -> None:
 
 
 class AuthenticationManager:
-    def __init__(self, transport, host: str, username: str, password: str,
+    def __init__(self, transport, host: str, port: int, username: str, password: str,
                  host_config, keyfiles: Sequence[str], paramiko_config: dict, auth_modes=AUTH_MODES):
         log("AuthenticationManager%s", (transport, host, username, "..", host_config, keyfiles, paramiko_config))
         self.transport = transport
         self.host = host
+        self.port = port
         self.username = username
         self.password = password
         self.host_config = host_config
@@ -791,7 +797,7 @@ class AuthenticationManager:
         verifyhostkeydns = self.configbool("verifyhostkeydns", True)
         stricthostkeychecking = self.configbool("stricthostkeychecking", VERIFY_STRICT)
         addkey = self.configbool("addkey", ADD_KEY)
-        port = self.configint("port", 22)
+        port = self.configint("port", self.port)
         host = self.host
         if port != 22:
             host = f"[{host}]:{port}"  # this is how the host is stored in known_hosts for non-standard ports
