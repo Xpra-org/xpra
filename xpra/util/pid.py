@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import signal
 
 from xpra.os_util import POSIX
 from xpra.log import Logger
@@ -80,3 +81,13 @@ def rm_pidfile(pidfile: str, inode: int) -> bool:
         log.warn(f"Warning: failed to remove pidfile {pidfile!r}")
         log.warn(f" {e!r}")
         return False
+
+
+def kill_pid(pid: int, procname: str, sig=signal.SIGTERM) -> None:
+    if pid:
+        try:
+            if pid and pid > 1 and pid != os.getpid():
+                os.kill(pid, sig)
+        except OSError as e:
+            log = Logger("util")
+            log.error(f"Error sending {sig!r} signal to {procname!r} pid {pid} {e}")

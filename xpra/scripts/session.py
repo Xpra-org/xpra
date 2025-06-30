@@ -5,8 +5,10 @@
 
 import os
 import glob
+from shutil import rmtree
 
 from xpra.os_util import POSIX, getuid
+from xpra.util.child_reaper import get_child_reaper
 from xpra.util.env import osexpand, envbool
 from xpra.util.io import load_binary_file
 
@@ -82,35 +84,126 @@ def save_session_file(filename: str, contents: str | bytes, uid: int = -1, gid: 
     return path
 
 
-def rm_session_dir(warn: bool = True) -> None:
+def rm_session_dir() -> None:
     session_dir = os.environ.get("XPRA_SESSION_DIR", "")
     if not session_dir or not os.path.exists(session_dir):
         return
+    clean_session_dir(session_dir)
+
+
+def pidexists(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+        return os.path.exists(f"/proc/{pid}")
+    except OSError:
+        return False
+
+
+def clean_session_dir(session_dir: str) -> bool:
     from xpra.log import Logger
     log = Logger("server")
+
+    pidmap = clean_pidfiles(session_dir)
+    if pidmap:
+        log.error(f"Error: cannot remove the session directory {session_dir!r},")
+        log.error(f" {len(pidmap)} commands are still running:")
+        for fname, (pid, command) in pidmap.items():
+            log.error(f"  * {command!r} with pid {pid} recorded in {fname!r}")
+        return False
+
     try:
         session_files = os.listdir(session_dir)
     except OSError as e:
-        log("os.listdir(%s)", session_dir, exc_info=True)
-        if warn:
-            log.error(f"Error: cannot access {session_dir!r}")
-            log.estr(e)
-        return
-    if session_files:
-        if warn:
-            log.info(f"session directory {session_dir!r} was not removed")
-            log.info(" because it still contains some files:")
-            for f in session_files:
-                extra = " (directory)" if os.path.isdir(os.path.join(session_dir, f)) else ""
-                log.info(f" {f!r}{extra}")
-        return
+        log.error(f"Error listing session files in {session_dir}: {e}")
+        return False
+
+    # files we can remove safely:
+    KNOWN_SERVER_FILES = [
+        "cmdline", "config",
+        "dbus.env", "dbus.pid",
+        "server.env", "server.pid", "server.log",
+        "socket", "xauthority", "Xorg.log", "xvfb.pid",
+        "pulseaudio.pid",
+        "ibus-daemon.pid",
+    ]
+    KNOWN_SERVER_DIRS = [
+        "pulse",
+        "ssh",
+        "tmp",
+    ]
+    ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
+    unknown_files = [x for x in session_files if x not in ALL_KNOWN]
+    if unknown_files:
+        from xpra.util.str_fn import csv
+        log.error("Error: found some unexpected session files:")
+        log.error(" " + csv(unknown_files))
+        log.error(f" the session directory {session_dir!r} has not been removed")
+        return False
+    for x in session_files:
+        pathname = os.path.join(session_dir, x)
+        try:
+            if x in KNOWN_SERVER_FILES:
+                os.unlink(pathname)
+            elif x in KNOWN_SERVER_DIRS:
+                rmtree(pathname)
+            else:
+                log.error(f"Error: unexpected session file {x!r}")
+                return False
+        except OSError as e:
+            log.error(f"Error removing {pathname!r}: {e}")
     try:
         os.rmdir(session_dir)
-    except OSError as e:
-        log = Logger("server")
-        log(f"rmdir({session_dir})", exc_info=True)
-        log.error(f"Error: failed to remove session directory {session_dir!r}")
-        log.estr(e)
+    except OSError as rme:
+        log.error(f"Error removing session directory {session_dir!r}: {rme}")
+        return False
+    return True
+
+
+def clean_pidfiles(session_dir: str, kill=("dbus.pid", "pulseaudio.pid")) -> dict[str, tuple[int, str]]:
+    # remove any session pid files for which the process has already terminated,
+    # and returns the ones that are still alive.
+    get_child_reaper().poll()
+    try:
+        session_files = os.listdir(session_dir)
+    except OSError:
+        session_files = ()
+    pidmap: dict[str, tuple[int, str]] = {}
+
+    def load_session_pid(pidfile: str) -> int:
+        from xpra.util.pid import load_pid
+        return load_pid(os.path.join(session_dir, pidfile))
+
+    def trydelpidfile(pid: int, fname: str) -> None:
+        if not pidexists(pid):
+            try:
+                os.unlink(os.path.join(session_dir, fname))
+            except FileNotFoundError:
+                pass
+            session_files.remove(fname)
+            pidmap.pop(fname, None)
+
+    for fname in tuple(session_files):
+        if fname.endswith(".pid"):
+            pid = load_session_pid(fname)
+            command = (load_binary_file(f"/proc/{pid}/cmdline") or b"").split(b"\0")[0].decode("latin1")
+            command = command or fname.rsplit(".", 1)[0]
+            pidmap[fname] = (pid, command)
+            if fname in kill:
+                from xpra.util.pid import kill_pid
+                kill_pid(pid, command)
+            trydelpidfile(pid, fname)
+
+    if pidmap:
+        get_child_reaper().poll()
+        # wait a bit and try again:
+        from time import sleep
+        sleep(0.1)
+        get_child_reaper().poll()
+        for fname, (pid, command) in dict(pidmap).items():
+            trydelpidfile(pid, fname)
+    return pidmap
 
 
 def clean_session_files(*filenames) -> None:
@@ -123,7 +216,7 @@ def clean_session_files(*filenames) -> None:
                 clean_session_path(p)
         else:
             clean_session_path(path)
-    rm_session_dir(False)
+    rm_session_dir()
 
 
 def clean_session_path(path) -> None:

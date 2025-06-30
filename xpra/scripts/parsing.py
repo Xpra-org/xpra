@@ -400,7 +400,7 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
     # (should we remove them afterwards?)
     from xpra.net.common import SOCKET_TYPES
 
-    def addschemes(array) -> None:
+    def addschemes(array: Sequence[str]) -> None:
         for x in SOCKET_TYPES:
             if x not in array:
                 array.append(x)

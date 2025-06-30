@@ -20,7 +20,7 @@ from importlib import import_module
 from importlib.util import find_spec
 from collections.abc import Sequence
 
-from shutil import rmtree, which
+from shutil import which
 from subprocess import Popen, PIPE, TimeoutExpired, run
 import signal
 import shlex
@@ -30,7 +30,7 @@ from collections.abc import Callable, Iterable
 
 from xpra.common import SocketState, noerr, noop, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
-from xpra.util.pid import load_pid
+from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr, sort_human
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, OSEnvContext
 from xpra.util.parsing import parse_scaling
@@ -3568,22 +3568,13 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
     return 0
 
 
-def kill_pid(pid: int, procname: str) -> None:
-    if pid:
-        try:
-            if pid and pid > 1 and pid != os.getpid():
-                os.kill(pid, signal.SIGTERM)
-        except OSError as e:
-            error("Error sending SIGTERM signal to %r pid %i %s" % (procname, pid, e))
-
-
 def run_clean(opts, args: Iterable[str]) -> ExitValue:
     no_gtk()
     try:
         uid = int(opts.uid)
     except (ValueError, TypeError):
         uid = getuid()
-    from xpra.scripts.session import get_session_dir
+    from xpra.scripts.session import get_session_dir, clean_session_dir
     clean: dict[str, str] = {}
     if args:
         for display in args:
@@ -3680,85 +3671,6 @@ def get_xvfb_pid(display: str, session_dir: str) -> int:
         return 0
     # so the X11 server may still be running
     return load_session_pid("xvfb.pid")
-
-
-def clean_session_dir(session_dir: str) -> bool:
-    def load_session_pid(pidfile: str) -> int:
-        return load_pid(os.path.join(session_dir, pidfile))
-
-    def pidexists(pid: int):
-        if pid <= 0:
-            return False
-        if not os.path.exists("/proc/%s" % os.getpid()):
-            return True
-        return os.path.exists("/proc/%s" % pid)
-
-    # print("session_dir: %s : %s" % (session_dir, state))
-    for pid_filename in ("dbus.pid", "pulseaudio.pid",):
-        pid = load_session_pid(pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
-        if pidexists(pid):
-            kill_pid(pid, pid_filename.split(".")[0])
-    try:
-        session_files = os.listdir(session_dir)
-    except OSError as e:
-        error(f"Error listing session files in {session_dir}: {e}")
-        return False
-    # files we can remove safely:
-    KNOWN_SERVER_FILES = [
-        "cmdline", "config",
-        "dbus.env", "dbus.pid",
-        "server.env", "server.pid", "server.log",
-        "socket", "xauthority", "Xorg.log", "xvfb.pid",
-        "pulseaudio.pid",
-        "ibus-daemon.pid",
-    ]
-    KNOWN_SERVER_DIRS = [
-        "pulse",
-        "ssh",
-        "tmp",
-    ]
-    ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
-    unknown_files = [x for x in session_files if x not in ALL_KNOWN]
-    remaining = unknown_files
-    if unknown_files and POSIX and os.path.exists("/proc/%s" % os.getpid()):
-        # try to ignore pidfiles for dead processes:
-        remaining = []
-        for fname in unknown_files:
-            if fname.endswith(".pid"):
-                pid = load_session_pid(fname)
-                if not pidexists(pid):
-                    # safe to remove:
-                    os.unlink(os.path.join(session_dir, fname))
-                    continue
-                from xpra.util.io import load_binary_file
-                command = (load_binary_file("/proc/%i/cmdline" % pid) or b"").decode() or "unknown"
-                error("Error: %r is still running" % (command, ))
-                error(" with pid %i stored in %s" % (pid, fname))
-                return False
-            remaining.append(fname)
-    if remaining:
-        error("Error: found some unexpected session files:")
-        error(" " + csv(remaining))
-        error(f" the session directory {session_dir!r} has not been removed")
-        return False
-    for x in session_files:
-        pathname = os.path.join(session_dir, x)
-        try:
-            if x in KNOWN_SERVER_FILES:
-                os.unlink(pathname)
-            elif x in KNOWN_SERVER_DIRS:
-                rmtree(pathname)
-            else:
-                error(f"Error: unexpected session file {x!r}")
-                return False
-        except OSError as e:
-            error(f"Error removing {pathname!r}: {e}")
-    try:
-        os.rmdir(session_dir)
-    except OSError as rme:
-        error(f"Error removing session directory {session_dir!r}: {rme}")
-        return False
-    return True
 
 
 def run_clean_sockets(opts, args) -> ExitValue:
