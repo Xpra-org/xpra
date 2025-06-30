@@ -3635,68 +3635,19 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
             print(f"server process for session {display} is still running with pid {server_pid}")
             print(f" the session directory {session_dir!r} has not been removed")
             continue
-        try:
-            dno = int(display.lstrip(":"))
-        except (ValueError, TypeError):
-            dno = 0
-        else:
-            x11_socket_path = os.path.join(X11_SOCKET_DIR, f"X{dno}")
-            r = stat_display_socket(x11_socket_path)
-            if r:
-                # so the X11 server may still be running
-                xvfb_pid = load_session_pid("xvfb.pid")
-                if xvfb_pid and kill_displays:
-                    kill_pid(xvfb_pid, "xvfb")
-                else:
-                    print(f"X11 server :{dno} is still running ")
-                    if xvfb_pid:
-                        print(" run clean-displays to terminate it")
-                    else:
-                        print(" cowardly refusing to clean the session")
-                    continue
-        # print("session_dir: %s : %s" % (session_dir, state))
-        for pid_filename in ("dbus.pid", "pulseaudio.pid",):
-            pid = load_session_pid(pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
-            kill_pid(pid, pid_filename.split(".")[0])
-        try:
-            session_files = os.listdir(session_dir)
-        except OSError as e:
-            error(f"Error listing session files in {session_dir}: {e}")
-            continue
-        # files we can remove safely:
-        KNOWN_SERVER_FILES = [
-            "cmdline", "config",
-            "dbus.env", "dbus.pid",
-            "server.env", "server.pid", "server.log",
-            "socket", "xauthority", "Xorg.log", "xvfb.pid",
-            "pulseaudio.pid",
-        ]
-        KNOWN_SERVER_DIRS = [
-            "pulse",
-            "ssh",
-        ]
-        ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
-        unknown_files = [x for x in session_files if x not in ALL_KNOWN]
-        if unknown_files:
-            error("Error: found some unexpected session files:")
-            error(" " + csv(unknown_files))
-            error(f" the session directory {session_dir!r} has not been removed")
-            continue
-        for x in session_files:
-            pathname = os.path.join(session_dir, x)
-            try:
-                if x in KNOWN_SERVER_FILES:
-                    os.unlink(pathname)
-                else:
-                    assert x in KNOWN_SERVER_DIRS
-                    rmtree(pathname)
-            except OSError as e:
-                error(f"Error removing {pathname!r}: {e}")
-        try:
-            os.rmdir(session_dir)
-        except OSError as rme:
-            error(f"Error session directory {session_dir!r}: {rme}")
-            continue
+        x11_socket = x11_display_socket(display)
+        x11_live = stat_display_socket(x11_socket)
+        xvfb_pid = get_xvfb_pid(display, session_dir)
+        if x11_live:
+            if xvfb_pid and kill_displays:
+                kill_pid(xvfb_pid, "xvfb")
+            else:
+                print(f"X11 server :{display} is still running ")
+                if xvfb_pid:
+                    print(" run clean-displays to terminate it")
+                print(" cowardly refusing to clean the session")
+                continue
+        clean_session_dir(display, session_dir)
         # remove the other sockets:
         socket_paths = dotxpra.socket_paths(check_uid=uid, matching_display=display)
         for filename in socket_paths:
@@ -3705,6 +3656,80 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
             except OSError as rme:
                 error(f"Error removing socket {filename!r}: {rme}")
     return 0
+
+
+def x11_display_socket(display: str) -> str:
+    try:
+        dno = int(display.lstrip(":"))
+    except (ValueError, TypeError):
+        return ""
+    return os.path.join(X11_SOCKET_DIR, f"X{dno}")
+
+
+def get_xvfb_pid(display: str, session_dir: str) -> int:
+    def load_session_pid(pidfile: str) -> int:
+        return load_pid(os.path.join(session_dir, pidfile))
+
+    try:
+        dno = int(display.lstrip(":"))
+    except (ValueError, TypeError):
+        return 0
+    x11_socket_path = os.path.join(X11_SOCKET_DIR, f"X{dno}")
+    r = stat_display_socket(x11_socket_path)
+    if not r:
+        return 0
+    # so the X11 server may still be running
+    return load_session_pid("xvfb.pid")
+
+
+def clean_session_dir(display: str, session_dir: str) -> bool:
+    def load_session_pid(pidfile: str) -> int:
+        return load_pid(os.path.join(session_dir, pidfile))
+
+    # print("session_dir: %s : %s" % (session_dir, state))
+    for pid_filename in ("dbus.pid", "pulseaudio.pid",):
+        pid = load_session_pid(pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
+        kill_pid(pid, pid_filename.split(".")[0])
+    try:
+        session_files = os.listdir(session_dir)
+    except OSError as e:
+        error(f"Error listing session files in {session_dir}: {e}")
+        return False
+    # files we can remove safely:
+    KNOWN_SERVER_FILES = [
+        "cmdline", "config",
+        "dbus.env", "dbus.pid",
+        "server.env", "server.pid", "server.log",
+        "socket", "xauthority", "Xorg.log", "xvfb.pid",
+        "pulseaudio.pid",
+    ]
+    KNOWN_SERVER_DIRS = [
+        "pulse",
+        "ssh",
+    ]
+    ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
+    unknown_files = [x for x in session_files if x not in ALL_KNOWN]
+    if unknown_files:
+        error("Error: found some unexpected session files:")
+        error(" " + csv(unknown_files))
+        error(f" the session directory {session_dir!r} has not been removed")
+        return False
+    for x in session_files:
+        pathname = os.path.join(session_dir, x)
+        try:
+            if x in KNOWN_SERVER_FILES:
+                os.unlink(pathname)
+            else:
+                assert x in KNOWN_SERVER_DIRS
+                rmtree(pathname)
+        except OSError as e:
+            error(f"Error removing {pathname!r}: {e}")
+    try:
+        os.rmdir(session_dir)
+    except OSError as rme:
+        error(f"Error session directory {session_dir!r}: {rme}")
+        return False
+    return True
 
 
 def run_clean_sockets(opts, args) -> ExitValue:
