@@ -646,7 +646,7 @@ class CoreX11WindowModel(WindowModelStub):
                                 scalar = (ptype,)
                                 value = self.prop_get(name, scalar, ignore_errors=True)
                             metalog("_handle_property_change(%s) value=%s", name, value)
-                            if value:
+                            if value is not None:
                                 self.emit("x11-property-changed", (name, ptype, dformat, value))
                                 return
             except Exception:
@@ -670,21 +670,21 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("wm-pid", pid)
 
     def _handle_client_machine_change(self) -> None:
-        client_machine = self.prop_get("WM_CLIENT_MACHINE", "latin1")
+        client_machine = self.prop_get("WM_CLIENT_MACHINE", "latin1") or ""
         metalog("WM_CLIENT_MACHINE=%s", client_machine)
         self._updateprop("client-machine", client_machine)
 
     def _handle_wm_name_change(self) -> None:
         name = self.prop_get("_NET_WM_NAME", "utf8", True)
         metalog("_NET_WM_NAME=%s", name)
-        if not name:
-            name = self.prop_get("WM_NAME", "latin1", True)
+        if name is None:
+            name = self.prop_get("WM_NAME", "latin1", True) or ""
             metalog("WM_NAME=%s", name)
         if self._updateprop("title", sanestr(str(name) or "")):
             metalog("wm_name changed")
 
     def _handle_role_change(self) -> None:
-        role = self.prop_get("WM_WINDOW_ROLE", "latin1")
+        role = self.prop_get("WM_WINDOW_ROLE", "latin1") or ""
         metalog("WM_WINDOW_ROLE=%s", role)
         self._updateprop("role", role)
 
@@ -709,7 +709,7 @@ class CoreX11WindowModel(WindowModelStub):
         if class_instance:
             class_instance = tuple(v.decode("latin1") for v in class_instance)
         metalog("WM_CLASS=%s", class_instance)
-        self._updateprop("class-instance", class_instance)
+        self._updateprop("class-instance", class_instance or ())
 
     def _handle_opaque_region_change(self) -> None:
         rectangles = []
