@@ -710,6 +710,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         # maybe doing the full keypress (down+up) worked:
                         new_mask = self.get_current_mask()
                         if (modifier in new_mask) == press:
+                            modkeycode = keycode
                             break
                     log("change_mask(%s) %s modifier '%s' using keycode %s, success: %s",
                         info, modifier_list, modifier, keycode, success)
