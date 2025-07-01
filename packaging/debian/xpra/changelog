@@ -4,6 +4,7 @@ xpra (6.3.2-1) UNRELEASED; urgency=low
     exit-with-children not honoured in polling mode (ie: MS Windows)
     `named-pipe` connection errors
     enable mDNS by default on Fedora
+    DEB: only audio server requires pulseaudio
   * Major:
     pam module errors
     xvfb fails to resize after a while
@@ -24,14 +25,16 @@ xpra (6.3.2-1) UNRELEASED; urgency=low
     can run `xpra configure` as root
     clean notification temporary files more aggressively
     starting servers with remote display can error out
+    prevent None values in window models
   * Cosmetic:
     `csc-type` debug metadata may be overwritten
     expose GPU attributes as strings
     unused / confusing attribute
     return type consistency
     import Cython type referenced
+    more correct data type in moveresize example
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 18 Jun 2025 12:33:57 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 01 Jul 2025 16:28:08 +0700
 
 xpra (6.3.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

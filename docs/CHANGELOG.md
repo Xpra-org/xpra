@@ -1,11 +1,12 @@
 # Changelog
 
-## [6.3.2] 2025-06-18
+## [6.3.2] 2025-07-01
 * Platforms, build and packaging:
     * Cython compilation warnings: [in macOS bindings](https://github.com/Xpra-org/xpra/commit/db8e44ee7b5267b2abc829d020c4ac6f3e9ebed7) and [procps library](https://github.com/Xpra-org/xpra/commit/38e598fed94f74a3d727043086aafd152b2d7144)
     * [exit-with-children not honoured in polling mode (ie: MS Windows)](https://github.com/Xpra-org/xpra/commit/c83d08e97c63a78f5e71217d5fdc3ed8605f0280)
     * [`named-pipe` connection errors](https://github.com/Xpra-org/xpra/commit/344222922f78694123eb05839c7ecf19de5556d8)
     * [enable mDNS by default on Fedora](https://github.com/Xpra-org/xpra/commit/1b76f88d9558a684290cfc3a11505a15a9740f3d)
+    * [DEB: only audio server requires pulseaudio](https://github.com/Xpra-org/xpra/commit/b3e15484b38a5df4fee8c4db794aeda02506f4d1)
 * Major:
     * [pam module errors](https://github.com/Xpra-org/xpra/commit/36da181aae942407b17f658abb75b4a62b197691)
     * [xvfb fails to resize after a while](https://github.com/Xpra-org/xpra/commit/73fd712bb9fffc033b705c61b4ca408f42e4c8c6)
@@ -27,12 +28,14 @@
     * [clean notification temporary files more aggressively](https://github.com/Xpra-org/xpra/commit/b28a846c1db2d23af06a15e2036fc8f491559c2b)
     * [starting servers with remote display can error out](https://github.com/Xpra-org/xpra/commit/1e2e8addfd985414251f00de21a6a5451f429d77)
     * [system trays can use regular encodings](https://github.com/Xpra-org/xpra/commit/7f70ce62b7a4fa8494c7fbe3c13661ad04089097)
+    * [prevent None values in window models](https://github.com/Xpra-org/xpra/commit/c1550f9c8738794c4b87d66d4b413d330442e32f)
 * Cosmetic:
     * [`csc-type` debug metadata may be overwritten](https://github.com/Xpra-org/xpra/commit/7909400c952735d6cf4642eb59ec70e45d30a73c)
     * [expose GPU attributes as strings](https://github.com/Xpra-org/xpra/commit/f06f0ce26a8afd7faf373d962bb30d7f17183dab)
     * [unused / confusing attribute](https://github.com/Xpra-org/xpra/commit/cca2e2a18f1e41d31040bea1e9030e168c726535)
     * [return type consistency](https://github.com/Xpra-org/xpra/commit/04aacedb4bcd4e4fbef9f7f2f0cb1aae4ca8388c)
     * [import Cython type referenced](https://github.com/Xpra-org/xpra/commit/dd763ccda00965c81d0ff276a914af855e299789)
+    * [more correct data type in moveresize example](https://github.com/Xpra-org/xpra/commit/a31fe3cbd17079ba0489498a7cb55d285ff7c612)
 
 ## [6.3.1] 2025-05-31
 * Platforms, build and packaging:

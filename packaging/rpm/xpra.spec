@@ -1008,12 +1008,13 @@ fi
 
 
 %changelog
-* Wed Jun 18 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
+* Tue Jul 01 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
 - Platforms, build and packaging:
    Cython compilation warnings in macOS bindings and procps library
    exit-with-children not honoured in polling mode (ie: MS Windows)
    `named-pipe` connection errors
    enable mDNS by default on Fedora
+   DEB: only audio server requires pulseaudio
 - Major:
    pam module errors
    xvfb fails to resize after a while
@@ -1035,12 +1036,14 @@ fi
    can run `xpra configure` as root
    clean notification temporary files more aggressively
    starting servers with remote display can error out
+   prevent None values in window models
 - Cosmetic:
    `csc-type` debug metadata may be overwritten
    expose GPU attributes as strings
    unused / confusing attribute
    return type consistency
    import Cython type referenced
+   more correct data type in moveresize example
 
 * Sat May 31 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:
