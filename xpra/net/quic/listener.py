@@ -214,9 +214,10 @@ async def do_listen(sock, xpra_server, cert, key, retry):
 
 def listen_quic(sock, xpra_server, socket_options: dict) -> None:
     log(f"listen_quic({sock}, {xpra_server}, {socket_options})")
+    from xpra.net.ssl_util import find_ssl_cert, SSL_CERT_FILENAME, KEY_FILENAME
     ssl_socket_options = xpra_server.get_ssl_socket_options(socket_options)
-    cert = ssl_socket_options.get("cert")
-    key = ssl_socket_options.get("key")
+    cert = ssl_socket_options.get("cert") or find_ssl_cert(SSL_CERT_FILENAME)
+    key = ssl_socket_options.get("key") or find_ssl_cert(KEY_FILENAME)
     if not cert:
         raise InitExit(ExitCode.SSL_FAILURE, "missing ssl certificate")
     if not key:
