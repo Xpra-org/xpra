@@ -53,7 +53,7 @@ else
   run dnf update -y
   install -y wget --setopt=install_weak_deps=False
   run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
-  install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-aioquic python3-pyxdg python3-zeroconf dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
+  install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-uvloop python3-aioquic python3-pyxdg python3-zeroconf dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
   # EL10: system-backgrounds system-logos
   if [ "${AUDIO}" == "1" ]; then
     install -y xpra-audio-server
