@@ -45,7 +45,7 @@ class KeyboardConfig(KeyboardConfigBase):
         log("get_keycode%s=%s", (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), keycode)
         return keycode, group
 
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None) -> None:
+    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=0, ignored_modifier_keynames=None) -> None:
         log("make_keymask_match%s", (modifier_list, ignored_modifier_keycode, ignored_modifier_keynames))
         log("keys pressed=%s", ",".join(str(VK_NAMES.get(i, i)) for i in range(256) if GetAsyncKeyState(i) > 0))
         current = set(self.get_current_mask())

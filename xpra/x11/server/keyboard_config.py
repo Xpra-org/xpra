@@ -611,7 +611,7 @@ class KeyboardConfig(KeyboardConfigBase):
         # this is only called from an existing xsync context in this module
         return mask_to_names(X11Keyboard.query_mask(), self.modifier_map)
 
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None) -> None:
+    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=0, ignored_modifier_keynames=None) -> None:
         """
             Given a list of modifiers that should be set, try to press the right keys
             to make the server's modifier list match it.
@@ -660,78 +660,6 @@ class KeyboardConfig(KeyboardConfigBase):
             verboselog("filtered_modifiers_set(%s)=%s", modifiers, m)
             return m
 
-        def change_mask(modifiers: set[str], press: bool, info: str) -> list[str]:
-            failed = []
-            for modifier in modifiers:
-                if modifier not in self.keynames_for_mod:
-                    log.error(f"Error: unknown modifier {modifier!r}")
-                    log.error(" known modifiers: %s", csv(self.keynames_for_mod.keys()))
-                    continue
-                keynames = self.keynames_for_mod.get(modifier, ())
-                if not keynames:
-                    log.warn("Warning: found no keynames for '%s'", modifier)
-                    continue
-                # find the keycodes that match the keynames for this modifier
-                keycodes = []
-                # log.info("keynames(%s)=%s", modifier, keynames)
-                for keyname in keynames:
-                    if keyname in self.keys_pressed.values():
-                        # found the key which was pressed to set this modifier
-                        for keycode, name in self.keys_pressed.items():
-                            if name == keyname:
-                                log("found the key pressed for %s: %s", modifier, name)
-                                keycodes.insert(0, keycode)
-                    keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname, ())
-                    for keycode in keycodes_for_keyname:
-                        if keycode not in keycodes:
-                            keycodes.append(keycode)
-                if ignored_modifier_keycode is not None and ignored_modifier_keycode in keycodes:
-                    log("modifier '%s' ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
-                    continue
-                # nuisance keys (lock, num, scroll) are toggled by a
-                # full key press + key release (so act accordingly in the loop below)
-                nuisance = modifier in self.mod_nuisance
-                log("keynames(%s)=%s, keycodes=%s, nuisance=%s, nuisance keys=%s",
-                    modifier, keynames, keycodes, nuisance, self.mod_nuisance)
-                modkeycode = 0
-                if not press:
-                    # since we want to unpress something,
-                    # let's try the keycodes we know are pressed first:
-                    kdown = X11Keyboard.get_keycodes_down()
-                    pressed = [x for x in keycodes if x in kdown]
-                    others = [x for x in keycodes if x not in kdown]
-                    keycodes = pressed + others
-                for keycode in keycodes:
-                    if nuisance:
-                        X11Keyboard.xtest_fake_key(keycode, True)
-                        X11Keyboard.xtest_fake_key(keycode, False)
-                    else:
-                        X11Keyboard.xtest_fake_key(keycode, press)
-                    if VERIFY_MODIFIERS:
-                        new_mask = self.get_current_mask()
-                        success = (modifier in new_mask) == press
-                    else:
-                        success = True
-                    if success:
-                        modkeycode = keycode
-                        log("change_mask(%s) %s modifier '%s' using keycode %s",
-                            info, modifier_list, modifier, keycode)
-                        break  # we're done for this modifier
-                    log("%s %s with keycode %s did not work", info, modifier, keycode)
-                    if press and not nuisance:
-                        log(" trying to unpress it!")
-                        X11Keyboard.xtest_fake_key(keycode, False)
-                        # maybe doing the full keypress (down+up) worked:
-                        new_mask = self.get_current_mask()
-                        if (modifier in new_mask) == press:
-                            break
-                    log("change_mask(%s) %s modifier '%s' using keycode %s, success: %s",
-                        info, modifier_list, modifier, keycode, success)
-                if not modkeycode:
-                    failed.append(modifier)
-            log("change_mask(%s, %s, %s) failed=%s", modifiers, press, info, failed)
-            return failed
-
         with xsync:
             current = filtered_modifiers_set(self.get_current_mask())
             wanted = filtered_modifiers_set(modifier_list or [])
@@ -740,8 +668,8 @@ class KeyboardConfig(KeyboardConfigBase):
             log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s",
                 modifier_list, current, wanted,
                 ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
-            fr = change_mask(current.difference(wanted), False, "remove")
-            fa = change_mask(wanted.difference(current), True, "add")
+            fr = self.change_mask(current.difference(wanted), False, "remove", ignored_modifier_keycode)
+            fa = self.change_mask(wanted.difference(current), True, "add", ignored_modifier_keycode)
             if not fr or fa:
                 return
             if fr:
@@ -757,5 +685,77 @@ class KeyboardConfig(KeyboardConfigBase):
             log.warn(" doing a full keyboard reset, keys now pressed=%s", X11Keyboard.get_keycodes_down())
             # and try to set the modifiers one last time:
             current = filtered_modifiers_set(self.get_current_mask())
-            change_mask(current.difference(wanted), False, "remove")
-            change_mask(wanted.difference(current), True, "add")
+            self.change_mask(current.difference(wanted), False, "remove", ignored_modifier_keycode)
+            self.change_mask(wanted.difference(current), True, "add", ignored_modifier_keycode)
+
+    def change_mask(self, modifiers: set[str], press: bool, info: str, ignored_modifier_keycode=0) -> list[str]:
+        failed: list[str] = []
+        for modifier in modifiers:
+            if modifier not in self.keynames_for_mod:
+                log.error(f"Error: unknown modifier {modifier!r}")
+                log.error(" known modifiers: %s", csv(self.keynames_for_mod.keys()))
+                continue
+            keynames = self.keynames_for_mod.get(modifier, ())
+            if not keynames:
+                log.warn("Warning: found no keynames for '%s'", modifier)
+                continue
+            # find the keycodes that match the keynames for this modifier
+            keycodes = []
+            # log.info("keynames(%s)=%s", modifier, keynames)
+            for keyname in keynames:
+                if keyname in self.keys_pressed.values():
+                    # found the key which was pressed to set this modifier
+                    for keycode, name in self.keys_pressed.items():
+                        if name == keyname:
+                            log("found the key pressed for %s: %s", modifier, name)
+                            keycodes.insert(0, keycode)
+                keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname, ())
+                for keycode in keycodes_for_keyname:
+                    if keycode not in keycodes:
+                        keycodes.append(keycode)
+            if ignored_modifier_keycode and ignored_modifier_keycode in keycodes:
+                log("modifier '%s' ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
+                continue
+            # nuisance keys (lock, num, scroll) are toggled by a
+            # full key press + key release (so act accordingly in the loop below)
+            nuisance = modifier in self.mod_nuisance
+            log("keynames(%s)=%s, keycodes=%s, nuisance=%s, nuisance keys=%s",
+                modifier, keynames, keycodes, nuisance, self.mod_nuisance)
+            modkeycode = 0
+            if not press:
+                # since we want to unpress something,
+                # let's try the keycodes we know are pressed first:
+                kdown = X11Keyboard.get_keycodes_down()
+                pressed = [x for x in keycodes if x in kdown]
+                others = [x for x in keycodes if x not in kdown]
+                keycodes = pressed + others
+            for keycode in keycodes:
+                if nuisance:
+                    X11Keyboard.xtest_fake_key(keycode, True)
+                    X11Keyboard.xtest_fake_key(keycode, False)
+                else:
+                    X11Keyboard.xtest_fake_key(keycode, press)
+                if VERIFY_MODIFIERS:
+                    new_mask = self.get_current_mask()
+                    success = (modifier in new_mask) == press
+                else:
+                    success = True
+                if success:
+                    modkeycode = keycode
+                    log("change_mask(%s) modifier '%s' using keycode %s",
+                        info, modifier, keycode)
+                    break  # we're done for this modifier
+                log("%s %s with keycode %s did not work", info, modifier, keycode)
+                if press and not nuisance:
+                    log(" trying to unpress it!")
+                    X11Keyboard.xtest_fake_key(keycode, False)
+                    # maybe doing the full keypress (down+up) worked:
+                    new_mask = self.get_current_mask()
+                    if (modifier in new_mask) == press:
+                        break
+                log("change_mask(%s) modifier '%s' using keycode %s, success: %s",
+                    info, modifier, keycode, success)
+            if not modkeycode:
+                failed.append(modifier)
+        log("change_mask(%s, %s, %s) failed=%s", modifiers, press, info, failed)
+        return failed

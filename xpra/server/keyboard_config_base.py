@@ -48,7 +48,7 @@ class KeyboardConfigBase:
     def set_default_keymap(self) -> None:
         """ should be overridden to set a default keymap """
 
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None) -> None:
+    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=0, ignored_modifier_keynames=None) -> None:
         """ should be overridden to match the modifier state specified """
 
     def get_keycode(self, client_keycode: int, keyname: str, pressed: bool,

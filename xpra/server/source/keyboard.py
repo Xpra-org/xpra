@@ -74,7 +74,7 @@ class KeyboardConnection(StubClientConnection):
             kc.compute_modifier_keynames()
         log("keys_changed() updated keyboard config=%s", self.keyboard_config)
 
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
+    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=0, ignored_modifier_keynames=None):
         kc = self.keyboard_config
         if kc and kc.enabled:
             kc.make_keymask_match(modifier_list, ignored_modifier_keycode, ignored_modifier_keynames)
