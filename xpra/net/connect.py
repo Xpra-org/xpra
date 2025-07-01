@@ -201,7 +201,7 @@ def connect_to_socket(display_desc: dict[str, Any]):
                 time.sleep(0.5)
                 continue
             except Exception as e:
-                debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
+                debug(f"failed to connect using {sock.connect}({sockpath})")
                 noerr(sock.close)
                 raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
     try:
