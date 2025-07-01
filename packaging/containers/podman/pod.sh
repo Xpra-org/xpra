@@ -40,6 +40,9 @@ if ! podman volume exists "$TMP_VOLUME"; then
   # rootless containers can't use ro,nodev,noexec
   # or "--opt device=tmpfs"
   podman volume create --opt device=tmpfs --opt type=tmpfs --opt o=size=128M,nodev,noexec "$TMP_VOLUME"
+  mkdir .X11-unix
+  chmod 1777 .X11-unix
+  tar -cv .X11-unix | podman volume import tmp -
 fi
 
 POD_NAME="xpra"
