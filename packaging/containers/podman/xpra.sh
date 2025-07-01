@@ -82,7 +82,7 @@ fi
 run sh -c "chmod 644 /etc/xpra/ssl/*.pem"
 
 # save space:
-run rm -fr /var/cache/*dnf*
+run rm -fr /var/cache/*dnf* /var/log/dnf*.log* /var/log/README /var/yp /var/preserve /var/opt /var/nis /var/log/journal /var/log/private /var/local /var/lib/systemd /var/lib/selinux/tmp /var/games /var/kerberos /var/db
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
