@@ -707,14 +707,12 @@ class KeyboardConfig(KeyboardConfigBase):
                 continue
             # find the keycodes that match the keynames for this modifier
             keycodes = []
-            # log.info("keynames(%s)=%s", modifier, keynames)
             for keyname in keynames:
-                if keyname in self.keys_pressed.values():
-                    # found the key which was pressed to set this modifier
-                    for keycode, name in self.keys_pressed.items():
-                        if name == keyname:
-                            log("found the key pressed for %s: %s", modifier, name)
-                            keycodes.insert(0, keycode)
+                # find the key which was pressed to set this modifier
+                for keycode, name in self.keys_pressed.items():
+                    if name == keyname:
+                        log("found the key pressed for %s: %s", modifier, name)
+                        keycodes.insert(0, keycode)
                 keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname, ())
                 for keycode in keycodes_for_keyname:
                     if keycode not in keycodes:
