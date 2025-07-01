@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import hashlib
+from collections.abc import Sequence
 from typing import Any
 
 from xpra.util.objects import typedict
@@ -636,15 +637,15 @@ class KeyboardConfig(KeyboardConfigBase):
             return
         if ignored_modifier_keynames is None:
             # this is not a keyboard event, ignore modifiers in "mod_pointermissing"
-            def is_ignored(modifier, _modifier_keynames) -> bool:
-                return modifier in (self.mod_pointermissing or [])
+            def is_ignored(modifier: str, _modifier_keynames: Sequence[str]) -> bool:
+                return modifier in (self.mod_pointermissing or ())
         else:
             # keyboard event: ignore the keynames specified
             # (usually the modifier key being pressed/unpressed)
-            def is_ignored(_modifier, modifier_keynames) -> bool:
-                return len(set(modifier_keynames or []) & set(ignored_modifier_keynames or [])) > 0
+            def is_ignored(_modifier: str, modifier_keynames: Sequence[str]) -> bool:
+                return len(set(modifier_keynames or ()) & set(ignored_modifier_keynames or ())) > 0
 
-        def filtered_modifiers_set(modifiers) -> set[str]:
+        def filtered_modifiers_set(modifiers: Sequence[str]) -> set[str]:
             m: set[str] = set()
             mm = self.mod_managed or ()
             for modifier in modifiers:
@@ -680,7 +681,7 @@ class KeyboardConfig(KeyboardConfigBase):
                             if name == keyname:
                                 log("found the key pressed for %s: %s", modifier, name)
                                 keycodes.insert(0, keycode)
-                    keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname, [])
+                    keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname, ())
                     for keycode in keycodes_for_keyname:
                         if keycode not in keycodes:
                             keycodes.append(keycode)
@@ -692,7 +693,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 nuisance = modifier in self.mod_nuisance
                 log("keynames(%s)=%s, keycodes=%s, nuisance=%s, nuisance keys=%s",
                     modifier, keynames, keycodes, nuisance, self.mod_nuisance)
-                modkeycode = None
+                modkeycode = 0
                 if not press:
                     # since we want to unpress something,
                     # let's try the keycodes we know are pressed first:
