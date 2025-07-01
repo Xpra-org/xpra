@@ -36,7 +36,7 @@ if ! podman volume exists "$RUN_VOLUME"; then
   podman volume create "$RUN_VOLUME"
 fi
 TMP_VOLUME="tmp"
-if ! podman volume exists "$RUN_VOLUME"; then
+if ! podman volume exists "$TMP_VOLUME"; then
   # rootless containers can't use ro,nodev,noexec
   # or "--opt device=tmpfs"
   podman volume create --opt device=tmpfs --opt type=tmpfs --opt o=size=128M,nodev,noexec "$TMP_VOLUME"
