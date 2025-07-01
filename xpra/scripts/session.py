@@ -176,7 +176,7 @@ def clean_pidfiles(session_dir: str, kill=("dbus.pid", "pulseaudio.pid")) -> dic
         return load_pid(os.path.join(session_dir, pidfile))
 
     def trydelpidfile(pid: int, fname: str) -> None:
-        if not pidexists(pid):
+        if not pidexists(pid) or (pid == os.getpid() and fname == "server.pid"):
             try:
                 os.unlink(os.path.join(session_dir, fname))
             except FileNotFoundError:
