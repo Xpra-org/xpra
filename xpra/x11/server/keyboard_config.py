@@ -62,6 +62,19 @@ def kmlog(keyname: str, msg: str, *args) -> None:
     lfn(msg, *args)
 
 
+def get_levels(mode: int, shift: int, group: int) -> list[int]:
+    levels: list[int] = []
+    # try to preserve the mode (harder to toggle):
+    for m in (int(bool(mode)), int(not mode)):
+        # try to preserve shift state:
+        for s in (int(bool(shift)), int(not shift)):
+            # group is comparatively easier to toggle (one function call):
+            for g in (int(bool(group)), int(not group)):
+                level = int(g) * 4 + int(m) * 2 + int(s) * 1
+                levels.append(level)
+    return levels
+
+
 class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
         super().__init__()
@@ -467,7 +480,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def update_keycode_mappings(self) -> None:
         self.keycode_mappings = get_keycode_mappings()
 
-    def do_get_keycode(self, client_keycode: int, keyname: str, pressed: bool, modifiers, keyval: int,
+    def do_get_keycode(self, client_keycode: int, keyname: str, pressed: bool, modifiers: list[str], keyval: int,
                        keystr: str, group: int) -> tuple[int, int]:
         if not self.enabled:
             kmlog(keyname, "ignoring keycode since keyboard is turned off")
@@ -483,7 +496,7 @@ class KeyboardConfig(KeyboardConfigBase):
         return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def find_matching_keycode(self, client_keycode: int, keyname: str,
-                              pressed: bool, modifiers, keyval: int, keystr: str, group: int) -> tuple[int, int]:
+                              pressed: bool, modifiers: list[str], keyval: int, keystr: str, group: int) -> tuple[int, int]:
         """
         from man xmodmap:
         The list of keysyms is assigned to the indicated keycode (which may be specified in decimal,
@@ -523,15 +536,23 @@ class KeyboardConfig(KeyboardConfigBase):
                 if name in ("ISO_Level3_Shift", "Mode_switch"):
                     mode = 1
                     break
-        levels = []
-        # try to preserve the mode (harder to toggle):
-        for m in (int(bool(mode)), int(not mode)):
-            # try to preserve shift state:
-            for s in (int(bool(shift)), int(not shift)):
-                # group is comparatively easier to toggle (one function call):
-                for g in (int(bool(group)), int(not group)):
-                    level = int(g) * 4 + int(m) * 2 + int(s) * 1
-                    levels.append(level)
+
+        def toggle_modifier(mod: str) -> None:
+            keynames = self.keynames_for_mod.get(mod, set())
+            if keyname in keynames:
+                kml("not toggling '%s' since '%s' should deal with it", mod, keyname)
+                # the keycode we're returning is for this modifier,
+                # assume that this will end up doing what is needed
+                return
+            if mod in modifiers:
+                kml(f"removing {mod!r} from modifiers")
+                modifiers.remove(mod)
+            else:
+                kml(f"adding {mod} to modifiers")
+                modifiers.append(mod)
+
+        levels = get_levels(mode, shift, group)
+        level0 = levels[0]
         kml("will try levels: %s", levels)
         for level in levels:
             keycode = self.keycode_translation.get((keyname, level), -1)
@@ -539,7 +560,6 @@ class KeyboardConfig(KeyboardConfigBase):
                 continue
             keysyms = self.keycode_mappings.get(keycode)
             klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
-            level0 = levels[0]
             uq_keysyms = set(keysyms)
             if len(uq_keysyms) <= 1 or (len(keysyms) > level0 and keysyms[level0] == ""):
                 # if the keysym we would match for this keycode is 'NoSymbol',
@@ -547,20 +567,6 @@ class KeyboardConfig(KeyboardConfigBase):
                 # same if there's only one actual keysym for this keycode
                 kml("not toggling any modifiers state for keysyms=%s", keysyms)
                 break
-
-            def toggle_modifier(mod: str) -> None:
-                keynames = self.keynames_for_mod.get(mod, set())
-                if keyname in keynames:
-                    kml("not toggling '%s' since '%s' should deal with it", mod, keyname)
-                    # the keycode we're returning is for this modifier,
-                    # assume that this will end up doing what is needed
-                    return
-                if mod in modifiers:
-                    kml(f"removing {mod!r} from modifiers")
-                    modifiers.remove(mod)
-                else:
-                    kml(f"adding {mod} to modifiers")
-                    modifiers.append(mod)
 
             # keypad overrules shift state (see #2702):
             if keyname.startswith("KP_"):
