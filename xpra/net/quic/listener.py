@@ -171,7 +171,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
                                   transmit=self.transmit)
 
 
-async def do_listen(sock, xpra_server, cert, key, retry):
+async def do_listen(sock, xpra_server, cert: str, key: str | None, retry: bool):
     log(f"do_listen({sock}, {xpra_server}, {cert}, {key}, {retry})")
 
     def create_protocol(*args, **kwargs):
@@ -215,7 +215,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
 def listen_quic(sock, xpra_server, socket_options: dict) -> None:
     log(f"listen_quic({sock}, {xpra_server}, {socket_options})")
     ssl_socket_options = xpra_server.get_ssl_socket_options(socket_options)
-    cert = ssl_socket_options.get("cert")
+    cert = ssl_socket_options.get("cert", "")
     key = ssl_socket_options.get("key")
     if not cert:
         raise InitExit(ExitCode.SSL_FAILURE, "missing ssl certificate")
