@@ -109,14 +109,14 @@ class PulseaudioServer(StubServerMixin):
             else:
                 xpra_rd = os.environ.get("XPRA_SESSION_DIR", _get_xpra_runtime_dir())
                 assert xpra_rd, "bug: no xpra runtime dir"
-                display = os.environ.get("DISPLAY", "").lstrip(":")
-                if xpra_rd.find(f"/{display}/"):
+                display_no = os.environ.get("DISPLAY", "").lstrip(":")
+                if xpra_rd.find(f"/{display_no}/"):
                     # this is already a per-display directory,
                     # no need to include the display name again:
                     # ie: /run/user/1000/xpra/10/
                     self.pulseaudio_private_dir = osexpand(xpra_rd, subs=os.environ)
                 else:
-                    pulse_dirname = f"pulse-{display}"
+                    pulse_dirname = f"pulse-{display_no}"
                     self.pulseaudio_private_dir = osexpand(os.path.join(xpra_rd, pulse_dirname), subs=os.environ)
                 if not os.path.exists(self.pulseaudio_private_dir):
                     os.mkdir(self.pulseaudio_private_dir, 0o700)
