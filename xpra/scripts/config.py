@@ -989,46 +989,6 @@ def get_default_systemd_run() -> str:
     return "auto"
 
 
-def get_default_pulseaudio_command() -> list[str]:
-    if WIN32 or OSX:
-        return []
-
-    def description(desc):
-        return f"device.description=\"{desc}\""
-
-    def load_opt(name, **kwargs):
-        args = " ".join([f"--load={name}"] + [f"{n}={v}" for n, v in kwargs.items()])
-        return f"'{args}'"
-
-    cmd = [
-        "pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
-        "--exit-idle-time=-1", "--load=module-suspend-on-idle",
-        load_opt("module-null-sink",
-                 sink_name="Xpra-Speaker",
-                 sink_properties=description("Xpra\\ Speaker")),
-        load_opt("module-null-sink",
-                 sink_name="Xpra-Microphone",
-                 sink_properties=description("Xpra\\ Microphone")),
-        load_opt("module-remap-source",
-                 source_name="Xpra-Mic-Source",
-                 source_properties=description("Xpra\\ Mic\\ Source"),
-                 master="Xpra-Microphone.monitor",
-                 channels=1),
-        load_opt("module-native-protocol-unix", socket="$XPRA_PULSE_SERVER"),
-        load_opt("module-dbus-protocol"),
-        load_opt("module-x11-publish", display="$DISPLAY"),
-        "--log-level=2", "--log-target=stderr",
-    ]
-    from xpra.util.env import envbool
-    if not envbool("XPRA_PULSEAUDIO_MEMFD", False):
-        cmd.append("--enable-memfd=no")
-    if not envbool("XPRA_PULSEAUDIO_REALTIME", True):
-        cmd.append("--realtime=no")
-    if not envbool("XPRA_PULSEAUDIO_HIGH_PRIORITY", True):
-        cmd.append("--high-priority=no")
-    return cmd
-
-
 def unexpand(path: str) -> str:
     xrd = os.environ.get("XDG_RUNTIME_DIR", "")
     if POSIX and xrd and path.startswith(xrd):
@@ -1114,7 +1074,7 @@ def get_defaults() -> dict[str, Any]:
         "clipboard-filter-file" : "",
         "remote-clipboard"  : "CLIPBOARD",
         "local-clipboard"   : "CLIPBOARD",
-        "pulseaudio-command": " ".join(get_default_pulseaudio_command()),
+        "pulseaudio-command": "auto",
         "bandwidth-limit"   : "auto",
         "encryption"        : "",
         "tcp-encryption"    : "",
