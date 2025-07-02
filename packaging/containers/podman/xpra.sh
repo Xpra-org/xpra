@@ -49,9 +49,9 @@ else
     buildah rmi -f $IMAGE_NAME || true
     buildah from --name $CONTAINER $DISTRO:$RELEASE
   fi
-  install -y https://download1.rpmfusion.org/free/${DISTRO}/rpmfusion-free-release-${RELEASE}.noarch.rpm
+  install -y "https://download1.rpmfusion.org/free/${DISTRO}/rpmfusion-free-release-${RELEASE}.noarch.rpm"
   run dnf update -y
-  install -y wget --setopt=install_weak_deps=False
+  install -y wget "--setopt=install_weak_deps=False"
   run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
   install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-uvloop python3-aioquic python3-pyxdg python3-zeroconf dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
   # EL10: system-backgrounds system-logos
@@ -82,7 +82,7 @@ fi
 run sh -c "chmod 644 /etc/xpra/ssl/*.pem"
 
 # save space:
-run rm -fr /var/cache/*dnf* /var/log/dnf*.log* /var/log/README /var/yp /var/preserve /var/opt /var/nis /var/log/journal /var/log/private /var/local /var/lib/systemd /var/lib/selinux/tmp /var/games /var/kerberos /var/db
+run rm -fr "/var/cache/*dnf*" "/var/log/dnf*.log*" "/var/log/README" "/var/yp" "/var/preserve" "/var/opt" "/var/nis" "/var/log/journal" "/var/log/private" "/var/local" "/var/lib/systemd" "/var/lib/selinux/tmp" "/var/games" "/var/kerberos" "/var/db"
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
