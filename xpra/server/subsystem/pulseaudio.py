@@ -18,7 +18,7 @@ from xpra.util.env import envbool, osexpand
 from xpra.util.thread import start_thread
 from xpra.scripts.session import clean_session_files
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.log import Logger
+from xpra.log import Logger, is_debug_enabled
 
 GLib = gi_import("GLib")
 
@@ -185,6 +185,8 @@ class PulseaudioServer(StubServerMixin):
         env = self.get_pulse_env()
         cmd = shlex.split(self.pulseaudio_command)
         cmd = list(osexpand(x, subs=env) for x in cmd)
+        if is_debug_enabled("pulseaudio"):
+            cmd.append("-vv")
         # find the absolute path to the command:
         pa_cmd = cmd[0]
         if not os.path.isabs(pa_cmd):
