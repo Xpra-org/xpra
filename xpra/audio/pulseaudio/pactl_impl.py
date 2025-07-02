@@ -75,19 +75,19 @@ def has_pa() -> bool:
     return bool(has_pulseaudio)
 
 
-def set_source_mute(device, mute=False) -> bool:
+def set_source_mute(device: str, mute=False) -> bool:
     code, out, err = pactl_output(True, "set-source-mute", device, str(int(mute)))
     log("set_source_mute: output=%s, err=%s", out, err)
     return code == 0
 
 
-def set_sink_mute(device, mute=False) -> bool:
+def set_sink_mute(device: str, mute=False) -> bool:
     code, out, err = pactl_output(True, "set-sink-mute", device, str(int(mute)))
     log("set_sink_mute: output=%s, err=%s", out, err)
     return code == 0
 
 
-def get_pactl_info_line(prefix) -> str:
+def get_pactl_info_line(prefix: str) -> str:
     if not has_pa():
         return ""
     code, out, err = pactl_output(False, "info")

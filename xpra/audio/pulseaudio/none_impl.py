@@ -12,11 +12,11 @@ def has_pa() -> bool:
     return False
 
 
-def set_source_mute(device, mute=False) -> None:
+def set_source_mute(device: str, mute=False) -> None:
     """ none implementation """
 
 
-def set_sink_mute(device, mute=False) -> None:
+def set_sink_mute(device: str, mute=False) -> None:
     """ none implementation """
 
 
