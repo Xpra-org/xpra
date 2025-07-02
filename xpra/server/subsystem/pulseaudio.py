@@ -12,8 +12,8 @@ from threading import Event
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.os_util import OSX, POSIX, gi_import, is_container
-from xpra.util.io import pollwait
+from xpra.os_util import OSX, POSIX, gi_import, is_container, getuid, getgid
+from xpra.util.io import pollwait, is_writable, which
 from xpra.util.env import envbool, osexpand
 from xpra.util.thread import start_thread
 from xpra.scripts.session import clean_session_files
@@ -37,6 +37,7 @@ PA_ENV_WHITELIST = (
     "PWD", "SHELL", "XAUTHORITY",
     "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
     "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
+    "PULSE_CONFIG_PATH", "PULSE_STATE_PATH", "PULSE_RUNTIME_PATH",
 )
 
 
@@ -63,6 +64,7 @@ class PulseaudioServer(StubServerMixin):
         self.pulseaudio_configure_commands = []
         self.pulseaudio_proc: Popen | None = None
         self.pulseaudio_private_dir = ""
+        self.pulseaudio_server_dir = ""
         self.pulseaudio_server_socket = ""
         self.pulseaudio_started_at = 0.0
 
@@ -123,6 +125,7 @@ class PulseaudioServer(StubServerMixin):
                 pulse_dir = os.path.join(self.pulseaudio_private_dir, "pulse")
         if not os.path.exists(pulse_dir):
             os.mkdir(pulse_dir, mode=0o700)
+        self.pulseaudio_server_dir = pulse_dir
         # ie: /run/user/1000/xpra/10/pulse/native
         # or /run/user/1000/pulse/native
         self.pulseaudio_server_socket = os.path.join(pulse_dir, "native")
@@ -140,6 +143,24 @@ class PulseaudioServer(StubServerMixin):
         finally:
             self.pulseaudio_init_done.set()
 
+    def get_pulse_env(self) -> dict[str, str]:
+        env = {k: v for k, v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
+        if self.pulseaudio_private_dir:
+            env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
+        env["XPRA_PULSE_SERVER"] = self.pulseaudio_server_socket
+        # pulseaudio will not start if it cannot write to the home directory:
+        # see https://serverfault.com/a/631549/63324
+        home_dir = env.get("HOME", "")
+        if not is_writable(home_dir, getuid(), getgid()):
+            server_dir = self.pulseaudio_server_dir
+            if "PULSE_CONFIG_PATH" not in env:
+                env["PULSE_CONFIG_PATH"] = server_dir
+            if "PULSE_STATE_PATH" not in env:
+                env["PULSE_STATE_PATH"] = server_dir
+            if "PULSE_RUNTIME_PATH" not in env:
+                env["PULSE_RUNTIME_PATH"] = server_dir
+        return env
+
     def do_init_pulseaudio(self) -> None:
         # environment initialization:
         # 1) make sure that the audio subprocess will use the devices
@@ -149,23 +170,15 @@ class PulseaudioServer(StubServerMixin):
         #    Note: speaker is the source and microphone the sink,
         #    because things are reversed on the server.
         os.environ.update(PULSE_DEVICE_DEFAULTS)
-        # 2) whitelist the env vars that pulseaudio may use:
-        env = {k: v for k, v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
         self.configure_pulse_dirs()
-        if self.pulseaudio_private_dir:
-            env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
-        env["XPRA_PULSE_SERVER"] = self.pulseaudio_server_socket
+        # 2) whitelist the env vars that pulseaudio may use:
+        env = self.get_pulse_env()
         cmd = shlex.split(self.pulseaudio_command)
         cmd = list(osexpand(x, subs=env) for x in cmd)
         # find the absolute path to the command:
         pa_cmd = cmd[0]
         if not os.path.isabs(pa_cmd):
-            pa_path = ""
-            for x in os.environ.get("PATH", "").split(os.path.pathsep):
-                t = os.path.join(x, pa_cmd)
-                if os.path.exists(t):
-                    pa_path = t
-                    break
+            pa_path = which(pa_cmd)
             if not pa_path:
                 msg = f"pulseaudio not started: {pa_cmd!r} command not found"
                 if self.pulseaudio is None:
@@ -198,7 +211,7 @@ class PulseaudioServer(StubServerMixin):
                 os.environ["PULSE_SERVER"] = "unix:%s" % self.pulseaudio_server_socket
             GLib.timeout_add(2 * 1000, self.configure_pulse, env)
 
-    def configure_pulse(self, env: dict) -> None:
+    def configure_pulse(self, env: dict[str, str]) -> None:
         p = self.pulseaudio_proc
         if p is None or p.poll() is not None:
             return
@@ -206,7 +219,7 @@ class PulseaudioServer(StubServerMixin):
             proc = Popen(x, env=env, shell=True)
             self.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
 
-    def pulseaudio_ended(self, proc) -> None:
+    def pulseaudio_ended(self, proc: Popen) -> None:
         log("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
             proc, self.pulseaudio_proc, proc.returncode, self._closing)
         if self.pulseaudio_proc is None or self._closing:
@@ -316,9 +329,11 @@ class PulseaudioServer(StubServerMixin):
         info: dict[str, str | Sequence[str] | int] = {
             "command": self.pulseaudio_command,
             "configure-commands": self.pulseaudio_configure_commands,
+            "server-directory": self.pulseaudio_server_dir,
         }
-        if self.pulseaudio_proc and self.pulseaudio_proc.poll() is None:
-            info["pid"] = self.pulseaudio_proc.pid
+        proc = self.pulseaudio_proc
+        if proc and proc.poll() is None:
+            info["pid"] = proc.pid
         if self.pulseaudio_private_dir and self.pulseaudio_server_socket:
             info["private-directory"] = self.pulseaudio_private_dir
             info["private-socket"] = self.pulseaudio_server_socket
