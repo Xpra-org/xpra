@@ -93,6 +93,9 @@ def wait_for_socket(sockpath: str, timeout=1) -> bool:
 
 
 def is_writable(path: str, uid: int, gid: int) -> bool:
+    from xpra.os_util import getuid
+    if uid == getuid():
+        return os.access(path, os.W_OK)
     try:
         s = os.stat(path)
     except OSError as e:
