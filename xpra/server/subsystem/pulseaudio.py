@@ -129,6 +129,7 @@ class PulseaudioServer(StubServerMixin):
         # ie: /run/user/1000/xpra/10/pulse/native
         # or /run/user/1000/pulse/native
         self.pulseaudio_server_socket = os.path.join(pulse_dir, "native")
+        log("configure_pulse_dirs() pulse_dir=%s, socket=%s", self.pulseaudio_server_dir, self.pulseaudio_server_socket)
 
     def init_pulseaudio(self) -> None:
         log("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
@@ -151,7 +152,9 @@ class PulseaudioServer(StubServerMixin):
         # pulseaudio will not start if it cannot write to the home directory:
         # see https://serverfault.com/a/631549/63324
         home_dir = env.get("HOME", "")
-        if not is_writable(home_dir, getuid(), getgid()):
+        home_rw = is_writable(home_dir, getuid(), getgid())
+        log(f"{home_rw=}")
+        if not home_rw:
             server_dir = self.pulseaudio_server_dir
             if "PULSE_CONFIG_PATH" not in env:
                 env["PULSE_CONFIG_PATH"] = server_dir
@@ -159,6 +162,7 @@ class PulseaudioServer(StubServerMixin):
                 env["PULSE_STATE_PATH"] = server_dir
             if "PULSE_RUNTIME_PATH" not in env:
                 env["PULSE_RUNTIME_PATH"] = server_dir
+        log("get_pulse_env()=%s", env)
         return env
 
     def do_init_pulseaudio(self) -> None:
