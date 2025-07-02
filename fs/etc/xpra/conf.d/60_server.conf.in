@@ -86,6 +86,13 @@ pulseaudio = %(pulseaudio)s
 
 # pulseaudio server start command:
 #pulseaudio-command = %(pulseaudio_command)s
+#pulseaudio-command = pulseaudio --start -n --daemonize=false --system=false --exit-idle-time=-1 \
+#     --load=module-suspend-on-idle \
+#     '--load=module-null-sink sink_name=Xpra-Speaker sink_properties=device.description="Xpra\ Speaker"' \
+#     '--load=module-null-sink sink_name=Xpra-Microphone sink_properties=device.description="Xpra\ Microphone"' \
+#     '--load=module-remap-source source_name=Xpra-Mic-Source source_properties=device.description="Xpra\ Mic\ Source" master=Xpra-Microphone.monitor channels=1' \
+#     '--load=module-native-protocol-unix socket=$XPRA_PULSE_SERVER' \
+#     '--load=module-dbus-protocol' '--load=module-x11-publish' --log-level=2 --log-target=stderr --enable-memfd=no
 # Note: only uncomment the above setting if you want to adjust the
 # pulseaudio command string, so the actual default value can depend on
 # the XPRA_PULSEAUDIO_* environment variables.

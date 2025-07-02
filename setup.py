@@ -1510,7 +1510,7 @@ def build_xpra_conf(install_dir: str) -> None:
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
         wrap_cmd_str, unexpand,
-        get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command,
+        get_default_key_shortcuts, get_default_systemd_run,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
     )
     # remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
@@ -1551,7 +1551,7 @@ def build_xpra_conf(install_dir: str) -> None:
         'start_env'             : default_start_env,
         'env'                   : default_env,
         'pulseaudio'            : bstr(DEFAULT_PULSEAUDIO),
-        'pulseaudio_command'    : pretty_cmd(get_default_pulseaudio_command()),
+        'pulseaudio_command'    : "auto",
         'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),     # noqa: E501
         'conf_dir'              : conf_dir,
         'bind'                  : "auto",
