@@ -63,7 +63,7 @@ else
   fi
 
   if [ "${TOOLS}" == "1" ]; then
-    install -y strace xterm net-tools lsof xpra-client socat glxgears mesa-demos xdpyinfo VirtualGL pavucontrol --setopt=install_weak_deps=False
+    install -y strace xterm xclip net-tools lsof xpra-client socat glxgears mesa-demos xdpyinfo VirtualGL pavucontrol --setopt=install_weak_deps=False
   fi
 
   run groupdel "${TARGET_GROUP}" || true
