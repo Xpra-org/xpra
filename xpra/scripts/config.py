@@ -1016,7 +1016,7 @@ def get_default_pulseaudio_command() -> list[str]:
                  channels=1),
         load_opt("module-native-protocol-unix", socket="$XPRA_PULSE_SERVER"),
         load_opt("module-dbus-protocol"),
-        load_opt("module-x11-publish"),
+        load_opt("module-x11-publish", display="$DISPLAY"),
         "--log-level=2", "--log-target=stderr",
     ]
     from xpra.util.env import envbool
