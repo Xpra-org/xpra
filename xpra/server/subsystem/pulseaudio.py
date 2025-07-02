@@ -37,7 +37,7 @@ PA_ENV_WHITELIST = (
     "PWD", "SHELL", "XAUTHORITY",
     "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
     "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
-    "PULSE_CONFIG_PATH", "PULSE_STATE_PATH", "PULSE_RUNTIME_PATH",
+    "PULSE_CONFIG_PATH", "PULSE_STATE_PATH", "PULSE_RUNTIME_PATH", "PULSE_COOKIE",
 )
 
 
@@ -145,23 +145,29 @@ class PulseaudioServer(StubServerMixin):
             self.pulseaudio_init_done.set()
 
     def get_pulse_env(self) -> dict[str, str]:
-        env = {k: v for k, v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
-        if self.pulseaudio_private_dir:
-            env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
-        env["XPRA_PULSE_SERVER"] = self.pulseaudio_server_socket
-        # pulseaudio will not start if it cannot write to the home directory:
-        # see https://serverfault.com/a/631549/63324
-        home_dir = env.get("HOME", "")
+        # pulseaudio will not start if it cannot write to the home directory, see:
+        # https://serverfault.com/a/631549/63324
+        # https://github.com/gavv/gavv.github.io/blob/main/content/articles/009-pulseaudio-under-the-hood.md#user-directories
+        # Under "What environment variables does PulseAudio care about?":
+        # https://www.freedesktop.org/wiki/Software/PulseAudio/FAQ/
+        # (fails to list any of the environment variables we use here)
+        home_dir = os.environ.get("HOME", "")
         home_rw = is_writable(home_dir, getuid(), getgid())
         log(f"{home_rw=}")
         if not home_rw:
             server_dir = self.pulseaudio_server_dir
-            if "PULSE_CONFIG_PATH" not in env:
-                env["PULSE_CONFIG_PATH"] = server_dir
-            if "PULSE_STATE_PATH" not in env:
-                env["PULSE_STATE_PATH"] = server_dir
-            if "PULSE_RUNTIME_PATH" not in env:
-                env["PULSE_RUNTIME_PATH"] = server_dir
+            if "PULSE_CONFIG_PATH" not in os.environ:
+                os.environ["PULSE_CONFIG_PATH"] = server_dir
+            if "PULSE_STATE_PATH" not in os.environ:
+                os.environ["PULSE_STATE_PATH"] = server_dir
+            if "PULSE_RUNTIME_PATH" not in os.environ:
+                os.environ["PULSE_RUNTIME_PATH"] = server_dir
+            if "PULSE_COOKIE" not in os.environ:
+                os.environ["PULSE_COOKIE"] = os.path.join(server_dir, "cookie")
+        os.environ["XPRA_PULSE_SERVER"] = self.pulseaudio_server_socket
+        env = {k: v for k, v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
+        if self.pulseaudio_private_dir:
+            env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
         log("get_pulse_env()=%s", env)
         return env
 
