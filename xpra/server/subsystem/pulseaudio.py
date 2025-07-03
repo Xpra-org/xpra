@@ -265,15 +265,14 @@ class PulseaudioServer(StubServerMixin):
         return env
 
     def get_pulseaudio_server_env(self) -> dict[str, str]:
-        env = {k: v for k, v in os.environ.items() if k in PA_ENV_WHITELIST}
+        whitelist = list(PA_ENV_WHITELIST)
         if features.dbus:
-            for k in ("DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID"):
-                if k in os.environ:
-                    env[k] = os.environ[k]
+            whitelist += ["DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID"]
+        env = {k: v for k, v in os.environ.items() if k in whitelist}
         env.update(self.get_pulse_env())
         if self.pulseaudio_private_dir:
             env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
-        return {}
+        return env
 
     def get_child_env(self) -> dict[str, str]:
         """
