@@ -1013,7 +1013,7 @@ def get_defaults() -> dict[str, Any]:
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
     from xpra.platform.features import (
-        OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS,
+        OPEN_COMMAND,
         SOURCE, DEFAULT_ENV, DEFAULT_START_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
     )
     from xpra.platform.paths import (
@@ -1214,7 +1214,7 @@ def get_defaults() -> dict[str, Any]:
         "splash"            : None,
         "gstreamer"         : True,
         "x11"               : POSIX and not OSX,
-        "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
+        "pulseaudio-configure-commands"  : ["auto"],
         "socket-dirs"       : unexpand_all(get_socket_dirs()),
         "client-socket-dirs" : unexpand_all(get_client_socket_dirs()),
         "remote-xpra"       : get_remote_run_xpra_scripts(),
