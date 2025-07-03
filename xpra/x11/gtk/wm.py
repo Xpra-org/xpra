@@ -456,7 +456,7 @@ class Wm(GObject.GObject):
                 h = event.height
             if event.value_mask & (CWX | CWY | CWWidth | CWHeight):
                 log("updated window geometry for window %#x from %s to %s",
-                    xid, X11Window.getGeometry(xid)[:4], (x, y, w, h))
+                    xid, geom[:4], (x, y, w, h))
             X11Window.configure(xid, x, y, w, h, event.value_mask)
             X11Window.sendConfigureNotify(xid)
 
