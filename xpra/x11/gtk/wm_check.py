@@ -37,11 +37,13 @@ def get_ewmh_xid() -> int:
 
 
 def get_wm_info() -> dict[str, Any]:
+    from xpra.x11.bindings.display_source import get_display_name
     with xsync:
         X11Window = X11WindowBindings()
         root_xid = get_root_xid()
         info = {
             "root": root_xid,
+            "display": get_display_name(),
         }
         s0 = X11Window.XGetSelectionOwner(WM_S0)
         if s0:
@@ -76,7 +78,7 @@ def get_wm_info() -> dict[str, Any]:
 
 def wm_check(upgrading=False) -> bool:
     info = get_wm_info()
-    display_name = info.get("display")
+    display_name = info.get("display", "")
     name = info.get("wmname")
     wm_so = info.get("WM_S0")
     cwm_so = info.get("_NEW_WM_CM_S0")
