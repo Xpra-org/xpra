@@ -108,6 +108,8 @@ def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER"
     if features.dbus:
         load("module-dbus-protocol", {})
     from xpra.util.env import envbool
+    if not envbool("XPRA_PULSEAUDIO_SHM", True):
+        cmd.append("--disable-shm=yes")
     if not envbool("XPRA_PULSEAUDIO_MEMFD", False):
         cmd.append("--enable-memfd=no")
     if not envbool("XPRA_PULSEAUDIO_REALTIME", True):
