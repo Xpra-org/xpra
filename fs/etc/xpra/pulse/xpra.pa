@@ -1,0 +1,5 @@
+#!/usr/bin/pulseaudio -nF
+# Xpra PulseAudio configuration file
+
+set-default-sink Xpra-Sink
+set-default-source Xpra-Source
