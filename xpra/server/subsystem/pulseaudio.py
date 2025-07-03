@@ -80,17 +80,17 @@ def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER"
     load("module-null-sink",
          {
              "sink_name": "Xpra-Speaker",
-             "sink_properties": description("Xpra\\ Speaker"),
+             "sink_properties": description("Xpra-Speaker"),
          })
     load("module-null-sink",
          {
              "sink_name": "Xpra-Microphone",
-             "sink_properties": description("Xpra\\ Microphone"),
+             "sink_properties": description("Xpra-Microphone"),
          })
     load("module-remap-source",
          {
              "source_name": "Xpra-Mic-Source",
-             "source_properties": description("Xpra\\ Mic\\ Source"),
+             "source_properties": description("Xpra-Mic-Source"),
              "master": "Xpra-Microphone.monitor",
              "channels": "1"
          })
