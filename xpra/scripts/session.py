@@ -127,6 +127,7 @@ def clean_session_dir(session_dir: str) -> bool:
         "socket", "xauthority", "Xorg.log", "xvfb.pid",
         "pulseaudio.pid",
         "ibus-daemon.pid",
+        "background.png",
     ]
     KNOWN_SERVER_DIRS = [
         "pulse",

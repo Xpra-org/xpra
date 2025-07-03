@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler
 from typing import Any
 from collections.abc import Iterable, Callable
 
-from xpra.common import FULL_INFO, noerr
+from xpra.common import FULL_INFO
 from xpra.net.common import HttpResponse
 from xpra.net.http.common import EXTENSION_TO_MIMETYPE
 from xpra.util.objects import AdHocStruct
@@ -109,16 +109,6 @@ def translate_path(path: str, web_root: str = "/usr/share/xpra/www") -> str:
     return path
 
 
-temp_png_background = None
-
-
-def clean_temp_png() -> None:
-    global temp_png_background
-    if temp_png_background:
-        noerr(os.unlink, temp_png_background.name)
-        temp_png_background = None
-
-
 def find_background_png_path() -> str:
     from xpra.platform.paths import get_desktop_background_paths
     paths = get_desktop_background_paths()
@@ -128,10 +118,11 @@ def find_background_png_path() -> str:
         if matches:
             path = matches[0]
             break
-    if path.endswith(".jxl"):
-        global temp_png_background
-        if temp_png_background:
-            return temp_png_background.name
+    session_dir = os.environ.get("XPRA_SESSION_DIR", "")
+    if path.endswith(".jxl") and session_dir:
+        filename = os.path.join(session_dir, "background.png")
+        if os.path.exists(filename):
+            return filename
         # try to convert it to png:
         from xpra.util.io import which
         djxl = which("djxl")
@@ -141,14 +132,9 @@ def find_background_png_path() -> str:
             result = run([djxl, path, "-", "--output_format", "png"], stdout=PIPE, stderr=PIPE)
             if result.returncode == 0:
                 png_data = result.stdout
-                from tempfile import NamedTemporaryFile
-                temp_png_background = NamedTemporaryFile(prefix="xpra-djxl-background", suffix=".png",
-                                                         delete=False, delete_on_close=False)
-                with temp_png_background as f:
+                with open(filename, "wb") as f:
                     f.write(png_data)
-                from atexit import register
-                register(clean_temp_png)
-                return temp_png_background.name
+                return filename
     if not path:
         log(f"no background images found matching {paths!r}")
     return path
