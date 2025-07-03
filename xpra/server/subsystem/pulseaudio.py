@@ -16,6 +16,7 @@ from xpra.os_util import OSX, WIN32, POSIX, gi_import, is_container, getuid, get
 from xpra.platform.paths import get_system_conf_dirs
 from xpra.util.io import pollwait, is_writable, which
 from xpra.util.env import envbool, osexpand
+from xpra.util.str_fn import csv
 from xpra.util.system import is_X11
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import enabled_or_auto
@@ -154,10 +155,11 @@ class PulseaudioServer(StubServerMixin):
     def init(self, opts) -> None:
         self.pulseaudio = opts.pulseaudio
         self.pulseaudio_command = opts.pulseaudio_command
-        if opts.pulseaudio_configure_commands == "auto":
+        pcc = csv(opts.pulseaudio_configure_commands)
+        if pcc == "auto":
             from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
             self.pulseaudio_configure_commands = DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
-        elif opts.pulseaudio_configure_commands == "none":
+        elif pcc == "none":
             self.pulseaudio_configure_commands = ()
         else:
             self.pulseaudio_configure_commands = tuple(x.strip() for x in opts.pulseaudio_configure_commands if x.strip())
@@ -315,7 +317,7 @@ class PulseaudioServer(StubServerMixin):
         self.pulseaudio_started_at = monotonic()
 
         try:
-            log("pulseaudio cmd=%s", " ".join(cmd))
+            log("pulseaudio cmd=%s", shlex.join(cmd))
             log("pulseaudio env=%s", env)
             self.pulseaudio_proc = Popen(cmd, env=env)
         except OSError as e:
