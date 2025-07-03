@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from xpra.os_util import OSX, WIN32, POSIX, gi_import, is_container, getuid, getgid
 from xpra.util.io import pollwait, is_writable, which
 from xpra.util.env import envbool, osexpand
+from xpra.util.system import is_X11
 from xpra.util.thread import start_thread
 from xpra.scripts.session import clean_session_files
 from xpra.server.subsystem.stub import StubServerMixin
@@ -55,46 +56,49 @@ def get_default_pulseaudio_command() -> list[str]:
     if WIN32 or OSX:
         return []
 
+    cmd = [
+        "pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
+        "--exit-idle-time=-1",
+        "--load=module-suspend-on-idle",
+        "--log-level=2", "--log-target=stderr",
+    ]
+
     def description(desc: str) -> str:
         return f"device.description=\"{desc}\""
 
-    def load_opt(name: str, options: dict[str, str]):
+    def load(name: str, options: dict[str, str]) -> None:
         args = " ".join([f"--load={name}"] + [f"{n}={v}" for n, v in options.items()])
-        return f"'{args}'"
+        cmd.append(f"'{args}'")
 
-    cmd = [
-        "pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
-        "--exit-idle-time=-1", "--load=module-suspend-on-idle",
-        load_opt("module-null-sink",
-                 {
-                     "sink_name": "Xpra-Speaker",
-                     "sink_properties": description("Xpra\\ Speaker"),
-                 }
-                 ),
-        load_opt("module-null-sink",
-                 {
-                     "sink_name": "Xpra-Microphone",
-                     "sink_properties": description("Xpra\\ Microphone"),
-                 }
-                 ),
-        load_opt("module-remap-source",
-                 {
-                     "source_name": "Xpra-Mic-Source",
-                     "source_properties": description("Xpra\\ Mic\\ Source"),
-                     "master": "Xpra-Microphone.monitor",
-                     "channels": "1"
-                 }
-                 ),
-        load_opt("module-native-protocol-unix", {
-            "socket": "$XPRA_PULSE_SERVER",
-            "auth-cookie-enabled": int(not is_container()),
-        }),
-        load_opt("module-dbus-protocol"),
-        load_opt("module-x11-publish", {
+    load("module-null-sink",
+         {
+             "sink_name": "Xpra-Speaker",
+             "sink_properties": description("Xpra\\ Speaker"),
+         })
+    load("module-null-sink",
+         {
+             "sink_name": "Xpra-Microphone",
+             "sink_properties": description("Xpra\\ Microphone"),
+         })
+    load("module-remap-source",
+         {
+             "source_name": "Xpra-Mic-Source",
+             "source_properties": description("Xpra\\ Mic\\ Source"),
+             "master": "Xpra-Microphone.monitor",
+             "channels": "1"
+         })
+    load("module-native-protocol-unix",
+         {
+             "socket": "$XPRA_PULSE_SERVER",
+             "auth-cookie-enabled": int(not is_container()),
+         })
+    if is_X11():
+        load("module-x11-publish", {
             "display": "$DISPLAY",
-        }),
-        "--log-level=2", "--log-target=stderr",
-    ]
+        })
+    from xpra.server import features
+    if features.dbus:
+        load("module-dbus-protocol", {})
     from xpra.util.env import envbool
     if not envbool("XPRA_PULSEAUDIO_MEMFD", False):
         cmd.append("--enable-memfd=no")
@@ -236,15 +240,15 @@ class PulseaudioServer(StubServerMixin):
         #    so we just hope that it matches this):
         #    Note: speaker is the source and microphone the sink,
         #    because things are reversed on the server.
-        pa_cmd = self.pulseaudio_command
-        if pa_cmd == "auto":
-            pa_cmd = get_default_pulseaudio_command()
+        if self.pulseaudio_command == "auto":
+            cmd = get_default_pulseaudio_command()
+        else:
+            cmd = shlex.split(self.pulseaudio_command)
 
         os.environ.update(PULSE_DEVICE_DEFAULTS)
         self.configure_pulse_dirs()
         # 2) whitelist the env vars that pulseaudio may use:
         env = self.get_pulse_env()
-        cmd = shlex.split(pa_cmd)
         cmd = list(osexpand(x, subs=env) for x in cmd)
         # find the absolute path to the command:
         pa_cmd = cmd[0]
