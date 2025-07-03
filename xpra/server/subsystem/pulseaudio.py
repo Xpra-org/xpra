@@ -228,13 +228,13 @@ class PulseaudioServer(StubServerMixin):
         if not home_rw:
             server_dir = self.pulseaudio_server_dir
             if "PULSE_CONFIG_PATH" not in os.environ:
-                os.environ["PULSE_CONFIG_PATH"] = server_dir
+                env["PULSE_CONFIG_PATH"] = server_dir
             if "PULSE_STATE_PATH" not in os.environ:
-                os.environ["PULSE_STATE_PATH"] = server_dir
+                env["PULSE_STATE_PATH"] = server_dir
             if "PULSE_RUNTIME_PATH" not in os.environ:
-                os.environ["PULSE_RUNTIME_PATH"] = self.pulseaudio_private_dir or server_dir
+                env["PULSE_RUNTIME_PATH"] = self.pulseaudio_private_dir or server_dir
             if "PULSE_COOKIE" not in os.environ:
-                os.environ["PULSE_COOKIE"] = os.path.join(server_dir, "cookie")
+                env["PULSE_COOKIE"] = os.path.join(server_dir, "cookie")
         log("get_pulse_env()=%s", env)
         return env
 
