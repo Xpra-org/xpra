@@ -32,7 +32,7 @@ from xpra.common import SocketState, noerr, noop, get_refresh_rate_for_value, BA
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr, sort_human
-from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, OSEnvContext
+from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
 from xpra.util.parsing import parse_scaling
 from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
@@ -375,6 +375,9 @@ def gtk_init_check() -> bool:
 
 def check_gtk(mode: str) -> None:
     if not gtk_init_check():
+        print("env=%s" % (os.environ, ))
+        import traceback
+        traceback.print_stack()
         raise InitExit(ExitCode.NO_DISPLAY, f"{mode!r} failed to initialize Gtk, no display?")
     check_display()
 
@@ -1718,9 +1721,13 @@ def enable_listen_mode(app, error_cb: Callable, opts):
 
 def make_progress_process(title="Xpra") -> Popen | None:
     # start the splash subprocess
-    env = os.environ.copy()
+    env = get_exec_env()
     env["XPRA_LOG_PREFIX"] = "splash: "
     env["XPRA_WAIT_FOR_INPUT"] = "0"
+    if POSIX:
+        display = get_saved_env_var("DISPLAY")
+        if display:
+            env["DISPLAY"] = display
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command() + ["splash"]
     try:
