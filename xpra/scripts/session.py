@@ -128,6 +128,7 @@ def clean_session_dir(session_dir: str) -> bool:
         "pulseaudio.pid",
         "ibus-daemon.pid",
         "background.png",
+        "background.jpg",
     ]
     KNOWN_SERVER_DIRS = [
         "pulse",

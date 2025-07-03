@@ -99,8 +99,9 @@ def translate_path(path: str, web_root: str = "/usr/share/xpra/www") -> str:
     if trailing_slash:
         path += '/'
     # hack for locating the default desktop background at runtime:
-    if not os.path.exists(path) and s.endswith("/background.png"):
-        path = find_background_png_path()
+    if not os.path.exists(path) and (s.endswith("/background.png") or s.endswith("/background.jpg")):
+        ext = s.split(".")[-1]
+        path = find_background_path(ext)
         if not os.path.exists(path):
             # better send something than a 404,
             # use a transparent 1x1 image:
@@ -109,7 +110,8 @@ def translate_path(path: str, web_root: str = "/usr/share/xpra/www") -> str:
     return path
 
 
-def find_background_png_path() -> str:
+def find_background_path(fmt="png") -> str:
+    assert fmt in ("png", "jpg"), f"unsupported background image type: {fmt!r}"
     from xpra.platform.paths import get_desktop_background_paths
     paths = get_desktop_background_paths()
     path = ""
@@ -120,7 +122,7 @@ def find_background_png_path() -> str:
             break
     session_dir = os.environ.get("XPRA_SESSION_DIR", "")
     if path.endswith(".jxl") and session_dir:
-        filename = os.path.join(session_dir, "background.png")
+        filename = os.path.join(session_dir, f"background.{fmt}")
         if os.path.exists(filename):
             return filename
         # try to convert it to png:
@@ -129,11 +131,11 @@ def find_background_png_path() -> str:
         log(f"found jxl: {path!r}, {djxl=}")
         if djxl:
             from subprocess import run, PIPE
-            result = run([djxl, path, "-", "--output_format", "png"], stdout=PIPE, stderr=PIPE)
+            result = run([djxl, path, "-", "--output_format", fmt], stdout=PIPE, stderr=PIPE)
             if result.returncode == 0:
-                png_data = result.stdout
+                img_data = result.stdout
                 with open(filename, "wb") as f:
-                    f.write(png_data)
+                    f.write(img_data)
                 return filename
     if not path:
         log(f"no background images found matching {paths!r}")
