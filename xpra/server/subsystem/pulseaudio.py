@@ -18,6 +18,7 @@ from xpra.util.env import envbool, osexpand
 from xpra.util.system import is_X11
 from xpra.util.thread import start_thread
 from xpra.scripts.session import clean_session_files
+from xpra.server import features
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger, is_debug_enabled
 
@@ -27,19 +28,21 @@ log = Logger("audio", "pulseaudio")
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", not is_container())
 
+PULSE_SOURCE = "Xpra-Speaker"
+PULSE_SINK = "Xpra-Microphone"
+
 PULSE_DEVICE_DEFAULTS: dict[str, str] = {
-    "XPRA_PULSE_SOURCE_DEVICE_NAME": "Xpra-Speaker",
-    "XPRA_PULSE_SINK_DEVICE_NAME": "Xpra-Microphone",
+    "XPRA_PULSE_SOURCE_DEVICE_NAME": PULSE_SOURCE,
+    "XPRA_PULSE_SINK_DEVICE_NAME": PULSE_SINK,
 }
 
 PA_ENV_WHITELIST = (
-    "DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID",
     "DISPLAY", "HOME", "HOSTNAME", "LANG", "PATH",
     "PWD", "SHELL", "XAUTHORITY",
     "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
     "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
-    "XPRA_PULSE_SERVER",
     "PULSE_CONFIG_PATH", "PULSE_STATE_PATH", "PULSE_RUNTIME_PATH", "PULSE_COOKIE",
+    "PULSE_SOURCE", "PULSE_SINK", "PULSE_SERVER",
 )
 
 
@@ -52,7 +55,7 @@ def pulseaudio_warning() -> None:
     log.warn(" or use the 'pulseaudio=no' option.")
 
 
-def get_default_pulseaudio_command() -> list[str]:
+def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER") -> list[str]:
     if WIN32 or OSX:
         return []
 
@@ -89,14 +92,13 @@ def get_default_pulseaudio_command() -> list[str]:
          })
     load("module-native-protocol-unix",
          {
-             "socket": "$XPRA_PULSE_SERVER",
+             "socket": pulseaudio_server_socket,
              "auth-cookie-enabled": int(not is_container()),
          })
     if is_X11():
         load("module-x11-publish", {
             "display": "$DISPLAY",
         })
-    from xpra.server import features
     if features.dbus:
         load("module-dbus-protocol", {})
     from xpra.util.env import envbool
@@ -206,6 +208,11 @@ class PulseaudioServer(StubServerMixin):
             self.pulseaudio_init_done.set()
 
     def get_pulse_env(self) -> dict[str, str]:
+        # ensure that we use our own pulse source and sink:
+        env: dict[str, str] = {
+            "PULSE_SOURCE": PULSE_SOURCE,
+            "PULSE_SINK": PULSE_SINK,
+        }
         # pulseaudio will not start if it cannot write to the home directory, see:
         # https://serverfault.com/a/631549/63324
         # https://github.com/gavv/gavv.github.io/blob/main/content/articles/009-pulseaudio-under-the-hood.md#user-directories
@@ -222,14 +229,29 @@ class PulseaudioServer(StubServerMixin):
             if "PULSE_STATE_PATH" not in os.environ:
                 os.environ["PULSE_STATE_PATH"] = server_dir
             if "PULSE_RUNTIME_PATH" not in os.environ:
-                os.environ["PULSE_RUNTIME_PATH"] = server_dir
+                os.environ["PULSE_RUNTIME_PATH"] = self.pulseaudio_private_dir or server_dir
             if "PULSE_COOKIE" not in os.environ:
                 os.environ["PULSE_COOKIE"] = os.path.join(server_dir, "cookie")
-        os.environ["XPRA_PULSE_SERVER"] = self.pulseaudio_server_socket
-        env = {k: v for k, v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
+        log("get_pulse_env()=%s", env)
+        return env
+
+    def get_pulseaudio_server_env(self) -> dict[str, str]:
+        env = {k: v for k, v in os.environ.items() if k in PA_ENV_WHITELIST}
+        if features.dbus:
+            for k in ("DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID"):
+                if k in os.environ:
+                    env[k] = os.environ[k]
+        env.update(self.get_pulse_env())
         if self.pulseaudio_private_dir:
             env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
-        log("get_pulse_env()=%s", env)
+        return {}
+
+    def get_child_env(self) -> dict[str, str]:
+        """
+        Returns the environment variables that should be passed to child processes.
+        """
+        env = super().get_child_env()
+        env.update(self.get_pulse_env())
         return env
 
     def do_init_pulseaudio(self) -> None:
@@ -240,15 +262,15 @@ class PulseaudioServer(StubServerMixin):
         #    so we just hope that it matches this):
         #    Note: speaker is the source and microphone the sink,
         #    because things are reversed on the server.
+        os.environ.update(PULSE_DEVICE_DEFAULTS)
+        self.configure_pulse_dirs()
+
         if self.pulseaudio_command == "auto":
-            cmd = get_default_pulseaudio_command()
+            cmd = get_default_pulseaudio_command(self.pulseaudio_server_socket)
         else:
             cmd = shlex.split(self.pulseaudio_command)
 
-        os.environ.update(PULSE_DEVICE_DEFAULTS)
-        self.configure_pulse_dirs()
-        # 2) whitelist the env vars that pulseaudio may use:
-        env = self.get_pulse_env()
+        env = self.get_pulseaudio_server_env()
         cmd = list(osexpand(x, subs=env) for x in cmd)
         # find the absolute path to the command:
         pa_cmd = cmd[0]
@@ -269,7 +291,7 @@ class PulseaudioServer(StubServerMixin):
             log("pulseaudio cmd=%s", " ".join(cmd))
             log("pulseaudio env=%s", env)
             self.pulseaudio_proc = Popen(cmd, env=env)
-        except Exception as e:
+        except OSError as e:
             log("Popen(%s)", cmd, exc_info=True)
             log.error("Error: failed to start pulseaudio:")
             log.estr(e)
