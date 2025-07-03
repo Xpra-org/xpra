@@ -355,7 +355,7 @@ def check_gtk_client() -> None:
     if not os.environ.get("PYOPENGL_PLATFORM"):
         set_pyopengl_platform()
 
-    check_gtk()
+    check_gtk("client")
 
     try:
         find_spec("xpra.client.gui")
@@ -373,9 +373,9 @@ def gtk_init_check() -> bool:
     return bool(r)
 
 
-def check_gtk() -> None:
+def check_gtk(mode: str) -> None:
     if not gtk_init_check():
-        raise InitExit(ExitCode.NO_DISPLAY, "failed to initialize Gtk, no display?")
+        raise InitExit(ExitCode.NO_DISPLAY, f"{mode!r} failed to initialize Gtk, no display?")
     check_display()
 
 
@@ -792,10 +792,10 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         check_gtk_client()
         return run_pass(args)
     if mode == "send-file":
-        check_gtk()
+        check_gtk("send-file")
         return run_send_file(args)
     if mode == "splash":
-        check_gtk()
+        check_gtk("splash")
         return run_splash(args)
     if mode == "opengl":
         return run_glcheck(options)
@@ -834,7 +834,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         from xpra.codecs.nvidia import util
         return util.main()
     if mode == "webcam":
-        check_gtk()
+        check_gtk("webcam")
         from xpra.gtk.dialogs import show_webcam
         return show_webcam.main()
     if mode == "keyboard":
@@ -845,11 +845,11 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         sys.stdout.write("%ix%i\n" % get_root_size((0, 0)))
         return ExitCode.OK
     if mode == "gtk-info":
-        check_gtk()
+        check_gtk("gtk-info")
         from xpra.gtk import info
         return info.main()
     if mode == "gui-info":
-        check_gtk()
+        check_gtk("gui-info")
         from xpra.platform import gui as platform_gui
         return platform_gui.main()
     if mode == "network-info":
@@ -1514,7 +1514,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         app = PrintClient(opts, args)
     elif mode == "qrcode":
         basic()
-        check_gtk()
+        check_gtk("qrcode")
         from xpra.gtk.dialogs.qrcode_client import QRCodeClient
         app = QRCodeClient(opts)
     elif mode == "version":
