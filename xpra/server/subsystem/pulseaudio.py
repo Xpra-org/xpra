@@ -367,30 +367,11 @@ class PulseaudioServer(StubServerMixin):
         proc = self.pulseaudio_proc
         if not proc:
             return
-        log("cleanup_pa() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
-        if self.is_child_alive(proc):
-            self.pulseaudio_proc = None
-            log.info("stopping pulseaudio with pid %s", proc.pid)
-            try:
-                # first we try pactl (required on Ubuntu):
-                cmd = ["pactl", "exit"]
-                proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-                self.add_process(proc, "pactl exit", cmd, True)
-                r = pollwait(proc)
-                # warning: pactl will return 0 whether it succeeds or not...
-                # but we can't kill the process because Ubuntu starts a new one
-                if r != 0 and self.is_child_alive(proc):
-                    # fallback to using SIGINT:
-                    proc.terminate()
-            except Exception as e:
-                log.warn("cleanup_pulseaudio() error stopping %s", proc, exc_info=True)
-                # only log the full stacktrace if the process failed to terminate:
-                if self.is_child_alive(proc):
-                    log.error("Error: stopping pulseaudio: %s", e, exc_info=True)
-            if self.pulseaudio_server_socket and self.is_child_alive(proc):
-                # wait for the pulseaudio process to exit,
-                # it will delete the socket:
-                log("pollwait()=%s", pollwait(proc))
+        self.exit_pulseaudio()
+        if self.pulseaudio_server_socket and self.is_child_alive(proc):
+            # wait for the pulseaudio process to exit,
+            # it will delete the socket:
+            log("pollwait()=%s", pollwait(proc))
         if self.pulseaudio_server_socket and not self.is_child_alive(proc):
             # wait for the socket to get cleaned up
             # (it should be removed by the pulseaudio server as it exits)
@@ -399,6 +380,32 @@ class PulseaudioServer(StubServerMixin):
             while (monotonic() - now) < 1 and os.path.exists(self.pulseaudio_server_socket):
                 time.sleep(0.1)
         self.clean_pulseaudio_private_dir()
+
+    def exit_pulseaudio(self) -> None:
+        proc = self.pulseaudio_proc
+        if not proc:
+            return
+        log("exit_pulseaudio() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
+        if not self.is_child_alive(proc):
+            return
+        self.pulseaudio_proc = None
+        log.info("stopping pulseaudio with pid %s", proc.pid)
+        try:
+            # first we try pactl (required on Ubuntu):
+            cmd = ["pactl", "exit"]
+            pactl_proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            self.add_process(pactl_proc, "pactl exit", cmd, True)
+            r = pollwait(pactl_proc)
+            # warning: pactl will return 0 whether it succeeds or not...
+            # but we can't kill the process because Ubuntu starts a new one
+            if r != 0 and self.is_child_alive(proc):
+                # fallback to using SIGINT:
+                proc.terminate()
+        except Exception as e:
+            log("exit_pulseaudio() error stopping %s", proc, exc_info=True)
+            # only log the full stacktrace if the process failed to terminate:
+            if self.is_child_alive(proc):
+                log.error("Error: stopping pulseaudio: %s", e, exc_info=True)
 
     def clean_pulseaudio_private_dir(self) -> None:
         if self.pulseaudio_private_dir:
