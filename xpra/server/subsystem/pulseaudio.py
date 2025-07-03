@@ -71,11 +71,11 @@ def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER"
     ]
 
     def description(desc: str) -> str:
-        return f"device.description=\"{desc}\""
+        return f"device.description={desc}"
 
     def load(name: str, options: dict[str, str]) -> None:
         args = " ".join([f"--load={name}"] + [f"{n}={v}" for n, v in options.items()])
-        cmd.append(f"'{args}'")
+        cmd.append(args)
 
     load("module-null-sink",
          {
