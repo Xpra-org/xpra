@@ -17,10 +17,11 @@ from xpra.util.io import pollwait, is_writable, which
 from xpra.util.env import envbool, osexpand
 from xpra.util.system import is_X11
 from xpra.util.thread import start_thread
+from xpra.scripts.parsing import enabled_or_auto
 from xpra.scripts.session import clean_session_files
 from xpra.server import features
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.log import Logger, is_debug_enabled
+from xpra.log import Logger
 
 GLib = gi_import("GLib")
 
@@ -66,8 +67,6 @@ def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER"
         "--log-level=%i" % (2 + 2 * int(log.is_debug_enabled())),
         "--log-target=stderr",
     ]
-    if is_debug_enabled("pulseaudio"):
-        cmd.append("-vv")
 
     def description(desc: str) -> str:
         return f"device.description=\"{desc}\""
@@ -198,7 +197,8 @@ class PulseaudioServer(StubServerMixin):
         log("configure_pulse_dirs() pulse_dir=%s, socket=%s", self.pulseaudio_server_dir, self.pulseaudio_server_socket)
 
     def init_pulseaudio(self) -> None:
-        log("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
+        log("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%r",
+            enabled_or_auto(self.pulseaudio), self.pulseaudio_command)
         if self.pulseaudio is False:
             return
         if not self.pulseaudio_command:
