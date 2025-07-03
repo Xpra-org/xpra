@@ -207,7 +207,7 @@ def clean_pidfiles(session_dir: str, kill=("dbus.pid", "pulseaudio.pid")) -> dic
     return pidmap
 
 
-def clean_session_files(*filenames) -> None:
+def clean_session_files(*filenames: str) -> None:
     if not CLEAN_SESSION_FILES:
         return
     for filename in filenames:
@@ -220,7 +220,7 @@ def clean_session_files(*filenames) -> None:
     rm_session_dir()
 
 
-def clean_session_path(path) -> None:
+def clean_session_path(path: str) -> None:
     from xpra.log import Logger
     log = Logger("server")
     log(f"clean_session_path({path})")
