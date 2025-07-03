@@ -1534,8 +1534,6 @@ def build_xpra_conf(install_dir: str) -> None:
         except Exception as e:
             print(f"could not probe for pdf/postscript printers: {e}")
 
-    def pretty_cmd(cmd: Sequence[str]) -> str:
-        return " ".join(cmd)
     # OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
     webcam = webcam_ENABLED and not (OSX or WIN32)
     # no python-avahi on RH / CentOS, need dbus module on *nix:
