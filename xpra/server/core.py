@@ -1801,6 +1801,7 @@ class ServerCore(ServerBaseClass):
                 continue
             if not netifaces:
                 if first_time("netifaces-socket-address"):
+                    netlog("get_socket_info()", backtrace=True)
                     netlog.warn("Warning: netifaces is missing")
                     netlog.warn(" socket addresses cannot be queried")
             else:
