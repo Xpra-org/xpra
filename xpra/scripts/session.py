@@ -217,7 +217,6 @@ def clean_session_files(*filenames: str) -> None:
                 clean_session_path(p)
         else:
             clean_session_path(path)
-    rm_session_dir()
 
 
 def clean_session_path(path: str) -> None:
