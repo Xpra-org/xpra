@@ -45,17 +45,16 @@ class ThreadedAsyncioLoop:
     def run_forever(self) -> None:
         if UVLOOP:
             try:
-                # there's nothing we can do about this deprecation warning,
-                # so silence it:
-                from xpra.util.env import SilenceWarningsContext
                 # noinspection PyPackageRequirements
-                with SilenceWarningsContext(DeprecationWarning):
-                    import uvloop  # pylint: disable=import-outside-toplevel
+                import uvloop  # pylint: disable=import-outside-toplevel
             except ImportError:
                 log.warn("Warning: uvloop not found")
             else:
                 log("installing uvloop")
-                uvloop.install()
+                # there's nothing we can do about this deprecation warning, so silence it:
+                from xpra.util.env import SilenceWarningsContext
+                with SilenceWarningsContext(DeprecationWarning):
+                    uvloop.install()
                 log.info(f"uvloop {uvloop.__version__} installed")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
