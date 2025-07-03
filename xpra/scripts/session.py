@@ -155,6 +155,7 @@ def clean_session_dir(session_dir: str) -> bool:
             log.error(f"Error removing {pathname!r}: {e}")
     try:
         os.rmdir(session_dir)
+        log.info("removed session directory %r", session_dir)
     except OSError as rme:
         log.error(f"Error removing session directory {session_dir!r}: {rme}")
         return False
