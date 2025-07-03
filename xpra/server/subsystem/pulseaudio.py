@@ -207,7 +207,7 @@ class PulseaudioServer(StubServerMixin):
                     # this is already a per-display directory,
                     # no need to include the display name again:
                     # ie: /run/user/1000/xpra/10/
-                    self.pulseaudio_private_dir = osexpand(xpra_rd, subs=os.environ)
+                    self.pulseaudio_private_dir = os.path.join(osexpand(xpra_rd, subs=os.environ), "pulse")
                 else:
                     pulse_dirname = f"pulse-{display_no}"
                     self.pulseaudio_private_dir = osexpand(os.path.join(xpra_rd, pulse_dirname), subs=os.environ)
