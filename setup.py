@@ -1506,7 +1506,6 @@ def build_xpra_conf(install_dir: str) -> None:
     source = "\n".join(f"source = {x}" for x in SOURCE)
     conf_dir = get_conf_dir(install_dir)
     print(f"get_conf_dir({install_dir})={conf_dir}")
-    from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
         wrap_cmd_str, unexpand,
@@ -1552,7 +1551,7 @@ def build_xpra_conf(install_dir: str) -> None:
         'env'                   : default_env,
         'pulseaudio'            : bstr(DEFAULT_PULSEAUDIO),
         'pulseaudio_command'    : "auto",
-        'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),     # noqa: E501
+        'pulseaudio_configure_commands' : "none",
         'conf_dir'              : conf_dir,
         'bind'                  : "auto",
         'ssl_cert'              : ssl_cert or "",
@@ -2410,7 +2409,8 @@ else:
             if data_ENABLED:
                 for etc_dir in ("http-headers", "content-type", "content-categories", "content-parent"):
                     self.dirtodir(f"fs/etc/xpra/{etc_dir}", f"/etc/xpra/{etc_dir}")
-
+                if audio_ENABLED:
+                    self.dirtodir("fs/etc/xpra/pulse", "/etc/xpra/pulse")
     # add build_conf to build step
     cmdclass |= {
         'build'        : build_override,

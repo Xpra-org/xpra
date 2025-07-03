@@ -13,6 +13,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import OSX, WIN32, POSIX, gi_import, is_container, getuid, getgid
+from xpra.platform.paths import get_system_conf_dirs
 from xpra.util.io import pollwait, is_writable, which
 from xpra.util.env import envbool, osexpand
 from xpra.util.system import is_X11
@@ -112,7 +113,24 @@ def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER"
         cmd.append("--realtime=no")
     if not envbool("XPRA_PULSEAUDIO_HIGH_PRIORITY", True):
         cmd.append("--high-priority=no")
+
+    # run our configure script:
+    xpra_pa = get_xpra_pulse_script()
+    log("get_xpra_pulse_script()=%s", xpra_pa)
+    if xpra_pa:
+        cmd.append(f"--file={xpra_pa}")
     return cmd
+
+
+def get_xpra_pulse_script() -> str:
+    for d in get_system_conf_dirs():
+        pulse_dir = os.path.join(d, "pulse")
+        if not os.path.exists(pulse_dir):
+            continue
+        script = os.path.join(pulse_dir, "xpra.pa")
+        if os.path.exists(script):
+            return script
+    return ""
 
 
 class PulseaudioServer(StubServerMixin):
@@ -126,7 +144,7 @@ class PulseaudioServer(StubServerMixin):
         self.pulseaudio_init_done.set()
         self.pulseaudio = False
         self.pulseaudio_command = ""
-        self.pulseaudio_configure_commands = []
+        self.pulseaudio_configure_commands = ()
         self.pulseaudio_proc: Popen | None = None
         self.pulseaudio_private_dir = ""
         self.pulseaudio_server_dir = ""
@@ -136,7 +154,13 @@ class PulseaudioServer(StubServerMixin):
     def init(self, opts) -> None:
         self.pulseaudio = opts.pulseaudio
         self.pulseaudio_command = opts.pulseaudio_command
-        self.pulseaudio_configure_commands = opts.pulseaudio_configure_commands
+        if opts.pulseaudio_configure_commands == "auto":
+            from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
+            self.pulseaudio_configure_commands = DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
+        elif opts.pulseaudio_configure_commands == "none":
+            self.pulseaudio_configure_commands = ()
+        else:
+            self.pulseaudio_configure_commands = tuple(x.strip() for x in opts.pulseaudio_configure_commands if x.strip())
 
     def threaded_setup(self) -> None:
         # the setup code will mostly be waiting for subprocesses to run,

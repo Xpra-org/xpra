@@ -99,7 +99,7 @@ pulseaudio = %(pulseaudio)s
 
 # commands used to configure the pulseaudio server:
 # pactl set-source-volume SomeSource 20%%
-%(pulseaudio_configure_commands)s
+pulseaudio_configure_commands = %(pulseaudio_configure_commands)s
 
 
 # Systemd specific options:
