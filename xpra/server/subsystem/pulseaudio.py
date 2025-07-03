@@ -63,8 +63,11 @@ def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER"
         "pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
         "--exit-idle-time=-1",
         "--load=module-suspend-on-idle",
-        "--log-level=2", "--log-target=stderr",
+        "--log-level=%i" % (2 + 2 * int(log.is_debug_enabled())),
+        "--log-target=stderr",
     ]
+    if is_debug_enabled("pulseaudio"):
+        cmd.append("-vv")
 
     def description(desc: str) -> str:
         return f"device.description=\"{desc}\""
@@ -93,11 +96,13 @@ def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER"
     load("module-native-protocol-unix",
          {
              "socket": pulseaudio_server_socket,
+             "auth-cookie": "$PULSE_COOKIE",
              "auth-cookie-enabled": int(not is_container()),
          })
     if is_X11():
         load("module-x11-publish", {
             "display": "$DISPLAY",
+            "cookie": "$PULSE_COOKIE",
         })
     if features.dbus:
         load("module-dbus-protocol", {})
@@ -108,8 +113,6 @@ def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER"
         cmd.append("--realtime=no")
     if not envbool("XPRA_PULSEAUDIO_HIGH_PRIORITY", True):
         cmd.append("--high-priority=no")
-    if is_debug_enabled("pulseaudio"):
-        cmd.append("-vv")
     return cmd
 
 
