@@ -24,9 +24,11 @@ from xpra.log import Logger
 
 log = Logger("menu")
 
-LOAD_FROM_RESOURCES: bool = envbool("XPRA_XDG_LOAD_FROM_RESOURCES", True)
-LOAD_FROM_PIXMAPS: bool = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", True)
-LOAD_FROM_THEME: bool = envbool("XPRA_XDG_LOAD_FROM_THEME", True)
+ENABLED: bool = envbool("XPRA_XDG", True)
+
+LOAD_FROM_RESOURCES: bool = envbool("XPRA_XDG_LOAD_FROM_RESOURCES", ENABLED)
+LOAD_FROM_PIXMAPS: bool = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", ENABLED)
+LOAD_FROM_THEME: bool = envbool("XPRA_XDG_LOAD_FROM_THEME", ENABLED)
 LOAD_GLOB: bool = envbool("XPRA_XDG_LOAD_GLOB", False)
 
 EXPORT_ICONS: bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
@@ -377,7 +379,7 @@ def remove_icons(menu_data: dict) -> dict:
 
 
 def load_menu() -> dict:
-    if not check_xdg():
+    if not ENABLED or not check_xdg():
         return {}
     icon_util.large_icons.clear()
     start = monotonic()
