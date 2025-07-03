@@ -210,8 +210,10 @@ class SystemTray(GObject.GObject):
         log(f"dock_tray({xid:x})")
         try:
             with xsync:
-                X11Window.getGeometry(xid)
-                self.do_dock_tray(xid)
+                if X11Window.getGeometry(xid):
+                    self.do_dock_tray(xid)
+                else:
+                    log.warn(f"Warning: unable to dock tray {xid:x}: window does not exist")
         except Exception as e:
             log(f"dock_tray({xid:x})", exc_info=True)
             log.warn(f"Warning: failed to dock tray {xid:x}:")
@@ -219,7 +221,11 @@ class SystemTray(GObject.GObject):
             log.warn(" the application may retry later")
 
     def do_dock_tray(self, xid: int) -> None:
-        w, h = X11Window.getGeometry(xid)[2:4]
+        geom = X11Window.getGeometry(xid)
+        if not geom:
+            log(f"tray {xid:x} vanished")
+            return
+        w, h = geom[2:4]
         log(f"tray geometry={w}x{h}")
         if w == 0 and h == 0:
             log(f"invalid tray geometry {w}x{h}, ignoring this request")
@@ -234,7 +240,7 @@ class SystemTray(GObject.GObject):
             title = prop_get(xid, "WM_NAME", "latin1", ignore_errors=True)
         if not title:
             title = ""
-        log(f"adjusted geometry={X11Window.getGeometry(xid)}, title={title!r}")
+        log(f"geometry={geom}, title={title!r}")
         root_xid = X11Window.get_root_xid()
         xtray = X11Window.CreateWindow(root_xid, -200, -200, w, h, OR=True, event_mask=event_mask)
         prop_set(xtray, "WM_TITLE", "latin1", title)

@@ -28,8 +28,8 @@ def get_ewmh_xid() -> int:
         if ewmh_xid:
             try:
                 with xsync:
-                    X11Window.getGeometry(ewmh_xid)
-                return ewmh_xid
+                    if X11Window.getGeometry(ewmh_xid):
+                        return ewmh_xid
             except Exception as e:
                 log(f"getGeometry({ewmh_xid:x}) {e}")
     return 0

@@ -610,6 +610,9 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         try:
             with xsync:
                 geom = X11Window.getGeometry(xid)
+                if not geom:
+                    windowlog(f"Window {xid:x} vanished")
+                    return
                 windowlog("Discovered new override-redirect window: %#x X11 geometry=%s", xid, geom)
         except Exception as e:
             windowlog("Window error (vanished already?): %s", e)

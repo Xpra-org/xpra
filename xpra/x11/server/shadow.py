@@ -136,7 +136,10 @@ def window_matches(wspec, model_class):
                 #        windows.append(cxid)
         models = {}
         for xid in windows:
-            x, y, w, h = wb.getGeometry(xid)[:4]
+            geom = wb.getGeometry(xid)
+            if not geom:
+                continue
+            x, y, w, h = geom[:4]
             # absp = wb.get_absolute_position(xid)
             if w > 0 and h > 0:
                 title = names.get(xid, "unknown window")

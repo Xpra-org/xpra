@@ -279,6 +279,8 @@ class WindowModel(BaseWindowModel):
         super().setup()
         self.saved_events = X11Window.getEventMask(self.xid)
         ogeom = X11Window.getGeometry(self.xid)
+        if not ogeom:
+            raise XError("window disappeared")
         ox, oy, ow, oh = ogeom[:4]
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
@@ -355,7 +357,9 @@ class WindowModel(BaseWindowModel):
             return  # no need to do anything
         self.desktop_geometry = (width, height)
         with xsync:
-            x, y, w, h = X11Window.getGeometry(self.corral_xid)[:4]
+            geom = X11Window.getGeometry(self.corral_xid)
+            assert geom
+            x, y, w, h = geom[:4]
             nx, ny = self._clamp_to_desktop(x, y, w, h)
             if nx != x or ny != y:
                 log("update_desktop_geometry(%i, %i) adjusting corral window to new location: %i,%i", width, height, nx, ny)
@@ -565,7 +569,10 @@ class WindowModel(BaseWindowModel):
         elif not self._setup_done:
             # try to honour initial size and position requests during setup:
             with xsync:
-                x, y, w, h = X11Window.getGeometry(self.xid)[:4]
+                geom = X11Window.getGeometry(self.xid)
+                if not geom:
+                    raise XError(f"window {self.xid:x} disappeared")
+                x, y, w, h = geom[:4]
             x, y = self.get_property("requested-position") or (x, y)
             w, h = self.get_property("requested-size") or (w, h)
             geometry = x, y, w, h
@@ -582,7 +589,9 @@ class WindowModel(BaseWindowModel):
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
         with xlog:
             if self.corral_xid:
-                cx, cy, cw, ch = X11Window.getGeometry(self.corral_xid)[:4]
+                geom = X11Window.getGeometry(self.corral_xid)
+                assert geom
+                cx, cy, cw, ch = geom[:4]
                 if cx != x or cy != y or cw != w or ch != h:
                     X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
                     X11Window.configure(self.xid, 0, 0, w, h)
