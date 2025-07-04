@@ -375,9 +375,6 @@ def gtk_init_check() -> bool:
 
 def check_gtk(mode: str) -> None:
     if not gtk_init_check():
-        print("env=%s" % (os.environ, ))
-        import traceback
-        traceback.print_stack()
         raise InitExit(ExitCode.NO_DISPLAY, f"{mode!r} failed to initialize Gtk, no display?")
     check_display()
 
