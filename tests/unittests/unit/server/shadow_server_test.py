@@ -78,36 +78,43 @@ class ShadowServerTest(ServerTestUtil):
             assert rd==new_delay, f"expected refresh-delay={new_delay}, got {rd}"
         self.stop_shadow_server(xvfb, server)
 
-
     def test_root_window_model(self):
         from xpra.server.shadow.root_window_model import RootWindowModel
         W = 640
         H = 480
+
         class FakeDisplay:
             def get_name(self):
                 return "fake-display"
+
         class FakeScreen:
             def get_display(self):
                 return FakeDisplay()
+
         class FakeRootWindow:
             def get_screen(self):
                 return FakeScreen()
+
             def get_geometry(self):
                 return (0, 0, W, H)
+
         class FakeCapture:
             def take_screenshot(self):
                 return self.get_image(0, 0, W, H)
+
             def get_image(self, x, y, w, h):
                 pixels = "0"*w*4*h
                 return ImageWrapper(x, y, w, h, pixels, "BGRA", 32, w*4, 4, ImageWrapper.PACKED, True, None)
+
             def get_info(self):
                 return {"type" : "fake"}
+
         window = FakeRootWindow()
         rwm = RootWindowModel(window, FakeCapture(), geometry=window.get_geometry()[:4])
         assert repr(rwm)
         assert rwm.get_info()
         rwm.get_default_window_icon(32)
-        for prop in ("title", "class-instance", "size-hints", "icons"):
+        for prop in ("title", "class-instance", "size-constraints", "icons"):
             rwm.get_property(prop)
         for prop, value in {
             "client-machine"    : socket.gethostname(),
@@ -118,7 +125,7 @@ class ShadowServerTest(ServerTestUtil):
             "scaling"            : None,
             "opacity"            : None,
             "content-type"        : "desktop",
-            }.items():
+        }.items():
             assert rwm.get_property(prop)==value
         rwm.suspend()
         rwm.unmanage(True)

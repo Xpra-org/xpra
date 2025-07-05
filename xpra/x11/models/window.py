@@ -693,7 +693,7 @@ class WindowModel(BaseWindowModel):
 
     def do_x11_child_configure_request_event(self, event) -> None:
         hints = self.get_property("size-constraints")
-        geomlog("do_x11_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s",
+        geomlog("do_x11_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-constraints=%s",
                 event, self.xid, self.corral_xid, configure_bits(event.value_mask), hints)
         if event.value_mask & CWStackMode:
             geomlog(" restack above=%s, detail=%s", event.above, event.detail)

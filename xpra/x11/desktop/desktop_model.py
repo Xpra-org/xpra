@@ -165,7 +165,7 @@ class ScreenDesktopModel(DesktopModelBase):
                         size_hints |= get_legacy_size_hints(screen_sizes)
         else:
             use_fixed_size()
-        screenlog("size-hints=%s", size_hints)
+        screenlog("size-constraints=%s", size_hints)
         self._updateprop("size-constraints", size_hints)
 
 
