@@ -1139,9 +1139,9 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfully mapped.",
 }
 
-cdef object guidstr(GUID guid)
+cdef str guidstr(GUID guid)
 cdef GUID parseguid(src) except *
-cdef object presetstr(GUID preset)
+cdef str presetstr(GUID preset)
 cdef str nvencStatusInfo(NVENCSTATUS ret)
 
 

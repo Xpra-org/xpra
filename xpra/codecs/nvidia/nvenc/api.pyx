@@ -72,7 +72,7 @@ cdef str presetstr(GUID preset):
     return CODEC_PRESETS_GUIDS.get(s, s)
 
 
-cdef str nvencStatusInfo(NVENCSTATUS ret) nogil noexcept:
+cdef str nvencStatusInfo(NVENCSTATUS ret):
     return NV_ENC_STATUS_TXT.get(ret, str(ret))
 
 
