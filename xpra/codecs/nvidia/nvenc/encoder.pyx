@@ -1921,12 +1921,7 @@ def init_module(options: dict) -> None:
     try_keys = CLIENT_KEYS_STR or [None]
     FAILED_ENCODINGS = set()
     global YUV444_ENABLED, YUV444_CODEC_SUPPORT, LOSSLESS_ENABLED, ENCODINGS, MAX_SIZE
-    if not validate_driver_yuv444lossless():
-        if YUV444_ENABLED:
-            YUV444_ENABLED = False
-        if LOSSLESS_ENABLED:
-            LOSSLESS_ENABLED = False
-    #check NVENC availability by creating a context:
+    # check NVENC availability by creating a context:
     device_warnings = {}
     log("init_module(%s) will try keys: %s", options, try_keys)
     for client_key in try_keys:

@@ -324,34 +324,6 @@ def is_blocklisted() -> bool | None:
 _version_warning = False
 
 
-def validate_driver_yuv444lossless() -> bool:
-    # this should log the kernel module version
-    v = get_nvidia_module_version()
-    if not v:
-        log.warn("Warning: unknown NVidia driver version")
-        bl = None
-    else:
-        bl = is_blocklisted()
-    if bl is True:
-        raise ValueError(f"NVidia driver version {pver(v)} is blocklisted, it does not work with NVENC")
-    if bl is None:
-        global _version_warning
-        if _version_warning:
-            log_fn = log.debug
-        else:
-            log_fn = log.warn
-            _version_warning = True
-        if v[0] < MIN_VERSION:
-            log_fn(f"Warning: NVidia driver version {pver(v)} is untested with NVENC")
-            log_fn(f" (this encoder has been tested with versions {MIN_VERSION}.x and later only)")
-        if not envbool("XPRA_NVENC_YUV444P", False):
-            log_fn(" disabling YUV444P and lossless mode")
-            log_fn(" use XPRA_NVENC_YUV444P=1 to force enable")
-            return False
-        log_fn(" force enabling YUV444P and lossless mode")
-    return True
-
-
 def parse_nvfbc_hex_key(s) -> bytes:
     # ie: 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
     # ie: 0102030405060708090A0B0C0D0E0F10
