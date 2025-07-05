@@ -1039,6 +1039,7 @@ fi
    starting servers with remote display can error out
    prevent None values in window models
    record successful change of modifier mask
+   potential non fatal errors when X11 windows disappear
 - Cosmetic:
    `csc-type` debug metadata may be overwritten
    expose GPU attributes as strings

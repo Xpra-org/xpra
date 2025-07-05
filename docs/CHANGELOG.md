@@ -31,6 +31,7 @@
     * [system trays can use regular encodings](https://github.com/Xpra-org/xpra/commit/7f70ce62b7a4fa8494c7fbe3c13661ad04089097)
     * [prevent None values in window models](https://github.com/Xpra-org/xpra/commit/c1550f9c8738794c4b87d66d4b413d330442e32f)
     * [record successful change of modifier mask](https://github.com/Xpra-org/xpra/commit/c8d64df16eb625eeff74e44e1f3a94b431386b86)
+    * [potential non fatal errors when X11 windows disappear](https://github.com/Xpra-org/xpra/commit/a53d512b24cee5a7f3b9d155a296c73565889924)
 * Cosmetic:
     * [`csc-type` debug metadata may be overwritten](https://github.com/Xpra-org/xpra/commit/7909400c952735d6cf4642eb59ec70e45d30a73c)
     * [expose GPU attributes as strings](https://github.com/Xpra-org/xpra/commit/f06f0ce26a8afd7faf373d962bb30d7f17183dab)
