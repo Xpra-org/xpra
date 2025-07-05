@@ -35,10 +35,10 @@ def h(v) -> str:
 cdef inline uint64_t hashtoint64(s):
     return <uint64_t> struct.unpack(b"@L", s)[0]
 
-cdef da(uint64_t *a, uint16_t l):
+cdef str da(uint64_t *a, uint16_t l):
     return repr_ellipsized(csv([h(a[i]) for i in range(l)]))
 
-cdef dd(uint16_t *d, uint16_t l):
+cdef str dd(uint16_t *d, uint16_t l):
     return csv([h(d[i]) for i in range(l)])
 
 

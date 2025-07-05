@@ -656,7 +656,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         finally:
             free(ckeysyms)
 
-    cdef KeysymToKeycodes(self, KeySym keysym):
+    cdef list KeysymToKeycodes(self, KeySym keysym):
         self.context_check("KeysymToKeycodes")
         if not self.hasXkb():
             return []

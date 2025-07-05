@@ -9,7 +9,7 @@ from typing import Dict
 from libc.stdint cimport uint8_t   # pylint: disable=syntax-error
 
 
-cdef object guidstr(GUID guid):
+cdef str guidstr(GUID guid):
     #really ugly! (surely there's a way using struct.unpack ?)
     #is this even endian safe? do we care? (always on the same system)
     parts = []
@@ -67,12 +67,12 @@ cdef GUID parseguid(src) except *:
     return guid
 
 
-cdef presetstr(GUID preset):
+cdef str presetstr(GUID preset):
     s = guidstr(preset)
     return CODEC_PRESETS_GUIDS.get(s, s)
 
 
-cdef nvencStatusInfo(NVENCSTATUS ret):
+cdef str nvencStatusInfo(NVENCSTATUS ret) nogil noexcept:
     return NV_ENC_STATUS_TXT.get(ret, str(ret))
 
 

@@ -1142,7 +1142,7 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
 cdef object guidstr(GUID guid)
 cdef GUID parseguid(src) except *
 cdef object presetstr(GUID preset)
-cdef nvencStatusInfo(NVENCSTATUS ret)
+cdef str nvencStatusInfo(NVENCSTATUS ret)
 
 
 cdef dict get_profile_guids(object encode)
