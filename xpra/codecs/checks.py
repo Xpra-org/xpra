@@ -367,47 +367,49 @@ def testdecoding(decoder_module, encoding: str, cs: str, full: bool) -> None:
         test_data = TEST_PICTURES[encoding]
     # add a context init test, without any data to decode:
     test_data.setdefault((256, 128), ())
-    log("will test sizes: %s", test_data.keys())
+    log("will test sizes: %s", csv(test_data.keys()))
     for size, frames in test_data.items():
         w, h = size
         if w < min_w or h < min_h:
             log(f"skipped {encoding} decoding test at {w}x{h} for {decoder_module} (min size is {min_w}x{min_h})")
             continue
-        try:
-            decoder = decoder_module.Decoder()
-            decoder.init_context(encoding, w, h, cs, typedict())
-        except Exception:
-            log.error(f"Error creating context {encoding} {w}x{h} {cs}")
-            raise
-        try:
-            if frames:
-                log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with {len(frames)} frames of size {w}x{h}")
-                for i, (data, options) in enumerate(frames):
+        times = 1 + int(full)
+        for test_run in range(times):
+            try:
+                decoder = decoder_module.Decoder()
+                decoder.init_context(encoding, w, h, cs, typedict())
+            except Exception:
+                log.error(f"Error creating context {encoding} {w}x{h} {cs}")
+                raise
+            try:
+                if frames:
+                    log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with {len(frames)} frames of size {w}x{h}, {test_run+1} of {times}")
+                    for i, (data, options) in enumerate(frames):
+                        try:
+                            log(f"frame {i+1} is {len(data or ()):5} bytes")
+                            image = decoder.decompress_image(data, typedict(options))
+                            if image is None:
+                                raise RuntimeError(f"failed to decode test data for encoding {encoding!r} with colorspace {cs!r}")
+                            if image.get_width()!=w:
+                                raise RuntimeError(f"expected image of width {w} but got {image.get_width()}")
+                            if image.get_height()!=h:
+                                raise RuntimeError(f"expected image of height {h} but got {image.get_height()}")
+                            log(f" test passed for {w}x{h} {encoding} - {cs}")
+                        except Exception:
+                            log.error(f"Error on {encoding} {w}x{h} test {cs} frame {i}")
+                            raise
+                if full:
+                    log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with junk data, {test_run+1} of {times}")
+                    # test failures:
+                    options = typedict({"junk": True})
                     try:
-                        log(f"frame {i+1} is {len(data or ()):5} bytes")
-                        image = decoder.decompress_image(data, typedict(options))
-                        if image is None:
-                            raise RuntimeError(f"failed to decode test data for encoding {encoding!r} with colorspace {cs!r}")
-                        if image.get_width()!=w:
-                            raise RuntimeError(f"expected image of width {w} but got {image.get_width()}")
-                        if image.get_height()!=h:
-                            raise RuntimeError(f"expected image of height {h} but got {image.get_height()}")
-                        log(f" test passed for {w}x{h} {encoding} - {cs}")
-                    except Exception:
-                        log.error(f"Error on {encoding} {w}x{h} test {cs} frame {i}")
-                        raise
-            if full:
-                log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with junk data")
-                # test failures:
-                options = typedict({"junk": True})
-                try:
-                    image = decoder.decompress_image(b"junk", options)
-                except (RuntimeError, ValueError):
-                    image = None
-                if image is not None:
-                    raise RuntimeError(f"decoding junk with {decoder_module.get_type()} should have failed, got {image} instead")
-        finally:
-            decoder.clean()
+                        image = decoder.decompress_image(b"junk", options)
+                    except (RuntimeError, ValueError):
+                        image = None
+                    if image is not None:
+                        raise RuntimeError(f"decoding junk with {decoder_module.get_type()} should have failed, got {image} instead")
+            finally:
+                decoder.clean()
 
 
 def testencoder(encoder_module, full: bool, options: typedict) -> Sequence[str]:
