@@ -38,13 +38,13 @@ class AudioMixinTest(ServerMixinTest):
         opts.pulseaudio_command = "/bin/true"
         opts.pulseaudio_configure_commands = []
         opts.av_sync = True
-        with silence_info(audio, "audiolog"):
+        with silence_info(audio, "log"):
             self._test_mixin_class(audio.AudioServer, opts, {
-                "audio" : {
-                    "receive" : True,
-                    "decoders" : gstreamer_util.CODEC_ORDER,
-                    },
-                }, AudioConnection)
+                "audio": {
+                    "receive": True,
+                    "decoders": gstreamer_util.CODEC_ORDER,
+                },
+            }, AudioConnection)
             #init runs in a thread, give it time:
             time.sleep(2)
         if not self.mixin.speaker_codecs:
@@ -57,6 +57,7 @@ class AudioMixinTest(ServerMixinTest):
         self.handle_packet(("sound-control", "fadeout"))
         time.sleep(1)
         self.handle_packet(("sound-control", "stop"))
+
 
 def main():
     from xpra.os_util import POSIX, OSX
