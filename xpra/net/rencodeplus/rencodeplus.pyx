@@ -83,11 +83,11 @@ cdef enum:
 #assert LIST_FIXED_START + LIST_FIXED_COUNT == 256
 
 
-cdef inline void swap_byte_order_ushort(unsigned short *s) noexcept:
+cdef inline void swap_byte_order_ushort(unsigned short *s) noexcept nogil:
     s[0] = (s[0] >> 8) | (s[0] << 8)
 
 
-cdef inline short swap_byte_order_short(char *c) noexcept:
+cdef inline short swap_byte_order_short(char *c) noexcept nogil:
     cdef short s
     cdef char *p = <char *>&s
     p[0] = c[1]
@@ -95,11 +95,11 @@ cdef inline short swap_byte_order_short(char *c) noexcept:
     return s
 
 
-cdef inline void swap_byte_order_uint(int *i) noexcept:
+cdef inline void swap_byte_order_uint(int *i) noexcept nogil:
     i[0] = (i[0] >> 24) | ((i[0] << 8) & 0x00FF0000) | ((i[0] >> 8) & 0x0000FF00) | (i[0] << 24)
 
 
-cdef inline int swap_byte_order_int(char *c) noexcept:
+cdef inline int swap_byte_order_int(char *c) noexcept nogil:
     cdef int i
     cdef char *p = <char *>&i
     p[0] = c[3]
@@ -109,18 +109,19 @@ cdef inline int swap_byte_order_int(char *c) noexcept:
     return i
 
 
-cdef inline void swap_byte_order_ulong_long(long long *l) noexcept:
-    l[0] = (l[0] >> 56) | \
-           ((l[0] << 40) & 0x00FF000000000000) | \
-           ((l[0] << 24) & 0x0000FF0000000000) | \
-           ((l[0] << 8) & 0x000000FF00000000) | \
-           ((l[0] >> 8) & 0x00000000FF000000) | \
-           ((l[0] >> 24) & 0x0000000000FF0000) | \
-           ((l[0] >> 40) & 0x000000000000FF00) | \
-           (l[0] << 56)
+cdef inline void swap_byte_order_ulong_long(long long *l) noexcept nogil:
+    cdef long long v = l[0]
+    l[0] = (v >> 56) | \
+           ((v << 40) & <long long> 0x00FF000000000000) | \
+           ((v << 24) & <long long> 0x0000FF0000000000) | \
+           ((v << 8) & <long long> 0x000000FF00000000) | \
+           ((v >> 8) & <long long> 0x00000000FF000000) | \
+           ((v >> 24) & <long long> 0x0000000000FF0000) | \
+           ((v >> 40) & <long long> 0x000000000000FF00) | \
+           (v << 56)
 
 
-cdef inline long long swap_byte_order_long_long(char *c) noexcept:
+cdef inline long long swap_byte_order_long_long(char *c) noexcept nogil:
     cdef long long l
     cdef char *p = <char *>&l
     p[0] = c[7]
@@ -134,7 +135,7 @@ cdef inline long long swap_byte_order_long_long(char *c) noexcept:
     return l
 
 
-cdef inline float swap_byte_order_float(char *c) noexcept:
+cdef inline float swap_byte_order_float(char *c) noexcept nogil:
     cdef float f
     cdef char *p = <char *>&f
     p[0] = c[3]
@@ -144,7 +145,7 @@ cdef inline float swap_byte_order_float(char *c) noexcept:
     return f
 
 
-cdef inline double swap_byte_order_double(char *c) noexcept:
+cdef inline double swap_byte_order_double(char *c) noexcept nogil:
     cdef double d
     cdef char *p = <char *>&d
     p[0] = c[7]
