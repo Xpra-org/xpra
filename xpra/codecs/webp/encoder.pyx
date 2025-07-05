@@ -28,12 +28,12 @@ cdef int WEBP_THREADING = envbool("XPRA_WEBP_THREADING", True)
 cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_SUBSAMPLING_THRESHOLD", 80)
 
 
-cdef inline int MIN(int a, int b):
+cdef inline int MIN(int a, int b) noexcept nogil:
     if a<=b:
         return a
     return b
 
-cdef inline int MAX(int a, int b):
+cdef inline int MAX(int a, int b) noexcept nogil:
     if a>=b:
         return a
     return b
@@ -393,7 +393,7 @@ cdef inline webp_check(int ret):
     raise RuntimeError("error: %s" % err)
 
 
-cdef inline float fclamp(int v):
+cdef inline float fclamp(int v) noexcept nogil:
     if v<0:
         v = 0
     elif v>100:

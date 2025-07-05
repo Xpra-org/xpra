@@ -64,14 +64,14 @@ cdef extern from "turbojpeg.h":
     tjhandle tjInitDecompress()
     int tjDecompressHeader3(tjhandle handle,
                             const unsigned char *jpegBuf, unsigned long jpegSize, int *width,
-                            int *height, int *jpegSubsamp, int *jpegColorspace)
+                            int *height, int *jpegSubsamp, int *jpegColorspace) noexcept nogil
     int tjDecompress2(tjhandle handle,
                       const unsigned char *jpegBuf, unsigned long jpegSize, unsigned char *dstBuf,
-                      int width, int pitch, int height, int pixelFormat, int flags) nogil
+                      int width, int pitch, int height, int pixelFormat, int flags) noexcept nogil
     int tjDecompressToYUVPlanes(tjhandle handle,
                                 const unsigned char *jpegBuf, unsigned long jpegSize,
-                                unsigned char **dstPlanes, int width, int *strides, int height, int flags) nogil
-    int tjDestroy(tjhandle handle)
+                                unsigned char **dstPlanes, int width, int *strides, int height, int flags) noexcept nogil
+    int tjDestroy(tjhandle handle) noexcept nogil
     char* tjGetErrorStr()
 
     int tjPlaneWidth(int componentID, int width, int subsamp)
@@ -123,8 +123,9 @@ def get_encodings() -> Sequence[str]:
     return ("jpeg", "jpega")
 
 
-cdef inline int roundup(int n, int m):
+cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
+
 
 DEF ALIGN = 4
 
@@ -134,11 +135,12 @@ def get_error_str() -> str:
     return str(err)
 
 
-cdef inline void close_handle(tjhandle handle):
+cdef inline void close_handle(tjhandle handle) noexcept nogil:
     r = tjDestroy(handle)
     if r:
-        log.error(f"Error: failed to destroy the JPEG decompressor, code {r}:")
-        log.error(" %s", get_error_str())
+        with gil:
+            log.error(f"Error: failed to destroy the JPEG decompressor, code {r}:")
+            log.error(" %s", get_error_str())
 
 
 def tj_err(int r, msg: str) -> NoReturn:
@@ -186,9 +188,10 @@ def decompress_to_yuv(data: bytes, options: typedict) -> ImageWrapper:
 
     # parse header:
     cdef int w, h, subsamp, cs
-    r = tjDecompressHeader3(decompressor,
-                            <const unsigned char *> buf, buf_len,
-                            &w, &h, &subsamp, &cs)
+    with nogil:
+        r = tjDecompressHeader3(decompressor,
+                                <const unsigned char *> buf, buf_len,
+                                &w, &h, &subsamp, &cs)
     tj_check(r, "failed to decompress JPEG main header")
 
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)

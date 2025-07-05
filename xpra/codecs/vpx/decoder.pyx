@@ -60,7 +60,7 @@ cdef unsigned int cpus = os.cpu_count()
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
 
 
-cdef inline int roundup(int n, int m):
+cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
 
 

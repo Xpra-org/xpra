@@ -33,8 +33,9 @@ cdef extern from "Python.h":
 cdef extern from "stdlib.h":
     void free(void *ptr)
 
-cdef inline int roundup(int n, int m) noexcept:
+cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
+
 
 #precalculate indexes in native endianness:
 cdef uint8_t BGRX_R, BGRX_G, BGRX_B, BGRX_X

@@ -10,14 +10,16 @@ from time import monotonic
 from typing import Tuple
 
 cdef extern from "math.h":
-    double log(double x)
+    double log(double x) nogil noexcept
 
 from math import sqrt
-def logp(double x):
+def logp(double x) -> float:
     return log(1.0+x)*1.4426950408889634
 
-cdef inline double clogp(double x):
+
+cdef inline double clogp(double x) noexcept nogil:
     return log(1.0+x)*1.4426950408889634
+
 
 SMOOTHING_NAMES = {sqrt: "sqrt", logp: "logp"}
 def smn(fn):

@@ -40,18 +40,20 @@ SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 cdef int default_nthreads = max(1, int(math.sqrt(os.cpu_count()+1)))
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", default_nthreads)
 
-cdef inline int roundup(int n, int m):
+
+cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
+
 
 cdef int ENABLE_VP9_TILING = envbool("XPRA_VP9_TILING", False)
 
 
-cdef inline int MIN(int a, int b):
+cdef inline int MIN(int a, int b) noexcept nogil:
     if a<=b:
         return a
     return b
 
-cdef inline int MAX(int a, int b):
+cdef inline int MAX(int a, int b) noexcept nogil:
     if a>=b:
         return a
     return b

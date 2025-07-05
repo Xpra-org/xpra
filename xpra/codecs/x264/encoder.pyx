@@ -50,7 +50,7 @@ cdef extern from "stdlib.h":
     void free(void *ptr)
 
 cdef extern from "string.h":
-    int vsnprintf(char * s, size_t n, const char *fmt, va_list arg)
+    int vsnprintf(char * s, size_t n, const char *fmt, va_list arg) noexcept nogil
 
 cdef extern from "stdarg.h":
     ctypedef struct va_list:
@@ -297,7 +297,7 @@ cdef extern from "x264.h":
     x264_t *x264_encoder_open(x264_param_t *param)
     void x264_encoder_close(x264_t *context)
 
-    int x264_encoder_encode(x264_t *context, x264_nal_t **pp_nal, int *pi_nal, x264_picture_t *pic_in, x264_picture_t *pic_out ) nogil
+    int x264_encoder_encode(x264_t *context, x264_nal_t **pp_nal, int *pi_nal, x264_picture_t *pic_in, x264_picture_t *pic_out) nogil
     int x264_encoder_delayed_frames(x264_t *)
     int x264_encoder_maximum_delayed_frames(x264_t *h)
 
@@ -310,7 +310,7 @@ cdef const char * const *get_preset_names():
     return x264_preset_names;
 
 
-cdef inline int roundup(int n, int m):
+cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
 
 

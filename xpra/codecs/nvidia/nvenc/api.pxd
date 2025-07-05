@@ -12,11 +12,12 @@ import ctypes
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t   # pylint: disable=syntax-error
 
 
-cdef inline int MIN(int a, int b):
+cdef inline int MIN(int a, int b) noexcept nogil:
     if a<=b:
         return a
     return b
-cdef inline int MAX(int a, int b):
+
+cdef inline int MAX(int a, int b) noexcept nogil:
     if a>=b:
         return a
     return b

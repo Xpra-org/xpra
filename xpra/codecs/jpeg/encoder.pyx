@@ -59,10 +59,10 @@ cdef extern from "turbojpeg.h":
     int TJFLAG_ACCURATEDCT
 
     ctypedef void* tjhandle
-    tjhandle tjInitCompress()
-    int tjDestroy(tjhandle handle)
+    tjhandle tjInitCompress() noexcept nogil
+    int tjDestroy(tjhandle handle) noexcept nogil
     char* tjGetErrorStr()
-    #unsigned long tjBufSize(int width, int height, int jpegSubsamp)
+    #unsigned long tjBufSize(int width, int height, int jpegSubsamp) nogil
     int tjCompress2(tjhandle handle, const unsigned char *srcBuf,
                     int width, int pitch, int height, int pixelFormat, unsigned char **jpegBuf,
                     unsigned long *jpegSize, int jpegSubsamp, int jpegQual, int flags) nogil
@@ -149,7 +149,7 @@ def get_specs() -> Sequence[VideoSpec]:
     return specs
 
 
-cdef inline int norm_quality(int quality) nogil:
+cdef inline int norm_quality(int quality) noexcept nogil:
     if quality<=0:
         return 0
     if quality>=100:
@@ -341,7 +341,7 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
             log.error(" %s", get_error_str())
 
 
-cdef inline TJSAMP get_subsamp(int quality):
+cdef inline TJSAMP get_subsamp(int quality) noexcept nogil:
     if quality<60:
         return TJSAMP_420
     elif quality<80:

@@ -27,8 +27,10 @@ log = Logger("encoder", "nvdec")
 #because importing cuda/context will have imported it with the lock
 from pycuda.driver import Memcpy2D, mem_alloc_pitch, memcpy_dtoh, Stream
 
-cdef inline int roundup(int n, int m):
+
+cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
+
 
 ctypedef int CUresult
 ctypedef void* CUstream

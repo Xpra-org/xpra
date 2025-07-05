@@ -178,7 +178,7 @@ cdef extern from "libyuv/planar_functions.h" namespace "libyuv":
                    int width,
                    int height) nogil
 
-cdef inline str get_fiter_mode_str(FilterMode fm):
+cdef inline str get_fiter_mode_str(FilterMode fm) noexcept:
     if fm==kFilterNone:
         return "None"
     elif fm==kFilterBilinear:
@@ -188,7 +188,7 @@ cdef inline str get_fiter_mode_str(FilterMode fm):
     return "invalid"
 
 
-cdef inline FilterMode get_filtermode(int speed, int downscaling):
+cdef inline FilterMode get_filtermode(int speed, int downscaling) noexcept nogil:
     if downscaling:
         return kFilterBilinear
     if speed>66:
@@ -201,15 +201,15 @@ cdef inline FilterMode get_filtermode(int speed, int downscaling):
 DEF ALIGN = 4   #MEMALIGN_ALIGNMENT
 
 
-cdef inline int roundup(int n, int m):
+cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
 
 
-cdef inline uintptr_t roundupl(uintptr_t n, uintptr_t m):
+cdef inline uintptr_t roundupl(uintptr_t n, uintptr_t m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
 
 
-cdef inline uintptr_t memalign_ptr(uintptr_t ptr):
+cdef inline uintptr_t memalign_ptr(uintptr_t ptr) noexcept nogil:
     return <uintptr_t> roundupl(<uintptr_t> ptr, ALIGN)
 
 

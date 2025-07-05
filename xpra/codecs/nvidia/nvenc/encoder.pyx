@@ -305,7 +305,7 @@ def get_encodings() -> Sequence[str]:
     return ENCODINGS
 
 
-cdef inline int roundup(int n, int m):
+cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
 
 
