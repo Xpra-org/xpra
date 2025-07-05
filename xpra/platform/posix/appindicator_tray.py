@@ -23,7 +23,6 @@ from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_di
 from xpra.log import Logger
 
 log = Logger("tray", "posix")
-log.enable_debug()
 
 try:
     AppIndicator3 = gi_import("AyatanaAppIndicator3", "0.1")
