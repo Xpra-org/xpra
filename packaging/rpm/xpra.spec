@@ -1008,7 +1008,7 @@ fi
 
 
 %changelog
-* Tue Jul 01 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
+* Sat Jul 05 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
 - Platforms, build and packaging:
    Cython compilation warnings in macOS bindings and procps library
    exit-with-children not honoured in polling mode (ie: MS Windows)
@@ -1030,6 +1030,7 @@ fi
    missing ssh mDNS records with zeroconf
    missing mDNS records with zeroconf
    override option for ssh port number
+   quic: try harder to find a valid ssl cert
 - Minor:
    strict type in `webp` encoder
    show mdns records as strings
@@ -1037,6 +1038,7 @@ fi
    clean notification temporary files more aggressively
    starting servers with remote display can error out
    prevent None values in window models
+   record successful change of modifier mask
 - Cosmetic:
    `csc-type` debug metadata may be overwritten
    expose GPU attributes as strings
@@ -1044,6 +1046,8 @@ fi
    return type consistency
    import Cython type referenced
    more correct data type in moveresize example
+   make it easier to disable xdg menus
+   expose X11 display name, shown in errors
 
 * Sat May 31 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:

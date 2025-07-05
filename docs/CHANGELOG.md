@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.2] 2025-07-01
+## [6.3.2] 2025-07-05
 * Platforms, build and packaging:
     * Cython compilation warnings: [in macOS bindings](https://github.com/Xpra-org/xpra/commit/db8e44ee7b5267b2abc829d020c4ac6f3e9ebed7) and [procps library](https://github.com/Xpra-org/xpra/commit/38e598fed94f74a3d727043086aafd152b2d7144)
     * [exit-with-children not honoured in polling mode (ie: MS Windows)](https://github.com/Xpra-org/xpra/commit/c83d08e97c63a78f5e71217d5fdc3ed8605f0280)
@@ -21,6 +21,7 @@
     * [missing ssh mDNS records with zeroconf](https://github.com/Xpra-org/xpra/commit/4f7f7192359a09d6bb3a5a76df9b401920a7c2f8)
     * [missing mDNS records with zeroconf](https://github.com/Xpra-org/xpra/commit/911e8ce631a0f091e63e431f9603ce97b2cd107e)
     * [override option for ssh port number](https://github.com/Xpra-org/xpra/commit/a77ddd67e8b073b40026384f6650a0dcb40baff5)
+    * [quic: try harder to find a valid ssl cert](https://github.com/Xpra-org/xpra/commit/914ef1aa363e06243babc57d91c19391065c98fc)
 * Minor:
     * [strict type in `webp` encoder](https://github.com/Xpra-org/xpra/commit/c278cf0965889acfbc3ad4c477202ee34d977832)
     * [show mdns records as strings](https://github.com/Xpra-org/xpra/commit/2ffed9301e9a8e80d6e8922c6997daecc2d0f86c)
@@ -29,6 +30,7 @@
     * [starting servers with remote display can error out](https://github.com/Xpra-org/xpra/commit/1e2e8addfd985414251f00de21a6a5451f429d77)
     * [system trays can use regular encodings](https://github.com/Xpra-org/xpra/commit/7f70ce62b7a4fa8494c7fbe3c13661ad04089097)
     * [prevent None values in window models](https://github.com/Xpra-org/xpra/commit/c1550f9c8738794c4b87d66d4b413d330442e32f)
+    * [record successful change of modifier mask](https://github.com/Xpra-org/xpra/commit/c8d64df16eb625eeff74e44e1f3a94b431386b86)
 * Cosmetic:
     * [`csc-type` debug metadata may be overwritten](https://github.com/Xpra-org/xpra/commit/7909400c952735d6cf4642eb59ec70e45d30a73c)
     * [expose GPU attributes as strings](https://github.com/Xpra-org/xpra/commit/f06f0ce26a8afd7faf373d962bb30d7f17183dab)
@@ -36,6 +38,8 @@
     * [return type consistency](https://github.com/Xpra-org/xpra/commit/04aacedb4bcd4e4fbef9f7f2f0cb1aae4ca8388c)
     * [import Cython type referenced](https://github.com/Xpra-org/xpra/commit/dd763ccda00965c81d0ff276a914af855e299789)
     * [more correct data type in moveresize example](https://github.com/Xpra-org/xpra/commit/a31fe3cbd17079ba0489498a7cb55d285ff7c612)
+    * [make it easier to disable xdg menus](https://github.com/Xpra-org/xpra/commit/9041c54ae760faf72ff6119ba808d775415eb642)
+    * [expose X11 display name, shown in errors](https://github.com/Xpra-org/xpra/commit/038c772bce2bec8dfbec19621529c5b75f3965a4)
 
 ## [6.3.1] 2025-05-31
 * Platforms, build and packaging:
