@@ -34,7 +34,7 @@ class MixinsTest(ClientMixinTest):
         }.items():
             opts = AdHocStruct()
             opts.mmap = mmap_option
-            opts.mmap_group = False
+            opts.mmap_group = "none"
             with ctx:
                 m = self._test_mixin_class(mmap.MmapClient, opts, {
                     "mmap": {
