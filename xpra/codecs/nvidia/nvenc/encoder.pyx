@@ -8,8 +8,6 @@ import platform
 from collections import deque
 from time import monotonic
 from typing import Any, Dict, Tuple, List
-import ctypes
-from ctypes import cdll, POINTER
 from threading import Lock
 from collections.abc import Sequence
 
@@ -25,7 +23,6 @@ from xpra.codecs.nvidia.cuda.context import (
     get_CUDA_function, record_device_failure, record_device_success,
     cuda_device_context, load_device,
 )
-from xpra.codecs.nvidia.cuda.errors import get_error_name
 from xpra.codecs.constants import VideoSpec, TransientCodecException, CSC_ALIAS
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.nvidia.util import (
