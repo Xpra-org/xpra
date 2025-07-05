@@ -12,24 +12,35 @@ from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
 from xpra.util.objects import typedict
-from xpra.codecs.image import ImageWrapper
+from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
 log = Logger("encoder", "dav1d")
 
 from libcpp cimport bool as bool_t
 from libc.string cimport memset
+from libc.stdlib cimport free
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int64_t, uintptr_t
-from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign, makebuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 
-cdef inline unsigned int roundup(unsigned int n, unsigned int m):
+cdef unsigned char debug_enabled = log.is_debug_enabled()
+
+
+cdef inline unsigned int roundup(unsigned int n, unsigned int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
+
+
+cdef unsigned int ENOMEM = errno.ENOMEM
 
 
 cdef extern from "stdarg.h":
     ctypedef struct va_list:
         pass
+
+
+cdef extern from "string.h":
+    int vsnprintf(char * s, size_t n, const char *fmt, va_list arg) nogil
 
 
 cdef extern from "dav1d/version.h":
@@ -194,11 +205,11 @@ cdef extern from "dav1d/dav1d.h":
     ctypedef struct Dav1dRef:
         pass
 
-    ctypedef void (*CALLBACK)(void* cookie, const char *format, va_list ap) nogil
+    ctypedef void (*CALLBACK)(void* cookie, const char *format, va_list ap) noexcept nogil
 
     ctypedef struct Dav1dLogger:
         void *cookie
-        void *CALLBACK
+        void *callback
 
     ctypedef enum Dav1dInloopFilterType:
         DAV1D_INLOOPFILTER_NONE
@@ -249,10 +260,6 @@ cdef extern from "dav1d/dav1d.h":
 
 
 
-ERROR_STR: Dict[int, str] = {
-}
-
-
 def get_version() -> Tuple[int, int, int]:
     return (DAV1D_API_VERSION_MAJOR, DAV1D_API_VERSION_MINOR, DAV1D_API_VERSION_PATCH)
 
@@ -292,12 +299,60 @@ def get_specs() -> Sequence[VideoSpec]:
     )
 
 
-cdef int picture_allocator(Dav1dPicture *pic, void *cookie) noexcept:
-    print("picture_allocator()\n")
+cdef int picture_allocator(Dav1dPicture *pic, void *cookie) noexcept nogil:
+    cdef AllocatorCookie *allocator_cookie = <AllocatorCookie *> cookie
+    if debug_enabled:
+        with gil:
+            log("picture_allocator(%#x, %#x) ystride=%i, yheight=%i, uvstride=%i, uvheight=%i",
+                <uintptr_t> pic, <uintptr_t> cookie,
+                allocator_cookie.ystride, allocator_cookie.yheight,
+                allocator_cookie.uvstride, allocator_cookie.uvheight)
+    pic.stride[0] = allocator_cookie.ystride
+    pic.stride[1] = allocator_cookie.uvstride
+    pic.data[0] = <void *> memalign(allocator_cookie.ystride * allocator_cookie.yheight)
+    if pic.data[0] is NULL:
+        return -ENOMEM
+    pic.data[1] = <void *> memalign(allocator_cookie.uvstride * allocator_cookie.uvheight)
+    if pic.data[1] is NULL:
+        return -ENOMEM
+    pic.data[2] = <void *> memalign(allocator_cookie.uvstride * allocator_cookie.uvheight)
+    if pic.data[2] is NULL:
+        return -ENOMEM
+    if debug_enabled:
+        with gil:
+            log("planes allocated: %#x, %#x, %#x",
+                <uintptr_t> pic.data[0], <uintptr_t> pic.data[1], <uintptr_t> pic.data[2])
     return 0
 
-cdef void release_picture(Dav1dPicture *pic, void *cookie) noexcept:
-    print("release_picture()\n")
+
+cdef void release_picture(Dav1dPicture *pic, void *cookie) noexcept nogil:
+    if debug_enabled:
+        with gil:
+            log("release_picture(%#x, %#x) planes=%#x, %#x, %#x",
+                <uintptr_t> pic, <uintptr_t> cookie,
+                <uintptr_t> pic.data[0], <uintptr_t> pic.data[1], <uintptr_t> pic.data[2])
+    # free(pic.data[0])
+    # free(pic.data[1])
+    # free(pic.data[2])
+
+
+cdef void logger_callback(void* cookie, const char *format, va_list arg) noexcept nogil:
+    cdef char buf[256]
+    cdef int r = vsnprintf(buf, 256, format, arg)
+    if r < 0:
+        with gil:
+            log.error("dav1d_log: vsnprintf returned %s on format string '%s'", r, format)
+        return
+    with gil:
+        pystr = buf[:r].decode("latin1").rstrip("\n\r")
+        log.info("dav1d: %r", pystr)
+
+
+ctypedef struct AllocatorCookie:
+    unsigned int ystride
+    unsigned int uvstride
+    unsigned int yheight
+    unsigned int uvheight
 
 
 cdef class Decoder:
@@ -306,6 +361,7 @@ cdef class Decoder:
     cdef int height
     cdef object colorspace
     cdef Dav1dContext *context
+    cdef AllocatorCookie allocator_cookie
 
     cdef object __weakref__
 
@@ -318,14 +374,20 @@ cdef class Decoder:
         self.colorspace = colorspace
         self.frames = 0
         cdef Dav1dSettings settings
+        memset(&settings, 0, sizeof(Dav1dSettings))
         dav1d_default_settings(&settings)
         settings.n_threads = 0
         settings.max_frame_delay = 1
         settings.apply_grain = 0
-        settings.allocator.cookie = <void *> 0
-        # settings.allocator.alloc_picture_callback = &picture_allocator
-        # settings.allocator.release_picture_callback = &release_picture
-        # settings.logger = TODO
+        self.allocator_cookie.ystride = roundup(width, 2)
+        self.allocator_cookie.uvstride = roundup(self.allocator_cookie.ystride // 2, 2)
+        self.allocator_cookie.yheight = roundup(height, 2)
+        self.allocator_cookie.uvheight = roundup(height, 2) // 2
+        settings.allocator.cookie = <void *> &self.allocator_cookie
+        settings.allocator.alloc_picture_callback = &picture_allocator
+        settings.allocator.release_picture_callback = &release_picture
+        settings.logger.cookie = <void *> NULL
+        settings.logger.callback = &logger_callback
         settings.strict_std_compliance = 0
         settings.output_invisible_frames = 0
         settings.inloop_filters = DAV1D_INLOOPFILTER_ALL
@@ -360,7 +422,9 @@ cdef class Decoder:
         self.width = 0
         self.height = 0
         self.colorspace = ""
-        dav1d_close(&self.context)
+        if self.context is not NULL:
+            dav1d_close(&self.context)
+            self.context = NULL
 
     def get_info(self) -> Dict[str, Any]:
         info = get_info()
@@ -398,19 +462,6 @@ cdef class Decoder:
 
         cdef Dav1dPicture pic
         memset(&pic, 0, sizeof(Dav1dPicture))
-
-        cdef unsigned int stride = roundup(self.width, 2)
-        strides = (stride, stride // 2)
-        cdef MemBuf yplane = padbuf(stride * self.height, stride)
-        cdef MemBuf uvplane = padbuf(stride * self.height // 2, stride)
-        planes = (yplane, uvplane)
-
-        pic.data[0] = <void *> yplane.get_mem()
-        pic.data[1] = <void *> uvplane.get_mem()
-
-        for i in range(2):
-            pic.stride[i] = strides[i]
-
         # Dav1dPictureParameters p
         # Dav1dRef *ref               # Frame data allocation origin
         # allocator_data
@@ -421,17 +472,30 @@ cdef class Decoder:
             if r == -errno.EAGAIN:
                 raise RuntimeError("decoder is waiting for more data: EAGAIN")
             raise RuntimeError("failed to get picture from decoder")
-        dav1d_picture_unref(&pic)
+
+        pyplanes: list[int] = []
+        pystrides = []
+        cdef unsigned int stride
+        cdef unsigned int height
         for i in range(3):
-            log("data[%i]=%#x", i, <uintptr_t> pic.data[i])
-        for i in range(2):
-            log("stride[%i]=%#x", i, <uintptr_t> pic.stride[i])
+            if i == 0:
+                stride = self.allocator_cookie.ystride
+                height = self.allocator_cookie.yheight
+            else:
+                stride = self.allocator_cookie.uvstride
+                height = self.allocator_cookie.uvheight
+            pystrides.append(stride)
+            pyplanes.append(makebuf(<void*> pic.data[i], stride * height, readonly=True))
+        dav1d_picture_unref(&pic)
         self.frames += 1
-        return None
+        return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides, planes=PlanarFormat.PLANAR_3)
 
 
 def selftest(full=False) -> None:
     log("dav1d selftest: %s", get_info())
+    if log.is_debug_enabled():
+        global debug_enabled
+        debug_enabled = True
     from xpra.codecs.checks import testdecoder
     from xpra.codecs.dav1d import decoder
     testdecoder(decoder, full)

@@ -25,6 +25,7 @@ CODEC_TO_MODULE: dict[str, str] = {
     "enc_amf"       : "amf.encoder",
     "enc_vpx"       : "vpx.encoder",
     "dec_vpx"       : "vpx.decoder",
+    "dec_dav1d"     : "dav1d.decoder",
     "enc_x264"      : "x264.encoder",
     "enc_openh264"  : "openh264.encoder",
     "nvenc"         : "nvidia.nvenc",
@@ -68,7 +69,7 @@ ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("amf", "x264", "openh264", "vpx",
                                             "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer", "remote")
 HARDWARE_ENCODER_OPTIONS: Sequence[str] = ("nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS: Sequence[str] = ("cython", "libyuv")
-ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("openh264", "vpx", "gstreamer", "nvdec")
+ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("openh264", "vpx", "gstreamer", "nvdec", "dav1d")
 
 PREFERRED_ENCODER_ORDER: Sequence[str] = tuple(
     autoprefix("enc", x) for x in (
@@ -185,7 +186,7 @@ def deepish_clone_dict(indict: Vdict) -> Vdict:
     return outd
 
 
-def modstatus(x: str, def_list: Sequence[str], active_list: dict):
+def modstatus(x: str, def_list: Sequence[str], active_list: dict) -> str:
     # the module is present
     if x in active_list:
         return "active"
