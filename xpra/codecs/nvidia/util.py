@@ -18,8 +18,6 @@ from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("encoder", "util")
 
-MIN_VERSION = 515
-
 NVIDIA_PROC_FILE = "/proc/driver/nvidia/version"
 NVIDIA_HARDWARE = envbool("XPRA_NVIDIA_HARDWARE", False)
 
@@ -308,22 +306,6 @@ def get_cards(probe=True) -> dict:
     return _cards
 
 
-def is_blocklisted() -> bool | None:
-    v = get_nvidia_module_version(True)
-    if v:
-        try:
-            if v[0] > MIN_VERSION:
-                return False
-        except Exception as e:
-            log("is_blocklisted()", exc_info=True)
-            log.warn(f"Warning: error checking driver version {v!r}:")
-            log.warn(" %s", e)
-    return None  # we don't know: unreleased / untested
-
-
-_version_warning = False
-
-
 def parse_nvfbc_hex_key(s) -> bytes:
     # ie: 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
     # ie: 0102030405060708090A0B0C0D0E0F10
@@ -387,8 +369,6 @@ def main() -> int:
         consume_verbose_argv(sys.argv, "encoding")
         # this will log the version number:
         get_nvidia_module_version()
-        if is_blocklisted():
-            log.warn("Warning: this driver version is blocklisted")
         keys = get_license_keys()
         log.info(f"{len(keys)} NVENC license keys")
         for k in keys:
