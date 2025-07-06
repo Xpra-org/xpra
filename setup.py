@@ -384,7 +384,7 @@ SWITCH_ALIAS = {
     "webp" : ("webp_encoder", "webp_decoder"),
     "avif": ("avif_encoder", "avif_decoder"),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
-    "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
+    "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels"),
     "gstreamer": ("gstreamer_audio", "gstreamer_video"),
     "cython": (
         "cython", "codecs",
