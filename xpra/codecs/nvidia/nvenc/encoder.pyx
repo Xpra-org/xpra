@@ -25,10 +25,7 @@ from xpra.codecs.nvidia.cuda.context import (
 )
 from xpra.codecs.constants import VideoSpec, TransientCodecException, CSC_ALIAS
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.nvidia.util import (
-    get_nvidia_module_version, get_license_keys,
-    validate_driver_yuv444lossless, get_cards,
-)
+from xpra.codecs.nvidia.util import get_nvidia_module_version, get_license_keys, get_cards
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
 
