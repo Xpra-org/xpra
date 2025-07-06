@@ -940,6 +940,10 @@ cdef class Encoder:
         av1.disableSeqHdr = 0
         av1.repeatSeqHdr = 1
         av1.chromaFormatIDC = self.get_chroma_format()
+        av1.enableBitstreamPadding = 1
+        av1.enableLTR = 0
+        # `enableTemporalSVC=1` causes crashes?
+        # av1.enableTemporalSVC = 1
         av1.idrPeriod = NVENC_INFINITE_GOPLENGTH
         av1.enableIntraRefresh = INTRA_REFRESH
         if INTRA_REFRESH:

@@ -377,11 +377,11 @@ class EncodingsConnection(StubClientConnection):
         if getattr(self, "mmap_enabled", False):
             # not with mmap!
             return
-        common_encodings = tuple(x for x in self.encodings if x in self.server_encodings)
+        common_encodings = set(x for x in self.encodings if x in self.server_encodings)
         from xpra.codecs.loader import has_codec
         want_cuda_device = any((
-            has_codec("nvenc") and ("h264" in self.core_encodings or "h265" in self.core_encodings),
-            "jpeg" in common_encodings and has_codec("enc_nvjpeg"),
+            has_codec("nvenc") and {"h264", "h265", "av1"} & common_encodings,
+            has_codec("enc_nvjpeg") and "jpeg" in common_encodings,
         ))
         if want_cuda_device:
             self.allocate_cuda_device_context()
