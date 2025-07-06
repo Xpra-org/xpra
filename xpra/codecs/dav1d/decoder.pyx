@@ -15,7 +15,7 @@ from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
-log = Logger("encoder", "dav1d")
+log = Logger("decoder", "dav1d")
 
 from libcpp cimport bool as bool_t
 from libc.string cimport memset
