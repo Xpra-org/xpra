@@ -251,12 +251,12 @@ class CodecSpec:
 @dataclass(kw_only=True)
 class VideoSpec(CodecSpec):
 
-    encoding           : str = "invalid"
-    has_lossless_mode   : bool = False
+    encoding: str = "invalid"
+    has_lossless_mode: bool = False
     full_range: bool = True
 
     def __repr__(self):
-        return f"{self.codec_type}({self.input_colorspace} to {self.encoding})"
+        return f"{self.codec_type}({self.input_colorspace} - {self.encoding})"
 
 
 @dataclass(kw_only=True)
