@@ -283,9 +283,10 @@ class VideoHelper:
                         get_csc_modules, ALL_CSC_MODULE_OPTIONS)
         self.decoders = filt("dec", "video decoders", video_decoders,
                              get_video_decoders, ALL_VIDEO_DECODER_OPTIONS)
-        log("VideoHelper.set_modules(%r, %r, %r) video encoders=%s, csc=%s, video decoders=%s",
-            csv(video_encoders), csv(csc_modules), csv(video_decoders),
-            self.encoders, self.csc, self.decoders)
+        log("VideoHelper.set_modules(%r, %r, %r)", csv(video_encoders), csv(csc_modules), csv(video_decoders))
+        log(" video encoders=%s", self.encoders)
+        log(" csc modules=%s", self.csc)
+        log(" video decoders=%s", self.decoders)
 
     def cleanup(self) -> None:
         self.encoders = {}
