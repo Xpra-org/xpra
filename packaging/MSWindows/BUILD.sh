@@ -438,7 +438,7 @@ if [ "${DO_FULL}" == "0" ]; then
 	# no dbus:
 	rm -f ./libdbus*
 	# no AV1:
-    rm -f ./libaom* ./rav1e* ./libheif*
+    rm -f ./rav1e* ./libheif*
     # no avif:
     rm -f ./libavif* ./libSvt*
     # remove h264 encoder:
