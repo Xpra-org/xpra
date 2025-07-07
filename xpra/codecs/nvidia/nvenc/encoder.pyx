@@ -99,7 +99,7 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 # NVENC requires compute capability value 0x30 or above:
 DESIRED_TUNING = os.environ.get("XPRA_NVENC_TUNING", "")
 
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "") or os.environ.get("XPRA_NVENC_SAVE_TO_FILE", "")
 
 cdef int SUPPORT_30BPP = envbool("XPRA_NVENC_SUPPORT_30BPP", True)
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
