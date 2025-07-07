@@ -30,6 +30,7 @@ Build-Depends: debhelper (>= 8)
               ,libwebp-dev
               ,libturbojpeg-dev
               ,libdav1d-dev
+              ,libaom-dev
 #noble:              ,libspng-dev
 #oracular:              ,libspng-dev
 #plucky:              ,libspng-dev
@@ -320,6 +321,7 @@ Depends: xpra-common (= ${binary:Version})
 #bookworm:              ,libdav1d6
 #trixie:              ,libdav1d7
 #sid:              ,libdav1d7
+              ,libaom3
 #noble:              ,libspng0
 #oracular:              ,libspng0
 #plucky:              ,libspng0

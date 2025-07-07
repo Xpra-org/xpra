@@ -283,7 +283,7 @@ openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
 openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
 dav1d_ENABLED           = DEFAULT and pkg_config_version("1.0", "dav1d")
-# crashes on 32-bit windows:
+aom_ENABLED             = DEFAULT and pkg_config_version("3.0", "aom")
 pillow_ENABLED          = DEFAULT
 pillow_encoder_ENABLED  = pillow_ENABLED
 pillow_decoder_ENABLED  = pillow_ENABLED
@@ -2790,6 +2790,8 @@ tace(openh264_decoder_ENABLED, "xpra.codecs.openh264.decoder", "openh264", langu
 tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", "openh264", language="c++")
 toggle_packages(dav1d_ENABLED, "xpra.codecs.dav1d")
 tace(dav1d_ENABLED, "xpra.codecs.dav1d.decoder", "dav1d", language="c++")
+toggle_packages(aom_ENABLED, "xpra.codecs.aom")
+tace(aom_ENABLED, "xpra.codecs.aom.decoder", "aom", language="c++")
 toggle_packages(pillow_encoder_ENABLED or pillow_decoder_ENABLED, "xpra.codecs.pillow")
 toggle_packages(pillow_encoder_ENABLED, "xpra.codecs.pillow.encoder")
 toggle_packages(pillow_decoder_ENABLED, "xpra.codecs.pillow.decoder")
