@@ -206,6 +206,12 @@ TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int], TEST_DATA]]] = {
             (64, 64): (
                 unhex("12000a0b00000002affff036be40103219110100010000004b17c531ecb5321932af9b2fab54ee58012c"),
             ),
+            # gst-launch-1.0 videotestsrc pattern=white num-buffers=1 ! video/x-raw,width=320,height=240 ! av1enc ! filesink location=frame.av1
+            # python3 -c 'import binascii;f=open("./frame.av1", "rb");print(binascii.hexlify(f.read()))'
+            (320, 240): (
+                unhex("12000a0b200000043cffbf83fff304321e135f580100000064da5eaa0fbffffffffe7101ff919be2abfac8dbed66a0"),
+                unhex("1200322539afb004080000000000000000000000000000000000000000000114000000f16f9f789ecc"),
+            ),
         },
     },
 }

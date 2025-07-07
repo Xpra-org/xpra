@@ -367,6 +367,7 @@ cdef class Decoder:
 
     def init_context(self, encoding: str, int width, int height, colorspace: str, options: typedict) -> None:
         log("dav1d.init_context%s", (encoding, width, height, colorspace))
+        raise RuntimeError("dav1d decoder disabled due to crashes with some AV1 streams")
         assert encoding == "av1", f"invalid encoding: {encoding}"
         assert colorspace == "YUV420P", f"invalid colorspace: {colorspace}"
         self.width = width
