@@ -392,7 +392,7 @@ cdef class Decoder:
     cdef object __weakref__
 
     def init_context(self, encoding: str, int width, int height, colorspace: str, options: typedict) -> None:
-        log("dav1d.init_context%s", (encoding, width, height, colorspace))
+        log("aom.init_context%s", (encoding, width, height, colorspace))
         assert encoding == "av1", f"invalid encoding: {encoding}"
         assert colorspace == "YUV420P", f"invalid colorspace: {colorspace}"
         self.width = width
@@ -534,7 +534,7 @@ cdef class Decoder:
 
 
 def selftest(full=False) -> None:
-    log("dav1d selftest: %s", get_info())
+    log("aom selftest: %s", get_info())
     if log.is_debug_enabled():
         global debug_enabled
         debug_enabled = True
