@@ -62,14 +62,14 @@ def kmlog(keyname: str, msg: str, *args) -> None:
     lfn(msg, *args)
 
 
-def get_levels(mode: int, shift: int, group: int) -> list[int]:
+def get_levels(mode: bool, shift: bool, group: bool) -> list[int]:
     levels: list[int] = []
     # try to preserve the mode (harder to toggle):
-    for m in (int(bool(mode)), int(not mode)):
+    for m in (int(mode), int(not mode)):
         # try to preserve shift state:
-        for s in (int(bool(shift)), int(not shift)):
+        for s in (int(shift), int(not shift)):
             # group is comparatively easier to toggle (one function call):
-            for g in (int(bool(group)), int(not group)):
+            for g in (int(group), int(not group)):
                 level = int(g) * 4 + int(m) * 2 + int(s) * 1
                 levels.append(level)
     return levels
@@ -551,7 +551,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 kml(f"adding {mod} to modifiers")
                 modifiers.append(mod)
 
-        levels = get_levels(mode, shift, group)
+        levels = get_levels(bool(mode), shift, bool(group))
         level0 = levels[0]
         kml("will try levels: %s", levels)
         for level in levels:
