@@ -1008,13 +1008,15 @@ fi
 
 
 %changelog
-* Sat Jul 05 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
+* Tue Jul 08 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
 - Platforms, build and packaging:
    Cython compilation warnings in macOS bindings and procps library
    exit-with-children not honoured in polling mode (ie: MS Windows)
    `named-pipe` connection errors
    enable mDNS by default on Fedora
    DEB: only audio server requires pulseaudio
+   use aligned memory on MacOS
+   remove (broken) support for i386 builds
 - Major:
    pam module errors
    xvfb fails to resize after a while

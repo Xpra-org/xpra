@@ -1,12 +1,14 @@
 # Changelog
 
-## [6.3.2] 2025-07-05
+## [6.3.2] 2025-07-08
 * Platforms, build and packaging:
     * Cython compilation warnings: [in macOS bindings](https://github.com/Xpra-org/xpra/commit/db8e44ee7b5267b2abc829d020c4ac6f3e9ebed7) and [procps library](https://github.com/Xpra-org/xpra/commit/38e598fed94f74a3d727043086aafd152b2d7144)
     * [exit-with-children not honoured in polling mode (ie: MS Windows)](https://github.com/Xpra-org/xpra/commit/c83d08e97c63a78f5e71217d5fdc3ed8605f0280)
     * [`named-pipe` connection errors](https://github.com/Xpra-org/xpra/commit/344222922f78694123eb05839c7ecf19de5556d8)
     * [enable mDNS by default on Fedora](https://github.com/Xpra-org/xpra/commit/1b76f88d9558a684290cfc3a11505a15a9740f3d)
     * [DEB: only audio server requires pulseaudio](https://github.com/Xpra-org/xpra/commit/b3e15484b38a5df4fee8c4db794aeda02506f4d1)
+    * [use aligned memory on MacOS](https://github.com/Xpra-org/xpra/commit/a447c67f21099044be3f08e2767671b7fea6a8dd)
+    * [remove (broken) support for i386 builds](https://github.com/Xpra-org/xpra/commit/f8175edc374cfd36f61ea603b06c02fa4af7a407)
 * Major:
     * [pam module errors](https://github.com/Xpra-org/xpra/commit/36da181aae942407b17f658abb75b4a62b197691)
     * [xvfb fails to resize after a while](https://github.com/Xpra-org/xpra/commit/73fd712bb9fffc033b705c61b4ca408f42e4c8c6)
