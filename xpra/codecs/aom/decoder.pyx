@@ -478,10 +478,26 @@ cdef class Decoder:
             log.error("Error retrieving frame: %s", err)
             raise RuntimeError(err)
 
-        log.info("got aom image at %#x, pixel format %s", <uintptr_t> image, FORMAT_STRS.get(image.fmt, "unknown: %i" % image.fmt))
+        log("got aom image at %#x, pixel format %s", <uintptr_t> image, FORMAT_STRS.get(image.fmt, "unknown: %i" % image.fmt))
 
-        if image.fmt != AOM_IMG_FMT_I420:
+        Bpp = 3
+        if image.fmt == AOM_IMG_FMT_I420:
+            pixel_format = "YUV420P"
+        elif image.fmt == AOM_IMG_FMT_I42016:
+            pixel_format = "YUV420P16"
+            Bpp = 6
+        elif image.fmt == AOM_IMG_FMT_I42216:
+            pixel_format = "YUV422P16"
+            Bpp = 6
+        elif image.fmt == AOM_IMG_FMT_I44416:
+            pixel_format = "YUV444P16"
+            Bpp = 6
+        else:
             raise RuntimeError(f"Unsupported image format %r" % FORMAT_STRS.get(image.fmt, "unknown"))
+        if image.bit_depth != AOM_BITS_8:
+            raise RuntimeError("image bit depth %i is not supported yet" % image.bit_depth)
+        depth = Bpp * image.bit_depth
+
         # expose these eventually:
         # aom_color_primaries color_primaries
         # aom_transfer_characteristics transfer_characteristics
@@ -490,19 +506,10 @@ cdef class Decoder:
             log("monochrome image")
         # aom_chroma_sample_position chroma_sample_position
         full_range = image.range == AOM_CR_FULL_RANGE
-        if image.w != self.width or image.h != self.height:
+        if image.w < self.width or image.h < self.height:
             log.error("Error: image size %ix%i does not match expected size %ix%i",
                       image.w, image.h, self.width, self.height)
             return None
-        if image.bit_depth != AOM_BITS_8:
-            raise RuntimeError("image bit depth %i is not supported yet" % image.bit_depth)
-        # not sure what to do with these yet:
-        # int d_w  # Display width
-        # int d_h  # Display height
-        # int r_w  # Render width
-        # int r_h  # Render height
-        # int x_chroma_shift  # Chroma subsampling horizontal shift
-        # int y_chroma_shift  # Chroma subsampling vertical shift
 
         # we have to copy the image data to a new buffer,
         # until we can implement the aom_codec_set_frame_buffer_functions callbacks
@@ -521,16 +528,12 @@ cdef class Decoder:
             # copy:
             plane_buf = padbuf(plane_height * stride, stride)
             memcpy(<void *> plane_buf.get_mem(), <const void *> image.planes[i], plane_height * stride)
-            pyplanes.append(plane_buf)
+            pyplanes.append(memoryview(plane_buf))
             pystrides.append(stride)
 
-        # unused:
-        # image.temporal_id
-        # image.spatial_id
-        # image.user_priv
-
         self.frames += 1
-        return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides, planes=PlanarFormat.PLANAR_3)
+        return ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, depth,
+                            pystrides, planes=PlanarFormat.PLANAR_3, bytesperpixel=Bpp, full_range=full_range)
 
 
 def selftest(full=False) -> None:
