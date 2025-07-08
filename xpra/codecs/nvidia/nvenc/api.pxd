@@ -817,11 +817,12 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved1[255]      #[in]: Reserved and must be set to 0
         void*       reserved2[64]       #[in]: Reserved and must be set to NULL
 
-    ctypedef struct NV_ENC_H264_SEI_PAYLOAD:
+    ctypedef struct NV_ENC_SEI_PAYLOAD:
         uint32_t    payloadSize         #[in] SEI payload size in bytes. SEI payload must be byte aligned, as described in Annex D
         uint32_t    payloadType         #[in] SEI payload types and syntax can be found in Annex D of the H.264 Specification.
         uint8_t     *payload            #[in] pointer to user data
-    ctypedef NV_ENC_H264_SEI_PAYLOAD NV_ENC_SEI_PAYLOAD
+
+    ctypedef NV_ENC_SEI_PAYLOAD NV_ENC_H264_SEI_PAYLOAD
 
     ctypedef struct NV_ENC_PIC_PARAMS_H264:
         uint32_t    displayPOCSyntax    #[in]: Specifies the display POC syntax This is required to be set if client is handling the picture type decision.
@@ -897,9 +898,43 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t reserved2 [244]        #[in]: Reserved and must be set to 0.
         void*    reserved3[61]          #[in]: Reserved and must be set to NULL.
 
+    ctypedef NV_ENC_SEI_PAYLOAD NV_ENC_AV1_OBU_PAYLOAD
+
+    ctypedef struct NV_ENC_FILM_GRAIN_PARAMS_AV1:
+        pass
+
+    ctypedef struct NV_ENC_PIC_PARAMS_AV1:
+        uint32_t displayPOCSyntax       #[in]: Specifies the display POC syntax This is required to be set if client is handling the picture type decision.
+        uint32_t refPicFlag             #[in]: Set to 1 for a reference picture. This is ignored if NV_ENC_INITIALIZE_PARAMS::enablePTD is set to 1. */
+        uint32_t temporalId             #[in]: Specifies the temporal id of the picture
+        uint32_t forceIntraRefreshWithFrameCnt  #[in]: Forces an intra refresh with duration equal to intraRefreshFrameCnt.
+        uint32_t goldenFrameFlag        #[in]: Encode frame as Golden Frame. This is ignored if NV_ENC_INITIALIZE_PARAMS::enablePTD is set to 1.
+        uint32_t arfFrameFlag           #[in]: Encode frame as Alternate Reference Frame. This is ignored if NV_ENC_INITIALIZE_PARAMS::enablePTD is set to 1.
+        uint32_t arf2FrameFlag          #[in]: Encode frame as Alternate Reference 2 Frame. This is ignored if NV_ENC_INITIALIZE_PARAMS::enablePTD is set to 1.
+        uint32_t bwdFrameFlag           #[in]: Encode frame as Backward Reference Frame. This is ignored if NV_ENC_INITIALIZE_PARAMS::enablePTD is set to 1.
+        uint32_t overlayFrameFlag       #[in]: Encode frame as overlay frame. A previously encoded frame with the same displayPOCSyntax value should be present in reference frame buffer.
+        uint32_t showExistingFrameFlag  #in]: When ovelayFrameFlag is set to 1, this flag controls the value of the show_existing_frame syntax element associated with the overlay frame.
+        uint32_t errorResilientModeFlag #[in]: encode frame independently from previously encoded frames */
+        uint32_t tileConfigUpdate       #[in]: Set to 1 if client wants to overwrite the default tile configuration with the tile parameters specified below
+        uint32_t enableCustomTileConfig #[in]: Set 1 to enable custom tile configuration: numTileColumns and numTileRows must have non zero values and tileWidths and tileHeights must point to a valid address
+        uint32_t filmGrainParamsUpdate  #[in]: Set to 1 if client wants to update previous film grain parameters: filmGrainParams must point to a valid address and encoder must have been configured with film grain enabled
+        uint32_t reservedBitFields      #[in]: Reserved bitfields and must be set to 0
+        uint32_t numTileColumns         #[in]: This parameter in conjunction with the flag enableCustomTileConfig and the array tileWidths[] specifies the way in which the picture is divided into tile columns.
+        uint32_t numTileRows            #[in]: This parameter in conjunction with the flag enableCustomTileConfig and the array tileHeights[] specifies the way in which the picture is divided into tiles rows
+        uint32_t reserved               #[in]: Reserved and must be set to 0
+        uint32_t *tileWidths            #[in]: If enableCustomTileConfig == 1, tileWidths[i] specifies the width of tile column i in 64x64 CTU unit, with 0 <= i <= numTileColumns -1.
+        uint32_t *tileHeights           #[in]: If enableCustomTileConfig == 1, tileHeights[i] specifies the height of tile row i in 64x64 CTU unit, with 0 <= i <= numTileRows -1.
+        uint32_t obuPayloadArrayCnt     #[in]: Specifies the number of elements allocated in  obuPayloadArray array.
+        uint32_t reserved1              #[in]: Reserved and must be set to 0.
+        NV_ENC_AV1_OBU_PAYLOAD* obuPayloadArray     #[in]: Array of OBU payloads which will be inserted for this frame.
+        NV_ENC_FILM_GRAIN_PARAMS_AV1 *filmGrainParams   #[in]: If filmGrainParamsUpdate == 1, filmGrainParams must point to a valid NV_ENC_FILM_GRAIN_PARAMS_AV1 structure
+        uint32_t reserved2[246]         #[in]: Reserved and must be set to 0.
+        void*    reserved3[61]
+
     ctypedef union NV_ENC_CODEC_PIC_PARAMS:
         NV_ENC_PIC_PARAMS_H264 h264PicParams    #[in]: H264 encode picture params.
         NV_ENC_PIC_PARAMS_HEVC hevcPicParams    #[in]: HEVC encode picture params.
+        NV_ENC_PIC_PARAMS_AV1  av1PicParams     #[in]: AV1 encode picture params.
         uint32_t               reserved[256]    #[in]: Reserved and must be set to 0.
 
     ctypedef struct NV_ENC_MEONLY_PARAMS:

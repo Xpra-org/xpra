@@ -1518,9 +1518,12 @@ cdef class Encoder:
         if self.encoding=="h264":
             pic.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
             pic.codecPicParams.h264PicParams.refPicFlag = self.frames==0
-        else:
+        elif self.encoding=="hevc":
             pic.codecPicParams.hevcPicParams.displayPOCSyntax = 2*self.frames
             pic.codecPicParams.hevcPicParams.refPicFlag = self.frames==0
+        elif self.encoding=="av1":
+            pic.codecPicParams.av1PicParams.displayPOCSyntax = 2*self.frames
+            pic.codecPicParams.av1PicParams.refPicFlag = self.frames==0
         pic.frameIdx = self.frames
         if timestamp>0:
             if timestamp>=self.first_frame_timestamp:
