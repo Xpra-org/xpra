@@ -17,11 +17,10 @@ from xpra.util.io import path_permission_info
 from xpra.util.str_fn import print_nested_dict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs
-from xpra.buffers.membuf cimport memalign    # pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign, memfree    # pylint: disable=syntax-error
 
 
 from libc.stdint cimport uint32_t, uint8_t
-from libc.stdlib cimport free
 from libc.string cimport memset, memcpy
 
 
@@ -486,4 +485,4 @@ cdef class VirtualWebcam:
             self.device.write(buf[:self.framesize])
             self.device.flush()
         finally:
-            free(buf)
+            memfree(buf)

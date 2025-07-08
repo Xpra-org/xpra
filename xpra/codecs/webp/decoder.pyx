@@ -13,11 +13,10 @@ from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.debug import may_save_image
-from xpra.buffers.membuf cimport memalign, buffer_context
+from xpra.buffers.membuf cimport memalign, memfree, buffer_context
 
 from xpra.codecs.argb.argb cimport show_plane_range
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
-from libc.stdlib cimport free
 
 DEF ALIGN = 4
 
@@ -235,7 +234,7 @@ class WebpImageWrapper(ImageWrapper):
         log("WebpImageWrapper.free() cython_buffer=%#x", buf)
         super().free()
         if buf!=0:
-            free(<void *> buf)
+            memfree(<void *> buf)
 
 
 def decompress_to_yuv(data: bytes, options: typedict) -> WebpImageWrapper:

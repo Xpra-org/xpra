@@ -20,7 +20,7 @@ from xpra.log import Logger
 log = Logger("csc", "cython")
 
 from libc.stdint cimport uint8_t, uintptr_t # pylint: disable=syntax-error
-from xpra.buffers.membuf cimport memalign, buffer_context
+from xpra.buffers.membuf cimport memalign, memfree, buffer_context
 
 
 cdef extern from "Python.h":
@@ -30,8 +30,6 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
     int PyBUF_WRITE
 
-cdef extern from "stdlib.h":
-    void free(void *ptr)
 
 cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
@@ -140,7 +138,7 @@ class CythonImageWrapper(ImageWrapper):
         cb = self.cython_buffer
         if cb>0:
             self.cython_buffer = 0
-            free(<void *> (<uintptr_t> cb))
+            memfree(<void *> (<uintptr_t> cb))
 
     def _cn(self):
         return "CythonImageWrapper"

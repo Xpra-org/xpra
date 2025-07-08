@@ -15,6 +15,9 @@ ctypedef void dealloc_callback(const void *p, size_t l, void *arg)
 cdef void *memalign(size_t size) noexcept nogil
 
 
+cdef void memfree(void *p) noexcept nogil
+
+
 cdef class MemBuf:
     cdef int readonly
     cdef const void *p

@@ -22,7 +22,7 @@ from collections import deque
 
 from libc.string cimport memset
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
-from xpra.buffers.membuf cimport memalign
+from xpra.buffers.membuf cimport memalign, memfree
 
 
 MB_INFO = envbool("XPRA_X264_MB_INFO", False)
@@ -46,8 +46,6 @@ cdef extern from "Python.h":
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
 
-cdef extern from "stdlib.h":
-    void free(void *ptr)
 
 cdef extern from "string.h":
     int vsnprintf(char * s, size_t n, const char *fmt, va_list arg) noexcept nogil
@@ -505,6 +503,11 @@ cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) 
     logger("X264: %r", pystr)
 
 
+cdef void mb_info_free(void *ptr) noexcept nogil:
+    # this shim is needed because cython doesn't want to give us a function pointer to `memfree`
+    memfree(ptr)
+
+
 cdef class Encoder:
     cdef unsigned long frames
     cdef x264_t *context
@@ -938,7 +941,7 @@ cdef class Encoder:
         if MB_INFO:
             mb_info = <uint8_t*> memalign(mb_count)
             memset(mb_info, 0, mb_count)
-            pic_in.prop.mb_info_free = &free
+            pic_in.prop.mb_info_free = &mb_info_free
             # for i in range(mb_count):
             #     mb_info[i] = i % 2
         pic_in.prop.mb_info = mb_info

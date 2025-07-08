@@ -18,11 +18,10 @@ from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.codecs.constants import get_subsampling_divs, CSCSpec
 from xpra.codecs.image import ImageWrapper
-from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context    # pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, memfree, buffer_context    # pylint: disable=syntax-error
 
 from xpra.codecs.argb.argb cimport show_plane_range
 from libc.stdint cimport uint8_t, uintptr_t
-from libc.stdlib cimport free
 
 
 cdef uint8_t SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
@@ -178,7 +177,7 @@ cdef extern from "libyuv/planar_functions.h" namespace "libyuv":
                    int width,
                    int height) nogil
 
-cdef inline str get_fiter_mode_str(FilterMode fm) noexcept:
+cdef inline str get_fiter_mode_str(FilterMode fm):
     if fm==kFilterNone:
         return "None"
     elif fm==kFilterBilinear:
@@ -267,7 +266,7 @@ class YUVImageWrapper(ImageWrapper):
         log("libyuv.YUVImageWrapper.free() cython_buffer=%#x", buf)
         super().free()
         if buf!=0:
-            free(<void *> buf)
+            memfree(<void *> buf)
 
 
 def argb_to_gray(image: ImageWrapper) -> ImageWrapper:
@@ -537,7 +536,7 @@ cdef class Converter:
         cdef uint8_t *output_buffer = self.output_buffer
         self.output_buffer = NULL
         if output_buffer:
-            free(output_buffer)
+            memfree(output_buffer)
         self.out_buffer_size = 0
 
     def is_closed(self) -> bool:

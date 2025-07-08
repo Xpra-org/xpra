@@ -32,6 +32,10 @@ cdef extern from "memalign.h":
     int MEMALIGN_ALIGNMENT
 
 
+cdef void memfree(void *p) noexcept nogil:
+    xmemfree(p)
+
+
 cdef void free_buf(const void *p, size_t l, void *arg) noexcept nogil:
     xmemfree(<void *>p)
 

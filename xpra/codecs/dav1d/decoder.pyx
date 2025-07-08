@@ -19,9 +19,8 @@ log = Logger("decoder", "dav1d")
 
 from libcpp cimport bool as bool_t
 from libc.string cimport memset
-from libc.stdlib cimport free
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int64_t, uintptr_t
-from xpra.buffers.membuf cimport memalign, makebuf, MemBuf, buffer_context  # pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign, memfree, makebuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 
 cdef unsigned char debug_enabled = log.is_debug_enabled()
@@ -331,9 +330,9 @@ cdef void release_picture(Dav1dPicture *pic, void *cookie) noexcept nogil:
             log("release_picture(%#x, %#x) planes=%#x, %#x, %#x",
                 <uintptr_t> pic, <uintptr_t> cookie,
                 <uintptr_t> pic.data[0], <uintptr_t> pic.data[1], <uintptr_t> pic.data[2])
-    # free(pic.data[0])
-    # free(pic.data[1])
-    # free(pic.data[2])
+    # memfree(pic.data[0])
+    # memfree(pic.data[1])
+    # memfree(pic.data[2])
 
 
 cdef void logger_callback(void* cookie, const char *format, va_list arg) noexcept nogil:
