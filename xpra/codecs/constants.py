@@ -101,18 +101,21 @@ PIXEL_SUBSAMPLING : dict[str, Sequence[tuple[int, int]]] = {
     "YUV400P"   : ((1, 1), ),
     "GBRP"      : ((1, 1), (1, 1), (1, 1)),
     "GBRP9LE"   : ((1, 1), (1, 1), (1, 1)),
-    "GBRP10"    : ((1, 1), (1, 1), (1, 1)),
-    "YUV444P10" : ((1, 1), (1, 1), (1, 1)),
-    "YUV444P16" : ((1, 1), (1, 1), (1, 1)),
 }
+
+
+def get_subsampling(pixel_format: str) -> str:
+    # "YUV420P16" and "YUV420P10" are the same as "YUV420P" when it comes to subsampling:
+    return pixel_format.replace("P16", "P").replace("P10", "P")
 
 
 def get_subsampling_divs(pixel_format: str) -> Sequence[tuple[int, int]]:
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
-    if pixel_format not in PIXEL_SUBSAMPLING:
+    subsampling = get_subsampling(pixel_format)
+    if subsampling not in PIXEL_SUBSAMPLING:
         raise ValueError(f"invalid pixel format: {pixel_format!r}")
-    return PIXEL_SUBSAMPLING[pixel_format]
+    return PIXEL_SUBSAMPLING[subsampling]
 
 
 def preforder(encodings: Iterable[str]) -> Sequence[str]:

@@ -14,8 +14,11 @@ from collections.abc import Callable, Iterable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.net.compression import Compressed, LargeStructure
-from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, COMPRESS_FMT_PREFIX, \
-    COMPRESS_FMT_SUFFIX, COMPRESS_FMT
+from xpra.codecs.constants import (
+    TransientCodecException, get_subsampling,
+    RGB_FORMATS, PIXEL_SUBSAMPLING, COMPRESS_FMT_PREFIX,
+    COMPRESS_FMT_SUFFIX, COMPRESS_FMT,
+)
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.protocols import ColorspaceConverter
 from xpra.server.window.compress import (
@@ -64,7 +67,7 @@ VIDEO_TIMEOUT = envint("XPRA_VIDEO_TIMEOUT", 10)
 VIDEO_NODETECT_TIMEOUT = envint("XPRA_VIDEO_NODETECT_TIMEOUT", 10*60)
 
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   # ie: "YUV444P"
-if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not in PIXEL_SUBSAMPLING:
+if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and get_subsampling(FORCE_CSC_MODE) not in PIXEL_SUBSAMPLING:
     log.warn("ignoring invalid CSC mode specified: %s", FORCE_CSC_MODE)
     FORCE_CSC_MODE = ""
 FORCE_CSC = bool(FORCE_CSC_MODE) or envbool("XPRA_FORCE_CSC", False)
