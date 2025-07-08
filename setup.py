@@ -2556,13 +2556,8 @@ if data_ENABLED:
 #*******************************************************************************
 if cython_ENABLED:
     add_packages("xpra.buffers")
-    import platform
-    # this may well be suboptimal:
-    extra_compile_args = "-mfpmath=387" if platform.machine() == "i386" else {}
-    tace(cython_ENABLED, "xpra.buffers.membuf,xpra/buffers/memalign.c", optimize=3,
-         extra_compile_args=extra_compile_args)
-    tace(cython_ENABLED, "xpra.buffers.xxh", "libxxhash", optimize=3,
-         extra_compile_args=extra_compile_args)
+    tace(cython_ENABLED, "xpra.buffers.membuf,xpra/buffers/memalign.c", optimize=3)
+    tace(cython_ENABLED, "xpra.buffers.xxh", "libxxhash", optimize=3)
     if cityhash_ENABLED:
         ace("xpra.buffers.cityhash", optimize=3,
             language="c++",
