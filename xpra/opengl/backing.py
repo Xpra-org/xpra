@@ -94,7 +94,8 @@ FORCE_SPINNER = envbool("XPRA_OPENGL_FORCE_SPINNER", False)
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
 PLANAR_FORMATS = (
-    "YUV420P", "YUV422P", "YUV444P", "NV12", "YUV444P16",
+    "YUV420P", "YUV422P", "YUV444P", "NV12",
+    "YUV420P16", "YUV422P16", "YUV444P16",
     "YUVA420P", "YUVA422P", "YUVA444P",
     "GBRP", "GBRP16",
 )
@@ -119,6 +120,8 @@ PIXEL_INTERNAL_FORMAT: dict[str, Sequence[IntConstant]] = {
     "GBRP": (GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE),  # invalid according to the spec! (only value that works)
     "GBRP16": (GL_R16, GL_R16, GL_R16),
     "YUV444P10": (GL_R16, GL_R16, GL_R16),
+    "YUV420P16": (GL_R16, GL_R16, GL_R16),
+    "YUV422P16": (GL_R16, GL_R16, GL_R16),
     "YUV444P16": (GL_R16, GL_R16, GL_R16),
 }
 PIXEL_DATA_FORMAT: dict[str, Sequence[IntConstant]] = {
@@ -148,6 +151,8 @@ PIXEL_UPLOAD_FORMAT: dict[str, Any] = {
     "GBRP": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
     "GBRP16": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
     "YUV444P10": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
+    "YUV420P16": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
+    "YUV422P16": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
     "YUV444P16": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
 }
 CONSTANT_TO_PIXEL_FORMAT: dict[IntConstant, str] = {
@@ -1326,7 +1331,7 @@ class GLWindowBackingBase(WindowBackingBase):
                                options: typedict, callbacks: PaintCallbacks) -> None:
         # overridden to handle YUV using shaders:
         pixel_format = img.get_pixel_format()
-        if pixel_format.startswith("YUV") or pixel_format=="NV12":
+        if pixel_format.startswith("YUV") or pixel_format == "NV12":
             w = img.get_width()
             h = img.get_height()
             shader = f"{pixel_format}_to_RGB"
@@ -1430,7 +1435,9 @@ class GLWindowBackingBase(WindowBackingBase):
             # which will end up calling paint rgb with r210 data
             super().do_video_paint(coding, img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
-        shader = f"{pixel_format}_to_RGB"
+        # ignore the bit depth, which is transparent to the shader once we've uploaded the pixel data:
+        fmt_name = pixel_format.replace("P16", "P")
+        shader = f"{fmt_name}_to_RGB"
         if img.get_full_range():
             shader += "_FULL"
         encoding = options.strget("encoding")
@@ -1491,7 +1498,7 @@ class GLWindowBackingBase(WindowBackingBase):
         )[:len(divs)]
         log("%s.update_planar_textures%s textures=%s", self, (width, height, img, pixel_format, scaling, pbo), textures)
         if self.planar_pixel_format != pixel_format or self.texture_size != (width, height):
-            gl_marker("Creating new planar textures, pixel format %s (was %s), texture size %s (was %s)",
+            gl_marker("Creating new planar textures, pixel format %r (was %r), texture size %s (was %s)",
                       pixel_format, self.planar_pixel_format, (width, height), self.texture_size)
             self.planar_pixel_format = pixel_format
             self.texture_size = (width, height)
@@ -1572,7 +1579,8 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.planar_pixel_format not in (
             "YUV420P", "YUV422P", "YUV444P",
             "YUVA420P", "YUVA422P", "YUVA444P",
-            "GBRP", "NV12", "GBRP16", "YUV444P16",
+            "GBRP", "NV12", "GBRP16",
+            "YUV420P16", "YUV422P16", "YUV444P16",
         ):
             # not ready to render yet
             return
@@ -1583,7 +1591,7 @@ class GLWindowBackingBase(WindowBackingBase):
             (GL_TEXTURE2, TEX_V),
             (GL_TEXTURE3, TEX_A),
         )[:len(divs)]
-        gl_marker("painting planar update, format %s", self.planar_pixel_format)
+        gl_marker("rendering planar update, format %s", self.planar_pixel_format)
 
         target = GL_TEXTURE_RECTANGLE
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
