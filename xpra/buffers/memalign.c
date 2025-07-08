@@ -34,12 +34,8 @@ void *xmemalign(size_t size)
 	//well done Microsoft, I didn't think you could screw up this badly
 	//and thank you for wasting my time once again
 	return malloc(size);
-#elif defined(__APPLE__) || defined(__OSX__)
-	//Crapple version: "all memory allocations are 16-byte aligned"
-	//no choice, this is what you get
-	return malloc(size);
 #else
-	//not WIN32 and not APPLE/OSX, assume POSIX:
+	// assume POSIX:
 	void *memptr = NULL;
 	if (posix_memalign(&memptr, MEMALIGN_ALIGNMENT, size))
 		return NULL;
