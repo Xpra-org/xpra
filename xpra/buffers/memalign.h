@@ -14,6 +14,7 @@ extern "C" {
 #define MEMALIGN_ALIGNMENT 64
 
 void *xmemalign(size_t size);
+void xmemfree(void *ptr);
 int pad(int size);
 
 #ifdef __cplusplus

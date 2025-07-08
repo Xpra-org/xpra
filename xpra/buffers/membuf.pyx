@@ -28,11 +28,12 @@ cdef extern from "Python.h":
 
 cdef extern from "memalign.h":
     void *xmemalign(size_t size) nogil
+    void xmemfree(void *ptr) nogil
     int MEMALIGN_ALIGNMENT
 
 
 cdef void free_buf(const void *p, size_t l, void *arg) noexcept nogil:
-    free(<void *>p)
+    xmemfree(<void *>p)
 
 
 cdef MemBuf getbuf(size_t l, int readonly=1):

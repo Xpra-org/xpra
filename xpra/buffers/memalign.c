@@ -7,11 +7,9 @@
 #include <stdlib.h>
 #include "memalign.h"
 
-//not honoured on MS Windows:
-#define MEMALIGN 1
-
 #ifdef _WIN32
 #define _STDINT_H
+#include <malloc.h>
 #endif
 #if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__DragonFly__) \
 		&& !defined(__OpenBSD__)
@@ -28,12 +26,8 @@ int pad(int size) {
 
 void *xmemalign(size_t size)
 {
-#ifdef MEMALIGN
 #ifdef _WIN32
-	//_aligned_malloc and _aligned_free lead to a memleak
-	//well done Microsoft, I didn't think you could screw up this badly
-	//and thank you for wasting my time once again
-	return malloc(size);
+    return _aligned_malloc(size, MEMALIGN_ALIGNMENT);
 #else
 	// assume POSIX:
 	void *memptr = NULL;
@@ -41,11 +35,18 @@ void *xmemalign(size_t size)
 		return NULL;
 	return memptr;
 #endif
-//MEMALIGN not set:
+}
+
+void xmemfree(void *ptr)
+{
+#ifdef _WIN32
+    _aligned_free(ptr);
 #else
-	return malloc(size);
+    // assume POSIX:
+    free(ptr);
 #endif
 }
+
 
 #ifdef __cplusplus
 }
