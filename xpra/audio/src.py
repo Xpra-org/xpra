@@ -53,7 +53,8 @@ class AudioSource(AudioPipeline):
         "new-buffer": n_arg_signal(3),
     }
 
-    def __init__(self, src_type: str, src_options: dict, codecs: Sequence[str], codec_options: dict, volume=1.0):
+    def __init__(self, src_type: str, src_options: dict[str, int | float | str],
+                 codecs: Sequence[str], codec_options: dict, volume=1.0):
         if not src_type:
             try:
                 from xpra.audio.pulseaudio.util import get_pa_device_options
