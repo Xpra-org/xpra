@@ -416,7 +416,7 @@ cdef class Decoder:
         config.threads = options.intget("threads", 0)  # 0 means use the default number of threads
         config.w = width
         config.h = height
-        config.allow_lowbitdepth = 0
+        config.allow_lowbitdepth = 1
         cdef aom_codec_err_t err = aom_codec_dec_init_ver(&self.context, self.codec, &config,
                                                           0, AOM_DECODER_ABI_VERSION)
         check(err)
