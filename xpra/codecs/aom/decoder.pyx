@@ -345,19 +345,24 @@ def get_min_size(encoding) -> Tuple[int, int]:
 
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
+COLORSPACES = ("YUV420P", "YUV422P", "YUV444P", "YUV420P16", "YUV422P16", "YUV444P16", "NV12")
+
 
 def get_specs() -> Sequence[VideoSpec]:
-    return (
-        VideoSpec(
-            encoding="av1", input_colorspace="YUV420P", output_colorspaces=("YUV420P", ),
-            has_lossless_mode=False,
-            codec_class=Decoder, codec_type=get_type(),
-            quality=40, speed=20,
-            size_efficiency=40,
-            setup_cost=0, width_mask=0xFFFE, height_mask=0xFFFE,
-            max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
-        ),
-    )
+    specs = []
+    for cs in COLORSPACES:
+        specs.append(
+            VideoSpec(
+                encoding="av1", input_colorspace=cs, output_colorspaces=(cs, ),
+                has_lossless_mode=False,
+                codec_class=Decoder, codec_type=get_type(),
+                quality=40, speed=20,
+                size_efficiency=40,
+                setup_cost=0, width_mask=0xFFFE, height_mask=0xFFFE,
+                max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
+            )
+        )
+    return specs
 
 
 def check(r: aom_codec_err_t) -> None:
@@ -394,7 +399,8 @@ cdef class Decoder:
     def init_context(self, encoding: str, int width, int height, colorspace: str, options: typedict) -> None:
         log("aom.init_context%s", (encoding, width, height, colorspace))
         assert encoding == "av1", f"invalid encoding: {encoding}"
-        assert colorspace == "YUV420P", f"invalid colorspace: {colorspace}"
+        if colorspace not in COLORSPACES:
+            raise ValueError(f"invalid colorspace: {colorspace!r}, expected one of {COLORSPACES}")
         self.width = width
         self.height = height
         self.colorspace = colorspace
@@ -478,22 +484,11 @@ cdef class Decoder:
             log.error("Error retrieving frame: %s", err)
             raise RuntimeError(err)
 
-        log("got aom image at %#x, pixel format %s", <uintptr_t> image, FORMAT_STRS.get(image.fmt, "unknown: %i" % image.fmt))
-
-        Bpp = 3
-        if image.fmt == AOM_IMG_FMT_I420:
-            pixel_format = "YUV420P"
-        elif image.fmt == AOM_IMG_FMT_I42016:
-            pixel_format = "YUV420P16"
-            Bpp = 6
-        elif image.fmt == AOM_IMG_FMT_I42216:
-            pixel_format = "YUV422P16"
-            Bpp = 6
-        elif image.fmt == AOM_IMG_FMT_I44416:
-            pixel_format = "YUV444P16"
-            Bpp = 6
-        else:
+        pixel_format = FORMAT_STRS.get(image.fmt, "unknown: %i" % image.fmt)
+        log("got aom image at %#x, pixel format %s", <uintptr_t> image, pixel_format)
+        if pixel_format not in COLORSPACES:
             raise RuntimeError(f"Unsupported image format %r" % FORMAT_STRS.get(image.fmt, "unknown"))
+        Bpp = 6 if pixel_format.endswith("P16") else 3
         if image.bit_depth != AOM_BITS_8:
             raise RuntimeError("image bit depth %i is not supported yet" % image.bit_depth)
         depth = Bpp * image.bit_depth
