@@ -54,7 +54,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 )
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import repr_ellipsized, hexstr
+from xpra.util.str_fn import repr_ellipsized, hexstr, csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.objects import typedict
 from xpra.util.system import is_X11
@@ -1488,17 +1488,21 @@ class GLWindowBackingBase(WindowBackingBase):
         internal_formats = PIXEL_INTERNAL_FORMAT.get(pixel_format, (GL_R8, GL_R8, GL_R8, GL_R8))
         data_formats = PIXEL_DATA_FORMAT.get(pixel_format, (GL_RED, GL_RED, GL_RED, GL_RED))
         divs = get_subsampling_divs(pixel_format)
+        nplanes = len(divs)
         # textures: usually 3 for "YUV", but only 2 for "NV12", 4 for "YUVA"
         textures = (
             (GL_TEXTURE0, TEX_Y),
             (GL_TEXTURE1, TEX_U),
             (GL_TEXTURE2, TEX_V),
             (GL_TEXTURE3, TEX_A),
-        )[:len(divs)]
+        )[:nplanes]
         log("%s.update_planar_textures%s textures=%s", self, (width, height, img, pixel_format, scaling, pbo), textures)
         if self.planar_pixel_format != pixel_format or self.texture_size != (width, height):
             gl_marker("Creating new planar textures, pixel format %r (was %r), texture size %s (was %s)",
                       pixel_format, self.planar_pixel_format, (width, height), self.texture_size)
+            gl_marker(" planes=%s, internal_formats=%s, data_formats=%s, upload_formats=%s",
+                      csv(get_plane_name(pixel_format, i) for i in range(nplanes)),
+                      internal_formats, data_formats, upload_formats)
             self.planar_pixel_format = pixel_format
             self.texture_size = (width, height)
             # Create textures of the same size as the window's
@@ -1522,7 +1526,7 @@ class GLWindowBackingBase(WindowBackingBase):
         gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
-        if len(rowstrides) != len(divs) or len(img_data) != len(divs):
+        if len(rowstrides) != nplanes or len(img_data) != nplanes:
             raise RuntimeError(f"invalid number of planes for {pixel_format}")
         for texture, index in textures:
             # "YUV420P" -> ("Y", "U", "V")
@@ -1565,7 +1569,7 @@ class GLWindowBackingBase(WindowBackingBase):
             except GLError:
                 pass
             log(f"texture {index}: {tex_name:2} div={div_w},{div_h}, rowstride={rowstride}, {w}x{h}, "
-                f"data={size} bytes, upload={upload}, format={dformat}, type={uformat}")
+                f"data={size:8} bytes, upload={upload}, format={dformat}, type={uformat}")
             glTexSubImage2D(target, 0, 0, 0, w, h, dformat, uformat, pixel_data)
             glBindTexture(target, 0)
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
