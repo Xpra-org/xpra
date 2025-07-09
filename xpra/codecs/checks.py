@@ -212,6 +212,10 @@ TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int], TEST_DATA]]] = {
                 unhex("12000a0b200000043cffbf83fff304321e135f580100000064da5eaa0fbffffffffe7101ff919be2abfac8dbed66a0"),
                 unhex("1200322539afb004080000000000000000000000000000000000000000000114000000f16f9f789ecc"),
             ),
+            # got this one from nvenc:
+            (1920, 1080): (
+                unhex("12000a0e00000042abbfc3f0086640404061325d1001050101041040400040080120182013d0d1d9ce8863558243b3fb18c22065eca93b2adc73a4f26a67b3a849de98f4acbf45384979de56eaf34381b2d0c099d9c78faa2a25ed316ee6bb4c28637ce4816d949ae7bb00c071976bc280"),
+            ),
         },
     },
 }

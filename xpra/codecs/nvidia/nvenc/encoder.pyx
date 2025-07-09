@@ -49,7 +49,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     get_buffer_formats, get_buffer_format_name, get_chroma_format,
     get_preset_speed, get_preset_quality, get_picture_type,
 
-    NV_ENC_PIC_FLAG_EOS, NV_ENC_PIC_FLAG_FORCEIDR,
+    NV_ENC_PIC_FLAG_EOS, NV_ENC_PIC_FLAG_FORCEIDR, NV_ENC_PIC_FLAG_OUTPUT_SPSPPS,
     NV_ENCODE_API_FUNCTION_LIST,
     NV_ENC_INITIALIZE_PARAMS, NV_ENC_INITIALIZE_PARAMS_VER,
     NV_ENC_REGISTERED_PTR,
@@ -930,17 +930,17 @@ cdef class Encoder:
     cdef void tune_av1(self, NV_ENC_CONFIG_AV1 *av1, int gopLength):
         memset(av1, 0, sizeof(NV_ENC_CONFIG_AV1))
         av1.level = NV_ENC_LEVEL_AV1_AUTOSELECT
+        av1.chromaFormatIDC = self.get_chroma_format()
         av1.tier = NV_ENC_TIER_AV1_1
         av1.minPartSize = NV_ENC_AV1_PART_SIZE_AUTOSELECT
         av1.maxPartSize = NV_ENC_AV1_PART_SIZE_AUTOSELECT
-        av1.outputAnnexBFormat = 1
+        # av1.outputAnnexBFormat = 0	# do not use this flag! (the decoders won' be able to parse the bitstream)
         av1.enableTimingInfo = 1
         av1.enableDecoderModelInfo = 1
         av1.enableFrameIdNumbers = 1
         av1.disableSeqHdr = 0
         av1.repeatSeqHdr = 1
-        av1.chromaFormatIDC = self.get_chroma_format()
-        av1.enableBitstreamPadding = 1
+        av1.enableBitstreamPadding = 0
         av1.enableLTR = 0
         # `enableTemporalSVC=1` causes crashes?
         # av1.enableTemporalSVC = 1
@@ -1510,7 +1510,6 @@ cdef class Encoder:
         if self.frames==0:
             #only the first frame needs to be IDR (as we never lose frames)
             pic.pictureType = NV_ENC_PIC_TYPE_IDR
-            # pic.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
             pic.encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR
         else:
             pic.pictureType = NV_ENC_PIC_TYPE_P
@@ -1524,6 +1523,7 @@ cdef class Encoder:
         elif self.encoding=="av1":
             pic.codecPicParams.av1PicParams.displayPOCSyntax = 2*self.frames
             pic.codecPicParams.av1PicParams.refPicFlag = self.frames==0
+            pic.encodePicFlags |= NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
         pic.frameIdx = self.frames
         if timestamp>0:
             if timestamp>=self.first_frame_timestamp:
