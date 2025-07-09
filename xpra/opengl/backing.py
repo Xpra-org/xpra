@@ -1488,7 +1488,6 @@ class GLWindowBackingBase(WindowBackingBase):
         internal_formats = PIXEL_INTERNAL_FORMAT.get(pixel_format, (GL_R8, GL_R8, GL_R8, GL_R8))
         data_formats = PIXEL_DATA_FORMAT.get(pixel_format, (GL_RED, GL_RED, GL_RED, GL_RED))
         divs = get_subsampling_divs(pixel_format)
-        bytespp = 2 if (pixel_format.endswith("P16") or pixel_format.endswith("P10")) else 1
         # textures: usually 3 for "YUV", but only 2 for "NV12", 4 for "YUVA"
         textures = (
             (GL_TEXTURE0, TEX_Y),
@@ -1530,7 +1529,7 @@ class GLWindowBackingBase(WindowBackingBase):
             # "YUVA420P" -> ("Y", "U", "V", "A")
             # "GBRP16" -> ("GG", "BB", "RR")
             # "NV12" -> ("Y", "UV")
-            tex_name = get_plane_name(pixel_format, index) * bytespp
+            tex_name = get_plane_name(pixel_format, index)
             dformat = data_formats[index]  # data format: ie: GL_RED
             uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
             rowstride = rowstrides[index]
