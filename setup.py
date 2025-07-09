@@ -2786,6 +2786,7 @@ tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", "openh264", langu
 toggle_packages(dav1d_ENABLED, "xpra.codecs.dav1d")
 tace(dav1d_ENABLED, "xpra.codecs.dav1d.decoder", "dav1d", language="c++")
 toggle_packages(aom_ENABLED, "xpra.codecs.aom")
+tace(aom_ENABLED, "xpra.codecs.aom.api", "aom", language="c++")
 tace(aom_ENABLED, "xpra.codecs.aom.decoder", "aom", language="c++")
 toggle_packages(pillow_encoder_ENABLED or pillow_decoder_ENABLED, "xpra.codecs.pillow")
 toggle_packages(pillow_encoder_ENABLED, "xpra.codecs.pillow.encoder")
