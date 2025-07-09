@@ -70,7 +70,7 @@ fi
 
 if [ "${XDUMMY}" == "1" ]; then
   rm -f "./xorg.conf"
-  wget "https://raw.githubusercontent.com/Xpra-org/xpra/refs/heads/master/fs/etc/xpra/xorg.conf"
+  wget --max-redirect=0 "https://raw.githubusercontent.com/Xpra-org/xpra/refs/heads/master/fs/etc/xpra/xorg.conf"
   run mkdir "/etc/X11"
   copy xorg.conf "/etc/X11"
   rm -f "./xorg.conf"
