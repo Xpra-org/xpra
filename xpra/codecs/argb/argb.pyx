@@ -798,7 +798,7 @@ cdef object bitdata_to_rectangles(const unsigned char* bitdata, const int bitdat
     return rectangles
 
 
-cdef void show_plane_range(name, plane: SizedBuffer, int width, int stride, int height):
+cdef object plane_range(plane: SizedBuffer, unsigned int width, unsigned int stride, unsigned int height):
     cdef unsigned char minv = 255
     cdef unsigned char maxv = 0
     cdef unsigned char value
@@ -812,4 +812,14 @@ cdef void show_plane_range(name, plane: SizedBuffer, int width, int stride, int 
                     minv = value
                 if value > maxv:
                     maxv = value
+    return minv, maxv
+
+
+cdef void show_plane_range(name, plane: SizedBuffer, unsigned int width, unsigned int stride, unsigned int height):
+    minv, maxv = plane_range(plane, width, stride, height)
     log.info("%s plane: min=%s, max=%s", name, minv, maxv)
+
+
+def get_plane_range(plane: SizedBuffer, int width, int stride, int height) -> Tuple[int, int]:
+    """ get the min and max values of a plane """
+    return plane_range(plane, width, stride, height)

@@ -11,6 +11,8 @@ from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
+from xpra.util.env import envbool
+from xpra.util.str_fn import hexstr
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
@@ -19,12 +21,13 @@ log = Logger("decoder", "aom")
 
 from libcpp cimport bool as bool_t
 from libc.string cimport memset, memcpy
-from libc.stdlib cimport free
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int64_t, uintptr_t
-from xpra.buffers.membuf cimport memalign, padbuf, makebuf, MemBuf, buffer_context  # pylint: disable=syntax-error
+from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
+from xpra.codecs.argb.argb cimport show_plane_range
 
 
 cdef unsigned char debug_enabled = log.is_debug_enabled()
+cdef unsigned char SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
 
 
 cdef inline unsigned int roundup(unsigned int n, unsigned int m) noexcept nogil:
@@ -525,6 +528,14 @@ cdef class Decoder:
             memcpy(<void *> plane_buf.get_mem(), <const void *> image.planes[i], plane_height * stride)
             pyplanes.append(memoryview(plane_buf))
             pystrides.append(stride)
+
+        if SHOW_PLANE_RANGES:
+            show_plane_range("Y", pyplanes[0], self.width, pystrides[0], self.height)
+            log.info("Y[0]=%s", hexstr(pyplanes[0][:64]))
+            show_plane_range("U", pyplanes[1], self.width, pystrides[1], self.height//2)
+            log.info("U[0]=%s", hexstr(pyplanes[1][:64]))
+            show_plane_range("V", pyplanes[2], self.width, pystrides[2], self.height//2)
+            log.info("V[0]=%s", hexstr(pyplanes[2][:64]))
 
         self.frames += 1
         return ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, depth,

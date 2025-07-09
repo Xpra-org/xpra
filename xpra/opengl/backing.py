@@ -90,6 +90,7 @@ NVJPEG = envbool("XPRA_OPENGL_NVJPEG", True)
 NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
 ALWAYS_RGBA = envbool("XPRA_OPENGL_ALWAYS_RGBA", False)
 FORCE_SPINNER = envbool("XPRA_OPENGL_FORCE_SPINNER", False)
+SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
@@ -1570,6 +1571,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 pass
             log(f"texture {index}: {tex_name:2} div={div_w},{div_h}, rowstride={rowstride}, {w}x{h}, "
                 f"data={size:8} bytes, upload={upload}, format={dformat}, type={uformat}")
+            if SHOW_PLANE_RANGES:
+                from xpra.codecs.argb.argb import get_plane_range
+                log.info("range=%s, hex=%s", get_plane_range(pixel_data, w, rowstride, h), hexstr(pixel_data[:64]))
+
             glTexSubImage2D(target, 0, 0, 0, w, h, dformat, uformat, pixel_data)
             glBindTexture(target, 0)
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)

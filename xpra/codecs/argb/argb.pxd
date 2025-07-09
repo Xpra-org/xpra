@@ -9,4 +9,4 @@ cdef memoryview argbdata_to_rgb(const unsigned int* argb, const int argb_len)
 cdef memoryview bgradata_to_rgb(const unsigned int* bgra, const int bgra_len)
 cdef memoryview bgradata_to_rgba(const unsigned int* bgra, const int bgra_len)
 
-cdef void show_plane_range(name, plane: Buffer, int width, int stride, int height)
+cdef void show_plane_range(name, plane: SizedBuffer, unsigned int width, unsigned int stride, unsigned int height)
