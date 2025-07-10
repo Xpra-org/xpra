@@ -189,7 +189,7 @@ cdef class Decoder:
 
     def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
         log("decompress_image(%i bytes, %s)", len(data), options)
-        cdef aom_codec_err_t r
+        cdef aom_codec_err_t r = AOM_CODEC_OK
 
         cdef size_t data_len
         cdef const uint8_t* data_buf
