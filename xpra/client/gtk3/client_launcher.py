@@ -776,8 +776,12 @@ class ApplicationWindow:
             params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
             params["display_name"] = f"{self.config.mode}://{self.config.host}:{self.config.port}"
-            # always populate ssl so we can auto-upgrade:
-            params["ssl-options"] = get_ssl_options(params, self.config, [])
+            try:
+                # always populate ssl so we can auto-upgrade:
+                params["ssl-options"] = get_ssl_options(params, self.config, [])
+            except ImportError:
+                # perhaps ssl is missing or blocked
+                pass
             if self.config.mode in (MODE_SSL, MODE_WSS) and self.nostrict_host_check.get_active():
                 params["strict-host-check"] = False
 
