@@ -236,11 +236,17 @@ def quic_connect(host : str, port : int, path : str,
         addr = addr_info[4]     #ie: ('192.168.0.10', 10000)
         log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)}")
         protocol.connect(addr)
+        from xpra.scripts.main import CONNECT_TIMEOUT
+        import asyncio
         try:
-            await protocol.wait_connected()
-            conn = protocol.open(host, port, path)
+            async with asyncio.timeout(CONNECT_TIMEOUT):
+                await protocol.wait_connected()
+                conn = protocol.open(host, port, path)
             log(f"websocket connection {conn}")
             return conn
+        except asyncio.TimeoutError:
+            log("connect()", exc_info=True)
+            raise RuntimeError(f"connection to {host}:{port}{path} timedout") from None
         except Exception as e:
             log("connect()", exc_info=True)
             #try to get a more meaningful exception message:
