@@ -268,8 +268,6 @@ def get_int_uuid() -> int:
 def get_machine_id() -> str:
     """
         Try to get uuid string which uniquely identifies this machine.
-        Warning: only works on posix!
-        (which is ok since we only used it on posix at present)
     """
     v = ""
     if POSIX:
