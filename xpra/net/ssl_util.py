@@ -199,7 +199,7 @@ def parse_ssl_verify_mask(verify_flags: str) -> int:
             raise InitException(f"invalid ssl verify-flag: {x!r}")
         ssl_verify_flags |= v
     get_ssl_logger().debug(" verify-flags=%#x", ssl_verify_flags)
-    return ssl_verify_flags
+    return int(ssl_verify_flags)
 
 
 def parse_ssl_protocol(protocol: str, server_side=True):
