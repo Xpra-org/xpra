@@ -91,7 +91,7 @@ elif WIN32 and WIN32_WORKSPACE:
     else:
         CAN_SET_WORKSPACE = len(get_virtual_desktops()) > 0
 
-POLL_WORKSPACE = envbool("XPRA_POLL_WORKSPACE", WIN32)
+POLL_WORKSPACE = envbool("XPRA_POLL_WORKSPACE", WIN32_WORKSPACE)
 
 
 class WorkspaceWindow(StubWindow):
