@@ -198,6 +198,8 @@ def get_user_uuid() -> str:
         uupdate(os.getuid())
         uupdate("/")
         uupdate(os.getgid())
+        uupdate("/")
+        uupdate(os.environ.get("DISPLAY", "") or os.environ.get("WAYLAND_DISPLAY", ""))
     uupdate(os.path.expanduser("~/"))
     return u.hexdigest()
 
