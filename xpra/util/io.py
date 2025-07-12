@@ -85,7 +85,7 @@ def wait_for_socket(sockpath: str, timeout=1) -> bool:
             sock.connect(sockpath)
             return True
         except OSError:
-            get_util_logger().debug(f"wait_for_socket({sockpath!r}, timeout)", exc_info=True)
+            get_util_logger().debug(f"wait_for_socket({sockpath!r}, {timeout})", exc_info=True)
         finally:
             if sock:
                 sock.close()
