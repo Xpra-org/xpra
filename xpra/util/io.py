@@ -75,10 +75,9 @@ def wait_for_socket(sockpath: str, timeout=1) -> bool:
     sock: socket.socket | None = None
     from time import monotonic, sleep
     now = monotonic()
+    wait = timeout / 10 if not os.path.exists(sockpath) else 0
     while monotonic() - now < timeout:
-        if not os.path.exists(sockpath):
-            sleep(timeout / 10)
-            continue
+        sleep(wait)
         try:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             sock.settimeout(timeout / 10)
@@ -87,6 +86,9 @@ def wait_for_socket(sockpath: str, timeout=1) -> bool:
         except PermissionError:
             get_util_logger().debug(f"wait_for_socket({sockpath!r}, {timeout})", exc_info=True)
             return False
+        except BlockingIOError:
+            get_util_logger().debug(f"wait_for_socket({sockpath!r}, {timeout})", exc_info=True)
+            wait = timeout / 10
         except OSError:
             get_util_logger().debug(f"wait_for_socket({sockpath!r}, {timeout})", exc_info=True)
         finally:
