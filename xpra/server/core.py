@@ -159,7 +159,7 @@ class ServerCore(ServerBaseClass):
         self.start_time = time()
         self.hello_request_handlers.update({
             "version": self._handle_hello_request_version,
-            "connect-test": self._handle_hello_request_connect_test,
+            "connect_test": self._handle_hello_request_connect_test,
             "id": self._handle_hello_request_id,
             "info": self._handle_hello_request_info,
             "screenshot": self._handle_hello_request_screenshot,
