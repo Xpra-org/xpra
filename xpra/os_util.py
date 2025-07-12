@@ -190,14 +190,14 @@ def get_user_uuid() -> str:
     import hashlib
     u = hashlib.sha256()
 
-    def uupdate(ustr) -> None:
-        u.update(ustr.encode("utf-8"))
+    def uupdate(val: int | str) -> None:
+        u.update(str(val).encode("utf-8"))
     uupdate(get_machine_id())
     if POSIX:
         uupdate("/")
-        uupdate(str(os.getuid()))
+        uupdate(os.getuid())
         uupdate("/")
-        uupdate(str(os.getgid()))
+        uupdate(os.getgid())
     uupdate(os.path.expanduser("~/"))
     return u.hexdigest()
 
