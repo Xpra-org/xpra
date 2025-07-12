@@ -894,7 +894,7 @@ class ServerCore(ServerBaseClass):
             return None
         address = conn.remote
         peername = conn.endpoint
-        sockname = sock.getsockname()
+        sockname = ssl_sock.getsockname()
         target = peername or sockname
         ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype, socket_options=socket_options)
         ssllog("ssl_wrap(%s, %s)=%s", conn, socket_options, ssl_conn)
