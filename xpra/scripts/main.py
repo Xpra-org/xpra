@@ -1661,7 +1661,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
         GLib = gi_import("GLib")
         call = GLib.idle_add
 
-    def do_setup_connection() -> None:
+    def do_setup_connection(may_retry=True) -> None:
         try:
             log("do_setup_connection() display_desc=%s", display_desc)
             conn = connect_or_fail(display_desc, opts)
@@ -1681,15 +1681,17 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
             werr("failed to connect:", f" {e}")
             call(app.quit, ExitCode.OK)
         except InitExit as e:
-            from xpra.net.ssl_util import ssl_retry
-            ssllog = Logger("ssl")
-            mods = ssl_retry(e, opts.ssl_ca_certs)
-            ssllog("do_setup_connection() ssl_retry(%s, %s)=%s", e, opts.ssl_ca_certs, mods)
-            if mods:
-                display_desc.setdefault("ssl-options", {}).update(mods)
-                do_setup_connection()
-                return
-            ssllog("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            retry = display_desc.get("retry", True)
+            if not retry:
+                from xpra.net.ssl_util import ssl_retry
+                ssllog = Logger("ssl")
+                mods = ssl_retry(e, opts.ssl_ca_certs)
+                ssllog("do_setup_connection() ssl_retry(%s, %s)=%s", e, opts.ssl_ca_certs, mods)
+                if mods:
+                    display_desc["retry"] = True
+                    display_desc.setdefault("ssl-options", {}).update(mods)
+                    do_setup_connection()
+                    return
             werr("Warning: failed to connect:", f" {e}")
             call(app.quit, e.status)
         except InitException as e:
