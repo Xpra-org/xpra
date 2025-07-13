@@ -1369,7 +1369,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
         GLib = gi_import("GLib")
         call = GLib.idle_add
 
-    def do_setup_connection(may_retry=True) -> None:
+    def do_setup_connection() -> None:
         try:
             log("do_setup_connection() display_desc=%s", display_desc)
             conn = connect_or_fail(display_desc, opts)
