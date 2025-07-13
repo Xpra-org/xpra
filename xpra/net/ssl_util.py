@@ -375,7 +375,7 @@ def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any]:
         try:
             cert_data = ssl.get_server_certificate(addr)
         except ssl.SSLError:
-            cert_data = None
+            cert_data = ""
         if not cert_data:
             ssllog.warn("Warning: failed to get server certificate from %s", addr)
             return {}
@@ -409,10 +409,10 @@ def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any]:
     return {}
 
 
-def load_ssl_options(server_hostname: str, port: int) -> dict[str, Any]:
+def load_ssl_options(server_hostname: str, port: int) -> dict[str, bool | str]:
     ssllog = get_ssl_logger()
     f = find_ssl_config_file(server_hostname, port, "options")
-    options = {}
+    options: dict[str, bool | str] = {}
     if f:
         try:
             with open(f, encoding="utf8") as fd:
