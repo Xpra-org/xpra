@@ -165,8 +165,8 @@ def parse_ssl_verify_mode(verify_mode_str: str):
     ssl_cert_reqs = getattr(ssl, "CERT_" + verify_mode_str.upper(), None)
     if ssl_cert_reqs is None:
         values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
-        raise InitException(f"invalid ssl-server-verify-mode {verify_mode_str!r}, must be one of: " + csv(values))
-    get_ssl_logger().debug(" verify-mode=%s", ssl_cert_reqs)
+        raise InitException(f"invalid ssl verify-mode {verify_mode_str!r}, must be one of: " + csv(values))
+    get_ssl_logger().debug(" verify-mode(%s)=%s", verify_mode_str, ssl_cert_reqs)
     return ssl_cert_reqs
 
 
