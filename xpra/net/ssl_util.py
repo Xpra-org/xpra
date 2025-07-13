@@ -229,7 +229,7 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
         cert, key, ca_certs, ca_data, protocol, client_verify_mode, server_verify_mode, verify_flags,
         check_hostname, server_hostname, options, ciphers, server_side)
     )
-    ssl_cert_reqs = parse_ssl_verify_mode(server_verify_mode if server_side else client_verify_mode)
+    ssl_cert_reqs = parse_ssl_verify_mode(client_verify_mode if server_side else server_verify_mode)
     ssllog(" verify_mode for server_side=%s : %s", server_side, ssl_cert_reqs)
     # parse protocol:
     import ssl
