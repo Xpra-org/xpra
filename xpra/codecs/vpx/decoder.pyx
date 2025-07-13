@@ -323,9 +323,7 @@ cdef class Decoder:
             self.encoding, self.frames, elapsed, VPX_COLOR_SPACES.get(img.cs, img.cs),
             VPX_COLOR_RANGES.get(img.range, img.range), self.dst_format,
             )
-        image = ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3)
-        image.set_full_range((options or {}).get("full-range", True))
-        return image
+        return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3)
 
     def codec_error_str(self) -> str:
         return vpx_codec_error(self.context).decode("latin1")
