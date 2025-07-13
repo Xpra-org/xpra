@@ -296,7 +296,7 @@ class XpraClientBase(ClientBaseClass):
     def verify_connected(self) -> None:
         if not self.connection_established:
             # server has not said hello yet
-            self.warn_and_quit(ExitCode.TIMEOUT, "connection timed out")
+            self.warn_and_quit(ExitCode.CONNECTION_FAILED, "connection timed out")
 
     def make_hello_base(self) -> dict[str, Any]:
         capabilities = {}
