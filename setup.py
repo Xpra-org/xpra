@@ -1117,7 +1117,7 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
         # all C++ modules trigger an address warning in the module initialization code:
         if WIN32:
             add_to_keywords(pkgc, "extra_compile_args", "-Wno-error=address")
-    if get_clang_version()>=(14, ):
+    if (14, ) <= get_clang_version() <= (20, ):
         add_to_keywords(pkgc, "extra_compile_args", "-Wno-error=unreachable-code-fallthrough")
     add_cython_ext(modname, src, **pkgc)
 
