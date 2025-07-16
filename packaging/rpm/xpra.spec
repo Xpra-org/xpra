@@ -74,7 +74,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.3.2
+Version:			6.3.3
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -1008,6 +1008,21 @@ fi
 
 
 %changelog
+* Wed Jul 16 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
+- Platforms, build and packaging:
+   clang 20 no longer recognizes `unreachable-code-fallthrough` warning
+- Major:
+   errors with `ssl` disabled
+- Minor:
+   distinguish client session running on a different display
+   map `kitty` to `text` content type
+   don't retry `ssl` connections forever
+   skip workspace polling when unused on MS Windows
+   preserve URI form when parsing some IP protocols
+   preserve URI path
+- Cosmetic:
+   potentially misleading ssl validation error message
+
 * Tue Jul 08 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
 - Platforms, build and packaging:
    Cython compilation warnings in macOS bindings and procps library

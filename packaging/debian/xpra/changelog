@@ -1,3 +1,20 @@
+xpra (6.3.3-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    clang 20 no longer recognizes `unreachable-code-fallthrough` warning
+  * Major:
+    errors with `ssl` disabled
+  * Minor:
+    distinguish client session running on a different display
+    map `kitty` to `text` content type
+    don't retry `ssl` connections forever
+    skip workspace polling when unused on MS Windows
+    preserve URI form when parsing some IP protocols
+    preserve URI path
+  * Cosmetic:
+    potentially misleading ssl validation error message
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 16 Jul 2025 17:31:34 +0700
+
 xpra (6.3.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     Cython compilation warnings in macOS bindings and procps library

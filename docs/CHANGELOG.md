@@ -1,5 +1,20 @@
 # Changelog
 
+## [6.3.3] 2025-07-16
+* Platforms, build and packaging:
+    * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/0aa7eb0ff2c207bea08ce25ed9a4877f5e1b493e)
+* Major:
+    * [errors with `ssl` disabled](https://github.com/Xpra-org/xpra/commit/de85e976a271507f5338ed2fa767f1535a12c67e)
+* Minor:
+    * [distinguish client session running on a different display](https://github.com/Xpra-org/xpra/commit/86ffce4cb1359aebb5cc9704c72ecbe857af008d)
+    * [map `kitty` to `text` content type](https://github.com/Xpra-org/xpra/commit/5cdbb33d07cc994633fcabef7250b9e04b04602d)
+    * [don't retry `ssl` connections forever](https://github.com/Xpra-org/xpra/commit/8ce47372d3802b873bb8b727d63921ad48d1be26)
+    * [skip workspace polling when unused on MS Windows](https://github.com/Xpra-org/xpra/commit/dc803c301c267dcb7b3e467cde83a0e09aa090ff)
+    * [preserve URI form when parsing some IP protocols](https://github.com/Xpra-org/xpra/commit/e5310c480ce5cd4bb54651c24b0c3e395fecb156)
+    * [preserve URI path](https://github.com/Xpra-org/xpra/commit/de4667ba18e64f92dfa772e2d85d19143900746a)
+* Cosmetic:
+    * [potentially misleading ssl validation error message](https://github.com/Xpra-org/xpra/commit/7b1e1e48be3d05c965c66cf2d406df12baddba3b)
+
 ## [6.3.2] 2025-07-08
 * Platforms, build and packaging:
     * Cython compilation warnings: [in macOS bindings](https://github.com/Xpra-org/xpra/commit/db8e44ee7b5267b2abc829d020c4ac6f3e9ebed7) and [procps library](https://github.com/Xpra-org/xpra/commit/38e598fed94f74a3d727043086aafd152b2d7144)
