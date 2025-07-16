@@ -25,7 +25,7 @@ from xpra.util.version import full_version_str
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
-from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS, verify_hyperv_available
+from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS, IP_SOCKTYPES, verify_hyperv_available
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
 from xpra.scripts.config import (
@@ -172,7 +172,7 @@ def parse_URL(url: str) -> tuple[str, dict]:
     scheme = up.scheme
     if scheme.startswith("xpra+"):
         scheme = scheme[len("xpra+"):]
-    if scheme in ("tcp", "ssl", "ssh", "ws", "wss"):
+    if scheme in IP_SOCKTYPES:
         address = f"{scheme}://{address}"
     if scheme in ("ws", "wss") and up.path:
         address += "/"+up.path
