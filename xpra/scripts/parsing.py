@@ -18,7 +18,7 @@ from typing import Any, List, Dict, Tuple, Optional, Callable
 
 from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict, stderr_print
-from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
+from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS, IP_SOCKTYPES
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.scripts.config import (
     XpraConfig,
@@ -172,7 +172,7 @@ def parse_URL(url:str) -> Tuple[str,Dict]:
     scheme = up.scheme
     if scheme.startswith("xpra+"):
         scheme = scheme[len("xpra+"):]
-    if scheme in ("tcp", "ssl", "ssh", "ws", "wss"):
+    if scheme in IP_SOCKTYPES:
         address = f"{scheme}://{address}"
     return address, options
 
