@@ -173,7 +173,7 @@ def parse_URL(url: str) -> tuple[str, dict]:
         scheme = scheme[len("xpra+"):]
     if scheme in IP_SOCKTYPES:
         address = f"{scheme}://{address}"
-    if scheme in ("ws", "wss") and up.path:
+    if up.path:
         address += "/"+up.path
     return address, options
 
