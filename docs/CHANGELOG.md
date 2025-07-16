@@ -1,5 +1,32 @@
 # Changelog
 
+## [5.1.2] 2025-07-16
+* Platforms, build and packaging:
+    * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/39c80ca0e373c8ee2787a5c07613d28bda07b3d3)
+* Encodings:
+    * [`openh264`: expose frame number and use default settings as base](https://github.com/Xpra-org/xpra/commit/8c8c02a611c71ab6e0d86fc93f9dd05beed35a89)
+    * [expose nvidia GPU attributes as strings](https://github.com/Xpra-org/xpra/commit/b22335086ce36db9fe18d1139875df22abb32ee4)
+    * [version parsing errors with newer nvidia kernel modules](https://github.com/Xpra-org/xpra/commit/efba061385cff96bb582afd97056339660d2cab1)
+* Network:
+    * [`quic` client connections should also timeout](https://github.com/Xpra-org/xpra/commit/f1663b02d03aa9c095865b90659573f434929715)
+    * [zeroconf mDNS errors on loopback addresses](https://github.com/Xpra-org/xpra/commit/6fc832dbfbf158d105cce6ca6c064ec4d32ad3e8)
+    * [errors with `ssl` disabled](https://github.com/Xpra-org/xpra/commit/a9b54d11fb16e161a5c7214188ee9df5d2563d54)
+    * [try harder to find an `ssl` certificate](https://github.com/Xpra-org/xpra/commit/4f70148e3a4e97c0607d3df5480394e3ef8c7ad5)
+    * [potentially misleading ssl validation error message](https://github.com/Xpra-org/xpra/commit/1a1f1c80795969c3a2537bbc624ca021062222d5)
+    * [preserve URI form when parsing some IP protocols](https://github.com/Xpra-org/xpra/commit/7bc6fae93504a1079eded0fa3ae023fbefdc88fe)
+    * [preserve URI path](https://github.com/Xpra-org/xpra/commit/c3b07f62c710bb321bfad73c808febd29e23575e)
+* Major:
+    * [`vpx` decoder fails during self-test](https://github.com/Xpra-org/xpra/commit/cf316484a170bae336b29090efb984b47fed4f2a)
+* Minor:
+    * [if unpressing a key worked, record it](https://github.com/Xpra-org/xpra/commit/cc42db08feb25dbc8ad4ed5143aa6cbb95833a20)
+    * [map `kitty` to `text` content type](https://github.com/Xpra-org/xpra/commit/9863c617754cb37af0ebd5675c5f9f5550dc77a3)
+    * [distinguish client session running on a different display](https://github.com/Xpra-org/xpra/commit/7d28fdb6430a54baf9d240ef3bc0e0074f596fe6)
+* Cosmetic:
+    * [remove unused attribute](https://github.com/Xpra-org/xpra/commit/80ad4d7b46bf545845cc6f6ba00e4798b224723d)
+    * [make it easier to disable xdg menus](https://github.com/Xpra-org/xpra/commit/82259530d9ae59f7f475f1b95790be3e19748702)
+    * [remove outdated and misleading docstring](https://github.com/Xpra-org/xpra/commit/493d81c559c2902796b77001d7ecfb377cdf4353)
+    * [debug failing unit tests](https://github.com/Xpra-org/xpra/commit/4af212c14842e611256fd09f61a891d903efa4d8)
+
 ## [5.1.1] 2025-06-18
 * Platforms, build and packaging:
     * [improved](https://github.com/Xpra-org/xpra/commit/8d2b3f670bc9ce73159a085a99bf6f6d085b4939) [MS Windows signtool compatibility](https://github.com/Xpra-org/xpra/commit/b8224c7a8db65900f99dc1fd72e4a11bfdb1bf4d)

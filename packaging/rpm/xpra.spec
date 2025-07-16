@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.1.1
+%define version 5.1.2
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -804,6 +804,33 @@ fi
 
 
 %changelog
+* Wed Jul 16 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
+- Platforms, build and packaging:
+   clang 20 no longer recognizes `unreachable-code-fallthrough` warning
+- Encodings:
+   `openh264`: expose frame number and use default settings as base
+   expose nvidia GPU attributes as strings
+   version parsing errors with newer nvidia kernel modules
+- Network:
+   `quic` client connections should also timeout
+   zeroconf mDNS errors on loopback addresses
+   errors with `ssl` disabled
+   try harder to find an `ssl` certificate
+   potentially misleading ssl validation error message
+   preserve URI form when parsing some IP protocols
+   preserve URI path
+- Major:
+   `vpx` decoder fails during self-test
+- Minor:
+   if unpressing a key worked, record it
+   map `kitty` to `text` content type
+   distinguish client session running on a different display
+- Cosmetic:
+   remove unused attribute
+   make it easier to disable xdg menus
+   remove outdated and misleading docstring
+   debug failing unit tests
+
 * Wed Jun 18 2025 Antoine Martin <antoine@xpra.org> 5.1.1-10
 - Platforms, build and packaging:
    improved MS Windows signtool compatibility
