@@ -61,7 +61,7 @@ def main(args) -> int:
             write(f"invalid file skipped: {p}  Expect {unittests_dir}/.../*test.py")
             return 0
         #ie: "unit.version_util_test"
-        name = p[len(unittests_dir) + 1:-3].replace(os.path.sep, ".")
+        name = p.split(unittests_dir)[-1].split(".py")[0].replace(os.path.sep, ".").lstrip(".")
         if p in skip_slow or name in skip_slow:
             write(f"skipped slow test as requested: {p}")
             return 0
