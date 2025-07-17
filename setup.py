@@ -282,7 +282,6 @@ enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
 openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
-dav1d_ENABLED           = DEFAULT and pkg_config_version("1.0", "dav1d")
 aom_ENABLED             = DEFAULT and pkg_config_version("3.0", "aom")
 pillow_ENABLED          = DEFAULT
 pillow_encoder_ENABLED  = pillow_ENABLED
@@ -2783,8 +2782,6 @@ tace(enc_x264_ENABLED, "xpra.codecs.x264.encoder", "x264")
 toggle_packages(openh264_ENABLED, "xpra.codecs.openh264")
 tace(openh264_decoder_ENABLED, "xpra.codecs.openh264.decoder", "openh264", language="c++")
 tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", "openh264", language="c++")
-toggle_packages(dav1d_ENABLED, "xpra.codecs.dav1d")
-tace(dav1d_ENABLED, "xpra.codecs.dav1d.decoder", "dav1d", language="c++")
 toggle_packages(aom_ENABLED, "xpra.codecs.aom")
 tace(aom_ENABLED, "xpra.codecs.aom.api", "aom", language="c++")
 tace(aom_ENABLED, "xpra.codecs.aom.decoder", "aom", language="c++")

@@ -68,7 +68,7 @@ DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
     "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
 ))
 DECODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("dec", x) for x in (
-    "vpx", "openh264", "dav1d", "nvdec", "aom",
+    "vpx", "openh264", "nvdec", "aom",
 ))
 SOURCES: Sequence[str] = filt("v4l2", "evdi", "drm", "nvfbc")
 
@@ -264,7 +264,6 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "dec_openh264"  : ("openh264 decoder",  "openh264",     "decoder", "Decoder"),
     "nvdec"         : ("nvdec decoder",     "nvidia.nvdec", "decoder", "Decoder"),
     "dec_gstreamer" : ("gstreamer decoder", "gstreamer",    "decoder", "Decoder"),
-    "dec_dav1d"     : ("dav1d decoder",     "dav1d",        "decoder", "Decoder"),
     "dec_aom"       : ("aom decoder",       "aom",          "decoder", "Decoder"),
     # sources:
     "v4l2"          : ("v4l2 source",       "v4l2",         "virtual", "VirtualWebcam"),
