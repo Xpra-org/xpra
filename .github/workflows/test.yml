@@ -38,8 +38,8 @@ jobs:
 
     - name: Install less buggy Cython
       run: |
-        apt-get install -y python3-pip
-        pip3 install cython --break-system-packages
+        sudo apt-get install -y python3-pip
+        sudo pip3 install cython --break-system-packages
 
     - name: "Build/Install/Test"
       run: >
