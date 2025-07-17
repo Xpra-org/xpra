@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Tuple
 
 cdef extern from "math.h":
-    double log(double x) nogil noexcept
+    double log(double x) noexcept nogil
 
 from math import sqrt
 def logp(double x) -> float:
