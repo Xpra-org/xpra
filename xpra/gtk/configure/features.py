@@ -79,14 +79,13 @@ class ConfigureGUI(BaseGUIWindow):
             except ImportError as e:
                 found = False
                 tooltip = f"this feature is missing: {e}"
-            sub = subsystem.lower().replace(" ", "-")
             grid.attach(plabel(subsystem, tooltip, found), 0, i, 1, 1)
             grid.attach(plabel(description, tooltip, found, font="sans 10"), 1, i, 1, 1)
             switch = Gtk.Switch()
             switch.set_sensitive(False)
             grid.attach(switch, 2, i, 1, 1)
             if found:
-                switch.connect("state-set", self.toggle_subsystem, sub)
+                sub = subsystem.lower().replace(" ", "-")
                 self.subsystem_switch[sub] = switch
         self.show_all()
         with_config(self.configure_switches)
