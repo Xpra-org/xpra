@@ -11,7 +11,7 @@ import unittest
 from xpra.os_util import WIN32
 from xpra.util.env import nomodule_context
 from xpra.scripts.parsing import (
-    parse_ssh_option, get_ssh_args, get_ssh_proxy_args, parse_remote_display,
+    parse_ssh_option, get_ssh_args, get_ssh_proxy_args,
 )
 
 
@@ -70,18 +70,6 @@ class TestParsing(unittest.TestCase):
             "proxy_host": "host1",
             "proxy_port": 2222,
         }, ["plink"])
-        # remote display attributes:
-        assert parse_remote_display("somedisplay").get("display") == "somedisplay"
-        assert parse_remote_display("10?proxy=username:password@host:222").get("proxy") == "username:password@host:222"
-
-        def t(s):
-            v = parse_remote_display(s)
-            assert v.get("display") == "somedisplay"
-
-        t("somedisplay?proxy=")
-        t("somedisplay?proxy=:22")
-        t("somedisplay?proxy=:@host:22")
-        t("somedisplay?proxy=:password@host:22")
 
 
 def main():
