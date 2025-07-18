@@ -112,15 +112,15 @@ class HttpServer(StubServerMixin):
             HttpServer.PREFIX: {"scripts": tuple(self._http_scripts.keys())},
         }
 
-    def http_menu_request(self, _uri: str) -> HttpResponse:
+    def http_menu_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         menu = self.menu_provider.get_menu_data(remove_icons=True)
         return send_json_response(menu or "not available")
 
-    def http_desktop_menu_request(self, _uri: str) -> HttpResponse:
+    def http_desktop_menu_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
         return send_json_response(xsessions or "not available")
 
-    def http_menu_icon_request(self, uri: str) -> HttpResponse:
+    def http_menu_icon_request(self, uri: str, _post_data: bytes) -> HttpResponse:
         parts = unquote(uri).split("/MenuIcon/", 1)
         # ie: "/menu-icon/a/b" -> ['', 'a/b']
         if len(parts) < 2:
@@ -137,7 +137,7 @@ class HttpServer(StubServerMixin):
         icon_type, icon_data = self.menu_provider.get_menu_icon(category_name, app_name)
         return http_icon_response(icon_type, icon_data)
 
-    def http_desktop_menu_icon_request(self, uri: str) -> HttpResponse:
+    def http_desktop_menu_icon_request(self, uri: str, _post_data: bytes) -> HttpResponse:
         parts = unquote(uri).split("/DesktopMenuIcon/", 1)
         # ie: "/menu-icon/wmname" -> ['', 'sessionname']
         if len(parts) < 2:
@@ -148,7 +148,7 @@ class HttpServer(StubServerMixin):
         icon_type, icon_data = self.menu_provider.get_desktop_menu_icon(sessionname)
         return http_icon_response(icon_type, icon_data)
 
-    def http_displays_request(self, _uri: str) -> HttpResponse:
+    def http_displays_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         displays = self.get_displays()
         displays_info = _filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
         return send_json_response(displays_info)
@@ -157,7 +157,7 @@ class HttpServer(StubServerMixin):
         from xpra.scripts.main import get_displays_info  # pylint: disable=import-outside-toplevel
         return get_displays_info(self.dotxpra)
 
-    def http_sessions_request(self, _uri) -> HttpResponse:
+    def http_sessions_request(self, _uri, _post_data: bytes) -> HttpResponse:
         sessions = self.get_xpra_sessions()
         sessions_info = _filter_display_dict(sessions, "state", "username", "session-type", "session-name", "uuid")
         return send_json_response(sessions_info)
@@ -166,7 +166,7 @@ class HttpServer(StubServerMixin):
         from xpra.scripts.main import get_xpra_sessions  # pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra)
 
-    def http_info_request(self, _uri: str) -> HttpResponse:
+    def http_info_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         return send_json_response(self.get_http_info())
 
     def get_http_info(self) -> dict[str, Any]:

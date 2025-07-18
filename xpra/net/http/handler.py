@@ -247,6 +247,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         server.logger = log
         self.directory_listing = DIRECTORY_LISTING
         self.extra_headers: dict[str, Any] = {}
+        self.post_data = b""
         super().__init__(sock, addr, server)
 
     def log_error(self, fmt, *args) -> None:  # pylint: disable=arguments-differ
@@ -290,6 +291,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             length = int(self.headers.get('content-length'))
             data = self.rfile.read(length)
             log("POST data=%s (%i bytes)", data, length)
+            self.post_data = data
             self.handle_request()
 
     def do_GET(self) -> None:
@@ -384,7 +386,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if script:
             log("request for %s handled using %s", path, script)
             try:
-                code, headers, body = script(path)
+                code, headers, body = script(path, self.post_data)
             except Exception:
                 log.error(f"Error calling script {script}", exc_info=True)
                 self.send_error(500, "Server error")
