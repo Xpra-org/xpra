@@ -14,7 +14,7 @@ from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
 from aioquic.quic.packet import QuicErrorCode
 
-from xpra.net.quic.asyncio_thread import get_threaded_loop
+from xpra.net.asyncio.thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
 from xpra.net.quic.common import binary_headers, override_aioquic_logger
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes

@@ -2847,6 +2847,7 @@ toggle_packages(brotli_ENABLED, "xpra.net.brotli")
 tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlidec")
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
+toggle_packages(quic_ENABLED, "xpra.net.asyncio")
 toggle_packages(quic_ENABLED, "xpra.net.quic")
 toggle_packages(ssh_ENABLED, "xpra.net.ssh")
 toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
@@ -2923,6 +2924,7 @@ if cythonize_more_ENABLED:
     if qrencode_ENABLED and gtk3_ENABLED:
         ace("xpra.gtk.dialogs.qrcode")
     if quic_ENABLED:
+        ax("xpra.net.ayncio")
         ax("xpra.net.quic")
     if rfb_ENABLED:
         ax("xpra.net.rfb")

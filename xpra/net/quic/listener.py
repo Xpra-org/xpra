@@ -25,7 +25,7 @@ from xpra.net.quic.http import HttpRequestHandler
 from xpra.net.quic.websocket import ServerWebSocketConnection
 from xpra.net.quic.webtransport import ServerWebTransportConnection
 from xpra.net.quic.session_ticket_store import SessionTicketStore
-from xpra.net.quic.asyncio_thread import get_threaded_loop
+from xpra.net.asyncio.thread import get_threaded_loop
 from xpra.net.websockets.protocol import WebSocketProtocol
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.scripts.config import InitExit
