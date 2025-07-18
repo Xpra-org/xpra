@@ -233,6 +233,7 @@ class BaseGUIWindow(Gtk.Window):
     def hide(self, *args) -> None:
         log("hide%s", args)
         super().hide()
+        super().unrealize()
 
     def quit(self, *args) -> None:
         log("quit%s", args)
