@@ -91,6 +91,7 @@ class ConfigureGUI(BaseGUIWindow):
         with_config(self.configure_switches)
 
     def configure_switches(self, defaults) -> bool:
+        log(f"configure_switches({defaults})")
         for subsystem, switch in self.subsystem_switch.items():
             value = getattr(defaults, subsystem.replace("-", "_"), None)
             log(f"configure_switches: {subsystem}={value}")
@@ -102,6 +103,7 @@ class ConfigureGUI(BaseGUIWindow):
 
     @staticmethod
     def toggle_subsystem(_widget, state, subsystem: str) -> None:
+        log("toggle_subsystem %s=%s", subsystem, bool(state))
         update_config_attribute(subsystem, bool(state))
 
 
