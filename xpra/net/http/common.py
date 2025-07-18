@@ -27,6 +27,6 @@ def http_status_request() -> HttpResponse:
     return http_response("ready")
 
 
-def send_json_response(data) -> HttpResponse:
+def json_response(data) -> HttpResponse:
     import json  # pylint: disable=import-outside-toplevel
     return http_response(json.dumps(data), "application/json")

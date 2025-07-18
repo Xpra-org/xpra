@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Callable
 from urllib.parse import unquote
 
-from xpra.net.http.common import http_response, http_status_request, send_json_response
+from xpra.net.http.common import http_response, http_status_request, json_response
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.io import load_binary_file
 from xpra.scripts.config import FALSE_OPTIONS
@@ -114,11 +114,11 @@ class HttpServer(StubServerMixin):
 
     def http_menu_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         menu = self.menu_provider.get_menu_data(remove_icons=True)
-        return send_json_response(menu or "not available")
+        return json_response(menu or "not available")
 
     def http_desktop_menu_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
-        return send_json_response(xsessions or "not available")
+        return json_response(xsessions or "not available")
 
     def http_menu_icon_request(self, uri: str, _post_data: bytes) -> HttpResponse:
         parts = unquote(uri).split("/MenuIcon/", 1)
@@ -151,7 +151,7 @@ class HttpServer(StubServerMixin):
     def http_displays_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         displays = self.get_displays()
         displays_info = _filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
-        return send_json_response(displays_info)
+        return json_response(displays_info)
 
     def get_displays(self) -> dict[str, Any]:
         from xpra.scripts.main import get_displays_info  # pylint: disable=import-outside-toplevel
@@ -160,14 +160,14 @@ class HttpServer(StubServerMixin):
     def http_sessions_request(self, _uri, _post_data: bytes) -> HttpResponse:
         sessions = self.get_xpra_sessions()
         sessions_info = _filter_display_dict(sessions, "state", "username", "session-type", "session-name", "uuid")
-        return send_json_response(sessions_info)
+        return json_response(sessions_info)
 
     def get_xpra_sessions(self) -> dict[str, Any]:
         from xpra.scripts.main import get_xpra_sessions  # pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra)
 
     def http_info_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
-        return send_json_response(self.get_http_info())
+        return json_response(self.get_http_info())
 
     def get_http_info(self) -> dict[str, Any]:
         return {
