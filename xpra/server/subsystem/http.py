@@ -7,6 +7,7 @@ from typing import Any
 from collections.abc import Callable
 from urllib.parse import unquote
 
+from xpra.net.http.common import http_response, http_status_request, send_json_response
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.io import load_binary_file
 from xpra.scripts.config import FALSE_OPTIONS
@@ -21,21 +22,6 @@ log = Logger("http")
 def invalid_path(uri: str) -> HttpResponse:
     log(f"invalid request path {uri!r}")
     return 404, {}, b""
-
-
-def http_response(content, content_type: str = "text/plain") -> HttpResponse:
-    if not content:
-        return 404, {}, b""
-    if isinstance(content, str):
-        content = content.encode("latin1")
-    return 200, {
-        "Content-type": content_type,
-        "Content-Length": len(content),
-    }, content
-
-
-def http_status_request() -> HttpResponse:
-    return http_response("ready")
 
 
 def http_icon_response(icon_type: str, icon_data: bytes) -> HttpResponse:
@@ -67,11 +53,6 @@ def http_icon_response(icon_type: str, icon_data: bytes) -> HttpResponse:
     else:
         mime_type = "application/octet-stream"
     return http_response(icon_data, mime_type)
-
-
-def send_json_response(data) -> HttpResponse:
-    import json  # pylint: disable=import-outside-toplevel
-    return http_response(json.dumps(data), "application/json")
 
 
 def _filter_display_dict(display_dict: dict[str, Any], *whitelist: str) -> dict[str, Any]:
