@@ -27,6 +27,21 @@ UVLOOP = envbool("XPRA_UVLOOP", not WIN32)
 ExceptionWrapper = namedtuple("ExceptionWrapper", ("exception", "args"))
 
 
+def install_uvloop() -> None:
+    try:
+        # noinspection PyPackageRequirements
+        import uvloop  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        log.warn("Warning: uvloop not found")
+        return
+    log("installing uvloop")
+    # there's nothing we can do about this deprecation warning, so silence it:
+    from xpra.util.env import SilenceWarningsContext
+    with SilenceWarningsContext(DeprecationWarning):
+        uvloop.install()
+    log.info(f"uvloop {uvloop.__version__} installed")
+
+
 class ThreadedAsyncioLoop:
     """
     shim for quic asyncio sockets,
@@ -44,18 +59,7 @@ class ThreadedAsyncioLoop:
 
     def run_forever(self) -> None:
         if UVLOOP:
-            try:
-                # noinspection PyPackageRequirements
-                import uvloop  # pylint: disable=import-outside-toplevel
-            except ImportError:
-                log.warn("Warning: uvloop not found")
-            else:
-                log("installing uvloop")
-                # there's nothing we can do about this deprecation warning, so silence it:
-                from xpra.util.env import SilenceWarningsContext
-                with SilenceWarningsContext(DeprecationWarning):
-                    uvloop.install()
-                log.info(f"uvloop {uvloop.__version__} installed")
+            install_uvloop()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self.loop = loop
