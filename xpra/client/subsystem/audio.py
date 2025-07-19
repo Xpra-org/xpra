@@ -157,19 +157,24 @@ class AudioClient(StubClientMixin):
         log("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s",
             decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
         log("av-sync=%s", self.av_sync)
-        if POSIX and not OSX:
-            try:
-                from xpra.audio.pulseaudio.util import get_info as get_pa_info
-                pa_info = get_pa_info()
-                log("pulseaudio info=%s", pa_info)
-                self.audio_properties.update(pa_info)
-            except ImportError as e:
-                log.warn("Warning: no pulseaudio information available")
-                log.warn(" %s", e)
-            except Exception:
-                log.error("Error: failed to add pulseaudio info", exc_info=True)
+        self.audio_properties.update(self.get_pa_info())
         # audio tagging:
         init_audio_tagging(opts.tray_icon)
+
+    def get_pa_info(self) -> dict:
+        if OSX or not POSIX:
+            return {}
+        try:
+            from xpra.audio.pulseaudio.util import get_info as get_pa_info
+            pa_info = get_pa_info()
+            log("pulseaudio info=%s", pa_info)
+            return pa_info
+        except ImportError as e:
+            log.warn("Warning: no pulseaudio information available")
+            log.warn(" %s", e)
+        except Exception:
+            log.error("Error: failed to add pulseaudio info", exc_info=True)
+        return {}
 
     def cleanup(self) -> None:
         self.stop_all_audio()

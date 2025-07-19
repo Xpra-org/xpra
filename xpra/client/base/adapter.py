@@ -36,13 +36,11 @@ CONNECT_POLL_DELAY = envint("XPRA_REMOTE_CONNECT_POLL_DELAY", 10000)
 
 opts = make_defaults_struct()
 try:
-    from xpra.client.subsystem.mmap import MmapClient
-    baseclass = MmapClient
+    from xpra.client.subsystem.mmap import MmapClient as baseclass
     opts.mmap = "both"
     opts.mmap_group = ""
 except ImportError:
-    from xpra.client.base.stub import StubClientMixin
-    baseclass = StubClientMixin
+    from xpra.client.base.stub import StubClientMixin as baseclass
 
 
 def get_server_socket_path(session_dir: str, mode="encoder", system_socket_path="") -> str:
