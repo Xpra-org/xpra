@@ -4,6 +4,7 @@
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/0aa7eb0ff2c207bea08ce25ed9a4877f5e1b493e)
 * Major:
+    * [focus breaks after 25 days or so](https://github.com/Xpra-org/xpra/commit/c56c7f054eba9672b9e13d7b474fb1958600a93d)
     * [errors with `ssl` disabled](https://github.com/Xpra-org/xpra/commit/de85e976a271507f5338ed2fa767f1535a12c67e)
 * Minor:
     * [distinguish client session running on a different display](https://github.com/Xpra-org/xpra/commit/86ffce4cb1359aebb5cc9704c72ecbe857af008d)
@@ -12,8 +13,11 @@
     * [skip workspace polling when unused on MS Windows](https://github.com/Xpra-org/xpra/commit/dc803c301c267dcb7b3e467cde83a0e09aa090ff)
     * [preserve URI form when parsing some IP protocols](https://github.com/Xpra-org/xpra/commit/e5310c480ce5cd4bb54651c24b0c3e395fecb156)
     * [preserve URI path](https://github.com/Xpra-org/xpra/commit/de4667ba18e64f92dfa772e2d85d19143900746a)
+    * [gui dialogs go blank after being closed once](https://github.com/Xpra-org/xpra/commit/65c933808aeeb21567bdbff2a42b7f5a02dcaa57)
+    * [rendundant events in `xpra configure features`](https://github.com/Xpra-org/xpra/commit/c9189153169799a7a4d99aec445a36a6f0442199)
 * Cosmetic:
     * [potentially misleading ssl validation error message](https://github.com/Xpra-org/xpra/commit/7b1e1e48be3d05c965c66cf2d406df12baddba3b)
+    * [show correct test name in messages](https://github.com/Xpra-org/xpra/commit/c92484c0c78b7ed966bac79c98a21f3af6acfabc)
 
 ## [6.3.2] 2025-07-08
 * Platforms, build and packaging:

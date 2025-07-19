@@ -1012,6 +1012,7 @@ fi
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warning
 - Major:
+   focus breaks after 25 days or so
    errors with `ssl` disabled
 - Minor:
    distinguish client session running on a different display
@@ -1020,8 +1021,11 @@ fi
    skip workspace polling when unused on MS Windows
    preserve URI form when parsing some IP protocols
    preserve URI path
+   gui dialogs go blank after being closed once
+   rendundant events in `xpra configure features`
 - Cosmetic:
    potentially misleading ssl validation error message
+   show correct test name in messages
 
 * Tue Jul 08 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
 - Platforms, build and packaging:
