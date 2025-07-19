@@ -365,6 +365,8 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding: Callable, se
 
 
 # pylint: disable=import-outside-toplevel
+
+
 class MenuHelper:
 
     def __init__(self, client):
@@ -465,9 +467,6 @@ class MenuHelper:
         self.after_handshake(enable_menuitem)
         return mi
 
-    def make_menu(self) -> Gtk.Menu:
-        return Gtk.Menu()
-
     def menuitem(self, title, icon_name="", tooltip="", cb: Callable = noop, **kwargs) -> Gtk.ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """
         image = None
@@ -483,15 +482,6 @@ class MenuHelper:
                 cb()
 
         return menuitem(title, image, tooltip, menu_cb)
-
-    def checkitem(self, title, cb: Callable = noop, active=False) -> Gtk.CheckMenuItem:
-        """ Utility method for easily creating a CheckMenuItem """
-        check_item = Gtk.CheckMenuItem(label=title)
-        check_item.set_active(active)
-        if cb:
-            check_item.connect("toggled", cb)
-        check_item.show()
-        return check_item
 
     def make_aboutmenuitem(self) -> Gtk.ImageMenuItem:
         return self.menuitem("About Xpra", "xpra.png", cb=about)

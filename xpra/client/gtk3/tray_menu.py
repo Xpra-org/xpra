@@ -18,10 +18,10 @@ from xpra.client.gtk3.menu_helper import (
     BANDWIDTH_MENU_OPTIONS,
     QUALITY_OPTIONS, MIN_QUALITY_OPTIONS,
     SPEED_OPTIONS, MIN_SPEED_OPTIONS,
-    get_appimage,
-    ll, set_sensitive, ensure_item_selected,
+    get_appimage, ll, set_sensitive, ensure_item_selected,
     make_encodingsmenu, MinAutoMenu,
 )
+from xpra.gtk.widget import checkitem
 from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
 from xpra.util.config import unset_config_attributes, update_config_attributes
@@ -240,7 +240,7 @@ class GTKTrayMenu(MenuHelper):
             if self.client.server_sharing_toggle:
                 self.client.send_sharing_enabled()
             log("sharing_toggled(%s) readonly=%s", args, self.client.readonly)
-        sharing = self.checkitem("Sharing", sharing_toggled)
+        sharing = checkitem("Sharing", sharing_toggled)
         sharing.set_tooltip_text("Allow other clients to connect to this session")
         set_sensitive(sharing, False)
 
@@ -269,7 +269,7 @@ class GTKTrayMenu(MenuHelper):
                 self.client.send_lock_enabled()
             log("lock_toggled(%s) lock=%s", args, self.client.client_lock)
 
-        lock = self.checkitem("Lock", lock_toggled)
+        lock = checkitem("Lock", lock_toggled)
         lock.set_tooltip_text("Prevent other clients from stealing this session")
         set_sensitive(lock, False)
 
@@ -295,7 +295,7 @@ class GTKTrayMenu(MenuHelper):
             v = readonly.get_active()
             self.client.readonly = v
             log("readonly_toggled(%s) readonly=%s", args, self.client.readonly)
-        readonly = self.checkitem("Read-only", readonly_toggled)
+        readonly = checkitem("Read-only", readonly_toggled)
         set_sensitive(readonly, False)
 
         def set_readonly_menuitem(*args) -> None:
@@ -320,7 +320,7 @@ class GTKTrayMenu(MenuHelper):
             if changed:
                 self.client.send_bell_enabled()
             log("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
-        bell = self.checkitem("Bell", bell_toggled)
+        bell = checkitem("Bell", bell_toggled)
         set_sensitive(bell, False)
 
         def set_bell_menuitem(*args) -> None:
@@ -345,7 +345,7 @@ class GTKTrayMenu(MenuHelper):
                 self.client.reset_cursor()
             log("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
 
-        cursors = self.checkitem("Cursors", cursors_toggled)
+        cursors = checkitem("Cursors", cursors_toggled)
         set_sensitive(cursors, False)
 
         def set_cursors_menuitem(*args) -> None:
@@ -368,7 +368,7 @@ class GTKTrayMenu(MenuHelper):
             log("notifications_toggled%s active=%s changed=%s", args, v, changed)
             if changed:
                 self.client.send_notify_enabled()
-        notifications = self.checkitem("Notifications", notifications_toggled)
+        notifications = checkitem("Notifications", notifications_toggled)
         set_sensitive(notifications, False)
 
         def set_notifications_menuitem(*args) -> None:
@@ -521,7 +521,7 @@ class GTKTrayMenu(MenuHelper):
                 set_keyboard_sync_tooltip()
                 self.client.send_keyboard_sync_enabled_status()
 
-        kbsync = self.checkitem("State Synchronization")
+        kbsync = checkitem("State Synchronization")
         set_sensitive(kbsync, False)
 
         def set_keyboard_sync_menuitem(*args) -> None:
@@ -541,7 +541,7 @@ class GTKTrayMenu(MenuHelper):
         return kbsync
 
     def make_shortcutsmenuitem(self) -> Gtk.ImageMenuItem:
-        kbshortcuts = self.checkitem("Intercept Shortcuts")
+        kbshortcuts = checkitem("Intercept Shortcuts")
         kh = self.client.keyboard_helper
         kbshortcuts.set_active(kh and bool(kh.shortcuts_enabled))
 
@@ -558,7 +558,7 @@ class GTKTrayMenu(MenuHelper):
                              cb=self.client.show_shortcuts)
 
     def make_openglmenuitem(self) -> Gtk.ImageMenuItem:
-        gl = self.checkitem("OpenGL")
+        gl = checkitem("OpenGL")
         gl.set_tooltip_text("hardware accelerated rendering using OpenGL")
 
         def gl_set(*args) -> None:
@@ -576,7 +576,7 @@ class GTKTrayMenu(MenuHelper):
         return gl
 
     def make_modalwindowmenuitem(self) -> Gtk.ImageMenuItem:
-        modal = self.checkitem("Modal Windows")
+        modal = checkitem("Modal Windows")
         modal.set_tooltip_text("honour modal windows")
         modal.set_active(self.client.modal_windows)
         set_sensitive(modal, False)
@@ -1213,7 +1213,7 @@ class GTKTrayMenu(MenuHelper):
             self.client.on_server_setting_changed("ibus-layouts", got_ibus_layouts)
 
     def kbitem(self, title: str, layout: str, variant: str, backend="", name="", active=False) -> Gtk.CheckMenuItem:
-        l = self.checkitem(title, self.set_kbitem_layout, active)
+        l = checkitem(title, self.set_kbitem_layout, active)
         l.set_draw_as_radio(True)
         l.keyboard_name = name
         l.keyboard_backend = backend

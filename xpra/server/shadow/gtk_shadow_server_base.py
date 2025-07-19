@@ -18,6 +18,7 @@ from xpra.server import features
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.gtk.widget import checkitem
 from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.net.compression import Compressed
 from xpra.log import Logger
@@ -56,16 +57,6 @@ def parse_geometries(s) -> list:
         if geometry_str:
             g.append(parse_geometry(geometry_str))
     return g
-
-
-def checkitem(title: str, cb: Callable[[Any], None] = noop, active=False):  # -> Gtk.CheckMenuItem:
-    Gtk = gi_import("Gtk")
-    check_item = Gtk.CheckMenuItem(label=title)
-    check_item.set_active(active)
-    if cb:
-        check_item.connect("toggled", cb)
-    check_item.show()
-    return check_item
 
 
 def get_icon_image(icon_name: str):

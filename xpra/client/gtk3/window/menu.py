@@ -5,6 +5,7 @@
 
 from xpra.os_util import gi_import
 from xpra.client.gtk3.menu_helper import MenuHelper
+from xpra.gtk.widget import checkitem
 from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 
@@ -52,7 +53,7 @@ class WindowMenuHelper(MenuHelper):
         return gl
 
     def make_openglmenuitem(self) -> Gtk.ImageMenuItem:
-        gl = self.checkitem("OpenGL")
+        gl = checkitem("OpenGL")
         gl.set_tooltip_text("hardware accelerated rendering using OpenGL")
         return gl
 

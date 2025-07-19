@@ -9,7 +9,7 @@ from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.common import noop
-from xpra.gtk.widget import scaled_image
+from xpra.gtk.widget import scaled_image, checkitem
 from xpra.gtk.dialogs.about import about
 from xpra.client.gtk3.tray_menu import (
     GTKTrayMenu,
@@ -196,7 +196,7 @@ class OSXMenuHelper(GTKTrayMenu):
                 menu.add(item)
 
         if SHOW_INFO_MENU:
-            info_menu = self.make_menu()
+            info_menu = Gtk.Menu()
             menus.append(("Info", info_menu))
             add(info_menu, self.make_sessioninfomenuitem())
             if SHOW_QR:
@@ -205,7 +205,7 @@ class OSXMenuHelper(GTKTrayMenu):
                 add(info_menu, self.make_updatecheckmenuitem())
             add(info_menu, self.make_bugreportmenuitem())
         if SHOW_FEATURES_MENU:
-            features_menu = self.make_menu()
+            features_menu = Gtk.Menu()
             menus.append(("Features", features_menu))
             self.append_featuresmenuitems(features_menu)
             if features.window:
@@ -214,7 +214,7 @@ class OSXMenuHelper(GTKTrayMenu):
                 add(features_menu, self.make_numlockmenuitem())
                 add(features_menu, self.make_scalingmenuitem())
         if features.clipboard and SHOW_CLIPBOARD_MENU:
-            clipboard_menu = self.make_menu()
+            clipboard_menu = Gtk.Menu()
             menus.append(("Clipboard", clipboard_menu))
             for label in CLIPBOARD_LABELS:
                 add(clipboard_menu, self.make_clipboard_submenuitem(label, self._remote_clipboard_changed))
@@ -224,14 +224,14 @@ class OSXMenuHelper(GTKTrayMenu):
             clipboard_menu.show_all()
             self.after_handshake(self.set_clipboard_menu, clipboard_menu)
         if features.audio and SHOW_SOUND_MENU:
-            audio_menu = self.make_menu()
+            audio_menu = Gtk.Menu()
             if self.client.speaker_allowed and self.client.speaker_codecs:
                 add(audio_menu, self.make_speakermenuitem())
             if self.client.microphone_allowed and self.client.microphone_codecs:
                 add(audio_menu, self.make_microphonemenuitem())
             menus.append(("Audio", audio_menu))
         if features.window and SHOW_ENCODINGS_MENU:
-            encodings_menu = self.make_menu()
+            encodings_menu = Gtk.Menu()
 
             def set_encodings_menu(*_args):
                 client_encodings, server_encodings = self.get_encoding_options()
@@ -242,7 +242,7 @@ class OSXMenuHelper(GTKTrayMenu):
             self.after_handshake(set_encodings_menu)
             menus.append(("Encoding", encodings_menu))
         if features.window and SHOW_ACTIONS_MENU:
-            actions_menu = self.make_menu()
+            actions_menu = Gtk.Menu()
             add(actions_menu, self.make_raisewindowsmenuitem())
             add(actions_menu, self.make_minimizewindowsmenuitem())
             add(actions_menu, self.make_refreshmenuitem())
@@ -250,7 +250,7 @@ class OSXMenuHelper(GTKTrayMenu):
             self.window_menu = actions_menu
             menus.append(("Windows", actions_menu))
         if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
-            server_menu = self.make_menu()
+            server_menu = Gtk.Menu()
             if SHOW_SHUTDOWN:
                 add(server_menu, self.make_shutdownmenuitem())
 
@@ -295,7 +295,7 @@ class OSXMenuHelper(GTKTrayMenu):
         self.set_new_remote_clipboard(remote_clipboard)
 
     def make_clipboard_submenuitem(self, label: str, cb: Callable = noop):
-        clipboard_item = self.checkitem(label)
+        clipboard_item = checkitem(label)
         clipboard_item.set_draw_as_radio(True)
 
         def clipboard_option_changed(item):
@@ -377,7 +377,7 @@ class OSXMenuHelper(GTKTrayMenu):
             if keyboard:
                 keyboard.swap_keys = v
 
-        swapkeys_menuitem = self.checkitem("Control/Command Key Swap", swapkeys_toggled)
+        swapkeys_menuitem = checkitem("Control/Command Key Swap", swapkeys_toggled)
 
         def set_swapkeys_menuitem(*args):
             keyboard = self._get_keyboard()
@@ -402,7 +402,7 @@ class OSXMenuHelper(GTKTrayMenu):
                 self.client.wheel_map[4] = 4
                 self.client.wheel_map[5] = 5
 
-        mousewheel_menuitem = self.checkitem("Invert Mouse Wheel", invert_toggled)
+        mousewheel_menuitem = checkitem("Invert Mouse Wheel", invert_toggled)
         mousewheel_menuitem.set_active(self.client.wheel_map.get(4) != 4)
         return mousewheel_menuitem
 
@@ -414,7 +414,7 @@ class OSXMenuHelper(GTKTrayMenu):
             if keyboard:
                 keyboard.num_lock_state = v
 
-        self.numlock_menuitem = self.checkitem("Num Lock", cb=numlock_toggled)
+        self.numlock_menuitem = checkitem("Num Lock", cb=numlock_toggled)
         self.numlock_menuitem.set_active(True)
 
         def set_numlock_menuitem(*args):
@@ -435,7 +435,7 @@ class OSXMenuHelper(GTKTrayMenu):
 
     def build_dock_menu(self):
         log("OSXMenuHelper.build_dock_menu()")
-        self.dock_menu = self.make_menu()
+        self.dock_menu = Gtk.Menu()
         if SHOW_ABOUT_XPRA:
             self.dock_menu.add(self.menuitem("About Xpra", "information.png", None, about))
         self.dock_menu.show_all()
