@@ -1334,6 +1334,7 @@ class SocketProtocol:
         eventlog("Protocol.close(%s) done", message)
 
     def may_log_stats(self, log_fn: Callable = log.info) -> None:
+        # noinspection PySimplifyBooleanCheck
         if self._log_stats is False:
             return
         icount = self.input_packetcount

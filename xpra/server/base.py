@@ -195,6 +195,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # handle new connections:
+    # noinspection PySimplifyBooleanCheck
     def handle_sharing(self, proto, ui_client: bool = True, share: bool = False,
                        uuid="") -> tuple[bool, int]:
         share_count = 0

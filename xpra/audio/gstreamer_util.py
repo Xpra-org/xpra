@@ -536,6 +536,7 @@ def get_pulse_defaults(device_name_match="", want_monitor_device=True,
     return {"device": device}
 
 
+# noinspection PySimplifyBooleanCheck
 def filter_ignored(devices: dict, input_or_output: bool | None) -> dict:
     if input_or_output is True:
         ignore = IGNORED_INPUT_DEVICES

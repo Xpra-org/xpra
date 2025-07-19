@@ -495,6 +495,7 @@ class Logger:
         if level <= self.min_level:
             return
         exc_info = kwargs.get("exc_info", None)
+        # noinspection PySimplifyBooleanCheck
         if exc_info is True:
             kwargs.pop("exc_info")
             ei = sys.exc_info()

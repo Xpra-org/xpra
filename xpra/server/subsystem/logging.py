@@ -167,6 +167,7 @@ class LoggingServer(StubServerMixin):
                             pass
                     source.send("logging", level, data, dtime)
                     exc_info = kwargs.get("exc_info")
+                    # noinspection PySimplifyBooleanCheck
                     if exc_info is True:
                         exc_info = sys.exc_info()
                     if exc_info and exc_info[0]:

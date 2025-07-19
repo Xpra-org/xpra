@@ -118,6 +118,7 @@ class ProxyServer(_ProxyServer):
             # "--tray=no",
         ]
         # unless explicitly stated otherwise, exit with client:
+        # noinspection PySimplifyBooleanCheck
         if sess_options.get("exit-with-client", None) is not False:
             cmd.append("--exit-with-client=yes")
         from xpra.log import debug_enabled_categories

@@ -228,6 +228,7 @@ class PulseaudioServer(StubServerMixin):
     def init_pulseaudio(self) -> None:
         log("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%r",
             enabled_or_auto(self.pulseaudio), self.pulseaudio_command)
+        # noinspection PySimplifyBooleanCheck
         if self.pulseaudio is False:
             return
         if not self.pulseaudio_command:
