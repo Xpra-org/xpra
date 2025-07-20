@@ -21,7 +21,7 @@ from unit.test_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log, estr, log_gap
 
 CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 60)
-SUBPROCESS_WAIT = envint("XPRA_TEST_SUBPROCESS_WAIT", CONNECT_WAIT * 2)
+FAIL_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 5)
 
 NOVERIFY = "--ssl-server-verify-mode=none"
 NOHOSTNAME = "--ssl-check-hostname=no"
@@ -86,19 +86,14 @@ class ServerSocketsTest(ServerTestUtil):
             "--dbus=no",
         ]
 
-    def get_run_env(self):
-        env = super().get_run_env()
-        env["XPRA_CONNECT_TIMEOUT"] = str(CONNECT_WAIT)
-        return env
-
     def start_server(self, *args):
         server_proc = self.run_xpra(["runner", "--no-daemon"] + list(args))
-        if pollwait(server_proc, 10) is not None:
+        if pollwait(server_proc, 1) is not None:
             r = server_proc.poll()
             raise Exception(f"server failed to start with args={args}, returned {estr(r)}")
         return server_proc
 
-    def _test_connect(self, server_args=(), client_args=(), password=None, uri_prefix=DISPLAY_PREFIX, exit_code=0):
+    def _test_connect(self, server_args=(), client_args=(), password="", uri_prefix=DISPLAY_PREFIX, exit_code=0):
         display_no = self.find_free_display_no()
         display = f":{display_no}"
         log(f"starting test server on {display}")
@@ -106,15 +101,22 @@ class ServerSocketsTest(ServerTestUtil):
         # we should always be able to get the version:
         uri = uri_prefix + str(display_no)
         start = monotonic()
+        timeout = FAIL_WAIT if exit_code == ExitCode.CONNECTION_FAILED else CONNECT_WAIT
+        wait = envint("XPRA_TEST_SUBPROCESS_WAIT", timeout * 2)
         while True:
             args = ["version", uri] + list(client_args or ())
-            client = self.run_xpra(args)
-            r = pollwait(client, CONNECT_WAIT)
-            if r == 0:
+            env = self.get_run_env()
+            env["XPRA_CONNECT_TIMEOUT"] = str(timeout)
+            client = self.run_xpra(args, env=env)
+            r = pollwait(client, timeout)
+            if r == 0 or r == exit_code:
                 break
             if r is None:
                 client.terminate()
-            if monotonic() - start > SUBPROCESS_WAIT:
+            if pollwait(server, 1) is not None:
+                r = server.poll()
+                raise Exception(f"server terminated - was started with args={args}, returned {estr(r)}")
+            if monotonic() - start > wait:
                 if exit_code == ExitCode.CONNECTION_FAILED:
                     return
                 err_msg = f"version client failed to connect using {args}, returned {estr(r)}"
@@ -122,14 +124,14 @@ class ServerSocketsTest(ServerTestUtil):
                 log.error(f" server was started on {display=} with {server_args}")
                 raise Exception(err_msg)
         # try to connect
-        cmd = ["connect-test", uri] + [x.replace("$DISPLAY_NO", str(display_no)) for x in client_args]
+        args = ["connect-test", uri] + [x.replace("$DISPLAY_NO", str(display_no)) for x in client_args]
         f = None
         if password:
             f = self._temp_file(password)
-            cmd += [f"--password-file={f.name}"]
-            cmd += [f"--challenge-handlers=file:filename={f.name}"]
-        client = self.run_xpra(cmd)
-        r = pollwait(client, SUBPROCESS_WAIT)
+            args += [f"--password-file={f.name}"]
+            args += [f"--challenge-handlers=file:filename={f.name}"]
+        client = self.run_xpra(args)
+        r = pollwait(client, wait)
         if f:
             f.close()
         if r is None:
@@ -188,6 +190,7 @@ class ServerSocketsTest(ServerTestUtil):
     def verify_connect(self, uri, exit_code=ExitCode.OK, *client_args):
         cmd = ["info", uri] + list(client_args)
         env = self.get_run_env()
+        env["XPRA_CONNECT_TIMEOUT"] = str(CONNECT_WAIT)
         env["SSL_RETRY"] = "0"
         client = self.run_xpra(cmd, env=env)
         r = pollwait(client, CONNECT_WAIT)
@@ -327,7 +330,9 @@ class ServerSocketsTest(ServerTestUtil):
         # remove socket dirs from default arguments temporarily:
         saved_args = ServerSocketsTest.default_xpra_args
         tmpsocketdir1 = tempfile.mkdtemp(suffix='xpra')
+        os.chmod(tmpsocketdir1, 0o700)
         tmpsocketdir2 = tempfile.mkdtemp(suffix='xpra')
+        os.chmod(tmpsocketdir2, 0o700)
         tmpsessionsdir = tempfile.mkdtemp(suffix='xpra')
         # hide sessions dir and use a single socket dir location:
         ServerSocketsTest.default_xpra_args = list(filter(lambda x: not x.startswith("--socket-dir"), saved_args))
@@ -339,8 +344,8 @@ class ServerSocketsTest(ServerTestUtil):
         )
         log_gap()
 
-        def t(client_args=(), prefix=DISPLAY_PREFIX, exit_code=ExitCode.OK):
-            self._test_connect(server_args, client_args, None, prefix, exit_code)
+        def t(client_args=(), prefix=DISPLAY_PREFIX, exit_code: ExitCode = ExitCode.OK):
+            self._test_connect(server_args, client_args, "", prefix, exit_code)
 
         try:
             # it should not be found by default
