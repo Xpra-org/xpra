@@ -15,6 +15,7 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.client.base.stub import StubClientMixin
+from xpra.platform.gui import get_cursor_size
 from xpra.log import Logger
 
 log = Logger("cursor")
@@ -47,6 +48,7 @@ class CursorClient(StubClientMixin):
         caps: dict[str, Any] = {
             CursorClient.PREFIX: {
                 "encodings": encodings,
+                "size": int(2 * get_cursor_size() / (self.xscale + self.yscale)),
             }
         }
         if BACKWARDS_COMPATIBLE:

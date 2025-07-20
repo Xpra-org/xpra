@@ -11,7 +11,7 @@ from xpra.exit_codes import ExitCode
 from xpra.platform.features import REINIT_WINDOWS
 from xpra.platform.gui import (
     get_vrefresh,
-    get_antialias_info, get_icc_info, get_display_icc_info, show_desktop, get_cursor_size,
+    get_antialias_info, get_icc_info, get_display_icc_info, show_desktop,
     get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name,
 )
 from xpra.scripts.main import check_display
@@ -205,9 +205,6 @@ class DisplayClient(StubClientMixin):
     def get_screen_caps(self) -> dict[str, Any]:
         caps = {
             "vrefresh": self.get_vrefresh(),
-            "cursor": {
-                "size": int(2 * get_cursor_size() / (self.xscale + self.yscale)),
-            },
         }
         aa = get_antialias_info()
         if aa:
