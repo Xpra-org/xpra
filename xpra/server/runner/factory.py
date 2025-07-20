@@ -16,7 +16,8 @@ def get_server_base_class() -> type:
     features.logging = features.http = features.shell = features.ssh = features.webcam = False
     # features.dbus = auto
     features.display = False
-    features.notification = features.clipboard = features.audio = features.keyboard = features.pointer = False
+    features.notification = features.clipboard = features.keyboard = features.pointer = False
+    features.audio = features.pulseaudio = False
     features.encoding = features.cursor = features.window = False
     features.command = True
 
