@@ -65,7 +65,7 @@ def main(args) -> int:
         if p in skip_slow or name in skip_slow:
             write(f"skipped slow test as requested: {p}")
             return 0
-        write(f"running {name}\n")
+        write(f"running {name} from {tfile}\n")
         cmd = run_cmd + [p]
         T0 = time.monotonic()
         try:
