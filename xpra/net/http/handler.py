@@ -235,7 +235,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def __init__(self, sock, addr,
                  web_root: str = "/usr/share/xpra/www/",
                  http_headers_dirs: Iterable[str] = ("/etc/xpra/http-headers", ),
-                 script_paths: dict[str, Callable[[str], HttpResponse]] = None,
+                 script_paths: dict[str, Callable[[str, bytes], HttpResponse]] = None,
                  username: str = AUTH_USERNAME,
                  password: str = AUTH_PASSWORD):
         self.web_root = web_root
