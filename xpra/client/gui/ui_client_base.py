@@ -182,6 +182,10 @@ class UIXpraClient(ClientBaseClass):
             self.emit("first-ui-received")
         self._ui_events += 1
 
+    def server_ok(self) -> bool:
+        # get the real value from the PingClient feature, if present:
+        return getattr(self, "_server_ok", True)
+
     def get_mouse_position(self) -> tuple:
         raise NotImplementedError()
 
