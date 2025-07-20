@@ -91,7 +91,7 @@ class ServerSocketsTest(ServerTestUtil):
         return env
 
     def start_server(self, *args):
-        server_proc = self.run_xpra(["start", "--no-daemon"] + list(args))
+        server_proc = self.run_xpra(["runner", "--no-daemon"] + list(args))
         if pollwait(server_proc, 10) is not None:
             r = server_proc.poll()
             raise Exception(f"server failed to start with args={args}, returned {estr(r)}")
