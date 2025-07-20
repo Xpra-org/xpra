@@ -785,8 +785,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     if "NORMAL" in window_types:
                         continue
                     window_type = "NORMAL"
-            hint = WINDOW_NAME_TO_HINT.get(window_type, None)
-            if hint is not None:
+            hint = WINDOW_NAME_TO_HINT.get(window_type, 0)
+            if hint:
                 hints |= hint
             else:
                 log("ignoring unknown window type hint: %s", window_type)

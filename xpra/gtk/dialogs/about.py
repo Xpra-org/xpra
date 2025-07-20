@@ -42,7 +42,7 @@ def load_license() -> str:
                    "\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt"
 
 
-about_dialog = None
+about_dialog: Gtk.AboutDialog | None = None
 
 
 def close_about(*_args) -> None:

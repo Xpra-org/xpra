@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-_loop = None
+_loop: object | None = None
 
 
 def loop_init():
@@ -15,7 +15,7 @@ def loop_init():
     return _loop
 
 
-_session_bus = None
+_session_bus: object | None = None
 
 
 def init_session_bus(private=False):
@@ -28,7 +28,7 @@ def init_session_bus(private=False):
     return _session_bus
 
 
-_system_bus = None
+_system_bus: object | None = None
 
 
 def init_system_bus():

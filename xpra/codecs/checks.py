@@ -9,7 +9,7 @@
 import struct
 import binascii
 from typing import Any, TypeAlias
-from collections.abc import Callable, Sequence, Iterable
+from collections.abc import Callable, Sequence
 
 from xpra.common import roundup
 from xpra.codecs.constants import EncodingNotSupported
@@ -305,7 +305,7 @@ assert convert_pixel(rgbx="01234567", fmt="RGBX") == "01234567"
 assert convert_pixel(rgbx="01234567", fmt="BGRX") == "45230167"
 
 
-def make_test_image(pixel_format: str, w: int, h: int, plane_values: Iterable[int] | str = (0x20, 0x80, 0x80, 0x0)):
+def make_test_image(pixel_format: str, w: int, h: int, plane_values: Sequence[int] | str = (0x20, 0x80, 0x80, 0x0)):
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.image import ImageWrapper
     from xpra.codecs.constants import get_subsampling_divs
@@ -326,7 +326,7 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values: Iterable[in
         nplanes = 2 if pixel_format == "NV12" else 3
         strides = tuple(w//divs[i][0]*Bpp for i in range(nplanes))
         sizes = tuple(strides[i]*h//divs[i][1]*Bpp for i in range(nplanes))
-        if isinstance(plane_values, Iterable):
+        if plane_values:
             planes = tuple(struct.pack(b"B", plane_value) * sizes[i]
                            for i, plane_value in enumerate(plane_values[:nplanes]))
         else:

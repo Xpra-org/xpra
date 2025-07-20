@@ -24,6 +24,10 @@ log = Logger("server", "cursor")
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 
+def nodata() -> tuple:
+    return ()
+
+
 class CursorsConnection(StubClientConnection):
     PREFIX = "cursor"
 
@@ -34,7 +38,7 @@ class CursorsConnection(StubClientConnection):
         return BACKWARDS_COMPATIBLE and caps.boolget("cursors")
 
     def __init__(self):
-        self.get_cursor_data_cb: Callable | None = None
+        self.get_cursor_data_cb: Callable = nodata
         self.send_cursors = False
         self.cursor_encodings: Sequence[str] = ()
         self.cursor_timer = 0

@@ -495,7 +495,7 @@ def get_device_context(options: typedict):
     return cuda_device_context(device_id, device)
 
 
-default_device_context = None
+default_device_context: object | None = None
 
 
 def get_default_device_context():

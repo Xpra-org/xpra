@@ -45,9 +45,6 @@ if not XRes.check_xres():
     log.warn("Warning: X Resource Extension missing or too old")
     XRes = None
 
-if get_parent_pid is None:
-    log("proc.get_parent_pid is not available")
-
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
@@ -455,7 +452,7 @@ class CoreX11WindowModel(WindowModelStub):
         # immutable ones:
         depth = X11Window.get_depth(self.xid)
         pid = XRes.get_pid(self.xid) if XRes else -1
-        ppid = get_parent_pid(pid) if pid and get_parent_pid else 0
+        ppid = get_parent_pid(pid)
         parent = X11Window.getParent(self.xid)
         if parent == get_root_xid():
             parent = 0

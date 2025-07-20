@@ -282,7 +282,7 @@ def normalize_display_name(display_name: str) -> str:
             if pos > 0 and len(parts) > 2:
                 newnetloc = "[" + (":".join(parts[:-1])) + "]:" + parts[-1]
                 display_name = display_name[:pos] + newnetloc + display_name[pos + len(netloc):]
-    except Exception:
+    except (ValueError, AttributeError, TypeError, UnicodeError):
         pass
     # workaround for vsock 'VMADDR_PORT_ANY':
     # "any" or "auto" is not a valid port number

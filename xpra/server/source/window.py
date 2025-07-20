@@ -34,6 +34,10 @@ MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5 * 1024 * 1024)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
+def noid(_window) -> int:
+    return 0
+
+
 class WindowsConnection(StubClientConnection):
     """
     Handle window forwarding:
@@ -50,7 +54,7 @@ class WindowsConnection(StubClientConnection):
 
     def __init__(self):
         self.get_focus: Callable | None = None
-        self.get_window_id: Callable | None = None
+        self.get_window_id = noid
         self.window_filters = []
         self.readonly = False
         # duplicated from encodings:

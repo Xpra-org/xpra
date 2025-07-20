@@ -323,15 +323,14 @@ def remove_printer(name: str) -> None:
 
 
 dbus_init = None
-printers_modified_callback: Callable | None = None
+printers_modified_callback: Callable = noop
 DBUS_PATH = "/com/redhat/PrinterSpooler"
 DBUS_IFACE = "com.redhat.PrinterSpooler"
 
 
 def handle_dbus_signal(*args) -> None:
     log("handle_dbus_signal(%s) printers_modified_callback=%s", args, printers_modified_callback)
-    if printers_modified_callback:
-        printers_modified_callback()
+    printers_modified_callback()
 
 
 def init_dbus_listener() -> bool:
@@ -366,8 +365,7 @@ def check_printers() -> None:
     # fire the callback every time, relying in client_base
     # to notice that nothing has changed and avoid sending the same printers to the server
     log("check_printers() printers_modified_callback=%s", printers_modified_callback)
-    if printers_modified_callback:
-        printers_modified_callback()
+    printers_modified_callback()
     schedule_polling_timer()
 
 

@@ -4,18 +4,19 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Optional
-from collections.abc import Callable
 
-get_parent_pid: Optional[Callable] = None
+def nopid(pid: int) -> int:
+    return 0
+
+
+get_parent_pid = nopid
+
 try:
     from xpra.platform.posix import proc_libproc
-
     get_parent_pid = proc_libproc.get_parent_pid
 except (ImportError, AttributeError):
     try:
         from xpra.platform.posix import proc_procps
-
         get_parent_pid = proc_procps.get_parent_pid
     except (ImportError, AttributeError):
         pass
@@ -29,7 +30,7 @@ def main(argv) -> int:
             return 1
         print(f"using `get_parent_pid`={get_parent_pid}")
         try:
-            print(f"from {get_parent_pid.__module__}")
+            print(f"from {get_parent_pid.__module__!r} module")
         except AttributeError:  # `__module__` is CPython only?
             pass
         for pid_str in argv[1:]:

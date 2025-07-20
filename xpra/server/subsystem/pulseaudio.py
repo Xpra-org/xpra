@@ -178,6 +178,7 @@ class PulseaudioServer(StubServerMixin):
         self.cleanup_pulseaudio()
 
     def get_info(self, _proto) -> dict[str, Any]:
+        # noinspection PySimplifyBooleanCheck
         if self.pulseaudio is False:
             return {}
         self.pulseaudio_init_done.wait(5)

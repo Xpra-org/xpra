@@ -57,8 +57,6 @@ class BandwidthServer(StubServerMixin):
         if not ss:
             return
         bandwidth_limit = packet.get_u64(1)
-        if not isinstance(bandwidth_limit, int):
-            raise TypeError("bandwidth-limit must be an integer, not %s" % type(bandwidth_limit))
         if (self.bandwidth_limit and bandwidth_limit >= self.bandwidth_limit) or bandwidth_limit <= 0:
             bandwidth_limit = self.bandwidth_limit or 0
         if ss.bandwidth_limit == bandwidth_limit:
