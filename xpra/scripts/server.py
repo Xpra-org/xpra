@@ -866,7 +866,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             del e
 
     clobber = int(upgrading) * CLOBBER_UPGRADE | int(use_display or 0) * CLOBBER_USE_DISPLAY
-    start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder) and opts.xvfb.lower() not in FALSE_OPTIONS
+    start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS
     xauth_data: str = get_hex_uuid() if start_vfb else ""
 
     # if pam is present, try to create a new session:
