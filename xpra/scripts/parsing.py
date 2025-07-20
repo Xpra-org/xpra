@@ -735,6 +735,9 @@ def get_usage() -> list[str]:
             "upgrade-shadow [DISPLAY]",
         ]
 
+    if has_module("xpra.codecs.jpeg"):
+        command_options.append("encoder")
+
     if supports_gtk3_client():
         command_options += [
             "attach [DISPLAY]",
