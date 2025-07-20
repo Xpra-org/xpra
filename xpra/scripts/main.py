@@ -1892,6 +1892,7 @@ def set_client_features(opts) -> None:
     features.command = opts.commands
     features.control = opts.control
     features.file = b(opts.file_transfer) and impcheck("xpra.net.file_transfer")
+    features.printer = features.file and b(opts.printing)
     features.display = opts.windows
     features.window = opts.windows
     features.cursor = opts.windows and opts.cursors
