@@ -83,6 +83,7 @@ class ServerSocketsTest(ServerTestUtil):
             "--encodings=rgb",
             "--mdns=no",
             "--webcam=no",
+            "--dbus=no",
         ]
 
     def get_run_env(self):
