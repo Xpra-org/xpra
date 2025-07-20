@@ -12,10 +12,11 @@ def get_window_base_classes() -> tuple[type, ...]:
     from xpra.client.gtk3.window.base import GTKClientWindowBase
     from xpra.client.gtk3.window.action import ActionWindow
     from xpra.client.gtk3.window.headerbar import HeaderBarWindow
+    from xpra.client.base import features
     # headerbar could be toggled using a feature:
     WINDOW_BASES: list[type] = [GTKClientWindowBase, ActionWindow, HeaderBarWindow]
     DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
-    if DRAGNDROP:
+    if features.file and DRAGNDROP:
         from xpra.client.gtk3.window.dragndrop import DragNDropWindow
         WINDOW_BASES.append(DragNDropWindow)
     FOCUS = envbool("XPRA_FOCUS", True)
@@ -34,7 +35,6 @@ def get_window_base_classes() -> tuple[type, ...]:
     if XSHAPE:
         from xpra.client.gtk3.window.shape import ShapeWindow
         WINDOW_BASES.append(ShapeWindow)
-    from xpra.client.base import features
     if features.keyboard:
         from xpra.client.gtk3.window.keyboard import KeyboardWindow
         WINDOW_BASES.append(KeyboardWindow)
