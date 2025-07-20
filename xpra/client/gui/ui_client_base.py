@@ -467,7 +467,3 @@ class UIXpraClient(ClientBaseClass):
         self.add_packets("startup-complete", "setting-change", main_thread=True)
         # run directly from the network thread:
         self.add_packets("server-event")
-
-    def process_packet(self, proto, packet) -> None:
-        self.check_server_echo(0)
-        super().process_packet(proto, packet)
