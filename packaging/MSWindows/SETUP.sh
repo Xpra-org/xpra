@@ -68,10 +68,6 @@ echo
 echo "for generating the documentation, install pandoc"
 echo "https://github.com/jgm/pandoc/releases/latest"
 echo
-echo "for a more seamless theme, install https://b00merang.weebly.com/windows-10.html"
-echo "into $MSYSTEM_PREFIX/share/themes/Windows-10/"
-echo " (see ticket #2762)"
-echo
 echo "to support NVIDIA hardware accelerated encoders NVENC, NVJPEG"
 echo "and NVFBC screen capture:"
 echo "* install CUDA in its default location"
