@@ -387,7 +387,7 @@ class SocketProtocol:
             self._write_format_thread,
         ) if x is not None)
 
-    def parse_remote_caps(self, caps: typedict) -> None:
+    def parse_remote_caps(self, _caps: typedict) -> None:
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
 
     def get_info(self, alias_info: bool = ALIAS_INFO) -> dict[str, Any]:

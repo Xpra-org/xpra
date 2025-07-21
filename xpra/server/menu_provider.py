@@ -146,20 +146,18 @@ class MenuProvider:
         log("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_MENU_DATA:
             return {}
-        menu_data = self.menu_data
         lock = self.load_lock
         if lock.acquire(wait):  # pylint: disable=consider-using-with
-            menu_data = self.menu_data
             try:
-                if menu_data is None or force_reload:
+                if self.menu_data is None or force_reload:
                     from xpra.platform.menu_helper import load_menu  # pylint: disable=import-outside-toplevel
-                    menu_data = self.menu_data = load_menu()
+                    self.menu_data = load_menu()
                     add_work_item(self.got_menu_data)
             finally:
                 lock.release()
         if remove_icons and self.menu_data:
-            menu_data = noicondata(self.menu_data)
-        return menu_data or {}
+            return noicondata(self.menu_data)
+        return self.menu_data or {}
 
     def got_menu_data(self) -> bool:
         log("got_menu_data(..) on_reload=%s", self.on_reload)

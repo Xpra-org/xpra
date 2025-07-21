@@ -277,7 +277,7 @@ class X11ServerCore(GTKServerBase):
         enabled = getattr(self, "cursors", False)
         if not (enabled and ("default" in encodings) and dci):
             return
-        cursorlog(f"default_cursor_image=%s, {enabled=}, {encodings=}", Ellipsizer(dci))
+        cursorlog(f"send_initial_cursors({ss}, {sharing}) default_cursor_image=%s, {enabled=}, {encodings=}", Ellipsizer(dci))
         with cursorlog.trap_error("Error sending default cursor"):
             ss.do_send_cursor(0, dci, get_cursor_sizes(), encoding_prefix="default:")
 

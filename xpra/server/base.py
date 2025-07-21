@@ -300,7 +300,7 @@ class ServerBase(ServerBaseClass):
         # process ui half in ui thread:
         GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, ui_client, share_count)
 
-    def _handle_hello_request_detach(self, proto, caps: typedict) -> bool:
+    def _handle_hello_request_detach(self, proto, _caps: typedict) -> bool:
         # noinspection PySimplifyBooleanCheck
         if self.lock is True:
             authlog("cannot detach: session is locked")

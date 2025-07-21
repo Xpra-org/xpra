@@ -99,7 +99,7 @@ class StubClientMixin:
         """
 
     # noinspection PyMethodMayBeStatic
-    def compressed_wrapper(self, datatype, data, level=5, **kwargs) -> Compressed:
+    def compressed_wrapper(self, datatype, data, level=5, **_kwargs) -> Compressed:
         """
         Dummy utility method for compressing data.
         Actual client implementations will provide compression

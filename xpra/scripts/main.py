@@ -2133,7 +2133,6 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args: list[st
         if mode != "expand" and not find_spec("xpra.x11"):
             raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
-    display = ""
     with_display = mode in ("seamless", "desktop", "monitor", "expand")
     if with_display and str_to_bool(options.attach, False) and args and not display_is_remote:
         # maybe the server is already running for the display specified

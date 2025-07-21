@@ -10,7 +10,7 @@ import signal
 from xpra.exit_codes import ExitCode, ExitValue
 
 
-def os_signal(sig, frame) -> None:
+def os_signal(_sig, _frame) -> None:
     sys.exit(ExitCode.IO_ERROR)
 
 

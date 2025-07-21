@@ -133,7 +133,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         return info
 
     def accept_client_ssh_agent(self, uuid: str, ssh_auth_sock: str) -> None:
-        log("accept_client_ssh_agent: not setting up ssh agent forwarding for shadow servers")
+        log(f"accept_client_ssh_agent({uuid}, {ssh_auth_sock}) not setting up ssh agent forwarding for shadow servers")
 
     def refresh(self) -> bool:
         log("refresh() mapped=%s, capture=%s", self.mapped, self.capture)

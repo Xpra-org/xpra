@@ -500,7 +500,6 @@ class Logger:
             kwargs.pop("exc_info")
             ei = sys.exc_info()
             if ei != (None, None, None):
-                exc_info = False
                 kwargs["exc_info"] = ei
         if LOG_PREFIX:
             msg = LOG_PREFIX + msg

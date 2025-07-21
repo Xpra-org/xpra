@@ -428,9 +428,8 @@ def testencoder(encoder_module, full: bool, options: typedict) -> Sequence[str]:
     for encoding in tuple(codecs):
         try:
             testencoding(encoder_module, encoding, full, options)
-        except EncodingNotSupported as e:
+        except EncodingNotSupported:
             log(f"{etype}: {encoding} encoding failed", exc_info=True)
-            del e
             codecs.remove(encoding)
         except Exception as e:
             log(f"{etype}: {encoding} encoding failed", exc_info=True)

@@ -143,7 +143,6 @@ def get_frame_info(ignore_threads: Sequence[Thread] = ()) -> dict[str | int, Any
             main_thread.ident: "main",
         }
         frames = sys._current_frames()  # pylint: disable=protected-access
-        stack = None
         for i, frame_pair in enumerate(frames.items()):
             stack = traceback.extract_stack(frame_pair[1])
             tident = thread_ident.get(frame_pair[0], "unknown")

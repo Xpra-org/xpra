@@ -1537,7 +1537,7 @@ class ServerCore(ServerBaseClass):
         self.send_hello_info(proto)
         return True
 
-    def _handle_hello_request_screenshot(self, proto, caps: typedict) -> bool:
+    def _handle_hello_request_screenshot(self, proto, _caps: typedict) -> bool:
         packet = self.make_screenshot_packet()
         proto.send_now(packet)
         return True

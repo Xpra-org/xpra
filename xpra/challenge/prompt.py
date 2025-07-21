@@ -12,7 +12,7 @@ from xpra.challenge.handler import AuthenticationHandler
 PROMPT_FN_KEY = "challenge_prompt_function"
 
 
-def noprompt(prompt: str) -> str:
+def noprompt(_prompt: str) -> str:
     return ""
 
 

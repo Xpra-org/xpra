@@ -53,7 +53,7 @@ def load_remotedesktop(display: str = "") -> type | None:
     return None
 
 
-def load_pipewire(display: str = "") -> type | None:
+def load_pipewire(_display: str = "") -> type | None:
     return load_remotedesktop() or load_screencast()
 
 

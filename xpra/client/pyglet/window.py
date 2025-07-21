@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from pyglet.window import Window, event
 from pyglet.image import ImageData, SolidColorImagePattern
 from pyglet.sprite import Sprite
@@ -12,6 +14,10 @@ from xpra.client.pyglet.keys import keynames
 from xpra.log import Logger
 
 log = Logger()
+
+
+def get_modifiers(_modifiers: int) -> Sequence[str]:
+    return ()
 
 
 class ClientWindow(Window):
@@ -64,7 +70,7 @@ class ClientWindow(Window):
         if not keyname:
             log.info(f"unknown key {keysym}")
             return
-        mods = ()
+        mods = get_modifiers(modifiers)
         keyval = 0
         string = ""
         keycode = 0

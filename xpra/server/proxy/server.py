@@ -303,14 +303,14 @@ class ProxyServer(ProxyServerBaseClass):
         self.proxy_auth(proto, c, auth_caps)
 
     # override the default hello info request handler:
-    def _handle_hello_request_info(self, proto, caps: typedict) -> bool:
+    def _handle_hello_request_info(self, proto, _caps: typedict) -> bool:
         info = self.get_session_id_info()
         log_file = os.environ.get("XPRA_SERVER_LOG", "")
         info["log-file"] = log_file
         self.do_send_info(proto, info)
         return True
 
-    def _handle_hello_request_stop(self, proto, caps: typedict) -> bool:
+    def _handle_hello_request_stop(self, proto, _caps: typedict) -> bool:
         self.handle_stop_request(proto)
         return True
 
