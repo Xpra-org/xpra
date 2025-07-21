@@ -132,7 +132,7 @@ SUBPIXEL_STR = {
     SubPixelVerticalRGB : "VRGB",
     SubPixelVerticalBGR : "VBGR",
     SubPixelNone        : "none",
-    }
+}
 
 
 cdef extern from "X11/extensions/Xrandr.h":

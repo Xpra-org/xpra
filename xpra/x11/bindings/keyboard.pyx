@@ -722,7 +722,6 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             keynames = keynames[:-1]
         return keynames
 
-
     def get_keycodes(self, keyname: str) -> List[int]:
         codes = []
         cdef KeySym keysym = self._parse_keysym(keyname)
