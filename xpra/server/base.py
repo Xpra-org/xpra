@@ -65,7 +65,8 @@ class ServerBase(ServerBaseClass):
         self.dotxpra = None
 
     def suspend_event(self, args) -> None:
-        ServerCore.suspend_event(self, args)
+        # if we get a `suspend_event`, we can assume that `PowerEventServer` is a superclass:
+        super().suspend_event(args)
         self.server_event("suspend")
         for s in self._server_sources.values():
             if hasattr(s, "go_idle"):
