@@ -52,11 +52,11 @@ class PingServer(StubServerMixin):
         return {}
 
     def send_ping(self) -> bool:
-        from xpra.server.source.bandwidth import BandwidthConnection
+        from xpra.server.source.ping import PingConnection
         for ss in self._server_sources.values():
             if ss.suspended or ss.is_closed() or not ss.startup_completed:
                 continue
-            if isinstance(ss, BandwidthConnection):
+            if isinstance(ss, PingConnection):
                 ss.ping()
         return True
 
