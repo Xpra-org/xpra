@@ -38,11 +38,11 @@ xpra start --bind-tcp=0.0.0.0:20002 --start=xterm
 
 Then you can simply open your browser at these locations (`/xpra1` and `/xpra2` in the example config):
 ```shell
-xdg-open http://localhost/xpra1/foo
+xdg-open http://localhost/xpra1/
 ```
 
 Or using the regular command line client using a websocket connection:
 ```shell
-xpra attach ws://localhost/xpra1/foo
-xpra attach ws://localhost/xpra1/bar
+xpra attach ws://localhost/xpra1/
+xpra attach ws://localhost/xpra2/
 ```
