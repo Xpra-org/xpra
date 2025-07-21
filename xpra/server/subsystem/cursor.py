@@ -81,6 +81,12 @@ class CursorManager(StubServerMixin):
                 "default_size": display.get_default_cursor_size(),
                 "max_size": max_size,
             }
+        if self.default_cursor_image and "default_cursor" in source.wants:
+            ce = getattr(source, "cursor_encodings", ())
+            if "default" not in ce:
+                # we have to send it this way
+                # instead of using send_initial_cursors()
+                caps["cursor.default"] = self.default_cursor_image
         log("cursor caps=%s", caps)
         return caps
 
@@ -89,8 +95,26 @@ class CursorManager(StubServerMixin):
             CursorManager.PREFIX: {
                 "": self.cursors,
                 "size": self.cursor_size,
+                "current": self.get_cursor_info(),
             },
         }
+
+    def get_cursor_info(self) -> dict[str, Any]:
+        # (NOT from UI thread)
+        # copy to prevent race:
+        cd = self.last_cursor_image
+        if cd is None:
+            return {}
+        dci = self.default_cursor_image
+        cinfo = {
+            "is-default": bool(dci) and len(dci) >= 8 and len(cd) >= 8 and cd[7] == dci[7],
+        }
+        # all but pixels:
+        for i, x in enumerate(("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name")):
+            if x:
+                v = cd[i] or ""
+                cinfo[x] = v
+        return cinfo
 
     def get_ui_info(self, _proto, _client_uuids=None, *args) -> dict[str, Any]:
         # (from UI thread)
@@ -103,15 +127,23 @@ class CursorManager(StubServerMixin):
             return {}
         with SilenceWarningsContext(DeprecationWarning):
             pos = display.get_default_screen().get_root_window().get_pointer()
-        cinfo: dict[str, Any] = {"position": (pos.x, pos.y)}
+        info: dict[str, Any] = {"position": (pos.x, pos.y)}
         for prop, size in {
             "default": display.get_default_cursor_size(),
             "max": tuple(display.get_maximal_cursor_size()),
         }.items():
             if size is None:
                 continue
-            cinfo[f"{prop}_size"] = size
-        return {CursorManager.PREFIX: cinfo}
+            info[f"{prop}_size"] = size
+        if is_X11():
+            from xpra.gtk.error import xswallow
+            with xswallow:
+                from xpra.x11.bindings.keyboard import X11KeyboardBindings
+                info |= {
+                    "Xkb": X11KeyboardBindings().hasXkb(),
+                    "XTest": X11KeyboardBindings().hasXTest(),
+                }
+        return {CursorManager.PREFIX: info}
 
     def _process_set_cursors(self, proto, packet: Packet) -> None:
         self._process_cursor_set(proto, packet)

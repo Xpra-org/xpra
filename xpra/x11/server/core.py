@@ -24,7 +24,6 @@ from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, first_time
-from xpra.util.str_fn import Ellipsizer
 from xpra.net.compression import Compressed
 from xpra.net.common import Packet
 from xpra.server.gtk_server import GTKServerBase
@@ -263,23 +262,7 @@ class X11ServerCore(GTKServerBase):
                 sizes = self.get_all_screen_sizes()
                 if len(sizes) > 1:
                     capabilities["screen-sizes"] = sizes
-            if self.default_cursor_image and "default_cursor" in source.wants:
-                ce = getattr(source, "cursor_encodings", ())
-                if "default" not in ce:
-                    # we have to send it this way
-                    # instead of using send_initial_cursors()
-                    capabilities["cursor.default"] = self.default_cursor_image
         return capabilities
-
-    def send_initial_cursors(self, ss, sharing: bool = False) -> None:
-        dci = self.default_cursor_image
-        encodings = getattr(ss, "cursor_encodings", ())
-        enabled = getattr(self, "cursors", False)
-        if not (enabled and ("default" in encodings) and dci):
-            return
-        cursorlog(f"send_initial_cursors({ss}, {sharing}) default_cursor_image=%s, {enabled=}, {encodings=}", Ellipsizer(dci))
-        with cursorlog.trap_error("Error sending default cursor"):
-            ss.do_send_cursor(0, dci, get_cursor_sizes(), encoding_prefix="default:")
 
     def do_get_info(self, proto, server_sources) -> dict[str, Any]:
         start = monotonic_ns()
@@ -319,14 +302,6 @@ class X11ServerCore(GTKServerBase):
             sinfo["XShm"] = CompositeHelper.XShmEnabled
         except (ImportError, ValueError) as e:
             log("no composite: %s", e)
-        # cursor:
-        if self.last_cursor_image:
-            info.setdefault("cursor", {}).update({"current": self.get_cursor_info()})
-        with xswallow:
-            sinfo |= {
-                "Xkb": X11KeyboardBindings().hasXkb(),
-                "XTest": X11KeyboardBindings().hasXTest(),
-            }
         # randr:
         if self.randr:
             with xlog:
@@ -338,23 +313,6 @@ class X11ServerCore(GTKServerBase):
                         "exact": self.randr_exact_size,
                     }
         return info
-
-    def get_cursor_info(self) -> dict[str, Any]:
-        # (NOT from UI thread)
-        # copy to prevent race:
-        cd = self.last_cursor_image
-        if cd is None:
-            return {}
-        dci = self.default_cursor_image
-        cinfo = {
-            "is-default": bool(dci) and len(dci) >= 8 and len(cd) >= 8 and cd[7] == dci[7],
-        }
-        # all but pixels:
-        for i, x in enumerate(("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name")):
-            if x:
-                v = cd[i] or ""
-                cinfo[x] = v
-        return cinfo
 
     def get_window_info(self, window) -> dict[str, Any]:
         info = super().get_window_info(window)
