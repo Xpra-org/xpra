@@ -17,6 +17,7 @@ from xpra.net.common import Packet
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
+from xpra.util.objects import typedict
 
 GLib = gi_import("GLib")
 
@@ -58,7 +59,7 @@ class PingClient(StubClientMixin):
     def get_info(self) -> dict[str, Any]:
         return {
             "network": {
-                "pings": self.pings,
+                "ping": self.pings,
                 "server-ok": self._server_ok,
             }
         }
@@ -87,7 +88,13 @@ class PingClient(StubClientMixin):
     def resume(self) -> None:
         self.start_sending_pings()
 
+    def parse_server_capabilities(self, c: typedict) -> bool:
+        if self.pings:
+            self.pings = c.boolget("ping", BACKWARDS_COMPATIBLE)
+        return True
+
     def start_sending_pings(self) -> None:
+        log("start_sending_pings() pings=%s, ping_timer=%s", self.pings, self.ping_timer)
         if self.pings > 0 and not self.ping_timer:
             self.send_ping()
             self.ping_timer = GLib.timeout_add(1000 * self.pings, self.send_ping)

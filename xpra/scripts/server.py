@@ -293,7 +293,7 @@ def set_server_features(opts, mode: str) -> None:
         features.cursor = features.display and opts.cursors
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
         features.ssh = b(opts.ssh) and impcheck("net.ssh")
-        features.ping = b(opts.pings)
+        features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)

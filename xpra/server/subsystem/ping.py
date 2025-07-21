@@ -40,7 +40,12 @@ class PingServer(StubServerMixin):
 
     def get_info(self, _source=None) -> dict[str, Any]:
         return {
-            "pings": self.pings,
+            "ping": self.pings,
+        }
+
+    def get_caps(self, _source) -> dict[str, Any]:
+        return {
+            "ping": self.pings,
         }
 
     def get_server_features(self, _source) -> dict[str, Any]:

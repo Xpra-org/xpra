@@ -1910,7 +1910,7 @@ def set_client_features(opts) -> None:
     features.ssh = b(opts.ssh)
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
-    features.ping = b(opts.pings)
+    features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
     features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
     features.ssh_agent = envbool("XPRA_SSH_AGENT", True)
     features.socket = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
