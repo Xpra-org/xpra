@@ -2122,7 +2122,7 @@ if WIN32:
     )
 
     if quic_ENABLED:
-        external_includes += ["pyasn1", "aioquic", "pylsqpack"]
+        external_includes += ["pyasn1", "winloop", "winloop._noop", "aioquic", "pylsqpack"]
         add_modules("aioquic._buffer")
 
     if webcam_ENABLED:
