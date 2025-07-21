@@ -22,6 +22,7 @@ from xpra.log import Logger
 
 log = Logger("asyncio")
 
+WINLOOP = envbool("XPRA_WINLOOP", WIN32)
 UVLOOP = envbool("XPRA_UVLOOP", not WIN32)
 
 ExceptionWrapper = namedtuple("ExceptionWrapper", ("exception", "args"))
@@ -29,11 +30,25 @@ ExceptionWrapper = namedtuple("ExceptionWrapper", ("exception", "args"))
 RETHROW = (ValueError, RuntimeError, TypeError, KeyError, IndexError, AttributeError, ImportError)
 
 
+def install_winloop() -> None:
+    try:
+        # noinspection PyPackageRequirements
+        import winloop  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        log("install_winloop()", exc_info=True)
+        log.warn("Warning: winloop not found")
+        return
+    log("installing winloop")
+    winloop.install()
+    log.info(f"winloop {winloop.__version__} installed")
+
+
 def install_uvloop() -> None:
     try:
         # noinspection PyPackageRequirements
         import uvloop  # pylint: disable=import-outside-toplevel
     except ImportError:
+        log("install_uvloop()", exc_info=True)
         log.warn("Warning: uvloop not found")
         return
     log("installing uvloop")
@@ -62,6 +77,8 @@ class ThreadedAsyncioLoop:
     def run_forever(self) -> None:
         if UVLOOP:
             install_uvloop()
+        if WINLOOP:
+            install_winloop()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self.loop = loop
