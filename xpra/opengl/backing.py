@@ -1463,9 +1463,11 @@ class GLWindowBackingBase(WindowBackingBase):
             self.gl_init(context)
             pbo = options.boolget("pbo")
             scaling = enc_width != width or enc_height != height
-            self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=pbo)
+            try:
+                self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=pbo)
+            finally:
+                img.free()
             self.render_planar_update(x, y, enc_width, enc_height, width, height, shader)
-
             self.paint_box(encoding, x, y, width, height)
             self.painted(context, x, y, width, height, flush)
             fire_paint_callbacks(callbacks, True)
@@ -1476,8 +1478,6 @@ class GLWindowBackingBase(WindowBackingBase):
         except Exception as e:
             message = f"OpenGL {encoding} paint failed: {e}"
             log.error("Error painting planar update", exc_info=True)
-        finally:
-            img.free()
         log.error(" flush=%i, image=%s, coords=%s, size=%ix%i",
                   flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)

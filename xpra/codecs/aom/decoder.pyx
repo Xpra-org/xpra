@@ -5,6 +5,8 @@
 
 #cython: wraparound=False
 
+import weakref
+from time import sleep
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
@@ -19,7 +21,7 @@ log = Logger("decoder", "aom")
 
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, uintptr_t
-from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
+from xpra.buffers.membuf cimport wrapbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 from xpra.codecs.argb.argb cimport show_plane_range
 
 
@@ -119,6 +121,7 @@ cdef class Decoder:
     cdef object colorspace
     cdef aom_codec_iface_t *codec
     cdef aom_codec_ctx_t context
+    cdef object image_wrapper
 
     cdef object __weakref__
 
@@ -187,9 +190,30 @@ cdef class Decoder:
         }
         return info
 
+    def wait_for_image(self) -> None:
+        cdef object wrapper = None
+        ref = self.image_wrapper
+        if ref is None:
+            return      # no image wrapper to wait for
+        for i in range(20):
+            wrapper = self.image_wrapper()
+            if wrapper is None or wrapper.freed:
+                self.image_wrapper = None  # clear the weakref
+                return
+            log("wait_for_image() wrapper=%s", wrapper)
+            # if the image wrapper still exists,
+            # then it references the libaom buffers
+            # we can't just call:
+            # `wrapper.clone_pixel_data()`
+            # because the pixel buffers may already be in use
+            sleep(i / 1000)  # wait a bit for the image wrapper to be released
+        raise RuntimeError("ImageWrapper is still in use, cannot decode new image")
+
     def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
         log("decompress_image(%i bytes, %s)", len(data), options)
         cdef aom_codec_err_t r = AOM_CODEC_OK
+
+        self.wait_for_image()  # wait for the previous image to be released
 
         cdef size_t data_len
         cdef const uint8_t* data_buf
@@ -245,10 +269,8 @@ cdef class Decoder:
             plane_width = aom_img_plane_width(image, i)
             plane_height = aom_img_plane_height(image, i)
             stride = image.stride[i]
-            log("plane %s: %ix%i, stride=%i", "YUV"[i], plane_width, plane_height, stride)
-            # copy:
-            plane_buf = padbuf(plane_height * stride, stride)
-            memcpy(<void *> plane_buf.get_mem(), <const void *> image.planes[i], plane_height * stride)
+            log("plane %s: %4ix%-4i, stride=%i", "YUV"[i], plane_width, plane_height, stride)
+            plane_buf = wrapbuf(<void *> image.planes[i], plane_height * stride)
             pyplanes.append(memoryview(plane_buf))
             pystrides.append(stride)
 
@@ -256,8 +278,10 @@ cdef class Decoder:
             self.show_planes(pyplanes, pystrides)
 
         self.frames += 1
-        return ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, depth,
-                            pystrides, planes=PlanarFormat.PLANAR_3, bytesperpixel=Bpp, full_range=full_range)
+        wrapper = ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, depth,
+                               pystrides, planes=PlanarFormat.PLANAR_3, bytesperpixel=Bpp, full_range=full_range)
+        self.image_wrapper = weakref.ref(wrapper)
+        return wrapper
 
 
     def show_planes(self, pyplanes: Sequence[memoryview], pystrides: Sequence[int]) -> None:

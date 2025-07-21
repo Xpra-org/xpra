@@ -60,6 +60,12 @@ cdef MemBuf makebuf(void *p, size_t l, int readonly=1):
     return MemBuf_init(p, l, &free_buf, NULL, readonly)
 
 
+cdef MemBuf wrapbuf(void *p, size_t l, int readonly=1):
+    if p == NULL:
+        raise ValueError(f"invalid NULL buffer pointer")
+    return MemBuf_init(p, l, NULL, NULL, readonly)
+
+
 cdef void *memalign(size_t size) noexcept nogil:
     return xmemalign(size)
 

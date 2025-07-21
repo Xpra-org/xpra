@@ -6,6 +6,7 @@
 cdef MemBuf getbuf(size_t l, int readonly=*)
 cdef MemBuf padbuf(size_t l, size_t padding, int readonly=*)
 cdef MemBuf makebuf(void *p, size_t l, int readonly=*)
+cdef MemBuf wrapbuf(void *p, size_t l, int readonly=*)
 
 cdef buffer_context(object obj)
 
