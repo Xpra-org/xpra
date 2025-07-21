@@ -65,6 +65,10 @@ echo "by downloading the plain x64 pdfium binary from"
 echo "https://github.com/bblanchon/pdfium-binaries"
 echo "and place the 'pdfium.dll' in '$MSYSTEM_PREFIX/bin'"
 echo
+echo "for faster quic support, install `winloop`"
+echo "following the instructions at:"
+echo "https://github.com/Xpra-org/xpra/issues/3950"
+echo
 echo "for generating the documentation, install pandoc"
 echo "https://github.com/jgm/pandoc/releases/latest"
 echo
