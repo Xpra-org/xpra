@@ -431,7 +431,7 @@ class WindowSource(WindowIconSource):
             log.warn("Warning: plain rgb encoder is missing!")
         # we need pillow for scaling and grayscale:
         pillow = add("enc_pillow")
-        if self._mmap and self.image_depth > 8:
+        if self._mmap:
             self.insert_encoder("mmap", "mmap", self.mmap_encode)
         if (not FORCE_PILLOW or not pillow) and self.image_depth != 30:
             # prefer these native encoders over the Pillow version:
@@ -897,7 +897,7 @@ class WindowSource(WindowIconSource):
     def update_encoding_selection(self, encoding="", exclude=(), init: bool = False) -> None:
         # now we have the real list of encodings we can use:
         # "rgb32" and "rgb24" encodings are both aliased to "rgb"
-        if self._mmap and self.encoding != "grayscale" and not self.has_shape and self.image_depth > 8:
+        if self._mmap and self.encoding != "grayscale" and not self.has_shape:
             self.auto_refresh_encodings = ()
             self.encoding = "mmap"
             self.encodings = ("mmap", )
@@ -1014,7 +1014,7 @@ class WindowSource(WindowIconSource):
             return self.encoding_is_hint
         # choose which method to use for selecting an encoding
         # first the easy ones (when there is no choice):
-        if self._mmap and self.encoding != "grayscale" and self.image_depth > 8:
+        if self._mmap and self.encoding != "grayscale":
             log("using mmap")
             return self.encoding_is_mmap
         if self.encoding == "png/L":
@@ -1350,7 +1350,7 @@ class WindowSource(WindowIconSource):
         if self.suspended:
             self._encoding_speed_info = {"suspended": True}
             return False
-        if self._mmap and self.image_depth > 8:
+        if self._mmap:
             self._encoding_speed_info = {"mmap": True}
             return False
         cs = self._current_speed
@@ -1417,7 +1417,7 @@ class WindowSource(WindowIconSource):
         if self.suspended:
             self._encoding_quality_info = {"suspended": True}
             return False
-        if self._mmap and self.image_depth > 8:
+        if self._mmap:
             self._encoding_quality_info = {"mmap": True}
             return False
         cq = self._current_quality
@@ -2243,7 +2243,7 @@ class WindowSource(WindowIconSource):
         if encoding.startswith("png"):
             actual_quality = 100
             lossy = self.image_depth > 32 or self.image_depth == 30
-        elif encoding.startswith("rgb") or (encoding == "mmap" and self.image_depth > 8):
+        elif encoding.startswith("rgb") or encoding == "mmap":
             actual_quality = 100
             lossy = False
         else:
@@ -2887,12 +2887,13 @@ class WindowSource(WindowIconSource):
             return ()
         self.global_statistics.mmap_bytes_sent += len(data)
         self.global_statistics.mmap_free_size = self._mmap.get_free_size()
+        client_options = {"rgb_format": pf, "chunks": mmap_data}
         # the data we send is the index within the mmap area
         # send the list of chunks as both:
         # * 'chunks' metadata for newer versions
         # * overloaded 'img_data' for older versions
         bdata = mmap_data if BACKWARDS_COMPATIBLE else b""
         return (
-            "mmap", bdata, {"rgb_format": pf, "chunks": mmap_data},
+            "mmap", bdata, client_options,
             image.get_width(), image.get_height(), image.get_rowstride(), len(pf)*8,
         )

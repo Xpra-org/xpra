@@ -64,6 +64,8 @@ def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_trans
         log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
     modes: Sequence[tuple[str, str]] = ()
+    w = image.get_width()
+    h = image.get_height()
     try:
         # pylint: disable=import-outside-toplevel
         from PIL import Image
@@ -71,6 +73,27 @@ def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_trans
         log("PIL.Image not found!")
         Image = None
     else:
+        if pixel_format == "RLE8" and "RGBX" in rgb_formats:
+            rowstride = image.get_rowstride()
+            if w != rowstride:
+                image.restride(w)
+                pixels = image.get_pixels()
+            img = Image.frombuffer("P", (w, h), pixels, "raw", "P", 0, 1)
+            if not image.get_palette():
+                log.error("Error: no palette found in %s", image)
+                return False
+            # convert the palette to a format that PIL can use:
+            palette = []
+            for entry in image.get_palette():
+                palette += [value // 256 for value in entry]
+            img.putpalette(palette)
+            pixel_format = "RGBA" if supports_transparency else "RGBX"
+            img = img.convert(pixel_format)
+            data = img.tobytes("raw", pixel_format)
+            image.set_pixels(data)
+            image.set_rowstride(w * len(pixel_format))
+            image.set_pixel_format(pixel_format)
+            return True
         if supports_transparency:
             modes = PIL_conv.get(pixel_format, ())
         else:
@@ -88,8 +111,6 @@ def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_trans
     assert Image
     input_format, target_format = target_rgb[0]
     start = monotonic()
-    w = image.get_width()
-    h = image.get_height()
     # older versions of PIL cannot use the memoryview directly:
     if isinstance(pixels, memoryview):
         from PIL import __version__ as pil_version
