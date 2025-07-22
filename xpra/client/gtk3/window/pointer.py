@@ -45,6 +45,21 @@ def _button_resolve(button: int) -> int:
     return button
 
 
+def _device_info(event) -> str:
+    try:
+        return event.device.get_name()
+    except AttributeError:
+        return ""
+
+
+def _get_pointer(event) -> tuple[int, int]:
+    return round(event.x_root), round(event.y_root)
+
+
+def _get_relative_pointer(event) -> tuple[int, int]:
+    return round(event.x), round(event.y)
+
+
 class PointerWindow(StubWindow):
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
@@ -59,7 +74,7 @@ class PointerWindow(StubWindow):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "button-state": self.button_state,
+            "button-state": self.button_pressed,
             "cursor-data": bool(self.cursor_data),
         }
 
@@ -211,7 +226,7 @@ class PointerWindow(StubWindow):
         log("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i",
             event, wid, self._client._focused, self.wid)
         log(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
-            self._device_info(event), pointer_data, modifiers, buttons)
+            _device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
         self._client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons)
 
@@ -228,15 +243,9 @@ class PointerWindow(StubWindow):
             y -= self.window_offset[1]
         return self.cp(x, y)
 
-    def _get_pointer(self, event) -> tuple[int, int]:
-        return round(event.x_root), round(event.y_root)
-
-    def _get_relative_pointer(self, event) -> tuple[int, int]:
-        return round(event.x), round(event.y)
-
     def get_pointer_data(self, event) -> tuple[int, int, int, int]:
-        x, y = self._get_pointer(event)
-        rx, ry = self._get_relative_pointer(event)
+        x, y = _get_pointer(event)
+        rx, ry = _get_relative_pointer(event)
         return self.adjusted_pointer_data(x, y, rx, ry)
 
     def adjusted_pointer_data(self, x: int, y: int, rx: int = 0, ry: int = 0) -> tuple[int, int, int, int]:
@@ -269,7 +278,7 @@ class PointerWindow(StubWindow):
             return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         log("do_scroll_event device=%s, direction=%s, button_mapping=%s",
-            self._device_info(event), event.direction, button_mapping)
+            _device_info(event), event.direction, button_mapping)
         if button_mapping >= 0:
             self._button_action(button_mapping, event, True)
             self._button_action(button_mapping, event, False)
@@ -296,7 +305,7 @@ class PointerWindow(StubWindow):
         log("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i",
             button, event, depressed, wid, self._client._focused, self.wid)
         log(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
-            self._device_info(event), pointer_data, modifiers, buttons)
+            _device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
 
         def send_button(server_button, pressed, **kwargs) -> None:
@@ -328,9 +337,3 @@ class PointerWindow(StubWindow):
 
     def do_button_release_event(self, event) -> None:
         self._button_action(event.button, event, False)
-
-    def _device_info(self, event) -> str:
-        try:
-            return event.device.get_name()
-        except AttributeError:
-            return ""
