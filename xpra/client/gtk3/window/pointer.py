@@ -74,7 +74,7 @@ class PointerWindow(StubWindow):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "button-state": self.button_pressed,
+            "buttons-pressed": self.button_pressed,
             "cursor-data": bool(self.cursor_data),
         }
 

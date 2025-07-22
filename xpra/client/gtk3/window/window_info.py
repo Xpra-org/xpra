@@ -201,7 +201,7 @@ class WindowInfo(Gtk.Window):
             "state": get_window_state(w),
             "attributes": get_window_attributes(w),
             "focused": w._focused,
-            "buttons": csv(b for b, s in w.button_state.items() if s) or "none",
+            "buttons": csv(b for b, s in w.button_pressed.items() if s) or "none",
             "gravity": gravity_str(w.window_gravity),
             "content-type": w.content_type or "unknown",
             "pixel-depth": w.pixel_depth or 24,
@@ -247,7 +247,11 @@ class WindowInfo(Gtk.Window):
         self.state_label.set_text(get_window_state(w))
         self.attributes_label.set_text(get_window_attributes(w))
         self.bool_icon(self.focus_image, w._focused)
-        self.button_state_label.set_text(csv(b for b, s in w.button_state.items() if s) or "none")
+        buttons = ()
+        if hasattr(w, "button_pressed"):
+            # this requires the PointerWindow subclass
+            buttons = tuple(b for b, s in w.button_pressed.items() if s)
+        self.button_state_label.set_text(csv(buttons) or "none")
         self.fps_label.set_text(fps)
         # self.group_leader_label.set_text(str(w.group_leader))
         self.gravity_label.set_text(gravity_str(w.window_gravity))
