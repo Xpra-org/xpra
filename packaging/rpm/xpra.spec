@@ -520,8 +520,7 @@ Suggests:			%{python3}-ldap3
 Suggests:			%{python3}-ldap
 Suggests:			%{python3}-oauthlib
 %if 0%{?fedora}%{?el10}
-# looks like they forgot to expose the pkgconfig?
-BuildRequires:		procps-ng-devel
+BuildRequires:		pkgconfig(libproc2)
 %else
 BuildRequires:		pkgconfig(libprocps)
 %endif
