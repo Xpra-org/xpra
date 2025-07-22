@@ -191,7 +191,7 @@ def get_Xdummy_command(xorg_cmd="Xorg",
 def get_Xvfb_command(width=8192, height=4096, depth=24, dpi=96, fps=0) -> list[str]:
     return add_ext_net_dpi_fps([
         "Xvfb",
-        "-screen", "0", f"{width}x{height}x{depth}+32",
+        "-screen", "0", f"{width}x{height}x{depth}",
     ], depth, dpi, fps)
 
 
