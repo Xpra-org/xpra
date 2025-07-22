@@ -1348,6 +1348,10 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Mouse wheel forwarding, can be used to disable the device ('no') or invert some axes "
                           "('invert-all', 'invert-x', invert-y', 'invert-z')."
                           " Default: %s." % defaults.mousewheel)
+    group.add_option("--pointer", action="store",
+                     dest="pointer", default=defaults.pointer,
+                     help="How to hande pointer events: on|off|emulate3buttons."
+                          " Default: %s." % defaults.pointer)
     group.add_option("--input-devices", action="store", metavar="APINAME",
                      dest="input_devices", default=defaults.input_devices,
                      help="Which API to use for input devices. Default: %s." % defaults.input_devices)

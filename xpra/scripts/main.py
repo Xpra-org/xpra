@@ -1902,7 +1902,7 @@ def set_client_features(opts) -> None:
     features.webcam = bo(opts.webcam) and impcheck("xpra.codecs")
     features.clipboard = b(opts.clipboard) and impcheck("xpra.clipboard")
     features.keyboard = impcheck("xpra.keyboard")
-    features.pointer = features.window
+    features.pointer = b(opts.pointer)
     features.notification = opts.notifications and impcheck("xpra.notification")
     features.dbus = b(opts.dbus) and impcheck("dbus", "xpra.dbus")
     features.mmap = b(opts.mmap)

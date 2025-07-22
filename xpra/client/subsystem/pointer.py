@@ -45,9 +45,15 @@ class PointerClient(StubClientMixin):
         self._mouse_position_send_time = 0
         self._mouse_position_delay = MOUSE_DELAY
         self._mouse_position_timer = 0
+        self._button_transform: dict[tuple[str, int], int] = {}
         self.server_pointer = True
 
     def init_ui(self, opts) -> None:
+        pointer_opt = opts.pointer.replace("-", "").lower()
+        pointer = pointer_opt.split(":", 1)[0]
+        modifier = "shift" if pointer_opt.find(":") < 0 else pointer_opt.split(":", 1)[1]
+        if pointer in ("emulate3buttons", "middleemulation"):
+            self._button_transform[(modifier, 1)] = 2  # emulate middle button with shift+left
         if MOUSE_DELAY_AUTO:
             try:
                 # some platforms don't detect the vrefresh correctly
@@ -63,7 +69,7 @@ class PointerClient(StubClientMixin):
         self.cancel_send_mouse_position_timer()
 
     def get_info(self) -> dict[str, dict[str, Any]]:
-        return {PointerClient.PREFIX: {}}
+        return {PointerClient.PREFIX: {"button-transform": self._button_transform}}
 
     def get_caps(self) -> dict[str, Any]:
         # the gtk client implements `get_mouse_position`

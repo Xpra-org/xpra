@@ -51,7 +51,7 @@ class PointerWindow(StubWindow):
         self.cursor_data = ()
         self.remove_pointer_overlay_timer = 0
         self.show_pointer_overlay_timer = 0
-        self.button_state: dict[int, bool] = {}
+        self.button_pressed: dict[int, int] = {}
 
     def cleanup(self) -> None:
         self.cancel_show_pointer_overlay_timer()
@@ -275,6 +275,19 @@ class PointerWindow(StubWindow):
             self._button_action(button_mapping, event, False)
         return True
 
+    def translate_button(self, button: int, modifiers: list[str]) -> int:
+        transform = self._client._button_transform
+        if not transform:
+            return button
+        for modifier in modifiers:
+            trans = transform.get((modifier, button), -1)
+            if trans >= 0:
+                log("translate_button(%i, %s) -> %s", button, modifiers, trans)
+                # we could consume the modifier,
+                # but pointer motion events would still include it
+                return trans
+        return button
+
     def _button_action(self, button: int, event, depressed: bool, props=None) -> None:
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
@@ -286,18 +299,29 @@ class PointerWindow(StubWindow):
             self._device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
 
-        def send_button(pressed, **kwargs) -> None:
+        def send_button(server_button, pressed, **kwargs) -> None:
             sprops = props or {}
             sprops.update(kwargs)
-            self._client.send_button(device_id, wid, button, pressed, pointer_data, modifiers, buttons, sprops)
+            self._client.send_button(device_id, wid, server_button, pressed, pointer_data, modifiers, buttons, sprops)
 
-        pressed_state = self.button_state.get(button, False)
-        if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
-            log("button action: simulating missing mouse-down event for window %s before mouse-up", wid)
-            # (needed for some dialogs on win32):
-            send_button(True, synthetic=True)
-        self.button_state[button] = depressed
-        send_button(depressed)
+        server_button = -1
+        if not depressed:
+            # we should have a record of which button press event was sent:
+            server_button = self.button_pressed.get(button, -1)
+            if SIMULATE_MOUSE_DOWN and server_button < 0:
+                log("button action: simulating missing mouse-down event for window %s before mouse-up", wid)
+                # (needed for some dialogs on win32):
+                server_button = self.translate_button(button, modifiers)
+                send_button(server_button, True, synthetic=True)
+
+        if server_button < 0:
+            server_button = self.translate_button(button, modifiers)
+
+        if depressed:
+            self.button_pressed[button] = server_button
+        else:
+            self.button_pressed.pop(button, None)
+        send_button(server_button, depressed)
 
     def do_button_press_event(self, event) -> None:
         self._button_action(event.button, event, True)
