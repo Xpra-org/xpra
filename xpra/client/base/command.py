@@ -214,10 +214,12 @@ class InfoXpraClient(CommandConnectClient):
             self.quit(ExitCode.NO_DATA)
             return
 
+        LINE_LIMIT = envint("XPRA_INFO_LINE_LIMIT", 160)
+
         def print_fn(s) -> None:
             sys.stdout.write(f"{s}\n")
 
-        def prettify(k, v):
+        def prettify(k, v) -> str:
             ks = str(k)
             if ks.endswith("xid"):
                 try:
@@ -230,14 +232,16 @@ class InfoXpraClient(CommandConnectClient):
                 if ks.endswith(".data"):
                     return hexstr(v)
                 return bytestostr(v)
+            elif isinstance(v, (int, bool, float)):
+                return str(v)
             elif isinstance(v, (tuple, list)):
                 eltypes = set(type(x) for x in v)
                 if len(eltypes) == 1 and tuple(eltypes)[0] in (int, bool, float):
-                    return str(v)
-                return type(v)(prettify(k, x) for x in v)
+                    return repr_ellipsized(v, LINE_LIMIT)
+                return repr_ellipsized(type(v)(prettify(k, x) for x in v), LINE_LIMIT)
             elif isinstance(v, str) and v.isprintable():
                 return v
-            return repr(v)
+            return repr_ellipsized(v, LINE_LIMIT)
 
         def print_dict(d: dict, path=""):
             for k in sorted_nicely(d.keys()):
