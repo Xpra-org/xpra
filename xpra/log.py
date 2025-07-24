@@ -201,6 +201,7 @@ ALIASES: dict[str, str] = {
     "mouse": "pointer",
     "statistics": "stats",
     "print": "printing",
+    "display": "screen",
 }
 
 # noinspection PyPep8
