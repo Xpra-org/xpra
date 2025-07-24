@@ -197,6 +197,19 @@ def get_rectangle_info(rect: Gdk.Rectangle) -> dict[str, int]:
     return info
 
 
+def get_average_monitor_refresh_rate() -> int:
+    rates = {}
+    display = Gdk.Display.get_default()
+    for m in range(display.get_n_monitors()):
+        monitor = display.get_monitor(m)
+        log(f"monitor {m} ({monitor.get_model()}) refresh-rate={monitor.get_refresh_rate()}")
+        rates[m] = monitor.get_refresh_rate()
+    rate = -1
+    if rates:
+        rate = round(min(rates.values()) / 1000)
+    return rate
+
+
 def get_monitor_info(monitor: Gdk.Monitor) -> dict[str, Any]:
     geom = monitor.get_geometry()
     info: dict[str, Any] = get_rectangle_info(geom)

@@ -5,6 +5,7 @@
 
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.configure.common import run_gui
+from xpra.gtk.info import get_average_monitor_refresh_rate
 from xpra.util.config import update_config_attribute, with_config
 from xpra.gtk.widget import label
 from xpra.os_util import gi_import
@@ -30,6 +31,21 @@ def make_scale(adjust, marks: dict) -> Gtk.Scale:
     return scale
 
 
+FRAMERATES: dict[str, str] = {
+    "automatic": "auto",
+    "1 fps": "1",
+    "10 fps": "10",
+    "15 fps": "15",
+    "30 fps": "30",
+    "50 fps": "50",
+    "60 fps": "60",
+    "75 fps": "75",
+    "100 fps": "100",
+    "50%": "50%",
+    "20%": "20%",
+}
+
+
 class ConfigureGUI(BaseGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
@@ -52,6 +68,22 @@ class ConfigureGUI(BaseGUIWindow):
         self.add_text_lines((
             f"Please read <a href='{url}'>the documentation</a>.",
         ))
+        self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+        rate = get_average_monitor_refresh_rate()
+        text = "Framerate (Hz)"
+        if rate > 0:
+            text += f" (default: {rate})"
+        self.add_widget(label(text, font="Sans 14"))
+        self.add_widget(label("Lowering the framerate saves bandwidth and CPU time"))
+        framerate_combo = Gtk.ComboBoxText()
+        index = 0
+        for rate, setting in FRAMERATES.items():
+            framerate_combo.append_text(rate)
+            if setting == config.refresh_rate:
+                framerate_combo.set_active(index)
+            index += 1
+        framerate_combo.connect("changed", self.framerate_changed)
+        self.add_widget(framerate_combo)
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
         self.add_widget(label("Minimum Speed (percentage)", font="Sans 14"))
         self.add_widget(label("Increasing the speed costs bandwidth and CPU time"))
@@ -95,12 +127,18 @@ class ConfigureGUI(BaseGUIWindow):
         switch = Gtk.Switch()
         switch.set_state(config.encoding == "grayscale")
         switch.connect("state-set", self.toggle_grayscale)
-        lbl = label("Grayscale Mode")
+        lbl = label("Grayscale Mode", font="Sans 14")
         lbl.set_hexpand(True)
         grid.attach(lbl, 0, 0, 1, 1)
         grid.attach(switch, 1, 0, 1, 1)
+        self.add_widget(label("Grayscale mode may save a little bandwidth and CPU time"))
         self.show_all()
         return False
+
+    @staticmethod
+    def framerate_changed(combo) -> None:
+        value = FRAMERATES.get(combo.get_active_text(), "")
+        update_config_attribute("refresh-rate", value)
 
     @staticmethod
     def speed_changed(widget) -> None:

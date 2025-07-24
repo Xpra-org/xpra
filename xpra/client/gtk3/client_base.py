@@ -30,7 +30,7 @@ from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
 from xpra.gtk.cursors import cursor_types, get_default_cursor
 from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow
-from xpra.gtk.info import get_monitors_info, get_screen_sizes
+from xpra.gtk.info import get_monitors_info, get_screen_sizes, get_average_monitor_refresh_rate
 from xpra.gtk.widget import scaled_image, label, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
@@ -124,19 +124,6 @@ def get_group_ref(metadata: typedict) -> str:
                 return f"{ref}:{csv(value)}"
             return f"{ref}:{value}"
     return ""
-
-
-def get_average_monitor_refresh_rate() -> int:
-    rates = {}
-    display = Gdk.Display.get_default()
-    for m in range(display.get_n_monitors()):
-        monitor = display.get_monitor(m)
-        log(f"monitor {m} ({monitor.get_model()}) refresh-rate={monitor.get_refresh_rate()}")
-        rates[m] = monitor.get_refresh_rate()
-    rate = -1
-    if rates:
-        rate = round(min(rates.values()) / 1000)
-    return rate
 
 
 # noinspection PyMethodMayBeStatic
