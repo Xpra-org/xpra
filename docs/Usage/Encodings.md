@@ -44,12 +44,13 @@ You can select the pseudo-encoding using the `--encoding=ENC` switch.
 Using a video stream is often the most efficient way of sending large amounts of screen updates without consuming too much bandwidth.
 The xpra engine should automatically detect when it makes sense to switch to a video codec.
 
-| Codename | [Bit Depths](../Features/Image-Depth.md) | Characteristics                    |
-|----------|------------------------------------------|------------------------------------|
-| `vp8`    | 24                                       | fast but less efficient            |
-| `vp9`    | 24 / 30                                  | more efficient but somewhat slower |
-| `h264`   | 24 / 30                                  | licensing issues                   |
-| `hevc`   | 24 / 30                                  | licensing issues - usually slower  |
+| Codename | [Bit Depths](../Features/Image-Depth.md) | Characteristics                         |
+|----------|------------------------------------------|-----------------------------------------|
+| `vp8`    | 24                                       | fast but less efficient                 |
+| `vp9`    | 24 / 30                                  | more efficient but somewhat slower      |
+| `h264`   | 24 / 30                                  | licensing issues                        |
+| `hevc`   | 24 / 30                                  | licensing issues - usually slower       |
+| `av1`    | 24                                       | most efficient, but lacks lossless mode |
 
 Which ones of these video encodings are available depends on the video encoders enabled:
 
@@ -57,11 +58,11 @@ Which ones of these video encodings are available depends on the video encoders 
 ### Video Encoders
 Xpra ships the following encoder modules:
 
-| Codename            | Encodings supported | Notes                       |
-|---------------------|---------------------|-----------------------------|
-| `vpx`               | `vp8`, `vp9`        |
-| `x264`              | `h264`              | fast                        |
-| [`nvenc`](NVENC.md) | `h264`, `hevc`      | fastest (requires hardware) |
+| Codename            | Encodings supported    | Notes                       |
+|---------------------|------------------------|-----------------------------|
+| `vpx`               | `vp8`, `vp9`           |
+| `x264`              | `h264`                 | fast                        |
+| [`nvenc`](NVENC.md) | `h264`, `hevc`, `av1`  | fastest (requires hardware) |
 
 Which encodings are actually supported by each encoder may vary, depending on the version used, the build options, hardware capabilities, etc.
 
@@ -88,11 +89,12 @@ You can choose which colorspace conversion modules are loaded at runtime using t
   <summary>video decoders</summary>
 
 Xpra ships the following decoder modules:
-|Codename|Encodings supported|
-|--------|-------------------|
-|`openh264`|`h264`|
-|`vpx`|`vp8`, `vp9`|
 
+| Codename   | Encodings supported |
+|------------|---------------------|
+| `openh264` | `h264`              |
+| `vpx`      | `vp8`, `vp9`        |
+| `aom`      | `av1`               |
 You can choose which video decoders are loaded at runtime using the `video-decoders` option.
 </details>
 
