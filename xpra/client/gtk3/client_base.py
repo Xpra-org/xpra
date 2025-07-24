@@ -126,6 +126,19 @@ def get_group_ref(metadata: typedict) -> str:
     return ""
 
 
+def get_average_monitor_refresh_rate() -> int:
+    rates = {}
+    display = Gdk.Display.get_default()
+    for m in range(display.get_n_monitors()):
+        monitor = display.get_monitor(m)
+        log(f"monitor {m} ({monitor.get_model()}) refresh-rate={monitor.get_refresh_rate()}")
+        rates[m] = monitor.get_refresh_rate()
+    rate = -1
+    if rates:
+        rate = round(min(rates.values()) / 1000)
+    return rate
+
+
 # noinspection PyMethodMayBeStatic
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     __gsignals__ = {}
@@ -267,22 +280,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.UI_watcher.add_resume_callback(self.resume)
         self.UI_watcher.add_fail_callback(self.suspend)
 
-    def get_vrefresh(self) -> int:
+    def get_raw_vrefresh(self) -> int:
         rate = envint("XPRA_VREFRESH", 0)
         if rate:
             return rate
-        # try via GTK:
-        rates = {}
-        display = Gdk.Display.get_default()
-        for m in range(display.get_n_monitors()):
-            monitor = display.get_monitor(m)
-            log(f"monitor {m} ({monitor.get_model()}) refresh-rate={monitor.get_refresh_rate()}")
-            rates[m] = monitor.get_refresh_rate()
-        rate = -1
-        if rates:
-            rate = round(min(rates.values()) / 1000)
-        if rate < 30 or rate > 250:
-            rate = super().get_vrefresh()
+        # DisplayClient defines this method:
+        try:
+            rate = super().get_raw_vrefresh()
+        except AttributeError:
+            log("get_raw_vrefresh() not defined in super class, trying GTK")
+            rate = get_average_monitor_refresh_rate()
         if rate < 0:
             return -1
         return max(MIN_VREFRESH, min(MAX_VREFRESH, rate))

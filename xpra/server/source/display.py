@@ -60,7 +60,14 @@ class DisplayConnection(StubClientConnection):
         return info
 
     def parse_client_caps(self, c: typedict) -> None:
-        self.vrefresh = c.intget("vrefresh", -1)
+        display_caps = c.dictget("display", {})
+        if not BACKWARDS_COMPATIBLE and not display_caps:
+            raise ValueError("missing display capabilities")
+        c = typedict(display_caps)
+        if BACKWARDS_COMPATIBLE:
+            self.vrefresh = c.intget("refresh-rate", c.intget("vrefresh", -1))
+        else:
+            self.vrefresh = c.intget("refresh-rate", -1)
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
             w, h = self.desktop_size

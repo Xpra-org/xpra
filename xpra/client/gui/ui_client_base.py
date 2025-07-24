@@ -113,11 +113,6 @@ class UIXpraClient(ClientBaseClass):
             log(f"init: {c}")
             c.init_ui(self, opts)
 
-    def get_vrefresh(self) -> int:
-        # this method is overridden in the GTK client
-        from xpra.platform.gui import get_vrefresh  # pylint: disable=import-outside-toplevel
-        return get_vrefresh()
-
     def run(self) -> ExitValue:
         for c in CLIENT_BASES:
             c.run(self)

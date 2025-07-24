@@ -19,7 +19,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.common import (
     noop, adjust_monitor_refresh_rate, get_refresh_rate_for_value,
-    FULL_INFO, SYNC_ICC, NotificationID, skipkeys,
+    FULL_INFO, SYNC_ICC, NotificationID, skipkeys, BACKWARDS_COMPATIBLE,
 )
 from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
@@ -112,10 +112,20 @@ class DisplayClient(StubClientMixin):
     ######################################################################
     # hello:
     def get_caps(self) -> dict[str, Any]:
+        dc = self.get_display_caps()
+        if not BACKWARDS_COMPATIBLE:
+            return {DisplayClient.PREFIX: dc}
+        dc["display"] = dict(dc)
+        return dc
+
+    def get_display_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {
             "show-desktop": True,
-            "vrefresh": self.get_vrefresh(),
+            "refresh-rate": self.get_vrefresh(),
+            "refresh-rate.raw": self.get_raw_vrefresh(),
         }
+        if BACKWARDS_COMPATIBLE:
+            caps["vrefresh"] = self.get_vrefresh()
         if FULL_INFO > 0:
             wm_name = get_wm_name()
             if wm_name:
@@ -200,6 +210,12 @@ class DisplayClient(StubClientMixin):
         }
 
     def get_vrefresh(self) -> int:
+        raw = self.get_raw_vrefresh()
+        rate = get_refresh_rate_for_value(self.refresh_rate, raw)
+        log("get_vrefresh()=%s (from %s and %s)", rate, self.refresh_rate, raw)
+        return rate
+
+    def get_raw_vrefresh(self) -> int:
         return get_vrefresh()
 
     def get_screen_caps(self) -> dict[str, Any]:
@@ -511,12 +527,9 @@ class DisplayClient(StubClientMixin):
         ydpi = self.cy(ydpi)
         log("get_screen_settings() scaled: xdpi=%s, ydpi=%s", xdpi, ydpi)
         vrefresh = self.get_vrefresh()
-        rrate = -1
-        if vrefresh > 0:
-            rrate = (get_refresh_rate_for_value(self.refresh_rate, vrefresh) or 0) // 1000
-        log("get_screen_settings() vrefresh=%s (from %s)", rrate, vrefresh)
+        log("get_screen_settings() vrefresh=%s", vrefresh)
         monitors = self.get_monitors_info()
-        return root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, rrate, monitors
+        return root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh, monitors
 
     def update_screen_size(self) -> None:
         self.screen_size_change_timer = 0
