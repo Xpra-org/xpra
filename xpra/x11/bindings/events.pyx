@@ -6,7 +6,7 @@
 
 import os
 from time import monotonic
-from typing import Dict
+from typing import Dict, Tuple
 from collections.abc import Callable
 
 from xpra.util.str_fn import strtobytes
@@ -216,24 +216,24 @@ cdef int get_XShape_event_base(Display *xdisplay) noexcept:
 
 cdef void init_x11_events(Display *display):
     add_x_event_signals({
-        MapRequest          : (None, "x11-child-map-request-event"),
-        ConfigureRequest    : (None, "x11-child-configure-request-event"),
-        SelectionRequest    : ("x11-selection-request", None),
-        SelectionClear      : ("x11-selection-clear", None),
-        FocusIn             : ("x11-focus-in-event", None),
-        FocusOut            : ("x11-focus-out-event", None),
-        ClientMessage       : ("x11-client-message-event", None),
-        CreateNotify        : ("x11-create-event", None),
+        MapRequest          : ("", "x11-child-map-request-event"),
+        ConfigureRequest    : ("", "x11-child-configure-request-event"),
+        SelectionRequest    : ("x11-selection-request", ""),
+        SelectionClear      : ("x11-selection-clear", ""),
+        FocusIn             : ("x11-focus-in-event", ""),
+        FocusOut            : ("x11-focus-out-event", ""),
+        ClientMessage       : ("x11-client-message-event", ""),
+        CreateNotify        : ("x11-create-event", ""),
         MapNotify           : ("x11-map-event", "x11-child-map-event"),
         UnmapNotify         : ("x11-unmap-event", "x11-child-unmap-event"),
-        DestroyNotify       : ("x11-destroy-event", None),
-        ConfigureNotify     : ("x11-configure-event", None),
-        ReparentNotify      : ("x11-reparent-event", None),
-        PropertyNotify      : ("x11-property-notify-event", None),
-        KeyPress            : ("x11-key-press-event", None),
-        EnterNotify         : ("x11-enter-event", None),
-        LeaveNotify         : ("x11-leave-event", None),
-        MotionNotify        : ("x11-motion-event", None)       #currently unused, just defined for debugging purposes
+        DestroyNotify       : ("x11-destroy-event", ""),
+        ConfigureNotify     : ("x11-configure-event", ""),
+        ReparentNotify      : ("x11-reparent-event", ""),
+        PropertyNotify      : ("x11-property-notify-event", ""),
+        KeyPress            : ("x11-key-press-event", ""),
+        EnterNotify         : ("x11-enter-event", ""),
+        LeaveNotify         : ("x11-leave-event", ""),
+        MotionNotify        : ("x11-motion-event", "")       #currently unused, just defined for debugging purposes
     })
     add_x_event_type_names({
         KeyPress            : "KeyPress",
@@ -275,51 +275,51 @@ cdef void init_x11_events(Display *display):
     if event_base>=0:
         global ShapeNotify
         ShapeNotify = event_base
-        add_x_event_signal(ShapeNotify, ("x11-shape-event", None))
-        add_x_event_type_name(ShapeNotify, "ShapeNotify")
-        log("added ShapeNotify=%s", ShapeNotify)
+        add_event_type(ShapeNotify, "ShapeNotify", "x11-shape-event")
     event_base = get_XKB_event_base(display)
     if event_base>=0:
         global XKBNotify
         XKBNotify = event_base
-        add_x_event_signal(XKBNotify, ("x11-xkb-event", None))
-        add_x_event_type_name(XKBNotify, "XKBNotify")
+        add_event_type(XKBNotify, "XKBNotify", "x11-xkb-event")
     event_base = get_XFixes_event_base(display)
     if event_base>=0:
         global CursorNotify
         CursorNotify = XFixesCursorNotify+event_base
-        add_x_event_signal(CursorNotify, ("x11-cursor-event", None))
-        add_x_event_type_name(CursorNotify, "CursorNotify")
+        add_event_type(CursorNotify, "CursorNotify", "x11-cursor-event")
+
         global XFSelectionNotify
         XFSelectionNotify = XFixesSelectionNotify+event_base
-        add_x_event_signal(XFSelectionNotify, ("x11-xfixes-selection-notify-event", None))
-        add_x_event_type_name(XFSelectionNotify, "XFSelectionNotify")
+        add_event_type(XFSelectionNotify, "XFSelectionNotify", "x11-xfixes-selection-notify-event")
     event_base = get_XDamage_event_base(display)
     if event_base>0:
         global DamageNotify
         DamageNotify = XDamageNotify+event_base
-        add_x_event_signal(DamageNotify, ("x11-damage-event", None))
-        add_x_event_type_name(DamageNotify, "DamageNotify")
+        add_event_type(DamageNotify, "DamageNotify", "x11-damage-event")
     set_debug_events()
 
 
-x_event_signals : Dict[int,tuple] = {}
+cdef void add_event_type(event: int, name: str, event_name: str, child_event_name: str = ""):
+    add_x_event_type_name(event, name)
+    add_x_event_signal(event, (event_name, child_event_name))
 
 
-def add_x_event_signal(event: int, mapping: tuple) -> None:
+x_event_signals : Dict[int, Tuple[str, str]] = {}
+
+
+def add_x_event_signal(event: int, mapping: Tuple[str, str]) -> None:
     x_event_signals[event] = mapping
 
 
-def add_x_event_signals(event_signals: Dict[int,tuple]) -> None:
+def add_x_event_signals(event_signals: Dict[int, Tuple[str, str]]) -> None:
     x_event_signals.update(event_signals)
 
 
-def get_x_event_signals(event: int) -> tuple:
+def get_x_event_signals(event: int) -> Tuple[str, str]:
     return x_event_signals.get(event)
 
 
-x_event_type_names : Dict[int,str] = {}
-names_to_event_type : Dict[str,int] = {}
+x_event_type_names : Dict[int, str] = {}
+names_to_event_type : Dict[str, int] = {}
 
 
 def add_x_event_type_name(event: int, name: str) -> None:

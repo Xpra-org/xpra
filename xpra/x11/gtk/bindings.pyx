@@ -330,7 +330,7 @@ cdef void _route_event(int etype, event, signal, parent_signal):
     handlers = None
     if event.window==event.delivered_to:
         window = event.window
-        if signal is not None:
+        if signal:
             if DEBUG:
                 log.info(f"  delivering {signal!r} to window itself: {window:x}")
             if window:
@@ -340,7 +340,7 @@ cdef void _route_event(int etype, event, signal, parent_signal):
             log.info(f"  received event on window {window:x} itself but have no signal for that")
     else:
         window = event.delivered_to
-        if parent_signal is not None:
+        if parent_signal:
             if not window:
                 if DEBUG:
                     log.info(f"  event.delivered_to={window}, ignoring")
