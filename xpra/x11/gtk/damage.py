@@ -14,6 +14,7 @@ from xpra.x11.common import Unmanageable
 
 from xpra.x11.bindings.ximage import XImageBindings
 from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.bindings.damage import init_damage_events
 from xpra.log import Logger
 
 log = Logger("x11", "window", "damage")
@@ -21,6 +22,7 @@ log = Logger("x11", "window", "damage")
 XImage = XImageBindings()
 X11Window = X11WindowBindings()
 X11Window.ensure_XDamage_support()
+assert init_damage_events()
 
 StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 USE_XSHM = envbool("XPRA_XSHM", True)

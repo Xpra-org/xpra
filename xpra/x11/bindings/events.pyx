@@ -5,37 +5,32 @@
 # later version. See the file COPYING for details.
 
 import os
-from time import monotonic
 from typing import Dict, Tuple
 from collections.abc import Callable
 
-from xpra.util.str_fn import strtobytes
 from xpra.gtk.error import XError, xsync
 from xpra.x11.common import X11Event
 from xpra.util.str_fn import csv
 
 from xpra.log import Logger
-log = Logger("x11", "bindings")
-verbose = Logger("x11", "bindings", "verbose")
+
+log = Logger("x11", "bindings", "events")
 
 
 from xpra.x11.bindings.xlib cimport (
     Display, Window, Visual, XID, XRectangle, Atom, Time, CARD32, Bool,
     XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
     XSelectionEvent, XCreateWindowEvent, XCreateWindowEvent,
-    XFree, XGetErrorText,
+    XFree,
     XDefaultRootWindow,
     XGetAtomName,
 )
 from libc.stdint cimport uintptr_t
 
 
-DEF XNone = 0
-
 cdef extern from "X11/Xlib.h":
     int NotifyNormal
 
-    int BadWindow
     int MapRequest
     int ConfigureRequest
     int SelectionRequest
@@ -70,123 +65,6 @@ cdef extern from "X11/Xlib.h":
     int LeaveNotify
     int MotionNotify
     int GenericEvent
-
-
-cdef extern from "X11/extensions/xfixeswire.h":
-    unsigned int XFixesCursorNotify
-    unsigned long XFixesDisplayCursorNotifyMask
-    unsigned int XFixesSelectionNotify
-
-
-cdef extern from "X11/extensions/Xdamage.h":
-    ctypedef XID Damage
-    unsigned int XDamageNotify
-    ctypedef struct XDamageNotifyEvent:
-        Damage damage
-        int level
-        Bool more
-        XRectangle area
-    Bool XDamageQueryExtension(Display *, int * event_base, int * error_base)
-
-
-cdef extern from "X11/extensions/Xfixes.h":
-    Bool XFixesQueryExtension(Display *, int *event_base, int *error_base)
-    ctypedef struct XFixesCursorImage:
-        short x
-        short y
-        unsigned short width
-        unsigned short height
-        unsigned short xhot
-        unsigned short yhot
-        unsigned long cursor_serial
-        unsigned long* pixels
-        Atom atom
-        char* name
-    ctypedef struct XFixesCursorNotifyEvent:
-        Window window
-        int subtype
-        unsigned long cursor_serial
-        Time timestamp
-        Atom cursor_name
-
-    ctypedef struct XFixesSelectionNotifyEvent:
-        int subtype
-        Window window
-        Window owner
-        Atom selection
-        Time timestamp
-        Time selection_timestamp
-
-
-cdef extern from "X11/extensions/XKB.h":
-    unsigned int XkbUseCoreKbd
-    unsigned int XkbBellNotifyMask
-    unsigned int XkbBellNotify
-    ctypedef struct XkbAnyEvent:
-        unsigned long   serial
-        Bool            send_event
-        Display *       display
-        Time            time
-        int             xkb_type
-        unsigned int    device
-
-
-cdef extern from "X11/XKBlib.h":
-    Bool XkbQueryExtension(Display *, int *opcodeReturn, int *eventBaseReturn, int *errorBaseReturn, int *majorRtrn, int *minorRtrn)
-
-
-cdef extern from "X11/extensions/XKBproto.h":
-    ctypedef struct XkbBellNotifyEvent:
-        int          type
-        CARD32       serial
-        Bool         send_event
-        Display*     display
-        Time         time
-        int          xkb_type
-        unsigned int device
-        int          percent
-        int          pitch
-        int          duration
-        unsigned int bell_class
-        unsigned int bell_id
-        Atom         name
-        Window       window
-        Bool         event_only
-
-
-cdef int get_XKB_event_base(Display *xdisplay) noexcept:
-    cdef int opcode = 0
-    cdef int event_base = 0
-    cdef int error_base = 0
-    cdef int major = 0
-    cdef int minor = 0
-    if not XkbQueryExtension(xdisplay, &opcode, &event_base, &error_base, &major, &minor):
-        log.warn("Warning: Xkb extension is not available")
-        return -1
-    verbose(f"get_XKB_event_base(%#x)=%i", <uintptr_t> xdisplay, event_base)
-    return event_base
-
-
-cdef int get_XFixes_event_base(Display *xdisplay) noexcept:
-    cdef int event_base = 0
-    cdef int error_base = 0
-    if not XFixesQueryExtension(xdisplay, &event_base, &error_base):
-        log.warn("Warning: XFixes extension is not available")
-        return -1
-    verbose("get_XFixes_event_base(%#x)=%i", <uintptr_t> xdisplay, event_base)
-    assert event_base>0, "invalid event base for XFixes"
-    return event_base
-
-
-cdef int get_XDamage_event_base(Display *xdisplay) noexcept:
-    cdef int event_base = 0
-    cdef int error_base = 0
-    if not XDamageQueryExtension(xdisplay, &event_base, &error_base):
-        log.warn("Warning: XDamage extension is not available")
-        return -1
-    verbose("get_XDamage_event_base(%#x)=%i", <uintptr_t> xdisplay, event_base)
-    assert event_base>0, "invalid event base for XDamage"
-    return event_base
 
 
 cdef void init_x11_events(Display *display):
@@ -246,29 +124,6 @@ cdef void init_x11_events(Display *display):
         MappingNotify       : "MappingNotify",
         GenericEvent        : "GenericEvent",
     })
-    event_base = get_XKB_event_base(display)
-    if event_base>=0:
-        global XKBNotify
-        XKBNotify = event_base
-        add_event_type(XKBNotify, "XKBNotify", "x11-xkb-event", "")
-        add_parser(XKBNotify, parse_XKBNotify)
-    event_base = get_XFixes_event_base(display)
-    if event_base>=0:
-        global CursorNotify
-        CursorNotify = XFixesCursorNotify+event_base
-        add_event_type(CursorNotify, "CursorNotify", "x11-cursor-event", "")
-        add_parser(CursorNotify, parse_CursorNotify)
-
-        global XFSelectionNotify
-        XFSelectionNotify = XFixesSelectionNotify+event_base
-        add_event_type(XFSelectionNotify, "XFSelectionNotify", "x11-xfixes-selection-notify-event", "")
-        add_parser(XFSelectionNotify, parse_XFSelectionNotify)
-    event_base = get_XDamage_event_base(display)
-    if event_base>0:
-        global DamageNotify
-        DamageNotify = XDamageNotify+event_base
-        add_event_type(DamageNotify, "DamageNotify", "x11-damage-event", "")
-        add_parser(DamageNotify, parse_DamageNotify)
     set_debug_events()
 
 
@@ -343,9 +198,9 @@ def add_x_event_type_names(event_type_names: Dict[int, str]) -> None:
     x_event_type_names.update(event_type_names)
     for k,v in event_type_names.items():
         names_to_event_type[v] = k
-    verbose("x_event_signals=%s", x_event_signals)
-    verbose("event_type_names=%s", x_event_type_names)
-    verbose("names_to_event_type=%s", names_to_event_type)
+    log("x_event_signals=%s", x_event_signals)
+    log("event_type_names=%s", x_event_type_names)
+    log("names_to_event_type=%s", names_to_event_type)
 
 
 def get_x_event_type_name(event: int) -> str:
@@ -416,8 +271,7 @@ cdef object new_x11_event(XEvent *e):
     pyev.type = etype
     pyev.send_event = bool(e.xany.send_event)
     pyev.serial = e.xany.serial
-    if etype != XKBNotify:
-        pyev.delivered_to = e.xany.window
+    pyev.delivered_to = e.xany.window
     return pyev
 
 
@@ -429,18 +283,6 @@ cdef object parse_GenericEvent(Display *d, XEvent *e):
         return pyparser(<uintptr_t> &e.xcookie)
     log("no GenericEvent parser for extension %s", e.xcookie.extension)
     return None
-
-
-cdef object parse_DamageNotify(Display *d, XEvent *e):
-    cdef XDamageNotifyEvent * damage_e = <XDamageNotifyEvent*>e
-    pyev = new_x11_event(e)
-    pyev.window = e.xany.window
-    pyev.damage = damage_e.damage
-    pyev.x = damage_e.area.x
-    pyev.y = damage_e.area.y
-    pyev.width = damage_e.area.width
-    pyev.height = damage_e.area.height
-    return pyev
 
 
 cdef object parse_MapRequest(Display *d, XEvent *e):
@@ -497,18 +339,6 @@ cdef object parse_SelectionNotify(Display *d, XEvent *e):
     pyev.target = atom_str(d, selection_e.target)
     pyev.property = atom_str(d, selection_e.property)
     pyev.time = int(selection_e.time)
-    return pyev
-
-
-cdef object parse_XFSelectionNotify(Display *d, XEvent *e):
-    cdef XFixesSelectionNotifyEvent * selectionnotify_e = <XFixesSelectionNotifyEvent*> e
-    pyev = new_x11_event(e)
-    pyev.window = selectionnotify_e.window
-    pyev.subtype = selectionnotify_e.subtype
-    pyev.owner = selectionnotify_e.owner
-    pyev.selection = atom_str(d, selectionnotify_e.selection)
-    pyev.timestamp = int(selectionnotify_e.timestamp)
-    pyev.selection_timestamp = int(selectionnotify_e.selection_timestamp)
     return pyev
 
 
@@ -625,15 +455,6 @@ cdef object parse_KeyPress(Display *d, XEvent *e):
     return pyev
 
 
-cdef object parse_CursorNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xany.window
-    cdef XFixesCursorNotifyEvent * cursor_e = <XFixesCursorNotifyEvent*> e
-    pyev.cursor_serial = cursor_e.cursor_serial
-    pyev.cursor_name = atom_str(d, cursor_e.cursor_name)
-    return pyev
-
-
 cdef object parse_MotionNotify(Display *d, XEvent *e):
     cdef object pyev = new_x11_event(e)
     pyev.window = e.xmotion.window
@@ -678,40 +499,6 @@ cdef object parse_ClientMessage(Display *d, XEvent *e):
         return None
     pyev.data = tuple(pieces)
     return pyev
-
-
-cdef object parse_XKBNotify(Display *d, XEvent *e):
-    cdef XkbAnyEvent * xkb_e = <XkbAnyEvent*> e
-    # note we could just cast directly to XkbBellNotifyEvent
-    # but this would be dirty, and we may want to catch
-    # other types of XKB events in the future
-    verbose("XKBNotify event received xkb_type=%s", xkb_e.xkb_type)
-    if xkb_e.xkb_type != XkbBellNotify:
-        return None
-    bell_e = <XkbBellNotifyEvent*>e
-    cdef object pyev = new_x11_event(e)
-    pyev.subtype = "bell"
-    pyev.device = int(bell_e.device)
-    pyev.percent = int(bell_e.percent)
-    pyev.pitch = int(bell_e.pitch)
-    pyev.duration = int(bell_e.duration)
-    pyev.bell_class = int(bell_e.bell_class)
-    pyev.bell_id = int(bell_e.bell_id)
-    # no idea why window is not set in XkbBellNotifyEvent
-    # since we can fire it from a specific window
-    # but we need one for the dispatch logic, so use root if unset
-    if bell_e.window != 0:
-        verbose("using bell_e.window=%#x", bell_e.window)
-        pyev.window = bell_e.window
-    else:
-        pyev.window = XDefaultRootWindow(d)
-        verbose("bell using root window=%#x", pyev.window)
-    pyev.event_only = bool(bell_e.event_only)
-    pyev.delivered_to = pyev.window
-    pyev.window_model = None
-    pyev.bell_name = atom_str(d, bell_e.name)
-    return pyev
-
 
 
 cdef object parse_xevent(Display *d, XEvent *e):

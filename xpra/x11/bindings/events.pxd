@@ -4,13 +4,15 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.x11.bindings.xlib cimport Display, XEvent
+from xpra.x11.bindings.xlib cimport Display, XEvent, Atom
 
 cdef object parse_xevent(Display *d, XEvent *e)
 cdef void init_x11_events(Display *display)
 cdef void add_event_type(int event, str name, str event_name, str child_event_name)
 
 ctypedef object (*PARSE_XEVENT)(Display* display, XEvent *event)
+
+cdef str atom_str(Display *display, Atom atom)
 
 cdef object new_x11_event(XEvent *e)
 

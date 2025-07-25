@@ -132,6 +132,18 @@ class X11ServerCore(GTKServerBase):
             # if some x11 atoms aren't defined, so we define them in advance:
             X11CoreBindings().intern_atoms(window_type_atoms)
         with xlog:
+            if features.clipboard or features.cursor:
+                try:
+                    from xpra.x11.bindings.fixes import init_xfixes_events
+                    init_xfixes_events()
+                except ImportError:
+                    log.warn("Warning: XFixes bindings not available, clipboard and cursor features may not work")
+            if features.keyboard:
+                try:
+                    from xpra.x11.bindings.xkb import init_xkb_events
+                    init_xkb_events()
+                except ImportError:
+                    log.warn("Warning: XKB bindings not available, keyboard features may not work")
             from xpra.x11.gtk.bindings import init_x11_filter
             self.x11_filter = init_x11_filter()
             assert self.x11_filter

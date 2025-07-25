@@ -21,17 +21,13 @@ cdef extern from "X11/extensions/shape.h":
         Bool shaped         #true if the region exists
 
 
-cdef int ShapeNotify = 0
-
-
 def init_xshape_events() -> bool:
     cdef Display *display = get_display()
     cdef int event_base = 0, ignored = 0
     if not XShapeQueryExtension(display, &event_base, &ignored):
         log.warn("Warning: XShape extension is not available")
         return False
-    global ShapeNotify
-    ShapeNotify = event_base
+    cdef int ShapeNotify = event_base
     log("init_xshape_events() ShapeNotify=%d", ShapeNotify)
     add_event_type(ShapeNotify, "ShapeNotify", "x11-shape-event", "")
     add_parser(ShapeNotify, parse_ShapeNotify)
