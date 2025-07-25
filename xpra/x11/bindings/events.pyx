@@ -164,12 +164,6 @@ cdef extern from "X11/extensions/XKBproto.h":
         Bool         event_only
 
 
-cdef int CursorNotify = -1
-cdef int XKBNotify = -1
-cdef int ShapeNotify = -1
-cdef int XFSelectionNotify = -1
-
-
 cdef int get_XKB_event_base(Display *xdisplay) noexcept:
     cdef int opcode = 0
     cdef int event_base = 0
@@ -232,7 +226,7 @@ cdef void init_x11_events(Display *display):
         KeyPress            : ("x11-key-press-event", ""),
         EnterNotify         : ("x11-enter-event", ""),
         LeaveNotify         : ("x11-leave-event", ""),
-        MotionNotify        : ("x11-motion-event", "")       #currently unused, just defined for debugging purposes
+        MotionNotify        : ("x11-motion-event", "")
     })
     add_x_event_type_names({
         KeyPress            : "KeyPress",
@@ -275,25 +269,30 @@ cdef void init_x11_events(Display *display):
         global ShapeNotify
         ShapeNotify = event_base
         add_event_type(ShapeNotify, "ShapeNotify", "x11-shape-event")
+        add_parser(ShapeNotify, parse_ShapeNotify)
     event_base = get_XKB_event_base(display)
     if event_base>=0:
         global XKBNotify
         XKBNotify = event_base
         add_event_type(XKBNotify, "XKBNotify", "x11-xkb-event")
+        add_parser(XKBNotify, parse_XKBNotify)
     event_base = get_XFixes_event_base(display)
     if event_base>=0:
         global CursorNotify
         CursorNotify = XFixesCursorNotify+event_base
         add_event_type(CursorNotify, "CursorNotify", "x11-cursor-event")
+        add_parser(CursorNotify, parse_CursorNotify)
 
         global XFSelectionNotify
         XFSelectionNotify = XFixesSelectionNotify+event_base
         add_event_type(XFSelectionNotify, "XFSelectionNotify", "x11-xfixes-selection-notify-event")
+        add_parser(XFSelectionNotify, parse_XFSelectionNotify)
     event_base = get_XDamage_event_base(display)
     if event_base>0:
         global DamageNotify
         DamageNotify = XDamageNotify+event_base
         add_event_type(DamageNotify, "DamageNotify", "x11-damage-event")
+        add_parser(DamageNotify, parse_DamageNotify)
     set_debug_events()
 
 
@@ -319,6 +318,45 @@ def get_x_event_signals(event: int) -> Tuple[str, str]:
 
 x_event_type_names : Dict[int, str] = {}
 names_to_event_type : Dict[str, int] = {}
+
+
+ctypedef object (*PARSE_EVENT)(Display* display, XEvent *event)
+
+
+cdef PARSE_EVENT[256] parsers
+for i in range(256):
+    parsers[i] = NULL
+
+
+cdef add_parser(event: int, PARSE_EVENT parser):
+    """
+    Add a parser for the given event type.
+    """
+    if event < 0 or event >= 256:
+        raise ValueError(f"Invalid event type: {event}")
+    parsers[event] = parser
+
+add_parser(MapRequest, parse_MapRequest)
+add_parser(ConfigureRequest, parse_ConfigureRequest)
+add_parser(SelectionRequest, parse_SelectionRequest)
+add_parser(SelectionClear, parse_SelectionClear)
+add_parser(SelectionNotify, parse_SelectionNotify)
+add_parser(ResizeRequest, parse_ResizeRequest)
+add_parser(FocusIn, parse_FocusIn)
+add_parser(FocusOut, parse_FocusOut)
+add_parser(EnterNotify, parse_EnterNotify)
+add_parser(LeaveNotify, parse_LeaveNotify)
+add_parser(CreateNotify, parse_CreateNotify)
+add_parser(MapNotify, parse_MapNotify)
+add_parser(UnmapNotify, parse_UnmapNotify)
+add_parser(DestroyNotify, parse_DestroyNotify)
+add_parser(PropertyNotify, parse_PropertyNotify)
+add_parser(ConfigureNotify, parse_ConfigureNotify)
+add_parser(CirculateNotify, parse_CirculateNotify)
+add_parser(ReparentNotify, parse_ReparentNotify)
+add_parser(KeyPress, parse_KeyPress)
+add_parser(MotionNotify, parse_MotionNotify)
+add_parser(ClientMessage, parse_ClientMessage)
 
 
 def add_x_event_type_name(event: int, name: str) -> None:
@@ -396,7 +434,7 @@ cdef str atom_str(Display *display, Atom atom):
 
 
 
-cdef object new_x11_event(XEvent *e):
+cdef inline object new_x11_event(XEvent *e):
     cdef int etype = e.type
     cdef str event_type = x_event_type_names.get(etype) or str(etype)
     cdef object pyev = X11Event(event_type)
@@ -714,10 +752,10 @@ cdef object parse_xevent(Display *d, XEvent *e):
 
     if etype == GenericEvent:
         global x_event_parsers
-        parser = x_event_parsers.get(e.xcookie.extension)
-        if parser:
-            log("calling GenericEvent parser %s(%s)", parser, <uintptr_t> &e.xcookie)
-            return parser(<uintptr_t> &e.xcookie)
+        pyparser = x_event_parsers.get(e.xcookie.extension)
+        if pyparser:
+            log("calling GenericEvent parser %s(%s)", pyparser, <uintptr_t> &e.xcookie)
+            return pyparser(<uintptr_t> &e.xcookie)
         log("no GenericEvent parser for extension %s", e.xcookie.extension)
         return None
 
@@ -727,57 +765,8 @@ cdef object parse_xevent(Display *d, XEvent *e):
         return None
     log("parse_xevent event=%s/%s window=%#x", event_args, event_type, e.xany.window)
 
-    if etype == DamageNotify:
-        return parse_DamageNotify(d, e)
-    if etype == MapRequest:
-        return parse_MapRequest(d, e)
-    if etype == ConfigureRequest:
-        return parse_ConfigureRequest(d, e)
-    if etype == SelectionRequest:
-        return parse_SelectionRequest(d, e)
-    if etype == SelectionClear:
-        return parse_SelectionClear(d, e)
-    if etype == SelectionNotify:
-        return parse_SelectionNotify(d, e)
-    if etype == XFSelectionNotify:
-        return parse_XFSelectionNotify(d, e)
-    if etype == ResizeRequest:
-        return parse_ResizeRequest(d, e)
-    if etype == FocusIn:
-        return parse_FocusIn(d, e)
-    if etype == FocusOut:
-        return parse_FocusOut(d, e)
-    if etype == EnterNotify:
-        return parse_EnterNotify(d, e)
-    if etype == LeaveNotify:
-        return parse_LeaveNotify(d, e)
-    if etype == CreateNotify:
-        return parse_CreateNotify(d, e)
-    if etype == MapNotify:
-        return parse_MapNotify(d, e)
-    if etype == UnmapNotify:
-        return parse_UnmapNotify(d, e)
-    if etype == DestroyNotify:
-        return parse_DestroyNotify(d, e)
-    if etype == PropertyNotify:
-        return parse_PropertyNotify(d, e)
-    if etype == ConfigureNotify:
-        return parse_ConfigureNotify(d, e)
-    if etype == CirculateNotify:
-        return parse_CirculateNotify(d, e)
-    if etype == ReparentNotify:
-        return parse_ReparentNotify(d, e)
-    if etype == KeyPress:
-        return parse_KeyPress(d, e)
-    if etype == CursorNotify:
-        return parse_CursorNotify(d, e)
-    if etype == MotionNotify:
-        return parse_MotionNotify(d, e)
-    if etype == ShapeNotify:
-        return parse_ShapeNotify(d, e)
-    if etype == ClientMessage:
-        return parse_ClientMessage(d, e)
-    if etype == XKBNotify:
-        return parse_XKBNotify(d, e)
-    log.info("not handled: %s", x_event_type_names.get(etype, etype))
-    return None
+    cdef PARSE_EVENT parser = parsers[etype]
+    if parser is NULL:
+        log.warn("no parser for %s/%s", event_type, etype)
+        return None
+    return parser(d, e)
