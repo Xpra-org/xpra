@@ -89,6 +89,7 @@ def parse_command_line(argv: list[str]):
     add("service", help="build the system service", default=ARCH != "aarch64")
     add("docs", help="generate the documentation", default=ARCH != "aarch64")
     add("html5", help="bundle the `xpra-html5` client")
+    add("x11", help="include X11 bindings")
     add("manual", help="bundle the user manual")
     add("numpy", help="bundle `numpy`")
     add("putty", help="bundle putty `plink`")
@@ -153,6 +154,8 @@ def get_build_args(args) -> list[str]:
         xpra_args.append("--with-qt6_client")
     if not args.cuda:
         xpra_args.append("--without-nvidia")
+    if args.x11:
+        xpra_args.append("--with-x11")
     if args.build_args:
         xpra_args += shlex.split(args.build_args)
     # we can't do 'docs' this way :(
