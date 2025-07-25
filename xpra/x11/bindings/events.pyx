@@ -21,10 +21,9 @@ verbose = Logger("x11", "bindings", "verbose")
 
 from xpra.x11.bindings.xlib cimport (
     Display, Window, Visual, XID, XRectangle, Atom, Time, CARD32, Bool,
-    XEvent, XSelectionRequestEvent, XSelectionClearEvent,
-    XSelectionEvent,
+    XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
+    XSelectionEvent, XCreateWindowEvent, XCreateWindowEvent,
     XFree, XGetErrorText,
-    XQueryTree,
     XDefaultRootWindow,
     XGetAtomName,
 )
@@ -396,17 +395,316 @@ cdef str atom_str(Display *display, Atom atom):
     return r
 
 
-cdef object parse_xevent(Display *d, XEvent *e):
-    cdef XDamageNotifyEvent * damage_e
-    cdef XFixesCursorNotifyEvent * cursor_e
-    cdef XkbAnyEvent * xkb_e
-    cdef XkbBellNotifyEvent * bell_e
-    cdef XShapeEvent * shape_e
-    cdef XSelectionRequestEvent * selectionrequest_e
-    cdef XSelectionClearEvent * selectionclear_e
-    cdef XSelectionEvent * selection_e
-    cdef XFixesSelectionNotifyEvent * selectionnotify_e
 
+cdef object new_x11_event(XEvent *e):
+    cdef int etype = e.type
+    cdef str event_type = x_event_type_names.get(etype) or str(etype)
+    cdef object pyev = X11Event(event_type)
+    pyev.type = etype
+    pyev.send_event = bool(e.xany.send_event)
+    pyev.serial = e.xany.serial
+    if etype != XKBNotify:
+        pyev.delivered_to = e.xany.window
+    return pyev
+
+
+cdef object parse_DamageNotify(Display *d, XEvent *e):
+    cdef XDamageNotifyEvent * damage_e = <XDamageNotifyEvent*>e
+    pyev = new_x11_event(e)
+    pyev.window = e.xany.window
+    pyev.damage = damage_e.damage
+    pyev.x = damage_e.area.x
+    pyev.y = damage_e.area.y
+    pyev.width = damage_e.area.width
+    pyev.height = damage_e.area.height
+    return pyev
+
+
+cdef object parse_MapRequest(Display *d, XEvent *e):
+    pyev = new_x11_event(e)
+    pyev.window = e.xmaprequest.window
+    return pyev
+
+
+cdef object parse_ConfigureRequest(Display *d, XEvent *e):
+    pyev = new_x11_event(e)
+    pyev.window = e.xconfigurerequest.window
+    pyev.x = e.xconfigurerequest.x
+    pyev.y = e.xconfigurerequest.y
+    pyev.width = e.xconfigurerequest.width
+    pyev.height = e.xconfigurerequest.height
+    pyev.border_width = e.xconfigurerequest.border_width
+    # In principle there are two cases here: .above is
+    # XNone (i.e. not specified in the original request),
+    # or .above is an invalid window (i.e. it was
+    # specified by the client, but it specified something
+    # weird).  I don't see any reason to handle these
+    # differently, though.
+    pyev.above = e.xconfigurerequest.above
+    pyev.detail = e.xconfigurerequest.detail
+    pyev.value_mask = e.xconfigurerequest.value_mask
+    return pyev
+
+
+cdef object parse_SelectionRequest(Display *d, XEvent *e):
+    cdef XSelectionRequestEvent * selectionrequest_e = <XSelectionRequestEvent*> e
+    pyev = new_x11_event(e)
+    pyev.window = selectionrequest_e.owner
+    pyev.requestor = selectionrequest_e.requestor
+    pyev.selection = atom_str(d, selectionrequest_e.selection)
+    pyev.target = atom_str(d, selectionrequest_e.target)
+    pyev.property = atom_str(d, selectionrequest_e.property)
+    pyev.time = int(selectionrequest_e.time)
+    return pyev
+
+
+cdef object parse_SelectionClear(Display *d, XEvent *e):
+    cdef XSelectionClearEvent * selectionclear_e = <XSelectionClearEvent*> e
+    pyev = new_x11_event(e)
+    pyev.window = selectionclear_e.window
+    pyev.selection = atom_str(d, selectionclear_e.selection)
+    pyev.time = int(selectionclear_e.time)
+    return pyev
+
+cdef object parse_SelectionNotify(Display *d, XEvent *e):
+    cdef XSelectionEvent * selection_e = <XSelectionEvent*> e
+    pyev = new_x11_event(e)
+    pyev.window = selection_e.requestor
+    pyev.selection = atom_str(d, selection_e.selection)
+    pyev.target = atom_str(d, selection_e.target)
+    pyev.property = atom_str(d, selection_e.property)
+    pyev.time = int(selection_e.time)
+    return pyev
+
+
+cdef object parse_XFSelectionNotify(Display *d, XEvent *e):
+    cdef XFixesSelectionNotifyEvent * selectionnotify_e = <XFixesSelectionNotifyEvent*> e
+    pyev = new_x11_event(e)
+    pyev.window = selectionnotify_e.window
+    pyev.subtype = selectionnotify_e.subtype
+    pyev.owner = selectionnotify_e.owner
+    pyev.selection = atom_str(d, selectionnotify_e.selection)
+    pyev.timestamp = int(selectionnotify_e.timestamp)
+    pyev.selection_timestamp = int(selectionnotify_e.selection_timestamp)
+    return pyev
+
+
+cdef object parse_ResizeRequest(Display *d, XEvent *e):
+    pyev = new_x11_event(e)
+    pyev.window = e.xresizerequest.window
+    pyev.width = e.xresizerequest.width
+    pyev.height = e.xresizerequest.height
+    return pyev
+
+
+cdef object _parse_Focus(Display *d, XEvent *e):
+    pyev = new_x11_event(e)
+    pyev.window = e.xfocus.window
+    pyev.mode = e.xfocus.mode
+    pyev.detail = e.xfocus.detail
+    return pyev
+
+
+cdef object parse_FocusIn(Display *d, XEvent *e):
+    return _parse_Focus(d, e)
+
+
+cdef object parse_FocusOut(Display *d, XEvent *e):
+    return _parse_Focus(d, e)
+
+
+cdef object _parse_EnterLeave(Display *d, XEvent *e):
+    cdef XCrossingEvent * crossing_e = <XCrossingEvent*> e
+    pyev = new_x11_event(e)
+    pyev.window = crossing_e.window
+    pyev.mode = crossing_e.mode
+    pyev.detail = crossing_e.detail
+    pyev.subwindow = crossing_e.subwindow
+    pyev.focus = bool(crossing_e.focus)
+    return pyev
+
+
+cdef object parse_EnterNotify(Display *d, XEvent *e):
+    return _parse_EnterLeave(d, e)
+
+
+cdef object parse_LeaveNotify(Display *d, XEvent *e):
+    return _parse_EnterLeave(d, e)
+
+
+cdef object parse_CreateNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xcreatewindow.window
+    pyev.width = e.xcreatewindow.width
+    pyev.height = e.xcreatewindow.height
+    return pyev
+
+
+cdef object parse_MapNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xmap.window
+    pyev.override_redirect = bool(e.xmap.override_redirect)
+    return pyev
+
+
+cdef object parse_UnmapNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xunmap.window
+    pyev.from_configure = bool(e.xunmap.from_configure)
+    return pyev
+
+
+cdef object parse_DestroyNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xdestroywindow.window
+    return pyev
+
+
+cdef object parse_PropertyNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xany.window
+    pyev.atom = atom_str(d, e.xproperty.atom)
+    pyev.time = e.xproperty.time
+    return pyev
+
+
+cdef object parse_ConfigureNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xconfigure.window
+    pyev.x = e.xconfigure.x
+    pyev.y = e.xconfigure.y
+    pyev.width = e.xconfigure.width
+    pyev.height = e.xconfigure.height
+    pyev.border_width = e.xconfigure.border_width
+    pyev.above = e.xconfigure.above
+    pyev.override_redirect = bool(e.xconfigure.override_redirect)
+    return pyev
+
+
+cdef object parse_CirculateNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xcirculaterequest.window
+    pyev.place = e.xcirculaterequest.place
+    return pyev
+
+
+cdef object parse_ReparentNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xreparent.window
+    return pyev
+
+
+cdef object parse_KeyPress(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xany.window
+    pyev.hardware_keycode = e.xkey.keycode
+    pyev.state = e.xkey.state
+    return pyev
+
+
+cdef object parse_CursorNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xany.window
+    cdef XFixesCursorNotifyEvent * cursor_e = <XFixesCursorNotifyEvent*> e
+    pyev.cursor_serial = cursor_e.cursor_serial
+    pyev.cursor_name = atom_str(d, cursor_e.cursor_name)
+    return pyev
+
+
+cdef object parse_MotionNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xmotion.window
+    pyev.root = e.xmotion.root
+    pyev.subwindow = e.xmotion.subwindow
+    pyev.time = e.xmotion.time
+    pyev.x = e.xmotion.x
+    pyev.y = e.xmotion.y
+    pyev.x_root = e.xmotion.x_root
+    pyev.y_root = e.xmotion.y_root
+    pyev.state = e.xmotion.state
+    pyev.is_hint = e.xmotion.is_hint != NotifyNormal
+    #pyev.same_screen = bool(e.xmotion.same_screen)
+    return pyev
+
+
+cdef object parse_ShapeNotify(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    cdef XShapeEvent *shape_e = <XShapeEvent*> e
+    pyev.window = shape_e.window
+    pyev.kind = shape_e.kind
+    pyev.x = shape_e.x
+    pyev.y = shape_e.y
+    pyev.width = shape_e.width
+    pyev.height = shape_e.height
+    pyev.shaped = bool(shape_e.shaped)
+    return pyev
+
+
+cdef object parse_ClientMessage(Display *d, XEvent *e):
+    cdef object pyev = new_x11_event(e)
+    pyev.window = e.xany.window
+    if int(e.xclient.message_type) > 2**32:
+        log.warn("Warning: Xlib claims that this ClientEvent's 32-bit")
+        log.warn(f" message_type is {e.xclient.message_type}.")
+        log.warn(" note that this is >2^32.")
+        log.warn(" this makes no sense, so I'm ignoring it")
+        return None
+    pyev.message_type = atom_str(d, e.xclient.message_type)
+    pyev.format = e.xclient.format
+    pieces = []
+    if pyev.format == 32:
+        for i in range(5):
+            # Mask with 0xffffffff to prevent sign-extension on
+            # architectures where Python's int is 64-bits.
+            pieces.append(int(e.xclient.data.l[i]) & 0xffffffff)
+    elif pyev.format == 16:
+        for i in range(10):
+            pieces.append(int(e.xclient.data.s[i]))
+    elif pyev.format == 8:
+        for i in range(20):
+            pieces.append(int(e.xclient.data.b[i]))
+    else:
+        log.warn(f"Warning: ignoring ClientMessage {pyev.message_type!r} with format={pyev.format}")
+        return None
+    pyev.data = tuple(pieces)
+    return pyev
+
+
+cdef object parse_XKBNotify(Display *d, XEvent *e):
+    cdef XkbAnyEvent * xkb_e = <XkbAnyEvent*> e
+    # note we could just cast directly to XkbBellNotifyEvent
+    # but this would be dirty, and we may want to catch
+    # other types of XKB events in the future
+    verbose("XKBNotify event received xkb_type=%s", xkb_e.xkb_type)
+    if xkb_e.xkb_type != XkbBellNotify:
+        return None
+    bell_e = <XkbBellNotifyEvent*>e
+    cdef object pyev = new_x11_event(e)
+    pyev.subtype = "bell"
+    pyev.device = int(bell_e.device)
+    pyev.percent = int(bell_e.percent)
+    pyev.pitch = int(bell_e.pitch)
+    pyev.duration = int(bell_e.duration)
+    pyev.bell_class = int(bell_e.bell_class)
+    pyev.bell_id = int(bell_e.bell_id)
+    # no idea why window is not set in XkbBellNotifyEvent
+    # since we can fire it from a specific window
+    # but we need one for the dispatch logic, so use root if unset
+    if bell_e.window != 0:
+        verbose("using bell_e.window=%#x", bell_e.window)
+        pyev.window = bell_e.window
+    else:
+        pyev.window = XDefaultRootWindow(d)
+        verbose("bell using root window=%#x", pyev.window)
+    pyev.event_only = bool(bell_e.event_only)
+    pyev.delivered_to = pyev.window
+    pyev.window_model = None
+    pyev.bell_name = atom_str(d, bell_e.name)
+    return pyev
+
+
+
+cdef object parse_xevent(Display *d, XEvent *e):
     cdef int etype = e.type
     global x_event_type_names, x_event_signals
     event_type = x_event_type_names.get(etype, etype)
@@ -429,199 +727,57 @@ cdef object parse_xevent(Display *d, XEvent *e):
         return None
     log("parse_xevent event=%s/%s window=%#x", event_args, event_type, e.xany.window)
 
-    def atom(Atom v) -> str:
-        return atom_str(d, v)
-
-    cdef object pyev = X11Event(event_type)
-    pyev.type = etype
-    pyev.send_event = bool(e.xany.send_event)
-    pyev.serial = e.xany.serial
-    if etype != XKBNotify:
-        pyev.delivered_to = e.xany.window
     if etype == DamageNotify:
-        damage_e = <XDamageNotifyEvent*>e
-        pyev.window = e.xany.window
-        pyev.damage = damage_e.damage
-        pyev.x = damage_e.area.x
-        pyev.y = damage_e.area.y
-        pyev.width = damage_e.area.width
-        pyev.height = damage_e.area.height
-    elif etype == MapRequest:
-        pyev.window = e.xmaprequest.window
-    elif etype == ConfigureRequest:
-        pyev.window = e.xconfigurerequest.window
-        pyev.x = e.xconfigurerequest.x
-        pyev.y = e.xconfigurerequest.y
-        pyev.width = e.xconfigurerequest.width
-        pyev.height = e.xconfigurerequest.height
-        pyev.border_width = e.xconfigurerequest.border_width
-        # In principle there are two cases here: .above is
-        # XNone (i.e. not specified in the original request),
-        # or .above is an invalid window (i.e. it was
-        # specified by the client, but it specified something
-        # weird).  I don't see any reason to handle these
-        # differently, though.
-        pyev.above = e.xconfigurerequest.above
-        pyev.detail = e.xconfigurerequest.detail
-        pyev.value_mask = e.xconfigurerequest.value_mask
-    elif etype == SelectionRequest:
-        selectionrequest_e = <XSelectionRequestEvent*> e
-        pyev.window = selectionrequest_e.owner
-        pyev.requestor = selectionrequest_e.requestor
-        pyev.selection = atom(selectionrequest_e.selection)
-        pyev.target = atom(selectionrequest_e.target)
-        pyev.property = atom(selectionrequest_e.property)
-        pyev.time = int(selectionrequest_e.time)
-    elif etype == SelectionClear:
-        selectionclear_e = <XSelectionClearEvent*> e
-        pyev.window = selectionclear_e.window
-        pyev.selection = atom(selectionclear_e.selection)
-        pyev.time = int(selectionclear_e.time)
-    elif etype == SelectionNotify:
-        selection_e = <XSelectionEvent*> e
-        pyev.requestor = selection_e.requestor
-        pyev.selection = atom(selection_e.selection)
-        pyev.target = atom(selection_e.target)
-        pyev.property = atom(selection_e.property)
-        pyev.time = int(selection_e.time)
-    elif etype == XFSelectionNotify:
-        selectionnotify_e = <XFixesSelectionNotifyEvent*> e
-        pyev.window = selectionnotify_e.window
-        pyev.subtype = selectionnotify_e.subtype
-        pyev.owner = selectionnotify_e.owner
-        pyev.selection = atom(selectionnotify_e.selection)
-        pyev.timestamp = int(selectionnotify_e.timestamp)
-        pyev.selection_timestamp = int(selectionnotify_e.selection_timestamp)
-    elif etype == ResizeRequest:
-        pyev.window = e.xresizerequest.window
-        pyev.width = e.xresizerequest.width
-        pyev.height = e.xresizerequest.height
-    elif etype in (FocusIn, FocusOut):
-        pyev.window = e.xfocus.window
-        pyev.mode = e.xfocus.mode
-        pyev.detail = e.xfocus.detail
-    elif etype in (EnterNotify, LeaveNotify):
-        pyev.window = e.xcrossing.window
-        pyev.mode = e.xcrossing.mode
-        pyev.detail = e.xcrossing.detail
-        pyev.subwindow = e.xcrossing.subwindow
-        pyev.focus = bool(e.xcrossing.focus)
-    elif etype == ClientMessage:
-        pyev.window = e.xany.window
-        if int(e.xclient.message_type) > 2**32:
-            log.warn("Warning: Xlib claims that this ClientEvent's 32-bit")
-            log.warn(f" message_type is {e.xclient.message_type}.")
-            log.warn(" note that this is >2^32.")
-            log.warn(" this makes no sense, so I'm ignoring it")
-            return None
-        pyev.message_type = atom(e.xclient.message_type)
-        pyev.format = e.xclient.format
-        pieces = []
-        if pyev.format == 32:
-            for i in range(5):
-                # Mask with 0xffffffff to prevent sign-extension on
-                # architectures where Python's int is 64-bits.
-                pieces.append(int(e.xclient.data.l[i]) & 0xffffffff)
-        elif pyev.format == 16:
-            for i in range(10):
-                pieces.append(int(e.xclient.data.s[i]))
-        elif pyev.format == 8:
-            for i in range(20):
-                pieces.append(int(e.xclient.data.b[i]))
-        else:
-            log.warn(f"Warning: ignoring ClientMessage {pyev.message_type!r} with format={pyev.format}")
-            return None
-        pyev.data = tuple(pieces)
-    elif etype == CreateNotify:
-        pyev.window = e.xcreatewindow.window
-        pyev.width = e.xcreatewindow.width
-        pyev.height = e.xcreatewindow.height
-    elif etype == MapNotify:
-        pyev.window = e.xmap.window
-        pyev.override_redirect = bool(e.xmap.override_redirect)
-    elif etype == UnmapNotify:
-        pyev.window = e.xunmap.window
-        pyev.from_configure = bool(e.xunmap.from_configure)
-    elif etype == DestroyNotify:
-        pyev.window = e.xdestroywindow.window
-    elif etype == PropertyNotify:
-        pyev.window = e.xany.window
-        pyev.atom = atom(e.xproperty.atom)
-        pyev.time = e.xproperty.time
-    elif etype == ConfigureNotify:
-        pyev.window = e.xconfigure.window
-        pyev.x = e.xconfigure.x
-        pyev.y = e.xconfigure.y
-        pyev.width = e.xconfigure.width
-        pyev.height = e.xconfigure.height
-        pyev.border_width = e.xconfigure.border_width
-        pyev.above = e.xconfigure.above
-        pyev.override_redirect = bool(e.xconfigure.override_redirect)
-    elif etype == CirculateNotify:
-        pyev.window = e.xcirculaterequest.window
-        pyev.place = e.xcirculaterequest.place
-    elif etype == ReparentNotify:
-        pyev.window = e.xreparent.window
-    elif etype == KeyPress:
-        pyev.window = e.xany.window
-        pyev.hardware_keycode = e.xkey.keycode
-        pyev.state = e.xkey.state
-    elif etype == CursorNotify:
-        pyev.window = e.xany.window
-        cursor_e = <XFixesCursorNotifyEvent*>e
-        pyev.cursor_serial = cursor_e.cursor_serial
-        pyev.cursor_name = atom(cursor_e.cursor_name)
-    elif etype == MotionNotify:
-        pyev.window = e.xmotion.window
-        pyev.root = e.xmotion.root
-        pyev.subwindow = e.xmotion.subwindow
-        pyev.time = e.xmotion.time
-        pyev.x = e.xmotion.x
-        pyev.y = e.xmotion.y
-        pyev.x_root = e.xmotion.x_root
-        pyev.y_root = e.xmotion.y_root
-        pyev.state = e.xmotion.state
-        pyev.is_hint = e.xmotion.is_hint != NotifyNormal
-        #pyev.same_screen = bool(e.xmotion.same_screen)
-    elif etype == ShapeNotify:
-        shape_e = <XShapeEvent*> e
-        pyev.window = shape_e.window
-        pyev.kind = shape_e.kind
-        pyev.x = shape_e.x
-        pyev.y = shape_e.y
-        pyev.width = shape_e.width
-        pyev.height = shape_e.height
-        pyev.shaped = bool(shape_e.shaped)
-    elif etype == XKBNotify:
-        # note we could just cast directly to XkbBellNotifyEvent
-        # but this would be dirty, and we may want to catch
-        # other types of XKB events in the future
-        xkb_e = <XkbAnyEvent*>e
-        verbose("XKBNotify event received xkb_type=%s", xkb_e.xkb_type)
-        if xkb_e.xkb_type!=XkbBellNotify:
-            return None
-        bell_e = <XkbBellNotifyEvent*>e
-        pyev.subtype = "bell"
-        pyev.device = int(bell_e.device)
-        pyev.percent = int(bell_e.percent)
-        pyev.pitch = int(bell_e.pitch)
-        pyev.duration = int(bell_e.duration)
-        pyev.bell_class = int(bell_e.bell_class)
-        pyev.bell_id = int(bell_e.bell_id)
-        # no idea why window is not set in XkbBellNotifyEvent
-        # since we can fire it from a specific window
-        # but we need one for the dispatch logic, so use root if unset
-        if bell_e.window!=0:
-            verbose("using bell_e.window=%#x", bell_e.window)
-            pyev.window = bell_e.window
-        else:
-            pyev.window = XDefaultRootWindow(d)
-            verbose("bell using root window=%#x", pyev.window)
-        pyev.event_only = bool(bell_e.event_only)
-        pyev.delivered_to = pyev.window
-        pyev.window_model = None
-        pyev.bell_name = atom(bell_e.name)
-    else:
-        log.info("not handled: %s", x_event_type_names.get(etype, etype))
-        return None
-    return pyev
+        return parse_DamageNotify(d, e)
+    if etype == MapRequest:
+        return parse_MapRequest(d, e)
+    if etype == ConfigureRequest:
+        return parse_ConfigureRequest(d, e)
+    if etype == SelectionRequest:
+        return parse_SelectionRequest(d, e)
+    if etype == SelectionClear:
+        return parse_SelectionClear(d, e)
+    if etype == SelectionNotify:
+        return parse_SelectionNotify(d, e)
+    if etype == XFSelectionNotify:
+        return parse_XFSelectionNotify(d, e)
+    if etype == ResizeRequest:
+        return parse_ResizeRequest(d, e)
+    if etype == FocusIn:
+        return parse_FocusIn(d, e)
+    if etype == FocusOut:
+        return parse_FocusOut(d, e)
+    if etype == EnterNotify:
+        return parse_EnterNotify(d, e)
+    if etype == LeaveNotify:
+        return parse_LeaveNotify(d, e)
+    if etype == CreateNotify:
+        return parse_CreateNotify(d, e)
+    if etype == MapNotify:
+        return parse_MapNotify(d, e)
+    if etype == UnmapNotify:
+        return parse_UnmapNotify(d, e)
+    if etype == DestroyNotify:
+        return parse_DestroyNotify(d, e)
+    if etype == PropertyNotify:
+        return parse_PropertyNotify(d, e)
+    if etype == ConfigureNotify:
+        return parse_ConfigureNotify(d, e)
+    if etype == CirculateNotify:
+        return parse_CirculateNotify(d, e)
+    if etype == ReparentNotify:
+        return parse_ReparentNotify(d, e)
+    if etype == KeyPress:
+        return parse_KeyPress(d, e)
+    if etype == CursorNotify:
+        return parse_CursorNotify(d, e)
+    if etype == MotionNotify:
+        return parse_MotionNotify(d, e)
+    if etype == ShapeNotify:
+        return parse_ShapeNotify(d, e)
+    if etype == ClientMessage:
+        return parse_ClientMessage(d, e)
+    if etype == XKBNotify:
+        return parse_XKBNotify(d, e)
+    log.info("not handled: %s", x_event_type_names.get(etype, etype))
+    return None
