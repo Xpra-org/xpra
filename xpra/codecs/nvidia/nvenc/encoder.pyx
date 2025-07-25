@@ -190,10 +190,13 @@ context_gen_counter = AtomicInteger()
 cdef double last_context_failure = 0
 
 # per-device preset denylist - should be mutated with device_lock held
-bad_presets = {}
+bad_presets: dict[int, list[str]] = {}
+no_preset: dict[str, float] = {}
 
 
-def get_runtime_factor() -> float:
+def get_runtime_factor(encoding: str, in_cs: str) -> float:
+    if no_preset.get(encoding, 0):
+        return 0
     global last_context_failure, context_counter
     device_count = len(init_all_devices())
     max_contexts = CONTEXT_LIMIT * device_count
@@ -203,7 +206,7 @@ def get_runtime_factor() -> float:
     low_limit = min(CONTEXT_LIMIT, 1 + CONTEXT_LIMIT// 2) * device_count
     f = max(0, 1.0 - (max(0, cc-low_limit)/max(1, max_contexts-low_limit)))
     #if we have had errors recently, lower our chances further:
-    cdef double failure_elapsed = monotonic()-last_context_failure
+    cdef double failure_elapsed = monotonic() - last_context_failure
     #discount factor gradually for 1 minute:
     f /= 61-min(60, failure_elapsed)
     log("nvenc.get_runtime_factor()=%s", f)
@@ -225,41 +228,47 @@ def get_height_mask(colorspace: str) -> int:
 
 
 def get_specs() -> Sequence[VideoSpec]:
+    specs: Sequence[VideoSpec] = []
+    for encoding in get_encodings():
+        for in_cs, out_css in get_COLORSPACES(encoding).items():
+            specs.append(
+                _get_spec(encoding, in_cs, out_css)
+            )
+    return specs
+
+
+def _get_spec(encoding: str, in_cs: str, out_css: Sequence[str]) -> VideoSpec:
     # undocumented and found the hard way, see:
     # https://github.com/Xpra-org/xpra/issues/1046#issuecomment-765450102
     # https://github.com/Xpra-org/xpra/issues/1550
     min_w, min_h = (128, 128)
+    # FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
+    max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
+    has_lossless_mode = LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
+    width_mask = get_width_mask(in_cs)
+    height_mask = get_height_mask(in_cs)
+    has_lossless_mode = in_cs in ("XRGB", "BGRX", "r210") and encoding == "h264"
 
-    specs: Sequence[VideoSpec] = []
-    for encoding in get_encodings():
-        # FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
-        max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
-        has_lossless_mode = LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
+    #the output will actually be in one of those two formats once decoded
+    #because internally that's what we convert to before encoding
+    #(well, NV12... which is equivallent to YUV420P here...)
 
-        for in_cs, out_css in get_COLORSPACES(encoding).items():
-            width_mask = get_width_mask(in_cs)
-            height_mask = get_height_mask(in_cs)
-            has_lossless_mode = in_cs in ("XRGB", "BGRX", "r210") and encoding == "h264"
-
-            #the output will actually be in one of those two formats once decoded
-            #because internally that's what we convert to before encoding
-            #(well, NV12... which is equivallent to YUV420P here...)
-
-            spec = VideoSpec(
-                encoding=encoding, input_colorspace=in_cs, output_colorspaces=out_css,
-                has_lossless_mode=has_lossless_mode,
-                codec_class=Encoder, codec_type=get_type(),
-                quality=60+has_lossless_mode*40, speed=100, size_efficiency=100,
-                setup_cost=80, cpu_cost=10, gpu_cost=100,
-                #using a hardware encoder for something this small is silly:
-                min_w=min_w, min_h=min_h,
-                max_w=max_w, max_h=max_h,
-                can_scale=in_cs != "r210",
-                width_mask=width_mask, height_mask=height_mask,
-            )
-            spec.get_runtime_factor = get_runtime_factor
-            specs.append(spec)
-    return specs
+    spec = VideoSpec(
+        encoding=encoding, input_colorspace=in_cs, output_colorspaces=out_css,
+        has_lossless_mode=has_lossless_mode,
+        codec_class=Encoder, codec_type=get_type(),
+        quality=60+has_lossless_mode*40, speed=100, size_efficiency=100,
+        setup_cost=80, cpu_cost=10, gpu_cost=100,
+        #using a hardware encoder for something this small is silly:
+        min_w=min_w, min_h=min_h,
+        max_w=max_w, max_h=max_h,
+        can_scale=in_cs != "r210",
+        width_mask=width_mask, height_mask=height_mask,
+    )
+    def _get_runtime_factor() -> float:
+        return get_runtime_factor(encoding, in_cs)
+    spec.get_runtime_factor = _get_runtime_factor
+    return spec
 
 
 #ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
@@ -466,6 +475,7 @@ cdef class Encoder:
                 if preset and (preset in presets.keys()):
                     log("using preset '%s' for speed=%s, quality=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
                     return parseguid(preset_guid)
+        no_preset[self.encoding] = monotonic()
         raise ValueError("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
     def init_context(self, encoding: str, unsigned int width, unsigned int height, src_format: str,
@@ -1282,6 +1292,8 @@ cdef class Encoder:
         cuda_device_context = options.get("cuda-device-context")
         if not cuda_device_context:
             log.error("Error: no 'cuda-device-context' in %s", options)
+            global last_context_failure
+            last_context_failure = monotonic()
             raise RuntimeError("no cuda device context")
         # cuda_device_context.__enter__ does self.context.push()
         with cuda_device_context as cuda_context:
