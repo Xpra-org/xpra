@@ -336,6 +336,7 @@ cdef add_parser(event: int, PARSE_EVENT parser):
         raise ValueError(f"Invalid event type: {event}")
     parsers[event] = parser
 
+add_parser(GenericEvent, parse_GenericEvent)
 add_parser(MapRequest, parse_MapRequest)
 add_parser(ConfigureRequest, parse_ConfigureRequest)
 add_parser(SelectionRequest, parse_SelectionRequest)
@@ -444,6 +445,16 @@ cdef inline object new_x11_event(XEvent *e):
     if etype != XKBNotify:
         pyev.delivered_to = e.xany.window
     return pyev
+
+
+cdef object parse_GenericEvent(Display *d, XEvent *e):
+    global x_event_parsers
+    pyparser = x_event_parsers.get(e.xcookie.extension)
+    if pyparser:
+        log("calling GenericEvent parser %s(%s)", pyparser, <uintptr_t> &e.xcookie)
+        return pyparser(<uintptr_t> &e.xcookie)
+    log("no GenericEvent parser for extension %s", e.xcookie.extension)
+    return None
 
 
 cdef object parse_DamageNotify(Display *d, XEvent *e):
@@ -750,21 +761,12 @@ cdef object parse_xevent(Display *d, XEvent *e):
         log("parse_xevent ignoring %s send_event", event_type)
         return None
 
-    if etype == GenericEvent:
-        global x_event_parsers
-        pyparser = x_event_parsers.get(e.xcookie.extension)
-        if pyparser:
-            log("calling GenericEvent parser %s(%s)", pyparser, <uintptr_t> &e.xcookie)
-            return pyparser(<uintptr_t> &e.xcookie)
-        log("no GenericEvent parser for extension %s", e.xcookie.extension)
-        return None
-
     cdef object event_args = x_event_signals.get(etype)
-    if event_args is None:
+    if etype != GenericEvent and event_args is None:
         log("no signal handler for %s", event_type)
         return None
-    log("parse_xevent event=%s/%s window=%#x", event_args, event_type, e.xany.window)
 
+    log("parse_xevent event=%s/%s window=%#x", event_args, event_type, e.xany.window)
     cdef PARSE_EVENT parser = parsers[etype]
     if parser is NULL:
         log.warn("no parser for %s/%s", event_type, etype)
