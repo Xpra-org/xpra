@@ -1106,6 +1106,17 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
                 src[0] = filename
     if isinstance(pkgconfig_names, str):
         pkgconfig_names = [x for x in pkgconfig_names.split(",") if x]
+    if WIN32:
+        WIN32_PKGCONFIG_ALIASES = {
+            "xrandr": "randrproto",
+            "xext": "xextproto",
+            "xdamage": "damageproto",
+            "xkbfile": "kbproto",
+            "xcomposite": "compositeproto",
+            "xres": "resourceproto",
+            "xfixes": "fixesproto",
+        }
+        pkgconfig_names = [WIN32_PKGCONFIG_ALIASES.get(name, name) for name in pkgconfig_names]
     pkgc = pkgconfig(*pkgconfig_names, optimize=optimize)
     for addto in ("extra_link_args", "extra_compile_args"):
         value = kwargs.pop(addto, None)
@@ -1301,7 +1312,6 @@ def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
         import sysconfig
         for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
             add_to_keywords(kw, 'extra_compile_args', cflag)
-
     if OSX:
         add_to_keywords(kw, 'extra_compile_args', "-Wno-nullability-completeness")
 
@@ -2600,13 +2610,14 @@ tace(OSX, "xpra.platform.darwin.gdk3_bindings,xpra/platform/darwin/transparency_
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
-    ace("xpra.x11.bindings.events", "x11,xfixes,xext,xdamage,xkbfile")
     ace("xpra.x11.bindings.xwait", "x11")
     ace("xpra.x11.bindings.wait_for_x_server", "x11")
     ace("xpra.x11.bindings.display_source", "x11")
     ace("xpra.x11.bindings.core", "x11")
     ace("xpra.x11.bindings.xwayland", "x11")
     ace("xpra.x11.bindings.posix_display_source", "x11")
+    ace("xpra.x11.bindings.shape", "x11")
+    ace("xpra.x11.bindings.events", "x11,xfixes,xext,xdamage,xkbfile")
     ace("xpra.x11.bindings.randr", "x11,xrandr")
     ace("xpra.x11.bindings.record", "x11,xtst")
     ace("xpra.x11.bindings.keyboard", "x11,xtst,xfixes,xkbfile")

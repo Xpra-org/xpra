@@ -78,16 +78,6 @@ cdef extern from "X11/extensions/xfixeswire.h":
     unsigned int XFixesSelectionNotify
 
 
-cdef extern from "X11/extensions/shape.h":
-    Bool XShapeQueryExtension(Display *display, int *event_base, int *error_base)
-    ctypedef struct XShapeEvent:
-        Window window
-        int kind            #ShapeBounding or ShapeClip
-        int x, y            #extents of new region
-        unsigned width, height
-        Bool shaped         #true if the region exists
-
-
 cdef extern from "X11/extensions/Xdamage.h":
     ctypedef XID Damage
     unsigned int XDamageNotify
@@ -199,14 +189,6 @@ cdef int get_XDamage_event_base(Display *xdisplay) noexcept:
     return event_base
 
 
-cdef int get_XShape_event_base(Display *xdisplay) noexcept:
-    cdef int event_base = 0, ignored = 0
-    if not XShapeQueryExtension(xdisplay, &event_base, &ignored):
-        log.warn("Warning: XShape extension is not available")
-        return -1
-    return event_base
-
-
 cdef void init_x11_events(Display *display):
     add_x_event_signals({
         MapRequest          : ("", "x11-child-map-request-event"),
@@ -264,39 +246,47 @@ cdef void init_x11_events(Display *display):
         MappingNotify       : "MappingNotify",
         GenericEvent        : "GenericEvent",
     })
-    cdef int event_base = get_XShape_event_base(display)
-    if event_base>=0:
-        global ShapeNotify
-        ShapeNotify = event_base
-        add_event_type(ShapeNotify, "ShapeNotify", "x11-shape-event")
-        add_parser(ShapeNotify, parse_ShapeNotify)
     event_base = get_XKB_event_base(display)
     if event_base>=0:
         global XKBNotify
         XKBNotify = event_base
-        add_event_type(XKBNotify, "XKBNotify", "x11-xkb-event")
+        add_event_type(XKBNotify, "XKBNotify", "x11-xkb-event", "")
         add_parser(XKBNotify, parse_XKBNotify)
     event_base = get_XFixes_event_base(display)
     if event_base>=0:
         global CursorNotify
         CursorNotify = XFixesCursorNotify+event_base
-        add_event_type(CursorNotify, "CursorNotify", "x11-cursor-event")
+        add_event_type(CursorNotify, "CursorNotify", "x11-cursor-event", "")
         add_parser(CursorNotify, parse_CursorNotify)
 
         global XFSelectionNotify
         XFSelectionNotify = XFixesSelectionNotify+event_base
-        add_event_type(XFSelectionNotify, "XFSelectionNotify", "x11-xfixes-selection-notify-event")
+        add_event_type(XFSelectionNotify, "XFSelectionNotify", "x11-xfixes-selection-notify-event", "")
         add_parser(XFSelectionNotify, parse_XFSelectionNotify)
     event_base = get_XDamage_event_base(display)
     if event_base>0:
         global DamageNotify
         DamageNotify = XDamageNotify+event_base
-        add_event_type(DamageNotify, "DamageNotify", "x11-damage-event")
+        add_event_type(DamageNotify, "DamageNotify", "x11-damage-event", "")
         add_parser(DamageNotify, parse_DamageNotify)
     set_debug_events()
 
 
-cdef void add_event_type(event: int, name: str, event_name: str, child_event_name: str = ""):
+cdef PARSE_XEVENT[256] parsers
+for i in range(256):
+    parsers[i] = NULL
+
+
+cdef void add_parser(unsigned int event, PARSE_XEVENT parser):
+    """
+    Add a parser for the given event type.
+    """
+    if event < 0 or event >= 256:
+        raise ValueError(f"Invalid event type: {event}")
+    parsers[event] = parser
+
+
+cdef void add_event_type(int event, str name, str event_name, str child_event_name):
     add_x_event_type_name(event, name)
     add_x_event_signal(event, (event_name, child_event_name))
 
@@ -319,22 +309,6 @@ def get_x_event_signals(event: int) -> Tuple[str, str]:
 x_event_type_names : Dict[int, str] = {}
 names_to_event_type : Dict[str, int] = {}
 
-
-ctypedef object (*PARSE_EVENT)(Display* display, XEvent *event)
-
-
-cdef PARSE_EVENT[256] parsers
-for i in range(256):
-    parsers[i] = NULL
-
-
-cdef add_parser(event: int, PARSE_EVENT parser):
-    """
-    Add a parser for the given event type.
-    """
-    if event < 0 or event >= 256:
-        raise ValueError(f"Invalid event type: {event}")
-    parsers[event] = parser
 
 add_parser(GenericEvent, parse_GenericEvent)
 add_parser(MapRequest, parse_MapRequest)
@@ -435,7 +409,7 @@ cdef str atom_str(Display *display, Atom atom):
 
 
 
-cdef inline object new_x11_event(XEvent *e):
+cdef object new_x11_event(XEvent *e):
     cdef int etype = e.type
     cdef str event_type = x_event_type_names.get(etype) or str(etype)
     cdef object pyev = X11Event(event_type)
@@ -676,19 +650,6 @@ cdef object parse_MotionNotify(Display *d, XEvent *e):
     return pyev
 
 
-cdef object parse_ShapeNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    cdef XShapeEvent *shape_e = <XShapeEvent*> e
-    pyev.window = shape_e.window
-    pyev.kind = shape_e.kind
-    pyev.x = shape_e.x
-    pyev.y = shape_e.y
-    pyev.width = shape_e.width
-    pyev.height = shape_e.height
-    pyev.shaped = bool(shape_e.shaped)
-    return pyev
-
-
 cdef object parse_ClientMessage(Display *d, XEvent *e):
     cdef object pyev = new_x11_event(e)
     pyev.window = e.xany.window
@@ -767,7 +728,7 @@ cdef object parse_xevent(Display *d, XEvent *e):
         return None
 
     log("parse_xevent event=%s/%s window=%#x", event_args, event_type, e.xany.window)
-    cdef PARSE_EVENT parser = parsers[etype]
+    cdef PARSE_XEVENT parser = parsers[etype]
     if parser is NULL:
         log.warn("no parser for %s/%s", event_type, etype)
         return None

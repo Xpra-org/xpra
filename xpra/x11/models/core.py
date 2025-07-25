@@ -522,6 +522,8 @@ class CoreX11WindowModel(WindowModelStub):
     def _read_xshape(self, x: int = 0, y: int = 0) -> dict[str, Any]:
         if not X11Window.displayHasXShape() or not XSHAPE:
             return {}
+        from xpra.x11.bindings.shape import init_xshape_events
+        init_xshape_events()
         extents = X11Window.XShapeQueryExtents(self.xid)
         if not extents:
             shapelog("read_shape for window %#x: no extents", self.xid)

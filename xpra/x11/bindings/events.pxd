@@ -8,3 +8,10 @@ from xpra.x11.bindings.xlib cimport Display, XEvent
 
 cdef object parse_xevent(Display *d, XEvent *e)
 cdef void init_x11_events(Display *display)
+cdef void add_event_type(int event, str name, str event_name, str child_event_name)
+
+ctypedef object (*PARSE_XEVENT)(Display* display, XEvent *event)
+
+cdef object new_x11_event(XEvent *e)
+
+cdef void add_parser(unsigned int event, PARSE_XEVENT parser)
