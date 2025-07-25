@@ -7,6 +7,7 @@ from time import monotonic
 from math import log as mathlog, sqrt
 from typing import Any
 
+from xpra.util.env import envint
 from xpra.server.cystats import (
     queue_inspect, logp, time_weighted_average,
     calculate_timesize_weighted_average_score,
@@ -14,6 +15,8 @@ from xpra.server.cystats import (
 from xpra.log import Logger
 
 log = Logger("server", "stats")
+
+LOSSLESS_STICKYNESS = envint("XPRA_LOSSLESS_STICKYNESS", 8)
 
 
 def get_low_limit(mmap_enabled: bool, window_dimensions: tuple[int, int]) -> int:
@@ -353,8 +356,10 @@ def get_target_quality(window_dimensions: tuple[int, int], batch,
 
     # apply min-quality:
     mq = min(100, max(min_quality, 0))
-    quality = int(mq + (100 - mq) * target)
+    quality = round(mq + (100 - mq) * target)
     quality = max(0, mq, min(100, quality))
+    if quality >= (100 - LOSSLESS_STICKYNESS):
+        quality = 100
 
     info.update({
         "min-quality": min_quality,
@@ -369,4 +374,4 @@ def get_target_quality(window_dimensions: tuple[int, int], batch,
             "boost": int(comp_boost * 100),
         },
     })
-    return info, int(quality)
+    return info, quality
