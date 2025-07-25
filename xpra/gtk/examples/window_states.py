@@ -2,6 +2,7 @@
 # Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+import os
 
 from xpra.os_util import gi_import
 from xpra.platform import program_context
@@ -106,11 +107,23 @@ def make_window() -> Gtk.Window:
 
     add_buttons("skip taskbar", skip_taskbar, "not skip taskbar", notskip_taskbar)
 
+    def may_need_x11() -> None:
+        from xpra.util.system import is_X11
+        if is_X11() and not os.environ.get("X11_DISPLAY_SOURCE"):
+            os.environ["X11_DISPLAY_SOURCE"] = "1"
+            try:
+                from xpra.x11.bindings.posix_display_source import init_posix_display_source  # @UnresolvedImport
+                init_posix_display_source()
+            except ImportError:
+                pass
+
     def shade() -> None:
+        may_need_x11()
         from xpra.platform.gui import set_shaded
         set_shaded(window.get_window(), True)
 
     def unshade() -> None:
+        may_need_x11()
         from xpra.platform.gui import set_shaded
         set_shaded(window.get_window(), False)
 
