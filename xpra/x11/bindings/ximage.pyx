@@ -64,8 +64,10 @@ cdef extern from "Python.h":
     int PyBUF_READ
     int PyBUF_WRITE
 
+
 cdef extern from "stdlib.h":
     int posix_memalign(void **memptr, size_t alignment, size_t size)
+
 
 cdef extern from "sys/ipc.h":
     ctypedef struct key_t:
@@ -74,6 +76,7 @@ cdef extern from "sys/ipc.h":
     int IPC_CREAT
     int IPC_RMID
 
+
 cdef extern from "sys/shm.h":
     int shmget(key_t __key, size_t __size, int __shmflg)
     void *shmat(int __shmid, const void *__shmaddr, int __shmflg)
@@ -81,6 +84,7 @@ cdef extern from "sys/shm.h":
     ctypedef struct shmid_ds:
         pass
     int shmctl(int shmid, int cmd, shmid_ds *buf)
+
 
 cdef extern from "errno.h" nogil:
     int errno
@@ -91,14 +95,19 @@ ctypedef unsigned short CARD16
 ctypedef CARD32 Colormap
 DEF XNone = 0
 
+
 cdef extern from "X11/X.h":
     unsigned long NoSymbol
+
 
 cdef extern from "X11/Xatom.h":
     int XA_RGB_DEFAULT_MAP
     int XA_RGB_BEST_MAP
 
+
 cdef extern from "X11/Xlib.h":
+    int XFreePixmap(Display *, Pixmap pixmap)
+
     void XQueryColors(Display *display, Colormap colormap, XColor defs_in_out[], int ncolors)
     VisualID XVisualIDFromVisual(Visual *visual)
 
@@ -115,14 +124,14 @@ cdef extern from "X11/Xlib.h":
                         int *x_return, int *y_return, unsigned int  *width_return, unsigned int *height_return,
                         unsigned int *border_width_return, unsigned int *depth_return)
 
+
 cdef extern from "X11/Xutil.h":
     pass
 
+
 cdef extern from "X11/extensions/Xcomposite.h":
-    Bool XCompositeQueryExtension(Display *, int * major, int * minor)
-    Status XCompositeQueryVersion(Display *, int * major, int * minor)
-    int XFreePixmap(Display *, Pixmap pixmap)
     Pixmap XCompositeNameWindowPixmap(Display *xdisplay, Window xwindow)
+
 
 cdef extern from "X11/extensions/XShm.h":
     unsigned int ShmCompletion
@@ -174,6 +183,7 @@ RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210, RGB565, BGR5
 
 
 cdef int ximage_counter = 0
+
 
 cdef class XImageWrapper:
     """
