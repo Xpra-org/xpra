@@ -688,7 +688,7 @@ def has_module(name: str) -> bool:
 
 
 def supports_x11() -> bool:
-    if OSX or WIN32:
+    if OSX:
         return False
     return has_module("xpra.x11")
 

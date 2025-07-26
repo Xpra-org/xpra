@@ -2128,7 +2128,7 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args: list[st
             "seamless", "desktop", "monitor", "expand",
             "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
     ):
-        if OSX or WIN32:
+        if OSX or (WIN32 and not find_spec("xpra.x11")):
             raise InitException(f"{mode} is not supported on this platform")
         if mode != "expand" and not find_spec("xpra.x11"):
             raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
