@@ -44,10 +44,6 @@ cdef extern from "sys/shm.h":
     int shmctl(int shmid, int cmd, shmid_ds *buf)
 
 
-cdef extern from "errno.h" nogil:
-    int errno
-    int EINVAL
-
 ctypedef unsigned long CARD32
 ctypedef CARD32 Colormap
 DEF XNone = 0
@@ -146,9 +142,7 @@ cdef class XShmWrapper:
         if self.shminfo.shmid < 0:
             log.error("XShmWrapper.setup() shmget(PRIVATE, %i bytes, %#x) failed, bytes_per_line=%i, width=%i, height=%i", size, IPC_CREAT | 0777, self.image.bytes_per_line, self.width, self.height)
             self.cleanup()
-            #only try again if we get EINVAL,
-            #the other error codes probably mean this is never going to work..
-            return False, errno==EINVAL, errno!=EINVAL
+            return False, False, False
         # Attach:
         self.image.data = <char *> shmat(self.shminfo.shmid, NULL, 0)
         self.shminfo.shmaddr = self.image.data
