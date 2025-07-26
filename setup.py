@@ -2624,9 +2624,9 @@ if x11_ENABLED:
     ace("xpra.x11.bindings.posix_display_source", "x11")
     ace("xpra.x11.bindings.core", "x11")
     ace("xpra.x11.bindings.ximage", "x11")
-    ace("xpra.x11.bindings.shm", "x11")
     ace("xpra.x11.bindings.test", "xtst")
     if not WIN32:
+        ace("xpra.x11.bindings.shm", "x11")
         ace("xpra.x11.bindings.window", "x11")
         ace("xpra.x11.bindings.xwayland", "x11")
         ace("xpra.x11.bindings.shape", "x11")
