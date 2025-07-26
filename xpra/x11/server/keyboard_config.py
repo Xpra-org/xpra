@@ -28,6 +28,7 @@ from xpra.x11.xkbhelper import (
     DEBUG_KEYSYMS,
 )
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
+from xpra.x11.bindings.test import XTestBindings
 from xpra.log import Logger
 
 log = Logger("keyboard")
@@ -35,6 +36,7 @@ verboselog = Logger("keyboard", "verbose")
 
 Gdk = gi_import("Gdk")
 
+XTest = XTestBindings()
 X11Keyboard = X11KeyboardBindings()
 
 MAP_MISSING_MODIFIERS: bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
@@ -686,8 +688,9 @@ class KeyboardConfig(KeyboardConfigBase):
                 log.warn(" %s", csv(fa))
             # this should never happen.. but if it does?
             # something didn't work, use the big hammer and start again from scratch:
-            log.warn(" keys still pressed=%s", X11Keyboard.get_keycodes_down())
-            X11Keyboard.unpress_all_keys()
+            keycodes = X11Keyboard.get_keycodes_down()
+            log.warn(" keys still pressed=%s", keycodes)
+            XTest.unpress_keys(tuple(keycodes.keys()))
             log.warn(" doing a full keyboard reset, keys now pressed=%s", X11Keyboard.get_keycodes_down())
             # and try to set the modifiers one last time:
             current = filtered_modifiers_set(self.get_current_mask())
@@ -735,10 +738,10 @@ class KeyboardConfig(KeyboardConfigBase):
                 keycodes = pressed + others
             for keycode in keycodes:
                 if nuisance:
-                    X11Keyboard.xtest_fake_key(keycode, True)
-                    X11Keyboard.xtest_fake_key(keycode, False)
+                    XTest.xtest_fake_key(keycode, True)
+                    XTest.xtest_fake_key(keycode, False)
                 else:
-                    X11Keyboard.xtest_fake_key(keycode, press)
+                    XTest.xtest_fake_key(keycode, press)
                 new_press = modifier in self.get_current_mask()
                 success = not VERIFY_MODIFIERS or new_press == press
                 if success:
@@ -749,7 +752,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 log("%s %s with keycode %s did not work", info, modifier, keycode)
                 if press and not nuisance:
                     log(" trying to unpress it!")
-                    X11Keyboard.xtest_fake_key(keycode, False)
+                    XTest.xtest_fake_key(keycode, False)
                     # maybe doing the full keypress (down+up) worked:
                     new_press = modifier in self.get_current_mask()
                     if new_press == press:

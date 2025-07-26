@@ -16,6 +16,7 @@ from xpra.os_util import gi_import
 from xpra.x11.bindings.core import set_context_check, X11CoreBindings, get_root_xid
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
+from xpra.x11.bindings.test import XTestBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.x11.server import server_uuid
@@ -76,13 +77,13 @@ class XTestPointerDevice:
     def move_pointer(x: int, y: int, props=None) -> None:
         pointerlog("xtest_fake_motion%s", (x, y, props))
         with xsync:
-            X11KeyboardBindings().xtest_fake_motion(x, y)
+            XTestBindings().xtest_fake_motion(x, y)
 
     @staticmethod
     def click(button: int, pressed: bool, props: dict) -> None:
         pointerlog("xtest_fake_button(%i, %s, %s)", button, pressed, props)
         with xsync:
-            X11KeyboardBindings().xtest_fake_button(button, pressed)
+            XTestBindings().xtest_fake_button(button, pressed)
 
     @staticmethod
     def has_precise_wheel() -> bool:
@@ -132,21 +133,26 @@ class X11ServerCore(GTKServerBase):
             # if some x11 atoms aren't defined, so we define them in advance:
             X11CoreBindings().intern_atoms(window_type_atoms)
         with xlog:
-            if features.clipboard or features.cursor:
-                try:
-                    from xpra.x11.bindings.fixes import init_xfixes_events
-                    init_xfixes_events()
-                except ImportError:
-                    log.warn("Warning: XFixes bindings not available, clipboard and cursor features may not work")
-            if features.keyboard:
-                try:
-                    from xpra.x11.bindings.xkb import init_xkb_events
-                    init_xkb_events()
-                except ImportError:
-                    log.warn("Warning: XKB bindings not available, keyboard features may not work")
+            self.init_x11_extensions()
             from xpra.x11.gtk.bindings import init_x11_filter
             self.x11_filter = init_x11_filter()
             assert self.x11_filter
+
+    def init_x11_extensions(self) -> None:
+        if features.clipboard or features.cursor:
+            try:
+                from xpra.x11.bindings.fixes import init_xfixes_events
+                init_xfixes_events()
+            except ImportError:
+                log("init_xfixes_events()", exc_info=True)
+                log.warn("Warning: XFixes bindings not available, clipboard and cursor features may not work")
+        if features.keyboard:
+            try:
+                from xpra.x11.bindings.xkb import init_xkb_events
+                init_xkb_events()
+            except ImportError:
+                log("init_xkb_events()", exc_info=True)
+                log.warn("Warning: XKB bindings not available, keyboard features may not work")
 
     def init_uuid(self) -> None:
         super().init_uuid()
@@ -400,7 +406,8 @@ class X11ServerCore(GTKServerBase):
     def get_cursor_image(self):
         # must be called from the UI thread!
         with xlog:
-            return X11KeyboardBindings().get_cursor_image()
+            from xpra.x11.bindings.fixes import XFixesBindings
+            return XFixesBindings().get_cursor_image()
 
     def get_cursor_data(self, skip_default=True) -> tuple[Any, Any]:
         # must be called from the UI thread!
@@ -696,7 +703,7 @@ class X11ServerCore(GTKServerBase):
         if keycode < mink or keycode > maxk:
             return
         with xsync:
-            X11KeyboardBindings().xtest_fake_key(keycode, press)
+            XTestBindings().xtest_fake_key(keycode, press)
 
     def do_x11_cursor_event(self, event) -> None:
         cursors = getattr(self, "cursors", False)

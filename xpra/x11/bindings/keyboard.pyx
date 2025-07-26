@@ -26,6 +26,7 @@ from xpra.x11.bindings.xlib cimport (
     XGrabKey, XUngrabKey,
     MappingBusy, GrabModeAsync, AnyKey, AnyModifier, NoSymbol,
 )
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 from libc.stdint cimport uintptr_t      # pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
 
@@ -33,7 +34,6 @@ from libc.stdlib cimport free, malloc
 DEF PATH_MAX = 1024
 DEF DFLT_XKB_RULES_FILE = "base"
 
-DEF screen_number = 0
 
 ###################################
 # Headers, python magic
@@ -167,59 +167,6 @@ cdef extern from "X11/XKBlib.h":
     void XkbFreeKeyboard(XkbDescPtr xkb, unsigned int which, Bool free_all)
 
 
-cdef extern from "X11/extensions/XTest.h":
-    Bool XTestQueryExtension(Display *display, int *event_base_return, int *error_base_return,
-                                int * major, int * minor)
-    int XTestFakeKeyEvent(Display *, unsigned int keycode,
-                          Bool is_press, unsigned long delay)
-    int XTestFakeButtonEvent(Display *, unsigned int button,
-                             Bool is_press, unsigned long delay)
-    int XTestFakeMotionEvent(Display * display, int screen_number, int x, int y, unsigned long delay)
-    int XTestFakeRelativeMotionEvent(Display * display, int x, int y, unsigned long delay)
-
-
-cdef extern from "X11/extensions/Xfixes.h":
-    ctypedef struct XFixesCursorNotify:
-        char* subtype
-        Window XID
-        int cursor_serial
-        int time
-        char* cursor_name
-    ctypedef struct XFixesCursorImage:
-        short x
-        short y
-        unsigned short width
-        unsigned short height
-        unsigned short xhot
-        unsigned short yhot
-        unsigned long cursor_serial
-        unsigned long* pixels
-        Atom atom
-        char* name
-    ctypedef struct XFixesCursorNotifyEvent:
-        int type
-        unsigned long serial
-        Bool send_event
-        Display *display
-        Window window
-        int subtype
-        unsigned long cursor_serial
-        Time timestamp
-        Atom cursor_name
-
-    Bool XFixesQueryExtension(Display *, int *event_base, int *error_base)
-    XFixesCursorImage* XFixesGetCursorImage(Display *)
-
-    ctypedef XID XserverRegion
-    XserverRegion XFixesCreateRegion(Display *, XRectangle *, int nrectangles)
-    void XFixesDestroyRegion(Display *, XserverRegion)
-
-
-cdef extern from "X11/extensions/xfixeswire.h":
-    unsigned long XFixesDisplayCursorNotifyMask
-    void XFixesSelectCursorInput(Display *, Window w, long mask)
-
-
 cdef object NS(char *v):
     if v==NULL:
         return "NULL"
@@ -245,9 +192,6 @@ cdef inline bytes b(value: str):
 # to the original C xmodmap code
 
 
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
-
-
 cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
     cdef XModifierKeymap* work_keymap
@@ -256,11 +200,6 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
     cdef int Xkb_checked
     cdef int Xkb_version_major
     cdef int Xkb_version_minor
-    cdef int XTest_checked
-    cdef int XTest_version_major
-    cdef int XTest_version_minor
-    cdef int XFixes_checked
-    cdef int XFixes_present
 
     def __init__(self):
         self.work_keymap = NULL
@@ -862,8 +801,8 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
     cdef _get_keycodes_down(self):
         cdef char[32] keymap
-        masktable = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80]
-        down = []
+        masktable: Sequence[int] = (0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80)
+        down: list[int] = []
         XQueryKeymap(self.display, keymap)
         for i in range(0, 256):
             if keymap[i >> 3] & masktable[i & 7]:
@@ -893,13 +832,6 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         for keycode in keycodes:
             keys[keycode] = get_keysyms(keycode)
         return keys
-
-    def unpress_all_keys(self) -> None:
-        if not self.hasXTest():
-            return
-        keycodes = self._get_keycodes_down()
-        for keycode in keycodes:
-            XTestFakeKeyEvent(self.display, keycode, False, 0)
 
     cdef list native_xmodmap(self, instructions: Iterable):
         self.context_check("native_xmodmap")
@@ -990,49 +922,6 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         # bellID = XkbDfltXIId
         return XkbDeviceBell(self.display, xwindow, XkbUseCoreKbd, bellClass, XkbDfltXIId,  percent, name_atom)
 
-    def hasXTest(self) -> bool:
-        self.context_check("hasXTest")
-        if self.XTest_checked:
-            return self.XTest_version_major>0 or self.XTest_version_minor>0
-        self.XTest_checked = True
-        if os.environ.get("XPRA_X11_XTEST", "1")!="1":
-            log.warn("XTest disabled using XPRA_X11_XTEST")
-            return False
-        cdef int evbase, errbase
-        cdef int major, minor
-        cdef int r = XTestQueryExtension(self.display, &evbase, &errbase, &major, &minor)
-        if not r:
-            log.warn("Warning: XTest extension is missing")
-            return False
-        log("XTestQueryExtension found version %i.%i with event base=%i, error base=%i", major, minor, evbase, errbase)
-        self.XTest_version_major = major
-        self.XTest_version_minor = minor
-        return True
-
-    def xtest_fake_key(self, keycode: int, is_press: bool) -> bool:
-        if not self.hasXTest():
-            return False
-        self.context_check("xtest_fake_key")
-        return XTestFakeKeyEvent(self.display, keycode, is_press, 0)
-
-    def xtest_fake_button(self, button: int, is_press: bool) -> bool:
-        if not self.hasXTest():
-            return False
-        self.context_check("xtest_fake_button")
-        return XTestFakeButtonEvent(self.display, button, is_press, 0)
-
-    def xtest_fake_motion(self, int x, int y, int delay=0) -> bool:
-        if not self.hasXTest():
-            return False
-        self.context_check("xtest_fake_motion")
-        return XTestFakeMotionEvent(self.display, screen_number, x, y, delay)
-
-    def xtest_fake_relative_motion(self, int x, int y, int delay=0) -> bool:
-        if not self.hasXTest():
-            return False
-        self.context_check("xtest_fake_relative_motion")
-        return XTestFakeRelativeMotionEvent(self.display, x, y, delay)
-
     def get_key_repeat_rate(self) -> Tuple[int, int]:
         if not self.hasXkb():
             return None
@@ -1052,68 +941,6 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef unsigned int cdelay = delay
         cdef unsigned int cinterval = interval
         return XkbSetAutoRepeatRate(self.display, deviceSpec, cdelay, cinterval)
-
-    def hasXFixes(self) -> bool:
-        self.context_check("hasXFixes")
-        cdef int evbase, errbase
-        if not self.XFixes_checked:
-            self.XFixes_checked = True
-            if os.environ.get("XPRA_X11_XFIXES", "1")!="1":
-                log.warn("XFixes disabled using XPRA_X11_XFIXES")
-            else:
-                self.XFixes_present = XFixesQueryExtension(self.display, &evbase, &errbase)
-                log("XFixesQueryExtension version present: %s", bool(self.XFixes_present))
-                if self.XFixes_present:
-                    log("XFixesQueryExtension event base=%i, error base=%i", evbase, errbase)
-                else:
-                    log.warn("Warning: XFixes extension is missing")
-        return bool(self.XFixes_present)
-
-    def get_cursor_image(self) -> List | None:
-        self.context_check("get_cursor_image")
-        if not self.hasXFixes():
-            return None
-        cdef XFixesCursorImage* image = NULL
-        cdef int n, i = 0
-        cdef unsigned char r, g, b, a
-        cdef unsigned long argb
-        try:
-            image = XFixesGetCursorImage(self.display)
-            if image==NULL:
-                return None
-            n = image.width*image.height
-            # Warning: we need to iterate over the input one *long* at a time
-            # (even though only 4 bytes are set - and longs are 8 bytes on 64-bit..)
-            pixels = bytearray(n*4)
-            while i<n:
-                argb = image.pixels[i] & 0xffffffff
-                a = (argb >> 24)   & 0xff
-                r = (argb >> 16)   & 0xff
-                g = (argb >> 8)    & 0xff
-                b = (argb)         & 0xff
-                pixels[i*4]     = r
-                pixels[i*4+1]   = g
-                pixels[i*4+2]   = b
-                pixels[i*4+3]   = a
-                i += 1
-            return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
-                int(image.cursor_serial), bytes(pixels), s(image.name)]
-        finally:
-            if image!=NULL:
-                XFree(image)
-
-    def selectCursorChange(self, on: bool) -> bool:
-        self.context_check("selectCursorChange")
-        if not self.hasXFixes():
-            log.warn("Warning: no cursor change notifications without XFixes support")
-            return False
-        cdef unsigned int mask = 0
-        cdef Window root_window = XDefaultRootWindow(self.display)
-        if on:
-            mask = XFixesDisplayCursorNotifyMask
-        # no return value..
-        XFixesSelectCursorInput(self.display, root_window, mask)
-        return True
 
     def selectBellNotification(self, on: bool) -> bool:
         self.context_check("selectBellNotification")

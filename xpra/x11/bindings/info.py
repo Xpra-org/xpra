@@ -23,10 +23,8 @@ with X11DisplayContext() as context:
 
     from xpra.x11.bindings.keyboard import X11KeyboardBindings
     keyboard = X11KeyboardBindings()
-    print("XFixes=%d" % bool(keyboard.hasXFixes()))
-    print("Xkb=%d" % bool(keyboard.hasXkb()))
-    print("XTest=%d" % bool(keyboard.hasXTest()))
-    print(" layout group=%i", keyboard.get_layout_group())
+    print("Xkb=%s" % bool(keyboard.hasXkb()))
+    print(" layout group=%i" % keyboard.get_layout_group())
     print(" default properties=%s" % keyboard.get_default_properties())
     print(" Xkb properties=%s" % keyboard.getXkbProperties())
     print(" modifier map=%s" % (keyboard.get_modifier_map(), ))
@@ -35,6 +33,14 @@ with X11DisplayContext() as context:
     print(" keycodes down=%s" % (keyboard.get_keycodes_down(), ))
     print(" pointer=%s" % (keyboard.query_pointer(), ))
     print(" mask=%s" % (keyboard.query_mask(), ))
+
+    from xpra.x11.bindings.test import XTestBindings
+    test = XTestBindings()
+    print("XTest=%s" % bool(test.hasXTest()))
+
+    from xpra.x11.bindings.fixes import XFixesBindings
+    fixes = XFixesBindings()
+    print("XFixes=%s" % bool(fixes.hasXFixes()))
 
     from xpra.x11.bindings.randr import RandRBindings
     randr = RandRBindings()

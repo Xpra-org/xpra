@@ -299,6 +299,7 @@ cdef extern from "X11/extensions/xfixeswire.h":
     unsigned int XFixesSelectionWindowDestroyNotifyMask
     unsigned int XFixesSelectionClientCloseNotifyMask
 
+
 cdef extern from "X11/extensions/Xfixes.h":
     ctypedef struct XFixesCursorNotify:
         char* subtype
@@ -306,6 +307,7 @@ cdef extern from "X11/extensions/Xfixes.h":
         int cursor_serial
         int time
         char* cursor_name
+
     ctypedef struct XFixesCursorImage:
         short x
         short y
@@ -317,6 +319,7 @@ cdef extern from "X11/extensions/Xfixes.h":
         unsigned long* pixels
         Atom atom
         char* name
+
     ctypedef struct XFixesCursorNotifyEvent:
         int type
         unsigned long serial
@@ -341,27 +344,6 @@ cdef extern from "X11/extensions/Xfixes.h":
     void XFixesSelectSelectionInput(Display *dpy, Window win, Atom selection, unsigned long eventMask)
 
 
-###################################
-# Xdamage
-###################################
-
-cdef extern from "X11/extensions/Xdamage.h":
-    ctypedef XID Damage
-    unsigned int XDamageReportDeltaRectangles
-    #unsigned int XDamageReportRawRectangles
-    unsigned int XDamageNotify
-    ctypedef struct XDamageNotifyEvent:
-        Damage damage
-        int level
-        Bool more
-        XRectangle area
-    Bool XDamageQueryExtension(Display *, int * event_base, int *)
-    Status XDamageQueryVersion(Display *, int * major, int * minor)
-    Damage XDamageCreate(Display *, Drawable, int level)
-    void XDamageDestroy(Display *, Damage)
-    void XDamageSubtract(Display *, Damage, XserverRegion repair, XserverRegion parts)
-
-
 cdef inline long cast_to_long(i):
     if i < 0:
         return <long>i
@@ -371,9 +353,9 @@ cdef inline long cast_to_long(i):
 
 class PropertyError(Exception):
     pass
+
 class BadPropertyType(PropertyError):
     pass
-
 
 class PropertyOverflow(PropertyError):
     pass
@@ -727,47 +709,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFixesSetWindowShapeRegion(self.display, window, ShapeBounding, 0, 0, 0)
         XFixesSetWindowShapeRegion(self.display, window, ShapeInput, 0, 0, region)
         XFixesDestroyRegion(self.display, region)
-
-    ###################################
-    # Xdamage
-    ###################################
-    def ensure_XDamage_support(self) -> None:
-        self.ensure_extension_support(1, 0, "DAMAGE",
-                                  XDamageQueryExtension,
-                                  XDamageQueryVersion)
-
-    def XDamageCreate(self, Window xwindow) -> None:
-        self.context_check("XDamageCreate")
-        return XDamageCreate(self.display, xwindow, XDamageReportDeltaRectangles)
-
-    def XDamageDestroy(self, Damage handle) -> None:
-        self.context_check("XDamageDestroy")
-        XDamageDestroy(self.display, handle)
-
-    def XDamageSubtract(self, Damage handle) -> None:
-        self.context_check("XDamageSubtract")
-        # def xdamage_acknowledge(display_source, handle, x, y, width, height):
-        # cdef XRectangle rect
-        # rect.x = x
-        # rect.y = y
-        # rect.width = width
-        # rect.height = height
-        # repair = XFixesCreateRegion(display, &rect, 1)
-        # XDamageSubtract(display, handle, repair, XNone)
-        # XFixesDestroyRegion(display, repair)
-
-        # DeltaRectangles mode + XDamageSubtract is broken, because repair
-        # operations trigger a flood of re-reported events (see freedesktop.org bug
-        # #14648 for details).  So instead we always repair all damage.  This
-        # means we may get redundant damage notifications if areas outside of the
-        # rectangle we actually repaired get re-damaged, but it avoids the
-        # quadratic blow-up that fixing just the correct area causes, and still
-        # reduces the number of events we receive as compared to just using
-        # RawRectangles mode.  This is very important for things like, say,
-        # drawing a scatterplot in R, which may make hundreds of thousands of
-        # draws to the same location, and with RawRectangles mode xpra can lag by
-        # seconds just trying to keep track of the damage.
-        XDamageSubtract(self.display, handle, XNone, XNone)
 
     ###################################
     # Smarter convenience wrappers

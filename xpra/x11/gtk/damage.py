@@ -14,14 +14,15 @@ from xpra.x11.common import Unmanageable
 
 from xpra.x11.bindings.ximage import XImageBindings
 from xpra.x11.bindings.window import constants, X11WindowBindings
-from xpra.x11.bindings.damage import init_damage_events
+from xpra.x11.bindings.damage import init_damage_events, XDamageBindings
 from xpra.log import Logger
 
 log = Logger("x11", "window", "damage")
 
 XImage = XImageBindings()
 X11Window = X11WindowBindings()
-X11Window.ensure_XDamage_support()
+XDamage = XDamageBindings()
+XDamage.ensure_XDamage_support()
 assert init_damage_events()
 
 StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
@@ -65,7 +66,7 @@ class WindowDamageHandler:
 
     def create_damage_handle(self) -> None:
         if self.xid:
-            self._damage_handle = X11Window.XDamageCreate(self.xid)
+            self._damage_handle = XDamage.XDamageCreate(self.xid)
             log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
 
     def destroy(self) -> None:
@@ -85,7 +86,7 @@ class WindowDamageHandler:
         if dh:
             self._damage_handle = 0
             with xlog:
-                X11Window.XDamageDestroy(dh)
+                XDamage.XDamageDestroy(dh)
         sh = self._xshm_handle
         if sh:
             self._xshm_handle = None
@@ -103,7 +104,7 @@ class WindowDamageHandler:
         if dh and self.xid:
             # "Synchronously modifies the regions..." so unsynced?
             with xlog:
-                X11Window.XDamageSubtract(dh)
+                XDamage.XDamageSubtract(dh)
             self.invalidate_pixmap()
 
     def invalidate_pixmap(self) -> None:

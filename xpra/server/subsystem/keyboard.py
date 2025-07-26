@@ -141,12 +141,14 @@ class KeyboardServer(StubServerMixin):
             with xlog:
                 clean_keyboard_state()
             with xlog:
+                from xpra.x11.bindings.test import XTestBindings
                 from xpra.x11.bindings.keyboard import X11KeyboardBindings
+                XTest = XTestBindings()
                 X11Keyboard = X11KeyboardBindings()
-                if not X11Keyboard.hasXTest():
-                    log.error("Error: keyboard and mouse disabled")
+                if not XTest.hasXTest():
+                    log.error("Error: keyboard and mouse disabled without XTest support")
                 elif not X11Keyboard.hasXkb():
-                    log.error("Error: limited keyboard support")
+                    log.error("Error: limited keyboard support without XKB")
             self.input_method = configure_imsettings_env(self.input_method)
             if self.input_method == "ibus":
                 start_command: Callable = getattr(self, "start_command", noop)

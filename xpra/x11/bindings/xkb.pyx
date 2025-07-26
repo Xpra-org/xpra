@@ -8,11 +8,6 @@ from xpra.x11.bindings.xlib cimport Display, Window, Atom, Time, Bool, XEvent
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, new_x11_event, add_event_type, atom_str
 
-from xpra.log import Logger
-
-log = Logger("x11", "bindings", "keyboard")
-
-
 from xpra.x11.bindings.xlib cimport (
     Display, Window, Visual, XID, XRectangle, Atom, Time, CARD32, Bool,
     XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
@@ -21,6 +16,12 @@ from xpra.x11.bindings.xlib cimport (
     XDefaultRootWindow,
     XGetAtomName,
 )
+
+from xpra.log import Logger
+
+log = Logger("x11", "bindings", "keyboard")
+verbose = Logger("x11", "bindings", "keyboard", "verbose")
+
 
 cdef extern from "X11/extensions/XKB.h":
     unsigned int XkbUseCoreKbd
@@ -37,7 +38,7 @@ cdef extern from "X11/extensions/XKB.h":
 
 
 cdef extern from "X11/XKBlib.h":
-    Bool XkbQueryExtension(Display *, int *opcodeReturn, int *eventBaseReturn, int *errorBaseReturn, int *majorRtrn, int *minorRtrn)
+    Bool XkbQueryExtension(Display *, int *opcodeReturn, int *event_base, int *error_base, int *major, int *minor)
 
 
 cdef extern from "X11/extensions/XKBproto.h":
@@ -66,7 +67,7 @@ def init_xkb_events() -> bool:
     cdef int error_base = 0
     cdef int major = 0
     cdef int minor = 0
-    if not XkbQueryExtension(xdisplay, &opcode, &event_base, &error_base, &major, &minor):
+    if not XkbQueryExtension(display, &opcode, &event_base, &error_base, &major, &minor):
         log.warn("Warning: Xkb extension is not available")
         return False
     if event_base <= 0:

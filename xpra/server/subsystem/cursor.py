@@ -40,14 +40,14 @@ class CursorManager(StubServerMixin):
         if is_X11():
             from xpra.gtk.error import xlog
             with xlog:
-                from xpra.x11.bindings.keyboard import X11KeyboardBindings
-                X11Keyboard = X11KeyboardBindings()
-                if not X11Keyboard.hasXFixes() and self.cursors:
+                from xpra.x11.bindings.fixes import XFixesBindings
+                XFixes = XFixesBindings()
+                if not XFixes.hasXFixes() and self.cursors:
                     log.error("Error: cursor forwarding support disabled")
                     self.cursors = False
                     return
-                X11KeyboardBindings().selectCursorChange(True)
-                self.default_cursor_image = X11Keyboard.get_cursor_image()
+                XFixes.selectCursorChange(True)
+                self.default_cursor_image = XFixes.get_cursor_image()
                 log("get_default_cursor=%s", Ellipsizer(self.default_cursor_image))
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
@@ -141,7 +141,7 @@ class CursorManager(StubServerMixin):
                 from xpra.x11.bindings.keyboard import X11KeyboardBindings
                 info |= {
                     "Xkb": X11KeyboardBindings().hasXkb(),
-                    "XTest": X11KeyboardBindings().hasXTest(),
+                    "XFixes": X11KeyboardBindings().hasXFixes(),
                 }
         return {CursorManager.PREFIX: info}
 
