@@ -1253,7 +1253,12 @@ def add_pkgconfig_tokens(kw: dict, s: str, add_to="extra_link_args") -> None:
     }
     ignored_flags = kw.get("ignored_flags", ())
     ignored_tokens = kw.get("ignored_tokens", ())
-    for token in shlex.split(s):
+    skip = False
+    tokens = shlex.split(s)
+    for i, token in enumerate(tokens):
+        if skip:
+            skip = False
+            continue
         if token in ignored_tokens:
             continue
         if token[:2] in ignored_flags:
@@ -1263,7 +1268,9 @@ def add_pkgconfig_tokens(kw: dict, s: str, add_to="extra_link_args") -> None:
             if len(token)>2:
                 add_to_keywords(kw, flag_map[token[:2]], token[2:])
             else:
-                print(f"Warning: invalid token {token!r}")
+                next_arg = tokens[i + 1]
+                add_to_keywords(kw, flag_map[token], next_arg)
+                skip = True
         else:
             add_to_keywords(kw, add_to, token)
 
@@ -1296,7 +1303,8 @@ def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
         print(f"exec_pkgconfig({pkgs_options}, {ekw})")
     kw = dict(ekw)
     for d in os.environ.get("INCLUDE_DIRS", "").split(os.pathsep):
-        add_to_keywords(kw, 'extra_compile_args', "-I", d)
+        if d.strip("'") and d.strip('"'):
+            add_to_keywords(kw, 'extra_compile_args', "-I", d)
     optimize = kw.pop("optimize", 0)
     if Os_ENABLED:
         optimize = "s"
