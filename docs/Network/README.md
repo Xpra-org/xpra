@@ -83,6 +83,7 @@ client.latency.absmin=1
 </details>
 
 The performance of xpra will be affected by your network connection speed, in particular [bufferbloat](https://en.wikipedia.org/wiki/Bufferbloat) is known to cause severe performance degradations as xpra is quite sensitive to network jitter and latency, try to [eliminate bufferbloat in your network](https://www.bufferbloat.net/projects/bloat/wiki/What_can_I_do_about_Bufferbloat/).
+[This is now a solvable problem](https://cacm.acm.org/practice/you-dont-know-jack-about-bandwidth/)
 
 QUIC should offer the lowest latency, though it may need [some tuning](https://github.com/Xpra-org/xpra/issues/3376).
 
