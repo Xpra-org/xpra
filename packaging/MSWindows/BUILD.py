@@ -37,6 +37,7 @@ PACKAGE_PREFIX = os.environ.get("MINGW_PACKAGE_PREFIX", f"mingw-w64-{MSYSTEM_CAR
 MSYS2_PACKAGE_PREFIX = "msys2-"
 MSYS_DLL_PREFIX = "msys-"
 
+X11_DLL_DIR = os.environ.get("X11_DLL_DIR", "E:/vcxsrv")
 
 TIMESTAMP_SERVER = "http://timestamp.digicert.com"
 # alternative:
@@ -883,7 +884,9 @@ def bundle_dlls(*expr: str) -> None:
             continue
         for match in matches:
             name = os.path.basename(match)
-            copyfile(match, f"{DIST}/{name}")
+            target = f"{DIST}/{name}"
+            if not os.path.exists(target):
+                copyfile(match, target)
 
 
 def bundle_openssh() -> None:
@@ -924,6 +927,10 @@ def bundle_desktop_logon() -> None:
     step("Bundling desktop_logon")
     dl_dlls = tuple(f"{MINGW_PREFIX}/bin/{dll}" for dll in ("AxMSTSCLib", "MSTSCLib", "DesktopLogon"))
     bundle_dlls(*dl_dlls)
+
+
+def bundle_x11_dlls() -> None:
+    bundle_dlls(f"{X11_DLL_DIR}/*")
 
 
 def add_cuda(enabled: bool) -> None:
@@ -1400,6 +1407,8 @@ def build(args) -> None:
         bundle_paxec()
     if args.desktop_logon:
         bundle_desktop_logon()
+    if args.x11:
+        bundle_x11_dlls()
     rec_options(args)
     if args.sbom:
         rec_sbom()
