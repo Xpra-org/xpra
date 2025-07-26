@@ -51,7 +51,7 @@ class WindowDamageHandler:
         self._use_xshm: bool = use_xshm
         self._damage_handle: int = 0
         self._xshm_handle = None  # XShmWrapper instance
-        self._contents_handle = None  # PixmapWrapper instance
+        self._contents_handle = None  # DrawableWrapper instance
         self._border_width: int = 0
 
     def __repr__(self):
@@ -178,7 +178,7 @@ class WindowDamageHandler:
             with xsync:
                 shm = self.get_xshm_handle()
                 if shm:
-                    shm_image = shm.get_image(handle.get_pixmap(), x, y, width, height)
+                    shm_image = shm.get_image(handle.get_drawable(), x, y, width, height)
                     if shm_image:
                         return shm_image
         except XError as e:

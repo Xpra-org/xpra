@@ -110,7 +110,8 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
                 add_event_receiver(xid, self, max_receivers=-1)
                 listening.append(xid)
                 xid = parent
-            handle = XImage.get_xcomposite_pixmap(self.xid)
+            pixmap = X11Composite.XCompositeNameWindowPixmap(self.xid)
+            handle = XImage.wrap_drawable(pixmap)
         except Exception:
             try:
                 self._cleanup_listening(listening)

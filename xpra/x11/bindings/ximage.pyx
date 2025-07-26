@@ -5,26 +5,24 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import List, Tuple, Dict
+from typing import Tuple, Dict
 
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
-from xpra.log import Logger
-
-
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 from xpra.x11.bindings.xlib cimport (
     XImage, Display, Pixmap,
-    XColor, Visual, VisualID, XVisualInfo, VisualIDMask,
+    XColor, Visual, VisualID,
     Status, Window, Drawable, Bool,
-    XFree, XWindowAttributes,
+    XWindowAttributes,
     MSBFirst, LSBFirst, ZPixmap,
-    DoRed, DoGreen, DoBlue, AllPlanes,
-    XGetVisualInfo,
+    AllPlanes,
 )
 from libc.stdlib cimport free
 from libc.string cimport memcpy
-from libc.stdint cimport uint64_t, uintptr_t
+from libc.stdint cimport uintptr_t
+
+from xpra.log import Logger
 
 log = Logger("x11", "bindings", "ximage")
 ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
@@ -99,10 +97,6 @@ cdef extern from "X11/Xlib.h":
 
 cdef extern from "X11/Xutil.h":
     pass
-
-
-cdef extern from "X11/extensions/Xcomposite.h":
-    Pixmap XCompositeNameWindowPixmap(Display *xdisplay, Window xwindow)
 
 
 cdef extern from "X11/extensions/XShm.h":
@@ -468,27 +462,26 @@ cdef class XImageWrapper:
         return True
 
 
-cdef int xpixmap_counter = 0
+cdef int drawable_counter = 0
 
 
-cdef class PixmapWrapper:
+cdef class DrawableWrapper:
     cdef Display *display
-    cdef Pixmap pixmap
+    cdef Drawable drawable
     cdef unsigned int width
     cdef unsigned int height
 
-    "Reference count an X Pixmap that needs explicit cleanup."
-    cdef void init(self, Display *display, Pixmap pixmap, unsigned int width, unsigned int height):
+    cdef void init(self, Display *display, Drawable drawable, unsigned int width, unsigned int height):
         self.display = display
-        self.pixmap = pixmap
+        self.drawable = drawable
         self.width = width
         self.height = height
-        global xpixmap_counter
-        xpixmap_counter += 1
-        ximagedebug("%s xpixmap counter: %i", self, xpixmap_counter)
+        global drawable_counter
+        drawable_counter += 1
+        ximagedebug("%s xpixmap counter: %i", self, drawable_counter)
 
     def __repr__(self):
-        return "PixmapWrapper(%#x, %i, %i)" % (self.pixmap, self.width, self.height)
+        return "DrawableWrapper(%#x, %i, %i)" % (self.drawable, self.width, self.height)
 
     def get_width(self) -> int:
         return self.width
@@ -496,38 +489,38 @@ cdef class PixmapWrapper:
     def get_height(self) -> int:
         return self.height
 
-    def get_pixmap(self) -> Pixmap:
-        return self.pixmap
+    def get_drawable(self) -> Drawable:
+        return self.drawable
 
     def get_image(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
-        if not self.pixmap:
+        if not self.drawable:
             log.warn("%s.get_image%s", self, (x, y, width, height))
             return None
         ximagedebug("%s.get_image%s width=%i, height=%i", self, (x, y, width, height), self.width, self.height)
-        if x>=self.width or y>=self.height:
+        if x >= self.width or y >= self.height:
             log("%s.get_image%s position outside image dimensions %ix%i", self, (x, y, width, height), self.width, self.height)
             return None
-        #clamp size to image size:
-        if x+width>self.width:
-            width = self.width-x
-        if y+height>self.height:
-            height = self.height-y
-        return get_image(self.display, self.pixmap, x, y, width, height)
+        # clamp size to image size:
+        if x + width > self.width:
+            width = self.width - x
+        if y + height > self.height:
+            height = self.height - y
+        return get_image(self.display, self.drawable, x, y, width, height)
 
     def __dealloc__(self):
         self.do_cleanup()
 
     cdef void do_cleanup(self):
-        if self.pixmap!=0:
-            XFreePixmap(self.display, self.pixmap)
-            self.pixmap = 0
-            global xpixmap_counter
-            xpixmap_counter -= 1
+        cdef drawable = self.drawable
+        if drawable != 0:
+            self.drawable = 0
+            XFreePixmap(self.display, drawable)
+            global drawable_counter
+            drawable_counter -= 1
 
     def cleanup(self) -> None:
         ximagedebug("%s.cleanup()", self)
         self.do_cleanup()
-
 
 
 cdef XImageWrapper get_image(Display * display, Drawable drawable, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
@@ -543,50 +536,29 @@ cdef XImageWrapper get_image(Display * display, Drawable drawable, unsigned int 
     return xi
 
 
-cdef object xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
-    cdef Window root_window
-    cdef int x, y
-    cdef unsigned int width, height, border, depth
-    cdef Pixmap xpixmap = XCompositeNameWindowPixmap(xdisplay, xwindow)
-    if xpixmap==XNone:
-        return None
-    cdef Status status = XGetGeometry(xdisplay, xpixmap, &root_window,
-                        &x, &y, &width, &height, &border, &depth)
-    if status==0:
-        log("failed to get pixmap dimensions for %#x", xpixmap)
-        XFreePixmap(xdisplay, xpixmap)
-        return None
-    cdef PixmapWrapper pw = PixmapWrapper()
-    pw.init(xdisplay, xpixmap, width, height)
-    return pw
-
-
-cdef object window_pixmap_wrapper(Display *xdisplay, Window xwindow):
-    cdef Window root_window
-    cdef int x, y
-    cdef unsigned width, height, border, depth
-    status = XGetGeometry(xdisplay, xwindow, &root_window,
-                        &x, &y, &width, &height, &border, &depth)
-    if status==0:
-        log("failed to get window dimensions for %#x", xwindow)
-        return None
-    cdef PixmapWrapper pw = PixmapWrapper()
-    pw.init(xdisplay, xwindow, width, height)
-    return pw
-
-
 cdef class XImageBindingsInstance(X11CoreBindingsInstance):
+
     def get_ximage(self, drawable, x, y, width, height):
         self.context_check("get_ximage")
         return get_image(self.display, drawable, x, y, width, height)
 
-    def get_xcomposite_pixmap(self, xwindow):
-        self.context_check("get_xcomposite_pixmap")
-        return xcomposite_name_window_pixmap(self.display, xwindow)
-
     def get_xwindow_pixmap_wrapper(self, xwindow):
-        self.context_check("get_xwindow_pixmap_wrapper")
-        return window_pixmap_wrapper(self.display, xwindow)
+        log("get_xwindow_pixmap_wrapper(%#x)", xwindow)
+        return self.wrap_drawable(xwindow)
+
+    def wrap_drawable(self, drawable):
+        self.context_check("wrap_drawable")
+        cdef Window root_window
+        cdef int x, y
+        cdef unsigned width, height, border, depth
+        status = XGetGeometry(self.display, drawable, &root_window,
+                              &x, &y, &width, &height, &border, &depth)
+        if status == 0:
+            log("failed to get dimensions for %#x", drawable)
+            return None
+        cdef DrawableWrapper pw = DrawableWrapper()
+        pw.init(self.display, drawable, width, height)
+        return pw
 
 
 cdef XImageBindingsInstance singleton = None

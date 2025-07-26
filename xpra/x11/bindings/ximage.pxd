@@ -4,22 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from time import monotonic
-from typing import List, Tuple, Dict
-
-
-from xpra.x11.bindings.xlib cimport (
-    XImage, Display, Pixmap,
-    XColor, Visual, VisualID, XVisualInfo, VisualIDMask,
-    Status, Window, Drawable, Bool,
-    XFree, XWindowAttributes,
-    MSBFirst, LSBFirst, ZPixmap,
-    DoRed, DoGreen, DoBlue, AllPlanes,
-    XGetVisualInfo,
-)
-from libc.stdlib cimport free
-from libc.string cimport memcpy
-from libc.stdint cimport uint64_t, uintptr_t
+from xpra.x11.bindings.xlib cimport XImage, Display, Pixmap
+from libc.stdint cimport uint64_t
 
 
 cdef inline unsigned int roundup(unsigned int n, unsigned int m) noexcept:

@@ -4,9 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.x11.bindings.xlib cimport Display, Drawable, Window, XID, XRectangle, Bool, Status, XEvent
-from xpra.x11.bindings.display_source cimport get_display
-from xpra.x11.bindings.events cimport add_parser, new_x11_event, add_event_type
+from xpra.x11.bindings.xlib cimport Display, Drawable, Window, Pixmap, Bool, Status
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 from xpra.log import Logger
@@ -26,6 +24,7 @@ cdef extern from "X11/extensions/Xcomposite.h":
     void XCompositeUnredirectSubwindows(Display *, Window, int mode)
     Window XCompositeGetOverlayWindow(Display *dpy, Window window)
     void XCompositeReleaseOverlayWindow(Display *dpy, Window window)
+    Pixmap XCompositeNameWindowPixmap(Display *xdisplay, Window xwindow)
 
 
 cdef class XCompositeBindingsInstance(X11CoreBindingsInstance):
@@ -74,6 +73,10 @@ cdef class XCompositeBindingsInstance(X11CoreBindingsInstance):
     def XCompositeReleaseOverlayWindow(self, Window window) -> None:
         self.context_check("XCompositeReleaseOverlayWindow")
         XCompositeReleaseOverlayWindow(self.display, window)
+
+    def XCompositeNameWindowPixmap(self, Window xwindow) -> Pixmap:
+        self.context_check("XCompositeNameWindowPixmap")
+        return XCompositeNameWindowPixmap(self.display, xwindow)
 
 
 cdef XCompositeBindingsInstance singleton = None
