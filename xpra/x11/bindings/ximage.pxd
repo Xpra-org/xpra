@@ -58,6 +58,7 @@ cdef class XImageWrapper:
     cdef uint64_t timestamp
     cdef object palette
     cdef unsigned char full_range
+    cdef unsigned char aligned
 
     cdef void set_image(self, XImage* image)
 

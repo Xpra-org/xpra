@@ -18,6 +18,7 @@ from xpra.x11.bindings.xlib cimport (
     MSBFirst, LSBFirst, ZPixmap,
     AllPlanes,
 )
+from xpra.buffers.membuf cimport memalign, memfree
 from libc.stdlib cimport free
 from libc.string cimport memcpy
 from libc.stdint cimport uintptr_t
@@ -35,10 +36,6 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
     int PyBUF_READ
     int PyBUF_WRITE
-
-
-cdef extern from "stdlib.h":
-    int posix_memalign(void **memptr, size_t alignment, size_t size)
 
 
 cdef extern from "sys/ipc.h":
@@ -179,6 +176,7 @@ cdef class XImageWrapper:
         self.timestamp = int(monotonic()*1000)
         self.palette = palette
         self.full_range = int(full_range)
+        self.aligned = False
 
     cdef void set_image(self, XImage* image):
         assert not self.sub
@@ -362,10 +360,12 @@ cdef class XImageWrapper:
 
         #Note: we can't free the XImage, because it may
         #still be used somewhere else (see XShmWrapper)
-        if posix_memalign(<void **> &self.pixels, 64, py_buf.len):
+        self.pixels = memalign(py_buf.len)
+        if self.pixels == NULL:
             PyBuffer_Release(&py_buf)
-            raise RuntimeError("posix_memalign failed!")
+            raise RuntimeError("memalign failed!")
         assert self.pixels!=NULL
+        self.aligned = True
         #from now on, we own the buffer,
         #so we're no longer a direct sub-image,
         #and we must free the buffer later:
@@ -398,7 +398,10 @@ cdef class XImageWrapper:
         ximagedebug("%s.free_pixels() pixels=%#x", self, <uintptr_t> self.pixels)
         if self.pixels!=NULL:
             if not self.sub:
-                free(self.pixels)
+                if self.aligned:
+                    memfree(self.pixels)
+                else:
+                    free(self.pixels)
             self.pixels = NULL
 
     def freeze(self) -> bool:
@@ -433,8 +436,9 @@ cdef class XImageWrapper:
         cdef void *img_buf = self.get_pixels_ptr()
         assert img_buf!=NULL, "this image wrapper is empty!"
         cdef void *new_buf
-        if posix_memalign(<void **> &new_buf, 64, (newsize+rowstride)):
-            raise RuntimeError("posix_memalign failed!")
+        new_buf = memalign(newsize + rowstride)
+        if new_buf == NULL:
+            raise RuntimeError("memalign failed!")
         cdef void *to = new_buf
         cdef unsigned int oldstride = self.rowstride                     #using a local variable is faster
         #Note: we don't zero the buffer,
@@ -454,6 +458,7 @@ cdef class XImageWrapper:
         #set the new attributes:
         self.rowstride = rowstride
         self.pixels = <char *> new_buf
+        self.aligned = True
         #without any X11 image to free, this is now thread safe:
         if self.image==NULL:
             self.thread_safe = 1
