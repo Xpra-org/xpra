@@ -90,16 +90,17 @@ cdef class ResBindingsInstance(X11CoreBindingsInstance):
         return "XResBindings(%s)" % self.display_name
 
     def check_xres(self, min_version=(1, 2)) -> bool:
-        cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
+        cdef int event_base = 0, ignored = 0
         cdef Bool r = XResQueryExtension(self.display, &event_base, &ignored)
         log("XResQueryExtension()=%i", r)
         if not r:
             return False
         log("found XRes extension")
-        if not XResQueryVersion(self.display, &cmajor, &cminor):
+        cdef int major = 0, minor = 0
+        if not XResQueryVersion(self.display, &major, &minor):
             return False
-        log("found XRes extension version %i.%i", cmajor, cminor)
-        return (cmajor, cminor) >= min_version
+        log("found XRes extension version %i.%i", major, minor)
+        return (major, minor) >= min_version
 
     def get_pid(self, Window xid) -> cython.uint:
         self.context_check("get_pid")

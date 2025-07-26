@@ -20,10 +20,19 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "fixes")
 
 
+cdef extern from "X11/extensions/shapeconst.h":
+    cdef int ShapeBounding
+    cdef int ShapeClip
+    cdef int ShapeInput
+
 cdef extern from "X11/extensions/xfixeswire.h":
     unsigned int XFixesCursorNotify
     unsigned long XFixesDisplayCursorNotifyMask
     unsigned int XFixesSelectionNotify
+
+    unsigned int XFixesSetSelectionOwnerNotifyMask
+    unsigned int XFixesSelectionWindowDestroyNotifyMask
+    unsigned int XFixesSelectionClientCloseNotifyMask
 
     void XFixesSelectCursorInput(Display *, Window w, long mask)
 
@@ -67,8 +76,12 @@ cdef extern from "X11/extensions/Xfixes.h":
 
     XFixesCursorImage* XFixesGetCursorImage(Display *)
 
-    XserverRegion XFixesCreateRegion(Display *, XRectangle *, int nrectangles)
+    XserverRegion XFixesCreateRegion(Display *, XRectangle *rectangles, int nrectangles)
     void XFixesDestroyRegion(Display *, XserverRegion)
+
+    void XFixesSetWindowShapeRegion(Display *dpy, Window win, int shape_kind, int x_off, int y_off, XserverRegion region)
+
+    void XFixesSelectSelectionInput(Display *dpy, Window win, Atom selection, unsigned long eventMask)
 
 
 def init_xfixes_events() -> bool:
@@ -190,6 +203,23 @@ cdef class XFixesBindingsInstance(X11CoreBindingsInstance):
         # no return value..
         XFixesSelectCursorInput(self.display, root_window, mask)
         return True
+
+    def selectXFSelectionInput(self, Window window, str selection_str) -> None:
+        self.context_check("selectXFSelectionInput")
+        cdef unsigned long event_mask = (
+            XFixesSetSelectionOwnerNotifyMask |
+            XFixesSelectionWindowDestroyNotifyMask |
+            XFixesSelectionClientCloseNotifyMask
+        )
+        cdef Atom selection = self.str_to_atom(selection_str)
+        XFixesSelectSelectionInput(self.display, window, selection, event_mask)
+
+    def AllowInputPassthrough(self, Window window) -> None:
+        self.context_check("AllowInputPassthrough")
+        cdef XserverRegion region = XFixesCreateRegion(self.display, NULL, 0)
+        XFixesSetWindowShapeRegion(self.display, window, ShapeBounding, 0, 0, 0)
+        XFixesSetWindowShapeRegion(self.display, window, ShapeInput, 0, 0, region)
+        XFixesDestroyRegion(self.display, region)
 
 
 cdef XFixesBindingsInstance singleton = None

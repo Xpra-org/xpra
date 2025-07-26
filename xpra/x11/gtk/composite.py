@@ -15,6 +15,7 @@ from xpra.x11.gtk.world_window import get_world_window
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.ximage import XImageBindings
 from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.bindings.composite import XCompositeBindings
 from xpra.log import Logger
 
 log = Logger("x11", "window", "damage")
@@ -23,7 +24,8 @@ GObject = gi_import("GObject")
 
 XImage = XImageBindings()
 X11Window = X11WindowBindings()
-X11Window.ensure_XComposite_support()
+X11Composite = XCompositeBindings()
+X11Composite.ensure_XComposite_support()
 
 StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 
@@ -45,12 +47,12 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         return f"CompositeHelper({self.xid:x})"
 
     def setup(self) -> None:
-        X11Window.XCompositeRedirectWindow(self.xid)
+        X11Composite.XCompositeRedirectWindow(self.xid)
         WindowDamageHandler.setup(self)
 
     def do_destroy(self) -> None:
         with xlog:
-            X11Window.XCompositeUnredirectWindow(self.xid)
+            X11Composite.XCompositeUnredirectWindow(self.xid)
             WindowDamageHandler.do_destroy(self)
 
     def invalidate_pixmap(self) -> None:

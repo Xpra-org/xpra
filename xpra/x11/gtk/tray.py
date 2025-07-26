@@ -14,6 +14,7 @@ from xpra.gtk.error import xsync, xlog
 from xpra.x11.gtk.prop import prop_set, prop_get, raw_prop_set
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.bindings.fixes import XFixesBindings
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
@@ -21,6 +22,7 @@ GObject = gi_import("GObject")
 glib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
+XFixes = XFixesBindings()
 
 log = Logger("x11", "tray")
 
@@ -163,7 +165,7 @@ class SystemTray(GObject.GObject):
                 prop_set(self.xid, "WM_TITLE", "latin1", "Xpra-SystemTray")
                 set_tray_visual(self.xid, visualid)
                 set_tray_orientation(self.xid, TRAY_ORIENTATION.HORZ)
-                X11Window.selectXFSelectionInput(root_xid, SELECTION)
+                XFixes.selectXFSelectionInput(root_xid, SELECTION)
                 setsel = X11Window.XSetSelectionOwner(self.xid, SELECTION)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
                 log(f"setup tray: set selection owner returned {setsel}, owner={owner:x}")

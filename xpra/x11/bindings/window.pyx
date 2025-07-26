@@ -35,7 +35,6 @@ from xpra.x11.bindings.xlib cimport (
     XKillClient,
 )
 from libc.stdint cimport uintptr_t
-from libc.stdlib cimport free, malloc        # pylint: disable=syntax-error
 from libc.string cimport memset
 
 from xpra.log import Logger
@@ -251,99 +250,6 @@ def get_mask_strs(int mask) -> list[str]:
     return masks
 
 
-###################################
-# Composite
-###################################
-
-cdef extern from "X11/extensions/Xcomposite.h":
-    Bool XCompositeQueryExtension(Display *, int *, int *)
-    Status XCompositeQueryVersion(Display *, int * major, int * minor)
-    unsigned int CompositeRedirectManual
-    unsigned int CompositeRedirectAutomatic
-    void XCompositeRedirectWindow(Display *, Window, int mode)
-    void XCompositeRedirectSubwindows(Display *, Window, int mode)
-    void XCompositeUnredirectWindow(Display *, Window, int mode)
-    void XCompositeUnredirectSubwindows(Display *, Window, int mode)
-    Window XCompositeGetOverlayWindow(Display *dpy, Window window)
-    void XCompositeReleaseOverlayWindow(Display *dpy, Window window)
-
-
-cdef extern from "X11/extensions/shape.h":
-    Bool XShapeQueryExtension(Display *display, int *event_base, int *error_base)
-    Status XShapeQueryVersion(Display *display, int *major_version, int *minor_version)
-    Status XShapeQueryExtents(Display *display, Window window, Bool *bounding_shaped, int *x_bounding, int *y_bounding, unsigned int *w_bounding, unsigned int *h_bounding, Bool *clip_shaped, int *x_clip, int *y_clip, unsigned int *w_clip, unsigned int *h_clip)
-    void XShapeSelectInput(Display *display, Window window, unsigned long mask)
-    unsigned long XShapeInputSelected(Display *display, Window window)
-    XRectangle *XShapeGetRectangles(Display *display, Window window, int kind, int *count, int *ordering)
-
-    void XShapeCombineRectangles(Display *display, Window dest, int dest_kind, int x_off, int y_off, XRectangle *rectangles, int n_rects, int op, int ordering)
-
-    cdef int ShapeBounding
-    cdef int ShapeClip
-    cdef int ShapeInput
-
-SHAPE_KIND: Dict[int, str] = {
-    ShapeBounding   : "Bounding",
-    ShapeClip       : "Clip",
-    ShapeInput      : "ShapeInput",
-}
-
-###################################
-# Xfixes: cursor events
-###################################
-cdef extern from "X11/extensions/xfixeswire.h":
-    unsigned long XFixesDisplayCursorNotifyMask
-    void XFixesSelectCursorInput(Display *, Window w, long mask)
-
-    unsigned int XFixesSetSelectionOwnerNotifyMask
-    unsigned int XFixesSelectionWindowDestroyNotifyMask
-    unsigned int XFixesSelectionClientCloseNotifyMask
-
-
-cdef extern from "X11/extensions/Xfixes.h":
-    ctypedef struct XFixesCursorNotify:
-        char* subtype
-        Window XID
-        int cursor_serial
-        int time
-        char* cursor_name
-
-    ctypedef struct XFixesCursorImage:
-        short x
-        short y
-        unsigned short width
-        unsigned short height
-        unsigned short xhot
-        unsigned short yhot
-        unsigned long cursor_serial
-        unsigned long* pixels
-        Atom atom
-        char* name
-
-    ctypedef struct XFixesCursorNotifyEvent:
-        int type
-        unsigned long serial
-        Bool send_event
-        Display *display
-        Window window
-        int subtype
-        unsigned long cursor_serial
-        Time timestamp
-        Atom cursor_name
-
-    Bool XFixesQueryExtension(Display *, int *event_base, int *error_base)
-    XFixesCursorImage* XFixesGetCursorImage(Display *)
-
-    ctypedef XID XserverRegion
-
-    XserverRegion XFixesCreateRegion(Display *dpy, XRectangle *rectangles, int nrectangles)
-    void XFixesDestroyRegion(Display *dpy, XserverRegion region)
-
-    void XFixesSetWindowShapeRegion(Display *dpy, Window win, int shape_kind, int x_off, int y_off, XserverRegion region)
-
-    void XFixesSelectSelectionInput(Display *dpy, Window win, Atom selection, unsigned long eventMask)
-
-
 cdef inline long cast_to_long(i):
     if i < 0:
         return <long>i
@@ -375,33 +281,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
     def __repr__(self):
         return "X11WindowBindings(%s)" % self.display_name
-
-    ###################################
-    # Extension testing
-    ###################################
-
-    # X extensions all have different APIs for negotiating their
-    # availability/version number, but a number of the more recent ones are
-    # similar enough to share code (in particular, Composite and DAMAGE, and
-    # probably also Xfixes, Xrandr, etc.).  (But note that we don't actually have
-    # to query for Xfixes support because 1) any server that can handle us at all
-    # already has a sufficiently advanced version of Xfixes, and 2) GTK+ already
-    # enables Xfixes for us automatically.)
-    cdef ensure_extension_support(self, major, minor, extension,
-                                   Bool (*query_extension)(Display*, int*, int*),
-                                   Status (*query_version)(Display*, int*, int*)):
-        cdef int event_base = 0, ignored = 0
-        if not (query_extension)(self.display, &event_base, &ignored):
-            raise ValueError("X11 extension %s not available" % extension)
-        log("X11 extension %s event_base=%i", extension, event_base)
-        cdef int cmajor = major, cminor = minor
-        if (query_version)(self.display, &cmajor, &cminor):
-            # See X.org bug #14511:
-            log("found X11 extension %s with version %i.%i", extension, major, minor)
-            if cmajor<major or (cmajor==major and cminor<minor):
-                raise ValueError("%s v%i.%i not supported; required: v%i.%i"
-                                 % (extension, cmajor, cminor, major, minor))
-
 
     def get_all_x11_windows(self) -> List[Window]:
         cdef Window root = XDefaultRootWindow(self.display);
@@ -588,129 +467,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return XKillClient(self.display, xwindow)
 
     ###################################
-    # Shape
-    ###################################
-    def displayHasXShape(self) -> bool:
-        cdef int event_base = 0, ignored = 0
-        cdef int cmajor, cminor
-        if self.has_xshape is not None:
-            pass
-        elif not XShapeQueryExtension(self.display, &event_base, &ignored):
-            log.warn("X11 extension XShape not available")
-            self.has_xshape = False
-        else:
-            log("X11 extension XShape event_base=%i", event_base)
-            if not XShapeQueryVersion(self.display, &cmajor, &cminor):
-                log.warn("XShape version query failed")
-                self.has_xshape = False
-            else:
-                log("found X11 extension XShape with version %i.%i", cmajor, cminor)
-                self.has_xshape = True
-        log("displayHasXShape()=%s", self.has_xshape)
-        return self.has_xshape
-
-    def XShapeSelectInput(self, Window window) -> None:
-        self.context_check("XShapeSelectInput")
-        cdef int ShapeNotifyMask = 1
-        XShapeSelectInput(self.display, window, ShapeNotifyMask)
-
-    def XShapeQueryExtents(self, Window window) -> Tuple[Tuple, Tuple]:
-        self.context_check("XShapeQueryExtents")
-        cdef Bool bounding_shaped, clip_shaped
-        cdef int x_bounding, y_bounding, x_clip, y_clip
-        cdef unsigned int w_bounding, h_bounding, w_clip, h_clip
-        if not XShapeQueryExtents(self.display, window,
-                                  &bounding_shaped, &x_bounding, &y_bounding, &w_bounding, &h_bounding,
-                                  &clip_shaped, &x_clip, &y_clip, &w_clip, &h_clip):
-            return None
-        return (
-            (bounding_shaped, x_bounding, y_bounding, w_bounding, h_bounding),
-            (clip_shaped, x_clip, y_clip, w_clip, h_clip)
-        )
-
-    def XShapeGetRectangles(self, Window window, int kind) -> List[Tuple[int, int, int, int]]:
-        self.context_check("XShapeGetRectangles")
-        cdef int count, ordering
-        cdef XRectangle* rect = XShapeGetRectangles(self.display, window, kind, &count, &ordering)
-        if rect==NULL or count<=0:
-            return []
-        rectangles = []
-        cdef int i
-        for i in range(count):
-            rectangles.append((rect[i].x, rect[i].y, rect[i].width, rect[i].height))
-        return rectangles
-
-    def XShapeCombineRectangles(self, Window window, int kind, int x_off, int y_off, rectangles) -> None:
-        self.context_check("XShapeCombineRectangles")
-        cdef int n_rects = len(rectangles)
-        cdef int op = 0     #SET
-        cdef int ordering = 0   #Unsorted
-        cdef size_t l = sizeof(XRectangle) * n_rects
-        cdef XRectangle *rects = <XRectangle*> malloc(l)
-        if rects==NULL:
-            raise RuntimeError("failed to allocate %i bytes of memory for xshape rectangles" % l)
-        cdef int i = 0
-        for r in rectangles:
-            rects[i].x = r[0]
-            rects[i].y = r[1]
-            rects[i].width = r[2]
-            rects[i].height = r[3]
-            i += 1
-        XShapeCombineRectangles(self.display, window, kind, x_off, y_off,
-                                rects, n_rects, op, ordering)
-        free(rects)
-
-
-    ###################################
-    # Composite
-    ###################################
-    def ensure_XComposite_support(self) -> None:
-        # We need NameWindowPixmap, but we don't need the overlay window
-        # (v0.3) or the special manual-redirect clipping semantics (v0.4).
-        self.ensure_extension_support(0, 2, "Composite",
-                                  XCompositeQueryExtension,
-                                  XCompositeQueryVersion)
-
-    def displayHasXComposite(self) -> bool:
-        try:
-            self.ensure_XComposite_support()
-            return True
-        except Exception as e:
-            log.error("%s", e)
-        return False
-
-    def XCompositeRedirectWindow(self, Window xwindow) -> None:
-        self.context_check("XCompositeRedirectWindow")
-        XCompositeRedirectWindow(self.display, xwindow, CompositeRedirectManual)
-
-    def XCompositeRedirectSubwindows(self, Window xwindow) -> None:
-        self.context_check("XCompositeRedirectSubwindows")
-        XCompositeRedirectSubwindows(self.display, xwindow, CompositeRedirectManual)
-
-    def XCompositeUnredirectWindow(self, Window xwindow) -> None:
-        self.context_check("XCompositeUnredirectWindow")
-        XCompositeUnredirectWindow(self.display, xwindow, CompositeRedirectManual)
-
-    def XCompositeUnredirectSubwindows(self, Window xwindow) -> None:
-        self.context_check("XCompositeUnredirectSubwindows")
-        XCompositeUnredirectSubwindows(self.display, xwindow, CompositeRedirectManual)
-
-    def XCompositeGetOverlayWindow(self, Window window) -> Window:
-        self.context_check("XCompositeGetOverlayWindow")
-        return XCompositeGetOverlayWindow(self.display, window)
-
-    def XCompositeReleaseOverlayWindow(self, Window window) -> None:
-        self.context_check("XCompositeReleaseOverlayWindow")
-        XCompositeReleaseOverlayWindow(self.display, window)
-
-    def AllowInputPassthrough(self, Window window) -> None:
-        self.context_check("AllowInputPassthrough")
-        cdef XserverRegion region = XFixesCreateRegion(self.display, NULL, 0)
-        XFixesSetWindowShapeRegion(self.display, window, ShapeBounding, 0, 0, 0)
-        XFixesSetWindowShapeRegion(self.display, window, ShapeInput, 0, 0, region)
-        XFixesDestroyRegion(self.display, region)
-
-    ###################################
     # Smarter convenience wrappers
     ###################################
 
@@ -814,16 +570,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     ###################################
     # Clipboard
     ###################################
-    def selectXFSelectionInput(self, Window window, selection_str) -> None:
-        self.context_check("selectXFSelectionInput")
-        cdef unsigned long event_mask = (
-            XFixesSetSelectionOwnerNotifyMask |
-            XFixesSelectionWindowDestroyNotifyMask |
-            XFixesSelectionClientCloseNotifyMask
-            )
-        cdef Atom selection = self.str_to_atom(selection_str)
-        XFixesSelectSelectionInput(self.display, window, selection, event_mask)
-
     def selectSelectionInput(self, Window xwindow) -> None:
         self.context_check("selectSelectionInput")
         self.addXSelectInput(xwindow, SelectionNotify)

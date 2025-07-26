@@ -578,17 +578,18 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return self.version
 
     def query_version(self) -> Tuple[int, int]:
-        cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
+        cdef int event_base = 0, ignored = 0
         cdef int r = XRRQueryExtension(self.display, &event_base, &ignored)
         log(f"XRRQueryExtension()={r}")
         if not r:
             return (0, )
         log("found XRandR extension")
-        if not XRRQueryVersion(self.display, &cmajor, &cminor):
+        cdef int major = 0, minor = 0
+        if not XRRQueryVersion(self.display, &major, &minor):
             return (0, )
-        log(f"found XRandR extension version {cmajor}.{cminor}")
+        log(f"found XRandR extension version {major}.{minor}")
         self._randr_event_base = event_base
-        return cmajor, cminor
+        return major, minor
 
     def check_randr_sizes(self) -> bool:
         #check for wayland, which has no sizes:

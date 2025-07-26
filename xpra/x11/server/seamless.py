@@ -118,7 +118,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.init_wm()
 
     def validate_display(self) -> bool:
-        if not X11WindowBindings().displayHasXComposite():
+        from xpra.x11.bindings.composite import XCompositeBindings
+        if not XCompositeBindings().hasXComposite():
             log.error("Xpra 'start' subcommand runs as a compositing manager")
             log.error(" it cannot use a display which lacks the XComposite extension!")
             return False
@@ -148,13 +149,16 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             log(f"init_root_overlay() found cairo: {cairo}")
             with xsync:
                 xid = get_root_xid()
-                X11Window = X11WindowBindings()
-                self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
+                from xpra.x11.bindings.composite import XCompositeBindings
+                XComposite = XCompositeBindings()
+                self.root_overlay = XComposite.XCompositeGetOverlayWindow(xid)
                 log("init_root_overlay() root_overlay=%#x", self.root_overlay)
                 if self.root_overlay:
                     from xpra.x11.gtk.prop import prop_set
                     prop_set(self.root_overlay, "WM_TITLE", "latin1", "RootOverlay")
-                    X11Window.AllowInputPassthrough(self.root_overlay)
+                    from xpra.x11.bindings.xfixes import XFixesBindings
+                    XFixes = XFixesBindings()
+                    XFixes.AllowInputPassthrough(self.root_overlay)
                     log("init_root_overlay() done AllowInputPassthrough(%#x)", self.root_overlay)
         except Exception as e:
             log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
@@ -167,7 +171,9 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if ro:
             self.root_overlay = 0
             with xswallow:
-                X11WindowBindings().XCompositeReleaseOverlayWindow(ro)
+                from xpra.x11.bindings.composite import XCompositeBindings
+                XComposite = XCompositeBindings()
+                XComposite.XCompositeReleaseOverlayWindow(ro)
 
     def init_wm(self) -> None:
         from xpra.x11.gtk.selection import AlreadyOwned

@@ -62,8 +62,8 @@ class WindowServer(StubServerMixin):
         if is_X11():
             from xpra.gtk.error import xlog
             with xlog:
-                from xpra.x11.bindings.window import X11WindowBindings
-                log("XShape=%s", X11WindowBindings().displayHasXShape())
+                from xpra.x11.bindings.shape import XShapeBindings
+                log("XShape=%s", XShapeBindings().hasXShape())
             from xpra.x11.window_filters import init_x11_window_filters
             init_x11_window_filters()
         self.add_init_thread_callback(self.reinit_window_encoders)

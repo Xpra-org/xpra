@@ -42,6 +42,10 @@ with X11DisplayContext() as context:
     fixes = XFixesBindings()
     print("XFixes=%s" % bool(fixes.hasXFixes()))
 
+    from xpra.x11.bindings.composite import XCompositeBindings
+    composite = XCompositeBindings()
+    print("XComposite=%s" % bool(composite.hasXComposite()))
+
     from xpra.x11.bindings.randr import RandRBindings
     randr = RandRBindings()
     print("RandR=%s" % bool(randr.has_randr()))

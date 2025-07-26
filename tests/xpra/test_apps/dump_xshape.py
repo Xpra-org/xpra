@@ -4,9 +4,9 @@ import sys
 
 
 def dump_xshape(xid):
-    from xpra.x11.bindings.window import X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
-    X11Window = X11WindowBindings()
-    extents = X11Window.XShapeQueryExtents(xid)
+    from xpra.x11.bindings.shape import XShapeBindings, SHAPE_KIND  #@UnresolvedImport
+    XShape = XShapeBindings()
+    extents = XShape.XShapeQueryExtents(xid)
     if not extents:
         print("read_shape for window %#x: no extents" % xid)
         return {}
@@ -20,7 +20,7 @@ def dump_xshape(xid):
     v["Clip.extents"] = cextents
     for kind in SHAPE_KIND.keys():
         kind_name = SHAPE_KIND[kind]
-        rectangles = X11Window.XShapeGetRectangles(xid, kind)
+        rectangles = XShape.XShapeGetRectangles(xid, kind)
         v[kind_name + ".rectangles"] = rectangles
     print("read_shape()=%s" % v)
     return v

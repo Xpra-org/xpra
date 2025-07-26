@@ -27,6 +27,7 @@ from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, 
 from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, PropertyError, X11WindowBindings
+from xpra.x11.bindings.fixes import XFixesBindings
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, memoryview_to_bytes
 from xpra.log import Logger
@@ -36,6 +37,7 @@ Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
+XFixes = XFixesBindings()
 
 log = Logger("x11", "clipboard")
 
@@ -667,8 +669,8 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
         proxy.connect("send-clipboard-request", self._send_clipboard_request_handler)
         with xsync:
-            X11Window.selectXFSelectionInput(xid, selection)
-            X11Window.selectXFSelectionInput(root_xid, selection)
+            XFixes.selectXFSelectionInput(xid, selection)
+            XFixes.selectXFSelectionInput(root_xid, selection)
         return proxy
 
     ############################################################################

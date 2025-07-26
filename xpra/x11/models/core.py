@@ -19,7 +19,7 @@ from xpra.gtk.error import XError, xsync, xswallow, xlog
 from xpra.codecs.image import ImageWrapper
 from xpra.platform.posix.proc import get_parent_pid
 from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.bindings.window import X11WindowBindings, constants, SHAPE_KIND
+from xpra.x11.bindings.window import X11WindowBindings, constants
 from xpra.x11.bindings.res import ResBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
@@ -345,8 +345,6 @@ class CoreX11WindowModel(WindowModelStub):
             self._composite = CompositeHelper(self.xid)
             with xsync:
                 self._composite.setup()
-                if X11Window.displayHasXShape():
-                    X11Window.XShapeSelectInput(self.xid)
         except Exception as e:
             remove_event_receiver(self.xid, self)
             log("%s %#x does not support compositing: %s", self._MODELTYPE, self.xid, e)
@@ -356,6 +354,11 @@ class CoreX11WindowModel(WindowModelStub):
             if isinstance(e, Unmanageable):
                 raise
             raise Unmanageable(e) from e
+        with xlog:
+            from xpra.x11.bindings.shape import XShapeBindings
+            XShape = XShapeBindings()
+            if XShape.hasXShape():
+                XShape.XShapeSelectInput(self.xid)
         # compositing is now enabled,
         # from now on we must call setup_failed to clean things up
         self._managed = True
@@ -520,11 +523,14 @@ class CoreX11WindowModel(WindowModelStub):
             self._internal_set_property("shape", v)
 
     def _read_xshape(self, x: int = 0, y: int = 0) -> dict[str, Any]:
-        if not X11Window.displayHasXShape() or not XSHAPE:
+        if not XSHAPE:
             return {}
-        from xpra.x11.bindings.shape import init_xshape_events
+        from xpra.x11.bindings.shape import init_xshape_events, XShapeBindings, SHAPE_KIND
+        XShape = XShapeBindings()
+        if not XShape.hasXShape():
+            return {}
         init_xshape_events()
-        extents = X11Window.XShapeQueryExtents(self.xid)
+        extents = XShape.XShapeQueryExtents(self.xid)
         if not extents:
             shapelog("read_shape for window %#x: no extents", self.xid)
             return {}
@@ -803,6 +809,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("geometry", geom)
 
     def do_x11_shape_event(self, event) -> None:
+        from xpra.x11.bindings.shape import SHAPE_KIND
         shapelog("shape event: %s, kind=%s, timer=%s",
                  event, SHAPE_KIND.get(event.kind, event.kind), self._shape_timer)
         cur_shape = self.get_property("shape")
