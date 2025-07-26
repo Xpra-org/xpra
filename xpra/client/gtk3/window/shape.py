@@ -52,7 +52,7 @@ class ShapeWindow(StubWindow):
         self.when_realized("shape", self.do_set_shape, shape)
 
     def do_set_shape(self, shape) -> None:
-        from xpra.x11.bindings.window import X11WindowBindings, SHAPE_KIND
+        from xpra.x11.bindings.shape import XShapeBindings, SHAPE_KIND
         xid = self.get_window().get_xid()
         x_off, y_off = shape.get("x", 0), shape.get("y", 0)
         for kind, name in SHAPE_KIND.items():
@@ -70,8 +70,8 @@ class ShapeWindow(StubWindow):
                 log("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)", xid, name, x_off, y_off, len(rectangles))
                 from xpra.gtk.error import xlog
                 with xlog:
-                    X11Window = X11WindowBindings()
-                    X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
+                    XShape = XShapeBindings()
+                    XShape.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
 
     def lazy_scale_shape(self, rectangles) -> list:
         # scale the rectangles without a bitmap...

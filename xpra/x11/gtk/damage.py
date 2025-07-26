@@ -13,6 +13,7 @@ from xpra.gtk.error import xsync, xswallow, xlog, XError
 from xpra.x11.common import Unmanageable
 
 from xpra.x11.bindings.ximage import XImageBindings
+from xpra.x11.bindings.shm import XShmBindings
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.bindings.damage import init_damage_events, XDamageBindings
 from xpra.log import Logger
@@ -20,6 +21,7 @@ from xpra.log import Logger
 log = Logger("x11", "window", "damage")
 
 XImage = XImageBindings()
+XShm = XShmBindings()
 X11Window = X11WindowBindings()
 XDamage = XDamageBindings()
 XDamage.ensure_XDamage_support()
@@ -116,7 +118,7 @@ class WindowDamageHandler:
                 ch.cleanup()
 
     def has_xshm(self) -> bool:
-        return self._use_xshm and WindowDamageHandler.XShmEnabled and XImage.has_XShm()
+        return self._use_xshm and WindowDamageHandler.XShmEnabled and XShm.has_XShm()
 
     def get_xshm_handle(self):
         if not self.has_xshm():
@@ -135,7 +137,7 @@ class WindowDamageHandler:
                 self._xshm_handle = None
         if self._xshm_handle is None:
             # make a new one:
-            self._xshm_handle = XImage.get_XShmWrapper(self.xid)
+            self._xshm_handle = XShm.get_XShmWrapper(self.xid)
             if self._xshm_handle is None:
                 # failed (may retry)
                 return None

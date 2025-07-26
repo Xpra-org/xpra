@@ -351,6 +351,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "randr"         : "X11 RandR bindings",
         "record"        : "X11 Record bindings",
         "ximage"        : "X11 XImage bindings",
+        "composite"     : "X11 Composite bindings",
         "fixes"         : "X11 Fixes extension",
         "error"         : "X11 errors",
     },

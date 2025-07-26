@@ -4064,13 +4064,13 @@ def run_xshm(args) -> ExitValue:
         from xpra.x11.bindings.posix_display_source import init_posix_display_source
         init_posix_display_source()
         from xpra.x11.bindings.core import get_root_xid
-        from xpra.x11.bindings.ximage import XImageBindings
-        ximage = XImageBindings()
-        xshm = ximage.has_XShm()
+        from xpra.x11.bindings.shm import XShmBindings
+        XShm = XShmBindings()
+        xshm = XShm.has_XShm()
         if xshm:
             # try to use it:
             rxid = get_root_xid()
-            w = ximage.get_XShmWrapper(rxid)
+            w = XShm.get_XShmWrapper(rxid)
             if w:
                 res = w.setup()
                 if not res[0]:
