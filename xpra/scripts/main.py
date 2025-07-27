@@ -91,6 +91,16 @@ def nox() -> str:
     return str(DISPLAY or "") or os.environ.get("WAYLAND_DISPLAY", "")
 
 
+def reqx11(mode: str) -> None:
+    if OSX:
+        raise InitExit(ExitCode.UNSUPPORTED,f"{mode} is not supported on MacOSX")
+    if find_spec("xpra.x11"):
+        return
+    if WIN32:
+        raise InitExit(ExitCode.UNSUPPORTED, f"{mode} requires a build with the X11 bindings")
+    raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
+
+
 def werr(*msg) -> None:
     for x in msg:
         stderr_print(str(x))
@@ -946,8 +956,6 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
 
 def run_help(script_file: str) -> int:
     print("Usage:")
-    if not POSIX or OSX:
-        print("(this xpra installation does not support starting local servers)")
     cmd = os.path.basename(script_file)
     for x in get_usage():
         print(f"\t{cmd} {x}")
@@ -2125,13 +2133,10 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args: list[st
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     if mode in (
-            "seamless", "desktop", "monitor", "expand",
+            "seamless", "desktop", "monitor",
             "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
     ):
-        if OSX or (WIN32 and not find_spec("xpra.x11")):
-            raise InitException(f"{mode} is not supported on this platform")
-        if mode != "expand" and not find_spec("xpra.x11"):
-            raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
+        reqx11(mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
     with_display = mode in ("seamless", "desktop", "monitor", "expand")
     if with_display and str_to_bool(options.attach, False) and args and not display_is_remote:
@@ -3702,7 +3707,6 @@ def run_clean_sockets(opts, args) -> ExitValue:
 def run_recover(script_file: str, cmdline: list[str], error_cb: Callable, options, args: list[str], defaults) -> ExitValue:
     if not POSIX or OSX:
         raise InitExit(ExitCode.UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
-    assert POSIX and not OSX
     no_gtk()
     display_descr: dict = {}
     ALL = len(args) == 1 and args[0].lower() == "all"
@@ -3912,7 +3916,7 @@ def get_displays_info(dotxpra=None, display_names=None, sessions_dir="") -> dict
 
 def get_display_info(display, sessions_dir="") -> dict[str, Any]:
     display_info = {"state": "LIVE"}
-    if OSX or not POSIX:
+    if OSX:
         return display_info
     if not display.startswith(":"):
         return {}
@@ -4030,7 +4034,9 @@ def run_list_sessions(args, options) -> ExitValue:
 
 
 def display_wm_info(args) -> dict[str, Any]:
-    assert POSIX and not OSX, "wminfo is not supported on this platform"
+    reqx11("wminfo")
+    if not find_spec("xpra.x11") or not find_spec("xpra.x11.gtk"):
+        raise InitExit(ExitCode.UNSUPPORTED, "wminfo is not supported on this platform")
     no_gtk()
     if len(args) == 1:
         os.environ["DISPLAY"] = args[0]
@@ -4051,7 +4057,8 @@ def display_wm_info(args) -> dict[str, Any]:
 
 
 def run_xshm(args) -> ExitValue:
-    assert POSIX and not OSX, "xshm subcommand is not supported on this platform"
+    if not find_spec("xpra.x11"):
+        raise RuntimeError("xshm subcommand is not supported on this platform")
     no_gtk()
     if len(args) == 1:
         os.environ["DISPLAY"] = args[0]
