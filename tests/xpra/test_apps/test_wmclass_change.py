@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 
-import gi
+from xpra.os_util import gi_import
 
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, GLib  # pylint: disable=wrong-import-position @UnresolvedImport
-
-from xpra.x11.gtk.display_source import init_gdk_display_source
-
-init_gdk_display_source()
-from xpra.x11.bindings.window import X11WindowBindings  #@UnresolvedImport
-from xpra.gtk.error import xsync
-
-X11Window = X11WindowBindings()
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 
 def main():
+    from xpra.x11.gtk.display_source import init_gdk_display_source
+    init_gdk_display_source()
+
+    from xpra.x11.bindings.classhint import XClassHintBindings  # @UnresolvedImport
+    from xpra.gtk.error import xsync
+    XClassHint = XClassHintBindings()
+
     win = Gtk.Window()
     win.set_size_request(400, 100)
     win.set_title("WM_CLASS test")
@@ -22,7 +21,7 @@ def main():
 
     def change_wmclass():
         with xsync:
-            X11Window.setClassHint(win.get_window().get_xid(), b"Hello", b"hello")
+            XClassHint.setClassHint(win.get_window().get_xid(), "Hello", "hello")
             print("WM_CLASS changed!")
 
     GLib.timeout_add(1000, change_wmclass)

@@ -23,7 +23,7 @@ from xpra.x11.bindings.xlib cimport (
     XFree,
     XGetSelectionOwner, XSetSelectionOwner, XConvertSelection,
     XMapWindow, XMapRaised, XUnmapWindow, XWithdrawWindow, XReparentWindow, XIconifyWindow, XRaiseWindow,
-    NextRequest, XSendEvent, XSelectInput, XAddToSaveSet, XRemoveFromSaveSet,
+    NextRequest, XSendEvent, XSelectInput,
     XGetWindowAttributes, XGetWindowProperty, XDeleteProperty, XChangeProperty,
     XGetWMNormalHints, XSetWMNormalHints, XGetWMHints, XGetWMProtocols,
     XGetGeometry, XTranslateCoordinates, XConfigureWindow,
@@ -895,15 +895,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                         PropModeReplace,
                         <unsigned char *>data_str,
                         nitems)
-
-    # Save set handling
-    def XAddToSaveSet(self, Window xwindow) -> None:
-        self.context_check("XAddToSaveSet")
-        XAddToSaveSet(self.display, xwindow)
-
-    def XRemoveFromSaveSet(self, Window xwindow) -> None:
-        self.context_check("XRemoveFromSaveSet")
-        XRemoveFromSaveSet(self.display, xwindow)
 
     def setRootIconSizes(self, int w, int h) -> None:
         cdef Window root = XDefaultRootWindow(self.display);

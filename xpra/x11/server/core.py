@@ -16,7 +16,6 @@ from xpra.os_util import gi_import
 from xpra.x11.bindings.core import set_context_check, X11CoreBindings, get_root_xid
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
-from xpra.x11.bindings.test import XTestBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.x11.server import server_uuid
@@ -67,29 +66,6 @@ window_type_atoms = tuple(f"_NET_WM_WINDOW_TYPE{wtype}" for wtype in (
 ))
 
 
-class XTestPointerDevice:
-    __slots__ = ()
-
-    def __repr__(self):
-        return "XTestPointerDevice"
-
-    @staticmethod
-    def move_pointer(x: int, y: int, props=None) -> None:
-        pointerlog("xtest_fake_motion%s", (x, y, props))
-        with xsync:
-            XTestBindings().xtest_fake_motion(x, y)
-
-    @staticmethod
-    def click(button: int, pressed: bool, props: dict) -> None:
-        pointerlog("xtest_fake_button(%i, %s, %s)", button, pressed, props)
-        with xsync:
-            XTestBindings().xtest_fake_button(button, pressed)
-
-    @staticmethod
-    def has_precise_wheel() -> bool:
-        return False
-
-
 # noinspection PyUnreachableCode
 def get_cursor_sizes() -> tuple[int, int]:
     Gdk = gi_import("Gdk")
@@ -114,7 +90,6 @@ class X11ServerCore(GTKServerBase):
 
     def __init__(self) -> None:
         self.display = os.environ.get("DISPLAY", "")
-        self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
         self.pointer_device_map: dict = {}
         self.keys_pressed: dict[int, Any] = {}
@@ -122,6 +97,21 @@ class X11ServerCore(GTKServerBase):
         self.current_keyboard_group = 0
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
+        try:
+            from xpra.x11.server.xtest_pointer import XTestPointerDevice
+            self.pointer_device = XTestPointerDevice()
+        except ImportError:
+            log.warn("Warning: XTestPointerDevice bindings not available, using NoPointerDevice")
+            from xpra.x11.server.nopointer import NoPointerDevice
+            self.pointer_device = NoPointerDevice()
+        try:
+            from xpra.x11.server.xtest_keyboard import XTestKeyboardDevice
+            self.keyboard_device = XTestKeyboardDevice()
+        except ImportError:
+            log.warn("Warning: XTestKeyboardDevice bindings not available, using NoKeyboardDevice")
+            from xpra.x11.server.nokeyboard import NoKeyboardDevice
+            self.keyboard_device = NoKeyboardDevice()
+        log("X11ServerCore pointer_device=%s, keyboard_device=%s", self.pointer_device, self.keyboard_device)
         super().__init__()
 
     def setup(self) -> None:
@@ -699,11 +689,7 @@ class X11ServerCore(GTKServerBase):
     # noinspection PyMethodMayBeStatic
     def fake_key(self, keycode, press) -> None:
         keylog("fake_key(%s, %s)", keycode, press)
-        mink, maxk = X11KeyboardBindings().get_minmax_keycodes()
-        if keycode < mink or keycode > maxk:
-            return
-        with xsync:
-            XTestBindings().xtest_fake_key(keycode, press)
+        self.keyboard_device.press_key(keycode, press)
 
     def do_x11_cursor_event(self, event) -> None:
         cursors = getattr(self, "cursors", False)
