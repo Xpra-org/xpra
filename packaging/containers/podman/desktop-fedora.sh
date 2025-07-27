@@ -72,7 +72,7 @@ else
     install xterm strace net-tools iputils
     install glx-utils
     install VirtualGL
-    install xprop xrandr xdpyinfo xwininfo
+    install xprop xrandr xdpyinfo xdriinfo xwininfo
   fi
 
   install pulseaudio pavucontrol
