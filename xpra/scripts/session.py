@@ -7,7 +7,7 @@ import os
 import glob
 from shutil import rmtree
 
-from xpra.os_util import POSIX, getuid
+from xpra.os_util import POSIX, WIN32, getuid
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.env import osexpand, envbool
 from xpra.util.io import load_binary_file
@@ -16,7 +16,10 @@ CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 
 
 def get_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int) -> str:
-    session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")), uid=uid)
+    sane_display_name = (display_name or "").lstrip(":")
+    if WIN32:
+        sane_display_name = sane_display_name.replace(":", "-")
+    session_dir = osexpand(os.path.join(sessions_dir, sane_display_name), uid=uid)
     if not os.path.exists(session_dir):
         ROOT = POSIX and getuid() == 0
         ROOT_FALLBACK = ("/run/xpra", "/var/run/xpra", "/tmp")
@@ -26,11 +29,11 @@ def get_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int) -
             # so try to find a more suitable directory we can use:
             for d in ROOT_FALLBACK:
                 if os.path.exists(d):
-                    if mode == "proxy" and (display_name or "").lstrip(":").split(",")[0] == "14500":
+                    if mode == "proxy" and sane_display_name.split(",")[0] == "14500":
                         # stash the system-wide proxy session files in a 'proxy' subdirectory:
                         return os.path.join(d, "proxy")
                     # otherwise just use the display as subdirectory name:
-                    return os.path.join(d, (display_name or "").lstrip(":"))
+                    return os.path.join(d, sane_display_name)
     return session_dir
 
 
