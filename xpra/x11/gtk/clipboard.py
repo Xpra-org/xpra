@@ -12,7 +12,7 @@ from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.common import noop
 from xpra.gtk.error import xsync
-from xpra.gtk.gobject import n_arg_signal, one_arg_signal
+from xpra.util.gobject import n_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.gtk.common import get_wininfo
 from xpra.x11.gtk.native_window import GDKX11Window

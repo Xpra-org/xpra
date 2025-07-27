@@ -8,7 +8,7 @@ from typing import Final
 from collections.abc import Iterable
 
 from xpra.os_util import gi_import
-from xpra.gtk.gobject import one_arg_signal
+from xpra.util.gobject import one_arg_signal
 from xpra.gtk.error import xsync
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings

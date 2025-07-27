@@ -19,7 +19,7 @@ from xpra.util.env import envint, envbool
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
 from xpra.server import features, ServerExitMode
-from xpra.gtk.gobject import one_arg_signal, n_arg_signal
+from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.server.base import root_prop_set
 from xpra.x11.bindings.core import get_root_xid

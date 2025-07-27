@@ -17,7 +17,7 @@ from xpra.os_util import gi_import
 from xpra.util.env import first_time
 from xpra.common import noerr
 from xpra.util.objects import AtomicInteger
-from xpra.gtk.gobject import one_arg_signal
+from xpra.util.gobject import one_arg_signal
 from xpra.log import Logger
 
 log = Logger("gstreamer")

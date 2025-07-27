@@ -12,7 +12,7 @@ from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.client.gtk3.window.stub_window import StubWindow
-from xpra.gtk.gobject import one_arg_signal
+from xpra.util.gobject import one_arg_signal
 from xpra.gtk.util import ds_inited
 from xpra.log import Logger
 

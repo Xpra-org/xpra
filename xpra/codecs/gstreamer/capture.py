@@ -15,7 +15,7 @@ from xpra.gstreamer.common import (
     get_default_appsink_attributes,
     get_caps_str,
 )
-from xpra.gtk.gobject import n_arg_signal
+from xpra.util.gobject import n_arg_signal
 from xpra.gstreamer.pipeline import Pipeline
 from xpra.codecs.constants import get_profile, CSC_ALIAS, VideoSpec
 from xpra.codecs.gstreamer.common import (

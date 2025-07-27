@@ -14,7 +14,7 @@ from typing import Final
 from struct import unpack, calcsize
 
 from xpra.gtk.error import xsync
-from xpra.gtk.gobject import no_arg_signal, one_arg_signal
+from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom, get_pywindow

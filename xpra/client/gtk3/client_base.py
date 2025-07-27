@@ -35,7 +35,7 @@ from xpra.gtk.widget import scaled_image, label, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.gtk.gobject import no_arg_signal
+from xpra.util.gobject import no_arg_signal
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.base.gobject import GObjectXpraClient

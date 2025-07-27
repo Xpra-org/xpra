@@ -19,7 +19,7 @@ from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
 from xpra.util.env import envint, envbool, first_time, ignorewarnings, IgnoreWarningsContext
-from xpra.gtk.gobject import no_arg_signal
+from xpra.util.gobject import no_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
