@@ -2629,8 +2629,7 @@ if x11_ENABLED:
     ace("xpra.x11.bindings.window", "x11")
     if not WIN32:
         ace("xpra.x11.bindings.test", "xtst")
-        # try:
-        ace("xpra.x11.bindings.shape", "x11")
+        ace("xpra.x11.bindings.shape", "xext")
         ace("xpra.x11.bindings.damage", "xdamage")
         ace("xpra.x11.bindings.fixes", "xfixes")
         ace("xpra.x11.bindings.keyboard", "xkbfile")
@@ -2639,9 +2638,9 @@ if x11_ENABLED:
         ace("xpra.x11.bindings.xkb", "xkbfile")
         ace("xpra.x11.bindings.saveset", "x11")
         ace("xpra.x11.bindings.classhint", "x11")
-        ace("xpra.x11.bindings.shm", "x11")
+        ace("xpra.x11.bindings.shm", "xext")
         ace("xpra.x11.bindings.randr", "xrandr")
-        ace("xpra.x11.bindings.record", "x11")
+        ace("xpra.x11.bindings.record", "xtst")
     tace(xinput_ENABLED, "xpra.x11.bindings.xi2", "x11,xi")
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk")
