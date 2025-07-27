@@ -3,63 +3,138 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.x11.bindings.posix_display_source import X11DisplayContext
+import sys
+from importlib.util import find_spec
+from importlib import import_module
+from typing import Any
 
-from xpra.util.str_fn import repr_ellipsized
 
-with X11DisplayContext() as context:
-    from xpra.x11.bindings.window import X11WindowBindings
-    window = X11WindowBindings()
+from xpra.util.str_fn import print_nested_dict
 
-    print("display=%s" % context.display_name)
-    from xpra.x11.bindings.xwayland import isxwayland
-    print("isXwayland=%s" % isxwayland())
 
-    root = window.get_root_xid()
-    print("root=%#x" % root)
-    window.addDefaultEvents(root)
+def get_info() -> dict[str, Any]:
+    """
+    Return a dictionary with information about the X11 display.
+    """
+    info: dict[str, Any] = {}
+    missing: list[str] = []
+    for binding in (
+        "classhint", "composite", "core", "damage", "display_source", "events", "fixes", "keyboard",
+        "posix_display_source", "randr", "record", "res", "saveset", "shape", "shm", "test",
+        "wait_for_server", "window", "xi2", "ximage", "xkb", "xwait", "xwayland",
+    ):
+        spec = find_spec("xpra.x11.bindings." + binding)
+        if not spec:
+            missing.append(binding)
+            continue
+        try:
+            import_module("xpra.x11.bindings." + binding)
+        except ImportError as e:
+            print(f"Error importing xpra.x11.bindings.{binding}: {e}", file=sys.stderr)
 
-    print("time(%#x)=%s" % (root, window.get_server_time(root)))
+    try:
+        from xpra.x11.bindings.xwayland import isxwayland
+        info["isXwayland"] = isxwayland()
+    except ImportError:
+        missing.append("xwayland")
+    try:
+        from xpra.x11.bindings.window import X11WindowBindings
+        window = X11WindowBindings()
+        root = window.get_root_xid()
+        info["root"] = root
+        window.addDefaultEvents(root)
+        info["time"] = window.get_server_time(root)
+    except ImportError:
+        missing.append("window")
 
-    from xpra.x11.bindings.keyboard import X11KeyboardBindings
-    keyboard = X11KeyboardBindings()
-    print("Xkb=%s" % bool(keyboard.hasXkb()))
-    print(" layout group=%i" % keyboard.get_layout_group())
-    print(" default properties=%s" % keyboard.get_default_properties())
-    print(" Xkb properties=%s" % keyboard.getXkbProperties())
-    print(" modifier map=%s" % (keyboard.get_modifier_map(), ))
-    print(" min-max keycodes=%s" % (keyboard.get_minmax_keycodes(), ))
-    print(" modifier mappings=%s" % (keyboard.get_modifier_mappings(), ))
-    print(" keycodes down=%s" % (keyboard.get_keycodes_down(), ))
-    print(" pointer=%s" % (keyboard.query_pointer(), ))
-    print(" mask=%s" % (keyboard.query_mask(), ))
+    try:
+        from xpra.x11.bindings.keyboard import X11KeyboardBindings
+        keyboard = X11KeyboardBindings()
+        minc, maxc = keyboard.get_minmax_keycodes()
+        info["keyboard"] = {
+            "xkb": bool(keyboard.hasXkb()),
+            "layout-group": keyboard.get_layout_group(),
+            "default-properties": keyboard.get_default_properties(),
+            "xkb-properties": keyboard.getXkbProperties(),
+            "modifier-map": keyboard.get_modifier_map(),
+            "min-keycode": minc,
+            "max-keycode": maxc,
+            "modifier-mappings": keyboard.get_modifier_mappings(),
+            "keycodes-down": keyboard.get_keycodes_down(),
+            "pointer": keyboard.query_pointer(),
+            "mask": keyboard.query_mask(),
+        }
+    except ImportError:
+        missing.append("keyboard")
 
-    from xpra.x11.bindings.test import XTestBindings
-    test = XTestBindings()
-    print("XTest=%s" % bool(test.hasXTest()))
+    try:
+        from xpra.x11.bindings.test import XTestBindings
+        test = XTestBindings()
+        info["xtest"] = bool(test.hasXTest())
+    except ImportError:
+        missing.append("xtest")
 
-    from xpra.x11.bindings.fixes import XFixesBindings
-    fixes = XFixesBindings()
-    print("XFixes=%s" % bool(fixes.hasXFixes()))
+    try:
+        from xpra.x11.bindings.fixes import XFixesBindings
+        fixes = XFixesBindings()
+        info["xfixes"] = bool(fixes.hasXFixes())
+    except ImportError:
+        missing.append("xfixes")
 
-    from xpra.x11.bindings.composite import XCompositeBindings
-    composite = XCompositeBindings()
-    print("XComposite=%s" % bool(composite.hasXComposite()))
+    try:
+        from xpra.x11.bindings.composite import XCompositeBindings
+        composite = XCompositeBindings()
+        info["xcomposite"] = bool(composite.hasXComposite())
+    except ImportError:
+        missing.append("xcomposite")
 
-    from xpra.x11.bindings.randr import RandRBindings
-    randr = RandRBindings()
-    print("RandR=%s" % bool(randr.has_randr()))
-    print(" dummy16=%s" % bool(randr.is_dummy16()))
-    print(" vrefresh=%d" % randr.get_vrefresh())
-    print(" screen size=%s" % (randr.get_screen_size(), ))
-    print(" version=%s" % (randr.get_version(), ))
-    print(" monitors=%s" % (randr.get_monitor_properties(), ))
+    try:
+        from xpra.x11.bindings.randr import RandRBindings
+        randr = RandRBindings()
+        if randr.has_randr():
+            info["randr"] = {
+                "dummy16": bool(randr.is_dummy16()),
+                "vrefresh": randr.get_vrefresh(),
+                "screen_size": randr.get_screen_size(),
+                "version": randr.get_version(),
+                "monitors": randr.get_monitor_properties(),
+            }
+    except ImportError:
+        missing.append("randr")
 
-    from xpra.x11.bindings.ximage import XImageBindings
-    image = XImageBindings()
-    print("XShm=%s" % bool(image.has_XShm()))
+    try:
+        from xpra.x11.bindings.shm import XShmBindings
+        xshm = XShmBindings()
+        info["xshm"] = xshm.has_XShm()
+    except ImportError:
+        missing.append("xshm")
 
-    from xpra.x11.bindings.xi2 import X11XI2Bindings
-    xi2 = X11XI2Bindings()
-    print("XI2 version=%s" % (xi2.get_xi_version(), ))
-    print(" devices=%s" % (repr_ellipsized(xi2.get_devices()), ))
+    try:
+        from xpra.x11.bindings.xi2 import X11XI2Bindings
+        xi2 = X11XI2Bindings()
+        info["xi2"] = {
+            "version": xi2.get_xi_version(),
+            "devices": xi2.get_devices(),
+        }
+    except ImportError:
+        missing.append("xi2")
+
+    if missing:
+        info["missing"] = missing
+    return info
+
+
+def main(args: list[str]) -> int:
+    """
+    Main function to run the script.
+    """
+    from xpra.x11.bindings.posix_display_source import X11DisplayContext
+    with X11DisplayContext() as context:
+        info = get_info()
+        info["display"] = context.display_name
+
+    print_nested_dict(info)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

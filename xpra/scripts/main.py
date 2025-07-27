@@ -483,7 +483,7 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
             "list-clients",
             "list-sessions", "sessions", "displays",
             "clean-displays", "clean-sockets", "clean",
-            "xwait", "wminfo", "wmname",
+            "xwait", "xinfo", "wminfo", "wmname",
             "xshm",
             "desktop-greeter", "gui", "start-gui",
             "docs", "documentation", "about", "html5",
@@ -699,6 +699,9 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "xshm":
         no_gtk()
         return run_xshm(args)
+    if mode == "xinfo":
+        no_gtk()
+        return run_xinfo(args)
     if mode == "wminfo":
         no_gtk()
         return run_wminfo(args)
@@ -4095,6 +4098,11 @@ def run_xwait(args) -> ExitValue:
     from xpra.x11.bindings.xwait import main as xwait_main  # pylint: disable=no-name-in-module
     xwait_main(args)
     return 0
+
+
+def run_xinfo(args) -> ExitValue:
+    from xpra.x11.bindings.info import main as xinfo_main  # pylint: disable=no-name-in-module
+    return xinfo_main(args)
 
 
 def run_wminfo(args) -> ExitValue:
