@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import struct
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from time import monotonic
 
 from xpra.log import Logger
@@ -559,42 +559,47 @@ cdef dict monitor_properties(Display *display):
 
 
 def get_monitor_properties(display: int) -> dict:
-    cdef Display *d = <Display *> display
+    log("get_monitor_properties(%#x)", display)
+    cdef Display *d = <Display *> (<uintptr_t> display)
+    version = query_version(d)
+    log("version=%s", version)
+    if version < (1, 2):
+        log.warn("Warning: XRandR version %s does not support monitors", version)
+        return {}
     return monitor_properties(d)
+
+
+cdef Tuple query_version(Display *display):
+    cdef int event_base = 0, ignored = 0
+    cdef int r = XRRQueryExtension(display, &event_base, &ignored)
+    log(f"XRRQueryExtension()={r}")
+    if not r:
+        return (0, 0, 0)
+    log("found XRandR extension")
+    cdef int major = 0, minor = 0
+    if not XRRQueryVersion(display, &major, &minor):
+        return (0, 0, 0)
+    log(f"found XRandR extension version {major}.{minor} with event_base={event_base}")
+    return major, minor
 
 
 cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     cdef int _has_randr
-    cdef int _randr_event_base
+    cdef int event_base
     cdef object _added_modes
     cdef object version
 
     def __init__(self):
-        self.version = self.query_version()
         self._added_modes = {}
-        self._has_randr = self.version>(0, ) and self.check_randr_sizes()
-        self._randr_event_base = 0
+        self.version = query_version(self.display)
+        self._has_randr = self.version > (1, 0) and self.check_randr_sizes()
 
     def __repr__(self):
         return f"RandRBindings({self.display_name})"
 
     def get_version(self) -> Tuple[int, int]:
         return self.version
-
-    def query_version(self) -> Tuple[int, int]:
-        cdef int event_base = 0, ignored = 0
-        cdef int r = XRRQueryExtension(self.display, &event_base, &ignored)
-        log(f"XRRQueryExtension()={r}")
-        if not r:
-            return (0, )
-        log("found XRandR extension")
-        cdef int major = 0, minor = 0
-        if not XRRQueryVersion(self.display, &major, &minor):
-            return (0, )
-        log(f"found XRandR extension version {major}.{minor}")
-        self._randr_event_base = event_base
-        return major, minor
 
     def check_randr_sizes(self) -> bool:
         #check for wayland, which has no sizes:

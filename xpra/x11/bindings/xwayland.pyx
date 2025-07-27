@@ -43,6 +43,7 @@ def isxwayland(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
     if not d:
         log(f"isxwayland({display_name}) cannot open display: %s", f.getvalue())
         return False
+    log("isxwayland(%s) opened display %#x", display_name, <uintptr_t> d)
     cdef int opcode, event, error
     try:
         #the easy way:
@@ -59,7 +60,7 @@ def isxwayland(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
         except ImportError:
             log(f"isxwayland({display_name}) RandRBindings not available")
             return False
-        props = get_monitor_properties(int(<uintptr_t> d))
+        props = get_monitor_properties(<uintptr_t> d)
         log(f"isxwayland({display_name}) monitor properties={props}")
         for mprops in props.values():
             if mprops.get("name", "").startswith("XWAYLAND"):
