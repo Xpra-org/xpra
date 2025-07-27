@@ -19,6 +19,7 @@ def get_info() -> dict[str, Any]:
     """
     info: dict[str, Any] = {}
     missing: list[str] = []
+    available: list[str] = []
     for binding in (
         "classhint", "composite", "core", "damage", "display_source", "events", "fixes", "keyboard",
         "posix_display_source", "randr", "record", "res", "saveset", "shape", "shm", "test",
@@ -30,6 +31,7 @@ def get_info() -> dict[str, Any]:
             continue
         try:
             import_module("xpra.x11.bindings." + binding)
+            available.append(binding)
         except ImportError as e:
             print(f"Error importing xpra.x11.bindings.{binding}: {e}", file=sys.stderr)
 
@@ -122,6 +124,8 @@ def get_info() -> dict[str, Any]:
 
     if missing:
         info["missing"] = missing
+    if available:
+        info["available"] = available
     return info
 
 
