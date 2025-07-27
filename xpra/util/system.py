@@ -249,8 +249,6 @@ def do_get_generic_os_name() -> str:
 
 
 def is_X11() -> bool:
-    if OSX or WIN32:
-        return False
     if envbool("XPRA_NOX11", False):
         return False
     try:

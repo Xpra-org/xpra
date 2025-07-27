@@ -51,7 +51,7 @@ cdef class X11CoreBindingsInstance:
 
     def __cinit__(self):
         if not is_X11():
-            raise RuntimeError("cannot load X11 bindings with wayland")
+            raise RuntimeError("cannot load X11 bindings")
         self.display = get_display()
         #log.warn("X11Core initialized")
         #import traceback

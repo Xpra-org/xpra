@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 from importlib.util import find_spec
 from importlib import import_module
@@ -125,15 +126,14 @@ def get_info() -> dict[str, Any]:
 
 
 def main(args: list[str]) -> int:
-    """
-    Main function to run the script.
-    """
+    display_name = args[0] if args else os.environ.get("DISPLAY", "")
     from xpra.x11.bindings.posix_display_source import X11DisplayContext
-    with X11DisplayContext() as context:
+    with X11DisplayContext(display_name) as context:
         info = get_info()
         info["display"] = context.display_name
 
     print_nested_dict(info)
+    return 0
 
 
 if __name__ == "__main__":
