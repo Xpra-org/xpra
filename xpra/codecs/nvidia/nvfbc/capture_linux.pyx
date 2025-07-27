@@ -433,14 +433,14 @@ cdef NVFBC_SESSION_HANDLE create_context() except 0xffffffff:
     return context
 
 
-cdef close_context(NVFBC_SESSION_HANDLE context):
+cdef void close_context(NVFBC_SESSION_HANDLE context):
     cdef NVFBC_DESTROY_HANDLE_PARAMS params
     params.dwVersion = NVFBC_DESTROY_HANDLE_PARAMS_VER
     cdef NVFBCSTATUS ret = function_list.nvFBCDestroyHandle(context, &params)
     raiseNvFBC(context, ret, "NvFBCDestroyHandle")
 
 
-cdef create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE capture_type, w=0, h=0):
+cdef void create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE capture_type, w=0, h=0):
     cdef NVFBC_CREATE_CAPTURE_SESSION_PARAMS create
     memset(&create, 0, sizeof(NVFBC_CREATE_CAPTURE_SESSION_PARAMS))
     create.dwVersion = NVFBC_CREATE_CAPTURE_SESSION_PARAMS_VER
@@ -459,7 +459,7 @@ cdef create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE cap
     log("NvFBCCreateCaptureSession() success")
 
 
-cdef destroy_session(NVFBC_SESSION_HANDLE context):
+cdef void destroy_session(NVFBC_SESSION_HANDLE context):
     cdef NVFBC_DESTROY_CAPTURE_SESSION_PARAMS params
     memset(&params, 0, sizeof(NVFBC_DESTROY_CAPTURE_SESSION_PARAMS))
     params.dwVersion = NVFBC_DESTROY_CAPTURE_SESSION_PARAMS_VER

@@ -368,7 +368,7 @@ cdef class VirtualWebcam:
             return ""
         return "".join(chr((vid_format.fmt.pix.pixelformat >> (8*x)) % 256) for x in range(4))
 
-    cdef show_vid_format(self, v4l2_format *vid_format):
+    cdef void show_vid_format(self, v4l2_format *vid_format):
         log("vid_format.type                 = %i", vid_format.type)
         log("vid_format.fmt.pix.width        = %i", vid_format.fmt.pix.width)
         log("vid_format.fmt.pix.height       = %i", vid_format.fmt.pix.height)

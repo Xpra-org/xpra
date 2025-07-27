@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import struct
-from typing import Dict
+from typing import Dict, List
 from time import monotonic
 
 from xpra.log import Logger
@@ -622,7 +622,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef Window root = XDefaultRootWindow(self.display)
         XRRSelectInput(self.display, root, mask)
 
-    cdef _get_xrr_screen_sizes(self):
+    cdef List _get_xrr_screen_sizes(self):
         cdef int num_sizes = 0
         cdef XRRScreenSize xrr
         cdef XRRScreenSize *xrrs = XRRSizes(self.display, 0, &num_sizes)
@@ -639,7 +639,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         log(f"get_xrr_screen_sizes()={v}")
         return v
 
-    cdef _set_screen_size(self, width, height):
+    cdef int _set_screen_size(self, width, height):
         self.context_check()
         cdef int num_sizes = 0
         cdef int num_rates = 0

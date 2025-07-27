@@ -300,7 +300,7 @@ cdef extern from "x264.h":
     int x264_encoder_maximum_delayed_frames(x264_t *h)
 
 
-cdef set_f_rf(x264_param_t *param, float q):
+cdef void set_f_rf(x264_param_t *param, float q):
     param.rc.f_rf_constant = q
 
 

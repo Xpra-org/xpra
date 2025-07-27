@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from collections.abc import Iterable
 
 from xpra.log import Logger
@@ -167,7 +167,7 @@ cdef extern from "X11/XKBlib.h":
     void XkbFreeKeyboard(XkbDescPtr xkb, unsigned int which, Bool free_all)
 
 
-cdef object NS(char *v):
+cdef str NS(char *v):
     if v==NULL:
         return "NULL"
     b = v
@@ -414,7 +414,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             if display!=NULL:
                 XCloseDisplay(display)
 
-    cdef _get_minmax_keycodes(self):
+    cdef Tuple _get_minmax_keycodes(self):
         if self.min_keycode==-1 and self.max_keycode==-1:
             XDisplayKeycodes(self.display, &self.min_keycode, &self.max_keycode)
         return self.min_keycode, self.max_keycode
@@ -609,7 +609,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                     break
         return keycodes
 
-    cdef _get_raw_keycode_mappings(self):
+    cdef Dict _get_raw_keycode_mappings(self):
         """
             returns a dict: {keycode, [keysyms]}
             for all the keycodes
@@ -622,7 +622,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef int keycode_count = max_keycode - min_keycode + 1
         cdef KeySym * keyboard_map = XGetKeyboardMapping(self.display, min_keycode, keycode_count, &keysyms_per_keycode)
         log("XGetKeyboardMapping keysyms_per_keycode=%i, keyboard_map=%#x", keysyms_per_keycode, <uintptr_t> keyboard_map)
-        mappings = {}
+        mappings: dict[int, List[str]] = {}
         cdef int i
         for i in range(keycode_count):
             keycode = min_keycode + i
@@ -693,7 +693,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             7 : "mod5",
         }.get(modifier_index, "")
 
-    cdef _get_raw_modifier_mappings(self):
+    cdef Tuple _get_raw_modifier_mappings(self):
         """
             returns a dict: {modifier_index, [keycodes]}
             for all keycodes (see above for list)
@@ -724,7 +724,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XFree(keyboard_map)
         return (keysyms_per_keycode, mappings)
 
-    cdef _get_modifier_mappings(self):
+    cdef Dict _get_modifier_mappings(self):
         """
         the mappings from _get_raw_modifier_mappings are in raw format
         (index and keycode), so here we convert into names:
@@ -799,7 +799,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                         success = False
         return success
 
-    cdef _get_keycodes_down(self):
+    cdef List _get_keycodes_down(self):
         cdef char[32] keymap
         masktable: Sequence[int] = (0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80)
         down: list[int] = []

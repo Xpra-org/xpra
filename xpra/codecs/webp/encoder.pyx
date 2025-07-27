@@ -589,7 +589,7 @@ cdef inline void config_init(WebPConfig *config):
         raise RuntimeError("failed to initialize webp config")
 
 
-cdef configure_encoder(WebPConfig *config,
+cdef void configure_encoder(WebPConfig *config,
                       unsigned int quality, unsigned int speed,
                       unsigned char alpha):
     config.lossless = quality>=100
@@ -781,7 +781,7 @@ cdef void to_yuv(WebPPicture *pic, WebPEncCSP csp=WEBP_YUV420):
     log("webp subsampling ARGB to %s took %.1fms", CSP_NAMES.get(csp, csp), 1000*(end-start))
 
 
-cdef object webp_encode(WebPConfig *config, WebPPicture *pic):
+cdef bytes webp_encode(WebPConfig *config, WebPPicture *pic):
     cdef double start = monotonic()
     cdef WebPMemoryWriter memory_writer
     memset(&memory_writer, 0, sizeof(WebPMemoryWriter))

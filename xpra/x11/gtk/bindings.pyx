@@ -157,7 +157,7 @@ def get_xatom(str_or_xatom) -> Atom:
 def get_pyatom(xatom) -> str:
     return _get_pyatom(xatom)
 
-cdef object _get_pyatom(int xatom):
+cdef str _get_pyatom(int xatom):
     if int(xatom) > 2**32:
         raise ValueError(f"weirdly huge purported xatom: {xatom}")
     if xatom==0:

@@ -349,7 +349,7 @@ cdef inline TJSAMP get_subsamp(int quality) noexcept nogil:
     return TJSAMP_444
 
 
-cdef object encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
+cdef MemBuf encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
     pfstr = image.get_pixel_format()
     pf = TJPF_VAL.get(pfstr)
     if pf is None:
@@ -369,7 +369,7 @@ cdef object encode_rgb(tjhandle compressor, image, int quality, int grayscale=0)
                          quality, tjpf, subsamp)
 
 
-cdef object do_encode_rgb(tjhandle compressor, pfstr, pixels,
+cdef MemBuf do_encode_rgb(tjhandle compressor, pfstr, pixels,
                    int width, int height, int stride,
                    int quality, TJPF tjpf, TJSAMP subsamp):
     cdef int flags = 0
@@ -401,7 +401,7 @@ cdef object do_encode_rgb(tjhandle compressor, pfstr, pixels,
     return makebuf(out, out_size, 0)
 
 
-cdef object encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
+cdef MemBuf encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
     pfstr = image.get_pixel_format()
     assert pfstr in ("YUV420P", "YUV422P"), "invalid yuv pixel format %s" % pfstr
     cdef TJSAMP subsamp
@@ -424,7 +424,7 @@ cdef object encode_yuv(tjhandle compressor, image, int quality, int grayscale=0)
                          quality, subsamp)
 
 
-cdef object do_encode_yuv(tjhandle compressor, pfstr, planes,
+cdef MemBuf do_encode_yuv(tjhandle compressor, pfstr, planes,
                    int width, int height, rowstrides,
                    int quality, TJSAMP subsamp):
     cdef int flags = 0

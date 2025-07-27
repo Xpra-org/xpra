@@ -768,7 +768,7 @@ cdef class Encoder:
                 free(params.encodeConfig)
             free(params)
 
-    cdef dump_caps(self, codec_name, GUID codec):
+    cdef void dump_caps(self, codec_name, GUID codec):
         #test all caps:
         caps = {}
         for cap in get_all_caps():
@@ -1305,7 +1305,7 @@ cdef class Encoder:
                 self.set_encoding_speed(speed)
             return self.do_compress_image(cuda_context, image)
 
-    cdef do_compress_image(self, cuda_context, image: ImageWrapper):
+    cdef Tuple do_compress_image(self, cuda_context, image: ImageWrapper):
         assert self.context, "nvenc context is not initialized"
         assert cuda_context, "missing device context"
         cdef unsigned int w = image.get_width()

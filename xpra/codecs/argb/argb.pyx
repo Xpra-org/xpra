@@ -736,7 +736,7 @@ def bit_to_rectangles(buf, unsigned int w, unsigned int h) -> List[Tuple[int,int
         return bitdata_to_rectangles(bits, len(bc), w, h)
 
 
-cdef object bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len,
+cdef list bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len,
                            const unsigned int w, const unsigned int h):
     rectangles = []
     cdef unsigned int rowstride = round8up(w)//8
@@ -798,7 +798,7 @@ cdef object bitdata_to_rectangles(const unsigned char* bitdata, const int bitdat
     return rectangles
 
 
-cdef object plane_range(plane: SizedBuffer, unsigned int width, unsigned int stride, unsigned int height):
+cdef tuple plane_range(plane: SizedBuffer, unsigned int width, unsigned int stride, unsigned int height):
     cdef unsigned char minv = 255
     cdef unsigned char maxv = 0
     cdef unsigned char value
