@@ -490,7 +490,7 @@ cdef dict get_all_screen_properties(Display *display):
                 props.setdefault("crtcs", {})[crtc] = crtc_info
     finally:
         XRRFreeScreenResources(rsc)
-    props["monitors"] = get_monitor_properties(display)
+    props["monitors"] = monitor_properties(display)
     return props
 
 
@@ -532,7 +532,7 @@ cdef dict get_crtc_info(Display *display, XRRScreenResources *rsc, RRCrtc crtc):
     return info
 
 
-cdef dict get_monitor_properties(Display *display):
+cdef dict monitor_properties(Display *display):
     cdef int nmonitors
     cdef Window window = XDefaultRootWindow(display)
     cdef XRRMonitorInfo *monitors = XRRGetMonitors(display, window, True, &nmonitors)
@@ -556,6 +556,11 @@ cdef dict get_monitor_properties(Display *display):
         }
     XRRFreeMonitors(monitors)
     return props
+
+
+def get_monitor_properties(display: int) -> dict:
+    cdef Display *d = <Display *> display
+    return monitor_properties(d)
 
 
 cdef class RandRBindingsInstance(X11CoreBindingsInstance):
@@ -1014,7 +1019,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     def get_monitor_properties(self) -> Dict[str, Any]:
         self.context_check("get_monitor_properties")
-        return get_monitor_properties(self.display)
+        return monitor_properties(self.display)
 
     def get_all_screen_properties(self) -> Dict[str, Any]:
         self.context_check("get_all_screen_properties")

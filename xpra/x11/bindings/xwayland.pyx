@@ -14,7 +14,7 @@ from xpra.x11.bindings.xlib cimport (
     XQueryExtension,
     XGetWindowProperty, XDefaultRootWindow,
 )
-from xpra.x11.bindings.randr cimport get_monitor_properties
+from libc.stdint cimport uintptr_t
 from xpra.log import Logger
 
 log = Logger("x11")
@@ -53,8 +53,13 @@ def isxwayland(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
         if get_xstring(d, "VFB_IDENT"):
             log(f"isxwayland({display_name}) VFB_IDENT found")
             return False
-        #this can go wrong...
-        props = get_monitor_properties(d)
+        # this can go wrong...
+        try:
+            from xpra.x11.bindings.randr import get_monitor_properties
+        except ImportError:
+            log(f"isxwayland({display_name}) RandRBindings not available")
+            return False
+        props = get_monitor_properties(int(<uintptr_t> d))
         log(f"isxwayland({display_name}) monitor properties={props}")
         for mprops in props.values():
             if mprops.get("name", "").startswith("XWAYLAND"):
