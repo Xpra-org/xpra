@@ -274,11 +274,6 @@ cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 
 cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
-    cdef object has_xshape
-
-    def __cinit__(self):
-        self.has_xshape = None
-
     def __repr__(self):
         return "X11WindowBindings(%s)" % self.display_name
 
