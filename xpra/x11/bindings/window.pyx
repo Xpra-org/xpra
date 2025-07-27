@@ -14,7 +14,7 @@ from xpra.x11.bindings.xlib cimport (
     XGetVisualInfo, VisualIDMask, XDefaultVisual,
     GrabModeAsync, XGrabPointer,
     Expose,
-    XEvent, XClassHint,
+    XEvent,
     XWMHints, XSizeHints,
     XCreateWindow, XDestroyWindow, XIfEvent, PropertyNotify,
     XSetWindowAttributes,
@@ -29,11 +29,12 @@ from xpra.x11.bindings.xlib cimport (
     XGetGeometry, XTranslateCoordinates, XConfigureWindow,
     XMoveResizeWindow, XMoveWindow, XResizeWindow,
     XGetInputFocus, XSetInputFocus,
-    XAllocClassHint, XAllocSizeHints, XGetClassHint, XSetClassHint,
+    XAllocSizeHints,
     XAllocIconSize, XIconSize, XSetIconSizes,
     XQueryTree,
     XKillClient,
 )
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 from libc.stdint cimport uintptr_t
 from libc.string cimport memset
 
@@ -266,8 +267,6 @@ class BadPropertyType(PropertyError):
 class PropertyOverflow(PropertyError):
     pass
 
-
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 
@@ -918,34 +917,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         icon_size.height_inc = 0
         XSetIconSizes(self.display, root, icon_size, 1)
         XFree(icon_size)
-
-    def setClassHint(self, Window xwindow, wmclass: str, wmname: str) -> None:
-        self.context_check("setClassHint")
-        cdef XClassHint *classhints = XAllocClassHint()
-        assert classhints!=NULL
-        res_class = wmclass.encode("latin1")
-        res_name = wmname.encode("latin1")
-        classhints.res_class = res_class
-        classhints.res_name = res_name
-        XSetClassHint(self.display, xwindow, classhints)
-        XFree(classhints)
-
-    def getClassHint(self, Window xwindow) -> Optional[Tuple[str,str]]:
-        self.context_check("getClassHint")
-        cdef XClassHint *classhints = XAllocClassHint()
-        assert classhints!=NULL
-        cdef Status s = XGetClassHint(self.display, xwindow, classhints)
-        if not s:
-            return None
-        _name = ""
-        _class = ""
-        if classhints.res_name!=NULL:
-            _name = classhints.res_name[:]
-        if classhints.res_class!=NULL:
-            _class = classhints.res_class[:]
-        XFree(classhints)
-        log("XGetClassHint(%#x) classhints: %s, %s", xwindow, _name, _class)
-        return (_name, _class)
 
     def getGeometry(self, Drawable d) -> Tuple[int, int, int, int, int, int]:
         self.context_check("getGeometry")

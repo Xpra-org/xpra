@@ -710,7 +710,8 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("command", command)
 
     def _handle_class_change(self) -> None:
-        class_instance = X11Window.getClassHint(self.xid)
+        from xpra.x11.bindings.classhint import XClassHintBindings
+        class_instance = XClassHintBindings().getClassHint(self.xid)
         if class_instance:
             class_instance = tuple(v.decode("latin1") for v in class_instance)
         metalog("WM_CLASS=%s", class_instance)

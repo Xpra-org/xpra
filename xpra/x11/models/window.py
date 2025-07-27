@@ -17,6 +17,7 @@ from xpra.x11.gtk.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
+from xpra.x11.bindings.saveset import XSaveSetBindings
 from xpra.x11.bindings.send_wm import send_wm_take_focus
 from xpra.x11.common import Unmanageable
 from xpra.x11.models.size_hints_util import sanitize_size_hints
@@ -38,6 +39,7 @@ GObject = gi_import("GObject")
 GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
+XSaveSet = XSaveSetBindings()
 
 CWX: Final[int] = constants["CWX"]
 CWY: Final[int] = constants["CWY"]
@@ -302,7 +304,7 @@ class WindowModel(BaseWindowModel):
             self.last_unmap_serial = X11Window.Unmap(self.xid)
 
         log("setup() adding to save set")
-        X11Window.XAddToSaveSet(self.xid)
+        XSaveSet.XAddToSaveSet(self.xid)
         self.in_save_set = True
 
         log("setup() reparenting")
@@ -450,7 +452,7 @@ class WindowModel(BaseWindowModel):
             # bug #27:
             if self.in_save_set:
                 with xswallow:
-                    X11Window.XRemoveFromSaveSet(self.xid)
+                    XSaveSet.XRemoveFromSaveSet(self.xid)
                 self.in_save_set = False
             if geom:
                 self.send_configure_notify()

@@ -100,7 +100,8 @@ def window_matches(wspec, model_class):
             command = prop_get(wxid, "WM_COMMAND", "latin1", True)
             if command:
                 commands[wxid] = command.strip("\0")
-            class_instance = wb.getClassHint(wxid)
+            from xpra.x11.bindings.classhint import XClassHintBindings
+            class_instance = XClassHintBindings().getClassHint(wxid)
             if class_instance:
                 classes[wxid] = class_instance[0].decode("latin1")
 
