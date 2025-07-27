@@ -742,7 +742,7 @@ class X11ServerCore(GTKServerBase):
         wid = 0
         for ss in self.window_sources():
             ss.bell(wid, event.device, event.percent,
-                    event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name)
+                    event.pitch, event.duration, event.bell_class, event.bell_id, event.name)
 
     def _bell_signaled(self, wm, event) -> None:
         log("bell signaled on window %#x", event.window)
@@ -755,7 +755,7 @@ class X11ServerCore(GTKServerBase):
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         for ss in self.window_sources():
             ss.bell(wid, event.device, event.percent,
-                    event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name)
+                    event.pitch, event.duration, event.bell_class, event.bell_id, event.name)
 
     def setup_input_devices(self) -> None:
         xinputlog("setup_input_devices() input_devices feature=%s", features.pointer)

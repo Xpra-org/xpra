@@ -6,7 +6,7 @@
 
 from xpra.x11.bindings.xlib cimport Display, Window, Atom, Time, Bool, XEvent
 from xpra.x11.bindings.display_source cimport get_display
-from xpra.x11.bindings.events cimport add_parser, new_x11_event, add_event_type, atom_str
+from xpra.x11.bindings.events cimport add_parser, add_event_type, atom_str
 
 from xpra.x11.bindings.xlib cimport (
     Display, Window, Visual, XID, XRectangle, Atom, Time, CARD32, Bool,
@@ -89,25 +89,23 @@ cdef object parse_XKBNotify(Display *d, XEvent *e):
     if xkb_e.xkb_type != XkbBellNotify:
         return None
     bell_e = <XkbBellNotifyEvent*>e
-    cdef object pyev = new_x11_event(e)
-    pyev.subtype = "bell"
-    pyev.device = int(bell_e.device)
-    pyev.percent = int(bell_e.percent)
-    pyev.pitch = int(bell_e.pitch)
-    pyev.duration = int(bell_e.duration)
-    pyev.bell_class = int(bell_e.bell_class)
-    pyev.bell_id = int(bell_e.bell_id)
     # no idea why window is not set in XkbBellNotifyEvent
     # since we can fire it from a specific window
     # but we need one for the dispatch logic, so use root if unset
-    if bell_e.window != 0:
-        verbose("using bell_e.window=%#x", bell_e.window)
-        pyev.window = bell_e.window
-    else:
-        pyev.window = XDefaultRootWindow(d)
-        verbose("bell using root window=%#x", pyev.window)
-    pyev.event_only = bool(bell_e.event_only)
-    pyev.delivered_to = pyev.window
-    pyev.window_model = None
-    pyev.bell_name = atom_str(d, bell_e.name)
-    return pyev
+    cdef Window window = bell_e.window
+    if not window:
+        window = XDefaultRootWindow(d)
+        verbose("bell using root window=%#x", window)
+    return {
+        "window": window,
+        "delivered_to": window,
+        "device": int(bell_e.device),
+        "percent": int(bell_e.percent),
+        "pitch": int(bell_e.pitch),
+        "duration": int(bell_e.duration),
+        "bell_class": int(bell_e.bell_class),
+        "bell_id": int(bell_e.bell_id),
+        "event_only": bool(bell_e.event_only),
+        "name": atom_str(d, bell_e.name),
+        "window_model": None,
+    }

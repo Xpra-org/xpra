@@ -11,7 +11,7 @@ from xpra.x11.bindings.xlib cimport (
     XFree, XDefaultRootWindow,
 )
 from xpra.x11.bindings.display_source cimport get_display
-from xpra.x11.bindings.events cimport add_parser, new_x11_event, add_event_type, atom_str
+from xpra.x11.bindings.events cimport add_parser, add_event_type, atom_str
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 from xpra.util.env import envbool
@@ -110,23 +110,25 @@ def init_xfixes_events() -> bool:
 
 cdef object parse_XFSelectionNotify(Display *d, XEvent *e):
     cdef XFixesSelectionNotifyEvent * selectionnotify_e = <XFixesSelectionNotifyEvent*> e
-    pyev = new_x11_event(e)
-    pyev.window = selectionnotify_e.window
-    pyev.subtype = selectionnotify_e.subtype
-    pyev.owner = selectionnotify_e.owner
-    pyev.selection = atom_str(d, selectionnotify_e.selection)
-    pyev.timestamp = int(selectionnotify_e.timestamp)
-    pyev.selection_timestamp = int(selectionnotify_e.selection_timestamp)
-    return pyev
+    return {
+        "window": selectionnotify_e.window,
+        "subtype": selectionnotify_e.subtype,
+        "owner": selectionnotify_e.owner,
+        "selection": atom_str(d, selectionnotify_e.selection),
+        "timestamp": int(selectionnotify_e.timestamp),
+        "selection_timestamp": int(selectionnotify_e.selection_timestamp),
+    }
 
 
 cdef object parse_CursorNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xany.window
     cdef XFixesCursorNotifyEvent * cursor_e = <XFixesCursorNotifyEvent*> e
-    pyev.cursor_serial = cursor_e.cursor_serial
-    pyev.cursor_name = atom_str(d, cursor_e.cursor_name)
-    return pyev
+    return {
+        "window": cursor_e.window,
+        "subtype": cursor_e.subtype,
+        "cursor_serial": int(cursor_e.cursor_serial),
+        "timestamp": int(cursor_e.timestamp),
+        "cursor_name": atom_str(d, cursor_e.cursor_name),
+    }
 
 
 cdef str s(const char *v):

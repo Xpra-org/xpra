@@ -14,6 +14,4 @@ ctypedef object (*PARSE_XEVENT)(Display* display, XEvent *event)
 
 cdef str atom_str(Display *display, Atom atom)
 
-cdef object new_x11_event(XEvent *e)
-
 cdef void add_parser(unsigned int event, PARSE_XEVENT parser)

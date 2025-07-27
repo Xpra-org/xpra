@@ -6,7 +6,7 @@
 
 from xpra.x11.bindings.xlib cimport Display, Drawable, Window, XID, XRectangle, Bool, Status, XEvent
 from xpra.x11.bindings.display_source cimport get_display
-from xpra.x11.bindings.events cimport add_parser, new_x11_event, add_event_type
+from xpra.x11.bindings.events cimport add_parser, add_event_type
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 from xpra.log import Logger
@@ -55,14 +55,14 @@ def init_damage_events() -> bool:
 
 cdef object parse_DamageNotify(Display *d, XEvent *e):
     cdef XDamageNotifyEvent * damage_e = <XDamageNotifyEvent*>e
-    pyev = new_x11_event(e)
-    pyev.window = e.xany.window
-    pyev.damage = damage_e.damage
-    pyev.x = damage_e.area.x
-    pyev.y = damage_e.area.y
-    pyev.width = damage_e.area.width
-    pyev.height = damage_e.area.height
-    return pyev
+    return {
+        "window": e.xany.window,
+        "damage": damage_e.damage,
+        "x": damage_e.area.x,
+        "y": damage_e.area.y,
+        "width": damage_e.area.width,
+        "height": damage_e.area.height,
+    }
 
 
 cdef class XDamageBindingsInstance(X11CoreBindingsInstance):

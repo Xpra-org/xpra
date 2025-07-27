@@ -20,7 +20,7 @@ log = Logger("x11", "bindings", "events")
 from xpra.x11.bindings.xlib cimport (
     Display, Window, Visual, XID, XRectangle, Atom, Time, CARD32, Bool,
     XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
-    XSelectionEvent, XCreateWindowEvent, XCreateWindowEvent,
+    XSelectionEvent, XCreateWindowEvent, XCreateWindowEvent, XConfigureRequestEvent,
     XFree,
     XDefaultRootWindow,
     XGetAtomName,
@@ -239,11 +239,11 @@ def set_debug_events() -> None:
         log.warn(" event codes: %s", csv(debug_route_events))
 
 
-x_event_parsers : Dict[int, Callable] = {}
+generic_event_parsers : Dict[int, Callable] = {}
 
 
-def add_x_event_parser(extension_opcode: int, parser : Callable) -> None:
-    x_event_parsers[extension_opcode] = parser
+def add_generic_event_parser(extension_opcode: int, parser : Callable) -> None:
+    generic_event_parsers[extension_opcode] = parser
 
 
 cdef str atom_str(Display *display, Atom atom):
@@ -276,8 +276,8 @@ cdef object new_x11_event(XEvent *e):
 
 
 cdef object parse_GenericEvent(Display *d, XEvent *e):
-    global x_event_parsers
-    pyparser = x_event_parsers.get(e.xcookie.extension)
+    global generic_event_parsers
+    pyparser = generic_event_parsers.get(e.xcookie.extension)
     if pyparser:
         log("calling GenericEvent parser %s(%s)", pyparser, <uintptr_t> &e.xcookie)
         return pyparser(<uintptr_t> &e.xcookie)
@@ -286,76 +286,78 @@ cdef object parse_GenericEvent(Display *d, XEvent *e):
 
 
 cdef object parse_MapRequest(Display *d, XEvent *e):
-    pyev = new_x11_event(e)
-    pyev.window = e.xmaprequest.window
-    return pyev
+    return {
+        "window": e.xmaprequest.window,
+    }
 
 
 cdef object parse_ConfigureRequest(Display *d, XEvent *e):
-    pyev = new_x11_event(e)
-    pyev.window = e.xconfigurerequest.window
-    pyev.x = e.xconfigurerequest.x
-    pyev.y = e.xconfigurerequest.y
-    pyev.width = e.xconfigurerequest.width
-    pyev.height = e.xconfigurerequest.height
-    pyev.border_width = e.xconfigurerequest.border_width
-    # In principle there are two cases here: .above is
-    # XNone (i.e. not specified in the original request),
-    # or .above is an invalid window (i.e. it was
-    # specified by the client, but it specified something
-    # weird).  I don't see any reason to handle these
-    # differently, though.
-    pyev.above = e.xconfigurerequest.above
-    pyev.detail = e.xconfigurerequest.detail
-    pyev.value_mask = e.xconfigurerequest.value_mask
-    return pyev
+    cdef XConfigureRequestEvent xconfigurerequest = e.xconfigurerequest
+    return {
+        "window": xconfigurerequest.window,
+        "x": xconfigurerequest.x,
+        "y": xconfigurerequest.y,
+        "width": xconfigurerequest.width,
+        "height": xconfigurerequest.height,
+        "border_width": xconfigurerequest.border_width,
+        # In principle there are two cases here: .above is
+        # XNone (i.e. not specified in the original request),
+        # or .above is an invalid window (i.e. it was
+        # specified by the client, but it specified something
+        # weird).  I don't see any reason to handle these
+        # differently, though.
+        "above": xconfigurerequest.above,
+        "detail": xconfigurerequest.detail,
+        "value_mask": xconfigurerequest.value_mask,
+    }
 
 
 cdef object parse_SelectionRequest(Display *d, XEvent *e):
     cdef XSelectionRequestEvent * selectionrequest_e = <XSelectionRequestEvent*> e
-    pyev = new_x11_event(e)
-    pyev.window = selectionrequest_e.owner
-    pyev.requestor = selectionrequest_e.requestor
-    pyev.selection = atom_str(d, selectionrequest_e.selection)
-    pyev.target = atom_str(d, selectionrequest_e.target)
-    pyev.property = atom_str(d, selectionrequest_e.property)
-    pyev.time = int(selectionrequest_e.time)
-    return pyev
+    return {
+        "window": selectionrequest_e.owner,
+        "requestor": selectionrequest_e.requestor,
+        "selection": atom_str(d, selectionrequest_e.selection),
+        "target": atom_str(d, selectionrequest_e.target),
+        "property": atom_str(d, selectionrequest_e.property),
+        "time": int(selectionrequest_e.time),
+    }
 
 
 cdef object parse_SelectionClear(Display *d, XEvent *e):
     cdef XSelectionClearEvent * selectionclear_e = <XSelectionClearEvent*> e
-    pyev = new_x11_event(e)
-    pyev.window = selectionclear_e.window
-    pyev.selection = atom_str(d, selectionclear_e.selection)
-    pyev.time = int(selectionclear_e.time)
-    return pyev
+    return {
+        "window": selectionclear_e.window,
+        "selection": atom_str(d, selectionclear_e.selection),
+        "time": int(selectionclear_e.time),
+    }
+
 
 cdef object parse_SelectionNotify(Display *d, XEvent *e):
     cdef XSelectionEvent * selection_e = <XSelectionEvent*> e
-    pyev = new_x11_event(e)
-    pyev.window = selection_e.requestor
-    pyev.selection = atom_str(d, selection_e.selection)
-    pyev.target = atom_str(d, selection_e.target)
-    pyev.property = atom_str(d, selection_e.property)
-    pyev.time = int(selection_e.time)
-    return pyev
+    return {
+        "requestor": selection_e.requestor,
+        "selection": atom_str(d, selection_e.selection),
+        "target": atom_str(d, selection_e.target),
+        "property": atom_str(d, selection_e.property),
+        "time": int(selection_e.time),
+    }
 
 
 cdef object parse_ResizeRequest(Display *d, XEvent *e):
-    pyev = new_x11_event(e)
-    pyev.window = e.xresizerequest.window
-    pyev.width = e.xresizerequest.width
-    pyev.height = e.xresizerequest.height
-    return pyev
+    return {
+        "window": e.xresizerequest.window,
+        "width": e.xresizerequest.width,
+        "height": e.xresizerequest.height,
+    }
 
 
 cdef object _parse_Focus(Display *d, XEvent *e):
-    pyev = new_x11_event(e)
-    pyev.window = e.xfocus.window
-    pyev.mode = e.xfocus.mode
-    pyev.detail = e.xfocus.detail
-    return pyev
+    return {
+        "window": e.xfocus.window,
+        "mode": e.xfocus.mode,
+        "detail": e.xfocus.detail,
+    }
 
 
 cdef object parse_FocusIn(Display *d, XEvent *e):
@@ -368,13 +370,15 @@ cdef object parse_FocusOut(Display *d, XEvent *e):
 
 cdef object _parse_EnterLeave(Display *d, XEvent *e):
     cdef XCrossingEvent * crossing_e = <XCrossingEvent*> e
-    pyev = new_x11_event(e)
-    pyev.window = crossing_e.window
-    pyev.mode = crossing_e.mode
-    pyev.detail = crossing_e.detail
-    pyev.subwindow = crossing_e.subwindow
-    pyev.focus = bool(crossing_e.focus)
-    return pyev
+    return {
+        "window": crossing_e.window,
+        "root": crossing_e.root,
+        "subwindow": crossing_e.subwindow,
+        "mode": crossing_e.mode,
+        "detail": crossing_e.detail,
+        "focus": bool(crossing_e.focus),
+        "state": crossing_e.state,
+    }
 
 
 cdef object parse_EnterNotify(Display *d, XEvent *e):
@@ -386,125 +390,129 @@ cdef object parse_LeaveNotify(Display *d, XEvent *e):
 
 
 cdef object parse_CreateNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xcreatewindow.window
-    pyev.width = e.xcreatewindow.width
-    pyev.height = e.xcreatewindow.height
-    return pyev
+    return {
+        "window": e.xcreatewindow.window,
+        "width": e.xcreatewindow.width,
+        "height": e.xcreatewindow.height,
+    }
 
 
 cdef object parse_MapNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xmap.window
-    pyev.override_redirect = bool(e.xmap.override_redirect)
-    return pyev
+    return {
+        "window": e.xmap.window,
+        "override_redirect": bool(e.xmap.override_redirect),
+    }
 
 
 cdef object parse_UnmapNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xunmap.window
-    pyev.from_configure = bool(e.xunmap.from_configure)
-    return pyev
+    return {
+        "window": e.xunmap.window,
+        "from_configure": bool(e.xunmap.from_configure),
+    }
 
 
 cdef object parse_DestroyNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xdestroywindow.window
-    return pyev
+    return {
+        "window": e.xdestroywindow.window,
+    }
 
 
 cdef object parse_PropertyNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xany.window
-    pyev.atom = atom_str(d, e.xproperty.atom)
-    pyev.time = e.xproperty.time
-    return pyev
+    return {
+        "window": e.xany.window,
+        "atom": atom_str(d, e.xproperty.atom),
+        "time": e.xproperty.time,
+    }
 
 
 cdef object parse_ConfigureNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xconfigure.window
-    pyev.x = e.xconfigure.x
-    pyev.y = e.xconfigure.y
-    pyev.width = e.xconfigure.width
-    pyev.height = e.xconfigure.height
-    pyev.border_width = e.xconfigure.border_width
-    pyev.above = e.xconfigure.above
-    pyev.override_redirect = bool(e.xconfigure.override_redirect)
-    return pyev
+    return {
+        "window": e.xconfigure.window,
+        "x": e.xconfigure.x,
+        "y": e.xconfigure.y,
+        "width": e.xconfigure.width,
+        "height": e.xconfigure.height,
+        "border_width": e.xconfigure.border_width,
+        "above": e.xconfigure.above,
+        "override_redirect": bool(e.xconfigure.override_redirect),
+    }
 
 
 cdef object parse_CirculateNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xcirculaterequest.window
-    pyev.place = e.xcirculaterequest.place
-    return pyev
+    return {
+        "window": e.xany.window,
+    }
 
 
 cdef object parse_ReparentNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xreparent.window
-    return pyev
+    return {
+        "window": e.xreparent.window,
+        "parent": e.xreparent.parent,
+        "x": e.xreparent.x,
+        "y": e.xreparent.y,
+    }
 
 
 cdef object parse_KeyPress(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xany.window
-    pyev.hardware_keycode = e.xkey.keycode
-    pyev.state = e.xkey.state
-    return pyev
+    return {
+        "window": e.xany.window,
+        "hardware_keycode": e.xkey.keycode,
+        "state": e.xkey.state,
+    }
 
 
 cdef object parse_MotionNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xmotion.window
-    pyev.root = e.xmotion.root
-    pyev.subwindow = e.xmotion.subwindow
-    pyev.time = e.xmotion.time
-    pyev.x = e.xmotion.x
-    pyev.y = e.xmotion.y
-    pyev.x_root = e.xmotion.x_root
-    pyev.y_root = e.xmotion.y_root
-    pyev.state = e.xmotion.state
-    pyev.is_hint = e.xmotion.is_hint != NotifyNormal
-    #pyev.same_screen = bool(e.xmotion.same_screen)
-    return pyev
+    return {
+        "window": e.xmotion.window,
+        "root": e.xmotion.root,
+        "subwindow": e.xmotion.subwindow,
+        "time": e.xmotion.time,
+        "x": e.xmotion.x,
+        "y": e.xmotion.y,
+        "x_root": e.xmotion.x_root,
+        "y_root": e.xmotion.y_root,
+        "state": e.xmotion.state,
+        "is_hint": e.xmotion.is_hint != NotifyNormal,
+        #pyev.same_screen = bool(e.xmotion.same_screen),
+    }
 
 
 cdef object parse_ClientMessage(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
-    pyev.window = e.xany.window
     if int(e.xclient.message_type) > 2**32:
         log.warn("Warning: Xlib claims that this ClientEvent's 32-bit")
         log.warn(f" message_type is {e.xclient.message_type}.")
         log.warn(" note that this is >2^32.")
         log.warn(" this makes no sense, so I'm ignoring it")
         return None
-    pyev.message_type = atom_str(d, e.xclient.message_type)
-    pyev.format = e.xclient.format
-    pieces = []
-    if pyev.format == 32:
+    cdef unsigned int format = e.xclient.format
+    cdef str message_type = atom_str(d, e.xclient.message_type)
+    pieces: list[int] = []
+    if format == 32:
         for i in range(5):
             # Mask with 0xffffffff to prevent sign-extension on
             # architectures where Python's int is 64-bits.
             pieces.append(int(e.xclient.data.l[i]) & 0xffffffff)
-    elif pyev.format == 16:
+    elif format == 16:
         for i in range(10):
             pieces.append(int(e.xclient.data.s[i]))
-    elif pyev.format == 8:
+    elif format == 8:
         for i in range(20):
             pieces.append(int(e.xclient.data.b[i]))
     else:
-        log.warn(f"Warning: ignoring ClientMessage {pyev.message_type!r} with format={pyev.format}")
+        log.warn(f"Warning: ignoring ClientMessage {message_type!r} with format={format}")
         return None
-    pyev.data = tuple(pieces)
-    return pyev
+    return {
+        "window": e.xany.window,
+        "message_type": message_type,
+        "format": format,
+        "data": tuple(pieces),
+    }
 
 
 cdef object parse_xevent(Display *d, XEvent *e):
     cdef int etype = e.type
     global x_event_type_names, x_event_signals
-    event_type = x_event_type_names.get(etype, etype)
+    cdef str event_type = x_event_type_names.get(etype, "") or str(etype)
     if e.xany.send_event and etype not in (ClientMessage, UnmapNotify):
         log("parse_xevent ignoring %s send_event", event_type)
         return None
@@ -519,4 +527,16 @@ cdef object parse_xevent(Display *d, XEvent *e):
     if parser is NULL:
         log.warn("no parser for %s/%s", event_type, etype)
         return None
-    return parser(d, e)
+
+    attrs = parser(d, e)
+    if attrs is None:
+        return None
+
+    cdef object pyev = X11Event(event_type)
+    pyev.type = etype
+    pyev.send_event = bool(e.xany.send_event)
+    pyev.serial = e.xany.serial
+    pyev.delivered_to = e.xany.window
+    for k, v in attrs.items():
+        setattr(pyev, k, v)
+    return pyev

@@ -7,7 +7,7 @@ from typing import Dict, Tuple
 
 from xpra.x11.bindings.xlib cimport Display, Window, XRectangle, XEvent, Bool, Status
 from xpra.x11.bindings.display_source cimport get_display
-from xpra.x11.bindings.events cimport add_parser, new_x11_event, add_event_type
+from xpra.x11.bindings.events cimport add_parser, add_event_type
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 from libc.stdlib cimport free, malloc        # pylint: disable=syntax-error
 
@@ -58,17 +58,16 @@ def init_xshape_events() -> bool:
 
 
 cdef object parse_ShapeNotify(Display *d, XEvent *e):
-    cdef object pyev = new_x11_event(e)
     cdef XShapeEvent *shape_e = <XShapeEvent*> e
-    pyev.window = shape_e.window
-    pyev.kind = shape_e.kind
-    pyev.x = shape_e.x
-    pyev.y = shape_e.y
-    pyev.width = shape_e.width
-    pyev.height = shape_e.height
-    pyev.shaped = bool(shape_e.shaped)
-    log("parse_ShapeNotify() event=%s", pyev)
-    return pyev
+    return {
+        "window": shape_e.window,
+        "kind": shape_e.kind,
+        "x": shape_e.x,
+        "y": shape_e.y,
+        "width": shape_e.width,
+        "height": shape_e.height,
+        "shaped": bool(shape_e.shaped),
+    }
 
 
 cdef class XShapeBindingsInstance(X11CoreBindingsInstance):
