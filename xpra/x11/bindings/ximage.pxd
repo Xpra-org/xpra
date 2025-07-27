@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.x11.bindings.xlib cimport XImage, Display, Pixmap
+from xpra.x11.bindings.xlib cimport XImage
 from libc.stdint cimport uint64_t
 
 

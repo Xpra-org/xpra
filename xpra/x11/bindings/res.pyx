@@ -4,10 +4,7 @@
 # later version. See the file COPYING for details.
 
 import cython
-from xpra.x11.bindings.xlib cimport (
-    Display, XID, Atom, Bool, Status, Window, CARD32,
-    Success,
-)
+from xpra.x11.bindings.xlib cimport Display, XID, Atom, Bool, Status, Window
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 from xpra.log import Logger

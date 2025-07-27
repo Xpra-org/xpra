@@ -18,11 +18,10 @@ log = Logger("x11", "bindings", "events")
 
 
 from xpra.x11.bindings.xlib cimport (
-    Display, Window, Visual, XID, XRectangle, Atom, Time, CARD32, Bool,
+    Display, Atom,
     XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
-    XSelectionEvent, XCreateWindowEvent, XCreateWindowEvent, XConfigureRequestEvent,
+    XSelectionEvent, XConfigureRequestEvent,
     XFree,
-    XDefaultRootWindow,
     XGetAtomName,
 )
 from libc.stdint cimport uintptr_t
@@ -261,18 +260,6 @@ cdef str atom_str(Display *display, Atom atom):
         r = atom_name.decode("latin1")
         XFree(atom_name)
     return r
-
-
-
-cdef object new_x11_event(XEvent *e):
-    cdef int etype = e.type
-    cdef str event_type = x_event_type_names.get(etype) or str(etype)
-    cdef object pyev = X11Event(event_type)
-    pyev.type = etype
-    pyev.send_event = bool(e.xany.send_event)
-    pyev.serial = e.xany.serial
-    pyev.delivered_to = e.xany.window
-    return pyev
 
 
 cdef object parse_GenericEvent(Display *d, XEvent *e):

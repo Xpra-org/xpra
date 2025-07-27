@@ -9,12 +9,9 @@ from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, add_event_type, atom_str
 
 from xpra.x11.bindings.xlib cimport (
-    Display, Window, Visual, XID, XRectangle, Atom, Time, CARD32, Bool,
-    XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
-    XSelectionEvent, XCreateWindowEvent, XCreateWindowEvent,
-    XFree,
+    Display, Window, Atom, Time, CARD32, Bool,
+    XEvent,
     XDefaultRootWindow,
-    XGetAtomName,
 )
 
 from xpra.log import Logger

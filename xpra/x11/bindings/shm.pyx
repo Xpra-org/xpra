@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import List, Tuple, Dict
+from typing import List, Tuple
 
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
@@ -16,7 +16,7 @@ from xpra.x11.bindings.xlib cimport (
     Status, Window, Drawable, Bool,
     XFree, XWindowAttributes,
     ZPixmap,
-    DoRed, DoGreen, DoBlue, AllPlanes,
+    DoRed, DoGreen, DoBlue,
     XGetVisualInfo,
 )
 from libc.stdint cimport uintptr_t

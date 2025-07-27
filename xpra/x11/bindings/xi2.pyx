@@ -21,7 +21,7 @@ from xpra.x11.bindings.xlib cimport (
     XQueryExtension,
     XGetEventData, XFreeEventData, XDefaultRootWindow, XQueryPointer,
     XFlush,
-    XInternAtom, XFree,
+    XFree,
     BadRequest, Success, XIAnyPropertyType,
 )
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error

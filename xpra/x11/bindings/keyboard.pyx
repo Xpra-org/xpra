@@ -14,7 +14,7 @@ log = Logger("x11", "bindings", "keyboard")
 
 from xpra.util.str_fn import csv
 from xpra.x11.bindings.xlib cimport (
-    Display, XID, Bool, KeySym, KeyCode, Atom, Window, Status, Time, XRectangle, CARD32,
+    Display, Bool, KeySym, KeyCode, Atom, Window, Status, Time, XRectangle, CARD32,
     XModifierKeymap,
     XDefaultRootWindow,
     XOpenDisplay, XCloseDisplay, XFlush, XFree, XInternAtom,

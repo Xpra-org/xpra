@@ -8,7 +8,6 @@ import sys
 import signal
 import threading
 
-from libc.stdint cimport uintptr_t
 from xpra.x11.bindings.xlib cimport (
     Display, XOpenDisplay,
     XNextEvent, XEvent, XErrorEvent,

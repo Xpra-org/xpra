@@ -11,7 +11,7 @@ from xpra.x11.bindings.xlib cimport (
     Display, Window, Atom, Status,
     XInternAtom,
     XOpenDisplay, XCloseDisplay,
-    XQueryExtension, XFree,
+    XQueryExtension,
     XGetWindowProperty, XDefaultRootWindow,
 )
 from xpra.x11.bindings.randr cimport get_monitor_properties

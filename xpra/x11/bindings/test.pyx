@@ -4,9 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
-from typing import List, Dict
-from collections.abc import Iterable
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")

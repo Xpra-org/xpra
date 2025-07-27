@@ -7,7 +7,6 @@
 from time import monotonic
 from typing import Tuple, Dict
 
-from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 from xpra.x11.bindings.xlib cimport (

@@ -9,18 +9,18 @@ from typing import Any, Optional, Tuple, List, Dict
 from xpra.gtk.error import XError
 
 from xpra.x11.bindings.xlib cimport (
-    Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime, Cursor, XPointer,
-    VisualID, XVisualInfo,
+    Display, Drawable, Visual, Window, Bool, XID, Status, Atom, Time, CurrentTime, Cursor, XPointer,
+    XVisualInfo,
     XGetVisualInfo, VisualIDMask, XDefaultVisual,
     GrabModeAsync, XGrabPointer,
     Expose,
-    XRectangle, XEvent, XClassHint,
+    XEvent, XClassHint,
     XWMHints, XSizeHints,
     XCreateWindow, XDestroyWindow, XIfEvent, PropertyNotify,
     XSetWindowAttributes,
     XWindowAttributes, XWindowChanges,
     XDefaultRootWindow,
-    XInternAtom, XFree, XGetErrorText,
+    XFree,
     XGetSelectionOwner, XSetSelectionOwner, XConvertSelection,
     XMapWindow, XMapRaised, XUnmapWindow, XWithdrawWindow, XReparentWindow, XIconifyWindow, XRaiseWindow,
     NextRequest, XSendEvent, XSelectInput, XAddToSaveSet, XRemoveFromSaveSet,
