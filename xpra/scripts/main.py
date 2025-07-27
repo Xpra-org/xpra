@@ -31,7 +31,10 @@ from collections.abc import Callable, Iterable
 from xpra.common import SocketState, noerr, noop, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
-from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr, sort_human
+from xpra.util.str_fn import (
+    nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr,
+    sort_human, is_valid_hostname,
+)
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
 from xpra.util.parsing import parse_scaling
 from xpra.util.thread import set_main_thread
@@ -559,6 +562,14 @@ def is_connection_arg(arg) -> bool:
         return True
     if any(arg.startswith(f"{mode}/") for mode in SOCKET_TYPES):
         return True
+    # could be a plain TCP address, specifying a display,
+    # ie: 127.0.0.1:0 or SOMEHOST:0.0
+    parts = arg.split(":")
+    if len(parts) == 2:
+        host, display = parts
+        if is_valid_hostname(host) and display.replace(".", "").isdigit():
+            # this is a valid connection argument
+            return True
     return False
 
 
@@ -3969,6 +3980,7 @@ def get_x11_display_info(display, sessions_dir="") -> dict[str, Any]:
     with OSEnvContext():
         if xauthority:
             os.environ["XAUTHORITY"] = xauthority
+        log("get_x11_display_info: XAUTHORITY=%r" % xauthority)
         try:
             from xpra.x11.bindings.xwayland import isxwayland
         except ImportError:
