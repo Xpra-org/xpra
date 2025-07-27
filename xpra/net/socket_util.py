@@ -728,7 +728,8 @@ def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotx
                 path = os.path.join(session_dir, "socket")
                 sockpaths[path] = dict(options)
             if sockpath != "noabstract" and AUTO_ABSTRACT_SOCKET:
-                path = "@" + ABSTRACT_SOCKET_PREFIX + strip_display_prefix(display_name)
+                sane_display_name = strip_display_prefix(display_name).replace(":", "-").replace(".", "_")
+                path = "@" + ABSTRACT_SOCKET_PREFIX + sane_display_name
                 abs_options = dict(options)
                 if "auth" not in options:
                     abs_options["auth"] = ABSTRACT_SOCKET_AUTH
