@@ -704,7 +704,8 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     path = os.path.join(session_dir, "socket")
                     sockpaths[path] = dict(options)
                 if sockpath != "noabstract" and AUTO_ABSTRACT_SOCKET:
-                    path = "@" + ABSTRACT_SOCKET_PREFIX + strip_display_prefix(display_name)
+                    sane_display_name = strip_display_prefix(display_name).replace(":", "-").replace(".", "_")
+                    path = "@" + ABSTRACT_SOCKET_PREFIX + sane_display_name
                     abs_options = dict(options)
                     if "auth" not in options:
                         abs_options["auth"] = ABSTRACT_SOCKET_AUTH
