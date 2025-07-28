@@ -574,11 +574,11 @@ cdef Tuple query_version(Display *display):
     cdef int r = XRRQueryExtension(display, &event_base, &ignored)
     log(f"XRRQueryExtension()={r}")
     if not r:
-        return (0, 0, 0)
+        return (0, 0)
     log("found XRandR extension")
     cdef int major = 0, minor = 0
     if not XRRQueryVersion(display, &major, &minor):
-        return (0, 0, 0)
+        return (0, 0)
     log(f"found XRandR extension version {major}.{minor} with event_base={event_base}")
     return major, minor
 
