@@ -129,14 +129,45 @@ def get_info() -> dict[str, Any]:
     return info
 
 
+def get_windows_info() -> dict[str, Any]:
+    try:
+        from xpra.x11.bindings.window import X11WindowBindings
+        window = X11WindowBindings()
+
+        def get_window_info(w: int) -> dict[str, Any]:
+            info = {
+                "xid": w,
+                "attributes": window.getWindowAttributes(w),
+                "event-mask": window.get_event_mask_strs(w),
+                "override-redirect": window.is_override_redirect(w),
+                "input-only": window.is_inputonly(w),
+                "depth": window.get_depth(w),
+                "geometry": window.getGeometry(w),
+                "size-hints": window.getSizeHints(w),
+                "wm-hints": window.getWMHints(w)
+            }
+            children = window.get_children(w)
+            if children:
+                info["children"] = dict((c, get_window_info(c)) for c in children)
+            return info
+    except ImportError:
+        return {}
+    root = window.get_root_xid()
+    print("get_windows_info: root:", root)
+    return {"root": get_window_info(root)}
+
+
 def main(args: list[str]) -> int:
     display_name = args[0] if args else os.environ.get("DISPLAY", "")
     from xpra.x11.bindings.posix_display_source import X11DisplayContext
     with X11DisplayContext(display_name) as context:
         info = get_info()
         info["display"] = context.display_name
+        print_nested_dict(info)
+        print()
+        info = get_windows_info()
+        print_nested_dict(info)
 
-    print_nested_dict(info)
     return 0
 
 
