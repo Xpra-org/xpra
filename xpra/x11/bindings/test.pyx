@@ -8,7 +8,6 @@ import os
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
-from xpra.util.str_fn import csv
 from xpra.x11.bindings.xlib cimport Display, XID, Bool, KeySym, KeyCode, Atom, Window, Status, Time
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
