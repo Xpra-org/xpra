@@ -90,7 +90,7 @@ def parse_command_line(argv: list[str]):
     add("service", help="build the system service", default=ARCH != "aarch64")
     add("docs", help="generate the documentation", default=ARCH != "aarch64")
     add("html5", help="bundle the `xpra-html5` client")
-    add("x11", help="include X11 bindings")
+    add("x11", help="include X11 bindings", default=False)
     add("manual", help="bundle the user manual")
     add("numpy", help="bundle `numpy`")
     add("putty", help="bundle putty `plink`")
