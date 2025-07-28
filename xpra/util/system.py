@@ -261,7 +261,7 @@ def is_X11() -> bool:
         from xpra.x11.gtk.bindings import is_X11_Display
         return is_X11_Display()
     except ImportError:
-        get_util_logger().debug("failed to load x11 bindings", exc_info=True)
+        get_util_logger().debug("failed to load gtk x11 bindings", exc_info=True)
         return True
 
 

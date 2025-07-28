@@ -9,12 +9,12 @@
 
 #cython: boundscheck=False, wraparound=False, overflowcheck=False
 
-cdef inline int MIN(int a, int b):   # pylint: disable=syntax-error
+cdef inline int MIN(int a, int b) noexcept:   # pylint: disable=syntax-error
     if a<=b:
         return a
     return b
 
-cdef inline int MAX(int a, int b):
+cdef inline int MAX(int a, int b) noexcept:
     if a>=b:
         return a
     return b

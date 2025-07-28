@@ -337,7 +337,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         log("get_xi_version%s=%s", (major, minor), (rmajor, rminor))
         return rmajor, rminor
 
-    cdef int get_xi_opcode(self, int major=2, int minor=2):
+    cdef int get_xi_opcode(self, int major=2, int minor=2) noexcept:
         if self.opcode!=-1:
             return self.opcode
         cdef int opcode, event, error
@@ -360,13 +360,13 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         log("get_xi_opcode%s=%i", (major, minor), opcode)
         return opcode
 
-    cdef void register_parser(self):
+    cdef void register_parser(self) noexcept:
         log("register_parser()")
         if self.opcode>0:
             from xpra.x11.bindings.events import add_x_event_parser
             add_x_event_parser(self.opcode, self.parse_xi_event)
 
-    cdef void register_gdk_events(self):
+    cdef void register_gdk_events(self) noexcept:
         log("register_gdk_events()")
         if self.opcode<=0:
             return
@@ -398,7 +398,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
             XI_RawTouchUpdate   : "raw-touch-update",
             XI_RawTouchEnd      : "raw-touch-end",
         }.items():
-            event = self.opcode+e
+            event = self.opcode + e
             add_x_event_signal(event, ("xi-%s" % xi_event_name, None))
             name = XI_EVENT_NAMES[e]
             add_x_event_type_name(event, name)

@@ -131,7 +131,7 @@ for i in range(256):
     parsers[i] = NULL
 
 
-cdef void add_parser(unsigned int event, PARSE_XEVENT parser):
+cdef void add_parser(unsigned int event, PARSE_XEVENT parser) noexcept:
     """
     Add a parser for the given event type.
     """
@@ -140,7 +140,7 @@ cdef void add_parser(unsigned int event, PARSE_XEVENT parser):
     parsers[event] = parser
 
 
-cdef void add_event_type(int event, str name, str event_name, str child_event_name):
+cdef void add_event_type(int event, str name, str event_name, str child_event_name) noexcept:
     add_x_event_type_name(event, name)
     add_x_event_signal(event, (event_name, child_event_name))
 
@@ -245,7 +245,7 @@ def add_generic_event_parser(extension_opcode: int, parser : Callable) -> None:
     generic_event_parsers[extension_opcode] = parser
 
 
-cdef str atom_str(Display *display, Atom atom):
+cdef str atom_str(Display *display, Atom atom) noexcept:
     if not atom:
         return ""
     cdef char* atom_name = NULL
@@ -272,13 +272,13 @@ cdef object parse_GenericEvent(Display *d, XEvent *e):
     return None
 
 
-cdef object parse_MapRequest(Display *d, XEvent *e):
+cdef object parse_MapRequest(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xmaprequest.window,
     }
 
 
-cdef object parse_ConfigureRequest(Display *d, XEvent *e):
+cdef object parse_ConfigureRequest(Display *d, XEvent *e) noexcept:
     cdef XConfigureRequestEvent xconfigurerequest = e.xconfigurerequest
     return {
         "window": xconfigurerequest.window,
@@ -299,7 +299,7 @@ cdef object parse_ConfigureRequest(Display *d, XEvent *e):
     }
 
 
-cdef object parse_SelectionRequest(Display *d, XEvent *e):
+cdef object parse_SelectionRequest(Display *d, XEvent *e) noexcept:
     cdef XSelectionRequestEvent * selectionrequest_e = <XSelectionRequestEvent*> e
     return {
         "window": selectionrequest_e.owner,
@@ -311,7 +311,7 @@ cdef object parse_SelectionRequest(Display *d, XEvent *e):
     }
 
 
-cdef object parse_SelectionClear(Display *d, XEvent *e):
+cdef object parse_SelectionClear(Display *d, XEvent *e) noexcept:
     cdef XSelectionClearEvent * selectionclear_e = <XSelectionClearEvent*> e
     return {
         "window": selectionclear_e.window,
@@ -320,7 +320,7 @@ cdef object parse_SelectionClear(Display *d, XEvent *e):
     }
 
 
-cdef object parse_SelectionNotify(Display *d, XEvent *e):
+cdef object parse_SelectionNotify(Display *d, XEvent *e) noexcept:
     cdef XSelectionEvent * selection_e = <XSelectionEvent*> e
     return {
         "requestor": selection_e.requestor,
@@ -331,7 +331,7 @@ cdef object parse_SelectionNotify(Display *d, XEvent *e):
     }
 
 
-cdef object parse_ResizeRequest(Display *d, XEvent *e):
+cdef object parse_ResizeRequest(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xresizerequest.window,
         "width": e.xresizerequest.width,
@@ -339,7 +339,7 @@ cdef object parse_ResizeRequest(Display *d, XEvent *e):
     }
 
 
-cdef object _parse_Focus(Display *d, XEvent *e):
+cdef object _parse_Focus(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xfocus.window,
         "mode": e.xfocus.mode,
@@ -347,15 +347,15 @@ cdef object _parse_Focus(Display *d, XEvent *e):
     }
 
 
-cdef object parse_FocusIn(Display *d, XEvent *e):
+cdef object parse_FocusIn(Display *d, XEvent *e) noexcept:
     return _parse_Focus(d, e)
 
 
-cdef object parse_FocusOut(Display *d, XEvent *e):
+cdef object parse_FocusOut(Display *d, XEvent *e) noexcept:
     return _parse_Focus(d, e)
 
 
-cdef object _parse_EnterLeave(Display *d, XEvent *e):
+cdef object _parse_EnterLeave(Display *d, XEvent *e) noexcept:
     cdef XCrossingEvent * crossing_e = <XCrossingEvent*> e
     return {
         "window": crossing_e.window,
@@ -368,15 +368,15 @@ cdef object _parse_EnterLeave(Display *d, XEvent *e):
     }
 
 
-cdef object parse_EnterNotify(Display *d, XEvent *e):
+cdef object parse_EnterNotify(Display *d, XEvent *e) noexcept:
     return _parse_EnterLeave(d, e)
 
 
-cdef object parse_LeaveNotify(Display *d, XEvent *e):
+cdef object parse_LeaveNotify(Display *d, XEvent *e) noexcept:
     return _parse_EnterLeave(d, e)
 
 
-cdef object parse_CreateNotify(Display *d, XEvent *e):
+cdef object parse_CreateNotify(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xcreatewindow.window,
         "width": e.xcreatewindow.width,
@@ -384,27 +384,27 @@ cdef object parse_CreateNotify(Display *d, XEvent *e):
     }
 
 
-cdef object parse_MapNotify(Display *d, XEvent *e):
+cdef object parse_MapNotify(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xmap.window,
         "override_redirect": bool(e.xmap.override_redirect),
     }
 
 
-cdef object parse_UnmapNotify(Display *d, XEvent *e):
+cdef object parse_UnmapNotify(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xunmap.window,
         "from_configure": bool(e.xunmap.from_configure),
     }
 
 
-cdef object parse_DestroyNotify(Display *d, XEvent *e):
+cdef object parse_DestroyNotify(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xdestroywindow.window,
     }
 
 
-cdef object parse_PropertyNotify(Display *d, XEvent *e):
+cdef object parse_PropertyNotify(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xany.window,
         "atom": atom_str(d, e.xproperty.atom),
@@ -412,7 +412,7 @@ cdef object parse_PropertyNotify(Display *d, XEvent *e):
     }
 
 
-cdef object parse_ConfigureNotify(Display *d, XEvent *e):
+cdef object parse_ConfigureNotify(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xconfigure.window,
         "x": e.xconfigure.x,
@@ -425,13 +425,13 @@ cdef object parse_ConfigureNotify(Display *d, XEvent *e):
     }
 
 
-cdef object parse_CirculateNotify(Display *d, XEvent *e):
+cdef object parse_CirculateNotify(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xany.window,
     }
 
 
-cdef object parse_ReparentNotify(Display *d, XEvent *e):
+cdef object parse_ReparentNotify(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xreparent.window,
         "parent": e.xreparent.parent,
@@ -440,7 +440,7 @@ cdef object parse_ReparentNotify(Display *d, XEvent *e):
     }
 
 
-cdef object parse_KeyPress(Display *d, XEvent *e):
+cdef object parse_KeyPress(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xany.window,
         "hardware_keycode": e.xkey.keycode,
@@ -448,7 +448,7 @@ cdef object parse_KeyPress(Display *d, XEvent *e):
     }
 
 
-cdef object parse_MotionNotify(Display *d, XEvent *e):
+cdef object parse_MotionNotify(Display *d, XEvent *e) noexcept:
     return {
         "window": e.xmotion.window,
         "root": e.xmotion.root,
@@ -464,7 +464,7 @@ cdef object parse_MotionNotify(Display *d, XEvent *e):
     }
 
 
-cdef object parse_ClientMessage(Display *d, XEvent *e):
+cdef object parse_ClientMessage(Display *d, XEvent *e) noexcept:
     if int(e.xclient.message_type) > 2**32:
         log.warn("Warning: Xlib claims that this ClientEvent's 32-bit")
         log.warn(f" message_type is {e.xclient.message_type}.")

@@ -475,7 +475,7 @@ cdef class DrawableWrapper:
     cdef unsigned int width
     cdef unsigned int height
 
-    cdef void init(self, Display *display, Drawable drawable, unsigned int width, unsigned int height):
+    cdef void init(self, Display *display, Drawable drawable, unsigned int width, unsigned int height) noexcept:
         self.display = display
         self.drawable = drawable
         self.width = width
@@ -514,7 +514,7 @@ cdef class DrawableWrapper:
     def __dealloc__(self):
         self.do_cleanup()
 
-    cdef void do_cleanup(self):
+    cdef void do_cleanup(self) noexcept:
         cdef drawable = self.drawable
         if drawable != 0:
             self.drawable = 0

@@ -636,7 +636,7 @@ cdef class Encoder:
         log("x264 params: %s", self.get_param_info(&param))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
-    cdef void tune_param(self, x264_param_t *param, options: typedict):
+    cdef void tune_param(self, x264_param_t *param, options: typedict) noexcept:
         param.i_lookahead_threads = 0
         if MIN_SLICED_THREADS_SPEED>0 and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
             param.b_sliced_threads = 1
@@ -799,7 +799,7 @@ cdef class Encoder:
             }
         return info
 
-    cdef dict get_param_info(self, x264_param_t *param):
+    cdef dict get_param_info(self, x264_param_t *param) noexcept:
         return {
             "me"                : self.get_analyse_info(param),
             "rc"                : self.get_rc_info(param),
@@ -817,13 +817,13 @@ cdef class Encoder:
             "sliced-threads"    : bool(param.b_sliced_threads),
         }
 
-    cdef dict get_vui_info(self, x264_param_t *param):
+    cdef dict get_vui_info(self, x264_param_t *param) noexcept:
         return {
             # "overscan": bool(param.vui.i_overscan),
             "fullrange" : bool(param.vui.b_fullrange),
         }
 
-    cdef dict get_analyse_info(self, x264_param_t *param):
+    cdef dict get_analyse_info(self, x264_param_t *param) noexcept:
         return {
             "type"              : ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method),
             "me-range"          : param.analyse.i_me_range,
@@ -837,7 +837,7 @@ cdef class Encoder:
             "mb_info"           : bool(param.analyse.b_mb_info),
         }
 
-    cdef dict get_rc_info(self, x264_param_t *param):
+    cdef dict get_rc_info(self, x264_param_t *param) noexcept:
         return {
             "rc-method"         : RC_TYPES.get(param.rc.i_rc_method, param.rc.i_rc_method),
             "qp_constant"       : param.rc.i_qp_constant,

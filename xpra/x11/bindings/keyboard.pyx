@@ -414,7 +414,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             if display!=NULL:
                 XCloseDisplay(display)
 
-    cdef Tuple _get_minmax_keycodes(self):
+    cdef Tuple _get_minmax_keycodes(self) noexcept:
         if self.min_keycode==-1 and self.max_keycode==-1:
             XDisplayKeycodes(self.display, &self.min_keycode, &self.max_keycode)
         return self.min_keycode, self.max_keycode
@@ -465,18 +465,18 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             self._get_minmax_keycodes()
         return self.min_keycode, self.max_keycode
 
-    cdef XModifierKeymap* get_keymap(self, load):
+    cdef XModifierKeymap* get_keymap(self, load) noexcept:
         self.context_check("get_keymap")
         if self.work_keymap==NULL and load:
             self.work_keymap = XGetModifierMapping(self.display)
             log("retrieved work keymap: %#x", <unsigned long> self.work_keymap)
         return self.work_keymap
 
-    cdef void set_work_keymap(self, XModifierKeymap* new_keymap):
+    cdef void set_work_keymap(self, XModifierKeymap* new_keymap) noexcept:
         # log("setting new work keymap: %#x", <unsigned long> new_keymap)
         self.work_keymap = new_keymap
 
-    cdef KeySym _parse_keysym(self, symbol):
+    cdef KeySym _parse_keysym(self, symbol) noexcept:
         s = b(symbol)
         if s in [b"NoSymbol", b"VoidSymbol"]:
             return NoSymbol
@@ -517,7 +517,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 keysymlist.append(keysym)
         return keysymlist
 
-    cdef int _parse_keycode(self, keycode_str):
+    cdef int _parse_keycode(self, keycode_str) noexcept:
         cdef int keycode
         if keycode_str=="any":
             # find a free one:
@@ -799,7 +799,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                         success = False
         return success
 
-    cdef List _get_keycodes_down(self):
+    cdef List _get_keycodes_down(self) noexcept:
         cdef char[32] keymap
         masktable: Sequence[int] = (0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80)
         down: list[int] = []

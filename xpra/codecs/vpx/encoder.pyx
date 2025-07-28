@@ -445,7 +445,7 @@ cdef class Encoder:
         log(" undershoot_pct=%s", self.cfg.rc_undershoot_pct)
         log(" overshoot_pct=%s", self.cfg.rc_overshoot_pct)
 
-    cdef void update_cfg(self):
+    cdef void update_cfg(self) noexcept:
         self.cfg.rc_undershoot_pct = 100
         self.cfg.rc_overshoot_pct = 100
         bitrate_kbps = int(self.width * self.height * self.initial_bitrate_per_pixel)
@@ -684,7 +684,7 @@ cdef class Encoder:
         self.speed = pct
         self.do_set_encoding_speed(pct)
 
-    cdef void do_set_encoding_speed(self, int speed):
+    cdef void do_set_encoding_speed(self, int speed) noexcept:
         #Valid range for VP8: -16..16
         #Valid range for VP9: -8..8
         #But we only use positive values, negative values are just too slow

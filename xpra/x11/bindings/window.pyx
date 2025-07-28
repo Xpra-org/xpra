@@ -251,7 +251,7 @@ def get_mask_strs(int mask) -> list[str]:
     return masks
 
 
-cdef inline long cast_to_long(i):
+cdef inline long cast_to_long(i) noexcept:
     if i < 0:
         return <long>i
     else:
@@ -358,7 +358,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                 "green-mask"    : attrs.visual.green_mask,
                 "blue-mask"     : attrs.visual.blue_mask,
                 "bits-per-rgb"  : attrs.visual.bits_per_rgb,
-                "map_entries"   : attrs.visual.map_entries,
+                "map-entries"   : attrs.visual.map_entries,
             },
             "bit-gravity" : attrs.bit_gravity,
             "win-gravity" : attrs.win_gravity,
@@ -370,7 +370,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             "map-installed" : attrs.map_installed,
             "map-state" : attrs.map_state,
             "all-events-mask" : attrs.all_event_masks,
-            "your_event_mask"   : attrs.your_event_mask,
+            "your-event-mask"   : attrs.your_event_mask,
             "do-not-propagate-mask" : attrs.do_not_propagate_mask,
             "override-redirect"     : attrs.override_redirect,
         }
@@ -657,7 +657,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                              InputOutput, visual,
                              valuemask, &attributes)
 
-    cdef Visual* get_visual(self, int visualid):
+    cdef Visual* get_visual(self, int visualid) noexcept:
         cdef Visual* visual = NULL
         cdef int count
         cdef XVisualInfo vinfo_template
@@ -1086,7 +1086,7 @@ ctypedef struct xifevent_timestamp:
     Atom atom
 
 
-cdef Bool timestamp_predicate(Display *display, XEvent  *xevent, XPointer arg) nogil:
+cdef Bool timestamp_predicate(Display *display, XEvent  *xevent, XPointer arg)  noexcept nogil:
     cdef xifevent_timestamp *et = <xifevent_timestamp*> arg
     cdef Window xwindow = <Window> arg
     if xevent.type!=PropertyNotify:

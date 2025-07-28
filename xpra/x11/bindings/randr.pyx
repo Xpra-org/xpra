@@ -627,7 +627,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef Window root = XDefaultRootWindow(self.display)
         XRRSelectInput(self.display, root, mask)
 
-    cdef List _get_xrr_screen_sizes(self):
+    cdef List _get_xrr_screen_sizes(self) noexcept:
         cdef int num_sizes = 0
         cdef XRRScreenSize xrr
         cdef XRRScreenSize *xrrs = XRRSizes(self.display, 0, &num_sizes)
@@ -880,7 +880,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 log("failed to remove older mode", exc_info=True)
         return mode
 
-    cdef XRRModeInfo *calculate_mode(self, name, unsigned int w, unsigned int h, unsigned int vrefresh):
+    cdef XRRModeInfo *calculate_mode(self, name, unsigned int w, unsigned int h, unsigned int vrefresh) noexcept:
         log("calculate_mode(%s, %i, %i, %i)", name, w, h, vrefresh)
         #monitor settings as set in xorg.conf...
         cdef unsigned int minHSync = 1*1000                     #1KHz
