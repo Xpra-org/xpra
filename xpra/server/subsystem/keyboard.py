@@ -6,6 +6,7 @@
 # pylint: disable-msg=E1101
 
 import os
+import shlex
 import threading
 from typing import Any
 from time import monotonic
@@ -13,7 +14,7 @@ from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.util.system import is_X11
-from xpra.util.io import which
+from xpra.util.io import which, find_libexec_command
 from xpra.util.str_fn import bytestostr, Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -29,7 +30,7 @@ log = Logger("keyboard")
 ibuslog = Logger("keyboard", "ibus")
 
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
-                                     "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
+                                     "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra")
 EXPOSE_IBUS_LAYOUTS = envbool("XPRA_EXPOSE_IBUS_LAYOUTS", True)
 
 
@@ -77,20 +78,23 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module,
     return v
 
 
-def may_start_ibus(start_command: Callable):
+def may_start_ibus(start_command: Callable[[list[str]], None]):
     # maybe we are inheriting one from a dead session?
     session_dir = os.environ["XPRA_SESSION_DIR"]
+    daemonizer = find_libexec_command("daemonizer")
     pidfile = os.path.join(session_dir, "ibus-daemon.pid")
     ibus_daemon_pid = load_pid(pidfile)
+    ibuslog(f"may_start_ibus({start_command}) {ibus_daemon_pid=}, {pidfile=!r}, {daemonizer=!r}, {session_dir=!r}")
     # weak dependency on command subsystem:
     if not ibus_daemon_pid or not os.path.exists("/proc") or not os.path.exists(f"/proc/{ibus_daemon_pid}"):
         # start it late:
         def late_start():
+            command = shlex.split(IBUS_DAEMON_COMMAND)
             ibuslog(f"starting ibus: {IBUS_DAEMON_COMMAND!r}")
-            proc = start_command("ibus", IBUS_DAEMON_COMMAND, True)
-            if proc and proc.pid > 0:
-                from xpra.util.pid import write_pid
-                write_pid(pidfile, proc.pid)
+            if daemonizer:
+                ibuslog(" using daemonizer: %r", daemonizer)
+                command = [daemonizer, pidfile, "--"] + command
+            start_command(command)
 
         GLib.idle_add(late_start)
 
@@ -151,8 +155,10 @@ class KeyboardServer(StubServerMixin):
                     log.error("Error: limited keyboard support without XKB")
             self.input_method = configure_imsettings_env(self.input_method)
             if self.input_method == "ibus":
-                start_command: Callable = getattr(self, "start_command", noop)
-                may_start_ibus(start_command)
+                def run(command: list[str]) -> None:
+                    start_command: Callable = getattr(self, "start_command", noop)
+                    start_command("ibus", command, ignore=True, use_wrapper=False, shell=False)
+                may_start_ibus(run)
 
         ibuslog(f"input.setup() {EXPOSE_IBUS_LAYOUTS=}")
         self.watch_keymap_changes()

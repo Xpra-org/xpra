@@ -24,9 +24,10 @@ from xpra.platform.gui import get_window_min_size, get_window_max_size
 from xpra.net.common import Packet
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr
-from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_execfile_command
+from xpra.platform.paths import get_icon_filename, get_python_execfile_command
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.client.gui.window_border import WindowBorder
+from xpra.util.io import find_libexec_command
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import std, bytestostr, strtobytes, memoryview_to_bytes
 from xpra.os_util import OSX, POSIX, gi_import
@@ -88,15 +89,7 @@ def find_signal_watcher_command() -> str:
     if not envbool("XPRA_SIGNAL_WATCHER", POSIX and not OSX):
         return ""
     cmd = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "xpra_signal_listener")
-    if cmd and os.path.isabs(cmd):
-        return cmd
-    if cmd:
-        for prefix in ("/usr", get_resources_dir()):
-            pcmd = prefix + "/libexec/xpra/" + cmd
-            if os.path.exists(pcmd):
-                return pcmd
-    log.warn("Warning: %r not found", cmd)
-    return ""
+    return find_libexec_command(cmd)
 
 
 SIGNAL_WATCHER_COMMAND = find_signal_watcher_command()

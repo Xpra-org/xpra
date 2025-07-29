@@ -267,6 +267,18 @@ class umask_context:
         return f"umask_context({self.umask})"
 
 
+def find_libexec_command(cmd: str) -> str:
+    if cmd and os.path.isabs(cmd):
+        return cmd
+    if cmd:
+        from xpra.platform.paths import get_resources_dir
+        for prefix in ("/usr", get_resources_dir()):
+            pcmd = prefix + "/libexec/xpra/" + cmd
+            if os.path.exists(pcmd):
+                return pcmd
+    return ""
+
+
 def find_lib_ldconfig(libname: str) -> str:
     libname = re.escape(libname)
     arch_map = {"x86_64": "libc6,x86-64"}

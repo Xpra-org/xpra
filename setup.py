@@ -2221,6 +2221,8 @@ else:
     libexec_scripts = []
     if scripts_ENABLED:
         libexec_scripts += ["xpra_signal_listener"]
+    if POSIX:
+        libexec_scripts += ["daemonizer"]
     if LINUX or FREEBSD:
         if scripts_ENABLED:
             libexec_scripts += ["xpra_udev_product_version"]

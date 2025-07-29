@@ -23,17 +23,15 @@ TIMEOUT = envint("XPRA_EXEC_AUTH_TIMEOUT", 600)
 
 
 def get_default_auth_dialog() -> str:
-    if os.name == "posix":
-        auth_dialog = "/usr/libexec/xpra/auth_dialog"
-    else:
+    from xpra.util.io import find_libexec_command
+    cmd = "auth_dialog" if not EXECUTABLE_EXTENSION else f"auth_dialog.{EXECUTABLE_EXTENSION}"
+    auth_dialog = find_libexec_command(cmd)
+    if not auth_dialog:
         from xpra.platform.paths import get_app_dir  # pylint: disable=import-outside-toplevel
         auth_dialog = os.path.join(get_app_dir(), "auth_dialog")
-    if EXECUTABLE_EXTENSION:
-        # ie: add ".exe" on MS Windows
-        auth_dialog += "." + EXECUTABLE_EXTENSION
     log(f"auth_dialog={auth_dialog!r}")
     if not os.path.exists(auth_dialog) and first_time("auth-dialog-not-found"):
-        log.warn(f"Warning: authentication dialog command {auth_dialog!r} does not exist")
+        log.warn(f"Warning: authentication dialog command {cmd!r} was not found")
     return auth_dialog
 
 

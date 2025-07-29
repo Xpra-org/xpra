@@ -59,7 +59,7 @@ from xpra.os_util import (
 )
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.system import get_env_info, get_sysconfig_info, register_SIGUSR_signals
-from xpra.util.io import load_binary_file
+from xpra.util.io import load_binary_file, find_libexec_command
 from xpra.util.background_worker import add_work_item, quit_worker
 from xpra.util.thread import start_thread
 from xpra.common import (
@@ -547,8 +547,11 @@ class ServerCore(ServerBaseClass):
         ud_paths = [sock.address for sock in local_sockets if sock.socktype == "socket"]
         if ud_paths:
             os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
-            if opts.forward_xdg_open and os.path.exists("/usr/libexec/xpra/xdg-open"):
-                os.environ["PATH"] = "/usr/libexec/xpra" + os.pathsep + os.environ.get("PATH", "")
+            if opts.forward_xdg_open:
+                xdg_open = find_libexec_command("xdg-open")
+                if xdg_open:
+                    libexec_dir = os.path.dirname(xdg_open)
+                    os.environ["PATH"] = libexec_dir + os.pathsep + os.environ.get("PATH", "")
         else:
             log.warn("Warning: no local server sockets,")
             if opts.forward_xdg_open:
