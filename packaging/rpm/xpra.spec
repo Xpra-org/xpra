@@ -843,6 +843,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libexecdir}/xpra/gvfs-open
 %{_libexecdir}/xpra/auth_dialog
 %{_libexecdir}/xpra/xpra*
+%{_libexecdir}/xpra/daemonizer
 
 %check
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra-launcher.desktop

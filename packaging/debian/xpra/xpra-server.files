@@ -9,6 +9,7 @@ usr/libexec/xpra/xdg-open
 usr/libexec/xpra/gnome-open
 usr/libexec/xpra/gvfs-open
 usr/libexec/xpra/auth_dialog
+usr/libexec/xpra/daemonizer
 #etc/default/xpra
 usr/lib/tmpfiles.d/xpra.conf
 usr/lib/sysusers.d/xpra.conf
