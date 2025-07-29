@@ -6,6 +6,7 @@
 from typing import Any
 from collections.abc import Callable, Sequence, Iterable
 
+from xpra.audio.common import AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
 from xpra.net.common import Packet
@@ -381,11 +382,10 @@ class AudioClient(StubClientMixin):
         codec = codec or audio_source.codec
         audio_source.codec = codec
         # tell the server this is the start:
-        self.send("sound-data", codec, b"",
-                  {
-                      "start-of-stream": True,
-                      "codec": codec,
-                  })
+        self.send(AUDIO_DATA_PACKET, codec, (), {
+            "start-of-stream": True,
+            "codec": codec,
+        })
 
     def stop_sending_audio(self) -> None:
         """ stop the audio source and emit client signal """
@@ -399,7 +399,7 @@ class AudioClient(StubClientMixin):
             log.warn("Warning: cannot stop audio capture which has not been started")
             return
         # tell the server to stop:
-        self.send("sound-data", ss.codec or "", b"", {
+        self.send(AUDIO_DATA_PACKET, ss.codec or "", (), {
             "end-of-stream": True,
             "sequence": ss.sequence,
         })
@@ -431,7 +431,7 @@ class AudioClient(StubClientMixin):
             def sink_ready(*args) -> bool:
                 scodec = codec
                 log("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)
-                self.send("sound-control", "start", scodec)
+                self.send(AUDIO_CONTROL_PACKET, "start", scodec)
                 return False
 
             self.on_sink_ready = sink_ready
@@ -456,9 +456,9 @@ class AudioClient(StubClientMixin):
         if not ss:
             return
         if tell_server and ss.sequence == self.audio_sink_sequence:
-            self.send("sound-control", "stop", self.audio_sink_sequence)
+            self.send(AUDIO_CONTROL_PACKET, "stop", self.audio_sink_sequence)
         self.audio_sink_sequence += 1
-        self.send("sound-control", "new-sequence", self.audio_sink_sequence)
+        self.send(AUDIO_CONTROL_PACKET, "new-sequence", self.audio_sink_sequence)
         self.audio_sink = None
         log("stop_receiving_audio(%s) calling %s", tell_server, ss.cleanup)
         ss.cleanup()
@@ -565,10 +565,10 @@ class AudioClient(StubClientMixin):
         # tag the packet metadata as already compressed:
         pmetadata = Compressed("packet metadata", packet_metadata)
         packet_data = [codec, Compressed(codec, data), metadata, pmetadata]
-        self.send("sound-data", *packet_data)
+        self.send(AUDIO_DATA_PACKET, *packet_data)
 
     def send_audio_sync(self, v: int) -> None:
-        self.send("sound-control", "sync", v)
+        self.send(AUDIO_CONTROL_PACKET, "sync", v)
 
     ######################################################################
     # packet handlers

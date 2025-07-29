@@ -9,6 +9,7 @@ from shutil import which
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.audio.common import AUDIO_DATA_PACKET
 from xpra.net.compression import Compressed
 from xpra.server.source.stub import StubClientConnection
 from xpra.common import FULL_INFO, NotificationID, SizedBuffer
@@ -280,11 +281,10 @@ class AudioConnection(StubClientConnection):
     def send_eos(self, codec: str, sequence: int = 0) -> None:
         log("send_eos(%s, %s)", codec, sequence)
         # tell the client this is the end:
-        self.send_more("sound-data", codec, b"",
-                       {
-                           "end-of-stream": True,
-                           "sequence": sequence,
-                       })
+        self.send_more(AUDIO_DATA_PACKET, codec, (), {
+            "end-of-stream": True,
+            "sequence": sequence,
+        })
 
     def new_stream_sound(self) -> None:
         if not NEW_STREAM_SOUND:
@@ -330,7 +330,7 @@ class AudioConnection(StubClientConnection):
         codec = codec or audio_source.codec
         audio_source.codec = codec
         # tell the client this is the start:
-        self.send("sound-data", codec, b"", {
+        self.send(AUDIO_DATA_PACKET, codec, (), {
             "start-of-stream": True,
             "codec": codec,
             "sequence": audio_source.sequence,
@@ -369,7 +369,7 @@ class AudioConnection(StubClientConnection):
         sequence = audio_source.sequence
         if sequence >= 0:
             metadata["sequence"] = sequence
-        self.send("sound-data", *packet_data, synchronous=False, will_have_more=True)
+        self.send(AUDIO_DATA_PACKET, *packet_data, synchronous=False, will_have_more=True)
 
     def stop_receiving_audio(self) -> None:
         ss = self.audio_sink

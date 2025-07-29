@@ -955,6 +955,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     os.environ.update(protected_env)
 
     session_dir = make_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
+    print("make_session_dir: %s", session_dir)
     os.environ["XPRA_SESSION_DIR"] = session_dir
     # populate it:
     if run_xpra_script:
@@ -1224,6 +1225,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                     pam.set_items({"XDISPLAY": display_name})
                 if session_dir:
                     new_session_dir = get_session_dir(mode, opts.sessions_dir, display_name, uid)
+                    print("new_session_dir: %s", new_session_dir)
                     if new_session_dir != session_dir:
                         try:
                             if os.path.exists(new_session_dir):

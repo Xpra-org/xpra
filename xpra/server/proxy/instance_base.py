@@ -10,6 +10,7 @@ from queue import Queue
 from typing import Any
 from collections.abc import Callable, Iterable
 
+from xpra.audio.common import AUDIO_DATA_PACKET
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.protocol.constants import CONNECTION_LOST
@@ -458,10 +459,10 @@ class ProxyInstance:
             pixel_data = packet.get_buffer(7)
             if pixel_data and len(pixel_data) > 1024:
                 packet = self.compressed_marker(packet, 7, "pixel-data")
-        elif packet_type == "sound-data":
+        elif packet_type == AUDIO_DATA_PACKET:
             if packet[2]:
                 # best if we use raw packets for the actual sound-data chunk:
-                packet = self.compressed_marker(packet, 2, "sound-data")
+                packet = self.compressed_marker(packet, 2, AUDIO_DATA_PACKET)
         # we do want to reformat cursor packets...
         # as they will have been uncompressed by the network layer already:
         elif packet_type == "cursor":

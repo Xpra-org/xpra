@@ -52,11 +52,11 @@ class AudioMixinTest(ServerMixinTest):
             return
         codec = self.mixin.speaker_codecs[0]
         with silence_info(gstreamer_util):
-            self.handle_packet(("sound-control", "start", codec))
+            self.handle_packet(("audio-control", "start", codec))
         time.sleep(1)
-        self.handle_packet(("sound-control", "fadeout"))
+        self.handle_packet(("audio-control", "fadeout"))
         time.sleep(1)
-        self.handle_packet(("sound-control", "stop"))
+        self.handle_packet(("audio-control", "stop"))
 
 
 def main():

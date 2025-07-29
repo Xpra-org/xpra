@@ -7,6 +7,7 @@
 from typing import Iterable
 from collections.abc import Sequence
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.log import Logger
 
@@ -42,6 +43,10 @@ WAV_LZ4 = WAV + "+" + LZ4
 # WAV_LZO     = WAV+"+"+LZO
 MP3_MPEG4 = MP3 + "+" + MPEG4
 MP3_ID3V2 = MP3 + "+" + ID3V2
+
+
+AUDIO_DATA_PACKET = "sound-data" if BACKWARDS_COMPATIBLE else "audio-data"
+AUDIO_CONTROL_PACKET = "sound-control" if BACKWARDS_COMPATIBLE else "audio-control"
 
 
 # used for parsing codec names specified on the command line:
