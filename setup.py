@@ -2583,7 +2583,8 @@ if cython_ENABLED:
     if cython_shared_ENABLED:
         # re-generate shared utility
         from xpra.util.io import which
-        cython_exe = which("cython") or "/usr/local/bin/cython"
+        major, minor = sys.version_info[:2]
+        cython_exe = which(f"python{major}.{minor}-cython") or which("cython") or "/usr/local/bin/cython"
         subprocess.run([cython_exe, "--generate-shared", CYSHARED])
         if os.path.exists(CYSHARED):
             cythonize_kwargs["shared_utility_qualified_name"] = CYSHARED_EXT
