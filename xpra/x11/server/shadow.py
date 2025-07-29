@@ -195,8 +195,9 @@ class XImageCapture:
         self.xshm = None
         self.xwindow = xwindow
         from xpra.x11.bindings.shm import XShmBindings  # pylint: disable=import-outside-toplevel
-        self.XShm = XShmBindings()
-        assert XSHM and self.XShm.has_XShm(), "no XShm support"
+        shm = XShmBindings()
+        if not shm or not shm.has_XShm():
+            raise RuntimeError("no XShm support")
         if is_Wayland():
             log.warn("Warning: shadow servers do not support Wayland")
             log.warn(" please switch to X11 for shadow support")
@@ -233,7 +234,8 @@ class XImageCapture:
         try:
             with xsync:
                 log("%s.refresh() xshm=%s", self, self.xshm)
-                self.xshm = self.XShm.get_XShmWrapper(self.xwindow)
+                from xpra.x11.bindings.shm import XShmBindings  # pylint: disable=import-outside-toplevel
+                self.xshm = XShmBindings().get_XShmWrapper(self.xwindow)
                 self.xshm.setup()
         except Exception as e:
             self.xshm = None
