@@ -403,7 +403,7 @@ class AudioSink(AudioPipeline):
             return
         data = uncompress_data(data, metadata)
         for x in packet_metadata:
-            self.do_add_data(x)
+            self.do_add_data(x, {})
         if self.do_add_data(data, metadata):
             self.rec_queue_level(data)
             self.set_max_level()
@@ -417,7 +417,7 @@ class AudioSink(AudioPipeline):
                     self.refill = False
         self.emit_info()
 
-    def do_add_data(self, data, metadata=None) -> bool:
+    def do_add_data(self, data, metadata: dict) -> bool:
         # having a timestamp causes problems with the queue and overruns:
         log("do_add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
         self.save_to_file(data)
