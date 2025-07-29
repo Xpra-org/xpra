@@ -235,6 +235,8 @@ Suggests:			%{package_prefix}-codecs-amd
 Suggests:			%{package_prefix}-codecs-nvidia
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			%{python3}-pillow
+# remote codec uses client code to connect to are remote encoder server:
+Suggests:			%{package_prefix}-client
 BuildRequires:		pkgconfig(libdrm)
 Requires:			libdrm
 BuildRequires:		pkgconfig(vpx)
