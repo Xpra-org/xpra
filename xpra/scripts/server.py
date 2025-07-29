@@ -259,6 +259,14 @@ def set_server_features(opts, mode: str) -> None:
 
     # turn off some server subsystem:
     from xpra.server import features
+    features.http = opts.http and impcheck("net.http")
+    features.control = opts.control and impcheck("net.control")
+    features.mmap = b(opts.mmap) and impcheck("net.mmap")
+    features.ssl = b(opts.ssl)
+    features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
+    features.encoding = impcheck("codecs")
+    features.shell = opts.shell
+
     if mode == "encoder":
         # turn off all relevant features:
         opts.start_new_commands = False
@@ -275,7 +283,7 @@ def set_server_features(opts, mode: str) -> None:
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
         features.mdns = opts.mdns and impcheck("net.mdns")
-        features.notification = opts.notifications and impcheck("notification")
+        features.notification = features.dbus and opts.notifications and impcheck("notification")
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
@@ -298,14 +306,6 @@ def set_server_features(opts, mode: str) -> None:
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0
-
-    features.http = opts.http and impcheck("net.http")
-    features.control = opts.control and impcheck("net.control")
-    features.mmap = b(opts.mmap) and impcheck("net.mmap")
-    features.ssl = b(opts.ssl)
-    features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
-    features.encoding = impcheck("codecs")
-    features.shell = opts.shell
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()
