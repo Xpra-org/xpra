@@ -580,7 +580,7 @@ class AudioClient(StubClientMixin):
         # the server may send packet_metadata, which is pushed before the actual audio data:
         packet_metadata = ()
         if len(packet) > 4:
-            packet_metadata = packet[4]
+            packet_metadata = packet.get_bytes_seq(4)
         if data:
             self.audio_in_bytecount += len(data)
         # verify sequence number if present:

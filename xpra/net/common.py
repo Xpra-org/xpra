@@ -176,6 +176,12 @@ class Packet(Sequence):
             return tuple(str(x) for x in v)
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
+    def get_bytes_seq(self, i: int) -> Sequence[str]:
+        v = self.data[i]
+        if isinstance(v, Sequence):
+            return tuple(bytes(x) for x in v)
+        raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
+
     def get_ints(self, i: int) -> Sequence[int]:
         v = self.data[i]
         if isinstance(v, Sequence):
