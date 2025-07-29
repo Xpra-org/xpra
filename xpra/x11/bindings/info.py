@@ -153,7 +153,6 @@ def get_windows_info() -> dict[str, Any]:
     except ImportError:
         return {}
     root = window.get_root_xid()
-    print("get_windows_info: root:", root)
     return {"root": get_window_info(root)}
 
 
