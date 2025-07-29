@@ -8,8 +8,8 @@ import sys
 
 
 def main(args):
-    from xpra.x11.bindings.posix_display_source import init_posix_display_source  # @UnresolvedImport
-    init_posix_display_source()
+    from xpra.x11.bindings.display_source import init_display_source  # @UnresolvedImport
+    init_display_source()
     from xpra.x11.bindings.res import ResBindings  # @UnresolvedImport
     res = ResBindings()
     for x in args[1:]:
@@ -27,6 +27,7 @@ def main(args):
             from xpra.util.io import load_binary_file
             cmdline = (load_binary_file("/proc/%i/cmdline" % pid) or b"").decode()
         print("pid(%#x)=%s      %s" % (w, pid, cmdline))
+
 
 if __name__ == "__main__":
     main(sys.argv)

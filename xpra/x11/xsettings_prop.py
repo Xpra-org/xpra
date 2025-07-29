@@ -193,8 +193,8 @@ def main() -> int:  # pragma: no cover
             return 1
 
         with xsync:
-            from xpra.x11.bindings.posix_display_source import init_posix_display_source
-            init_posix_display_source()
+            from xpra.x11.bindings.display_source import init_display_source
+            init_display_source()
             from xpra.x11.bindings.window import X11WindowBindings
             window_bindings = X11WindowBindings()
             selection = "_XSETTINGS_S0"

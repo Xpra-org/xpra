@@ -388,8 +388,8 @@ def main() -> int:
 
         # naughty, but how else can I hook this up?
         if is_X11():
-            from xpra.x11.bindings.posix_display_source import init_posix_display_source
-            init_posix_display_source()
+            from xpra.x11.bindings.display_source import init_display_source
+            init_display_source()
         i = get_info()
         print_nested_dict(i, hex_keys=("data", "icc-data", "icc-profile"))
     return 0

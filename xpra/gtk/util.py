@@ -128,8 +128,8 @@ def main() -> None:
         from xpra.gtk.versions import get_gtk_version_info
         print("%s" % get_gtk_version_info())
         if is_X11():
-            from xpra.x11.bindings.posix_display_source import init_posix_display_source
-            init_posix_display_source()
+            from xpra.x11.bindings.display_source import init_display_source
+            init_display_source()
         import warnings
         warnings.simplefilter("ignore")
         from xpra.gtk.info import get_display_info, get_screen_sizes

@@ -22,7 +22,7 @@ def get_info() -> dict[str, Any]:
     available: list[str] = []
     for binding in (
         "classhint", "composite", "core", "damage", "display_source", "events", "fixes", "keyboard",
-        "posix_display_source", "randr", "record", "res", "saveset", "shape", "shm", "test",
+        "randr", "record", "res", "saveset", "shape", "shm", "test",
         "wait_for_server", "window", "xi2", "ximage", "xkb", "xwait", "xwayland",
     ):
         spec = find_spec("xpra.x11.bindings." + binding)
@@ -159,7 +159,7 @@ def get_windows_info() -> dict[str, Any]:
 
 def main(args: list[str]) -> int:
     display_name = args[0] if args else os.environ.get("DISPLAY", "")
-    from xpra.x11.bindings.posix_display_source import X11DisplayContext
+    from xpra.x11.bindings.display_source import X11DisplayContext
     with X11DisplayContext(display_name) as context:
         info = get_info()
         info["display"] = context.display_name

@@ -30,7 +30,7 @@ def get_x11_property(atom_name: str) -> str:
         return ""
     try:
         from xpra.gtk.error import xswallow
-        from xpra.x11.bindings.posix_display_source import X11DisplayContext
+        from xpra.x11.bindings.display_source import X11DisplayContext
         from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.window import X11WindowBindingsInstance
     except ImportError as e:

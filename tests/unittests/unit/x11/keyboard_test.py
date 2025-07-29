@@ -20,14 +20,14 @@ class TestX11Keyboard(ServerTestUtil):
         cls.xvfb = cls.start_Xvfb(display)
         os.environ["DISPLAY"] = display
         os.environ["GDK_BACKEND"] = "x11"
-        from xpra.x11.bindings.posix_display_source import init_posix_display_source  #@UnresolvedImport
-        cls.display_ptr = init_posix_display_source()
+        from xpra.x11.bindings.display_source import init_display_source  #@UnresolvedImport
+        cls.display_ptr = init_display_source()
         from xpra.scripts.server import verify_gdk_display
         verify_gdk_display(display)
 
     @classmethod
     def tearDownClass(cls):
-        from xpra.x11.bindings.posix_display_source import close_display_source  #@UnresolvedImport
+        from xpra.x11.bindings.display_source import close_display_source  #@UnresolvedImport
         close_display_source(cls.display_ptr)
         ServerTestUtil.tearDownClass()
         cls.xvfb.terminate()

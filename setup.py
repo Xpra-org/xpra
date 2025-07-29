@@ -2622,7 +2622,6 @@ if x11_ENABLED:
     ace("xpra.x11.bindings.xwait", "x11")
     ace("xpra.x11.bindings.wait_for_x_server", "x11")
     ace("xpra.x11.bindings.display_source", "x11")
-    ace("xpra.x11.bindings.posix_display_source", "x11")
     ace("xpra.x11.bindings.core", "x11")
     ace("xpra.x11.bindings.ximage", "x11")
     ace("xpra.x11.bindings.xwayland", "x11")

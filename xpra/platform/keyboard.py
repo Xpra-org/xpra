@@ -29,8 +29,8 @@ def main() -> int:
         # naughty, but how else can I hook this up?
         if is_X11():
             try:
-                from xpra.x11.bindings.posix_display_source import init_posix_display_source
-                init_posix_display_source()
+                from xpra.x11.bindings.display_source import init_display_source
+                init_display_source()
             except Exception as e:
                 print("failed to connect to the X11 server:")
                 print(" %s" % e)

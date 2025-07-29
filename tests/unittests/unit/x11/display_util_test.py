@@ -26,7 +26,7 @@ class TestDisplayUtil(ServerTestUtil):
             display = self.find_free_display()
             xvfb = self.start_Xvfb(display)
             os.environ["DISPLAY"] = display
-            from xpra.x11.bindings.posix_display_source import X11DisplayContext    #@UnresolvedImport
+            from xpra.x11.bindings.display_source import X11DisplayContext    #@UnresolvedImport
             with X11DisplayContext(display):
                 verify_gdk_display(display)
             xvfb.terminate()

@@ -4083,8 +4083,8 @@ def run_xshm(args) -> ExitValue:
     else:
         raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
     with OSEnvContext(GDK_BACKEND="x11"):
-        from xpra.x11.bindings.posix_display_source import init_posix_display_source
-        init_posix_display_source()
+        from xpra.x11.bindings.display_source import init_display_source
+        init_display_source()
         from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.shm import XShmBindings
         XShm = XShmBindings()

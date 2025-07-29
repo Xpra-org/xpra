@@ -112,8 +112,8 @@ def make_window() -> Gtk.Window:
         if is_X11() and not os.environ.get("X11_DISPLAY_SOURCE"):
             os.environ["X11_DISPLAY_SOURCE"] = "1"
             try:
-                from xpra.x11.bindings.posix_display_source import init_posix_display_source  # @UnresolvedImport
-                init_posix_display_source()
+                from xpra.x11.bindings.display_source import init_display_source  # @UnresolvedImport
+                init_display_source()
             except ImportError:
                 pass
 

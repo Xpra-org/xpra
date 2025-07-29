@@ -109,10 +109,10 @@ def main(_args):
     with program_context("Keyboard-Shortcuts", "Keyboard Shortcuts"):
         if is_X11():
             try:
-                from xpra.x11.bindings.posix_display_source import init_posix_display_source
-                init_posix_display_source()
+                from xpra.x11.bindings.display_source import init_display_source
+                init_display_source()
             except Exception as e:
-                log("init_posix_display_source failure", exc_info=True)
+                log("init_display_source failure", exc_info=True)
                 log.warn("Warning: failed to connect to the X11 server")
                 log.warn(f" {e}")
                 # hope for the best..
