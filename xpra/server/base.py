@@ -7,6 +7,7 @@
 
 import os
 from time import monotonic
+from collections.abc import Sequence
 from typing import Any
 
 from xpra.server.core import ServerCore
@@ -459,11 +460,11 @@ class ServerBase(ServerBaseClass):
             ss.send_info_response({"error": err})
             return
 
-        categories: list[str] = []
+        categories: Sequence[str] = []
         # if len(packet>=2):
         #    uuid = packet[1]
         if len(packet) >= 4:
-            categories = [str(x) for x in packet[3]]
+            categories = packet.get_strs(3)
 
         def info_callback(_proto, info) -> None:
             assert proto == _proto
