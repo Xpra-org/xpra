@@ -129,8 +129,12 @@ class NotificationForwarder(StubServerMixin):
             log.error("Error processing notification:")
             log.estr(e)
 
-    def get_notification_icon(self, _icon_string: str) -> Any:
-        return None
+    def get_notification_icon(self, icon_string: str) -> tuple[str, int, int, bytes] | None:
+        try:
+            from xpra.notification.common import get_notification_icon
+        except ImportError:
+            return None
+        return get_notification_icon(icon_string)
 
     def notify_close_callback(self, nid: int) -> None:
         assert self.notifications_forwarder

@@ -25,7 +25,6 @@ GLib = gi_import("GLib")
 
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
-notifylog = Logger("notify")
 
 
 def get_default_display():
@@ -196,10 +195,3 @@ class GTKServerBase(ServerBase):
 
     def do_process_button_action(self, *args):
         raise NotImplementedError
-
-    def get_notification_icon(self, icon_string: str) -> tuple[str, int, int, bytes] | None:
-        try:
-            from xpra.notification.common import get_notification_icon
-        except ImportError:
-            return None
-        return get_notification_icon(icon_string)
