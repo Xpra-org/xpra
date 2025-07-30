@@ -956,7 +956,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     os.environ.update(protected_env)
 
     session_dir = make_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
-    print("make_session_dir: %s", session_dir)
     os.environ["XPRA_SESSION_DIR"] = session_dir
     # populate it:
     if run_xpra_script:
