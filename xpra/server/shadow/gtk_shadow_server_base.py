@@ -310,8 +310,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def _adjust_pointer(self, proto, device_id, wid: int, opointer) -> list[int] | None:
         window = self._id_to_window.get(wid)
+        # soft dependency on cursor subsystem:
+        suspend_cursor = getattr(self, "suspend_cursor", noop)
         if wid > 0 and not window:
-            self.suspend_cursor(proto)
+            suspend_cursor(proto)
             return None
         pointer = super()._adjust_pointer(proto, device_id, wid, opointer)
         ax = x = int(pointer[0])
@@ -321,7 +323,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             wx, wy, ww, wh = window.get_geometry()
             # or maybe the pointer is off-screen:
             if x < 0 or x >= ww or y < 0 or y >= wh:
-                self.suspend_cursor(proto)
+                suspend_cursor(proto)
                 return None
             # note: with x11 shadow servers,
             # X11ServerCore._get_pointer_abs_coordinates() will recalculate

@@ -10,21 +10,19 @@
 from time import monotonic
 from typing import Any
 from collections.abc import Callable
-from xpra.util.env import envbool
-from xpra.util.version import dict_version_trim
+
 from xpra.os_util import gi_import
+from xpra.util.version import dict_version_trim
 from xpra.common import FULL_INFO
 from xpra.net.common import Packet
+from xpra.gtk.versions import get_gtk_version_info
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.gtk.keymap import get_default_keymap
 from xpra.server import features
 from xpra.server.base import ServerBase
-from xpra.gtk.versions import get_gtk_version_info
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
-
-UI_THREAD_WATCHER = envbool("XPRA_UI_THREAD_WATCHER")
 
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
@@ -46,8 +44,6 @@ class GTKServerBase(ServerBase):
 
     def __init__(self):
         log("GTKServerBase.__init__()")
-        self.cursor_suspended: bool = False
-        self.ui_watcher = None
         self.keymap_changing_timer: int = 0
         super().__init__()
 
@@ -94,20 +90,8 @@ class GTKServerBase(ServerBase):
         log("GTKServerBase.late_cleanup(%s)", stop)
         self.stop_keymap_timer()
         super().late_cleanup(stop)
-        self.stop_ui_watcher()
-
-    def stop_ui_watcher(self) -> None:
-        uiw = self.ui_watcher
-        log("stop_ui_watcher() ui watcher=%s", uiw)
-        if uiw:
-            self.ui_watcher = None
-            uiw.stop()
 
     def do_run(self) -> None:
-        if UI_THREAD_WATCHER:
-            from xpra.platform.ui_thread_watcher import get_UI_watcher  # pylint: disable=import-outside-toplevel
-            self.ui_watcher = get_UI_watcher()
-            self.ui_watcher.start()
         if features.window:
             display = get_default_display()
             if display:
@@ -144,28 +128,6 @@ class GTKServerBase(ServerBase):
                 }
             )
         return info
-
-    def suspend_cursor(self, proto) -> None:
-        # this is called by shadow and desktop servers
-        # when we're receiving pointer events but the pointer
-        # is no longer over the active window area,
-        # so we have to tell the client to switch back to the default cursor
-        if self.cursor_suspended:
-            return
-        self.cursor_suspended = True
-        ss = self.get_server_source(proto)
-        if ss:
-            ss.cancel_cursor_timer()
-            ss.send_empty_cursor()
-
-    def restore_cursor(self, proto) -> None:
-        # see suspend_cursor
-        if not self.cursor_suspended:
-            return
-        self.cursor_suspended = False
-        ss = self.get_server_source(proto)
-        if ss and hasattr(ss, "send_cursor"):
-            ss.send_cursor()
 
     def do_get_info(self, proto, *args) -> dict[str, Any]:
         start = monotonic()

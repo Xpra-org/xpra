@@ -10,6 +10,7 @@ from xpra.os_util import gi_import
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
+from xpra.common import noop
 from xpra.net.common import Packet
 from xpra.server import features
 from xpra.gtk.util import get_root_size
@@ -297,9 +298,11 @@ class DesktopServerBase(DesktopServerBaseClass):
     def _adjust_pointer(self, proto, device_id: int, wid: int, pointer):
         pointerlog("_adjust_pointer%s", (proto, device_id, wid, pointer))
         window = self._id_to_window.get(wid)
+        # soft dependency on cursor subsystem:
+        suspend_cursor = getattr(self, "suspend_cursor", noop)
         if not window:
             pointerlog("adjust pointer: no window, suspending cursor")
-            self.suspend_cursor(proto)
+            suspend_cursor(proto)
             return None
         pointer = super()._adjust_pointer(proto, device_id, wid, pointer)
         # maybe the pointer is off-screen:
@@ -307,7 +310,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         x, y = pointer[:2]
         if x < 0 or x >= ww or y < 0 or y >= wh:
             pointerlog("adjust pointer: pointer outside desktop, suspending cursor")
-            self.suspend_cursor(proto)
+            suspend_cursor(proto)
             return None
         self.restore_cursor(proto)
         return pointer

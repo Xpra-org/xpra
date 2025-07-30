@@ -27,6 +27,7 @@ class CursorManager(StubServerMixin):
     def __init__(self):
         self.cursors = False
         self.cursor_size = 0
+        self.cursor_suspended: bool = False
         # x11:
         self.default_cursor_image = None
         self.last_cursor_serial = 0
@@ -153,6 +154,28 @@ class CursorManager(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss:
             ss.send_cursors = packet.get_bool(1)
+
+    def suspend_cursor(self, proto) -> None:
+        # this is called by shadow and desktop servers
+        # when we're receiving pointer events but the pointer
+        # is no longer over the active window area,
+        # so we have to tell the client to switch back to the default cursor
+        if self.cursor_suspended:
+            return
+        self.cursor_suspended = True
+        ss = self.get_server_source(proto)
+        if ss:
+            ss.cancel_cursor_timer()
+            ss.send_empty_cursor()
+
+    def restore_cursor(self, proto) -> None:
+        # see suspend_cursor
+        if not self.cursor_suspended:
+            return
+        self.cursor_suspended = False
+        ss = self.get_server_source(proto)
+        if ss and hasattr(ss, "send_cursor"):
+            ss.send_cursor()
 
     def init_packet_handlers(self) -> None:
         self.add_packets(f"{CursorManager.PREFIX}-set")

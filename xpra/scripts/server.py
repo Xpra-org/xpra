@@ -266,6 +266,7 @@ def set_server_features(opts, mode: str) -> None:
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
     features.shell = opts.shell
+    features.watcher = envbool("XPRA_UI_THREAD_WATCHER", True)
 
     if mode == "encoder":
         # turn off all relevant features:
