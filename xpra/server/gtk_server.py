@@ -139,48 +139,6 @@ class GTKServerBase(ServerBase):
     def configure_best_screen_size(self) -> tuple[int, int]:
         return self.get_root_window_size()
 
-    def calculate_workarea(self, maxw: int, maxh: int) -> None:
-        screenlog("calculate_workarea(%s, %s)", maxw, maxh)
-        Gdk = gi_import("Gdk")
-        workarea = Gdk.Rectangle()
-        workarea.width = maxw
-        workarea.height = maxh
-        for ss in self._server_sources.values():
-            screen_sizes = ss.screen_sizes
-            screenlog("calculate_workarea() screen_sizes(%s)=%s", ss, screen_sizes)
-            if not screen_sizes:
-                continue
-            for display in screen_sizes:
-                # avoid error with old/broken clients:
-                if not display or not isinstance(display, (list, tuple)):
-                    continue
-                # display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
-                if len(display) >= 10:
-                    work_x, work_y, work_w, work_h = display[6:10]
-                    display_workarea = Gdk.Rectangle()
-                    display_workarea.x = work_x
-                    display_workarea.y = work_y
-                    display_workarea.width = work_w
-                    display_workarea.height = work_h
-                    screenlog("calculate_workarea() found %s for display %s", display_workarea, display[0])
-                    success, workarea = workarea.intersect(display_workarea)
-                    if not success:
-                        log.warn("Warning: failed to calculate workarea")
-                        log.warn(" as intersection of %s and %s", (maxw, maxh), (work_x, work_y, work_w, work_h))
-        # sanity checks:
-        screenlog("calculate_workarea(%s, %s) workarea=%s", maxw, maxh, workarea)
-        max_dim = 32768 - 8192
-        if workarea.width == 0 or workarea.height == 0 or workarea.width >= max_dim or workarea.height >= max_dim:
-            screenlog.warn("Warning: failed to calculate a common workarea")
-            screenlog.warn(f" using the full display area: {maxw}x{maxh}")
-            workarea = Gdk.Rectangle()
-            workarea.width = maxw
-            workarea.height = maxh
-        self.set_workarea(workarea)
-
-    def set_workarea(self, workarea) -> None:
-        """ overridden by seamless servers """
-
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         x, y = pos
         display = get_default_display()
