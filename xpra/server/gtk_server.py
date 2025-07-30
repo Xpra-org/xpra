@@ -14,7 +14,6 @@ from collections.abc import Callable
 from xpra.os_util import gi_import
 from xpra.util.version import dict_version_trim
 from xpra.common import FULL_INFO
-from xpra.net.common import Packet
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.gtk.keymap import get_default_keymap
@@ -190,9 +189,6 @@ class GTKServerBase(ServerBase):
     def set_workarea(self, workarea) -> None:
         """ overridden by seamless servers """
 
-    def set_desktop_geometry(self, width: int, height: int) -> None:
-        """ overridden by X11 seamless and desktop servers """
-
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         x, y = pos
         display = get_default_display()
@@ -200,18 +196,6 @@ class GTKServerBase(ServerBase):
 
     def do_process_button_action(self, *args):
         raise NotImplementedError
-
-    def _process_map_window(self, proto, packet: Packet) -> None:
-        log.info("_process_map_window(%s, %s)", proto, packet)
-
-    def _process_unmap_window(self, proto, packet: Packet) -> None:
-        log.info("_process_unmap_window(%s, %s)", proto, packet)
-
-    def _process_close_window(self, proto, packet: Packet) -> None:
-        log.info("_process_close_window(%s, %s)", proto, packet)
-
-    def _process_configure_window(self, proto, packet: Packet) -> None:
-        log.info("_process_configure_window(%s, %s)", proto, packet)
 
     def get_notification_icon(self, icon_string: str) -> tuple[str, int, int, bytes] | None:
         try:
