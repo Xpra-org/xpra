@@ -9,13 +9,11 @@
 
 from time import monotonic
 from typing import Any
-from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.util.version import dict_version_trim
 from xpra.common import FULL_INFO
 from xpra.gtk.versions import get_gtk_version_info
-from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.gtk.keymap import get_default_keymap
 from xpra.server import features
 from xpra.server.base import ServerBase
@@ -69,11 +67,6 @@ class GTKServerBase(ServerBase):
         if kct:
             self.keymap_changing_timer = 0
             GLib.source_remove(kct)
-
-    def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
-        sstr = f"{self.session_type} server"
-        register_os_signals(callback, sstr)
-        register_SIGUSR_signals(sstr)
 
     def do_quit(self) -> None:
         log("do_quit: calling Gtk.main_quit")
