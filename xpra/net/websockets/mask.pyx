@@ -29,7 +29,7 @@ def hybi_mask(mask: bytes, data: SizedBuffer) -> memoryview:
             return do_hybi_mask(<uintptr_t> int(mbc), <uintptr_t> int(dbc), len(dbc))
 
 
-cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen) noexcept:
+cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
     # we skip the first 'align' bytes in the output buffer,
     # to ensure that its alignment is the same as the input data buffer
     cdef unsigned int align = (<uintptr_t> dp) & 0x3

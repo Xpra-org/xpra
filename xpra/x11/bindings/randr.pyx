@@ -627,7 +627,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef Window root = XDefaultRootWindow(self.display)
         XRRSelectInput(self.display, root, mask)
 
-    cdef List _get_xrr_screen_sizes(self) noexcept:
+    cdef List _get_xrr_screen_sizes(self):
         cdef int num_sizes = 0
         cdef XRRScreenSize xrr
         cdef XRRScreenSize *xrrs = XRRSizes(self.display, 0, &num_sizes)

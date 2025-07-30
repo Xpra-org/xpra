@@ -414,7 +414,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             if display!=NULL:
                 XCloseDisplay(display)
 
-    cdef Tuple _get_minmax_keycodes(self) noexcept:
+    cdef Tuple _get_minmax_keycodes(self):
         if self.min_keycode==-1 and self.max_keycode==-1:
             XDisplayKeycodes(self.display, &self.min_keycode, &self.max_keycode)
         return self.min_keycode, self.max_keycode
@@ -799,7 +799,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                         success = False
         return success
 
-    cdef List _get_keycodes_down(self) noexcept:
+    cdef List _get_keycodes_down(self):
         cdef char[32] keymap
         masktable: Sequence[int] = (0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80)
         down: list[int] = []

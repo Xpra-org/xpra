@@ -450,7 +450,7 @@ EVENT_TYPES: dict[int, str] = {
 }
 
 
-cdef dict parse_GrabPointer(xGrabPointerReq *rec) noexcept:
+cdef dict parse_GrabPointer(xGrabPointerReq *rec):
     return {
         "window": rec.grabWindow,
         "pointer-mode": rec.pointerMode,
@@ -459,7 +459,7 @@ cdef dict parse_GrabPointer(xGrabPointerReq *rec) noexcept:
         "time": rec.time,
     }
 
-cdef dict parse_GrabButton(xGrabButtonReq *rec) noexcept:
+cdef dict parse_GrabButton(xGrabButtonReq *rec):
     return {
         "window": rec.grabWindow,
         "owner-events": rec.ownerEvents,
@@ -472,21 +472,21 @@ cdef dict parse_GrabButton(xGrabButtonReq *rec) noexcept:
         "modifiers": rec.modifiers,
     }
 
-cdef dict parse_UngrabButton(xUngrabButtonReq *rec) noexcept:
+cdef dict parse_UngrabButton(xUngrabButtonReq *rec):
     return {
         "window": rec.grabWindow,
         "button": rec.button,
         "modifiers": rec.modifiers,
     }
 
-cdef dict parse_ChangeActivePointerGrab(xChangeActivePointerGrabReq *rec) noexcept:
+cdef dict parse_ChangeActivePointerGrab(xChangeActivePointerGrabReq *rec):
     return {
         "cursor": rec.cursor,
         "event-mask": rec.eventMask,
         "time": rec.time,
     }
 
-cdef dict parse_GrabKeyboard(xGrabKeyboardReq *rec) noexcept:
+cdef dict parse_GrabKeyboard(xGrabKeyboardReq *rec):
     return {
         "window": rec.grabWindow,
         "owner-events": rec.ownerEvents,
@@ -495,7 +495,7 @@ cdef dict parse_GrabKeyboard(xGrabKeyboardReq *rec) noexcept:
         "keyboard-mode": rec.keyboardMode,
     }
 
-cdef dict parse_GrabKey(xGrabKeyReq *rec) noexcept:
+cdef dict parse_GrabKey(xGrabKeyReq *rec):
     return {
         "window": rec.grabWindow,
         "owner-events": rec.ownerEvents,
@@ -505,7 +505,7 @@ cdef dict parse_GrabKey(xGrabKeyReq *rec) noexcept:
     }
 
 
-cdef dict parse_UngrabKey(xUngrabKeyReq *rec) noexcept:
+cdef dict parse_UngrabKey(xUngrabKeyReq *rec):
     return {
         "window": rec.grabWindow,
         "key": rec.key,
