@@ -9,7 +9,6 @@ from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.server.window import batch_config
-from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.scripts.config import InitExit
 from xpra.platform.gui import get_wm_name
 from xpra.platform.paths import get_icon_dir
@@ -17,7 +16,6 @@ from xpra.server import features
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
 from xpra.exit_codes import ExitValue
-from xpra.util.system import is_Wayland
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
 from xpra.common import NotificationID, ConnectionMessage
@@ -49,33 +47,32 @@ def try_setup_capture(backends: dict[str, Callable], backend: str, *args):
             raise InitExit(ExitCode.UNSUPPORTED,
                            f"invalid capture backend {backend!r}, should be one of: %s" % csv(backends.keys()))
         backends = {backend: backends[backend]}
-    log(f"setup_capture() will try {backends.keys()}")
+    log(f"setup_capture() will try {csv(backends.keys())}")
     for backend, setup_fn in backends.items():
         try:
             log(f"{backend!r}: {setup_fn}{args}")
             capture = setup_fn(*args)
             if not capture:
-                log(f"backend {backend!r} is unable to capture")
+                log(f"backend {backend!r} is unable to capture using {setup_fn!r}({csv(args)})")
                 continue
             return capture
         except ImportError as e:
-            log(f"backend {backend!r} is not installed: {e}")
+            log.info(f"shadow backend {backend!r} is not installed: {e}")
         except Exception as e:
             log(f"{setup_fn}{args}", exc_info=True)
             log.warn(f"Warning: {backend!r} failed to setup screen capture:")
             log.warn(" %s", e)
-    raise InitExit(ExitCode.UNSUPPORTED, f"failed to setup screen capture backend {backend!r}")
+    raise InitExit(ExitCode.UNSUPPORTED, f"failed to setup screen capture backends: {csv(backends)}")
 
 
 class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     # 20 fps unless the client specifies more:
     DEFAULT_REFRESH_RATE: int = 20
 
-    def __init__(self, root_window=None, capture=None):
+    def __init__(self, capture=None):
         # noinspection PyArgumentList
         super().__init__()
         self.capture = capture
-        self.root = root_window
         self.window_matches: list[str] = []
         self.mapped = []
         self.pulseaudio: bool = False
@@ -101,8 +98,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         log("init(..) session_name=%s", opts.session_name)
         if opts.session_name:
             self.session_name = opts.session_name
-        else:
-            self.guess_session_name()
 
     def run(self) -> ExitValue:
         if NOTIFY_STARTUP:
@@ -110,6 +105,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return super().run()
 
     def setup(self) -> None:
+        if not self.session_name:
+            self.guess_session_name()
         if SHADOWSERVER_BASE_CLASS is not object:
             SHADOWSERVER_BASE_CLASS.setup(self)
 
@@ -125,25 +122,10 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.capture = None
             capture.clean()
 
-    def guess_session_name(self, procs=None) -> None:
+    def guess_session_name(self, procs=()) -> None:
         log("guess_session_name(%s)", procs)
         self.session_name = get_wm_name()  # pylint: disable=assignment-from-none
         log("get_wm_name()=%s", self.session_name)
-
-    def print_screen_info(self) -> None:
-        if not features.display or not self.root:
-            return
-        w, h = self.root.get_geometry()[2:4]
-        dinfo = ""
-        if is_Wayland():
-            wdisplay = os.environ.get("WAYLAND_DISPLAY", "").replace("wayland-", "")
-            if wdisplay:
-                dinfo = f"Wayland display {wdisplay}"
-        else:
-            display = os.environ.get("DISPLAY", "")
-            if display:
-                dinfo = f"X11 display {display}"
-        self.do_print_screen_info(dinfo, w, h)
 
     def do_print_screen_info(self, display: str, w: int, h: int) -> None:
         if display or w or h:
@@ -450,15 +432,16 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def load_existing_windows(self) -> None:
         self.mmap_min_size = 1024 * 1024 * 4 * 2
-        for i, model in enumerate(self.makeRootWindowModels()):
+        for i, model in enumerate(self.make_capture_window_models()):
             log(f"load_existing_windows() root window model {i} : {model}")
             self._add_new_window(model)
             # at least big enough for 2 frames of BGRX pixel data:
             w, h = model.get_dimensions()
             self.mmap_min_size = max(self.mmap_min_size, w * h * 4 * 2)
 
-    def makeRootWindowModels(self) -> list:
-        return [RootWindowModel(self.root)]
+    def make_capture_window_models(self) -> list:
+        from xpra.server.shadow.root_window_model import CaptureWindowModel
+        return [CaptureWindowModel()]
 
     def send_initial_windows(self, ss, sharing: bool = False) -> None:
         log("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)

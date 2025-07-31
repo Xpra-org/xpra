@@ -13,36 +13,18 @@ from xpra.x11.server.core import X11ServerCore
 from xpra.net.compression import Compressed
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
 from xpra.util.objects import AdHocStruct, merge_dicts
-from xpra.util.env import envint, envbool
+from xpra.util.env import envbool
 from xpra.common import NotificationID
-from xpra.server.shadow.root_window_model import RootWindowModel
+from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.x11.server.server_uuid import del_mode, del_uuid
 from xpra.x11.gtk.prop import prop_get
-from xpra.x11.bindings.window import X11WindowBindings
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 
 log = Logger("x11", "shadow")
-
-XSHM: bool = envbool("XPRA_SHADOW_XSHM", True)
-POLL_CURSOR: int = envint("XPRA_SHADOW_POLL_CURSOR", 20)
-NVFBC: bool = envbool("XPRA_SHADOW_NVFBC", True)
-GSTREAMER: bool = envbool("XPRA_SHADOW_GSTREAMER", False)
-nvfbc = None
-if NVFBC:
-    try:
-        from xpra.codecs.nvidia.nvfbc.capture import get_capture_module, get_capture_instance
-
-        nvfbc = get_capture_module()
-        if nvfbc:
-            nvfbc.init_nvfbc_library()
-    except Exception:
-        log("NvFBC Capture is not available", exc_info=True)
-        NVFBC = False
-        nvfbc = None
 
 
 def matchre(re_str: str, xid_dict: dict) -> list[int]:
@@ -86,6 +68,7 @@ def window_matches(wspec, model_class):
         skip_children = False
     else:
         skip_children = True
+    from xpra.x11.bindings.window import X11WindowBindings
     wb = X11WindowBindings()
     with xsync:
         allw: list[int] = [wxid for wxid in wb.get_all_x11_windows() if
@@ -154,6 +137,7 @@ def window_matches(wspec, model_class):
 
 
 def position_models(models: dict[int, Any]) -> None:
+    from xpra.x11.bindings.window import X11WindowBindings
     wb = X11WindowBindings()
     # find relative position and 'transient-for':
     for xid, model in models.items():
@@ -259,26 +243,47 @@ class XImageCapture:
         finally:
             end = monotonic_ns()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s",
-                width * height, (width * height / (end - start)), ["GTK", "XSHM"][XSHM])
+                width * height, (width * height / (end - start)), ["GTK", "XSHM"][bool(self.xshm)])
 
 
-def setup_nvfbc_capture(window):
+nvfbc_failed = False
+
+
+def setup_nvfbc_capture():
+    global nvfbc_failed
+    if nvfbc_failed:
+        return None
+    NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
     if not NVFBC:
         return None
-    ww, wh = window.get_geometry()[2:4]
-    capture = get_capture_instance()
-    capture.init_context(ww, wh)
-    capture.refresh()
-    image = capture.get_image(0, 0, ww, wh)
-    assert image, "test capture failed"
-    return capture
+    try:
+        from xpra.codecs.nvidia.nvfbc.capture import get_capture_module, get_capture_instance
+        nvfbc = get_capture_module()
+        if nvfbc:
+            nvfbc.init_nvfbc_library()
+        from xpra.gtk.util import get_default_root_window
+        root = get_default_root_window()
+        ww, wh = root.get_geometry()[2:4]
+        capture = get_capture_instance()
+        capture.init_context(ww, wh)
+        capture.refresh()
+        image = capture.get_image(0, 0, ww, wh)
+        assert image, "test capture failed"
+        return capture
+    except Exception:
+        log("NvFBC Capture is not available", exc_info=True)
+        nvfbc_failed = True
+        return None
 
 
-def setup_gstreamer_capture(window):
+def setup_gstreamer_capture():
+    GSTREAMER: bool = envbool("XPRA_SHADOW_GSTREAMER", False)
     if not GSTREAMER:
         return None
-    xid = window.get_xid()
-    ww, wh = window.get_geometry()[2:4]
+    from xpra.gtk.util import get_default_root_window
+    root = get_default_root_window()
+    xid = root.get_xid()
+    ww, wh = root.get_geometry()[2:4]
     from xpra.codecs.gstreamer.capture import Capture
     el = "ximagesrc"
     if xid >= 0:
@@ -296,23 +301,28 @@ def setup_gstreamer_capture(window):
     return capture
 
 
-def setup_xshm_capture(window):
+def setup_xshm_capture():
+    XSHM = envbool("XPRA_SHADOW_XSHM", True)
     if not XSHM:
         return None
-    xid = window.get_xid()
     try:
         from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
         XImage = XImageBindings()
+        from xpra.x11.bindings.shm import XShmBindings
+        XShm = XShmBindings()
     except ImportError as e:
         log(f"not using X11 capture using bindings: {e}")
         return None
-    if XImage.has_XShm():
+    xid = XImage.get_root_xid()
+    if XShm.has_XShm():
         return XImageCapture(xid)
     return None
 
 
-def setup_gtk_capture(window):
-    return GTKImageCapture(window)
+def setup_gtk_capture():
+    from xpra.gtk.util import get_default_root_window
+    root = get_default_root_window()
+    return GTKImageCapture(root)
 
 
 CAPTURE_BACKENDS: dict[str, Callable] = {
@@ -324,11 +334,11 @@ CAPTURE_BACKENDS: dict[str, Callable] = {
 }
 
 
-class X11ShadowModel(RootWindowModel):
+class X11ShadowModel(CaptureWindowModel):
     __slots__ = ("xid", "override_redirect", "transient_for", "parent", "relative_position")
 
-    def __init__(self, root_window, capture=None, title="", geometry=None):
-        super().__init__(root_window, capture, title, geometry)
+    def __init__(self, capture=None, title="", geometry=None):
+        super().__init__(capture, title, geometry)
         self.property_names += ["transient-for", "parent", "relative-position"]
         self.dynamic_property_names += ["transient-for", "parent", "relative-position"]
         self.override_redirect: bool = False
@@ -336,7 +346,8 @@ class X11ShadowModel(RootWindowModel):
         self.parent = None
         self.relative_position = ()
         try:
-            self.xid = root_window.get_xid()
+            from xpra.x11.bindings.core import X11CoreBindings
+            self.xid = X11CoreBindings.get_root_xid()
             self.property_names.append("xid")
         except Exception:
             self.xid = 0
@@ -387,8 +398,8 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
                 log("cleanup() failed to remove X11 attribute", exc_info=True)
 
     def setup_capture(self):
-        capture = try_setup_capture(CAPTURE_BACKENDS, self.backend, self.root)
-        log(f"setup_capture() {self.backend} - {self.root}: {capture}")
+        capture = try_setup_capture(CAPTURE_BACKENDS, self.backend)
+        log(f"setup_capture() {self.backend} : {capture}")
         return capture
 
     def get_root_window_model_class(self) -> type:
@@ -433,7 +444,9 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         log(f"verify_capture({ss})")
         nid = NotificationID.DISPLAY
         try:
-            capture = GTKImageCapture(self.root)
+            from xpra.gtk.util import get_default_root_window
+            root = get_default_root_window()
+            capture = GTKImageCapture(root)
             bdata = capture.take_screenshot()[-1]
             title = body = ""
             if any(b != 0 for b in bdata):
@@ -466,7 +479,9 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         return info
 
     def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
-        capture = GTKImageCapture(self.root)
+        from xpra.gtk.util import get_default_root_window
+        root = get_default_root_window()
+        capture = GTKImageCapture(root)
         w, h, encoding, rowstride, data = capture.take_screenshot()
         assert encoding == "png"  # use fixed encoding for now
         # pylint: disable=import-outside-toplevel

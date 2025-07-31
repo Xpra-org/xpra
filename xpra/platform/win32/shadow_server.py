@@ -17,11 +17,11 @@ from xpra.util.env import envbool
 from xpra.util.system import is_VirtualBox
 from xpra.common import XPRA_APP_ID
 from xpra.scripts.config import InitException
-from xpra.server.gtk_server import GTKServerBase
+from xpra.server.gtk_server import GTKServerBase, get_default_display
 from xpra.server.shadow.shadow_server_base import try_setup_capture
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
-from xpra.server.shadow.root_window_model import RootWindowModel
+from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
@@ -304,11 +304,11 @@ def get_shape_rectangles(logit=False) -> list:
     return sorted(rectangles)
 
 
-class SeamlessRootWindowModel(RootWindowModel):
+class SeamlessCaptureWindowModel(CaptureWindowModel):
 
     def __init__(self, root, capture, title, geometry):
         super().__init__(root, capture, title, geometry)
-        log("SeamlessRootWindowModel(%s, %s) SEAMLESS=%s", root, capture, SEAMLESS)
+        log("SeamlessCaptureWindowModel(%s, %s) SEAMLESS=%s", root, capture, SEAMLESS)
         self.property_names.append("shape")
         self.dynamic_property_names.append("shape")
         self.rectangles = get_shape_rectangles(logit=True)
@@ -329,11 +329,11 @@ class SeamlessRootWindowModel(RootWindowModel):
         return super().get_property(prop)
 
 
-class Win32ShadowModel(RootWindowModel):
+class Win32ShadowModel(CaptureWindowModel):
     __slots__ = ("hwnd", "iconic")
 
-    def __init__(self, root_window, capture=None, title="", geometry=None):
-        super().__init__(root_window, capture, title, geometry)
+    def __init__(self, capture=None, title="", geometry=None):
+        super().__init__(capture, title, geometry)
         self.hwnd = 0
         self.iconic = geometry[2] == -32000 and geometry[3] == -32000
         self.property_names.append("hwnd")
@@ -375,7 +375,7 @@ class ShadowServer(GTKShadowServerBase):
             raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
         super().init(opts)
 
-    def guess_session_name(self, _procs=None) -> None:
+    def guess_session_name(self, _procs=()) -> None:
         desktop_name = get_desktop_name()
         log("get_desktop_name()=%s", desktop_name)
         if desktop_name:
@@ -388,10 +388,11 @@ class ShadowServer(GTKShadowServerBase):
             return
         w, h = size
         try:
-            display = prettify_plug_name(self.root.get_screen().get_display().get_name())
+            display = get_default_display()
+            display_name = prettify_plug_name(display.get_name())
         except Exception:
-            display = ""
-        self.do_print_screen_info(display, w, h)
+            display_name = ""
+        self.do_print_screen_info(display_name, w, h)
 
     def make_tray_widget(self):
         from xpra.platform.win32.tray import Win32Tray
@@ -401,13 +402,13 @@ class ShadowServer(GTKShadowServerBase):
     def setup_capture(self):
         w, h = get_root_window_size()
         capture = try_setup_capture(CAPTURE_BACKENDS, self.backend, w, h, self.pixel_depth)
-        log(f"setup_capture() {self.backend} - {self.root}: {capture}")
+        log(f"setup_capture() {self.backend} : {capture}")
         return capture
 
     def get_root_window_model_class(self) -> type:
         if SEAMLESS:
-            return SeamlessRootWindowModel
-        return RootWindowModel
+            return SeamlessCaptureWindowModel
+        return CaptureWindowModel
 
     def makeDynamicWindowModels(self):
         assert self.window_matches
@@ -453,7 +454,7 @@ class ShadowServer(GTKShadowServerBase):
         models = []
 
         def add_model(hwnd: int, title: str, geometry: tuple[int, int, int, int]):
-            model = Win32ShadowModel(self.root, self.capture, title=title, geometry=geometry)
+            model = Win32ShadowModel(self.capture, title=title, geometry=geometry)
             model.hwnd = hwnd
             models.append(model)
 
@@ -624,7 +625,7 @@ class ShadowServer(GTKShadowServerBase):
 def main() -> None:
     from xpra.platform import program_context
     with program_context("Shadow-Test", "Shadow Server Screen Capture Test"):
-        rwm = RootWindowModel(None)
+        rwm = CaptureWindowModel(None)
         pngdata = rwm.take_screenshot()
         filename = "screenshot.png"
         with open(filename, "wb") as f:

@@ -1454,7 +1454,10 @@ def attach_client(options, defaults) -> None:
 def verify_gdk_display(display_name: str):
     # pylint: disable=import-outside-toplevel
     # Now we can safely load gtk and connect:
-    Gdk = gi_import("Gdk")
+    try:
+        Gdk = gi_import("Gdk")
+    except ImportError:
+        return None
     display = Gdk.Display.open(display_name)
     if not display:
         return None

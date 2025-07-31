@@ -18,7 +18,7 @@ from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture, capture_and_encode
 from xpra.gstreamer.common import get_element_str
 from xpra.codecs.image import ImageWrapper
-from xpra.server.shadow.root_window_model import RootWindowModel
+from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.posix.fd_portal import (
     SCREENCAST_IFACE, PORTAL_SESSION_INTERFACE,
@@ -37,11 +37,11 @@ VIDEO_MODE = envbool("XPRA_PIPEWIRE_VIDEO_MODE", True)
 VIDEO_MODE_ENCODINGS = os.environ.get("XPRA_PIPEWIRE_VIDEO_ENCODINGS", "h264,vp8,vp9,av1").split(",")
 
 
-class PipewireWindowModel(RootWindowModel):
+class PipewireWindowModel(CaptureWindowModel):
     __slots__ = ("pipewire_id", "pipewire_props")
 
-    def __init__(self, root_window, capture, title: str, geometry, node_id: int, props: typedict):
-        super().__init__(root_window=root_window, capture=capture, title=title, geometry=geometry)
+    def __init__(self, capture, title: str, geometry, node_id: int, props: typedict):
+        super().__init__(capture=capture, title=title, geometry=geometry)
         self.pipewire_id = node_id
         self.pipewire_props = props
 
@@ -84,8 +84,8 @@ class PortalShadow(GTKShadowServerBase):
             self.disconnect_protocol(ac.protocol, reason, message)
             self.cleanup_source(ac)
 
-    def makeRootWindowModels(self) -> list:
-        log("makeRootWindowModels()")
+    def make_capture_window_models(self) -> list:
+        log("make_capture_window_models()")
         return []
 
     def makeDynamicWindowModels(self) -> list:
@@ -280,7 +280,7 @@ class PortalShadow(GTKShadowServerBase):
         source_type = props.intget("source_type")
         title = f"{AvailableSourceTypes(source_type)} {node_id}"
         geometry = (x, y, w, h)
-        model = PipewireWindowModel(self.root, self.capture, title, geometry, node_id, props)
+        model = PipewireWindowModel(self.capture, title, geometry, node_id, props)
         # must be called from the main thread:
         log(f"new model: {model}")
         self.do_add_new_window_common(node_id, model)

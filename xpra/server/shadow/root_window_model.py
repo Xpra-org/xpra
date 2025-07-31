@@ -42,15 +42,14 @@ def get_os_icons() -> Sequence[tuple[int, int, str, bytes]]:
     return ()
 
 
-class RootWindowModel:
+class CaptureWindowModel:
     __slots__ = (
-        "window", "title", "geometry", "capture",
+        "title", "geometry", "capture",
         "property_names", "dynamic_property_names", "internal_property_names",
         "signal_listeners",
     )
 
-    def __init__(self, root_window, capture=None, title: str = "", geometry=None):
-        self.window = root_window
+    def __init__(self, capture=None, title: str = "", geometry=None):
         self.title: str = title
         self.geometry = geometry
         self.capture = capture
@@ -65,7 +64,7 @@ class RootWindowModel:
         self.signal_listeners: dict[str, list[tuple]] = {}
 
     def __repr__(self):
-        return f"RootWindowModel({self.capture} : {str(self.geometry):24})"
+        return f"CaptureWindowModel({self.capture} : {str(self.geometry):24})"
 
     def get_info(self) -> dict[str, Any]:
         info = {}

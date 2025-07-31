@@ -17,7 +17,6 @@ GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = ("ximagesrc", "pipewiresrc")
 
 XSHM: bool = envbool("XPRA_SHADOW_XSHM", True)
 NVFBC: bool = envbool("XPRA_SHADOW_NVFBC", True)
-GSTREAMER: bool = envbool("XPRA_SHADOW_GSTREAMER", True)
 PIPEWIRE: bool = envbool("XPRA_SHADOW_PIPEWIRE", True)
 
 
@@ -82,6 +81,12 @@ def load_x11(display: str = "") -> type | None:
     return None
 
 
+def load_gstreamer(display: str = "") -> type | None:
+    os.environ["XPRA_STREAM_MODE"] = "gstreamer"
+    os.environ["XPRA_SHADOW_GSTREAMER"] = "1"
+    return load_x11()
+
+
 # the ShadowX11Server supports multiple sub-backends:
 load_nvfbc = load_x11
 load_xshm = load_x11
@@ -118,6 +123,7 @@ def check_nvfbc() -> bool:
 
 
 def check_gstreamer() -> bool:
+    GSTREAMER: bool = envbool("XPRA_SHADOW_GSTREAMER", True)
     if not GSTREAMER:
         return False
     from xpra.gstreamer.common import has_plugins, import_gst
@@ -140,9 +146,9 @@ def check_x11() -> bool:
 
 
 def check_xshm() -> bool:
-    from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
-    assert XImageBindings
-    return XImageBindings().has_XShm()
+    from xpra.x11.bindings.shm import XShmBindings
+    assert XShmBindings
+    return XShmBindings().has_XShm()
 
 
 def nocheck() -> bool:

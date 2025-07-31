@@ -54,7 +54,7 @@ def do_send_menu_data(ss, menu) -> None:
     log(f"{len(menu)} menu data entries sent to {ss}")
 
 
-def guess_session_name(procs=None, exec_wrapper=()) -> str:
+def guess_session_name(procs=(), exec_wrapper=()) -> str:
     if not procs:
         return ""
     # use the commands to define the session name:
@@ -392,7 +392,7 @@ class ChildCommandServer(StubServerMixin):
             log(f"still not terminated: {wait_for}")
         log("done waiting for child commands")
 
-    def guess_session_name(self, procs=None) -> None:
+    def guess_session_name(self, procs=()) -> None:
         new_name = guess_session_name(procs, self.exec_wrapper)
         if new_name and self.session_name != new_name:
             self.session_name = new_name

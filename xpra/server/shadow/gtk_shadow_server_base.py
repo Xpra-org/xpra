@@ -15,10 +15,9 @@ from xpra.common import XPRA_APP_ID, noop
 from xpra.os_util import POSIX, OSX, gi_import
 from xpra.scripts.config import str_to_bool
 from xpra.server import features
-from xpra.server.shadow.root_window_model import RootWindowModel
-from xpra.server.gtk_server import GTKServerBase
+from xpra.server.shadow.root_window_model import CaptureWindowModel
+from xpra.server.gtk_server import GTKServerBase, get_default_display
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
-from xpra.gtk.widget import checkitem
 from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.net.compression import Compressed
 from xpra.log import Logger
@@ -94,8 +93,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def setup(self) -> None:
         GTKServerBase.setup(self)
-        from xpra.gtk.util import get_default_root_window
-        self.root = get_default_root_window()
         ShadowServerBase.setup(self)
         if self.tray:
             self.setup_tray()
@@ -104,6 +101,24 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.cleanup_tray()
         ShadowServerBase.cleanup(self)
         GTKServerBase.cleanup(self)  # @UndefinedVariable
+
+    def print_screen_info(self) -> None:
+        if not features.display:
+            return
+        from xpra.util.system import is_Wayland
+        dinfo = ""
+        if is_Wayland():
+            wdisplay = os.environ.get("WAYLAND_DISPLAY", "").replace("wayland-", "")
+            if wdisplay:
+                dinfo = f"Wayland display {wdisplay}"
+        else:
+            display = os.environ.get("DISPLAY", "")
+            if display:
+                dinfo = f"X11 display {display}"
+        from xpra.gtk.util import get_default_root_window
+        root = get_default_root_window()
+        w, h = root.get_geometry()[2:4]
+        self.do_print_screen_info(dinfo, w, h)
 
     def client_startup_complete(self, ss) -> None:
         GTKServerBase.client_startup_complete(self, ss)
@@ -181,17 +196,17 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         for model in tuple(self._window_to_id.keys()):
             self._remove_window(model)
         self.cleanup_capture()
-        for model in self.makeRootWindowModels():
+        for model in self.make_capture_window_models():
             self._add_new_window(model)
 
     def setup_capture(self):
         raise NotImplementedError()
 
     def get_root_window_model_class(self) -> type:
-        return RootWindowModel
+        return CaptureWindowModel
 
     def get_shadow_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
-        display = self.root.get_display()
+        display = get_default_display()
         if not display:
             return []
         n = display.get_n_monitors()
@@ -211,15 +226,16 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         screenlog("get_shadow_monitors()=%s", monitors)
         return monitors
 
-    def makeRootWindowModels(self) -> list:
-        screenlog("makeRootWindowModels() root=%s, display_options=%s", self.root, self.display_options)
+    def make_capture_window_models(self) -> list:
+        screenlog("make_capture_window_models() display_options=%s", self.display_options)
         self.capture = self.setup_capture()
         if not self.capture:
             raise RuntimeError("failed to instantiate a capture backend")
         log.info(f"capture using {self.capture.get_type()}")
         model_class = self.get_root_window_model_class()
         models = []
-        display_name = prettify_plug_name(self.root.get_screen().get_display().get_name())
+        display = get_default_display()
+        display_name = prettify_plug_name(display.get_name())
         monitors = self.get_shadow_monitors()
         match_str = None
         geometries = None
@@ -240,10 +256,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 geometries = parse_geometries(self.display_options)
             except ValueError:
                 match_str = self.display_options
-        log(f"makeRootWindowModels() multi_window={self.multi_window}")
+        log(f"make_capture_window_models() multi_window={self.multi_window}")
         if not self.multi_window or geometries:
-            for geometry in (geometries or (self.root.get_geometry()[:4],)):
-                model = model_class(self.root, self.capture, display_name, geometry)
+            from xpra.gtk.util import get_default_root_window
+            root = get_default_root_window()
+            for geometry in (geometries or (root.get_geometry()[:4],)):
+                model = model_class(self.capture, display_name, geometry)
                 models.append(model)
             return models
         found = []
@@ -258,10 +276,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 screenlog.info(" skipped monitor %s", plug_name or title)
                 continue
             geometry = (x, y, width, height)
-            model = model_class(self.root, self.capture, title, geometry)
+            model = model_class(self.capture, title, geometry)
             models.append(model)
             screenlog("monitor %i: %10s geometry=%s, scale factor=%s", i, title, geometry, scale_factor)
-        screenlog("makeRootWindowModels()=%s", models)
+        screenlog("make_capture_window_models()=%s", models)
         if not models and match_str:
             screenlog.warn("Warning: no monitors found matching %r", match_str)
             screenlog.warn(" only found: %s", csv(found))
@@ -335,7 +353,9 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         return [ax, ay] + list(pointer[2:])
 
     def get_pointer_position(self) -> tuple[int, int]:
-        return self.root.get_pointer()[-3:-1]
+        from xpra.gtk.util import get_default_root_window
+        root = get_default_root_window()
+        return root.get_pointer()[-3:-1]
 
     def get_notification_tray(self):
         return self.tray_widget
@@ -400,6 +420,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                         self.readonly = ro
                         self.setting_changed("readonly", ro)
 
+                from xpra.gtk.widget import checkitem
                 self.tray_menu.append(checkitem("Read-only", cb=readonly_toggled, active=self.readonly))
             self.tray_menu.append(self.traymenuitem("Exit", "quit.png", cb=self.tray_exit_callback))
             self.tray_menu.append(self.traymenuitem("Close Menu", "close.png", cb=self.close_tray_menu))
