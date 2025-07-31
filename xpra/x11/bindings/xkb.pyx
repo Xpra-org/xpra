@@ -95,6 +95,7 @@ cdef object parse_XKBNotify(Display *d, XEvent *e):
     return {
         "window": window,
         "delivered_to": window,
+        "subtype": "bell",
         "device": int(bell_e.device),
         "percent": int(bell_e.percent),
         "pitch": int(bell_e.pitch),
