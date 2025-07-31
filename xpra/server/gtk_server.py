@@ -73,9 +73,6 @@ class GTKServerBase(ServerBase):
         Gtk = gi_import("Gtk")
         Gtk.main_quit()
         log("do_quit: Gtk.main_quit done")
-        # from now on, we can't rely on the main loop:
-        from xpra.util.system import register_SIGUSR_signals
-        register_SIGUSR_signals()
 
     def late_cleanup(self, stop=True) -> None:
         log("GTKServerBase.late_cleanup(%s)", stop)
