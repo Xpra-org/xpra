@@ -62,6 +62,9 @@ class Capture(Pipeline):
         self.create_pipeline(element)
         assert width > 0 and height > 0
 
+    def __repr__(self):
+        return f"gstreamer.Capture({self.capture_element} - {self.pixel_format})"
+
     def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
         elements = [
             f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
@@ -194,6 +197,9 @@ class CaptureAndEncode(Capture):
         self.encoding = encoding
         self.encoder = encoder
         super().__init__(element, pixel_format, width, height, framerate)
+
+    def __repr__(self):
+        return f"gstreamer.Capture({self.capture_element} - {self.pixel_format} - {self.encoder})"
 
     def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
         options = typedict({
