@@ -30,6 +30,7 @@ from xpra.log import Logger
 
 log = Logger("events", "win32")
 
+
 KNOWN_EVENTS = {}
 POWER_EVENTS = {}
 for x in dir(win32con):
@@ -89,12 +90,44 @@ WINDOW_EVENTS = envbool("XPRA_WIN32_WINDOW_EVENTS", True)
 EVENT_CALLBACK_TYPE = Callable[[int, int], None]
 
 
+power_event_handlers: dict[str, list[Callable[[], None]]] = {}
+
+
+def power_broadcast_event_handler(wParam: int, lParam: int) -> None:
+    log("WM_POWERBROADCAST: %s/%s", POWER_EVENTS.get(wParam, wParam), lParam)
+    if wParam == win32con.PBT_APMSUSPEND:
+        call_power_event_handlers("suspend")
+    elif wParam == win32con.PBT_APMRESUMEAUTOMATIC:
+        call_power_event_handlers("resume")
+
+
+def call_power_event_handlers(event: str) -> None:
+    ehandlers = power_event_handlers.get(event, ())
+    for ehandler in ehandlers:
+        ehandler()
+
+
 def add_handler(event: str, handler: Callable) -> None:
-    """ not implemented on win32 """
+    if event in ("suspend", "resume"):
+        if not power_event_handlers:
+            # first power event to be registered, add the callback to our handler:
+            el = get_win32_event_listener(True)
+            el.add_event_callback(win32con.WM_POWERBROADCAST, power_broadcast_event_handler)
+        power_event_handlers.setdefault(event, []).append(handler)
 
 
 def remove_handler(event: str, handler: Callable) -> None:
-    """ not implemented on win32 """
+    ehandlers = power_event_handlers.get(event, [])
+    if handler in ehandlers:
+        ehandlers.remove(handler)
+        if not ehandlers:
+            power_event_handlers.pop(event, [])
+            if not power_event_handlers:
+                # the last power event handler has been removed,
+                # unregister our handler:
+                el = get_win32_event_listener(False)
+                if el:
+                    el.remove_event_callback(win32con.WM_POWERBROADCAST, power_broadcast_event_handler)
 
 
 class Win32Eventlistener:

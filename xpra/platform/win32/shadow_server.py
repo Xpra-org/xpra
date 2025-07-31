@@ -15,7 +15,7 @@ from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.util.system import is_VirtualBox
-from xpra.common import XPRA_APP_ID, NotificationID
+from xpra.common import XPRA_APP_ID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server import GTKServerBase
 from xpra.server.shadow.shadow_server_base import try_setup_capture
@@ -25,7 +25,7 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
-from xpra.platform.win32.events import get_win32_event_listener, POWER_EVENTS
+from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow_cursor import get_cursor_data
 from xpra.platform.win32.gdi_screen_capture import GDICapture
 from xpra.log import Logger
@@ -357,12 +357,11 @@ class ShadowServer(GTKShadowServerBase):
         self.backend = attrs.get("backend", "auto")
         if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT) == 0:
             raise InitException("all the monitors must use the same display format")
-        el = get_win32_event_listener()
         # TODO: deal with those messages?
-        el.add_event_callback(win32con.WM_POWERBROADCAST, self.power_broadcast_event)
         # el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
         # these are bound to callbacks in the client,
         # but on the server we just ignore them:
+        el = get_win32_event_listener(True)
         el.ignore_events.update({
             win32con.WM_ACTIVATEAPP: "WM_ACTIVATEAPP",
             win32con.WM_MOVE: "WM_MOVE",
@@ -375,17 +374,6 @@ class ShadowServer(GTKShadowServerBase):
         if self.pixel_depth not in (24, 30, 32):
             raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
         super().init(opts)
-
-    def power_broadcast_event(self, wParam: int, lParam: int) -> None:
-        log("WM_POWERBROADCAST: %s/%s", POWER_EVENTS.get(wParam, wParam), lParam)
-        if wParam == win32con.PBT_APMSUSPEND:
-            log.info("WM_POWERBROADCAST: PBT_APMSUSPEND")
-            for source in self._server_sources.values():
-                source.may_notify(NotificationID.IDLE, "Server Suspending",
-                                  "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon.",
-                                  expire_timeout=10 * 1000, icon_name="shutdown")
-        elif wParam == win32con.PBT_APMRESUMEAUTOMATIC:
-            log.info("WM_POWERBROADCAST: PBT_APMRESUMEAUTOMATIC")
 
     def guess_session_name(self, _procs=None) -> None:
         desktop_name = get_desktop_name()

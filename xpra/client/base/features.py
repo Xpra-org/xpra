@@ -35,3 +35,4 @@ socket = True
 ssh_agent = True
 encoding = True
 native = True
+power = True

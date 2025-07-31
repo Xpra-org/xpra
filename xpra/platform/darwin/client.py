@@ -71,8 +71,6 @@ class PlatformClient(StubClientMixin):
         from xpra.platform.darwin.events import get_app_delegate
         delegate = get_app_delegate()
         log(f"setup_event_listener() delegate={delegate}")
-        delegate.add_handler("suspend", self.client.suspend)
-        delegate.add_handler("resume", self.client.resume)
         delegate.add_handler("deiconify", self.client.deiconify_windows)
         r = CGDisplayRegisterReconfigurationCallback(self.cg_display_change, self)
         if r != 0:

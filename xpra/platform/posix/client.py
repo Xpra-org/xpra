@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.base.stub import StubClientMixin
-from xpra.platform.posix.events import remove_handler, add_handler
 from xpra.platform.posix.gui import x11_bindings, X11WindowBindings
 from xpra.scripts.config import str_to_bool
 from xpra.common import noop
@@ -59,7 +58,6 @@ class PlatformClient(StubClientMixin):
             # this would trigger warnings with our temporary opengl windows:
             # only enable it after we have connected:
             self.after_handshake(self.setup_xi)
-        self.setup_dbus_signals()
 
     def init_x11_filter(self) -> None:
         if self._x11_filter:
@@ -86,8 +84,6 @@ class PlatformClient(StubClientMixin):
         if self._root_props_watcher:
             self._root_props_watcher.cleanup()
             self._root_props_watcher = None
-        remove_handler("suspend", self.suspend_callback)
-        remove_handler("resume", self.resume_callback)
 
     def suspend_callback(self, *args) -> None:
         eventlog("suspend_callback%s", args)
@@ -96,10 +92,6 @@ class PlatformClient(StubClientMixin):
     def resume_callback(self, *args) -> None:
         eventlog("resume_callback%s", args)
         self.resume()
-
-    def setup_dbus_signals(self) -> None:
-        add_handler("suspend", self.suspend_callback)
-        add_handler("resume", self.resume_callback)
 
     def setup_xprops(self) -> None:
         # wait for handshake to complete:

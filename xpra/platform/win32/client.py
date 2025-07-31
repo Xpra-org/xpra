@@ -18,7 +18,7 @@ from xpra.platform.win32.common import (
     GetIntSystemParametersInfo, UnhookWindowsHookEx, GetKeyboardLayoutName,
     CallNextHookEx, GetKeyState, SetWindowsHookExA, GetModuleHandleA, GetMessageA, TranslateMessage, DispatchMessageA,
 )
-from xpra.platform.win32.events import POWER_EVENTS, KNOWN_EVENTS, Win32Eventlistener, get_win32_event_listener
+from xpra.platform.win32.events import KNOWN_EVENTS, Win32Eventlistener, get_win32_event_listener
 from xpra.platform.win32.gui import (
     WM_WTSSESSION_CHANGE, FORWARD_WINDOWS_KEY, POLL_LAYOUT, grablog, keylog, WTS_SESSION_EVENTS, WTS_SESSION_LOGOFF,
     WTS_SESSION_LOCK, WTS_SESSION_LOGON, WTS_SESSION_UNLOCK,
@@ -164,14 +164,13 @@ class PlatformClient(StubClientMixin):
             self._eventlistener = el
             if el:
                 el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
-                el.add_event_callback(win32con.WM_POWERBROADCAST, self.power_broadcast_event)
                 el.add_event_callback(win32con.WM_MOVE, self.wm_move)
                 el.add_event_callback(WM_WTSSESSION_CHANGE, self.session_change_event)
                 el.add_event_callback(win32con.WM_INPUTLANGCHANGE, self.inputlangchange)
                 el.add_event_callback(win32con.WM_WININICHANGE, self.inichange)
                 el.add_event_callback(win32con.WM_ENDSESSION, self.end_session)
         except Exception as e:
-            log.error("Error: cannot register focus and power callbacks:")
+            log.error("Error: cannot register focus and session callbacks:")
             log.estr(e)
 
     def cleanup(self) -> None:
@@ -330,16 +329,6 @@ class PlatformClient(StubClientMixin):
             fixup_window_style = getattr(window, "fixup_window_style", None)
             if fixup_window_style:
                 fixup_window_style()
-
-    def power_broadcast_event(self, wparam: int, lparam: int) -> None:
-        log("WM_POWERBROADCAST: %s/%s", POWER_EVENTS.get(wparam, wparam), lparam)
-        # maybe also "PBT_APMQUERYSUSPEND" and "PBT_APMQUERYSTANDBY"?
-        if wparam == win32con.PBT_APMSUSPEND:
-            self.suspend()
-        # According to the documentation:
-        # The system always sends a PBT_APMRESUMEAUTOMATIC message whenever the system resumes.
-        elif wparam == win32con.PBT_APMRESUMEAUTOMATIC:
-            self.resume()
 
     def handle_console_event(self, event: int) -> int:
         event_name = KNOWN_EVENTS.get(event, event)

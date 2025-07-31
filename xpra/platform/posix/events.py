@@ -29,7 +29,7 @@ def load_dbus() -> bool:
         import xpra.dbus
         assert xpra.dbus
     except ImportError:
-        log("setup_dbus_signals()", exc_info=True)
+        log("load_dbus()", exc_info=True)
         if not loaded:
             log.info("no dbus support")
         return False

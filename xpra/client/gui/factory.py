@@ -65,6 +65,9 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.tray:
         from xpra.client.subsystem.tray import TrayClient
         CLIENT_BASES.append(TrayClient)
+    if features.power:
+        from xpra.client.subsystem.power import PowerEventClient
+        CLIENT_BASES.append(PowerEventClient)
 
     if features.native:
         try:
