@@ -25,6 +25,7 @@ FREEBSD: bool = sys.platform.startswith("freebsd")
 POSIX: bool = os.name == "posix"
 BITS: int = struct.calcsize(b"P")*8
 
+GI_BLOCK = tuple(x for x in os.environ.get("XPRA_GI_BLOCK", "").split(",") if x)
 
 GIR_VERSIONS: dict[str, str] = {
     "Gtk": "3.0",
@@ -46,6 +47,8 @@ GIR_VERSIONS: dict[str, str] = {
 
 
 def gi_import(mod="Gtk", version="") -> ModuleType:
+    if mod in GI_BLOCK:
+        raise ImportError(f"import of {mod!r} is blocked")
     version = version or GIR_VERSIONS.get(mod, "")
     from xpra.util.env import SilenceWarningsContext
     with SilenceWarningsContext(DeprecationWarning, ImportWarning):
