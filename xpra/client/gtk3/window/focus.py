@@ -23,7 +23,7 @@ log = Logger("focus", "grab")
 
 NotifyInferior = 2
 
-FOCUS_RECHECK_DELAY = envint("XPRA_FOCUS_RECHECK_DELAY", 15)
+FOCUS_RECHECK_DELAY = envint("XPRA_FOCUS_RECHECK_DELAY", 0)
 AUTOGRAB_WITH_FOCUS = envbool("XPRA_AUTOGRAB_WITH_FOCUS", False)
 
 
