@@ -80,6 +80,7 @@ ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS: bool = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS: bool = envbool("XPRA_SAVE_CURSORS", False)
 POLL_POINTER = envint("XPRA_POLL_POINTER", 0)
+OPENGL_REINIT_WINDOWS = envbool("XPRA_OPENGL_REINIT_WINDOWS", True)
 
 DRAW_LOG_FMT = "process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i" \
                " using %6s encoding with options=%s"
@@ -1532,7 +1533,7 @@ class WindowClient(StubClientMixin):
         delta = datetime.timedelta(seconds=int(elapsed))
         log.info("system resumed, was suspended for %s", str(delta).lstrip("0:"))
         # this will reset the refresh rate too:
-        if self.opengl_enabled:
+        if self.opengl_enabled and OPENGL_REINIT_WINDOWS:
             # with opengl, the buffers sometimes contain garbage after resuming,
             # this should create new backing buffers:
             self.reinit_windows()
