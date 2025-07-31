@@ -2569,6 +2569,11 @@ def guess_display(current_display, uid: int = getuid(), gid: int = getgid(), ses
         if current_display in displays:
             log(f"using {current_display=}")
             return current_display
+        # remove displays that are likely equivalent
+        # ie: ":0" and ":0.0"
+        noscreen = set(display.split(".")[0] for display in displays)
+        if len(noscreen) == 1:
+            return tuple(noscreen)[0]
         if not args:
             log(f"guess_display({current_display}, {uid}, {gid}, {sessions_dir}) {displays=}, {all_displays=}")
             if len(displays) > 1:
