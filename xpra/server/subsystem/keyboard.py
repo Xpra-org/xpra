@@ -179,6 +179,7 @@ class KeyboardServer(StubServerMixin):
                     Ellipsizer(self.ibus_layouts))
 
     def cleanup(self) -> None:
+        self.stop_keymap_timer()
         noerr(self.clear_keys_pressed)
         self.keyboard_config = None
         if is_X11():
@@ -186,6 +187,21 @@ class KeyboardServer(StubServerMixin):
             from xpra.x11.xkbhelper import clean_keyboard_state
             with xswallow:
                 clean_keyboard_state()
+
+    def keymap_changed(self, *_args) -> None:
+        if self.keymap_changing_timer:
+            return
+        self.keymap_changing_timer = GLib.timeout_add(500, self.do_keymap_changed)
+
+    def do_keymap_changed(self) -> None:
+        self.keymap_changing_timer = 0
+        self._keys_changed()
+
+    def stop_keymap_timer(self) -> None:
+        kct = self.keymap_changing_timer
+        if kct:
+            self.keymap_changing_timer = 0
+            GLib.source_remove(kct)
 
     def reset_focus(self) -> None:
         self.clear_keys_pressed()

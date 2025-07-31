@@ -14,7 +14,6 @@ from xpra.os_util import gi_import
 from xpra.util.version import dict_version_trim
 from xpra.common import FULL_INFO
 from xpra.gtk.versions import get_gtk_version_info
-from xpra.gtk.keymap import get_default_keymap
 from xpra.server import features
 from xpra.server.base import ServerBase
 from xpra.log import Logger
@@ -40,44 +39,19 @@ class GTKServerBase(ServerBase):
 
     def __init__(self):
         log("GTKServerBase.__init__()")
-        self.keymap_changing_timer: int = 0
         super().__init__()
 
     def watch_keymap_changes(self) -> None:
         # Set up keymap change notification:
+        from xpra.gtk.keymap import get_default_keymap
         keymap = get_default_keymap()
-
-        # this event can fire many times in succession
-        # throttle how many times we call self._keys_changed()
-
-        def keys_changed(*_args) -> None:
-            if self.keymap_changing_timer:
-                return
-
-            def do_keys_changed() -> None:
-                self.keymap_changing_timer = 0
-                self._keys_changed()
-
-            self.keymap_changing_timer = GLib.timeout_add(500, do_keys_changed)
-
-        keymap.connect("keys-changed", keys_changed)
-
-    def stop_keymap_timer(self) -> None:
-        kct = self.keymap_changing_timer
-        if kct:
-            self.keymap_changing_timer = 0
-            GLib.source_remove(kct)
+        keymap.connect("keys-changed", self.keymap_changed)
 
     def do_quit(self) -> None:
         log("do_quit: calling Gtk.main_quit")
         Gtk = gi_import("Gtk")
         Gtk.main_quit()
         log("do_quit: Gtk.main_quit done")
-
-    def late_cleanup(self, stop=True) -> None:
-        log("GTKServerBase.late_cleanup(%s)", stop)
-        self.stop_keymap_timer()
-        super().late_cleanup(stop)
 
     def do_run(self) -> None:
         if features.window:
