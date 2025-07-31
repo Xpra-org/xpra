@@ -124,8 +124,11 @@ class ClientConnection(StubClientConnection):
         # MRO is depth first and would hit the default implementation
         # instead of the mixin unless we force it:
         notification_mixin = sys.modules.get("xpra.server.source.notification")
-        if notification_mixin and isinstance(self, notification_mixin.NotificationMixin):
-            notification_mixin.NotificationMixin.may_notify(self, *args, **kwargs)
+        if not notification_mixin:
+            return
+        NotificationConnection = notification_mixin.NotificationConnection
+        if isinstance(self, NotificationConnection):
+            NotificationConnection.may_notify(self, *args, **kwargs)
 
     def compressed_wrapper(self, datatype, data, **kwargs) -> Compressed | LevelCompressed:
         # set compression flags based on self.lz4:

@@ -140,9 +140,10 @@ class CursorManager(StubServerMixin):
             from xpra.gtk.error import xswallow
             with xswallow:
                 from xpra.x11.bindings.keyboard import X11KeyboardBindings
+                from xpra.x11.bindings.fixes import XFixesBindings
                 info |= {
                     "Xkb": X11KeyboardBindings().hasXkb(),
-                    "XFixes": X11KeyboardBindings().hasXFixes(),
+                    "XFixes": XFixesBindings().hasXFixes(),
                 }
         return {CursorManager.PREFIX: info}
 
