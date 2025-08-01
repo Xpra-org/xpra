@@ -37,16 +37,14 @@ def x11_bindings():
 
 
 def X11WindowBindings():
-    xb = x11_bindings()
-    if not xb:
+    if not x11_bindings():
         return None
     from xpra.x11.bindings.window import X11WindowBindings  # @UnresolvedImport
     return X11WindowBindings()
 
 
 def X11RandRBindings():
-    xb = x11_bindings()
-    if not xb:
+    if not x11_bindings():
         return None
     from xpra.x11.bindings.randr import RandRBindings  # @UnresolvedImport
     return RandRBindings()
@@ -237,6 +235,17 @@ def get_desktop_names() -> Sequence[str]:
         with xsync:
             return get_x11_desktop_names()
     return ("Main", )
+
+
+def get_display_name() -> str:
+    if x11_bindings():
+        from xpra.x11.bindings.display_source import get_display_name as get_x11_display_name
+        return get_x11_display_name()
+    # don't want to load Gtk here just to get the name
+    wd_parts = os.environ.get("WAYLAND_DISPLAY", "").split("-", 1)
+    if len(wd_parts) == 2:
+        return wd_parts[1]
+    return ""
 
 
 def get_vrefresh() -> int:

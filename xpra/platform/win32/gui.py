@@ -10,7 +10,7 @@ import os
 import sys
 import types
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from ctypes import (
     WinDLL,  # @UnresolvedImport
     CDLL, pythonapi, py_object,
@@ -200,6 +200,10 @@ def get_window_handle(window) -> int:
     return hwnd
 
 
+def get_desktop_names() -> Sequence[str]:
+    return [get_desktop_name()]
+
+
 def get_desktop_name() -> str:
     try:
         desktop = OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
@@ -214,6 +218,10 @@ def get_desktop_name() -> str:
         log.warn("Warning: failed to get desktop name")
         log.warn(" %s", e)
     return ""
+
+
+def get_display_name() -> str:
+    return get_desktop_name()
 
 
 def get_session_type() -> str:

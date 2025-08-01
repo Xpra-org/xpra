@@ -298,6 +298,10 @@ def get_wm_name() -> str:
     return ""
 
 
+def get_display_name() -> str:
+    return ""
+
+
 def can_access_display() -> bool:
     return True
 
@@ -370,6 +374,7 @@ platform_import(globals(), "gui", False,
                 "get_fixed_cursor_size", "get_cursor_size", "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",
+                "get_display_name",
                 "can_access_display",
                 "set_window_progress",
                 "get_info",

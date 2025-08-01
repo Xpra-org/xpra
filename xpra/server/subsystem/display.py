@@ -19,7 +19,8 @@ from xpra.net.common import Packet
 from xpra.util.system import is_X11
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
-from xpra.common import get_refresh_rate_for_value, FULL_INFO, parse_env_resolutions, parse_resolutions
+from xpra.common import get_refresh_rate_for_value, FULL_INFO, parse_env_resolutions, parse_resolutions, \
+    BACKWARDS_COMPATIBLE
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -416,8 +417,15 @@ class DisplayManager(StubServerMixin):
                     "root_window_size": root_size,
                     "desktop_size": self._get_desktop_size_capability(source, *root_size),
                 }
+            from xpra.platform.gui import get_display_name
+            name = get_display_name()
+            if name:
+                caps["name"] = name
         if FULL_INFO and self.opengl_props:
             caps["opengl"] = dict_version_trim(self.opengl_props)
+        if not BACKWARDS_COMPATIBLE:
+            return {"display": caps}
+        caps["display"] = caps.get("name", "")
         return caps
 
     def get_server_features(self, source) -> dict[str, Any]:

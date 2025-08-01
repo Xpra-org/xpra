@@ -68,16 +68,10 @@ class GTKServerBase(ServerBase):
         log("do_run() end of gtk.main()")
 
     def make_hello(self, source) -> dict[str, Any]:
-        capabilities = super().make_hello(source)
-        if "display" in source.wants:
-            display = get_default_display()
-            if display:
-                capabilities |= {
-                    "display": display.get_name(),
-                }
+        caps: dict[str, Any] = super().make_hello(source)
         if "versions" in source.wants and FULL_INFO >= 2:
-            capabilities.setdefault("versions", {}).update(get_gtk_version_info())
-        return capabilities
+            caps.setdefault("versions", {}).update(get_gtk_version_info())
+        return caps
 
     def get_ui_info(self, proto, *args) -> dict[str, Any]:
         info = super().get_ui_info(proto, *args)
@@ -85,7 +79,6 @@ class GTKServerBase(ServerBase):
         if display:
             info.setdefault("server", {}).update(
                 {
-                    "display": display.get_name(),
                     "root_window_size": self.get_root_window_size(),
                 }
             )
@@ -114,6 +107,3 @@ class GTKServerBase(ServerBase):
         x, y = pos
         display = get_default_display()
         display.warp_pointer(display.get_default_screen(), x, y)
-
-    def do_process_button_action(self, *args):
-        raise NotImplementedError

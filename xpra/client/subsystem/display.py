@@ -227,8 +227,16 @@ class DisplayClient(StubClientMixin):
             caps["antialias"] = aa
         return caps
 
-    def parse_server_capabilities(self, c: typedict) -> bool:
-        self.server_display = c.strget("display")
+    def parse_server_capabilities(self, caps: typedict) -> bool:
+        d = caps.get("display")
+        if isinstance(d, dict):
+            c = typedict(d)
+            self.server_display = c.strget("name")
+        elif BACKWARDS_COMPATIBLE:
+            c = caps
+            self.server_display = c.strget("display")
+        else:
+            raise ValueError("missing display capabilities")
         self.server_desktop_size = c.intpair("desktop_size")
         log("server desktop size=%s", self.server_desktop_size)
         self.server_max_desktop_size = c.intpair("max_desktop_size", (2 ** 15, 2 ** 15))
