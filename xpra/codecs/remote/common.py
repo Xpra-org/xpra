@@ -60,7 +60,7 @@ class RemoteCodecClient(RemoteServerAdapter):
         self.lz4 = to.boolget("lz4", False)
         self.specs: dict[str, dict[str, Sequence[VideoSpec]]] = {}
 
-    def make_hello(self) -> dict:
+    def make_hello(self) -> dict[str, Any]:
         caps = super().make_hello()
         caps.update({
             "client_type": "encode",

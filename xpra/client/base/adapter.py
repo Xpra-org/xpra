@@ -230,7 +230,7 @@ class RemoteServerAdapter(baseclass):
         else:
             log.warn(f"Warning: received unexpected {packet_type!r} from encoder server connection {proto}")
 
-    def make_hello(self) -> dict:
+    def make_hello(self) -> dict[str, Any]:
         return {
             "version": __version__[:FULL_INFO+1],
             # "client_type": "encode",
