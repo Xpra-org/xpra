@@ -11,6 +11,7 @@ from xpra.net.bytestreams import set_socket_timeout
 from xpra.net.rfb.const import RFB_KEYNAMES
 from xpra.server.rfb.protocol import RFBServerProtocol
 from xpra.server.rfb.source import RFBSource
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.server import features
 from xpra.scripts.config import str_to_bool, parse_number
 from xpra.log import Logger
@@ -23,7 +24,7 @@ pointerlog = Logger("rfb", "pointer")
 keylog = Logger("rfb", "keyboard")
 
 
-class RFBServer:
+class RFBServer(StubServerMixin):
     """
         Adds RFB packet handler to a server.
     """

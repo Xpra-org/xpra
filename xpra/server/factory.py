@@ -95,4 +95,11 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.command:
         from xpra.server.subsystem.command import ChildCommandServer
         classes.append(ChildCommandServer)
+    # this should only be enabled for desktop and shadow servers:
+    if features.rfb:
+        from xpra.server.rfb.server import RFBServer
+        classes.append(RFBServer)
+    if features.gtk:
+        from xpra.server.subsystem.gtk import GTKServer
+        classes.append(GTKServer)
     return tuple(classes)

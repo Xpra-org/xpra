@@ -373,8 +373,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         self.session_files: list[str] = []
 
     def init(self, opts) -> None:
-        # don't call init on X11ServerCore,
-        # this would call up to GTKServerBase.init(opts) again:
         X11ServerCore.init(self, opts)
         GTKShadowServerBase.init(self, opts)
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")

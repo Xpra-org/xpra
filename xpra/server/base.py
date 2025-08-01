@@ -44,7 +44,7 @@ class ServerBase(ServerBaseClass):
     This is the base class for seamless and desktop servers. (not proxy servers)
     It provides all the generic functions but is not tied
     to a specific backend (X11 or otherwise).
-    See GTKServerBase/X11ServerBase and other platform specific subclasses.
+    See X11ServerBase and other platform specific subclasses.
     """
 
     def __init__(self):

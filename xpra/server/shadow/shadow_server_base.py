@@ -9,6 +9,7 @@ from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.server.window import batch_config
+from xpra.server.base import ServerBase
 from xpra.scripts.config import InitExit
 from xpra.platform.gui import get_wm_name
 from xpra.platform.paths import get_icon_dir
@@ -33,11 +34,6 @@ POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
 CURSORS = envbool("XPRA_CURSORS", True)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 NOTIFY_STARTUP = envbool("XPRA_SHADOW_NOTIFY_STARTUP", True)
-
-SHADOWSERVER_BASE_CLASS: type = object
-if features.rfb:
-    from xpra.server.rfb.server import RFBServer
-    SHADOWSERVER_BASE_CLASS = RFBServer
 
 
 def try_setup_capture(backends: dict[str, Callable], backend: str, *args):
@@ -65,7 +61,7 @@ def try_setup_capture(backends: dict[str, Callable], backend: str, *args):
     raise InitExit(ExitCode.UNSUPPORTED, f"failed to setup screen capture backends: {csv(backends)}")
 
 
-class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
+class ShadowServerBase(ServerBase):
     # 20 fps unless the client specifies more:
     DEFAULT_REFRESH_RATE: int = 20
 
@@ -89,9 +85,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         batch_config.ALWAYS = True  # always batch
 
     def init(self, opts) -> None:
-        if SHADOWSERVER_BASE_CLASS is not object:
-            # RFBServer:
-            SHADOWSERVER_BASE_CLASS.init(self, opts)
+        super().init(opts)
         self.notifications = bool(opts.notifications)
         if self.notifications:
             self.make_notifier()
@@ -107,8 +101,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def setup(self) -> None:
         if not self.session_name:
             self.guess_session_name()
-        if SHADOWSERVER_BASE_CLASS is not object:
-            SHADOWSERVER_BASE_CLASS.setup(self)
+        super().setup()
 
     def cleanup(self) -> None:
         for wid in self.mapped:

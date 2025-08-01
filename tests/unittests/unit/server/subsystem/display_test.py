@@ -28,9 +28,6 @@ class DisplayMixinTest(ServerMixinTest):
         opts.refresh_rate = "auto"
         opts.resize_display = "no"
 
-        def get_root_window_size() -> tuple[int, int]:
-            return 1024, 768
-
         def calculate_workarea(*_args) -> None:
             pass
 
@@ -39,7 +36,6 @@ class DisplayMixinTest(ServerMixinTest):
 
         def make_display_manager():
             dm = DisplayManager()
-            dm.get_root_window_size = get_root_window_size
             dm.calculate_workarea = calculate_workarea
             dm.set_desktop_geometry = set_desktop_geometry
             return dm

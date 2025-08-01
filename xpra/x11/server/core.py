@@ -26,7 +26,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envbool, first_time
 from xpra.net.compression import Compressed
 from xpra.net.common import Packet
-from xpra.server.gtk_server import GTKServerBase
+from xpra.server.base import ServerBase
 from xpra.server import features
 from xpra.log import Logger
 
@@ -81,10 +81,10 @@ def get_root_size() -> tuple[int, int]:
         return X11WindowBindings().getGeometry(xid)[2:4]
 
 
-class X11ServerCore(GTKServerBase):
+class X11ServerCore(ServerBase):
     """
         Base class for X11 servers,
-        adds X11 specific methods to GTKServerBase.
+        adds X11 specific methods to ServerBase.
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 

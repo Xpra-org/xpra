@@ -17,7 +17,7 @@ from xpra.util.env import envbool
 from xpra.util.system import is_VirtualBox
 from xpra.common import XPRA_APP_ID
 from xpra.scripts.config import InitException
-from xpra.server.gtk_server import GTKServerBase, get_default_display
+from xpra.server.subsystem.gtk import get_default_display
 from xpra.server.shadow.shadow_server_base import try_setup_capture
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -605,14 +605,13 @@ class ShadowServer(GTKShadowServerBase):
         mouse_event(dwFlags, x, y, dwData, 0)
 
     def make_hello(self, source) -> dict[str, Any]:
-        capabilities = GTKServerBase.make_hello(self, source)
+        capabilities = super().make_hello(self, source)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/Win32-Shadow"
         return capabilities
 
     def get_info(self, proto, *_args) -> dict[str, Any]:
-        info = GTKServerBase.get_info(self, proto)
-        info.update(GTKShadowServerBase.get_info(self, proto))
+        info = super().get_info(self, proto)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {
             "pixel-depth": self.pixel_depth,

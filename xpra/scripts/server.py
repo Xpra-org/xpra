@@ -19,6 +19,8 @@ from typing import Any, NoReturn
 from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence, Callable
 
+from pybind11.setup_helpers import MACOS
+
 from xpra import __version__
 from xpra.scripts.session import (
     get_session_dir, make_session_dir, session_file_path,
@@ -300,13 +302,14 @@ def set_server_features(opts, mode: str) -> None:
         features.window = opts.windows and impcheck("codecs")
         features.display = features.window or features.keyboard or features.pointer
         features.cursor = features.display and opts.cursors
-        features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
+        features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb") and mode in ("desktop", "shadow")
         features.ssh = b(opts.ssh) and impcheck("net.ssh")
         features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0
+        features.gtk = POSIX or MACOS or mode not in ("desktop", "seamless")
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()

@@ -16,7 +16,7 @@ from xpra.os_util import POSIX, OSX, gi_import
 from xpra.scripts.config import str_to_bool
 from xpra.server import features
 from xpra.server.shadow.root_window_model import CaptureWindowModel
-from xpra.server.gtk_server import GTKServerBase, get_default_display
+from xpra.server.subsystem.gtk import get_default_display
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.net.compression import Compressed
@@ -71,11 +71,10 @@ def get_icon_image(icon_name: str):
         return scaled_image(pixbuf, size)
 
 
-class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
+class GTKShadowServerBase(ShadowServerBase):
 
     def __init__(self, attrs: dict[str, str]):
-        ShadowServerBase.__init__(self)
-        GTKServerBase.__init__(self)
+        super().__init__()
         self.session_type = "shadow"
         self.multi_window = str_to_bool(attrs.get("multi-window", True))
         # for managing the systray
@@ -86,21 +85,18 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.tray_icon = None
 
     def init(self, opts) -> None:
-        GTKServerBase.init(self, opts)
-        ShadowServerBase.init(self, opts)
+        super().init(opts)
         self.tray = opts.tray
         self.tray_icon = opts.tray_icon
 
     def setup(self) -> None:
-        GTKServerBase.setup(self)
-        ShadowServerBase.setup(self)
+        super().setup()
         if self.tray:
             self.setup_tray()
 
     def cleanup(self) -> None:
         self.cleanup_tray()
-        ShadowServerBase.cleanup(self)
-        GTKServerBase.cleanup(self)  # @UndefinedVariable
+        super().cleanup()
 
     def print_screen_info(self) -> None:
         if not features.display:
@@ -121,7 +117,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.do_print_screen_info(dinfo, w, h)
 
     def client_startup_complete(self, ss) -> None:
-        GTKServerBase.client_startup_complete(self, ss)
+        super().client_startup_complete(self, ss)
         if not self.tray_icon:
             self.set_tray_icon("server-connected")
 
@@ -132,11 +128,11 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         # revert to default icon:
         if not self.tray_icon:
             self.set_tray_icon("server-notconnected")
-        GTKServerBase.last_client_exited(self)
+        super().last_client_exited(self)
 
     def make_hello(self, source) -> dict[str, Any]:
         caps = ShadowServerBase.make_hello(self, source)
-        caps.update(GTKServerBase.make_hello(self, source))
+        caps.update(super().make_hello(self, source))
         if "features" in source.wants:
             from xpra.gtk.info import get_screen_sizes
             caps["screen_sizes"] = get_screen_sizes()
@@ -144,7 +140,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def get_info(self, proto=None, *args) -> dict[str, Any]:
         info = ShadowServerBase.get_info(self, proto, *args)
-        info.update(GTKServerBase.get_info(self, proto, *args))
+        info.update(super().get_info(self, proto, *args))
         return info
 
     def accept_client_ssh_agent(self, uuid: str, ssh_auth_sock: str) -> None:

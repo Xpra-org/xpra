@@ -15,7 +15,6 @@ from xpra.scripts.config import InitExit
 from xpra.scripts.main import check_display
 from xpra.exit_codes import ExitCode
 from xpra.codecs.image import ImageWrapper
-from xpra.server.gtk_server import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
@@ -249,13 +248,13 @@ class ShadowServer(GTKShadowServerBase):
         log("CG.CGPostScrollWheelEvent%s=%s", event, r)
 
     def make_hello(self, source) -> dict[str, Any]:
-        capabilities = GTKServerBase.make_hello(self, source)
+        capabilities = super().make_hello(self, source)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/MacOS-Shadow"
         return capabilities
 
     def get_info(self, proto, *_args) -> dict[str, Any]:
-        info = GTKServerBase.get_info(self, proto)
+        info = super().get_info(self, proto)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk2/osx-shadow"
         info.setdefault("damage", {}).update({

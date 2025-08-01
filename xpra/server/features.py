@@ -40,3 +40,4 @@ window = True
 cursor = True
 rfb = True
 http = True
+gtk = True
