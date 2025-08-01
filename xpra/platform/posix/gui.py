@@ -255,7 +255,7 @@ def get_display_size() -> tuple[int, int]:
         with xsync:
             return X11WindowBindings().get_root_size()
     Gdk = gi_import("Gdk")
-    screen = Gdk.Screen.get_default
+    screen = Gdk.Screen.get_default()
     if not screen:
         raise RuntimeError("unable to access the screen via Gdk")
     return screen.get_width(), screen.get_height()
