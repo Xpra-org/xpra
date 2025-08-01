@@ -36,7 +36,7 @@ class PointerServer(StubServerMixin):
             "pointer.relative": True,  # assumed available in 5.0.3
         }
 
-    def _move_pointer(self, device_id, wid, pos, *args) -> None:
+    def _move_pointer(self, device_id: int, wid: int, pos, *args) -> None:
         raise NotImplementedError()
 
     def _adjust_pointer(self, proto, device_id, wid: int, pointer):

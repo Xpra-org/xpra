@@ -272,7 +272,7 @@ class X11ServerCore(ServerBase):
                     capabilities["screen-sizes"] = sizes
         return capabilities
 
-    def do_get_info(self, proto, server_sources) -> dict[str, Any]:
+    def do_get_info(self, proto, server_sources=()) -> dict[str, Any]:
         start = monotonic_ns()
         info = super().do_get_info(proto, server_sources)
         sinfo = info.setdefault("server", {})
