@@ -18,10 +18,7 @@ from xpra.server import features
 from xpra.server.base import ServerBase
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
-
 log = Logger("server", "gtk")
-screenlog = Logger("server", "screen")
 
 
 def get_default_display():
@@ -30,28 +27,12 @@ def get_default_display():
 
 
 class GTKServerBase(ServerBase):
-    """
-        This is the base class for servers.
-        It provides all the generic functions but is not tied
-        to a specific backend (X11 or otherwise).
-        See X11ServerBase, XpraServer and XpraX11ShadowServer
-    """
-
-    def __init__(self):
-        log("GTKServerBase.__init__()")
-        super().__init__()
 
     def watch_keymap_changes(self) -> None:
         # Set up keymap change notification:
         from xpra.gtk.keymap import get_default_keymap
         keymap = get_default_keymap()
         keymap.connect("keys-changed", self.keymap_changed)
-
-    def do_quit(self) -> None:
-        log("do_quit: calling Gtk.main_quit")
-        Gtk = gi_import("Gtk")
-        Gtk.main_quit()
-        log("do_quit: Gtk.main_quit done")
 
     def do_run(self) -> None:
         if features.window:
@@ -62,10 +43,7 @@ class GTKServerBase(ServerBase):
                 screen = display.get_default_screen()
                 screen.connect("size-changed", self._screen_size_changed)
                 screen.connect("monitors-changed", self._monitors_changed)
-        Gtk = gi_import("Gtk")
-        log("do_run() calling %s", Gtk.main)
-        Gtk.main()
-        log("do_run() end of gtk.main()")
+        super().do_run()
 
     def make_hello(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = super().make_hello(source)
