@@ -1175,6 +1175,9 @@ class WindowClient(StubClientMixin):
             # or the new dimensions, etc
             geom = x, y, ww, wh
             backing_size = bw, bh
+            # try to preserve the location:
+            metadata["set-initial-position"] = True
+            metadata["requested-position"] = x, y
             window = self.make_new_window(wid, geom, backing_size, metadata, override_redirect, client_properties)
             window._resize_counter = resize_counter
             # if we had a backing already,
