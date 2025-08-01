@@ -116,13 +116,21 @@ def get_local_cursor(cursor_name: str):
     return None
 
 
-def get_group_ref(metadata: typedict) -> str:
-    for ref in WINDOW_GROUPING:
-        if ref in metadata:
-            value = metadata.get(ref)
+def get_group_ref(metadata: dict) -> str:
+    # ie: refs="group-leader-xid" or "pid+class-instance"
+    for ref_str in WINDOW_GROUPING:
+        refs = ref_str.split(".")
+        # ie: ["pid", "class-instance"]
+        if not all(ref in metadata for ref in refs):
+            continue
+        group_refs = []
+        for ref in refs:
+            value = metadata[ref]
             if isinstance(value, Iterable):
-                return f"{ref}:{csv(value)}"
-            return f"{ref}:{value}"
+                group_refs.append(f"{ref}:{csv(value)}")
+            group_refs.append(f"{ref}:{value}")
+        # ie: "pid=10,class-instance=foo"
+        return ",".join(group_refs)
     return ""
 
 
@@ -1408,7 +1416,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if win:
             return win
 
-        refkey = get_group_ref(metadata)
+        ref_metadata = dict(metadata)
+        ref_metadata["wid"] = wid
+        refkey = get_group_ref(ref_metadata)
         log(f"get_group_leader: refkey={refkey}, metadata={metadata}, refs={self._ref_to_group_leader}")
         group_leader_window = self._ref_to_group_leader.get(refkey)
         if group_leader_window:
