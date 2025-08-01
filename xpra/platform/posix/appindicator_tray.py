@@ -148,7 +148,7 @@ def main() -> None:  # pragma: no cover
             from xpra.log import enable_debug_for
             enable_debug_for("tray")
 
-        from xpra.gtk.signals import register_os_signals
+        from xpra.util.glib import register_os_signals
         Gtk = gi_import("Gtk")
         menu = Gtk.Menu()
         item = Gtk.MenuItem(label="Top Menu Item 1")

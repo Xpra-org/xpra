@@ -19,7 +19,7 @@ from xpra.scripts.main import get_command_args
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, imagebutton, label, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.signals import register_os_signals
+from xpra.util.glib import register_os_signals
 from xpra.gtk.dialogs.util import hb_button
 from xpra.net.common import DEFAULT_PORTS
 from xpra.exit_codes import ExitCode, ExitValue

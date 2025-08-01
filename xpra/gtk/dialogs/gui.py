@@ -140,7 +140,7 @@ def main(argv):  # pragma: no cover
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
-    from xpra.gtk.signals import register_os_signals
+    from xpra.util.glib import register_os_signals
     with program_context("xpra-gui", "Xpra GUI"):
         enable_color()
         init()

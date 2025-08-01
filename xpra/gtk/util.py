@@ -139,3 +139,14 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def quit_on_signals(commandtype: str = "") -> None:
+    from xpra.os_util import gi_import
+    Gtk = gi_import("Gtk")
+
+    def signal_handler(_signum: int) -> None:
+        Gtk.main_quit()
+
+    from xpra.util.glib import register_os_signals
+    register_os_signals(signal_handler, commandtype)

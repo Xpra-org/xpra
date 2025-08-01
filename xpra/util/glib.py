@@ -1,25 +1,16 @@
 # This file is part of Xpra.
-# Copyright (C) 2011 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import signal
-from collections.abc import Callable
+from typing import Callable
 
-from xpra.os_util import POSIX, gi_import
-from xpra.util.system import SIGNAMES
+from xpra.os_util import gi_import, POSIX
 from xpra.util.io import stderr_print, get_util_logger
+from xpra.util.system import SIGNAMES
 
 _glib_unix_signals: dict[int, int] = {}
-
-
-def quit_on_signals(commandtype: str = "") -> None:
-    Gtk = gi_import("Gtk")
-
-    def signal_handler(_signum: int) -> None:
-        Gtk.main_quit()
-
-    register_os_signals(signal_handler, commandtype)
 
 
 def register_os_signals(callback: Callable[[int], None],

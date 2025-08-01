@@ -159,7 +159,7 @@ def main(argv) -> int:
     with program_context("Xpra-Version-Check", "Xpra Version Check"):
         consume_verbose_argv(argv, "all")
 
-        from xpra.gtk.signals import register_os_signals
+        from xpra.util.glib import register_os_signals
         app = UpdateStatusWindow()
         app.close = app.quit
         register_os_signals(app.quit, "Version Check")

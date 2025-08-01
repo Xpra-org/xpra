@@ -11,7 +11,7 @@ from collections.abc import Callable
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.signals import register_os_signals
+from xpra.util.glib import register_os_signals
 from xpra.util.objects import typedict
 from xpra.util.config import parse_user_config_file, update_config_attribute
 from xpra.exit_codes import ExitValue

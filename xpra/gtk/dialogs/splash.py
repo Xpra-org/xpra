@@ -15,7 +15,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.signals import install_signal_handlers
+from xpra.util.glib import install_signal_handlers
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.platform.gui import force_focus, set_window_progress
 from xpra.log import Logger

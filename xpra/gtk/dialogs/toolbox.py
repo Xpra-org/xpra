@@ -11,7 +11,7 @@ import subprocess
 from collections.abc import Iterable, Sequence
 
 from xpra.util.child_reaper import get_child_reaper
-from xpra.gtk.signals import register_os_signals
+from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf

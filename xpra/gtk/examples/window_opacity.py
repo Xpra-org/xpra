@@ -48,7 +48,7 @@ def main() -> int:
             w.present()
 
         add_close_accel(w, Gtk.main_quit)
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("window opacity test window")
         GLib.idle_add(show_with_focus)
         Gtk.main()

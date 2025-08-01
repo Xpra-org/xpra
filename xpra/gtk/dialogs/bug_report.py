@@ -436,7 +436,7 @@ def main(argv=()) -> int:
         if "-v" in argv:
             enable_debug_for("util")
 
-        from xpra.gtk.signals import register_os_signals
+        from xpra.util.glib import register_os_signals
         app = BugReport()
         app.close = app.quit
         app.init(True)

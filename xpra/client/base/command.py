@@ -361,7 +361,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.info_timer = 0
 
     def run(self) -> ExitValue:
-        from xpra.gtk.signals import register_os_signals
+        from xpra.util.glib import register_os_signals
         register_os_signals(self.signal_handler, "")
         v = super().run()
         self.log("run()=%s" % v)

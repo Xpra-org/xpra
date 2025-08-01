@@ -9,7 +9,7 @@ import subprocess
 
 from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.io import which
-from xpra.gtk.signals import register_os_signals
+from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf

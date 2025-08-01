@@ -87,7 +87,7 @@ class TestForm:
 
 
 def main() -> None:
-    from xpra.gtk.signals import quit_on_signals
+    from xpra.gtk.util import quit_on_signals
     with program_context("clicks", "Clicks"):
         w = TestForm()
         add_close_accel(w.window, Gtk.main_quit)

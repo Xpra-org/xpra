@@ -21,7 +21,7 @@ def run_gui(gui_class) -> int:
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
-    from xpra.gtk.signals import install_signal_handlers
+    from xpra.util.glib import install_signal_handlers
     with program_context("xpra-configure-gui", "Xpra Configure GUI"):
         enable_color()
         init()

@@ -8,7 +8,7 @@ import sys
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.signals import register_os_signals
+from xpra.util.glib import register_os_signals
 from xpra.os_util import gi_import
 from xpra.log import Logger
 

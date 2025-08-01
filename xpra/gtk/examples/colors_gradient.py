@@ -155,7 +155,7 @@ def main() -> None:
         set_default_icon("encoding.png")
         init()
 
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("colros gradient test window")
         w = ColorGradientWindow()
         add_close_accel(w, Gtk.main_quit)

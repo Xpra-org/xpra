@@ -16,7 +16,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.signals import install_signal_handlers
+from xpra.util.glib import install_signal_handlers
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.client.base.client import XpraClientBase
 from xpra.client.base.command import InfoXpraClient

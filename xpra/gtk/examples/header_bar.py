@@ -55,7 +55,7 @@ class HeaderBarWindow(Gtk.Window):
 
 def main() -> None:
     with program_context("header-bar", "Header Bar"):
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("header bar test window")
         w = HeaderBarWindow()
         w.connect("delete-event", Gtk.main_quit)

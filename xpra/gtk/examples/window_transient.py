@@ -6,7 +6,7 @@
 from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk.util import get_default_root_window
+from xpra.gtk.util import get_default_root_window, quit_on_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -72,7 +72,6 @@ def main() -> int:
     with program_context("window-transient", "Window Transient"):
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
-        from xpra.gtk.signals import quit_on_signals
         quit_on_signals("transient window test")
 
         def show_with_focus() -> None:

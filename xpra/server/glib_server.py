@@ -7,7 +7,7 @@ from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.net.glib_handler import GLibPacketHandler
-from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
+from xpra.util.glib import register_os_signals, register_SIGUSR_signals
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 

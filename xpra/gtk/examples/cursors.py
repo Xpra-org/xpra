@@ -51,7 +51,7 @@ def main() -> int:
             window.show_all()
             window.present()
 
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("cursors test window")
         add_close_accel(window, Gtk.main_quit)
         GLib.idle_add(show_with_focus)

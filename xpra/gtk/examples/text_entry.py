@@ -55,7 +55,7 @@ def main() -> None:
             w.present()
 
         GLib.idle_add(show_with_focus)
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("text entry test window")
         Gtk.main()
 

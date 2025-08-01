@@ -10,7 +10,7 @@ from queue import SimpleQueue, Empty
 from collections.abc import Callable
 from typing import Any
 
-from xpra.gtk.signals import register_os_signals
+from xpra.util.glib import register_os_signals
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool, get_exec_env
 from xpra.net.bytestreams import TwoFileConnection

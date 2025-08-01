@@ -197,7 +197,8 @@ class ProxyServer(ProxyServerBaseClass):
                                                                 self.handle_stop_command, min_args=1, max_args=1))
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
-        from xpra.gtk.signals import register_SIGUSR_signals, register_os_signals
+        from xpra.util.glib import register_SIGUSR_signals
+        from xpra.util.glib import register_os_signals
         register_os_signals(callback, "Proxy Server")
         register_SIGUSR_signals("Proxy Server")
 

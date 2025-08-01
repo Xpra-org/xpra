@@ -174,7 +174,7 @@ def main() -> None:
     with program_context("window-geometry-hints", "Window Geometry Hints"):
         w = OptionWindow(sys.argv[1:])
         add_close_accel(w, Gtk.main_quit)
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("geometry hints test window")
 
         def show_with_focus() -> None:

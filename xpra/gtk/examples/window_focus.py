@@ -117,7 +117,7 @@ def main() -> int:
     with program_context("window-focus", "Window Focus"):
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("focus test window")
 
         def show_with_focus() -> None:

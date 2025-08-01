@@ -17,7 +17,7 @@ def main() -> int:
         file_filter.set_name("Xpra")
         file_filter.add_pattern("*.xpra")
         window = None
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("file chooser test window")
         choose_file(window, "test", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN)
         return 0

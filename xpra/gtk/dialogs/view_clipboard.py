@@ -249,7 +249,7 @@ def main() -> None:
         set_default_icon("clipboard.png")
         init()
 
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("clipboard test window")
 
         w = ClipboardStateInfoWindow()

@@ -191,7 +191,7 @@ def main() -> int:
         if is_X11():
             from xpra.x11.gtk.display_source import init_gdk_display_source
             init_gdk_display_source()
-        from xpra.gtk.signals import quit_on_signals
+        from xpra.gtk.util import quit_on_signals
         quit_on_signals("tray test")
         FakeApplication()
         Gtk.main()

@@ -11,7 +11,7 @@ from time import monotonic
 from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
-from xpra.gtk.signals import register_os_signals
+from xpra.util.glib import register_os_signals
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label

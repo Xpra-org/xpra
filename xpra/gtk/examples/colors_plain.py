@@ -73,7 +73,7 @@ class ColorPlainWindow(Gtk.Window):
 
 
 def main() -> None:
-    from xpra.gtk.signals import quit_on_signals
+    from xpra.gtk.util import quit_on_signals
     with program_context("colors-plain", "Colors Plain"):
         quit_on_signals("colors test window")
         w = ColorPlainWindow()
