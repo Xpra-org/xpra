@@ -279,7 +279,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     # info:
     #
 
-    def do_get_info(self, proto, server_sources) -> dict[str, Any]:
+    def do_get_info(self, proto, server_sources=()) -> dict[str, Any]:
         info = super().do_get_info(proto, server_sources)
         info["exit-with-windows"] = self._exit_with_windows
         info.setdefault("state", {}).update(
