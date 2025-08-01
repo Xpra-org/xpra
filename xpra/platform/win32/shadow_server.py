@@ -23,7 +23,7 @@ from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size
+from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size, get_display_size
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow_cursor import get_cursor_data
@@ -145,12 +145,6 @@ BUTTON_EVENTS: dict[tuple[int, bool], tuple[int, int]] = {
     (9, True): (win32con.MOUSEEVENTF_XDOWN, win32con.XBUTTON2),
     (9, False): (win32con.MOUSEEVENTF_XUP, win32con.XBUTTON2),
 }
-
-
-def get_root_window_size() -> tuple[int, int]:
-    w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
-    h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
-    return w, h
 
 
 def get_monitors() -> list[dict[str, Any]]:
@@ -381,8 +375,11 @@ class ShadowServer(GTKShadowServerBase):
         if desktop_name:
             self.session_name = desktop_name
 
+    def get_display_size(self) -> tuple[int, int]:
+        return get_display_size()
+
     def print_screen_info(self) -> None:
-        size = self.get_root_window_size()
+        size = self.get_display_size()
         if not size:
             # we probably don't have access to the screen
             return
@@ -400,7 +397,7 @@ class ShadowServer(GTKShadowServerBase):
                          click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
 
     def setup_capture(self):
-        w, h = get_root_window_size()
+        w, h = self.get_display_size()
         capture = try_setup_capture(CAPTURE_BACKENDS, self.backend, w, h, self.pixel_depth)
         log(f"setup_capture() {self.backend} : {capture}")
         return capture
@@ -529,6 +526,10 @@ class ShadowServer(GTKShadowServerBase):
         pos = POINT()
         GetPhysicalCursorPos(byref(pos))  # NOSONAR
         return pos.x, pos.y
+
+    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
+        x, y = pos[:2]
+        SetPhysicalCursorPos(x, y)
 
     def do_process_mouse_common(self, proto, device_id, wid: int, pointer, props) -> bool:
         ss = self._server_sources.get(proto)

@@ -276,6 +276,13 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def __repr__(self):
         return "X11WindowBindings(%s)" % self.display_name
 
+    def get_root_size(self) -> Tuple[int, int]:
+        cdef int root = self.get_root_xid()
+        geom = self.getGeometry(root)
+        if not geom:
+            raise RuntimeError("failed to query the size of the root window!")
+        return int(geom[2]), int(geom[3])
+
     def get_all_x11_windows(self) -> List[Window]:
         cdef Window root = XDefaultRootWindow(self.display);
         return self.get_all_children(root)

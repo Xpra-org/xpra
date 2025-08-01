@@ -315,7 +315,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.restore_cursor(proto)
         return pointer
 
-    def _move_pointer(self, device_id: int, wid: int, pos, props=None):
+    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         if wid >= 0:
             window = self._id_to_window.get(wid)
             if not window:

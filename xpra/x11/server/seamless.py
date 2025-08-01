@@ -950,7 +950,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def clamp_window(self, x: int, y: int, w: int, h: int):
         if not CLAMP_WINDOW_TO_ROOT:
             return False, (x, y, w, h)
-        rw, rh = self.get_root_window_size()
+        with xsync:
+            rw, rh = X11WindowBindings().get_root_size()
         # clamp to root window size
         mod = False
         if x + w < 0:
@@ -1254,7 +1255,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
     def do_repaint_root_overlay(self) -> bool:
         self.repaint_root_overlay_timer = 0
-        root_width, root_height = self.get_root_window_size()
+        with xsync:
+            root_width, root_height = X11WindowBindings().get_root_size()
         display = Gdk.Display.get_default()
         overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
         log("overlaywin: %s", overlaywin.get_geometry())

@@ -19,8 +19,11 @@ from xpra.net.common import Packet
 from xpra.util.system import is_X11
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
-from xpra.common import get_refresh_rate_for_value, FULL_INFO, parse_env_resolutions, parse_resolutions, \
-    BACKWARDS_COMPATIBLE
+from xpra.common import (
+    get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions,
+    BACKWARDS_COMPATIBLE, FULL_INFO,
+)
+from xpra.platform.gui import get_display_name, get_display_size
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -410,14 +413,13 @@ class DisplayManager(StubServerMixin):
             "bell": self.bell,
         }
         if "display" in source.wants:
-            root_size = self.get_root_window_size()
+            root_size = self.get_display_size()
             if root_size:
                 caps |= {
                     "actual_desktop_size": root_size,
                     "root_window_size": root_size,
                     "desktop_size": self._get_desktop_size_capability(source, *root_size),
                 }
-            from xpra.platform.gui import get_display_name
             name = get_display_name()
             if name:
                 caps["name"] = name
@@ -481,6 +483,9 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # display / screen / root window:
+    def get_display_size(self) -> tuple[int, int]:
+        return get_display_size()
+
     def set_screen_geometry_attributes(self, w: int, h: int) -> None:
         # by default, use the screen as desktop area:
         self.set_desktop_geometry_attributes(w, h)
@@ -562,11 +567,8 @@ class DisplayManager(StubServerMixin):
         log("notify_screen_changed(%s)", screen)
         GLib.idle_add(self.send_updated_screen_size)
 
-    def get_root_window_size(self) -> tuple[int, int]:
-        raise NotImplementedError()
-
     def send_updated_screen_size(self) -> None:
-        root_size = self.get_root_window_size()
+        root_size = self.get_display_size()
         if not root_size:
             return
         root_w, root_h = root_size
@@ -585,7 +587,7 @@ class DisplayManager(StubServerMixin):
                      count, root_w, root_h, max_w, max_h)
 
     def get_max_screen_size(self) -> tuple[int, int]:
-        return self.get_root_window_size()
+        return self.get_display_size()
 
     def _get_desktop_size_capability(self, server_source, root_w: int, root_h: int) -> tuple[int, int]:
         client_size = server_source.desktop_size
@@ -599,7 +601,7 @@ class DisplayManager(StubServerMixin):
         return w, h
 
     def configure_best_screen_size(self) -> tuple[int, int]:
-        return self.get_root_window_size()
+        return self.get_display_size()
 
     def apply_refresh_rate(self, ss) -> int:
         rrate = self.get_client_refresh_rate(ss)

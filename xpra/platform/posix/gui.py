@@ -248,6 +248,19 @@ def get_display_name() -> str:
     return ""
 
 
+def get_display_size() -> tuple[int, int]:
+    if x11_bindings():
+        from xpra.x11.bindings.window import X11WindowBindings
+        from xpra.gtk.error import xsync
+        with xsync:
+            return X11WindowBindings().get_root_size()
+    Gdk = gi_import("Gdk")
+    screen = Gdk.Screen.get_default
+    if not screen:
+        raise RuntimeError("unable to access the screen via Gdk")
+    return screen.get_width(), screen.get_height()
+
+
 def get_vrefresh() -> int:
     if x11_bindings():
         from xpra.x11.common import get_vrefresh as get_x11_vrefresh

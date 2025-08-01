@@ -224,6 +224,12 @@ def get_display_name() -> str:
     return get_desktop_name()
 
 
+def get_display_size() -> tuple[int, int]:
+    w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+    h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+    return w, h
+
+
 def get_session_type() -> str:
     try:
         b = c_bool()

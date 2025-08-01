@@ -413,7 +413,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         except Exception:
             log.info(" unknown client desktop size")
         self.apply_refresh_rate(ss)
-        return self.get_root_window_size()
+        return self.get_display_size()
 
     def _process_desktop_size(self, proto, packet: Packet) -> None:
         # just record the screen size info in the source

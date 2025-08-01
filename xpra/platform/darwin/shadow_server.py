@@ -217,6 +217,12 @@ class ShadowServer(GTKShadowServerBase):
         if pointer:
             self.button_action(device_id, wid, pointer, button, pressed, props)
 
+    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
+        x, y = pos
+        event = [pos, 1, 0]
+        r = CG.CGPostMouseEvent(*event)
+        log("CG.CGPostMouseEvent%s=%s", event, r)
+
     def button_action(self, device_id: int, wid: int, pointer, button: int, pressed: bool, props):
         if button <= 3:
             # we should be using CGEventCreateMouseEvent

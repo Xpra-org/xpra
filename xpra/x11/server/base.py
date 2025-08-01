@@ -153,6 +153,9 @@ class X11ServerBase(X11ServerCore):
         # pylint: disable=import-outside-toplevel
         # (this runs in the main thread - before the main loop starts)
         # for the time being, we only use the pointer if there is one:
+        if not hasattr(self, "get_display_size"):
+            log.warn("cannot enable virtual devices without a display")
+            return
         pointer = devices.get("pointer")
         touchpad = devices.get("touchpad")
         pointerlog("init_virtual_devices(%s) got pointer=%s, touchpad=%s", devices, pointer, touchpad)
@@ -170,7 +173,7 @@ class X11ServerBase(X11ServerCore):
             device_path = touchpad.get("device")
             if uinput_device:
                 from xpra.x11.uinput.device import UInputTouchpadDevice
-                root_w, root_h = self.get_root_window_size()
+                root_w, root_h = self.get_display_size()
                 self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path, root_w, root_h)
         try:
             pointerlog.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
