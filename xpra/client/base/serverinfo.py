@@ -98,7 +98,11 @@ class ServerInfoMixin(StubClientMixin):
         self.server_packet_encoders = tuple(x for x in VALID_ENCODERS if c.boolget(x, False))
 
         self._remote_machine_id = c.strget("machine_id")
+        self._remote_hostname = c.strget("hostname")
+        self._remote_display = c.strget("display")
+        self._remote_platform = c.strget("platform")
         self._remote_uuid = c.strget("uuid")
+
         self._remote_version = parse_version(c.strget("build.version", c.strget("version")))
         mods = c.get("build.local_modifications")
         if mods and str(mods).find("dfsg") >= 0:  # pragma: no cover
@@ -107,15 +111,13 @@ class ServerInfoMixin(StubClientMixin):
         else:
             self._remote_modifications = c.intget("build.local_modifications", 0)
         self._remote_branch = c.strget("build.branch")
-        self._remote_hostname = c.strget("hostname")
-        self._remote_display = c.strget("display")
-        self._remote_platform = c.strget("platform")
         # unused:
         # remote_commit = c.strget("build.commit")
         # remote_platform_platform = c.strget("platform.platform")
         # remote_python_version = c.strget("python.version")
         self._remote_build_date = c.strget("build.date")
         self._remote_build_time = c.strget("build.time")
+
         self._remote_subcommands = c.strtupleget("subcommands")
         self._remote_server_log = c.strget("server-log")
         self._remote_server_mode = c.strget("server.mode", "server")
