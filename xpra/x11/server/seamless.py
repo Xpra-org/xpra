@@ -135,7 +135,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             X11Window = X11WindowBindings()
             event_mask = X11Window.getEventMask(xid) | SubstructureNotifyMask
             X11Window.setEventMask(xid, event_mask)
-        from xpra.x11.gtk.bindings import add_event_receiver
+        from xpra.x11.dispatch import add_event_receiver
         add_event_receiver(xid, self)
 
     @staticmethod

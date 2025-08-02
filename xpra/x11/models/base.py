@@ -15,7 +15,7 @@ from xpra.x11.models.core import CoreX11WindowModel, Above, RESTACKING_STR
 from xpra.x11.bindings.window import X11WindowBindings, constants
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties, GUESS_CONTENT
 from xpra.util.background_worker import add_work_item
-from xpra.x11.gtk.bindings import get_pywindow, get_pyatom
+from xpra.x11.gtk.bindings import get_pywindow
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -25,6 +25,12 @@ metalog = Logger("x11", "window", "metadata")
 GObject = gi_import("GObject")
 
 X11Window = X11WindowBindings()
+
+
+def get_pyatom(value: int):
+    with xsync:
+        return X11Window.get_atom_name(value)
+
 
 # _NET_WM_STATE:
 _NET_WM_STATE_REMOVE = 0

@@ -23,7 +23,7 @@ from xpra.x11.common import Unmanageable
 from xpra.x11.models.size_hints_util import sanitize_size_hints
 from xpra.x11.models.base import BaseWindowModel, constants
 from xpra.x11.models.core import sanestr
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "window")

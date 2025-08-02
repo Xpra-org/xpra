@@ -128,6 +128,7 @@ cdef class X11CoreBindingsInstance:
         return r
 
     def get_atom_name(self, Atom atom) -> str:
+        self.context_check("XGetAtomName")
         bin_name = self.XGetAtomName(atom)
         return bin_name.decode("latin1")
 

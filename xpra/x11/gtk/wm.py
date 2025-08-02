@@ -19,7 +19,7 @@ from xpra.x11.gtk.native_window import GDKX11Window
 from xpra.x11.gtk.selection import ManagerSelection
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
 from xpra.x11.gtk.world_window import WorldWindow, destroy_world_window
-from xpra.x11.gtk.bindings import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
+from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.window_info import window_name, window_info
 from xpra.x11.bindings.core import get_root_xid

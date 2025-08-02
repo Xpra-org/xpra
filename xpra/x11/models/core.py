@@ -13,11 +13,11 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.env import envbool, envint, first_time
 from xpra.util.io import get_proc_cmdline
-from xpra.x11.common import Unmanageable
 from xpra.util.gobject import one_arg_signal, n_arg_signal
-from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.codecs.image import ImageWrapper
 from xpra.platform.posix.proc import get_parent_pid
+from xpra.x11.common import Unmanageable
+from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings, constants
 from xpra.x11.bindings.res import ResBindings
@@ -25,7 +25,8 @@ from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk.composite import CompositeHelper
 from xpra.x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_pywindow
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk.bindings import get_pywindow
 from xpra.log import Logger
 
 log = Logger("x11", "window")

@@ -8,7 +8,7 @@ from typing import Final
 
 from xpra.util.env import envbool
 from xpra.util.gobject import one_arg_signal
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.error import xsync, xswallow, xlog, XError
 from xpra.x11.common import Unmanageable
 

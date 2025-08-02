@@ -17,7 +17,8 @@ from xpra.x11.error import xsync
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom, get_pywindow
+from xpra.x11.gtk.bindings import get_pywindow
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.prop import prop_set
 from xpra.exit_codes import ExitCode
 from xpra.util.env import envint
@@ -117,11 +118,11 @@ class ManagerSelection(GObject.GObject):
             ts_num = 0  # CurrentTime=0
             log.warn("invalid data for 'TIMESTAMP': %s", tuple(hex(ord(x)) for x in ts_data))
         log("selection timestamp(%s)=%s", ts_data, ts_num)
-        # Calculate the X atom for this selection:
-        selection_xatom = get_xatom(self.atom)
         # Ask X what window we used:
         with xsync:
             X11Window = X11WindowBindings()
+            # Calculate the X atom for this selection:
+            selection_xatom = X11Window.get_xatom(self.atom)
             self.xid = int(X11Window.XGetSelectionOwner(self.atom))
             root_xid = get_root_xid()
             X11Window.sendClientMessage(root_xid, root_xid, False, StructureNotifyMask,

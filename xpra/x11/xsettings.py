@@ -8,11 +8,11 @@ from typing import Final
 
 from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal, one_arg_signal
-from xpra.x11.error import xlog, XError
+from xpra.x11.error import xlog, XError, xsync
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.prop import raw_prop_set, raw_prop_get
 from xpra.x11.gtk.selection import ManagerSelection
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.xsettings_prop import bytes_to_xsettings, xsettings_to_bytes
 from xpra.log import Logger
 
@@ -66,6 +66,10 @@ class XSettingsHelper:
     def __init__(self, screen_number=0):
         self._selection = "_XSETTINGS_S%s" % screen_number
         atom = Gdk.Atom.intern(self._selection, False)
+        with xsync:
+            from xpra.x11.bindings.window import X11WindowBindings
+            X11Window = X11WindowBindings()
+            self._selection_atom = X11Window.get_xatom(self._selection)
         self._clipboard = Gtk.Clipboard.get(atom)
 
     def xsettings_owner(self) -> int:
@@ -113,7 +117,7 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
             add_event_receiver(owner, self)
 
     def do_x11_client_message_event(self, evt) -> None:
-        if evt.window is self.xid and evt.message_type == "MANAGER" and evt.data[1] == get_xatom(self._selection):
+        if evt.window is self.xid and evt.message_type == "MANAGER" and evt.data[1] == self._selection_atom:
             log("XSettings manager changed")
             self._add_watch()
             self.emit("xsettings-changed")

@@ -15,7 +15,7 @@ from xpra.x11.prop import prop_set, prop_get, raw_prop_set
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.bindings.fixes import XFixesBindings
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 GObject = gi_import("GObject")

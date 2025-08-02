@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from xpra.os_util import gi_import
 from xpra.x11.error import XError, xsync
 from xpra.gtk.info import get_screen_sizes
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.bindings.window import X11WindowBindings

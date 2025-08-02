@@ -12,7 +12,7 @@ from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import xsync
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "util")
