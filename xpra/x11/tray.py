@@ -86,8 +86,8 @@ IGNORED_MESSAGE_TYPES = ("_GTK_LOAD_ICONTHEMES",)
 MAX_TRAY_SIZE = envint("XPRA_MAX_TRAY_SIZE", 64)
 
 
-def get_tray_window(tray_window) -> int:
-    return prop_get(tray_window.get_xid(), XPRA_TRAY_WINDOW_PROPERTY, "u32")
+def get_tray_window(xid: int) -> int:
+    return prop_get(xid, XPRA_TRAY_WINDOW_PROPERTY, "u32")
 
 
 def set_tray_visual(xid: int, visualid: int) -> None:

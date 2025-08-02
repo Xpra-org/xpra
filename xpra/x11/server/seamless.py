@@ -391,7 +391,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         # Tray handler:
         try:
             with xsync:
-                from xpra.x11.gtk.tray import SystemTray
+                from xpra.x11.tray import SystemTray
                 self._tray = SystemTray()
         except RuntimeError:
             log.warn(" system tray forwarding is disabled")
@@ -619,8 +619,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             return
         try:
             # pylint: disable=import-outside-toplevel
-            from xpra.x11.gtk.tray import get_tray_window
-            tray_xid: int = get_tray_window(gdk_window)
+            from xpra.x11.tray import get_tray_window
+            tray_xid: int = get_tray_window(xid)
             if tray_xid:
                 assert self._tray
                 from xpra.x11.models.systray import SystemTrayWindowModel
