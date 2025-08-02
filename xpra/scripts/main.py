@@ -4070,7 +4070,7 @@ def display_wm_info(args) -> dict[str, Any]:
     with OSEnvContext(GDK_BACKEND="x11"):
         from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
-        from xpra.x11.gtk.wm_check import get_wm_info
+        from xpra.x11.wm_check import get_wm_info
         info = get_wm_info()
         gdk = gi_import("Gdk")
         display = gdk.Display.get_default()

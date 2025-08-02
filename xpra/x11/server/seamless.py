@@ -124,7 +124,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             log.error(" it cannot use a display which lacks the XComposite extension!")
             return False
         # check for an existing window manager:
-        from xpra.x11.gtk.wm_check import wm_check
+        from xpra.x11.wm_check import wm_check
         return wm_check(self.clobber & CLOBBER_UPGRADE)
 
     def receive_root_events(self):
