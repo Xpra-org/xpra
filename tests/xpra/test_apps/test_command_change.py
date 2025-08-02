@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
-import gi
-
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, GLib  # pylint: disable=wrong-import-position @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.x11.gtk.display_source import init_gdk_display_source
 from xpra.x11.gtk.prop import prop_set
-from xpra.gtk.error import xsync
+from xpra.x11.error import xsync
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 
 def main():

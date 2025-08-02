@@ -127,7 +127,7 @@ LOSSLESS_WINDOW_TYPES = set(os.environ.get(
 
 ui_context: ContextManager = nullcontext()
 if POSIX and not OSX and not envbool("XPRA_NOX11", False) and os.environ.get("GDK_BACKEND", "x11") == "x11":
-    from xpra.gtk.error import xlog
+    from xpra.x11.error import xlog
     ui_context = xlog
 
 

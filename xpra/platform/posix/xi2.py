@@ -59,7 +59,7 @@ class XI2_Window:
         self.window = None
 
     def configured(self, *_args) -> None:
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         with xlog:
             self.windows = self.get_parent_windows(self.xid)
         for window in (self.windows or ()):

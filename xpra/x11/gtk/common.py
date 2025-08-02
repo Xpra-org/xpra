@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util.str_fn import csv
-from xpra.gtk.error import xswallow
+from xpra.x11.error import xswallow
 
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.res import ResBindings

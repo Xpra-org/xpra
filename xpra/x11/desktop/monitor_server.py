@@ -12,7 +12,7 @@ from xpra.net.common import Packet
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.server.subsystem.window import WindowsConnection
 from xpra.x11.bindings.randr import RandRBindings
-from xpra.gtk.error import xsync, xlog, XError
+from xpra.x11.error import xsync, xlog, XError
 from xpra.log import Logger
 
 GObject = gi_import("GObject")

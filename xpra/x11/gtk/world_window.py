@@ -7,7 +7,7 @@
 from typing import Final
 
 from xpra.os_util import gi_import
-from xpra.gtk.error import xlog
+from xpra.x11.error import xlog
 from xpra.util.env import IgnoreWarningsContext, ignorewarnings
 from xpra.x11.bindings.window import constants
 from xpra.x11.bindings.send_wm import send_wm_take_focus

@@ -8,7 +8,7 @@ from typing import Final
 
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
-from xpra.gtk.error import xlog, xsync
+from xpra.x11.error import xlog, xsync
 from xpra.x11.gtk.damage import WindowDamageHandler
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.x11.gtk.world_window import get_world_window

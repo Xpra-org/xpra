@@ -13,7 +13,7 @@ import sys
 from typing import Final
 from struct import unpack, calcsize
 
-from xpra.gtk.error import xsync
+from xpra.x11.error import xsync
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings

@@ -261,7 +261,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.paint_context_manager: AbstractContextManager = nullcontext()
         if is_X11():
             # pylint: disable=ungrouped-imports
-            from xpra.gtk.error import xsync
+            from xpra.x11.error import xsync
             self.paint_context_manager = xsync
 
     def opengl_init(self) -> None:

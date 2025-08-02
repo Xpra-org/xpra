@@ -185,7 +185,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def setup_frame_request_windows(self) -> None:
         # query the window manager to get the frame size:
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
         self.frame_request_window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         self.frame_request_window.set_title("Xpra-FRAME_EXTENTS")
@@ -723,7 +723,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def request_frame_extents(self, window) -> None:
         from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         win = window.get_window()
         xid = win.get_xid()
         framelog(f"request_frame_extents({window}) xid={xid:x}")

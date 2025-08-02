@@ -250,7 +250,7 @@ class DisplayManager(StubServerMixin):
             self.save_server_pid()
 
     def init_randr(self) -> None:
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         with xlog:
             from xpra.x11.bindings.randr import RandRBindings
             RandR = RandRBindings()
@@ -283,7 +283,7 @@ class DisplayManager(StubServerMixin):
     def set_initial_resolution(self) -> None:
         log(f"set_initial_resolution() randr={self.randr}, initial_resolutions={self.initial_resolutions}")
         if self.randr and self.initial_resolutions and is_X11():
-            from xpra.gtk.error import xlog
+            from xpra.x11.error import xlog
             from xpra.x11.vfb_util import set_initial_resolution
             DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions(default_refresh_rate=self.refresh_rate)
             dpi = self.dpi or self.default_dpi
@@ -292,7 +292,7 @@ class DisplayManager(StubServerMixin):
                 set_initial_resolution(resolutions, dpi)
 
     def save_server_pid(self) -> None:
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         from xpra.x11.gtk.prop import prop_set
         with xlog:
             from xpra.x11.bindings.core import get_root_xid

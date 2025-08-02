@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.gtk.error import XError, xsync
+from xpra.x11.error import XError, xsync
 from xpra.gtk.info import get_screen_sizes
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.x11.desktop.model_base import DesktopModelBase

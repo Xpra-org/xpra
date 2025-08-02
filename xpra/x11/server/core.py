@@ -17,7 +17,7 @@ from xpra.x11.bindings.core import set_context_check, X11CoreBindings, get_root_
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
+from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.x11.server import server_uuid
 from xpra.x11.gtk.prop import prop_del
 from xpra.x11.xkbhelper import clean_keyboard_state

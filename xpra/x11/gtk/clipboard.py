@@ -11,7 +11,7 @@ from collections.abc import Iterable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.common import noop
-from xpra.gtk.error import xsync
+from xpra.x11.error import xsync
 from xpra.util.gobject import n_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.gtk.common import get_wininfo
@@ -22,7 +22,7 @@ from xpra.x11.gtk.bindings import (
     init_x11_filter,
     cleanup_x11_filter,
 )
-from xpra.gtk.error import XError
+from xpra.x11.error import XError
 from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
 from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.x11.bindings.core import get_root_xid

@@ -12,7 +12,7 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, csv, bytestostr, Ellipsizer
 from xpra.util.env import envbool
-from xpra.gtk.error import xsync, xlog
+from xpra.x11.error import xsync, xlog
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.test import XTestBindings
 from xpra.log import Logger

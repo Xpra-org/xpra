@@ -182,7 +182,7 @@ def main() -> int:  # pragma: no cover
     from xpra.platform.gui import init as gui_init
     from xpra.os_util import POSIX
     from xpra.platform import program_context
-    from xpra.gtk.error import xsync
+    from xpra.x11.error import xsync
     with program_context("XSettings"):
         gui_init()
         consume_verbose_argv(sys.argv, "all")

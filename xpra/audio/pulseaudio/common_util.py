@@ -29,7 +29,7 @@ def get_x11_property(atom_name: str) -> str:
             log.info("unable to query display properties without the X11 bindings")
         return ""
     try:
-        from xpra.gtk.error import xswallow
+        from xpra.x11.error import xswallow
         from xpra.x11.bindings.display_source import X11DisplayContext
         from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.window import X11WindowBindingsInstance

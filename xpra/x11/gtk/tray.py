@@ -10,7 +10,7 @@ from enum import IntEnum
 from xpra.util.env import envint
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
-from xpra.gtk.error import xsync, xlog
+from xpra.x11.error import xsync, xlog
 from xpra.x11.gtk.prop import prop_set, prop_get, raw_prop_set
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings

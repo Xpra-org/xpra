@@ -72,7 +72,7 @@ def do_get_wm_name(env) -> str:
             wm_name = "wayland"
     elif is_X11() and x11_bindings():
         from xpra.x11.common import get_wm_name as get_x11_wm_name
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             wm_name = get_x11_wm_name()
     return wm_name
@@ -88,7 +88,7 @@ def get_session_type() -> str:
 
 def _get_xsettings():
     if x11_bindings():
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         from xpra.x11.common import get_xsettings
         with xlog:
             return get_xsettings()
@@ -128,7 +128,7 @@ def _get_xsettings_dpi() -> int:
 def _get_randr_dpi() -> tuple[int, int]:
     if RANDR_DPI and x11_bindings():
         from xpra.x11.common import get_randr_dpi
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         with xlog:
             return get_randr_dpi()
     return -1, -1
@@ -151,7 +151,7 @@ def get_ydpi() -> int:
 def get_icc_info() -> dict[str, Any]:
     if x11_bindings():
         from xpra.x11.common import get_icc_data as get_x11_icc_data
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             return get_x11_icc_data()
     from xpra.platform.gui import default_get_icc_info
@@ -204,7 +204,7 @@ def get_antialias_info() -> dict[str, Any]:
 def get_current_desktop() -> int:
     if x11_bindings():
         from xpra.x11.common import get_current_desktop as get_x11_current_desktop
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             return get_x11_current_desktop()
     return -1
@@ -213,7 +213,7 @@ def get_current_desktop() -> int:
 def get_workarea() -> tuple[int, int, int, int] | None:
     if x11_bindings():
         from xpra.x11.common import get_workarea as get_x11_workarea
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             return get_x11_workarea()
     return None
@@ -222,7 +222,7 @@ def get_workarea() -> tuple[int, int, int, int] | None:
 def get_number_of_desktops() -> int:
     if x11_bindings():
         from xpra.x11.common import get_number_of_desktops as get_x11_number_of_desktops
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             return get_x11_number_of_desktops()
     return 0
@@ -231,7 +231,7 @@ def get_number_of_desktops() -> int:
 def get_desktop_names() -> Sequence[str]:
     if x11_bindings():
         from xpra.x11.common import get_desktop_names as get_x11_desktop_names
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             return get_x11_desktop_names()
     return ("Main", )
@@ -251,7 +251,7 @@ def get_display_name() -> str:
 def get_display_size() -> tuple[int, int]:
     if x11_bindings():
         from xpra.x11.bindings.window import X11WindowBindings
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             return X11WindowBindings().get_root_size()
     Gdk = gi_import("Gdk")
@@ -264,7 +264,7 @@ def get_display_size() -> tuple[int, int]:
 def get_vrefresh() -> int:
     if x11_bindings():
         from xpra.x11.common import get_vrefresh as get_x11_vrefresh
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             return get_x11_vrefresh()
     return -1
@@ -273,7 +273,7 @@ def get_vrefresh() -> int:
 def get_cursor_size() -> int:
     if x11_bindings():
         from xpra.x11.common import get_cursor_size as get_x11_cursor_size
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             return get_x11_cursor_size()
     return -1
@@ -313,7 +313,7 @@ def system_bell(*args) -> bool:
     if device_bell is False:
         # failed already
         return False
-    from xpra.gtk.error import XError
+    from xpra.x11.error import XError
 
     def x11_bell() -> None:
         from xpra.x11.common import system_bell as x11_system_bell
@@ -322,7 +322,7 @@ def system_bell(*args) -> bool:
             device_bell = False
 
     try:
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         with xlog:
             x11_bell()
         return True
@@ -336,7 +336,7 @@ def system_bell(*args) -> bool:
 
 def pointer_grab(gdk_window) -> bool:
     if x11_bindings():
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         with xlog:
             return X11WindowBindings().pointer_grab(gdk_window.get_xid())
     return False
@@ -344,7 +344,7 @@ def pointer_grab(gdk_window) -> bool:
 
 def pointer_ungrab(_window) -> bool:
     if x11_bindings():
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         with xlog:
             return X11WindowBindings().UngrabPointer() == 0
     return False

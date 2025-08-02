@@ -15,7 +15,7 @@ from xpra.util.env import envbool, envint, first_time
 from xpra.util.io import get_proc_cmdline
 from xpra.x11.common import Unmanageable
 from xpra.util.gobject import one_arg_signal, n_arg_signal
-from xpra.gtk.error import XError, xsync, xswallow, xlog
+from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.codecs.image import ImageWrapper
 from xpra.platform.posix.proc import get_parent_pid
 from xpra.x11.bindings.core import get_root_xid

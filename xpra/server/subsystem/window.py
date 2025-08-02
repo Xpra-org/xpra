@@ -60,7 +60,7 @@ class WindowServer(StubServerMixin):
         maxw, maxh = self.window_max_size
         self.update_size_constraints(minw, minh, maxw, maxh)
         if is_X11():
-            from xpra.gtk.error import xlog
+            from xpra.x11.error import xlog
             with xlog:
                 from xpra.x11.bindings.shape import XShapeBindings
                 log("XShape=%s", XShapeBindings().hasXShape())

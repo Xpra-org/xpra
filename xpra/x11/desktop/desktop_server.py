@@ -10,7 +10,7 @@ from xpra.x11.server.core import get_root_size
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.server import features
-from xpra.gtk.error import xsync, xlog
+from xpra.x11.error import xsync, xlog
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

@@ -6,7 +6,7 @@
 
 import cython
 from typing import Any, Optional, Tuple, List, Dict
-from xpra.gtk.error import XError
+from xpra.x11.error import XError
 
 from xpra.x11.bindings.xlib cimport (
     Display, Drawable, Visual, Window, Bool, XID, Status, Atom, Time, CurrentTime, Cursor, XPointer,

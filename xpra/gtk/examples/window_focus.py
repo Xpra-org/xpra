@@ -101,7 +101,7 @@ def make_window() -> Gtk.Window:
         from xpra.x11.gtk.display_source import init_gdk_display_source
         from xpra.x11.gtk.bindings import init_x11_filter
         from xpra.x11.bindings.window import X11WindowBindings  # pylint: disable=no-name-in-module
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         # x11 focus events:
         gdk_win = window.get_window()
         xid = gdk_win.get_xid()

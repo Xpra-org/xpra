@@ -11,7 +11,7 @@ def main():
     init_gdk_display_source()
 
     from xpra.x11.bindings.classhint import XClassHintBindings  # @UnresolvedImport
-    from xpra.gtk.error import xsync
+    from xpra.x11.error import xsync
     XClassHint = XClassHintBindings()
 
     win = Gtk.Window()

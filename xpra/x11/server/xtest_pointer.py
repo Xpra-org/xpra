@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk.error import xsync
+from xpra.x11.error import xsync
 from xpra.x11.bindings.test import XTestBindings
 from xpra.log import Logger
 

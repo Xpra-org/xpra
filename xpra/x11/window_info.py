@@ -14,7 +14,7 @@ def window_info(xid: int) -> str:
     net_wm_name = prop_get(xid, "_NET_WM_NAME", "utf8", True)
     from xpra.x11.bindings.window import X11WindowBindings
     X11Window = X11WindowBindings()
-    from xpra.gtk.error import xlog
+    from xpra.x11.error import xlog
     geom = None     # @UnusedVariable
     mapped = False  # @UnusedVariable
     with xlog:
@@ -40,7 +40,7 @@ def dump_windows() -> None:
     try:
         from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.window import X11WindowBindings
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
     except ImportError:
         pass
     else:

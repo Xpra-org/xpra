@@ -21,7 +21,7 @@ from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.x11.server.server_uuid import del_mode, del_uuid
 from xpra.x11.gtk.prop import prop_get
-from xpra.gtk.error import xsync, xlog
+from xpra.x11.error import xsync, xlog
 from xpra.log import Logger
 
 log = Logger("x11", "shadow")

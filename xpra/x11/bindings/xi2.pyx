@@ -10,7 +10,7 @@ from collections import deque
 from xpra.log import Logger
 log = Logger("x11", "bindings", "xinput")
 
-from xpra.gtk.error import xlog
+from xpra.x11.error import xlog
 from xpra.x11.common import X11Event
 from xpra.util.str_fn import hexstr
 

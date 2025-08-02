@@ -39,7 +39,7 @@ class CursorManager(StubServerMixin):
 
     def setup(self) -> None:
         if is_X11():
-            from xpra.gtk.error import xlog
+            from xpra.x11.error import xlog
             with xlog:
                 from xpra.x11.bindings.fixes import XFixesBindings
                 XFixes = XFixesBindings()
@@ -137,7 +137,7 @@ class CursorManager(StubServerMixin):
                 continue
             info[f"{prop}_size"] = size
         if is_X11():
-            from xpra.gtk.error import xswallow
+            from xpra.x11.error import xswallow
             with xswallow:
                 from xpra.x11.bindings.keyboard import X11KeyboardBindings
                 from xpra.x11.bindings.fixes import XFixesBindings

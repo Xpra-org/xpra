@@ -68,7 +68,7 @@ class ShapeWindow(StubWindow):
                     rectangles = add_border_rectangles(rectangles, ww, wh, self.border.size)
                 # too expensive to log with actual rectangles:
                 log("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)", xid, name, x_off, y_off, len(rectangles))
-                from xpra.gtk.error import xlog
+                from xpra.x11.error import xlog
                 with xlog:
                     XShape = XShapeBindings()
                     XShape.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)

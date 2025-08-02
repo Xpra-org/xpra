@@ -7,7 +7,7 @@ from collections import namedtuple
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.gtk.error import xlog
+from xpra.x11.error import xlog
 from xpra.x11.common import get_wm_name
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.util.rectangle import rectangle

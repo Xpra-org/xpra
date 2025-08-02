@@ -8,7 +8,7 @@ from typing import Final
 
 from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal, one_arg_signal
-from xpra.gtk.error import xlog, XError
+from xpra.x11.error import xlog, XError
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.gtk.prop import raw_prop_set, raw_prop_get
 from xpra.x11.gtk.selection import ManagerSelection

@@ -10,7 +10,7 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.env import first_time
 from xpra.common import WORKSPACE_UNSET, WORKSPACE_ALL
-from xpra.gtk.error import xsync, xlog
+from xpra.x11.error import xsync, xlog
 from xpra.x11.models.core import CoreX11WindowModel, Above, RESTACKING_STR
 from xpra.x11.bindings.window import X11WindowBindings, constants
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties, GUESS_CONTENT

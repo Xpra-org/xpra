@@ -7,7 +7,7 @@
 from typing import Any
 
 from xpra.util.env import envbool
-from xpra.gtk.error import xsync, xlog
+from xpra.x11.error import xsync, xlog
 from xpra.x11.gtk.prop import prop_get
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings

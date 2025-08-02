@@ -44,7 +44,7 @@ def get_xkb_rules_names_property() -> Sequence[str]:
         return ()
     xkb_rules_names: list[str] = []
     # pylint: disable=import-outside-toplevel
-    from xpra.gtk.error import xlog
+    from xpra.x11.error import xlog
     from xpra.x11.common import get_X11_root_property
     with xlog:
         prop = get_X11_root_property("_XKB_RULES_NAMES", "STRING")
@@ -223,7 +223,7 @@ class Keyboard(KeyboardBase):
                     log.warn("Warning: incomplete keymap support under Wayland")
                 return {}, [], ["mod2", ]
             return {}, [], []
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         with xlog:
             mod_mappings = self.keyboard_bindings.get_modifier_mappings()
             if mod_mappings:
@@ -245,7 +245,7 @@ class Keyboard(KeyboardBase):
     def get_x11_keymap(self) -> dict[int, list[str]]:
         if not self.keyboard_bindings:
             return {}
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         with xlog:
             return self.keyboard_bindings.get_keycode_mappings()
         return {}
@@ -261,7 +261,7 @@ class Keyboard(KeyboardBase):
                     query_struct["layout"] = layout
             log("query_struct(%s)=%s", locale, query_struct)
             return query_struct
-        from xpra.gtk.error import xsync
+        from xpra.x11.error import xsync
         with xsync:
             query_struct = self.keyboard_bindings.getXkbProperties()
         log("get_keymap_spec()=%r", query_struct)
@@ -277,7 +277,7 @@ class Keyboard(KeyboardBase):
         variant = ""
         options = ""
         if self.keyboard_bindings:
-            from xpra.gtk.error import xsync
+            from xpra.x11.error import xsync
             with xsync:
                 props = self.keyboard_bindings.getXkbProperties()
             model = props.get("model", "")

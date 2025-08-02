@@ -14,7 +14,7 @@ from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.gtk.keymap import get_gtk_keymap, get_default_keymap
-from xpra.gtk.error import xsync, xlog
+from xpra.x11.error import xsync, xlog
 from xpra.keyboard.mask import (
     DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names,
 )

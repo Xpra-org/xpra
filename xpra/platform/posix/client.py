@@ -146,7 +146,7 @@ class PlatformClient(StubClientMixin):
                 log(" server uses: %r", server_input_devices)
             return False
         try:
-            from xpra.gtk.error import xsync, XError  # pylint: disable=import-outside-toplevel
+            from xpra.x11.error import xsync, XError  # pylint: disable=import-outside-toplevel
             assert X11WindowBindings(), "no X11 window bindings"
             from xpra.x11.bindings.xi2 import X11XI2Bindings  # @UnresolvedImport
             XI2 = X11XI2Bindings()

@@ -25,7 +25,7 @@ from xpra.x11.server.base import root_prop_set
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings, constants
 from xpra.x11.server.base import X11ServerBase
-from xpra.gtk.error import xsync, xswallow, xlog, XError
+from xpra.x11.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

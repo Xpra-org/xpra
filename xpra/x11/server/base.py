@@ -13,7 +13,7 @@ from xpra.os_util import gi_import
 from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.gtk.error import xswallow, xsync, xlog
+from xpra.x11.error import xswallow, xsync, xlog
 from xpra.scripts.config import str_to_bool
 from xpra.common import SYNC_ICC
 from xpra.server import features

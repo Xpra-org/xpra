@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.common import MAX_WINDOW_SIZE
-from xpra.gtk.error import xsync, xswallow, xlog
+from xpra.x11.error import xsync, xswallow, xlog
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.common import Unmanageable

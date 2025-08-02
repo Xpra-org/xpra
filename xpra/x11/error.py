@@ -31,7 +31,6 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.util.env import envbool
-from xpra.os_util import gi_import
 from xpra.util.thread import is_main_thread
 from xpra.log import Logger
 
@@ -56,6 +55,18 @@ else:
             log.error("Error: invalid access from thread %s", threading.current_thread(), backtrace=True)
 
     verify_main_thread()
+
+
+def noXenter() -> None:
+    pass
+
+
+def noXexit(flush=True) -> Any:
+    return None
+
+
+Xenter = noXenter
+Xexit = noXexit
 
 
 class XError(Exception):
@@ -99,8 +110,7 @@ class _ErrorManager:
     def Xenter(self) -> None:
         assert self.depth >= 0
         verify_main_thread()
-        Gdk = gi_import("Gdk")
-        Gdk.error_trap_push()
+        Xenter()
         if XPRA_LOG_SYNC:
             log("X11trap.enter at level %i", self.depth)
         if LOG_NESTED_XTRAP and self.depth > 0:
@@ -112,11 +122,7 @@ class _ErrorManager:
         self.depth -= 1
         if XPRA_LOG_SYNC:
             log("X11trap.exit at level %i, need_sync=%s", self.depth, need_sync)
-        Gdk = gi_import("Gdk")
-        if self.depth == 0 and need_sync:
-            Gdk.flush()
-        # This is a Xlib error constant (Success == 0)
-        return Gdk.error_trap_pop()
+        return Xexit(self.depth == 0 and need_sync)
 
     def safe_x_exit(self) -> None:
         err = self.Xexit()

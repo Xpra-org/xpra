@@ -8,7 +8,7 @@ import os
 from typing import Dict, Tuple
 from collections.abc import Callable
 
-from xpra.gtk.error import XError, xsync
+from xpra.x11.error import XError, xsync
 from xpra.x11.common import X11Event
 from xpra.util.str_fn import csv
 

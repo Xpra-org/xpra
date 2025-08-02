@@ -50,7 +50,7 @@ def use_x11_bindings() -> bool:
 
 if use_x11_bindings():
     try:
-        from xpra.gtk.error import xlog
+        from xpra.x11.error import xlog
         from xpra.x11.gtk.prop import prop_get
         from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.send_wm import send_wm_workspace
