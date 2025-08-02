@@ -89,11 +89,9 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         e = None
         try:
             world = get_world_window()
-            wxid = None
-            if world:
-                wxid = world.get_window().get_xid()
             with xsync:
                 rxid = get_root_xid()
+            wxid = world.get_window().get_xid() if world else 0
             xid = X11Window.getParent(self.xid)
             while xid not in (0, rxid, wxid):
                 # We have to use a lowlevel function to manipulate the
