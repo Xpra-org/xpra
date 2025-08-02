@@ -10,7 +10,7 @@ from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xlog, XError
 from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.gtk.prop import raw_prop_set, raw_prop_get
+from xpra.x11.prop import raw_prop_set, raw_prop_get
 from xpra.x11.gtk.selection import ManagerSelection
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom
 from xpra.x11.xsettings_prop import bytes_to_xsettings, xsettings_to_bytes

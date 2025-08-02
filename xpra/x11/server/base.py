@@ -20,7 +20,7 @@ from xpra.server import features
 from xpra.x11.server.core import X11ServerCore
 from xpra.x11.server.xtest_pointer import XTestPointerDevice
 from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.gtk.prop import prop_set, prop_del
+from xpra.x11.prop import prop_set, prop_del
 from xpra.x11.xsettings_prop import XSettingsType, BLOCKLISTED_XSETTINGS
 from xpra.log import Logger
 

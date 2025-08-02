@@ -13,7 +13,7 @@ from xpra.util.env import envint, envbool
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import XError, xsync, xswallow, xlog
-from xpra.x11.gtk.prop import prop_set
+from xpra.x11.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings

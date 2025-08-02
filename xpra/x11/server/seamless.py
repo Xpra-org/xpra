@@ -154,7 +154,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 self.root_overlay = XComposite.XCompositeGetOverlayWindow(xid)
                 log("init_root_overlay() root_overlay=%#x", self.root_overlay)
                 if self.root_overlay:
-                    from xpra.x11.gtk.prop import prop_set
+                    from xpra.x11.prop import prop_set
                     prop_set(self.root_overlay, "WM_TITLE", "latin1", "RootOverlay")
                     from xpra.x11.bindings.xfixes import XFixesBindings
                     XFixes = XFixesBindings()

@@ -63,7 +63,7 @@ X11Window = X11Core = None
 if use_x11_bindings():
     try:
         from xpra.x11.error import xlog, verify_sync
-        from xpra.x11.gtk.prop import prop_get, prop_set, prop_del
+        from xpra.x11.prop import prop_get, prop_set, prop_del
         from xpra.x11.bindings.window import constants, X11WindowBindings
         from xpra.x11.bindings.core import X11CoreBindings, set_context_check, get_root_xid
 

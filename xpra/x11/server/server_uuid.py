@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.x11.gtk.prop import prop_set, prop_get, prop_del
+from xpra.x11.prop import prop_set, prop_get, prop_del
 
 
 def root_xid() -> int:

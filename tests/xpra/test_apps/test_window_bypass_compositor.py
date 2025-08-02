@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 
-import gi
-
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk  # pylint: disable=wrong-import-position @UnresolvedImport
+from xpra.os_util import gi_import
 from xpra.x11.gtk.display_source import init_gdk_display_source
-
-init_gdk_display_source()
-from xpra.x11.gtk.prop import prop_set
+from xpra.x11.prop import prop_set
 
 
 def main():
+    init_gdk_display_source()
+    Gtk = gi_import("Gtk")
+
     window = Gtk.Window()
     window.set_size_request(220, 120)
     window.connect("delete_event", Gtk.main_quit)
@@ -18,7 +16,7 @@ def main():
 
     b = Gtk.Button(label="Bypass")
 
-    def bypass(*args):
+    def bypass(*_args) -> None:
         prop_set(window.get_window(), "_NET_WM_BYPASS_COMPOSITOR", "u32", 1)
 
     b.connect('clicked', bypass)
@@ -26,7 +24,7 @@ def main():
 
     b = Gtk.Button(label="Not Bypass")
 
-    def notbypass(*args):
+    def notbypass(*_args) -> None:
         prop_set(window.get_window(), "_NET_WM_BYPASS_COMPOSITOR", "u32", 2)
 
     b.connect('clicked', notbypass)

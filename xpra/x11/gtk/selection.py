@@ -18,7 +18,7 @@ from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom, get_pywindow
-from xpra.x11.gtk.prop import prop_set
+from xpra.x11.prop import prop_set
 from xpra.exit_codes import ExitCode
 from xpra.util.env import envint
 from xpra.os_util import gi_import

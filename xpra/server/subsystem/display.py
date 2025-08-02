@@ -132,7 +132,7 @@ def check_xvfb(xvfb: Popen | None, timeout=0) -> bool:
 
 def _get_root_int(prop: str) -> int:
     from xpra.x11.bindings.core import get_root_xid
-    from xpra.x11.gtk.prop import prop_get
+    from xpra.x11.prop import prop_get
     try:
         xid = get_root_xid()
         return prop_get(xid, prop, "u32")
@@ -142,7 +142,7 @@ def _get_root_int(prop: str) -> int:
 
 def _set_root_int(prop: str = "_XPRA_RANDR_EXACT_SIZE", i: int = 0) -> None:
     from xpra.x11.bindings.core import get_root_xid
-    from xpra.x11.gtk.prop import prop_set
+    from xpra.x11.prop import prop_set
     xid = get_root_xid()
     prop_set(xid, prop, "u32", i)
 
@@ -293,7 +293,7 @@ class DisplayManager(StubServerMixin):
 
     def save_server_pid(self) -> None:
         from xpra.x11.error import xlog
-        from xpra.x11.gtk.prop import prop_set
+        from xpra.x11.prop import prop_set
         with xlog:
             from xpra.x11.bindings.core import get_root_xid
             prop_set(get_root_xid(), "XPRA_SERVER_PID", "u32", os.getpid())

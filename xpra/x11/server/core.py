@@ -19,7 +19,7 @@ from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.x11.server import server_uuid
-from xpra.x11.gtk.prop import prop_del
+from xpra.x11.prop import prop_del
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
 from xpra.util.objects import typedict

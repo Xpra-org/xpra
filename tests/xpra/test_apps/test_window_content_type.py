@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
 
-import gi
-
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk  #pylint: disable=wrong-import-position @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.x11.gtk.display_source import init_gdk_display_source
 
-init_gdk_display_source()
 
-
-def change_callback(self, window, entry):
+def change_callback(self, window, entry) -> None:
     print("content_type=%s" % entry.get_text())
     if window.get_window():
-        from xpra.x11.gtk.prop import prop_set
+        from xpra.x11.prop import prop_set
         prop_set(window.get_window(), "_XPRA_CONTENT_TYPE", "latin1", entry.get_text().decode())
 
 
 def main():
+    init_gdk_display_source()
+    Gtk = gi_import("Gtk")
+
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_size_request(400, 100)
     window.connect("delete_event", Gtk.main_quit)

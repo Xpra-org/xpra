@@ -2,7 +2,7 @@
 
 from xpra.os_util import gi_import
 from xpra.x11.gtk.display_source import init_gdk_display_source
-from xpra.x11.gtk.prop import prop_set
+from xpra.x11.prop import prop_set
 from xpra.x11.error import xsync
 
 

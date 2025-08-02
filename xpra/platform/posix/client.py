@@ -20,7 +20,7 @@ xinputlog = Logger("posix", "xinput")
 def get_resource_manager() -> bytes | None:
     try:
         from xpra.gtk.util import get_default_root_window
-        from xpra.x11.gtk.prop import prop_get
+        from xpra.x11.prop import prop_get
         root = get_default_root_window()
         xid = root.get_xid()
         value = prop_get(xid, "RESOURCE_MANAGER", "latin1", ignore_errors=True)

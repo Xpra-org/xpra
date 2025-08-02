@@ -10,8 +10,7 @@ The goo needed to deal with X properties.
 Everyone else should just use prop_set/prop_get with nice clean Python calling
 conventions, and if you need more (un)marshalling smarts, add them here.
 
-This module adds GTK / GDK specific conversions,
-the conversions for plain python types is found in prop_conv.py
+The conversions for plain python types is found in prop_conv.py
 """
 
 import struct
