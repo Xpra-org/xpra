@@ -24,7 +24,9 @@ MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 0)
 SVG_TO_PNG = envbool("XPRA_SVG_TO_PNG", True)
 
 INKSCAPE_RE = b'\\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
+# noinspection HttpUrlsUsage
 INKSCAPE_BROKEN_SODIPODI_DTD = b'xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/s odipodi-0.dtd"'
+# noinspection HttpUrlsUsage
 INKSCAPE_SODIPODI_DTD = b'xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/sodipodi-0.dtd"'
 
 large_icons = []

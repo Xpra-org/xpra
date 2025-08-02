@@ -23,8 +23,8 @@ def set_icon_path(v: str) -> None:
 def add_audio_tagging_env(env_dict: dict = os.environ, icon_path: str = "") -> None:
     """
         This is called audio-tagging in PulseAudio, see:
-        http://pulseaudio.org/wiki/ApplicationProperties
-        http://0pointer.de/blog/projects/tagging-audio.html
+        https://pulseaudio.org/wiki/ApplicationProperties
+        https://0pointer.de/blog/projects/tagging-audio.html
     """
     from xpra.util.version import XPRA_VERSION
     env_dict |= {
