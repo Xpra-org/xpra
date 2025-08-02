@@ -14,7 +14,7 @@ from xpra.common import noop
 from xpra.x11.error import xsync
 from xpra.util.gobject import n_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
-from xpra.x11.gtk.common import get_wininfo
+from xpra.x11.info import get_wininfo
 from xpra.x11.gtk.native_window import GDKX11Window
 from xpra.x11.gtk.bindings import (
     add_event_receiver,
