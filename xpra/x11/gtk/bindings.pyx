@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")
 
 GObject = gi_import("GObject")
-GdkX11= gi_import("GdkX11")
+GdkX11 = gi_import("GdkX11")
 Gdk = gi_import("Gdk")
 Gtk = gi_import("Gtk")
 

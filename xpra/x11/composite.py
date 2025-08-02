@@ -9,8 +9,7 @@ from typing import Final
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import xlog, xsync
-from xpra.x11.gtk.damage import WindowDamageHandler
-from xpra.x11.gtk.world_window import get_world_window
+from xpra.x11.damage import WindowDamageHandler
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.ximage import XImageBindings
@@ -38,10 +37,13 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
     }
 
     # This may raise XError.
-    def __init__(self, xid: int):
+    def __init__(self, xid: int, wxid: int):
         WindowDamageHandler.__init__(self, xid)
         GObject.GObject.__init__(self)
         self._listening_to: list[int] = []
+        with xsync:
+            self._rxid = get_root_xid()
+        self._wxid = wxid
 
     def __repr__(self):
         return f"CompositeHelper({self.xid:x})"
@@ -88,12 +90,8 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         listening: list[int] = []
         e = None
         try:
-            world = get_world_window()
-            with xsync:
-                rxid = get_root_xid()
-            wxid = world.get_window().get_xid() if world else 0
             xid = X11Window.getParent(self.xid)
-            while xid not in (0, rxid, wxid):
+            while xid not in (0, self._rxid, self._wxid):
                 # We have to use a lowlevel function to manipulate the
                 # event selection here, because SubstructureRedirectMask
                 # does not roundtrip through the GDK event mask

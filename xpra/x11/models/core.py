@@ -23,7 +23,7 @@ from xpra.x11.bindings.window import X11WindowBindings, constants
 from xpra.x11.bindings.res import ResBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
-from xpra.x11.gtk.composite import CompositeHelper
+from xpra.x11.composite import CompositeHelper
 from xpra.x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.gtk.bindings import get_pywindow
@@ -343,7 +343,10 @@ class CoreX11WindowModel(WindowModelStub):
         # reparent, so I'm not sure doing this here in the superclass,
         # before we reparent, actually works... let's wait and see.
         try:
-            self._composite = CompositeHelper(self.xid)
+            from xpra.x11.gtk.world_window import get_world_window
+            world = get_world_window()
+            wxid = world.get_window().get_xid() if world else 0
+            self._composite = CompositeHelper(self.xid, wxid)
             with xsync:
                 self._composite.setup()
         except Exception as e:

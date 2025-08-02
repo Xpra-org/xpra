@@ -198,7 +198,7 @@ class X11ServerCore(ServerBase):
         log("do_cleanup() x11_filter=%s", self.x11_filter)
         if self.x11_filter:
             self.x11_filter = False
-            from xpra.x11.gtk.bindings import cleanup_x11_filter, cleanup_all_event_receivers
+            from xpra.x11.dispatch import cleanup_x11_filter, cleanup_all_event_receivers
             cleanup_x11_filter()
             # try a few times:
             # errors happen because windows are being destroyed
@@ -306,7 +306,7 @@ class X11ServerCore(ServerBase):
                 )
         sinfo = info.setdefault("server", {})
         try:
-            from xpra.x11.gtk.composite import CompositeHelper
+            from xpra.x11.composite import CompositeHelper
             sinfo["XShm"] = CompositeHelper.XShmEnabled
         except (ImportError, ValueError) as e:
             log("no composite: %s", e)
