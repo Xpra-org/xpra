@@ -39,7 +39,7 @@ def load_license():
                 GPL2 = f.read().decode("latin1")
     return GPL2 or "Your installation may be corrupted," \
                    " the license text for GPL version 2 could not be found," \
-                   "\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt"
+                   "\nplease refer to:\nhttps://www.gnu.org/licenses/gpl-2.0.txt"
 
 
 about_dialog = None
