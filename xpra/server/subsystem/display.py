@@ -10,6 +10,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX
 from xpra.util.rectangle import rectangle
+
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import bytestostr
@@ -153,17 +154,6 @@ def get_display_pid() -> int:
     return _get_root_int("XPRA_XVFB_PID") or _get_root_int("_XPRA_SERVER_PID")
 
 
-def gdk_init():
-    try:
-        from xpra.x11.gtk.display_source import init_gdk_display_source
-    except ImportError as e:
-        log.warn(f"Warning: unable to initialize gdk display source: {e}")
-        return
-    if os.environ.get("NO_AT_BRIDGE") is None:
-        os.environ["NO_AT_BRIDGE"] = "1"
-    init_gdk_display_source()
-
-
 class DisplayManager(StubServerMixin):
     """
     Mixin for servers that handle displays.
@@ -212,15 +202,11 @@ class DisplayManager(StubServerMixin):
             self.initial_resolutions = ()
         self.randr = onoff.lower() not in FALSE_OPTIONS
         self.randr_exact_size = False
-        from xpra.scripts.main import no_gtk
-        no_gtk()
         self.check_xvfb()
         if is_X11():
-            from xpra.scripts.server import verify_display, verify_gdk_display
+            from xpra.scripts.server import verify_display
             if not verify_display(xvfb=self.xvfb, display_name=self.display):
                 raise InitExit(ExitCode.NO_DISPLAY, f"unable to access display {self.display!r}")
-            if not verify_gdk_display(self.display):
-                raise InitExit(ExitCode.NO_DISPLAY, f"Gdk is unable to access display {self.display!r}")
             self.session_files += [
                 "xvfb.pid",
                 "xauthority",
@@ -240,7 +226,6 @@ class DisplayManager(StubServerMixin):
         log("gui_init()")
         gui_init()
         self.check_xvfb()
-        gdk_init()
         if not self.display_pid:
             self.display_pid = get_display_pid()
         self.bit_depth = self.get_display_bit_depth()
@@ -316,10 +301,6 @@ class DisplayManager(StubServerMixin):
             GLib.source_remove(ssct)
 
     def late_cleanup(self, stop=True) -> None:
-        from xpra.gtk.util import close_gtk_display
-        close_gtk_display()
-        from xpra.x11.gtk.display_source import close_gdk_display_source
-        close_gdk_display_source()
         if stop and POSIX:
             self.kill_display()
         elif self.display_pid:

@@ -16,7 +16,6 @@ from xpra.util.gobject import n_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.info import get_wininfo
 from xpra.x11.gtk.native_window import GDKX11Window
-from xpra.x11.gtk.bindings import init_x11_filter, cleanup_x11_filter
 from xpra.x11.error import XError
 from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
 from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
@@ -624,8 +623,6 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     def __init__(self, send_packet_cb, progress_cb=noop, **kwargs):
         GObject.GObject.__init__(self)
         self.init_window()
-        init_x11_filter()
-        self.x11_filter = True
         super().__init__(send_packet_cb, progress_cb, **kwargs)
 
     def __repr__(self):
@@ -650,9 +647,6 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
             w.hide()
 
     def cleanup(self) -> None:
-        if self.x11_filter:
-            self.x11_filter = False
-            cleanup_x11_filter()
         ClipboardTimeoutHelper.cleanup(self)
         self.cleanup_window()
 

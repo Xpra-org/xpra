@@ -93,7 +93,6 @@ class X11ServerCore(ServerBase):
         self.touchpad_device = None
         self.pointer_device_map: dict = {}
         self.keys_pressed: dict[int, Any] = {}
-        self.x11_filter = False
         self.current_keyboard_group = 0
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
@@ -124,9 +123,6 @@ class X11ServerCore(ServerBase):
             X11CoreBindings().intern_atoms(window_type_atoms)
         with xlog:
             self.init_x11_extensions()
-            from xpra.x11.gtk.bindings import init_x11_filter
-            self.x11_filter = init_x11_filter()
-            assert self.x11_filter
 
     def init_x11_extensions(self) -> None:
         if features.clipboard or features.cursor:
@@ -195,28 +191,11 @@ class X11ServerCore(ServerBase):
         self.input_devices = "xtest"
 
     def do_cleanup(self) -> None:
-        log("do_cleanup() x11_filter=%s", self.x11_filter)
-        if self.x11_filter:
-            self.x11_filter = False
-            from xpra.x11.dispatch import cleanup_x11_filter, cleanup_all_event_receivers
-            cleanup_x11_filter()
-            # try a few times:
-            # errors happen because windows are being destroyed
-            # (even more so when we call `cleanup`)
-            # and we don't really care too much about this
-            for log_fn in (log.debug, log.debug, log.debug, log.debug, log.warn):
-                try:
-                    with xsync:
-                        cleanup_all_event_receivers()
-                        # all went well, we're done
-                        log("all event receivers have been removed")
-                        break
-                except Exception as e:
-                    log("do_cleanup() cleanup_all_event_receivers()", exc_info=True)
-                    log_fn("failed to remove event receivers: %s", e)
         # prop_del does its own xsync:
         noerr(self.clean_x11_properties)
         super().do_cleanup()
+        from xpra.x11.dispatch import cleanup_all_event_receivers
+        cleanup_all_event_receivers()
 
     def clean_x11_properties(self) -> None:
         self.do_clean_x11_properties("XPRA_SERVER_MODE", "_XPRA_RANDR_EXACT_SIZE")
@@ -255,7 +234,7 @@ class X11ServerCore(ServerBase):
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
-        capabilities["server_type"] = "Python/gtk/x11"
+        capabilities["server_type"] = "Python/x11"
         if "features" in source.wants:
             capabilities |= {
                 "resize_screen": self.randr,
@@ -276,7 +255,7 @@ class X11ServerCore(ServerBase):
         start = monotonic_ns()
         info = super().do_get_info(proto, server_sources)
         sinfo = info.setdefault("server", {})
-        sinfo["type"] = "Python/gtk/x11"
+        sinfo["type"] = "Python/x11"
         if FULL_INFO > 1:
             try:
                 from xpra.codecs.drm.drm import query  # pylint: disable=import-outside-toplevel

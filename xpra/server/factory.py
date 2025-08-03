@@ -43,6 +43,10 @@ def get_server_base_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.webcam import WebcamServer
         classes.append(WebcamServer)
 
+    if features.gtk:
+        from xpra.server.subsystem.gtk import GTKServer
+        classes.append(GTKServer)
+
     # `Dbus` must be placed before `Power`, `DisplayServer` and `NotificationForwarder`
     if features.dbus:
         from xpra.server.subsystem.dbus import DbusServer
@@ -99,7 +103,4 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.rfb:
         from xpra.server.rfb.server import RFBServer
         classes.append(RFBServer)
-    if features.gtk:
-        from xpra.server.subsystem.gtk import GTKServer
-        classes.append(GTKServer)
     return tuple(classes)
