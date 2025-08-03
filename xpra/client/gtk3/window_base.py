@@ -27,7 +27,7 @@ from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.keymap import KEY_TRANSLATIONS
 from xpra.common import (
-    MoveResize, force_size_constraint,
+    MoveResize, force_size_constraint, noop,
     MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, WORKSPACE_UNSET,
     WORKSPACE_ALL, WORKSPACE_NAMES,
 )
@@ -404,6 +404,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if DRAGNDROP and not self._client.readonly:
             self.init_dragndrop()
         self.init_workspace()
+        self.remove_event_receiver = noop
         self.init_focus()
         ClientWindowBase.init_window(self, metadata)
 
@@ -611,7 +612,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # so we can get focus-out when grabs are active:
         if is_X11():
             try:
-                from xpra.x11.gtk.bindings import add_event_receiver
+                from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
             except ImportError as e:
                 log("do_init_focus()", exc_info=True)
                 if not ds_inited():
@@ -622,6 +623,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 grablog("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
                 xid = self.get_window().get_xid()
                 add_event_receiver(xid, self)
+
+                def remove_hook() -> None:
+                    remove_event_receiver(xid, self)
+                self.remove_event_receiver = remove_hook
 
         # other platforms should bet getting regular focus events instead:
 
@@ -2514,6 +2519,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.cancel_follow_handler()
         self.cancel_workspace_timer()
         self.on_realize_cb = {}
+        self.remove_event_receiver()
         ClientWindowBase.destroy(self)
         Gtk.Window.destroy(self)
         if self._client.has_focus(self.wid):
