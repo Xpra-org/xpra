@@ -4,21 +4,19 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Callable
-
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("x11", "bindings", "events")
 GObject = gi_import("GObject")
 
-event_receivers_map: dict[int, set[Callable]] = {}
-catchall_receivers: dict[str, list[Callable]] = {}
-fallback_receivers: dict[str, list[Callable]] = {}
+event_receivers_map: dict[int, set] = {}
+fallback_receivers: dict[str, list] = {}
+catchall_receivers: dict[str, list] = {}
 debug_route_events: list[int] = []
 
 
-def add_event_receiver(xid: int, receiver: Callable, max_receivers=3) -> None:
+def add_event_receiver(xid: int, receiver, max_receivers=3) -> None:
     receivers = event_receivers_map.setdefault(xid, set())
     if 0 < max_receivers < len(receivers):
         from xpra.x11.window_info import window_info
@@ -28,7 +26,7 @@ def add_event_receiver(xid: int, receiver: Callable, max_receivers=3) -> None:
     receivers.add(receiver)
 
 
-def remove_event_receiver(xid: int, receiver: Callable) -> None:
+def remove_event_receiver(xid: int, receiver) -> None:
     receivers = event_receivers_map.get(xid)
     if receivers is None:
         return
@@ -37,24 +35,24 @@ def remove_event_receiver(xid: int, receiver: Callable) -> None:
         event_receivers_map.pop(xid)
 
 
-def add_catchall_receiver(signal: str, handler: Callable) -> None:
+def add_catchall_receiver(signal: str, handler) -> None:
     catchall_receivers.setdefault(signal, []).append(handler)
     log("add_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
 
-def remove_catchall_receiver(signal: str, handler: Callable) -> None:
+def remove_catchall_receiver(signal: str, handler) -> None:
     receivers = catchall_receivers.get(signal)
     if receivers:
         receivers.remove(handler)
     log("remove_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
 
-def add_fallback_receiver(signal: str, handler: Callable) -> None:
+def add_fallback_receiver(signal: str, handler) -> None:
     fallback_receivers.setdefault(signal, []).append(handler)
     log("add_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
 
 
-def remove_fallback_receiver(signal: str, handler: Callable) -> None:
+def remove_fallback_receiver(signal: str, handler) -> None:
     receivers = fallback_receivers.get(signal)
     if receivers:
         receivers.remove(handler)
@@ -74,7 +72,7 @@ def cleanup_all_event_receivers() -> None:
     event_receivers_map.clear()
 
 
-def _maybe_send_event(debug: bool, handlers: set[Callable] | None, signal: str, event, hinfo="window") -> None:
+def _maybe_send_event(debug: bool, handlers: set | None, signal: str, event, hinfo="window") -> None:
     if not handlers:
         if debug:
             log.info("  no handler registered for %s (%s)", hinfo, handlers)
@@ -103,7 +101,7 @@ def route_event(etype: int, event, signal: str, parent_signal: str) -> None:
     debug = etype in debug_route_events
     if debug:
         log.info(f"{event}")
-    handlers: set[Callable] | None = None
+    handlers: set | None = None
     if event.window == event.delivered_to:
         window = event.window
         if signal:
