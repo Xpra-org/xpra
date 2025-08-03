@@ -58,7 +58,10 @@ else:
 
 
 def noXenter() -> None:
-    pass
+    """
+    this default function does nothing at all,
+    it is typically overriden by the gtk handler
+    """
 
 
 def noXexit(flush=True) -> Any:
