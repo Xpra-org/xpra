@@ -36,9 +36,11 @@ class FocusWindow(StubWindow):
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self._focus_latest = None
         self.recheck_focus_timer: int = 0
+        self.remove_event_receiver = noop
         self.init_focus()
 
     def cleanup(self):
+        self.remove_event_receiver()
         self.cancel_focus_timer()
         if self._client.has_focus(self.wid):
             self._unfocus()
@@ -59,7 +61,7 @@ class FocusWindow(StubWindow):
         # so we can get focus-out when grabs are active:
         if is_X11():
             try:
-                from xpra.x11.dispatch import add_event_receiver
+                from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
             except ImportError as e:
                 log("do_init_focus()", exc_info=True)
                 if not ds_inited():
@@ -70,6 +72,10 @@ class FocusWindow(StubWindow):
                 log("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
                 xid = self.get_window().get_xid()
                 add_event_receiver(xid, self)
+
+                def remove_hook() -> None:
+                    remove_event_receiver(xid, self)
+                self.remove_event_receiver = remove_hook
 
         # other platforms should be getting regular focus events instead:
 
@@ -141,7 +147,7 @@ class FocusWindow(StubWindow):
         # so we recheck the focus status via this timer to skip unnecessary churn
         if FOCUS_RECHECK_DELAY < 0:
             self.recheck_focus()
-        elif self.recheck_focus_timer == 0:
+        elif not self.recheck_focus_timer:
             log(f"will recheck focus in {FOCUS_RECHECK_DELAY}ms")
             self.recheck_focus_timer = GLib.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
 
