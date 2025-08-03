@@ -160,10 +160,14 @@ def add_video_device_change_callback(callback: Callable) -> None:
 
     if not device_monitor:
         update_device_timestamps()
-        gfile = Gio.File.new_for_path("/dev")
-        device_monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
-        device_monitor.connect("changed", dev_directory_changed)
-        log("watching for video device changes in /dev")
+        try:
+            gfile = Gio.File.new_for_path("/dev")
+            device_monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+            device_monitor.connect("changed", dev_directory_changed)
+            log("watching for video device changes in /dev")
+        except Exception as e:
+            log("add_video_device_change_callback(%s)", callback, exc_info=True)
+            log.warn("Warning: unable to use Gio file monitor: %s", e)
     _video_device_change_callbacks.append(callback)
 
 
