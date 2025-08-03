@@ -107,10 +107,13 @@ class MenuProvider:
             log(f"watchdog library not found: {e}, using Gio instead")
             for menu_dir in get_system_menu_dirs():
                 if menu_dir not in self.dir_watchers:
-                    gfile = Gio.File.new_for_path(menu_dir)
-                    monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
-                    monitor.connect("changed", directory_changed)
-                    self.dir_watchers[menu_dir] = monitor
+                    try:
+                        gfile = Gio.File.new_for_path(menu_dir)
+                        monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+                        monitor.connect("changed", directory_changed)
+                        self.dir_watchers[menu_dir] = monitor
+                    except Exception as e:
+                        log.warn("Warning: unable to use Gio file monitor: %s", e)
             watcher = "Gio file monitor"
         if self.dir_watchers:
             log.info("watching for applications menu changes in:")
