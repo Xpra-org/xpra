@@ -412,7 +412,7 @@ class VideoSubregion:
             #     rects, not_damaged_pixels, rect, rect_pixels)
             return max(0, min(1, 1.0 - not_damaged_pixels / rect_pixels))
 
-        scores = {None: 0}
+        scores: dict[rectangle, int] = {}
 
         def score_region(info: str, region: rectangle, ignore_size=0, d_ratio=0.0) -> int:
             score = scores.get(region)
@@ -567,36 +567,37 @@ class VideoSubregion:
                         scores[merged] = score_region("horizontal", merged, 48 * 48)
 
         sslog("merged regions scores: %s", scores)
-        highscore = max(scores.values())
-        # a score of 100 is neutral
-        if highscore >= 120:
-            region = next(iter(r for r, s in scores.items() if s == highscore))
-            setnewregion(region, "very high score: %s", highscore)
-            return
-
-        # retry existing region, tolerate lower score:
-        if cur_score >= 90 and (highscore < 100 or cur_score >= highscore):
-            sslog("keeping existing video region %s with score %s", rect, cur_score)
-            setnewregion(self.rectangle, f"existing region with score: {cur_score}")
-            return
-
-        if highscore >= 100:
-            region = next(iter(r for r, s in scores.items() if s == highscore))
-            setnewregion(region, "high score: %s", highscore)
-            return
-
-        # could do:
-        # * re-add some scrolling detection: the region may have moved
-        # * re-try with a higher "from_time" and a higher score threshold
-
-        # try harder still: try combining all the regions we haven't discarded
-        # (Flash player with Firefox and Youtube does stupid unnecessary repaints)
-        if len(damage_count) >= 2:
-            merged = merge_all(tuple(damage_count.keys()))
-            score = score_region("merged", merged)
-            if score >= 110:
-                setnewregion(merged, "merged all regions, score=%s", score)
+        if scores:
+            highscore = max(scores.values())
+            # a score of 100 is neutral
+            if highscore >= 120:
+                region = next(iter(r for r, s in scores.items() if s == highscore))
+                setnewregion(region, "very high score: %s", highscore)
                 return
+
+            # retry existing region, tolerate lower score:
+            if cur_score >= 90 and (highscore < 100 or cur_score >= highscore):
+                sslog("keeping existing video region %s with score %s", rect, cur_score)
+                setnewregion(self.rectangle, f"existing region with score: {cur_score}")
+                return
+
+            if highscore >= 100:
+                region = next(iter(r for r, s in scores.items() if s == highscore))
+                setnewregion(region, "high score: %s", highscore)
+                return
+
+            # could do:
+            # * re-add some scrolling detection: the region may have moved
+            # * re-try with a higher "from_time" and a higher score threshold
+
+            # try harder still: try combining all the regions we haven't discarded
+            # (Flash player with Firefox and Youtube does stupid unnecessary repaints)
+            if len(damage_count) >= 2:
+                merged = merge_all(tuple(damage_count.keys()))
+                score = score_region("merged", merged)
+                if score >= 110:
+                    setnewregion(merged, "merged all regions, score=%s", score)
+                    return
 
         self.novideoregion("failed to identify a video region")
         self.last_scores = scores
