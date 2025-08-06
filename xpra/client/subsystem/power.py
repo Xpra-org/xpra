@@ -25,10 +25,8 @@ class PowerEventClient(StubClientMixin):
         remove_handler("suspend", self.suspend)
         remove_handler("resume", self.resume)
 
-    @staticmethod
-    def suspend(_args) -> None:
-        log.info("suspending")
+    def suspend(self) -> None:
+        log.info(f"{self} suspending")
 
-    @staticmethod
-    def resume(_args) -> None:
-        log.info("resuming")
+    def resume(self) -> None:
+        log.info(f"{self} resuming")
