@@ -132,7 +132,6 @@ class GTKShadowServerBase(ShadowServerBase):
 
     def make_hello(self, source) -> dict[str, Any]:
         caps = ShadowServerBase.make_hello(self, source)
-        caps.update(super().make_hello(self, source))
         if "features" in source.wants:
             from xpra.gtk.info import get_screen_sizes
             caps["screen_sizes"] = get_screen_sizes()
