@@ -105,9 +105,7 @@ class WorldWindow(Gtk.Window):
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
         self.set_decorated(False)
-        self.set_resizable(False)
         ignorewarnings(self.set_opacity, 0)
-
         # Make sure that we are always the same size as the screen
         self.set_resizable(False)
         self.move(0, 0)
