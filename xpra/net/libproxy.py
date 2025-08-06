@@ -53,28 +53,29 @@ _libproxy.px_proxy_factory_free_proxies.argtypes = [POINTER(c_void_p)]
 
 
 class ProxyFactory:
+    # noinspection HttpUrlsUsage
     """A ProxyFactory object is used to provide potential proxies to use
-    in order to reach a given URL (via 'getProxies(url)').
+        in order to reach a given URL (via 'getProxies(url)').
 
-    This instance should be kept around as long as possible as it contains
-    cached data to increase performance.  Memory usage should be minimal (cache
-    is small) and the cache lifespan is handled automatically.
+        This instance should be kept around as long as possible as it contains
+        cached data to increase performance.  Memory usage should be minimal (cache
+        is small) and the cache lifespan is handled automatically.
 
-    Usage is pretty simple:
-        pf = libproxy.ProxyFactory()
-        for url in urls:
-            proxies = pf.getProxies(url)
-            for proxy in proxies:
-                if proxy == "direct://":
-                    # Fetch URL without using a proxy
-                elif proxy.startswith("http://"):
-                    # Fetch URL using an HTTP proxy
-                elif proxy.startswith("socks://"):
-                    # Fetch URL using a SOCKS proxy
+        Usage is pretty simple:
+            pf = libproxy.ProxyFactory()
+            for url in urls:
+                proxies = pf.getProxies(url)
+                for proxy in proxies:
+                    if proxy == "direct://":
+                        # Fetch URL without using a proxy
+                    elif proxy.startswith("http://"):
+                        # Fetch URL using an HTTP proxy
+                    elif proxy.startswith("socks://"):
+                        # Fetch URL using a SOCKS proxy
 
-                if fetchSucceeded:
-                    break
-    """
+                    if fetchSucceeded:
+                        break
+        """
 
     class ProxyResolutionError(RuntimeError):
         """Exception raised when proxy cannot be resolved generally
