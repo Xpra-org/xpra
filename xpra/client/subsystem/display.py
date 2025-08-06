@@ -219,7 +219,7 @@ class DisplayClient(StubClientMixin):
         return get_vrefresh()
 
     def get_screen_caps(self) -> dict[str, Any]:
-        caps = {
+        caps: dict[str, int | dict] = {
             "vrefresh": self.get_vrefresh(),
         }
         aa = get_antialias_info()
