@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from typing import Any, Final
 from collections.abc import Sequence
 
@@ -14,7 +13,7 @@ from xpra.common import MAX_WINDOW_SIZE
 from xpra.x11.error import xsync, xswallow, xlog
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
-from xpra.x11.common import Unmanageable
+from xpra.x11.common import Unmanageable, NET_SUPPORTED, FRAME_EXTENTS
 from xpra.x11.gtk.native_window import GDKX11Window
 from xpra.x11.gtk.selection import ManagerSelection
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
@@ -48,109 +47,6 @@ NotifyPointerRoot: Final[int] = constants["NotifyPointerRoot"]
 NotifyDetailNone: Final[int] = constants["NotifyDetailNone"]
 
 LOG_MANAGE_FAILURES = envbool("XPRA_LOG_MANAGE_FAILURES", False)
-
-NO_NET_SUPPORTED = os.environ.get("XPRA_NO_NET_SUPPORTED", "").split(",")
-
-DEFAULT_NET_SUPPORTED = [
-    "_NET_SUPPORTED",  # a bit redundant, perhaps...
-    "_NET_SUPPORTING_WM_CHECK",
-    "_NET_WM_FULL_PLACEMENT",
-    "_NET_WM_HANDLED_ICONS",
-    "_NET_CLIENT_LIST",
-    "_NET_CLIENT_LIST_STACKING",
-    "_NET_DESKTOP_VIEWPORT",
-    "_NET_DESKTOP_GEOMETRY",
-    "_NET_NUMBER_OF_DESKTOPS",
-    "_NET_DESKTOP_NAMES",
-    "_NET_WORKAREA",
-    "_NET_ACTIVE_WINDOW",
-    "_NET_CURRENT_DESKTOP",
-    "_NET_SHOWING_DESKTOP",
-
-    "WM_NAME", "_NET_WM_NAME",
-    "WM_ICON_NAME", "_NET_WM_ICON_NAME",
-    "WM_ICON_SIZE",
-    "WM_CLASS",
-    "WM_PROTOCOLS",
-    "_NET_WM_PID",
-    "WM_CLIENT_MACHINE",
-    "WM_STATE",
-
-    "_NET_WM_FULLSCREEN_MONITORS",
-
-    "_NET_WM_ALLOWED_ACTIONS",
-    "_NET_WM_ACTION_CLOSE",
-    "_NET_WM_ACTION_FULLSCREEN",
-
-    # We don't actually use _NET_WM_USER_TIME at all (yet), but it is
-    # important to say we support the _NET_WM_USER_TIME_WINDOW property,
-    # because this tells applications that they do not need to constantly
-    # ping any pagers etc. that might be running -- see EWMH for details.
-    # (Though it's not clear that any applications actually take advantage
-    # of this yet.)
-    "_NET_WM_USER_TIME",
-    "_NET_WM_USER_TIME_WINDOW",
-    # Not fully:
-    "WM_HINTS",
-    "WM_NORMAL_HINTS",
-    "WM_TRANSIENT_FOR",
-    "_NET_WM_STRUT",
-    "_NET_WM_STRUT_PARTIAL"
-    "_NET_WM_ICON",
-
-    "_NET_CLOSE_WINDOW",
-
-    # These aren't supported in any particularly meaningful way, but hey.
-    "_NET_WM_WINDOW_TYPE",
-    "_NET_WM_WINDOW_TYPE_NORMAL",
-    "_NET_WM_WINDOW_TYPE_DESKTOP",
-    "_NET_WM_WINDOW_TYPE_DOCK",
-    "_NET_WM_WINDOW_TYPE_TOOLBAR",
-    "_NET_WM_WINDOW_TYPE_MENU",
-    "_NET_WM_WINDOW_TYPE_UTILITY",
-    "_NET_WM_WINDOW_TYPE_SPLASH",
-    "_NET_WM_WINDOW_TYPE_DIALOG",
-    "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
-    "_NET_WM_WINDOW_TYPE_POPUP_MENU",
-    "_NET_WM_WINDOW_TYPE_TOOLTIP",
-    "_NET_WM_WINDOW_TYPE_NOTIFICATION",
-    "_NET_WM_WINDOW_TYPE_COMBO",
-    # "_NET_WM_WINDOW_TYPE_DND",
-
-    "_NET_WM_STATE",
-    "_NET_WM_STATE_DEMANDS_ATTENTION",
-    "_NET_WM_STATE_MODAL",
-    # More states to support:
-    "_NET_WM_STATE_STICKY",
-    "_NET_WM_STATE_MAXIMIZED_VERT",
-    "_NET_WM_STATE_MAXIMIZED_HORZ",
-    "_NET_WM_STATE_SHADED",
-    "_NET_WM_STATE_SKIP_TASKBAR",
-    "_NET_WM_STATE_SKIP_PAGER",
-    "_NET_WM_STATE_HIDDEN",
-    "_NET_WM_STATE_FULLSCREEN",
-    "_NET_WM_STATE_ABOVE",
-    "_NET_WM_STATE_BELOW",
-    "_NET_WM_STATE_FOCUSED",
-
-    "_NET_WM_DESKTOP",
-
-    "_NET_WM_MOVERESIZE",
-    "_NET_MOVERESIZE_WINDOW",
-
-    "_MOTIF_WM_HINTS",
-    "_MOTIF_WM_INFO",
-
-    "_NET_REQUEST_FRAME_EXTENTS",
-    "_NET_RESTACK_WINDOW",
-
-    "_NET_WM_OPAQUE_REGION",
-]
-FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
-if FRAME_EXTENTS:
-    DEFAULT_NET_SUPPORTED.append("_NET_FRAME_EXTENTS")
-
-NET_SUPPORTED = [x for x in DEFAULT_NET_SUPPORTED if x not in NO_NET_SUPPORTED]
 
 DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 

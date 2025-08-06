@@ -16,7 +16,7 @@ from xpra.util.io import get_proc_cmdline
 from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.codecs.image import ImageWrapper
 from xpra.platform.posix.proc import get_parent_pid
-from xpra.x11.common import Unmanageable
+from xpra.x11.common import Unmanageable, FRAME_EXTENTS
 from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings, constants
@@ -48,7 +48,6 @@ if not XRes.check_xres():
 
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
-FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 OPAQUE_REGION = envbool("XPRA_OPAQUE_REGION", True)
 DELETE_DESTROY = envbool("XPRA_DELETE_DESTROY", False)
 DELETE_KILL_PID = envbool("XPRA_DELETE_KILL_PID", True)
