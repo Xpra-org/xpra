@@ -191,7 +191,9 @@ class DotXpra:
             state = self.is_socket_match(sockpath)
             if state is SocketState.LIVE:
                 return state
-        return state or SocketState.DEAD
+        if state is None:
+            return SocketState.DEAD
+        return state
 
     # find the matching sockets, and return:
     # (state, local_display, sockpath) for each socket directory we probe
