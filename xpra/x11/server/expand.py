@@ -8,7 +8,6 @@ from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.x11.server.shadow import ShadowX11Server
 from xpra.server.shadow.root_window_model import CaptureWindowModel
-from xpra.gtk.util import get_default_root_window
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.evdi.capture import EvdiDevice, find_evdi_devices, add_evdi_device  # pylint: disable=no-name-in-module
 from xpra.log import Logger
@@ -161,9 +160,8 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
 
     def make_capture_window_models(self) -> list[EVDIModel]:
         # TODO: remove root window
-        root = get_default_root_window()
         geom = (0, 0, 800, 600)
-        model = EVDIModel(root, self, "evdi", geom)
+        model = EVDIModel(self, "evdi", geom)
         return [model]
 
     def do_make_screenshot_packet(self):

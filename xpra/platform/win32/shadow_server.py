@@ -300,9 +300,9 @@ def get_shape_rectangles(logit=False) -> list:
 
 class SeamlessCaptureWindowModel(CaptureWindowModel):
 
-    def __init__(self, root, capture, title, geometry):
-        super().__init__(root, capture, title, geometry)
-        log("SeamlessCaptureWindowModel(%s, %s) SEAMLESS=%s", root, capture, SEAMLESS)
+    def __init__(self, capture, title, geometry):
+        super().__init__(capture, title, geometry)
+        log("SeamlessCaptureWindowModel%s SEAMLESS=%s", (capture, title, geometry), SEAMLESS)
         self.property_names.append("shape")
         self.dynamic_property_names.append("shape")
         self.rectangles = get_shape_rectangles(logit=True)
