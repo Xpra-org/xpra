@@ -186,7 +186,7 @@ class win32NotifyIcon:
         self.app_id = app_id
         self.title = title
         self.current_icon = None
-        self.destroy_icon = None
+        self.destroy_icon = noop
         self.move_callback = move_callback
         self.click_callback = click_callback
         self.exit_callback = exit_callback
@@ -280,7 +280,7 @@ class win32NotifyIcon:
             di = self.destroy_icon
             if ci and di:
                 self.current_icon = None
-                self.destroy_icon = None
+                self.destroy_icon = noop
                 di(ci)
         except Exception as e:
             log("delete_tray_window()", exc_info=True)

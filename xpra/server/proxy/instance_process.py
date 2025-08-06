@@ -7,6 +7,7 @@
 import os
 import sys
 import signal
+import socket
 from typing import Any
 from queue import SimpleQueue
 from multiprocessing import Process
@@ -33,7 +34,7 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
 from xpra.util.version import full_version_str
-from xpra.common import ConnectionMessage, SocketState, noerr, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.common import ConnectionMessage, SocketState, noerr, noop, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.platform.dotxpra import DotXpra
 from xpra.log import Logger
 
@@ -80,10 +81,10 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
                                "%s: %s.." % (type(caps), Ellipsizer(caps)), message_queue))
         self.message_queue = message_queue
         # for handling the local unix domain socket:
-        self.control_socket_cleanup = None
-        self.control_socket = None
+        self.control_socket_cleanup = noop
+        self.control_socket: socket.socket | None = None
         self.control_socket_thread = None
-        self.control_socket_path = None
+        self.control_socket_path = ""
         self.potential_protocols = []
         self.max_connections = MAX_CONCURRENT_CONNECTIONS
 
