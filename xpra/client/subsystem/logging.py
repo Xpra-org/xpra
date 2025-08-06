@@ -10,7 +10,7 @@ from time import monotonic
 from threading import Lock
 from typing import Any
 
-from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.common import noop, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.client.base.stub import StubClientMixin
@@ -31,7 +31,7 @@ class LoggingClient(StubClientMixin):
     def __init__(self):
         self.remote_logging = "no"
         self.in_remote_logging = False
-        self.local_logging = None
+        self.local_logging = noop
         self.logging_lock = Lock()
         self.log_both = False
         self.request_server_log = False
@@ -44,8 +44,8 @@ class LoggingClient(StubClientMixin):
     def cleanup(self) -> None:
         ll = self.local_logging
         log("cleanup() local_logging=%s", ll)
-        if ll:
-            self.local_logging = None
+        if ll != noop:
+            self.local_logging = noop
             set_global_logging_handler(ll)
 
     def get_info(self) -> dict[str, Any]:
@@ -92,7 +92,7 @@ class LoggingClient(StubClientMixin):
         self.send("logging-control", "start")
 
     def _process_logging_event(self, packet: Packet) -> None:
-        assert not self.local_logging, "cannot receive logging packets when forwarding logging!"
+        assert self.local_logging == noop, "cannot receive logging packets when forwarding logging!"
         level = packet.get_u8(1)
         msg = packet.get_str(2)
         prefix = "server: "
@@ -124,19 +124,17 @@ class LoggingClient(StubClientMixin):
         ll = self.local_logging
 
         def local_warn(*warn_args) -> None:
-            if ll:
-                ll(logger_log, logging.WARNING, *warn_args)
+            ll(logger_log, logging.WARNING, *warn_args)
 
         try:
             if not kwargs.pop("remote", True):
                 # keyword is telling us not to forward it!
-                if ll:
-                    try:
-                        ll(logger_log, level, msg, *args, **kwargs)
-                    except Exception as e:
-                        local_warn("Warning: failed to log message locally")
-                        local_warn(" %s", e)
-                        local_warn(" %s", msg)
+                try:
+                    ll(logger_log, level, msg, *args, **kwargs)
+                except Exception as e:
+                    local_warn("Warning: failed to log message locally")
+                    local_warn(" %s", e)
+                    local_warn(" %s", msg)
                 return
 
             dtime = int(1000 * (monotonic() - self.monotonic_start_time))
@@ -168,7 +166,7 @@ class LoggingClient(StubClientMixin):
                 except AttributeError:
                     etypeinfo = str(exc_info[0])
                 self.send(packet_type, level, f"{etypeinfo}: {exc_info[1]}", dtime)
-            if self.log_both and ll:
+            if self.log_both:
                 ll(logger_log, level, msg, *args, **kwargs)
         except Exception as e:
             if self.exit_code is not None:
@@ -181,11 +179,10 @@ class LoggingClient(StubClientMixin):
                 local_warn(f" {len(args)} arguments: {args}")
             else:
                 local_warn(" (no arguments)")
-            if ll:
-                try:
-                    ll(logger_log, level, msg, *args, **kwargs)
-                except Exception:
-                    pass
+            try:
+                ll(logger_log, level, msg, *args, **kwargs)
+            except Exception:
+                pass
             try:
                 exc_info = sys.exc_info()
                 for x in traceback.format_tb(exc_info[2]):
