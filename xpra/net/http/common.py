@@ -23,7 +23,7 @@ def http_response(content, content_type: str = "text/plain") -> HttpResponse:
     }, content
 
 
-def http_status_request() -> HttpResponse:
+def http_status_request(_uri: str, _post_data: bytes) -> HttpResponse:
     return http_response("ready")
 
 

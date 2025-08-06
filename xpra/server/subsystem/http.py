@@ -77,7 +77,7 @@ class HttpServer(StubServerMixin):
         http_scripts = opts.http_scripts
         if http_scripts.lower() in FALSE_OPTIONS:
             return
-        script_options: dict[str, Callable[[str], HttpResponse]] = {
+        script_options: dict[str, Callable[[str, bytes], HttpResponse]] = {
             "/Status": http_status_request,
             "/Info": self.http_info_request,
             "/Sessions": self.http_sessions_request,
