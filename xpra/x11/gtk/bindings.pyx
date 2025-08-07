@@ -213,7 +213,9 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     return GDK_FILTER_CONTINUE  # @UndefinedVariable
 
 
-_INIT_X11_FILTER_DONE = 0
+cdef int _INIT_X11_FILTER_DONE = 0
+
+
 def init_x11_filter() -> bool:
     log("init_x11_filter()")
     """ returns True if we did initialize it, False if it was already initialized """
