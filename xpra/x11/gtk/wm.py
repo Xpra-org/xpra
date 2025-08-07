@@ -12,11 +12,9 @@ from xpra.os_util import gi_import
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.x11.error import xsync, xswallow, xlog
 from xpra.util.gobject import no_arg_signal, one_arg_signal
-from xpra.gtk.util import get_default_root_window
 from xpra.x11.common import Unmanageable, NET_SUPPORTED, FRAME_EXTENTS
-from xpra.x11.gtk.native_window import GDKX11Window
-from xpra.x11.gtk.selection import ManagerSelection
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
+from xpra.x11.gtk.selection import ManagerSelection
 from xpra.x11.gtk.world_window import WorldWindow, destroy_world_window
 from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.models.window import WindowModel, configure_bits
@@ -109,8 +107,8 @@ class Wm(GObject.GObject):
         self.set_desktop_list(("Main",))
         self.set_current_desktop(0)
         # Start with the full display as workarea:
-        root = get_default_root_window()
-        root_w, root_h = root.get_geometry()[2:4]
+        rxid = get_root_xid()
+        root_w, root_h = X11Window.getGeometry(rxid)[2:4]
         self.root_set("_NET_SUPPORTED", ["atom"], NET_SUPPORTED)
         self.set_workarea(0, 0, root_w, root_h)
         self.set_desktop_geometry(root_w, root_h)
@@ -126,7 +124,6 @@ class Wm(GObject.GObject):
 
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
-        rxid = root.get_xid()
         add_event_receiver(rxid, self)
         add_fallback_receiver("x11-client-message-event", self)
         # when reparenting, the events may get sent
@@ -220,8 +217,8 @@ class Wm(GObject.GObject):
             with xsync:
                 log("_manage_client(%x)", xid)
                 desktop_geometry = self.root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
-                root = get_default_root_window()
-                win = WindowModel(root.get_xid(), xid, desktop_geometry, self.size_constraints)
+                rxid = get_root_xid()
+                win = WindowModel(rxid, xid, desktop_geometry, self.size_constraints)
         except Exception as e:
             if LOG_MANAGE_FAILURES or not isinstance(e, Unmanageable):
                 log_fn = log.warn
@@ -390,6 +387,8 @@ class Wm(GObject.GObject):
         # clobber any `XSelectInput` calls that *we* might have wanted to make
         # on this window.)  Also, GDK might silently swallow all events that
         # are detected on it, anyway.
+        from xpra.x11.gtk.native_window import GDKX11Window
+        from xpra.gtk.util import get_default_root_window
         root = get_default_root_window()
         self._ewmh_window = GDKX11Window(root, wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=self._wm_name)
         xid = self._ewmh_window.get_xid()

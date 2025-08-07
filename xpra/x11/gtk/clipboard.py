@@ -13,9 +13,7 @@ from xpra.util.env import envbool
 from xpra.common import noop
 from xpra.x11.error import xsync
 from xpra.util.gobject import n_arg_signal, one_arg_signal
-from xpra.gtk.util import get_default_root_window
 from xpra.x11.info import get_wininfo
-from xpra.x11.gtk.native_window import GDKX11Window
 from xpra.x11.error import XError
 from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
 from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
@@ -629,8 +627,9 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         return "X11Clipboard"
 
     def init_window(self) -> None:
-        root = get_default_root_window()
-        self.window = GDKX11Window(root, width=1, height=1,
+        rxid = get_root_xid()
+        from xpra.x11.gtk.native_window import GDKX11Window
+        self.window = GDKX11Window(rxid, width=1, height=1,
                                    title="Xpra-Clipboard",
                                    wclass=Gdk.WindowWindowClass.INPUT_ONLY)
         self.window.set_events(Gdk.EventMask.PROPERTY_CHANGE_MASK | self.window.get_events())
