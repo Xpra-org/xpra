@@ -268,18 +268,19 @@ def set_server_features(opts, mode: str) -> None:
     features.shell = opts.shell
     features.watcher = envbool("XPRA_UI_THREAD_WATCHER", True)
 
-    if mode == "encoder":
+    if mode in ("encoder", "runner"):
         # turn off all relevant features:
-        opts.start_new_commands = False
-        features.command = False
+        opts.start_new_commands = mode == "runner"
+        features.command = mode == "runner"
         features.notification = features.webcam = features.clipboard = False
         features.gstreamer = features.x11 = features.pulseaudio = features.audio = features.av_sync = False
-        features.file = features.printer = features.command = features.mdns = False
+        features.file = features.printer = features.mdns = False
         features.keyboard = features.pointer = False
         features.logging = features.display = features.window = False
         features.cursor = features.rfb = False
         features.power = features.suspend = features.idle = False
         features.ssh = False
+        features.gtk = False
     else:
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
