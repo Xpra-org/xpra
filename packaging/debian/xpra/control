@@ -315,7 +315,7 @@ Depends: xpra-common (= ${binary:Version})
 #bookworm:              ,libopenh264-7
 #trixie:              ,libopenh264-8
 #sid:              ,libopenh264-8
-#noble:              ,libdav1d6
+#noble:              ,libdav1d7
 #oracular:              ,libdav1d7
 #plucky:              ,libdav1d7
 #bookworm:              ,libdav1d6
