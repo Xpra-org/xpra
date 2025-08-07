@@ -247,13 +247,13 @@ class ShadowServer(GTKShadowServerBase):
         log("CG.CGPostScrollWheelEvent%s=%s", event, r)
 
     def make_hello(self, source) -> dict[str, Any]:
-        capabilities = super().make_hello(self, source)
+        capabilities = super().make_hello(source)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/MacOS-Shadow"
         return capabilities
 
     def get_info(self, proto, *_args) -> dict[str, Any]:
-        info = super().get_info(self, proto)
+        info = super().get_info(proto)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk2/osx-shadow"
         info.setdefault("damage", {}).update({
