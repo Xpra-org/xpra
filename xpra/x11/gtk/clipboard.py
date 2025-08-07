@@ -629,7 +629,9 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     def init_window(self) -> None:
         rxid = get_root_xid()
         from xpra.x11.gtk.native_window import GDKX11Window
-        self.window = GDKX11Window(rxid, width=1, height=1,
+        from xpra.x11.gtk.bindings import get_pywindow
+        root = get_pywindow(rxid)
+        self.window = GDKX11Window(root, width=1, height=1,
                                    title="Xpra-Clipboard",
                                    wclass=Gdk.WindowWindowClass.INPUT_ONLY)
         self.window.set_events(Gdk.EventMask.PROPERTY_CHANGE_MASK | self.window.get_events())
