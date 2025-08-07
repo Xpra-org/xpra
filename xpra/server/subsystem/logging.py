@@ -12,7 +12,7 @@ from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes
 from xpra.net.common import Packet
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
@@ -40,7 +40,7 @@ class LoggingServer(StubServerMixin):
         self.logging_lock: Lock = Lock()
         self.log_both: bool = False
         self.in_remote_logging: bool = False
-        self.local_logging: Callable | None = None
+        self.local_logging: Callable = noop
         self.logging_clients: dict[Any, float] = {}
 
     def init(self, opts) -> None:
@@ -89,18 +89,18 @@ class LoggingServer(StubServerMixin):
             self.start_capturing_logging()
 
     def start_capturing_logging(self) -> None:
-        if not self.local_logging:
+        if self.local_logging == noop:
             self.local_logging = set_global_logging_handler(self.remote_logging_handler)
 
     def stop_capturing_logging(self) -> None:
         ll = self.local_logging
-        if ll:
-            self.local_logging = None
+        if ll != noop:
+            self.local_logging = noop
             set_global_logging_handler(ll)
 
     def local_err(self, message: str, exc, level: int, msg: str, args, kwargs) -> None:
         ll = self.local_logging
-        if self._closing or not ll:
+        if self._closing or ll == noop:
             return
 
         def local_warn(*args) -> None:
