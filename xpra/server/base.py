@@ -122,7 +122,7 @@ class ServerBase(ServerBaseClass):
         super().call_init_thread_callbacks()
 
     def server_is_ready(self) -> None:
-        ServerCore.server_is_ready(self)
+        super().server_is_ready()
         self.server_event("ready")
 
     def do_cleanup(self) -> None:
@@ -257,7 +257,7 @@ class ServerBase(ServerBaseClass):
             log.warn("Warning: received another 'hello' packet")
             log.warn(" from an existing connection: %s", proto)
             return
-        if ServerCore.hello_oked(self, proto, c, auth_caps):
+        if super().hello_oked(proto, c, auth_caps):
             # has been handled
             return
         if not self.sanity_checks(proto, c):
@@ -519,7 +519,7 @@ class ServerBase(ServerBaseClass):
         return i
 
     def get_subsystems(self) -> list[str]:
-        subsystems: list[str] = ServerCore.get_subsystems(self)
+        subsystems: list[str] = super().get_subsystems()
         for c in SERVER_BASES:
             subsystems.append(c.__name__.replace("Server", "").rstrip("_"))
         return subsystems
@@ -708,7 +708,7 @@ class ServerBase(ServerBaseClass):
         return list(self._potential_protocols) + list(self._server_sources.keys())
 
     def is_timedout(self, protocol) -> bool:
-        v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
+        v = super().is_timedout(protocol) and protocol not in self._server_sources
         netlog("is_timedout(%s)=%s", protocol, v)
         return v
 
