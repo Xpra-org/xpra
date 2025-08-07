@@ -18,7 +18,6 @@ from xpra.log import Logger
 log = Logger("x11", "util")
 
 GObject = gi_import("GObject")
-Gdk = gi_import("Gdk")
 
 PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
 
