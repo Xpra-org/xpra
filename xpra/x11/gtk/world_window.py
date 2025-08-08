@@ -12,7 +12,6 @@ from xpra.util.env import IgnoreWarningsContext, ignorewarnings
 from xpra.x11.bindings.window import constants
 from xpra.x11.bindings.send_wm import send_wm_take_focus
 from xpra.x11.prop import prop_set
-from xpra.gtk.util import get_default_root_window
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -96,11 +95,12 @@ def destroy_world_window() -> None:
 
 
 class WorldWindow(Gtk.Window):
-    def __init__(self):
+    def __init__(self, xid: int):
         global world_window
         assert world_window is None, "a world window already exists! (%s)" % world_window
         world_window = self
         super().__init__()
+        self.reset_focus_window = xid
         self.set_title("Xpra-WorldWindow")
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
@@ -193,10 +193,7 @@ class WorldWindow(Gtk.Window):
 
         def do_reset_x_focus() -> None:
             self._take_focus()
-            root = get_default_root_window()
-            assert root
-            xid = root.get_xid()
-            prop_set(xid, "_NET_ACTIVE_WINDOW", "u32", XNone)
+            prop_set(self.reset_focus_window, "_NET_ACTIVE_WINDOW", "u32", XNone)
 
         with xlog:
             do_reset_x_focus()
