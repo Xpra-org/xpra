@@ -8,7 +8,7 @@ from typing import Any
 from subprocess import Popen
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import, POSIX
+from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.rectangle import rectangle
 
 from xpra.util.objects import typedict
@@ -233,6 +233,7 @@ class DisplayManager(StubServerMixin):
             self.init_randr()
             self.set_initial_resolution()
             self.save_server_pid()
+        GLib.idle_add(self.print_screen_info)
 
     def init_randr(self) -> None:
         from xpra.x11.error import xlog
@@ -314,13 +315,35 @@ class DisplayManager(StubServerMixin):
         kill_xvfb(self.display_pid)
 
     def print_screen_info(self) -> None:
-        display = os.environ.get("DISPLAY", "")
-        if display.startswith(":"):
-            extra = ""
-            bit_depth = self.get_display_bit_depth()
-            if bit_depth:
-                extra = f" with {bit_depth} bit colors"
-            log.info(f" connected to X11 display {display}{extra}")
+        log.warn("print_screen_info display")
+        for x in self.get_display_description().split("\n"):
+            log.info(x)
+
+    def get_display_description(self) -> str:
+        # try the `get_display_name()` platform function first,
+        # then the instance method, which may be overriden (see `GTKServer`)
+        dinfo = get_display_name() or self.get_display_name()
+        dtype = self.get_display_type()
+        dinfo = f"{dtype} display {dinfo}"      #ie: "X11 display :0"
+        size = self.get_display_size()
+        if size:
+            w, h = size
+            dinfo += f" with display size {w}x{h}"
+        bit_depth = self.get_display_bit_depth()
+        if bit_depth:
+            dinfo += f"\n with {bit_depth} bit colors"
+        return dinfo
+
+    def get_display_name(self) -> str:
+        return get_display_name()
+
+    def get_display_type(self) -> str:
+        if POSIX and not OSX:
+            from xpra.util.system import is_Wayland
+            if is_Wayland():
+                return "Wayland"
+            return "X11"
+        return "Main"
 
     def get_display_bit_depth(self) -> int:
         return 0

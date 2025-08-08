@@ -121,28 +121,22 @@ class ShadowServerBase(ServerBase):
         self.session_name = get_wm_name()  # pylint: disable=assignment-from-none
         log("get_wm_name()=%s", self.session_name)
 
-    def do_print_screen_info(self, display: str, w: int, h: int) -> None:
-        if display or w or h:
-            if display:
-                msg = f" on display {display!r}"
-                if w and h:
-                    msg += f" of size {w}x{h}"
-            else:
-                msg = f" on display of size {w}x{h}"
-            log.info(msg)
+    def get_display_description(self) -> None:
+        descr = super().get_display_description()
         if self.window_matches:
-            return
+            return descr
         try:
             count = len(self._id_to_window)
         except AttributeError as e:
             log(f"no screen info: {e}")
-            return
+            return descr
         if count > 1:
-            log.info(f" with {count} monitors:")
+            descr += f"\n with {count} monitors:"
             for window in self._id_to_window.values():
                 title = window.get_property("title")
                 x, y, w, h = window.geometry
-                log.info("  %-16s %4ix%-4i at %4i,%-4i", title, w, h, x, y)
+                descr += "\n  %-16s %4ix%-4i at %4i,%-4i" % (title, w, h, x, y)
+        return descr
 
     def apply_refresh_rate(self, ss) -> None:
         rrate = super().apply_refresh_rate(ss)

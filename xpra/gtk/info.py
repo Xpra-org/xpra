@@ -329,7 +329,7 @@ def get_screens_info() -> dict[int, dict]:
     return info
 
 
-def get_screen_sizes(xscale: float = 1, yscale: float = 1):
+def get_screen_sizes(xscale: float = 1, yscale: float = 1) -> list[tuple]:
     from xpra.platform.gui import get_workarea, get_workareas
 
     def xs(v) -> int:

@@ -10,6 +10,7 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.util.system import is_X11
 from xpra.util.version import dict_version_trim
+from xpra.util.screen import prettify_plug_name
 from xpra.scripts.config import InitExit
 from xpra.common import FULL_INFO
 from xpra.exit_codes import ExitCode
@@ -79,6 +80,12 @@ class GTKServer(StubServerMixin):
             from xpra.scripts.server import verify_gdk_display
             if not verify_gdk_display(self.display):
                 raise InitExit(ExitCode.NO_DISPLAY, f"Gdk is unable to access display {self.display!r}")
+
+    def get_display_name(self) -> str:
+        Gdk = gi_import("Gdk")
+        manager = Gdk.DisplayManager.get()
+        display = manager.get_default_display()
+        return prettify_plug_name(display.get_name())
 
     def watch_keymap_changes(self) -> None:
         # Set up keymap change notification:

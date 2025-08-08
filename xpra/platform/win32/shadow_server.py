@@ -11,7 +11,6 @@ from collections.abc import Sequence, Callable
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT, POINT, BYTE
 
-from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.util.system import is_VirtualBox
@@ -376,22 +375,6 @@ class ShadowServer(GTKShadowServerBase):
 
     def get_display_size(self) -> tuple[int, int]:
         return get_display_size()
-
-    def print_screen_info(self) -> None:
-        size = self.get_display_size()
-        if not size:
-            # we probably don't have access to the screen
-            return
-        w, h = size
-        try:
-            from xpra.os_util import gi_import
-            Gdk = gi_import("Gdk")
-            manager = Gdk.DisplayManager.get()
-            display = manager.get_default_display()
-            display_name = prettify_plug_name(display.get_name())
-        except Exception:
-            display_name = ""
-        self.do_print_screen_info(display_name, w, h)
 
     def make_tray_widget(self):
         from xpra.platform.win32.tray import Win32Tray

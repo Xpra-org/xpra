@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from typing import Any
 from collections.abc import Callable
 
@@ -69,24 +68,6 @@ class GTKShadowServerBase(ShadowServerBase):
 
             from xpra.gtk.widget import checkitem
             tray_menu.append(checkitem("Read-only", cb=readonly_toggled, active=self.readonly))
-
-    def print_screen_info(self) -> None:
-        if not features.display:
-            return
-        from xpra.util.system import is_Wayland
-        dinfo = ""
-        if is_Wayland():
-            wdisplay = os.environ.get("WAYLAND_DISPLAY", "").replace("wayland-", "")
-            if wdisplay:
-                dinfo = f"Wayland display {wdisplay}"
-        else:
-            display = os.environ.get("DISPLAY", "")
-            if display:
-                dinfo = f"X11 display {display}"
-        from xpra.gtk.util import get_default_root_window
-        root = get_default_root_window()
-        w, h = root.get_geometry()[2:4]
-        self.do_print_screen_info(dinfo, w, h)
 
     def last_client_exited(self) -> None:
         log("last_client_exited() mapped=%s", self.mapped)

@@ -7,13 +7,11 @@ import os
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.common import noop
 from xpra.net.common import Packet
 from xpra.server import features
-from xpra.gtk.util import get_root_size
 from xpra.gtk.info import get_screen_sizes
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
@@ -145,13 +143,6 @@ class DesktopServerBase(DesktopServerBaseClass):
 
     def notify_dpi_warning(self, body) -> None:
         """ ignore DPI warnings in desktop mode """
-
-    def print_screen_info(self) -> None:
-        super().print_screen_info()
-        root_w, root_h = get_root_size()
-        log.info(" initial resolution: %ix%i", root_w, root_h)
-        sss = get_screen_sizes()
-        log_screen_sizes(root_w, root_h, sss)
 
     def parse_screen_info(self, ss) -> None:
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)

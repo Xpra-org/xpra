@@ -215,10 +215,6 @@ class ProxyServer(ProxyServerBaseClass):
         assert proto in self._requests
         self.clean_quit(False)
 
-    def print_screen_info(self) -> None:
-        # no screen, we just use a virtual display number
-        pass
-
     def handle_stop_command(self, *args) -> str:
         display = args[0]
         log("stop command: will try to find proxy process for display %s", display)

@@ -509,18 +509,9 @@ class ServerCore(ServerBaseClass):
         from xpra.common import get_run_info
         for run_info in get_run_info(f"{self.session_type} server"):
             log.info(run_info)
-        GLib.idle_add(self.print_screen_info)
 
     def notify_new_user(self, ss) -> None:
         pass
-
-    ######################################################################
-    # screen / display:
-    def get_display_bit_depth(self) -> int:
-        return 0
-
-    def print_screen_info(self) -> None:
-        """ see subclasses for actual implementations """
 
     # #####################################################################
     # sockets / connections / packets:
