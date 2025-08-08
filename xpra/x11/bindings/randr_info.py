@@ -6,12 +6,12 @@
 import sys
 
 from xpra.util.str_fn import print_nested_dict
-from xpra.x11.gtk.display_source import init_gdk_display_source
+from xpra.x11.bindings.display_source import init_display_source
 from xpra.x11.bindings.randr import RandRBindings  # pylint: disable=no-name-in-module
 
 
 def main() -> None:
-    init_gdk_display_source()
+    init_display_source()
     randr = RandRBindings()
     # print(randr.is_dummy16())
     print_nested_dict(randr.get_all_screen_properties())
