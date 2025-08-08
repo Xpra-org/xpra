@@ -7,7 +7,7 @@ Simply run `xpra` and click on the `Configure` button, or run the subcommand: `x
 
 Most other important xpra settings can be configured from the command line or through xpra's configuration files.
 
-You can find some example configuration files here: [sample /etc/xpra/ directory](https://xpra.org/conf/)
+You can find some example configuration files here: [template /etc/xpra/ directory](https://github.com/Xpra-org/xpra/tree/master/fs/etc)
 
 The configuration files use the exact same format as the command line options, which can be shown using `xpra --help`, just without the `--` prefix.\
 The manual is also shipped with all binary installations and should be easily accessible. (ie: `man xpra`)
