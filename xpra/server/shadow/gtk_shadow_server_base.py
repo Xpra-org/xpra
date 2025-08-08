@@ -7,16 +7,12 @@ import os
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv
-from xpra.util.parsing import parse_simple_dict
-from xpra.util.env import envbool, SilenceWarningsContext
-from xpra.common import XPRA_APP_ID, noop
-from xpra.os_util import POSIX, OSX, gi_import
+from xpra.util.env import envbool
+from xpra.common import noop
+from xpra.os_util import gi_import
 from xpra.scripts.config import str_to_bool
 from xpra.server import features
-from xpra.server.shadow.root_window_model import CaptureWindowModel
-from xpra.server.subsystem.gtk import get_default_display
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.net.compression import Compressed
@@ -24,8 +20,6 @@ from xpra.log import Logger
 
 GLib = gi_import("GLib")
 
-traylog = Logger("tray")
-notifylog = Logger("notify")
 screenlog = Logger("screen")
 log = Logger("shadow")
 
@@ -50,7 +44,7 @@ def parse_geometry(s) -> list[int]:
         raise
 
 
-def parse_geometries(s) -> list:
+def parse_geometries(s) -> list[list[int]]:
     g = []
     for geometry_str in s.split("/"):
         if geometry_str:
@@ -58,45 +52,23 @@ def parse_geometries(s) -> list:
     return g
 
 
-def get_icon_image(icon_name: str):
-    from xpra.platform.gui import get_icon_size
-    size = get_icon_size()
-    from xpra.gtk.widget import scaled_image
-    with log.trap_error(f"Error loading image from icon {icon_name!r} with size {size}"):
-        from xpra.gtk.pixbuf import get_icon_pixbuf
-        pixbuf = get_icon_pixbuf(icon_name)
-        traylog("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
-        if not pixbuf:
-            return None
-        return scaled_image(pixbuf, size)
-
-
 class GTKShadowServerBase(ShadowServerBase):
 
     def __init__(self, attrs: dict[str, str]):
         super().__init__()
-        self.session_type = "shadow"
         self.multi_window = str_to_bool(attrs.get("multi-window", True))
-        # for managing the systray
-        self.tray_menu = None
-        self.tray_menu_shown = False
-        self.tray_widget = None
-        self.tray = False
-        self.tray_icon = None
 
-    def init(self, opts) -> None:
-        super().init(opts)
-        self.tray = opts.tray
-        self.tray_icon = opts.tray_icon
+    def add_tray_menu_items(self, tray_menu):
+        if features.window:
+            def readonly_toggled(menuitem) -> None:
+                log("readonly_toggled(%s)", menuitem)
+                ro = menuitem.get_active()
+                if ro != self.readonly:
+                    self.readonly = ro
+                    self.setting_changed("readonly", ro)
 
-    def setup(self) -> None:
-        super().setup()
-        if self.tray:
-            self.setup_tray()
-
-    def cleanup(self) -> None:
-        self.cleanup_tray()
-        super().cleanup()
+            from xpra.gtk.widget import checkitem
+            tray_menu.append(checkitem("Read-only", cb=readonly_toggled, active=self.readonly))
 
     def print_screen_info(self) -> None:
         if not features.display:
@@ -116,19 +88,11 @@ class GTKShadowServerBase(ShadowServerBase):
         w, h = root.get_geometry()[2:4]
         self.do_print_screen_info(dinfo, w, h)
 
-    def client_startup_complete(self, ss) -> None:
-        super().client_startup_complete(self, ss)
-        if not self.tray_icon:
-            self.set_tray_icon("server-connected")
-
     def last_client_exited(self) -> None:
         log("last_client_exited() mapped=%s", self.mapped)
         for wid in tuple(self.mapped):
             self.stop_refresh(wid)
-        # revert to default icon:
-        if not self.tray_icon:
-            self.set_tray_icon("server-notconnected")
-        super().last_client_exited(self)
+        super().last_client_exited()
 
     def make_hello(self, source) -> dict[str, Any]:
         caps = ShadowServerBase.make_hello(self, source)
@@ -198,10 +162,13 @@ class GTKShadowServerBase(ShadowServerBase):
         raise NotImplementedError()
 
     def get_root_window_model_class(self) -> type:
+        from xpra.server.shadow.root_window_model import CaptureWindowModel
         return CaptureWindowModel
 
     def get_shadow_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
-        display = get_default_display()
+        Gdk = gi_import("Gdk")
+        manager = Gdk.DisplayManager.get()
+        display = manager.get_default_display()
         if not display:
             return []
         n = display.get_n_monitors()
@@ -229,13 +196,17 @@ class GTKShadowServerBase(ShadowServerBase):
         log.info(f"capture using {self.capture.get_type()}")
         model_class = self.get_root_window_model_class()
         models = []
-        display = get_default_display()
+        Gdk = gi_import("Gdk")
+        manager = Gdk.DisplayManager.get()
+        display = manager.get_default_display()
+        from xpra.util.screen import prettify_plug_name
         display_name = prettify_plug_name(display.get_name())
         monitors = self.get_shadow_monitors()
         match_str = None
         geometries = None
         if "=" in self.display_options:
             # parse the display options as a dictionary:
+            from xpra.util.parsing import parse_simple_dict
             opt_dict = parse_simple_dict(self.display_options)
             windows = opt_dict.get("windows")
             if windows:
@@ -361,159 +332,12 @@ class GTKShadowServerBase(ShadowServerBase):
             from xpra.gtk.notifier import GTKNotifier  # pylint: disable=import-outside-toplevel
             ncs.append(GTKNotifier)
         except Exception as e:
+            notifylog = Logger("notify")
             notifylog("get_notifier_classes()", exc_info=True)
             notifylog.warn("Warning: cannot load GTK notifier:")
             notifylog.warn(" %s", e)
         return ncs
 
-    ############################################################################
-    # system tray methods, mostly copied from the gtk client...
-    # (most of these should probably be moved to a common location instead)
-
-    def cleanup_tray(self) -> None:
-        tw = self.tray_widget
-        traylog("cleanup_tray() tray_widget=%s", tw)
-        if tw:
-            self.tray_widget = None
-            tw.cleanup()
-
-    def setup_tray(self) -> None:
-        if OSX:
-            return
-        Gdk = gi_import("Gdk")
-        Gtk = gi_import("Gtk")
-        display = Gdk.Display.get_default()
-        if not display:
-            # usually this is wayland shadow server:
-            traylog("no access to the display, cannot setup tray")
-            return
-        try:
-            # menu:
-            label = "Xpra Shadow Server"
-            display = os.environ.get("DISPLAY", "")
-            if POSIX and display:
-                label = f"Xpra {display} Shadow Server"
-            self.tray_menu = Gtk.Menu()
-            with SilenceWarningsContext(DeprecationWarning):
-                self.tray_menu.set_title(label)
-            title_item = Gtk.MenuItem()
-            title_item.set_label(label)
-            title_item.set_sensitive(False)
-            title_item.show()
-            self.tray_menu.append(title_item)
-
-            def show_about(*_args):
-                from xpra.gtk.dialogs.about import about  # pylint: disable=import-outside-toplevel
-                about()
-
-            self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", cb=show_about))
-            if features.window:
-                def readonly_toggled(menuitem) -> None:
-                    log("readonly_toggled(%s)", menuitem)
-                    ro = menuitem.get_active()
-                    if ro != self.readonly:
-                        self.readonly = ro
-                        self.setting_changed("readonly", ro)
-
-                from xpra.gtk.widget import checkitem
-                self.tray_menu.append(checkitem("Read-only", cb=readonly_toggled, active=self.readonly))
-            self.tray_menu.append(self.traymenuitem("Exit", "quit.png", cb=self.tray_exit_callback))
-            self.tray_menu.append(self.traymenuitem("Close Menu", "close.png", cb=self.close_tray_menu))
-            # maybe add: session info, clipboard, sharing, etc
-            # control: disconnect clients
-            self.tray_menu.connect("deactivate", self.tray_menu_deactivated)
-            self.tray_widget = self.make_tray_widget()
-            self.set_tray_icon(self.tray_icon or "server-notconnected")
-        except ImportError as e:
-            traylog("setup_tray()", exc_info=True)
-            traylog.warn("Warning: failed to load systemtray:")
-            traylog.warn(" %s", e)
-        except Exception as e:
-            traylog("error setting up %s", self.tray_widget, exc_info=True)
-            traylog.error("Error setting up system tray:")
-            traylog.estr(e)
-
-    def make_tray_widget(self):
-        # pylint: disable=import-outside-toplevel
-        from xpra.platform.systray import get_backends
-        classes = get_backends()
-        try:
-            from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
-            classes.append(GTKStatusIconTray)
-        except ImportError:
-            traylog("no GTKStatusIconTray", exc_info=True)
-        traylog("tray classes: %s", classes)
-        if not classes:
-            traylog.error("Error: no system tray implementation available")
-            return None
-        errs = []
-        for c in classes:
-            try:
-                w = c(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server",
-                      icon_filename="server-notconnected.png",
-                      click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
-                if w:
-                    traylog(f"server system tray widget using {c}(..)={w}")
-                    return w
-                traylog(f"{c}(..) returned None")
-                errs.append((c, "returned None"))
-            except Exception as e:
-                traylog(f"{c}(..)", exc_info=True)
-                errs.append((c, e))
-        traylog.error("Error: all system tray implementations have failed")
-        for c, err in errs:
-            traylog.error(" %s: %s", c, err)
-        return None
-
-    def set_tray_icon(self, filename: str) -> None:
-        if not self.tray_widget:
-            return
-        try:
-            self.tray_widget.set_icon(filename)
-        except Exception as e:
-            traylog.warn("Warning: failed to set tray icon to %s", filename)
-            traylog.warn(" %s", e)
-
-    def traymenuitem(self, title: str, icon_name="", tooltip="", cb: Callable = noop):  # -> Gtk.ImageMenuItem:
-        """ Utility method for easily creating an ImageMenuItem """
-        # pylint: disable=import-outside-toplevel
-        from xpra.gtk.widget import menuitem
-        image = None
-        if icon_name:
-            image = get_icon_image(icon_name)
-        return menuitem(title, image, tooltip, cb)
-
-    def tray_menu_deactivated(self, *_args) -> None:
-        self.tray_menu_shown = False
-
-    def tray_click_callback(self, button: int, pressed: int, time=0) -> None:
-        traylog("tray_click_callback(%s, %s, %i) tray menu=%s, shown=%s",
-                button, pressed, time, self.tray_menu, self.tray_menu_shown)
-        if pressed:
-            self.close_tray_menu()
-        else:
-            # status icon can give us a position function:
-            # except this doesn't work and nothing happens!
-            # position_menu = self.tray_widget.tray_widget.position_menu
-            # pos = position_menu(self.tray_menu, x, y, self.tray_widget.tray_widget)
-            if POSIX and not OSX:
-                self.tray_menu.popup_at_pointer()
-            else:
-                with SilenceWarningsContext(DeprecationWarning):
-                    self.tray_menu.popup(None, None, None, None, button, time)
-            self.tray_menu_shown = True
-
-    def tray_exit_callback(self, *_args) -> None:
-        self.close_tray_menu()
-        GLib.idle_add(self.clean_quit, False)
-
-    def close_tray_menu(self, *_args) -> None:
-        if self.tray_menu_shown:
-            self.tray_menu.popdown()
-            self.tray_menu_shown = False
-
-    ############################################################################
-    # screenshot
     def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
         assert len(self._id_to_window) == 1, "multi root window screenshot not implemented yet"
         rwm = self._id_to_window.values()[0]

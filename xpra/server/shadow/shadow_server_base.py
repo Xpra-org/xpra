@@ -81,6 +81,7 @@ class ShadowServerBase(ServerBase):
         self.pointer_poll_timer = 0
         self.last_cursor_data = None
         self.session_name = "shadow"
+        self.session_type = "shadow"
         self.keyboard_config = None
         batch_config.ALWAYS = True  # always batch
 

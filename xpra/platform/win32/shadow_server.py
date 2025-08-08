@@ -17,7 +17,6 @@ from xpra.util.env import envbool
 from xpra.util.system import is_VirtualBox
 from xpra.common import XPRA_APP_ID
 from xpra.scripts.config import InitException
-from xpra.server.subsystem.gtk import get_default_display
 from xpra.server.shadow.shadow_server_base import try_setup_capture
 from xpra.gtk.capture import GTKImageCapture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -385,7 +384,10 @@ class ShadowServer(GTKShadowServerBase):
             return
         w, h = size
         try:
-            display = get_default_display()
+            from xpra.os_util import gi_import
+            Gdk = gi_import("Gdk")
+            manager = Gdk.DisplayManager.get()
+            display = manager.get_default_display()
             display_name = prettify_plug_name(display.get_name())
         except Exception:
             display_name = ""

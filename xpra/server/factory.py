@@ -46,6 +46,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.gtk:
         from xpra.server.subsystem.gtk import GTKServer
         classes.append(GTKServer)
+    if features.tray:
+        from xpra.server.subsystem.tray import TrayMenu
+        classes.append(TrayMenu)
 
     # `Dbus` must be placed before `Power`, `DisplayServer` and `NotificationForwarder`
     if features.dbus:

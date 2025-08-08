@@ -281,6 +281,7 @@ def set_server_features(opts, mode: str) -> None:
         features.power = features.suspend = features.idle = False
         features.ssh = False
         features.gtk = False
+        features.tray = False
     else:
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
@@ -309,6 +310,7 @@ def set_server_features(opts, mode: str) -> None:
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0
         features.gtk = POSIX or OSX or mode not in ("desktop", "seamless")
+        features.tray = b(opts.tray) and mode == "shadow"
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()
@@ -354,6 +356,7 @@ def enforce_server_features() -> None:
         "cursor": "xpra.server.subsystem.cursor,xpra.server.source.cursor",
         "rfb": "xpra.net.rfb,xpra.server.rfb",
         "http": "xpra.net.http,xpra.server.subsystem.http",
+        "tray": "xpra.server.subsystem.tray",
     })
     may_block_numpy()
 
