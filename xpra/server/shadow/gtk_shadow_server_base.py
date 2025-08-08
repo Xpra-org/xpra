@@ -205,9 +205,11 @@ class GTKShadowServerBase(ShadowServerBase):
                 match_str = self.display_options
         log(f"make_capture_window_models() multi_window={self.multi_window}")
         if not self.multi_window or geometries:
-            from xpra.gtk.util import get_default_root_window
-            root = get_default_root_window()
-            for geometry in (geometries or (root.get_geometry()[:4],)):
+            if not geometries:
+                from xpra.gtk.util import get_root_size
+                rw, rh = get_root_size()
+                geometries = ((0, 0, rw, rh), )
+            for geometry in geometries:
                 model = model_class(self.capture, display_name, geometry)
                 models.append(model)
             return models
@@ -308,7 +310,7 @@ class GTKShadowServerBase(ShadowServerBase):
         return self.tray_widget
 
     def get_notifier_classes(self) -> list[Callable]:
-        ncs: list[Callable] = list(ShadowServerBase.get_notifier_classes(self))
+        ncs: list[Callable] = list(super().get_notifier_classes())
         try:
             from xpra.gtk.notifier import GTKNotifier  # pylint: disable=import-outside-toplevel
             ncs.append(GTKNotifier)
