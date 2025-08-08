@@ -35,6 +35,13 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 MAX_ARGB_PIXELS = envint("XPRA_MAX_ARGB_PIXELS", 1024)
 
 
+def no_default_window_icon(_size: int, _name: str):
+    return ""
+
+
+get_default_window_icon = no_default_window_icon
+
+
 class WindowIconSource:
     """
     Mixin for handling the sending of window icon pixels.
@@ -118,31 +125,7 @@ class WindowIconSource:
         wmclass_name = self.get_window_wm_class_name()
         if not wmclass_name:
             return None
-        Gtk = gi_import("Gtk")
-        it = Gtk.IconTheme.get_default()  # pylint: disable=no-member
-        log("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
-        for icon_name in (
-                f"{wmclass_name}-color",
-                wmclass_name,
-                f"{wmclass_name}_{size}x{size}",
-                f"application-x-{wmclass_name}",
-                f"{wmclass_name}-symbolic",
-                f"{wmclass_name}.symbolic",
-        ):
-            i = it.lookup_icon(icon_name, size, 0)
-            log("lookup_icon(%s)=%s", icon_name, i)
-            if not i:
-                continue
-            try:
-                pixbuf = i.load_icon()
-                log("load_icon()=%s", pixbuf)
-                if pixbuf:
-                    w, h = pixbuf.props.width, pixbuf.props.height
-                    log("using '%s' pixbuf %ix%i", icon_name, w, h)
-                    return w, h, "RGBA", pixbuf.get_pixels()
-            except Exception:
-                log("%s.load_icon()", i, exc_info=True)
-        return None
+        return get_default_window_icon(size, wmclass_name)
 
     def get_window_wm_class_name(self) -> str:
         try:

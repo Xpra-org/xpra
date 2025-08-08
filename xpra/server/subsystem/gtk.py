@@ -7,6 +7,7 @@
 import os
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.util.system import is_X11
 from xpra.util.version import dict_version_trim
 from xpra.scripts.config import InitExit
@@ -29,6 +30,40 @@ def gdk_init() -> None:
     if os.environ.get("NO_AT_BRIDGE") is None:
         os.environ["NO_AT_BRIDGE"] = "1"
     init_gdk_display_source()
+    # inject Gtk into the windowicon lookup:
+    try:
+        from xpra.server.window import windowicon
+        windowicon.get_default_window_icon = get_default_window_icon
+    except ImportError:
+        pass
+
+
+def get_default_window_icon(size: int, wmclass_name: str):
+    Gtk = gi_import("Gtk")
+    it = Gtk.IconTheme.get_default()  # pylint: disable=no-member
+    log("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
+    for icon_name in (
+            f"{wmclass_name}-color",
+            wmclass_name,
+            f"{wmclass_name}_{size}x{size}",
+            f"application-x-{wmclass_name}",
+            f"{wmclass_name}-symbolic",
+            f"{wmclass_name}.symbolic",
+    ):
+        i = it.lookup_icon(icon_name, size, 0)
+        log("lookup_icon(%s)=%s", icon_name, i)
+        if not i:
+            continue
+        try:
+            pixbuf = i.load_icon()
+            log("load_icon()=%s", pixbuf)
+            if pixbuf:
+                w, h = pixbuf.props.width, pixbuf.props.height
+                log("using '%s' pixbuf %ix%i", icon_name, w, h)
+                return w, h, "RGBA", pixbuf.get_pixels()
+        except Exception:
+            log("%s.load_icon()", i, exc_info=True)
+    return None
 
 
 class GTKServer(StubServerMixin):
@@ -54,7 +89,6 @@ class GTKServer(StubServerMixin):
     def setup(self) -> None:
         gdk_init()
         if features.window:
-            from xpra.os_util import gi_import
             Gdk = gi_import("Gdk")
             screen = Gdk.Screen.get_default()
             if screen:
