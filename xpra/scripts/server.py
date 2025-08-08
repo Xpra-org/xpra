@@ -310,7 +310,7 @@ def set_server_features(opts, mode: str) -> None:
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0
         features.gtk = POSIX or OSX or mode not in ("desktop", "seamless")
-        features.tray = b(opts.tray) and mode == "shadow"
+        features.tray = features.gtk and b(opts.tray) and mode == "shadow"
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()
