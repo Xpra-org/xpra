@@ -136,7 +136,7 @@ class TrayMenu(StubServerMixin):
         from xpra.platform.systray import get_backends
         classes = get_backends()
         try:
-            from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
+            from xpra.gtk.statusicon_tray import GTKStatusIconTray
             classes.append(GTKStatusIconTray)
         except ImportError:
             log("no GTKStatusIconTray", exc_info=True)

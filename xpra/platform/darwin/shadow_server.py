@@ -127,7 +127,7 @@ class ShadowServer(GTKShadowServerBase):
         return KeyboardConfig()
 
     def make_tray_widget(self):
-        from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
+        from xpra.gtk.statusicon_tray import GTKStatusIconTray
         return GTKStatusIconTray(self, 0, self.tray, "Xpra Shadow Server",
                                  click_cb=self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
 

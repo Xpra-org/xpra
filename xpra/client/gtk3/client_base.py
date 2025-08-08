@@ -789,7 +789,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def _add_statusicon_tray(self, tray_classes: list[type]) -> list[type]:
         if not is_Wayland():
             try:
-                from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
+                from xpra.gtk.statusicon_tray import GTKStatusIconTray
                 # unlikely to work with gnome:
                 PREFER_STATUSICON = envbool("XPRA_PREFER_STATUSICON", False)
                 if PREFER_STATUSICON:

@@ -6,7 +6,7 @@
 from time import monotonic
 
 from xpra.os_util import gi_import
-from xpra.client.gui.tray_base import TrayBase
+from xpra.tray_base import TrayBase
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.platform.darwin.menu import getOSXMenuHelper
 from xpra.platform.darwin import set_exit_cb

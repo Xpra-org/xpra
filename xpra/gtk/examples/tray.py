@@ -109,7 +109,7 @@ class FakeApplication:
         menu = self.menu_helper.build()
         tray_classes = list(get_backends())
         try:
-            from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
+            from xpra.gtk.statusicon_tray import GTKStatusIconTray
             tray_classes.append(GTKStatusIconTray)
         except ImportError:
             log("no StatusIcon tray")

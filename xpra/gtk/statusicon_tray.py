@@ -11,7 +11,7 @@ from time import time, monotonic
 
 from xpra.os_util import WIN32, OSX, POSIX, gi_import
 from xpra.util.env import envbool, ignorewarnings
-from xpra.client.gui.tray_base import TrayBase, log
+from xpra.tray_base import TrayBase, log
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_icon_from_file, get_pixbuf_from_data
 
