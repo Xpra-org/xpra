@@ -17,7 +17,6 @@ from xpra.util.env import envbool
 from xpra.common import NotificationID
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
-from xpra.gtk.capture import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.x11.server.server_uuid import del_mode, del_uuid
 from xpra.x11.prop import prop_get
@@ -321,6 +320,7 @@ def setup_xshm_capture():
 
 def setup_gtk_capture():
     from xpra.gtk.util import get_default_root_window
+    from xpra.gtk.capture import GTKImageCapture
     root = get_default_root_window()
     return GTKImageCapture(root)
 
@@ -442,9 +442,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         log(f"verify_capture({ss})")
         nid = NotificationID.DISPLAY
         try:
-            from xpra.gtk.util import get_default_root_window
-            root = get_default_root_window()
-            capture = GTKImageCapture(root)
+            capture = setup_gtk_capture()
             bdata = capture.take_screenshot()[-1]
             title = body = ""
             if any(b != 0 for b in bdata):
@@ -477,9 +475,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         return info
 
     def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
-        from xpra.gtk.util import get_default_root_window
-        root = get_default_root_window()
-        capture = GTKImageCapture(root)
+        capture = setup_gtk_capture()
         w, h, encoding, rowstride, data = capture.take_screenshot()
         assert encoding == "png"  # use fixed encoding for now
         # pylint: disable=import-outside-toplevel
