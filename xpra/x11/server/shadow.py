@@ -17,7 +17,7 @@ from xpra.util.env import envbool
 from xpra.common import NotificationID
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
-from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
+from xpra.gtk.capture import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.x11.server.server_uuid import del_mode, del_uuid
 from xpra.x11.prop import prop_get

@@ -184,7 +184,7 @@ class BugReport:
         if take_screenshot_fn == noop:
             # default: gtk screen capture
             try:
-                from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
+                from xpra.gtk.capture import GTKImageCapture
                 rwm = GTKImageCapture(get_default_root_window())
                 take_screenshot_fn = rwm.take_screenshot
             except (ImportError, AttributeError):

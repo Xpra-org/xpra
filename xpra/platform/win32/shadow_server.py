@@ -19,7 +19,7 @@ from xpra.common import XPRA_APP_ID
 from xpra.scripts.config import InitException
 from xpra.server.subsystem.gtk import get_default_display
 from xpra.server.shadow.shadow_server_base import try_setup_capture
-from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
+from xpra.gtk.capture import GTKImageCapture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
