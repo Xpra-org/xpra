@@ -309,7 +309,7 @@ def set_server_features(opts, mode: str) -> None:
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0
-        features.gtk = POSIX or OSX or mode not in ("desktop", "seamless")
+        features.gtk = (POSIX or OSX or mode not in ("desktop", "seamless")) and envbool("XPRA_GTK", True)
         features.tray = features.gtk and b(opts.tray) and mode == "shadow"
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
@@ -412,12 +412,13 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
         if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
             return False
         log(f"X11 display {display_name!r} is ready")
-    # we're going to load gtk:
-    bypass_no_gtk()
-    display = verify_gdk_display(display_name)
-    if not display:
-        return False
-    log(f"GDK can access the display {display_name!r}")
+    if POSIX and not OSX and envbool("XPRA_GTK", True):
+        # we're going to load gtk:
+        bypass_no_gtk()
+        display = verify_gdk_display(display_name)
+        if not display:
+            return False
+        log(f"GDK can access the display {display_name!r}")
     return True
 
 
@@ -677,6 +678,10 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     validate_encryption(opts)
     if opts.encoding == "help" or "help" in opts.encodings:
         return show_encoding_help(opts)
+
+    if not envbool("XPRA_GTK", True):
+        from xpra.scripts.main import no_gi_gtk_modules
+        no_gi_gtk_modules()
 
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])

@@ -19,7 +19,6 @@ from xpra.keyboard.mask import (
     DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names,
 )
 from xpra.server.keyboard_config_base import KeyboardConfigBase
-from xpra.x11.gtk.keys import grok_modifier_map
 from xpra.x11.xkbhelper import (
     do_set_keymap, set_all_keycodes, set_keycode_translation,
     get_modifiers_from_meanings, get_modifiers_from_keycodes,
@@ -33,8 +32,6 @@ from xpra.log import Logger
 
 log = Logger("keyboard")
 verboselog = Logger("keyboard", "verbose")
-
-Gdk = gi_import("Gdk")
 
 XTest = XTestBindings()
 X11Keyboard = X11KeyboardBindings()
@@ -263,6 +260,7 @@ class KeyboardConfig(KeyboardConfigBase):
         log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
 
     def compute_modifier_keynames(self) -> None:
+        Gdk = gi_import("Gdk")
         self.keycodes_for_modifier_keynames = {}
         self.mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
         keymap = get_default_keymap()
@@ -326,6 +324,7 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def compute_modifier_map(self) -> None:
         with xlog:
+            from xpra.x11.gtk.keys import grok_modifier_map
             self.modifier_map = grok_modifier_map(self.mod_meanings)
         log("modifier_map(%s)=%s", self.mod_meanings, self.modifier_map)
 

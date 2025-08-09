@@ -30,8 +30,6 @@ from xpra.log import Logger
 
 GLib = gi_import("GLib")
 GObject = gi_import("GObject")
-Gdk = gi_import("Gdk")
-GdkX11 = gi_import("GdkX11")
 
 log = Logger("server")
 focuslog = Logger("server", "focus")
@@ -589,6 +587,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             return
         from xpra.x11.gtk.bindings import get_pywindow
         gdk_window = get_pywindow(xid)
+        Gdk = gi_import("Gdk")
         if not gdk_window or gdk_window.get_window_type() == Gdk.WindowType.TEMP:
             # ignoring one of gtk's temporary windows
             # all the windows we manage should be Gdk.WINDOW_FOREIGN
@@ -1190,6 +1189,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     #
 
     def update_root_overlay(self, window, x: int, y: int, image) -> None:
+        Gdk = gi_import("Gdk")
+        GdkX11 = gi_import("GdkX11")
         display = Gdk.Display.get_default()
         overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
         wx, wy = window.get_property("geometry")[:2]
@@ -1257,6 +1258,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.repaint_root_overlay_timer = 0
         with xsync:
             root_width, root_height = X11WindowBindings().get_root_size()
+        Gdk = gi_import("Gdk")
+        GdkX11 = gi_import("GdkX11")
         display = Gdk.Display.get_default()
         overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
         log("overlaywin: %s", overlaywin.get_geometry())

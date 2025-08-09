@@ -1992,8 +1992,8 @@ def may_block_numpy() -> None:
             sys.modules["numpy"] = None
 
 
-def no_gi_gtk_modules() -> None:
-    for mod in ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication"):
+def no_gi_gtk_modules(mods=("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication")) -> None:
+    for mod in mods:
         mod_path = f"gi.repository.{mod}"
         if sys.modules.get(mod_path):
             raise RuntimeError(f"Gtk module {mod!r} is already loaded!")

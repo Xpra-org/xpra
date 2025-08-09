@@ -6,7 +6,12 @@
 
 def inject_gdk() -> None:
     from xpra.os_util import gi_import
-    Gdk = gi_import("Gdk")
+    try:
+        Gdk = gi_import("Gdk")
+    except ImportError as e:
+        from xpra.log import Logger
+        Logger("gtk").warn("Warning: unable to import Gdk: %s", e)
+        return
 
     from xpra.x11 import error
     error.Xenter = Gdk.error_trap_push
