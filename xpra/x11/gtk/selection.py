@@ -13,11 +13,10 @@ import sys
 from typing import Final
 from struct import unpack, calcsize
 
-from xpra.x11.error import xsync
+from xpra.x11.error import xsync, xlog
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
-from xpra.x11.gtk.bindings import get_pywindow
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.prop import prop_set
 from xpra.exit_codes import ExitCode
@@ -132,14 +131,16 @@ class ManagerSelection(GObject.GObject):
         if old_owner != XNone and when is self.FORCE:
             # Block in a recursive mainloop until the previous owner has
             # cleared out.
-            window = get_pywindow(old_owner)
-            if not window:
+            geom = ()
+            with xlog:
+                geom = X11Window.getGeometry(old_owner)
+            if not geom:
                 log(f"Previous owner {old_owner:x} is already gone? not blocking")
             else:
-                log(f"got owner window {window}")
-                window.set_events(window.get_events() | Gdk.EventMask.STRUCTURE_MASK)
+                log(f"got owner window {old_owner:x}: {geom}")
+                X11Window.addXSelectInput(old_owner, StructureNotifyMask)
                 log("Waiting for previous owner to exit...")
-                add_event_receiver(window.get_xid(), self)
+                add_event_receiver(old_owner, self)
                 self.exit_timer = GLib.timeout_add(SELECTION_EXIT_TIMEOUT * 1000, self.exit_timeout)
                 Gtk.main()
                 if self.exit_timer:
