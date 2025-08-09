@@ -22,6 +22,7 @@ GLib = gi_import("GLib")
 
 log = Logger("audio")
 
+NEW_STREAM_SAMPLE = os.environ.get("XPRA_NEW_STREAM_SAMPLE", "bell.wav")
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 NEW_STREAM_SOUND_STOP = envint("XPRA_NEW_STREAM_SOUND_STOP", 20)
 
@@ -289,9 +290,11 @@ class AudioMixin(StubSourceMixin):
     def new_stream_sound(self) -> None:
         if not NEW_STREAM_SOUND:
             return
-        from xpra.platform.paths import get_resources_dir  # pylint: disable=import-outside-toplevel
-        sample = os.path.abspath(os.path.normpath(os.path.join(get_resources_dir(), "bell.wav")))
-        log(f"new_stream_sound() sample={sample}, exists={os.path.exists(sample)}")
+        sample = NEW_STREAM_SAMPLE
+        if not os.path.isabs(sample):
+            from xpra.platform.paths import get_resources_dir  # pylint: disable=import-outside-toplevel
+            sample = os.path.abspath(os.path.normpath(os.path.join(get_resources_dir(), sample)))
+        log(f"new_stream_sound() sample={sample!r}, exists={os.path.exists(sample)}")
         if not os.path.exists(sample):
             return
         gst_launch = os.path.abspath(os.path.normpath(which("gst-launch-1.0") or "gst-launch-1.0"))
