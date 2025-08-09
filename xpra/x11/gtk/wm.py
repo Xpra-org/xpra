@@ -10,8 +10,8 @@ from collections.abc import Sequence
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.common import MAX_WINDOW_SIZE
-from xpra.x11.error import xsync, xswallow, xlog
 from xpra.util.gobject import no_arg_signal, one_arg_signal
+from xpra.x11.error import xsync, xswallow, xlog
 from xpra.x11.common import Unmanageable, NET_SUPPORTED, FRAME_EXTENTS
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
 from xpra.x11.gtk.selection import ManagerSelection
@@ -25,7 +25,6 @@ from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
-Gdk = gi_import("Gdk")
 
 log = Logger("x11", "window")
 
@@ -40,6 +39,7 @@ CWX: Final[int] = constants["CWX"]
 CWY: Final[int] = constants["CWY"]
 CWWidth: Final[int] = constants["CWWidth"]
 CWHeight: Final[int] = constants["CWHeight"]
+InputOnly: Final[int] = constants["InputOnly"]
 
 NotifyPointerRoot: Final[int] = constants["NotifyPointerRoot"]
 NotifyDetailNone: Final[int] = constants["NotifyDetailNone"]
@@ -81,7 +81,7 @@ class Wm(GObject.GObject):
         super().__init__()
 
         self._wm_name = wm_name
-        self._ewmh_window = None
+        self._ewmh_window = 0
 
         self._windows: dict[int, Any] = {}
         # EWMH says we have to know the order of our windows oldest to
@@ -301,10 +301,12 @@ class Wm(GObject.GObject):
         remove_fallback_receiver("x11-child-map-request-event", self)
         for win in tuple(self._windows.values()):
             win.unmanage(True)
-        xid = self._ewmh_window.get_xid()
-        with xswallow:
-            prop_del(xid, "_NET_SUPPORTING_WM_CHECK")
-            prop_del(xid, "_NET_WM_NAME")
+        xid = self._ewmh_window
+        if xid:
+            self._ewmh_window = 0
+            with xswallow:
+                prop_del(xid, "_NET_SUPPORTING_WM_CHECK")
+                prop_del(xid, "_NET_WM_NAME")
         destroy_world_window()
 
     def do_x11_child_map_request_event(self, event) -> None:
@@ -387,23 +389,23 @@ class Wm(GObject.GObject):
         # clobber any `XSelectInput` calls that *we* might have wanted to make
         # on this window.)  Also, GDK might silently swallow all events that
         # are detected on it, anyway.
-        from xpra.x11.gtk.native_window import GDKX11Window
-        from xpra.gtk.util import get_default_root_window
-        root = get_default_root_window()
-        self._ewmh_window = GDKX11Window(root, wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=self._wm_name)
-        xid = self._ewmh_window.get_xid()
+        rxid = get_root_xid()
+        xid = X11Window.CreateWindow(rxid, -1, -1, inputoutput=InputOnly)
+        prop_set(xid, "WM_TITLE", "latin1", self._wm_name)
         prop_set(xid, "_NET_SUPPORTING_WM_CHECK", "window", xid)
+        self._ewmh_window = xid
         self.root_set("_NET_SUPPORTING_WM_CHECK", "window", xid)
         self.root_set("_NET_WM_NAME", "utf8", self._wm_name)
 
     def get_net_wm_name(self) -> str:
-        try:
-            return prop_get(self._ewmh_window.get_xid(), "_NET_WM_NAME", "utf8",
-                            ignore_errors=False, raise_xerrors=False)
-        except Exception as e:
-            log.error("Error querying _NET_WM_NAME")
-            log.estr(e)
-            return ""
+        if self._ewmh_window:
+            try:
+                return prop_get(self._ewmh_window, "_NET_WM_NAME", "utf8",
+                                ignore_errors=False, raise_xerrors=False)
+            except Exception as e:
+                log.error("Error querying _NET_WM_NAME")
+                log.estr(e)
+        return ""
 
 
 GObject.type_register(Wm)
