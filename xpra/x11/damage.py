@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Final
-
 from xpra.util.env import envbool
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
@@ -14,7 +12,7 @@ from xpra.x11.common import Unmanageable
 
 from xpra.x11.bindings.ximage import XImageBindings
 from xpra.x11.bindings.shm import XShmBindings
-from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.damage import init_damage_events, XDamageBindings
 from xpra.log import Logger
 
@@ -27,7 +25,6 @@ XDamage = XDamageBindings()
 XDamage.ensure_XDamage_support()
 assert init_damage_events()
 
-StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 USE_XSHM = envbool("XPRA_XSHM", True)
 
 
