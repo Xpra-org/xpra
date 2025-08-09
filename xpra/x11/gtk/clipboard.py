@@ -6,27 +6,27 @@
 import os
 import struct
 from typing import Any, Final
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.common import noop
-from xpra.x11.error import xsync
+from xpra.x11.error import xsync, xlog
 from xpra.util.gobject import n_arg_signal, one_arg_signal
 from xpra.x11.info import get_wininfo
 from xpra.x11.error import XError
-from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
-from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
+from xpra.x11.prop import prop_set
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, PropertyError, X11WindowBindings
 from xpra.x11.bindings.fixes import XFixesBindings
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
+from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
+from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, memoryview_to_bytes
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
-Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
@@ -36,6 +36,8 @@ log = Logger("x11", "clipboard")
 
 CurrentTime: Final[int] = constants["CurrentTime"]
 StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
+InputOnly: Final[int] = constants["InputOnly"]
+PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
 
 sizeof_long = struct.calcsize(b'@L')
 
@@ -618,34 +620,35 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         "x11-xfixes-selection-notify-event": one_arg_signal,
     }
 
-    def __init__(self, send_packet_cb, progress_cb=noop, **kwargs):
+    def __init__(self, send_packet_cb: Callable, progress_cb=noop, **kwargs):
         GObject.GObject.__init__(self)
-        self.init_window()
+        with xsync:
+            self.event_window_xid = self.init_window()
+            # gtk must know about this window before we use it:
+            from xpra.x11.gtk.bindings import get_pywindow
+            self.window = get_pywindow(self.event_window_xid)
         super().__init__(send_packet_cb, progress_cb, **kwargs)
 
     def __repr__(self):
         return "X11Clipboard"
 
-    def init_window(self) -> None:
+    def init_window(self) -> int:
         rxid = get_root_xid()
-        from xpra.x11.gtk.native_window import GDKX11Window
-        from xpra.x11.gtk.bindings import get_pywindow
-        root = get_pywindow(rxid)
-        self.window = GDKX11Window(root, width=1, height=1,
-                                   title="Xpra-Clipboard",
-                                   wclass=Gdk.WindowWindowClass.INPUT_ONLY)
-        self.window.set_events(Gdk.EventMask.PROPERTY_CHANGE_MASK | self.window.get_events())
-        xid = self.window.get_xid()
-        with xsync:
-            X11Window.selectSelectionInput(xid)
+        xid = X11Window.CreateWindow(rxid, -1, -1, inputoutput=InputOnly, event_mask=PropertyChangeMask)
+        prop_set(xid, "WM_TITLE", "latin1", "Xpra-Clipboard")
+        X11Window.selectSelectionInput(xid)
         add_event_receiver(xid, self)
+        log(f"init_window() {xid=}")
+        return xid
 
     def cleanup_window(self) -> None:
-        w = self.window
-        if w:
-            self.window = None
-            remove_event_receiver(w.get_xid(), self)
-            w.hide()
+        xid = self.event_window_xid
+        if xid:
+            self.event_window_xid = None
+            remove_event_receiver(xid, self)
+            # X11Window.Unmap(xid)
+            with xlog:
+                X11Window.DestroyWindow(xid)
 
     def cleanup(self) -> None:
         ClipboardTimeoutHelper.cleanup(self)
@@ -653,7 +656,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
 
     def make_proxy(self, selection) -> ClipboardProxy:
         root_xid = get_root_xid()
-        xid = self.window.get_xid()
+        xid = self.event_window_xid
         proxy = ClipboardProxy(xid, selection)
         proxy.set_want_targets(self._want_targets)
         proxy.set_direction(self.can_send, self.can_receive)

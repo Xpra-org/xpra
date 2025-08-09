@@ -645,7 +645,8 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return self.CreateWindow(parent, x, y, width, height, OR=False, event_mask=event_mask)
 
     def CreateWindow(self, Window parent, int x=0, int y=0, int width=1, int height=1,
-                           depth=0, int OR=0, long event_mask=0, unsigned long visualid=0) -> Window:
+                           depth=0, int OR=0, long event_mask=0,
+                           int inputoutput=InputOutput, unsigned long visualid=0) -> Window:
         self.context_check("CreateWindow")
         cdef XSetWindowAttributes attributes
         memset(<void*> &attributes, 0, sizeof(XSetWindowAttributes))
@@ -654,14 +655,15 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if OR:
             valuemask |= CWOverrideRedirect
             attributes.override_redirect = 1
-        if depth == 0:
-            depth = self.get_depth(parent)
         cdef Visual* visual = <Visual*> CopyFromParent
-        if visualid:
-            visual = self.get_visual(visualid)
+        if inputoutput != InputOnly:
+            if depth == 0:
+                depth = self.get_depth(parent)
+            if visualid:
+                visual = self.get_visual(visualid)
         return XCreateWindow(self.display, parent,
                              x, y, width, height, 0, depth,
-                             InputOutput, visual,
+                             inputoutput, visual,
                              valuemask, &attributes)
 
     cdef Visual* get_visual(self, int visualid) noexcept:

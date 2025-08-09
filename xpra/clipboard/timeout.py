@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.common import noop
@@ -36,7 +37,7 @@ REMOTE_TIMEOUT = env_timeout("REMOTE", 2500)
 class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     # a clipboard superclass that handles timeouts
 
-    def __init__(self, send_packet_cb, progress_cb=noop, **kwargs):
+    def __init__(self, send_packet_cb: Callable, progress_cb=noop, **kwargs):
         super().__init__(send_packet_cb, progress_cb, **kwargs)
         self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
 

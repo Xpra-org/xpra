@@ -315,7 +315,6 @@ class DisplayManager(StubServerMixin):
         kill_xvfb(self.display_pid)
 
     def print_screen_info(self) -> None:
-        log.warn("print_screen_info display")
         for x in self.get_display_description().split("\n"):
             log.info(x)
 
