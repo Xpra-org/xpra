@@ -20,7 +20,6 @@ from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence, Callable
 
 from xpra import __version__
-from xpra.gtk.util import verify_gdk_display
 from xpra.scripts.session import (
     get_session_dir, make_session_dir, session_file_path,
     load_session_file, save_session_file
@@ -29,7 +28,7 @@ from xpra.util.io import info, warn, wait_for_socket, which
 from xpra.util.parsing import parse_str_dict
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.main import (
-    no_gtk, bypass_no_gtk, nox,
+    no_gtk, nox,
     validate_encryption, parse_env, configure_env,
     stat_display_socket, get_xpra_sessions,
     make_progress_process,
@@ -412,13 +411,6 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
         if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
             return False
         log(f"X11 display {display_name!r} is ready")
-    if POSIX and not OSX and envbool("XPRA_GTK", True):
-        # we're going to load gtk:
-        bypass_no_gtk()
-        display = verify_gdk_display(display_name)
-        if not display:
-            return False
-        log(f"GDK can access the display {display_name!r}")
     return True
 
 

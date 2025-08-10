@@ -6,6 +6,7 @@
 
 import os
 from typing import Any
+from subprocess import Popen
 
 from xpra.os_util import gi_import
 from xpra.util.system import is_X11
@@ -68,6 +69,7 @@ def get_default_window_icon(size: int, wmclass_name: str):
 class GTKServer(StubServerMixin):
 
     def __init__(self):
+        self.xvfb: Popen | None = None
         self.display = os.environ.get("DISPLAY", "")
         self.x11_filter = False
 
@@ -89,6 +91,11 @@ class GTKServer(StubServerMixin):
 
     def setup(self) -> None:
         if is_X11():
+            from xpra.scripts.server import verify_display
+            if not verify_display(xvfb=self.xvfb, display_name=self.display):
+                from xpra.scripts.config import InitExit
+                from xpra.exit_codes import ExitCode
+                raise InitExit(ExitCode.NO_DISPLAY, f"unable to access display {self.display!r}")
             gdk_init()
             from xpra.x11.gtk.bindings import init_x11_filter
             self.x11_filter = init_x11_filter()
