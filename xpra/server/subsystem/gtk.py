@@ -11,9 +11,7 @@ from xpra.os_util import gi_import
 from xpra.util.system import is_X11
 from xpra.util.version import dict_version_trim
 from xpra.util.screen import prettify_plug_name
-from xpra.scripts.config import InitExit
 from xpra.common import FULL_INFO
-from xpra.exit_codes import ExitCode
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.server import features
 from xpra.server.subsystem.stub import StubServerMixin
@@ -90,20 +88,17 @@ class GTKServer(StubServerMixin):
         keymap.connect("keys-changed", self.keymap_changed)
 
     def setup(self) -> None:
+        if is_X11():
+            gdk_init()
+            from xpra.x11.gtk.bindings import init_x11_filter
+            self.x11_filter = init_x11_filter()
+            assert self.x11_filter
         if features.window:
             Gdk = gi_import("Gdk")
             screen = Gdk.Screen.get_default()
             if screen:
                 screen.connect("size-changed", self._screen_size_changed)
                 screen.connect("monitors-changed", self._monitors_changed)
-        if is_X11():
-            gdk_init()
-            from xpra.scripts.server import verify_gdk_display
-            if not verify_gdk_display(self.display):
-                raise InitExit(ExitCode.NO_DISPLAY, f"Gdk is unable to access display {self.display!r}")
-            from xpra.x11.gtk.bindings import init_x11_filter
-            self.x11_filter = init_x11_filter()
-            assert self.x11_filter
 
     def cleanup(self) -> None:
         if not self.x11_filter:
