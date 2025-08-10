@@ -404,13 +404,13 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     # check that we can access the X11 display:
     from xpra.log import Logger
     log = Logger("screen", "x11")
-    if xvfb:
-        from xpra.x11.vfb_util import verify_display_ready, VFB_WAIT
-        if timeout is None:
-            timeout = VFB_WAIT
-        if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
-            return False
-        log(f"X11 display {display_name!r} is ready")
+    log("verify_display%s", (xvfb, display_name, shadowing, log_errors, timeout))
+    from xpra.x11.vfb_util import verify_display_ready, VFB_WAIT
+    if timeout is None:
+        timeout = VFB_WAIT
+    if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
+        return False
+    log(f"X11 display {display_name!r} is ready")
     return True
 
 
