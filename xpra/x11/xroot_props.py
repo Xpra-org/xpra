@@ -5,17 +5,19 @@
 # later version. See the file COPYING for details.
 
 from typing import Final
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import xsync
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.prop import prop_set, prop_get
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "util")
+screenlog = Logger("x11", "screen")
 
 GObject = gi_import("GObject")
 
@@ -24,6 +26,54 @@ PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
 X11Window = X11WindowBindings()
 
 rxid = get_root_xid()
+
+
+def root_set(prop: str, vtype, value) -> None:
+    prop_set(rxid, prop, vtype, value)
+
+
+def root_get(*args, **kwargs):
+    return prop_get(rxid, *args, **kwargs)
+
+
+def set_supported() -> None:
+    from xpra.x11.common import NET_SUPPORTED
+    root_set("_NET_SUPPORTED", ["atom"], NET_SUPPORTED)
+
+
+def set_workarea(x: int, y: int, width: int, height: int) -> None:
+    v = (x, y, width, height)
+    screenlog("_NET_WORKAREA=%s", v)
+    root_set("_NET_WORKAREA", ["u32"], v)
+
+
+def set_desktop_list(desktops: Sequence[str]) -> None:
+    log("set_desktop_list(%s)", desktops)
+    root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
+    root_set("_NET_DESKTOP_NAMES", ["utf8"], desktops)
+
+
+def set_current_desktop(index: int) -> None:
+    root_set("_NET_CURRENT_DESKTOP", "u32", index)
+
+
+def set_desktop_geometry(width: int, height: int) -> None:
+    v = (width, height)
+    screenlog("_NET_DESKTOP_GEOMETRY=%s", v)
+    root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
+
+
+def get_desktop_geometry() -> tuple[int, int]:
+    desktop_geometry = root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
+    if desktop_geometry and len(desktop_geometry) == 2:
+        return int(desktop_geometry[0]), int(desktop_geometry[1])
+    with xsync:
+        root_w, root_h = X11Window.getGeometry(rxid)[2:4]
+        return root_w, root_h
+
+
+def set_desktop_viewport(x=0, y=0) -> None:
+    root_set("_NET_DESKTOP_VIEWPORT", ["u32"], (x, y))
 
 
 class XRootPropWatcher(GObject.GObject):

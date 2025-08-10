@@ -375,7 +375,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def set_desktop_geometry(self, width: int, height: int) -> None:
         wm = self._wm
         if wm:
-            wm.set_desktop_geometry(width, height)
+            wm.update_desktop_geometry(width, height)
 
     def set_dpi(self, xdpi: int, ydpi: int) -> None:
         # this is used by some newer versions of the dummy driver (xf86-driver-dummy)

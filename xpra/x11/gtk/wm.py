@@ -5,20 +5,24 @@
 # later version. See the file COPYING for details.
 
 from typing import Any, Final
-from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xsync, xswallow, xlog
-from xpra.x11.common import Unmanageable, NET_SUPPORTED, FRAME_EXTENTS
+from xpra.x11.common import Unmanageable, FRAME_EXTENTS
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
 from xpra.x11.gtk.selection import ManagerSelection
 from xpra.x11.gtk.world_window import WorldWindow, destroy_world_window
 from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.window_info import window_name, window_info
+from xpra.x11.xroot_props import (
+    set_desktop_list, set_current_desktop, set_desktop_viewport, set_desktop_geometry, get_desktop_geometry,
+    set_supported, set_workarea,
+    root_set,
+)
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -47,6 +51,9 @@ NotifyDetailNone: Final[int] = constants["NotifyDetailNone"]
 LOG_MANAGE_FAILURES = envbool("XPRA_LOG_MANAGE_FAILURES", False)
 
 DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
+
+
+rxid = get_root_xid()
 
 
 class Wm(GObject.GObject):
@@ -103,16 +110,15 @@ class Wm(GObject.GObject):
 
         # Set up the necessary EWMH properties on the root window.
         self._setup_ewmh_window()
-        # Start with just one desktop:
-        self.set_desktop_list(("Main",))
-        self.set_current_desktop(0)
-        # Start with the full display as workarea:
-        rxid = get_root_xid()
         root_w, root_h = X11Window.getGeometry(rxid)[2:4]
-        self.root_set("_NET_SUPPORTED", ["atom"], NET_SUPPORTED)
-        self.set_workarea(0, 0, root_w, root_h)
-        self.set_desktop_geometry(root_w, root_h)
-        self.root_set("_NET_DESKTOP_VIEWPORT", ["u32"], [0, 0])
+        # Start with just one desktop:
+        set_desktop_list(("Main",))
+        set_current_desktop(0)
+        set_supported()
+        # Start with the full display as workarea:
+        set_workarea(0, 0, root_w, root_h)
+        set_desktop_geometry(root_w, root_h)
+        set_desktop_viewport(0, 0)
 
         self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
 
@@ -158,23 +164,8 @@ class Wm(GObject.GObject):
         # Tray's need to provide info for _NET_ACTIVE_WINDOW and _NET_WORKAREA
         # (and notifications for both)
 
-    @staticmethod
-    def root_set(*args) -> None:
-        prop_set(get_root_xid(), *args)
-
-    @staticmethod
-    def root_get(*args, **kwargs):
-        return prop_get(get_root_xid(), *args, **kwargs)
-
-    def set_workarea(self, x: int, y: int, width: int, height: int) -> None:
-        v = [x, y, width, height]
-        screenlog("_NET_WORKAREA=%s", v)
-        self.root_set("_NET_WORKAREA", ["u32"], v)
-
-    def set_desktop_geometry(self, width: int, height: int) -> None:
-        v = (width, height)
-        screenlog("_NET_DESKTOP_GEOMETRY=%s", v)
-        self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
+    def update_desktop_geometry(self, width: int, height: int) -> None:
+        set_desktop_geometry(width, height)
         # update all the windows:
         for model in self._windows.values():
             model.update_desktop_geometry(width, height)
@@ -191,7 +182,7 @@ class Wm(GObject.GObject):
         framelog("set_default_frame_extents(%s)", v)
         if not v or len(v) != 4:
             v = (0, 0, 0, 0)
-        self.root_set("DEFAULT_NET_FRAME_EXTENTS", ["u32"], v)
+        root_set("DEFAULT_NET_FRAME_EXTENTS", ["u32"], v)
         # update the models that are using the global default value:
         for win in self._windows.values():
             if win.is_OR() or win.is_tray():
@@ -216,8 +207,7 @@ class Wm(GObject.GObject):
         try:
             with xsync:
                 log("_manage_client(%x)", xid)
-                desktop_geometry = self.root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
-                rxid = get_root_xid()
+                desktop_geometry = get_desktop_geometry()
                 win = WindowModel(rxid, xid, desktop_geometry, self.size_constraints)
         except Exception as e:
             if LOG_MANAGE_FAILURES or not isinstance(e, Unmanageable):
@@ -256,10 +246,9 @@ class Wm(GObject.GObject):
         # _update_window_list again.
         dtype, dformat, window_xids = prop_encode(["u32"], tuple(self._windows_in_order))
         log("prop_encode(%s)=%s", self._windows_in_order, (dtype, dformat, window_xids))
-        xid = get_root_xid()
         with xlog:
             for prop in ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING"):
-                raw_prop_set(xid, prop, "WINDOW", dformat, window_xids)
+                raw_prop_set(rxid, prop, "WINDOW", dformat, window_xids)
 
     def do_x11_client_message_event(self, event) -> None:
         # FIXME
@@ -368,14 +357,6 @@ class Wm(GObject.GObject):
     def do_x11_focus_out_event(self, event) -> None:
         focuslog("wm.do_x11_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
 
-    def set_desktop_list(self, desktops: Sequence[str]) -> None:
-        log("set_desktop_list(%s)", desktops)
-        self.root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
-        self.root_set("_NET_DESKTOP_NAMES", ["utf8"], desktops)
-
-    def set_current_desktop(self, index) -> None:
-        self.root_set("_NET_CURRENT_DESKTOP", "u32", index)
-
     def _setup_ewmh_window(self) -> None:
         # Set up a 1x1 invisible unmapped window, with which to participate in
         # EWMH's _NET_SUPPORTING_WM_CHECK protocol.  The only important things
@@ -389,13 +370,12 @@ class Wm(GObject.GObject):
         # clobber any `XSelectInput` calls that *we* might have wanted to make
         # on this window.)  Also, GDK might silently swallow all events that
         # are detected on it, anyway.
-        rxid = get_root_xid()
         xid = X11Window.CreateWindow(rxid, -1, -1, inputoutput=InputOnly)
         prop_set(xid, "WM_TITLE", "latin1", self._wm_name)
         prop_set(xid, "_NET_SUPPORTING_WM_CHECK", "window", xid)
         self._ewmh_window = xid
-        self.root_set("_NET_SUPPORTING_WM_CHECK", "window", xid)
-        self.root_set("_NET_WM_NAME", "utf8", self._wm_name)
+        root_set("_NET_SUPPORTING_WM_CHECK", "window", xid)
+        root_set("_NET_WM_NAME", "utf8", self._wm_name)
 
     def get_net_wm_name(self) -> str:
         if self._ewmh_window:
