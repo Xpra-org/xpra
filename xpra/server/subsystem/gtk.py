@@ -76,10 +76,6 @@ class GTKServer(StubServerMixin):
     def init(self, opts) -> None:
         from xpra.scripts.main import no_gtk
         no_gtk()
-        if is_X11():
-            from xpra.scripts.server import verify_gdk_display
-            if not verify_gdk_display(self.display):
-                raise InitExit(ExitCode.NO_DISPLAY, f"Gdk is unable to access display {self.display!r}")
 
     def get_display_name(self) -> str:
         Gdk = gi_import("Gdk")
@@ -94,16 +90,20 @@ class GTKServer(StubServerMixin):
         keymap.connect("keys-changed", self.keymap_changed)
 
     def setup(self) -> None:
-        gdk_init()
         if features.window:
             Gdk = gi_import("Gdk")
             screen = Gdk.Screen.get_default()
             if screen:
                 screen.connect("size-changed", self._screen_size_changed)
                 screen.connect("monitors-changed", self._monitors_changed)
-        from xpra.x11.gtk.bindings import init_x11_filter
-        self.x11_filter = init_x11_filter()
-        assert self.x11_filter
+        if is_X11():
+            gdk_init()
+            from xpra.scripts.server import verify_gdk_display
+            if not verify_gdk_display(self.display):
+                raise InitExit(ExitCode.NO_DISPLAY, f"Gdk is unable to access display {self.display!r}")
+            from xpra.x11.gtk.bindings import init_x11_filter
+            self.x11_filter = init_x11_filter()
+            assert self.x11_filter
 
     def cleanup(self) -> None:
         if not self.x11_filter:

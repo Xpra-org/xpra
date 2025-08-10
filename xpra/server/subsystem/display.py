@@ -203,6 +203,13 @@ class DisplayManager(StubServerMixin):
         self.randr = onoff.lower() not in FALSE_OPTIONS
         self.randr_exact_size = False
         self.check_xvfb()
+
+    def check_xvfb(self) -> None:
+        if not check_xvfb(self.xvfb):
+            raise InitExit(ExitCode.NO_DISPLAY, "xvfb process has terminated")
+
+    def setup(self) -> None:
+        self.check_xvfb()
         if is_X11():
             from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
             if not get_display_ptr():
@@ -218,13 +225,6 @@ class DisplayManager(StubServerMixin):
                 "xorg.conf.d/*",
                 "xorg.conf.d",
             ]
-
-    def check_xvfb(self) -> None:
-        if not check_xvfb(self.xvfb):
-            raise InitExit(ExitCode.NO_DISPLAY, "xvfb process has terminated")
-
-    def setup(self) -> None:
-        self.check_xvfb()
         from xpra.platform.gui import init as gui_init
         log("gui_init()")
         gui_init()
