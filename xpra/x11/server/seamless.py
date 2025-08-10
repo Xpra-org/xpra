@@ -365,12 +365,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     if v != "0" or i != 0:
                         name = v
             names.append(name)
-        wm.set_desktop_list(names)
+        from xpra.x11.xroot_props import set_desktop_list
+        set_desktop_list(names)
 
     def set_workarea(self, workarea) -> None:
-        wm = self._wm
-        if wm:
-            wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
+        from xpra.x11.xroot_props import set_workarea
+        set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
 
     def set_desktop_geometry(self, width: int, height: int) -> None:
         wm = self._wm
