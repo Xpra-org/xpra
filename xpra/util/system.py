@@ -233,10 +233,6 @@ def is_WSL() -> bool:
 
 
 def get_generic_os_name() -> str:
-    return do_get_generic_os_name().lower()
-
-
-def do_get_generic_os_name() -> str:
     for k, v in {
         "linux": "Linux",
         "darwin": "MacOS",

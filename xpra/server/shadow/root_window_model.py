@@ -8,7 +8,7 @@ from typing import Any
 from collections import namedtuple
 from collections.abc import Sequence
 
-from xpra.util.system import get_linux_distribution, get_generic_os_name, do_get_generic_os_name
+from xpra.util.system import get_linux_distribution, get_generic_os_name
 from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
@@ -162,7 +162,7 @@ class CaptureWindowModel:
                 "base-size": size,
             }
         if prop == "class-instance":
-            osn = do_get_generic_os_name()
+            osn = get_generic_os_name()
             if osn == "Linux":
                 try:
                     osn += "-" + get_linux_distribution()[0].replace(" ", "-")
