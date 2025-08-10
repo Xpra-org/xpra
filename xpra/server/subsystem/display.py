@@ -143,7 +143,10 @@ def _set_root_int(prop: str = "_XPRA_RANDR_EXACT_SIZE", i: int = 0) -> None:
 def get_display_pid() -> int:
     # perhaps this is an upgrade from an older version?
     # try harder to find the pid:
-    return _get_root_int("XPRA_XVFB_PID") or _get_root_int("_XPRA_SERVER_PID")
+    try:
+        return _get_root_int("XPRA_XVFB_PID") or _get_root_int("_XPRA_SERVER_PID")
+    except RuntimeError:
+        return 0
 
 
 class DisplayManager(StubServerMixin):
