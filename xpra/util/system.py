@@ -250,13 +250,19 @@ def do_get_generic_os_name() -> str:
 
 def is_X11() -> bool:
     if envbool("XPRA_NOX11", False):
+        get_util_logger().debug("is_X11() XPRA_NOX11 is set")
         return False
     try:
         from xpra import x11
         assert x11
     except ImportError:
+        get_util_logger().debug("failed to load gtk x11 bindings", exc_info=True)
         # x11 is not installed, so assume it isn't used
         return False
+    gdk_backend = os.environ.get("GDK_BACKEND", "")
+    if gdk_backend == "x11":
+        get_util_logger().debug(f"is_X11() GDK_BACKEND={gdk_backend}")
+        return True
     try:
         from xpra.x11.gtk.bindings import is_X11_Display
         return is_X11_Display()
