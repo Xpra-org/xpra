@@ -17,7 +17,6 @@ from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
-from xpra.x11.server import server_uuid
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
 from xpra.util.objects import typedict
@@ -145,7 +144,8 @@ class X11ServerCore(ServerBase):
             self.save_server_uuid()
 
     def save_server_mode(self) -> None:
-        server_uuid.save_mode(self.session_type)
+        from xpra.x11.xroot_props import root_set
+        root_set("XPRA_SERVER_MODE", "latin1", self.session_type)
 
     # noinspection PyMethodMayBeStatic
     def get_display_bit_depth(self) -> int:
@@ -209,10 +209,12 @@ class X11ServerCore(ServerBase):
 
     # noinspection PyMethodMayBeStatic
     def get_server_uuid(self) -> str:
-        return server_uuid.get_uuid()
+        from xpra.x11.xroot_props import root_get
+        return root_get("XPRA_SERVER_UUID", "latin1", ignore_errors=True) or ""
 
     def save_server_uuid(self) -> None:
-        server_uuid.save_uuid(str(self.uuid))
+        from xpra.x11.xroot_props import root_set
+        root_set("XPRA_SERVER_UUID", "latin1", self.uuid)
 
     def set_keyboard_repeat(self, key_repeat) -> None:
         with xlog:
