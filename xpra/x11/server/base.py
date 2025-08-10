@@ -19,8 +19,6 @@ from xpra.common import SYNC_ICC
 from xpra.server import features
 from xpra.x11.server.core import X11ServerCore
 from xpra.x11.server.xtest_pointer import XTestPointerDevice
-from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.prop import prop_set, prop_del
 from xpra.x11.xsettings_prop import XSettingsType, BLOCKLISTED_XSETTINGS
 from xpra.log import Logger
 
@@ -32,15 +30,6 @@ screenlog = Logger("server", "screen")
 dbuslog = Logger("dbus")
 
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
-
-
-def root_prop_set(prop_name: str, prop_type: list | tuple | str, value) -> None:
-    # pylint: disable=import-outside-toplevel
-    prop_set(get_root_xid(), prop_name, prop_type, value)
-
-
-def root_prop_del(prop_name: str) -> None:
-    prop_del(get_root_xid(), prop_name)
 
 
 def _get_antialias_hintstyle(antialias: typedict) -> str:
@@ -62,12 +51,13 @@ def _get_antialias_hintstyle(antialias: typedict) -> str:
 def save_dbus_x11_properties(dbus_env: dict):
     # now we can save values on the display
     # (we cannot access bindings until dbus has started up)
+    from xpra.x11.xroot_props import root_set
 
     def _save_int(prop_name, intval) -> None:
-        root_prop_set(prop_name, "u32", intval)
+        root_set(prop_name, "u32", intval)
 
     def _save_str(prop_name, strval) -> None:
-        root_prop_set(prop_name, "latin1", strval)
+        root_set(prop_name, "latin1", strval)
 
     # DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
     # DBUS_SESSION_BUS_PID=11406
@@ -124,9 +114,6 @@ class X11ServerBase(X11ServerCore):
             self.init_all_server_settings()
 
     # noinspection PyMethodMayBeStatic
-    def save_server_pid(self) -> None:
-        root_prop_set("XPRA_SERVER_PID", "u32", os.getpid())
-
     def clean_x11_properties(self) -> None:
         super().clean_x11_properties()
         self.do_clean_x11_properties("XPRA_SERVER_PID")
@@ -226,6 +213,7 @@ class X11ServerBase(X11ServerCore):
     def set_icc_profile(self) -> None:
         if not SYNC_ICC:
             return
+        from xpra.x11.xroot_props import root_set
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
         if len(ui_clients) != 1:
             screenlog("%i UI clients, resetting ICC profile to default", len(ui_clients))
@@ -238,16 +226,17 @@ class X11ServerBase(X11ServerCore):
                 screenlog("set_icc_profile() icc data for %s: %s (%i bytes)",
                           ui_clients[0], hexstr(data), len(data))
                 self.icc_profile = data
-                root_prop_set("_ICC_PROFILE", ["u32"], data)
-                root_prop_set("_ICC_PROFILE_IN_X_VERSION", "u32", 0 * 100 + 4)  # 0.4 -> 0*100+4*1
+                root_set("_ICC_PROFILE", ["u32"], data)
+                root_set("_ICC_PROFILE_IN_X_VERSION", "u32", 0 * 100 + 4)  # 0.4 -> 0*100+4*1
                 return
         screenlog("no icc data found in %s", icc)
         self.reset_icc_profile()
 
     def reset_icc_profile(self) -> None:
         screenlog("reset_icc_profile()")
-        root_prop_del("_ICC_PROFILE")
-        root_prop_del("_ICC_PROFILE_IN_X_VERSION")
+        from xpra.x11.xroot_props import root_del
+        root_del("_ICC_PROFILE")
+        root_del("_ICC_PROFILE_IN_X_VERSION")
         self.icc_profile = b""
 
     def reset_settings(self) -> None:
@@ -435,6 +424,7 @@ class X11ServerBase(X11ServerCore):
                 elif k == "resource-manager":
                     p = "RESOURCE_MANAGER"
                     log(f"server_settings: setting {p} to {v}")
-                    root_prop_set(p, "latin1", strtobytes(v).decode("latin1"))
+                    from xpra.x11.xroot_props import root_set
+                    root_set(p, "latin1", strtobytes(v).decode("latin1"))
                 else:
                     log.warn(f"Warning: unexpected setting {k}")

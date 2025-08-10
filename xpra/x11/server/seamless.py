@@ -21,7 +21,6 @@ from xpra.net.common import Packet, PacketElement
 from xpra.server import features, ServerExitMode
 from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.x11.common import Unmanageable, get_wm_name
-from xpra.x11.server.base import root_prop_set
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings, constants
 from xpra.x11.server.base import X11ServerBase
@@ -139,7 +138,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     @staticmethod
     def save_server_version():
         from xpra.util.version import XPRA_VERSION
-        root_prop_set("XPRA_SERVER", "latin1", XPRA_VERSION)
+        from xpra.x11.xroot_props import root_set
+        root_set("XPRA_SERVER", "latin1", XPRA_VERSION)
 
     def init_root_overlay(self) -> None:
         try:
@@ -381,8 +381,9 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         # this is used by some newer versions of the dummy driver (xf86-driver-dummy)
         # (and will not be honoured by anything else..)
         if DUMMY_DPI:
-            root_prop_set("dummy-constant-xdpi", "u32", xdpi)
-            root_prop_set("dummy-constant-ydpi", "u32", ydpi)
+            from xpra.x11.xroot_props import root_set
+            root_set("dummy-constant-xdpi", "u32", xdpi)
+            root_set("dummy-constant-ydpi", "u32", ydpi)
             screenlog("set_dpi(%i, %i)", xdpi, ydpi)
 
     def add_system_tray(self) -> None:

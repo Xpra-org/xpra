@@ -24,6 +24,7 @@ from xpra.x11.bindings.res import ResBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.composite import CompositeHelper
+from xpra.x11.xroot_props import root_get
 from xpra.x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.gtk.bindings import get_pywindow
@@ -587,7 +588,7 @@ class CoreX11WindowModel(WindowModelStub):
         v = self.get_property("frame")
         framelog("sync_frame: frame(%#x)=%s", self.xid, v)
         if not v and (not self.is_OR() and not self.is_tray()):
-            v = self.root_prop_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"])
+            v = root_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"])
         if not v:
             # default for OR, or if we don't have any other value:
             v = (0, 0, 0, 0)
@@ -619,12 +620,6 @@ class CoreX11WindowModel(WindowModelStub):
 
     def prop_set(self, key: str, ptype, value) -> None:
         prop_set(self.xid, key, ptype, value)
-
-    def root_prop_get(self, key: str, ptype, ignore_errors=True) -> object:
-        return prop_get(get_root_xid(), key, ptype, ignore_errors=ignore_errors)
-
-    def root_prop_set(self, key: str, ptype, value) -> None:
-        prop_set(get_root_xid(), key, ptype, value)
 
     def do_x11_property_notify_event(self, event) -> None:
         # X11: PropertyNotify

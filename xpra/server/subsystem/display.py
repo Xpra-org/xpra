@@ -10,7 +10,6 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.rectangle import rectangle
-
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import bytestostr
@@ -132,20 +131,13 @@ def check_xvfb(xvfb: Popen | None, timeout=0) -> bool:
 
 
 def _get_root_int(prop: str) -> int:
-    from xpra.x11.bindings.core import get_root_xid
-    from xpra.x11.prop import prop_get
-    try:
-        xid = get_root_xid()
-        return prop_get(xid, prop, "u32")
-    except Exception:
-        return 0
+    from xpra.x11.xroot_props import root_get
+    return root_get(prop, "u32", ignore_errors=True, raise_xerrors=False) or 0
 
 
 def _set_root_int(prop: str = "_XPRA_RANDR_EXACT_SIZE", i: int = 0) -> None:
-    from xpra.x11.bindings.core import get_root_xid
-    from xpra.x11.prop import prop_set
-    xid = get_root_xid()
-    prop_set(xid, prop, "u32", i)
+    from xpra.x11.xroot_props import root_set
+    root_set(prop, "u32", i)
 
 
 def get_display_pid() -> int:
@@ -282,10 +274,8 @@ class DisplayManager(StubServerMixin):
 
     def save_server_pid(self) -> None:
         from xpra.x11.error import xlog
-        from xpra.x11.prop import prop_set
         with xlog:
-            from xpra.x11.bindings.core import get_root_xid
-            prop_set(get_root_xid(), "XPRA_SERVER_PID", "u32", os.getpid())
+            _set_root_int("XPRA_SERVER_PID", os.getpid())
 
     def init_display_pid(self) -> None:
         pid = envint("XVFB_PID", 0)

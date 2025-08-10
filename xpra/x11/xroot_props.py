@@ -12,7 +12,7 @@ from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import xsync
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
-from xpra.x11.prop import prop_set, prop_get
+from xpra.x11.prop import prop_set, prop_get, prop_del
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
@@ -23,17 +23,19 @@ GObject = gi_import("GObject")
 
 PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
 
-X11Window = X11WindowBindings()
-
-rxid = get_root_xid()
+rxid: Final[int] = get_root_xid()
 
 
-def root_set(prop: str, vtype, value) -> None:
+def root_set(prop: str, vtype: list | tuple | str, value) -> None:
     prop_set(rxid, prop, vtype, value)
 
 
-def root_get(*args, **kwargs):
-    return prop_get(rxid, *args, **kwargs)
+def root_get(prop: str, vtype: list | tuple | str, *args, **kwargs):
+    return prop_get(rxid, prop, vtype, *args, **kwargs)
+
+
+def root_del(prop: str) -> None:
+    prop_del(rxid, prop)
 
 
 def set_supported() -> None:
@@ -68,6 +70,7 @@ def get_desktop_geometry() -> tuple[int, int]:
     if desktop_geometry and len(desktop_geometry) == 2:
         return int(desktop_geometry[0]), int(desktop_geometry[1])
     with xsync:
+        X11Window = X11WindowBindings()
         root_w, root_h = X11Window.getGeometry(rxid)[2:4]
         return root_w, root_h
 
@@ -86,6 +89,7 @@ class XRootPropWatcher(GObject.GObject):
         super().__init__()
         self._props = props
         with xsync:
+            X11Window = X11WindowBindings()
             mask = X11Window.getEventMask(rxid)
             self._saved_event_mask = mask
             X11Window.setEventMask(rxid, mask | PropertyChangeMask)
@@ -94,6 +98,7 @@ class XRootPropWatcher(GObject.GObject):
     def cleanup(self) -> None:
         # this must be called from the UI thread!
         with xsync:
+            X11Window = X11WindowBindings()
             X11Window.setEventMask(rxid, self._saved_event_mask)
         remove_event_receiver(rxid, self)
 

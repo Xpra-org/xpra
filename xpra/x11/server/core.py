@@ -11,7 +11,6 @@ from time import monotonic_ns
 from typing import Any
 from collections.abc import Sequence
 
-
 from xpra.os_util import gi_import
 from xpra.x11.bindings.core import set_context_check, X11CoreBindings, get_root_xid
 from xpra.x11.bindings.randr import RandRBindings
@@ -19,7 +18,6 @@ from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.x11.server import server_uuid
-from xpra.x11.prop import prop_del
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
 from xpra.util.objects import typedict
@@ -202,12 +200,12 @@ class X11ServerCore(ServerBase):
 
     # noinspection PyMethodMayBeStatic
     def do_clean_x11_properties(self, *properties) -> None:
-        root_xid = get_root_xid()
+        from xpra.x11.xroot_props import root_del
         for prop in properties:
             try:
-                prop_del(root_xid, prop)
+                root_del(prop)
             except Exception as e:
-                log.warn(f"Warning: failed to delete property {prop!r} on root window {root_xid}: {e}")
+                log.warn(f"Warning: failed to delete property {prop!r} on root window: {e}")
 
     # noinspection PyMethodMayBeStatic
     def get_server_uuid(self) -> str:

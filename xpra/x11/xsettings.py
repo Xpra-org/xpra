@@ -27,7 +27,9 @@ XSETTINGS: Final[str] = "_XSETTINGS_SETTINGS"
 # constant type in prop.py:
 XSETTINGS_TYPE: Final[str] = "xsettings-settings"
 
-XNone = 0
+rxid: Final[int] = get_root_xid()
+
+XNone: Final[int] = 0
 
 
 class XSettingsManager:
@@ -104,12 +106,11 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
     def __init__(self):
         GObject.GObject.__init__(self)
         XSettingsHelper.__init__(self)
-        self.xid = get_root_xid()
-        add_event_receiver(self.xid, self)
+        add_event_receiver(rxid, self)
         self._add_watch()
 
     def cleanup(self) -> None:
-        remove_event_receiver(self.xid, self)
+        remove_event_receiver(rxid, self)
 
     def _add_watch(self) -> None:
         owner = self.xsettings_owner()
@@ -117,7 +118,7 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
             add_event_receiver(owner, self)
 
     def do_x11_client_message_event(self, evt) -> None:
-        if evt.window is self.xid and evt.message_type == "MANAGER" and evt.data[1] == self._selection_atom:
+        if evt.window is rxid and evt.message_type == "MANAGER" and evt.data[1] == self._selection_atom:
             log("XSettings manager changed")
             self._add_watch()
             self.emit("xsettings-changed")

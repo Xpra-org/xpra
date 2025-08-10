@@ -31,7 +31,9 @@ StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 ExposureMask: Final[int] = constants["ExposureMask"]
 PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
 
-XEMBED_VERSION = 0
+XEMBED_VERSION: Final[int] = 0
+
+rxid: Final[int] = get_root_xid()
 
 
 # XEmbed
@@ -152,27 +154,26 @@ class SystemTray(GObject.GObject):
                     log.warn(f"Warning: the system tray selection {SELECTION!r} is already owned by:")
                     log.warn(" %s", window_info(owner))
                     raise RuntimeError(f"{SELECTION} already owned by {owner:x}")
-                root_xid = get_root_xid()
-                root_depth = X11Window.get_depth(root_xid)
+                root_depth = X11Window.get_depth(rxid)
                 visualid = 0
                 if TRANSPARENCY:
                     depth = root_depth if root_depth != 24 else 32
                     visualid = X11Window.get_rgba_visualid(depth)
                 event_mask = PropertyChangeMask
                 win_vid = X11Window.get_default_visualid()
-                self.xid = X11Window.CreateWindow(root_xid, depth=root_depth, event_mask=event_mask, visualid=win_vid)
+                self.xid = X11Window.CreateWindow(rxid, depth=root_depth, event_mask=event_mask, visualid=win_vid)
                 log(f"tray dock window: visualid=0x{visualid:x} geometry=%s", X11Window.getGeometry(self.xid))
                 prop_set(self.xid, "WM_TITLE", "latin1", "Xpra-SystemTray")
                 set_tray_visual(self.xid, visualid)
                 set_tray_orientation(self.xid, TRAY_ORIENTATION.HORZ)
-                XFixes.selectXFSelectionInput(root_xid, SELECTION)
+                XFixes.selectXFSelectionInput(rxid, SELECTION)
                 setsel = X11Window.XSetSelectionOwner(self.xid, SELECTION)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
                 log(f"setup tray: set selection owner returned {setsel}, owner={owner:x}")
                 time = X11Window.get_server_time(self.xid)
                 log(f"setup tray: sending client message with {time=}")
                 event_mask = StructureNotifyMask
-                X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "MANAGER", time, SELECTION, self.xid)
+                X11Window.sendClientMessage(rxid, rxid, False, event_mask, "MANAGER", time, SELECTION, self.xid)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
                 if owner != self.xid:
                     raise RuntimeError("we failed to get ownership of the tray selection")
@@ -208,7 +209,6 @@ class SystemTray(GObject.GObject):
 
     def undock(self, xid) -> None:
         log("undock(%#x)", xid)
-        rxid = get_root_xid()
         X11Window.Unmap(xid)
         X11Window.Reparent(xid, rxid, 0, 0)
 
@@ -247,8 +247,7 @@ class SystemTray(GObject.GObject):
         if not title:
             title = ""
         log(f"geometry={geom}, title={title!r}")
-        root_xid = get_root_xid()
-        xtray = X11Window.CreateWindow(root_xid, -200, -200, w, h, OR=True, event_mask=event_mask)
+        xtray = X11Window.CreateWindow(rxid, -200, -200, w, h, OR=True, event_mask=event_mask)
         prop_set(xtray, "WM_TITLE", "latin1", title)
         log(f"tray: recording corral window {xtray:x}, setting tray properties")
         prop_set(xtray, XPRA_TRAY_WINDOW_PROPERTY, "u32", xid)
