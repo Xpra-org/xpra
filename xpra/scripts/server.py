@@ -20,6 +20,7 @@ from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence, Callable
 
 from xpra import __version__
+from xpra.gtk.util import verify_gdk_display
 from xpra.scripts.session import (
     get_session_dir, make_session_dir, session_file_path,
     load_session_file, save_session_file
@@ -52,8 +53,7 @@ from xpra.os_util import (
     POSIX, WIN32, OSX,
     force_quit,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, find_group,
-    get_hex_uuid, gi_import,
-)
+    get_hex_uuid, )
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr
 from xpra.util.io import is_writable, stderr_print
@@ -1458,21 +1458,3 @@ def attach_client(options, defaults) -> None:
     env = get_saved_env()
     proc = Popen(cmd, env=env, start_new_session=POSIX and not OSX)
     get_child_reaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
-
-
-def verify_gdk_display(display_name: str):
-    # pylint: disable=import-outside-toplevel
-    # Now we can safely load gtk and connect:
-    try:
-        Gdk = gi_import("Gdk")
-    except ImportError:
-        return None
-    display = Gdk.Display.open(display_name)
-    if not display:
-        return None
-    manager = Gdk.DisplayManager.get()
-    default_display = manager.get_default_display()
-    if default_display is not None and default_display != display:
-        default_display.close()
-    manager.set_default_display(display)
-    return display

@@ -101,6 +101,24 @@ def ds_inited() -> bool:
     return dsinit
 
 
+def verify_gdk_display(display_name: str):
+    # pylint: disable=import-outside-toplevel
+    # Now we can safely load gtk and connect:
+    try:
+        Gdk = gi_import("Gdk")
+    except ImportError:
+        return None
+    display = Gdk.Display.open(display_name)
+    if not display:
+        return None
+    manager = Gdk.DisplayManager.get()
+    default_display = manager.get_default_display()
+    if default_display is not None and default_display != display:
+        default_display.close()
+    manager.set_default_display(display)
+    return display
+
+
 def close_gtk_display() -> None:
     # Close our display(s) first, so the server dying won't kill us.
     # (if gtk has been loaded)
