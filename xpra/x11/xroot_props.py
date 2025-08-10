@@ -23,6 +23,8 @@ PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
 
 X11Window = X11WindowBindings()
 
+rxid = get_root_xid()
+
 
 class XRootPropWatcher(GObject.GObject):
     __gsignals__ = {
@@ -34,18 +36,16 @@ class XRootPropWatcher(GObject.GObject):
         super().__init__()
         self._props = props
         with xsync:
-            root_xid = get_root_xid()
-            mask = X11Window.getEventMask(root_xid)
+            mask = X11Window.getEventMask(rxid)
             self._saved_event_mask = mask
-            X11Window.setEventMask(root_xid, mask | PropertyChangeMask)
-        add_event_receiver(root_xid, self)
+            X11Window.setEventMask(rxid, mask | PropertyChangeMask)
+        add_event_receiver(rxid, self)
 
     def cleanup(self) -> None:
         # this must be called from the UI thread!
         with xsync:
-            root_xid = get_root_xid()
-            X11Window.setEventMask(root_xid, self._saved_event_mask)
-        remove_event_receiver(root_xid, self)
+            X11Window.setEventMask(rxid, self._saved_event_mask)
+        remove_event_receiver(rxid, self)
 
     def __repr__(self):  # pylint: disable=arguments-differ
         return "XRootPropWatcher"
