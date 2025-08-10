@@ -149,6 +149,45 @@ def get_display_pid() -> int:
         return 0
 
 
+def save_server_pid() -> None:
+    from xpra.x11.error import xlog
+    with xlog:
+        _set_root_int("XPRA_SERVER_PID", os.getpid())
+
+
+def get_display_type() -> str:
+    if POSIX and not OSX:
+        from xpra.util.system import is_Wayland
+        if is_Wayland():
+            return "Wayland"
+        return "X11"
+    return "Main"
+
+
+def get_desktop_size_capability(server_source, root_w: int, root_h: int) -> tuple[int, int]:
+    client_size = server_source.desktop_size
+    log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
+    if not client_size:
+        # client did not specify size, just return what we have
+        return root_w, root_h
+    client_w, client_h = client_size
+    w = min(client_w, root_w)
+    h = min(client_h, root_h)
+    return w, h
+
+
+def set_window_refresh_rate(ss, rrate: int):
+    if hasattr(ss, "default_batch_config"):
+        ss.default_batch_config.match_vrefresh(rrate)
+    if hasattr(ss, "global_batch_config"):
+        ss.global_batch_config.match_vrefresh(rrate)
+    if hasattr(ss, "all_window_sources"):
+        for window_source in ss.all_window_sources():
+            bc = window_source.batch_config
+            if bc:
+                bc.match_vrefresh(rrate)
+
+
 class DisplayManager(StubServerMixin):
     """
     Mixin for servers that handle displays.
@@ -230,7 +269,7 @@ class DisplayManager(StubServerMixin):
         if self.randr and is_X11():
             self.init_randr()
             self.set_initial_resolution()
-            self.save_server_pid()
+            save_server_pid()
         GLib.idle_add(self.print_screen_info)
 
     def init_randr(self) -> None:
@@ -275,11 +314,6 @@ class DisplayManager(StubServerMixin):
             with xlog:
                 set_initial_resolution(resolutions, dpi)
 
-    def save_server_pid(self) -> None:
-        from xpra.x11.error import xlog
-        with xlog:
-            _set_root_int("XPRA_SERVER_PID", os.getpid())
-
     def init_display_pid(self) -> None:
         pid = envint("XVFB_PID", 0)
         if not pid:
@@ -318,7 +352,7 @@ class DisplayManager(StubServerMixin):
         # try the `get_display_name()` platform function first,
         # then the instance method, which may be overriden (see `GTKServer`)
         dinfo = get_display_name() or self.get_display_name()
-        dtype = self.get_display_type()
+        dtype = get_display_type()
         dinfo = f"{dtype} display {dinfo}"      #ie: "X11 display :0"
         size = self.get_display_size()
         if size:
@@ -329,18 +363,12 @@ class DisplayManager(StubServerMixin):
             dinfo += f"\n with {bit_depth} bit colors"
         return dinfo
 
-    def get_display_name(self) -> str:
+    @staticmethod
+    def get_display_name() -> str:
         return get_display_name()
 
-    def get_display_type(self) -> str:
-        if POSIX and not OSX:
-            from xpra.util.system import is_Wayland
-            if is_Wayland():
-                return "Wayland"
-            return "X11"
-        return "Main"
-
-    def get_display_bit_depth(self) -> int:
+    @staticmethod
+    def get_display_bit_depth() -> int:
         return 0
 
     def get_refresh_rate_for_value(self, invalue) -> int:
@@ -417,7 +445,7 @@ class DisplayManager(StubServerMixin):
                 caps |= {
                     "actual_desktop_size": root_size,
                     "root_window_size": root_size,
-                    "desktop_size": self._get_desktop_size_capability(source, *root_size),
+                    "desktop_size": get_desktop_size_capability(source, *root_size),
                 }
             name = get_display_name()
             if name:
@@ -482,7 +510,8 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # display / screen / root window:
-    def get_display_size(self) -> tuple[int, int]:
+    @staticmethod
+    def get_display_size() -> tuple[int, int]:
         return get_display_size()
 
     def set_screen_geometry_attributes(self, w: int, h: int) -> None:
@@ -530,10 +559,12 @@ class DisplayManager(StubServerMixin):
         log("configure_best_screen_size()=%s", (w, h))
         return w, h
 
-    def set_icc_profile(self) -> None:
+    @staticmethod
+    def set_icc_profile() -> None:
         log("set_icc_profile() not implemented")
 
-    def reset_icc_profile(self) -> None:
+    @staticmethod
+    def reset_icc_profile() -> None:
         log("reset_icc_profile() not implemented")
 
     def _monitors_changed(self, screen) -> None:
@@ -588,17 +619,6 @@ class DisplayManager(StubServerMixin):
     def get_max_screen_size(self) -> tuple[int, int]:
         return self.get_display_size()
 
-    def _get_desktop_size_capability(self, server_source, root_w: int, root_h: int) -> tuple[int, int]:
-        client_size = server_source.desktop_size
-        log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
-        if not client_size:
-            # client did not specify size, just return what we have
-            return root_w, root_h
-        client_w, client_h = client_size
-        w = min(client_w, root_w)
-        h = min(client_h, root_h)
-        return w, h
-
     def configure_best_screen_size(self) -> tuple[int, int]:
         return self.get_display_size()
 
@@ -606,19 +626,8 @@ class DisplayManager(StubServerMixin):
         rrate = self.get_client_refresh_rate(ss)
         log(f"apply_refresh_rate({ss}) rate={rrate}")
         if rrate > 0:
-            self.set_window_refresh_rate(ss, rrate)
+            set_window_refresh_rate(ss, rrate)
         return rrate
-
-    def set_window_refresh_rate(self, ss, rrate: int):
-        if hasattr(ss, "default_batch_config"):
-            ss.default_batch_config.match_vrefresh(rrate)
-        if hasattr(ss, "global_batch_config"):
-            ss.global_batch_config.match_vrefresh(rrate)
-        if hasattr(ss, "all_window_sources"):
-            for window_source in ss.all_window_sources():
-                bc = window_source.batch_config
-                if bc:
-                    bc.match_vrefresh(rrate)
 
     def get_client_refresh_rate(self, ss) -> int:
         vrefresh = []
