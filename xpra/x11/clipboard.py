@@ -8,11 +8,11 @@ import struct
 from typing import Any, Final
 from collections.abc import Iterable, Sequence, Callable
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
-from xpra.common import noop
-from xpra.x11.error import xsync, xlog
 from xpra.util.gobject import n_arg_signal, one_arg_signal
+from xpra.x11.error import xsync, xlog
 from xpra.x11.info import get_wininfo
 from xpra.x11.error import XError
 from xpra.x11.prop import prop_set
@@ -625,7 +625,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         with xsync:
             self.event_window_xid = self.init_window()
             # gtk must know about this window before we use it:
-            from xpra.x11.gtk.bindings import get_pywindow
+            from xpra.x11.common import get_pywindow
             self.window = get_pywindow(self.event_window_xid)
         super().__init__(send_packet_cb, progress_cb, **kwargs)
 

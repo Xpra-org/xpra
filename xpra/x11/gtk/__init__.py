@@ -10,3 +10,15 @@ if not envbool("XPRA_GTK", True):
 
 from xpra.x11.gtk.error import inject_gdk
 inject_gdk()
+
+
+def inject_pywindow() -> None:
+    def get_pywindow(xid: int):
+        from xpra.x11.gtk.bindings import get_pywindow as gpw
+        return gpw(xid)
+
+    from xpra.x11 import common
+    common.get_pywindow = get_pywindow
+
+
+inject_pywindow()

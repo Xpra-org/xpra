@@ -19,6 +19,15 @@ class Unmanageable(Exception):
     pass
 
 
+# gtk will inject its lookup function here
+# (which we can eventually remove)
+def nolookup(xid: int):
+    return object()
+
+
+get_pywindow = nolookup
+
+
 REPR_FUNCTIONS: dict[type, Callable] = {}
 
 
