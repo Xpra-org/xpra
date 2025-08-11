@@ -92,12 +92,28 @@ cdef extern from "X11/extensions/XKBstr.h":
         unsigned char           *modmap
     ctypedef XkbClientMapRec* XkbClientMapPtr
 
-    ctypedef void * XkbControlsPtr
-    ctypedef void * XkbServerMapPtr
-    ctypedef void * XkbIndicatorPtr
-    ctypedef void * XkbNamesPtr
-    ctypedef void * XkbCompatMapPtr
-    ctypedef void * XkbGeometryPtr
+    ctypedef struct XkbControlsRec:
+        pass
+    ctypedef XkbControlsRec* XkbControlsPtr
+
+    ctypedef struct XkbServerMapRec:
+        pass
+    ctypedef XkbServerMapRec* XkbServerMapPtr
+
+    ctypedef struct XkbIndicatorRec:
+        pass
+    ctypedef XkbIndicatorRec* XkbIndicatorPtr
+
+    ctypedef struct XkbNamesRec:
+        pass
+    ctypedef XkbNamesRec* XkbNamesPtr
+
+    ctypedef struct XkbCompatMapRec:
+        pass
+    ctypedef XkbCompatMapRec* XkbCompatMapPtr
+
+    ctypedef void* XkbGeometryPtr
+
     ctypedef struct XkbDescRec:
         Display                 *dpy
         unsigned short          flags
@@ -165,6 +181,8 @@ cdef extern from "X11/XKBlib.h":
     int XkbKeyNumSyms(XkbDescPtr xkb, KeyCode keycode)
     XkbDescPtr XkbGetMap(Display *display, unsigned int which, unsigned int device_spec)
     void XkbFreeKeyboard(XkbDescPtr xkb, unsigned int which, Bool free_all)
+
+    XkbDescPtr XkbGetMap(Display *display, unsigned int which, unsigned int device)
 
 
 cdef str NS(char *v):

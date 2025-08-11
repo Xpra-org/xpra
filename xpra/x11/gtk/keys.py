@@ -30,6 +30,9 @@ def grok_modifier_map(meanings: dict) -> dict[str, int]:
     if not meanings:
         meanings = DEFAULT_MODIFIER_MEANINGS
 
+    from xpra.log import Logger
+    log = Logger("x11")
+
     max_keypermod, keycodes = X11Keyboard.get_modifier_map()
     assert len(keycodes) == 8 * max_keypermod
     keymap = get_default_keymap()
@@ -44,9 +47,13 @@ def grok_modifier_map(meanings: dict) -> dict[str, int]:
                 found, _, keyvals = entries
                 if not found:  # pragma: no cover
                     continue
+                log.info("keyvals(%i)=%s", keycode, keyvals)
                 for keyval in keyvals:
+                    if not keyval:
+                        continue
                     keyval_name = Gdk.keyval_name(keyval)
                     modifier = meanings.get(keyval_name)
+                    log.info("keyname(%i)=%s - modifier=%s", keyval, keyval_name, modifier)
                     if modifier:
                         modifier_map[modifier] |= (1 << i)
     return modifier_map
