@@ -145,7 +145,7 @@ def position_models(models: dict[int, Any]) -> None:
         model.transient_for = None
         if transient_for_xid:
             try:
-                from xpra.x11.gtk.bindings import get_pywindow
+                from xpra.x11.common import get_pywindow
                 model.transient_for = get_pywindow(transient_for_xid)
             except ImportError:
                 pass

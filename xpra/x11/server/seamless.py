@@ -586,7 +586,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if self.root_overlay and self.root_overlay == xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
-        from xpra.x11.gtk.bindings import get_pywindow
+        from xpra.x11.common import get_pywindow
         gdk_window = get_pywindow(xid)
         Gdk = gi_import("Gdk")
         if not gdk_window or gdk_window.get_window_type() == Gdk.WindowType.TEMP:
