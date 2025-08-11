@@ -14,7 +14,7 @@ X11Keyboard = X11KeyboardBindings()
 Gdk = gi_import("Gdk")
 
 
-def grok_modifier_map(meanings) -> dict[str, int]:
+def grok_modifier_map(meanings: dict) -> dict[str, int]:
     """Return a dict mapping modifier names to corresponding X modifier
     bitmasks."""
     # is this still correct for GTK3?

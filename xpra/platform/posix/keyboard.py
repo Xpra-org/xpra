@@ -95,7 +95,7 @@ class Keyboard(KeyboardBase):
 
     def init_vars(self) -> None:
         super().init_vars()
-        self.keymap_modifiers = None
+        self.keymap_modifiers = ()
         self.keyboard_bindings = None
         self.__input_sources: dict[str, int] = {}
         try:
@@ -193,7 +193,7 @@ class Keyboard(KeyboardBase):
         return "posix.Keyboard"
 
     def get_keymap_modifiers(self) -> tuple[dict, list[str], list[str]]:
-        if self.keymap_modifiers is None:
+        if not self.keymap_modifiers:
             self.keymap_modifiers = self.do_get_keymap_modifiers()
         return self.keymap_modifiers
 
@@ -293,7 +293,7 @@ class Keyboard(KeyboardBase):
                 log.estr(e)
         return None
 
-    def update_modifier_map(self, mod_meanings) -> None:
+    def update_modifier_map(self, mod_meanings: dict) -> None:
         try:
             # pylint: disable=import-outside-toplevel
             from xpra.x11.gtk.keys import grok_modifier_map
@@ -301,5 +301,5 @@ class Keyboard(KeyboardBase):
         except ImportError:
             self.modifier_map = MODIFIER_MAP
         # force re-query on next call:
-        self.keymap_modifiers = None
+        self.keymap_modifiers = ()
         log(f"update_modifier_map({mod_meanings}) modifier_map={self.modifier_map}")

@@ -40,9 +40,9 @@ class TestX11Keyboard(ServerTestUtil):
                 "2248", "FB01", "F8FF", "203A", "FB02", "02C6",
                 "02DA", "02DC", "2206", "2044", "25CA",
         ):
-            #hex form:
+            # hex form:
             hk = keyboard_bindings.parse_keysym("0x" + x)
-            #osx U+ form:
+            # osx U+ form:
             uk = keyboard_bindings.parse_keysym("U+" + x)
             log("keysym(U+%s)=%#x, keysym(0x%s)=%#x", x, uk, x, hk)
             assert hk and uk
@@ -50,12 +50,12 @@ class TestX11Keyboard(ServerTestUtil):
 
     def test_grok_modifier_map(self):
         from xpra.x11.gtk.keys import grok_modifier_map
-        grok_modifier_map(None)
+        grok_modifier_map({"foo": 8})
         grok_modifier_map({})
 
 
 def main():
-    #can only work with an X11 server
+    # can only work with an X11 server
     if POSIX and not OSX:
         unittest.main()
 
