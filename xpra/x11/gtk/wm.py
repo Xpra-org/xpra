@@ -266,15 +266,15 @@ class Wm(GObject.GObject):
             # if we're here, that means the window model does not exist
             # (or it would have processed the event)
             # so this must be an unmapped window
-            frame = None
+            NO_FRAME = (0, 0, 0, 0)
+            frame = NO_FRAME
             with xswallow:
                 xid = event.window
                 if not X11Window.is_override_redirect(xid):
                     # use the global default:
                     frame = root_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"])
-                if not frame:
-                    # fallback:
-                    frame = (0, 0, 0, 0)
+                if not frame or len(frame) != 4:
+                    frame = NO_FRAME
                 framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, xid)
                 prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
 
