@@ -49,7 +49,7 @@ class TestX11Keyboard(ServerTestUtil):
             assert uk == hk, "failed to get unicode keysym %s" % x
 
     def test_grok_modifier_map(self):
-        from xpra.x11.gtk.keys import grok_modifier_map
+        from xpra.x11.xkbhelper import grok_modifier_map
         grok_modifier_map({"foo": 8})
         grok_modifier_map({})
 

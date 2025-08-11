@@ -24,7 +24,7 @@ from xpra.x11.xkbhelper import (
     get_modifiers_from_meanings, get_modifiers_from_keycodes,
     clear_modifiers, set_modifiers, map_missing_modifiers,
     clean_keyboard_state, get_keycode_mappings,
-    DEBUG_KEYSYMS,
+    DEBUG_KEYSYMS, grok_modifier_map,
 )
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.test import XTestBindings
@@ -324,7 +324,6 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def compute_modifier_map(self) -> None:
         with xlog:
-            from xpra.x11.gtk.keys import grok_modifier_map
             self.modifier_map = grok_modifier_map(self.mod_meanings)
         log("modifier_map(%s)=%s", self.mod_meanings, self.modifier_map)
 

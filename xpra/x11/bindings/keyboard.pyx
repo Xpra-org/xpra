@@ -472,7 +472,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 sym = xkb.map.syms[offset+i]
                 syms.append(sym)
             # og("%3i: width=%i, offset=%3i, num_groups=%i, syms=%s / %s",
-            # eycode, width, offset, num_groups, syms, symstrs)
+            # keycode, width, offset, num_groups, syms, ksymstrs)
             keynames = self.keysyms_to_strings(syms)
             if len(keynames)>0:
                 keysyms[keycode] = keynames

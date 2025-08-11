@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Iterable, Sequence
 
 from xpra.common import noop
-from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
+from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, MODIFIER_MAP
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, csv, bytestostr, Ellipsizer
 from xpra.util.env import envbool
@@ -840,3 +840,38 @@ def map_missing_modifiers(keynames_for_mod: dict[str, Iterable]):
     if xmodmap_changes:
         log("xmodmap_changes=%s", xmodmap_changes)
         X11Keyboard.set_xmodmap(xmodmap_changes)
+
+
+def grok_modifier_map(meanings: dict) -> dict[str, int]:
+    """
+    Return a dict mapping modifier names to corresponding X modifier bitmasks.
+    """
+    # is this still correct for GTK3?
+    modifier_map = MODIFIER_MAP.copy()
+    modifier_map |= {
+        "scroll": 0,
+        "num": 0,
+        "meta": 0,
+        "super": 0,
+        "hyper": 0,
+        "alt": 0,
+    }
+    if not meanings:
+        meanings = DEFAULT_MODIFIER_MEANINGS
+
+    from xpra.x11.xkbhelper import get_keycode_mappings
+    with xsync:
+        mappings = get_keycode_mappings()
+        X11Keyboard = X11KeyboardBindings()
+        max_keypermod, keycodes = X11Keyboard.get_modifier_map()
+    assert len(keycodes) == 8 * max_keypermod
+    for i in range(8):
+        for j in range(max_keypermod):
+            keycode = keycodes[i * max_keypermod + j]
+            if keycode:
+                keysyms = mappings.get(keycode, ())
+                for keysym in keysyms:
+                    modifier = meanings.get(keysym, "")
+                    if modifier:
+                        modifier_map[modifier] |= (1 << i)
+    return modifier_map
