@@ -61,9 +61,6 @@ class Wm(GObject.GObject):
         "windows": (GObject.TYPE_PYOBJECT,
                     "Set of managed windows (as WindowModels)", "",
                     GObject.ParamFlags.READABLE),
-        "toplevel": (GObject.TYPE_PYOBJECT,
-                     "Toplevel container widget for the display", "",
-                     GObject.ParamFlags.READABLE),
     }
     __gsignals__ = {
         # Public use:
@@ -89,6 +86,7 @@ class Wm(GObject.GObject):
 
         self._wm_name = wm_name
         self._ewmh_window = 0
+        self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
 
         self._windows: dict[int, Any] = {}
         # EWMH says we have to know the order of our windows oldest to
@@ -109,7 +107,7 @@ class Wm(GObject.GObject):
         self._cm_wm_selection.acquire(mode)
 
         # Set up the necessary EWMH properties on the root window.
-        self._setup_ewmh_window()
+        self._ewmh_window = self._setup_ewmh_window()
         root_w, root_h = X11Window.getGeometry(rxid)[2:4]
         # Start with just one desktop:
         set_desktop_list(("Main",))
@@ -120,11 +118,8 @@ class Wm(GObject.GObject):
         set_desktop_geometry(root_w, root_h)
         set_desktop_viewport(0, 0)
 
-        self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
-
         # Load up our full-screen widget
         self._world_window = WorldWindow(rxid)
-        self.notify("toplevel")
         self._world_window.show_all()
         wxid = self._world_window.get_window().get_xid()
 
@@ -194,8 +189,6 @@ class Wm(GObject.GObject):
     def do_get_property(self, pspec):
         if pspec.name == "windows":
             return tuple(self._windows.values())
-        if pspec.name == "toplevel":
-            return self._world_window
         assert False
 
     # This is in some sense the key entry point to the entire WM program.  We
@@ -357,7 +350,7 @@ class Wm(GObject.GObject):
     def do_x11_focus_out_event(self, event) -> None:
         focuslog("wm.do_x11_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
 
-    def _setup_ewmh_window(self) -> None:
+    def _setup_ewmh_window(self) -> int:
         # Set up a 1x1 invisible unmapped window, with which to participate in
         # EWMH's _NET_SUPPORTING_WM_CHECK protocol.  The only important things
         # about this window are the _NET_SUPPORTING_WM_CHECK property, and
@@ -373,9 +366,9 @@ class Wm(GObject.GObject):
         xid = X11Window.CreateWindow(rxid, -1, -1, inputoutput=InputOnly)
         prop_set(xid, "WM_TITLE", "latin1", self._wm_name)
         prop_set(xid, "_NET_SUPPORTING_WM_CHECK", "window", xid)
-        self._ewmh_window = xid
         root_set("_NET_SUPPORTING_WM_CHECK", "window", xid)
         root_set("_NET_WM_NAME", "utf8", self._wm_name)
+        return xid
 
     def get_net_wm_name(self) -> str:
         if self._ewmh_window:

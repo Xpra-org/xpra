@@ -696,9 +696,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         had_focus = self._id_to_window.get(hfid)
 
         def reset_focus() -> None:
-            toplevel = None
-            if self._wm:
-                toplevel = self._wm.get_property("toplevel")
+            from xpra.x11.gtk.world_window import get_world_window
+            toplevel = get_world_window()
             focuslog("reset_focus() %s / %s had focus (toplevel=%s)", hfid, had_focus, toplevel)
             # this will call clear_keys_pressed() if the server is an InputServer:
             if hasattr(self, "reset_focus"):
