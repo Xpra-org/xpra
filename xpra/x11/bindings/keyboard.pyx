@@ -446,10 +446,11 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             sym_map = xkb.map.key_sym_map[keycode]
             width = sym_map.width
             offset = sym_map.offset
-            # um_groups = sym_map.group_info
-            # roup_width = 0
+            count = width * sym_map.group_info
+            if count <= 0:
+                continue
             syms = []
-            for i in range(width):
+            for i in range(count):
                 sym = xkb.map.syms[offset+i]
                 syms.append(sym)
             # og("%3i: width=%i, offset=%3i, num_groups=%i, syms=%s / %s",
