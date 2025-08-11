@@ -21,7 +21,7 @@ from xpra.x11.window_info import window_name, window_info
 from xpra.x11.xroot_props import (
     set_desktop_list, set_current_desktop, set_desktop_viewport, set_desktop_geometry, get_desktop_geometry,
     set_supported, set_workarea,
-    root_set,
+    root_set, root_get,
 )
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
@@ -271,7 +271,7 @@ class Wm(GObject.GObject):
                 xid = event.window
                 if not X11Window.is_override_redirect(xid):
                     # use the global default:
-                    frame = self.root_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
+                    frame = root_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"])
                 if not frame:
                     # fallback:
                     frame = (0, 0, 0, 0)

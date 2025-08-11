@@ -24,7 +24,7 @@ from xpra.x11.bindings.res import ResBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.composite import CompositeHelper
-from xpra.x11.xroot_props import root_get
+from xpra.x11.xroot_props import root_get, root_set
 from xpra.x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.gtk.bindings import get_pywindow
@@ -876,7 +876,7 @@ class CoreX11WindowModel(WindowModelStub):
         X11Window.XRaiseWindow(self.xid)
 
     def set_active(self) -> None:
-        self.root_prop_set("_NET_ACTIVE_WINDOW", "u32", self.xid)
+        root_set("_NET_ACTIVE_WINDOW", "u32", self.xid)
 
     ################################
     # Killing clients:

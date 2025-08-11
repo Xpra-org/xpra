@@ -132,7 +132,7 @@ def check_xvfb(xvfb: Popen | None, timeout=0) -> bool:
 
 def _get_root_int(prop: str) -> int:
     from xpra.x11.xroot_props import root_get
-    return root_get(prop, "u32", ignore_errors=True, raise_xerrors=False) or 0
+    return root_get(prop, "u32") or 0
 
 
 def _set_root_int(prop: str = "_XPRA_RANDR_EXACT_SIZE", i: int = 0) -> None:

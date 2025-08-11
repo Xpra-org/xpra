@@ -150,12 +150,9 @@ def get_ydpi() -> int:
 
 def get_icc_info() -> dict[str, Any]:
     if x11_bindings():
-        from xpra.x11.common import get_icc_data as get_x11_icc_data
-        from xpra.x11.error import xsync
-        with xsync:
-            return get_x11_icc_data()
-    from xpra.platform.gui import default_get_icc_info
-    return default_get_icc_info()
+        from xpra.x11 import xroot_props
+        return xroot_props.get_icc_data()
+    return {}
 
 
 def get_antialias_info() -> dict[str, Any]:
@@ -203,37 +200,29 @@ def get_antialias_info() -> dict[str, Any]:
 
 def get_current_desktop() -> int:
     if x11_bindings():
-        from xpra.x11.common import get_current_desktop as get_x11_current_desktop
-        from xpra.x11.error import xsync
-        with xsync:
-            return get_x11_current_desktop()
+        from xpra.x11 import xroot_props
+        return xroot_props.get_current_desktop()
     return -1
 
 
 def get_workarea() -> tuple[int, int, int, int] | None:
     if x11_bindings():
-        from xpra.x11.common import get_workarea as get_x11_workarea
-        from xpra.x11.error import xsync
-        with xsync:
-            return get_x11_workarea()
+        from xpra.x11 import xroot_props
+        return xroot_props.get_workarea()
     return None
 
 
 def get_number_of_desktops() -> int:
     if x11_bindings():
-        from xpra.x11.common import get_number_of_desktops as get_x11_number_of_desktops
-        from xpra.x11.error import xsync
-        with xsync:
-            return get_x11_number_of_desktops()
+        from xpra.x11 import xroot_props
+        return xroot_props.get_number_of_desktops()
     return 0
 
 
 def get_desktop_names() -> Sequence[str]:
     if x11_bindings():
-        from xpra.x11.common import get_desktop_names as get_x11_desktop_names
-        from xpra.x11.error import xsync
-        with xsync:
-            return get_x11_desktop_names()
+        from xpra.x11 import xroot_props
+        return xroot_props.get_desktop_names()
     return ("Main", )
 
 
@@ -354,8 +343,13 @@ def _send_client_message(window, message_type: str, *values) -> None:
     if not x11_bindings():
         log(f"cannot send client message {message_type} without the X11 bindings")
         return
+    if window:
+        xid = window.get_xid()
+    else:
+        from xpra.x11.bindings.core import X11CoreBindings
+        xid = X11CoreBindings().get_root_xid()
     from xpra.x11.common import send_client_message
-    send_client_message(window, message_type, *values)
+    send_client_message(xid, message_type, *values)
 
 
 def show_desktop(b) -> None:

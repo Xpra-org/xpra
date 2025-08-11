@@ -346,7 +346,7 @@ class X11ShadowModel(CaptureWindowModel):
         self.relative_position = ()
         try:
             from xpra.x11.bindings.core import X11CoreBindings
-            self.xid = X11CoreBindings.get_root_xid()
+            self.xid = X11CoreBindings().get_root_xid()
             self.property_names.append("xid")
         except Exception:
             self.xid = 0
@@ -486,7 +486,8 @@ def snapshot(filename) -> int:
     # pylint: disable=import-outside-toplevel
     from io import BytesIO
     from xpra.util.str_fn import memoryview_to_bytes
-    from xpra.gtk.util import get_default_root_window, get_root_size
+    from xpra.x11.xroot_props import get_root_size
+    from xpra.gtk.util import get_default_root_window
     root = get_default_root_window()
     capture = try_setup_capture(CAPTURE_BACKENDS, "auto", root)
     capture.refresh()

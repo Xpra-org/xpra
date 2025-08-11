@@ -38,25 +38,6 @@ def get_locale_status() -> dict[str, str]:
     return locale
 
 
-def get_xkb_rules_names_property() -> Sequence[str]:
-    # parses the "_XKB_RULES_NAMES" X11 property
-    if not is_X11():
-        return ()
-    xkb_rules_names: list[str] = []
-    # pylint: disable=import-outside-toplevel
-    from xpra.x11.error import xlog
-    from xpra.x11.common import get_X11_root_property
-    with xlog:
-        prop = get_X11_root_property("_XKB_RULES_NAMES", "STRING")
-        log("get_xkb_rules_names_property() _XKB_RULES_NAMES=%s", prop)
-        # ie: 'evdev\x00pc104\x00gb,us\x00,\x00\x00'
-        if prop:
-            xkb_rules_names = prop.decode("latin1").split("\0")
-        # ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
-    log("get_xkb_rules_names_property()=%s", xkb_rules_names)
-    return tuple(xkb_rules_names)
-
-
 def get_all_x11_layouts() -> dict[str, str]:
     repository = "/usr/share/X11/xkb/rules/base.xml"
     x11_layouts: dict[str, str] = {}
@@ -289,7 +270,8 @@ class Keyboard(KeyboardBase):
             v = locale.get("X11 Layout", "")
         if not v:
             # fallback:
-            props = get_xkb_rules_names_property()
+            from xpra.x11.xroot_props import get_xkb_rules_names
+            props = get_xkb_rules_names()
             # ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
             if props and len(props) >= 3:
                 v = props[2]

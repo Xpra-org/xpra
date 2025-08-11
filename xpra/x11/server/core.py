@@ -75,7 +75,8 @@ def get_cursor_sizes() -> tuple[int, int]:
 def get_root_size() -> tuple[int, int]:
     xid = get_root_xid()
     with xsync:
-        return X11WindowBindings().getGeometry(xid)[2:4]
+        root_w, root_h = X11WindowBindings().getGeometry(xid)[2:4]
+        return root_w, root_h
 
 
 class X11ServerCore(ServerBase):
@@ -210,7 +211,7 @@ class X11ServerCore(ServerBase):
     # noinspection PyMethodMayBeStatic
     def get_server_uuid(self) -> str:
         from xpra.x11.xroot_props import root_get
-        return root_get("XPRA_SERVER_UUID", "latin1", ignore_errors=True) or ""
+        return root_get("XPRA_SERVER_UUID", "latin1") or ""
 
     def save_server_uuid(self) -> None:
         from xpra.x11.xroot_props import root_set
