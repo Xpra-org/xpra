@@ -404,7 +404,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if not self._wm:
             return
 
-        windows = self._wm.get_property("windows")
+        windows = self._wm.get_windows()
         log(f"found {len(windows)} windows: {windows}")
         for window in windows:
             self._add_new_window(window)

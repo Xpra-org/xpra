@@ -57,11 +57,6 @@ rxid = get_root_xid()
 
 
 class Wm(GObject.GObject):
-    __gproperties__ = {
-        "windows": (GObject.TYPE_PYOBJECT,
-                    "Set of managed windows (as WindowModels)", "",
-                    GObject.ParamFlags.READABLE),
-    }
     __gsignals__ = {
         # Public use:
         # A new window has shown up:
@@ -186,10 +181,8 @@ class Wm(GObject.GObject):
             if cur is None:
                 win._handle_frame_changed()
 
-    def do_get_property(self, pspec):
-        if pspec.name == "windows":
-            return tuple(self._windows.values())
-        assert False
+    def get_windows(self):
+        return tuple(self._windows.values())
 
     # This is in some sense the key entry point to the entire WM program.  We
     # have detected a new client window, and start managing it:
@@ -217,7 +210,6 @@ class Wm(GObject.GObject):
             win.managed_connect("unmanaged", self._handle_client_unmanaged, xid)
             self._windows[xid] = win
             self._windows_in_order.append(xid)
-            self.notify("windows")
             self._update_window_list()
             self.emit("new-window", win)
 
@@ -229,7 +221,6 @@ class Wm(GObject.GObject):
         del self._windows[xid]
         self._windows_in_order.remove(xid)
         self._update_window_list()
-        self.notify("windows")
 
     def _update_window_list(self, *_args) -> None:
         # Ignore errors because not all the windows may still exist; if so,
