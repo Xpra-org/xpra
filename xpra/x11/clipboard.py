@@ -18,7 +18,6 @@ from xpra.x11.error import XError
 from xpra.x11.prop import prop_set
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, PropertyError, X11WindowBindings
-from xpra.x11.bindings.fixes import XFixesBindings
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
 from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
@@ -30,7 +29,6 @@ GObject = gi_import("GObject")
 GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
-XFixes = XFixesBindings()
 
 log = Logger("x11", "clipboard")
 
@@ -662,9 +660,17 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         proxy.set_direction(self.can_send, self.can_receive)
         proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
         proxy.connect("send-clipboard-request", self._send_clipboard_request_handler)
-        with xsync:
-            XFixes.selectXFSelectionInput(xid, selection)
-            XFixes.selectXFSelectionInput(root_xid, selection)
+        try:
+            from xpra.x11.bindings.fixes import XFixesBindings
+            XFixes = XFixesBindings()
+            with xsync:
+                XFixes.selectXFSelectionInput(xid, selection)
+                XFixes.selectXFSelectionInput(root_xid, selection)
+        except ImportError:
+            log("make_proxy(%s)", selection, exc_info=True)
+            if first_time("xfixes"):
+                log.warn("Warning: XFixes extension bindings could not be loaded")
+                log.warn(" clipboard synchonization will be limited")
         return proxy
 
     ############################################################################
