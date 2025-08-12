@@ -10,6 +10,7 @@
 # else steals it, then we should exit.
 
 import sys
+from enum import Enum
 from typing import Final
 from struct import unpack, calcsize
 
@@ -41,6 +42,18 @@ class AlreadyOwned(Exception):
     pass
 
 
+class Ownership(Enum):
+    # If the selection is already owned, then raise AlreadyOwned rather
+    # than stealing it.
+    IF_UNOWNED = 1
+    # If the selection is already owned, then steal it, and then block until
+    # the previous owner has signaled that they are done cleaning up.
+    FORCE = 2
+    # If the selection is already owned, then steal it and return immediately.
+    # Created for the use of tests.
+    FORCE_AND_RETURN = 3
+
+
 class ManagerSelection(GObject.GObject):
     __gsignals__ = {
         "selection-lost": no_arg_signal,
@@ -65,19 +78,9 @@ class ManagerSelection(GObject.GObject):
         """Returns True if someone owns the given selection."""
         return self._owner() != XNone
 
-    # If the selection is already owned, then raise AlreadyOwned rather
-    # than stealing it.
-    IF_UNOWNED = "if_unowned"
-    # If the selection is already owned, then steal it, and then block until
-    # the previous owner has signaled that they are done cleaning up.
-    FORCE = "force"
-    # If the selection is already owned, then steal it and return immediately.
-    # Created for the use of tests.
-    FORCE_AND_RETURN = "force_and_return"
-
-    def acquire(self, when) -> None:
+    def acquire(self, when: Ownership) -> None:
         old_owner = self._owner()
-        if when is self.IF_UNOWNED and old_owner != XNone:
+        if when is Ownership.IF_UNOWNED and old_owner != XNone:
             raise AlreadyOwned
 
         # we can only set strings with GTK3,
@@ -128,7 +131,7 @@ class ManagerSelection(GObject.GObject):
                                         "MANAGER",
                                         ts_num, selection_xatom, self.xid)
 
-        if old_owner != XNone and when is self.FORCE:
+        if old_owner != XNone and when is Ownership.FORCE:
             # Block in a recursive mainloop until the previous owner has
             # cleared out.
             geom = ()
