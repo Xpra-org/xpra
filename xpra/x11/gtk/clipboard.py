@@ -603,9 +603,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             GLib.source_remove(idt)
 
     def incr_data_timeout(self) -> None:
-        self.incr_data_timer = 0
         log.warn("Warning: incremental data timeout")
-        self.incr_data = None
+        self.reset_incr_data()
 
 
 GObject.type_register(ClipboardProxy)
