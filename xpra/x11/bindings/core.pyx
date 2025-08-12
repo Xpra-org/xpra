@@ -58,8 +58,7 @@ cdef class X11CoreBindingsInstance:
         #traceback.print_stack()
         if self.display == NULL:
             raise RuntimeError("X11 display is not set")
-        bstr = get_display_name().encode("latin1")
-        self.display_name = bstr
+        self.display_name = get_display_name()
         self.XSynchronize(envbool("XPRA_X_SYNC", False))
 
     def XSynchronize(self, enable: bool) -> None:

@@ -389,11 +389,12 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             if r==0 or tmp==NULL:
                 # f the display points to a specific screen (ie: DISPLAY=:20.1)
                 # e may have to connect to the first screen to get the properties:
-                nohost = self.display_name.split(b":")[-1]
-                if nohost.find(b".")>0:
-                    display_name = self.display_name[:self.display_name.rfind(b".")]
-                    log("getXkbProperties retrying on %r", s(display_name))
-                    display = XOpenDisplay(display_name)
+                nohost = self.display_name.split(":")[-1]
+                if nohost.find(".")>0:
+                    display_name = self.display_name[:self.display_name.rfind(".")]
+                    log("getXkbProperties retrying on %r", display_name)
+                    bstr = display_name.encode("latin1")
+                    display = XOpenDisplay(bstr)
                     if display:
                         r = XkbRF_GetNamesProp(display, &tmp, &vd)
             if r==0 or tmp==NULL:

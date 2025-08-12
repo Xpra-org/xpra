@@ -8,7 +8,7 @@ from xpra.x11.bindings.xlib cimport Display, Atom
 
 cdef class X11CoreBindingsInstance:
     cdef Display * display
-    cdef char * display_name
+    cdef object display_name
     cdef Atom xatom(self, str_or_int)
     cdef Atom str_to_atom(self, atomstr)
 #    def get_error_text(self, code)

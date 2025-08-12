@@ -578,10 +578,11 @@ cdef class RecordBindingsInstance(X11CoreBindingsInstance):
         self.version = self.query_version()
         # open new X11 connection:
         cdef Display *display = NULL
+        bstr = self.display_name.encode("latin1")
         try:
-            display = XOpenDisplay(self.display_name)
+            display = XOpenDisplay(bstr)
         except Exception as e:
-            log(f"XOpenDisplay{self.display_name}", exc_info=True)
+            log(f"XOpenDisplay({bstr})", exc_info=True)
             log.error("Error: failed to open the display again")
             log.error(f" {e}")
         if display != NULL:
