@@ -10,7 +10,7 @@ def get_backend_module() -> str:
         try:
             from xpra import x11
             assert x11
-            return "xpra.x11.clipboard.X11Clipboard"
+            return "xpra.x11.selection.clipboard.X11Clipboard"
         except ImportError:
             pass
     return "xpra.gtk.clipboard.GTK_Clipboard"

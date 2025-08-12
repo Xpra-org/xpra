@@ -1,53 +1,51 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import struct
-from typing import Any, Final
-from collections.abc import Iterable, Sequence, Callable
+from typing import Sequence, Any, Final
 
-from xpra.common import noop
-from xpra.os_util import gi_import
 from xpra.util.env import envbool
-from xpra.util.gobject import n_arg_signal, one_arg_signal
-from xpra.x11.error import xsync, xlog
-from xpra.x11.info import get_wininfo
-from xpra.x11.error import XError
-from xpra.x11.prop import prop_set
-from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.bindings.window import constants, PropertyError, X11WindowBindings
-from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
-from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
-from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
+from xpra.os_util import gi_import
+from xpra.x11.bindings.window import PropertyError
+from xpra.clipboard.core import ClipboardProxyCore, ClipboardCallback, TEXT_TARGETS, must_discard, must_discard_extra
+from xpra.clipboard.timeout import CONVERT_TIMEOUT
 from xpra.util.env import first_time
-from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, memoryview_to_bytes
+from xpra.util.gobject import one_arg_signal, n_arg_signal
+from xpra.util.str_fn import Ellipsizer, bytestostr, csv, memoryview_to_bytes
+from xpra.x11.selection.common import xatoms_to_strings, strings_to_xatoms
+from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.error import xsync, XError
+from xpra.x11.info import get_wininfo
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
 GLib = gi_import("GLib")
 
-X11Window = X11WindowBindings()
-
 log = Logger("x11", "clipboard")
 
+X11Window = X11WindowBindings()
 CurrentTime: Final[int] = constants["CurrentTime"]
 StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
-InputOnly: Final[int] = constants["InputOnly"]
-PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
-
-sizeof_long = struct.calcsize(b'@L')
 
 MAX_DATA_SIZE: int = 4 * 1024 * 1024
-
 RECLAIM = envbool("XPRA_CLIPBOARD_RECLAIM", True)
-
 BLOCKLISTED_CLIPBOARD_CLIENTS: list[str] = os.environ.get(
     "XPRA_BLOCKLISTED_CLIPBOARD_CLIENTS",
     "clipit,Software,gnome-shell"
 ).split(",")
 log("BLOCKLISTED_CLIPBOARD_CLIENTS=%s", BLOCKLISTED_CLIPBOARD_CLIENTS)
+DEFAULT_TRANSLATED_TARGETS: str = "#".join(
+    (
+        "text/plain;charset=utf-8:UTF8_STRING,text/plain,public.utf8-plain-text",
+        "TEXT:text/plain,text/plain;charset=utf-8,UTF8_STRING,public.utf8-plain-text",
+        "STRING:text/plain,text/plain;charset=utf-8,UTF8_STRING,public.utf8-plain-text",
+        "UTF8_STRING:text/plain;charset=utf-8,text/plain,public.utf8-plain-text",
+        "GTK_TEXT_BUFFER_CONTENTS:UTF8_STRING,text/plain,public.utf8-plain-text",
+    )
+)
 
 
 def parse_translated_targets(v: str) -> dict[str, list[str]]:
@@ -67,45 +65,11 @@ def parse_translated_targets(v: str) -> dict[str, list[str]]:
     return trans
 
 
-DEFAULT_TRANSLATED_TARGETS: str = "#".join(
-    (
-        "text/plain;charset=utf-8:UTF8_STRING,text/plain,public.utf8-plain-text",
-        "TEXT:text/plain,text/plain;charset=utf-8,UTF8_STRING,public.utf8-plain-text",
-        "STRING:text/plain,text/plain;charset=utf-8,UTF8_STRING,public.utf8-plain-text",
-        "UTF8_STRING:text/plain;charset=utf-8,text/plain,public.utf8-plain-text",
-        "GTK_TEXT_BUFFER_CONTENTS:UTF8_STRING,text/plain,public.utf8-plain-text",
-    )
-)
 TRANSLATED_TARGETS = parse_translated_targets(os.environ.get(
     "XPRA_CLIPBOARD_TRANSLATED_TARGETS",
     DEFAULT_TRANSLATED_TARGETS)
 )
 log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
-
-IGNORED_PROPERTIES = (
-    "_NET_WM_NAME", "WM_NAME", "_NET_WM_ICON_NAME", "WM_ICON_NAME",
-    "WM_PROTOCOLS", "WM_NORMAL_HINTS", "WM_CLIENT_MACHINE", "WM_LOCALE_NAME",
-    "_NET_WM_PID", "WM_CLIENT_LEADER", "_NET_WM_USER_TIME_WINDOW",
-)
-IGNORED_MESSAGES = (
-    "_GTK_LOAD_ICONTHEMES",
-)
-
-
-def xatoms_to_strings(data: bytes) -> Sequence[str]:
-    length = len(data)
-    if length % sizeof_long != 0:
-        raise ValueError(f"invalid length for atom array: {length}, value={repr_ellipsized(data)}")
-    natoms = length // sizeof_long
-    atoms = struct.unpack(b"@" + b"L" * natoms, data)
-    with xsync:
-        return tuple(name for name in (X11Window.get_atom_name(atom) for atom in atoms if atom) if name)
-
-
-def strings_to_xatoms(data: Iterable[str]) -> bytes:
-    with xsync:
-        atom_array = tuple(X11Window.get_xatom(atom) for atom in data if atom)
-    return struct.pack(b"@" + b"L" * len(atom_array), *atom_array)
 
 
 class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
@@ -131,7 +95,10 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.local_request_counter: int = 0
         self.targets: Sequence[str] = ()
         self.target_data: dict[str, tuple[str, int, Any]] = {}
-        self.reset_incr_data()
+        self.incr_data_size: int = 0
+        self.incr_data_type: str = ""
+        self.incr_data_chunks: list[bytes] = []
+        self.incr_data_timer: int = 0
 
     def reset_incr_data(self) -> None:
         self.incr_data_size: int = 0
@@ -211,6 +178,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     return
                 # send announcement:
                 log("claim_selection: sending message to root window")
+                from xpra.x11.bindings.core import get_root_xid
                 root_xid = get_root_xid()
                 event_mask = StructureNotifyMask
                 X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "MANAGER",
@@ -599,140 +567,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             GLib.source_remove(idt)
 
     def incr_data_timeout(self) -> None:
-        self.incr_data_timer = 0
         log.warn("Warning: incremental data timeout")
-        self.incr_data = None
+        self.reset_incr_data()
 
 
 GObject.type_register(ClipboardProxy)
-
-
-class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
-    # handle signals from the X11 bindings,
-    # and dispatch them to the proxy handling the selection specified:
-    __gsignals__ = {
-        "x11-client-message-event": one_arg_signal,
-        "x11-selection-request": one_arg_signal,
-        "x11-selection-clear": one_arg_signal,
-        "x11-property-notify-event": one_arg_signal,
-        "x11-xfixes-selection-notify-event": one_arg_signal,
-    }
-
-    def __init__(self, send_packet_cb: Callable, progress_cb=noop, **kwargs):
-        GObject.GObject.__init__(self)
-        with xsync:
-            self.event_window_xid = self.init_window()
-            # gtk must know about this window before we use it:
-            from xpra.x11.common import get_pywindow
-            self.window = get_pywindow(self.event_window_xid)
-        super().__init__(send_packet_cb, progress_cb, **kwargs)
-
-    def __repr__(self):
-        return "X11Clipboard"
-
-    def init_window(self) -> int:
-        rxid = get_root_xid()
-        xid = X11Window.CreateWindow(rxid, -1, -1, inputoutput=InputOnly, event_mask=PropertyChangeMask)
-        prop_set(xid, "WM_TITLE", "latin1", "Xpra-Clipboard")
-        X11Window.selectSelectionInput(xid)
-        add_event_receiver(xid, self)
-        log(f"init_window() {xid=}")
-        return xid
-
-    def cleanup_window(self) -> None:
-        xid = self.event_window_xid
-        if xid:
-            self.event_window_xid = None
-            remove_event_receiver(xid, self)
-            # X11Window.Unmap(xid)
-            with xlog:
-                X11Window.DestroyWindow(xid)
-
-    def cleanup(self) -> None:
-        ClipboardTimeoutHelper.cleanup(self)
-        self.cleanup_window()
-
-    def make_proxy(self, selection) -> ClipboardProxy:
-        root_xid = get_root_xid()
-        xid = self.event_window_xid
-        proxy = ClipboardProxy(xid, selection)
-        proxy.set_want_targets(self._want_targets)
-        proxy.set_direction(self.can_send, self.can_receive)
-        proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
-        proxy.connect("send-clipboard-request", self._send_clipboard_request_handler)
-        try:
-            from xpra.x11.bindings.fixes import XFixesBindings
-            XFixes = XFixesBindings()
-            with xsync:
-                XFixes.selectXFSelectionInput(xid, selection)
-                XFixes.selectXFSelectionInput(root_xid, selection)
-        except ImportError:
-            log("make_proxy(%s)", selection, exc_info=True)
-            if first_time("xfixes"):
-                log.warn("Warning: XFixes extension bindings could not be loaded")
-                log.warn(" clipboard synchonization will be limited")
-        return proxy
-
-    ############################################################################
-    # X11 event handlers:
-    # we dispatch them to the proxy handling the selection specified
-    ############################################################################
-    def do_x11_selection_request(self, event) -> None:
-        log("do_x11_selection_request(%s)", event)
-        proxy = self._get_proxy(event.selection)
-        if proxy:
-            proxy.do_selection_request_event(event)
-
-    def do_x11_selection_clear(self, event) -> None:
-        log("do_x11_selection_clear(%s)", event)
-        proxy = self._get_proxy(event.selection)
-        if proxy:
-            proxy.do_selection_clear_event(event)
-
-    def do_x11_xfixes_selection_notify_event(self, event) -> None:
-        log("do_x11_xfixes_selection_notify_event(%s)", event)
-        proxy = self._get_proxy(event.selection)
-        if proxy:
-            proxy.do_selection_notify_event(event)
-
-    def do_x11_client_message_event(self, event) -> None:
-        message_type = event.message_type
-        if message_type in IGNORED_MESSAGES:
-            log("ignored clipboard client message: %s", message_type)
-            return
-        log.info(f"Unexpected X11 message received by clipboard window {event.window:x}")
-        log.info(f" {event}")
-
-    def do_x11_property_notify_event(self, event) -> None:
-        if event.atom in IGNORED_PROPERTIES:
-            # these properties are populated by GTK when we create the window,
-            # no need to log them
-            return
-        log("do_x11_property_notify_event(%s)", event)
-        # ie: atom=PRIMARY-TARGETS
-        # ie: atom=PRIMARY-VALUE
-        parts = event.atom.split("-", 1)
-        if len(parts) != 2:
-            return
-        selection = parts[0]  # ie: PRIMARY
-        # target = parts[1]           # ie: VALUE
-        proxy = self._get_proxy(selection)
-        if proxy:
-            proxy.do_property_notify(event)
-
-    ############################################################################
-    # x11 specific munging support:
-    ############################################################################
-
-    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data) -> tuple[Any, Any]:
-        if dformat == 32 and dtype in ("ATOM", "ATOM_PAIR"):
-            return "atoms", self.remote_targets(xatoms_to_strings(data))
-        return super()._munge_raw_selection_to_wire(target, dtype, dformat, data)
-
-    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data) -> bytes | str:
-        if encoding == "atoms":
-            return strings_to_xatoms(self.local_targets(data))
-        return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
-
-
-GObject.type_register(X11Clipboard)
