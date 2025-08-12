@@ -59,6 +59,8 @@ def init_gdk_display_source() -> None:
     cdef Display *x11_display = gdk_x11_display_get_xdisplay(gdk_display)
     set_display(x11_display)
     name = gdk_display_get_name(gdk_display).decode()
+    from xpra.log import Logger
+    Logger("gtk").debug("gdk display initialized: %r", name)
     set_display_name(name)
 
 def close_gdk_display_source() -> None:
