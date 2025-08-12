@@ -259,12 +259,13 @@ def is_X11() -> bool:
     if gdk_backend == "x11":
         get_util_logger().debug(f"is_X11() GDK_BACKEND={gdk_backend}")
         return True
-    try:
-        from xpra.x11.gtk.bindings import is_X11_Display
-        return is_X11_Display()
-    except ImportError:
-        get_util_logger().debug("failed to load gtk x11 bindings", exc_info=True)
-        return True
+    if envbool("XPRA_GTK", True):
+        try:
+            from xpra.x11.gtk.bindings import is_X11_Display
+            return is_X11_Display()
+        except ImportError:
+            get_util_logger().debug("failed to load gtk x11 bindings", exc_info=True)
+    return True
 
 
 def nn(x) -> str:
