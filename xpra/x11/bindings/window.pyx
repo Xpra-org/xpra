@@ -1087,6 +1087,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         et.window = xwindow
         et.atom = timestamp_prop
         XIfEvent(self.display, &xevent, <void*> &timestamp_predicate, <XPointer> &et)
+        XDeleteProperty(self.display, xwindow, timestamp_prop)
         return xevent.xproperty.time
 
 
