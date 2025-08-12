@@ -6,7 +6,9 @@
 from time import monotonic
 
 from xpra.util.gobject import n_arg_signal, one_arg_signal
-from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, ClipboardCallback
+from xpra.clipboard.common import ClipboardCallback
+from xpra.clipboard.targets import TEXT_TARGETS
+from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.os_util import gi_import
 from xpra.util.str_fn import Ellipsizer

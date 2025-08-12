@@ -33,13 +33,16 @@ from xpra.platform.win32.common import (
 )
 from xpra.platform.win32 import win32con
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
-from xpra.clipboard.core import (
-    ClipboardProxyCore, log, _filter_targets, TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE, ClipboardCallback,
-)
+from xpra.clipboard.common import MAX_CLIPBOARD_PACKET_SIZE, ClipboardCallback
+from xpra.clipboard.targets import _filter_targets, TEXT_TARGETS
+from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.common import roundup, noop
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.util.env import envint, envbool
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
+from xpra.log import Logger
+
+log = Logger("clipboard", "win32")
 
 GLib = gi_import("GLib")
 

@@ -9,7 +9,8 @@ from collections.abc import Callable
 from xpra.os_util import gi_import
 from xpra.common import noop
 from xpra.net.common import PacketElement
-from xpra.clipboard.core import ClipboardProtocolHelperCore, ClipboardProxyCore
+from xpra.clipboard.core import ClipboardProtocolHelperCore
+from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized
 from xpra.util.env import envint
 from xpra.log import Logger

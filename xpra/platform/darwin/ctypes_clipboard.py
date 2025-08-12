@@ -13,7 +13,9 @@ from AppKit import (
 from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength
 
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
-from xpra.clipboard.core import _filter_targets, ClipboardProxyCore, TEXT_TARGETS, ClipboardCallback
+from xpra.clipboard.common import ClipboardCallback
+from xpra.clipboard.targets import _filter_targets, TEXT_TARGETS
+from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.platform.ui_thread_watcher import get_UI_watcher
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.os_util import gi_import

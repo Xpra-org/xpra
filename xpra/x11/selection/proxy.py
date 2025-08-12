@@ -10,7 +10,9 @@ from typing import Sequence, Any, Final
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.x11.bindings.window import PropertyError
-from xpra.clipboard.core import ClipboardProxyCore, ClipboardCallback, TEXT_TARGETS, must_discard, must_discard_extra
+from xpra.clipboard.common import ClipboardCallback
+from xpra.clipboard.targets import must_discard_extra, must_discard, TEXT_TARGETS
+from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.clipboard.timeout import CONVERT_TIMEOUT
 from xpra.util.env import first_time
 from xpra.util.gobject import one_arg_signal, n_arg_signal
