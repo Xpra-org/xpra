@@ -13,8 +13,7 @@ from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xsync, xswallow, xlog
 from xpra.x11.common import Unmanageable, FRAME_EXTENTS
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
-from xpra.x11.gtk.selection import ManagerSelection
-from xpra.x11.selection.common import Ownership
+from xpra.x11.selection.manager import ManagerSelection
 from xpra.x11.gtk.world_window import WorldWindow, destroy_world_window
 from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.models.window import WindowModel, configure_bits
@@ -83,24 +82,29 @@ class Wm(GObject.GObject):
         self._wm_name = wm_name
         self._ewmh_window = 0
         self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
+        self._world_window = None
 
         self._windows: dict[int, Any] = {}
         # EWMH says we have to know the order of our windows oldest to
         # youngest...
         self._windows_in_order = []
 
-        # Become the Official Window Manager of this year's display:
-        self._wm_selection = ManagerSelection("WM_S0")
-        self._cm_wm_selection = ManagerSelection("_NET_WM_CM_S0")
-        self._wm_selection.connect("selection-lost", self._lost_wm_selection)
-        self._cm_wm_selection.connect("selection-lost", self._lost_wm_selection)
-        # May throw AlreadyOwned:
-        mode: Ownership = Ownership.FORCE if replace_other_wm else Ownership.IF_UNOWNED
-        self._wm_selection.acquire(mode)
-        self._cm_wm_selection.acquire(mode)
+        # According to ICCCM 2.8/4.3, a window manager for screen N is a client which
+        # acquires the selection WM_S<N>.  If another client already has this
+        # selection, we can either abort or steal it.  Once we have it, if someone
+        # else steals it, then we should exit.
 
+        # Become the Official Window Manager of this year's display:
+        self._wm_selection = ManagerSelection("WM_S0", "_NET_WM_CM_S0")
+        self._wm_selection.connect("selection-lost", self._lost_wm_selection)
+        self._wm_selection.connect("selection-acquired", self._got_wm_selection)
+        # May throw AlreadyOwned:
+        self._wm_selection.acquire(replace_other_wm)
+
+    def _got_wm_selection(self, *_args):
         # Set up the necessary EWMH properties on the root window.
         self._ewmh_window = self._setup_ewmh_window()
+
         root_w, root_h = X11Window.getGeometry(rxid)[2:4]
         # Start with just one desktop:
         set_desktop_list(("Main",))
@@ -260,8 +264,7 @@ class Wm(GObject.GObject):
                 framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, xid)
                 prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
 
-    def _lost_wm_selection(self, selection) -> None:
-        log.info("Lost WM selection %s, exiting", selection)
+    def _lost_wm_selection(self, *_args) -> None:
         self.emit("quit")
 
     def do_quit(self) -> None:

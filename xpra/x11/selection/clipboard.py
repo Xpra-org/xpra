@@ -12,9 +12,8 @@ from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import xsync, xlog
 from xpra.x11.prop import prop_set
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
-from xpra.x11.selection.common import xatoms_to_strings, strings_to_xatoms
+from xpra.x11.selection.common import xatoms_to_strings, strings_to_xatoms, xfixes_selection_input
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
-from xpra.util.env import first_time
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -38,7 +37,7 @@ def init_event_window() -> int:
     InputOnly: Final[int] = constants["InputOnly"]
     PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
     rxid = X11Window.get_root_xid()
-    xid = X11Window.CreateWindow(rxid, -1, -1, inputoutput=InputOnly, event_mask=PropertyChangeMask)
+    xid = X11Window.CreateWindow(rxid, -1, -1, event_mask=PropertyChangeMask, inputoutput=InputOnly)
     prop_set(xid, "WM_TITLE", "latin1", "Xpra-Clipboard")
     X11Window.selectSelectionInput(xid)
     log(f"init_event_window()={xid=}")
@@ -96,18 +95,10 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         proxy.set_direction(self.can_send, self.can_receive)
         proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
         proxy.connect("send-clipboard-request", self._send_clipboard_request_handler)
-        try:
-            from xpra.x11.bindings.fixes import XFixesBindings
-            XFixes = XFixesBindings()
-            with xsync:
-                root_xid = XFixes.get_root_xid()
-                XFixes.selectXFSelectionInput(xid, selection)
-                XFixes.selectXFSelectionInput(root_xid, selection)
-        except ImportError:
-            log("make_proxy(%s)", selection, exc_info=True)
-            if first_time("xfixes"):
-                log.warn("Warning: XFixes extension bindings could not be loaded")
-                log.warn(" clipboard synchonization will be limited")
+        from xpra.x11.bindings.core import get_root_xid
+        rxid = get_root_xid()
+        xfixes_selection_input(xid, selection)
+        xfixes_selection_input(rxid, selection)
         return proxy
 
     ############################################################################

@@ -11,8 +11,7 @@ from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xlog, XError, xsync
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.prop import raw_prop_set, raw_prop_get
-from xpra.x11.gtk.selection import ManagerSelection
-from xpra.x11.selection.common import Ownership
+from xpra.x11.selection.manager import ManagerSelection
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.xsettings_prop import bytes_to_xsettings, xsettings_to_bytes
 from xpra.log import Logger
@@ -37,14 +36,13 @@ class XSettingsManager:
     __slots__ = ("_manager", "_window")
 
     def __init__(self, screen_number=0):
-        selection = f"_XSETTINGS_S{screen_number}"
-        self._manager = ManagerSelection(selection)
+        self._manager = ManagerSelection(f"_XSETTINGS_S{screen_number}")
         # Technically I suppose ICCCM says we should use FORCE, but it's not
         # like a window manager where you have to wait for the old wm to clean
         # things up before you can do anything... as soon as the selection is
         # gone, the settings are gone. (Also, if we're stealing from
         # ourselves, we probably don't clean up the window properly.)
-        self._manager.acquire(Ownership.FORCE_AND_RETURN)
+        self._manager.acquire()
 
     def set_settings(self, settings) -> None:
         if isinstance(settings, list):

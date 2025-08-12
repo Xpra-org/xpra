@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import struct
-from enum import Enum
 from typing import Sequence, Iterable
 
 from xpra.util.str_fn import repr_ellipsized
@@ -16,18 +15,6 @@ sizeof_long = struct.calcsize(b'@L')
 
 class AlreadyOwned(Exception):
     pass
-
-
-class Ownership(Enum):
-    # If the selection is already owned, then raise AlreadyOwned rather
-    # than stealing it.
-    IF_UNOWNED = 1
-    # If the selection is already owned, then steal it, and then block until
-    # the previous owner has signaled that they are done cleaning up.
-    FORCE = 2
-    # If the selection is already owned, then steal it and return immediately.
-    # Created for the use of tests.
-    FORCE_AND_RETURN = 3
 
 
 def xatoms_to_strings(data: bytes) -> Sequence[str]:
@@ -48,3 +35,21 @@ def strings_to_xatoms(data: Iterable[str]) -> bytes:
         X11Window = X11WindowBindings()
         atom_array = tuple(X11Window.get_xatom(atom) for atom in data if atom)
     return struct.pack(b"@" + b"L" * len(atom_array), *atom_array)
+
+
+def xfixes_selection_input(xid: int, selection: str) -> bool:
+    try:
+        from xpra.x11.bindings.fixes import XFixesBindings
+    except ImportError:
+        from xpra.util.env import first_time
+        from xpra.log import Logger
+        log = Logger("x11")
+        log("xfixes_selection_input(%#x)", xid, exc_info=True)
+        if first_time("xfixes"):
+            log.warn("Warning: XFixes extension bindings could not be loaded")
+            log.warn(" some features will be degraded")
+        return False
+    XFixes = XFixesBindings()
+    with xsync:
+        XFixes.selectXFSelectionInput(xid, selection)
+    return True
