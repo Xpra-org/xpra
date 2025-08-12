@@ -356,6 +356,8 @@ class Wm(GObject.GObject):
         # are detected on it, anyway.
         xid = X11Window.CreateWindow(rxid, -1, -1, inputoutput=InputOnly)
         prop_set(xid, "WM_TITLE", "latin1", self._wm_name)
+        prop_set(xid,"WM_NAME", "utf8", self._wm_name)
+        prop_set(xid,"_NET_WM_NAME", "utf8", self._wm_name)
         prop_set(xid, "_NET_SUPPORTING_WM_CHECK", "window", xid)
         root_set("_NET_SUPPORTING_WM_CHECK", "window", xid)
         root_set("_NET_WM_NAME", "utf8", self._wm_name)
