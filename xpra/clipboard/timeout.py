@@ -3,18 +3,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.common import noop
-from xpra.net.common import PacketElement
 from xpra.clipboard.common import env_timeout
 from xpra.clipboard.core import ClipboardProtocolHelperCore
 from xpra.clipboard.proxy import ClipboardProxyCore
-from xpra.util.str_fn import Ellipsizer, repr_ellipsized
+from xpra.util.str_fn import Ellipsizer
 from xpra.log import Logger
-from xpra.platform.features import CLIPBOARD_GREEDY
 
 GLib = gi_import("GLib")
 
@@ -37,46 +34,9 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         self._clipboard_outstanding_requests = {}
         super().cleanup()
 
-    def make_proxy(self, selection: str):
-        raise NotImplementedError()
-
-    def _get_proxy(self, selection: str) -> ClipboardProxyCore | None:
-        proxy = self._clipboard_proxies.get(selection)
-        if not proxy:
-            log.warn("Warning: no clipboard proxy for '%s'", selection)
-            return None
-        return proxy
-
-    def set_want_targets_client(self, want_targets: bool) -> None:
-        super().set_want_targets_client(want_targets)
-        # pass it on to the ClipboardProxy instances:
-        for proxy in self._clipboard_proxies.values():
-            proxy.set_want_targets(want_targets)
-
     ############################################################################
     # network methods for communicating with the remote clipboard:
     ############################################################################
-    def _send_clipboard_token_handler(self, proxy: ClipboardProxyCore, packet_data: tuple[PacketElement] = ()):
-        if log.is_debug_enabled():
-            log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
-        remote = self.local_to_remote(proxy._selection)
-        packet: list[Any] = ["clipboard-token", remote]
-        if packet_data:
-            # append 'TARGETS' unchanged:
-            packet.append(packet_data[0])
-            # if present, the next element is the target data,
-            # which we have to convert to wire format:
-            if len(packet_data) >= 2:
-                target, dtype, dformat, data = packet_data[1]
-                wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
-                if wire_encoding:
-                    wire_data = self._may_compress(dtype, dformat, wire_data)
-                    if wire_data:
-                        packet += [target, dtype, dformat, wire_encoding, wire_data]
-                        claim = proxy._can_send
-                        packet += [claim, CLIPBOARD_GREEDY]
-        log("send_clipboard_token_handler %s to %s", proxy._selection, remote)
-        self.send(*packet)
 
     def _send_clipboard_request_handler(self, proxy: ClipboardProxyCore, selection: str, target: str):
         log("send_clipboard_request_handler%s", (proxy, selection, target))

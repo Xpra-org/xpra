@@ -11,12 +11,12 @@ from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
 from xpra.net.compression import Compressible
-from xpra.net.common import Packet
+from xpra.net.common import Packet, PacketElement
 from xpra.os_util import POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
 from xpra.util.env import envint
-from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
+from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS, CLIPBOARD_GREEDY
 from xpra.clipboard.common import get_format_size, sizeof_long, sizeof_short, compile_filters
 from xpra.clipboard.targets import _filter_targets, must_discard, DISCARD_EXTRA_TARGETS, DISCARD_TARGETS
 from xpra.log import Logger, is_debug_enabled
@@ -72,6 +72,19 @@ class ClipboardProtocolHelperCore:
             proxy = self.make_proxy(selection)
             self._clipboard_proxies[selection] = proxy
         log("%s.init_proxies : %s", self, self._clipboard_proxies)
+
+    def _get_proxy(self, selection: str):
+        proxy = self._clipboard_proxies.get(selection)
+        if not proxy:
+            log.warn("Warning: no clipboard proxy for '%s'", selection)
+        return proxy
+
+    def set_want_targets_client(self, want_targets: bool) -> None:
+        log("set_want_targets_client(%s)", want_targets)
+        self._want_targets = want_targets
+        # pass it on to the ClipboardProxy instances:
+        for proxy in self._clipboard_proxies.values():
+            proxy.set_want_targets(want_targets)
 
     def init_translation(self, kwargs: dict) -> None:
         def getselection(name: str) -> str:
@@ -161,10 +174,6 @@ class ClipboardProtocolHelperCore:
         for proxy in self._clipboard_proxies.values():
             proxy.set_greedy_client(greedy)
 
-    def set_want_targets_client(self, want_targets: bool) -> None:
-        log("set_want_targets_client(%s)", want_targets)
-        self._want_targets = want_targets
-
     def set_preferred_targets(self, preferred_targets) -> None:
         for proxy in self._clipboard_proxies.values():
             proxy.set_preferred_targets(preferred_targets)
@@ -198,6 +207,28 @@ class ClipboardProtocolHelperCore:
     def send_all_tokens(self) -> None:
         # only send the tokens that we're actually handling:
         self.send_tokens(tuple(self._clipboard_proxies.keys()))
+
+    def _send_clipboard_token_handler(self, proxy, packet_data: tuple[PacketElement] = ()):
+        if log.is_debug_enabled():
+            log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
+        remote = self.local_to_remote(proxy._selection)
+        packet: list[Any] = ["clipboard-token", remote]
+        if packet_data:
+            # append 'TARGETS' unchanged:
+            packet.append(packet_data[0])
+            # if present, the next element is the target data,
+            # which we have to convert to wire format:
+            if len(packet_data) >= 2:
+                target, dtype, dformat, data = packet_data[1]
+                wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
+                if wire_encoding:
+                    wire_data = self._may_compress(dtype, dformat, wire_data)
+                    if wire_data:
+                        packet += [target, dtype, dformat, wire_encoding, wire_data]
+                        claim = proxy._can_send
+                        packet += [claim, CLIPBOARD_GREEDY]
+        log("send_clipboard_token_handler %s to %s", proxy._selection, remote)
+        self.send(*packet)
 
     def _process_clipboard_token(self, packet: Packet) -> None:
         selection = packet.get_str(1)
