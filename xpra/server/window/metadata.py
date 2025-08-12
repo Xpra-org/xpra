@@ -32,7 +32,7 @@ def make_window_metadata(window,
         return {}
 
 
-DEFAULT_VALUES: dict[str: int | str | bool | tuple | dict] = {
+DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "title": "",
     "icon-title": "",
     "command": "",
