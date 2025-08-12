@@ -9,13 +9,9 @@ from xpra.x11.error import xswallow
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.res import ResBindings
 
-X11Window = X11WindowBindings()
-XRes = ResBindings()
-if not XRes.check_xres():
-    XRes = None
-
 
 def get_wintitle(xid: int) -> str:
+    X11Window = X11WindowBindings()
     with xswallow:
         data = X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING")
         if data:
@@ -29,7 +25,8 @@ def get_wintitle(xid: int) -> str:
 
 def get_wininfo(xid: int) -> str:
     wininfo = [f"xid={xid:x}"]
-    if XRes:
+    XRes = ResBindings()
+    if XRes.check_xres():
         with xswallow:
             pid = XRes.get_pid(xid)
             if pid:
@@ -44,5 +41,6 @@ def get_wininfo(xid: int) -> str:
             wininfo.append(f"child of {title!r}")
             return csv(wininfo)
         with xswallow:
+            X11Window = X11WindowBindings()
             xid = X11Window.getParent(xid)
     return csv(wininfo)
