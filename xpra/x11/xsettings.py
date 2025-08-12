@@ -19,8 +19,6 @@ from xpra.log import Logger
 log = Logger("x11", "xsettings")
 
 GObject = gi_import("GObject")
-Gtk = gi_import("Gtk")
-Gdk = gi_import("Gdk")
 
 # the X11 atom name for the XSETTINGS property:
 XSETTINGS: Final[str] = "_XSETTINGS_SETTINGS"
@@ -66,12 +64,10 @@ class XSettingsHelper:
     """
     def __init__(self, screen_number=0):
         self._selection = "_XSETTINGS_S%s" % screen_number
-        atom = Gdk.Atom.intern(self._selection, False)
         with xsync:
             from xpra.x11.bindings.window import X11WindowBindings
             X11Window = X11WindowBindings()
             self._selection_atom = X11Window.get_xatom(self._selection)
-        self._clipboard = Gtk.Clipboard.get(atom)
 
     def xsettings_owner(self) -> int:
         with xlog:
@@ -134,8 +130,8 @@ GObject.type_register(XSettingsWatcher)
 def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.x11.xsettings_prop import XSettingsNames
-    from xpra.x11.gtk.display_source import init_gdk_display_source
-    init_gdk_display_source()
+    from xpra.x11.bindings.display_source import init_display_source
+    init_display_source()
     s = XSettingsHelper().get_settings()
     assert s
     seq, data = s
