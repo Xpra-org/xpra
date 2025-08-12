@@ -32,6 +32,27 @@ IGNORED_MESSAGES = (
 )
 
 
+def init_event_window() -> int:
+    from xpra.x11.bindings.window import X11WindowBindings, constants
+    X11Window = X11WindowBindings()
+    InputOnly: Final[int] = constants["InputOnly"]
+    PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
+    rxid = X11Window.get_root_xid()
+    xid = X11Window.CreateWindow(rxid, -1, -1, inputoutput=InputOnly, event_mask=PropertyChangeMask)
+    prop_set(xid, "WM_TITLE", "latin1", "Xpra-Clipboard")
+    X11Window.selectSelectionInput(xid)
+    log(f"init_event_window()={xid=}")
+    return xid
+
+
+def remove_event_window(xid: int) -> None:
+    with xlog:
+        from xpra.x11.bindings.window import X11WindowBindings
+        X11Window = X11WindowBindings()
+        # X11Window.Unmap(xid)
+        X11Window.DestroyWindow(xid)
+
+
 class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     # handle signals from the X11 bindings,
     # and dispatch them to the proxy handling the selection specified:
@@ -46,7 +67,8 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     def __init__(self, send_packet_cb: Callable, progress_cb=noop, **kwargs):
         GObject.GObject.__init__(self)
         with xsync:
-            self.event_window_xid = self.init_window()
+            self.event_window_xid = init_event_window()
+            add_event_receiver(self.event_window_xid, self)
             # gtk must know about this window before we use it:
             from xpra.x11.common import get_pywindow
             self.window = get_pywindow(self.event_window_xid)
@@ -55,29 +77,12 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     def __repr__(self):
         return "X11Clipboard"
 
-    def init_window(self) -> int:
-        from xpra.x11.bindings.window import X11WindowBindings, constants
-        X11Window = X11WindowBindings()
-        InputOnly: Final[int] = constants["InputOnly"]
-        PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
-        rxid = X11Window.get_root_xid()
-        xid = X11Window.CreateWindow(rxid, -1, -1, inputoutput=InputOnly, event_mask=PropertyChangeMask)
-        prop_set(xid, "WM_TITLE", "latin1", "Xpra-Clipboard")
-        X11Window.selectSelectionInput(xid)
-        add_event_receiver(xid, self)
-        log(f"init_window() {xid=}")
-        return xid
-
     def cleanup_window(self) -> None:
         xid = self.event_window_xid
         if xid:
-            self.event_window_xid = None
+            self.event_window_xid = 0
             remove_event_receiver(xid, self)
-            # X11Window.Unmap(xid)
-            with xlog:
-                from xpra.x11.bindings.window import X11WindowBindings
-                X11Window = X11WindowBindings()
-                X11Window.DestroyWindow(xid)
+            remove_event_window(xid)
 
     def cleanup(self) -> None:
         ClipboardTimeoutHelper.cleanup(self)
