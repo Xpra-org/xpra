@@ -34,7 +34,7 @@ class GLibServer(StubServerMixin, GLibPacketHandler):
 
     def do_run(self) -> None:
         run: Callable = self.main_loop.run
-        log("do_run() calling %s", )
+        log("do_run() calling %s()", run)
         run()
         log("do_run() end of %()", run)
 
