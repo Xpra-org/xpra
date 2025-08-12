@@ -9,10 +9,10 @@ from collections.abc import Callable
 from xpra.os_util import gi_import
 from xpra.common import noop
 from xpra.net.common import PacketElement
+from xpra.clipboard.common import env_timeout
 from xpra.clipboard.core import ClipboardProtocolHelperCore
 from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized
-from xpra.util.env import envint
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY
 
@@ -20,18 +20,6 @@ GLib = gi_import("GLib")
 
 log = Logger("clipboard")
 
-
-def env_timeout(name, default: int, min_time=0, max_time=5000) -> int:
-    env_name = f"XPRA_CLIPBOARD_{name}_TIMEOUT"
-    value = envint(env_name, default)
-    if not min_time < value <= max_time:
-        log.warn(f"Warning: invalid value for {env_name!r}")
-        log.warn(f" valid range is from {min_time} to {max_time}")
-        value = max(min_time, min(max_time, value))
-    return value
-
-
-CONVERT_TIMEOUT = env_timeout("CONVERT", 100)
 REMOTE_TIMEOUT = env_timeout("REMOTE", 2500)
 
 

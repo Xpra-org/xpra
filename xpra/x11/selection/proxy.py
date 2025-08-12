@@ -10,10 +10,9 @@ from typing import Sequence, Any, Final
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.x11.bindings.window import PropertyError
-from xpra.clipboard.common import ClipboardCallback
+from xpra.clipboard.common import ClipboardCallback, env_timeout
 from xpra.clipboard.targets import must_discard_extra, must_discard, TEXT_TARGETS
 from xpra.clipboard.proxy import ClipboardProxyCore
-from xpra.clipboard.timeout import CONVERT_TIMEOUT
 from xpra.util.env import first_time
 from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.util.str_fn import Ellipsizer, bytestostr, csv, memoryview_to_bytes
@@ -27,6 +26,8 @@ GObject = gi_import("GObject")
 GLib = gi_import("GLib")
 
 log = Logger("x11", "clipboard")
+
+CONVERT_TIMEOUT = env_timeout("CONVERT", 100)
 
 X11Window = X11WindowBindings()
 CurrentTime: Final[int] = constants["CurrentTime"]
