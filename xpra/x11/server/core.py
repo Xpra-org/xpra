@@ -65,6 +65,8 @@ window_type_atoms = tuple(f"_NET_WM_WINDOW_TYPE{wtype}" for wtype in (
 
 # noinspection PyUnreachableCode
 def get_cursor_sizes() -> tuple[int, int]:
+    if not envbool("XPRA_GTK", True):
+        return 0, 0
     Gdk = gi_import("Gdk")
     display = Gdk.Display.get_default()
     if not display:

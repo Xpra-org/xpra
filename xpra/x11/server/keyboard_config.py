@@ -260,7 +260,11 @@ class KeyboardConfig(KeyboardConfigBase):
         log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
 
     def compute_modifier_keynames(self) -> None:
-        Gdk = gi_import("Gdk")
+        try:
+            Gdk = gi_import("Gdk")
+        except ImportError:
+            log.warn("Warning: unable to compute modifier keynames")
+            return
         self.keycodes_for_modifier_keynames = {}
         self.mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
         keymap = get_default_keymap()
@@ -415,7 +419,12 @@ class KeyboardConfig(KeyboardConfigBase):
         # add the keynames we find via gtk
         # since we may rely on finding those keynames from the client
         # (used with non-native keymaps)
-        keymap = get_gtk_keymap()
+        try:
+            keymap = get_gtk_keymap()
+        except ImportError:
+            log("add_gtk_keynames()", exc_info=True)
+            log.warn("Warning: unable to use gtk keymap")
+            return
         log("add_gtk_keynames() gtk keymap=%s", Ellipsizer(keymap))
         for _, keyname, keycode, _, _ in keymap:
             if keyname not in self.keycode_translation:
