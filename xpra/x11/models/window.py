@@ -930,8 +930,7 @@ class WindowModel(BaseWindowModel):
     ################################
 
     def give_client_focus(self) -> None:
-        """The focus manager has decided that our client should receive X
-        focus.  See world_window.py for details."""
+        """The focus manager has decided that our client should receive X focus."""
         log("give_client_focus() corral_xid=%s", self.corral_xid)
         if self.corral_xid:
             with xlog:

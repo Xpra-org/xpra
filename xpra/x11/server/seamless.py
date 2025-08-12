@@ -176,7 +176,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def init_wm(self) -> None:
         from xpra.x11.selection.common import AlreadyOwned
         # Create the WM object
-        from xpra.x11.gtk.wm import Wm
+        from xpra.x11.wm import Wm
         x11_errors = []
         self._wm = None
         while self._wm is None:
@@ -242,7 +242,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         elif features.window:
             # update the static default so the Wm instance will use it
             # when we do instantiate it:
-            from xpra.x11.gtk import wm as wm_module
+            from xpra.x11 import wm as wm_module
             wm_module.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
     def init_packet_handlers(self) -> None:
@@ -696,17 +696,11 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         had_focus = self._id_to_window.get(hfid)
 
         def reset_focus() -> None:
-            from xpra.x11.gtk.world_window import get_world_window
-            toplevel = get_world_window()
-            focuslog("reset_focus() %s / %s had focus (toplevel=%s)", hfid, had_focus, toplevel)
+            focuslog("reset_focus() %s / %s had focus", hfid, had_focus)
             # this will call clear_keys_pressed() if the server is an InputServer:
             if hasattr(self, "reset_focus"):
                 self.reset_focus()
-            # FIXME: kind of a hack:
             self._has_focus = 0
-            # toplevel may be None during cleanup!
-            if toplevel:
-                toplevel.reset_x_focus()
 
         if wid == 0:
             # wid==0 means root window

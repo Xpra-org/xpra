@@ -14,7 +14,6 @@ from xpra.x11.error import xsync, xswallow, xlog
 from xpra.x11.common import Unmanageable, FRAME_EXTENTS
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
 from xpra.x11.selection.manager import ManagerSelection
-from xpra.x11.gtk.world_window import WorldWindow, destroy_world_window
 from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.window_info import window_name, window_info
@@ -82,7 +81,6 @@ class Wm(GObject.GObject):
         self._wm_name = wm_name
         self._ewmh_window = 0
         self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
-        self._world_window = None
 
         self._windows: dict[int, Any] = {}
         # EWMH says we have to know the order of our windows oldest to
@@ -115,11 +113,6 @@ class Wm(GObject.GObject):
         set_desktop_geometry(root_w, root_h)
         set_desktop_viewport(0, 0)
 
-        # Load up our full-screen widget
-        self._world_window = WorldWindow(rxid)
-        self._world_window.show_all()
-        wxid = self._world_window.get_window().get_xid()
-
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
         add_event_receiver(rxid, self)
@@ -133,15 +126,12 @@ class Wm(GObject.GObject):
         children = X11Window.get_children(rxid)
         log(f"root window children: {children}")
         for xid in children:
-            # ignore windows we have created ourselves (ie: the world window),
-            # unmapped or `OR` windows:
-            if xid == wxid:
-                continue
+            # ignore unmapped and `OR` windows:
             if X11Window.is_override_redirect(xid):
-                log("skipping %s", window_info(xid))
+                log("skipping OR window %s", window_info(xid))
                 continue
             if not X11Window.is_mapped(xid):
-                log("skipping %s", window_info(xid))
+                log("skipping unmapped window %s", window_info(xid))
                 continue
             log(f"Wm managing pre-existing child window {xid:x}")
             self._manage_client(xid)
@@ -281,7 +271,6 @@ class Wm(GObject.GObject):
             with xswallow:
                 prop_del(xid, "_NET_SUPPORTING_WM_CHECK")
                 prop_del(xid, "_NET_WM_NAME")
-        destroy_world_window()
 
     def do_x11_child_map_request_event(self, event) -> None:
         log("Found a potential client")
@@ -335,8 +324,8 @@ class Wm(GObject.GObject):
         # something real.  This is easy to detect -- a FocusIn event with
         # detail PointerRoot or None is generated on the root window.
         focuslog("wm.do_x11_focus_in_event(%s)", event)
-        if event.detail in (NotifyPointerRoot, NotifyDetailNone) and self._world_window:
-            self._world_window.reset_x_focus()
+        # if event.detail in (NotifyPointerRoot, NotifyDetailNone):
+        #     self._world_window.reset_x_focus()
 
     # noinspection PyMethodMayBeStatic
     def do_x11_focus_out_event(self, event) -> None:

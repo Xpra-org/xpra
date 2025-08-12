@@ -342,10 +342,7 @@ class CoreX11WindowModel(WindowModelStub):
         # reparent, so I'm not sure doing this here in the superclass,
         # before we reparent, actually works... let's wait and see.
         try:
-            from xpra.x11.gtk.world_window import get_world_window
-            world = get_world_window()
-            wxid = world.get_window().get_xid() if world else 0
-            self._composite = CompositeHelper(self.xid, wxid)
+            self._composite = CompositeHelper(self.xid)
             with xsync:
                 self._composite.setup()
         except Exception as e:
