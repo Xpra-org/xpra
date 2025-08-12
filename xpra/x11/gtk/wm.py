@@ -13,7 +13,8 @@ from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xsync, xswallow, xlog
 from xpra.x11.common import Unmanageable, FRAME_EXTENTS
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
-from xpra.x11.gtk.selection import ManagerSelection, Ownership
+from xpra.x11.gtk.selection import ManagerSelection
+from xpra.x11.selection.common import Ownership
 from xpra.x11.gtk.world_window import WorldWindow, destroy_world_window
 from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.models.window import WindowModel, configure_bits

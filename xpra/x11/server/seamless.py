@@ -174,7 +174,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 XComposite.XCompositeReleaseOverlayWindow(ro)
 
     def init_wm(self) -> None:
-        from xpra.x11.gtk.selection import AlreadyOwned
+        from xpra.x11.selection.common import AlreadyOwned
         # Create the WM object
         from xpra.x11.gtk.wm import Wm
         x11_errors = []

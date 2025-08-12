@@ -10,7 +10,6 @@
 # else steals it, then we should exit.
 
 import sys
-from enum import Enum
 from typing import Final
 from struct import unpack, calcsize
 
@@ -24,6 +23,7 @@ from xpra.exit_codes import ExitCode
 from xpra.util.env import envint
 from xpra.os_util import gi_import
 from xpra.log import Logger
+from xpra.x11.selection.common import AlreadyOwned, Ownership
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -36,22 +36,6 @@ SELECTION_EXIT_TIMEOUT = envint("XPRA_SELECTION_EXIT_TIMEOUT", 20)
 
 StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 XNone: Final[int] = constants["XNone"]
-
-
-class AlreadyOwned(Exception):
-    pass
-
-
-class Ownership(Enum):
-    # If the selection is already owned, then raise AlreadyOwned rather
-    # than stealing it.
-    IF_UNOWNED = 1
-    # If the selection is already owned, then steal it, and then block until
-    # the previous owner has signaled that they are done cleaning up.
-    FORCE = 2
-    # If the selection is already owned, then steal it and return immediately.
-    # Created for the use of tests.
-    FORCE_AND_RETURN = 3
 
 
 class ManagerSelection(GObject.GObject):

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import struct
+from enum import Enum
 from typing import Sequence, Iterable
 
 from xpra.util.str_fn import repr_ellipsized
@@ -11,6 +12,22 @@ from xpra.x11.error import xsync
 
 
 sizeof_long = struct.calcsize(b'@L')
+
+
+class AlreadyOwned(Exception):
+    pass
+
+
+class Ownership(Enum):
+    # If the selection is already owned, then raise AlreadyOwned rather
+    # than stealing it.
+    IF_UNOWNED = 1
+    # If the selection is already owned, then steal it, and then block until
+    # the previous owner has signaled that they are done cleaning up.
+    FORCE = 2
+    # If the selection is already owned, then steal it and return immediately.
+    # Created for the use of tests.
+    FORCE_AND_RETURN = 3
 
 
 def xatoms_to_strings(data: bytes) -> Sequence[str]:
