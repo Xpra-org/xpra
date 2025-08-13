@@ -170,6 +170,13 @@ def get_keycode_mappings() -> dict[int, list[str]]:
     return X11Keyboard.get_keycode_mappings()
 
 
+def get_keyval_mappings() -> dict[int, dict[int, Sequence[int]]]:
+    X11Keyboard = X11KeyboardBindings()
+    if XKB and X11Keyboard.hasXkb():
+        return X11Keyboard.get_xkb_keysym_mappings()
+    return {}
+
+
 def set_keycode_translation(xkbmap_x11_keycodes: dict, xkbmap_keycodes: Iterable) -> dict[str | tuple[int, str], int]:
     x11_keycodes = get_keycode_mappings()
     keycodes: dict[int, set]

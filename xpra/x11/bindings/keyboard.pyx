@@ -480,6 +480,35 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XkbFreeKeyboard(xkb, 0, 1)
         return keysyms
 
+    def get_xkb_keysym_mappings(self) -> Dict[int, Dict[int, Sequence[int]]]:
+        # returns a map with the keyval as key,
+        # and a map as value: (group, list of keycodes)
+        self.context_check("get_xkb_keysym_mappings")
+        if not self.hasXkb():
+            return {}
+        mask = 255
+        cdef XkbDescPtr xkb = XkbGetMap(self.display, mask, XkbUseCoreKbd)
+        if xkb==NULL:
+            return {}
+        cdef KeySym sym
+        cdef unsigned char width
+        cdef XkbSymMapRec *sym_map
+        keysyms: Dict[int, Dict[int, Sequence[int]]] = {}
+        for keycode in range(xkb.min_key_code, xkb.max_key_code):
+            sym_map = &xkb.map.key_sym_map[keycode]
+            width = sym_map.width
+            if width <= 0 or sym_map.group_info <= 0:
+                continue
+            for group in range(sym_map.group_info):
+                offset = sym_map.offset + width * group
+                for i in range(width):
+                    keysym = xkb.map.syms[offset + i]
+                    keycodes = keysyms.setdefault(keysym, {}).setdefault(group, [])
+                    if keycode not in keycodes:
+                        keycodes.append(keycode)
+        XkbFreeKeyboard(xkb, 0, 1)
+        return keysyms
+
     def get_minmax_keycodes(self) -> Tuple[int, int]:
         if self.min_keycode==-1 and self.max_keycode==-1:
             self._get_minmax_keycodes()

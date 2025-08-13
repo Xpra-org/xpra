@@ -21,7 +21,7 @@ from xpra.x11.xkbhelper import (
     do_set_keymap, set_all_keycodes, set_keycode_translation,
     get_modifiers_from_meanings, get_modifiers_from_keycodes,
     clear_modifiers, set_modifiers, map_missing_modifiers,
-    clean_keyboard_state, get_keycode_mappings,
+    clean_keyboard_state, get_keycode_mappings, get_keyval_mappings,
     DEBUG_KEYSYMS, grok_modifier_map,
 )
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -98,6 +98,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.modifier_client_keycodes: dict[str, list] = {}
         self.compute_modifier_map()
         self.keycode_mappings = {}
+        self.keyval_mappings = {}
 
     def __repr__(self):
         return "KeyboardConfig(%s / %s / %s)" % (self.layout, self.variant, self.options)
@@ -355,6 +356,7 @@ class KeyboardConfig(KeyboardConfigBase):
             self.compute_modifier_keynames()
             self.compute_client_modifier_keycodes()
             self.update_keycode_mappings()
+            self.update_keyval_mappings()
             return
 
         with xlog:
@@ -404,6 +406,7 @@ class KeyboardConfig(KeyboardConfigBase):
             log("keyname_for_mod=%s", self.keynames_for_mod)
             clean_keyboard_state()
             self.update_keycode_mappings()
+            self.update_keyval_mappings()
             self.add_loose_matches()
 
     def add_gtk_keynames(self) -> None:
@@ -477,9 +480,13 @@ class KeyboardConfig(KeyboardConfigBase):
             log("set_default_keymap: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
             log("set_default_keymap: modifier_map=%s", self.modifier_map)
             self.update_keycode_mappings()
+            self.update_keyval_mappings()
 
     def update_keycode_mappings(self) -> None:
         self.keycode_mappings = get_keycode_mappings()
+
+    def update_keyval_mappings(self) -> None:
+        self.keyval_mappings = get_keyval_mappings()
 
     def do_get_keycode(self, client_keycode: int, keyname: str, pressed: bool, modifiers: list[str], keyval: int,
                        keystr: str, group: int) -> tuple[int, int]:
@@ -606,13 +613,19 @@ class KeyboardConfig(KeyboardConfigBase):
         # noinspection PyChainedComparisons
         if keycode < 0 and keyval > 0:
             # last resort, find using the keyval:
-            from xpra.gtk.keymap import get_default_keymap
-            keymap = get_default_keymap()
-            b, entries = keymap.get_entries_for_keyval(keyval)
-            if b and entries:
-                for entry in entries:
-                    if entry.group == group:
-                        return entry.keycode, entry.group
+            group_mapping = self.keyval_mappings.get(keyval, {})
+            if group_mapping:
+                # this keyval was found!
+                # try to preserve the group:
+                keycodes = group_mapping.get(keyval, [])
+                if keycodes:
+                    keycode = keycodes[0]
+                else:
+                    # try other groups:
+                    for group, keycodes in group_mapping.items():
+                        if keycodes:
+                            keycode = keycodes[0]
+                            rgroup = group
         return keycode, rgroup
 
     def get_current_mask(self) -> list[str]:
