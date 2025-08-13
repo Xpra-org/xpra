@@ -12,7 +12,6 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
-from xpra.gtk.keymap import get_gtk_keymap, get_default_keymap
 from xpra.x11.error import xsync, xlog
 from xpra.keyboard.mask import (
     DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names,
@@ -261,6 +260,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def compute_modifier_keynames(self) -> None:
         self.keycodes_for_modifier_keynames = {}
         self.mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
+        from xpra.gtk.keymap import get_default_keymap
         keymap = get_default_keymap()
         if self.keynames_for_mod:
             for modifier, keynames in self.keynames_for_mod.items():
@@ -415,6 +415,7 @@ class KeyboardConfig(KeyboardConfigBase):
         # since we may rely on finding those keynames from the client
         # (used with non-native keymaps)
         try:
+            from xpra.gtk.keymap import get_gtk_keymap
             keymap = get_gtk_keymap()
         except ImportError:
             log("add_gtk_keynames()", exc_info=True)
@@ -609,6 +610,7 @@ class KeyboardConfig(KeyboardConfigBase):
         # noinspection PyChainedComparisons
         if keycode < 0 and keyval > 0:
             # last resort, find using the keyval:
+            from xpra.gtk.keymap import get_default_keymap
             keymap = get_default_keymap()
             b, entries = keymap.get_entries_for_keyval(keyval)
             if b and entries:
