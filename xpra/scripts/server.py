@@ -674,6 +674,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     if not envbool("XPRA_GTK", True):
         from xpra.scripts.main import no_gi_gtk_modules
         no_gi_gtk_modules()
+        sys.modules["xpra.gtk"] = None
 
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
