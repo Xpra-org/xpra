@@ -63,17 +63,6 @@ window_type_atoms = tuple(f"_NET_WM_WINDOW_TYPE{wtype}" for wtype in (
 ))
 
 
-# noinspection PyUnreachableCode
-def get_cursor_sizes() -> tuple[int, int]:
-    if not envbool("XPRA_GTK", True):
-        return 0, 0
-    Gdk = gi_import("Gdk")
-    display = Gdk.Display.get_default()
-    if not display:
-        return 0, 0
-    return int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
-
-
 def get_root_size() -> tuple[int, int]:
     xid = get_root_xid()
     with xsync:
@@ -394,8 +383,13 @@ class X11ServerCore(ServerBase):
         if skip_default and is_default:
             cursorlog("get_cursor_data(): default cursor - clearing it")
             cursor_image = None
-        cursor_sizes = get_cursor_sizes()
-        return cursor_image, cursor_sizes
+        try:
+            from xpra.x11.bindings.cursor import X11CursorBindings
+            size = X11CursorBindings().get_cursor_size()
+            log.warn(f"size={size}")
+        except ImportError:
+            size = 32
+        return cursor_image, (size, size)
 
     def get_all_screen_sizes(self) -> Sequence[tuple[int, int]]:
         # workaround for #2910: the resolutions we add are not seen by XRRSizes!

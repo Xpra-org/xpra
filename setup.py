@@ -2635,6 +2635,7 @@ if x11_ENABLED:
         ace("xpra.x11.bindings.shape", "xext")
         ace("xpra.x11.bindings.damage", "xdamage")
         ace("xpra.x11.bindings.fixes", "xfixes")
+        ace("xpra.x11.bindings.cursor", "xcursor")
         ace("xpra.x11.bindings.keyboard", "xkbfile")
         ace("xpra.x11.bindings.res", "xres")
         ace("xpra.x11.bindings.composite", "xcomposite")
