@@ -515,7 +515,6 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return keysym
 
     def parse_keysym(self, symbol) -> int:
-        self.context_check("parse_keysym")
         return int(self._parse_keysym(symbol))
 
     def keysym_str(self, keysym_val) -> str:
