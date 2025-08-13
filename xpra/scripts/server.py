@@ -6,16 +6,12 @@
 
 # pylint: disable=import-outside-toplevel
 
-# DO NOT IMPORT GTK HERE: see
-#  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000041.html
-#  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
-# (also do not import anything that imports gtk)
 import sys
 import glob
 import shlex
 import os.path
 import datetime
-from typing import Any, NoReturn
+from typing import Any, NoReturn, Final
 from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence, Callable
 
@@ -589,7 +585,7 @@ def start_dbus() -> None:
     ROOT: bool = POSIX and getuid() == 0
     SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", ROOT)
     SYSTEM_DBUS_TIMEOUT = envint("XPRA_SYSTEM_DBUS_TIMEOUT", 5)
-    MACHINE_ID = "/var/lib/dbus/machine-id"
+    MACHINE_ID: Final[str] = "/var/lib/dbus/machine-id"
     if SYSTEM_DBUS and not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
         if not os.path.exists(MACHINE_ID):
             try:
