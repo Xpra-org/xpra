@@ -44,7 +44,6 @@ screenlog = Logger("x11", "screen")
 
 SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 
-REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", False)
