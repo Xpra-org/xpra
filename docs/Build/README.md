@@ -15,6 +15,8 @@ Use one of the following locations:
 * `pypi`: https://pypi.org/project/xpra/ (releases only)
 * `xpra.org`: https://xpra.org/src/ (releases only)
 
+For more information about the source code, please see [source metrics](Source.md).
+
 ## Build
 First, make sure that all the required [dependencies](Dependencies.md) are installed, then:
 ```shell
