@@ -507,10 +507,13 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             sym_map = xkb.map.key_sym_map[keycode]
             width = sym_map.width
             offset = sym_map.offset
+            count = width * sym_map.group_info
+            if count <= 0:
+                continue
             #num_groups = sym_map.group_info
             #group_width = 0
             syms = []
-            for i in range(width):
+            for i in range(count):
                 sym = xkb.map.syms[offset+i]
                 syms.append(sym)
             #log("%3i: width=%i, offset=%3i, num_groups=%i, syms=%s / %s",
