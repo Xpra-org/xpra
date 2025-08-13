@@ -388,7 +388,7 @@ class X11ServerCore(ServerBase):
             size = X11CursorBindings().get_default_cursor_size()
         except ImportError:
             size = 32
-        return cursor_image, (size, size)
+        return cursor_image, (size, (32767, 32767))
 
     def get_all_screen_sizes(self) -> Sequence[tuple[int, int]]:
         # workaround for #2910: the resolutions we add are not seen by XRRSizes!
