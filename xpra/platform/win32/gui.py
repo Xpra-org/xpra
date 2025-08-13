@@ -836,9 +836,12 @@ def get_fixed_cursor_size() -> tuple[int, int]:
         return 32, 32
 
 
-def get_cursor_size() -> int:
-    w, h = get_fixed_cursor_size()
-    return (w + h) // 2
+def get_default_cursor_size() -> tuple[int, int]:
+    return get_fixed_cursor_size()
+
+
+def get_max_cursor_size() -> tuple[int, int]:
+    return get_fixed_cursor_size()
 
 
 def get_window_min_size() -> tuple[int, int]:

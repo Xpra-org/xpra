@@ -15,7 +15,7 @@ cdef class X11CursorBindingsInstance(X11CoreBindingsInstance):
     def __repr__(self):
         return "X11CursorBindingsInstance(%s)" % self.display_name
 
-    def get_cursor_size(self) -> int:
+    def get_default_cursor_size(self) -> int:
         return XcursorGetDefaultSize(self.display)
 
 cdef X11CursorBindingsInstance singleton = None

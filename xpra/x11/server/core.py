@@ -385,8 +385,7 @@ class X11ServerCore(ServerBase):
             cursor_image = None
         try:
             from xpra.x11.bindings.cursor import X11CursorBindings
-            size = X11CursorBindings().get_cursor_size()
-            log.warn(f"size={size}")
+            size = X11CursorBindings().get_default_cursor_size()
         except ImportError:
             size = 32
         return cursor_image, (size, size)

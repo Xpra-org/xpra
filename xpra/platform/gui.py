@@ -227,8 +227,12 @@ def get_fixed_cursor_size() -> tuple[int, int]:
     return -1, -1
 
 
-def get_cursor_size() -> int:
-    return -1
+def get_default_cursor_size() -> tuple[int, int]:
+    return -1, -1
+
+
+def get_max_cursor_size() -> tuple[int, int]:
+    return -1, -1
 
 
 def get_window_min_size() -> tuple[int, int]:
@@ -330,8 +334,11 @@ def get_info_base() -> dict[str, Any]:
         "desktop_names": get_desktop_names(),
         "session-type": get_session_type(),
         "vertical-refresh": get_vrefresh(),
-        "fixed_cursor_size": get_fixed_cursor_size(),
-        "cursor_size": get_cursor_size(),
+        "cursor-size": {
+            "fixed": get_fixed_cursor_size(),
+            "default": get_default_cursor_size(),
+            "max": get_max_cursor_size(),
+        },
         "icon_size": get_icon_size(),
         "mouse": get_mouse_config(),
         "double_click": {
@@ -371,7 +378,8 @@ platform_import(globals(), "gui", False,
                 "get_window_min_size", "get_window_max_size",
                 "get_mouse_config",
                 "get_double_click_time", "get_double_click_distance",
-                "get_fixed_cursor_size", "get_cursor_size", "get_window_frame_sizes",
+                "get_fixed_cursor_size", "get_default_cursor_size", "get_max_cursor_size",
+                "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",
                 "get_display_name",

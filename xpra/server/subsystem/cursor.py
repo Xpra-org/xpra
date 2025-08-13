@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 from typing import Any
 
 from xpra.common import BACKWARDS_COMPATIBLE
@@ -11,7 +10,6 @@ from xpra.net.common import Packet
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.util.str_fn import Ellipsizer
-from xpra.util.env import SilenceWarningsContext
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -62,32 +60,35 @@ class CursorManager(StubServerMixin):
     def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
         if not send_ui:
             return
-        self.send_initial_cursors(ss, share_count > 0)
-
-    def send_initial_cursors(self, ss, sharing=False) -> None:
-        log("send_initial_cursors(%s, %s)", ss, sharing)
         from xpra.server.source.cursor import CursorsConnection
         if isinstance(ss, CursorsConnection):
             ss.send_cursor()
 
     def get_caps(self, source) -> dict[str, Any]:
-        caps: dict[str, Any] = {}
-        if BACKWARDS_COMPATIBLE:
-            caps["cursors"] = self.cursors
-        Gdk = sys.modules.get("gi.repository.Gdk", None)
-        display = Gdk.Display.get_default() if Gdk else None
-        if display:
-            max_size = tuple(display.get_maximal_cursor_size())
-            caps["cursor"] = {
-                "default_size": display.get_default_cursor_size(),
-                "max_size": max_size,
-            }
+        from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size
+        cursor_caps = {}
+        sizes = cursor_caps.setdefault("sizes", {})
+        dsize = get_default_cursor_size()
+        if min(dsize) > 0:
+            sizes["default"] = dsize
+            if BACKWARDS_COMPATIBLE:
+                cursor_caps["default_size"] = round(sum(dsize) / len(dsize))
+        max_size = get_max_cursor_size()
+        if min(max_size) > 0:
+            sizes["max"] = max_size
+            if BACKWARDS_COMPATIBLE:
+                cursor_caps["max_size"] = max_size
         if self.default_cursor_image and "default_cursor" in source.wants:
             ce = getattr(source, "cursor_encodings", ())
             if "default" not in ce:
                 # we have to send it this way
                 # instead of using send_initial_cursors()
-                caps["cursor.default"] = self.default_cursor_image
+                if BACKWARDS_COMPATIBLE:
+                    cursor_caps["cursor.default"] = self.default_cursor_image
+                cursor_caps["default"] = self.default_cursor_image
+        caps: dict[str, Any] = {"cursor": cursor_caps}
+        if BACKWARDS_COMPATIBLE:
+            caps["cursors"] = self.cursors
         log("cursor caps=%s", caps)
         return caps
 
@@ -119,32 +120,18 @@ class CursorManager(StubServerMixin):
 
     def get_ui_info(self, _proto, _client_uuids=None, *args) -> dict[str, Any]:
         # (from UI thread)
-        # now cursor size info:
-        Gdk = sys.modules.get("gi.repository.Gdk", None)
-        if not Gdk:
-            return {}
-        display = Gdk.Display.get_default()
-        if not display:
-            return {}
-        with SilenceWarningsContext(DeprecationWarning):
-            pos = display.get_default_screen().get_root_window().get_pointer()
-        info: dict[str, Any] = {"position": (pos.x, pos.y)}
-        for prop, size in {
-            "default": display.get_default_cursor_size(),
-            "max": tuple(display.get_maximal_cursor_size()),
+        info: dict[str, Any] = {}
+        from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size
+        for name, size in {
+            "default": get_default_cursor_size(),
+            "max": get_max_cursor_size(),
         }.items():
-            if size is None:
-                continue
-            info[f"{prop}_size"] = size
+            info.setdefault("sizes", {})[name] = size
         if is_X11():
             from xpra.x11.error import xswallow
             with xswallow:
                 from xpra.x11.bindings.keyboard import X11KeyboardBindings
-                from xpra.x11.bindings.fixes import XFixesBindings
-                info |= {
-                    "Xkb": X11KeyboardBindings().hasXkb(),
-                    "XFixes": XFixesBindings().hasXFixes(),
-                }
+                info["position"] = X11KeyboardBindings().query_pointer()
         return {CursorManager.PREFIX: info}
 
     def _process_set_cursors(self, proto, packet: Packet) -> None:

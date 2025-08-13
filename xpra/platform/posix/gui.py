@@ -259,13 +259,13 @@ def get_vrefresh() -> int:
     return -1
 
 
-def get_cursor_size() -> int:
+def get_default_cursor_size() -> tuple[int, int]:
     if x11_bindings():
-        from xpra.x11.common import get_cursor_size as get_x11_cursor_size
+        from xpra.x11.common import get_default_cursor_size as get_x11_cursor_size
         from xpra.x11.error import xsync
         with xsync:
             return get_x11_cursor_size()
-    return -1
+    return -1, -1
 
 
 def _get_xsettings_int(name: str, default_value: int) -> int:

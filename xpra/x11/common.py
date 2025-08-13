@@ -250,10 +250,18 @@ def get_randr_dpi() -> tuple[int, int]:
     return -1, -1
 
 
-def get_cursor_size() -> int:
+def get_default_cursor_size() -> tuple[int, int]:
     from xpra.x11.xroot_props import get_xresources
     d = get_xresources()
     try:
-        return int(d.get("Xcursor.size", 0))
+        size = int(d.get("Xcursor.size", 0))
     except ValueError:
-        return -1
+        size = 0
+    if not size:
+        try:
+            from xpra.x11.bindings.cursor import X11CursorBindings
+            cursor = X11CursorBindings()
+            size = cursor.get_default_cursor_size()
+        except ImportError:
+            log("get_default_cursor_size() no x11 cursor bindings")
+    return size, size
