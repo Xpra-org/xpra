@@ -31,7 +31,7 @@ from xpra.gtk_common.gtk_util import (
     WINDOW_EVENT_MASK,
     )
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
-from xpra.common import KeyEvent
+from xpra.common import KeyEvent, noop
 from xpra.client.gui.client_window_base import ClientWindowBase
 from xpra.platform.gui import (
     set_fullscreen_monitors, set_shaded,
@@ -306,6 +306,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.add_events(self.get_window_event_mask())
         if DRAGNDROP and not self._client.readonly:
             self.init_dragndrop()
+        self.remove_event_receiver = noop
         self.init_focus()
         ClientWindowBase.init_window(self, metadata)
 
@@ -497,7 +498,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # so we can get focus-out when grabs are active:
         if is_X11():
             try:
-                from xpra.x11.gtk3.gdk_bindings import add_event_receiver
+                from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
             except ImportError as e:
                 log("do_init_focus()", exc_info=True)
                 if not ds_inited():
@@ -508,6 +509,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 grablog("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
                 xid = self.get_window().get_xid()
                 add_event_receiver(xid, self)
+
+
+                def remove_hook() -> None:
+                    remove_event_receiver(xid, self)
+                self.remove_event_receiver = remove_hook
+
         #other platforms should bet getting regular focus events instead:
         def focus_in(_window, event):
             focuslog("focus-in-event for wid=%s", self.wid)
@@ -2332,6 +2339,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.cancel_moveresize_timer()
         self.cancel_follow_handler()
         self.on_realize_cb = {}
+        self.remove_event_receiver()
         ClientWindowBase.destroy(self)
         Gtk.Window.destroy(self)
         if self._client.has_focus(self.wid):
