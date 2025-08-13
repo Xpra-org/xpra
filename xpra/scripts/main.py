@@ -25,7 +25,7 @@ from subprocess import Popen, PIPE, TimeoutExpired, run
 import signal
 import shlex
 import traceback
-from typing import Any, NoReturn
+from typing import Any, NoReturn, Final
 from collections.abc import Callable, Iterable
 
 from xpra.common import SocketState, noerr, noop, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE
@@ -2479,7 +2479,7 @@ def find_wayland_display_sockets(uid: int = getuid(), gid: int = getgid()) -> di
     return displays
 
 
-X11_SOCKET_DIR = "/tmp/.X11-unix"
+X11_SOCKET_DIR: Final[str] = "/tmp/.X11-unix"
 
 
 def find_x11_display_sockets(max_display_no: int = 0) -> dict[str, str]:
