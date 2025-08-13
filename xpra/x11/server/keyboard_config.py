@@ -260,9 +260,9 @@ class KeyboardConfig(KeyboardConfigBase):
     def compute_modifier_keynames(self) -> None:
         self.keycodes_for_modifier_keynames = {}
         self.mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
-        from xpra.gtk.keymap import get_default_keymap
-        keymap = get_default_keymap()
         if self.keynames_for_mod:
+            with xsync:
+                keysym_mappings = X11Keyboard.get_keysym_mappings()
             for modifier, keynames in self.keynames_for_mod.items():
                 for keyname in keynames:
                     if keyname in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
@@ -272,15 +272,11 @@ class KeyboardConfig(KeyboardConfigBase):
                     if keyval == 0:
                         log.error("Error: no keyval found for keyname %r (modifier %r)", keyname, modifier)
                         continue
-                    entries = keymap.get_entries_for_keyval(keyval)
-                    if entries:
-                        keycodes = []
-                        if entries[0] is True:
-                            keycodes = [entry.keycode for entry in entries[1]]
-                        for keycode in keycodes:
-                            l = self.keycodes_for_modifier_keynames.setdefault(keyname, [])
-                            if keycode not in l:
-                                l.append(keycode)
+                    keycodes = keysym_mappings.get(keyval, ())
+                    for keycode in keycodes:
+                        l = self.keycodes_for_modifier_keynames.setdefault(keyname, [])
+                        if keycode not in l:
+                            l.append(keycode)
         log("compute_modifier_keynames: keycodes_for_modifier_keynames=%s",
             self.keycodes_for_modifier_keynames)
 

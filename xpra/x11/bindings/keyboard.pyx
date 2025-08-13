@@ -653,6 +653,17 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XFree(keyboard_map)
         return mappings
 
+    def get_keysym_mappings(self) -> Dict[int, List[int]]:
+        """
+            Maps keysyms to the keycodes that can be used to produce them
+        """
+        raw_mappings = self._get_raw_keycode_mappings()
+        mappings = {}
+        for keycode, keysyms in raw_mappings.items():
+            for keysym in keysyms:
+                mappings.setdefault(keysym, []).append(keycode)
+        return mappings
+
     def get_keycode_mappings(self) -> Dict[int, List[str]]:
         """
         the mappings from _get_raw_keycode_mappings are in raw format
