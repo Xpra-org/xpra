@@ -7,7 +7,6 @@
 
 import os
 import signal
-import math
 from time import monotonic, sleep
 from collections import deque
 from typing import Any
@@ -143,35 +142,19 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
     def init_root_overlay(self) -> None:
         try:
-            import cairo
-            log(f"init_root_overlay() found cairo: {cairo}")
-            with xsync:
-                xid = get_root_xid()
-                from xpra.x11.bindings.composite import XCompositeBindings
-                XComposite = XCompositeBindings()
-                self.root_overlay = XComposite.XCompositeGetOverlayWindow(xid)
-                log("init_root_overlay() root_overlay=%#x", self.root_overlay)
-                if self.root_overlay:
-                    from xpra.x11.prop import prop_set
-                    prop_set(self.root_overlay, "WM_TITLE", "latin1", "RootOverlay")
-                    from xpra.x11.bindings.xfixes import XFixesBindings
-                    XFixes = XFixesBindings()
-                    XFixes.AllowInputPassthrough(self.root_overlay)
-                    log("init_root_overlay() done AllowInputPassthrough(%#x)", self.root_overlay)
-        except Exception as e:
-            log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
+            from xpra.x11.server.root_overlay import init_root_overlay
+            self.root_overlay = init_root_overlay()
+        except ImportError as e:
+            log("init_root_overlay()", exc_info=True)
             log.error("Error setting up xvfb synchronization:")
             log.estr(e)
-            self.release_root_overlay()
 
     def release_root_overlay(self) -> None:
         ro = self.root_overlay
         if ro:
             self.root_overlay = 0
-            with xswallow:
-                from xpra.x11.bindings.composite import XCompositeBindings
-                XComposite = XCompositeBindings()
-                XComposite.XCompositeReleaseOverlayWindow(ro)
+            from xpra.x11.server.root_overlay import release_root_overlay
+            release_root_overlay(ro)
 
     def init_wm(self) -> None:
         from xpra.x11.selection.common import AlreadyOwned
@@ -1175,63 +1158,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if self.root_overlay:
             image = window.get_image(x, y, width, height)
             if image:
-                self.update_root_overlay(window, x, y, image)
-
-    # #########################################################################
-    # paint the root overlay
-    # so the server-side root window gets updated if this feature is enabled
-    #
-
-    def update_root_overlay(self, window, x: int, y: int, image) -> None:
-        Gdk = gi_import("Gdk")
-        GdkX11 = gi_import("GdkX11")
-        display = Gdk.Display.get_default()
-        overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
-        wx, wy = window.get_property("geometry")[:2]
-        # FIXME: we should paint the root overlay directly
-        # either using XCopyArea or XShmPutImage,
-        # using GTK and having to unpremultiply then convert to RGB is just too slooooow
-        width = image.get_width()
-        height = image.get_height()
-        rowstride = image.get_rowstride()
-        img_data = image.get_pixels()
-        rgb_format = image.get_pixel_format()
-        from xpra.codecs.argb.argb import (
-            unpremultiply_argb, bgra_to_rgba, bgra_to_rgbx, r210_to_rgbx, bgr565_to_rgbx
-        )
-        from cairo import OPERATOR_OVER, OPERATOR_SOURCE  # pylint: disable=no-name-in-module
-        log("update_root_overlay%s rgb_format=%s, img_data=%i (%s)",
-            (window, x, y, image), rgb_format, len(img_data), type(img_data))
-        operator = OPERATOR_SOURCE
-        if rgb_format == "BGRA":
-            img_data = unpremultiply_argb(img_data)
-            img_data = bgra_to_rgba(img_data)
-            operator = OPERATOR_OVER
-        elif rgb_format == "BGRX":
-            img_data = bgra_to_rgbx(img_data)
-        elif rgb_format == "r210":
-            # lossy...
-            img_data = r210_to_rgbx(img_data, width, height, rowstride, width * 4)
-            rowstride = width * 4
-        elif rgb_format == "BGR565":
-            img_data = bgr565_to_rgbx(img_data)
-            rowstride *= 2
-        else:
-            raise ValueError(f"xync-xvfb root overlay paint code does not handle {rgb_format} pixel format")
-        from xpra.util.str_fn import memoryview_to_bytes
-        img_data = memoryview_to_bytes(img_data)
-        log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx + x, wy + y, width, height))
-        from xpra.gtk.pixbuf import get_pixbuf_from_data
-        pixbuf = get_pixbuf_from_data(img_data, True, width, height, rowstride)
-        cr = overlaywin.cairo_create()
-        cr.new_path()
-        cr.rectangle(wx + x, wy + y, width, height)
-        cr.clip()
-        Gdk.cairo_set_source_pixbuf(cr, pixbuf, wx + x, wy + y)
-        cr.set_operator(operator)
-        cr.paint()
-        with xlog:
-            image.free()
+                from xpra.x11.server.root_overlay import update_root_overlay
+                update_root_overlay(self.root_overlay, window, x, y, image)
 
     def repaint_root_overlay(self) -> None:
         if not self.root_overlay:
@@ -1258,49 +1186,24 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
         log("overlaywin: %s", overlaywin.get_geometry())
         cr = overlaywin.cairo_create()
-
-        def fill_grey_rect(shade: tuple[float, float, float], x: int, y: int, w: int, h: int) -> None:
-            log("paint_grey_rect%s", (shade, x, y, w, h))
-            cr.new_path()
-            cr.set_source_rgb(*shade)
-            cr.rectangle(x, y, w, h)
-            cr.fill()
-
-        def paint_grey_rect(shade: tuple[float, float, float], x: int, y: int, w: int, h: int) -> None:
-            log("paint_grey_rect%s", (shade, x, y, w, h))
-            cr.new_path()
-            cr.set_line_width(2)
-            cr.set_source_rgb(*shade)
-            cr.rectangle(x, y, w, h)
-            cr.stroke()
-
+        from xpra.x11.server.root_overlay import fill_rect
         # clear to black
-        fill_grey_rect((0, 0, 0), 0, 0, root_width, root_height)
+        fill_rect(cr, (0, 0, 0), 0, 0, root_width, root_height)
+        self.paint_overlay_monitors(cr)
+        self.paint_overlay_windows(cr)
+
+    def paint_overlay_monitors(self, cr) -> None:
+        # only draw the monitors if we have a single UI user connected:
         sources = [source for source in self._server_sources.values() if source.ui_client]
-        ss = None
-        if len(sources) == 1:
-            ss = sources[0]
-            if ss.screen_sizes and len(ss.screen_sizes) == 1:
-                screen1 = ss.screen_sizes[0]
-                if len(screen1) >= 10:
-                    display_name, width, height, width_mm, height_mm, \
-                        monitors, work_x, work_y, work_width, work_height = screen1[:10]
-                    assert display_name or width_mm or height_mm or True  # just silences pydev warnings
-                    # paint dark grey background for display dimensions:
-                    fill_grey_rect((0.2, 0.2, 0.2), 0, 0, width, height)
-                    paint_grey_rect((0.2, 0.2, 0.4), 0, 0, width, height)
-                    # paint lighter grey background for workspace dimensions:
-                    paint_grey_rect((0.5, 0.5, 0.5), work_x, work_y, work_width, work_height)
-                    # paint each monitor with even lighter shades of grey:
-                    for m in monitors:
-                        if len(m) < 7:
-                            continue
-                        plug_name, plug_x, plug_y, plug_width, plug_height, plug_width_mm, plug_height_mm = m[:7]
-                        assert plug_name or plug_width_mm or plug_height_mm or True  # just silences pydev warnings
-                        paint_grey_rect((0.7, 0.7, 0.7), plug_x, plug_y, plug_width, plug_height)
-                        if len(m) >= 10:
-                            dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
-                            paint_grey_rect((1, 1, 1), dwork_x, dwork_y, dwork_width, dwork_height)
+        if len(sources) != 1:
+            return
+        ss = sources[0]
+        if ss.screen_sizes and len(ss.screen_sizes) == 1:
+            screen1 = ss.screen_sizes[0]
+            from xpra.x11.server.root_overlay import paint_overlay_monitors
+            paint_overlay_monitors(cr, screen1)
+
+    def paint_overlay_windows(self, cr):
         # now paint all the windows on top:
         order = {}
         focus_history = tuple(self._focus_history)
@@ -1315,57 +1218,16 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         windows = []
         for key in sorted(order):
             windows.append(order[key])
-        self.paint_root_overlay_windows(cr, windows)
+        from xpra.x11.server.root_overlay import paint_root_overlay_windows, paint_overlay_pointer
+        paint_root_overlay_windows(cr, windows)
         # FIXME: use server mouse position, and use current cursor shape
-        if ss:
+        sources = [source for source in self._server_sources.values() if source.ui_client]
+        if len(sources) == 1:
+            ss = sources[0]
             mlp = getattr(ss, "mouse_last_position", (0, 0))
             if mlp != (0, 0):
-                x, y = mlp
-                cr.set_source_rgb(1.0, 0.5, 0.7)
-                cr.new_path()
-                cr.arc(x, y, 10.0, 0, 2.0 * math.pi)
-                cr.stroke_preserve()
-                cr.set_source_rgb(0.3, 0.4, 0.6)
-                cr.fill()
+                paint_overlay_pointer(cr, *mlp[:2])
         return False
-
-    def paint_root_overlay_windows(self, cr, windows: Sequence) -> None:
-        log("paint_root_overlay_windows(%s) has_focus=%s, has_grab=%s",
-            windows, self._has_focus, self._has_grab)
-        for window in windows:
-            x, y, w, h = window.get_property("geometry")[:4]
-            image = window.get_image(0, 0, w, h)
-            if not image:
-                continue
-            self.update_root_overlay(window, 0, 0, image)
-            frame = window.get_property("frame")
-            if frame and tuple(frame) != (0, 0, 0, 0):
-                left, right, top, bottom = frame
-                # always add a little something, so we can see the edge:
-                left = max(1, left)
-                right = max(1, right)
-                top = max(1, top)
-                bottom = max(1, bottom)
-                rectangles = (
-                    (x - left, y, left, h, True),  # left side
-                    (x - left, y - top, w + left + right, top, True),  # top
-                    (x + w, y, right, h, True),  # right
-                    (x - left, y + h, w + left + right, bottom, True),  # bottom
-                )
-            else:
-                rectangles = (
-                    (x, y, w, h, False),
-                )
-            log("rectangles for window frame=%s and geometry=%s : %s", frame, (x, y, w, h), rectangles)
-            for x, y, w, h, fill in rectangles:
-                cr.new_path()
-                cr.set_source_rgb(0.1, 0.1, 0.1)
-                cr.set_line_width(1)
-                cr.rectangle(x, y, w, h)
-                if fill:
-                    cr.fill()
-                else:
-                    cr.stroke()
 
     def do_make_screenshot_packet(self) -> Packet:
         log("grabbing screenshot")
