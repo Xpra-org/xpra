@@ -12,7 +12,6 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
-from xpra.os_util import gi_import
 from xpra.gtk.keymap import get_gtk_keymap, get_default_keymap
 from xpra.x11.error import xsync, xlog
 from xpra.keyboard.mask import (
@@ -260,11 +259,6 @@ class KeyboardConfig(KeyboardConfigBase):
         log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
 
     def compute_modifier_keynames(self) -> None:
-        try:
-            Gdk = gi_import("Gdk")
-        except ImportError:
-            log.warn("Warning: unable to compute modifier keynames")
-            return
         self.keycodes_for_modifier_keynames = {}
         self.mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
         keymap = get_default_keymap()
@@ -273,9 +267,10 @@ class KeyboardConfig(KeyboardConfigBase):
                 for keyname in keynames:
                     if keyname in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
                         self.mod_nuisance.add(modifier)
-                    keyval = Gdk.keyval_from_name(keyname)
+                    keyval = X11Keyboard.parse_keysym(keyname)
+                    log("keyval(%s)=%s", keyname, keyval)
                     if keyval == 0:
-                        log.error("Error: no keyval found for keyname '%s' (modifier '%s')", keyname, modifier)
+                        log.error("Error: no keyval found for keyname %r (modifier %r)", keyname, modifier)
                         continue
                     entries = keymap.get_entries_for_keyval(keyval)
                     if entries:
