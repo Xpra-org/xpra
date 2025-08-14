@@ -16,6 +16,7 @@ from xpra.x11.bindings.core import set_context_check, X11CoreBindings, get_root_
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.window import X11WindowBindings
+from xpra.x11.bindings.info import get_extensions_info
 from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
@@ -276,6 +277,7 @@ class X11ServerCore(ServerBase):
                     }
                 )
         sinfo = info.setdefault("server", {})
+        sinfo.setdefault("x11", {}).update(get_extensions_info(False))
         try:
             from xpra.x11.composite import CompositeHelper
             sinfo["XShm"] = CompositeHelper.XShmEnabled

@@ -5,41 +5,54 @@
 
 import os
 import sys
+from typing import Any
 from importlib.util import find_spec
 from importlib import import_module
-from typing import Any
 
-
+from xpra.log import Logger
 from xpra.util.str_fn import print_nested_dict
+
+log = Logger("x11")
+
+ALL_X11_BINDINGS = (
+    "classhint", "composite", "core", "damage", "display_source", "events", "fixes", "keyboard",
+    "randr", "record", "res", "saveset", "shape", "shm", "test",
+    "wait_for_server", "window", "xi2", "ximage", "xkb", "xwait", "xwayland",
+)
+
+
+def get_extensions_info(load=True) -> dict[str, Any]:
+    missing: list[str] = []
+    available: list[str] = []
+    for binding in ALL_X11_BINDINGS:
+        spec = find_spec("xpra.x11.bindings." + binding)
+        if not spec:
+            missing.append(binding)
+            continue
+        if load:
+            try:
+                import_module("xpra.x11.bindings." + binding)
+            except ImportError as e:
+                log.error(f"Error importing xpra.x11.bindings.{binding}: {e}", file=sys.stderr)
+                continue
+        available.append(binding)
+    return {
+        "missing": missing,
+        "available": available,
+    }
 
 
 def get_info() -> dict[str, Any]:
     """
     Return a dictionary with information about the X11 display.
     """
-    info: dict[str, Any] = {}
-    missing: list[str] = []
-    available: list[str] = []
-    for binding in (
-        "classhint", "composite", "core", "damage", "display_source", "events", "fixes", "keyboard",
-        "randr", "record", "res", "saveset", "shape", "shm", "test",
-        "wait_for_server", "window", "xi2", "ximage", "xkb", "xwait", "xwayland",
-    ):
-        spec = find_spec("xpra.x11.bindings." + binding)
-        if not spec:
-            missing.append(binding)
-            continue
-        try:
-            import_module("xpra.x11.bindings." + binding)
-            available.append(binding)
-        except ImportError as e:
-            print(f"Error importing xpra.x11.bindings.{binding}: {e}", file=sys.stderr)
+    info = get_extensions_info(True)
 
     try:
         from xpra.x11.bindings.xwayland import isxwayland
         info["isXwayland"] = isxwayland()
     except ImportError:
-        missing.append("xwayland")
+        pass
     try:
         from xpra.x11.bindings.window import X11WindowBindings
         window = X11WindowBindings()
@@ -48,7 +61,7 @@ def get_info() -> dict[str, Any]:
         window.addDefaultEvents(root)
         info["time"] = window.get_server_time(root)
     except ImportError:
-        missing.append("window")
+        pass
 
     try:
         from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -68,28 +81,28 @@ def get_info() -> dict[str, Any]:
             "mask": keyboard.query_mask(),
         }
     except ImportError:
-        missing.append("keyboard")
+        pass
 
     try:
         from xpra.x11.bindings.test import XTestBindings
         test = XTestBindings()
         info["xtest"] = bool(test.hasXTest())
     except ImportError:
-        missing.append("xtest")
+        pass
 
     try:
         from xpra.x11.bindings.fixes import XFixesBindings
         fixes = XFixesBindings()
         info["xfixes"] = bool(fixes.hasXFixes())
     except ImportError:
-        missing.append("xfixes")
+        pass
 
     try:
         from xpra.x11.bindings.composite import XCompositeBindings
         composite = XCompositeBindings()
         info["xcomposite"] = bool(composite.hasXComposite())
     except ImportError:
-        missing.append("xcomposite")
+        pass
 
     try:
         from xpra.x11.bindings.randr import RandRBindings
@@ -103,14 +116,14 @@ def get_info() -> dict[str, Any]:
                 "monitors": randr.get_monitor_properties(),
             }
     except ImportError:
-        missing.append("randr")
+        pass
 
     try:
         from xpra.x11.bindings.shm import XShmBindings
         xshm = XShmBindings()
         info["xshm"] = xshm.has_XShm()
     except ImportError:
-        missing.append("xshm")
+        pass
 
     try:
         from xpra.x11.bindings.xi2 import X11XI2Bindings
@@ -120,12 +133,7 @@ def get_info() -> dict[str, Any]:
             "devices": xi2.get_devices(),
         }
     except ImportError:
-        missing.append("xi2")
-
-    if missing:
-        info["missing"] = missing
-    if available:
-        info["available"] = available
+        pass
     return info
 
 
