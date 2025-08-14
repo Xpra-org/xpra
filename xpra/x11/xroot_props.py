@@ -163,7 +163,7 @@ def get_xresources() -> dict[str, str]:
     rm = root_get("RESOURCE_MANAGER", "latin1") or ""
     if not rm:
         return {}
-    log(f"RESOURCE_MANAGER={rm}")
+    log(f"RESOURCE_MANAGER={rm!r}")
     # parse the resources into a dict:
     xresources: dict[str, str] = {}
     for line in rm.split("\n"):
