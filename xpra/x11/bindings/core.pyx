@@ -124,6 +124,24 @@ cdef extern from "X11/Xlib.h":
     int NotifyPointerRoot
     int NotifyDetailNone
 
+    int BadRequest
+    int BadValue
+    int BadWindow
+    int BadPixmap
+    int BadAtom
+    int BadCursor
+    int BadFont
+    int BadMatch
+    int BadDrawable
+    int BadAccess
+    int BadAlloc
+    int BadColor
+    int BadGC
+    int BadIDChoice
+    int BadName
+    int BadLength
+    int BadImplementation
+
 
 constants: Dict[str, int] = {
     "CWX"               : CWX,
@@ -213,6 +231,27 @@ constants: Dict[str, int] = {
     "PropertyChangeMask": PropertyChangeMask,
     "ColormapChangeMask": ColormapChangeMask,
     "OwnerGrabButtonMask": OwnerGrabButtonMask,
+}
+
+
+errors = {
+    BadRequest: "BadRequest",
+    BadValue: "BadValue",
+    BadWindow: "BadWindow",
+    BadPixmap: "BadPixmap",
+    BadAtom: "BadAtom",
+    BadCursor: "BadCursor",
+    BadFont: "BadFont",
+    BadMatch: "BadMatch",
+    BadDrawable: "BadDrawable",
+    BadAccess: "BadAccess",
+    BadAlloc: "BadAlloc",
+    BadColor: "BadColor",
+    BadGC: "BadGC",
+    BadIDChoice: "BadIDChoice",
+    BadName: "BadName",
+    BadLength: "BadLength",
+    BadImplementation: "BadImplementation",
 }
 
 

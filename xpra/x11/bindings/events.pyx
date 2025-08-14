@@ -624,7 +624,6 @@ cdef class EventLoop:
         if not last_error:
             return None
         err = last_error.get("error", "unknown")
-        log.warn("err=%s (%s)", err, type(err))
         last_error = {}
         return err
 
