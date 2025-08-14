@@ -64,8 +64,8 @@ if use_x11_bindings():
     try:
         from xpra.x11.error import xlog, verify_sync
         from xpra.x11.prop import prop_get, prop_set, prop_del
-        from xpra.x11.bindings.window import constants, X11WindowBindings
-        from xpra.x11.bindings.core import X11CoreBindings, set_context_check, get_root_xid
+        from xpra.x11.bindings.core import X11CoreBindings, set_context_check, constants, get_root_xid
+        from xpra.x11.bindings.window import X11WindowBindings
 
         X11Window = X11WindowBindings()
         X11Core = X11CoreBindings()

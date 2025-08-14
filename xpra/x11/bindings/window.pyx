@@ -35,6 +35,7 @@ from xpra.x11.bindings.xlib cimport (
     XKillClient,
 )
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core import constants
 from libc.stdint cimport uintptr_t
 from libc.string cimport memset
 
@@ -75,37 +76,17 @@ cdef extern from "X11/Xlib.h":
 
     int CWOverrideRedirect
     int CWEventMask
-    int CWColormap
     int CWBorderWidth
-    int CWSibling
-    int CWStackMode
 
     int NoEventMask
-    int KeyPressMask
-    int KeyReleaseMask
-    int ButtonPressMask
-    int ButtonReleaseMask
-    int EnterWindowMask
-    int LeaveWindowMask
     int PointerMotionMask
     int PointerMotionHintMask
-    int Button1MotionMask
-    int Button2MotionMask
-    int Button3MotionMask
-    int Button4MotionMask
-    int Button5MotionMask
     int ButtonMotionMask
-    int KeymapStateMask
-    int ExposureMask
-    int VisibilityChangeMask
     int StructureNotifyMask
-    int ResizeRedirectMask
     int SubstructureNotifyMask
     int SubstructureRedirectMask
     int FocusChangeMask
     int PropertyChangeMask
-    int ColormapChangeMask
-    int OwnerGrabButtonMask
 
     int AnyPropertyType
     int Success
@@ -116,7 +97,6 @@ cdef extern from "X11/Xlib.h":
     int PSize
     int PMinSize
     int IsUnmapped
-    int XNone
     int PMaxSize
     int PBaseSize
     int PResizeInc
@@ -130,112 +110,7 @@ cdef extern from "X11/Xlib.h":
     int IconMaskHint
     int WindowGroupHint
     int XUrgencyHint
-    int WithdrawnState
-    int IconicState
-    int NormalState
-    int NotifyNormal
-    int NotifyGrab
-    int NotifyUngrab
-    int NotifyWhileGrabbed
-    int NotifyNonlinearVirtual
-    int NotifyAncestor
-    int NotifyVirtual
-    int NotifyInferior
-    int NotifyNonlinear
-    int NotifyPointer
-    int NotifyPointerRoot
-    int NotifyDetailNone
 
-
-constants: Dict[str, int] = {
-    "CWX"               : CWX,
-    "CWY"               : CWY,
-    "CWWidth"           : CWWidth,
-    "CWHeight"          : CWHeight,
-    "CurrentTime"       : CurrentTime,
-    "IsUnmapped"        : IsUnmapped,
-    "InputOnly"         : InputOnly,
-    "RevertToParent"    : RevertToParent,
-    "ClientMessage"     : ClientMessage,
-    "ButtonPress"       : ButtonPress,
-    "Button1"           : Button1,
-    "Button2"           : Button2,
-    "Button3"           : Button3,
-    "SelectionNotify"   : SelectionNotify,
-    "ConfigureNotify"   : ConfigureNotify,
-    "CWBorderWidth"     : CWBorderWidth,
-    "CWSibling"         : CWSibling,
-    "CWStackMode"       : CWStackMode,
-    "AnyPropertyType"   : AnyPropertyType,
-    "Success"           : Success,
-    "PropModeReplace"   : PropModeReplace,
-    "USPosition"        : USPosition,
-    "PPosition"         : PPosition,
-    "USSize"            : USSize,
-    "PSize"             : PSize,
-    "PMinSize"          : PMinSize,
-    "XNone"             : XNone,
-    "PMaxSize"          : PMaxSize,
-    "PBaseSize"         : PBaseSize,
-    "PResizeInc"        : PResizeInc,
-    "PAspect"           : PAspect,
-    "PWinGravity"       : PWinGravity,
-    "InputHint"         : InputHint,
-    "StateHint"         : StateHint,
-    "IconPixmapHint"    : IconPixmapHint,
-    "IconWindowHint"    : IconWindowHint,
-    "IconPositionHint"  : IconPositionHint,
-    "IconMaskHint"      : IconMaskHint,
-    "WindowGroupHint"   : WindowGroupHint,
-    "XUrgencyHint"      : XUrgencyHint,
-    "WithdrawnState"    : WithdrawnState,
-    "IconicState"       : IconicState,
-    "NormalState"       : NormalState,
-    "NotifyNormal"      : NotifyNormal,
-    "NotifyGrab"        : NotifyGrab,
-    "NotifyUngrab"      : NotifyUngrab,
-    "NotifyWhileGrabbed" : NotifyWhileGrabbed,
-    "NotifyNonlinear"   : NotifyNonlinear,
-    "NotifyNonlinearVirtual" : NotifyNonlinearVirtual,
-    "NotifyAncestor"    : NotifyAncestor,
-    "NotifyVirtual"     : NotifyVirtual,
-    "NotifyInferior"    : NotifyInferior,
-    "NotifyNonlinearVirtual" : NotifyNonlinearVirtual,
-    "NotifyPointer"     : NotifyPointer,
-    "NotifyPointerRoot" : NotifyPointerRoot,
-    "NotifyDetailNone"  : NotifyDetailNone,
-
-    "NoEventMask"       : NoEventMask,
-    "StructureNotifyMask" : StructureNotifyMask,
-    "SubstructureNotifyMask"   : SubstructureNotifyMask,
-    "SubstructureRedirectMask" : SubstructureRedirectMask,
-    "FocusChangeMask"   : FocusChangeMask,
-    "KeyPressMask"      : KeyPressMask,
-    "KeyReleaseMask"    : KeyReleaseMask,
-    "ButtonPress"       : ButtonPressMask,
-    "ButtonReleaseMask" : ButtonReleaseMask,
-    "EnterWindowMask"   : EnterWindowMask,
-    "LeaveWindowMask"   : LeaveWindowMask,
-    "PointerMotionMask" : PointerMotionMask,
-    "PointerMotionHintMask": PointerMotionHintMask,
-    "Button1MotionMask" : Button1MotionMask,
-    "Button2MotionMask" : Button2MotionMask,
-    "Button3MotionMask" : Button3MotionMask,
-    "Button4MotionMask" : Button4MotionMask,
-    "Button5MotionMask" : Button5MotionMask,
-    "ButtonMotionMask"  : ButtonMotionMask,
-    "KeymapStateMask"   : KeymapStateMask,
-    "ExposureMask"      : ExposureMask,
-    "VisibilityChangeMask": VisibilityChangeMask,
-    "StructureNotifyMask": StructureNotifyMask,
-    "ResizeRedirectMask": ResizeRedirectMask,
-    "SubstructureNotifyMask": SubstructureNotifyMask,
-    "SubstructureRedirectMask": SubstructureRedirectMask,
-    "FocusChangeMask"   : FocusChangeMask,
-    "PropertyChangeMask": PropertyChangeMask,
-    "ColormapChangeMask": ColormapChangeMask,
-    "OwnerGrabButtonMask": OwnerGrabButtonMask,
-}
 
 MASKS: Dict[int, str] = {}
 for name, constant in constants.items():

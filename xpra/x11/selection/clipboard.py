@@ -32,7 +32,8 @@ IGNORED_MESSAGES = (
 
 
 def init_event_window() -> int:
-    from xpra.x11.bindings.window import X11WindowBindings, constants
+    from xpra.x11.bindings.core import constants
+    from xpra.x11.bindings.window import X11WindowBindings
     X11Window = X11WindowBindings()
     InputOnly: Final[int] = constants["InputOnly"]
     PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]

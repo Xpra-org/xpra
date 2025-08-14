@@ -11,9 +11,9 @@ from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import xlog
 from xpra.x11.damage import WindowDamageHandler
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
-from xpra.x11.bindings.core import get_root_xid
+from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.ximage import XImageBindings
-from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.composite import XCompositeBindings
 from xpra.log import Logger
 

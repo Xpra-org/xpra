@@ -22,8 +22,8 @@ from xpra.x11.xroot_props import (
     set_supported, set_workarea,
     root_set, root_get,
 )
-from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.bindings.core import constants, get_root_xid
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
 

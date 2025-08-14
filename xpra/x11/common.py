@@ -181,12 +181,12 @@ def get_vrefresh() -> int:
 
 
 def send_client_message(xid, message_type: str, *values) -> None:
-    from xpra.x11.bindings.window import constants, X11WindowBindings  # @UnresolvedImport
+    from xpra.x11.bindings.core import constants, get_root_xid
+    from xpra.x11.bindings.window import X11WindowBindings
     X11Window = X11WindowBindings()
     SubstructureNotifyMask = constants["SubstructureNotifyMask"]
     SubstructureRedirectMask = constants["SubstructureRedirectMask"]
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-    from xpra.x11.xroot_props import get_root_xid
     root_xid = get_root_xid
     X11Window.sendClientMessage(root_xid, xid, False, event_mask, message_type, *values)
 

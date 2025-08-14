@@ -16,7 +16,7 @@ from collections.abc import Callable, Sequence
 from typing import Any, NoReturn, Final
 
 from xpra.util.str_fn import hexstr
-from xpra.x11.bindings.window import constants
+from xpra.x11.bindings.core import constants
 from xpra.log import Logger
 
 log = Logger("x11", "window")

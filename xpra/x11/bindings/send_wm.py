@@ -6,7 +6,8 @@
 
 from typing import Final
 
-from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.bindings.core import constants
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.log import Logger
 
 log = Logger("x11", "focus")

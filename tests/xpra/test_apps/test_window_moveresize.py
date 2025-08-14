@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
-import gi
+from xpra.os_util import gi_import
 
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version('GdkX11', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, GdkX11, GLib    # pylint: disable=wrong-import-position @UnresolvedImport
-assert GdkX11    #this import has side-effects
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
+GdkX11 = gi_import("GdkX11")
+assert GdkX11    # this import has side-effects
 
 width = 400
 height = 200
+
+
 class MoveWindow(Gtk.Window):
     def __init__(self, window_type):
         super().__init__(type=window_type)
@@ -40,7 +42,8 @@ class MoveWindow(Gtk.Window):
         new_x, new_y, new_width, new_height = self.get_new_geometry()
         from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
-        from xpra.x11.bindings.window import constants, X11WindowBindings  #@UnresolvedImport
+        from xpra.x11.bindings.core import constants
+        from xpra.x11.bindings.window import X11WindowBindings
         X11Window = X11WindowBindings()
         root = self.get_window().get_screen().get_root_window()
         root_xid = root.get_xid()

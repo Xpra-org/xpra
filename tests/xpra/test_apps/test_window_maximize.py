@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-import gi
+from xpra.os_util import gi_import
 
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, Gdk  # pylint: disable=wrong-import-position @UnresolvedImport
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
 
 
 def main():
@@ -34,7 +33,8 @@ def main():
     def send_maximized_wm_state(mode):
         from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
-        from xpra.x11.bindings.window import constants, X11WindowBindings  #@UnresolvedImport
+        from xpra.x11.bindings.core import constants
+        from xpra.x11.bindings.window import X11WindowBindings
         X11Window = X11WindowBindings()
         root = window.get_window().get_screen().get_root_window()
         root_xid = root.get_xid()

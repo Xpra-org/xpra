@@ -11,7 +11,8 @@ from xpra.x11.common import get_pywindow
 from xpra.x11.error import xsync
 from xpra.util.str_fn import csv
 from xpra.util.gobject import no_arg_signal, one_arg_signal
-from xpra.x11.bindings.window import constants, X11WindowBindings
+from xpra.x11.bindings.core import constants
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.selection.common import AlreadyOwned, xfixes_selection_input
 from xpra.x11.prop import prop_set

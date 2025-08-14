@@ -18,8 +18,8 @@ from xpra.codecs.image import ImageWrapper
 from xpra.platform.posix.proc import get_parent_pid
 from xpra.x11.common import Unmanageable, FRAME_EXTENTS, get_pywindow
 from xpra.x11.error import XError, xsync, xswallow, xlog
-from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.bindings.window import X11WindowBindings, constants
+from xpra.x11.bindings.core import constants, get_root_xid
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.res import ResBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub

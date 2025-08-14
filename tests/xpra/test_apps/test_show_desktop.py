@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-import gi
+from xpra.os_util import gi_import
 
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk  #pylint: disable=wrong-import-position @UnresolvedImport
+Gtk = gi_import("Gtk")
 
 width = 400
 height = 200
@@ -11,14 +10,15 @@ height = 200
 
 def main():
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
-    #window = gtk.Window(gtk.WINDOW_POPUP)
+    # window = gtk.Window(gtk.WINDOW_POPUP)
     window.set_size_request(width, height)
     window.connect("delete_event", Gtk.main_quit)
     vbox = Gtk.VBox()
 
     def send_net_showing_desktop(v):
         from xpra.x11.gtk.display_source import init_gdk_display_source
-        from xpra.x11.bindings.window import constants, X11WindowBindings  #@UnresolvedImport
+        from xpra.x11.bindings.core import constants
+        from xpra.x11.bindings.window import X11WindowBindings
         init_gdk_display_source()
         X11Window = X11WindowBindings()
         root = window.get_window().get_screen().get_root_window()

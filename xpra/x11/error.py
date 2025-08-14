@@ -90,7 +90,7 @@ def get_X_error(xerror) -> str:
     if not isinstance(xerror, int):
         return str(xerror)
     with log.trap_error("Error retrieving error string for %s", xerror):
-        from xpra.x11.bindings.window import constants
+        from xpra.x11.bindings.core import constants
         if not xerror_to_name:
             xerror_to_name[0] = "OK"
             for name, code in constants.items():  # @UndefinedVariable
