@@ -544,28 +544,28 @@ last_error = {}
 
 
 cdef int x11_error_handler(Display *display, XErrorEvent *event) except 0:
-    global last_error
-    last_error = {
+    einfo = {
         "serial": event.serial,
         "error": event.error_code,
         "request": event.request_code,
         "minor": event.minor_code,
         "xid": event.resourceid,
     }
-    log.warn("Error: X11 %s", last_error)
+    log("x11 error: %s", einfo)
+    global last_error
+    if not last_error:
+        last_error = einfo
     return 0
 
 
 cdef class EventLoop:
 
     cdef Display *display
-    cdef unsigned int depth
 
     def __cinit__(self):
-        self.depth = 0
         self.display = get_display()
         init_x11_events()
-        self.inject_x11_error_handlers()
+        self.set_x11_error_handlers()
 
     def process_events(self) -> int:
         cdef XEvent event
@@ -604,7 +604,7 @@ cdef class EventLoop:
         except:
             log.warn("Unhandled exception in x_event_filter:", exc_info=True)
 
-    def inject_x11_error_handlers(self) -> None:
+    def set_x11_error_handlers(self) -> None:
         from xpra.x11 import error
         error.Xenter = self.Xenter
         error.Xexit = self.Xexit
@@ -613,21 +613,20 @@ cdef class EventLoop:
 
     def Xenter(self) -> None:
         log("Xenter")
-        if self.depth == 0:
-            global last_error
-            last_error = {}
-        self.depth += 1
 
-    def Xexit(self, flush=True) -> None:
+    def Xexit(self, flush=True):
         log("Xexit(%s)", flush)
-        if self.depth > 0:
-            self.depth -= 1
-        if flush or self.depth == 0:
+        if flush:
             XSync(self.display, False)
         else:
             XFlush(self.display)
-        if last_error:
-            raise XError(last_error.get("error", "unknown"))
+        global last_error
+        if not last_error:
+            return None
+        err = last_error.get("error", "unknown")
+        log.warn("err=%s (%s)", err, type(err))
+        last_error = {}
+        return err
 
 
 def register_glib_source(context) -> None:
