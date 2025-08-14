@@ -616,21 +616,17 @@ def register_glib_source(context) -> None:
     if not get_display_ptr():
         raise RuntimeError("no display!")
     from xpra.x11.bindings.core import X11CoreBindings
-    cdef unsigned int fd = X11CoreBindings().get_connection_number()
+    X11Core = X11CoreBindings()
+    cdef unsigned int fd = X11Core.get_connection_number()
     log("register_glib_source() X11 fd=%i", fd)
     from xpra.os_util import gi_import
     GLib = gi_import("GLib")
-    ioc = GLib.IOCondition
-    glib_source = GLib.unix_fd_source_new(fd, ioc.IN | ioc.PRI | ioc.HUP | ioc.ERR | ioc.NVAL)
-    glib_source.set_name("X11")
-    # glib_source.set_can_recurse(False)
     cdef EventLoop loop = EventLoop()
 
-    def x11_callback(data=None) -> bool:
-        log("x11_callback%s", data)
+    def x11_callback(*args) -> bool:
+        log("x11_callback%s", args)
         count = loop.process_events()
         log("processed %i X11 events", count)
         return True
 
-    glib_source.set_callback(x11_callback, None)
-    glib_source.attach(context)
+    GLib.io_add_watch(fd, GLib.IO_IN, x11_callback)
