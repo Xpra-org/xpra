@@ -223,7 +223,7 @@ def init_x11_filter() -> bool:
     cdef Display *display
     if _INIT_X11_FILTER_DONE==0:
         display = get_xdisplay()
-        init_x11_events(display)
+        init_x11_events()
         gdk_window_add_filter(<GdkWindow*>0, x_event_filter, NULL)
         _INIT_X11_FILTER_DONE += 1
     return _INIT_X11_FILTER_DONE==1

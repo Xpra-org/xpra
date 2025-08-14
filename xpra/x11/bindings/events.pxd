@@ -7,7 +7,7 @@
 from xpra.x11.bindings.xlib cimport Display, XEvent, Atom
 
 cdef object parse_xevent(Display *d, XEvent *e)
-cdef void init_x11_events(Display *display)
+cdef void init_x11_events()
 cdef void add_event_type(int event, str name, str event_name, str child_event_name) noexcept
 
 ctypedef object (*PARSE_XEVENT)(Display* display, XEvent *event)

@@ -17,6 +17,7 @@ from xpra.x11.bindings.xlib cimport (
     XSynchronize, XSync, XFlush,
     CurrentTime,
     XDefaultRootWindow,
+    XConnectionNumber,
 )
 from libc.stdlib cimport malloc, free        # pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
@@ -76,6 +77,9 @@ cdef class X11CoreBindingsInstance:
 
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
+
+    def get_connection_number(self) -> int:
+        return XConnectionNumber(self.display)
 
     def get_root_xid(self) -> cython.ulong:
         assert self.display

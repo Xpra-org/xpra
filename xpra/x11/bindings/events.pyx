@@ -5,9 +5,11 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import monotonic
 from typing import Dict, Tuple
 from collections.abc import Callable
 
+from xpra.x11.dispatch import route_event
 from xpra.x11.error import XError, xsync
 from xpra.x11.common import X11Event
 from xpra.util.str_fn import csv
@@ -17,12 +19,14 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "events")
 
 
+from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.xlib cimport (
     Display, Atom,
     XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
     XSelectionEvent, XConfigureRequestEvent,
     XFree,
     XGetAtomName,
+    XPending, XNextEvent,
 )
 from libc.stdint cimport uintptr_t
 
@@ -66,7 +70,7 @@ cdef extern from "X11/Xlib.h":
     int GenericEvent
 
 
-cdef void init_x11_events(Display *display):
+cdef void init_x11_events():
     add_x_event_signals({
         MapRequest          : ("", "x11-child-map-request-event"),
         ConfigureRequest    : ("", "x11-child-configure-request-event"),
@@ -156,7 +160,7 @@ def add_x_event_signals(event_signals: Dict[int, Tuple[str, str]]) -> None:
     x_event_signals.update(event_signals)
 
 
-def get_x_event_signals(event: int) -> Tuple[str, str]:
+def get_x_event_signals(event: int) -> Tuple[str, str] | None:
     return x_event_signals.get(event)
 
 
@@ -527,3 +531,49 @@ cdef object parse_xevent(Display *d, XEvent *e):
     for k, v in attrs.items():
         setattr(pyev, k, v)
     return pyev
+
+
+cdef class EventLoop:
+
+    cdef Display *display
+
+    def __cinit__(self):
+        self.display = get_display()
+        init_x11_events()
+
+    def process_events(self) -> int:
+        cdef XEvent event
+        cdef unsigned int count = 0
+        while XPending(self.display):
+            XNextEvent(self.display, &event)
+            self.process_event(&event)
+            count += 1
+        return count
+
+    cdef void process_event(self, XEvent *event) noexcept:
+        cdef int etype = event.type
+        ename = get_x_event_type_name(etype) or etype
+        event_args = get_x_event_signals(etype)
+        if not event_args:
+            # not handled
+            log("skipped event %r (no handlers)", ename)
+            return
+
+        try:
+            pyev = parse_xevent(self.display, event)
+        except Exception:
+            log.error("Error parsing X11 event", exc_info=True)
+            return
+        log("process_event: %s", pyev)
+        if not pyev:
+            return
+
+        cdef float start = monotonic()
+        try:
+            signal, parent_signal = event_args
+            route_event(etype, pyev, signal, parent_signal)
+            log("x_event_filter event=%s/%s took %.1fms", event_args, ename, 1000.0*(monotonic() - start))
+        # except (KeyboardInterrupt, SystemExit):
+        #    log("exiting on KeyboardInterrupt/SystemExit")
+        except:
+            log.warn("Unhandled exception in x_event_filter:", exc_info=True)
