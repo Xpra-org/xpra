@@ -540,18 +540,29 @@ cdef int x11_io_error_handler(Display *display) except 0:
     return 0
 
 
+last_error = {}
+
+
 cdef int x11_error_handler(Display *display, XErrorEvent *event) except 0:
-    #X11 error handler called (ignored)
-    message = "xerror"
-    log.warn(message)
+    global last_error
+    last_error = {
+        "serial": event.serial,
+        "error": event.error_code,
+        "request": event.request_code,
+        "minor": event.minor_code,
+        "xid": event.resourceid,
+    }
+    log.warn("Error: X11 %s", last_error)
     return 0
 
 
 cdef class EventLoop:
 
     cdef Display *display
+    cdef unsigned int depth
 
     def __cinit__(self):
+        self.depth = 0
         self.display = get_display()
         init_x11_events()
         self.inject_x11_error_handlers()
@@ -602,13 +613,21 @@ cdef class EventLoop:
 
     def Xenter(self) -> None:
         log("Xenter")
+        if self.depth == 0:
+            global last_error
+            last_error = {}
+        self.depth += 1
 
     def Xexit(self, flush=True) -> None:
         log("Xexit(%s)", flush)
-        if flush:
+        if self.depth > 0:
+            self.depth -= 1
+        if flush or self.depth == 0:
             XSync(self.display, False)
         else:
             XFlush(self.display)
+        if last_error:
+            raise XError(last_error.get("error", "unknown"))
 
 
 def register_glib_source(context) -> None:
