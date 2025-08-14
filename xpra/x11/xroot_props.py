@@ -105,8 +105,7 @@ def get_number_of_desktops() -> int:
 def get_root_size() -> tuple[int, int]:
     with xsync:
         X11Window = X11WindowBindings()
-        root_w, root_h = X11Window.getGeometry(rxid)[2:4]
-        return root_w, root_h
+        return X11Window.get_root_size()
 
 
 def set_desktop_viewport(x=0, y=0) -> None:

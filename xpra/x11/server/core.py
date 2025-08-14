@@ -65,10 +65,8 @@ window_type_atoms = tuple(f"_NET_WM_WINDOW_TYPE{wtype}" for wtype in (
 
 
 def get_root_size() -> tuple[int, int]:
-    xid = get_root_xid()
     with xsync:
-        root_w, root_h = X11WindowBindings().getGeometry(xid)[2:4]
-        return root_w, root_h
+        return X11WindowBindings().get_root_size()
 
 
 class X11ServerCore(ServerBase):
