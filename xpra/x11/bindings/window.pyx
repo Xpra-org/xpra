@@ -277,6 +277,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return "X11WindowBindings(%s)" % self.display_name
 
     def get_root_size(self) -> Tuple[int, int]:
+        self.context_check("get_root_size")
         cdef int root = self.get_root_xid()
         geom = self.getGeometry(root)
         if not geom:
