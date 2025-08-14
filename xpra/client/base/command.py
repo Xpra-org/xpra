@@ -214,7 +214,7 @@ class InfoXpraClient(CommandConnectClient):
             self.quit(ExitCode.NO_DATA)
             return
 
-        LINE_LIMIT = envint("XPRA_INFO_LINE_LIMIT", 160)
+        LINE_LIMIT = envint("XPRA_INFO_LINE_LIMIT", 320)
 
         def print_fn(s) -> None:
             sys.stdout.write(f"{s}\n")
@@ -236,8 +236,15 @@ class InfoXpraClient(CommandConnectClient):
                 return str(v)
             elif isinstance(v, (tuple, list)):
                 eltypes = set(type(x) for x in v)
-                if len(eltypes) == 1 and tuple(eltypes)[0] in (int, bool, float):
-                    return repr_ellipsized(v, LINE_LIMIT)
+                if len(eltypes) == 1:
+                    eltype = tuple(eltypes)[0]
+                    if eltype in (int, bool, float):
+                        return repr_ellipsized(v, LINE_LIMIT)
+                    if eltype == str:
+                        csv_str = csv(repr(x) for x in v)
+                        if len(csv_str) < LINE_LIMIT:
+                            return csv_str
+                        return repr_ellipsized(csv_str)
                 return repr_ellipsized(type(v)(prettify(k, x) for x in v), LINE_LIMIT)
             elif isinstance(v, str) and v.isprintable():
                 return v
