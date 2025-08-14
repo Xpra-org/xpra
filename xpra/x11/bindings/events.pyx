@@ -26,7 +26,8 @@ from xpra.x11.bindings.xlib cimport (
     XSelectionEvent, XConfigureRequestEvent,
     XFree,
     XGetAtomName,
-    XPending, XNextEvent,
+    XPending, XNextEvent, XSync, XFlush,
+    XSetErrorHandler, XSetIOErrorHandler, XErrorEvent,
 )
 from libc.stdint cimport uintptr_t
 
@@ -533,6 +534,19 @@ cdef object parse_xevent(Display *d, XEvent *e):
     return pyev
 
 
+cdef int x11_io_error_handler(Display *display) except 0:
+    message = b"X11 fatal IO error"
+    log.warn(message)
+    return 0
+
+
+cdef int x11_error_handler(Display *display, XErrorEvent *event) except 0:
+    #X11 error handler called (ignored)
+    message = "xerror"
+    log.warn(message)
+    return 0
+
+
 cdef class EventLoop:
 
     cdef Display *display
@@ -540,6 +554,7 @@ cdef class EventLoop:
     def __cinit__(self):
         self.display = get_display()
         init_x11_events()
+        self.inject_x11_error_handlers()
 
     def process_events(self) -> int:
         cdef XEvent event
@@ -577,3 +592,45 @@ cdef class EventLoop:
         #    log("exiting on KeyboardInterrupt/SystemExit")
         except:
             log.warn("Unhandled exception in x_event_filter:", exc_info=True)
+
+    def inject_x11_error_handlers(self) -> None:
+        from xpra.x11 import error
+        error.Xenter = self.Xenter
+        error.Xexit = self.Xexit
+        XSetErrorHandler(&x11_error_handler)
+        XSetIOErrorHandler(&x11_io_error_handler)
+
+    def Xenter(self) -> None:
+        log("Xenter")
+
+    def Xexit(self, flush=True) -> None:
+        log("Xexit(%s)", flush)
+        if flush:
+            XSync(self.display, False)
+        else:
+            XFlush(self.display)
+
+
+def register_glib_source(context) -> None:
+    from xpra.x11.bindings.display_source import get_display_ptr
+    if not get_display_ptr():
+        raise RuntimeError("no display!")
+    from xpra.x11.bindings.core import X11CoreBindings
+    cdef unsigned int fd = X11CoreBindings().get_connection_number()
+    log("register_glib_source() X11 fd=%i", fd)
+    from xpra.os_util import gi_import
+    GLib = gi_import("GLib")
+    ioc = GLib.IOCondition
+    glib_source = GLib.unix_fd_source_new(fd, ioc.IN | ioc.PRI | ioc.HUP | ioc.ERR | ioc.NVAL)
+    glib_source.set_name("X11")
+    # glib_source.set_can_recurse(False)
+    cdef EventLoop loop = EventLoop()
+
+    def x11_callback(data=None) -> bool:
+        log("x11_callback%s", data)
+        count = loop.process_events()
+        log("processed %i X11 events", count)
+        return True
+
+    glib_source.set_callback(x11_callback, None)
+    glib_source.attach(context)

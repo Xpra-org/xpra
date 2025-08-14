@@ -245,9 +245,6 @@ class DisplayManager(StubServerMixin):
     def setup(self) -> None:
         self.check_xvfb()
         if is_X11():
-            from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
-            if not get_display_ptr():
-                init_display_source()
             from xpra.scripts.server import verify_display
             if not verify_display(xvfb=self.xvfb, display_name=self.display):
                 raise InitExit(ExitCode.NO_DISPLAY, f"unable to access display {self.display!r}")

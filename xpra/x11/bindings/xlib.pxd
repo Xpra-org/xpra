@@ -235,6 +235,8 @@ cdef extern from "X11/Xlib.h":
 
     int XPending(Display *display)
 
+    unsigned long XLastKnownRequestProcessed(Display *display)
+
     # Icon sizes
     ctypedef struct XIconSize:
         int min_width

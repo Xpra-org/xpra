@@ -77,6 +77,7 @@ class X11ServerCore(ServerBase):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self.display = os.environ.get("DISPLAY", "")
         self.touchpad_device = None
         self.pointer_device_map: dict = {}
@@ -84,6 +85,15 @@ class X11ServerCore(ServerBase):
         self.current_keyboard_group = 0
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
+        if not envbool("XPRA_GTK", True):
+            from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
+            if not get_display_ptr():
+                init_display_source()
+            context = self.main_loop.get_context()
+            log("GLib MainContext=%r", context)
+            from xpra.x11.bindings.events import register_glib_source
+            register_glib_source(context)
+
         try:
             from xpra.x11.server.xtest_pointer import XTestPointerDevice
             self.pointer_device = XTestPointerDevice()
@@ -99,7 +109,6 @@ class X11ServerCore(ServerBase):
             from xpra.x11.server.nokeyboard import NoKeyboardDevice
             self.keyboard_device = NoKeyboardDevice()
         log("X11ServerCore pointer_device=%s, keyboard_device=%s", self.pointer_device, self.keyboard_device)
-        super().__init__()
 
     def setup(self) -> None:
         super().setup()
@@ -300,7 +309,7 @@ class X11ServerCore(ServerBase):
         return info
 
     def get_window_id(self, gdkwindow) -> int:
-        if not gdkwindow:
+        if not gdkwindow or not envbool("XPRA_GTK", True):
             return 0
         xid = gdkwindow.get_xid()
         if not xid:

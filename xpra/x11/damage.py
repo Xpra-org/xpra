@@ -97,7 +97,7 @@ class WindowDamageHandler:
     def acknowledge_changes(self) -> None:
         sh = self._xshm_handle
         dh = self._damage_handle
-        log("acknowledge_changes() xshm handle=%s, damage handle=%s", sh, dh)
+        log("acknowledge_changes() xid=%#x, xshm handle=%s, damage handle=%#x", sh, dh)
         if sh:
             sh.discard()
         if dh and self.xid:
