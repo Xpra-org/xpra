@@ -572,12 +572,12 @@ def get_monitor_properties(display: int) -> dict:
 cdef Tuple query_version(Display *display):
     cdef int event_base = 0, ignored = 0
     cdef int r = XRRQueryExtension(display, &event_base, &ignored)
-    log(f"XRRQueryExtension()={r}")
     if not r:
+        log(f"no XRandR!")
         return (0, 0)
-    log("found XRandR extension")
     cdef int major = 0, minor = 0
     if not XRRQueryVersion(display, &major, &minor):
+        log.warn("Warning: XRandR version check failed")
         return (0, 0)
     log(f"found XRandR extension version {major}.{minor} with event_base={event_base}")
     return major, minor
@@ -611,8 +611,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             return False
         cdef int num_sizes = 0
         XRRConfigSizes(config, &num_sizes)
-        log(f"found {num_sizes} config sizes")
-        return num_sizes>0
+        log(f"found {num_sizes} screen sizes")
+        return num_sizes > 0
 
     def has_randr(self) -> bool:
         return bool(self._has_randr)

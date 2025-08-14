@@ -83,12 +83,12 @@ cdef class XShapeBindingsInstance(X11CoreBindingsInstance):
                 log.warn("X11 extension XShape not available")
                 self.present = False
             else:
-                log("X11 extension XShape event_base=%i", event_base)
+                log("XShape extension event_base=%i", event_base)
                 if not XShapeQueryVersion(self.display, &cmajor, &cminor):
                     log.warn("XShape version query failed")
                     self.present = False
                 else:
-                    log("found X11 extension XShape with version %i.%i", cmajor, cminor)
+                    log("found XShape extension version %i.%i", cmajor, cminor)
                     self.present = True
         log("hasXShape()=%s", self.present)
         return self.present

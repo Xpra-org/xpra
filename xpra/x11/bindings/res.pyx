@@ -89,12 +89,12 @@ cdef class ResBindingsInstance(X11CoreBindingsInstance):
     def check_xres(self, min_version=(1, 2)) -> bool:
         cdef int event_base = 0, ignored = 0
         cdef Bool r = XResQueryExtension(self.display, &event_base, &ignored)
-        log("XResQueryExtension()=%i", r)
         if not r:
+            log("no XRes!")
             return False
-        log("found XRes extension")
         cdef int major = 0, minor = 0
         if not XResQueryVersion(self.display, &major, &minor):
+            log.warn("Warning: XRes version check failed")
             return False
         log("found XRes extension version %i.%i", major, minor)
         return (major, minor) >= min_version

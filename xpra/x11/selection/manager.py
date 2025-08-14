@@ -84,12 +84,11 @@ class ManagerSelection(GObject.GObject):
         """
         This method should cause either the `selection-acquired` or the `selection-lost` signals to fire
         """
-        log("acquire(%s)", force)
         X11Window = X11WindowBindings()
         log("window bindings=%s", X11Window)
         with xsync:
             self.timestamp = X11Window.get_server_time(self.xid)
-            log("acquire(%s) server timestamp=%s", force, self.timestamp)
+            log("acquire(%s) server timestamp=%s for selections=%s", force, self.timestamp, csv(self.selections))
 
         with xsync:
             for selection in self.selections:
