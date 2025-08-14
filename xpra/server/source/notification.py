@@ -56,7 +56,7 @@ class NotificationMixin(StubSourceMixin):
         else:
             icon_filename = get_icon_filename(icon_name)
             icon = parse_image_path(icon_filename)
-            self.notify("", nid, "Xpra", 0, "",
+            self.notify("", int(nid), "Xpra", 0, "",
                         summary, body, actions, hints or {},
                         expire_timeout, icon, user_callback)
 
