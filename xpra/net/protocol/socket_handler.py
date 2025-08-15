@@ -672,10 +672,10 @@ class SocketProtocol:
         for i, item in enumerate(packet):
             if item is None:
                 raise TypeError(f"invalid None value in {packet_type!r} packet at index {i}")
-            if isinstance(item, (int, bool, Mapping, Sequence)):
-                continue
             if isinstance(item, IntEnum):
                 packet[i] = int(item)
+                continue
+            if isinstance(item, (int, bool, Mapping, Sequence)):
                 continue
             if isinstance(item, Enum):
                 packet[i] = str(item)
