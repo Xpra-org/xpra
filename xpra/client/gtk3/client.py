@@ -20,7 +20,7 @@ class XpraClient(GTKXpraClient):
     ClientWindowClass = ClientWindow
 
     def __repr__(self):  # pylint: disable=arguments-differ
-        return "gtk3.client"
+        return "%s client" % self.client_toolkit()
 
     def client_toolkit(self) -> str:
         if POSIX and not OSX:
