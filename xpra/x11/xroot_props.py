@@ -47,7 +47,7 @@ def set_workarea(x: int, y: int, width: int, height: int) -> None:
 
 
 def get_workareas() -> tuple[tuple[int, int, int, int]]:
-    net_workarea = root_get("_NET_WORKAREA", ["u32"])
+    net_workarea = root_get("_NET_WORKAREA", ["u32"]) or ()
     # workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
     nworkareas = len(net_workarea) // 4
     desktop = get_current_desktop()
