@@ -14,6 +14,7 @@ from xpra.util.version import dict_version_trim
 from xpra.util.screen import prettify_plug_name
 from xpra.common import FULL_INFO
 from xpra.gtk.versions import get_gtk_version_info
+from xpra.gtk.info import get_screen_sizes
 from xpra.server import features
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -121,9 +122,15 @@ class GTKServer(StubServerMixin):
         close_gdk_display_source()
 
     def get_caps(self, source) -> dict[str, Any]:
+        caps: dict[str, Any] = {}
         if "versions" in source.wants and FULL_INFO >= 2:
-            return {"versions": get_gtk_version_info()}
-        return {}
+            caps["versions"] = get_gtk_version_info()
+        if "features" in source.wants:
+            caps["screen_sizes"] = get_screen_sizes()
+        return caps
 
     def get_info(self, _proto) -> dict[str, Any]:
-        return {"versions": dict_version_trim(get_gtk_version_info())}
+        return {
+            "versions": dict_version_trim(get_gtk_version_info()),
+            "screen_sizes": get_screen_sizes(),
+        }
