@@ -518,7 +518,6 @@ cdef class DrawableWrapper:
         cdef drawable = self.drawable
         if drawable != 0:
             self.drawable = 0
-            XFreePixmap(self.display, drawable)
             global drawable_counter
             drawable_counter -= 1
 
