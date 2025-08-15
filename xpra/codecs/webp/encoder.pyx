@@ -544,7 +544,7 @@ cdef class Encoder:
         cdef int scaled_width = options.intget("scaled-width", self.width)
         cdef int scaled_height = options.intget("scaled-height", self.height)
         if scaled_width!=self.width or scaled_height!=self.height:
-            scale_picture(&pic, self.scaled_width, self.scaled_height)
+            scale_picture(&pic, scaled_width, scaled_height)
 
         client_options = {
             "rgb_format"  : pixel_format,
