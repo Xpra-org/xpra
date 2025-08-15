@@ -18,6 +18,7 @@ from xpra.common import NotificationID
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
+from xpra.x11.common import get_pywindow
 from xpra.x11.prop import prop_get
 from xpra.x11.error import xsync, xlog
 from xpra.log import Logger
@@ -144,11 +145,7 @@ def position_models(models: dict[int, Any]) -> None:
         transient_for_xid = prop_get(xid, "WM_TRANSIENT_FOR", "window", True)
         model.transient_for = None
         if transient_for_xid:
-            try:
-                from xpra.x11.common import get_pywindow
-                model.transient_for = get_pywindow(transient_for_xid)
-            except ImportError:
-                pass
+            model.transient_for = get_pywindow(transient_for_xid)
         rel_parent = model.transient_for
         if not rel_parent:
             parent = xid
