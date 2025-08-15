@@ -58,6 +58,8 @@ cdef object parse_DamageNotify(Display *d, XEvent *e):
     return {
         "window": e.xany.window,
         "damage": damage_e.damage,
+        "level": damage_e.level,
+        "more": damage_e.more,
         "x": damage_e.area.x,
         "y": damage_e.area.y,
         "width": damage_e.area.width,

@@ -1649,14 +1649,16 @@ class WindowSource(WindowIconSource):
             if congestion_elapsed < 1000:
                 delay += (1000-congestion_elapsed)//4
         # raise min_delay with qsize:
-        min_delay = max(0, self.batch_config.min_delay * max(2, self.queue_size())//2 - FRAME_OVERHEAD)
+        more = bool(options.get("more", False))
+        abs_min_delay = int(more) * 5
+        min_delay = max(abs_min_delay, self.batch_config.min_delay * max(2, self.queue_size())//2 - FRAME_OVERHEAD)
         delay = max(delay, options.get("min_delay", min_delay))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
         elapsed = int(1000*(now-self.batch_config.last_event))
         # discount the elapsed time since the last event:
         target_delay = delay
-        delay = max(0, delay-elapsed)
+        delay = max(abs_min_delay, delay-elapsed)
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = DelayedRegions(damage_time=now, regions=regions, encoding=actual_encoding, options=options)
         expire_delay = min(self.batch_config.expire_delay, delay)
