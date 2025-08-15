@@ -8,7 +8,6 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.x11.error import XError, xsync
-from xpra.gtk.info import get_screen_sizes
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.x11.bindings.randr import RandRBindings
@@ -109,7 +108,7 @@ class ScreenDesktopModel(DesktopModelBase):
             if ow == rw and oh == rh:
                 return
             with xsync:
-                if RandR.is_dummy16() and (rw, rh) not in get_screen_sizes():
+                if RandR.is_dummy16() and (rw, rh) not in RandR.DesktopServerBaseget_xrr_screen_sizes():
                     RandR.add_screen_size(rw, rh)
             with xsync:
                 if not RandR.set_screen_size(rw, rh):
