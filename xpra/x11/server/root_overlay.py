@@ -105,7 +105,7 @@ def paint_overlay_monitors(cr, screen: Sequence) -> None:
 def paint_root_overlay_windows(cr, windows: Sequence) -> None:
     log("paint_root_overlay_windows(%s)",windows)
     for window in windows:
-        x, y, w, h = window.get_property("geometry")[:4]
+        w, h = window.get_property("geometry")[2:4]
         image = window.get_image(0, 0, w, h)
         if not image:
             continue
