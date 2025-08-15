@@ -22,7 +22,7 @@ from xpra.util.str_fn import (
     csv, hexstr, nicestr,
     Ellipsizer, repr_ellipsized, strtobytes, memoryview_to_bytes,
 )
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint, envbool, first_time
 from xpra.util.thread import make_thread, start_thread
 from xpra.common import noop, SizedBuffer
 from xpra.scripts.config import TRUE_OPTIONS
@@ -673,6 +673,8 @@ class SocketProtocol:
             if item is None:
                 raise TypeError(f"invalid None value in {packet_type!r} packet at index {i}")
             if isinstance(item, IntEnum):
+                if first_time(f"enum-{packet_type}-%s" % type(item)):
+                    log.warn(f"Warning: found IntEnum value in {packet_type!r} packet at index {i}")
                 packet[i] = int(item)
                 continue
             if isinstance(item, (int, bool, Mapping, Sequence)):
