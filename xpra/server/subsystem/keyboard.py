@@ -78,25 +78,31 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module,
     return v
 
 
+def ibus_pid_file() -> str:
+    session_dir = os.environ["XPRA_SESSION_DIR"]
+    return os.path.join(session_dir, "ibus-daemon.pid")
+
+
 def may_start_ibus(start_command: Callable[[list[str]], None]):
     # maybe we are inheriting one from a dead session?
-    session_dir = os.environ["XPRA_SESSION_DIR"]
     daemonizer = find_libexec_command("daemonizer")
-    pidfile = os.path.join(session_dir, "ibus-daemon.pid")
+    pidfile = ibus_pid_file()
     ibus_daemon_pid = load_pid(pidfile)
-    ibuslog(f"may_start_ibus({start_command}) {ibus_daemon_pid=}, {pidfile=!r}, {daemonizer=!r}, {session_dir=!r}")
-    # weak dependency on command subsystem:
-    if not ibus_daemon_pid or not os.path.exists("/proc") or not os.path.exists(f"/proc/{ibus_daemon_pid}"):
-        # start it late:
-        def late_start():
-            command = shlex.split(IBUS_DAEMON_COMMAND)
-            ibuslog(f"starting ibus: {IBUS_DAEMON_COMMAND!r}")
-            if daemonizer:
-                ibuslog(" using daemonizer: %r", daemonizer)
-                command = [daemonizer, pidfile, "--"] + command
-            start_command(command)
+    ibuslog(f"may_start_ibus({start_command}) {ibus_daemon_pid=}, {pidfile=!r}, {daemonizer=!r}")
+    if ibus_daemon_pid and os.path.exists("/proc") or os.path.exists(f"/proc/{ibus_daemon_pid}"):
+        ibuslog("ibus-daemon is already running")
+        return
 
-        GLib.idle_add(late_start)
+    # start it late:
+    def late_start():
+        command = shlex.split(IBUS_DAEMON_COMMAND)
+        ibuslog(f"starting ibus: {IBUS_DAEMON_COMMAND!r}")
+        if daemonizer:
+            ibuslog(" using daemonizer: %r", daemonizer)
+            command = [daemonizer, pidfile, "--"] + command
+        start_command(command)
+
+    GLib.idle_add(late_start)
 
 
 class KeyboardServer(StubServerMixin):
