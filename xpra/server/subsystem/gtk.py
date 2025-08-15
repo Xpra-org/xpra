@@ -132,5 +132,9 @@ class GTKServer(StubServerMixin):
     def get_info(self, _proto) -> dict[str, Any]:
         return {
             "versions": dict_version_trim(get_gtk_version_info()),
+        }
+
+    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str, Any]:
+        return {
             "screen_sizes": get_screen_sizes(),
         }
