@@ -535,7 +535,7 @@ cdef object parse_xevent(Display *d, XEvent *e):
 
 
 cdef int x11_io_error_handler(Display *display) except 0:
-    message = b"X11 fatal IO error"
+    message = "X11 fatal IO error"
     log.warn(message)
     return 0
 
