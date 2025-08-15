@@ -389,7 +389,7 @@ class CoreX11WindowModel(WindowModelStub):
         if self._managed:
             self.emit("unmanaged", exiting)
 
-    def do_unmanaged(self, wm_exiting) -> None:
+    def do_unmanaged(self, wm_exiting: bool) -> None:
         if not self._managed:
             return
         self._managed = False

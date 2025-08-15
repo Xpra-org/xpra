@@ -540,7 +540,7 @@ cdef int x11_io_error_handler(Display *display) except 0:
     return 0
 
 
-last_error = {}
+last_error: Dict[str, int] = {}
 
 
 cdef int x11_error_handler(Display *display, XErrorEvent *event) except 0:

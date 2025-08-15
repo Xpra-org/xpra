@@ -425,7 +425,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("requested-size", (aw, ah))
         self.update_children()
 
-    def do_unmanaged(self, wm_exiting) -> None:
+    def do_unmanaged(self, wm_exiting: bool) -> None:
         log("unmanaging window: %s (%s - %s)", self, self.corral_xid, self.xid)
         cxid = self.corral_xid
         if cxid:
