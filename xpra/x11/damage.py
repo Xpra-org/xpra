@@ -60,13 +60,9 @@ class WindowDamageHandler:
         if geom is None:
             raise Unmanageable(f"window {self.xid:x} disappeared already")
         self._border_width = geom[-1]
-        self.create_damage_handle()
+        self._damage_handle = XDamage.XDamageCreate(self.xid)
+        log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
         add_event_receiver(self.xid, self, self.MAX_RECEIVERS)
-
-    def create_damage_handle(self) -> None:
-        if self.xid:
-            self._damage_handle = XDamage.XDamageCreate(self.xid)
-            log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
 
     def destroy(self) -> None:
         if not self.xid:
@@ -97,7 +93,7 @@ class WindowDamageHandler:
     def acknowledge_changes(self) -> None:
         sh = self._xshm_handle
         dh = self._damage_handle
-        log("acknowledge_changes() xid=%#x, xshm handle=%s, damage handle=%#x", sh, dh)
+        log("acknowledge_changes() xid=%#x, xshm handle=%s, damage handle=%#x", self.xid, sh, dh)
         if sh:
             sh.discard()
         if dh and self.xid:
