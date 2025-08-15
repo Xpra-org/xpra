@@ -1615,7 +1615,7 @@ class WindowSource(WindowIconSource):
                 region = rectangle(x, y, w, h)
                 add_rectangle(regions, region)
             # merge/override options
-            if options is not None:
+            if options:
                 override = options.get("override_options", False)
                 existing_options = delayed.options
                 for k in options.keys():
