@@ -26,6 +26,7 @@ URL:            http://pyopengl.sourceforge.net/
 Source0:        https://files.pythonhosted.org/packages/source/p/pyopengl_accelerate/pyopengl_accelerate-%{version}.tar.gz
 Source1:        https://files.pythonhosted.org/packages/source/p/pyopengl/pyopengl-%{version}.tar.gz
 Patch0:         pyopengl-py3.13-nonumpy.patch
+Patch1:         pyopengl-long-is-int.patch
 
 BuildRequires:	coreutils
 BuildRequires:  %{python3}-devel
@@ -72,6 +73,7 @@ fi
 %setup -q -c -n %{srcname}-%{version} -T -a0 -a1
 pushd pyopengl_accelerate-%{version}
 %patch -p1 -P 0
+%patch -p1 -P 1
 popd
 
 
