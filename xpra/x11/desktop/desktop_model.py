@@ -85,7 +85,16 @@ class ScreenDesktopModel(DesktopModelBase):
         add_event_receiver(self.xid, self)
         if RandR.has_randr():
             RandR.select_screen_changes()
+        self.update_size()
         self.update_size_hints()
+
+    def update_size(self) -> bool:
+        with xsync:
+            w, h = RandR.get_screen_size()
+        if (w, h) == (self.width, self.height):
+            return False
+        self.width, self.height = w, h
+        return True
 
     def unmanage(self, _exiting=False) -> None:
         remove_event_receiver(self.xid, self)
@@ -133,10 +142,7 @@ class ScreenDesktopModel(DesktopModelBase):
 
     def _screen_size_changed(self):
         self.invalidate_pixmap()
-        with xsync:
-            w, h = RandR.get_screen_size()
-        if (w, h) != (self.width, self.height):
-            self.width, self.height = w, h
+        if self.update_size():
             screenlog("screen size changed: new size %ix%i", self.width, self.height)
             self.update_size_hints()
             self.emit("resized")
