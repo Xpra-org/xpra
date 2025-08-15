@@ -72,6 +72,8 @@ class ScreenDesktopModel(DesktopModelBase):
 
     def __init__(self, resize=True, resize_exact=False):
         super().__init__()
+        self.width = 1
+        self.height = 1
         self.can_resize = resize
         self.resize_exact = resize_exact
 
@@ -81,18 +83,18 @@ class ScreenDesktopModel(DesktopModelBase):
     def setup(self) -> None:
         super().setup()
         add_event_receiver(self.xid, self)
+        if RandR.has_randr():
+            RandR.select_screen_changes()
         self.update_size_hints()
 
     def unmanage(self, _exiting=False) -> None:
         remove_event_receiver(self.xid, self)
 
     def get_geometry(self) -> tuple[int, int, int, int]:
-        w, h = self.get_dimensions()
-        return 0, 0, w, h
+        return 0, 0, self.width, self.height
 
     def get_dimensions(self) -> tuple[int, int]:
-        with xsync:
-            return RandR.get_screen_size()
+        return self.width, self.height
 
     def get_property(self, prop: str) -> Any:
         if prop == "xid":
@@ -126,20 +128,25 @@ class ScreenDesktopModel(DesktopModelBase):
     def do_x11_configure_event(self, event) -> None:
         self._screen_size_changed()
 
+    def do_x11_screen_change_event(self, event) -> None:
+        self._screen_size_changed()
+
     def _screen_size_changed(self):
-        w, h = self.get_dimensions()
-        screenlog("screen size changed: new size %ix%i", w, h)
         self.invalidate_pixmap()
-        self.update_size_hints()
-        self.emit("resized")
+        with xsync:
+            w, h = RandR.get_screen_size()
+        if (w, h) != (self.width, self.height):
+            self.width, self.height = w, h
+            screenlog("screen size changed: new size %ix%i", self.width, self.height)
+            self.update_size_hints()
+            self.emit("resized")
 
     def update_size_hints(self) -> None:
-        w, h = self.get_dimensions()
-        screenlog("screen dimensions: %ix%i", w, h)
+        screenlog("screen dimensions: %ix%i", self.width, self.height)
         size_hints: dict[str, tuple[int, int]] = {}
 
         def use_fixed_size() -> None:
-            size = w, h
+            size = self.width, self.height
             size_hints.update({
                 "maximum-size": size,
                 "minimum-size": size,

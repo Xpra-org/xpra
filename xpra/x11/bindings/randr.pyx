@@ -8,9 +8,6 @@ import struct
 from typing import Dict, List, Tuple
 from time import monotonic
 
-from xpra.log import Logger
-log = Logger("x11", "bindings", "randr")
-
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom, XEvent,
     XDefaultRootWindow,
@@ -19,10 +16,16 @@ from xpra.x11.bindings.xlib cimport (
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
 )
+from xpra.x11.bindings.display_source cimport get_display
+from xpra.x11.bindings.events cimport add_parser, add_event_type
+
 from xpra.common import DEFAULT_REFRESH_RATE
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.str_fn import csv, decode_str, strtobytes
 from xpra.util.screen import prettify_plug_name
+from xpra.log import Logger
+
+log = Logger("x11", "bindings", "randr")
 
 
 TIMESTAMPS = envbool("XPRA_RANDR_TIMESTAMPS", False)
@@ -1293,6 +1296,41 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 XRRFreeMonitors(monitors)
         finally:
             XRRFreeScreenResources(rsc)
+
+
+cdef object parse_ScreenChangeNotify(Display *d, XEvent *e):
+    cdef XRRScreenChangeNotifyEvent *scn_e = <XRRScreenChangeNotifyEvent*> e
+    return {
+        "window": scn_e.window,
+        "root": scn_e.root,
+        "config_timestamp": int(scn_e.config_timestamp),
+        "size_index": int(scn_e.size_index),
+        "subpixel_order": int(scn_e.subpixel_order),
+        "rotation": int(scn_e.rotation),
+        "width": int(scn_e.width),
+        "height": int(scn_e.height),
+        "mwidth": int(scn_e.mwidth),
+        "mheight": int(scn_e.mheight),
+    }
+
+
+def init_xrandr_events() -> bool:
+    cdef Display *display = get_display()
+    cdef int event_base = 0
+    cdef int error_base = 0
+    if not XRRQueryExtension(display, &event_base, &error_base):
+        log.warn("Warning: XRandR extension is not available")
+        return False
+    if event_base <= 0:
+        log.warn("Warning: XRandR extension returned invalid event base: %d", event_base)
+        return False
+
+    cdef int ScreenChangeNotify = event_base + RRScreenChangeNotify
+    add_event_type(ScreenChangeNotify, "ScreenChangeNotify", "x11-screen-change-event", "")
+    add_parser(ScreenChangeNotify, parse_ScreenChangeNotify)
+    log("ScreenChangeNotify=%d", ScreenChangeNotify)
+
+    return True
 
 
 cdef RandRBindingsInstance singleton = None

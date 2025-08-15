@@ -41,6 +41,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         "motion": one_arg_signal,
         "x11-motion-event": one_arg_signal,
         "x11-property-notify-event": one_arg_signal,
+        "x11-screen-change-event": one_arg_signal,
     }
 
     __gproperties__ = {
