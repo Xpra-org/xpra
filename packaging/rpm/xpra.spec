@@ -620,6 +620,7 @@ cp %{buildroot}/usr/bin/xpra %{buildroot}/usr/bin/%{package_prefix}
 #no matter which python3 was used for building the package:
 sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/env python3=' %{buildroot}/usr/bin/xpra
 sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/env python3=' %{buildroot}/usr/bin/xpra_launcher
+sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/env python3=' %{buildroot}/usr/bin/run_scaled
 %endif
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
