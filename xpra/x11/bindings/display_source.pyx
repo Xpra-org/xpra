@@ -11,9 +11,8 @@
 
 import os
 import cython
-from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
-from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
 from libc.stdint cimport uintptr_t
+from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
 
 cdef Display *display = NULL
 cdef str display_name = ""
@@ -65,6 +64,7 @@ cdef uintptr_t do_init_display_source(display_name: str):
         raise ValueError("failed to open X11 display '%s'" % display_name)
     set_display(display)
     set_display_name(display_name)
+
     return <uintptr_t> display
 
 
