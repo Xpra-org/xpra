@@ -291,6 +291,21 @@ cdef extern from "X11/Xlib.h":
     void XNextEvent(Display *display, XEvent *event_return) nogil
     int XSelectInput(Display * display, Window w, unsigned long event_mask)
 
+    ctypedef void (*XConnectionWatchProc)(Display *display,
+                   XPointer client_data, int fd, Bool opening, XPointer *watch_data) noexcept
+    Status XAddConnectionWatch(Display *display, XConnectionWatchProc procedure, XPointer client_data)
+    void XProcessInternalConnection(Display *display, int fd)
+    Status XInternalConnectionNumbers(Display *display, int **fd_return, int *count_return)
+
+    unsigned long XNextRequest(Display *display)
+    unsigned long XLastKnownRequestProcessed(Display *display)
+
+    int XProtocolVersion(Display *display)
+    int XProtocolRevision(Display *display)
+    char *XServerVendor(Display *display)
+    int XVendorRelease(Display *display)
+    char *XDisplayString(Display *display)
+
     # properties:
     int XChangeProperty(Display *, Window w, Atom prop,
          Atom ptype, int fmt, int mode, unsigned char * data, int nelements)

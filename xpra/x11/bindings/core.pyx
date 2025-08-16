@@ -18,6 +18,9 @@ from xpra.x11.bindings.xlib cimport (
     CurrentTime,
     XDefaultRootWindow,
     XConnectionNumber,
+    XProtocolVersion, XProtocolRevision,
+    XServerVendor, XVendorRelease,
+    XDisplayString,
 )
 from libc.stdlib cimport malloc, free        # pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
@@ -378,6 +381,31 @@ cdef class X11CoreBindingsInstance:
         if self.display == NULL:
             raise RuntimeError("display is closed")
         return XUngrabPointer(self.display, time)
+
+    def get_info(self) -> Dict[str, Any]:
+        cdef int version = XProtocolVersion(self.display)
+        cdef int revision = XProtocolRevision(self.display)
+        cdef char *vendor = XServerVendor(self.display)
+        cdef int release = XVendorRelease(self.display)
+        vendor_str = vendor.decode("utf8")
+        return {
+            "version": version,
+            "revision": revision,
+            "vendor": vendor_str,
+            "release": release,
+        }
+
+    def show_server_info(self) -> None:
+        cdef char *display = XDisplayString(self.display)
+        cdef int version = XProtocolVersion(self.display)
+        cdef int revision = XProtocolRevision(self.display)
+        cdef char *vendor = XServerVendor(self.display)
+        cdef int release = XVendorRelease(self.display)
+        display_str = display.decode("latin1")
+        vendor_str = vendor.decode("latin1")
+        log.info("connected to X11 server %r", display_str)
+        log.info(" vendor: %r", vendor_str)
+        log.info(" version %i.%i release %i", version, revision, release)
 
 
 cdef X11CoreBindingsInstance singleton = None

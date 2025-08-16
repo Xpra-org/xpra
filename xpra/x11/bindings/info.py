@@ -17,7 +17,7 @@ log = Logger("x11")
 ALL_X11_BINDINGS = (
     "classhint", "composite", "core", "damage", "display_source", "events", "fixes", "keyboard",
     "randr", "record", "res", "saveset", "shape", "shm", "test",
-    "wait_for_server", "window", "xi2", "ximage", "xkb", "xwait", "xwayland",
+    "wait_for_x_server", "window", "xi2", "ximage", "xkb", "xwait", "xwayland",
 )
 
 
@@ -47,6 +47,9 @@ def get_info() -> dict[str, Any]:
     Return a dictionary with information about the X11 display.
     """
     info = get_extensions_info(True)
+
+    from xpra.x11.bindings.core import X11CoreBindings
+    info.update(X11CoreBindings().get_info())
 
     try:
         from xpra.x11.bindings.xwayland import isxwayland

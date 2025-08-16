@@ -93,6 +93,7 @@ class X11ServerCore(ServerBase):
             log("GLib MainContext=%r", context)
             from xpra.x11.bindings.events import register_glib_source
             register_glib_source(context)
+            X11CoreBindings().show_server_info()
 
         try:
             from xpra.x11.server.xtest_pointer import XTestPointerDevice
