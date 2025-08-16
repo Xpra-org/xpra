@@ -31,6 +31,7 @@ def isX11(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
     if not d:
         log(f"isX11({display_name}) cannot open display: %s", f.getvalue())
         return False
+    XCloseDisplay(d)
     return True
 
 
