@@ -41,6 +41,7 @@ XPRA_SYNCHRONIZE = envbool("XPRA_SYNCHRONIZE", False)
 XPRA_LOG_SYNC = envbool("XPRA_LOG_SYNC", False)
 VERIFY_MAIN_THREAD = envbool("XPRA_VERIFY_MAIN_THREAD", True)
 LOG_NESTED_XTRAP = envbool("XPRA_LOG_NESTED_XTRAP", False)
+LOG_XTRAP = envbool("XPRA_LOG_XTRAP", False)
 
 log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
@@ -241,3 +242,5 @@ def verify_sync(*args) -> None:
         log.error("Error: unmanaged X11 context", backtrace=True)
         if args:
             log.error(" " + str(args[0]) + "%s", args[1:])
+    elif LOG_XTRAP:
+        log.info(args[0], *args[1:])

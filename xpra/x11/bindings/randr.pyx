@@ -648,7 +648,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return v
 
     cdef int _set_screen_size(self, width, height):
-        self.context_check()
+        self.context_check("set-screen-size")
         cdef int num_sizes = 0
         cdef int num_rates = 0
         cdef short* rates = <short*> 0
@@ -752,7 +752,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return self._get_screen_size()
 
     def _get_screen_size(self):
-        self.context_check()
+        self.context_check("get-screen-size")
         cdef XRRScreenSize *xrrs
         cdef Rotation original_rotation
         cdef int num_sizes = 0
