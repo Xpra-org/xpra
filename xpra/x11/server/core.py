@@ -91,7 +91,7 @@ class X11ServerCore(ServerBase):
                 init_display_source()
             context = self.main_loop.get_context()
             log("GLib MainContext=%r", context)
-            from xpra.x11.bindings.events import register_glib_source
+            from xpra.x11.bindings.loop import register_glib_source
             register_glib_source(context)
             X11CoreBindings().show_server_info()
 

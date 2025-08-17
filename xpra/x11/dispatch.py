@@ -4,6 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
+from xpra.util.str_fn import csv
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -66,6 +69,39 @@ def add_debug_route_event(event_type: int) -> None:
 
 def remove_debug_route_event(event_type: int) -> None:
     debug_route_events.remove(event_type)
+
+
+def set_debug_events() -> None:
+    from xpra.x11.bindings.events import names_to_event_type
+    global debug_route_events
+    XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
+    debug_set = set()
+    ignore_set = set()
+    for n in XPRA_X11_DEBUG_EVENTS.split(","):
+        name = n.strip()
+        if len(name)==0:
+            continue
+        if name[0]=="-":
+            event_set = ignore_set
+            name = name[1:]
+        else:
+            event_set = debug_set
+        if name in ("*", "all"):
+            events = names_to_event_type.keys()
+        elif name in names_to_event_type:
+            events = [name]
+        else:
+            log("unknown X11 debug event type: %s", name)
+            continue
+        #add to correct set:
+        for e in events:
+            event_set.add(e)
+    events = debug_set.difference(ignore_set)
+    debug_route_events = [names_to_event_type.get(x) for x in events]
+    if len(events)>0:
+        log.warn("debugging of X11 events enabled for:")
+        log.warn(" %s", csv(events))
+        log.warn(" event codes: %s", csv(debug_route_events))
 
 
 def cleanup_all_event_receivers() -> None:

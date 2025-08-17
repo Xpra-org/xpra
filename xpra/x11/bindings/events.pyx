@@ -9,7 +9,6 @@ from time import monotonic
 from typing import Dict, Tuple
 from collections.abc import Callable
 
-from xpra.x11.dispatch import route_event
 from xpra.x11.error import XError, xsync
 from xpra.x11.common import X11Event
 from xpra.util.str_fn import csv
@@ -21,13 +20,11 @@ log = Logger("x11", "bindings", "events")
 
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.xlib cimport (
-    Display, Atom,
+    Display, Atom, Bool, Status,
     XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
     XSelectionEvent, XConfigureRequestEvent,
     XFree,
     XGetAtomName,
-    XPending, XNextEvent, XSync, XFlush,
-    XSetErrorHandler, XSetIOErrorHandler, XErrorEvent,
 )
 from libc.stdint cimport uintptr_t
 
@@ -128,6 +125,7 @@ cdef void init_x11_events():
         MappingNotify       : "MappingNotify",
         GenericEvent        : "GenericEvent",
     })
+    from xpra.x11.dispatch import set_debug_events
     set_debug_events()
 
 
@@ -209,38 +207,6 @@ def add_x_event_type_names(event_type_names: Dict[int, str]) -> None:
 
 def get_x_event_type_name(event: int) -> str:
     return x_event_type_names.get(event, "")
-
-
-def set_debug_events() -> None:
-    global debug_route_events
-    XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
-    debug_set = set()
-    ignore_set = set()
-    for n in XPRA_X11_DEBUG_EVENTS.split(","):
-        name = n.strip()
-        if len(name)==0:
-            continue
-        if name[0]=="-":
-            event_set = ignore_set
-            name = name[1:]
-        else:
-            event_set = debug_set
-        if name in ("*", "all"):
-            events = names_to_event_type.keys()
-        elif name in names_to_event_type:
-            events = [name]
-        else:
-            log("unknown X11 debug event type: %s", name)
-            continue
-        #add to correct set:
-        for e in events:
-            event_set.add(e)
-    events = debug_set.difference(ignore_set)
-    debug_route_events = [names_to_event_type.get(x) for x in events]
-    if len(events)>0:
-        log.warn("debugging of X11 events enabled for:")
-        log.warn(" %s", csv(events))
-        log.warn(" event codes: %s", csv(debug_route_events))
 
 
 generic_event_parsers : Dict[int, Callable] = {}
@@ -532,118 +498,3 @@ cdef object parse_xevent(Display *d, XEvent *e):
     for k, v in attrs.items():
         setattr(pyev, k, v)
     return pyev
-
-
-cdef int x11_io_error_handler(Display *display) except 0:
-    message = "X11 fatal IO error"
-    log.warn(message)
-    return 0
-
-
-last_error: Dict[str, int] = {}
-
-
-cdef int x11_error_handler(Display *display, XErrorEvent *event) except 0:
-    einfo = {
-        "serial": event.serial,
-        "error": event.error_code,
-        "request": event.request_code,
-        "minor": event.minor_code,
-        "xid": event.resourceid,
-    }
-    log("x11 error: %s", einfo)
-    global last_error
-    if not last_error:
-        last_error = einfo
-    return 0
-
-
-cdef class EventLoop:
-
-    cdef Display *display
-
-    def __cinit__(self):
-        self.display = get_display()
-        init_x11_events()
-        self.set_x11_error_handlers()
-
-    def process_events(self) -> int:
-        cdef XEvent event
-        cdef unsigned int count = 0
-        while XPending(self.display):
-            XNextEvent(self.display, &event)
-            self.process_event(&event)
-            count += 1
-        return count
-
-    cdef void process_event(self, XEvent *event) noexcept:
-        cdef int etype = event.type
-        ename = get_x_event_type_name(etype) or etype
-        event_args = get_x_event_signals(etype)
-        if not event_args:
-            # not handled
-            log("skipped event %r (no handlers)", ename)
-            return
-
-        try:
-            pyev = parse_xevent(self.display, event)
-        except Exception:
-            log.error("Error parsing X11 event", exc_info=True)
-            return
-        log("process_event: %s", pyev)
-        if not pyev:
-            return
-
-        cdef float start = monotonic()
-        try:
-            signal, parent_signal = event_args
-            route_event(etype, pyev, signal, parent_signal)
-            log("x_event_filter event=%s/%s took %.1fms", event_args, ename, 1000.0*(monotonic() - start))
-        # except (KeyboardInterrupt, SystemExit):
-        #    log("exiting on KeyboardInterrupt/SystemExit")
-        except:
-            log.warn("Unhandled exception in x_event_filter:", exc_info=True)
-
-    def set_x11_error_handlers(self) -> None:
-        from xpra.x11 import error
-        error.Xenter = self.Xenter
-        error.Xexit = self.Xexit
-        XSetErrorHandler(&x11_error_handler)
-        XSetIOErrorHandler(&x11_io_error_handler)
-
-    def Xenter(self) -> None:
-        log("Xenter")
-
-    def Xexit(self, flush=True):
-        log("Xexit(%s)", flush)
-        if flush:
-            XSync(self.display, False)
-        else:
-            XFlush(self.display)
-        global last_error
-        if not last_error:
-            return None
-        err = last_error.get("error", "unknown")
-        last_error = {}
-        return err
-
-
-def register_glib_source(context) -> None:
-    from xpra.x11.bindings.display_source import get_display_ptr
-    if not get_display_ptr():
-        raise RuntimeError("no display!")
-    from xpra.x11.bindings.core import X11CoreBindings
-    X11Core = X11CoreBindings()
-    cdef unsigned int fd = X11Core.get_connection_number()
-    log("register_glib_source() X11 fd=%i", fd)
-    from xpra.os_util import gi_import
-    GLib = gi_import("GLib")
-    cdef EventLoop loop = EventLoop()
-
-    def x11_callback(*args) -> bool:
-        log("x11_callback%s", args)
-        count = loop.process_events()
-        log("processed %i X11 events", count)
-        return True
-
-    GLib.io_add_watch(fd, GLib.IO_IN, x11_callback)
