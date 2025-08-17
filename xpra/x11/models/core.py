@@ -16,7 +16,7 @@ from xpra.util.io import get_proc_cmdline
 from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.codecs.image import ImageWrapper
 from xpra.platform.posix.proc import get_parent_pid
-from xpra.x11.common import Unmanageable, FRAME_EXTENTS, get_pywindow
+from xpra.x11.common import Unmanageable, FRAME_EXTENTS
 from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
@@ -129,8 +129,9 @@ class CoreX11WindowModel(WindowModelStub):
             GObject.ParamFlags.READABLE,
         ),
         "parent": (
-            GObject.TYPE_PYOBJECT,
-            "parent window id", "",
+            GObject.TYPE_INT,
+            "parent X11 window id", "",
+            -1, 65535, -1,
             GObject.ParamFlags.READABLE,
         ),
         # FIXME: this is an ugly virtual property
@@ -468,7 +469,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("has-alpha", depth == 32)
         self._updateprop("allowed-actions", self._DEFAULT_NET_WM_ALLOWED_ACTIONS)
         self._updateprop("shape", self._read_xshape())
-        self._updateprop("parent", get_pywindow(parent))
+        self._updateprop("parent", parent)
         # note: some of those are technically mutable,
         # but we don't export them as "dynamic" properties, so this won't be propagated
         # maybe we want to catch errors parsing _NET_WM_ICON ?

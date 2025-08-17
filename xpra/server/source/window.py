@@ -54,7 +54,6 @@ class WindowsConnection(StubClientConnection):
 
     def __init__(self):
         self.get_focus: Callable | None = None
-        self.get_window_id = noid
         self.window_filters = []
         self.readonly = False
         # duplicated from encodings:
@@ -64,7 +63,6 @@ class WindowsConnection(StubClientConnection):
 
     def init_from(self, _protocol, server) -> None:
         self.get_focus = server.get_focus
-        self.get_window_id = server.get_window_id
         self.window_filters = server.window_filters
         self.readonly = server.readonly
 
@@ -292,9 +290,7 @@ class WindowsConnection(StubClientConnection):
         if propname not in self.metadata_supported:
             metalog("make_metadata: client does not support '%s'", propname)
             return {}
-        metadata = make_window_metadata(window, propname,
-                                        get_window_id=self.get_window_id,
-                                        skip_defaults=skip_defaults)
+        metadata = make_window_metadata(window, propname, skip_defaults=skip_defaults)
         if self.readonly:
             metalog("overriding size-constraints for readonly mode")
             size = window.get_dimensions()
@@ -394,10 +390,7 @@ class WindowsConnection(StubClientConnection):
                 return
             self.send_async("raise-window", wid)
             return
-        sibling_wid = 0
-        if sibling:
-            sibling_wid = self.get_window_id(sibling)
-        self.send_async("restack-window", wid, detail, sibling_wid)
+        self.send_async("restack-window", wid, detail, sibling)
 
     def raise_window(self, wid: int, window) -> None:
         if not self.can_send_window(window):

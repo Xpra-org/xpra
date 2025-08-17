@@ -309,17 +309,6 @@ class X11ServerCore(ServerBase):
         info["geometry"] = window.get_geometry()
         return info
 
-    def get_window_id(self, gdkwindow) -> int:
-        if not gdkwindow or not envbool("XPRA_GTK", True):
-            return 0
-        xid = gdkwindow.get_xid()
-        if not xid:
-            return 0
-        for wid, window in self._id_to_window.items():
-            if window.get("xid", 0) == xid:
-                return wid
-        return 0
-
     # noinspection PyMethodMayBeStatic
     def get_keyboard_config(self, props=None):
         p = typedict(props or {})

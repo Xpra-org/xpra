@@ -150,10 +150,6 @@ class WindowServer(StubServerMixin):
     def is_shown(self, _window) -> bool:
         return True
 
-    def get_window_id(self, _gdkwindow) -> int:
-        # the X11 server can find the model from the window's xid
-        return 0
-
     def reset_window_filters(self) -> None:
         self.window_filters = []
 
@@ -212,12 +208,17 @@ class WindowServer(StubServerMixin):
         return wid
 
     def _add_new_window_common(self, window) -> int:
-        wid = self._max_window_id
+        if "xid" in window.get_property_names():
+            wid = window.get_property("xid")
+        else:
+            wid = self._max_window_id
+            self._max_window_id = max(self._max_window_id, wid + 1)
+        if not wid:
+            raise RuntimeError(f"failed to get window id for new window {window!r}")
         self.do_add_new_window_common(wid, window)
         return wid
 
     def do_add_new_window_common(self, wid: int, window) -> None:
-        self._max_window_id = max(self._max_window_id, wid + 1)
         props = window.get_dynamic_property_names()
         metalog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
         for prop in props:
@@ -236,9 +237,8 @@ class WindowServer(StubServerMixin):
             if "transient-for" in window.get_property_names():
                 transient_for = window.get_property("transient-for")
                 if transient_for:
-                    window_tf = self.get_window_id(transient_for)
-                    parent = self._id_to_window.get(window_tf)
-                    parent_ws = ss.get_window_source(window_tf)
+                    parent = self._id_to_window.get(transient_for)
+                    parent_ws = ss.get_window_source(transient_for)
                     pos = self.get_window_position(parent)
                     geomlog("transient-for=%s : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
                     if pos and parent and parent_ws:

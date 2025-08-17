@@ -16,7 +16,6 @@ from xpra.x11.bindings.core import constants
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties, GUESS_CONTENT
 from xpra.util.background_worker import add_work_item
-from xpra.x11.common import get_pywindow
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -85,8 +84,9 @@ class BaseWindowModel(CoreX11WindowModel):
         ),
         # from WM_HINTS.window_group
         "group-leader": (
-            GObject.TYPE_PYOBJECT,
-            "Window group leader as a pair: (xid, gdk window)", "",
+            GObject.TYPE_INT,
+            "Window group leader", "",
+            -1, 65535, -1,
             GObject.ParamFlags.READABLE,
         ),
         # from WM_HINTS.urgency or _NET_WM_STATE
@@ -376,11 +376,10 @@ class BaseWindowModel(CoreX11WindowModel):
     #########################################
 
     def _handle_transient_for_change(self) -> None:
-        transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
-        metalog("WM_TRANSIENT_FOR=%s", transient_for)
+        transient_for = self.prop_get("WM_TRANSIENT_FOR", "window") or 0
+        metalog("WM_TRANSIENT_FOR=%#x", transient_for)
         # `transient-for` may be None
-        window = get_pywindow(transient_for) if transient_for else None
-        self._updateprop("transient-for", window)
+        self._updateprop("transient-for", transient_for)
 
     def _handle_window_type_change(self) -> None:
         window_types = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
@@ -432,13 +431,9 @@ class BaseWindowModel(CoreX11WindowModel):
         if wm_hints is None:
             return
         # GdkWindow or None
-        group_leader = None
+        group_leader = 0
         if "window_group" in wm_hints:
-            xid = wm_hints.get("window_group")
-            if xid:
-                group_leader = get_pywindow(xid)
-                if not group_leader:
-                    log.error(f"Error group leader window {hex(xid)} not found")
+            group_leader = wm_hints.get("window_group", 0)
         self._updateprop("group-leader", group_leader)
         self._updateprop("attention-requested", wm_hints.get("urgency", False))
         _input = wm_hints.get("input")

@@ -565,20 +565,20 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, xid: int) -> None:
+        log.warn("_add_new_or_window(%#x)", xid)
         if self.root_overlay and self.root_overlay == xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
-        from xpra.x11.common import get_pywindow
-        gdk_window = get_pywindow(xid)
-        Gdk = gi_import("Gdk")
-        if not gdk_window or gdk_window.get_window_type() == Gdk.WindowType.TEMP:
-            # ignoring one of gtk's temporary windows
-            # all the windows we manage should be Gdk.WINDOW_FOREIGN
-            windowlog("ignoring TEMP window %#x", xid)
-            return
-        WINDOW_MODEL_KEY = "_xpra_window_model_"
-        wid = getattr(gdk_window, WINDOW_MODEL_KEY, None)
-        window = self._id_to_window.get(wid)
+        if envbool("XPRA_GTK", True):
+            from xpra.x11.common import get_pywindow
+            gdk_window = get_pywindow(xid)
+            Gdk = gi_import("Gdk")
+            if not gdk_window or gdk_window.get_window_type() == Gdk.WindowType.TEMP:
+                # ignoring one of gtk's temporary windows
+                # all the windows we manage should be Gdk.WINDOW_FOREIGN
+                windowlog("ignoring TEMP window %#x", xid)
+                return
+        window = self._id_to_window.get(xid)
         if window:
             if window.is_managed():
                 windowlog("found existing window model %s for %#x, will refresh it", type(window), xid)
@@ -608,14 +608,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 from xpra.x11.models.systray import SystemTrayWindowModel
                 window = SystemTrayWindowModel(tray_xid, xid)
                 wid = self._add_new_window_common(window)
-                setattr(gdk_window, WINDOW_MODEL_KEY, wid)
                 window.call_setup()
                 self._send_new_tray_window_packet(wid, window)
             else:
                 from xpra.x11.models.or_window import OverrideRedirectWindowModel
                 window = OverrideRedirectWindowModel(xid)
-                wid = self._add_new_window_common(window)
-                setattr(gdk_window, WINDOW_MODEL_KEY, wid)
+                self._add_new_window_common(window)
                 window.call_setup()
                 window.managed_connect("notify::geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)

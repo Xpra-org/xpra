@@ -465,7 +465,6 @@ Requires:			libXdamage
 Requires:			libXres
 Requires:			libXfixes
 Requires:			libXrandr
-Requires:			gtk3
 %if 0%{?fedora}
 Suggests:			xmodmap
 Suggests:			xrandr
@@ -495,7 +494,6 @@ Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
 Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
-Requires:			gtk3
 Recommends:			%{package_prefix}-x11 = %{version}-%{release}
 Recommends:			%{package_prefix}-client = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs = %{version}-%{release}
@@ -506,13 +504,14 @@ Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			%{python3}-cups
 Recommends:			dbus-x11
-Recommends:			gtk3-immodule-xim
 Recommends:			%{python3}-setproctitle
 Recommends:			librsvg2
 Recommends:			ibus
 Recommends:			%{python3}-pyxdg
 Recommends:         %{python3}-watchdog
 Recommends:			xdg-menu
+Suggests:			gtk3
+Suggests:			gtk3-immodule-xim
 %if 0%{?fedora} >= 42
 # so we can convert desktop backgrounds to a format that can actually be used:
 Recommends:			libjxl-utils

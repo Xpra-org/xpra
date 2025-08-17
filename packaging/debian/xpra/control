@@ -89,7 +89,6 @@ Description: tool to detach/reattach running X programs
 Package: xpra-x11
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}, ${x11:Depends}
-        ,gir1.2-gtk-3.0
         ,python3-cairo
         ,python3-gi
 Recommends: python3-lxml
@@ -136,7 +135,6 @@ Conflicts: python2-xpra, python3-xpra, xpra (<< 5)
 Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
-        ,gir1.2-gtk-3.0
         ,python3-cairo
         ,python3-pil
 # ssl (generate cert), wss:
@@ -183,6 +181,7 @@ Suggests: xpra-codecs-nvidia (= ${binary:Version})
         ,xpra-codecs-amd (= ${binary:Version})
         ,openssh-server
         ,python3-opengl
+        ,gir1.2-gtk-3.0
 # authentication:
         ,python3-kerberos
         ,python3-gssapi

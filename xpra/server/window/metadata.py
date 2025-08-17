@@ -6,25 +6,19 @@
 
 import os
 from typing import Any
-from collections.abc import Callable
 
 from xpra.util.io import get_util_logger
-from xpra.common import WORKSPACE_UNSET
+from xpra.common import WORKSPACE_UNSET, BACKWARDS_COMPATIBLE
 
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
 
-def make_window_metadata(window,
-                         propname: str,
-                         get_window_id: Callable[[Any], int] | None = None,
-                         skip_defaults=False,
-                         ) -> dict[str, Any]:
+def make_window_metadata(window, propname: str, skip_defaults=False) -> dict[str, Any]:
     try:
-        return _make_window_metadata(window, propname, get_window_id, skip_defaults)
+        return _make_window_metadata(window, propname, skip_defaults)
     except (ValueError, TypeError) as e:
         log = get_util_logger()
-        log("make_window_metadata%s",
-            (window, propname, get_window_id, skip_defaults), exc_info=True)
+        log("make_window_metadata%s", (window, propname, skip_defaults), exc_info=True)
         log.error("Error: failed to make window metadata")
         log.error(" for attribute '%s' of window %s", propname, window)
         log.error(" with value '%s':", getattr(window, propname, None))
@@ -84,11 +78,7 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
 }
 
 
-def _make_window_metadata(window,
-                          propname: str,
-                          get_window_id: Callable[[Any], int] | None = None,
-                          skip_defaults=False,
-                          ) -> dict[str, Any]:
+def _make_window_metadata(window, propname: str, skip_defaults=False) -> dict[str, Any]:
     if propname in SKIP_METADATA:
         return {}
 
@@ -107,16 +97,10 @@ def _make_window_metadata(window,
         ref_window = raw()
         if not ref_window:
             return {}
-        p = {}
-        if hasattr(ref_window, "get_xid"):
-            # for Gdk X11 windows:
-            p["%s-xid" % propname] = ref_window.get_xid()
-        if get_window_id:
-            wid = get_window_id(ref_window)
-            if wid:
-                if propname == "group-leader":
-                    p["%s-wid" % propname] = wid
-                else:
-                    p[propname] = wid
+        p: dict[str, Any] = {propname: ref_window}
+        if BACKWARDS_COMPATIBLE:
+            p["%s-xid" % propname] = ref_window
+            if propname == "group-leader":
+                p["%s-wid" % propname] = ref_window
         return p
     raise ValueError(f"unhandled property name: {propname}")
