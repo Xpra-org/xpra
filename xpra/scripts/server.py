@@ -304,7 +304,7 @@ def set_server_features(opts, mode: str) -> None:
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0
-        features.gtk = (POSIX or OSX or mode not in ("desktop", "seamless")) and envbool("XPRA_GTK", True)
+        features.gtk = mode not in ("desktop", "seamless") or envbool("XPRA_GTK", False)
         features.tray = features.gtk and b(opts.tray) and mode == "shadow"
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
@@ -352,7 +352,11 @@ def enforce_server_features() -> None:
         "rfb": "xpra.net.rfb,xpra.server.rfb",
         "http": "xpra.net.http,xpra.server.subsystem.http",
         "tray": "xpra.server.subsystem.tray",
+        "gtk": "xpra.gtk",
     })
+    if not features.gtk:
+        from xpra.scripts.main import no_gi_gtk_modules
+        no_gi_gtk_modules()
     may_block_numpy()
 
 
@@ -666,11 +670,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     validate_encryption(opts)
     if opts.encoding == "help" or "help" in opts.encodings:
         return show_encoding_help(opts)
-
-    if not envbool("XPRA_GTK", True):
-        from xpra.scripts.main import no_gi_gtk_modules
-        no_gi_gtk_modules()
-        sys.modules["xpra.gtk"] = None
 
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])

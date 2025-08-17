@@ -85,7 +85,7 @@ class X11ServerCore(ServerBase):
         self.current_keyboard_group = 0
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
-        if not envbool("XPRA_GTK", True):
+        if not envbool("XPRA_GTK", False):
             from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
             if not get_display_ptr():
                 init_display_source()

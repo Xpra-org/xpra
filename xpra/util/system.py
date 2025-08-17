@@ -259,7 +259,7 @@ def is_X11() -> bool:
     if gdk_backend == "x11":
         get_util_logger().debug(f"is_X11() GDK_BACKEND={gdk_backend}")
         return True
-    if envbool("XPRA_GTK", True):
+    if envbool("XPRA_GTK", False):
         try:
             from xpra.x11.gtk.bindings import is_X11_Display
             return is_X11_Display()

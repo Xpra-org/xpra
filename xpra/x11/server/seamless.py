@@ -7,6 +7,7 @@
 
 import os
 import signal
+import sys
 from time import monotonic, sleep
 from collections import deque
 from typing import Any
@@ -569,10 +570,10 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if self.root_overlay and self.root_overlay == xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
-        if envbool("XPRA_GTK", True):
+        Gdk = sys.modules.get("gi.repository.Gdk")
+        if Gdk:
             from xpra.x11.common import get_pywindow
             gdk_window = get_pywindow(xid)
-            Gdk = gi_import("Gdk")
             if not gdk_window or gdk_window.get_window_type() == Gdk.WindowType.TEMP:
                 # ignoring one of gtk's temporary windows
                 # all the windows we manage should be Gdk.WINDOW_FOREIGN
