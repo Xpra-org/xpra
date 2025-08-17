@@ -740,7 +740,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def _contents_changed(self, window, event) -> None:
         if window.is_OR() or window.is_tray() or window.get_property("shown"):
             options = {"damage": True}
-            if event.get("more", False):
+            if getattr(event, "more", False):
                 options["more"] = True
             self.refresh_window_area(window, event.x, event.y, event.width, event.height, options=options)
 
