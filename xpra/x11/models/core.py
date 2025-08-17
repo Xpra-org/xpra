@@ -306,6 +306,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._kill_count = 0
         self._shape_timer = 0
         self._shape_timer_serial = 0
+        self._updateprop("xid", self.xid)
 
     def __repr__(self) -> str:  # pylint: disable=arguments-differ
         try:
@@ -461,7 +462,6 @@ class CoreX11WindowModel(WindowModelStub):
         metalog("initial X11 properties: xid=%#x, parent=%#x, depth=%i, pid=%i, ppid=%i",
                 self.xid, parent, depth, pid, ppid)
         self._updateprop("depth", depth)
-        self._updateprop("xid", self.xid)
         self._updateprop("pid", pid)
         self._updateprop("ppid", ppid)
         self._updateprop("has-alpha", depth == 32)
