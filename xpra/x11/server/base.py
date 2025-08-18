@@ -17,7 +17,6 @@ GLib = gi_import("GLib")
 
 log = Logger("x11", "server")
 pointerlog = Logger("x11", "server", "pointer")
-screenlog = Logger("server", "screen")
 
 
 class X11ServerBase(X11ServerCore):
@@ -100,10 +99,3 @@ class X11ServerBase(X11ServerCore):
     def dpi_changed(self) -> None:
         # re-apply the same settings, which will apply the new dpi override to it:
         self.update_server_settings()
-
-    def get_info(self, proto=None, client_uuids=None) -> dict[str, Any]:
-        info = super().get_info(proto=proto, client_uuids=client_uuids)
-        display_info = info.setdefault("display", {})
-        if self.display_pid:
-            display_info["pid"] = self.display_pid
-        return info
