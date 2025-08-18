@@ -19,6 +19,7 @@ from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.info import get_extensions_info
 from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
+from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, first_time
 from xpra.net.compression import Compressed
@@ -535,16 +536,6 @@ class X11ServerCore(ServerBase):
     def set_dpi(self, xdpi: int, ydpi: int) -> None:
         """ overridden in the seamless server """
 
-    def _process_server_settings(self, _proto, packet: Packet) -> None:
-        settings = packet.get_dict(1)
-        log("process_server_settings: %s", settings)
-        self.update_server_settings(settings)
-
-    def update_server_settings(self, _settings, _reset=False) -> None:
-        # implemented in the X11 xpra server only for now
-        # (does not make sense to update a shadow server)
-        log("ignoring server settings update in %s", self)
-
     def _process_force_ungrab(self, proto, _packet: Packet) -> None:
         # ignore the window id: wid = packet[1]
         grablog("force ungrab from %s", proto)
@@ -719,7 +710,8 @@ class X11ServerCore(ServerBase):
             ss.record_scroll_event(wid)
 
     @staticmethod
-    def make_screenshot_packet_from_regions(regions) -> tuple[str, int, int, str, int, Any]:
+    def make_screenshot_packet_from_regions(regions: Sequence[tuple[int, int, int, ImageWrapper]]) \
+            -> tuple[str, int, int, str, int, Any]:
         # regions = array of (wid, x, y, PIL.Image)
         if not regions:
             log("screenshot: no regions found, returning empty 0x0 image!")

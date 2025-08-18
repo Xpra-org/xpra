@@ -12,7 +12,6 @@ and
 * converting those structures back into XSETTINGS format
 """
 
-import os
 import sys
 import struct
 from enum import IntEnum
@@ -23,11 +22,6 @@ from xpra.util.env import envbool
 from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 
 log: Logger = Logger("x11", "xsettings")
-
-BLOCKLISTED_XSETTINGS: list[str] = os.environ.get(
-    "XPRA_BLOCKLISTED_XSETTINGS",
-    "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule"
-).split(",")
 
 
 # undocumented XSETTINGS endianness values:

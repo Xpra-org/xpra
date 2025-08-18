@@ -409,9 +409,8 @@ class ShadowServerBase(ServerBase):
         if ss and len(packet) >= 4:
             ss.set_screen_sizes(packet[3])
 
-    def set_keyboard_repeat(self, key_repeat) -> None:
+    def set_keyboard_repeat(self, *_args) -> None:
         """ don't override the existing desktop """
-        pass  # pylint: disable=unnecessary-pass
 
     def set_keymap(self, server_source, force=False) -> None:
         log("set_keymap%s", (server_source, force))

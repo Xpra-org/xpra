@@ -9,7 +9,7 @@ from typing import Sequence
 from xpra.x11.error import xsync, xlog
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.bindings.test import XTestBindings
-from xpra.x11.keyboard.bindings import X11KeyboardBindings
+from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
 
 log = Logger("x11", "server", "keyboard")
@@ -35,6 +35,12 @@ class XTestKeyboardDevice:
         with xsync:
             XTest.xtest_fake_key(keycode, press)
 
+    @staticmethod
+    def set_keyboard_repeat(delay: int, interval: int) -> None:
+        if delay > 0 and interval > 0:
+            with xsync:
+                X11Keyboard.set_key_repeat_rate(delay, interval)
+
     def clear_keys_pressed(self, keycodes: Sequence[int]) -> None:
         # clear all the keys we know about:
         if keycodes:
@@ -46,14 +52,17 @@ class XTestKeyboardDevice:
         # (there should not be any - but we want to be certain)
         clean_keyboard_state()
 
-    def set_repeat_rate(self, delay: int, interval: int) -> None:
+    @staticmethod
+    def set_repeat_rate(delay: int, interval: int) -> None:
         with xlog:
             X11Keyboard.set_key_repeat_rate(delay, interval)
 
-    def get_keycodes_down(self) -> Sequence[int]:
+    @staticmethod
+    def get_keycodes_down() -> Sequence[int]:
         with xlog:
             return X11Keyboard.get_keycodes_down()
 
-    def get_layout_group(self) -> int:
+    @staticmethod
+    def get_layout_group() -> int:
         with xlog:
             return X11Keyboard.get_layout_group()

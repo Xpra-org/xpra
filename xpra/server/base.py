@@ -12,7 +12,7 @@ from typing import Any
 
 from xpra.server.core import ServerCore
 from xpra.util.background_worker import add_work_item
-from xpra.common import FULL_INFO, noop, ConnectionMessage
+from xpra.common import FULL_INFO, noop, ConnectionMessage, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
@@ -724,8 +724,9 @@ class ServerBase(ServerBaseClass):
         # no need for main thread:
         self.add_packets("sharing-toggle", "lock-toggle")
         self.add_packet_handler("set_deflate", noop)  # removed in v6
-        # attributes / settings:
-        self.add_packets("server-settings", "info-request", main_thread=True)
+        if BACKWARDS_COMPATIBLE:
+            # now moved to XSettingsServer
+            self.add_packets("server-settings", "info-request", main_thread=True)
         self.add_packets("shutdown-server", "exit-server")
 
     # override so we can set the 'authenticated' flag:

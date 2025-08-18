@@ -18,7 +18,7 @@ from xpra.util.io import which, find_libexec_command
 from xpra.util.str_fn import bytestostr, Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.common import noop, noerr
+from xpra.common import noop, noerr, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
 from xpra.scripts.main import load_pid
 from xpra.server.subsystem.stub import StubServerMixin
@@ -116,7 +116,6 @@ class KeyboardServer(StubServerMixin):
         self.keyboard_device = None
         self.keyboard_config = None
         self.keymap_changing_timer = 0  # to ignore events when we know we are changing the configuration
-        self.key_repeat = None
         # ugly: we're duplicating the value pair from "key_repeat" here:
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
@@ -226,7 +225,7 @@ class KeyboardServer(StubServerMixin):
     def last_client_exited(self) -> None:
         self.clear_keys_pressed()
 
-    def get_info(self, _proto) -> dict[str, Any]:
+    def get_ui_info(self, _proto, client_uuids, *_args) -> dict[str, Any]:
         info = self.get_keyboard_info()
         device = self.keyboard_device
         if not self.readonly and device:
@@ -234,7 +233,10 @@ class KeyboardServer(StubServerMixin):
                 "keys_pressed": tuple(self.keys_pressed.keys()),
                 "keycodes-down": device.get_keycodes_down(),
                 "layout-group": device.get_layout_group(),
-                "key_repeat": self.key_repeat,
+                "key-repeat": {
+                    "delay": self.key_repeat_delay,
+                    "interval": self.key_repeat_interval,
+                }
             }
         return {"keyboard": info}
 
@@ -242,13 +244,13 @@ class KeyboardServer(StubServerMixin):
         return {}
 
     def get_caps(self, _source) -> dict[str, Any]:
-        if not self.key_repeat:
-            return {}
-        return {
-            "key_repeat": self.key_repeat,
-            "key_repeat_modifiers": True,
-            "keyboard.fast-switching": True,
+        caps: dict[str, Any] = {
+            "key_repeat": (self.key_repeat_delay, self.key_repeat_interval),
         }
+        if BACKWARDS_COMPATIBLE:
+            caps["key_repeat_modifiers"] = True
+            caps["keyboard.fast-switching"] = True
+        return caps
 
     def parse_hello(self, ss, caps: typedict, send_ui: bool) -> None:
         if send_ui:
@@ -280,16 +282,13 @@ class KeyboardServer(StubServerMixin):
             return
         ss.keyboard_config = self.get_keyboard_config(c)  # pylint: disable=assignment-from-none
 
+        delay, interval = (500, 30)
         if not other_ui_clients:
             # so only activate this feature afterwards:
-            self.key_repeat = c.intpair("key_repeat") or (0, 0)
-            self.set_keyboard_repeat(self.key_repeat)
+            delay, interval = c.intpair("key_repeat") or (500, 30)
             # always clear modifiers before setting a new keymap
             ss.make_keymask_match(c.strtupleget("modifiers"))
-        else:
-            self.set_keyboard_repeat(None)
-            self.key_repeat = (0, 0)
-        self.key_repeat_delay, self.key_repeat_interval = self.key_repeat
+        self.set_keyboard_repeat(delay, interval)
         self.set_keymap(ss)
 
     def get_keyboard_info(self) -> dict[str, Any]:
@@ -571,18 +570,13 @@ class KeyboardServer(StubServerMixin):
             log.error(f"Error: failed to set keyboard layout group {grp}")
             log.estr(e)
 
-    def set_keyboard_repeat(self, key_repeat) -> None:
+    def set_keyboard_repeat(self, delay: int, interval: int) -> None:
+        self.key_repeat_delay = delay
+        self.key_repeat_interval = interval
         device = self.keyboard_device
         if not device:
             return
-        if key_repeat:
-            delay, interval = key_repeat
-            device.set_keyboard_repeat(delay, interval)
-        else:
-            delay, interval = -1, -1
-            # use a default repeat rate:
-            device.set_keyboard_repeat(500, 30)
-        self.key_repeat_delay, self.key_repeat_interval = key_repeat
+        device.set_repeat_rate(delay, interval)
 
     def get_keyboard_config(self, props=None) -> Any | None:
         log("get_keyboard_config(%s) is not implemented", props)

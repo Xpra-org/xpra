@@ -6,7 +6,9 @@
 import os.path
 import signal
 from typing import Any
+from collections.abc import Callable
 
+from xpra.server import features
 from xpra.util.pid import load_pid
 from xpra.scripts.session import load_session_file, save_session_file
 from xpra.server.subsystem.stub import StubServerMixin
@@ -56,6 +58,40 @@ def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
     return dbus_pid, dbus_env
 
 
+def save_dbus_x11_properties(dbus_env: dict):
+    # now we can save values on the display
+    # (we cannot access bindings until dbus has started up)
+    from xpra.x11.xroot_props import root_set
+
+    def _save_int(prop_name, intval) -> None:
+        root_set(prop_name, "u32", intval)
+
+    def _save_str(prop_name, strval) -> None:
+        root_set(prop_name, "latin1", strval)
+
+    # DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
+    # DBUS_SESSION_BUS_PID=11406
+    # DBUS_SESSION_BUS_WINDOWID=50331649
+    attributes: list[tuple[str, type, Callable[[str, int | str], None]]] = [
+        ("ADDRESS", str, _save_str),
+        ("PID", int, _save_int),
+        ("WINDOW_ID", int, _save_int),
+    ]
+    for name, conv, save in attributes:
+        k = f"DBUS_SESSION_BUS_{name}"
+        v = dbus_env.get(k, "")
+        if not v:
+            continue
+        try:
+            tv = conv(v)
+            save(k, tv)
+        except Exception as e:
+            log("save_dbus_env(%s)", dbus_env, exc_info=True)
+            log.error(f"Error: failed to save dbus environment variable {k!r}")
+            log.error(f" with value {v!r}")
+            log.estr(e)
+
+
 class DbusServer(StubServerMixin):
     """
     Mixin for servers that have a dbus server associated with them
@@ -94,14 +130,16 @@ class DbusServer(StubServerMixin):
             log("dbus components are not installed: %s", e)
             return
         self.dbus_pid, self.dbus_env = start_dbus(self.dbus_launch)
-        if self.dbus_env:
-            log(f"started new dbus instance: {self.dbus_env}")
-            save_session_file("dbus.pid", f"{self.dbus_pid}", self.uid, self.gid)
-            dbus_env_data = "\n".join(f"{k}={v}" for k, v in self.dbus_env.items()) + "\n"
-            save_session_file("dbus.env", dbus_env_data.encode("utf8"), self.uid, self.gid)
-            self.session_files += ["dbus.pid", "dbus.env"]
-        if self.dbus_env:
-            os.environ.update(self.dbus_env)
+        if not self.dbus_env:
+            return
+        log(f"started new dbus instance: {self.dbus_env}")
+        save_session_file("dbus.pid", f"{self.dbus_pid}", self.uid, self.gid)
+        dbus_env_data = "\n".join(f"{k}={v}" for k, v in self.dbus_env.items()) + "\n"
+        save_session_file("dbus.env", dbus_env_data.encode("utf8"), self.uid, self.gid)
+        self.session_files += ["dbus.pid", "dbus.env"]
+        os.environ.update(self.dbus_env)
+        if features.x11:
+            save_dbus_x11_properties(self.dbus_env)
 
     def init_dbus_server(self) -> None:
         log("init_dbus_server() env: %s", {k: v for k, v in os.environ.items() if k.startswith("DBUS_")})

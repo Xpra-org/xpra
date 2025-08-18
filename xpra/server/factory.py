@@ -98,6 +98,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.window:
         from xpra.server.subsystem.window import WindowServer
         classes.append(WindowServer)
+    if features.x11 and features.display:
+        from xpra.server.subsystem.xsettings import XSettingsServer
+        classes.append(XSettingsServer)
     # this should be last so that the environment is fully prepared:
     if features.command:
         from xpra.server.subsystem.command import ChildCommandServer

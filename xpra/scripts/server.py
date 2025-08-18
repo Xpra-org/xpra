@@ -274,9 +274,7 @@ def set_server_features(opts, mode: str) -> None:
         features.logging = features.display = features.window = False
         features.cursor = features.rfb = False
         features.power = features.suspend = features.idle = False
-        features.ssh = False
-        features.gtk = False
-        features.tray = False
+        features.ssh = features.gtk = features.x11 = features.tray = False
     else:
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
