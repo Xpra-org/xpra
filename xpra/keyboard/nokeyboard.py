@@ -25,7 +25,7 @@ class NoKeyboardDevice:
         pass
 
     @staticmethod
-    def set_repeat_rate(self, delay: int, interval: int) -> None:
+    def set_repeat_rate(delay: int, interval: int) -> None:
         pass
 
     @staticmethod
@@ -33,5 +33,5 @@ class NoKeyboardDevice:
         return ()
 
     @staticmethod
-    def get_layout_group(self) -> int:
+    def get_layout_group() -> int:
         return 0
