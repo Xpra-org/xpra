@@ -56,11 +56,18 @@ cdef extern from "X11/extensions/XKBproto.h":
         Bool         event_only
 
 
+cdef unsigned int init_done = 0
+cdef int event_base = 0
+cdef int error_base = 0
+
+
 def init_xkb_events() -> bool:
+    global init_done
+    if init_done:
+        return event_base > 0
+    init_done = 1
     cdef Display *display = get_display()
     cdef int opcode = 0
-    cdef int event_base = 0
-    cdef int error_base = 0
     cdef int major = 0
     cdef int minor = 0
     if not XkbQueryExtension(display, &opcode, &event_base, &error_base, &major, &minor):

@@ -39,7 +39,7 @@ def strings_to_xatoms(data: Iterable[str]) -> bytes:
 
 def xfixes_selection_input(xid: int, selection: str) -> bool:
     try:
-        from xpra.x11.bindings.fixes import XFixesBindings
+        from xpra.x11.bindings.fixes import XFixesBindings, init_xfixes_events
     except ImportError:
         from xpra.util.env import first_time
         from xpra.log import Logger
@@ -49,6 +49,7 @@ def xfixes_selection_input(xid: int, selection: str) -> bool:
             log.warn("Warning: XFixes extension bindings could not be loaded")
             log.warn(" some features will be degraded")
         return False
+    init_xfixes_events()
     XFixes = XFixesBindings()
     with xsync:
         XFixes.selectXFSelectionInput(xid, selection)

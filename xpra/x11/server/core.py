@@ -25,7 +25,6 @@ from xpra.util.env import envbool, first_time
 from xpra.net.compression import Compressed
 from xpra.net.common import Packet
 from xpra.server.base import ServerBase
-from xpra.server import features
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -96,24 +95,6 @@ class X11ServerCore(ServerBase):
             # some applications (like openoffice), do not work properly
             # if some x11 atoms aren't defined, so we define them in advance:
             X11CoreBindings().intern_atoms(window_type_atoms)
-        with xlog:
-            self.init_x11_extensions()
-
-    def init_x11_extensions(self) -> None:
-        if features.clipboard or features.cursor:
-            try:
-                from xpra.x11.bindings.fixes import init_xfixes_events
-                init_xfixes_events()
-            except ImportError:
-                log("init_xfixes_events()", exc_info=True)
-                log.warn("Warning: XFixes bindings not available, clipboard and cursor features may not work")
-        if features.keyboard:
-            try:
-                from xpra.x11.bindings.xkb import init_xkb_events
-                init_xkb_events()
-            except ImportError:
-                log("init_xkb_events()", exc_info=True)
-                log.warn("Warning: XKB bindings not available, keyboard features may not work")
 
     def init_uuid(self) -> None:
         super().init_uuid()

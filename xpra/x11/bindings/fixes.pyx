@@ -84,10 +84,17 @@ cdef extern from "X11/extensions/Xfixes.h":
     void XFixesSelectSelectionInput(Display *dpy, Window win, Atom selection, unsigned long eventMask)
 
 
+cdef unsigned int init_done = 0
+cdef int event_base = 0
+cdef int error_base = 0
+
+
 def init_xfixes_events() -> bool:
+    global init_done
+    if init_done:
+        return event_base > 0
+    init_done = 1
     cdef Display *display = get_display()
-    cdef int event_base = 0
-    cdef int error_base = 0
     if not XFixesQueryExtension(display, &event_base, &error_base):
         log.warn("Warning: XFixes extension is not available")
         return False

@@ -148,6 +148,15 @@ class KeyboardServer(StubServerMixin):
 
     def setup(self) -> None:
         if is_X11():
+            try:
+                from xpra.x11.bindings.xkb import init_xkb_events
+                xkb = init_xkb_events()
+            except ImportError:
+                log("init_xkb_events()", exc_info=True)
+                xkb = False
+            if not xkb:
+                log.warn("Warning: XKB bindings not available, some keyboard features may not work")
+
             from xpra.x11.error import xlog
             from xpra.x11.xkbhelper import clean_keyboard_state
             with xlog:

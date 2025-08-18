@@ -39,10 +39,15 @@ class CursorManager(StubServerMixin):
         if is_X11():
             from xpra.x11.error import xlog
             with xlog:
-                from xpra.x11.bindings.fixes import XFixesBindings
-                XFixes = XFixesBindings()
-                if not XFixes.hasXFixes() and self.cursors:
-                    log.error("Error: cursor forwarding support disabled")
+                try:
+                    from xpra.x11.bindings.fixes import XFixesBindings, init_xfixes_events
+                    init_xfixes_events()
+                    XFixes = XFixesBindings()
+                    fixes = XFixes.hasXFixes()
+                except ImportError:
+                    fixes = False
+                if not fixes and self.cursors:
+                    log.error("Error: cursor forwarding support is not available")
                     self.cursors = False
                     return
                 XFixes.selectCursorChange(True)
