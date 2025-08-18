@@ -8,7 +8,7 @@ from typing import Final
 import ctypes
 from ctypes.wintypes import HANDLE
 from ctypes import create_string_buffer, byref
-from ctypes.wintypes import DWORD
+from ctypes.wintypes import DWORD, BYTE
 from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
@@ -17,7 +17,7 @@ from xpra.platform.win32.common import (
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId,
-    MapVirtualKeyW, keybd_event,
+    GetKeyboardState, SetKeyboardState, MapVirtualKeyW, keybd_event,
 )
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
@@ -134,6 +134,28 @@ EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
 EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
 
 
+def clear_keys_pressed() -> None:
+    # noinspection PyCallingNonCallable,PyTypeChecker
+    keystate = (BYTE * 256)()
+    if GetKeyboardState(keystate):
+        vknames = {}
+        for vkconst in (x for x in dir(win32con) if x.startswith("VK_")):
+            vknames[getattr(win32con, vkconst)] = vkconst[3:]
+        pressed = []
+        for i in range(256):
+            if keystate[i]:
+                pressed.append(vknames.get(i, i))
+        log("keys still pressed: %s", csv(pressed))
+        for x in (
+                win32con.VK_LSHIFT, win32con.VK_RSHIFT, win32con.VK_SHIFT,
+                win32con.VK_LCONTROL, win32con.VK_RCONTROL, win32con.VK_CONTROL,
+                win32con.VK_LMENU, win32con.VK_RMENU, win32con.VK_MENU,
+                win32con.VK_LWIN, win32con.VK_RWIN,
+        ):
+            keystate[x] = 0
+        SetKeyboardState(keystate)
+
+
 def fake_key(keycode, press):
     if keycode <= 0:
         log.warn("no keycode found for %s", keycode)
@@ -152,8 +174,12 @@ def fake_key(keycode, press):
 class Win32Keyboard:
 
     @staticmethod
-    def fake_key(keycode, press):
+    def press_key(keycode, press):
         fake_key(keycode, press)
+
+    @staticmethod
+    def clear_keys_pressed(_keycodes):
+        clear_keys_pressed()
 
 
 def get_keyboard_device():

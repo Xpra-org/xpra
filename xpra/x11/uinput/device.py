@@ -123,7 +123,7 @@ class UInputPointerDevice(UInputDevice):
     def __repr__(self):
         return "UInput pointer device %s" % self.device_path
 
-    def move_pointer(self, x: int, y: int, props=None) -> None:
+    def move_pointer(self, x: int, y: int, props: dict) -> None:
         log("UInputPointerDevice.move_pointer(%i, %s, %s)", x, y, props)
         # calculate delta:
         with xsync:
@@ -152,7 +152,7 @@ class UInputTouchpadDevice(UInputDevice):
     def __repr__(self):
         return "UInput touchpad device %s" % self.device_path
 
-    def move_pointer(self, x: int, y: int, props=None) -> None:
+    def move_pointer(self, x: int, y: int, props: dict) -> None:
         log("UInputTouchpadDevice.move_pointer(%s, %s, %s)", x, y, props)
         self.device.emit(BTN_TOUCH, 1, syn=False)
         self.device.emit(ABS_X, x * (2 ** 24) // self.root_w, syn=False)

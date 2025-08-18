@@ -18,7 +18,6 @@ from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.info import get_extensions_info
 from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
-from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, first_time
@@ -79,12 +78,6 @@ class X11ServerCore(ServerBase):
     def __init__(self) -> None:
         super().__init__()
         self.display = os.environ.get("DISPLAY", "")
-        self.touchpad_device = None
-        self.pointer_device_map: dict = {}
-        self.keys_pressed: dict[int, Any] = {}
-        self.current_keyboard_group = 0
-        self.key_repeat_delay = -1
-        self.key_repeat_interval = -1
         if not envbool("XPRA_GTK", False):
             from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
             if not get_display_ptr():
@@ -94,15 +87,6 @@ class X11ServerCore(ServerBase):
             from xpra.x11.bindings.loop import register_glib_source
             register_glib_source(context)
             X11CoreBindings().show_server_info()
-
-        try:
-            from xpra.x11.server.xtest_pointer import XTestPointerDevice
-            self.pointer_device = XTestPointerDevice()
-        except ImportError:
-            log.warn("Warning: XTestPointerDevice bindings not available, using NoPointerDevice")
-            from xpra.x11.server.nopointer import NoPointerDevice
-            self.pointer_device = NoPointerDevice()
-        log("pointer_device=%s", self.pointer_device)
 
     def setup(self) -> None:
         super().setup()
@@ -147,34 +131,6 @@ class X11ServerCore(ServerBase):
             return X11WindowBindings().get_depth(get_root_xid())
         return 0
 
-    # noinspection PyMethodMayBeStatic
-    def set_keyboard_layout_group(self, grp: int) -> None:
-        kc = self.keyboard_config
-        if not kc:
-            keylog(f"set_keyboard_layout_group({grp}) ignored, no config")
-            return
-        if not kc.layout_groups:
-            keylog(f"set_keyboard_layout_group({grp}) ignored, no layout groups support")
-            # not supported by the client that owns the current keyboard config,
-            # so make sure we stick to the default group:
-            grp = 0
-        if not X11KeyboardBindings().hasXkb():
-            keylog(f"set_keyboard_layout_group({grp}) ignored, no Xkb support")
-            return
-        if grp < 0:
-            grp = 0
-        if self.current_keyboard_group == grp:
-            keylog(f"set_keyboard_layout_group({grp}) ignored, value unchanged")
-            return
-        keylog(f"set_keyboard_layout_group({grp}) config={self.keyboard_config}, {self.current_keyboard_group=}")
-        try:
-            with xsync:
-                self.current_keyboard_group = X11KeyboardBindings().set_layout_group(grp)
-        except XError as e:
-            keylog(f"set_keyboard_layout_group({grp})", exc_info=True)
-            keylog.error(f"Error: failed to set keyboard layout group {grp}")
-            keylog.estr(e)
-
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_packets("force-ungrab", "wheel-motion", main_thread=True)
@@ -210,22 +166,6 @@ class X11ServerCore(ServerBase):
         from xpra.x11.xroot_props import root_set
         root_set("XPRA_SERVER_UUID", "latin1", self.uuid)
 
-    def set_keyboard_repeat(self, key_repeat) -> None:
-        with xlog:
-            if key_repeat:
-                self.key_repeat_delay, self.key_repeat_interval = key_repeat
-                if self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
-                    X11KeyboardBindings().set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
-                    keylog.info("setting key repeat rate from client: %sms delay / %sms interval",
-                                self.key_repeat_delay, self.key_repeat_interval)
-            else:
-                # dont do any jitter compensation:
-                self.key_repeat_delay = -1
-                self.key_repeat_interval = -1
-                # but do set a default repeat rate:
-                X11KeyboardBindings().set_key_repeat_rate(500, 30)
-                keylog("keyboard repeat disabled")
-
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/x11"
@@ -234,10 +174,6 @@ class X11ServerCore(ServerBase):
                 "resize_screen": self.randr,
                 "resize_exact": self.randr_exact_size,
                 "force_ungrab": True,
-                "keyboard.fast-switching": True,
-                "wheel.precise": self.pointer_device.has_precise_wheel(),
-                "pointer.optional": True,
-                "touchpad-device": bool(self.touchpad_device),
             }
             if self.randr:
                 sizes = self.get_all_screen_sizes()
@@ -337,23 +273,6 @@ class X11ServerCore(ServerBase):
             # pylint: disable=access-member-before-definition
             server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
             self.keyboard_config = server_source.keyboard_config
-
-    def clear_keys_pressed(self) -> None:
-        if self.readonly:
-            return
-        keylog("clear_keys_pressed()")
-        # make sure the timer doesn't fire and interfere:
-        self.cancel_key_repeat_timer()
-        # clear all the keys we know about:
-        if self.keys_pressed:
-            keylog("clearing keys pressed: %s", self.keys_pressed)
-            with xsync:
-                for keycode in self.keys_pressed:
-                    self.fake_key(keycode, False)
-            self.keys_pressed = {}
-        # this will take care of any remaining ones we are not aware of:
-        # (there should not be any - but we want to be certain)
-        clean_keyboard_state()
 
     # noinspection PyMethodMayBeStatic
     def get_cursor_image(self):
@@ -705,46 +624,6 @@ class X11ServerCore(ServerBase):
             ss.bell(wid, event.device, event.percent,
                     event.pitch, event.duration, event.bell_class, event.bell_id, event.name)
 
-    def setup_input_devices(self) -> None:
-        xinputlog("setup_input_devices() input_devices feature=%s", features.pointer)
-        if not features.pointer:
-            return
-        xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
-        xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
-        # xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
-        xinputlog("setup_input_devices() pointer device=%s", self.pointer_device)
-        xinputlog("setup_input_devices() touchpad device=%s", self.touchpad_device)
-        self.pointer_device_map = {}
-        if not self.touchpad_device:
-            # no need to assign anything, we only have one device anyway
-            return
-        # if we find any absolute pointer devices,
-        # map them to the "touchpad_device"
-        XIModeAbsolute = 1
-        for deviceid, device_data in self.input_devices_data.items():
-            name = device_data.get("name")
-            # xinputlog("[%i]=%s", deviceid, device_data)
-            xinputlog("[%i]=%s", deviceid, name)
-            if device_data.get("use") != "slave pointer":
-                continue
-            classes = device_data.get("classes")
-            if not classes:
-                continue
-            # look for absolute pointer devices:
-            touchpad_axes = []
-            for i, defs in classes.items():
-                xinputlog(" [%i]=%s", i, defs)
-                mode = defs.get("mode")
-                label = defs.get("label")
-                if not mode or mode != XIModeAbsolute:
-                    continue
-                if defs.get("min", -1) == 0 and defs.get("max", -1) == (2 ** 24 - 1):
-                    touchpad_axes.append((i, label))
-            if len(touchpad_axes) == 2:
-                xinputlog.info("found touchpad device: %s", name)
-                xinputlog("axes: %s", touchpad_axes)
-                self.pointer_device_map[deviceid] = self.touchpad_device
-
     def _process_wheel_motion(self, proto, packet: Packet) -> None:
         assert self.pointer_device.has_precise_wheel()
         ss = self.get_server_source(proto)
@@ -794,7 +673,7 @@ class X11ServerCore(ServerBase):
         x, y = self._get_pointer_abs_coordinates(wid, pos)
         self.device_move_pointer(device_id, wid, (x, y), props)
 
-    def device_move_pointer(self, device_id: int, wid: int, pos, props):
+    def device_move_pointer(self, device_id: int, wid: int, pos, props: dict):
         device = self.get_pointer_device(device_id)
         x, y = pos
         pointerlog("move_pointer(%s, %s, %s) device=%s, position=%s", wid, pos, device_id, device, (x, y))

@@ -2697,6 +2697,7 @@ if client_ENABLED or server_ENABLED:
     add_packages("xpra.codecs")
     add_packages("xpra.challenge")
 toggle_packages(keyboard_ENABLED, "xpra.keyboard")
+toggle_packages(keyboard_ENABLED, "xpra.pointer")
 if client_ENABLED or server_ENABLED:
     add_modules(
         "xpra.scripts.config",

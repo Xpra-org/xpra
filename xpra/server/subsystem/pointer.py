@@ -9,10 +9,11 @@ from typing import Any
 
 from xpra.util.env import envbool
 from xpra.net.common import Packet
+from xpra.platform.pointer import get_pointer_device
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
-pointerlog = Logger("pointer")
+log = Logger("pointer")
 
 INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
 
@@ -29,6 +30,27 @@ class PointerServer(StubServerMixin):
         self.input_devices_data = None
         self.pointer_sequence = {}
         self.last_mouse_user = None
+        self.pointer_device_map: dict = {}
+        self.pointer_device = None
+        self.touchpad_device = None
+
+    def setup(self) -> None:
+        self.pointer_device = get_pointer_device()
+        if not self.pointer_device:
+            log.warn("Warning: no pointer device available, using NoPointerDevice")
+            from xpra.pointer.nopointer import NoPointerDevice
+            self.pointer_device = NoPointerDevice()
+        log("pointer_device=%s", self.pointer_device)
+
+    def get_caps(self, source) -> dict[str, Any]:
+        caps: dict[str, Any] = {}
+        if "features" in source.wants:
+            caps = {
+                "wheel.precise": self.pointer_device.has_precise_wheel(),
+                "pointer.optional": True,
+                "touchpad-device": bool(self.touchpad_device),
+            }
+        return caps
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {
@@ -58,7 +80,7 @@ class PointerServer(StubServerMixin):
                         if dx != 0 or dy != 0:
                             px, py = pointer[:2]
                             ax, ay = px + dx, py + dy
-                            pointerlog(
+                            log(
                                 "client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s",
                                 # noqa: E501
                                 ss.counter, pos, mapped_at, pointer, (ax, ay))
@@ -77,7 +99,7 @@ class PointerServer(StubServerMixin):
         return True
 
     def _process_pointer_button(self, proto, packet: Packet) -> None:
-        pointerlog("process_pointer_button(%s, %s)", proto, packet)
+        log("process_pointer_button(%s, %s)", proto, packet)
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -96,13 +118,13 @@ class PointerServer(StubServerMixin):
         if device_id >= 0:
             # highest_seq = self.pointer_sequence.get(device_id, 0)
             # if INPUT_SEQ_NO and 0<=seq<=highest_seq:
-            #    pointerlog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
+            #    log(f"dropped outdated sequence {seq}, latest is {highest_seq}")
             #    return
             self.pointer_sequence[device_id] = seq
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
     def _process_button_action(self, proto, packet: Packet) -> None:
-        pointerlog("process_button_action(%s, %s)", proto, packet)
+        log("process_button_action(%s, %s)", proto, packet)
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -132,8 +154,8 @@ class PointerServer(StubServerMixin):
 
     def _process_pointer(self, proto, packet: Packet) -> None:
         # v5 packet format
-        pointerlog("_process_pointer(%s, %s) readonly=%s, ui_driver=%s",
-                   proto, packet, self.readonly, self.ui_driver)
+        log("_process_pointer(%s, %s) readonly=%s, ui_driver=%s",
+            proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -147,7 +169,7 @@ class PointerServer(StubServerMixin):
         if device_id >= 0:
             highest_seq = self.pointer_sequence.get(device_id, 0)
             if INPUT_SEQ_NO and 0 <= seq <= highest_seq:
-                pointerlog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
+                log(f"dropped outdated sequence {seq}, latest is {highest_seq}")
                 return
             self.pointer_sequence[device_id] = seq
         pointer = pdata[:2]
@@ -164,8 +186,8 @@ class PointerServer(StubServerMixin):
                 self._update_modifiers(proto, wid, modifiers)
 
     def _process_pointer_position(self, proto, packet: Packet) -> None:
-        pointerlog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
-                   proto, packet, self.readonly, self.ui_driver)
+        log("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
+            proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -195,15 +217,54 @@ class PointerServer(StubServerMixin):
         self.input_devices_format = packet.get_str(1)
         self.input_devices_data = packet.get_dict(2)
         from xpra.util.str_fn import print_nested_dict
-        pointerlog("client %s input devices:", self.input_devices_format)
-        print_nested_dict(self.input_devices_data, print_fn=pointerlog)
+        log("client %s input devices:", self.input_devices_format)
+        print_nested_dict(self.input_devices_data, print_fn=log)
         self.setup_input_devices()
 
     def setup_input_devices(self) -> None:
-        """
-        subclasses can override this method
-        the x11 servers use this to map devices
-        """
+        from xpra.server import features
+        log("setup_input_devices() input_devices feature=%s", features.pointer)
+        from xpra.util.system import is_X11
+        if not is_X11():
+            return
+        if not features.pointer:
+            return
+        xinputlog = Logger("xinput", "pointer")
+        xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
+        xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
+        # xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
+        xinputlog("setup_input_devices() pointer device=%s", self.pointer_device)
+        xinputlog("setup_input_devices() touchpad device=%s", self.touchpad_device)
+        self.pointer_device_map = {}
+        if not self.touchpad_device:
+            # no need to assign anything, we only have one device anyway
+            return
+        # if we find any absolute pointer devices,
+        # map them to the "touchpad_device"
+        XIModeAbsolute = 1
+        for deviceid, device_data in self.input_devices_data.items():
+            name = device_data.get("name")
+            # xinputlog("[%i]=%s", deviceid, device_data)
+            xinputlog("[%i]=%s", deviceid, name)
+            if device_data.get("use") != "slave pointer":
+                continue
+            classes = device_data.get("classes")
+            if not classes:
+                continue
+            # look for absolute pointer devices:
+            touchpad_axes = []
+            for i, defs in classes.items():
+                xinputlog(" [%i]=%s", i, defs)
+                mode = defs.get("mode")
+                label = defs.get("label")
+                if not mode or mode != XIModeAbsolute:
+                    continue
+                if defs.get("min", -1) == 0 and defs.get("max", -1) == (2 ** 24 - 1):
+                    touchpad_axes.append((i, label))
+            if len(touchpad_axes) == 2:
+                xinputlog.info("found touchpad device: %s", name)
+                xinputlog("axes: %s", touchpad_axes)
+                self.pointer_device_map[deviceid] = self.touchpad_device
 
     def init_packet_handlers(self) -> None:
         self.add_packets(

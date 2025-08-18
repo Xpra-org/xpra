@@ -18,7 +18,7 @@ class XTestPointerDevice:
         return "XTestPointerDevice"
 
     @staticmethod
-    def move_pointer(x: int, y: int, props=None) -> None:
+    def move_pointer(x: int, y: int, props: dict) -> None:
         log("xtest_fake_motion%s", (x, y, props))
         with xsync:
             XTestBindings().xtest_fake_motion(x, y)

@@ -9,9 +9,8 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence, Callable
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
-from ctypes.wintypes import RECT, POINT, BYTE
+from ctypes.wintypes import RECT, POINT
 
-from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.util.system import is_VirtualBox
 from xpra.common import XPRA_APP_ID
@@ -36,9 +35,7 @@ from xpra.platform.win32.common import (
     GetWindowThreadProcessId,
     GetSystemMetrics,
     SetPhysicalCursorPos, GetPhysicalCursorPos, GetCursorInfo, CURSORINFO,
-    GetKeyboardState, SetKeyboardState,
     EnumDisplayMonitors, GetMonitorInfo,
-    mouse_event,
 )
 
 log = Logger("shadow", "win32")
@@ -118,30 +115,6 @@ SHADOW_OPTIONS = {
     "gstreamer": check_gstreamer,
     "gdi": check_gdi,
     "gtk": check_gtk,
-}
-
-
-NOEVENT = (0, 0)
-BUTTON_EVENTS: dict[tuple[int, bool], tuple[int, int]] = {
-    # (button,up-or-down)  : win-event-name
-    (1, True): (win32con.MOUSEEVENTF_LEFTDOWN, 0),
-    (1, False): (win32con.MOUSEEVENTF_LEFTUP, 0),
-    (2, True): (win32con.MOUSEEVENTF_MIDDLEDOWN, 0),
-    (2, False): (win32con.MOUSEEVENTF_MIDDLEUP, 0),
-    (3, True): (win32con.MOUSEEVENTF_RIGHTDOWN, 0),
-    (3, False): (win32con.MOUSEEVENTF_RIGHTUP, 0),
-    (4, True): (win32con.MOUSEEVENTF_WHEEL, win32con.WHEEL_DELTA),
-    (4, False): NOEVENT,
-    (5, True): (win32con.MOUSEEVENTF_WHEEL, -win32con.WHEEL_DELTA),
-    (5, False): NOEVENT,
-    (6, True): (win32con.MOUSEEVENTF_HWHEEL, win32con.WHEEL_DELTA),
-    (6, False): NOEVENT,
-    (7, True): (win32con.MOUSEEVENTF_HWHEEL, -win32con.WHEEL_DELTA),
-    (7, False): NOEVENT,
-    (8, True): (win32con.MOUSEEVENTF_XDOWN, win32con.XBUTTON1),
-    (8, False): (win32con.MOUSEEVENTF_XUP, win32con.XBUTTON1),
-    (9, True): (win32con.MOUSEEVENTF_XDOWN, win32con.XBUTTON2),
-    (9, False): (win32con.MOUSEEVENTF_XUP, win32con.XBUTTON2),
 }
 
 
@@ -541,27 +514,6 @@ class ShadowServer(GTKShadowServerBase):
             log.estr(e)
         return False
 
-    def clear_keys_pressed(self) -> None:
-        # noinspection PyCallingNonCallable,PyTypeChecker
-        keystate = (BYTE * 256)()
-        if GetKeyboardState(keystate):
-            vknames = {}
-            for vkconst in (x for x in dir(win32con) if x.startswith("VK_")):
-                vknames[getattr(win32con, vkconst)] = vkconst[3:]
-            pressed = []
-            for i in range(256):
-                if keystate[i]:
-                    pressed.append(vknames.get(i, i))
-            keylog("keys still pressed: %s", csv(pressed))
-            for x in (
-                    win32con.VK_LSHIFT, win32con.VK_RSHIFT, win32con.VK_SHIFT,
-                    win32con.VK_LCONTROL, win32con.VK_RCONTROL, win32con.VK_CONTROL,
-                    win32con.VK_LMENU, win32con.VK_RMENU, win32con.VK_MENU,
-                    win32con.VK_LWIN, win32con.VK_RWIN,
-            ):
-                keystate[x] = 0
-            SetKeyboardState(keystate)
-
     def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()
 
@@ -576,15 +528,8 @@ class ShadowServer(GTKShadowServerBase):
             self.button_action(did, wid, pointer, button, pressed, props)
 
     def button_action(self, device_id, wid: int, pointer, button: int, pressed: bool, props) -> None:
-        event = BUTTON_EVENTS.get((button, pressed))
-        if event is None:
-            log.warn("no matching event found for button=%s, pressed=%s", button, pressed)
-            return
-        elif event == NOEVENT:
-            return
-        dwFlags, dwData = event
         x, y = pointer[:2]
-        mouse_event(dwFlags, x, y, dwData, 0)
+        self.pointer_device.click(x, y, button, pressed)
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)

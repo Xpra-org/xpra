@@ -4,8 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Sequence
+
 from xpra.x11.error import xsync
 from xpra.x11.bindings.test import XTestBindings
+from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.log import Logger
 
 log = Logger("x11", "server", "keyboard")
@@ -30,3 +33,14 @@ class XTestKeyboardDevice:
             return
         with xsync:
             XTestBindings().xtest_fake_key(keycode, press)
+
+    def clear_keys_pressed(self, keycodes: Sequence[int]) -> None:
+        # clear all the keys we know about:
+        if keycodes:
+            log("clearing keys pressed: %s", keycodes)
+            with xsync:
+                for keycode in keycodes:
+                    self.press_key(keycode, False)
+        # this will take care of any remaining ones we are not aware of:
+        # (there should not be any - but we want to be certain)
+        clean_keyboard_state()

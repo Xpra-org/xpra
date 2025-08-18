@@ -95,7 +95,7 @@ def fake_key(keycode: int, press: bool) -> None:
 class CGFakeKeyboard:
 
     @staticmethod
-    def fake_key(keycode: int, press: bool) -> None:
+    def press_key(keycode: int, press: bool) -> None:
         fake_key(keycode, press)
 
 

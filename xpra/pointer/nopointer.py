@@ -16,7 +16,7 @@ class NoPointerDevice:
         return "NoPointerDevice"
 
     @staticmethod
-    def move_pointer(x: int, y: int, props=None) -> None:
+    def move_pointer(x: int, y: int, props: dict) -> None:
         log("xtest_fake_motion%s", (x, y, props))
 
     @staticmethod

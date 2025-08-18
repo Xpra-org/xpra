@@ -126,6 +126,8 @@ class KeyboardServer(StubServerMixin):
         self.keys_timedout: dict[int, float] = {}
         # timers for cancelling key repeat when we get jitter
         self.key_repeat_timer = 0
+        self.keys_pressed: dict[int, Any] = {}
+        self.current_keyboard_group = 0
 
         self.input_method = "keep"
         self.ibus_layouts: dict[str, Any] = {}
@@ -236,6 +238,7 @@ class KeyboardServer(StubServerMixin):
         return {
             "key_repeat": self.key_repeat,
             "key_repeat_modifiers": True,
+            "keyboard.fast-switching": True,
         }
 
     def parse_hello(self, ss, caps: typedict, send_ui: bool) -> None:
@@ -340,10 +343,6 @@ class KeyboardServer(StubServerMixin):
             self.set_keymap(ss, True)
             modifiers = props.get("modifiers", [])
             ss.make_keymask_match(modifiers)
-
-    def set_keyboard_layout_group(self, grp: int) -> None:
-        # only actually implemented in X11ServerBase
-        pass
 
     def _process_key_action(self, proto, packet: Packet) -> None:
         if self.readonly:
@@ -523,14 +522,69 @@ class KeyboardServer(StubServerMixin):
                     ss.keys_changed()
 
     def clear_keys_pressed(self) -> None:
-        log("clear_keys_pressed() is not implemented")
+        log("clear_keys_pressed()")
+        if self.readonly:
+            return
+        # make sure the timer doesn't fire and interfere:
+        self.cancel_key_repeat_timer()
+        keycodes = tuple(self.keys_pressed.keys())
+        self.keyboard_device.clear_keys_pressed(keycodes)
+        self.keys_pressed = {}
+
+    def set_keyboard_layout_group(self, grp: int) -> None:
+        if not is_X11():
+            return
+        kc = self.keyboard_config
+        if not kc:
+            log(f"set_keyboard_layout_group({grp}) ignored, no config")
+            return
+        if not kc.layout_groups:
+            log(f"set_keyboard_layout_group({grp}) ignored, no layout groups support")
+            # not supported by the client that owns the current keyboard config,
+            # so make sure we stick to the default group:
+            grp = 0
+        from xpra.x11.bindings.keyboard import X11KeyboardBindings
+        if not X11KeyboardBindings().hasXkb():
+            log(f"set_keyboard_layout_group({grp}) ignored, no Xkb support")
+            return
+        if grp < 0:
+            grp = 0
+        if self.current_keyboard_group == grp:
+            log(f"set_keyboard_layout_group({grp}) ignored, value unchanged")
+            return
+        log(f"set_keyboard_layout_group({grp}) config={self.keyboard_config}, {self.current_keyboard_group=}")
+        from xpra.x11.error import xsync, XError
+        try:
+            with xsync:
+                self.current_keyboard_group = X11KeyboardBindings().set_layout_group(grp)
+        except XError as e:
+            log(f"set_keyboard_layout_group({grp})", exc_info=True)
+            log.error(f"Error: failed to set keyboard layout group {grp}")
+            log.estr(e)
+
+    def set_keyboard_repeat(self, key_repeat) -> None:
+        if not is_X11():
+            return
+        from xpra.x11.error import xlog
+        with xlog:
+            from xpra.x11.bindings.keyboard import X11KeyboardBindings
+            if key_repeat:
+                self.key_repeat_delay, self.key_repeat_interval = key_repeat
+                if self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
+                    X11KeyboardBindings().set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
+                    log.info("setting key repeat rate from client: %sms delay / %sms interval",
+                             self.key_repeat_delay, self.key_repeat_interval)
+            else:
+                # dont do any jitter compensation:
+                self.key_repeat_delay = -1
+                self.key_repeat_interval = -1
+                # but do set a default repeat rate:
+                X11KeyboardBindings().set_key_repeat_rate(500, 30)
+                log("keyboard repeat disabled")
 
     def get_keyboard_config(self, props=None) -> Any | None:
         log("get_keyboard_config(%s) is not implemented", props)
         return None
-
-    def set_keyboard_repeat(self, key_repeat) -> None:
-        log("set_keyboard_repeat(%s)", key_repeat)
 
     def set_keymap(self, ss, force: bool = False) -> None:
         log("set_keymap(%s, %s)", ss, force)
