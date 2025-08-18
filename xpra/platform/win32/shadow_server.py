@@ -22,7 +22,7 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size, get_display_size
-from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
+from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow_cursor import get_cursor_data
 from xpra.platform.win32.gdi_screen_capture import GDICapture
@@ -564,9 +564,6 @@ class ShadowServer(GTKShadowServerBase):
 
     def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()
-
-    def fake_key(self, keycode: int, press: bool) -> None:
-        fake_key(keycode, press)
 
     def do_process_button_action(self, proto, device_id, wid: int, button: int, pressed: bool, pointer, props) -> None:
         if "modifiers" in props:

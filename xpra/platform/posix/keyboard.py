@@ -76,6 +76,13 @@ def get_all_x11_layouts() -> dict[str, str]:
     return {"us": "English"}
 
 
+def get_keyboard_device():
+    if is_X11():
+        from xpra.x11.server.xtest_keyboard import XTestKeyboardDevice
+        return XTestKeyboardDevice()
+    return None
+
+
 class Keyboard(KeyboardBase):
 
     def __init__(self):

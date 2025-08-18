@@ -200,15 +200,6 @@ class ShadowServer(GTKShadowServerBase):
         CG.CGWarpMouseCursorPosition(pointer[:2])
         return True
 
-    def fake_key(self, keycode: int, press: bool) -> None:
-        e = CG.CGEventCreateKeyboardEvent(None, keycode, press)
-        log("fake_key(%s, %s)", keycode, press)
-        # CGEventSetFlags(keyPress, modifierFlags)
-        # modifierFlags: kCGEventFlagMaskShift, ...
-        CG.CGEventPost(CG.kCGSessionEventTap, e)
-        # this causes crashes, don't do it!
-        # CG.CFRelease(e)
-
     def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool, pointer, props):
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers"))

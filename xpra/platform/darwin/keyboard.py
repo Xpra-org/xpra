@@ -7,11 +7,22 @@
 import os
 from collections.abc import Callable, Sequence
 
-from xpra.os_util import gi_import
 from xpra.platform.keyboard_base import KeyboardBase, log
-from xpra.platform.darwin.menu import getOSXMenuHelper
 
-Gdk = gi_import("Gdk")
+# from xpra.os_util import gi_import
+# Gdk = gi_import("Gdk")
+# Gdk.ModifierType.SHIFT_MASK: 1
+# Gdk.ModifierType.LOCK_MASK: 2
+# Gdk.ModifierType.SUPER_MASK: 67108864,
+# Gdk.ModifierType.HYPER_MASK: 134217728,
+# Gdk.ModifierType.META_MASK: 268435456,
+# Gdk.ModifierType.CONTROL_MASK: 4,
+SHIFT_MASK = 1
+LOCK_MASK = 2
+SUPER_MASK = 67108864
+HYPER_MASK = 134217728
+META_MASK = 268435456
+CONTROL_MASK = 4
 
 NUM_LOCK_KEYCODE = 71  # HARDCODED!
 # a key and the keys we want to translate it into when swapping keys
@@ -68,6 +79,28 @@ APPLE_LAYOUTS: dict[str, str] = {
     "Thai": "th",
     "Turkey": "tr",
 }
+
+
+def fake_key(keycode: int, press: bool) -> None:
+    import Quartz.CoreGraphics as CG
+    e = CG.CGEventCreateKeyboardEvent(None, keycode, press)
+    log("fake_key(%s, %s)", keycode, press)
+    # CGEventSetFlags(keyPress, modifierFlags)
+    # modifierFlags: kCGEventFlagMaskShift, ...
+    CG.CGEventPost(CG.kCGSessionEventTap, e)
+    # this causes crashes, don't do it!
+    # CG.CFRelease(e)
+
+
+class CGFakeKeyboard:
+
+    @staticmethod
+    def fake_key(keycode: int, press: bool) -> None:
+        fake_key(keycode, press)
+
+
+def get_keyboard_device():
+    return CGFakeKeyboard()
 
 
 class Keyboard(KeyboardBase):
@@ -205,12 +238,12 @@ class Keyboard(KeyboardBase):
             meta = self.meta_modifier
             control = self.control_modifier
         modmap = {
-            Gdk.ModifierType.SHIFT_MASK: "shift",
-            Gdk.ModifierType.LOCK_MASK: "lock",
-            Gdk.ModifierType.SUPER_MASK: self.super_modifier,
-            Gdk.ModifierType.HYPER_MASK: self.hyper_modifier,
-            Gdk.ModifierType.META_MASK: meta,
-            Gdk.ModifierType.CONTROL_MASK: control,
+            SHIFT_MASK: "shift",
+            LOCK_MASK: "lock",
+            SUPER_MASK: self.super_modifier,
+            HYPER_MASK: self.hyper_modifier,
+            META_MASK: meta,
+            CONTROL_MASK: control,
         }
         names = []
         for modmask, modname in modmap.items():
@@ -236,7 +269,12 @@ class Keyboard(KeyboardBase):
             if not key_event.pressed:
                 log("toggling numlock")
                 self.num_lock_state = not self.num_lock_state
-                getOSXMenuHelper().update_numlock(self.num_lock_state)
+                try:
+                    from xpra.platform.darwin.menu import getOSXMenuHelper
+                except ImportError:
+                    pass
+                else:
+                    getOSXMenuHelper().update_numlock(self.num_lock_state)
             # do not forward the "Escape" key that numlock usually comes up as
             return
         send_key_action_cb(wid, key_event)

@@ -6,7 +6,7 @@
 
 from xpra.log import Logger
 
-log = Logger("x11", "server", "keyboard")
+log = Logger("keyboard")
 
 
 class NoKeyboardDevice:

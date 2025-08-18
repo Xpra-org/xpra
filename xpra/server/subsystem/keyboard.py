@@ -113,6 +113,7 @@ class KeyboardServer(StubServerMixin):
     def __init__(self):
         self.keymap_options: dict[str, Any] = {}
         self.mod_meanings = {}
+        self.keyboard_device = None
         self.keyboard_config = None
         self.keymap_changing_timer = 0  # to ignore events when we know we are changing the configuration
         self.key_repeat = None
@@ -165,6 +166,14 @@ class KeyboardServer(StubServerMixin):
                     start_command: Callable = getattr(self, "start_command", noop)
                     start_command("ibus", command, ignore=True, use_wrapper=False, shell=False)
                 may_start_ibus(run)
+
+        from xpra.platform.keyboard import get_keyboard_device
+        self.keyboard_device = get_keyboard_device()
+        if not self.keyboard_device:
+            log.warn("Warning: keyboard device not available, using NoKeyboardDevice")
+            from xpra.keyboard.nokeyboard import NoKeyboardDevice
+            self.keyboard_device = NoKeyboardDevice()
+        log("keyboard_device=%s", self.keyboard_device)
 
         ibuslog(f"input.setup() {EXPOSE_IBUS_LAYOUTS=}")
         self.watch_keymap_changes()
@@ -378,8 +387,10 @@ class KeyboardServer(StubServerMixin):
                     pressed: bool, modifiers: list, keyval: int, keystr: str, group: int):
         return ss.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
-    def fake_key(self, keycode, press):
-        log("fake_key%s is not implemented", (keycode, press))
+    def fake_key(self, keycode, press) -> None:
+        log("fake_key(%s, %s)", keycode, press)
+        if self.keyboard_device:
+            self.keyboard_device.press_key(keycode, press)
 
     def _handle_key(self, wid: int, pressed: bool, name: str, keyval: int, keycode: int,
                     modifiers: list, is_mod: bool = False, sync: bool = True):

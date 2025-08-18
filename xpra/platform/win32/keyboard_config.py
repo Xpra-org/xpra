@@ -6,28 +6,12 @@
 from collections.abc import Sequence
 
 from xpra.platform.win32 import constants as win32con
+from xpra.platform.win32.keyboard import fake_key
 from xpra.server.keyboard_config_base import KeyboardConfigBase
-from xpra.platform.win32.common import MapVirtualKeyW, GetAsyncKeyState, VkKeyScanW, keybd_event
+from xpra.platform.win32.common import GetAsyncKeyState, VkKeyScanW
 from xpra.log import Logger
 
 log = Logger("keyboard")
-
-MAPVK_VK_TO_VSC = 0
-
-
-def fake_key(keycode, press):
-    if keycode <= 0:
-        log.warn("no keycode found for %s", keycode)
-        return
-    # KEYEVENTF_SILENT = 0X4
-    flags = 0
-    if not press:
-        flags |= win32con.KEYEVENTF_KEYUP
-    # get the scancode:
-    scancode = MapVirtualKeyW(keycode, MAPVK_VK_TO_VSC)
-    # see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
-    log("fake_key(%s, %s) calling keybd_event(%s, %s, %s, 0)", keycode, press, keycode, scancode, flags)
-    keybd_event(keycode, scancode, flags, 0)
 
 
 class KeyboardConfig(KeyboardConfigBase):

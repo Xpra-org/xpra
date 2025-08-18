@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Final
 import ctypes
 from ctypes.wintypes import HANDLE
 from ctypes import create_string_buffer, byref
@@ -16,6 +17,7 @@ from xpra.platform.win32.common import (
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId,
+    MapVirtualKeyW, keybd_event,
 )
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
@@ -33,6 +35,8 @@ LAYOUT_MASKS: dict[int, Sequence[int]] = {
     0xffff: (0,),
     0x3ff: (0,),
 }
+
+MAPVK_VK_TO_VSC: Final[int] = 0
 
 
 def _GetKeyboardLayoutList() -> list[int]:
@@ -128,6 +132,32 @@ def x11_layouts_to_win32_hkl() -> dict[str, int]:
 
 EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
 EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
+
+
+def fake_key(keycode, press):
+    if keycode <= 0:
+        log.warn("no keycode found for %s", keycode)
+        return
+    # KEYEVENTF_SILENT = 0X4
+    flags = 0
+    if not press:
+        flags |= win32con.KEYEVENTF_KEYUP
+    # get the scancode:
+    scancode = MapVirtualKeyW(keycode, MAPVK_VK_TO_VSC)
+    # see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
+    log("fake_key(%s, %s) calling keybd_event(%s, %s, %s, 0)", keycode, press, keycode, scancode, flags)
+    keybd_event(keycode, scancode, flags, 0)
+
+
+class Win32Keyboard:
+
+    @staticmethod
+    def fake_key(keycode, press):
+        fake_key(keycode, press)
+
+
+def get_keyboard_device():
+    return Win32Keyboard()
 
 
 class Keyboard(KeyboardBase):

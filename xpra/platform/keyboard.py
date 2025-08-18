@@ -10,8 +10,14 @@ from xpra.platform import platform_import
 # default:
 Keyboard: type | None = None
 
+
+def get_keyboard_device():
+    return None
+
+
 platform_import(globals(), "keyboard", True,
-                "Keyboard")
+                "Keyboard",
+                "get_keyboard_device")
 
 
 def main() -> int:
@@ -35,6 +41,8 @@ def main() -> int:
                 print("failed to connect to the X11 server:")
                 print(" %s" % e)
                 # hope for the best..
+
+        print("keyboard device: %s" % get_keyboard_device())
 
         if not Keyboard:
             print("no keyboard implementation")

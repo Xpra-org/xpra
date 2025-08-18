@@ -102,14 +102,7 @@ class X11ServerCore(ServerBase):
             log.warn("Warning: XTestPointerDevice bindings not available, using NoPointerDevice")
             from xpra.x11.server.nopointer import NoPointerDevice
             self.pointer_device = NoPointerDevice()
-        try:
-            from xpra.x11.server.xtest_keyboard import XTestKeyboardDevice
-            self.keyboard_device = XTestKeyboardDevice()
-        except ImportError:
-            log.warn("Warning: XTestKeyboardDevice bindings not available, using NoKeyboardDevice")
-            from xpra.x11.server.nokeyboard import NoKeyboardDevice
-            self.keyboard_device = NoKeyboardDevice()
-        log("X11ServerCore pointer_device=%s, keyboard_device=%s", self.pointer_device, self.keyboard_device)
+        log("pointer_device=%s", self.pointer_device)
 
     def setup(self) -> None:
         super().setup()
@@ -659,11 +652,6 @@ class X11ServerCore(ServerBase):
             core = X11CoreBindings()
             core.UngrabKeyboard()
             core.UngrabPointer()
-
-    # noinspection PyMethodMayBeStatic
-    def fake_key(self, keycode, press) -> None:
-        keylog("fake_key(%s, %s)", keycode, press)
-        self.keyboard_device.press_key(keycode, press)
 
     def do_x11_cursor_event(self, event) -> None:
         cursors = getattr(self, "cursors", False)
