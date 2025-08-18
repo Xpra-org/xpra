@@ -37,7 +37,6 @@ pointerlog = Logger("x11", "server", "pointer")
 grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
-xinputlog = Logger("xinput")
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
@@ -200,19 +199,6 @@ class X11ServerCore(ServerBase):
         log("do_get_info thread=%s", threading.current_thread())
         info = super().get_ui_info(proto, wids, *args)
         # this is added here because the server keyboard config doesn't know about "keys_pressed"..
-        if not self.readonly:
-            with xlog:
-                info.setdefault("keyboard", {}).update(
-                    {
-                        "state":
-                            {
-                                "keys_pressed": tuple(self.keys_pressed.keys()),
-                                "keycodes-down": X11KeyboardBindings().get_keycodes_down(),
-                            },
-                        "fast-switching": True,
-                        "layout-group": X11KeyboardBindings().get_layout_group(),
-                    }
-                )
         sinfo = info.setdefault("server", {})
         sinfo.setdefault("x11", {}).update(get_extensions_info(False))
         try:

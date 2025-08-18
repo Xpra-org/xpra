@@ -69,7 +69,7 @@ cdef extern from "X11/Xlib.h":
 
 
 cdef void init_x11_events():
-    add_x_event_signals({
+    x_event_signals.update({
         MapRequest          : ("", "x11-child-map-request-event"),
         ConfigureRequest    : ("", "x11-child-configure-request-event"),
         SelectionRequest    : ("x11-selection-request", ""),
@@ -153,10 +153,6 @@ x_event_signals : Dict[int, Tuple[str, str]] = {}
 
 def add_x_event_signal(event: int, mapping: Tuple[str, str]) -> None:
     x_event_signals[event] = mapping
-
-
-def add_x_event_signals(event_signals: Dict[int, Tuple[str, str]]) -> None:
-    x_event_signals.update(event_signals)
 
 
 def get_x_event_signals(event: int) -> Tuple[str, str] | None:

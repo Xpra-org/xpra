@@ -227,7 +227,16 @@ class KeyboardServer(StubServerMixin):
         self.clear_keys_pressed()
 
     def get_info(self, _proto) -> dict[str, Any]:
-        return {"keyboard": self.get_keyboard_info()}
+        info = self.get_keyboard_info()
+        device = self.keyboard_device
+        if not self.readonly and device:
+            info["state"] = {
+                "keys_pressed": tuple(self.keys_pressed.keys()),
+                "keycodes-down": device.get_keycodes_down(),
+                "layout-group": device.get_layout_group(),
+                "key_repeat": self.key_repeat,
+            }
+        return {"keyboard": info}
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {}
@@ -563,24 +572,17 @@ class KeyboardServer(StubServerMixin):
             log.estr(e)
 
     def set_keyboard_repeat(self, key_repeat) -> None:
-        if not is_X11():
+        device = self.keyboard_device
+        if not device:
             return
-        from xpra.x11.error import xlog
-        with xlog:
-            from xpra.x11.bindings.keyboard import X11KeyboardBindings
-            if key_repeat:
-                self.key_repeat_delay, self.key_repeat_interval = key_repeat
-                if self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
-                    X11KeyboardBindings().set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
-                    log.info("setting key repeat rate from client: %sms delay / %sms interval",
-                             self.key_repeat_delay, self.key_repeat_interval)
-            else:
-                # dont do any jitter compensation:
-                self.key_repeat_delay = -1
-                self.key_repeat_interval = -1
-                # but do set a default repeat rate:
-                X11KeyboardBindings().set_key_repeat_rate(500, 30)
-                log("keyboard repeat disabled")
+        if key_repeat:
+            delay, interval = key_repeat
+            device.set_keyboard_repeat(delay, interval)
+        else:
+            delay, interval = -1, -1
+            # use a default repeat rate:
+            device.set_keyboard_repeat(500, 30)
+        self.key_repeat_delay, self.key_repeat_interval = key_repeat
 
     def get_keyboard_config(self, props=None) -> Any | None:
         log("get_keyboard_config(%s) is not implemented", props)

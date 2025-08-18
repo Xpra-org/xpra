@@ -133,27 +133,29 @@ def x11_layouts_to_win32_hkl() -> dict[str, int]:
 EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
 EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
 
+VKNAMES = {}
+for vkconst in (x for x in dir(win32con) if x.startswith("VK_")):
+    VKNAMES[getattr(win32con, vkconst)] = vkconst[3:]
+
+
+def get_keys_pressed() -> Sequence[int]:
+    # noinspection PyCallingNonCallable,PyTypeChecker
+    keystate = (BYTE * 256)()
+    pressed = []
+    if GetKeyboardState(keystate):
+        for i in range(256):
+            if keystate[i]:
+                pressed.append(i)
+    log("get_keys_pressed()=%s (%s)", pressed, csv(VKNAMES.get(k, k) for k in pressed))
+    return pressed
+
 
 def clear_keys_pressed() -> None:
     # noinspection PyCallingNonCallable,PyTypeChecker
     keystate = (BYTE * 256)()
-    if GetKeyboardState(keystate):
-        vknames = {}
-        for vkconst in (x for x in dir(win32con) if x.startswith("VK_")):
-            vknames[getattr(win32con, vkconst)] = vkconst[3:]
-        pressed = []
-        for i in range(256):
-            if keystate[i]:
-                pressed.append(vknames.get(i, i))
-        log("keys still pressed: %s", csv(pressed))
-        for x in (
-                win32con.VK_LSHIFT, win32con.VK_RSHIFT, win32con.VK_SHIFT,
-                win32con.VK_LCONTROL, win32con.VK_RCONTROL, win32con.VK_CONTROL,
-                win32con.VK_LMENU, win32con.VK_RMENU, win32con.VK_MENU,
-                win32con.VK_LWIN, win32con.VK_RWIN,
-        ):
-            keystate[x] = 0
-        SetKeyboardState(keystate)
+    for i in range(256):
+        keystate[i] = 0
+    SetKeyboardState(keystate)
 
 
 def fake_key(keycode, press):
@@ -174,12 +176,24 @@ def fake_key(keycode, press):
 class Win32Keyboard:
 
     @staticmethod
-    def press_key(keycode, press):
+    def press_key(keycode, press) -> None:
         fake_key(keycode, press)
 
     @staticmethod
-    def clear_keys_pressed(_keycodes):
+    def clear_keys_pressed(_keycodes) -> None:
         clear_keys_pressed()
+
+    @staticmethod
+    def set_repeat_rate(self, delay: int, interval: int) -> None:
+        pass
+
+    @staticmethod
+    def get_keycodes_down() -> Sequence[int]:
+        return get_keys_pressed()
+
+    @staticmethod
+    def get_layout_group() -> int:
+        return 0
 
 
 def get_keyboard_device():

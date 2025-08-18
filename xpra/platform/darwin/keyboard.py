@@ -98,6 +98,22 @@ class CGFakeKeyboard:
     def press_key(keycode: int, press: bool) -> None:
         fake_key(keycode, press)
 
+    @staticmethod
+    def clear_keys_pressed(_keycodes) -> None:
+        pass
+
+    @staticmethod
+    def set_repeat_rate(self, delay: int, interval: int) -> None:
+        pass
+
+    @staticmethod
+    def get_keycodes_down() -> Sequence[int]:
+        return ()
+
+    @staticmethod
+    def get_layout_group() -> int:
+        return 0
+
 
 def get_keyboard_device():
     return CGFakeKeyboard()
