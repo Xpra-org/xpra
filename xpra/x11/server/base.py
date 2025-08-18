@@ -8,10 +8,7 @@
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import hexstr
-from xpra.util.objects import typedict
 from xpra.x11.error import xswallow, xlog
-from xpra.common import SYNC_ICC
 from xpra.x11.server.core import X11ServerCore
 from xpra.x11.server.xtest_pointer import XTestPointerDevice
 from xpra.log import Logger
@@ -109,42 +106,4 @@ class X11ServerBase(X11ServerCore):
         display_info = info.setdefault("display", {})
         if self.display_pid:
             display_info["pid"] = self.display_pid
-        display_info["icc"] = self.get_icc_info()
         return info
-
-    def get_icc_info(self) -> dict[str, Any]:
-        icc_info: dict[str, Any] = {
-            "sync": SYNC_ICC,
-        }
-        if SYNC_ICC:
-            icc_info["profile"] = hexstr(self.icc_profile)
-        return icc_info
-
-    def set_icc_profile(self) -> None:
-        if not SYNC_ICC:
-            return
-        from xpra.x11.xroot_props import root_set
-        ui_clients = [s for s in self._server_sources.values() if s.ui_client]
-        if len(ui_clients) != 1:
-            screenlog("%i UI clients, resetting ICC profile to default", len(ui_clients))
-            self.reset_icc_profile()
-            return
-        icc = typedict(ui_clients[0].icc)
-        for x in ("data", "icc-data", "icc-profile"):
-            data = icc.bytesget(x)
-            if data:
-                screenlog("set_icc_profile() icc data for %s: %s (%i bytes)",
-                          ui_clients[0], hexstr(data), len(data))
-                self.icc_profile = data
-                root_set("_ICC_PROFILE", ["u32"], data)
-                root_set("_ICC_PROFILE_IN_X_VERSION", "u32", 0 * 100 + 4)  # 0.4 -> 0*100+4*1
-                return
-        screenlog("no icc data found in %s", icc)
-        self.reset_icc_profile()
-
-    def reset_icc_profile(self) -> None:
-        screenlog("reset_icc_profile()")
-        from xpra.x11.xroot_props import root_del
-        root_del("_ICC_PROFILE")
-        root_del("_ICC_PROFILE_IN_X_VERSION")
-        self.icc_profile = b""

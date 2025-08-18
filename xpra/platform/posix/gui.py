@@ -106,7 +106,7 @@ def _get_xsettings_dict() -> dict[str, Any]:
 def _get_xsettings_dpi() -> int:
     if XSETTINGS_DPI and x11_bindings():
         try:
-            from xpra.x11.xsettings_prop import XSettingsType
+            from xpra.x11.subsystem.xsettings_prop import XSettingsType
         except ImportError:
             return -1
         d = _get_xsettings_dict()
@@ -160,7 +160,7 @@ def get_antialias_info() -> dict[str, Any]:
     if not x11_bindings():
         return info
     try:
-        from xpra.x11.xsettings_prop import XSettingsType
+        from xpra.x11.subsystem.xsettings_prop import XSettingsType
         d = _get_xsettings_dict()
         for prop_name, name in {
             "Xft/Antialias": "enabled",
@@ -273,7 +273,7 @@ def _get_xsettings_int(name: str, default_value: int) -> int:
     if name not in d:
         return default_value
     value_type, value = d.get(name)
-    from xpra.x11.xsettings_prop import XSettingsType
+    from xpra.x11.subsystem.xsettings_prop import XSettingsType
     if value_type != XSettingsType.Integer:
         return default_value
     return value

@@ -2648,8 +2648,9 @@ if x11_ENABLED:
         ace("xpra.x11.bindings.record", "xtst")
     tace(xinput_ENABLED, "xpra.x11.bindings.xi2", "x11,xi")
 
-toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk")
-toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models", "xpra.x11.desktop", "xpra.x11.server")
+toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.gtk")
+toggle_packages(server_ENABLED and x11_ENABLED,
+                "xpra.x11.models", "xpra.x11.desktop", "xpra.x11.server", "xpra.x11.subsystem")
 if gtk_x11_ENABLED:
     add_packages("xpra.x11.bindings")
     ace("xpra.x11.gtk.display_source", "gdk-3.0")
@@ -3003,6 +3004,7 @@ if cythonize_more_ENABLED:
         ax("xpra.x11")
         ax("xpra.x11.desktop")
         ax("xpra.x11.models")
+        ax("xpra.x11.subsystem")
         if server_ENABLED:
             ax("xpra.x11.server")
         if uinput_ENABLED:

@@ -223,7 +223,7 @@ def get_xsettings():
     data = X11Window.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
     if not data:
         return None
-    from xpra.x11.xsettings_prop import bytes_to_xsettings
+    from xpra.x11.subsystem.xsettings_prop import bytes_to_xsettings
     return bytes_to_xsettings(data)
 
 

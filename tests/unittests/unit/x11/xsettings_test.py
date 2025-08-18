@@ -16,11 +16,11 @@ from unit.test_util import LoggerSilencer
 class XSettingsTest(unittest.TestCase):
 
     def test_xsettings(self):
-        from xpra.x11.xsettings_prop import (
+        from xpra.x11.subsystem.xsettings_prop import (
             xsettings_to_bytes, bytes_to_xsettings,
             get_local_byteorder,
             XSettingsType,
-            )
+        )
         for v in (None, 10, "", (), [], (1, 2, 3), [1, ]):
             try:
                 xsettings_to_bytes(v)
@@ -57,7 +57,7 @@ class XSettingsTest(unittest.TestCase):
                     (XSettingsType.Integer, "int1", 1, 0),
                     (XSettingsType.String, "str1", "1", 0),
                     (XSettingsType.Color, "color1", (128, 128, 64, 32), 0),
-                    )
+                )
                 serial = 2
                 data = xsettings_to_bytes((serial, settings))
                 assert data
@@ -66,7 +66,7 @@ class XSettingsTest(unittest.TestCase):
                 rserial, rsettings = v
                 assert rserial==serial
                 assert len(rsettings)==len(settings)
-        from xpra.x11 import xsettings_prop
+        from xpra.x11.subsystem import xsettings_prop
         with LoggerSilencer(xsettings_prop):
             # test error handling:
             for settings in (
@@ -95,10 +95,11 @@ class XSettingsTest(unittest.TestCase):
 
 
 def main():
-    #can only work with an X11 server
+    # can only work with an X11 server
     from xpra.os_util import OSX, POSIX
     if POSIX and not OSX:
         unittest.main()
+
 
 if __name__ == '__main__':
     main()

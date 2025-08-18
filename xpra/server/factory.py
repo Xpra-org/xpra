@@ -71,6 +71,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.display:
         from xpra.server.subsystem.display import DisplayManager
         classes.append(DisplayManager)
+    if features.x11 and features.display:
+        from xpra.x11.subsystem.icc import ICCServer
+        classes.append(ICCServer)
     if features.notification:
         from xpra.server.subsystem.notification import NotificationForwarder
         classes.append(NotificationForwarder)
@@ -99,7 +102,7 @@ def get_server_base_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.window import WindowServer
         classes.append(WindowServer)
     if features.x11 and features.display:
-        from xpra.server.subsystem.xsettings import XSettingsServer
+        from xpra.x11.subsystem.xsettings import XSettingsServer
         classes.append(XSettingsServer)
     # this should be last so that the environment is fully prepared:
     if features.command:

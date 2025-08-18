@@ -104,7 +104,7 @@ class PlatformClient(StubClientMixin):
         try:
             self.init_x11_filter()
             # pylint: disable=import-outside-toplevel
-            from xpra.x11.xsettings import XSettingsWatcher
+            from xpra.x11.subsystem.xsettings_manager import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
             if self._xsettings_watcher is None:
                 self._xsettings_watcher = XSettingsWatcher()

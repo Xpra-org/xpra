@@ -13,7 +13,7 @@ from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.prop import raw_prop_set, raw_prop_get
 from xpra.x11.selection.manager import ManagerSelection
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
-from xpra.x11.xsettings_prop import bytes_to_xsettings, xsettings_to_bytes
+from xpra.x11.subsystem.xsettings_prop import bytes_to_xsettings, xsettings_to_bytes
 from xpra.log import Logger
 
 log = Logger("x11", "xsettings")
@@ -129,7 +129,7 @@ GObject.type_register(XSettingsWatcher)
 
 def main() -> None:
     # pylint: disable=import-outside-toplevel
-    from xpra.x11.xsettings_prop import XSettingsNames
+    from xpra.x11.subsystem.xsettings_prop import XSettingsNames
     from xpra.x11.bindings.display_source import init_display_source
     init_display_source()
     s = XSettingsHelper().get_settings()

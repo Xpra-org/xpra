@@ -20,7 +20,7 @@ from xpra.util.system import is_X11
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
 from xpra.common import (
-    get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions,
+    get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions, noop,
     BACKWARDS_COMPATIBLE, FULL_INFO,
 )
 from xpra.platform.gui import get_display_name, get_display_size
@@ -208,7 +208,6 @@ class DisplayManager(StubServerMixin):
         self.bell = False
         self.default_dpi = 96
         self.bit_depth = 24
-        self.icc_profile = b""
         self.dpi = 0
         self.xdpi = 0
         self.ydpi = 0
@@ -414,9 +413,6 @@ class DisplayManager(StubServerMixin):
         reset = share_count == 0
         self.update_all_server_settings(reset)
 
-    def last_client_exited(self) -> None:
-        self.reset_icc_profile()
-
     def threaded_setup(self) -> None:
         self.opengl_props = self.query_opengl()
 
@@ -551,18 +547,9 @@ class DisplayManager(StubServerMixin):
             w = min(w, maxw)
             h = min(h, maxh)
         self.set_desktop_geometry_attributes(w, h)
-        self.set_icc_profile()
         self.apply_refresh_rate(ss)
         log("configure_best_screen_size()=%s", (w, h))
         return w, h
-
-    @staticmethod
-    def set_icc_profile() -> None:
-        log("set_icc_profile() not implemented")
-
-    @staticmethod
-    def reset_icc_profile() -> None:
-        log("reset_icc_profile() not implemented")
 
     def _monitors_changed(self, screen) -> None:
         log(f"_monitors_changed({screen})")
@@ -745,12 +732,11 @@ class DisplayManager(StubServerMixin):
         if desktop_names:
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)
             self.calculate_desktops()
-        iccd = attrs.dictget("icc")
-        if iccd:
-            iccd = typedict(iccd)
-            ss.icc = iccd.get("global", ss.icc)
-            ss.display_icc = iccd.get("display", ss.display_icc)
-            self.set_icc_profile()
+        # soft dependency on ICC:
+        process_icc = getattr(self, "process_icc", noop)
+        iccdata = attrs.dictget("icc")
+        if iccdata:
+            process_icc(ss, iccdata)
         self.apply_refresh_rate(ss)
         # ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
