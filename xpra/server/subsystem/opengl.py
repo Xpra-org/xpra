@@ -6,7 +6,6 @@
 import os
 from typing import Any
 
-from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
 from xpra.util.env import OSEnvContext
@@ -16,10 +15,7 @@ from xpra.common import FULL_INFO
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
-
-log = Logger("screen")
-gllog = Logger("opengl")
+log = Logger("opengl")
 
 
 def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
@@ -29,11 +25,11 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
         from subprocess import Popen, PIPE
         # we want the output so we can parse it:
         env["XPRA_REDIRECT_OUTPUT"] = "0"
-        gllog(f"query_opengl() using {cmd=}, {env=}")
+        log(f"query_opengl() using {cmd=}, {env=}")
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
         out, err = proc.communicate()
-        gllog("out(%s)=%s", cmd, out)
-        gllog("err(%s)=%s", cmd, err)
+        log("out(%s)=%s", cmd, out)
+        log("err(%s)=%s", cmd, err)
         if proc.returncode == 0:
             # parse output:
             for line in out.splitlines():
@@ -46,21 +42,21 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
                     props[k] = parse_version(v)
                 else:
                     props[k] = v
-            gllog("opengl props=%s", props)
+            log("opengl props=%s", props)
             if props:
                 glprops = typedict(props)
                 if glprops.strget("success").lower() in TRUE_OPTIONS:
-                    gllog.info(f"OpenGL is supported on display {display_name!r}")
+                    log.info(f"OpenGL is supported on display {display_name!r}")
                     renderer = glprops.strget("renderer").split(";")[0]
                     if renderer:
-                        gllog.info(f" using {renderer!r} renderer")
+                        log.info(f" using {renderer!r} renderer")
                 else:
-                    gllog.info("OpenGL is not supported on this display")
+                    log.info("OpenGL is not supported on this display")
                     probe_err = glprops.strget("error")
                     if probe_err:
-                        gllog.info(f" {probe_err}")
+                        log.info(f" {probe_err}")
             else:
-                gllog.info("No OpenGL information available")
+                log.info("No OpenGL information available")
         else:
             error = bytestostr(err).strip("\n\r")
             for x in str(err).splitlines():
@@ -74,11 +70,11 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
             log.warn("Warning: OpenGL support check failed:")
             log.warn(f" {error}")
     except Exception as e:
-        gllog("query_opengl()", exc_info=True)
-        gllog.error("Error: OpenGL support check failed")
-        gllog.error(f" {e!r}")
+        log("query_opengl()", exc_info=True)
+        log.error("Error: OpenGL support check failed")
+        log.error(f" {e!r}")
         props["error"] = str(e)
-    gllog("OpenGL: %s", props)
+    log("OpenGL: %s", props)
     return props
 
 
@@ -88,11 +84,11 @@ def load_opengl() -> dict[str, Any]:
             # import OpenGL directly
             import OpenGL
             assert OpenGL
-            gllog("found pyopengl version %s", OpenGL.__version__)
+            log("found pyopengl version %s", OpenGL.__version__)
             # this may trigger an `AttributeError` if libGLX / libOpenGL are not installed:
             from OpenGL import GL
             assert GL
-            gllog("loaded `GL` bindings: %s", GL)
+            log("loaded `GL` bindings: %s", GL)
         except (ImportError, AttributeError) as e:
             return {
                 'error': f'OpenGL is not available: {e}',
@@ -126,7 +122,7 @@ class OpenGLInfo(StubServerMixin):
     def query_opengl(self) -> dict[str, Any]:
         props: dict[str, Any] = {}
         if self.opengl.lower() == "noprobe" or self.opengl.lower() in FALSE_OPTIONS:
-            gllog("query_opengl() skipped because opengl=%s", self.opengl)
+            log("query_opengl() skipped because opengl=%s", self.opengl)
             return props
         err = load_opengl()
         if err:
