@@ -110,7 +110,7 @@ BuildRequires:		tar
 BuildRequires:		grep
 BuildRequires:		gawk
 BuildRequires:		gcc
-%if 0%{?fedora}
+%if 0%{?fedora}0%{nvidia_codecs}
 BuildRequires:		clang
 %endif
 BuildRequires:		gcc-c++
