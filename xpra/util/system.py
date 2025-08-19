@@ -265,6 +265,11 @@ def is_X11() -> bool:
             return is_X11_Display()
         except ImportError:
             get_util_logger().debug("failed to load gtk x11 bindings", exc_info=True)
+    try:
+        from xpra.x11.bindings.xwayland import isxwayland
+        return not isxwayland()
+    except ImportError as e:
+        get_util_logger().debug("is_X11() isxwayland missing: %s", e)
     return True
 
 
