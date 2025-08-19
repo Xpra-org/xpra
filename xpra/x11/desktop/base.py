@@ -15,7 +15,7 @@ from xpra.server import features
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
 from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.server.base import X11ServerCore
+from xpra.x11.server.core import X11ServerCore
 from xpra.x11.error import xsync, xlog
 from xpra.log import Logger
 

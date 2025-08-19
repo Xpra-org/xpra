@@ -23,7 +23,7 @@ from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.server.base import X11ServerCore
+from xpra.x11.server.core import X11ServerCore
 from xpra.x11.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
 
