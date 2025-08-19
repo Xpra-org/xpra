@@ -344,4 +344,5 @@ class DesktopServerBase(GObject.GObject, X11ServerCore):
             # tile them horizontally:
             offset_x += w
             offset_y += 0
-        return Packet(*self.make_screenshot_packet_from_regions(regions))
+        from xpra.codecs.screenshot import make_screenshot_packet_from_regions
+        return Packet(*make_screenshot_packet_from_regions(regions))

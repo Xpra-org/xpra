@@ -1271,7 +1271,8 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
             else:
                 regions.append(item)
         log("screenshot: found regions=%s, OR_regions=%s", len(regions), len(OR_regions))
-        return Packet(*self.make_screenshot_packet_from_regions(OR_regions + regions))
+        from xpra.codecs.screenshot import make_screenshot_packet_from_regions
+        return Packet(*make_screenshot_packet_from_regions(OR_regions + regions))
 
     def make_dbus_server(self):
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
