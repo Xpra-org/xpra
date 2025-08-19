@@ -43,3 +43,4 @@ http = True
 gtk = True
 tray = True
 opengl = True
+bell = True

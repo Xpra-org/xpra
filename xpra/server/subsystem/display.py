@@ -66,7 +66,6 @@ class DisplayManager(StubServerMixin):
         self.display = os.environ.get("DISPLAY", "")
         self.display_options = ""
         self.screen_size_changed_timer = 0
-        self.bell = False
         self.default_dpi = 96
         self.bit_depth = 24
         self.dpi = 0
@@ -79,7 +78,6 @@ class DisplayManager(StubServerMixin):
         self.original_desktop_display = None
 
     def init(self, opts) -> None:
-        self.bell = opts.bell
         self.default_dpi = int(opts.dpi)
         self.refresh_rate = opts.refresh_rate
 
@@ -173,9 +171,7 @@ class DisplayManager(StubServerMixin):
         self.update_all_server_settings(reset)
 
     def get_caps(self, source) -> dict[str, Any]:
-        caps: dict[str, Any] = {
-            "bell": self.bell,
-        }
+        caps: dict[str, Any] = {}
         if "display" in source.wants:
             root_size = self.get_display_size()
             if root_size:
@@ -211,7 +207,6 @@ class DisplayManager(StubServerMixin):
 
     def get_info(self, _proto) -> dict[str, Any]:
         i = {
-            "bell": self.bell,
             "double-click": {
                 "time": self.double_click_time,
                 "distance": self.double_click_distance,
@@ -231,12 +226,6 @@ class DisplayManager(StubServerMixin):
         return {
             "display": i,
         }
-
-    def _process_set_bell(self, proto, packet: Packet) -> None:
-        assert self.bell, "cannot toggle send_bell: the feature is disabled"
-        ss = self.get_server_source(proto)
-        if ss:
-            ss.send_bell = packet.get_bool(1)
 
     ######################################################################
     # display / screen / root window:
@@ -553,4 +542,4 @@ class DisplayManager(StubServerMixin):
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("set-bell", "desktop_size", "configure-display", "screenshot", main_thread=True)
+        self.add_packets("desktop_size", "configure-display", "screenshot", main_thread=True)

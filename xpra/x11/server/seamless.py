@@ -485,7 +485,8 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
         window.managed_connect("unmanaged", self._lost_window)
         window.managed_connect("grab", self._window_grab)
         window.managed_connect("ungrab", self._window_ungrab)
-        window.managed_connect("bell", self._bell_signaled)
+        if hasattr(self, "_bell_signaled"):
+            window.managed_connect("bell", self._bell_signaled)
         window.managed_connect("motion", self._motion_signaled)
         window.managed_connect("x11-property-changed", self._x11_property_changed)
         if not window.is_tray():

@@ -9,7 +9,7 @@ import threading
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.x11.bindings.core import set_context_check, X11CoreBindings, get_root_xid
+from xpra.x11.bindings.core import set_context_check, X11CoreBindings
 from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.common import noerr
 from xpra.util.objects import typedict
@@ -165,34 +165,6 @@ class X11ServerCore(ServerBase):
             if ALWAYS_NOTIFY_MOTION or self.last_mouse_user is None or self.last_mouse_user != ss.uuid:
                 if hasattr(ss, "update_mouse"):
                     ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
-
-    def do_x11_xkb_event(self, event) -> None:
-        # X11: XKBNotify
-        log("server do_x11_xkb_event(%r)" % event)
-        if event.subtype != "bell":
-            log.error(f"Error: unknown event subtype: {event.subtype!r}")
-            log.error(f" {event=}")
-            return
-        # bell events on our windows will come through the bell signal,
-        # this method is a catch-all for events on windows we don't manage,
-        # so we use wid=0 for that:
-        wid = 0
-        for ss in self.window_sources():
-            ss.bell(wid, event.device, event.percent,
-                    event.pitch, event.duration, event.bell_class, event.bell_id, event.name)
-
-    def _bell_signaled(self, wm, event) -> None:
-        log("bell signaled on window %#x", event.window)
-        if not self.bell:
-            return
-        wid = 0
-        rxid = get_root_xid()
-        if event.window != rxid and event.window_model is not None:
-            wid = self._window_to_id.get(event.window_model, 0)
-        log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
-        for ss in self.window_sources():
-            ss.bell(wid, event.device, event.percent,
-                    event.pitch, event.duration, event.bell_class, event.bell_id, event.name)
 
     def _process_wheel_motion(self, proto, packet: Packet) -> None:
         assert self.pointer_device.has_precise_wheel()

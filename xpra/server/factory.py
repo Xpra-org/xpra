@@ -91,6 +91,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.x11 and features.display:
         from xpra.x11.subsystem.icc import ICCServer
         classes.append(ICCServer)
+    if features.x11 and features.bell:
+        from xpra.x11.subsystem.bell import BellServer
+        classes.append(BellServer)
     if features.notification:
         from xpra.server.subsystem.notification import NotificationForwarder
         classes.append(NotificationForwarder)
