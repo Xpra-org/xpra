@@ -1,0 +1,48 @@
+# This file is part of Xpra.
+# Copyright (C) 2010 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+import os
+from typing import Any
+
+from xpra.util.env import envbool
+from xpra.server.subsystem.stub import StubServerMixin
+from xpra.log import Logger
+
+log = Logger("screen")
+
+FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
+
+
+class X11Init(StubServerMixin):
+    PREFIX = "x11"
+
+    def __init__(self):
+        self.display = os.environ.get("DISPLAY", "")
+        assert not envbool("XPRA_GTK", False)
+
+    def setup(self) -> None:
+        if FAKE_X11_INIT_ERROR:
+            raise RuntimeError("fake x11 init error")
+        from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
+        if not get_display_ptr():
+            init_display_source()
+        main_loop = getattr(self, "main_loop", None)
+        if not main_loop:
+            raise RuntimeError("no main loop!")
+        context = main_loop.get_context()
+        log("GLib MainContext=%r", context)
+        from xpra.x11.bindings.loop import register_glib_source
+        register_glib_source(context)
+        from xpra.x11.bindings.core import X11CoreBindings
+        X11CoreBindings().show_server_info()
+
+    def parse_hello(self, ss, caps, send_ui: bool):
+        pass
+
+    def last_client_exited(self) -> None:
+        pass
+
+    def get_info(self, _proto) -> dict[str, Any]:
+        return {"icc": self.get_icc_info()}
