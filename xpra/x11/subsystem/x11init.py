@@ -28,9 +28,6 @@ class X11Init(StubServerMixin):
         from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
         if not get_display_ptr():
             init_display_source()
-            from xpra.x11.bindings.core import set_context_check
-            from xpra.x11.error import verify_sync
-            set_context_check(verify_sync)
         main_loop = getattr(self, "main_loop", None)
         if not main_loop:
             raise RuntimeError("no main loop!")

@@ -9,8 +9,8 @@ import threading
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.x11.bindings.core import X11CoreBindings, get_root_xid
-from xpra.x11.error import XError, xswallow, xsync, xlog
+from xpra.x11.bindings.core import set_context_check, X11CoreBindings, get_root_xid
+from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.common import noerr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -19,6 +19,8 @@ from xpra.server.base import ServerBase
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
+
+set_context_check(verify_sync)
 
 log = Logger("x11", "server")
 keylog = Logger("x11", "server", "keyboard")
