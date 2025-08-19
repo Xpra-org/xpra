@@ -109,8 +109,12 @@ def get_server_base_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.encoding import EncodingServer
         classes.append(EncodingServer)
     if features.cursor:
-        from xpra.server.subsystem.cursor import CursorManager
-        classes.append(CursorManager)
+        if features.x11:
+            from xpra.x11.subsystem.cursor import XCursorServer
+            classes.append(XCursorServer)
+        else:
+            from xpra.server.subsystem.cursor import CursorManager
+            classes.append(CursorManager)
     if features.window:
         from xpra.server.subsystem.window import WindowServer
         classes.append(WindowServer)

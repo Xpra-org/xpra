@@ -37,20 +37,28 @@ def strings_to_xatoms(data: Iterable[str]) -> bytes:
     return struct.pack(b"@" + b"L" * len(atom_array), *atom_array)
 
 
+def log_xfixes_error(msg: str) -> None:
+    from xpra.util.env import first_time
+    from xpra.log import Logger
+    log = Logger("x11")
+    log("xfixes_error(%s)", msg, exc_info=True)
+    if first_time("xfixes"):
+        log.warn("Warning: the XFixes extension is not available:")
+        log.warn(f" {msg!r}")
+        log.warn(" some selection features will be degraded")
+
+
 def xfixes_selection_input(xid: int, selection: str) -> bool:
     try:
         from xpra.x11.bindings.fixes import XFixesBindings, init_xfixes_events
-    except ImportError:
-        from xpra.util.env import first_time
-        from xpra.log import Logger
-        log = Logger("x11")
-        log("xfixes_selection_input(%#x)", xid, exc_info=True)
-        if first_time("xfixes"):
-            log.warn("Warning: XFixes extension bindings could not be loaded")
-            log.warn(" some features will be degraded")
+    except ImportError as e:
+        log_xfixes_error(str(e))
         return False
-    init_xfixes_events()
-    XFixes = XFixesBindings()
     with xsync:
-        XFixes.selectXFSelectionInput(xid, selection)
+        xfixes = XFixesBindings()
+        if not xfixes.hasXFixes():
+            log_xfixes_error("not available")
+            return False
+        init_xfixes_events()
+        xfixes.selectXFSelectionInput(xid, selection)
     return True

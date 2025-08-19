@@ -9,7 +9,6 @@ from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
-from xpra.util.str_fn import Ellipsizer
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -18,7 +17,7 @@ log = Logger("cursor")
 
 class CursorManager(StubServerMixin):
     """
-    Mixin for servers that handle cursors.
+    Servers that send cursor bitmaps.
     """
     PREFIX = "cursor"
 
@@ -28,31 +27,10 @@ class CursorManager(StubServerMixin):
         self.cursor_suspended: bool = False
         # x11:
         self.default_cursor_image = None
-        self.last_cursor_serial = 0
-        self.last_cursor_image = None
-        self.send_cursor_pending = False
+        self.last_cursor_image = ()
 
     def init(self, opts) -> None:
         self.cursors = opts.cursors
-
-    def setup(self) -> None:
-        if is_X11():
-            from xpra.x11.error import xlog
-            with xlog:
-                try:
-                    from xpra.x11.bindings.fixes import XFixesBindings, init_xfixes_events
-                    init_xfixes_events()
-                    XFixes = XFixesBindings()
-                    fixes = XFixes.hasXFixes()
-                except ImportError:
-                    fixes = False
-                if not fixes and self.cursors:
-                    log.error("Error: cursor forwarding support is not available")
-                    self.cursors = False
-                    return
-                XFixes.selectCursorChange(True)
-                self.default_cursor_image = XFixes.get_cursor_image()
-                log("get_default_cursor=%s", Ellipsizer(self.default_cursor_image))
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         if not send_ui:
@@ -110,7 +88,7 @@ class CursorManager(StubServerMixin):
         # (NOT from UI thread)
         # copy to prevent race:
         cd = self.last_cursor_image
-        if cd is None:
+        if not cd:
             return {}
         dci = self.default_cursor_image
         cinfo = {

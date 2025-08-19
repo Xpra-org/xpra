@@ -31,7 +31,6 @@ log = Logger("x11", "server")
 keylog = Logger("x11", "server", "keyboard")
 pointerlog = Logger("x11", "server", "pointer")
 grablog = Logger("server", "grab")
-cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
@@ -177,33 +176,6 @@ class X11ServerCore(ServerBase):
             # pylint: disable=access-member-before-definition
             server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
             self.keyboard_config = server_source.keyboard_config
-
-    # noinspection PyMethodMayBeStatic
-    def get_cursor_image(self):
-        # must be called from the UI thread!
-        with xlog:
-            from xpra.x11.bindings.fixes import XFixesBindings
-            return XFixesBindings().get_cursor_image()
-
-    def get_cursor_data(self, skip_default=True) -> tuple[Any, Any]:
-        # must be called from the UI thread!
-        cursor_image = self.get_cursor_image()
-        if cursor_image is None:
-            cursorlog("get_cursor_data() failed to get cursor image")
-            return None, []
-        self.last_cursor_image = list(cursor_image)
-        pixels = self.last_cursor_image[7]
-        cursorlog("get_cursor_image() cursor=%s", cursor_image[:7] + ["%s bytes" % len(pixels)] + cursor_image[8:])
-        is_default = self.default_cursor_image is not None and str(pixels) == str(self.default_cursor_image[7])
-        if skip_default and is_default:
-            cursorlog("get_cursor_data(): default cursor - clearing it")
-            cursor_image = None
-        try:
-            from xpra.x11.bindings.cursor import X11CursorBindings
-            size = X11CursorBindings().get_default_cursor_size()
-        except ImportError:
-            size = 32
-        return cursor_image, (size, (32767, 32767))
 
     def get_all_screen_sizes(self) -> Sequence[tuple[int, int]]:
         # workaround for #2910: the resolutions we add are not seen by XRRSizes!
@@ -465,19 +437,6 @@ class X11ServerCore(ServerBase):
             core = X11CoreBindings()
             core.UngrabKeyboard()
             core.UngrabPointer()
-
-    def do_x11_cursor_event(self, event) -> None:
-        cursors = getattr(self, "cursors", False)
-        if not cursors:
-            return
-        if self.last_cursor_serial == event.cursor_serial:
-            cursorlog("ignoring cursor event %s with the same serial number %s", event, self.last_cursor_serial)
-            return
-        cursorlog("cursor_event: %s", event)
-        self.last_cursor_serial = event.cursor_serial
-        for ss in self.window_sources():
-            if hasattr(ss, "send_cursor"):
-                ss.send_cursor()
 
     def _motion_signaled(self, model, event) -> None:
         pointerlog("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
