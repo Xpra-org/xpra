@@ -240,7 +240,6 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "encoding"      : "Server side encoding selection and compression",
         "scaling"       : "Picture scaling",
         "scroll"        : "Scrolling detection and compression",
-        "xor"           : "XOR delta pre-compression",
         "subregion"     : "Video subregion processing",
         "regiondetect"  : "Video region detection",
         "regionrefresh" : "Video region refresh",
