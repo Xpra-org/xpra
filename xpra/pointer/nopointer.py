@@ -17,11 +17,15 @@ class NoPointerDevice:
 
     @staticmethod
     def move_pointer(x: int, y: int, props: dict) -> None:
-        log("xtest_fake_motion%s", (x, y, props))
+        log("npointer.move_pointer%s", (x, y, props))
 
     @staticmethod
     def click(button: int, pressed: bool, props: dict) -> None:
-        log("xtest_fake_button(%i, %s, %s)", button, pressed, props)
+        log("npointer.click(%i, %s, %s)", button, pressed, props)
+
+    @staticmethod
+    def wheel_motion(button: int, distance: float) -> None:
+        raise NotImplementedError()
 
     @staticmethod
     def has_precise_wheel() -> bool:

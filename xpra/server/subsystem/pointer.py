@@ -281,6 +281,30 @@ class PointerServer(StubServerMixin):
         if self.process_mouse_common(proto, device_id, wid, pdata, props):
             self._update_modifiers(proto, wid, modifiers)
 
+    def _process_wheel_motion(self, proto, packet: Packet) -> None:
+        assert self.pointer_device.has_precise_wheel()
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
+        wid = packet.get_wid()
+        button = packet.get_u8(2)
+        distance = packet.get_i64(3)
+        pointer = packet.get_ints(4)
+        modifiers = packet.get_strs(5)
+        # _buttons = packet[6]
+        device_id = -1
+        props = {}
+        self.record_wheel_event(wid, button)
+        if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
+            self.last_mouse_user = ss.uuid
+            self._update_modifiers(proto, wid, modifiers)
+            self.pointer_device.wheel_motion(button, distance / 1000.0)  # pylint: disable=no-member
+
+    def record_wheel_event(self, wid: int, button: int) -> None:
+        log("recording scroll event for button %i", button)
+        for ss in self.window_sources():
+            ss.record_scroll_event(wid)
+
     ######################################################################
     # input devices:
     def _process_input_devices(self, _proto, packet: Packet) -> None:
@@ -341,6 +365,7 @@ class PointerServer(StubServerMixin):
             # mouse:
             "pointer-button", "pointer",
             "pointer-position",  # pre v5
+            "wheel-motion",
             # setup:
             "input-devices",
             main_thread=True

@@ -15,6 +15,7 @@ from xpra.x11.error import xlog, xsync, XError
 from xpra.exit_codes import ExitCode
 from xpra.util.system import is_X11
 from xpra.scripts.config import FALSE_OPTIONS, InitExit
+from xpra.net.common import Packet
 from xpra.common import (
     get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions,
     MAX_WINDOW_SIZE, NotificationID,
@@ -27,8 +28,18 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("screen")
+grablog = Logger("server", "grab")
 
 DUMMY_WIDTH_HEIGHT_MM = envbool("XPRA_DUMMY_WIDTH_HEIGHT_MM", True)
+
+
+def x11_ungrab() -> None:
+    grablog("X11_ungrab")
+    with xsync:
+        from xpra.x11.bindings.core import X11CoreBindings
+        core = X11CoreBindings()
+        core.UngrabKeyboard()
+        core.UngrabPointer()
 
 
 def check_xvfb(xvfb: Popen | None, timeout=0) -> bool:
@@ -114,6 +125,7 @@ class X11DisplayManager(DisplayManager):
             caps |= {
                 "resize_screen": self.randr,
                 "resize_exact": self.randr_exact_size,
+                "force_ungrab": True,
             }
             if self.randr:
                 sizes = self.get_all_screen_sizes()
@@ -538,3 +550,16 @@ class X11DisplayManager(DisplayManager):
 
     def set_dpi(self, xdpi: int, ydpi: int) -> None:
         """ overridden in the seamless server """
+
+    ################################################################
+    # force-ungrab:
+
+    def _process_force_ungrab(self, proto, _packet: Packet) -> None:
+        # ignore the window id: wid = packet[1]
+        grablog("force ungrab from %s", proto)
+        x11_ungrab()
+
+    # noinspection PyMethodMayBeStatic
+    def init_packet_handlers(self) -> None:
+        super().init_packet_handlers()
+        self.add_packets("force-ungrab", main_thread=True)

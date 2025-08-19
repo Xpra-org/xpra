@@ -9,12 +9,11 @@ import threading
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.x11.bindings.core import set_context_check, X11CoreBindings
+from xpra.x11.bindings.core import set_context_check
 from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.common import noerr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.net.common import Packet
 from xpra.server.base import ServerBase
 from xpra.log import Logger
 
@@ -25,7 +24,6 @@ set_context_check(verify_sync)
 log = Logger("x11", "server")
 keylog = Logger("x11", "server", "keyboard")
 pointerlog = Logger("x11", "server", "pointer")
-grablog = Logger("server", "grab")
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 
@@ -46,10 +44,6 @@ class X11ServerCore(ServerBase):
     def save_server_mode(self) -> None:
         from xpra.x11.xroot_props import root_set
         root_set("XPRA_SERVER_MODE", "latin1", self.session_type)
-
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("force-ungrab", "wheel-motion", main_thread=True)
 
     def do_cleanup(self) -> None:
         # prop_del does its own xsync:
@@ -82,10 +76,6 @@ class X11ServerCore(ServerBase):
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/x11"
-        if "features" in source.wants:
-            capabilities |= {
-                "force_ungrab": True,
-            }
         return capabilities
 
     def get_ui_info(self, proto, wids=None, *args) -> dict[str, Any]:
@@ -142,19 +132,6 @@ class X11ServerCore(ServerBase):
             server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
             self.keyboard_config = server_source.keyboard_config
 
-    def _process_force_ungrab(self, proto, _packet: Packet) -> None:
-        # ignore the window id: wid = packet[1]
-        grablog("force ungrab from %s", proto)
-        self.X11_ungrab()
-
-    # noinspection PyMethodMayBeStatic
-    def X11_ungrab(self) -> None:
-        grablog("X11_ungrab")
-        with xsync:
-            core = X11CoreBindings()
-            core.UngrabKeyboard()
-            core.UngrabPointer()
-
     def _motion_signaled(self, model, event) -> None:
         pointerlog("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
         # find the window model for this gdk window:
@@ -165,26 +142,6 @@ class X11ServerCore(ServerBase):
             if ALWAYS_NOTIFY_MOTION or self.last_mouse_user is None or self.last_mouse_user != ss.uuid:
                 if hasattr(ss, "update_mouse"):
                     ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
-
-    def _process_wheel_motion(self, proto, packet: Packet) -> None:
-        assert self.pointer_device.has_precise_wheel()
-        ss = self.get_server_source(proto)
-        if not ss:
-            return
-        wid = packet.get_wid()
-        button = packet.get_u8(2)
-        distance = packet.get_i64(3)
-        pointer = packet.get_ints(4)
-        modifiers = packet.get_strs(5)
-        # _buttons = packet[6]
-        device_id = -1
-        props = {}
-        self.record_wheel_event(wid, button)
-        with xsync:
-            if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
-                self.last_mouse_user = ss.uuid
-                self._update_modifiers(proto, wid, modifiers)
-                self.pointer_device.wheel_motion(button, distance / 1000.0)  # pylint: disable=no-member
 
     def get_pointer_device(self, deviceid: int):
         # pointerlog("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)
@@ -269,8 +226,3 @@ class X11ServerCore(ServerBase):
         except XError:
             pointerlog("button_action%s", (device_id, wid, pointer, button, pressed, props), exc_info=True)
             pointerlog.error("Error: failed (un)press mouse button %s", button)
-
-    def record_wheel_event(self, wid: int, button: int) -> None:
-        pointerlog("recording scroll event for button %i", button)
-        for ss in self.window_sources():
-            ss.record_scroll_event(wid)

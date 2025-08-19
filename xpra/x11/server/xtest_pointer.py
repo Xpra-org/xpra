@@ -30,5 +30,9 @@ class XTestPointerDevice:
             XTestBindings().xtest_fake_button(button, pressed)
 
     @staticmethod
+    def wheel_motion(button: int, distance: float) -> None:
+        raise NotImplementedError()
+
+    @staticmethod
     def has_precise_wheel() -> bool:
         return False
