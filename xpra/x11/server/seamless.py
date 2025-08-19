@@ -23,7 +23,7 @@ from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.server.base import X11ServerBase
+from xpra.x11.server.base import X11ServerCore
 from xpra.x11.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
 
@@ -60,7 +60,7 @@ def rindex(alist: list | tuple, avalue: Any) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 
-class SeamlessServer(GObject.GObject, X11ServerBase):
+class SeamlessServer(GObject.GObject, X11ServerCore):
     __gsignals__ = {
         "x11-child-map-event": one_arg_signal,
         "x11-cursor-event": one_arg_signal,
@@ -82,7 +82,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.last_raised = None
         self.system_tray = False
         GObject.GObject.__init__(self)
-        X11ServerBase.__init__(self)
+        X11ServerCore.__init__(self)
         self.session_type = "seamless"
         self._exit_with_windows = False
         self._xsettings_enabled = True
@@ -103,8 +103,13 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.connect("server-event", log_server_event)
 
     def setup(self) -> None:
-        X11ServerBase.setup(self)
+        X11ServerCore.setup(self)
         self.validate_display()
+        # TODO: this needs moving to a module
+        # init_atoms should be done as early as possible, before running client commands
+        from xpra.x11.wm import Wm
+        self._wm = Wm(self.wm_name)
+        self._wm.init_atoms()
         if self.system_tray:
             self.add_system_tray()
         self.receive_root_events()
@@ -159,13 +164,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def init_wm(self) -> None:
         from xpra.x11.selection.common import AlreadyOwned
         # Create the WM object
-        from xpra.x11.wm import Wm
         x11_errors = []
-        self._wm = None
-        while self._wm is None:
+        while True:
             try:
                 with xsync:
-                    self._wm = Wm(self.clobber, self.wm_name)
+                    self._wm.setup(self.clobber)
+                    break
             except AlreadyOwned:
                 log("Error: cannot create our window manager", exc_info=True)
                 display = os.environ.get("DISPLAY", "")
@@ -205,7 +209,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             # but at this point in the cleanup, we probably won't, so force set it:
             self._has_grab = 0
             self.X11_ungrab()
-        X11ServerBase.do_cleanup(self)
+        X11ServerCore.do_cleanup(self)
 
     def clean_x11_properties(self) -> None:
         super().clean_x11_properties()
@@ -213,7 +217,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
     def last_client_exited(self) -> None:
         # last client is gone:
-        X11ServerBase.last_client_exited(self)
+        X11ServerCore.last_client_exited(self)
         if self._has_grab:
             self._has_grab = 0
             self.X11_ungrab()
@@ -229,7 +233,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             wm_module.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
     def init_packet_handlers(self) -> None:
-        X11ServerBase.init_packet_handlers(self)
+        X11ServerCore.init_packet_handlers(self)
         self.add_packets("window-signal", main_thread=True)
 
     def __repr__(self):

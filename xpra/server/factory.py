@@ -46,6 +46,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.gtk:
         from xpra.server.subsystem.gtk import GTKServer
         classes.append(GTKServer)
+    elif features.x11:
+        from xpra.x11.subsystem.x11init import X11Init
+        classes.append(X11Init)
     if features.tray:
         from xpra.server.subsystem.tray import TrayMenu
         classes.append(TrayMenu)
@@ -71,6 +74,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.display:
         from xpra.server.subsystem.display import DisplayManager
         classes.append(DisplayManager)
+    if features.opengl:
+        from xpra.server.subsystem.opengl import OpenGLInfo
+        classes.append(OpenGLInfo)
     if features.x11 and features.display:
         from xpra.x11.subsystem.icc import ICCServer
         classes.append(ICCServer)

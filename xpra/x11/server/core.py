@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import threading
 from time import monotonic_ns
 from typing import Any
@@ -39,27 +38,7 @@ cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
-FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
 DUMMY_WIDTH_HEIGHT_MM = envbool("XPRA_DUMMY_WIDTH_HEIGHT_MM", True)
-
-window_type_atoms = tuple(f"_NET_WM_WINDOW_TYPE{wtype}" for wtype in (
-    "",
-    "_NORMAL",
-    "_DESKTOP",
-    "_DOCK",
-    "_TOOLBAR",
-    "_MENU",
-    "_UTILITY",
-    "_SPLASH",
-    "_DIALOG",
-    "_DROPDOWN_MENU",
-    "_POPUP_MENU",
-    "_TOOLTIP",
-    "_NOTIFICATION",
-    "_COMBO",
-    "_DND",
-    "_NORMAL"
-))
 
 
 def get_root_size() -> tuple[int, int]:
@@ -73,28 +52,6 @@ class X11ServerCore(ServerBase):
         adds X11 specific methods to ServerBase.
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.display = os.environ.get("DISPLAY", "")
-        if not envbool("XPRA_GTK", False):
-            from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
-            if not get_display_ptr():
-                init_display_source()
-            context = self.main_loop.get_context()
-            log("GLib MainContext=%r", context)
-            from xpra.x11.bindings.loop import register_glib_source
-            register_glib_source(context)
-            X11CoreBindings().show_server_info()
-
-    def setup(self) -> None:
-        super().setup()
-        if FAKE_X11_INIT_ERROR:
-            raise RuntimeError("fake x11 init error")
-        with xsync:
-            # some applications (like openoffice), do not work properly
-            # if some x11 atoms aren't defined, so we define them in advance:
-            X11CoreBindings().intern_atoms(window_type_atoms)
 
     def init_uuid(self) -> None:
         super().init_uuid()
@@ -116,9 +73,6 @@ class X11ServerCore(ServerBase):
         super().init_packet_handlers()
         self.add_packets("force-ungrab", "wheel-motion", main_thread=True)
 
-    def init_virtual_devices(self, _devices) -> None:
-        self.input_devices = "xtest"
-
     def do_cleanup(self) -> None:
         # prop_del does its own xsync:
         noerr(self.clean_x11_properties)
@@ -127,7 +81,7 @@ class X11ServerCore(ServerBase):
         cleanup_all_event_receivers()
 
     def clean_x11_properties(self) -> None:
-        self.do_clean_x11_properties("XPRA_SERVER_MODE", "_XPRA_RANDR_EXACT_SIZE")
+        self.do_clean_x11_properties("XPRA_SERVER_MODE", "_XPRA_RANDR_EXACT_SIZE", "XPRA_SERVER_PID")
 
     # noinspection PyMethodMayBeStatic
     def do_clean_x11_properties(self, *properties) -> None:

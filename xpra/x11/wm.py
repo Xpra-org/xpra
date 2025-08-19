@@ -15,14 +15,13 @@ from xpra.x11.common import Unmanageable, FRAME_EXTENTS
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
 from xpra.x11.selection.manager import ManagerSelection
 from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
-from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.window_info import window_name, window_info
 from xpra.x11.xroot_props import (
     set_desktop_list, set_current_desktop, set_desktop_viewport, set_desktop_geometry, get_desktop_geometry,
     set_supported, set_workarea,
     root_set, root_get,
 )
-from xpra.x11.bindings.core import constants, get_root_xid
+from xpra.x11.bindings.core import constants, get_root_xid, X11CoreBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
@@ -51,6 +50,25 @@ LOG_MANAGE_FAILURES = envbool("XPRA_LOG_MANAGE_FAILURES", False)
 
 DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
+WINDOW_TYPE_ATOMS = tuple(f"_NET_WM_WINDOW_TYPE{wtype}" for wtype in (
+    "",
+    "_NORMAL",
+    "_DESKTOP",
+    "_DOCK",
+    "_TOOLBAR",
+    "_MENU",
+    "_UTILITY",
+    "_SPLASH",
+    "_DIALOG",
+    "_DROPDOWN_MENU",
+    "_POPUP_MENU",
+    "_TOOLTIP",
+    "_NOTIFICATION",
+    "_COMBO",
+    "_DND",
+    "_NORMAL"
+))
+
 
 rxid = get_root_xid()
 
@@ -75,7 +93,7 @@ class Wm(GObject.GObject):
         "x11-xkb-event": one_arg_signal,
     }
 
-    def __init__(self, replace_other_wm: bool, wm_name: str):
+    def __init__(self, wm_name: str):
         super().__init__()
 
         self._wm_name = wm_name
@@ -86,7 +104,15 @@ class Wm(GObject.GObject):
         # EWMH says we have to know the order of our windows oldest to
         # youngest...
         self._windows_in_order = []
+        self._wm_selection = None
 
+    def init_atoms(self) -> None:
+        with xsync:
+            # some applications (like openoffice), do not work properly
+            # if some x11 atoms aren't defined, so we define them in advance:
+            X11CoreBindings().intern_atoms(WINDOW_TYPE_ATOMS)
+
+    def setup(self, replace_other_wm: bool) -> None:
         # According to ICCCM 2.8/4.3, a window manager for screen N is a client which
         # acquires the selection WM_S<N>.  If another client already has this
         # selection, we can either abort or steal it.  Once we have it, if someone
@@ -182,6 +208,7 @@ class Wm(GObject.GObject):
         if xid in self._windows:
             # already managed
             return
+        from xpra.x11.models.window import WindowModel
         try:
             with xsync:
                 log("_manage_client(%x)", xid)
@@ -287,6 +314,7 @@ class Wm(GObject.GObject):
         xid = event.window
         if not xid:
             return
+        from xpra.x11.models.window import configure_bits
         model = self._windows.get(xid)
         if model:
             # the window has been reparented already,

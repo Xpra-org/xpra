@@ -12,16 +12,14 @@ from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.rectangle import rectangle
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.str_fn import bytestostr
-from xpra.util.env import OSEnvContext, envint, SilenceWarningsContext
+from xpra.util.env import envint, SilenceWarningsContext
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
 from xpra.util.system import is_X11
-from xpra.util.version import parse_version, dict_version_trim
-from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
+from xpra.scripts.config import FALSE_OPTIONS, InitExit
 from xpra.common import (
     get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions, noop,
-    BACKWARDS_COMPATIBLE, FULL_INFO,
+    BACKWARDS_COMPATIBLE,
 )
 from xpra.platform.gui import get_display_name, get_display_size
 from xpra.server.subsystem.stub import StubServerMixin
@@ -30,94 +28,6 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("screen")
-gllog = Logger("opengl")
-
-
-def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
-    props: dict[str, Any] = {}
-    try:
-        # pylint: disable=import-outside-toplevel
-        from subprocess import Popen, PIPE
-        # we want the output so we can parse it:
-        env["XPRA_REDIRECT_OUTPUT"] = "0"
-        gllog(f"query_opengl() using {cmd=}, {env=}")
-        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
-        out, err = proc.communicate()
-        gllog("out(%s)=%s", cmd, out)
-        gllog("err(%s)=%s", cmd, err)
-        if proc.returncode == 0:
-            # parse output:
-            for line in out.splitlines():
-                parts = bytestostr(line).split("=")
-                if len(parts) != 2:
-                    continue
-                k = parts[0].strip()
-                v = parts[1].strip()
-                if k in ("GLX", "GLU.version", "opengl", "pyopengl", "accelerate", "shading-language-version"):
-                    props[k] = parse_version(v)
-                else:
-                    props[k] = v
-            gllog("opengl props=%s", props)
-            if props:
-                glprops = typedict(props)
-                if glprops.strget("success").lower() in TRUE_OPTIONS:
-                    gllog.info(f"OpenGL is supported on display {display_name!r}")
-                    renderer = glprops.strget("renderer").split(";")[0]
-                    if renderer:
-                        gllog.info(f" using {renderer!r} renderer")
-                else:
-                    gllog.info("OpenGL is not supported on this display")
-                    probe_err = glprops.strget("error")
-                    if probe_err:
-                        gllog.info(f" {probe_err}")
-            else:
-                gllog.info("No OpenGL information available")
-        else:
-            error = bytestostr(err).strip("\n\r")
-            for x in str(err).splitlines():
-                if x.startswith("RuntimeError: "):
-                    error = x[len("RuntimeError: "):]
-                    break
-                if x.startswith("ImportError: "):
-                    error = x[len("ImportError: "):]
-                    break
-            props["error"] = error
-            log.warn("Warning: OpenGL support check failed:")
-            log.warn(f" {error}")
-    except Exception as e:
-        gllog("query_opengl()", exc_info=True)
-        gllog.error("Error: OpenGL support check failed")
-        gllog.error(f" {e!r}")
-        props["error"] = str(e)
-    gllog("OpenGL: %s", props)
-    return props
-
-
-def load_opengl() -> dict[str, Any]:
-    with OSEnvContext(XPRA_VERIFY_MAIN_THREAD="0"):
-        try:
-            # import OpenGL directly
-            import OpenGL
-            assert OpenGL
-            gllog("found pyopengl version %s", OpenGL.__version__)
-            # this may trigger an `AttributeError` if libGLX / libOpenGL are not installed:
-            from OpenGL import GL
-            assert GL
-            gllog("loaded `GL` bindings: %s", GL)
-        except (ImportError, AttributeError) as e:
-            return {
-                'error': f'OpenGL is not available: {e}',
-                'success': False,
-            }
-        try:
-            from xpra.opengl import backing
-            assert backing
-        except ImportError:
-            return {
-                'error': '`xpra.opengl` is not available',
-                'success': False,
-            }
-    return {}
 
 
 def check_xvfb(xvfb: Popen | None, timeout=0) -> bool:
@@ -214,14 +124,11 @@ class DisplayManager(StubServerMixin):
         self.antialias: dict[str, Any] = {}
         self.double_click_time = -1
         self.double_click_distance = -1, -1
-        self.opengl = "no"
-        self.opengl_props: dict[str, Any] = {}
         self.refresh_rate = "auto"
         self.original_desktop_display = None
 
     def init(self, opts) -> None:
         self.init_display_pid()
-        self.opengl = opts.opengl
         self.bell = opts.bell
         self.default_dpi = int(opts.dpi)
         self.refresh_rate = opts.refresh_rate
@@ -413,21 +320,6 @@ class DisplayManager(StubServerMixin):
         reset = share_count == 0
         self.update_all_server_settings(reset)
 
-    def threaded_setup(self) -> None:
-        self.opengl_props = self.query_opengl()
-
-    def query_opengl(self) -> dict[str, Any]:
-        props: dict[str, Any] = {}
-        if self.opengl.lower() == "noprobe" or self.opengl.lower() in FALSE_OPTIONS:
-            gllog("query_opengl() skipped because opengl=%s", self.opengl)
-            return props
-        err = load_opengl()
-        if err:
-            return err
-        from xpra.platform.paths import get_xpra_command
-        cmd = self.get_full_child_command(get_xpra_command() + ["opengl", "--opengl=force"])
-        return run_opengl_probe(cmd, self.get_child_env(), self.display)
-
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {
             "bell": self.bell,
@@ -443,8 +335,6 @@ class DisplayManager(StubServerMixin):
             name = get_display_name()
             if name:
                 caps["name"] = name
-        if FULL_INFO and self.opengl_props:
-            caps["opengl"] = dict_version_trim(self.opengl_props)
         if not BACKWARDS_COMPATIBLE:
             return {"display": caps}
         caps["display"] = caps.get("name", "")
@@ -489,8 +379,6 @@ class DisplayManager(StubServerMixin):
             i["pid"] = self.display_pid
         if self.original_desktop_display:
             i["original-desktop-display"] = self.original_desktop_display
-        if self.opengl_props:
-            i["opengl"] = self.opengl_props
         return {
             "display": i,
         }
@@ -746,6 +634,7 @@ class DisplayManager(StubServerMixin):
         The x11 servers override this method
         to also update the XSettings.
         """
+        self.update_server_settings()
 
     def calculate_desktops(self):
         """ seamless servers can update the desktops """

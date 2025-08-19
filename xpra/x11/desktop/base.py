@@ -15,7 +15,7 @@ from xpra.server import features
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
 from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.server.base import X11ServerBase
+from xpra.x11.server.base import X11ServerCore
 from xpra.x11.error import xsync, xlog
 from xpra.log import Logger
 
@@ -32,19 +32,6 @@ iconlog = Logger("icon")
 
 MODIFY_GSETTINGS: bool = envbool("XPRA_MODIFY_GSETTINGS", True)
 MULTI_MONITORS: bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
-
-
-def get_desktop_server_base_classes() -> tuple[type, ...]:
-    classes: list[type] = [GObject.GObject, X11ServerBase]
-    if features.rfb:
-        from xpra.server.rfb.server import RFBServer
-        classes.append(RFBServer)
-    return tuple(classes)
-
-
-DESKTOPSERVER_BASES = get_desktop_server_base_classes()
-DesktopServerBaseClass = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
-log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
 
 def do_modify_gsettings(defs: dict[str, Any], value=False) -> dict[str, Any]:
@@ -73,7 +60,7 @@ def do_modify_gsettings(defs: dict[str, Any], value=False) -> dict[str, Any]:
     return modified
 
 
-class DesktopServerBase(DesktopServerBaseClass):
+class DesktopServerBase(GObject.GObject, X11ServerCore):
     """
         A server base class for RFB / VNC-like virtual desktop or virtual monitors,
         used with the "start-desktop" subcommand.
@@ -86,21 +73,14 @@ class DesktopServerBase(DesktopServerBaseClass):
     }
 
     def __init__(self):
-        for c in DESKTOPSERVER_BASES:
-            c.__init__(self)  # pylint: disable=non-parent-init-called
+        GObject.GObject.__init__()
+        X11ServerCore.__init__()
         self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
         self.session_type = "X11 desktop"
 
-    def init(self, opts) -> None:
-        for c in DESKTOPSERVER_BASES:
-            if c != GObject.GObject:
-                c.init(self, opts)
-
     def setup(self) -> None:
-        for c in DESKTOPSERVER_BASES:
-            if c != GObject.GObject:
-                c.setup(self)
+        X11ServerCore.setup(self)
         add_event_receiver(get_root_xid(), self)
         add_catchall_receiver("x11-motion-event", self)
         add_catchall_receiver("x11-xkb-event", self)
@@ -129,7 +109,7 @@ class DesktopServerBase(DesktopServerBaseClass):
 
     def do_cleanup(self) -> None:
         remove_catchall_receiver("x11-motion-event", self)
-        X11ServerBase.do_cleanup(self)
+        super().do_cleanup()
         if MODIFY_GSETTINGS:
             self.restore_gsettings()
         rpw = self.root_prop_watcher
@@ -309,7 +289,7 @@ class DesktopServerBase(DesktopServerBaseClass):
                 pointerlog("_move_pointer(%s, %s) invalid window id", wid, pos)
                 return
         with xsync:
-            X11ServerBase._move_pointer(self, device_id, wid, pos, props)
+            super()._move_pointer(self, device_id, wid, pos, props)
 
     def _process_close_window(self, proto, packet: Packet) -> None:
         # disconnect?

@@ -256,7 +256,6 @@ class WindowClient(StubClientMixin):
         self.server_input_devices = None
         self.server_precise_wheel: bool = False
 
-        self.input_devices = "auto"
         self.border = WindowBorder(False)
         self.border_str = "no"
 
@@ -298,7 +297,6 @@ class WindowClient(StubClientMixin):
             else:
                 self.client_supports_system_tray = True
         self.client_supports_bell = opts.bell
-        self.input_devices = opts.input_devices
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.min_window_size = parse_window_size(opts.min_size) or get_window_min_size()
         self.max_window_size = parse_window_size(opts.max_size) or get_window_max_size()

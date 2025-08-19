@@ -274,7 +274,7 @@ def set_server_features(opts, mode: str) -> None:
         features.logging = features.display = features.window = False
         features.cursor = features.rfb = False
         features.power = features.suspend = features.idle = False
-        features.ssh = features.gtk = features.x11 = features.tray = False
+        features.ssh = features.gtk = features.x11 = features.tray = features.opengl = False
     else:
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
@@ -304,6 +304,7 @@ def set_server_features(opts, mode: str) -> None:
         features.idle = opts.server_idle_timeout > 0
         features.gtk = mode not in ("desktop", "seamless") or envbool("XPRA_GTK", False)
         features.tray = features.gtk and b(opts.tray) and mode == "shadow"
+        features.opengl = features.display and b(opts.opengl)
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()
