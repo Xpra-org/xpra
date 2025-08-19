@@ -281,8 +281,8 @@ cdef class X11CoreBindingsInstance:
             raise RuntimeError("cannot load X11 bindings on non-X11 platform")
         self.display = get_display()
         #log.warn("X11Core initialized")
-        import traceback
-        traceback.print_stack()
+        #import traceback
+        #traceback.print_stack()
         if self.display == NULL:
             raise RuntimeError("X11 display is not set")
         self.display_name = get_display_name()
