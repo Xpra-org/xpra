@@ -4,6 +4,10 @@
 # later version. See the file COPYING for details.
 
 
+from xpra.os_util import POSIX
+from xpra.common import FULL_INFO
+
+
 def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server import features
     from xpra.server.core import ServerCore
@@ -77,6 +81,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.opengl:
         from xpra.server.subsystem.opengl import OpenGLInfo
         classes.append(OpenGLInfo)
+    if POSIX and FULL_INFO >= 1:
+        from xpra.server.subsystem.drm import DRMInfo
+        classes.append(DRMInfo)
     if features.x11 and features.display:
         from xpra.x11.subsystem.icc import ICCServer
         classes.append(ICCServer)

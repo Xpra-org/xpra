@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import threading
-from time import monotonic_ns
 from typing import Any
 from collections.abc import Sequence
 
@@ -17,7 +16,7 @@ from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.info import get_extensions_info
 from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
-from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
+from xpra.common import MAX_WINDOW_SIZE, NotificationID, noerr
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, first_time
@@ -115,21 +114,6 @@ class X11ServerCore(ServerBase):
                 if len(sizes) > 1:
                     capabilities["screen-sizes"] = sizes
         return capabilities
-
-    def do_get_info(self, proto, server_sources=()) -> dict[str, Any]:
-        start = monotonic_ns()
-        info = super().do_get_info(proto, server_sources)
-        sinfo = info.setdefault("server", {})
-        sinfo["type"] = "Python/x11"
-        if FULL_INFO > 1:
-            try:
-                from xpra.codecs.drm.drm import query  # pylint: disable=import-outside-toplevel
-            except ImportError as e:
-                log(f"no drm query: {e}")
-            else:
-                sinfo["drm"] = query()
-        log("X11ServerCore.do_get_info took %ims", (monotonic_ns() - start) // 1_000_000)
-        return info
 
     def get_ui_info(self, proto, wids=None, *args) -> dict[str, Any]:
         log("do_get_info thread=%s", threading.current_thread())
