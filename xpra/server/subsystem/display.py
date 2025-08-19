@@ -5,22 +5,14 @@
 
 import os
 from typing import Any
-from subprocess import Popen
-from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.rectangle import rectangle
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.env import envint, SilenceWarningsContext
-from xpra.exit_codes import ExitCode
+from xpra.util.env import SilenceWarningsContext
 from xpra.net.common import Packet
-from xpra.util.system import is_X11
-from xpra.scripts.config import FALSE_OPTIONS, InitExit
-from xpra.common import (
-    get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions, noop,
-    BACKWARDS_COMPATIBLE,
-)
+from xpra.common import get_refresh_rate_for_value, noop, BACKWARDS_COMPATIBLE
 from xpra.platform.gui import get_display_name, get_display_size
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -28,41 +20,6 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("screen")
-
-
-def check_xvfb(xvfb: Popen | None, timeout=0) -> bool:
-    if xvfb is None:
-        return True
-    assert POSIX
-    from xpra.x11.vfb_util import check_xvfb_process
-    if not check_xvfb_process(xvfb, timeout=timeout):
-        return False
-    return True
-
-
-def _get_root_int(prop: str) -> int:
-    from xpra.x11.xroot_props import root_get
-    return root_get(prop, "u32") or 0
-
-
-def _set_root_int(prop: str = "_XPRA_RANDR_EXACT_SIZE", i: int = 0) -> None:
-    from xpra.x11.xroot_props import root_set
-    root_set(prop, "u32", i)
-
-
-def get_display_pid() -> int:
-    # perhaps this is an upgrade from an older version?
-    # try harder to find the pid:
-    try:
-        return _get_root_int("XPRA_XVFB_PID") or _get_root_int("_XPRA_SERVER_PID")
-    except RuntimeError:
-        return 0
-
-
-def save_server_pid() -> None:
-    from xpra.x11.error import xlog
-    with xlog:
-        _set_root_int("XPRA_SERVER_PID", os.getpid())
 
 
 def get_display_type() -> str:
@@ -106,15 +63,9 @@ class DisplayManager(StubServerMixin):
     PREFIX = "display"
 
     def __init__(self):
-        self.xvfb: Popen | None = None
         self.display = os.environ.get("DISPLAY", "")
         self.display_options = ""
-        self.display_pid: int = 0
-        self.randr_sizes_added: list[tuple[int, int]] = []
-        self.initial_resolutions: Sequence[tuple[int, int, int]] = ()
         self.screen_size_changed_timer = 0
-        self.randr = False
-        self.randr_exact_size = False
         self.bell = False
         self.default_dpi = 96
         self.bit_depth = 24
@@ -128,102 +79,16 @@ class DisplayManager(StubServerMixin):
         self.original_desktop_display = None
 
     def init(self, opts) -> None:
-        self.init_display_pid()
         self.bell = opts.bell
         self.default_dpi = int(opts.dpi)
         self.refresh_rate = opts.refresh_rate
-        onoff = sizes = opts.resize_display
-        if opts.resize_display.find(":") > 0:
-            # ie: "off:1080p"
-            onoff, sizes = opts.resize_display.split(":", 1)
-        try:
-            self.initial_resolutions = parse_resolutions(sizes, opts.refresh_rate) or ()
-        except ValueError:
-            self.initial_resolutions = ()
-        self.randr = onoff.lower() not in FALSE_OPTIONS
-        self.randr_exact_size = False
-        self.check_xvfb()
-
-    def check_xvfb(self) -> None:
-        if not check_xvfb(self.xvfb):
-            raise InitExit(ExitCode.NO_DISPLAY, "xvfb process has terminated")
 
     def setup(self) -> None:
-        self.check_xvfb()
-        if is_X11():
-            from xpra.scripts.server import verify_display
-            if not verify_display(xvfb=self.xvfb, display_name=self.display):
-                raise InitExit(ExitCode.NO_DISPLAY, f"unable to access display {self.display!r}")
-            self.session_files += [
-                "xvfb.pid",
-                "xauthority",
-                "Xorg.log",
-                "Xorg.log.old",
-                "xorg.conf.d/*",
-                "xorg.conf.d",
-            ]
         from xpra.platform.gui import init as gui_init
         log("gui_init()")
         gui_init()
-        self.check_xvfb()
-        if not self.display_pid:
-            self.display_pid = get_display_pid()
         self.bit_depth = self.get_display_bit_depth()
-        if self.randr and is_X11():
-            self.init_randr()
-            self.set_initial_resolution()
-            save_server_pid()
         GLib.idle_add(self.print_screen_info)
-
-    def init_randr(self) -> None:
-        from xpra.x11.error import xlog
-        with xlog:
-            from xpra.x11.bindings.randr import RandRBindings
-            RandR = RandRBindings()
-            if not RandR.has_randr():
-                self.randr = False
-            log("randr=%s", self.randr)
-            if not self.randr:
-                return
-            # check the property first,
-            # because we may be inheriting this display,
-            # in which case the screen sizes list may be longer than 1
-            eprop = _get_root_int("_XPRA_RANDR_EXACT_SIZE")
-            log("_XPRA_RANDR_EXACT_SIZE=%s", eprop)
-            self.randr_exact_size = eprop == 1 or RandR.get_version() >= (1, 6)
-            if not self.randr_exact_size:
-                # ugly hackish way of detecting Xvfb with randr,
-                # assume that it has only one resolution pre-defined:
-                sizes = RandR.get_xrr_screen_sizes()
-                if len(sizes) == 1:
-                    self.randr_exact_size = True
-                    _set_root_int("_XPRA_RANDR_EXACT_SIZE",1)
-                elif not sizes:
-                    # xwayland?
-                    self.randr = False
-                    self.randr_exact_size = False
-            log(f"randr enabled: {self.randr}, exact size={self.randr_exact_size}")
-            if not self.randr:
-                log.warn("Warning: no X11 RandR support on %r", os.environ.get("DISPLAY", ""))
-
-    def set_initial_resolution(self) -> None:
-        log(f"set_initial_resolution() randr={self.randr}, initial_resolutions={self.initial_resolutions}")
-        if self.randr and self.initial_resolutions and is_X11():
-            from xpra.x11.error import xlog
-            from xpra.x11.vfb_util import set_initial_resolution
-            DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions(default_refresh_rate=self.refresh_rate)
-            dpi = self.dpi or self.default_dpi
-            resolutions = self.initial_resolutions or DEFAULT_VFB_RESOLUTIONS
-            with xlog:
-                set_initial_resolution(resolutions, dpi)
-
-    def init_display_pid(self) -> None:
-        pid = envint("XVFB_PID", 0)
-        if not pid:
-            log.info("xvfb pid not found")
-        else:
-            log.info(f"xvfb pid {pid}")
-        self.display_pid = pid
 
     def cleanup(self) -> None:
         self.cancel_screen_size_changed_timer()
@@ -233,19 +98,6 @@ class DisplayManager(StubServerMixin):
         if ssct:
             self.screen_size_changed_timer = 0
             GLib.source_remove(ssct)
-
-    def late_cleanup(self, stop=True) -> None:
-        if stop and POSIX:
-            self.kill_display()
-        elif self.display_pid:
-            log.info("not cleaning up Xvfb %i", self.display_pid)
-
-    def kill_display(self) -> None:
-        if not self.display_pid:
-            log("unable to kill display: no display pid")
-            return
-        from xpra.x11.vfb_util import kill_xvfb
-        kill_xvfb(self.display_pid)
 
     def print_screen_info(self) -> None:
         for x in self.get_display_description().split("\n"):
@@ -359,7 +211,6 @@ class DisplayManager(StubServerMixin):
 
     def get_info(self, _proto) -> dict[str, Any]:
         i = {
-            "randr": self.randr,
             "bell": self.bell,
             "double-click": {
                 "time": self.double_click_time,
@@ -375,8 +226,6 @@ class DisplayManager(StubServerMixin):
             "depth": self.bit_depth,
             "refresh-rate": self.refresh_rate,
         }
-        if self.display_pid:
-            i["pid"] = self.display_pid
         if self.original_desktop_display:
             i["original-desktop-display"] = self.original_desktop_display
         return {
@@ -570,6 +419,9 @@ class DisplayManager(StubServerMixin):
         self.apply_refresh_rate(ss)
         # ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
+
+    def set_screen_size(self, width: int, height: int):
+        """ subclasses should override this method if they support resizing """
 
     def _process_configure_display(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)

@@ -76,8 +76,12 @@ def get_server_base_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.idle import IdleTimeoutServer
         classes.append(IdleTimeoutServer)
     if features.display:
-        from xpra.server.subsystem.display import DisplayManager
-        classes.append(DisplayManager)
+        if features.x11:
+            from xpra.x11.subsystem.display import X11DisplayManager
+            classes.append(X11DisplayManager)
+        else:
+            from xpra.server.subsystem.display import DisplayManager
+            classes.append(DisplayManager)
     if features.opengl:
         from xpra.server.subsystem.opengl import OpenGLInfo
         classes.append(OpenGLInfo)

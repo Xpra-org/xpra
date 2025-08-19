@@ -7,39 +7,25 @@
 
 import threading
 from typing import Any
-from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.x11.bindings.core import set_context_check, X11CoreBindings, get_root_xid
-from xpra.x11.bindings.randr import RandRBindings
-from xpra.x11.bindings.keyboard import X11KeyboardBindings
-from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.bindings.info import get_extensions_info
-from xpra.x11.error import XError, xswallow, xsync, xlog, verify_sync
-from xpra.common import MAX_WINDOW_SIZE, NotificationID, noerr
+from xpra.x11.bindings.core import X11CoreBindings, get_root_xid
+from xpra.x11.error import XError, xswallow, xsync, xlog
+from xpra.common import noerr
 from xpra.util.objects import typedict
-from xpra.util.env import envbool, first_time
+from xpra.util.env import envbool
 from xpra.net.common import Packet
 from xpra.server.base import ServerBase
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
 
-set_context_check(verify_sync)
-
 log = Logger("x11", "server")
 keylog = Logger("x11", "server", "keyboard")
 pointerlog = Logger("x11", "server", "pointer")
 grablog = Logger("server", "grab")
-screenlog = Logger("server", "screen")
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
-DUMMY_WIDTH_HEIGHT_MM = envbool("XPRA_DUMMY_WIDTH_HEIGHT_MM", True)
-
-
-def get_root_size() -> tuple[int, int]:
-    with xsync:
-        return X11WindowBindings().get_root_size()
 
 
 class X11ServerCore(ServerBase):
@@ -58,12 +44,6 @@ class X11ServerCore(ServerBase):
     def save_server_mode(self) -> None:
         from xpra.x11.xroot_props import root_set
         root_set("XPRA_SERVER_MODE", "latin1", self.session_type)
-
-    # noinspection PyMethodMayBeStatic
-    def get_display_bit_depth(self) -> int:
-        with xlog:
-            return X11WindowBindings().get_depth(get_root_xid())
-        return 0
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
@@ -102,14 +82,8 @@ class X11ServerCore(ServerBase):
         capabilities["server_type"] = "Python/x11"
         if "features" in source.wants:
             capabilities |= {
-                "resize_screen": self.randr,
-                "resize_exact": self.randr_exact_size,
                 "force_ungrab": True,
             }
-            if self.randr:
-                sizes = self.get_all_screen_sizes()
-                if len(sizes) > 1:
-                    capabilities["screen-sizes"] = sizes
         return capabilities
 
     def get_ui_info(self, proto, wids=None, *args) -> dict[str, Any]:
@@ -117,22 +91,11 @@ class X11ServerCore(ServerBase):
         info = super().get_ui_info(proto, wids, *args)
         # this is added here because the server keyboard config doesn't know about "keys_pressed"..
         sinfo = info.setdefault("server", {})
-        sinfo.setdefault("x11", {}).update(get_extensions_info(False))
         try:
             from xpra.x11.composite import CompositeHelper
             sinfo["XShm"] = CompositeHelper.XShmEnabled
         except (ImportError, ValueError) as e:
             log("no composite: %s", e)
-        # randr:
-        if self.randr:
-            with xlog:
-                sizes = self.get_all_screen_sizes()
-                if sizes:
-                    sinfo["randr"] = {
-                        "": True,
-                        "options": tuple(reversed(sorted(sizes))),
-                        "exact": self.randr_exact_size,
-                    }
         return info
 
     def get_window_info(self, window) -> dict[str, Any]:
@@ -176,254 +139,6 @@ class X11ServerCore(ServerBase):
             # pylint: disable=access-member-before-definition
             server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
             self.keyboard_config = server_source.keyboard_config
-
-    def get_all_screen_sizes(self) -> Sequence[tuple[int, int]]:
-        # workaround for #2910: the resolutions we add are not seen by XRRSizes!
-        # so we keep track of the ones we have added ourselves:
-        sizes = list(RandRBindings().get_xrr_screen_sizes())
-        for w, h in self.randr_sizes_added:
-            if (w, h) not in sizes:
-                sizes.append((w, h))
-        return tuple(sizes)
-
-    def get_max_screen_size(self) -> tuple[int, int]:
-        max_w, max_h = get_root_size()
-        if self.randr:
-            sizes = self.get_all_screen_sizes()
-            if len(sizes) >= 1:
-                for w, h in sizes:
-                    max_w = max(max_w, w)
-                    max_h = max(max_h, h)
-            if max_w > MAX_WINDOW_SIZE or max_h > MAX_WINDOW_SIZE:
-                screenlog.warn("Warning: maximum screen size is very large: %sx%s", max_w, max_h)
-                screenlog.warn(" you may encounter window sizing problems")
-            screenlog("get_max_screen_size()=%s", (max_w, max_h))
-        return max_w, max_h
-
-    def configure_best_screen_size(self) -> tuple[int, int]:
-        # return ServerBase.set_best_screen_size(self)
-        """ sets the screen size to use the largest width and height used by any of the clients """
-        root_w, root_h = get_root_size()
-        if not self.randr:
-            return root_w, root_h
-        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
-        max_w, max_h = 0, 0
-        min_w, min_h = 16384, 16384
-        client_sizes = {}
-        for ss in sss:
-            client_size = ss.desktop_size
-            if client_size:
-                w, h = client_size
-                size = "%ix%i" % (w, h)
-                max_w = max(max_w, w)
-                max_h = max(max_h, h)
-                if w > 0:
-                    min_w = min(min_w, w)
-                if h > 0:
-                    min_h = min(min_h, h)
-                client_sizes[ss.uuid] = size
-        if len(client_sizes) > 1:
-            screenlog.info("screen used by %i clients:", len(client_sizes))
-            for uuid, size in client_sizes.items():
-                screenlog.info("* %s: %s", uuid, size)
-        screenlog("current server resolution is %ix%i", root_w, root_h)
-        screenlog("maximum client resolution is %ix%i", max_w, max_h)
-        screenlog("minimum client resolution is %ix%i", min_w, min_h)
-        w, h = max_w, max_h
-        screenlog("using %ix%i", w, h)
-        if w <= 0 or h <= 0:
-            # invalid - use fallback
-            return root_w, root_h
-        return self.set_screen_size(w, h)
-
-    def get_best_screen_size(self, desired_w: int, desired_h: int):
-        r = self.do_get_best_screen_size(desired_w, desired_h)
-        screenlog("get_best_screen_size%s=%s", (desired_w, desired_h), r)
-        return r
-
-    def do_get_best_screen_size(self, desired_w: int, desired_h: int):
-        if not self.randr:
-            return desired_w, desired_h
-        screen_sizes = self.get_all_screen_sizes()
-        if (desired_w, desired_h) in screen_sizes:
-            return desired_w, desired_h
-        if self.randr_exact_size:
-            try:
-                with xsync:
-                    if RandRBindings().add_screen_size(desired_w, desired_h):
-                        # we have to wait a little bit
-                        # to make sure that everything sees the new resolution
-                        # (ideally this method would be split in two and this would be a callback)
-                        self.randr_sizes_added.append((desired_w, desired_h))
-                        import time
-                        time.sleep(0.5)
-                        return desired_w, desired_h
-            except XError as e:
-                screenlog("add_screen_size(%s, %s)", desired_w, desired_h, exc_info=True)
-                screenlog.warn("Warning: failed to add resolution %ix%i:", desired_w, desired_h)
-                screenlog.warn(" %s", e)
-            # re-query:
-            screen_sizes = self.get_all_screen_sizes()
-        # try to find the best screen size to resize to:
-        closest = {}
-        for w, h in screen_sizes:
-            distance = abs(desired_w * desired_h - w * h)
-            closest[distance] = (w, h)
-        if not closest:
-            screenlog.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
-            root_w, root_h = get_root_size()
-            return root_w, root_h
-        min_dist = sorted(closest.keys())[0]
-        new_size = closest[min_dist]
-        screenlog("best %s resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
-        w, h = new_size
-        return w, h
-
-    def set_screen_size(self, desired_w: int, desired_h: int):
-        screenlog("set_screen_size%s", (desired_w, desired_h))
-        root_w, root_h = get_root_size()
-        if not self.randr:
-            return root_w, root_h
-        if desired_w == root_w and desired_h == root_h:
-            return root_w, root_h  # unlikely: perfect match already!
-        # clients may supply "xdpi" and "ydpi" (v0.15 onwards), or just "dpi", or nothing...
-        xdpi = self.xdpi or self.dpi
-        ydpi = self.ydpi or self.dpi
-        screenlog("set_screen_size(%s, %s) xdpi=%s, ydpi=%s",
-                  desired_w, desired_h, xdpi, ydpi)
-        wmm, hmm = 0, 0
-        if xdpi <= 0 or ydpi <= 0:
-            # use some sane defaults: either the command line option, or fallback to 96
-            # (96 is better than nothing, because we do want to set the dpi
-            # to avoid Xdummy setting a crazy dpi from the virtual screen dimensions)
-            xdpi = self.default_dpi or 96
-            ydpi = self.default_dpi or 96
-            # find the "physical" screen dimensions, so we can calculate the required dpi
-            # (and do this before changing the resolution)
-            client_w, client_h = 0, 0
-            sss = self._server_sources.values()
-            for ss in sss:
-                screen_sizes = getattr(ss, "screen_sizes", ())
-                for s in screen_sizes:
-                    if len(s) >= 10:
-                        # (display_name, width, height, width_mm, height_mm, monitors,
-                        # work_x, work_y, work_width, work_height)
-                        client_w = max(client_w, s[1])
-                        client_h = max(client_h, s[2])
-                        wmm = max(wmm, s[3])
-                        hmm = max(hmm, s[4])
-            if wmm > 0 and hmm > 0 and client_w > 0 and client_h > 0:
-                # calculate "real" dpi:
-                xdpi = round(client_w * 25.4 / wmm)
-                ydpi = round(client_h * 25.4 / hmm)
-                screenlog("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)",
-                          xdpi, ydpi, client_w, wmm, client_h, hmm)
-        if wmm == 0 or hmm == 0:
-            wmm = round(desired_w * 25.4 / xdpi)
-            hmm = round(desired_h * 25.4 / ydpi)
-        if DUMMY_WIDTH_HEIGHT_MM:
-            # FIXME: we assume there is only one output:
-            output = 0
-            with xsync:
-                RandRBindings().set_output_int_property(output, "WIDTH_MM", wmm)
-                RandRBindings().set_output_int_property(output, "HEIGHT_MM", hmm)
-        screenlog("set_dpi(%i, %i)", xdpi, ydpi)
-        self.set_dpi(xdpi, ydpi)
-
-        # try to find the best screen size to resize to:
-        w, h = self.get_best_screen_size(desired_w, desired_h)
-
-        if w == root_w and h == root_h:
-            screenlog.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
-            return root_w, root_h
-        with screenlog.trap_error("Error: failed to set new resolution"):
-            with xsync:
-                RandRBindings().get_screen_size()
-            # Xdummy with randr 1.2:
-            screenlog("using XRRSetScreenConfigAndRate with %ix%i", w, h)
-            with xsync:
-                RandRBindings().set_screen_size(w, h)
-            if self.randr_exact_size:
-                # Xvfb with randr > 1.2: the resolution has been added
-                # we can use XRRSetScreenSize:
-                try:
-                    with xsync:
-                        RandRBindings().xrr_set_screen_size(w, h, wmm, hmm)
-                except XError:
-                    screenlog("XRRSetScreenSize failed", exc_info=True)
-            screenlog("calling RandR.get_screen_size()")
-            with xsync:
-                root_w, root_h = RandRBindings().get_screen_size()
-            screenlog("RandR.get_screen_size()=%s,%s", root_w, root_h)
-            screenlog("RandR.get_vrefresh()=%s", RandRBindings().get_vrefresh())
-            if root_w != w or root_h != h:
-                screenlog.warn("Warning: tried to set resolution to %ix%i", w, h)
-                screenlog.warn(" and ended up with %ix%i", root_w, root_h)
-            else:
-                msg = f"server virtual display now set to {root_w}x{root_h}"
-                if desired_w != root_w or desired_h != root_h:
-                    msg += f" (best match for {desired_w}x{desired_h})"
-                screenlog.info(msg)
-
-            # show dpi via idle_add so server has time to change the screen size (mm)
-            GLib.idle_add(self.show_dpi, xdpi, ydpi)
-        return root_w, root_h
-
-    def show_dpi(self, xdpi: int, ydpi: int):
-        root_w, root_h = get_root_size()
-        wmm, hmm = RandRBindings().get_screen_size_mm()  # ie: (1280, 1024)
-        screenlog("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
-        actual_xdpi = round(root_w * 25.4 / wmm)
-        actual_ydpi = round(root_h * 25.4 / hmm)
-        if abs(actual_xdpi - xdpi) <= 1 and abs(actual_ydpi - ydpi) <= 1:
-            screenlog.info("DPI set to %s x %s", actual_xdpi, actual_ydpi)
-            screenlog("wanted: %s x %s", xdpi, ydpi)
-        else:
-            # should this be a warning:
-            log_fn = screenlog.info
-            maxdelta = max(abs(actual_xdpi - xdpi), abs(actual_ydpi - ydpi))
-            if maxdelta >= 10:
-                log_fn = screenlog.warn
-            messages = [
-                f"DPI set to {actual_xdpi} x {actual_ydpi} (wanted {xdpi} x {ydpi})",
-            ]
-            if maxdelta >= 10:
-                messages.append("you may experience scaling problems, such as huge or small fonts, etc")
-                messages.append("to fix this issue, try the dpi switch, or use a patched Xorg dummy driver")
-                self.notify_dpi_warning("\n".join(messages))
-            for i, message in enumerate(messages):
-                log_fn("%s%s", ["", " "][i > 0], message)
-
-    def mirror_client_monitor_layout(self) -> dict[int, Any]:
-        with xsync:
-            assert RandRBindings().is_dummy16(), "cannot match monitor layout without RandR 1.6"
-        # if we have a single UI client,
-        # see if we can emulate its monitor geometry exactly
-        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
-        screenlog("%i sources=%s", len(sss), sss)
-        if len(sss) != 1:
-            return {}
-        ss = sss[0]
-        mdef = ss.get_monitor_definitions()
-        if not mdef:
-            return {}
-        screenlog(f"monitor definition from client {ss}: {mdef}")
-        from xpra.common import adjust_monitor_refresh_rate
-        mdef = adjust_monitor_refresh_rate(self.refresh_rate, mdef)
-        screenlog("refresh-rate adjusted using %s: %s", self.refresh_rate, mdef)
-        with xlog:
-            RandRBindings().set_crtc_config(mdef)
-        return mdef
-
-    def notify_dpi_warning(self, body: str) -> None:
-        sources = tuple(self._server_sources.values())
-        if len(sources) == 1:
-            ss = sources[0]
-            if first_time("DPI-warning-%s" % ss.uuid):
-                sources[0].may_notify(NotificationID.DPI, "DPI Issue", body, icon_name="font")
-
-    def set_dpi(self, xdpi: int, ydpi: int) -> None:
-        """ overridden in the seamless server """
 
     def _process_force_ungrab(self, proto, _packet: Packet) -> None:
         # ignore the window id: wid = packet[1]
@@ -541,6 +256,7 @@ class X11ServerCore(ServerBase):
         if self.readonly:
             return False
         with xsync:
+            from xpra.x11.bindings.keyboard import X11KeyboardBindings
             pos = X11KeyboardBindings().query_pointer()
         if (pointer and pos != pointer[:2]) or self.input_devices == "xi":
             with xswallow:

@@ -306,6 +306,10 @@ def get_display_name() -> str:
     return ""
 
 
+def get_display_size() -> tuple[int, int]:
+    return 0, 0
+
+
 def can_access_display() -> bool:
     return True
 
