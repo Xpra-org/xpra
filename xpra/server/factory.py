@@ -110,8 +110,12 @@ def get_server_base_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.audio import AudioServer
         classes.append(AudioServer)
     if features.keyboard:
-        from xpra.server.subsystem.keyboard import KeyboardServer
-        classes.append(KeyboardServer)
+        if features.x11:
+            from xpra.x11.subsystem.keyboard import X11KeyboardServer
+            classes.append(X11KeyboardServer)
+        else:
+            from xpra.server.subsystem.keyboard import KeyboardServer
+            classes.append(KeyboardServer)
     if features.pointer:
         from xpra.server.subsystem.pointer import PointerServer
         classes.append(PointerServer)

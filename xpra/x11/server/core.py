@@ -10,7 +10,6 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.x11.error import XError, xswallow, xsync
-from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.server.base import ServerBase
 from xpra.log import Logger
@@ -61,41 +60,6 @@ class X11ServerCore(ServerBase):
         return info
 
     # noinspection PyMethodMayBeStatic
-    def get_keyboard_config(self, props=None):
-        p = typedict(props or {})
-        from xpra.x11.server.keyboard_config import KeyboardConfig
-        keyboard_config = KeyboardConfig()
-        keyboard_config.enabled = p.boolget("keyboard", True)
-        keyboard_config.parse_options(p)
-        keyboard_config.parse_layout(p)
-        keylog("get_keyboard_config(..)=%s", keyboard_config)
-        return keyboard_config
-
-    def set_keymap(self, server_source, force=False) -> None:
-        if self.readonly:
-            return
-
-        def reenable_keymap_changes(*args) -> bool:
-            keylog("reenable_keymap_changes(%s)", args)
-            self.keymap_changing_timer = 0
-            self._keys_changed()
-            return False
-
-        # prevent _keys_changed() from firing:
-        # (using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
-        if not self.keymap_changing_timer:
-            # use idle_add to give all the pending
-            # events a chance to run first (and get ignored)
-            self.keymap_changing_timer = GLib.timeout_add(100, reenable_keymap_changes)
-        # if sharing, don't set the keymap, translate the existing one:
-        other_ui_clients = [s.uuid for s in self._server_sources.values() if s != server_source and s.ui_client]
-        translate_only = len(other_ui_clients) > 0
-        keylog("set_keymap(%s, %s) translate_only=%s", server_source, force, translate_only)
-        with xsync:
-            # pylint: disable=access-member-before-definition
-            server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
-            self.keyboard_config = server_source.keyboard_config
-
     def _motion_signaled(self, model, event) -> None:
         pointerlog("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
         # find the window model for this gdk window:
