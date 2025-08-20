@@ -17,7 +17,7 @@ log = Logger("x11", "server", "cursor")
 class XCursorServer(CursorManager):
 
     def __init__(self):
-        super().__init__()
+        CursorManager.__init__(self)
         self.last_cursor_serial = 0
 
     def setup(self) -> None:

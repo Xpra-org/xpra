@@ -110,7 +110,7 @@ class X11DisplayManager(DisplayManager):
     """
 
     def __init__(self):
-        super().__init__()
+        DisplayManager.__init__(self)
         self.xvfb: Popen | None = None
         self.display_pid: int = 0
         self.randr_sizes_added: list[tuple[int, int]] = []
@@ -127,7 +127,7 @@ class X11DisplayManager(DisplayManager):
 
     def init(self, opts) -> None:
         self.init_display_pid()
-        super().init(opts)
+        DisplayManager.init(self, opts)
         onoff = sizes = opts.resize_display
         if opts.resize_display.find(":") > 0:
             # ie: "off:1080p"
@@ -141,7 +141,7 @@ class X11DisplayManager(DisplayManager):
         self.check_xvfb()
 
     def get_caps(self, source) -> dict[str, Any]:
-        caps = super().get_caps(source)
+        caps = DisplayManager.get_caps(self, source)
         if "features" in source.wants:
             caps |= {
                 "resize_screen": self.randr,
@@ -171,7 +171,7 @@ class X11DisplayManager(DisplayManager):
             "xorg.conf.d/*",
             "xorg.conf.d",
         ]
-        super().setup()
+        DisplayManager.setup(self)
         if not self.display_pid:
             self.display_pid = get_display_pid()
         if self.randr:
@@ -265,7 +265,7 @@ class X11DisplayManager(DisplayManager):
         return get_refresh_rate_for_value(self.refresh_rate, invalue)
 
     def get_info(self, proto) -> dict[str, Any]:
-        info = super().get_info(proto)
+        info = DisplayManager.get_info(self, proto)
         dinfo = info["display"]
         dinfo["randr"] = self.randr
         try:
@@ -278,7 +278,7 @@ class X11DisplayManager(DisplayManager):
         return info
 
     def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str, Any]:
-        info = super().get_ui_info(proto, client_uuids, *args)
+        info = DisplayManager.get_ui_info(self, proto, client_uuids, *args)
         # randr:
         if self.randr:
             with xlog:
@@ -599,5 +599,5 @@ class X11DisplayManager(DisplayManager):
 
     # noinspection PyMethodMayBeStatic
     def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
+        DisplayManager.init_packet_handlers(self)
         self.add_packets("force-ungrab", main_thread=True)

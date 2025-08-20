@@ -14,7 +14,7 @@ log = Logger("x11", "server", "keyboard")
 class X11KeyboardServer(KeyboardServer):
 
     def __init__(self):
-        super().__init__()
+        KeyboardServer.__init__(self)
         self.readonly = False
 
     def get_keyboard_config(self, props=None):
