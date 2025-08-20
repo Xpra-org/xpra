@@ -123,6 +123,10 @@ class UInputPointerDevice(UInputDevice):
     def __repr__(self):
         return "UInput pointer device %s" % self.device_path
 
+    @staticmethod
+    def get_position():
+        return XTest.query_pointer()
+
     def move_pointer(self, x: int, y: int, props: dict) -> None:
         log("UInputPointerDevice.move_pointer(%i, %s, %s)", x, y, props)
         # calculate delta:

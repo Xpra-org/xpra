@@ -24,6 +24,12 @@ class XTestPointerDevice:
             XTestBindings().xtest_fake_motion(x, y)
 
     @staticmethod
+    def get_position() -> tuple[int, int]:
+        with xsync:
+            from xpra.x11.bindings.keyboard import X11KeyboardBindings
+            return X11KeyboardBindings().query_pointer()
+
+    @staticmethod
     def click(button: int, pressed: bool, props: dict) -> None:
         log("xtest_fake_button(%i, %s, %s)", button, pressed, props)
         with xsync:

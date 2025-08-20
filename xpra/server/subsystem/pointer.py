@@ -19,6 +19,7 @@ log = Logger("pointer")
 GLib = gi_import("GLib")
 
 INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
+ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 
 
 class PointerServer(StubServerMixin):
@@ -36,6 +37,8 @@ class PointerServer(StubServerMixin):
         self.pointer_device_map: dict = {}
         self.pointer_device = None
         self.touchpad_device = None
+        # duplicated:
+        self.readonly = False
 
     def init(self, opts) -> None:
         self.input_devices = opts.input_devices
@@ -128,9 +131,6 @@ class PointerServer(StubServerMixin):
             "pointer.relative": True,  # assumed available in 5.0.3
         }
 
-    def _move_pointer(self, device_id: int, wid: int, pos, *args) -> None:
-        raise NotImplementedError()
-
     def _adjust_pointer(self, proto, device_id, wid: int, pointer):
         # the window may not be mapped at the same location by the client:
         ss = self.get_server_source(proto)
@@ -164,9 +164,6 @@ class PointerServer(StubServerMixin):
         if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
             return pointer
         return None
-
-    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        return True
 
     def _process_pointer_button(self, proto, packet: Packet) -> None:
         log("process_pointer_button(%s, %s)", proto, packet)
@@ -216,16 +213,96 @@ class PointerServer(StubServerMixin):
             props["buttons"] = 6
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
-    def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props) -> None:
-        """ all servers should implement this method """
+    def _motion_signaled(self, model, event) -> None:
+        log("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
+        # find the window model for this gdk window:
+        wid = self._window_to_id.get(model)
+        if not wid:
+            return
+        for ss in self._server_sources.values():
+            if ALWAYS_NOTIFY_MOTION or self.last_mouse_user is None or self.last_mouse_user != ss.uuid:
+                if hasattr(ss, "update_mouse"):
+                    ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
 
-    def _update_modifiers(self, proto, wid, modifiers) -> None:
-        """ servers subclasses may change the modifiers state """
+    def get_pointer_device(self, deviceid: int):
+        # log("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)
+        if self.input_devices_data:
+            device_data = self.input_devices_data.get(deviceid)
+            if device_data:
+                log("get_pointer_device(%i) device=%s", deviceid, device_data.get("name"))
+        device = self.pointer_device_map.get(deviceid) or self.pointer_device
+        return device
+
+    def _get_pointer_abs_coordinates(self, wid: int, pos) -> tuple[int, int]:
+        # simple absolute coordinates
+        x, y = pos[:2]
+        from xpra.server.subsystem.window import WindowServer
+        if len(pos) >= 4 and isinstance(self, WindowServer):
+            # relative coordinates
+            model = self._id_to_window.get(wid)
+            if model:
+                rx, ry = pos[2:4]
+                geom = model.get_geometry()
+                x = geom[0] + rx
+                y = geom[1] + ry
+                log("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
+        return x, y
+
+    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
+        # (this is called within a `xswallow` context)
+        x, y = self._get_pointer_abs_coordinates(wid, pos)
+        self.device_move_pointer(device_id, wid, (x, y), props)
+
+    def device_move_pointer(self, device_id: int, wid: int, pos, props: dict):
+        device = self.get_pointer_device(device_id)
+        x, y = pos
+        log("move_pointer(%s, %s, %s) device=%s, position=%s", wid, pos, device_id, device, (x, y))
+        try:
+            device.move_pointer(x, y, props)
+        except Exception as e:
+            log.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
+            log.estr(e)
+
+    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
+        log("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
+        if self.readonly:
+            return False
+        pos = self.get_pointer_device(device_id).get_position()
+        if (pointer and pos != pointer[:2]) or self.input_devices == "xi":
+            self._move_pointer(device_id, wid, pointer, props)
+        return True
+
+    def _update_modifiers(self, proto, wid: int, modifiers) -> None:
+        if self.readonly:
+            return
+        ss = self.get_server_source(proto)
+        if ss:
+            if self.ui_driver and self.ui_driver != ss.uuid:
+                return
+            if hasattr(ss, "keyboard_config"):
+                ss.make_keymask_match(modifiers)
+            if wid == self.get_focus():
+                ss.user_event()
+
+    def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool,
+                                 pointer, props: dict) -> None:
+        if "modifiers" in props:
+            self._update_modifiers(proto, wid, props.get("modifiers"))
+        props = {}
+        if self.process_mouse_common(proto, device_id, wid, pointer, props):
+            self.button_action(device_id, wid, pointer, button, pressed, props)
+
+    def button_action(self, device_id: int, wid: int, pointer, button: int, pressed: bool, props: dict) -> None:
+        device = self.get_pointer_device(device_id)
+        assert device, "pointer device %s not found" % device_id
+        if button in (4, 5) and wid:
+            self.record_wheel_event(wid, button)
+        log("%s%s", device.click, (button, pressed, props))
+        device.click(button, pressed, props)
 
     def _process_pointer(self, proto, packet: Packet) -> None:
         # v5 packet format
-        log("_process_pointer(%s, %s) readonly=%s, ui_driver=%s",
-            proto, packet, self.readonly, self.ui_driver)
+        log("_process_pointer(%s, %s) readonly=%s, ui_driver=%s", proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
             return
         ss = self.get_server_source(proto)

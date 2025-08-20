@@ -4,8 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from ctypes import byref
+from ctypes.wintypes import POINT
+
 from xpra.platform.win32 import win32con
-from xpra.platform.win32.common import SetPhysicalCursorPos, mouse_event
+from xpra.platform.win32.common import SetPhysicalCursorPos, GetPhysicalCursorPos, mouse_event
 
 NOEVENT = (0, 0)
 BUTTON_EVENTS: dict[tuple[int, bool], tuple[int, int]] = {
@@ -35,6 +38,12 @@ def move_pointer(x: int, y: int) -> None:
     SetPhysicalCursorPos(x, y)
 
 
+def get_position() -> tuple[int, int]:
+    pos = POINT()
+    GetPhysicalCursorPos(byref(pos))  # NOSONAR
+    return pos.x, pos.y
+
+
 def click(x: int, y: int, button: int, pressed: bool) -> None:
     event = BUTTON_EVENTS.get((button, pressed))
     if event is None:
@@ -57,6 +66,10 @@ class Win32Pointer:
     @staticmethod
     def move_pointer(x: int, y: int, _props: dict) -> None:
         move_pointer(x, y)
+
+    @staticmethod
+    def get_position() -> tuple[int, int]:
+        return get_position()
 
     @staticmethod
     def click(x: int, y: int, button: int, pressed: bool, _props: dict) -> None:

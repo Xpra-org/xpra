@@ -20,6 +20,10 @@ class NoPointerDevice:
         log("npointer.move_pointer%s", (x, y, props))
 
     @staticmethod
+    def get_position() -> tuple[int, int]:
+        return 0, 0
+
+    @staticmethod
     def click(button: int, pressed: bool, props: dict) -> None:
         log("npointer.click(%i, %s, %s)", button, pressed, props)
 

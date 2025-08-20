@@ -9,7 +9,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence, Callable
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
-from ctypes.wintypes import RECT, POINT
+from ctypes.wintypes import RECT
 
 from xpra.util.env import envbool
 from xpra.util.system import is_VirtualBox
@@ -21,6 +21,7 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size, get_display_size
+from xpra.platform.win32.pointer import get_position, move_pointer
 from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow_cursor import get_cursor_data
@@ -34,7 +35,7 @@ from xpra.platform.win32.common import (
     GetWindowRect,
     GetWindowThreadProcessId,
     GetSystemMetrics,
-    SetPhysicalCursorPos, GetPhysicalCursorPos, GetCursorInfo, CURSORINFO,
+    SetPhysicalCursorPos, GetCursorInfo, CURSORINFO,
     EnumDisplayMonitors, GetMonitorInfo,
 )
 
@@ -481,13 +482,11 @@ class ShadowServer(GTKShadowServerBase):
         )
 
     def get_pointer_position(self) -> tuple[int, int]:
-        pos = POINT()
-        GetPhysicalCursorPos(byref(pos))  # NOSONAR
-        return pos.x, pos.y
+        return get_position()
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         x, y = pos[:2]
-        SetPhysicalCursorPos(x, y)
+        move_pointer(x, y)
 
     def do_process_mouse_common(self, proto, device_id, wid: int, pointer, props) -> bool:
         ss = self._server_sources.get(proto)
