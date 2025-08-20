@@ -108,8 +108,6 @@ class X11DisplayManager(DisplayManager):
     """
     Mixin for servers that handle displays.
     """
-    DEFAULT_REFRESH_RATE = 0
-    PREFIX = "display"
 
     def __init__(self):
         super().__init__()
