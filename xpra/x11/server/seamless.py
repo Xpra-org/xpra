@@ -113,7 +113,6 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
         if self.system_tray:
             self.add_system_tray()
         self.receive_root_events()
-        self.save_server_version()
         if self.sync_xvfb > 0:
             self.init_root_overlay()
         self.init_wm()
@@ -138,12 +137,6 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
             X11Window.setEventMask(xid, event_mask)
         from xpra.x11.dispatch import add_event_receiver
         add_event_receiver(xid, self)
-
-    @staticmethod
-    def save_server_version():
-        from xpra.util.version import XPRA_VERSION
-        from xpra.x11.xroot_props import root_set
-        root_set("XPRA_SERVER", "latin1", XPRA_VERSION)
 
     def init_root_overlay(self) -> None:
         try:
@@ -210,10 +203,6 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
             self._has_grab = 0
             self.X11_ungrab()
         X11ServerCore.do_cleanup(self)
-
-    def clean_x11_properties(self) -> None:
-        super().clean_x11_properties()
-        self.do_clean_x11_properties("XPRA_SERVER")
 
     def last_client_exited(self) -> None:
         # last client is gone:

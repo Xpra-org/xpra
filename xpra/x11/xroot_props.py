@@ -20,18 +20,19 @@ log = Logger("x11", "util")
 
 GObject = gi_import("GObject")
 
-rxid: Final[int] = get_root_xid()
-
 
 def root_set(prop: str, vtype: list | tuple | str, value) -> None:
+    rxid = get_root_xid()
     prop_set(rxid, prop, vtype, value)
 
 
 def root_get(prop: str, vtype: list | tuple | str):
+    rxid = get_root_xid()
     return prop_get(rxid, prop, vtype, ignore_errors=True)
 
 
 def root_del(prop: str) -> None:
+    rxid = get_root_xid()
     prop_del(rxid, prop)
 
 
@@ -187,6 +188,7 @@ class XRootPropWatcher(GObject.GObject):
         super().__init__()
         self._props = props
         with xsync:
+            rxid = get_root_xid()
             X11Window = X11WindowBindings()
             mask = X11Window.getEventMask(rxid)
             self._saved_event_mask = mask
@@ -197,6 +199,7 @@ class XRootPropWatcher(GObject.GObject):
     def cleanup(self) -> None:
         # this must be called from the UI thread!
         with xsync:
+            rxid = get_root_xid()
             X11Window = X11WindowBindings()
             X11Window.setEventMask(rxid, self._saved_event_mask)
         remove_event_receiver(rxid, self)

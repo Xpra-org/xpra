@@ -246,6 +246,7 @@ class ServerCore(ServerBaseClass):
             self.ssl_upgrade = opts.ssl_upgrade
 
     def setup(self) -> None:
+        self.init_uuid()
         for bc in SERVER_BASES:
             bc.setup(self)
         self.start_listen_sockets()
@@ -371,8 +372,6 @@ class ServerCore(ServerBaseClass):
         return subsystems
 
     def run(self) -> ExitValue:
-        # uuid needs to be done after setup()
-        self.init_uuid()
         self.install_signal_handlers(self.signal_quit)
         GLib.idle_add(self.server_is_ready)
         self.do_run()

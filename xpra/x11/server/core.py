@@ -9,7 +9,7 @@ import threading
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.x11.error import XError, xswallow, xsync, xlog
+from xpra.x11.error import XError, xswallow, xsync
 from xpra.common import noerr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -32,16 +32,6 @@ class X11ServerCore(ServerBase):
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 
-    def init_uuid(self) -> None:
-        super().init_uuid()
-        with xlog:
-            self.save_server_mode()
-            self.save_server_uuid()
-
-    def save_server_mode(self) -> None:
-        from xpra.x11.xroot_props import root_set
-        root_set("XPRA_SERVER_MODE", "latin1", self.session_type)
-
     def do_cleanup(self) -> None:
         # prop_del does its own xsync:
         noerr(self.clean_x11_properties)
@@ -49,27 +39,7 @@ class X11ServerCore(ServerBase):
         from xpra.x11.dispatch import cleanup_all_event_receivers
         cleanup_all_event_receivers()
 
-    def clean_x11_properties(self) -> None:
-        self.do_clean_x11_properties("XPRA_SERVER_MODE", "_XPRA_RANDR_EXACT_SIZE", "XPRA_SERVER_PID")
-
     # noinspection PyMethodMayBeStatic
-    def do_clean_x11_properties(self, *properties) -> None:
-        from xpra.x11.xroot_props import root_del
-        for prop in properties:
-            try:
-                root_del(prop)
-            except Exception as e:
-                log.warn(f"Warning: failed to delete property {prop!r} on root window: {e}")
-
-    # noinspection PyMethodMayBeStatic
-    def get_server_uuid(self) -> str:
-        from xpra.x11.xroot_props import root_get
-        return root_get("XPRA_SERVER_UUID", "latin1") or ""
-
-    def save_server_uuid(self) -> None:
-        from xpra.x11.xroot_props import root_set
-        root_set("XPRA_SERVER_UUID", "latin1", self.uuid)
-
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/x11"

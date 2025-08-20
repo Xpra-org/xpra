@@ -11,15 +11,17 @@ from collections.abc import Sequence
 from xpra.os_util import gi_import, POSIX
 from xpra.util.screen import log_screen_sizes
 from xpra.util.env import envint, envbool, first_time
-from xpra.x11.error import xlog, xsync, XError
+from xpra.util.version import XPRA_VERSION
+from xpra.x11.error import xlog, xsync, xswallow, XError
 from xpra.exit_codes import ExitCode
 from xpra.util.system import is_X11
 from xpra.scripts.config import FALSE_OPTIONS, InitExit
 from xpra.net.common import Packet
 from xpra.common import (
     get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions,
-    MAX_WINDOW_SIZE, NotificationID,
+    MAX_WINDOW_SIZE, NotificationID, BACKWARDS_COMPATIBLE,
 )
+from xpra.x11.xroot_props import root_set, root_get, root_del
 from xpra.server.subsystem.display import DisplayManager
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.platform.gui import get_display_size
@@ -54,12 +56,14 @@ def check_xvfb(xvfb: Popen | None, timeout=0) -> bool:
 
 def _get_root_int(prop: str) -> int:
     from xpra.x11.xroot_props import root_get
-    return root_get(prop, "u32") or 0
+    with xsync:
+        return root_get(prop, "u32") or 0
 
 
 def _set_root_int(prop: str = "_XPRA_RANDR_EXACT_SIZE", i: int = 0) -> None:
     from xpra.x11.xroot_props import root_set
-    root_set(prop, "u32", i)
+    with xsync:
+        root_set(prop, "u32", i)
 
 
 def get_root_size() -> tuple[int, int]:
@@ -73,15 +77,31 @@ def get_display_pid() -> int:
     # perhaps this is an upgrade from an older version?
     # try harder to find the pid:
     try:
-        return _get_root_int("XPRA_XVFB_PID") or _get_root_int("_XPRA_SERVER_PID")
+        return _get_root_int("XPRA_XVFB_PID") or _get_root_int("_XPRA_SERVER_PID") or 0
     except RuntimeError:
         return 0
 
 
 def save_server_pid() -> None:
-    from xpra.x11.error import xlog
-    with xlog:
-        _set_root_int("XPRA_SERVER_PID", os.getpid())
+    root_set("XPRA_SERVER_PID", "u32", os.getpid())
+
+
+def save_server_mode(session_type: str) -> None:
+    root_set("XPRA_SERVER_MODE", "latin1", session_type)
+
+
+def save_server_uuid(uuid: str) -> None:
+    root_set("XPRA_SERVER_UUID", "latin1", uuid)
+
+
+def get_server_uuid() -> str:
+    return root_get("XPRA_SERVER_UUID", "latin1") or ""
+
+
+def save_server_version():
+    if BACKWARDS_COMPATIBLE:
+        root_set("XPRA_SERVER", "latin1", XPRA_VERSION)
+    root_set("XPRA_SERVER_VERSION", "latin1", XPRA_VERSION)
 
 
 class X11DisplayManager(DisplayManager):
@@ -103,6 +123,9 @@ class X11DisplayManager(DisplayManager):
         self.double_click_time = -1
         self.double_click_distance = -1, -1
         self.original_desktop_display = None
+        # the actual values are defined in subclasses:
+        self.session_type = ""
+        self.uuid = ""
 
     def init(self, opts) -> None:
         self.init_display_pid()
@@ -156,7 +179,11 @@ class X11DisplayManager(DisplayManager):
         if self.randr:
             self.init_randr()
             self.set_initial_resolution()
+        with xsync:
             save_server_pid()
+            save_server_mode(self.session_type)
+            save_server_uuid(self.uuid)
+            save_server_version()
 
     def init_randr(self) -> None:
         from xpra.x11.error import xlog
@@ -208,6 +235,14 @@ class X11DisplayManager(DisplayManager):
         self.display_pid = pid
 
     def late_cleanup(self, stop=True) -> None:
+        with xswallow:
+            root_del("XPRA_SERVER_PID")
+            root_del("XPRA_SERVER_VERSION")
+            if BACKWARDS_COMPATIBLE:
+                root_del("XPRA_SERVER")
+            if stop:
+                root_del("XPRA_SERVER_MODE")
+                root_del("_XPRA_RANDR_EXACT_SIZE")
         if stop and POSIX:
             self.kill_display()
         elif self.display_pid:
