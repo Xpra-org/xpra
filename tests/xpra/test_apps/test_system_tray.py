@@ -25,9 +25,14 @@ class StatusIcon:
             if envbool("XPRA_NATIVE_NOTIFIER", True):
                 from xpra.platform.systray import get_backends
                 nc += get_backends()
-            from xpra.gtk.notifier import GTKNotifier
-            nc.append(GTKNotifier)
-            self.notifier = nc[0](self.notification_closed, self.notification_action)
+            if not nc:
+                from xpra.gtk.notifier import GTKNotifier
+                nc.append(GTKNotifier)
+            print("trying %s" % (nc[0], ))
+            self.notifier = nc[0](None, "app_id", menu=None, tooltip="foo",
+                                  icon_filename="xpra.png",
+                                  click_cb=self.notification_action,
+                                  exit_cb=self.notification_closed)
             self.notifier.app_name_format = "%s"
             #ensure we can send the image-path hint with the dbus backend:
             if hasattr(self.notifier, "noparse_hints"):
@@ -36,6 +41,7 @@ class StatusIcon:
             import traceback
             traceback.print_stack()
             print("Failed to instantiate the notifier: %s" % e)
+            raise
         self.nid = 1
         for x in dir(Gtk):
             if x.startswith("STOCK_"):
