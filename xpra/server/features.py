@@ -44,3 +44,4 @@ gtk = True
 tray = True
 opengl = True
 bell = True
+systray = True

@@ -10,7 +10,6 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.x11.error import XError, xswallow, xsync
-from xpra.common import noerr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.server.base import ServerBase
@@ -33,8 +32,6 @@ class X11ServerCore(ServerBase):
     """
 
     def do_cleanup(self) -> None:
-        # prop_del does its own xsync:
-        noerr(self.clean_x11_properties)
         super().do_cleanup()
         from xpra.x11.dispatch import cleanup_all_event_receivers
         cleanup_all_event_receivers()

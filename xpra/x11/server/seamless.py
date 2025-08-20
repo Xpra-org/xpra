@@ -73,14 +73,12 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
         self.repaint_root_overlay_timer = 0
         self.configure_damage_timers: dict[int, int] = {}
         self._focus_history: deque[int] = deque(maxlen=100)
-        self._tray = None
         self._has_grab = 0
         self._has_focus = 0
         self._wm = None
         self.wm_name = ""
         self.sync_xvfb = 0
         self.last_raised = None
-        self.system_tray = False
         GObject.GObject.__init__(self)
         X11ServerCore.__init__(self)
         self.session_type = "seamless"
@@ -93,7 +91,6 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
     def init(self, opts) -> None:
         self.wm_name = opts.wm_name
         self.sync_xvfb = int(opts.sync_xvfb or 0)
-        self.system_tray = opts.system_tray
         self._exit_with_windows = opts.exit_with_windows
         super().init(opts)
 
@@ -110,8 +107,6 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
         from xpra.x11.wm import Wm
         self._wm = Wm(self.wm_name)
         self._wm.init_atoms()
-        if self.system_tray:
-            self.add_system_tray()
         self.receive_root_events()
         if self.sync_xvfb > 0:
             self.init_root_overlay()
@@ -188,9 +183,6 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
         self._wm.connect("show-desktop", self._show_desktop)
 
     def do_cleanup(self) -> None:
-        if self._tray:
-            self._tray.cleanup()
-            self._tray = None
         self.cancel_repaint_root_overlay()
         self.release_root_overlay()
         self.cancel_all_configure_damage()
@@ -361,15 +353,6 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
             root_set("dummy-constant-xdpi", "u32", xdpi)
             root_set("dummy-constant-ydpi", "u32", ydpi)
             screenlog("set_dpi(%i, %i)", xdpi, ydpi)
-
-    def add_system_tray(self) -> None:
-        # Tray handler:
-        try:
-            with xsync:
-                from xpra.x11.tray import SystemTray
-                self._tray = SystemTray()
-        except RuntimeError:
-            log.warn(" system tray forwarding is disabled")
 
     ##########################################################################
     # Manage windows:
@@ -560,7 +543,7 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, xid: int) -> None:
-        log.warn("_add_new_or_window(%#x)", xid)
+        log("_add_new_or_window(%#x)", xid)
         if self.root_overlay and self.root_overlay == xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return

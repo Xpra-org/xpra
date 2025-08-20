@@ -275,7 +275,7 @@ def set_server_features(opts, mode: str) -> None:
         features.cursor = features.rfb = False
         features.power = features.suspend = features.idle = False
         features.ssh = features.gtk = features.x11 = features.tray = features.opengl = False
-        features.bell = False
+        features.bell = features.systray = False
     else:
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
@@ -284,6 +284,7 @@ def set_server_features(opts, mode: str) -> None:
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
+        print("opts.x11=%s" % opts.x11)
         features.x11 = b(opts.x11) and impcheck("x11")
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
         features.pulseaudio = features.audio and b(opts.pulseaudio)
@@ -307,6 +308,7 @@ def set_server_features(opts, mode: str) -> None:
         features.tray = features.gtk and b(opts.tray) and mode == "shadow"
         features.opengl = features.display and b(opts.opengl)
         features.bell = features.display and b(opts.bell)
+        features.systray = b(opts.system_tray) and mode == "seamless"
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()
@@ -354,6 +356,7 @@ def enforce_server_features() -> None:
         "http": "xpra.net.http,xpra.server.subsystem.http",
         "tray": "xpra.server.subsystem.tray",
         "gtk": "xpra.gtk",
+        "systray": "xpra.x11.subsystem.systray",
     })
     if not features.gtk:
         from xpra.scripts.main import no_gi_gtk_modules
