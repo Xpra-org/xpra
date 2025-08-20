@@ -297,7 +297,6 @@ class DisplayManager(StubServerMixin):
 
     def do_screen_changed(self, screen) -> None:
         log("do_screen_changed(%s)", screen)
-        self.screen_size_changed_timer = 0
         with SilenceWarningsContext(DeprecationWarning):
             w, h = screen.get_width(), screen.get_height()
         log("new screen dimensions: %ix%i", w, h)
