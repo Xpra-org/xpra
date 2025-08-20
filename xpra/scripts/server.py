@@ -274,7 +274,7 @@ def set_server_features(opts, mode: str) -> None:
         features.logging = features.display = features.window = False
         features.cursor = features.rfb = False
         features.power = features.suspend = features.idle = False
-        features.ssh = features.gtk = features.x11 = features.tray = features.opengl = False
+        features.ssh = features.gtk = features.tray = features.opengl = False
         features.bell = features.systray = False
     else:
         features.debug = features.debug or b(opts.debug)
@@ -284,7 +284,6 @@ def set_server_features(opts, mode: str) -> None:
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
-        print("opts.x11=%s" % opts.x11)
         features.x11 = b(opts.x11) and impcheck("x11")
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
         features.pulseaudio = features.audio and b(opts.pulseaudio)
