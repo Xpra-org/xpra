@@ -270,6 +270,11 @@ class X11DisplayManager(DisplayManager):
         info = super().get_info(proto)
         dinfo = info["display"]
         dinfo["randr"] = self.randr
+        try:
+            from xpra.x11.composite import CompositeHelper
+            dinfo["xshm"] = CompositeHelper.XShmEnabled
+        except (ImportError, ValueError) as e:
+            log("no composite: %s", e)
         if self.display_pid:
             dinfo["pid"] = self.display_pid
         return info

@@ -23,7 +23,7 @@ from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.server.core import X11ServerCore
+from xpra.server.base import ServerBase
 from xpra.x11.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
 
@@ -60,7 +60,7 @@ def rindex(alist: list | tuple, avalue: Any) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 
-class SeamlessServer(GObject.GObject, X11ServerCore):
+class SeamlessServer(GObject.GObject, ServerBase):
     __gsignals__ = {
         "x11-child-map-event": one_arg_signal,
         "x11-cursor-event": one_arg_signal,
@@ -80,7 +80,7 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
         self.sync_xvfb = 0
         self.last_raised = None
         GObject.GObject.__init__(self)
-        X11ServerCore.__init__(self)
+        ServerBase.__init__(self)
         self.session_type = "seamless"
         self._exit_with_windows = False
         self._xsettings_enabled = True
@@ -100,7 +100,7 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
         self.connect("server-event", log_server_event)
 
     def setup(self) -> None:
-        X11ServerCore.setup(self)
+        super().setup()
         self.validate_display()
         # TODO: this needs moving to a module
         # init_atoms should be done as early as possible, before running client commands
@@ -194,11 +194,11 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
             # but at this point in the cleanup, we probably won't, so force set it:
             self._has_grab = 0
             self.X11_ungrab()
-        X11ServerCore.do_cleanup(self)
+        super().do_cleanup()
 
     def last_client_exited(self) -> None:
         # last client is gone:
-        X11ServerCore.last_client_exited(self)
+        super().last_client_exited()
         if self._has_grab:
             self._has_grab = 0
             self.X11_ungrab()
@@ -214,7 +214,7 @@ class SeamlessServer(GObject.GObject, X11ServerCore):
             wm_module.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
     def init_packet_handlers(self) -> None:
-        X11ServerCore.init_packet_handlers(self)
+        super().init_packet_handlers()
         self.add_packets("window-signal", main_thread=True)
 
     def __repr__(self):

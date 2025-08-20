@@ -9,7 +9,7 @@ from time import monotonic_ns
 from collections.abc import Callable
 from typing import Any
 
-from xpra.x11.server.core import X11ServerCore
+from xpra.server.base import ServerBase
 from xpra.net.compression import Compressed
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
 from xpra.util.objects import AdHocStruct, merge_dicts
@@ -354,18 +354,18 @@ class X11ShadowModel(CaptureWindowModel):
 
 # FIXME: warning: this class inherits from ServerBase twice..
 # so many calls will happen twice there (__init__ and init)
-class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
+class ShadowX11Server(GTKShadowServerBase, ServerBase):
 
     def __init__(self, attrs: dict[str, str]):
         GTKShadowServerBase.__init__(self, attrs)
-        X11ServerCore.__init__(self)
+        ServerBase.__init__(self)
         self.session_type = "X11 shadow"
         self.modify_keymap = False
         self.backend = attrs.get("backend", "x11")
         self.session_files: list[str] = []
 
     def init(self, opts) -> None:
-        X11ServerCore.init(self, opts)
+        ServerBase.init(self, opts)
         GTKShadowServerBase.init(self, opts)
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
         self.session_files.append("xauthority")
@@ -374,13 +374,13 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         if self.readonly:
             return
         if self.modify_keymap:
-            X11ServerCore.set_keymap(self, server_source, force)
+            ServerBase.set_keymap(self, server_source, force)
         else:
             ShadowServerBase.set_keymap(self, server_source, force)
 
     def cleanup(self) -> None:
         GTKShadowServerBase.cleanup(self)
-        X11ServerCore.cleanup(self)
+        ServerBase.cleanup(self)
         from xpra.x11.xroot_props import root_del
         for prop in ("XPRA_SERVER_UUID", "XPRA_SERVER_MODE"):
             try:
@@ -421,10 +421,10 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def last_client_exited(self) -> None:
         GTKShadowServerBase.last_client_exited(self)
-        X11ServerCore.last_client_exited(self)
+        ServerBase.last_client_exited(self)
 
     def do_get_cursor_data(self) -> tuple[Any, Any]:
-        return X11ServerCore.get_cursor_data(self)
+        return ServerBase.get_cursor_data(self)
 
     def send_initial_data(self, ss, c, send_ui: bool, share_count: int) -> None:
         super().send_initial_data(ss, c, send_ui, share_count)
@@ -455,13 +455,13 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             ss.may_notify(nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
 
     def make_hello(self, source) -> dict[str, Any]:
-        capabilities = X11ServerCore.make_hello(self, source)
+        capabilities = ServerBase.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))
         capabilities["server_type"] = "X11 Shadow"
         return capabilities
 
     def get_info(self, proto, *_args) -> dict[str, Any]:
-        info = X11ServerCore.get_info(self, proto)
+        info = ServerBase.get_info(self, proto)
         merge_dicts(info, ShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/bindings/x11-shadow"

@@ -13,9 +13,9 @@ from xpra.common import noop
 from xpra.net.common import Packet
 from xpra.server import features
 from xpra.util.gobject import one_arg_signal
+from xpra.server.base import ServerBase
 from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
 from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.server.core import X11ServerCore
 from xpra.x11.error import xsync, xlog
 from xpra.log import Logger
 
@@ -60,7 +60,7 @@ def do_modify_gsettings(defs: dict[str, Any], value=False) -> dict[str, Any]:
     return modified
 
 
-class DesktopServerBase(GObject.GObject, X11ServerCore):
+class DesktopServerBase(GObject.GObject, ServerBase):
     """
         A server base class for RFB / VNC-like virtual desktop or virtual monitors,
         used with the "start-desktop" subcommand.
@@ -74,13 +74,13 @@ class DesktopServerBase(GObject.GObject, X11ServerCore):
 
     def __init__(self):
         GObject.GObject.__init__()
-        X11ServerCore.__init__()
+        ServerBase.__init__()
         self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
         self.session_type = "X11 desktop"
 
     def setup(self) -> None:
-        X11ServerCore.setup(self)
+        super().setup()
         add_event_receiver(get_root_xid(), self)
         add_catchall_receiver("x11-motion-event", self)
         add_catchall_receiver("x11-xkb-event", self)
@@ -289,7 +289,7 @@ class DesktopServerBase(GObject.GObject, X11ServerCore):
                 pointerlog("_move_pointer(%s, %s) invalid window id", wid, pos)
                 return
         with xsync:
-            super()._move_pointer(self, device_id, wid, pos, props)
+            super()._move_pointer(device_id, wid, pos, props)
 
     def _process_close_window(self, proto, packet: Packet) -> None:
         # disconnect?

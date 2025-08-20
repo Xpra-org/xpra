@@ -84,7 +84,7 @@ class GTKShadowServerBase(ShadowServerBase):
 
     def get_info(self, proto=None, *args) -> dict[str, Any]:
         info = ShadowServerBase.get_info(self, proto, *args)
-        info.update(super().get_info(self, proto, *args))
+        info.update(super().get_info(proto, *args))
         return info
 
     def accept_client_ssh_agent(self, uuid: str, ssh_auth_sock: str) -> None:
@@ -293,7 +293,7 @@ class GTKShadowServerBase(ShadowServerBase):
                 suspend_cursor(proto)
                 return None
             # note: with x11 shadow servers,
-            # X11ServerCore._get_pointer_abs_coordinates() will recalculate
+            # _get_pointer_abs_coordinates() will recalculate
             # the absolute coordinates from the relative ones,
             # and it should end up with the same values we calculated here
             ax = x + wx
