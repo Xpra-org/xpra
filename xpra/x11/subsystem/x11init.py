@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Any
 
 from xpra.util.env import envbool
 from xpra.server.subsystem.stub import StubServerMixin
@@ -38,11 +37,6 @@ class X11Init(StubServerMixin):
         from xpra.x11.bindings.core import X11CoreBindings
         X11CoreBindings().show_server_info()
 
-    def parse_hello(self, ss, caps, send_ui: bool):
-        pass
-
-    def last_client_exited(self) -> None:
-        pass
-
-    def get_info(self, _proto) -> dict[str, Any]:
-        return {"icc": self.get_icc_info()}
+    def cleanup(self) -> None:
+        from xpra.x11.dispatch import cleanup_all_event_receivers
+        cleanup_all_event_receivers()
