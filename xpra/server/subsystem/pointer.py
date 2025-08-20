@@ -92,8 +92,8 @@ class PointerServer(StubServerMixin):
         def verify_uinput_moved() -> None:
             pos = (ox, oy)
             with xswallow:
-                from xpra.x11.bindings.keyboard import X11KeyboardBindings
-                pos = X11KeyboardBindings().query_pointer()
+                from xpra.x11.bindings.core import X11CoreBindings
+                pos = X11CoreBindings().query_pointer()
                 log("X11Keyboard.query_pointer=%s", pos)
             if pos == (ox, oy):
                 log.warn("Warning: %s failed verification", self.pointer_device)

@@ -9,7 +9,7 @@ import threading
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.x11.error import XError, xswallow, xsync
+from xpra.x11.error import XError, xsync
 from xpra.util.env import envbool
 from xpra.server.base import ServerBase
 from xpra.log import Logger
@@ -115,11 +115,10 @@ class X11ServerCore(ServerBase):
         if self.readonly:
             return False
         with xsync:
-            from xpra.x11.bindings.keyboard import X11KeyboardBindings
-            pos = X11KeyboardBindings().query_pointer()
+            from xpra.x11.bindings.core import X11CoreBindings
+            pos = X11CoreBindings().query_pointer()
         if (pointer and pos != pointer[:2]) or self.input_devices == "xi":
-            with xswallow:
-                self._move_pointer(device_id, wid, pointer, props)
+            self._move_pointer(device_id, wid, pointer, props)
         return True
 
     def _update_modifiers(self, proto, wid: int, modifiers) -> None:
@@ -149,8 +148,7 @@ class X11ServerCore(ServerBase):
             self.record_wheel_event(wid, button)
         try:
             pointerlog("%s%s", device.click, (button, pressed, props))
-            with xsync:
-                device.click(button, pressed, props)
+            device.click(button, pressed, props)
         except XError:
             pointerlog("button_action%s", (device_id, wid, pointer, button, pressed, props), exc_info=True)
             pointerlog.error("Error: failed (un)press mouse button %s", button)

@@ -113,8 +113,8 @@ class CursorManager(StubServerMixin):
         if is_X11():
             from xpra.x11.error import xswallow
             with xswallow:
-                from xpra.x11.bindings.keyboard import X11KeyboardBindings
-                info["position"] = X11KeyboardBindings().query_pointer()
+                from xpra.x11.bindings.core import X11CoreBindings
+                info["position"] = X11CoreBindings().query_pointer()
         return {CursorManager.PREFIX: info}
 
     def _process_set_cursors(self, proto, packet: Packet) -> None:

@@ -10,13 +10,13 @@ from uinput import (
 )
 
 from xpra.util.env import envint
-from xpra.x11.bindings.keyboard import X11KeyboardBindings
+from xpra.x11.bindings.test import XTestBindings
 from xpra.x11.error import xsync, xlog
 from xpra.log import Logger
 
 log = Logger("x11", "server", "pointer")
 
-X11Keyboard = X11KeyboardBindings()
+XTest = XTestBindings()
 
 MOUSE_WHEEL_CLICK_MULTIPLIER = envint("XPRA_MOUSE_WHEEL_CLICK_MULTIPLIER", 30)
 
@@ -91,7 +91,7 @@ class UInputDevice:
             self.device.emit(ubutton, val)
         else:
             log("UInput.click(%i, %s) uinput button not found - using XTest", button, pressed)
-            X11Keyboard.xtest_fake_button(button, pressed)
+            XTest.xtest_fake_button(button, pressed)
 
     def wheel_motion(self, button: int, distance: float) -> None:
         if button in (4, 5):
@@ -127,8 +127,8 @@ class UInputPointerDevice(UInputDevice):
         log("UInputPointerDevice.move_pointer(%i, %s, %s)", x, y, props)
         # calculate delta:
         with xsync:
-            cx, cy = X11Keyboard.query_pointer()
-            log("X11Keyboard.query_pointer=%s, %s", cx, cy)
+            cx, cy = XTest.query_pointer()
+            log("XTest.query_pointer=%s, %s", cx, cy)
             dx = x - cx
             dy = y - cy
             log("delta(%s, %s)=%s, %s", cx, cy, dx, dy)
@@ -160,5 +160,5 @@ class UInputTouchpadDevice(UInputDevice):
         self.device.emit(ABS_PRESSURE, 255, syn=False)
         self.device.emit(BTN_TOUCH, 0, syn=True)
         with xsync:
-            cx, cy = X11Keyboard.query_pointer()
-            log("X11Keyboard.query_pointer=%s, %s", cx, cy)
+            cx, cy = XTest.query_pointer()
+            log("XTest.query_pointer=%s, %s", cx, cy)

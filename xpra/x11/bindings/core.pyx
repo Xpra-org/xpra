@@ -8,11 +8,12 @@ import cython
 from collections.abc import Callable, Sequence
 
 from xpra.x11.bindings.xlib cimport (
-    Time, Status, Atom,
+    Time, Status, Atom, Window,
     XInternAtom, XInternAtoms,
     XGetAtomName,
     XFree,
     XGetErrorText,
+    XQueryPointer,
     XUngrabKeyboard, XUngrabPointer,
     XSynchronize, XSync, XFlush,
     CurrentTime,
@@ -382,6 +383,28 @@ cdef class X11CoreBindingsInstance:
             raise RuntimeError("display is closed")
         return XUngrabPointer(self.display, time)
 
+    def query_pointer(self) -> Tuple[int, int]:
+        self.context_check("query_pointer")
+        cdef Window root_window = XDefaultRootWindow(self.display)
+        cdef Window root, child
+        cdef int root_x, root_y
+        cdef int win_x, win_y
+        cdef unsigned int mask
+        XQueryPointer(self.display, root_window, &root, &child,
+                      &root_x, &root_y, &win_x, &win_y, &mask)
+        return root_x, root_y
+
+    def query_mask(self) -> int:
+        self.context_check("query_mask")
+        cdef Window root_window = XDefaultRootWindow(self.display)
+        cdef Window root, child
+        cdef int root_x, root_y
+        cdef int win_x, win_y
+        cdef unsigned int mask
+        XQueryPointer(self.display, root_window, &root, &child,
+                      &root_x, &root_y, &win_x, &win_y, &mask)
+        return mask
+
     def get_info(self) -> Dict[str, Any]:
         cdef int version = XProtocolVersion(self.display)
         cdef int revision = XProtocolRevision(self.display)
@@ -393,6 +416,8 @@ cdef class X11CoreBindingsInstance:
             "revision": revision,
             "vendor": vendor_str,
             "release": release,
+            "mask": self.query_mask(),
+            "pointer": self.query_pointer(),
         }
 
     def show_server_info(self) -> None:

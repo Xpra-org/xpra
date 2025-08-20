@@ -18,7 +18,6 @@ from xpra.x11.bindings.xlib cimport (
     XModifierKeymap,
     XDefaultRootWindow,
     XOpenDisplay, XCloseDisplay, XFlush, XFree, XInternAtom,
-    XQueryPointer,
     XDisplayKeycodes, XQueryKeymap,
     XGetModifierMapping, XSetModifierMapping,
     XFreeModifiermap, XChangeKeyboardMapping, XGetKeyboardMapping, XInsertModifiermapEntry,
@@ -1011,27 +1010,6 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             bits = 0
         return XkbSelectEvents(self.display, XkbUseCoreKbd, XkbBellNotifyMask, bits)
 
-    def query_pointer(self) -> Tuple[int, int]:
-        self.context_check("query_pointer")
-        cdef Window root_window = XDefaultRootWindow(self.display)
-        cdef Window root, child
-        cdef int root_x, root_y
-        cdef int win_x, win_y
-        cdef unsigned int mask
-        XQueryPointer(self.display, root_window, &root, &child,
-                      &root_x, &root_y, &win_x, &win_y, &mask)
-        return root_x, root_y
-
-    def query_mask(self) -> int:
-        self.context_check("query_mask")
-        cdef Window root_window = XDefaultRootWindow(self.display)
-        cdef Window root, child
-        cdef int root_x, root_y
-        cdef int win_x, win_y
-        cdef unsigned int mask
-        XQueryPointer(self.display, root_window, &root, &child,
-                      &root_x, &root_y, &win_x, &win_y, &mask)
-        return mask
 
 
 cdef X11KeyboardBindingsInstance singleton = None

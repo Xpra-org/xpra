@@ -80,8 +80,6 @@ def get_info() -> dict[str, Any]:
             "max-keycode": maxc,
             "modifier-mappings": keyboard.get_modifier_mappings(),
             "keycodes-down": keyboard.get_keycodes_down(),
-            "pointer": keyboard.query_pointer(),
-            "mask": keyboard.query_mask(),
         }
     except ImportError:
         pass
