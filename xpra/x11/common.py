@@ -137,8 +137,12 @@ NET_SUPPORTED = [x for x in DEFAULT_NET_SUPPORTED if x not in NO_NET_SUPPORTED]
 # Just to make it easier to pass around and have a helpful debug logging.
 # Really, just a python objects where we can stick random bags of attributes.
 class X11Event:
-    def __init__(self, name: str):
-        self.name: str = name
+    def __init__(self, etype: int, name: str, send_event: bool, serial: int, delivered_to: int):
+        self.event_type = etype
+        self.name = name
+        self.send_event = send_event
+        self.serial = serial
+        self.delivered_to = delivered_to
 
     def __repr__(self):
         d = {}

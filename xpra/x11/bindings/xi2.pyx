@@ -462,12 +462,10 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                     _cookie, last_event.name, event_name)
                 return None
 
-        pyev = X11Event(event_name)
-        pyev.type = etype
-        pyev.send_event = bool(xie.send_event)
-        pyev.serial = xie.serial
+        xid = int(XDefaultRootWindow(self.display))
+        pyev = X11Event(etype, event_name, bool(xie.send_event), xie.serial, xid)
         pyev.time = int(xie.time)
-        pyev.window = int(XDefaultRootWindow(self.display))
+        pyev.window = xid
 
         device_info = None
         if xi_type in (XI_KeyPress, XI_KeyRelease,

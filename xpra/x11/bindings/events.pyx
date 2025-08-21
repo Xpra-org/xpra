@@ -486,11 +486,7 @@ cdef object parse_xevent(Display *d, XEvent *e):
     if attrs is None:
         return None
 
-    cdef object pyev = X11Event(event_type)
-    pyev.type = etype
-    pyev.send_event = bool(e.xany.send_event)
-    pyev.serial = e.xany.serial
-    pyev.delivered_to = e.xany.window
+    cdef object pyev = X11Event(etype, event_type, bool(e.xany.send_event), e.xany.serial, e.xany.window)
     for k, v in attrs.items():
         setattr(pyev, k, v)
     return pyev
