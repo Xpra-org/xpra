@@ -144,6 +144,8 @@ Depends: xpra-common (= ${binary:Version})
 #        ,xserver-xorg-video-dummy
         ,xvfb
         ,keyboard-configuration
+# addgroup:
+        ,adduser
 Recommends: xpra-codecs (= ${binary:Version})
         ,xpra-audio-server
         ,xpra-codecs-extras (= ${binary:Version})
