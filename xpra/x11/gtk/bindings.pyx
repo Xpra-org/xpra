@@ -197,7 +197,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     if not pyev:
         return GDK_FILTER_CONTINUE  # @UndefinedVariable
     try:
-        etype = pyev.type
+        etype = pyev.event_type
         event_args = get_x_event_signals(etype)
         #log("signals(%s)=%s", pyev, event_args)
         if event_args is not None:
