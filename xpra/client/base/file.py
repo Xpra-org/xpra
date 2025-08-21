@@ -45,7 +45,6 @@ class FileMixin(StubClientMixin, FileTransferHandler):
 
     def cleanup(self) -> None:
         # we must clean printing before FileTransferHandler, which turns the printing flag off!
-        self.cleanup_printing()
         FileTransferHandler.cleanup(self)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
