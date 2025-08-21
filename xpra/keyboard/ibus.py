@@ -57,7 +57,19 @@ def query_ibus() -> dict[str, Any]:
     return info
 
 
+ready_callbacks: list[Callable[[], None]] = []
+dbus_watched = None
+
+
 def with_ibus_ready(callback: Callable[[], None]):
+    global ready_callbacks, dbus_watched
+    ready_callbacks.append(callback)
+    if not dbus_watched:
+        dbus_watched = True
+        ibus_ready_watch()
+
+
+def ibus_ready_watch():
     try:
         from xpra.os_util import gi_import
         from xpra.dbus.helper import DBusHelper
@@ -78,7 +90,8 @@ def with_ibus_ready(callback: Callable[[], None]):
             connected = bus.is_connected()
             log("IBus.Bus.connected()=%s", connected)
             if connected:
-                callback()
+                for callback in ready_callbacks:
+                    callback()
                 return False
             if delay >= 10000:
                 log.warn("Warning: timeout waiting for IBus")
@@ -90,7 +103,7 @@ def with_ibus_ready(callback: Callable[[], None]):
             return False
         check_connected(0)
 
-    log(f"waiting for {BUSNAME!r} to call {callback}")
+    log(f"waiting for {BUSNAME!r}")
     session_bus = dbus_helper.get_session_bus()
     session_bus.watch_name_owner(BUSNAME, got_name)
 
