@@ -9,10 +9,6 @@ import sys
 from typing import List, Dict, Tuple
 from collections.abc import Iterable
 
-from xpra.log import Logger
-log = Logger("x11", "bindings", "keyboard")
-
-from xpra.util.str_fn import csv
 from xpra.x11.bindings.xlib cimport (
     Display, Bool, KeySym, KeyCode, Atom, Window, Status, Time, XRectangle, CARD32,
     XModifierKeymap,
@@ -25,10 +21,16 @@ from xpra.x11.bindings.xlib cimport (
     XGrabKey, XUngrabKey,
     MappingBusy, GrabModeAsync, AnyKey, AnyModifier, NoSymbol,
 )
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 from libc.stdint cimport uintptr_t      # pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
 
+from xpra.util.str_fn import csv
+from xpra.log import Logger
+
+import_check("keyboard")
+
+log = Logger("x11", "bindings", "keyboard")
 
 DEF PATH_MAX = 1024
 DEF DFLT_XKB_RULES_FILE = "base"

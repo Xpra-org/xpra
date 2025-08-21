@@ -7,9 +7,11 @@
 from xpra.x11.bindings.xlib cimport Display, Drawable, XID, XRectangle, Bool, Status, XEvent
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, add_event_type
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 
 from xpra.log import Logger
+
+import_check("damage")
 
 log = Logger("x11", "bindings", "damage")
 

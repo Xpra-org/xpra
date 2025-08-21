@@ -34,12 +34,15 @@ from xpra.x11.bindings.xlib cimport (
     XQueryTree,
     XKillClient,
 )
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 from xpra.x11.bindings.core import constants
 from libc.stdint cimport uintptr_t
 from libc.string cimport memset
 
 from xpra.log import Logger
+
+import_check("window")
+
 log = Logger("x11", "bindings", "window")
 
 ###################################

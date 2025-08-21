@@ -5,8 +5,9 @@
 # later version. See the file COPYING for details.
 
 from xpra.x11.bindings.xlib cimport XAddToSaveSet, XRemoveFromSaveSet, Window
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 
+import_check("saveset")
 
 cdef class X11SaveSetBindingsInstance(X11CoreBindingsInstance):
 

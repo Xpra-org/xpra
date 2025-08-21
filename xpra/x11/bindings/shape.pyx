@@ -8,10 +8,13 @@ from typing import Dict, Tuple
 from xpra.x11.bindings.xlib cimport Display, Window, XRectangle, XEvent, Bool, Status
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, add_event_type
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 from libc.stdlib cimport free, malloc        # pylint: disable=syntax-error
 
 from xpra.log import Logger
+
+import_check("shape")
+
 log = Logger("x11", "bindings", "shape")
 
 

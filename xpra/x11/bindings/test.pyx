@@ -5,11 +5,15 @@
 
 import os
 
+from xpra.x11.bindings.xlib cimport Display, XID, Bool, KeySym, KeyCode, Atom, Window, Status, Time
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
+
 from xpra.log import Logger
+
+import_check("test")
+
 log = Logger("x11", "bindings", "keyboard")
 
-from xpra.x11.bindings.xlib cimport Display, XID, Bool, KeySym, KeyCode, Atom, Window, Status, Time
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 cdef extern from "X11/extensions/XTest.h":
     Bool XTestQueryExtension(Display *display, int *event_base_return, int *error_base_return,

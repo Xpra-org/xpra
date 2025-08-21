@@ -35,6 +35,17 @@ log = Logger("x11", "bindings", "core")
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.display_source import get_display_name
 
+
+cdef void import_check(modname):
+    upname = str(modname).upper()
+    envname = f"XPRA_X11_{upname}"
+    if not envbool(envname, True):
+        raise ImportError(f"import of {modname!r} bindings is prevented by {envname!r}")
+
+
+import_check("core")
+
+
 DEF XNone = 0
 
 

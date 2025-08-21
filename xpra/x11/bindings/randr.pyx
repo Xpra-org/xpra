@@ -16,6 +16,7 @@ from xpra.x11.bindings.xlib cimport (
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
 )
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, add_event_type
 
@@ -27,6 +28,7 @@ from xpra.log import Logger
 
 log = Logger("x11", "bindings", "randr")
 
+import_check("randr")
 
 TIMESTAMPS = envbool("XPRA_RANDR_TIMESTAMPS", False)
 GAMMA = envbool("XPRA_RANDR_GAMMA", False)
@@ -311,9 +313,6 @@ cdef extern from "X11/extensions/Xrandr.h":
     void XRRSetMonitor(Display *dpy, Window window, XRRMonitorInfo *monitor)
     void XRRDeleteMonitor(Display *dpy, Window window, Atom name)
     void XRRFreeMonitors(XRRMonitorInfo *monitors)
-
-
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 
 cdef dict get_mode_info(XRRModeInfo *mi, with_sync: bool):

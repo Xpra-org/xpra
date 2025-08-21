@@ -8,7 +8,7 @@ from time import monotonic
 from typing import Tuple, Dict
 
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 from xpra.x11.bindings.xlib cimport (
     XImage, Display, Pixmap,
     XColor, Visual, VisualID,
@@ -23,6 +23,8 @@ from libc.string cimport memcpy
 from libc.stdint cimport uintptr_t
 
 from xpra.log import Logger
+
+import_check("image")
 
 log = Logger("x11", "bindings", "ximage")
 ximagedebug = Logger("x11", "bindings", "ximage", "verbose")

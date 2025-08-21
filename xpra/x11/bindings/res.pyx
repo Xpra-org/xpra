@@ -5,9 +5,12 @@
 
 import cython
 from xpra.x11.bindings.xlib cimport Display, XID, Atom, Bool, Status, Window
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 
 from xpra.log import Logger
+
+import_check("res")
+
 log = Logger("x11", "bindings")
 
 ctypedef int pid_t

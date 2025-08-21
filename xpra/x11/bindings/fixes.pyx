@@ -12,10 +12,12 @@ from xpra.x11.bindings.xlib cimport (
 )
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, add_event_type, atom_str
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 
 from xpra.util.env import envbool
 from xpra.log import Logger
+
+import_check("fixes")
 
 log = Logger("x11", "bindings", "fixes")
 

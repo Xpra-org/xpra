@@ -8,7 +8,7 @@ from typing import List, Tuple
 
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 from xpra.x11.bindings.ximage cimport XImageWrapper, roundup, BYTESPERPIXEL
 from xpra.x11.bindings.xlib cimport (
     XImage, Display, Pixmap,
@@ -22,6 +22,8 @@ from xpra.x11.bindings.xlib cimport (
 from libc.stdint cimport uintptr_t
 
 from xpra.log import Logger
+
+import_check("shm")
 
 log = Logger("x11", "bindings", "ximage", "xshm")
 xshmdebug = Logger("x11", "bindings", "ximage", "xshm", "verbose")

@@ -12,3 +12,5 @@ cdef class X11CoreBindingsInstance:
     cdef Atom xatom(self, str_or_int)
     cdef Atom str_to_atom(self, atomstr)
 #    def get_error_text(self, code)
+
+cdef void import_check(modname)

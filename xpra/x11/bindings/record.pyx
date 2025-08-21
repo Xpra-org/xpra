@@ -17,8 +17,9 @@ from xpra.x11.bindings.xlib cimport (
     XOpenDisplay,
     XFree, XFlush, XSync, XConnectionNumber, XPending,
 )
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 
+import_check("record")
 
 ctypedef unsigned long   XRecordClientSpec
 ctypedef unsigned long   XRecordContext

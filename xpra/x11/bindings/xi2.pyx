@@ -7,9 +7,6 @@ import struct
 from typing import Dict
 from collections import deque
 
-from xpra.log import Logger
-log = Logger("x11", "bindings", "xinput")
-
 from xpra.x11.error import xlog
 from xpra.x11.common import X11Event
 from xpra.util.str_fn import hexstr
@@ -24,7 +21,14 @@ from xpra.x11.bindings.xlib cimport (
     XFree,
     BadRequest, Success, XIAnyPropertyType,
 )
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
+
+from xpra.log import Logger
+
+import_check("xi2")
+
+log = Logger("x11", "bindings", "xinput")
 
 
 ######
@@ -272,9 +276,6 @@ CLASS_INFO = {
     XIScrollClass       : "scroll",
     XITouchClass        : "touch",
 }
-
-
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 
 cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
