@@ -11,6 +11,7 @@ from xpra.util.env import envint
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import xsync, xlog
+from xpra.x11.common import X11Event
 from xpra.x11.prop import prop_set, prop_get, raw_prop_set
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
@@ -183,7 +184,7 @@ class SystemTray(GObject.GObject):
             self.cleanup()
             raise
 
-    def do_x11_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event: X11Event) -> None:
         if event.message_type == "_NET_SYSTEM_TRAY_OPCODE" and event.window == self.xid and event.format == 32:
             opcode = event.data[1]
             if opcode == SYSTEM_TRAY_REQUEST_DOCK:
@@ -262,7 +263,7 @@ class SystemTray(GObject.GObject):
         log(f"dock_tray({xid:x}) done, sending xembed notification")
         X11Window.send_xembed_message(xid, XEMBED.EMBEDDED_NOTIFY, 0, xtray, XEMBED_VERSION)
 
-    def do_x11_unmap_event(self, event) -> None:
+    def do_x11_unmap_event(self, event: X11Event) -> None:
         xid = event.window
         xtray = self.tray_windows.pop(xid, None)
         log(f"SystemTray.do_x11_unmap_event({event}) window={xid}, container window={xtray}")

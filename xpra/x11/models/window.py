@@ -19,7 +19,7 @@ from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.saveset import XSaveSetBindings
 from xpra.x11.bindings.send_wm import send_wm_take_focus
-from xpra.x11.common import Unmanageable
+from xpra.x11.common import Unmanageable, X11Event
 from xpra.x11.models.size_hints_util import sanitize_size_hints
 from xpra.x11.models.base import BaseWindowModel
 from xpra.x11.models.core import sanestr
@@ -494,13 +494,13 @@ class WindowModel(BaseWindowModel):
     # X11 Events
     #########################################
 
-    def do_x11_property_notify_event(self, event) -> None:
+    def do_x11_property_notify_event(self, event: X11Event) -> None:
         if event.delivered_to == self.corral_xid:
             return
         super().do_x11_property_notify_event(event)
 
     # noinspection PyMethodMayBeStatic
-    def do_x11_child_map_request_event(self, event) -> None:
+    def do_x11_child_map_request_event(self, event: X11Event) -> None:
         # If we get a MapRequest then it might mean that someone tried to map
         # this window multiple times in quick succession, before we actually
         # mapped it (so that several MapRequests ended up queued up; FSF Emacs
@@ -510,7 +510,7 @@ class WindowModel(BaseWindowModel):
         # request.
         log("do_x11_child_map_request_event(%s)", event)
 
-    def do_x11_unmap_event(self, event) -> None:
+    def do_x11_unmap_event(self, event: X11Event) -> None:
         log(f"do_x11_unmap_event({event}) corral_xid={self.corral_xid:x}")
         if not self.corral_xid or event.delivered_to == self.corral_xid:
             return
@@ -528,7 +528,7 @@ class WindowModel(BaseWindowModel):
         if event.send_event or self.serial_after_last_unmap(event.serial):
             self.unmanage()
 
-    def do_x11_destroy_event(self, event) -> None:
+    def do_x11_destroy_event(self, event: X11Event) -> None:
         log(f"do_x11_destroy_event({event}) corral_xid={self.corral_xid:x}")
         if not self.corral_xid or event.delivered_to == self.corral_xid:
             return
@@ -607,7 +607,7 @@ class WindowModel(BaseWindowModel):
                 X11Window.sendConfigureNotify(self.xid)
             self._updateprop("geometry", (x, y, w, h))
 
-    def do_x11_configure_event(self, event) -> None:
+    def do_x11_configure_event(self, event: X11Event) -> None:
         geomlog("WindowModel.do_x11_configure_event(%s) corral=%#x, client=%#x, managed=%s",
                 event, self.corral_xid, self.xid, self._managed)
         if not self._managed or not self.corral_xid or not self.xid:
@@ -693,7 +693,7 @@ class WindowModel(BaseWindowModel):
             y = cy
         return self._updateprop("geometry", (x, y, w, h))
 
-    def do_x11_child_configure_request_event(self, event) -> None:
+    def do_x11_child_configure_request_event(self, event: X11Event) -> None:
         hints = self.get_property("size-constraints")
         geomlog("do_x11_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-constraints=%s",
                 event, self.xid, self.corral_xid, configure_bits(event.value_mask), hints)
@@ -756,7 +756,7 @@ class WindowModel(BaseWindowModel):
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
 
-    def process_client_message_event(self, event) -> bool:
+    def process_client_message_event(self, event: X11Event) -> bool:
         if event.message_type == "_NET_MOVERESIZE_WINDOW":
             # TODO: honour gravity, show source indication
             with xsync:

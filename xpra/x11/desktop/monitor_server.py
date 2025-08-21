@@ -11,6 +11,7 @@ from xpra.scripts.config import InitException
 from xpra.net.common import Packet
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.server.subsystem.window import WindowsConnection
+from xpra.x11.common import X11Event
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.error import xsync, xlog, XError
 from xpra.log import Logger
@@ -121,7 +122,7 @@ class XpraMonitorServer(DesktopServerBase):
         # screen = gdk.Screen.get_default()
         # screen.connect("monitors-changed", self.monitors_changed)
 
-    def do_x11_configure_event(self, event) -> None:
+    def do_x11_configure_event(self, event: X11Event) -> None:
         # the root window changed,
         # check to see if a monitor has been modified
         # do this via a timer to avoid running multiple times

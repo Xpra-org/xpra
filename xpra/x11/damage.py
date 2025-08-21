@@ -8,7 +8,7 @@ from xpra.util.env import envbool
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.error import xsync, xswallow, xlog, XError
-from xpra.x11.common import Unmanageable
+from xpra.x11.common import Unmanageable, X11Event
 
 from xpra.x11.bindings.ximage import XImageBindings
 from xpra.x11.bindings.shm import XShmBindings
@@ -201,15 +201,15 @@ class WindowDamageHandler:
                 log.warn("Warning: cannot capture image of geometry %", (x, y, width, height), exc_info=True)
             return None
 
-    def do_x11_damage_event(self, _event) -> None:
+    def do_x11_damage_event(self, _event: X11Event) -> None:
         raise NotImplementedError()
 
-    def do_x11_reparent_event(self, _event) -> None:
+    def do_x11_reparent_event(self, _event: X11Event) -> None:
         self.invalidate_pixmap()
 
     def xpra_unmap_event(self, _event) -> None:
         self.invalidate_pixmap()
 
-    def do_x11_configure_event(self, event) -> None:
+    def do_x11_configure_event(self, event: X11Event) -> None:
         self._border_width = event.border_width
         self.invalidate_pixmap()

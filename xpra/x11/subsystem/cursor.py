@@ -8,6 +8,7 @@ from collections.abc import Sequence
 
 from xpra.server.subsystem.cursor import CursorManager
 from xpra.util.str_fn import Ellipsizer
+from xpra.x11.common import X11Event
 from xpra.x11.error import xlog
 from xpra.log import Logger
 
@@ -68,7 +69,7 @@ class XCursorServer(CursorManager):
             size = 32
         return cursor_image, (size, (32767, 32767))
 
-    def do_x11_cursor_event(self, event) -> None:
+    def do_x11_cursor_event(self, event: X11Event) -> None:
         if not self.cursors:
             return
         if self.last_cursor_serial == event.cursor_serial:

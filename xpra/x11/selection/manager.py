@@ -15,6 +15,7 @@ from xpra.x11.bindings.core import constants
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.selection.common import AlreadyOwned, xfixes_selection_input
+from xpra.x11.common import X11Event
 from xpra.x11.prop import prop_set
 from xpra.x11.info import get_wininfo
 from xpra.util.env import envint
@@ -144,7 +145,7 @@ class ManagerSelection(GObject.GObject):
             self.cancel_exit_timer()
             self.emit("selection-acquired")
 
-    def do_x11_selection_request(self, event) -> None:
+    def do_x11_selection_request(self, event: X11Event) -> None:
         # only ever used for providing the version of the spec:
         log("do_selection_request_event(%s)", event)
         requestor = event.requestor
@@ -166,7 +167,7 @@ class ManagerSelection(GObject.GObject):
             X11Window.XChangeProperty(requestor, prop, "INTEGER", 32, version_data)
             X11Window.sendSelectionNotify(requestor, "selection", target, prop, event.time)
 
-    def do_x11_destroy_event(self, event) -> None:
+    def do_x11_destroy_event(self, event: X11Event) -> None:
         xid = event.window
         if not xid:
             return
@@ -180,7 +181,7 @@ class ManagerSelection(GObject.GObject):
         elif selection:
             self.acquired_selection(selection)
 
-    def do_x11_selection_clear(self, event) -> None:
+    def do_x11_selection_clear(self, event: X11Event) -> None:
         log("do_x11_selection_clear(%s) %s", event, event.selection)
         log.info("lost the %r selection", event.selection)
         self.emit("selection-lost")

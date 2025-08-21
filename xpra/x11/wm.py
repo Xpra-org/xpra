@@ -11,7 +11,7 @@ from xpra.os_util import gi_import
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xsync, xswallow, xlog
-from xpra.x11.common import Unmanageable, FRAME_EXTENTS
+from xpra.x11.common import Unmanageable, FRAME_EXTENTS, X11Event
 from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
 from xpra.x11.selection.manager import ManagerSelection
 from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
@@ -253,7 +253,7 @@ class Wm(GObject.GObject):
             for prop in ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING"):
                 raw_prop_set(rxid, prop, "WINDOW", dformat, window_xids)
 
-    def do_x11_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event: X11Event) -> None:
         # FIXME
         # Need to listen for:
         #   _NET_ACTIVE_WINDOW
@@ -299,11 +299,11 @@ class Wm(GObject.GObject):
                 prop_del(xid, "_NET_SUPPORTING_WM_CHECK")
                 prop_del(xid, "_NET_WM_NAME")
 
-    def do_x11_child_map_request_event(self, event) -> None:
+    def do_x11_child_map_request_event(self, event: X11Event) -> None:
         log("Found a potential client")
         self._manage_client(event.window)
 
-    def do_x11_child_configure_request_event(self, event) -> None:
+    def do_x11_child_configure_request_event(self, event: X11Event) -> None:
         # The point of this method is to handle configure requests on
         # withdrawn windows.  We simply allow them to move/resize any way they
         # want.  This is harmless because the window isn't visible anyway (and
@@ -346,7 +346,7 @@ class Wm(GObject.GObject):
             X11Window.configure(xid, x, y, w, h, event.value_mask)
             X11Window.sendConfigureNotify(xid)
 
-    def do_x11_focus_in_event(self, event) -> None:
+    def do_x11_focus_in_event(self, event: X11Event) -> None:
         # The purpose of this function is to detect when the focus mode has
         # gone to PointerRoot or None, so that it can be given back to
         # something real.  This is easy to detect -- a FocusIn event with
@@ -356,7 +356,7 @@ class Wm(GObject.GObject):
         #     self._world_window.reset_x_focus()
 
     # noinspection PyMethodMayBeStatic
-    def do_x11_focus_out_event(self, event) -> None:
+    def do_x11_focus_out_event(self, event: X11Event) -> None:
         focuslog("wm.do_x11_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
 
     def _setup_ewmh_window(self) -> int:

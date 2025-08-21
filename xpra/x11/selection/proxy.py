@@ -18,6 +18,7 @@ from xpra.util.str_fn import Ellipsizer, bytestostr, csv, memoryview_to_bytes
 from xpra.x11.selection.common import xatoms_to_strings, strings_to_xatoms
 from xpra.x11.bindings.core import constants
 from xpra.x11.bindings.window import PropertyError, X11WindowBindings
+from xpra.x11.common import X11Event
 from xpra.x11.error import xsync, XError
 from xpra.x11.info import get_wininfo
 from xpra.log import Logger
@@ -191,7 +192,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             log("failed to claim selection '%s'", self._selection, exc_info=True)
             raise
 
-    def do_x11_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event: X11Event) -> None:
         if event.message_type == "_GTK_LOAD_ICONTHEMES":
             # ignore this crap
             return

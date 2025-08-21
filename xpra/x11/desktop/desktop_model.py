@@ -12,6 +12,7 @@ from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.bindings.window import X11WindowBindings
+from xpra.x11.common import X11Event
 from xpra.log import Logger
 
 X11Window = X11WindowBindings()
@@ -134,10 +135,10 @@ class ScreenDesktopModel(DesktopModelBase):
             geomlog.error("Error: failed to resize desktop display to %ix%i:", rw, rh)
             geomlog.error(" %s", str(e) or type(e))
 
-    def do_x11_configure_event(self, event) -> None:
+    def do_x11_configure_event(self, event: X11Event) -> None:
         self._screen_size_changed()
 
-    def do_x11_screen_change_event(self, event) -> None:
+    def do_x11_screen_change_event(self, _event: X11Event) -> None:
         self._screen_size_changed()
 
     def _screen_size_changed(self):

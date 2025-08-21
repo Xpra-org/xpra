@@ -9,6 +9,7 @@ from typing import Final
 from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xlog, XError, xsync
+from xpra.x11.common import X11Event
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.prop import raw_prop_set, raw_prop_get
 from xpra.x11.selection.manager import ManagerSelection
@@ -112,13 +113,13 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
         if owner:
             add_event_receiver(owner, self)
 
-    def do_x11_client_message_event(self, evt) -> None:
-        if evt.window is rxid and evt.message_type == "MANAGER" and evt.data[1] == self._selection_atom:
+    def do_x11_client_message_event(self, event: X11Event) -> None:
+        if event.window is rxid and event.message_type == "MANAGER" and event.data[1] == self._selection_atom:
             log("XSettings manager changed")
             self._add_watch()
             self.emit("xsettings-changed")
 
-    def do_x11_property_notify_event(self, event) -> None:
+    def do_x11_property_notify_event(self, event: X11Event) -> None:
         if str(event.atom) == XSETTINGS:
             log("XSettings property value changed")
             self.emit("xsettings-changed")

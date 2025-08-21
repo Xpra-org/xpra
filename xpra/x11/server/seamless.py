@@ -20,7 +20,7 @@ from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKW
 from xpra.net.common import Packet, PacketElement
 from xpra.server import features, ServerExitMode
 from xpra.util.gobject import one_arg_signal, n_arg_signal
-from xpra.x11.common import Unmanageable, get_wm_name
+from xpra.x11.common import Unmanageable, get_wm_name, X11Event
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.server.base import ServerBase
@@ -445,7 +445,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.last_raised = None
         self._add_new_window(window)
 
-    def do_x11_child_map_event(self, event) -> None:
+    def do_x11_child_map_event(self, event: X11Event) -> None:
         windowlog("do_x11_child_map_event(%s)", event)
         if event.override_redirect:
             self._add_new_or_window(event.window)

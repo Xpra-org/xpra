@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.x11.error import xlog
-from xpra.x11.common import get_wm_name
+from xpra.x11.common import get_wm_name, X11Event
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.util.rectangle import rectangle
 from xpra.log import Logger
@@ -80,7 +80,7 @@ class MonitorDesktopModel(DesktopModelBase):
             "name": self.name,
         }
 
-    def do_x11_damage_event(self, event) -> None:
+    def do_x11_damage_event(self, event: X11Event) -> None:
         # ie: <X11:DamageNotify {'send_event': '0', 'serial': '0x4da', 'delivered_to': '0x56e', 'window': '0x56e',
         #                       'damage': '2097157', 'x': '313', 'y': '174', 'width': '6', 'height': '13'}>)
         damaged_area = rectangle(event.x, event.y, event.width, event.height)

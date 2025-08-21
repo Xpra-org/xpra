@@ -9,6 +9,7 @@ from collections.abc import Callable
 from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
+from xpra.x11.common import X11Event
 from xpra.x11.error import xsync, xlog
 from xpra.x11.prop import prop_set
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
@@ -106,25 +107,25 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     # X11 event handlers:
     # we dispatch them to the proxy handling the selection specified
     ############################################################################
-    def do_x11_selection_request(self, event) -> None:
+    def do_x11_selection_request(self, event: X11Event) -> None:
         log("do_x11_selection_request(%s)", event)
         proxy = self._get_proxy(event.selection)
         if proxy:
             proxy.do_selection_request_event(event)
 
-    def do_x11_selection_clear(self, event) -> None:
+    def do_x11_selection_clear(self, event: X11Event) -> None:
         log("do_x11_selection_clear(%s)", event)
         proxy = self._get_proxy(event.selection)
         if proxy:
             proxy.do_selection_clear_event(event)
 
-    def do_x11_xfixes_selection_notify_event(self, event) -> None:
+    def do_x11_xfixes_selection_notify_event(self, event: X11Event) -> None:
         log("do_x11_xfixes_selection_notify_event(%s)", event)
         proxy = self._get_proxy(event.selection)
         if proxy:
             proxy.do_selection_notify_event(event)
 
-    def do_x11_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event: X11Event) -> None:
         message_type = event.message_type
         if message_type in IGNORED_MESSAGES:
             log("ignored clipboard client message: %s", message_type)
@@ -132,7 +133,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         log.info(f"Unexpected X11 message received by clipboard window {event.window:x}")
         log.info(f" {event}")
 
-    def do_x11_property_notify_event(self, event) -> None:
+    def do_x11_property_notify_event(self, event: X11Event) -> None:
         if event.atom in IGNORED_PROPERTIES:
             # these properties are populated by GTK when we create the window,
             # no need to log them

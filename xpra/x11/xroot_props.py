@@ -10,6 +10,7 @@ from collections.abc import Iterable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import xsync
+from xpra.x11.common import X11Event
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.prop import prop_set, prop_get, prop_del
@@ -207,7 +208,7 @@ class XRootPropWatcher(GObject.GObject):
     def __repr__(self):  # pylint: disable=arguments-differ
         return "XRootPropWatcher"
 
-    def do_x11_property_notify_event(self, event) -> None:
+    def do_x11_property_notify_event(self, event: X11Event) -> None:
         log("XRootPropWatcher.do_x11_property_notify_event(%s)", event)
         if event.atom in self._props:
             self.do_notify(str(event.atom))

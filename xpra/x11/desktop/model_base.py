@@ -12,7 +12,7 @@ from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xlog
-from xpra.x11.common import get_wm_name
+from xpra.x11.common import get_wm_name, X11Event
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.damage import WindowDamageHandler
@@ -109,7 +109,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         #  so raise the limit to 20)
         add_event_receiver(self.xid, self, 20)
 
-    def do_x11_property_notify_event(self, event) -> None:
+    def do_x11_property_notify_event(self, event: X11Event) -> None:
         eventlog(f"do_x11_property_notify_event: {event.atom}")
         # update the wm-name (and therefore the window's "title")
         # whenever this property changes:
@@ -193,10 +193,10 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             return False
         return GObject.GObject.get_property(self, prop)
 
-    def do_x11_damage_event(self, event) -> None:
+    def do_x11_damage_event(self, event: X11Event) -> None:
         self.emit("client-contents-changed", event)
 
-    def do_x11_motion_event(self, event) -> None:
+    def do_x11_motion_event(self, event: X11Event) -> None:
         self.emit("motion", event)
 
     def resize(self, w: int, h: int) -> None:

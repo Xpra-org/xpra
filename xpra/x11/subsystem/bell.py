@@ -9,6 +9,7 @@ from xpra.net.common import Packet
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.dispatch import add_event_receiver
+from xpra.x11.common import X11Event
 from xpra.log import Logger
 
 log = Logger("screen")
@@ -48,7 +49,7 @@ class BellServer(StubServerMixin):
         if ss:
             ss.send_bell = packet.get_bool(1)
 
-    def do_x11_xkb_event(self, event) -> None:
+    def do_x11_xkb_event(self, event: X11Event) -> None:
         if not self.bell:
             return
         # X11: XKBNotify

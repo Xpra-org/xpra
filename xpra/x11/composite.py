@@ -8,6 +8,7 @@ from typing import Final
 
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
+from xpra.x11.common import X11Event
 from xpra.x11.error import xlog
 from xpra.x11.damage import WindowDamageHandler
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
@@ -123,7 +124,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
             # invariant:
             self._listening_to = listening
 
-    def do_x11_damage_event(self, event) -> None:
+    def do_x11_damage_event(self, event: X11Event) -> None:
         event.x += self._border_width
         event.y += self._border_width
         self.emit("contents-changed", event)

@@ -16,7 +16,7 @@ from xpra.util.io import get_proc_cmdline
 from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.codecs.image import ImageWrapper
 from xpra.platform.posix.proc import get_parent_pid
-from xpra.x11.common import Unmanageable, FRAME_EXTENTS
+from xpra.x11.common import Unmanageable, X11Event, FRAME_EXTENTS
 from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
@@ -420,7 +420,7 @@ class CoreX11WindowModel(WindowModelStub):
             raise RuntimeError("composite window destroyed outside the UI thread?")
         c.acknowledge_changes()
 
-    def _forward_contents_changed(self, _obj, event) -> None:
+    def _forward_contents_changed(self, _obj, event: X11Event) -> None:
         if self._managed:
             self.emit("client-contents-changed", event)
 
@@ -618,7 +618,7 @@ class CoreX11WindowModel(WindowModelStub):
     def prop_set(self, key: str, ptype, value) -> None:
         prop_set(self.xid, key, ptype, value)
 
-    def do_x11_property_notify_event(self, event) -> None:
+    def do_x11_property_notify_event(self, event: X11Event) -> None:
         # X11: PropertyNotify
         assert event.window == self.xid
         self._handle_property_change(str(event.atom))
@@ -749,11 +749,11 @@ class CoreX11WindowModel(WindowModelStub):
     # X11 Events
     #########################################
 
-    def do_x11_unmap_event(self, event) -> None:
+    def do_x11_unmap_event(self, event: X11Event) -> None:
         log("do_x11_unmap_event(%s) xid=%s, ", event, self.xid)
         self.unmanage()
 
-    def do_x11_destroy_event(self, event) -> None:
+    def do_x11_destroy_event(self, event: X11Event) -> None:
         log("do_x11_destroy_event(%s) xid=%s, ", event, self.xid)
         if event.delivered_to == self.xid:
             # This is somewhat redundant with the unmap signal, because if you
@@ -764,7 +764,7 @@ class CoreX11WindowModel(WindowModelStub):
             # the morning.  It makes for simple code:
             self.unmanage()
 
-    def process_client_message_event(self, event) -> bool:
+    def process_client_message_event(self, event: X11Event) -> bool:
         # FIXME
         # Need to listen for:
         #   _NET_CURRENT_DESKTOP
@@ -795,7 +795,7 @@ class CoreX11WindowModel(WindowModelStub):
         # not handled:
         return False
 
-    def do_x11_configure_event(self, event) -> None:
+    def do_x11_configure_event(self, event: X11Event) -> None:
         if not self._managed:
             return
         # shouldn't the border width always be 0?
@@ -804,7 +804,7 @@ class CoreX11WindowModel(WindowModelStub):
                 event, self.xid, geom)
         self._updateprop("geometry", geom)
 
-    def do_x11_shape_event(self, event) -> None:
+    def do_x11_shape_event(self, event: X11Event) -> None:
         from xpra.x11.bindings.shape import SHAPE_KIND
         shapelog("shape event: %s, kind=%s, timer=%s",
                  event, SHAPE_KIND.get(event.kind, event.kind), self._shape_timer)
@@ -820,7 +820,7 @@ class CoreX11WindowModel(WindowModelStub):
             self._shape_timer = GLib.timeout_add(SHAPE_DELAY, self.read_xshape)
         self._shape_timer_serial = max(self._shape_timer_serial, serial)
 
-    def do_x11_xkb_event(self, event) -> None:
+    def do_x11_xkb_event(self, event: X11Event) -> None:
         # X11: XKBNotify
         log("WindowModel.do_x11_xkb_event(%r)", event)
         if event.subtype != "bell":
@@ -830,7 +830,7 @@ class CoreX11WindowModel(WindowModelStub):
         event.window_model = self
         self.emit("bell", event)
 
-    def do_x11_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event: X11Event) -> None:
         # X11: ClientMessage
         log("do_x11_client_message_event(%s)", event)
         if not event.data or len(event.data) != 5:
@@ -839,7 +839,7 @@ class CoreX11WindowModel(WindowModelStub):
         if not self.process_client_message_event(event):
             log.warn("do_x11_client_message_event(%s) not handled", event)
 
-    def do_x11_focus_in_event(self, event) -> None:
+    def do_x11_focus_in_event(self, event: X11Event) -> None:
         # X11: FocusIn
         grablog("focus_in_event(%s) mode=%s, detail=%s",
                 event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
@@ -848,13 +848,13 @@ class CoreX11WindowModel(WindowModelStub):
         else:
             self.may_emit_grab(event)
 
-    def do_x11_focus_out_event(self, event) -> None:
+    def do_x11_focus_out_event(self, event: X11Event) -> None:
         # X11: FocusOut
         grablog("focus_out_event(%s) mode=%s, detail=%s",
                 event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
         self.may_emit_grab(event)
 
-    def may_emit_grab(self, event) -> None:
+    def may_emit_grab(self, event: X11Event) -> None:
         if event.mode == NotifyGrab:
             grablog("emitting grab on %s", self)
             self.emit("grab", event)
@@ -862,7 +862,7 @@ class CoreX11WindowModel(WindowModelStub):
             grablog("emitting ungrab on %s", self)
             self.emit("ungrab", event)
 
-    def do_x11_motion_event(self, event) -> None:
+    def do_x11_motion_event(self, event: X11Event) -> None:
         self.emit("motion", event)
 
     ################################
