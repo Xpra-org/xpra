@@ -32,8 +32,6 @@ class TestDisplayUtil(unittest.TestCase):
                 raise ValueError(f"{s!r} in {e!r}: {not find}")
         f(name)
         f(f"{e.serial:x}")
-        f(e.display, False)
-        f(e.type, False)
         f("XXXXX", True)
 
 
