@@ -6,7 +6,7 @@
 from typing import Any
 
 from xpra.net.common import Packet
-from xpra.server.subsystem.display import DisplayManager
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.dispatch import add_event_receiver
 from xpra.log import Logger
@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("screen")
 
 
-class BellServer(DisplayManager):
+class BellServer(StubServerMixin):
     """
     Servers that forward bell events.
     """
@@ -27,7 +27,9 @@ class BellServer(DisplayManager):
         self.bell = opts.bell
 
     def get_caps(self, source) -> dict[str, Any]:
-        return self.get_info()
+        return {
+            "bell": self.bell,
+        }
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
