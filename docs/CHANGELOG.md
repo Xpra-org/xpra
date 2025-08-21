@@ -1,7 +1,34 @@
 # Changelog
 
-## [6.4] 2025-03-31
-* TODO
+## [6.4] 2025-08-21
+* Platforms, build and packaging:
+  * [major modularization](https://github.com/Xpra-org/xpra/issues/4523)
+  * [Gtk-free server](https://github.com/Xpra-org/xpra/issues/3871)
+  * [faster unit tests](https://github.com/Xpra-org/xpra/issues/3680#issuecomment-3097000167)
+  * [memory aligned allocations on MS Windows](https://github.com/Xpra-org/xpra/issues/4620)
+  * [faster cython bindings](https://github.com/Xpra-org/xpra/issues/4617), [common utility module](https://github.com/Xpra-org/xpra/issues/4592)
+  * [pulseaudio for containers](https://github.com/Xpra-org/xpra/issues/4615)
+  * [remove `python-avahi` mDNS backend](https://github.com/Xpra-org/xpra/issues/4614)
+  * [deprecate legacy features](https://github.com/Xpra-org/xpra/issues/4496)
+* Encodings:
+  * [nvenc AV1 encoder](https://github.com/Xpra-org/xpra/issues/4612)
+  * [aom AV1 decoder](https://github.com/Xpra-org/xpra/issues/4618)
+  * [handle 8-bit pixel depth with mmap transfers](https://github.com/Xpra-org/xpra/issues/4579)
+  * [convert JpegXL background images for the html5 client](https://github.com/Xpra-org/xpra/issues/4590)
+  * [encoder server redundancy](https://github.com/Xpra-org/xpra/issues/4577)
+* Features:
+  * [emulate middle click button](https://github.com/Xpra-org/xpra/issues/4608)
+  * [make per-window menu more easily accessible](https://github.com/Xpra-org/xpra/issues/4542)
+  * [record correct pid for daemonized processes](https://github.com/Xpra-org/xpra/issues/4499)
+  * [configurable window grouping](https://github.com/Xpra-org/xpra/issues/4208)
+  * [blend window border with OpenGL backend](https://github.com/Xpra-org/xpra/issues/4540)
+* Network:
+  * [stronger packet data types](https://github.com/Xpra-org/xpra/issues/4566)
+  * [honour `IdentityFile` and `IdentitiesOnly` in ssh configs](https://github.com/Xpra-org/xpra/issues/4598)
+  * [ssh host key verification for non-standard ports](https://github.com/Xpra-org/xpra/pull/4600)
+* Configuration:
+  * [configure refresh rate](https://github.com/Xpra-org/xpra/issues/3735#issuecomment-3209051804)
+  * [`fakescreenfps` when supported](https://github.com/Xpra-org/xpra/commit/06b07ab582ae1f4066b3678ef2a165604d2c62e3)
 
 ## [6.3] 2025-03-23
 * Platforms, build and packaging:
