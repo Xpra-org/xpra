@@ -26,6 +26,17 @@ log = Logger("server", "util", "exec")
 sequence = AtomicInteger()
 
 
+class PidPopen:
+    def __init__(self, pid: int):
+        self.pid = pid
+
+    def poll(self) -> int | None:
+        if POSIX and os.path.exists("/proc"):
+            if not os.path.exists(f"/proc/{self.pid}"):
+                return 0
+        return None
+
+
 class ProcInfo:
     __slots__ = (
         "pid", "pidfile", "pidinode",
@@ -108,6 +119,11 @@ class ChildReaper:
         self.poll()
         self._proc_info = []
         self._quit = None
+
+    def add_pid(self, pid: int, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None) -> ProcInfo:
+        # this method is used when we have a pid but not a Popen object
+        process = PidPopen(pid)
+        return self.add_process(process, name, command, ignore=ignore, forget=forget, callback=callback)
 
     def add_process(self, process, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None) -> ProcInfo:
         pid = process.pid

@@ -10,9 +10,10 @@ import shlex
 import threading
 from typing import Any
 from time import monotonic
-from collections.abc import Callable
+from subprocess import Popen
 
 from xpra.os_util import gi_import
+from xpra.util.child_reaper import get_child_reaper
 from xpra.util.system import is_X11
 from xpra.util.io import which, find_libexec_command
 from xpra.util.str_fn import bytestostr, Ellipsizer
@@ -83,15 +84,27 @@ def ibus_pid_file() -> str:
     return os.path.join(session_dir, "ibus-daemon.pid")
 
 
-def may_start_ibus(start_command: Callable[[list[str]], None]):
+def may_start_ibus(env: dict[str, str]):
     # maybe we are inheriting one from a dead session?
     daemonizer = find_libexec_command("daemonizer")
     pidfile = ibus_pid_file()
     ibus_daemon_pid = load_pid(pidfile)
-    ibuslog(f"may_start_ibus({start_command}) {ibus_daemon_pid=}, {pidfile=!r}, {daemonizer=!r}")
-    if ibus_daemon_pid and os.path.exists("/proc") or os.path.exists(f"/proc/{ibus_daemon_pid}"):
-        ibuslog("ibus-daemon is already running")
-        return
+    ibuslog(f"may_start_ibus({env}) {ibus_daemon_pid=}, {pidfile=!r}, {daemonizer=!r}")
+    pidfile_exists = os.path.exists(pidfile)
+    pid_exists = os.path.exists(f"/proc/{ibus_daemon_pid}")
+    if ibus_daemon_pid and pid_exists:
+        pid = load_pid(pidfile)
+        if pid > 0:
+            ibuslog(f"ibus-daemon is already running with pid {pid!r}")
+            return
+    if pidfile_exists and os.path.exists("/proc"):
+        try:
+            os.unlink(pidfile)
+        except OSError as e:
+            log.error(f"Warning: unable to delete old ibus pid file {pidfile!r}")
+            log.estr(e)
+            # don't trust the pidfile value from now on:
+            pidfile = ""
 
     # start it late:
     def late_start():
@@ -100,7 +113,38 @@ def may_start_ibus(start_command: Callable[[list[str]], None]):
         if daemonizer:
             ibuslog(" using daemonizer: %r", daemonizer)
             command = [daemonizer, pidfile, "--"] + command
-        start_command(command)
+        proc = Popen(command, env=env)
+        ibuslog("ibus-daemon proc=%s", proc)
+        start = monotonic()
+
+        def rec_new_pid() -> None:
+            if pidfile and os.path.exists(pidfile):
+                new_pid = load_pid(pidfile)
+                ibuslog(f"{new_pid=}")
+                if new_pid:
+                    ibuslog.info(f"ibus-daemon is running with pid {new_pid!r}")
+                    procinfo = get_child_reaper().add_pid(new_pid, "ibus-daemon", command=command,
+                                                          ignore=True, forget=False)
+                    procinfo.pidfile = pidfile
+
+        def poll_daemonizer() -> bool:
+            poll = proc.poll()
+            ibuslog(f"poll_daemonizer() {poll=}")
+            if poll is not None:
+                rec_new_pid()
+                return False
+            elapsed = monotonic() - start
+            if elapsed < 5:
+                return True
+            ibuslog.warn("Warning: the daemonizer has failed to exit")
+            proc.terminate()
+            return False
+
+        if daemonizer:
+            GLib.timeout_add(50, poll_daemonizer)
+        else:
+            get_child_reaper().add_process(proc, "ibus-daemon", command,
+                                           ignore=True, forget=False)
 
     GLib.idle_add(late_start)
 
@@ -172,10 +216,11 @@ class KeyboardServer(StubServerMixin):
                     log.error("Error: limited keyboard support without XKB")
             self.input_method = configure_imsettings_env(self.input_method)
             if self.input_method == "ibus":
-                def run(command: list[str]) -> None:
-                    start_command: Callable = getattr(self, "start_command", noop)
-                    start_command("ibus", command, ignore=True, use_wrapper=False, shell=False)
-                may_start_ibus(run)
+                if hasattr(self, "get_child_env"):
+                    env = self.get_child_env()
+                else:
+                    env = os.environ.copy()
+                may_start_ibus(env)
 
         from xpra.platform.keyboard import get_keyboard_device
         self.keyboard_device = get_keyboard_device()
