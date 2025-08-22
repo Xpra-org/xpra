@@ -710,7 +710,7 @@ def can_use_socket_path(path: str, uid: int, gid: int) -> bool:
 
 
 def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotxpra,
-                       username: str, uid: int, gid: int) -> dict[str, dict[str, Any]]:
+                       uid: int, gid: int) -> dict[str, dict[str, Any]]:
     from xpra.platform.dotxpra import norm_makepath, strip_display_prefix
     log = get_network_logger()
     sockpaths = {}
@@ -814,9 +814,9 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                            "at least one socket directory must be set to use unix domain sockets")
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
-    if display_name is not None and not WIN32:
+    if display_name and not WIN32:
         display_name = normalize_local_display_name(display_name)
-    sockpaths = get_bind_sockpaths(bind, session_dir, display_name, dotxpra, username, uid, gid)
+    sockpaths = get_bind_sockpaths(bind, session_dir, display_name, dotxpra, uid, gid)
     log(f"{sockpaths=}")
     defs: list[SocketListener] = []
     if not sockpaths:
