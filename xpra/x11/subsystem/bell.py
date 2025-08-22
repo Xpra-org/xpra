@@ -7,12 +7,13 @@ from typing import Any
 
 from xpra.net.common import Packet
 from xpra.server.subsystem.stub import StubServerMixin
+from xpra.util.gobject import one_arg_signal
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.dispatch import add_event_receiver
 from xpra.x11.common import X11Event
 from xpra.log import Logger
 
-log = Logger("screen")
+log = Logger("bell")
 
 
 class BellServer(StubServerMixin):
@@ -20,12 +21,16 @@ class BellServer(StubServerMixin):
     Servers that forward bell events.
     """
     PREFIX = "bell"
+    __gsignals__ = {
+        "x11-xkb-event": one_arg_signal,
+    }
 
     def __init__(self):
         self.bell = False
 
     def init(self, opts) -> None:
         self.bell = opts.bell
+        log(f"bell={opts.bell}")
 
     def get_caps(self, source) -> dict[str, Any]:
         return {
@@ -50,10 +55,10 @@ class BellServer(StubServerMixin):
             ss.send_bell = packet.get_bool(1)
 
     def do_x11_xkb_event(self, event: X11Event) -> None:
+        log("server do_x11_xkb_event(%r) bell=%s", event, self.bell)
         if not self.bell:
             return
         # X11: XKBNotify
-        log("server do_x11_xkb_event(%r)" % event)
         if event.subtype != "bell":
             log.error(f"Error: unknown event subtype: {event.subtype!r}")
             log.error(f" {event=}")

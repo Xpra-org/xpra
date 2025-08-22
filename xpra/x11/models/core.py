@@ -35,6 +35,7 @@ shapelog = Logger("x11", "window", "shape")
 grablog = Logger("x11", "window", "grab")
 framelog = Logger("x11", "window", "frame")
 geomlog = Logger("x11", "window", "geometry")
+belllog = Logger("x11", "window", "bell")
 
 GObject = gi_import("GObject")
 GLib = gi_import("GLib")
@@ -822,10 +823,10 @@ class CoreX11WindowModel(WindowModelStub):
 
     def do_x11_xkb_event(self, event: X11Event) -> None:
         # X11: XKBNotify
-        log("WindowModel.do_x11_xkb_event(%r)", event)
+        belllog("WindowModel.do_x11_xkb_event(%r)", event)
         if event.subtype != "bell":
-            log("WindowModel.do_x11_xkb_event(%r)", event, exc_info=True)
-            log.error("Error: unknown xkb event type: %s", event.type)
+            belllog("WindowModel.do_x11_xkb_event(%r)", event, exc_info=True)
+            belllog.error("Error: unknown xkb event type: %s", event.type)
             return
         event.window_model = self
         self.emit("bell", event)

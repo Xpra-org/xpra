@@ -245,6 +245,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "grab"          : "Window grabs (both keyboard and mouse)",
         "dragndrop"     : "Window drag-n-drop events",
         "filters"       : "Window filters",
+        "bell"          : "Bell events",
     },
     "Encoding": {
         "codec"         : "Codec loader and video helper",

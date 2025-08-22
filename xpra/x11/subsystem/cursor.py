@@ -7,7 +7,9 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.server.subsystem.cursor import CursorManager
+from xpra.util.gobject import one_arg_signal
 from xpra.util.str_fn import Ellipsizer
+from xpra.x11.dispatch import add_event_receiver
 from xpra.x11.common import X11Event
 from xpra.x11.error import xlog
 from xpra.log import Logger
@@ -16,6 +18,9 @@ log = Logger("x11", "server", "cursor")
 
 
 class XCursorServer(CursorManager):
+    __gsignals__ = {
+        "x11-cursor-event": one_arg_signal,
+    }
 
     def __init__(self):
         CursorManager.__init__(self)
@@ -37,6 +42,9 @@ class XCursorServer(CursorManager):
             XFixes.selectCursorChange(True)
             self.default_cursor_image = XFixes.get_cursor_image()
             log("get_default_cursor=%s", Ellipsizer(self.default_cursor_image))
+            from xpra.x11.bindings.core import get_root_xid
+            rxid = get_root_xid()
+            add_event_receiver(rxid, self)
 
     # noinspection PyMethodMayBeStatic
     def get_cursor_image(self) -> Sequence:

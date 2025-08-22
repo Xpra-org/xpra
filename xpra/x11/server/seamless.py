@@ -60,12 +60,15 @@ def rindex(alist: list | tuple, avalue: Any) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 
+GSIGNALS = ServerBase.__gsignals__.copy()
+GSIGNALS.update({
+    "x11-child-map-event": one_arg_signal,
+    "server-event": n_arg_signal(2),
+})
+
+
 class SeamlessServer(GObject.GObject, ServerBase):
-    __gsignals__ = {
-        "x11-child-map-event": one_arg_signal,
-        "x11-cursor-event": one_arg_signal,
-        "server-event": n_arg_signal(2),
-    }
+    __gsignals__ = GSIGNALS
 
     def __init__(self, clobber):
         self.clobber = clobber
