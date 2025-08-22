@@ -21,7 +21,7 @@ from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id,
 from xpra.util.io import path_permission_info, umask_context, is_writable
 from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.parsing import parse_simple_dict
-from xpra.util.env import envint, envbool, osexpand, SilenceWarningsContext
+from xpra.util.env import envint, envbool, SilenceWarningsContext
 from xpra.util.thread import start_thread
 
 # pylint: disable=import-outside-toplevel
@@ -701,12 +701,19 @@ def normalize_local_display_name(local_display_name: str) -> str:
     return local_display_name
 
 
+def can_use_socket_path(path: str, uid: int, gid: int) -> bool:
+    sockdir = os.path.dirname(path)
+    if os.path.exists(sockdir):
+        return is_writable(sockdir, uid, gid)
+    # recurse until we find a directory:
+    return can_use_socket_path(sockdir, uid, gid)
+
+
 def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotxpra,
                        username: str, uid: int, gid: int) -> dict[str, dict[str, Any]]:
     from xpra.platform.dotxpra import norm_makepath, strip_display_prefix
     log = get_network_logger()
     sockpaths = {}
-    homedir = osexpand("~", username, uid, gid)
     log(f"get_bind_sockpaths: bind={bind}, dotxpra={dotxpra}")
     for b in bind:
         if b in ("none", ""):
@@ -718,15 +725,17 @@ def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotx
             options = parse_simple_dict(parts[1])
         if sockpath in ("auto", "noabstract"):
             assert display_name is not None
+            # norm_socket_paths is typically used for sockets in $HOME/.xpra/
             for path in dotxpra.norm_socket_paths(display_name):
-                sockdir = os.path.dirname(path)
-                if not is_writable(sockdir, uid, gid) and sockdir.startswith(homedir):
-                    log.info(f"skipped read-only socket path {path!r}")
-                else:
+                if can_use_socket_path(path, uid, gid):
                     sockpaths[path] = dict(options)
+                else:
+                    log.info(f"insufficient permissions to use socket path {path!r}")
+            # ie: /run/user/$UID/xpra/$DISPLAYNO/socket
             if session_dir and not WIN32:
                 path = os.path.join(session_dir, "socket")
                 sockpaths[path] = dict(options)
+            # automatic abstract sockets:
             if sockpath != "noabstract" and AUTO_ABSTRACT_SOCKET:
                 sane_display_name = strip_display_prefix(display_name).replace(":", "-").replace(".", "_")
                 path = "@" + ABSTRACT_SOCKET_PREFIX + sane_display_name
@@ -736,7 +745,7 @@ def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotx
                 sockpaths[path] = abs_options
             log(f"sockpaths({display_name})={sockpaths} (uid={uid}, gid={gid})")
         elif sockpath.startswith("@"):
-            # abstract socket
+            # explicit abstract socket
             if WIN32:
                 raise ValueError("abstract sockets are not supported on MS Windows")
             sockpath = dotxpra.osexpand(sockpath)
@@ -744,6 +753,7 @@ def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotx
                 raise ValueError(f"invalid characters in abstract socket name {sockpath!r}")
             sockpaths[sockpath] = options
         else:
+            # explicit paths:
             sockpath = dotxpra.osexpand(sockpath)
             if sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
                 assert display_name is not None
