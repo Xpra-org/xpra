@@ -7,6 +7,7 @@
 import sys
 import signal
 from time import monotonic
+from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.os_util import gi_import
@@ -87,7 +88,7 @@ class ServerCommandsWindow:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
 
-        def btn(label, tooltip, callback, icon_name=None) -> None:
+        def btn(label: str, tooltip: str, callback: Callable, icon_name="") -> None:
             b = self.btn(label, tooltip, callback, icon_name)
             hbox.pack_start(b)
 
@@ -100,7 +101,7 @@ class ServerCommandsWindow:
         self.window.vbox = vbox
         self.window.add(vbox)
 
-    def btn(self, label, tooltip, callback, icon_name=None) -> Gtk.Button:
+    def btn(self, label: str, tooltip: str, callback: Callable, icon_name="") -> Gtk.Button:
         btn = Gtk.Button(label=label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
@@ -169,7 +170,7 @@ class ServerCommandsWindow:
                 signame = self.client.server_commands_signals[a]
                 self.client.send("command-signal", pid, signame)
 
-        b = self.btn("Send", None, send, "forward.png")
+        b = self.btn("Send", "", send, "forward.png")
         hbox.pack_start(combo)
         hbox.pack_start(b)
         return hbox
