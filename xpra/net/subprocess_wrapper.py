@@ -10,6 +10,7 @@ from queue import SimpleQueue, Empty
 from collections.abc import Callable
 from typing import Any
 
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.util.glib import register_os_signals
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool, get_exec_env
@@ -306,7 +307,7 @@ def exec_env() -> dict[str, str]:
     return env
 
 
-class SubprocessCaller:
+class SubprocessCaller(SignalEmitter):
     """
     This is the caller side, wrapping the subprocess.
     You can call send() to pass packets to it
@@ -317,6 +318,7 @@ class SubprocessCaller:
     """
 
     def __init__(self, description="wrapper"):
+        super().__init__()
         self.process = None
         self.protocol = None
         self.command = None
@@ -327,10 +329,6 @@ class SubprocessCaller:
         # hook a default packet handlers:
         self.connect(CONNECTION_LOST, self.connection_lost)
         self.connect(GIBBERISH, self.gibberish)
-
-    def connect(self, signal: str, cb: Callable, *args) -> None:
-        """ gobject style signal registration """
-        self.signal_callbacks.setdefault(signal, []).append((cb, list(args)))
 
     def subprocess_exit(self, *args) -> None:
         # beware: this may fire more than once!
@@ -443,11 +441,3 @@ class SubprocessCaller:
         signal_name = packet.get_str(0)
         self._fire_callback(signal_name, packet[1:])
         INJECT_FAULT(proto)
-
-    def _fire_callback(self, signal_name: str, extra_args=()) -> None:
-        callbacks = self.signal_callbacks.get(signal_name, [])
-        log("firing callback for '%s': %s", signal_name, callbacks)
-        for cb, args in callbacks:
-            with log.trap_error(f"Error processing callback {cb} for {signal_name} packet"):
-                all_args = list(args) + list(extra_args)
-                GLib.idle_add(cb, self, *all_args)
