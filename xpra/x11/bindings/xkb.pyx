@@ -6,7 +6,7 @@
 
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, add_event_type, atom_str
-from xpra.x11.bindings.core import import_check
+from xpra.x11.bindings.core cimport import_check
 
 from xpra.x11.bindings.xlib cimport (
     Display, Window, Atom, Time, CARD32, Bool,
