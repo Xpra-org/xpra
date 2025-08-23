@@ -22,6 +22,7 @@ class PingServer(StubServerMixin):
     """
 
     def __init__(self):
+        super().__init__()
         self.pings = False
         self.ping_timer: int = 0
 

@@ -15,6 +15,7 @@ log = Logger("command")
 class ControlHandler(StubServerMixin):
 
     def __init__(self):
+        super().__init__()
         self.control_commands: dict[str, Any] = {}
 
     def add_default_control_commands(self, enabled=True):

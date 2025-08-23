@@ -18,6 +18,7 @@ class ICCServer(StubServerMixin):
     PREFIX = "icc"
 
     def __init__(self):
+        super().__init__()
         self.icc_profile = b""
 
     def parse_hello(self, ss, caps, send_ui: bool):

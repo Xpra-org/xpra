@@ -43,6 +43,7 @@ class PrinterServer(StubServerMixin):
     """
 
     def __init__(self):
+        super().__init__()
         self.lpadmin: str = ""
         self.lpinfo: str = ""
         self.add_printer_options = []

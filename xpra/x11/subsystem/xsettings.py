@@ -45,6 +45,7 @@ def _get_antialias_hintstyle(antialias: typedict) -> str:
 class XSettingsServer(StubServerMixin):
 
     def __init__(self):
+        super().__init__()
         self._default_xsettings: tuple[int, list[tuple]] = (0, [])
         self._settings: dict[str, Any] = {}
         self._xsettings_enabled = False

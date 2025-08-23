@@ -33,6 +33,7 @@ class ClipboardServer(StubServerMixin):
     PREFIX = "clipboard"
 
     def __init__(self):
+        super().__init__()
         self.clipboard = False
         self.clipboard_direction = "none"
         self.clipboard_filter_file = None

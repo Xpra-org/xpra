@@ -21,7 +21,8 @@ class SplashServer(StubServerMixin):
     """
 
     def __init__(self):
-        log("ServerCore.__init__()")
+        super().__init__()
+        log("SplashServer()")
         self.splash_process: Popen | None = None
 
     def setup(self) -> None:

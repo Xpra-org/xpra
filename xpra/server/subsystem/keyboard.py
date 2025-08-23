@@ -27,6 +27,7 @@ class KeyboardServer(StubServerMixin):
     """
 
     def __init__(self):
+        super().__init__()
         self.keymap_options: dict[str, Any] = {}
         self.mod_meanings = {}
         self.keyboard_device = None

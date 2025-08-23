@@ -13,6 +13,7 @@ log = Logger("server", "tray")
 class SystemTrayServer(StubServerMixin):
 
     def __init__(self):
+        super().__init__()
         self.system_tray = False
         self._tray = None
 

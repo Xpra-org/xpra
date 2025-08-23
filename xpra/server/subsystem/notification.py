@@ -27,6 +27,7 @@ class NotificationForwarder(StubServerMixin):
     PREFIX = "notification"
 
     def __init__(self):
+        super().__init__()
         self.notifications_forwarder = None
         self.notifications = False
 

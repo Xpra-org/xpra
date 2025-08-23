@@ -28,6 +28,7 @@ class PointerServer(StubServerMixin):
     """
 
     def __init__(self):
+        super().__init__()
         self.input_devices = "auto"
         self.input_devices_format = None
         self.input_devices_data = None

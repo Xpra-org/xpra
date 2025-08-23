@@ -29,6 +29,7 @@ class AudioServer(StubServerMixin):
     PREFIX = "audio"
 
     def __init__(self):
+        super().__init__()
         self.audio_source_plugin = ""
         self.supports_speaker = False
         self.supports_microphone = False

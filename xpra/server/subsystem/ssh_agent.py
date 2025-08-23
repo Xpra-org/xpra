@@ -35,6 +35,7 @@ class SshAgent(StubServerMixin):
     PREFIX = "ssh-agent"
 
     def __init__(self):
+        super().__init__()
         self.ssh_agent = False
         self.session_files: list[str] = []
 

@@ -13,6 +13,7 @@ class UIWatcher(StubServerMixin):
     """
 
     def __init__(self):
+        super().__init__()
         self.ui_watcher = None
 
     def run(self) -> None:

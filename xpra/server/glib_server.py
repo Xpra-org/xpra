@@ -19,6 +19,7 @@ log = Logger("server", "glib")
 class GLibServer(StubServerMixin, GLibPacketHandler):
 
     def __init__(self):
+        super().__init__()
         GLibPacketHandler.__init__(self)
         StubServerMixin.__init__(self)
         self.main_loop = GLib.MainLoop()

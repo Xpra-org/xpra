@@ -172,6 +172,7 @@ def parse_encryption(protocol, socket_options: dict[str, Any], tcp_encryption: s
 class EncryptionServer(StubServerMixin):
 
     def __init__(self):
+        super().__init__()
         self.encryption = ""
         self.encryption_keyfile = ""
         self.tcp_encryption = ""

@@ -69,6 +69,7 @@ def get_default_window_icon(size: int, wmclass_name: str):
 class GTKServer(StubServerMixin):
 
     def __init__(self):
+        super().__init__()
         self.xvfb: Popen | None = None
         self.display = os.environ.get("DISPLAY", "")
         self.x11_filter = False

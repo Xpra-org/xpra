@@ -29,6 +29,7 @@ class MdnsServer(StubServerMixin):
     """
 
     def __init__(self):
+        super().__init__()
         self.uuid = ""
         self.mdns = False
         self.mdns_publishers = {}

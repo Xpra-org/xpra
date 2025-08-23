@@ -25,6 +25,7 @@ class BandwidthServer(StubServerMixin):
     """
 
     def __init__(self):
+        super().__init__()
         self.bandwidth_limit = 0
         self.bandwidth_detection = False
 

@@ -30,6 +30,7 @@ class RFBServer(StubServerMixin):
     """
 
     def __init__(self):
+        super().__init__()
         self._window_to_id = {}
         self._rfb_upgrade = 0
         self.readonly = False

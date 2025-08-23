@@ -8,12 +8,22 @@ import shlex
 from typing import Any
 from collections.abc import Callable
 
+from xpra.util.env import envbool
 from xpra.os_util import getuid, getgid
 from xpra.util.objects import typedict
 from xpra.os_util import WIN32
 
+# when running the unit tests,
+# we inject the signal emitter into the signal hierarchy,
+# whereas regular server classes inherit the GObject methods:
+if envbool("XPRA_UNIT_TEST"):
+    from xpra.util.signal_emitter import SignalEmitter
+    superclass = SignalEmitter
+else:
+    superclass = object
 
-class StubServerMixin:
+
+class StubServerMixin(superclass):
     """
     Base class for server subsystem.
     Defines the default interface methods that each mixin may override.

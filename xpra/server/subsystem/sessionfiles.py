@@ -15,6 +15,7 @@ log = Logger("server")
 class SessionFilesServer(StubServerMixin):
 
     def __init__(self):
+        super().__init__()
         self.session_files: list[str] = []
 
     def late_cleanup(self, stop=True) -> None:
