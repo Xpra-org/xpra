@@ -79,7 +79,7 @@ class SourceMixinsTest(unittest.TestCase):
             assert c.get_caps(m) is not None
             assert not c.is_closed(m)
         for c in mixin_classes:
-            c.user_event(m)
+            c.emit("user-event", "test")
             c.may_notify(m)
             c.queue_encode(m, ("item",))
             c.send_more(m, "packet-type", 0)
