@@ -1,5 +1,4 @@
 usr/lib/python3*/*/xpra/server/
-usr/lib/python3*/*/xpra/codecs/proxy/
 usr/lib/cups/backend/xpraforwarder
 usr/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 usr/share/xpra/css/

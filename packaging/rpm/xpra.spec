@@ -831,7 +831,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n %{package_prefix}-server
 %{python3_sitearch}/xpra/server
-%{python3_sitearch}/xpra/codecs/proxy
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
 /lib/systemd/system/xpra.service
 /lib/systemd/system/xpra.socket
