@@ -59,7 +59,6 @@ class WindowServer(StubServerMixin):
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
         self.update_size_constraints(minw, minh, maxw, maxh)
-        self.add_init_thread_callback(self.reinit_window_encoders)
         # when the main loop runs, load the windows:
         GLib.idle_add(self.load_existing_windows)
 
@@ -69,14 +68,6 @@ class WindowServer(StubServerMixin):
         # this can cause errors if we receive packets during shutdown:
         # self._window_to_id = {}
         # self._id_to_window = {}
-
-    def reinit_window_encoders(self) -> None:
-        # any window mapped before the threaded init completed
-        # may need to re-initialize its list of encoders:
-        log("reinit_window_encoders()")
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsConnection):
-                ss.reinit_encoders()
 
     def last_client_exited(self) -> None:
         self._focus(None, 0, [])

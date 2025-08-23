@@ -14,7 +14,6 @@ import platform
 import threading
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
-from threading import Lock
 from types import FrameType
 from typing import Any, NoReturn
 from collections.abc import Callable, Sequence, Iterable
@@ -151,6 +150,9 @@ class ServerCore(ServerBaseClass):
         It only handles the connection layer:
         authentication and the initial handshake.
     """
+    __signals__ = {
+        "init-thread-ended": 0,
+    }
 
     def __init__(self):
         log("ServerCore.__init__()")
@@ -206,8 +208,6 @@ class ServerCore(ServerBaseClass):
         self.exit_with_client = False
 
         self.init_thread = None
-        self.init_thread_callbacks: list[tuple[Callable, tuple]] = []
-        self.init_thread_lock = Lock()
 
         self._default_packet_handlers: dict[str, Callable] = {}
 
@@ -313,45 +313,19 @@ class ServerCore(ServerBaseClass):
 
     def threaded_init(self) -> None:
         log("threaded_init() servercore start")
-        self.threaded_setup()
-        self.call_init_thread_callbacks()
-
-    def threaded_setup(self) -> None:
-        log("threaded_setup() servercore start")
         # platform specific init:
         threaded_server_init()
         init_memcheck()
         add_work_item(self.print_run_info)
+        self.threaded_setup()
+        self.emit("init-thread-ended")
+
+    def threaded_setup(self) -> None:
+        log("threaded_setup() servercore start")
         for c in SERVER_BASES:
             with log.trap_error("Error during threaded setup of %s", c):
                 c.threaded_setup(self)
         log("threaded_setup() servercore end")
-
-    def call_init_thread_callbacks(self) -> None:
-        # run the init callbacks:
-        with self.init_thread_lock:
-            log("call_init_thread_callbacks() init_thread_callbacks=%s", self.init_thread_callbacks)
-            for cb, args in self.init_thread_callbacks:
-                try:
-                    log("calling %s%s", cb, args)
-                    cb(*args)
-                except Exception as e:
-                    log("threaded_init()", exc_info=True)
-                    log.error("Error in initialization thread callback")
-                    log.error(" calling %s%s", cb, args, exc_info=True)
-                    log.estr(e)
-
-    def add_init_thread_callback(self, callback: Callable, *args) -> None:
-        log("add_init_thread_callback(%s, %s)", callback, args)
-        self.init_thread_callbacks.append((callback, args))
-
-    def after_threaded_init(self, callback: Callable, *args) -> None:
-        log("after_threaded_init(%s, %s)", callback, args)
-        with self.init_thread_lock:
-            if self.init_thread is None or self.init_thread.is_alive():
-                self.add_init_thread_callback(callback, *args)
-            else:
-                callback(*args)
 
     def wait_for_threaded_init(self) -> None:
         if not self.init_thread:

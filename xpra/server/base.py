@@ -118,13 +118,12 @@ class ServerBase(ServerBaseClass):
             end = monotonic()
             log("%3ims in %s.setup", 1000 * (end - start), c)
 
-    def threaded_init(self) -> None:
+    def threaded_setup(self) -> None:
         log("threaded_init() serverbase start")
         for c in SERVER_BASES:
             with log.trap_error("Error during threaded setup of %s", c):
                 c.threaded_setup(self)
         log("threaded_init() serverbase end")
-        super().call_init_thread_callbacks()
 
     def server_is_ready(self) -> None:
         super().server_is_ready()
@@ -437,7 +436,6 @@ class ServerBase(ServerBaseClass):
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.send_hello(capabilities)
-        self.after_threaded_init(server_source.threaded_init_complete, self)
 
     ######################################################################
     # utility method:

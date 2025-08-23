@@ -46,12 +46,6 @@ class StubServerMixin(superclass):
         Initialize state attributes.
         """
 
-    def add_init_thread_callback(self, callback: Callable) -> None:
-        """
-        Adds a callback that will be executed
-        after the init thread has completed.
-        """
-
     def last_client_exited(self) -> None:
         """
         Called when the last client has exited,

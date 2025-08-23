@@ -426,7 +426,6 @@ class EncodingsConnection(StubClientConnection):
             log.warn("  no other encodings are available!")
 
     def parse_proxy_video(self) -> None:
-        self.wait_for_threaded_init()
         proxy_video_encodings = self.encoding_options.get("proxy.video.encodings")
         proxylog("parse_proxy_video() proxy.video.encodings=%s", proxy_video_encodings)
         if not proxy_video_encodings:

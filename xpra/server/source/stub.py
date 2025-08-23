@@ -54,12 +54,6 @@ class StubClientConnection:
         """
         return {}
 
-    def threaded_init_complete(self, server) -> None:
-        """
-        This method is called after the server's threaded initialization is complete,
-        and after `get_caps()` has already been called to send the `hello` packet to the client.
-        """
-
     def get_info(self) -> dict[str, Any]:
         """
         Runtime information on this mixin, includes state and settings.

@@ -92,8 +92,8 @@ class EncodingServer(StubServerMixin):
             load_codec("enc_jpeg")
         if "avif" in ae:
             load_codec("enc_avif")
+        self.connect("init-thread-ended", self.reinit_encodings)
         self.init_encodings()
-        self.add_init_thread_callback(self.reinit_encodings)
 
     def reinit_encodings(self) -> None:
         self.init_encodings()
@@ -107,6 +107,7 @@ class EncodingServer(StubServerMixin):
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsConnection):
                 ss.reinit_encodings(self)
+                ss.reinit_encoders()
 
     def threaded_setup(self) -> None:
         if INIT_DELAY > 0:
