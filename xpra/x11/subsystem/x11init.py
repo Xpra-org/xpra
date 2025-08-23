@@ -38,6 +38,8 @@ class X11Init(StubServerMixin):
         X11CoreBindings().show_server_info()
         from xpra.x11.window_filters import init_x11_window_filters
         init_x11_window_filters()
+        from xpra.scripts.main import no_gi_gtk_modules
+        no_gi_gtk_modules()
 
     def cleanup(self) -> None:
         from xpra.x11.dispatch import cleanup_all_event_receivers
