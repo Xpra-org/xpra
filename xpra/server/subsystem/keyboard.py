@@ -234,7 +234,7 @@ class KeyboardServer(StubServerMixin):
                 log.error("Error: failed to %s key", ["unpress", "press"][pressed])
                 log.estr(e)
                 log.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
-        ss.user_event()
+        ss.emit("user-event", "key-action")
 
     def get_keycode(self, ss, client_keycode: int, keyname: str,
                     pressed: bool, modifiers: list, keyval: int, keystr: str, group: int):
@@ -355,7 +355,7 @@ class KeyboardServer(StubServerMixin):
                 self.fake_key(keycode, True)
         is_mod = ss.is_modifier(keyname, keycode)
         self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, is_mod, self.key_repeat_interval)
-        ss.user_event()
+        ss.emit("user-event", "key-repeat")
 
     def _process_keyboard_sync_enabled_status(self, proto, packet: Packet) -> None:
         if self.readonly:

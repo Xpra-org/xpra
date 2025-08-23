@@ -58,6 +58,7 @@ class MMAP_Connection(StubClientConnection):
         return False
 
     def __init__(self):
+        super().__init__()
         self.mmap_supported = False
         self.mmap_read_area = None
         self.mmap_write_area = None

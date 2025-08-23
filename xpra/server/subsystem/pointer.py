@@ -176,7 +176,7 @@ class PointerServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return
-        ss.user_event()
+        ss.emit("user-event", "pointer-button")
         self.last_mouse_user = ss.uuid
         self.set_ui_driver(ss)
         device_id = packet.get_i64(1)
@@ -201,7 +201,7 @@ class PointerServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return
-        ss.user_event()
+        ss.emit("user-event", "button-action")
         self.last_mouse_user = ss.uuid
         self.set_ui_driver(ss)
         wid = packet.get_wid(1)
@@ -286,7 +286,7 @@ class PointerServer(StubServerMixin):
             if hasattr(ss, "keyboard_config"):
                 ss.make_keymask_match(modifiers)
             if wid == self.get_focus():
-                ss.user_event()
+                ss.emit("user-event", "focus-changed")
 
     def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool,
                                  pointer, props: dict) -> None:
@@ -329,7 +329,7 @@ class PointerServer(StubServerMixin):
         ss.mouse_last_position = pointer
         if self.ui_driver and self.ui_driver != ss.uuid:
             return
-        ss.user_event()
+        ss.emit("user-event", "pointer")
         self.last_mouse_user = ss.uuid
         if self.process_mouse_common(proto, device_id, wid, pdata, props):
             modifiers = props.get("modifiers")
@@ -353,7 +353,7 @@ class PointerServer(StubServerMixin):
         ss.mouse_last_position = pointer
         if self.ui_driver and self.ui_driver != ss.uuid:
             return
-        ss.user_event()
+        ss.emit("user-event", "pointer-position")
         self.last_mouse_user = ss.uuid
         props: dict[str, Any] = {}
         device_id = -1

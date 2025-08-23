@@ -177,7 +177,7 @@ class NotificationForwarder(StubServerMixin):
         action_key = packet.get_str(2)
         ss = self.get_server_source(proto)
         assert ss
-        ss.user_event()
+        ss.emit("user-event", "notification-action")
         try:
             # special client callback notification:
             client_callback = ss.notification_callbacks.pop(nid)

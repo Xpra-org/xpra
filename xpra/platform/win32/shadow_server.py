@@ -523,7 +523,7 @@ class ShadowServer(GTKShadowServerBase):
         did = -1
         pointer = self.process_mouse_common(proto, did, wid, pointer)
         if pointer:
-            self.get_server_source(proto).user_event()
+            self.get_server_source(proto).emit("user-event", "button-action")
             self.button_action(did, wid, pointer, button, pressed, props)
 
     def button_action(self, device_id, wid: int, pointer, button: int, pressed: bool, props) -> None:

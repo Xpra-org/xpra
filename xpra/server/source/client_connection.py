@@ -55,6 +55,7 @@ class ClientConnection(StubClientConnection):
     """
 
     def __init__(self, protocol, disconnect_cb: Callable, setting_changed: Callable[[str, Any], None]):
+        super().__init__()
         self.counter = counter.increase()
         self.protocol = protocol
         self.connection_time = monotonic()

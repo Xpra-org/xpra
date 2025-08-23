@@ -53,6 +53,7 @@ class WindowsConnection(StubClientConnection):
         return caps.boolget("windows")
 
     def __init__(self):
+        super().__init__()
         self.get_focus: Callable | None = None
         self.window_filters = []
         self.readonly = False

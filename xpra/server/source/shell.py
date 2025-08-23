@@ -24,6 +24,7 @@ class ShellConnection(StubClientConnection):
         return caps.boolget(ShellConnection.PREFIX, False)
 
     def __init__(self, *_args):
+        super().__init__()
         self._server = None
         self.shell_enabled = False
         self.saved_logging_handler = None

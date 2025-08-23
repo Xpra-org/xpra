@@ -38,6 +38,7 @@ class CursorsConnection(StubClientConnection):
         return BACKWARDS_COMPATIBLE and caps.boolget("cursors")
 
     def __init__(self):
+        super().__init__()
         self.get_cursor_data_cb: Callable = nodata
         self.send_cursors = False
         self.cursor_encodings: Sequence[str] = ()

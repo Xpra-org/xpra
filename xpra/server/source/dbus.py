@@ -23,6 +23,7 @@ class DBUS_Connection(StubClientConnection):
         return caps.boolget("windows", False) or caps.boolget("sound", False) or caps.get("audio", False)
 
     def __init__(self):
+        super().__init__()
         self.dbus_control = False
         self.dbus_server = None
 

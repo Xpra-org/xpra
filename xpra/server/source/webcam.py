@@ -65,6 +65,7 @@ class WebcamConnection(StubClientConnection):
         return True
 
     def __init__(self):
+        super().__init__()
         self.webcam_enabled = False
         self.webcam_device = None
         self.webcam_encodings = []

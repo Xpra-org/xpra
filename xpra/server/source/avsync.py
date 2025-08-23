@@ -30,6 +30,7 @@ class AVSyncConnection(StubClientConnection):
         return caps.boolget("av-sync") and caps.boolget("windows")
 
     def __init__(self):
+        super().__init__()
         self.av_sync = False
 
     def init_from(self, _protocol, server) -> None:

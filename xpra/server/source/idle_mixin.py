@@ -30,11 +30,13 @@ class IdleConnection(StubClientConnection):
         return BACKWARDS_COMPATIBLE and caps.boolget("mouse")
 
     def __init__(self) -> None:
+        super().__init__()
         self.idle_timeout = 0
         # duplicated from clientconnection:
         self.notification_callbacks: dict[int, Callable] = {}
         self.send_notifications = False
         self.send_notifications_actions = False
+        self.connect("user-event", self.do_user_event)
 
     def init_from(self, _protocol, server) -> None:
         self.idle_timeout = server.idle_timeout
@@ -63,8 +65,8 @@ class IdleConnection(StubClientConnection):
         self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
 
-    def user_event(self) -> None:
-        log("user_event()")
+    def do_user_event(self, *args) -> None:
+        log("user_event%s", args)
         self.last_user_event = monotonic()
         self.cancel_idle_grace_timeout()
         self.schedule_idle_grace_timeout()
@@ -127,7 +129,7 @@ class IdleConnection(StubClientConnection):
     def idle_notification_action(self, nid: int, action_id) -> None:
         log("idle_notification_action(%i, %s)", nid, action_id)
         if action_id == "cancel":
-            self.user_event()
+            self.emit("user-event", "notification-cancelled")
 
     def idle_timedout(self) -> None:
         self.idle_timer = 0

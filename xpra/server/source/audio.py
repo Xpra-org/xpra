@@ -66,6 +66,7 @@ class AudioConnection(StubClientConnection):
         return False
 
     def __init__(self):
+        super().__init__()
         self.audio_properties: typedict = typedict()
         self.audio_source_plugin = ""
         self.supports_speaker = False

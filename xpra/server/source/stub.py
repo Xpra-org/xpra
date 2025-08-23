@@ -6,10 +6,11 @@
 from typing import Any
 from collections.abc import Callable
 from xpra.util.objects import typedict
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.net.common import PacketElement
 
 
-class StubClientConnection:
+class StubClientConnection(SignalEmitter):
     """
     Base class for client-connection subsystem.
     Defines the default interface methods that each mixin may override.
@@ -61,11 +62,6 @@ class StubClientConnection:
         but the data is returned in a structured format. (ie: nested dictionaries)
         """
         return {}
-
-    def user_event(self) -> None:
-        """
-        This method is called every time a user action (keyboard, mouse, etc) is being handled.
-        """
 
     def may_notify(self, *args, **kwargs) -> None:
         """
