@@ -102,6 +102,7 @@ def get_client_connection_class(caps: typedict):
             self.hello_sent = False
             from xpra.server.source.client_connection import ClientConnection
             for bc in CC_BASES:
+                log("ClientConnectionMuxer: initializing %s", bc.__name__)
                 try:
                     if bc == ClientConnection:
                         initargs = (protocol, disconnect_cb, setting_changed)
@@ -147,16 +148,6 @@ def get_client_connection_class(caps: typedict):
                 print_nested_dict(capabilities, print_fn=netlog.info)
             self.send("hello", capabilities)
             self.hello_sent = True
-
-        def suspend(self) -> None:
-            log("suspend()")
-            for bc in CC_BASES:
-                bc.suspend(self)
-
-        def resume(self) -> None:
-            log("resume()")
-            for bc in CC_BASES:
-                bc.resume(self)
 
         def get_info(self) -> dict[str, Any]:
             def module_name(m) -> str:

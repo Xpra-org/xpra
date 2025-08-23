@@ -55,7 +55,7 @@ class ClientConnection(StubClientConnection):
     """
 
     def __init__(self, protocol, disconnect_cb: Callable, setting_changed: Callable[[str, Any], None]):
-        super().__init__()
+        StubClientConnection.__init__(self)
         self.counter = counter.increase()
         self.protocol = protocol
         self.connection_time = monotonic()
@@ -81,6 +81,15 @@ class ClientConnection(StubClientConnection):
         self.client_packet_types = ()
         self.setting_changed = setting_changed
         self.queue_encode: Callable[[ENCODE_WORK_ITEM], None] = self.start_queue_encode
+
+        def suspend() -> None:
+            self.suspended = True
+
+        def resume() -> None:
+            self.suspended = False
+
+        self.connect("suspend", suspend)
+        self.connect("resume", resume)
 
     def run(self) -> None:
         # ready for processing:
@@ -113,12 +122,6 @@ class ClientConnection(StubClientConnection):
         self.close_event.set()
         self.protocol = None
         self.statistics.reset(0)
-
-    def suspend(self) -> None:
-        self.suspended = True
-
-    def resume(self) -> None:
-        self.suspended = False
 
     def may_notify(self, *args, **kwargs) -> None:
         # fugly workaround,

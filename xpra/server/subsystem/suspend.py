@@ -24,7 +24,7 @@ class SuspendServer(StubServerMixin):
         ss = self.get_server_source(proto)
         log("suspend(%s) source=%s", packet[1:], ss)
         if ss:
-            ss.suspend()
+            ss.emit("suspend")
         if NOTIFY_SUSPEND_EVENTS:
             for source in self._server_sources.values():
                 source.may_notify(NotificationID.IDLE, "Server Suspending",
@@ -35,7 +35,7 @@ class SuspendServer(StubServerMixin):
         ss = self.get_server_source(proto)
         log("resume(%s) source=%s", packet[1:], ss)
         if ss:
-            ss.resume()
+            ss.emit("resume")
 
     def init_packet_handlers(self) -> None:
         self.add_packets(

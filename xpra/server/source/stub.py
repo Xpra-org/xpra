@@ -86,15 +86,3 @@ class StubClientConnection(SignalEmitter):
         Send a packet to the client,
         the `synchronous` and `will_have_more` arguments will be set to `False`
         """
-
-    def suspend(self) -> None:
-        """
-        The client is not interacting with the window and may even suspend the session completely,
-        take appropriate measures to handle this.
-        Typically this means we stop sending screen and cursor updates.
-        """
-
-    def resume(self) -> None:
-        """
-        The client is resuming the session, so whatever was suspended needs resuming.
-        """

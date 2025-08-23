@@ -61,6 +61,8 @@ class WindowsConnection(StubClientConnection):
         self.global_batch_config = None
         # duplicated from clientconnection:
         self.statistics = None
+        self.connect("suspend", self.suspend_window_sources)
+        self.connect("resume", self.resume_window_sources)
 
     def init_from(self, _protocol, server) -> None:
         self.get_focus = server.get_focus
@@ -88,13 +90,11 @@ class WindowsConnection(StubClientConnection):
     def all_window_sources(self) -> tuple:
         return tuple(self.window_sources.values())
 
-    def suspend(self) -> None:
-        eventslog("suspend() suspended=%s", self.suspended)
+    def suspend_window_sources(self) -> None:
         for ws in self.window_sources.values():
             ws.suspend()
 
-    def resume(self) -> None:
-        eventslog("resume() suspended=%s", self.suspended)
+    def resume_window_sources(self) -> None:
         for ws in self.window_sources.values():
             ws.resume()
 
