@@ -7,7 +7,6 @@ from typing import Any
 
 from xpra.net.common import Packet
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.util.gobject import one_arg_signal
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.dispatch import add_event_receiver
 from xpra.x11.common import X11Event
@@ -21,8 +20,8 @@ class BellServer(StubServerMixin):
     Servers that forward bell events.
     """
     PREFIX = "bell"
-    __gsignals__ = {
-        "x11-xkb-event": one_arg_signal,
+    __signals__ = {
+        "x11-xkb-event": 1,
     }
 
     def __init__(self):

@@ -12,7 +12,7 @@ from xpra.util.env import envbool
 from xpra.common import noop
 from xpra.net.common import Packet
 from xpra.server import features
-from xpra.util.gobject import one_arg_signal
+from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.server.base import ServerBase
 from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
 from xpra.x11.bindings.core import get_root_xid
@@ -60,17 +60,21 @@ def do_modify_gsettings(defs: dict[str, Any], value=False) -> dict[str, Any]:
     return modified
 
 
+SIGNALS = to_gsignals(ServerBase.__signals__)
+SIGNALS.update({
+    "x11-xkb-event": one_arg_signal,
+    "x11-cursor-event": one_arg_signal,
+    "x11-motion-event": one_arg_signal,
+    "x11-configure-event": one_arg_signal,
+})
+
+
 class DesktopServerBase(GObject.GObject, ServerBase):
     """
         A server base class for RFB / VNC-like virtual desktop or virtual monitors,
         used with the "start-desktop" subcommand.
     """
-    __common_gsignals__: dict[str, tuple] = {
-        "x11-xkb-event": one_arg_signal,
-        "x11-cursor-event": one_arg_signal,
-        "x11-motion-event": one_arg_signal,
-        "x11-configure-event": one_arg_signal,
-    }
+    __common_gsignals__ = SIGNALS
 
     def __init__(self):
         GObject.GObject.__init__()

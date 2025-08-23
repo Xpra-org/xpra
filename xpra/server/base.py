@@ -32,12 +32,12 @@ netlog = Logger("network")
 authlog = Logger("auth")
 
 SERVER_BASES = get_server_base_classes()
-GSIGNALS: dict[str, tuple] = {}
+SIGNALS: dict[str, tuple] = {}
 for base_class in SERVER_BASES:
-    GSIGNALS.update(getattr(base_class, "__gsignals__", {}))
+    SIGNALS.update(getattr(base_class, "__signals__", {}))
 ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
 log("ServerBaseClass%s", SERVER_BASES)
-log("signals: %s", GSIGNALS)
+log("signals: %s", SIGNALS)
 
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 MDNS_CLIENT_COUNT = envbool("XPRA_MDNS_CLIENT_COUNT", True)
@@ -50,7 +50,7 @@ class ServerBase(ServerBaseClass):
     to a specific backend (X11 or otherwise).
     See X11ServerBase and other platform specific subclasses.
     """
-    __gsignals__ = GSIGNALS
+    __signals__ = SIGNALS
 
     def __init__(self):
         for c in SERVER_BASES:

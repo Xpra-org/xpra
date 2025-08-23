@@ -7,7 +7,6 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.server.subsystem.cursor import CursorManager
-from xpra.util.gobject import one_arg_signal
 from xpra.util.str_fn import Ellipsizer
 from xpra.x11.dispatch import add_event_receiver
 from xpra.x11.common import X11Event
@@ -18,8 +17,8 @@ log = Logger("x11", "server", "cursor")
 
 
 class XCursorServer(CursorManager):
-    __gsignals__ = {
-        "x11-cursor-event": one_arg_signal,
+    __signals__ = {
+        "x11-cursor-event": 1,
     }
 
     def __init__(self):

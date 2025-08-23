@@ -21,7 +21,7 @@ from xpra.exit_codes import ExitCode
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
 from xpra.server import features, ServerExitMode
-from xpra.util.gobject import one_arg_signal, n_arg_signal
+from xpra.util.gobject import one_arg_signal, n_arg_signal, to_gsignals
 from xpra.x11.common import Unmanageable, get_wm_name, X11Event
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
@@ -62,7 +62,7 @@ def rindex(alist: list | tuple, avalue: Any) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 
-GSIGNALS = ServerBase.__gsignals__.copy()
+GSIGNALS = to_gsignals(ServerBase.__signals__)
 GSIGNALS.update({
     "x11-child-map-event": one_arg_signal,
     "server-event": n_arg_signal(2),
