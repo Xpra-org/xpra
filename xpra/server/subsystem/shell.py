@@ -32,7 +32,7 @@ class ShellServer(StubServerMixin):
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {
-            "shell": True,
+            ShellServer.PREFIX: True,
         }
 
     def _process_shell_exec(self, proto, packet: Packet) -> None:

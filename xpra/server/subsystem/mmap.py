@@ -31,7 +31,7 @@ class MMAP_Server(StubServerMixin):
 
     def get_info(self, _proto=None) -> dict[str, Any]:
         return {
-            "mmap": {
+            MMAP_Server.PREFIX: {
                 "supported": self.mmap_supported,
                 "filename": self.mmap_filename or "",
             },

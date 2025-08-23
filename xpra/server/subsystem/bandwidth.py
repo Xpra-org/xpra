@@ -23,6 +23,7 @@ class BandwidthServer(StubServerMixin):
     """
     Adds bandwidth management
     """
+    PREFIX = "bandwidth"
 
     def __init__(self):
         super().__init__()
@@ -36,9 +37,10 @@ class BandwidthServer(StubServerMixin):
 
     def get_info(self, _source=None) -> dict[str, Any]:
         info = {
-            "bandwidth-limit": self.bandwidth_limit or 0,
+            "limit": self.bandwidth_limit or 0,
+            "detection": self.bandwidth_detection,
         }
-        return info
+        return {BandwidthServer.PREFIX: info}
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {

@@ -135,11 +135,11 @@ class OpenGLInfo(StubServerMixin):
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
         if FULL_INFO and self.opengl_props:
-            caps["opengl"] = dict_version_trim(self.opengl_props)
+            caps[OpenGLInfo.PREFIX] = dict_version_trim(self.opengl_props)
         return caps
 
     def get_info(self, _proto) -> dict[str, Any]:
         info: dict[str, Any] = {}
         if self.opengl_props:
             info = dict(self.opengl_props)
-        return {"opengl": info}
+        return {OpenGLInfo.PREFIX: info}

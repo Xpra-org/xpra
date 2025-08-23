@@ -41,6 +41,7 @@ class PrinterServer(StubServerMixin):
     Mixin for servers that can handle forwarded printers.
     Printer forwarding is only supported on Posix servers with the cups backend script.
     """
+    PREFIX = "printer"
 
     def __init__(self):
         super().__init__()
@@ -77,7 +78,7 @@ class PrinterServer(StubServerMixin):
     def get_server_features(self, _source) -> dict[str, Any]:
         f = self.file_transfer.get_printer_features()
         f["attributes"] = ("printer-info", "device-uri")
-        return {"printer": f}
+        return {PrinterServer.PREFIX: f}
 
     def get_info(self, _proto) -> dict[str, Any]:
         info = {}
@@ -90,7 +91,7 @@ class PrinterServer(StubServerMixin):
         if self.file_transfer.printing:
             from xpra.platform.printing import get_info
             info.update(get_info())
-        return {"printer": info}
+        return {PrinterServer.PREFIX: info}
 
     def init_printing(self) -> None:
         printing = self.file_transfer.printing

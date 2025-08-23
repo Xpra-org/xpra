@@ -27,6 +27,7 @@ class MdnsServer(StubServerMixin):
     """
         Publishes sockets using mDNS
     """
+    PREFIX = "mdns"
 
     def __init__(self):
         super().__init__()
@@ -169,5 +170,5 @@ class MdnsServer(StubServerMixin):
         authenticated = proto and proto.authenticators
         full = FULL_INFO > 0 or authenticated
         if full:
-            return {"mdns": self.mdns}
+            return {MdnsServer.PREFIX: self.mdns}
         return {}

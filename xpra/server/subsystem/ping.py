@@ -20,6 +20,7 @@ class PingServer(StubServerMixin):
     """
     Adds ping handling
     """
+    PREFIX = "ping"
 
     def __init__(self):
         super().__init__()
@@ -44,7 +45,7 @@ class PingServer(StubServerMixin):
 
     def get_caps(self, _source) -> dict[str, Any]:
         return {
-            "ping": self.pings,
+            PingServer.PREFIX: self.pings,
         }
 
     def get_server_features(self, _source) -> dict[str, Any]:

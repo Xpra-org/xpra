@@ -13,6 +13,7 @@ log = Logger("server")
 
 
 class SessionFilesServer(StubServerMixin):
+    PREFIX = "session-files"
 
     def __init__(self):
         super().__init__()
@@ -27,5 +28,5 @@ class SessionFilesServer(StubServerMixin):
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
-            "session-files": self.session_files,
+            SessionFilesServer.PREFIX: self.session_files,
         }
