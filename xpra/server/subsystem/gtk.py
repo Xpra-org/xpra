@@ -23,13 +23,12 @@ log = Logger("server", "gtk")
 
 
 def gdk_init() -> None:
+    log("gdk_init()")
     try:
         from xpra.x11.gtk.display_source import init_gdk_display_source
     except ImportError as e:
         log.warn(f"Warning: unable to initialize gdk display source: {e}")
         return
-    if os.environ.get("NO_AT_BRIDGE") is None:
-        os.environ["NO_AT_BRIDGE"] = "1"
     init_gdk_display_source()
     # inject Gtk into the windowicon lookup:
     try:
@@ -75,6 +74,7 @@ class GTKServer(StubServerMixin):
         self.x11_filter = False
 
     def init(self, opts) -> None:
+        log("GTKServer.init(..)")
         from xpra.scripts.main import no_gtk
         no_gtk()
 

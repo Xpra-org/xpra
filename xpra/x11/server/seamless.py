@@ -112,6 +112,8 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.connect("server-event", log_server_event)
 
     def setup(self) -> None:
+        if os.environ.get("NO_AT_BRIDGE") is None:
+            os.environ["NO_AT_BRIDGE"] = "1"
         super().setup()
         self.validate_display()
         # TODO: this needs moving to a module
