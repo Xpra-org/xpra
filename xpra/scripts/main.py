@@ -1919,7 +1919,7 @@ def set_client_features(opts) -> None:
     features.window = opts.windows
     features.cursor = opts.windows and opts.cursors
     features.gstreamer = opts.gstreamer
-    features.x11 = opts.x11 and impcheck("xpra.x11")
+    features.x11 = impcheck("xpra.x11")
     features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("xpra.audio")
     features.webcam = bo(opts.webcam) and impcheck("xpra.codecs")
     features.clipboard = b(opts.clipboard) and impcheck("xpra.clipboard")

@@ -284,7 +284,7 @@ def set_server_features(opts, mode: str) -> None:
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
-        features.x11 = b(opts.x11) and impcheck("x11")
+        features.x11 = (mode in ("desktop", "seamless") or opts.backend == "x11") and impcheck("x11")
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
         features.pulseaudio = features.audio and b(opts.pulseaudio)
         features.av_sync = features.audio and b(opts.av_sync)
@@ -303,7 +303,7 @@ def set_server_features(opts, mode: str) -> None:
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0
-        features.gtk = mode not in ("desktop", "seamless") or envbool("XPRA_GTK", False)
+        features.gtk = mode not in ("desktop", "seamless") or opts.backend.lower() == "gtk"
         features.tray = features.gtk and b(opts.tray) and mode == "shadow"
         features.opengl = features.display and b(opts.opengl)
         features.bell = features.display and b(opts.bell)
@@ -711,9 +711,10 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         opts.forward_xdg_open = mode == "seamless"
 
     if not proxying and not shadowing and POSIX and not OSX:
-        if not opts.x11:
-            raise InitExit(ExitCode.UNSUPPORTED, f"{mode!r} requires x11")
-        os.environ["GDK_BACKEND"] = "x11"
+        if opts.backend.lower() not in ("auto", "gtk", "x11"):
+            raise InitExit(ExitCode.UNSUPPORTED, f"{mode!r} requires the 'x11' backend, not {opts.backend!r}")
+        if opts.backend.lower() in ("auto", "gtk"):
+            os.environ["GDK_BACKEND"] = "x11"
 
     has_child_arg = any((
         opts.start_child,
