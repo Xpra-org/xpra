@@ -9,8 +9,6 @@ from collections.abc import Callable
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
-
 log = Logger("util")
 
 
@@ -37,6 +35,9 @@ class SignalEmitter:
     def _fire_callback(self, signal_name: str, extra_args=()) -> None:
         callbacks = self._signal_callbacks.get(signal_name, ())
         log("firing callback for '%s': %s", signal_name, callbacks)
+        if not callbacks:
+            return
+        GLib = gi_import("GLib")
         for cb, args in callbacks:
             with log.trap_error(f"Error processing callback {cb} for {signal_name} packet"):
                 all_args = list(args) + list(extra_args)
