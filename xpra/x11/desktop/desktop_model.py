@@ -120,7 +120,7 @@ class ScreenDesktopModel(DesktopModelBase):
             if ow == rw and oh == rh:
                 return
             with xsync:
-                if RandR.is_dummy16() and (rw, rh) not in RandR.DesktopServerBaseget_xrr_screen_sizes():
+                if RandR.is_dummy16() and (rw, rh) not in RandR.get_xrr_screen_sizes():
                     RandR.add_screen_size(rw, rh)
             with xsync:
                 if not RandR.set_screen_size(rw, rh):
