@@ -15,6 +15,10 @@ log = Logger("file")
 
 class FileConnection(FileTransferHandler, StubClientConnection):
 
+    def __init__(self):
+        FileTransferHandler.__init__(self)
+        StubClientConnection.__init__(self)
+
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         return bool("file" in caps or caps.boolget("file-transfer"))
