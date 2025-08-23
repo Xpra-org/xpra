@@ -52,7 +52,7 @@ XSHAPE = envbool("XPRA_XSHAPE", True)
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 OPAQUE_REGION = envbool("XPRA_OPAQUE_REGION", True)
 DELETE_DESTROY = envbool("XPRA_DELETE_DESTROY", False)
-DELETE_KILL_PID = envbool("XPRA_DELETE_KILL_PID", True)
+DELETE_KILL_PID = envbool("XPRA_DELETE_KILL_PID", XRes is not None)
 DELETE_XKILL = envbool("XPRA_DELETE_XKILL", True)
 
 CurrentTime: Final[int] = constants["CurrentTime"]
