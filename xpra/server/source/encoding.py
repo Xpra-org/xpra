@@ -16,7 +16,6 @@ from xpra.server.source.stub import StubClientConnection
 from xpra.server.window import batch_config
 from xpra.server.core import ClientException
 from xpra.codecs.video import getVideoHelper
-from xpra.codecs.constants import VideoSpec
 from xpra.net.compression import use
 from xpra.util.background_worker import add_work_item
 from xpra.util.objects import typedict
@@ -347,14 +346,6 @@ class EncodingsConnection(StubClientConnection):
         log("encoding options: %s", self.encoding_options)
         log("icons encoding options: %s", self.icons_encoding_options)
 
-        # handle proxy video: add proxy codec to video helper:
-        pv = self.encoding_options.boolget("proxy.video")
-        proxylog("proxy.video=%s", pv)
-        if pv:
-            # enabling video proxy:
-            with proxylog.trap_error("Error parsing proxy video"):
-                self.parse_proxy_video()
-
         sc = self.encoding_options.get("scaling.control", self.scaling_control)
         if sc is not None:
             self.default_encoding_options["scaling.control"] = sc
@@ -424,44 +415,6 @@ class EncodingsConnection(StubClientConnection):
         else:
             log.warn(f" {s}")
             log.warn("  no other encodings are available!")
-
-    def parse_proxy_video(self) -> None:
-        proxy_video_encodings = self.encoding_options.get("proxy.video.encodings")
-        proxylog("parse_proxy_video() proxy.video.encodings=%s", proxy_video_encodings)
-        if not proxy_video_encodings:
-            return
-        from xpra.codecs.proxy.encoder import Encoder  # pylint: disable=import-outside-toplevel
-        cloned = False
-        for encoding, colorspace_specs in proxy_video_encodings.items():
-            for colorspace, spec_props in colorspace_specs.items():
-                for spec_prop in spec_props:
-                    # make a new spec based on spec_props:
-                    spec_prop = typedict(spec_prop)
-                    input_colorspace = spec_prop.strget("input_colorspace")
-                    output_colorspaces = spec_prop.strtupleget("output_colorspaces")
-                    if not input_colorspace or not output_colorspaces:
-                        log.warn("Warning: invalid proxy video encoding '%s':", encoding)
-                        log.warn(" missing colorspace attributes")
-                        continue
-                    spec = VideoSpec(codec_class=Encoder,
-                                     has_lossless_mode=spec_prop.boolget("has_lossless_mode", False),
-                                     input_colorspace=input_colorspace,
-                                     output_colorspaces=output_colorspaces,
-                                     codec_type="proxy", encoding=encoding,
-                                     )
-                    for k, v in spec_prop.items():
-                        if k.startswith("_") or not hasattr(spec, k):
-                            log.warn("Warning: invalid proxy codec attribute '%s'", k)
-                            continue
-                        setattr(spec, k, v)
-                    proxylog("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
-                    if not cloned:
-                        # if we "proxy video", we will modify the video helper to add
-                        # new encoders, so we must make a deep copy to preserve the original
-                        # which may be used by other clients (other ServerSource instances)
-                        self.video_helper = getVideoHelper().clone()
-                        cloned = True
-                    self.video_helper.add_encoder_spec(spec)
 
     ######################################################################
     # Functions used by the server to request something
