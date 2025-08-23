@@ -18,7 +18,7 @@
 %global srcname PyOpenGL
 
 Name:           %{python3}-pyopengl
-Version:        3.1.9
+Version:        3.1.10
 Release:        1%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
@@ -61,12 +61,12 @@ Requires:       %{python3}-tkinter
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "85957c7c76975818ff759ec9243f9dc7091ef6f373ea37a2eb50c320fd9a86f3" ]; then
+if [ "${sha256}" != "82751c83f0a6f732b8b5923990edc2441d38176a98756b1718e8d6c4379f5a71" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 sha256=`sha256sum %{SOURCE1} | awk '{print $1}'`
-if [ "${sha256}" != "28ebd82c5f4491a418aeca9672dffb3adbe7d33b39eada4548a5b4e8c03f60c8" ]; then
+if [ "${sha256}" != "c4a02d6866b54eb119c8e9b3fb04fa835a95ab802dd96607ab4cdb0012df8335" ]; then
 	echo "invalid checksum for %{SOURCE1}"
 	exit 1
 fi
@@ -118,6 +118,9 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Sat Aug 23 2025 Antoine Martin <antoine@xpra.org> - 3.1.10-1
+- new upstream release
+
 * Mon Jan 27 2025 Antoine Martin <antoine@xpra.org> - 3.1.9-1
 - new upstream release
 - switch back to pypi
