@@ -10,7 +10,6 @@ from typing import Any
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.net.common import Packet
-from xpra.platform.pointer import get_pointer_device
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -44,12 +43,16 @@ class PointerServer(StubServerMixin):
         self.input_devices = opts.input_devices
 
     def setup(self) -> None:
-        self.pointer_device = get_pointer_device()
+        self.pointer_device = self.make_pointer_device()
         if not self.pointer_device:
             log.warn("Warning: no pointer device available, using NoPointerDevice")
             from xpra.pointer.nopointer import NoPointerDevice
             self.pointer_device = NoPointerDevice()
         log("pointer_device=%s", self.pointer_device)
+
+    def make_pointer_device(self):
+        from xpra.platform.pointer import get_pointer_device
+        return get_pointer_device()
 
     def init_virtual_devices(self, devices: dict[str, Any]) -> None:
         # pylint: disable=import-outside-toplevel
@@ -382,69 +385,12 @@ class PointerServer(StubServerMixin):
         for ss in self.window_sources():
             ss.record_scroll_event(wid)
 
-    ######################################################################
-    # input devices:
-    def _process_input_devices(self, _proto, packet: Packet) -> None:
-        self.input_devices_format = packet.get_str(1)
-        self.input_devices_data = packet.get_dict(2)
-        from xpra.util.str_fn import print_nested_dict
-        log("client %s input devices:", self.input_devices_format)
-        print_nested_dict(self.input_devices_data, print_fn=log)
-        self.setup_input_devices()
-
-    def setup_input_devices(self) -> None:
-        from xpra.server import features
-        log("setup_input_devices() input_devices feature=%s", features.pointer)
-        from xpra.util.system import is_X11
-        if not is_X11():
-            return
-        if not features.pointer:
-            return
-        xinputlog = Logger("xinput", "pointer")
-        xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
-        xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
-        # xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
-        xinputlog("setup_input_devices() pointer device=%s", self.pointer_device)
-        xinputlog("setup_input_devices() touchpad device=%s", self.touchpad_device)
-        self.pointer_device_map = {}
-        if not self.touchpad_device:
-            # no need to assign anything, we only have one device anyway
-            return
-        # if we find any absolute pointer devices,
-        # map them to the "touchpad_device"
-        XIModeAbsolute = 1
-        for deviceid, device_data in self.input_devices_data.items():
-            name = device_data.get("name")
-            # xinputlog("[%i]=%s", deviceid, device_data)
-            xinputlog("[%i]=%s", deviceid, name)
-            if device_data.get("use") != "slave pointer":
-                continue
-            classes = device_data.get("classes")
-            if not classes:
-                continue
-            # look for absolute pointer devices:
-            touchpad_axes = []
-            for i, defs in classes.items():
-                xinputlog(" [%i]=%s", i, defs)
-                mode = defs.get("mode")
-                label = defs.get("label")
-                if not mode or mode != XIModeAbsolute:
-                    continue
-                if defs.get("min", -1) == 0 and defs.get("max", -1) == (2 ** 24 - 1):
-                    touchpad_axes.append((i, label))
-            if len(touchpad_axes) == 2:
-                xinputlog.info("found touchpad device: %s", name)
-                xinputlog("axes: %s", touchpad_axes)
-                self.pointer_device_map[deviceid] = self.touchpad_device
-
     def init_packet_handlers(self) -> None:
         self.add_packets(
             # mouse:
             "pointer-button", "pointer",
             "pointer-position",  # pre v5
             "wheel-motion",
-            # setup:
-            "input-devices",
             main_thread=True
         )
         self.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync_enabled_status, True)

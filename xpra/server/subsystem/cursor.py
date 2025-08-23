@@ -30,6 +30,7 @@ class CursorManager(StubServerMixin):
         self.last_cursor_image = ()
 
     def init(self, opts) -> None:
+        log("init(..) cursors=%s", opts.cursors)
         self.cursors = opts.cursors
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:

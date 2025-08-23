@@ -40,6 +40,7 @@ class ExitCode(IntEnum):
     DEVICE_NOT_FOUND = 29
     OPENGL_UNSAFE = 30
     COMPONENT_MISSING = 31
+    WM_ERROR = 32
 
 
 ExitValue: TypeAlias = ExitCode | int

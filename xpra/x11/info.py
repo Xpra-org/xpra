@@ -7,7 +7,6 @@ from xpra.util.str_fn import csv
 from xpra.x11.error import xswallow
 
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.bindings.res import ResBindings
 
 
 def get_wintitle(xid: int) -> str:
@@ -25,12 +24,17 @@ def get_wintitle(xid: int) -> str:
 
 def get_wininfo(xid: int) -> str:
     wininfo = [f"xid={xid:x}"]
-    XRes = ResBindings()
-    if XRes.check_xres():
-        with xswallow:
-            pid = XRes.get_pid(xid)
-            if pid:
-                wininfo.append(f"pid={pid}")
+    try:
+        from xpra.x11.bindings.res import ResBindings
+        XRes = ResBindings()
+    except ImportError:
+        pass
+    else:
+        if XRes.check_xres():
+            with xswallow:
+                pid = XRes.get_pid(xid)
+                if pid:
+                    wininfo.append(f"pid={pid}")
     title = get_wintitle(xid)
     if title:
         wininfo.insert(0, repr(title))

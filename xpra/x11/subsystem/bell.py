@@ -43,7 +43,17 @@ class BellServer(StubServerMixin):
         }
 
     def setup(self) -> None:
-        if self.bell:
+        if not self.bell:
+            return
+        try:
+            from xpra.x11.bindings.keyboard import X11KeyboardBindings
+            X11Keyboard = X11KeyboardBindings()
+        except ImportError as e:
+            log.error("Error: unable to listen for bell events:")
+            log.estr(e)
+            self.bell = False
+        else:
+            X11Keyboard.selectBellNotification(True)
             # somewhat redundant, but doing it more than once does not hurt:
             rxid = get_root_xid()
             add_event_receiver(rxid, self)

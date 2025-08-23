@@ -20,10 +20,8 @@ from xpra.x11.common import Unmanageable, X11Event, FRAME_EXTENTS
 from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.bindings.res import ResBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
-from xpra.x11.composite import CompositeHelper
 from xpra.x11.xroot_props import root_get, root_set
 from xpra.x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
@@ -42,16 +40,24 @@ GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
 
-XRes = ResBindings()
-if not XRes.check_xres():
-    log.warn("Warning: X Resource Extension missing or too old")
+try:
+    from xpra.x11.bindings.res import ResBindings
+    XRes = ResBindings()
+except ImportError:
+    log.warn("Warning: missing X Resource Extension bindings")
     XRes = None
+else:
+    if not XRes.check_xres():
+        log.warn("Warning: X Resource Extension missing or too old")
+        XRes = None
+if XRes is None:
+    log.warn(" the process IDs cannot be trusted")
 
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 OPAQUE_REGION = envbool("XPRA_OPAQUE_REGION", True)
 DELETE_DESTROY = envbool("XPRA_DELETE_DESTROY", False)
-DELETE_KILL_PID = envbool("XPRA_DELETE_KILL_PID", True)
+DELETE_KILL_PID = envbool("XPRA_DELETE_KILL_PID", XRes is not None)
 DELETE_XKILL = envbool("XPRA_DELETE_XKILL", True)
 
 CurrentTime: Final[int] = constants["CurrentTime"]
@@ -300,10 +306,11 @@ class CoreX11WindowModel(WindowModelStub):
             raise TypeError(f"xid must be an int, not a {type(xid)}")
         log("new window %#x", xid)
         self.xid: int = xid
-        self._composite: CompositeHelper | None = None
+        self._composite = None
         self._damage_forward_handle = None
         self._setup_done = False
         self._kill_count = 0
+        self._xshape = False
         self._shape_timer = 0
         self._shape_timer_serial = 0
         self._updateprop("xid", self.xid)
@@ -341,27 +348,42 @@ class CoreX11WindowModel(WindowModelStub):
             log("failed to manage %#x", self.xid, exc_info=True)
             raise Unmanageable(e) from e
         add_event_receiver(self.xid, self)
-        # Keith Packard says that composite state is undefined following a
-        # reparent, so I'm not sure doing this here in the superclass,
-        # before we reparent, actually works... let's wait and see.
         try:
-            self._composite = CompositeHelper(self.xid)
-            with xsync:
-                self._composite.setup()
-        except Exception as e:
-            remove_event_receiver(self.xid, self)
-            log("%s %#x does not support compositing: %s", self._MODELTYPE, self.xid, e)
-            with xswallow:
-                self._composite.destroy()
-            self._composite = None
-            if isinstance(e, Unmanageable):
-                raise
-            raise Unmanageable(e) from e
+            from xpra.x11.composite import CompositeHelper
+        except ImportError:
+            from xpra.util.env import first_time
+            if first_time("composite-helper"):
+                log.error("Error: unable to load the composite bindings")
+                log.error(" the window contents will not be visible")
+        else:
+            # Keith Packard says that composite state is undefined following a
+            # reparent, so I'm not sure doing this here in the superclass,
+            # before we reparent, actually works... let's wait and see.
+            try:
+                self._composite = CompositeHelper(self.xid)
+                with xsync:
+                    self._composite.setup()
+            except Exception as e:
+                remove_event_receiver(self.xid, self)
+                log("%s %#x does not support compositing: %s", self._MODELTYPE, self.xid, e)
+                with xswallow:
+                    self._composite.destroy()
+                self._composite = None
+                if isinstance(e, Unmanageable):
+                    raise
+                raise Unmanageable(e) from e
         with xlog:
-            from xpra.x11.bindings.shape import XShapeBindings
-            XShape = XShapeBindings()
-            if XShape.hasXShape():
-                XShape.XShapeSelectInput(self.xid)
+            try:
+                from xpra.x11.bindings.shape import XShapeBindings
+                XShape = XShapeBindings()
+            except ImportError as e:
+                log.warn("Warning: unable to load the X11 Shape extension")
+                log.warn(" %s", e)
+                log.warn(" window shapes cannot be forwarded")
+            else:
+                if XShape.hasXShape():
+                    self._xshape = True
+                    XShape.XShapeSelectInput(self.xid)
         # compositing is now enabled,
         # from now on we must call setup_failed to clean things up
         self._managed = True
@@ -385,7 +407,9 @@ class CoreX11WindowModel(WindowModelStub):
     def setup(self) -> None:
         # Start listening for important events.
         X11Window.addDefaultEvents(self.xid)
-        self._damage_forward_handle = self._composite.connect("contents-changed", self._forward_contents_changed)
+        c = self._composite
+        if c:
+            self._damage_forward_handle = c.connect("contents-changed", self._forward_contents_changed)
         self._setup_property_sync()
 
     def unmanage(self, exiting=False) -> None:
@@ -417,9 +441,10 @@ class CoreX11WindowModel(WindowModelStub):
         if not self._managed:
             return
         c = self._composite
-        if not c:
-            raise RuntimeError("composite window destroyed outside the UI thread?")
-        c.acknowledge_changes()
+        if c:
+            c.acknowledge_changes()
+        else:
+            log("composite window destroyed outside the UI thread?")
 
     def _forward_contents_changed(self, _obj, event: X11Event) -> None:
         if self._managed:
@@ -429,8 +454,11 @@ class CoreX11WindowModel(WindowModelStub):
         c = self._composite
         return bool(c) and c.has_xshm()
 
-    def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper:
-        return self._composite.get_image(x, y, width, height)
+    def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper | None:
+        c = self._composite
+        if not c:
+            return None
+        return c.get_image(x, y, width, height)
 
     def _setup_property_sync(self) -> None:
         metalog("setup_property_sync()")
@@ -457,8 +485,8 @@ class CoreX11WindowModel(WindowModelStub):
         metalog("read_initial_X11_properties() core")
         # immutable ones:
         depth = X11Window.get_depth(self.xid)
-        pid = XRes.get_pid(self.xid) if XRes else -1
-        ppid = get_parent_pid(pid)
+        pid = XRes.get_pid(self.xid) if XRes else 0
+        ppid = get_parent_pid(pid) if pid else 0
         parent = X11Window.getParent(self.xid)
         if parent == get_root_xid():
             parent = 0
@@ -508,6 +536,8 @@ class CoreX11WindowModel(WindowModelStub):
 
     def read_xshape(self) -> None:
         shapelog("read_xshape()")
+        if not self._xshape:
+            return
         self._shape_timer = 0
         cur_shape = self.get_property("shape") or {}
         # remove serial before comparing dicts:
@@ -525,7 +555,7 @@ class CoreX11WindowModel(WindowModelStub):
             self._internal_set_property("shape", v)
 
     def _read_xshape(self, x: int = 0, y: int = 0) -> dict[str, Any]:
-        if not XSHAPE:
+        if not self._xshape:
             return {}
         from xpra.x11.bindings.shape import init_xshape_events, XShapeBindings, SHAPE_KIND
         XShape = XShapeBindings()
@@ -706,10 +736,16 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("command", command)
 
     def _handle_class_change(self) -> None:
-        from xpra.x11.bindings.classhint import XClassHintBindings
-        class_instance = XClassHintBindings().getClassHint(self.xid)
-        if class_instance:
-            class_instance = tuple(v.decode("latin1") for v in class_instance)
+        try:
+            from xpra.x11.bindings.classhint import XClassHintBindings
+            class_instance = XClassHintBindings().getClassHint(self.xid)
+            if class_instance:
+                class_instance = tuple(v.decode("latin1") for v in class_instance)
+        except ImportError as e:
+            if first_time("x11-class-hint"):
+                log.warn("Warning: window class-hint is not available")
+                log.warn(" %s", e)
+            class_instance = ()
         metalog("WM_CLASS=%s", class_instance)
         self._updateprop("class-instance", class_instance or ())
 
@@ -913,7 +949,7 @@ class CoreX11WindowModel(WindowModelStub):
                 return
         machine = self.get_property("client-machine")
         pid = self.get_property("pid")
-        if pid <= 0:
+        if pid <= 0 and XRes:
             log.warn("Warning: no 'pid' for window %#x", self.xid)
             if machine:
                 log.warn(" WM_CLIENT_MACHINE=%r", machine)

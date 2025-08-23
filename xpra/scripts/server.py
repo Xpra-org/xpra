@@ -1332,27 +1332,33 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     progress(80, "initializing server")
     if "backend" not in mode_attrs:
         mode_attrs["backend"] = opts.backend
-    if shadowing:
-        # "shadow" -> multi-window=True, "shadow-screen" -> multi-window=False
-        mode_attrs["multi-window"] = str(mode == "shadow")
-        app = make_shadow_server(display_name, mode_attrs)
-    elif proxying:
-        app = make_proxy_server()
-    elif expanding:
-        app = make_expand_server(mode_attrs)
-    elif encoder:
-        app = make_encoder_server()
-    elif runner:
-        app = make_runner_server()
-    else:
-        if starting or upgrading_seamless:
-            app = make_seamless_server(clobber)
-        elif starting_desktop or upgrading_desktop:
-            app = make_desktop_server()
+    try:
+        if shadowing:
+            # "shadow" -> multi-window=True, "shadow-screen" -> multi-window=False
+            mode_attrs["multi-window"] = str(mode == "shadow")
+            app = make_shadow_server(display_name, mode_attrs)
+        elif proxying:
+            app = make_proxy_server()
+        elif expanding:
+            app = make_expand_server(mode_attrs)
+        elif encoder:
+            app = make_encoder_server()
+        elif runner:
+            app = make_runner_server()
         else:
-            assert starting_monitor or upgrading_monitor
-            app = make_monitor_server()
-        app.init_virtual_devices(devices)
+            if starting or upgrading_seamless:
+                app = make_seamless_server(clobber)
+            elif starting_desktop or upgrading_desktop:
+                app = make_desktop_server()
+            else:
+                assert starting_monitor or upgrading_monitor
+                app = make_monitor_server()
+            app.init_virtual_devices(devices)
+    except ImportError as e:
+        log.error("Error: the server cannot be started,")
+        log.error(" some critical component is missing:")
+        log.estr(e)
+        return ExitCode.COMPONENT_MISSING
 
     def server_not_started(msg="server not started") -> None:
         progress(100, msg)

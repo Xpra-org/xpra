@@ -11,7 +11,6 @@ from xpra.x11.error import xsync, xswallow, xlog, XError
 from xpra.x11.common import Unmanageable, X11Event
 
 from xpra.x11.bindings.ximage import XImageBindings
-from xpra.x11.bindings.shm import XShmBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.damage import init_damage_events, XDamageBindings
 from xpra.log import Logger
@@ -19,13 +18,21 @@ from xpra.log import Logger
 log = Logger("x11", "window", "damage")
 
 XImage = XImageBindings()
-XShm = XShmBindings()
 X11Window = X11WindowBindings()
 XDamage = XDamageBindings()
 XDamage.ensure_XDamage_support()
 assert init_damage_events()
 
 USE_XSHM = envbool("XPRA_XSHM", True)
+if USE_XSHM:
+    try:
+        from xpra.x11.bindings.shm import XShmBindings
+        XShm = XShmBindings()
+    except ImportError as e:
+        log.warn("Warning: unable to load the X11 Shm bindings")
+        log.warn(" this can severely affect performance")
+        log.warn(" %s", e)
+        USE_XSHM = False
 
 
 class WindowDamageHandler:
@@ -111,7 +118,7 @@ class WindowDamageHandler:
                 ch.cleanup()
 
     def has_xshm(self) -> bool:
-        return self._use_xshm and WindowDamageHandler.XShmEnabled and XShm.has_XShm()
+        return self._use_xshm and WindowDamageHandler.XShmEnabled and XShm and XShm.has_XShm()
 
     def get_xshm_handle(self):
         if not self.has_xshm():

@@ -36,6 +36,8 @@ class X11Init(StubServerMixin):
         register_glib_source(context)
         from xpra.x11.bindings.core import X11CoreBindings
         X11CoreBindings().show_server_info()
+        from xpra.x11.window_filters import init_x11_window_filters
+        init_x11_window_filters()
 
     def cleanup(self) -> None:
         from xpra.x11.dispatch import cleanup_all_event_receivers

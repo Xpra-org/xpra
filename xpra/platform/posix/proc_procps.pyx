@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import cython
 from libc.string cimport memset
 
 from xpra.log import Logger
@@ -32,12 +33,13 @@ cdef extern from "proc/readproc.h":
     proc_t* readproc(PROCTAB *PT, proc_t *p)
     void closeproc(PROCTAB* PT)
 
-def get_parent_pid(int pid) -> int:
+
+def get_parent_pid(int pid) -> cython.ulong:
     cdef proc_t proc_info
     memset(&proc_info, 0, sizeof(proc_t))
     cdef PROCTAB *pt_ptr = openproc(PROC_FILLSTATUS | PROC_PID, &pid)
     try:
-        if readproc(pt_ptr, &proc_info):
+        if readproc(pt_ptr, &proc_info) and proc_info.ppid > 0:
             return proc_info.ppid
     finally:
         closeproc(pt_ptr);

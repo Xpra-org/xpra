@@ -17,7 +17,6 @@ from xpra.x11.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.bindings.saveset import XSaveSetBindings
 from xpra.x11.bindings.send_wm import send_wm_take_focus
 from xpra.x11.common import Unmanageable, X11Event
 from xpra.x11.models.size_hints_util import sanitize_size_hints
@@ -39,7 +38,6 @@ GObject = gi_import("GObject")
 GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
-XSaveSet = XSaveSetBindings()
 
 CWX: Final[int] = constants["CWX"]
 CWY: Final[int] = constants["CWY"]
@@ -303,9 +301,15 @@ class WindowModel(BaseWindowModel):
             log("hiding inherited window")
             self.last_unmap_serial = X11Window.Unmap(self.xid)
 
-        log("setup() adding to save set")
-        XSaveSet.XAddToSaveSet(self.xid)
-        self.in_save_set = True
+        try:
+            log("setup() adding to save set")
+            from xpra.x11.bindings.saveset import XSaveSetBindings
+            XSaveSetBindings().XAddToSaveSet(self.xid)
+            self.in_save_set = True
+        except ImportError as e:
+            log.warn("Warning: unable to use SaveSet X11 bindings")
+            log.warn(" %s", e)
+            log.warn(" you may not be able to recover sessions after xpra exits")
 
         log("setup() reparenting")
         X11Window.Reparent(self.xid, self.corral_xid, 0, 0)
@@ -451,8 +455,9 @@ class WindowModel(BaseWindowModel):
             # section 10. Connection Close).  This causes "ghost windows", see
             # bug #27:
             if self.in_save_set:
+                from xpra.x11.bindings.saveset import XSaveSetBindings
                 with xswallow:
-                    XSaveSet.XRemoveFromSaveSet(self.xid)
+                    XSaveSetBindings().XRemoveFromSaveSet(self.xid)
                 self.in_save_set = False
             if geom:
                 self.send_configure_notify()

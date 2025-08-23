@@ -10,12 +10,14 @@ import signal
 import sys
 from time import monotonic, sleep
 from collections import deque
-from typing import Any
+from typing import Any, NoReturn
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
+from xpra.scripts.config import InitExit
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
+from xpra.exit_codes import ExitCode
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
 from xpra.server import features, ServerExitMode
@@ -67,6 +69,13 @@ GSIGNALS.update({
 })
 
 
+def log_composite_error(msg: str) -> NoReturn:
+    log.error("Xpra 'seamless' server runs as a compositing manager")
+    log.error(" and the XComposite extension is required,")
+    log.error(" the server cannot be started")
+    raise InitExit(ExitCode.COMPONENT_MISSING, "the composite extension is not available: %s" % msg)
+
+
 class SeamlessServer(GObject.GObject, ServerBase):
     __gsignals__ = GSIGNALS
 
@@ -115,15 +124,18 @@ class SeamlessServer(GObject.GObject, ServerBase):
             self.init_root_overlay()
         self.init_wm()
 
-    def validate_display(self) -> bool:
-        from xpra.x11.bindings.composite import XCompositeBindings
+    def validate_display(self) -> None:
+        try:
+            from xpra.x11.bindings.composite import XCompositeBindings
+        except ImportError as e:
+            log("validate_display()", exc_info=True)
+            log_composite_error("the XCompositeBindings bindings cannot be loaded: %s" % e)
         if not XCompositeBindings().hasXComposite():
-            log.error("Xpra 'start' subcommand runs as a compositing manager")
-            log.error(" it cannot use a display which lacks the XComposite extension!")
-            return False
+            log_composite_error("the composite extension is not available on this display")
         # check for an existing window manager:
         from xpra.x11.wm_check import wm_check
-        return wm_check(self.clobber & CLOBBER_UPGRADE)
+        if not wm_check(self.clobber & CLOBBER_UPGRADE):
+            raise InitExit(ExitCode.WM_ERROR, "another window manager seems to be running on this display")
 
     def receive_root_events(self):
         # Do this before creating the Wm object, to avoid clobbering its

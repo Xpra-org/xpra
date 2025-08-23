@@ -8,7 +8,6 @@ from typing import Any
 
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
-from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.server.source.window import WindowsConnection
@@ -59,13 +58,6 @@ class WindowServer(StubServerMixin):
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
         self.update_size_constraints(minw, minh, maxw, maxh)
-        if is_X11():
-            from xpra.x11.error import xlog
-            with xlog:
-                from xpra.x11.bindings.shape import XShapeBindings
-                log("XShape=%s", XShapeBindings().hasXShape())
-            from xpra.x11.window_filters import init_x11_window_filters
-            init_x11_window_filters()
         self.add_init_thread_callback(self.reinit_window_encoders)
         # when the main loop runs, load the windows:
         GLib.idle_add(self.load_existing_windows)

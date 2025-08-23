@@ -27,6 +27,9 @@ class XCursorServer(CursorManager):
         self.last_cursor_serial = 0
 
     def setup(self) -> None:
+        log("setup() cursors=%s", self.cursors)
+        if not self.cursors:
+            return
         with xlog:
             try:
                 from xpra.x11.bindings.fixes import XFixesBindings, init_xfixes_events
@@ -35,6 +38,7 @@ class XCursorServer(CursorManager):
                 fixes = XFixes.hasXFixes()
             except ImportError:
                 fixes = False
+            log("setup() fixes=%s", fixes)
             if not fixes and self.cursors:
                 log.error("Error: cursor forwarding support is not available")
                 self.cursors = False
@@ -73,8 +77,13 @@ class XCursorServer(CursorManager):
         try:
             from xpra.x11.bindings.cursor import X11CursorBindings
             size = X11CursorBindings().get_default_cursor_size()
-        except ImportError:
+        except ImportError as e:
             size = 32
+            from xpra.util.env import first_time
+            if first_time("x11-cursor"):
+                log.warn("Warning: missing X11 cursor bindings")
+                log.warn(" %s", e)
+                log.warn(" using default cursor size %i", size)
         return cursor_image, (size, (32767, 32767))
 
     def do_x11_cursor_event(self, event: X11Event) -> None:

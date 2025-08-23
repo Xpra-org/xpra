@@ -23,7 +23,6 @@ from xpra.common import (
 )
 from xpra.x11.xroot_props import root_set, root_get, root_del
 from xpra.server.subsystem.display import DisplayManager
-from xpra.x11.bindings.randr import RandRBindings
 from xpra.platform.gui import get_display_size
 from xpra.log import Logger
 
@@ -104,6 +103,13 @@ def save_server_version():
     root_set("XPRA_SERVER_VERSION", "latin1", XPRA_VERSION)
 
 
+def log_randr_warning(msg="no randr bindings", error="") -> None:
+    log.warn("Warning: %s", msg)
+    if error:
+        log.warn(error)
+    log.warn(" the virtual display cannot be configured properly")
+
+
 class X11DisplayManager(DisplayManager):
     """
     Mixin for servers that handle displays.
@@ -175,23 +181,28 @@ class X11DisplayManager(DisplayManager):
         if not self.display_pid:
             self.display_pid = get_display_pid()
         if self.randr:
-            self.init_randr()
-            self.set_initial_resolution()
+            if self.init_randr():
+                self.set_initial_resolution()
         with xsync:
             save_server_pid()
             save_server_mode(self.session_type)
             save_server_uuid(self.uuid)
             save_server_version()
 
-    def init_randr(self) -> None:
+    def init_randr(self) -> bool:
         from xpra.x11.error import xlog
+        try:
+            from xpra.x11.bindings.randr import RandRBindings
+        except ImportError as e:
+            self.randr = False
+            log_randr_warning("no randr bindings", str(e))
+            return False
         with xlog:
             RandR = RandRBindings()
             if not RandR.has_randr():
+                log_randr_warning("randr extension is not available")
                 self.randr = False
-            log("randr=%s", self.randr)
-            if not self.randr:
-                return
+                return False
             # check the property first,
             # because we may be inheriting this display,
             # in which case the screen sizes list may be longer than 1
@@ -344,6 +355,10 @@ class X11DisplayManager(DisplayManager):
     def get_all_screen_sizes(self) -> Sequence[tuple[int, int]]:
         # workaround for #2910: the resolutions we add are not seen by XRRSizes!
         # so we keep track of the ones we have added ourselves:
+        try:
+            from xpra.x11.bindings.randr import RandRBindings
+        except ImportError:
+            return (get_root_size(), )
         sizes = list(RandRBindings().get_xrr_screen_sizes())
         for w, h in self.randr_sizes_added:
             if (w, h) not in sizes:
@@ -414,6 +429,7 @@ class X11DisplayManager(DisplayManager):
         if self.randr_exact_size:
             try:
                 with xsync:
+                    from xpra.x11.bindings.randr import RandRBindings
                     if RandRBindings().add_screen_size(desired_w, desired_h):
                         # we have to wait a little bit
                         # to make sure that everything sees the new resolution
@@ -485,6 +501,7 @@ class X11DisplayManager(DisplayManager):
         if wmm == 0 or hmm == 0:
             wmm = round(desired_w * 25.4 / xdpi)
             hmm = round(desired_h * 25.4 / ydpi)
+        from xpra.x11.bindings.randr import RandRBindings
         if DUMMY_WIDTH_HEIGHT_MM:
             # FIXME: we assume there is only one output:
             output = 0
@@ -535,6 +552,7 @@ class X11DisplayManager(DisplayManager):
 
     def show_dpi(self, xdpi: int, ydpi: int):
         root_w, root_h = get_root_size()
+        from xpra.x11.bindings.randr import RandRBindings
         wmm, hmm = RandRBindings().get_screen_size_mm()  # ie: (1280, 1024)
         log("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
         actual_xdpi = round(root_w * 25.4 / wmm)
@@ -559,8 +577,12 @@ class X11DisplayManager(DisplayManager):
                 log_fn("%s%s", ["", " "][i > 0], message)
 
     def mirror_client_monitor_layout(self) -> dict[int, Any]:
+        if not self.randr:
+            return {}
         with xsync:
-            assert RandRBindings().is_dummy16(), "cannot match monitor layout without RandR 1.6"
+            from xpra.x11.bindings.randr import RandRBindings
+            if not RandRBindings().is_dummy16():
+                raise RuntimeError("cannot match monitor layout without RandR 1.6")
         # if we have a single UI client,
         # see if we can emulate its monitor geometry exactly
         sss = tuple(x for x in self._server_sources.values() if x.ui_client)

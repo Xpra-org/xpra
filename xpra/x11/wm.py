@@ -23,7 +23,6 @@ from xpra.x11.xroot_props import (
 )
 from xpra.x11.bindings.core import constants, get_root_xid, X11CoreBindings
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -31,7 +30,6 @@ GObject = gi_import("GObject")
 log = Logger("x11", "window")
 
 X11Window = X11WindowBindings()
-X11Keyboard = X11KeyboardBindings()
 
 focuslog = Logger("x11", "window", "focus")
 screenlog = Logger("x11", "window", "screen")
@@ -164,7 +162,6 @@ class Wm(GObject.GObject):
 
         # Also watch for focus change events on the root window
         X11Window.selectFocusChange(rxid)
-        X11Keyboard.selectBellNotification(True)
         X11Window.setRootIconSizes(64, 64)
 
         # FIXME:

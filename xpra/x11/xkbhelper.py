@@ -14,7 +14,6 @@ from xpra.util.str_fn import std, csv, bytestostr, Ellipsizer
 from xpra.util.env import envbool
 from xpra.x11.error import xsync, xlog
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
-from xpra.x11.bindings.test import XTestBindings
 from xpra.log import Logger
 
 log = Logger("x11", "keyboard")
@@ -66,8 +65,14 @@ def clean_keyboard_state() -> None:
         keycodes = X11Keyboard.get_keycodes_down()
     if keycodes:
         with xlog:
-            XTest = XTestBindings()
-            XTest.unpress_keys(tuple(keycodes.keys()))
+            try:
+                from xpra.x11.bindings.test import XTestBindings
+            except ImportError:
+                pass
+            else:
+                XTest = XTestBindings()
+                XTest.unpress_keys(tuple(keycodes.keys()))
+
 
 ################################################################################
 # keyboard layouts
