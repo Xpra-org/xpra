@@ -455,7 +455,7 @@ class CoreX11WindowModel(WindowModelStub):
         # immutable ones:
         depth = X11Window.get_depth(self.xid)
         pid = XRes.get_pid(self.xid) if XRes else -1
-        ppid = get_parent_pid(pid) if pid and get_parent_pid else 0
+        ppid = get_parent_pid(pid) if pid > 0 and get_parent_pid else 0
         parent = X11Window.getParent(self.xid)
         if parent == X11Window.get_root_xid():
             parent = 0
