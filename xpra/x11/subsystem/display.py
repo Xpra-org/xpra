@@ -223,6 +223,7 @@ class X11DisplayManager(DisplayManager):
             log(f"randr enabled: {self.randr}, exact size={self.randr_exact_size}")
             if not self.randr:
                 log.warn("Warning: no X11 RandR support on %r", os.environ.get("DISPLAY", ""))
+        return self.randr
 
     def set_initial_resolution(self) -> None:
         log(f"set_initial_resolution() randr={self.randr}, initial_resolutions={self.initial_resolutions}")
