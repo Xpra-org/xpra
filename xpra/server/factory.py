@@ -117,8 +117,12 @@ def get_server_base_classes() -> tuple[type, ...]:
             from xpra.server.subsystem.keyboard import KeyboardServer
             classes.append(KeyboardServer)
     if features.pointer:
-        from xpra.server.subsystem.pointer import PointerServer
-        classes.append(PointerServer)
+        if features.x11:
+            from xpra.x11.subsystem.pointer import X11PointerServer
+            classes.append(X11PointerServer)
+        else:
+            from xpra.server.subsystem.pointer import PointerServer
+            classes.append(PointerServer)
     if features.encoding:
         from xpra.server.subsystem.encoding import EncodingServer
         classes.append(EncodingServer)
