@@ -124,8 +124,6 @@ class X11DisplayManager(DisplayManager):
         self.randr = False
         self.randr_exact_size = False
         self.antialias: dict[str, Any] = {}
-        self.double_click_time = -1
-        self.double_click_distance = -1, -1
         self.original_desktop_display = None
         # the actual values are defined in subclasses:
         self.session_type = ""
