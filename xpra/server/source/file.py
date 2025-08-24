@@ -8,9 +8,6 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub import StubClientConnection
-from xpra.log import Logger
-
-log = Logger("file")
 
 
 class FileConnection(FileTransferHandler, StubClientConnection):
