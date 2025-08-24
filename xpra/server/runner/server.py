@@ -22,7 +22,7 @@ class RunnerServer(SERVER_BASE):
 
     def __init__(self):
         log("RunnerServer.__init__()")
-        super().__init__()
+        SERVER_BASE.__init__(self)
         self.session_type = "runner"
 
     def __repr__(self):

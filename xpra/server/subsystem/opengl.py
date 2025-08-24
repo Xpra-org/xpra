@@ -109,7 +109,7 @@ class OpenGLInfo(StubServerMixin):
     PREFIX = "opengl"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.display = os.environ.get("DISPLAY", "")
         self.opengl = "no"
         self.opengl_props: dict[str, Any] = {}

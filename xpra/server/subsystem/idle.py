@@ -19,7 +19,7 @@ GLib = gi_import("GLib")
 class IdleTimeoutServer(StubServerMixin):
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.server_idle_timeout = 0
         self.server_idle_timer = 0
 

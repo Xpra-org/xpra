@@ -22,7 +22,7 @@ class DebugServer(StubServerMixin):
     """
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.mem_bytes = 0
         self.cpu_info: dict = {}
 

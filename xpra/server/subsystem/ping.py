@@ -23,7 +23,7 @@ class PingServer(StubServerMixin):
     PREFIX = "ping"
 
     def __init__(self):
-        super().__init__()
+        log("ServerBase.__init__()")
         self.pings = False
         self.ping_timer: int = 0
 

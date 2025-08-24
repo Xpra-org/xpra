@@ -54,7 +54,7 @@ def parse_geometries(s) -> list[list[int]]:
 class GTKShadowServerBase(ShadowServerBase):
 
     def __init__(self, attrs: dict[str, str]):
-        super().__init__()
+        ShadowServerBase.__init__(self)
         self.multi_window = str_to_bool(attrs.get("multi-window", True))
 
     def add_tray_menu_items(self, tray_menu):

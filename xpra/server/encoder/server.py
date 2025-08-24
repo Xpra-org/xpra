@@ -88,7 +88,7 @@ class EncoderServer(ServerBase):
 
     def __init__(self):
         log(f"EncoderServer.__init__() {SERVER_BASES=}")
-        super().__init__()
+        ServerBase.__init__(self)
         self.session_type = "encoder"
         self.encoders: dict[str, dict[int, Any]] = {}
 

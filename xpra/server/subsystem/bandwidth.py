@@ -26,7 +26,7 @@ class BandwidthServer(StubServerMixin):
     PREFIX = "bandwidth"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.bandwidth_limit = 0
         self.bandwidth_detection = False
 

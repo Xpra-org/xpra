@@ -70,7 +70,7 @@ class HttpServer(StubServerMixin):
     PREFIX = "http"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.menu_provider = None
         self._http_scripts = {}
 

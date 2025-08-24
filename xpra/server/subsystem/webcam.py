@@ -26,7 +26,7 @@ class WebcamServer(StubServerMixin):
     PREFIX = "webcam"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.webcam_device = ""
         self.webcam_encodings: Sequence[str] = ()
         self.webcam_enabled: bool = False

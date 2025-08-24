@@ -44,7 +44,7 @@ def traymenuitem(title: str, icon_name="", tooltip="", cb: Callable = noop):  # 
 class TrayMenu(StubServerMixin):
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.tray_menu = None
         self.tray_menu_shown = False
         self.tray_widget = None

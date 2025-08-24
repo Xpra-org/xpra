@@ -48,7 +48,7 @@ class EncodingServer(StubServerMixin):
     PREFIX = "encoding"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.default_quality = -1
         self.default_min_quality = 0
         self.default_speed = -1

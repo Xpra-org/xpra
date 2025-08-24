@@ -37,7 +37,7 @@ class AuthenticatedServer(StubServerMixin):
     """
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         log("AuthenticatedServer.__init__()")
         self.auth_classes: dict[str, Sequence[AuthDef]] = {}
         self.password_file: Iterable[str] = ()

@@ -40,7 +40,7 @@ class MdnsServer(StubServerMixin):
     PREFIX = "mdns"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.uuid = ""
         self.mdns = False
         self.mdns_publishers = {}

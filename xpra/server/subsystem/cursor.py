@@ -22,7 +22,7 @@ class CursorManager(StubServerMixin):
     PREFIX = "cursor"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.cursors = False
         self.cursor_size = 0
         self.cursor_suspended: bool = False

@@ -16,7 +16,7 @@ class SessionFilesServer(StubServerMixin):
     PREFIX = "session-files"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.session_files: list[str] = []
 
     def late_cleanup(self, stop=True) -> None:

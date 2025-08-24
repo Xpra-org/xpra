@@ -13,7 +13,7 @@ class DRMInfo(StubServerMixin):
     PREFIX = "drm"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.display = os.environ.get("DISPLAY", "")
         self.drm_info = {}
 

@@ -18,7 +18,7 @@ class X11Init(StubServerMixin):
     PREFIX = "x11"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.display = os.environ.get("DISPLAY", "")
         assert not envbool("XPRA_GTK", False)
 

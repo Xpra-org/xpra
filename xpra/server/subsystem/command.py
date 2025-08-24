@@ -91,7 +91,7 @@ class ChildCommandServer(StubServerMixin):
     PREFIX = "command"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.hello_request_handlers["run"] = self._handle_hello_request_run
         self.child_display: str = ""
         self.start_commands = []

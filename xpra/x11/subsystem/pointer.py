@@ -14,7 +14,7 @@ log = Logger("pointer")
 class X11PointerServer(PointerServer):
 
     def __init__(self):
-        super().__init__()
+        PointerServer.__init__(self)
         self.input_devices_format = ""
 
     def make_pointer_device(self):

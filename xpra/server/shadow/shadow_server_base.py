@@ -67,7 +67,7 @@ class ShadowServerBase(ServerBase):
 
     def __init__(self, capture=None):
         # noinspection PyArgumentList
-        super().__init__()
+        ServerBase.__init__(self)
         self.capture = capture
         self.window_matches: list[str] = []
         self.mapped = []

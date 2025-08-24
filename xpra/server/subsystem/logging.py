@@ -35,7 +35,7 @@ class LoggingServer(StubServerMixin):
     PREFIX = "logging"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.remote_logging_send: bool = False
         self.remote_logging_receive: bool = False
         self.logging_lock: Lock = Lock()

@@ -63,7 +63,7 @@ class DisplayManager(StubServerMixin):
     PREFIX = "display"
 
     def __init__(self):
-        super().__init__()
+        StubServerMixin.__init__(self)
         self.display = os.environ.get("DISPLAY", "")
         self.display_options = ""
         self.screen_size_changed_timer = 0
