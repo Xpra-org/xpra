@@ -28,7 +28,12 @@ class BandwidthTest(ServerMixinTest):
             capped_at = 1*1000*1000*1000    # == "1Gbps"
             with silence_info(bandwidth):
                 self._test_mixin_class(BandwidthServer, opts, {}, bandwidth.BandwidthConnection)
-            self.assertEqual(capped_at, self.mixin.get_info().get("bandwidth-limit"))
+
+            def get_info_limit(obj) -> int:
+                print("%s.info=%s" % (obj, obj.get_info(),))
+                return obj.get_info().get("bandwidth", {}).get("limit", 0)
+
+            self.assertEqual(capped_at, get_info_limit(self.mixin))
             for v in (None, "foo", 1, 2.0, [], (), set()):
                 try:
                     self.handle_packet(("connection-data", v))
@@ -47,12 +52,10 @@ class BandwidthTest(ServerMixinTest):
             with silence_info(bandwidth):
                 self.handle_packet(("bandwidth-limit", 10*1024*1024))
 
-            def get_limit():
-                return self.source.get_info().get("bandwidth-limit", {}).get("setting", 0)
-            self.assertEqual(10*1024*1024, get_limit())
+            self.assertEqual(10*1024*1024, get_info_limit(self.source))
             with silence_info(bandwidth):
                 self.handle_packet(("bandwidth-limit", MAX_BANDWIDTH_LIMIT+1))
-            self.assertEqual(min(capped_at, MAX_BANDWIDTH_LIMIT), get_limit())
+            self.assertEqual(min(capped_at, MAX_BANDWIDTH_LIMIT), get_info_limit(self.source))
 
 
 def main():

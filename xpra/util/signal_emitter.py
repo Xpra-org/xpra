@@ -29,7 +29,7 @@ class SignalEmitter:
         self._signal_callbacks.setdefault(signal, []).append((cb, list(args)))
 
     def emit(self, signal: str, *extra_args):
-        log("emit(%s, %s)", signal, extra_args)
+        log("%s.emit(%s, %s)", self, signal, extra_args)
         self._fire_callback(signal, extra_args)
 
     def _fire_callback(self, signal_name: str, extra_args=()) -> None:

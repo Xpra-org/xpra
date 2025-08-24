@@ -70,8 +70,8 @@ class BandwidthConnection(StubClientConnection):
 
     def get_info(self) -> dict[str, Any]:
         info = {
-            "bandwidth-limit": {
-                "setting": self.bandwidth_limit or 0,
+            "bandwidth": {
+                "limit": self.bandwidth_limit or 0,
                 "detection": self.bandwidth_detection,
                 "actual": self.soft_bandwidth_limit or 0,
             },
