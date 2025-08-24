@@ -123,6 +123,11 @@ class ChildCommandServer(StubServerMixin):
             self.session_name: str = ""
         self.menu_provider = None
 
+        def server_is_running(*args) -> None:
+            log("server_is_running%s", args)
+            self.exec_start_late_commands()
+        self.connect("running", server_is_running)
+
     def init(self, opts) -> None:
         self.exit_with_children = opts.exit_with_children
         self.terminate_children = opts.terminate_children

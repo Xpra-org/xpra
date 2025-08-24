@@ -152,6 +152,7 @@ class ServerCore(ServerBaseClass):
     """
     __signals__ = {
         "init-thread-ended": 0,
+        "running": 0,
     }
 
     def __init__(self):
@@ -353,6 +354,7 @@ class ServerCore(ServerBaseClass):
         return 0
 
     def server_is_ready(self) -> None:
+        self.emit("running")
         log.info("xpra is ready.")
         noerr(sys.stdout.flush)
 
