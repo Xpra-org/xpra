@@ -4,13 +4,14 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 
 from xpra.server.subsystem.cursor import CursorManager
 from xpra.util.str_fn import Ellipsizer
 from xpra.x11.dispatch import add_event_receiver
 from xpra.x11.common import X11Event
 from xpra.x11.error import xlog
+from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("x11", "server", "cursor")
@@ -94,5 +95,6 @@ class XCursorServer(CursorManager):
         log("cursor_event: %s", event)
         self.last_cursor_serial = event.cursor_serial
         for ss in self.window_sources():
-            if hasattr(ss, "send_cursor"):
-                ss.send_cursor()
+            # not all client connections support `send_cursor`:
+            send_cursor: Callable = getattr(ss, "send_cursor", noop)
+            send_cursor()

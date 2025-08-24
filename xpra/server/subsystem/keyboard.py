@@ -85,9 +85,6 @@ class KeyboardServer(StubServerMixin):
             self.keymap_changing_timer = 0
             GLib.source_remove(kct)
 
-    def reset_focus(self) -> None:
-        self.clear_keys_pressed()
-
     def last_client_exited(self) -> None:
         self.clear_keys_pressed()
 

@@ -13,6 +13,10 @@ log = Logger("pointer")
 
 class X11PointerServer(PointerServer):
 
+    def __init__(self):
+        super().__init__()
+        self.input_devices_format = ""
+
     def make_pointer_device(self):
         try:
             from xpra.x11.server.xtest_pointer import XTestPointerDevice
