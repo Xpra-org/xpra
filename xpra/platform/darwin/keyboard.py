@@ -104,7 +104,13 @@ class CGFakeKeyboard:
 
     @staticmethod
     def set_repeat_rate(self, delay: int, interval: int) -> None:
-        pass
+        """
+        This can't be done?
+        The closest I can find is:
+        `defaults write NSGlobalDomain KeyRepeat -int <rate_value>`
+        `defaults write NSGlobalDomain InitialKeyRepeat -int <delay_value>`
+        But this requires the user to logout and then log back in again!
+        """
 
     @staticmethod
     def get_keycodes_down() -> Sequence[int]:
