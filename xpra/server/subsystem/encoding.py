@@ -95,11 +95,11 @@ class EncodingServer(StubServerMixin):
         self.connect("init-thread-ended", self.reinit_encodings)
         self.init_encodings()
 
-    def reinit_encodings(self) -> None:
+    def reinit_encodings(self, *args) -> None:
         self.init_encodings()
         # any window mapped before the threaded init completed
         # may need to re-initialize its list of encodings:
-        log("reinit_encodings()")
+        log("reinit_encodings()", args)
         try:
             from xpra.server.source.window import WindowsConnection
         except ImportError:
