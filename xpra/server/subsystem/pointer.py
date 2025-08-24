@@ -102,10 +102,23 @@ class PointerServer(StubServerMixin):
                 from xpra.x11.uinput.device import UInputTouchpadDevice
                 root_w, root_h = self.get_display_size()
                 self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path, root_w, root_h)
+                # this signal should always be defined,
+                # since I can't imagine how we can have a touchpad device without a display!
+                if "display-geometry-changed" in self.__signals__:
+                    self.connect("display-geometry-changed", self.update_touchpad_size)
         try:
             log.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
         except Exception as e:
             log("cannot get pointer device class from %s: %s", self.pointer_device, e)
+
+    def update_touchpad_size(self) -> None:
+        td = self.touchpad_device
+        if td:
+            # this handler only runs when the DisplayManager emits the signal,
+            # so we can assume that the `get_display_size()` method is available:
+            root_w, root_h = self.get_display_size()
+            td.root_w = root_w
+            td.root_h = root_h
 
     def verify_uinput_pointer_device(self) -> None:
         from xpra.x11.server.xtest_pointer import XTestPointerDevice
@@ -131,14 +144,6 @@ class PointerServer(StubServerMixin):
                 self.input_devices = "xtest"
 
         GLib.timeout_add(1000, verify_uinput_moved)
-
-    # TODO: use "screen-size-changed" signal instead:
-    def configure_best_screen_size(self) -> tuple[int, int]:
-        root_w, root_h = super().configure_best_screen_size()
-        if self.touchpad_device:
-            self.touchpad_device.root_w = root_w
-            self.touchpad_device.root_h = root_h
-        return root_w, root_h
 
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}

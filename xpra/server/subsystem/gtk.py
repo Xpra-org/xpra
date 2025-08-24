@@ -102,12 +102,20 @@ class GTKServer(StubServerMixin):
             from xpra.x11.gtk.bindings import init_x11_filter
             self.x11_filter = init_x11_filter()
             assert self.x11_filter
-        if features.window:
+        if features.display:
             Gdk = gi_import("Gdk")
             screen = Gdk.Screen.get_default()
             if screen:
                 screen.connect("size-changed", self._screen_size_changed)
                 screen.connect("monitors-changed", self._monitors_changed)
+
+    def _screen_size_changed(self, screen) -> None:
+        log(f"_screen_size_changed({screen})")
+        self.schedule_screen_changed(screen)
+
+    def _monitors_changed(self, screen) -> None:
+        log(f"_monitors_changed({screen})")
+        self.schedule_screen_changed(screen)
 
     def cleanup(self) -> None:
         if not self.x11_filter:

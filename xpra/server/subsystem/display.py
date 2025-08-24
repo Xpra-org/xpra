@@ -62,6 +62,10 @@ class DisplayManager(StubServerMixin):
     DEFAULT_REFRESH_RATE = 0
     PREFIX = "display"
 
+    __signals__ = {
+        "display-geometry-changed": 0,
+    }
+
     def __init__(self):
         StubServerMixin.__init__(self)
         self.display = os.environ.get("DISPLAY", "")
@@ -264,14 +268,6 @@ class DisplayManager(StubServerMixin):
         log("configure_best_screen_size()=%s", (w, h))
         return w, h
 
-    def _monitors_changed(self, screen) -> None:
-        log(f"_monitors_changed({screen})")
-        self.schedule_screen_changed(screen)
-
-    def _screen_size_changed(self, screen) -> None:
-        log(f"_screen_size_changed({screen})")
-        self.schedule_screen_changed(screen)
-
     def schedule_screen_changed(self, screen):
         self.cancel_screen_size_changed_timer()
         self.screen_size_changed_timer = GLib.timeout_add(10, self.screen_size_changed, screen)
@@ -291,6 +287,7 @@ class DisplayManager(StubServerMixin):
 
     def notify_screen_changed(self, screen) -> None:
         log("notify_screen_changed(%s)", screen)
+        self.emit("display-geometry-changed")
         GLib.idle_add(self.send_updated_screen_size)
 
     def send_updated_screen_size(self) -> None:

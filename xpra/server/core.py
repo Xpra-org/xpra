@@ -141,6 +141,13 @@ def get_server_base_classes() -> tuple[type, ...]:
 SERVER_BASES = get_server_base_classes()
 ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
 log("ServerBaseClass%s", SERVER_BASES)
+SIGNALS: dict[str, int] = {}
+for base_class in SERVER_BASES:
+    SIGNALS.update(getattr(base_class, "__signals__", {}))
+SIGNALS.update({
+    "init-thread-ended": 0,
+    "running": 0,
+})
 
 
 # noinspection PyMethodMayBeStatic
@@ -150,10 +157,7 @@ class ServerCore(ServerBaseClass):
         It only handles the connection layer:
         authentication and the initial handshake.
     """
-    __signals__ = {
-        "init-thread-ended": 0,
-        "running": 0,
-    }
+    __signals__ = SIGNALS
 
     def __init__(self):
         log("ServerCore.__init__()")

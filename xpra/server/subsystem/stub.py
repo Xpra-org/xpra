@@ -28,6 +28,7 @@ class StubServerMixin(superclass):
     Base class for server subsystem.
     Defines the default interface methods that each mixin may override.
     """
+    __signals__: dict[str, int] = {}
     uid = getuid()
     gid = getgid()
     hello_request_handlers: dict[str, Callable[[Any, typedict], bool]] = {}
