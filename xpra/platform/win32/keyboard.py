@@ -18,6 +18,7 @@ from xpra.platform.win32.common import (
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId,
     GetKeyboardState, SetKeyboardState, MapVirtualKeyW, keybd_event,
+    SystemParametersInfoA,
 )
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
@@ -184,8 +185,17 @@ class Win32Keyboard:
         clear_keys_pressed()
 
     @staticmethod
-    def set_repeat_rate(self, delay: int, interval: int) -> None:
-        pass
+    def set_repeat_rate(delay: int, interval: int) -> None:
+        # The keyboard repeat-delay setting, from 0 (approximately 250 millisecond delay)
+        # through 3 (approximately 1 second delay).
+        uiParam = max(0, min(3, delay // 250))
+        SystemParametersInfoA(win32con.SPI_SETKEYBOARDDELAY, uiParam, 0, 0)
+        # The uiParam parameter must specify a value in the range from 0 (approximately 2.5 repetitions per second)
+        # through 31 (approximately 30 repetitions per second).
+        repeat = 1000 / max(1, min(1000, interval)) - 2.5
+        # clamp it to the range that win32 can handle:
+        uiParam = max(0, min(31, round(repeat)))
+        SystemParametersInfoA(win32con.SPI_SETKEYBOARDSPEED, uiParam, 0, 0)
 
     @staticmethod
     def get_keycodes_down() -> Sequence[int]:
