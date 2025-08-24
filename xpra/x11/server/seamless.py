@@ -481,13 +481,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         if not window.is_tray():
             window.managed_connect("restack", self._restack_window)
             window.managed_connect("initiate-moveresize", self._initiate_moveresize)
-        window_prop_set = getattr(window, "prop_set", None)
-        if window_prop_set:
-            try:
-                window_prop_set("_XPRA_WID", "u32", wid)
-            except XError:
-                pass  # this can fail if the window disappears
-                # but we don't really care, it will get cleaned up soon enough
         return wid
 
     def _x11_property_changed(self, window, event) -> None:
