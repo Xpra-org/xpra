@@ -84,7 +84,6 @@ class XError(Exception):
 
 # noinspection PyUnreachableCode
 def get_X_error(xerror) -> str:
-    global xerror_to_name
     if not isinstance(xerror, int):
         return str(xerror)
     with log.trap_error("Error retrieving error string for %s", xerror):
