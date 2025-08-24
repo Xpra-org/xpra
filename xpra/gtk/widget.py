@@ -61,9 +61,8 @@ def imagebutton(title, icon=None, tooltip="", clicked_callback: Callable | None 
 
 
 def modify_fg(widget, color, state=Gtk.StateType.NORMAL) -> None:
-    if hasattr(widget, "modify_fg"):
-        with IgnoreWarningsContext():
-            widget.modify_fg(state, color)
+    with IgnoreWarningsContext():
+        widget.modify_fg(state, color)
 
 
 def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
@@ -75,8 +74,7 @@ def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
         # override gtk defaults: we *want* icons:
         settings = menu_item.get_settings()
         settings.set_property('gtk-menu-images', True)
-        if hasattr(menu_item, "set_always_show_image"):
-            ignorewarnings(menu_item.set_always_show_image, True)
+        ignorewarnings(menu_item.set_always_show_image, True)
     if tooltip:
         menu_item.set_tooltip_text(tooltip)
     if cb:

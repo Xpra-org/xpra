@@ -219,9 +219,6 @@ class ZeroconfPublisher:
         self.zeroconf = None
 
     def update_txt(self, txt) -> None:
-        if not hasattr(self.zeroconf, "update_service"):
-            log("no update_service with zeroconf version %s", zeroconf_version)
-            return
         props = txt_rec(txt)
         self.kwargs["properties"] = props
         si = ServiceInfo(**self.kwargs)

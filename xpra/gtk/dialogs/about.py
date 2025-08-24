@@ -72,8 +72,7 @@ def about(on_close=close_about, parent: Gtk.Window | None = None):
     dialog.set_website_label(SITE_DOMAIN)
     if xpra_icon:
         dialog.set_logo(xpra_icon)
-    if hasattr(dialog, "set_program_name"):
-        dialog.set_program_name(APPLICATION_NAME)
+    dialog.set_program_name(APPLICATION_NAME)
     dialog.connect("response", on_close)
     add_close_accel(dialog, on_close)
     about_dialog = dialog
