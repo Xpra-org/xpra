@@ -11,14 +11,14 @@ import sys
 from time import monotonic, sleep
 from collections import deque
 from typing import Any, NoReturn
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitExit
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
-from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE
+from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE, noop
 from xpra.net.common import Packet, PacketElement
 from xpra.server import features, ServerExitMode
 from xpra.util.gobject import one_arg_signal, n_arg_signal, to_gsignals
@@ -666,8 +666,8 @@ class SeamlessServer(GObject.GObject, ServerBase):
         def reset_focus() -> None:
             focuslog("reset_focus() %s / %s had focus", hfid, had_focus)
             # this will call clear_keys_pressed() if the server is an InputServer:
-            if hasattr(self, "reset_focus"):
-                self.reset_focus()
+            clear_keys_pressed: Callable[[], None] = getattr(self, "clear_keys_pressed", noop)
+            clear_keys_pressed()
             self._has_focus = 0
 
         if wid == 0:

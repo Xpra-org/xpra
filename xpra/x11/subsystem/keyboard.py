@@ -6,6 +6,7 @@
 import os
 import shlex
 from typing import Any
+from collections.abc import Callable
 from time import monotonic
 from subprocess import Popen
 
@@ -199,10 +200,8 @@ class X11KeyboardServer(KeyboardServer):
                     log.error("Error: limited keyboard support without XKB")
             self.input_method = configure_imsettings_env(self.input_method)
             if self.input_method == "ibus":
-                if hasattr(self, "get_child_env"):
-                    env = self.get_child_env()
-                else:
-                    env = os.environ.copy()
+                get_env: Callable[[], dict[str, str]] = getattr(self, "get_child_env", os.environ.copy)
+                env = get_env()
                 may_start_ibus(env)
 
         super().setup()
