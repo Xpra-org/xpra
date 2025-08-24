@@ -77,8 +77,8 @@ class DesktopServerBase(GObject.GObject, ServerBase):
     __common_gsignals__ = SIGNALS
 
     def __init__(self):
-        GObject.GObject.__init__()
-        ServerBase.__init__()
+        GObject.GObject.__init__(self)
+        ServerBase.__init__(self)
         self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
         self.session_type = "X11 desktop"
