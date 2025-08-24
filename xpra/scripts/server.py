@@ -748,7 +748,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     display_options = ""
     # get the display name:
     if (shadowing or expanding or runner) and not extra_args:
-        if WIN32 or OSX:
+        if runner:
+            display_name = "runner-%i" % os.getpid()
+        elif WIN32 or OSX:
             # just a virtual name for the only display available:
             display_name = "Main"
         else:
