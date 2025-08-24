@@ -22,11 +22,11 @@ class NoKeyboardDevice:
 
     @staticmethod
     def clear_keys_pressed(_keycodes) -> None:
-        pass
+        """ this is not a real keyboard """
 
     @staticmethod
     def set_repeat_rate(delay: int, interval: int) -> None:
-        pass
+        """ this is not a real keyboard """
 
     @staticmethod
     def get_keycodes_down() -> Sequence[int]:
