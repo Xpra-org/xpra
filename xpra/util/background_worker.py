@@ -12,6 +12,7 @@ from collections.abc import Callable
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
 from xpra.log import Logger
+from xpra.util.str_fn import repr_ellipsized
 
 log = Logger("util")
 
@@ -55,6 +56,7 @@ class WorkerThread(Thread):
     def add(self, item: Callable, allow_duplicates: bool = True, daemon: bool = False) -> None:
         if self.items.qsize() > 10:
             log.warn("WorkerThread.items queue size is %s", self.items.qsize())
+            log.warn(" items: %s", repr_ellipsized(tuple(self.items.queue)))
         if not allow_duplicates and item in self.items.queue:
             return
         self.items.put(item)
