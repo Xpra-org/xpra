@@ -180,9 +180,8 @@ class X11DisplayManager(DisplayManager):
         DisplayManager.setup(self)
         if not self.display_pid:
             self.display_pid = get_display_pid()
-        if self.randr:
-            if self.init_randr():
-                self.set_initial_resolution()
+        if self.randr and self.init_randr():
+            self.set_initial_resolution()
         with xsync:
             save_server_pid()
             save_server_mode(self.session_type)

@@ -188,8 +188,8 @@ class X11KeyboardServer(KeyboardServer):
             log.estr(e)
             self.input_method = ""
             self.xkb = False
-
-        if self.xkb:
+        else:
+            assert self.xkb
             with xlog:
                 XTest = XTestBindings()
                 X11Keyboard = X11KeyboardBindings()

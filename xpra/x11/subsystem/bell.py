@@ -33,9 +33,7 @@ class BellServer(StubServerMixin):
         log(f"bell={opts.bell}")
 
     def get_caps(self, source) -> dict[str, Any]:
-        return {
-            "bell": self.bell,
-        }
+        return self.get_info(None)
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {

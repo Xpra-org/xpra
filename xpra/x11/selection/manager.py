@@ -223,9 +223,9 @@ def main(argv: list[str]) -> int:
 
         from xpra.util.glib import register_os_signals
 
-        def quit(signum) -> None:
+        def signal_quit(_signum) -> None:
             loop.quit()
-        register_os_signals(quit)
+        register_os_signals(signal_quit)
 
         loop.run()
         return 0
