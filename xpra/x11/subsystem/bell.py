@@ -53,10 +53,12 @@ class BellServer(StubServerMixin):
             log.estr(e)
             self.bell = False
         else:
-            X11Keyboard.selectBellNotification(True)
-            # somewhat redundant, but doing it more than once does not hurt:
-            rxid = get_root_xid()
-            add_event_receiver(rxid, self)
+            from xpra.x11.error import xlog
+            with xlog:
+                X11Keyboard.selectBellNotification(True)
+                # somewhat redundant, but doing it more than once does not hurt:
+                rxid = get_root_xid()
+                add_event_receiver(rxid, self)
 
     def _process_bell_set(self, proto, packet: Packet) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
