@@ -81,4 +81,4 @@ class Win32Pointer:
 
 
 def get_pointer_device():
-    return None
+    return Win32Pointer()

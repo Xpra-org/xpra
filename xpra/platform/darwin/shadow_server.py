@@ -17,6 +17,7 @@ from xpra.exit_codes import ExitCode
 from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
+from xpra.platform.darwin.pointer import click, move_pointer
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 from xpra.log import Logger
 
@@ -197,7 +198,8 @@ class ShadowServer(GTKShadowServerBase):
         if proto not in self._server_sources:
             return False
         assert wid in self._id_to_window
-        CG.CGWarpMouseCursorPosition(pointer[:2])
+        x, y = pointer[:2]
+        move_pointer(x, y)
         return True
 
     def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool, pointer, props):
@@ -208,34 +210,12 @@ class ShadowServer(GTKShadowServerBase):
             self.button_action(device_id, wid, pointer, button, pressed, props)
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
-        event = [pos, 1, 0]
-        r = CG.CGPostMouseEvent(*event)
-        log("CG.CGPostMouseEvent%s=%s", event, r)
+        x, y = pos[:2]
+        move_pointer(x, y)
 
     def button_action(self, device_id: int, wid: int, pointer, button: int, pressed: bool, props):
-        if button <= 3:
-            # we should be using CGEventCreateMouseEvent
-            # instead we clear previous clicks when a "higher" button is pressed... oh well
-            event = [pointer[:2], 1, button]
-            for i in range(button):
-                event.append(i == (button - 1) and pressed)
-            r = CG.CGPostMouseEvent(*event)
-            log("CG.CGPostMouseEvent%s=%s", event, r)
-            return
-        if not pressed:
-            # we don't simulate press/unpress
-            # so just ignore unpressed events
-            return
-        wheel = (button - 2) // 2
-        direction = 1 - (((button - 2) % 2) * 2)
-        event = [wheel]
-        for i in range(wheel):
-            if i != (wheel - 1):
-                event.append(0)
-            else:
-                event.append(direction)
-        r = CG.CGPostScrollWheelEvent(*event)
-        log("CG.CGPostScrollWheelEvent%s=%s", event, r)
+        x, y = pointer[:2]
+        click(x, y, button, pressed)
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)

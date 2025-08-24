@@ -202,6 +202,7 @@ ALIASES: dict[str, str] = {
     "statistics": "stats",
     "print": "printing",
     "display": "screen",
+    "macos": "osx",
 }
 
 # noinspection PyPep8
