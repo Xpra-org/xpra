@@ -9,6 +9,7 @@ import time
 
 from OpenGL import GL
 
+from xpra.common import StrEnum
 from xpra.util.env import envbool
 from xpra.util.str_fn import strtobytes
 from xpra.buffers.membuf import get_membuf  # @UnresolvedImport pylint: disable=import-outside-toplevel
@@ -42,22 +43,31 @@ if envbool("XPRA_OPENGL_ZEROCOPY_UPLOAD", True):
         zerocopy_upload = version.__version__ == OpenGL_accelerate.__version__
 
 
-def pixels_for_upload(img_data) -> tuple[str, memoryview | bytes]:
+class UploadMode(StrEnum):
+    ZEROCOPY_MEMORYVIEW = "zerocopy:memoryview"
+    COPY_MEMORYVIEW_TO_BYTES = "copy:memoryview.tobytes"
+    ZEROCOPY_BYTES = "zerocopy:bytes-as-memoryview"
+    COPY_BYTES = "copy:bytes"
+    ZEROCOPY_MMAP = "zerocopy:mmap"
+    COPY_TOBYTES = "copy:tobytes"
+
+
+def pixels_for_upload(img_data) -> tuple[UploadMode, memoryview | bytes]:
     # prepare the pixel buffer for upload:
     if isinstance(img_data, memoryview):
         if zerocopy_upload:
-            return "zerocopy:memoryview", img_data.toreadonly()
+            return UploadMode.ZEROCOPY_MEMORYVIEW, img_data.toreadonly()
         # not safe, make a copy :(
-        return "copy:memoryview.tobytes", img_data.tobytes()
+        return UploadMode.COPY_MEMORYVIEW_TO_BYTES, img_data.tobytes()
     if isinstance(img_data, bytes):
         if zerocopy_upload:
             # we can zerocopy if we wrap it:
-            return "zerocopy:bytes-as-memoryview", memoryview(img_data).toreadonly()
-        return "copy:bytes", img_data
+            return UploadMode.ZEROCOPY_BYTES, memoryview(img_data).toreadonly()
+        return UploadMode.COPY_BYTES, img_data
     if hasattr(img_data, "raw"):
-        return "zerocopy:mmap", img_data.raw
+        return UploadMode.ZEROCOPY_MMAP, img_data.raw
     # everything else: copy to bytes:
-    return f"copy:bytes({type(img_data)})", strtobytes(img_data)
+    return UploadMode.COPY_TOBYTES, strtobytes(img_data)
 
 
 def set_alignment(width: int, rowstride: int, pixel_format: str) -> None:
