@@ -33,7 +33,11 @@ class BellServer(StubServerMixin):
         log(f"bell={opts.bell}")
 
     def get_caps(self, source) -> dict[str, Any]:
-        return self.get_info(None)
+        # Note: don't just call self.get_info() to get rid of linter warnings,
+        # this is not safe as it will call it on the subclass!
+        return {
+            "bell": self.bell,
+        }
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
