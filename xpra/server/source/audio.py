@@ -41,7 +41,7 @@ class FakeSink:
         log("FakeSink.cleanup%s ignored", args)
 
 
-def stop_proc(proc) -> None:
+def stop_proc(proc: Popen) -> None:
     r = proc.poll()
     log("stop_proc(%s) exit code=%s", proc, r)
     if r is not None:
