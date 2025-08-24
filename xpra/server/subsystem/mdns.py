@@ -8,19 +8,29 @@
 import os
 import sys
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 
 from xpra.common import FULL_INFO
-from xpra.os_util import gi_import
 from xpra.util.env import envbool
+from xpra.util.objects import typedict
 from xpra.net.common import get_ssh_port
 from xpra.scripts.config import str_to_bool
 from xpra.platform.info import get_username
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.util.background_worker import add_work_item
 from xpra.log import Logger
 
 log = Logger("server", "mdns")
+
+
+def idle_work(fn: Callable[[], None]) -> None:
+    """
+    calls a function as a work item via GLib.idle_add,
+    so this will also wait for the main loop to be started
+    """
+    from xpra.os_util import gi_import
+    from xpra.util.background_worker import add_work_item
+    GLib = gi_import("GLib")
+    GLib.idle_add(add_work_item, fn)
 
 
 class MdnsServer(StubServerMixin):
@@ -44,13 +54,15 @@ class MdnsServer(StubServerMixin):
 
     def setup(self) -> None:
         if self.mdns:
-            # ugly: use idle_add to wait for run()
+            # ugly: `idle_work` uses GLib.idle_add to wait for run()
             # which is where the server uuid is set:
-            GLib = gi_import("GLib")
-            GLib.idle_add(add_work_item, self.mdns_publish)
+            idle_work(self.mdns_publish)
 
     def cleanup(self) -> None:
         self.mdns_cleanup()
+
+    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+        idle_work(self.mdns_update)
 
     def can_upgrade(self, socktype: str, tosocktype: str, options: dict[str, str]) -> bool:
         # `ServerCore` actually implements this method properly
@@ -144,7 +156,8 @@ class MdnsServer(StubServerMixin):
 
     def mdns_cleanup(self) -> None:
         if self.mdns_publishers:
-            add_work_item(self.do_mdns_cleanup)
+            from xpra.util.thread import start_thread
+            start_thread(self.do_mdns_cleanup, "mdns-cleanup", daemon=True)
 
     def do_mdns_cleanup(self) -> None:
         mp = dict(self.mdns_publishers)

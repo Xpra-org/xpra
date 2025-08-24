@@ -299,9 +299,6 @@ class ServerBase(ServerBaseClass):
             ss.close()
             raise
         self._server_sources[proto] = ss
-        # weak dependency on mdns:
-        mdns_update = getattr(self, "mdns_update", noop)
-        add_work_item(mdns_update)
         # process ui half in ui thread:
         GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, ui_client, share_count)
 
