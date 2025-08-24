@@ -2,6 +2,7 @@
 # Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+from xpra.util.signal_emitter import SignalEmitter
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -18,10 +19,11 @@ SERVER_BASE: type = get_server_base_class()
 log("SERVER_BASE=%s", SERVER_BASE)
 
 
-class RunnerServer(SERVER_BASE):
+class RunnerServer(SignalEmitter, SERVER_BASE):
 
     def __init__(self):
         log("RunnerServer.__init__()")
+        SignalEmitter.__init__(self)
         SERVER_BASE.__init__(self)
         self.session_type = "runner"
 
