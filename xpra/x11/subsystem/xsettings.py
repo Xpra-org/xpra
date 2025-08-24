@@ -210,7 +210,9 @@ class XSettingsServer(StubServerMixin):
 
             # cook xsettings to add various settings:
             # (as those may not be present in xsettings on some platforms… like win32 and osx)
-            have_override = self.double_click_time > 0 or self.double_click_distance != (-1, -1) or antialias or dpi > 0
+            dc_time = getattr(self, "double_click_time", 0)
+            dc_distance = getattr(self, "double_click_distance", (-1, -1))
+            have_override = dc_time > 0 or dc_distance != (-1, -1) or antialias or dpi > 0
             if k == "xsettings-blob" and have_override:
                 # start by removing blocklisted options:
                 def filter_blocklisted() -> tuple[int, list]:
@@ -241,7 +243,7 @@ class XSettingsServer(StubServerMixin):
                 if dpi > 0:
                     v = set_xsettings_int("Xft/DPI", dpi * 1024)
                 if double_click_time > 0:
-                    v = set_xsettings_int("Net/DoubleClickTime", self.double_click_time)
+                    v = set_xsettings_int("Net/DoubleClickTime", double_click_time)
                 if antialias:
                     ad = typedict(antialias)
                     v = set_xsettings_int("Xft/Antialias", ad.intget("enabled", -1))

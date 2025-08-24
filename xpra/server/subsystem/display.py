@@ -73,8 +73,6 @@ class DisplayManager(StubServerMixin):
         self.xdpi = 0
         self.ydpi = 0
         self.antialias: dict[str, Any] = {}
-        self.double_click_time = -1
-        self.double_click_distance = -1, -1
         self.refresh_rate = "auto"
         self.original_desktop_display = None
 
@@ -148,8 +146,6 @@ class DisplayManager(StubServerMixin):
             self.dpi = 0
             self.xdpi = 0
             self.ydpi = 0
-            self.double_click_time = -1
-            self.double_click_distance = -1, -1
             self.antialias = {}
         else:
             dpi_caps = c.get("dpi")
@@ -161,15 +157,9 @@ class DisplayManager(StubServerMixin):
                 self.dpi = tdpi.intget("", 0)
                 self.xdpi = tdpi.intget("x", self.xdpi)
                 self.ydpi = tdpi.intget("y", self.ydpi)
-            self.double_click_time = c.intget("double_click.time", -1)
-            self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
             self.antialias = c.dictget("antialias", {})
         log("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s",
             self.dpi, self.xdpi, self.ydpi, self.antialias)
-        log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
-        # if we're not sharing, reset all the settings:
-        reset = share_count == 0
-        self.update_all_server_settings(reset)
 
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
@@ -208,10 +198,6 @@ class DisplayManager(StubServerMixin):
 
     def get_info(self, _proto) -> dict[str, Any]:
         i = {
-            "double-click": {
-                "time": self.double_click_time,
-                "distance": self.double_click_distance,
-            },
             "dpi": {
                 "default": self.default_dpi,
                 "value": self.dpi,

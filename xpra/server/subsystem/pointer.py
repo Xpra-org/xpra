@@ -8,6 +8,7 @@
 from typing import Any
 
 from xpra.util.env import envbool
+from xpra.util.objects import typedict
 from xpra.os_util import gi_import
 from xpra.net.common import Packet
 from xpra.server.subsystem.stub import StubServerMixin
@@ -26,17 +27,19 @@ class PointerServer(StubServerMixin):
     Mixin for servers that handle pointer devices
     (mouse, etc)
     """
+    PREFIX = "pointer"
 
     def __init__(self):
         super().__init__()
         self.input_devices = "auto"
-        self.input_devices_format = None
-        self.input_devices_data = None
+        self.input_devices_data = {}
         self.pointer_sequence = {}
-        self.last_mouse_user = None
+        self.last_mouse_user = ""
         self.pointer_device_map: dict = {}
         self.pointer_device = None
         self.touchpad_device = None
+        self.double_click_time = -1
+        self.double_click_distance = -1, -1
         # duplicated:
         self.readonly = False
 
@@ -54,6 +57,24 @@ class PointerServer(StubServerMixin):
     def make_pointer_device(self):
         from xpra.platform.pointer import get_pointer_device
         return get_pointer_device()
+
+    def get_info(self, _proto) -> dict[str, Any]:
+        info = {
+            "double-click": {
+                "time": self.double_click_time,
+                "distance": self.double_click_distance,
+            },
+        }
+        return {PointerServer.PREFIX: info}
+
+    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+        if share_count > 0:
+            self.double_click_time = -1
+            self.double_click_distance = -1, -1
+        else:
+            self.double_click_time = c.intget("double_click.time", -1)
+            self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
+        log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
 
     def init_virtual_devices(self, devices: dict[str, Any]) -> None:
         # pylint: disable=import-outside-toplevel

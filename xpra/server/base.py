@@ -351,6 +351,7 @@ class ServerBase(ServerBaseClass):
 
             self.send_hello(ss, auth_caps)
             self.add_new_client(ss, c, send_ui, share_count)
+            self.update_all_server_settings(share_count == 0)  # if we're not sharing, reset all the settings
             self.send_initial_data(ss, c, send_ui, share_count)
             self.client_startup_complete(ss)
 
