@@ -6,7 +6,6 @@
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.x11.server.core import get_root_size
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.server import features
@@ -52,6 +51,7 @@ class XpraDesktopServer(DesktopServerBase):
 
     def configure_best_screen_size(self) -> tuple[int, int]:
         """ for the first client, honour desktop_mode_size if set """
+        from xpra.x11.subsystem.display import get_root_size
         root_w, root_h = get_root_size()
         if not self.randr:
             screenlog("configure_best_screen_size() no randr")
