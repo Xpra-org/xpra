@@ -16,11 +16,12 @@ from xpra.os_util import OSX, WIN32, POSIX, gi_import, is_container, getuid, get
 from xpra.platform.paths import get_system_conf_dirs
 from xpra.util.io import pollwait, is_writable, which
 from xpra.util.env import envbool, osexpand
+from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import csv
 from xpra.util.system import is_X11
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import enabled_or_auto
-from xpra.scripts.session import clean_session_files
+from xpra.scripts.session import clean_session_files, session_file_path, pidexists
 from xpra.server import features
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -149,6 +150,7 @@ class PulseaudioServer(StubServerMixin):
         self.pulseaudio = False
         self.pulseaudio_command = ""
         self.pulseaudio_configure_commands = ()
+        self.pulseaudio_pid = 0
         self.pulseaudio_proc: Popen | None = None
         self.pulseaudio_private_dir = ""
         self.pulseaudio_server_dir = ""
@@ -174,9 +176,10 @@ class PulseaudioServer(StubServerMixin):
         start_thread(self.init_pulseaudio, "init-pulseaudio", True)
         # we spawn another thread here to avoid blocking threaded init
 
-    def cleanup(self) -> None:
-        self.pulseaudio_init_done.wait(5)
-        self.cleanup_pulseaudio()
+    def late_cleanup(self, stop=True) -> None:
+        if stop:
+            self.pulseaudio_init_done.wait(5)
+            self.cleanup_pulseaudio()
 
     def get_info(self, _proto) -> dict[str, Any]:
         # noinspection PySimplifyBooleanCheck
@@ -289,6 +292,12 @@ class PulseaudioServer(StubServerMixin):
         return env
 
     def do_init_pulseaudio(self) -> None:
+        pidfile = session_file_path("pulseaudio.pid")
+        pid = load_pid(pidfile)
+        if pidexists(pid):
+            log.info("found existing pulseaudio server process with pid %i", pid)
+            self.pulseaudio_pid = pid
+            return
         # environment initialization:
         # 1) make sure that the audio subprocess will use the devices
         #    we define in the pulseaudio command
@@ -353,6 +362,7 @@ class PulseaudioServer(StubServerMixin):
     def pulseaudio_ended(self, proc: Popen) -> None:
         log("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
             proc, self.pulseaudio_proc, proc.returncode, self._closing)
+        self.pulseaudio_pid = 0
         if self.pulseaudio_proc is None or self._closing:
             # cleared by cleanup already, ignore
             return
@@ -368,9 +378,13 @@ class PulseaudioServer(StubServerMixin):
         log("cleanup_pulseaudio()")
         self.pulseaudio_init_done.wait(5)
         proc = self.pulseaudio_proc
-        if not proc:
+        pid = self.pulseaudio_pid
+        if proc:
+            self.exit_pulseaudio()
+        elif pid:
+            kill_pid(pid, "pulseaudio")
+        else:
             return
-        self.exit_pulseaudio()
         if self.pulseaudio_server_socket and self.is_child_alive(proc):
             # wait for the pulseaudio process to exit,
             # it will delete the socket:

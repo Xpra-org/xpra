@@ -167,7 +167,7 @@ def clean_session_dir(session_dir: str) -> bool:
     return True
 
 
-def clean_pidfiles(session_dir: str, kill=("dbus.pid", "pulseaudio.pid")) -> dict[str, tuple[int, str]]:
+def clean_pidfiles(session_dir: str, kill=()) -> dict[str, tuple[int, str]]:
     # remove any session pid files for which the process has already terminated,
     # and returns the ones that are still alive.
     get_child_reaper().poll()
