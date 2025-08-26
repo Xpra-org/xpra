@@ -1392,8 +1392,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         server_not_started(str(e))
         return ExitCode.OK
     except InitExit as e:
+        log_fn = log.error if int(e.status) else log.info
         for m in str(e).split("\n"):
-            log.info("%s", m)
+            log_fn("%s", m)
         server_not_started(str(e))
         return e.status
     except InitException as e:
