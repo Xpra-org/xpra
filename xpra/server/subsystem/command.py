@@ -115,9 +115,7 @@ class ChildCommandServer(StubServerMixin):
         self.terminate_children: bool = False
         self.children_started: list[ProcInfo] = []
         self.reaper_exit: Callable = self.reaper_exit_check
-        # does not belong here...
-        if not hasattr(self, "session_name"):
-            self.session_name: str = ""
+        self.session_name = ""
         self.menu_provider = None
 
         def server_is_running(*args) -> None:
