@@ -24,7 +24,6 @@ from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.util.pid import write_pid
-from xpra.server import ServerExitMode
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -117,8 +116,6 @@ class ChildCommandServer(StubServerMixin):
         self.children_started: list[ProcInfo] = []
         self.reaper_exit: Callable = self.reaper_exit_check
         # does not belong here...
-        if not hasattr(self, "_exit_mode"):
-            self._exit_mode = None
         if not hasattr(self, "session_name"):
             self.session_name: str = ""
         self.menu_provider = None
@@ -166,14 +163,16 @@ class ChildCommandServer(StubServerMixin):
             self.menu_provider.setup()
 
     def cleanup(self) -> None:
-        if self.terminate_children and self._exit_mode not in (ServerExitMode.UPGRADE, ServerExitMode.EXIT):
-            self.terminate_children_processes()
         # during cleanup, just ignore the reaper exit callback:
         self.reaper_exit = noop
         mp = self.menu_provider
         if mp:
             self.menu_provider = None
             mp.cleanup()
+
+    def late_cleanup(self, stop=True) -> None:
+        if self.terminate_children and stop:
+            self.terminate_children_processes()
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {
