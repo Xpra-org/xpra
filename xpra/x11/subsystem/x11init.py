@@ -27,7 +27,12 @@ class X11Init(StubServerMixin):
             raise RuntimeError("fake x11 init error")
         from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
         if not get_display_ptr():
-            init_display_source()
+            try:
+                init_display_source()
+            except ValueError as e:
+                from xpra.scripts.config import InitExit
+                from xpra.exit_codes import ExitCode
+                raise InitExit(ExitCode.VFB_ERROR, str(e)) from None
         main_loop = getattr(self, "main_loop", None)
         if not main_loop:
             raise RuntimeError("no main loop!")
