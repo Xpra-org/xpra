@@ -12,7 +12,7 @@ from subprocess import Popen
 
 from xpra.common import noop
 from xpra.os_util import gi_import
-from xpra.util.pid import load_pid
+from xpra.util.pid import load_pid, kill_pid
 from xpra.util.env import envbool
 from xpra.util.io import find_libexec_command, which
 from xpra.util.objects import typedict
@@ -236,6 +236,14 @@ class X11KeyboardServer(KeyboardServer):
             from xpra.x11.xkbhelper import clean_keyboard_state
             with xswallow:
                 clean_keyboard_state()
+
+    def late_cleanup(self, stop=True) -> None:
+        if not stop:
+            return
+        pidfile = ibus_pid_file()
+        pid = load_pid(pidfile)
+        if pid:
+            kill_pid(pid, "ibus-daemon")
 
     def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
         if send_ui:
