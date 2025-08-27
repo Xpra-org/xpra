@@ -21,8 +21,8 @@ export PATH=$PATH:~/.new_local/bin/
   <summary>Configure `jhbuild` to use our modules</summary>
 
 ```shell
-ln -sf $(pwd)/gtk-osx-build/jhbuildrc-gtk-osx ~/.config/jhbuildrc
-ln -sf $(pwd)/gtk-osx-build/jhbuildrc-custom ~/.config/jhbuildrc-custom
+ln -sf "$(realpath .)/gtk-osx-build/jhbuildrc-gtk-osx" ~/.config/jhbuildrc
+ln -sf "$(realpath .)/gtk-osx-build/jhbuildrc-custom" ~/.config/jhbuildrc-custom
 ```
 </details>
 
