@@ -47,7 +47,7 @@ GIR_VERSIONS: dict[str, str] = {
 
 
 def gi_import(mod="Gtk", version="") -> ModuleType:
-    if mod in GI_BLOCK:
+    if mod in GI_BLOCK or "*" in GI_BLOCK:
         raise ImportError(f"import of {mod!r} is blocked")
     version = version or GIR_VERSIONS.get(mod, "")
     from xpra.util.env import SilenceWarningsContext
