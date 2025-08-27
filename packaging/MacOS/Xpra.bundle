@@ -168,7 +168,7 @@
 	</data>
 
 	<icon-theme icons="auto">
-		Tango
+		Adwaita
 	</icon-theme>
 
 </app-bundle>
