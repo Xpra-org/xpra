@@ -76,25 +76,30 @@ class OSXRootCapture:
     def __repr__(self):
         return "OSXRootCapture"
 
-    def get_type(self) -> str:
+    @staticmethod
+    def get_type() -> str:
         return "CoreGraphics"
 
-    def refresh(self) -> bool:
+    @staticmethod
+    def refresh() -> bool:
         return True
 
     def clean(self) -> None:
         """ nothing specific to do here on MacOS """
 
-    def get_image(self, x, y, width, height) -> ImageWrapper:
+    @staticmethod
+    def get_image(x, y, width, height) -> ImageWrapper:
         rect = (x, y, width, height)
         return get_CG_imagewrapper(rect)
 
-    def get_info(self) -> dict[str, Any]:
+    @staticmethod
+    def get_info() -> dict[str, Any]:
         return {
             "type": "CoreGraphics",
         }
 
-    def take_screenshot(self) -> tuple[int, int, str, int, bytes]:
+    @staticmethod
+    def take_screenshot() -> tuple[int, int, str, int, bytes]:
         log("grabbing screenshot")
         return take_screenshot()
 
@@ -124,7 +129,8 @@ class ShadowServer(GTKShadowServerBase):
         # printing fails silently on OSX
         self.printing = False
 
-    def get_keyboard_config(self, _props=None) -> KeyboardConfig:
+    @staticmethod
+    def get_keyboard_config(_props=None) -> KeyboardConfig:
         return KeyboardConfig()
 
     def make_tray_widget(self):
