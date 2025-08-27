@@ -17,12 +17,12 @@ When using [SSH](../Network/SSH.md) to connect to a server, [encryption](../Netw
 Starting with version 4.0, the preferred way of specifying authentication is within the socket option itself. \
 ie for starting a [seamless](Seamless.md) server with a `TCP` socket protected by a password stored in a `file`:
 ```shell
-xpra start --start=xterm -d auth
+xpra seamless --start=xterm -d auth
      --bind-tcp=0.0.0.0:10000,auth=file,filename=password.txt
 ```
 So that multiple sockets can use different authentication modules, and those modules can more easily be chained:
 ```shell
-xpra start --start=xterm -d auth \
+xpra seamless --start=xterm -d auth \
      --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file,filename=password.txt \
      --bind-tcp=0.0.0.0:10001,auth=sys
 ```
@@ -67,11 +67,11 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 <details>
   <summary>more examples</summary>
 
-* `XPRA_PASSWORD=mysecret xpra start --bind-tcp=0.0.0.0:10000,auth=env`
-* `SOME_OTHER_ENV_VAR_NAME=mysecret xpra start --bind-tcp=0.0.0.0:10000,auth=env,name=SOME_OTHER_ENV_VAR_NAME`
-* `xpra start --bind-tcp=0.0.0.0:10000,auth=password,value=mysecret`
-* `xpra start --bind-tcp=0.0.0.0:10000,auth=file,filename=/path/to/mypasswordfile.txt`
-* `xpra start --bind-tcp=0.0.0.0:10000,auth=sqlite,filename=/path/to/userlist.sdb`
+* `XPRA_PASSWORD=mysecret xpra seamless --bind-tcp=0.0.0.0:10000,auth=env`
+* `SOME_OTHER_ENV_VAR_NAME=mysecret xpra seamless --bind-tcp=0.0.0.0:10000,auth=env,name=SOME_OTHER_ENV_VAR_NAME`
+* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=password,value=mysecret`
+* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=file,filename=/path/to/mypasswordfile.txt`
+* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=sqlite,filename=/path/to/userlist.sdb`
 
 Beware when mixing environment variables and password files as the latter may contain a trailing newline character whereas the former often do not.
 </details>

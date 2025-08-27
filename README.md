@@ -63,7 +63,7 @@ You can use the [html5 client](https://github.com/Xpra-org/xpra-html5) in which 
 ## Seamless Mode
 Run `xterm` on a remote host, display and interact with it locally (from the client machine):
 ```sh
-xpra start ssh://USER@HOST/ --start=xterm
+xpra seamless ssh://USER@HOST/ --start=xterm
 # hint: xterm must be installed on the HOST.
 ```
 For more examples, see [usage](docs/Usage/README.md).

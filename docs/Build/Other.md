@@ -32,7 +32,7 @@ Follow https://github.com/Xpra-org/xpra/issues/3288#issuecomment-931851564
 ## displayfd workaround
 Because of the Raspberry Pi's limited power, getting an answer from `displayfd` might take more than the ten seconds specified as the standard timeout. In order to change this, you can start xpra like this:
 ```shell
-xpra start --env=XPRA_DISPLAY_FD_TIMEOUT=30 ...
+xpra seamless --env=XPRA_DISPLAY_FD_TIMEOUT=30 ...
 ```
 
-Alternatively, always specify a display when use the `xpra start` subcommand.
+Alternatively, always specify a display when use the `xpra seamless` subcommand.

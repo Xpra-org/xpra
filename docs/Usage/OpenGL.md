@@ -11,13 +11,13 @@ To take advantage of GPU [OpenGL](https://www.opengl.org/) acceleration, here ar
 * ## VirtualGL
 [VirtualGL](http://www.virtualgl.org/) does API intercept and delegates OpenGL acceleration to a real GPU. Example:
 ```shell
-xpra start --start="vglrun glxgears"
+xpra seamless --start="vglrun glxgears"
 ```
 Or even better:
 ```shell
-xpra start --exec-wrapper="vglrun" --start="glxgears"
+xpra seamless --exec-wrapper="vglrun" --start="glxgears"
 ```
-That way, xpra will be able to detect the GPU actually used by `start` sub commands.
+That way, xpra will be able to detect the GPU actually used by its sub commands.
 
 * ## via WSL - Windows Subsystem for Linux
 See [WSL - Windows Subsystem for Linux](WSL.md) OpenGL acceleration.
@@ -26,7 +26,7 @@ See [WSL - Windows Subsystem for Linux](WSL.md) OpenGL acceleration.
 From within an X11 session, you can use start the Weston Wayland compositor, then start Xwayland and the xpra server with the `-use-display` option:
 ```shell
 Xwayland :20 &
-xpra start :20 --use-display
+xpra seamless :20 --use-display
 ```
 (the Weston window can be hidden)
 
@@ -39,7 +39,7 @@ The limitation here is that the performance of shadow sessions is inferior to [s
 * ## Taking over an existing display
 Similarly to the shadow solution, you can tell xpra to take over an existing X11 display and manage it for remote access using the `--use-display` flag:
 ```shell
-xpra start --use-display :0
+xpra seamless --use-display :0
 ```
 The downside is that the session is no longer accessible from the local display.
 

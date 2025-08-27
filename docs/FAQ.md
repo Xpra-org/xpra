@@ -57,7 +57,7 @@ If the xpra server is still running but unresponsive, you should kill it first (
 ### Application X creates a new tab or window on an existing display, not the display I want to use
 If the application does not provide an option to prevent this behaviour, you may need to use a different user account to launch multiple instances of this application on different displays - this is a common issue with some applications, in particular browsers
 ### Why are my applications missing their menu bar on Ubuntu?
-Always start your applications with `xpra start --start=APP` and not `DISPLAY=:N APP` (see #1419)
+Always start your applications with `xpra seamless --start=APP` and not `DISPLAY=:N APP` (see #1419)
 
 
 ***

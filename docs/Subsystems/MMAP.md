@@ -68,7 +68,7 @@ Example steps for host to guest setup:
   ```shell
   VSOCK_PORT=10000
   MMAP_PATH=$(find /sys/devices/ -type f -name "resource2_wc")
-  xpra start --bind-vsock=auto:${VSOCK_PORT} --mmap=$MMAP_PATH
+  xpra seamless --bind-vsock=auto:${VSOCK_PORT} --mmap=$MMAP_PATH
   ```
 * from the host, use `mmap` with the same device:
   ```shell

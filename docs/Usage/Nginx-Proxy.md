@@ -67,7 +67,7 @@ sudo nginx -c xpra-basic.conf
 ### Xpra server
 Start an xpra server on port 10000:
 ```shell
-xpra start --bind-tcp=0.0.0.0:10000 --start=xterm
+xpra seamless --bind-tcp=0.0.0.0:10000 --start=xterm
 ```
 (beware: [authentication](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Authentication.md) is turned off for simplicity)
 

@@ -21,7 +21,7 @@ uuidgen > ./key.txt
 ```
 start a server:
 ```
-xpra start --start=xterm \
+xpra seamless --start=xterm \
      --bind-tcp=0.0.0.0:10000,encryption=AES,keyfile=key.txt
 ```
 * client:

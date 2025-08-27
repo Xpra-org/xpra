@@ -32,7 +32,7 @@ Important: the video encoder is only used when needed, usually when there is a s
 ## Debugging
 To force xpra to use nvenc exclusively as video encoder, you can use the `--video-encoders=` command line option:
 ```shell
-xpra start :10 --video-encoders=nvenc
+xpra seamless :10 --video-encoders=nvenc
 ```
 
 To debug the availability of video encoders and GPUs:
@@ -44,7 +44,7 @@ xpra nvinfo
 
 Once nvenc is running, you can debug the encoding process step with:
 ```shell
-xpra start -d nvenc ...
+xpra seamless -d nvenc ...
 ```
 
 

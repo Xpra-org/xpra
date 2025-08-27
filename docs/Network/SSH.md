@@ -13,7 +13,7 @@ xpra attach ssh://USERNAME@HOST/DISPLAY
 
 Similarly, it is possible to start new sessions and connect to them in one command:
 ```
-xpra start ssh://USERNAME@HOST/ --start=xterm
+xpra seamless ssh://USERNAME@HOST/ --start=xterm
 ```
 
 The sessions do not require any specific `bind` command line options: the default xpra configuration will already create unix domain sockets which are forwarded to the client by the SSH transport. Those sockets can be seen with `xpra list` on the server.
@@ -25,7 +25,7 @@ This mode can be used to enable SSH connections on servers that do not include a
 
 This mode can be used with plain TCP sockets which end up being upgraded to SSH. The server also supports the `bind-ssh` option: these sockets will only allow SSH connections. ie:
 ```
-xpra start --bind-ssh=0.0.0.0:10000 --start=xterm
+xpra seamless --bind-ssh=0.0.0.0:10000 --start=xterm
 ```
 The client can then connect to this port using ssh:
 ```

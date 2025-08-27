@@ -29,7 +29,7 @@ See also: [Security Considerations](../Usage/Security.md)
   <summary>TCP Upgrade to WebSocket</summary>
 
 ```shell
-xpra start --start=xterm --bind-tcp=0.0.0.0:10000
+xpra seamless --start=xterm --bind-tcp=0.0.0.0:10000
 ```
 ```shell
 xpra attach ws://localhost:10000/
@@ -45,7 +45,7 @@ xdg-open http://localhost:10000/
 
 ```shell
 echo -n thepassword > password.txt
-xpra start --start=xterm --bind-ssh=0.0.0.0:10000,auth=file,filename=password.txt
+xpra seamless --start=xterm --bind-ssh=0.0.0.0:10000,auth=file,filename=password.txt
 ```
 ```shell
 xpra attach ssh://localhost:10000/

@@ -14,7 +14,7 @@ xpra attach -d geometry
 
 Start a seamless server with `focus` debugging enabled:
 ```shell
-xpra start -d focus --start=xterm
+xpra seamless -d focus --start=xterm
 ```
 </details>
 
@@ -27,7 +27,7 @@ You can also prefix a logging category with a dash "`-`" to disable debug loggin
 
 To log everything except the `window` and `focus` categories:
 ```shell
-xpra start :10 -d all,-window,-focus
+xpra seamless :10 -d all,-window,-focus
 ```
 </details>
 
@@ -216,9 +216,9 @@ In particular the X11 bindings, as those can process thousands of events per sec
 
 Log all X11 events:
 ```shell
-XPRA_X11_DEBUG_EVENTS="*" xpra start :10
+XPRA_X11_DEBUG_EVENTS="*" xpra seamless :10
 ```
 or just specific events:
 ```shell
-XPRA_X11_DEBUG_EVENTS="EnterNotify,CreateNotify" xpra start :10
+XPRA_X11_DEBUG_EVENTS="EnterNotify,CreateNotify" xpra seamless :10
 ```

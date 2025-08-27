@@ -22,7 +22,7 @@ Depending on the [authentication](Authentication.md) module configured, the prox
 
 start a session on display `:100` with an `xterm`, this session is not exposed via TCP as there is no `bind-tcp` option:
 ```shell
-xpra start :100 --start=xterm
+xpra seamless :100 --start=xterm
 ```
 start a proxy server available on tcp port 14501:
 ```shell
@@ -73,8 +73,8 @@ This example uses a `sqlite` database to expose two remote server instances acce
 
 Start the two sessions we wish to access via the `PROXYHOST` (we call this `TARGETHOST` - for testing, this can be the same host as `PROXYHOST`). On `TARGETHOST`:
 ```shell
-xpra start :200 --bind-tcp=0.0.0.0:10100 --start=xterm
-xpra start :201 --bind-tcp=0.0.0.0:10101 --start=xterm
+xpra seamless :200 --bind-tcp=0.0.0.0:10100 --start=xterm
+xpra seamless :201 --bind-tcp=0.0.0.0:10101 --start=xterm
 ```
 Start a proxy server on port 14501 using the "`sqlite`" authentication module (we will call this server `PROXYHOST`):
 ```shell

@@ -10,7 +10,7 @@ On MS Windows, please see [windows command line](https://github.com/Xpra-org/xpr
 This is how xpra is most often used.\
 This command will start an `xterm` (or any graphical application of your choice) on `HOST` and display it to your local desktop through an [SSH](../Network/SSH.md) transport:
 ```shell
-xpra start ssh://USERNAME@HOST/ --start-child=xterm
+xpra seamless ssh://USERNAME@HOST/ --start-child=xterm
 ```
 
 <details>
@@ -19,7 +19,7 @@ xpra start ssh://USERNAME@HOST/ --start-child=xterm
 Instead of starting and attaching to the session using a single command:\
 first connect to the server via ssh and start the xpra server instance on a free display of your choice (`:100 in this example`):
 ```shell
-xpra start :100 --start=xterm
+xpra seamless :100 --start=xterm
 ```
 then from the client, just connect to this xpra instance:
 ```shell
@@ -47,7 +47,7 @@ SSH is great, it provides host verification, secure authentication and encryptio
 However, in some cases, you may not want to give remote users shell access, or you may want to share sessions between multiple remote users. \
 For this type of use case, you can use TCP sockets:
 ```shell
-xpra start --start=xterm --bind-tcp=0.0.0.0:10000
+xpra seamless --start=xterm --bind-tcp=0.0.0.0:10000
 ```
 Then, assuming that the port you have chosen (`10000` in the example above) is allowed through the firewall, you can connect from the client using:
 ```shell

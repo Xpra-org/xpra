@@ -125,14 +125,14 @@ xpra attach --encoding=help
   <summary>list encodings available to the server</summary>
 
 ```shell
-xpra start --encoding=help
+xpra seamless --encoding=help
 ```
 </details>
 <details>
   <summary>debug logging switches</summary>
 
 ```shell
-xpra start -d damage,compress,encoding
+xpra seamless -d damage,compress,encoding
 ```
 </details>
 

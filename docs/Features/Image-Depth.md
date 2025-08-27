@@ -3,7 +3,7 @@
 ## Usage
 Simply specify which pixel bit depth you want to use when starting a session, ie:
 ```shell
-xpra start --pixel-depth=30
+xpra seamless --pixel-depth=30
 ```
 
 ## Support

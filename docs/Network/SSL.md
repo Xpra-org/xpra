@@ -8,7 +8,7 @@ For step-by-step instructions, expand this:
 
 start a server with TCP and SSL support using an existing certificate `cert.pem` (see below for generating one):
 ```
-xpra start --start=xterm \
+xpra seamless --start=xterm \
      --bind-tcp=0.0.0.0:10000 \
      --ssl-cert=/path/to/ssl-cert.pem
 ```
@@ -94,7 +94,7 @@ openssl verify -CAfile ca.crt ./server.crt
 ```
 You can now start your xpra server using this key:
 ```
-xpra start --start=xterm \
+xpra seamless --start=xterm \
      --bind-tcp=0.0.0.0:10000 \
      --ssl-cert=`pwd`/server.crt --ssl-key=`pwd`/server.key
 ```
