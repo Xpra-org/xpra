@@ -1584,13 +1584,15 @@ class WindowClient(StubClientMixin):
 
             def draw_cleanup() -> None:
                 if coding == "mmap":
-                    from xpra.net.mmap import int_from_buffer
-                    # we need to ack the data to free the space!
-                    data_start = int_from_buffer(self.mmap_read_area.mmap, 0)
-                    offset, length = data[-1]
-                    data_start.value = offset + length
-                    # clear the mmap area via idle_add so any pending draw requests
-                    # will get a chance to run first (preserving the order)
+                    area = self.mmap_read_area
+                    if area:
+                        from xpra.net.mmap import int_from_buffer
+                        # we need to ack the data to free the space!
+                        data_start = int_from_buffer(area.mmap, 0)
+                        offset, length = data[-1]
+                        data_start.value = offset + length
+                        # clear the mmap area via idle_add so any pending draw requests
+                        # will get a chance to run first (preserving the order)
                 self.send_damage_sequence(wid, packet_sequence, width, height, WINDOW_NOT_FOUND, "window not found")
 
             GLib.idle_add(draw_cleanup)
