@@ -94,7 +94,7 @@ def validate_pixel_depth(pixel_depth, starting_desktop=False) -> int:
     if pixel_depth not in (8, 16, 24, 30):
         raise InitException(f"invalid pixel depth: {pixel_depth}")
     if not starting_desktop and pixel_depth == 8:
-        raise InitException("pixel depth 8 is only supported in 'start-desktop' mode")
+        raise InitException("pixel depth 8 is only supported in 'desktop' mode")
     return pixel_depth
 
 

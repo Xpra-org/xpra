@@ -72,7 +72,7 @@ SIGNALS.update({
 class DesktopServerBase(GObject.GObject, ServerBase):
     """
         A server base class for RFB / VNC-like virtual desktop or virtual monitors,
-        used with the "start-desktop" subcommand.
+        used with the `desktop` subcommand.
     """
     __common_gsignals__ = SIGNALS
 

@@ -11,7 +11,7 @@ log-dir = %(log_dir)s
 # Log file:
 log-file = server.log
 
-# Delegate "start" and "start-desktop" subcommands to the system-wide proxy server instance
+# Delegate "seamless" and "desktop" subcommands to the system-wide proxy server instance
 #start-via-proxy = auto
 start-via-proxy = no
 

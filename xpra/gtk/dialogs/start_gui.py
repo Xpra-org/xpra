@@ -599,10 +599,10 @@ class StartSession(Gtk.Window):
         shadow = self.shadow_btn.get_active()
         seamless = self.seamless_btn.get_active()
         if seamless:
-            return "start"
+            return "seamless"
         if shadow:
             return "shadow"
-        return "start-desktop"
+        return "desktop"
 
     def get_run_command(self, attach=False) -> list[str]:
         localhost = self.localhost_btn.get_active()
@@ -1010,7 +1010,7 @@ class DisplayWindow(SessionOptions):
             pixel_depths[8] = "8"
         for pd in (16, 24, 30, 32):
             pixel_depths[pd] = str(pd)
-        if self.run_mode == "start-desktop":
+        if self.run_mode == "desktop":
             size_options: dict[str, str] = {
                 "yes": "auto",
             }

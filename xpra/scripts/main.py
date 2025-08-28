@@ -589,8 +589,8 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
     if args and mode in ("seamless", "desktop", "monitor"):
         # all args that aren't specifying a connection will be interpreted as a start-child command:
-        # ie: "xpra" "start" "xterm"
-        # ie: "xpra" "start-desktop" "ssh://host/" "fluxbox"
+        # ie: "xpra" "seamless" "xterm"
+        # ie: "xpra" "desktop" "ssh://host/" "fluxbox"
         # and we also enable `exit-with-children` if unspecified
         commands = []
         connargs = []

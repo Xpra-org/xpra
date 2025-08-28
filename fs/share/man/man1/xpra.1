@@ -14,8 +14,8 @@ xpra \- viewer for remote, persistent X applications
 .SH SYNOPSIS
 .PD 0
 .HP \w'xpra\ 'u
-\fBxpra\fP \fBstart\fP [CONNECTIONSTRING] |
-\fBxpra\fP \fBstart-desktop\fP [CONNECTIONSTRING]
+\fBxpra\fP \fBseamless\fP [CONNECTIONSTRING] |
+\fBxpra\fP \fBdesktop\fP [CONNECTIONSTRING]
 [\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBattach\fP [CONNECTIONSTRING]
@@ -63,13 +63,13 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBhtml5\fP
 .HP
 \fBxpra\fP \fBupgrade\fP \fI[:DISPLAY]\fP [...any options accepted by
-\fBxpra start\fP...]
+\fBxpra seamless\fP...]
 .HP
 \fBxpra\fP \fBupgrade-desktop\fP \fI[:DISPLAY]\fP [...any options accepted by
-\fBxpra start-desktop\fP...]
+\fBxpra desktop\fP...]
 .HP
 \fBxpra\fP \fBrecover\fP \fI[:DISPLAY]\fP [...any options accepted by
-\fBxpra start\fP...]
+\fBxpra seamless\fP...]
 .PD
 .\" --------------------------------------------------------------------
 .SH DESCRIPTION
@@ -155,7 +155,7 @@ for running under xpra.
 Start an xpra server on \fIbigbox\fP with an xterm in it,
 and connect to it.
 .TP
-\fBxpra start-desktop \-\-start=xfce4-session\fP
+\fBxpra desktop \-\-start=xfce4-session\fP
 Start an xfce session in a nested X11 server on an automatically
 assigned display number.
 .TP
@@ -296,7 +296,7 @@ the form \fBtcp://HOST:PORT[/DISPLAY]\fP,
 This command starts a new xpra server, including any necessary setup.
 (When starting a remote server with the \fBssh://HOST/DISPLAY\fP syntax,
 the new session will also be attached.)
-.SS xpra start-desktop
+.SS xpra desktop
 Starts a nested X11 server, all child commands will be started in the
 nested X11 server.
 .SS xpra attach
@@ -355,7 +355,7 @@ against an older version of xpra with a newer version, without having
 to restart your session.  Any currently-running \fBxpra attach\fP
 command will exit and need to be restarted.
 .SS xpra upgrade-desktop
-Same as \fIupgrade\fP but for servers started using \fIstart-desktop\fP.
+Same as \fIupgrade\fP but for servers started using \fIdesktop\fP.
 It is possible to upgrade seamless server into a desktop server
 and vice versa.
 .SS xpra recover
@@ -636,7 +636,7 @@ shown if there is a GUI available - ie: no attempt will be made
 to show the splash screen when xpra is launched from an SSH session.
 
 
-.SS Options for start, start-desktop, upgrade, proxy and shadow
+.SS Options for seamless, desktop, upgrade, proxy and shadow
 .TP
 \fB\-\-daemon\fP=\fIyes\fP|\fIno\fP
 By default, the xpra server puts itself into the background,
@@ -647,7 +647,7 @@ This can be used to prevent that behavior (useful mostly for debugging).
 \fB\-\-resize\-display\fP=\fIyes\fP|\fIno|WIDTHxHEIGHT\fP
 Resize the virtual display to match the resolution of
 the client currently connected.
-This only applies to the \fIstart\fP and \fIstart-desktop\fP
+This only applies to the \fIstart\fP and \fIdesktop\fP
 subcommands.
 If a resolution is given, this will be the initial resolution
 of the display and the display will be resizable.
@@ -723,7 +723,7 @@ Start a dbus server which can be used to interact with the server
 process.
 
 
-.SS Options for start, start-desktop, upgrade and listen:
+.SS Options for seamless, desktop, upgrade and listen:
 In previous versions, the authentication for each connection type
 was configured using a separate command line option which would
 apply to all connections of the same type. ie: \fItcp-auth\fP for
@@ -793,7 +793,7 @@ See \fIssl-auth\fP and the other SSL options.
 .TP
 \fB\-\-bind\-rfb\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
 Listens for RFB connections on the given port.
-These sockets are only supported with the \fBstart-desktop\fP and
+These sockets are only supported with the \fBdesktop\fP and
 \fBshadow\fP modes.
 .TP
 \fB\-\-bind\-vsock\fP=\fICID:PORT[,PROPERTIES]\fP
@@ -948,7 +948,7 @@ to VSOCK sockets (sockets defined using the \fBbind-vsock\fP switch).
 Deprecated, use per-socket authentication options.
 
 
-.SS Options for start, start-desktop, upgrade
+.SS Options for seamless, desktop, upgrade
 .TP
 \fB\-\-exec\-wrapper\fP=\fICMD\fP
 A wrapper command which is prepended to all start commands.
@@ -1017,7 +1017,7 @@ Allow clients to ask the server to execute new commands.
 (this can also be used via the control channel)
 .TP
 \fB\-\-start\-via\-proxy\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
-If enabled, the \fBstart\fP and \fBstart-desktop\fP subcommands
+If enabled, the \fBseamless\fP and \fBdesktop\fP subcommands
 will be delegated to the system wide proxy server instance.
 With \fIauto\fP mode, this delegation will only occur if the
 system wide proxy server is found.
@@ -1041,7 +1041,7 @@ if it is found.
 The xpra server will write the display number back on this
 file descriptor as a newline-terminated string.
 This is most useful when the display number is not specified
-with the xpra \fIstart\fP or \fIstart-desktop\fP subcommands.
+with the xpra \fIseamless\fP or \fIdesktop\fP subcommands.
 .TP
 \fB\-\-xvfb\fP=\fICMD\fP
 When starting a seamless server, xpra starts a virtual X server to
@@ -1071,7 +1071,7 @@ only. (servers specified via a network URI)
 If a display is specified and a server is already running,
 xpra will not try to start a new one and it will just attach to it.
 .TP
-.SS Options for start, start-desktop, upgrade, shadow
+.SS Options for seamless, desktop, upgrade, shadow
 .TP
 
 \fB\-\-http\fP=\fIon\fP|\fIoff\fP
@@ -1096,7 +1096,7 @@ Allows RFB clients (ie: VNC) to connect to a plain TCP socket.
 If no data is received after \fIDELAY\fP seconds, the server
 will send a RFB handshake.
 This option is only applicable to servers started in
-\fIstart-desktop\fP or \fIshadow\fP modes.
+\fIdesktop\fP or \fIshadow\fP modes.
 .TP
 
 \fB\-\-video\-encoders\fP=\fIENCODERS\fP
@@ -1120,7 +1120,7 @@ Specifies the file permissions on the server's unix domain sockets.
 Defaults to 600. This is ignored when \fImmap-group\fP is enabled.
 
 
-.SS Options for start, start-desktop, upgrade and attach
+.SS Options for seamless, desktop, upgrade and attach
 .TP
 \fB\-\-encryption\fP=\fICIPHER\fP
 Specifies the cipher to use for securing the connection from

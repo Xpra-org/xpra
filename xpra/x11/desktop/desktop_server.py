@@ -23,7 +23,7 @@ screenlog = Logger("screen")
 class XpraDesktopServer(DesktopServerBase):
     """
         A server class for RFB / VNC-like desktop displays,
-        used with the "start-desktop" subcommand.
+        used with the `desktop` subcommand.
     """
     __gsignals__ = DesktopServerBase.__common_gsignals__
 

@@ -13,7 +13,7 @@ from unit.server.subsystem.server_mixins_option_test_util import ServerMixinsOpt
 class StartDesktopOptionTest(ServerMixinsOptionTestUtil):
 
     def test_start_all(self):
-        self._test_all("start-desktop")
+        self._test_all("desktop")
 
 
 def main():
