@@ -128,7 +128,9 @@ def do_get_user_conf_dirs(_uid) -> list[str]:
             dirs.append(os.path.join(x, "Xpra"))
     except Exception:
         # fallback to hardcoded:
-        dirs = ["/Library/Application Support/Xpra"]
+        from os import getuid
+        if getuid() == 0:
+            dirs = ["/Library/Application Support/Xpra"]
     dirs.append("~/.xpra")
     return dirs
 
