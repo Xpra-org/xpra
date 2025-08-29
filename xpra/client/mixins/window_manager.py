@@ -1568,11 +1568,12 @@ class WindowClient(StubClientMixin):
         if not window:
             #window is gone
             def draw_cleanup():
-                if coding=="mmap":
+                area = self.mmap
+                if coding=="mmap" and area:
                     assert self.mmap_enabled
                     from xpra.net.mmap_pipe import int_from_buffer
                     #we need to ack the data to free the space!
-                    data_start = int_from_buffer(self.mmap, 0)
+                    data_start = int_from_buffer(area, 0)
                     offset, length = data[-1]
                     data_start.value = offset+length
                     #clear the mmap area via idle_add so any pending draw requests
