@@ -200,9 +200,14 @@ def platform_import(where: dict, pm="", required=False, *imports) -> None:
     # log("importing %s from %s (required=%s)" % (imports, module, required))
     try:
         platform_module = import_module(module)
-    except ImportError:
+    except ImportError as e:
         if required:
             raise
+        from xpra.util.env import envbool
+        if envbool("XPRA_IMPORT_DEBUG", False):
+            from xpra.log import Logger
+            log = Logger("util")
+            log.info(f"Unable to import optional {module}: {e}")
         return
     for x in imports:
         found = hasattr(platform_module, x)
