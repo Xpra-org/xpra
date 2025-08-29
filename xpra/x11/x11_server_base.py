@@ -414,7 +414,7 @@ class X11ServerBase(X11ServerCore):
                 if dpi>0:
                     v = set_xsettings_int("Xft/DPI", dpi*1024)
                 if double_click_time>0:
-                    v = set_xsettings_int("Net/DoubleClickTime", self.double_click_time)
+                    v = set_xsettings_int("Net/DoubleClickTime", double_click_time)
                 if antialias:
                     ad = typedict(antialias)
                     v = set_xsettings_int("Xft/Antialias",  ad.intget("enabled", -1))
