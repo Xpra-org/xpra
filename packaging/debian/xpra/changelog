@@ -1,23 +1,50 @@
 xpra (6.3.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
-    clang 20 no longer recognizes `unreachable-code-fallthrough` warning
+    clang 20 no longer recognizes `unreachable-code-fallthrough` warningg
+    `run_scaled` script should use default python interpreterg
+    PyOpenGL build patch for newer Cython versionsg
+    DEB `xpra-server` packages need `adduser`g
   * Major:
-    focus breaks after 25 days or so
-    errors with `ssl` disabled
+    focus breaks after 25 days or sog
+    focus delay issuesg
+    errors with `ssl` disabledg
+    crashes when randr is not availableg
+    failure to run on file notification setup errorsg
+    enumerate all the keyboard layout groupsg
+    never use a zero value as vertical refresh rateg
+    DPI notification message can cause connection to drop, prevent similar issues
+    webp encoder errors when scalingg
+    `isX11` check would leave an unused connection openg
+    Gtk IconTheme lookup could cause race condition errorsg
+    `libproc` error when the `XRes` bindings are not availableg
+    only use `kill` signal when we trust the pid valueg
   * Minor:
-    distinguish client session running on a different display
-    map `kitty` to `text` content type
-    don't retry `ssl` connections forever
-    skip workspace polling when unused on MS Windows
-    preserve URI form when parsing some IP protocols
-    preserve URI path
-    gui dialogs go blank after being closed once
-    rendundant events in `xpra configure features`
+    distinguish client session running on a different displayg
+    map `kitty` to `text` content typeg
+    skip workspace polling when unused on MS Windowsg
+    preserve URI form when parsing some IP protocolsg
+    preserve URI pathg
+    gui dialogs go blank after being closed onceg
+    rendundant events in `xpra configure features`g
+    preserve window positions when re-initializing OpenGLg
+    remove event receivers when windows are closedg
+    reset clipboard incremental data on timeoutg
+    ensure that the window's XID is set as early as possibleg
+    incorrect double-click settings may be usedg
+  * Network:
+    don't retry `ssl` connections foreverg
+    support connecting to X11 displays via TCPg
+    abstract socket filename errors with remote displaysg
+    MS Windows parsing errors with remote displaysg
   * Cosmetic:
-    potentially misleading ssl validation error message
-    show correct test name in messages
+    potentially misleading ssl validation error messageg
+    show correct test name in messagesg
+    https linter warningsg
+    add env var to override the 'new-stream-sound'g
+    documentation formattingg
+    remove unused logging categoryg
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 16 Jul 2025 17:31:34 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 29 Aug 2025 16:29:30 +0700
 
 xpra (6.3.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

@@ -3,21 +3,48 @@
 ## [6.3.3] 2025-07-16
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/0aa7eb0ff2c207bea08ce25ed9a4877f5e1b493e)
+    * [`run_scaled` script should use default python interpreter](https://github.com/Xpra-org/xpra/commit/fbc5c8a141eafe0ee775143ead2bcaa7d3d9bb1e)
+    * [PyOpenGL build patch for newer Cython versions](https://github.com/Xpra-org/xpra/commit/df37876a56849c1442c1e74c757dcd20e6b67378)
+    * [DEB `xpra-server` packages need `adduser`](https://github.com/Xpra-org/xpra/commit/1857bb52a4e11b789f640d741e3e0bb120ea48ae)
 * Major:
     * [focus breaks after 25 days or so](https://github.com/Xpra-org/xpra/commit/c56c7f054eba9672b9e13d7b474fb1958600a93d)
+    * [focus delay issues](https://github.com/Xpra-org/xpra/commit/4d69fcefe54ad8f3a904064d4a27ad98e6d874b1)
     * [errors with `ssl` disabled](https://github.com/Xpra-org/xpra/commit/de85e976a271507f5338ed2fa767f1535a12c67e)
+    * [crashes when randr is not available](https://github.com/Xpra-org/xpra/commit/94301720e54c731a9c98ee804753325406887fe7)
+    * [failure to run on file notification setup errors](https://github.com/Xpra-org/xpra/commit/2b959c5edde3034ad35721c28354c432dae3dca1)
+    * [enumerate all the keyboard layout groups](https://github.com/Xpra-org/xpra/commit/3070c494e02f59a6f661083f69751ffe915673c4)
+    * [never use a zero value as vertical refresh rate](https://github.com/Xpra-org/xpra/commit/544ce8fdd96fcc25264af9ee60fdb632877e1804)
+    * [DPI notification message can cause connection to drop](https://github.com/Xpra-org/xpra/commit/6356326488d6a0e1b2401a750fa6a9de7a7c81a2), [prevent similar issues](https://github.com/Xpra-org/xpra/commit/532507e4e5258516a98aa63fa8a846f576091dcf)
+    * [webp encoder errors when scaling](https://github.com/Xpra-org/xpra/commit/95db6aa82c2afc9d20cf452b507c176a35d3e228)
+    * [`isX11` check would leave an unused connection open](https://github.com/Xpra-org/xpra/commit/00d8f5baea2d9337eda93c01650c90f10a6cb192)
+    * [Gtk IconTheme lookup could cause race condition errors](https://github.com/Xpra-org/xpra/commit/18f6ec5e3165bd173f398e66f7198304c9f5d7a6)
+    * [`libproc` error when the `XRes` bindings are not available](https://github.com/Xpra-org/xpra/commit/8df205d1cec7d5566d168f7edccfaf2807975d9d)
+    * [only use `kill` signal when we trust the pid value](https://github.com/Xpra-org/xpra/commit/bb673a07da4880ffdc2c392ef885800cc5490ce3)
 * Minor:
     * [distinguish client session running on a different display](https://github.com/Xpra-org/xpra/commit/86ffce4cb1359aebb5cc9704c72ecbe857af008d)
     * [map `kitty` to `text` content type](https://github.com/Xpra-org/xpra/commit/5cdbb33d07cc994633fcabef7250b9e04b04602d)
-    * [don't retry `ssl` connections forever](https://github.com/Xpra-org/xpra/commit/8ce47372d3802b873bb8b727d63921ad48d1be26)
     * [skip workspace polling when unused on MS Windows](https://github.com/Xpra-org/xpra/commit/dc803c301c267dcb7b3e467cde83a0e09aa090ff)
     * [preserve URI form when parsing some IP protocols](https://github.com/Xpra-org/xpra/commit/e5310c480ce5cd4bb54651c24b0c3e395fecb156)
     * [preserve URI path](https://github.com/Xpra-org/xpra/commit/de4667ba18e64f92dfa772e2d85d19143900746a)
     * [gui dialogs go blank after being closed once](https://github.com/Xpra-org/xpra/commit/65c933808aeeb21567bdbff2a42b7f5a02dcaa57)
     * [rendundant events in `xpra configure features`](https://github.com/Xpra-org/xpra/commit/c9189153169799a7a4d99aec445a36a6f0442199)
+    * [preserve window positions when re-initializing OpenGL](https://github.com/Xpra-org/xpra/commit/a478bb7204e27667f68f3e47682ef942562fbb6a)
+    * [remove event receivers when windows are closed](https://github.com/Xpra-org/xpra/commit/449a7030dfc60df1461a28d5e59c9338de71219d)
+    * [reset clipboard incremental data on timeout](https://github.com/Xpra-org/xpra/commit/b88c381b5561cfed3f14a810e667f78a43ae29a1)
+    * [ensure that the window's XID is set as early as possible](https://github.com/Xpra-org/xpra/commit/0f5d889bcec3e88b20a59ba0f4e80be453b2bf60)
+    * [incorrect double-click settings may be used](https://github.com/Xpra-org/xpra/commit/286836c1bd98ac450ca5363eebf6d5237f2eeac3)
+* Network:
+    * [don't retry `ssl` connections forever](https://github.com/Xpra-org/xpra/commit/8ce47372d3802b873bb8b727d63921ad48d1be26)
+    * [support connecting to X11 displays via TCP](https://github.com/Xpra-org/xpra/commit/f76f2e268abab50b9bda4e16ced8ad15e711c012)
+    * [abstract socket filename errors with remote displays](https://github.com/Xpra-org/xpra/commit/393b7c20f75a833e66dccfadbe8a2b597f8a0746)
+    * [MS Windows parsing errors with remote displays](https://github.com/Xpra-org/xpra/commit/c7c555cafb7107f26610036262e3f9d3ab348301)
 * Cosmetic:
     * [potentially misleading ssl validation error message](https://github.com/Xpra-org/xpra/commit/7b1e1e48be3d05c965c66cf2d406df12baddba3b)
     * [show correct test name in messages](https://github.com/Xpra-org/xpra/commit/c92484c0c78b7ed966bac79c98a21f3af6acfabc)
+    * [https linter warnings](https://github.com/Xpra-org/xpra/commit/f47101dc5d0ca6cc037ed89e12b10e8ade27c27f)
+    * [add env var to override the 'new-stream-sound'](https://github.com/Xpra-org/xpra/commit/2ab4996ddc43b9f7f53e91518aacee92b547ca30)
+    * [documentation formatting](https://github.com/Xpra-org/xpra/commit/3e1b81b08ce768c02cf95e2b3af23ec70a6b1f27)
+    * [remove unused logging category](https://github.com/Xpra-org/xpra/commit/6e1f84089ffd4ee5b4920f5fd0c150df7d706140)
 
 ## [6.3.2] 2025-07-08
 * Platforms, build and packaging:
