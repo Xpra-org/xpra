@@ -70,8 +70,10 @@ class PlatformClient(StubClientMixin):
         log("setup_event_listener()")
         from xpra.platform.darwin.events import get_app_delegate
         delegate = get_app_delegate()
-        log(f"setup_event_listener() delegate={delegate}")
-        delegate.add_handler("deiconify", self.client.deiconify_windows)
+        deiconify_windows = getattr(self, "deiconify_windows", noop)
+        log(f"setup_event_listener() {delegate=}, {deiconify_windows=}")
+        if deiconify_windows != noop:
+            delegate.add_handler("deiconify", deiconify_windows)
         r = CGDisplayRegisterReconfigurationCallback(self.cg_display_change, self)
         if r != 0:
             log.warn("Warning: failed to register display reconfiguration callback")
