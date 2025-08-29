@@ -5,4 +5,4 @@
 
 
 def get_backend_module() -> str:
-    return "xpra.platform.darwin.clipboard.OSXClipboardProtocolHelper"
+    return "xpra.platform.darwin.ctypes_clipboard.OSXClipboardProtocolHelper"
