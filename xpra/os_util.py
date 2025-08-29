@@ -55,7 +55,7 @@ def gi_import(mod="Gtk", version="") -> ModuleType:
         import gi
         try:
             gi.require_version(mod, version)
-        except ValueError as e:
+        except (ValueError, AssertionError) as e:
             raise ImportError(f"unable to import {mod!r} {version=!r}: {e}") from None
         import importlib
         return importlib.import_module(f"gi.repository.{mod}")
