@@ -270,7 +270,7 @@ def is_X11() -> bool:
         return not isxwayland()
     except ImportError as e:
         get_util_logger().debug("is_X11() isxwayland missing: %s", e)
-    return True
+    return not (OSX or WIN32)
 
 
 def nn(x) -> str:
