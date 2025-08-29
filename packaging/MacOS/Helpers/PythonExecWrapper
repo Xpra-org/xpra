@@ -87,8 +87,10 @@ if test "$?" != "0"; then
 fi
 LANG=""
 if test "$lang" != ""; then
-	LANG="`grep \"\`echo $lang\`_\" /usr/share/locale/locale.alias | \
-		tail -n1 | sed 's/\./ /' | awk '{print $2}'`"
+  if [ -r "/usr/share/locale/locale.alias" ]; then
+  	LANG="`grep \"\`echo $lang\`_\" /usr/share/locale/locale.alias | \
+	  	tail -n1 | sed 's/\./ /' | awk '{print $2}'`"
+	fi
 fi
 if test "$LANG" == ""; then
 	export LANG="C"
