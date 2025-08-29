@@ -4,7 +4,7 @@ Xpra includes a _start_ GUI capable of replacing most of the example command lin
 
 These examples should work for the [current versions](https://github.com/Xpra-org/xpra/wiki/Versions).\
 Use `man xpra` to get the manual corresponding to the version you have installed. \
-On MS Windows, please see [windows command line](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Client.md#command-line). \
+On MS Windows, please see [windows command line](./Client.md#command-line). \
 
 ## Simple [seamless](Seamless.md) application forwarding
 This is how xpra is most often used.\
@@ -67,7 +67,7 @@ mode=ssh
 host=YOURSERVER
 speaker=off
 ```
-  For more information, see [session files](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Client.md#session-files)
+  For more information, see [session files](./Client.md#session-files)
 </details>
 
 ***

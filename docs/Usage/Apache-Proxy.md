@@ -34,7 +34,7 @@ Start the xpra servers defined in the apache configuration above:
 xpra seamless --bind-tcp=0.0.0.0:20001 --start=xterm
 xpra seamless --bind-tcp=0.0.0.0:20002 --start=xterm
 ```
-(beware: [authentication](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Authentication.md) is turned off for simplicity)
+(beware: [authentication](./Authentication.md) is turned off for simplicity)
 
 Then you can simply open your browser at these locations (`/xpra1` and `/xpra2` in the example config):
 ```shell

@@ -95,7 +95,7 @@ For these reasons, it may be worth considering [desktop mode](Desktop.md) instea
 ### [Network](../Network) and [Authentication](Authentication.md)
 Xpra supports natively many different types of network connections (`tcp`, `ssl`, `ws`, `wss`, `vnc`, `ssh`, `vsock`, `quic`, etc) and most of these can be [encrypted](../Network/Encryption.md) and multiplexed through a single port.
 The safest option will depend on the type of xpra client connecting - but generally speaking, `ssl`, `quic` and `ssh` are considered the safest as they provide host verification and encryption in one protocol.
-Each connection can also combine any number of [authentication modules](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Authentication.md#authentication-modules).
+Each connection can also combine any number of [authentication modules](./Authentication.md#authentication-modules).
 
 ### [Logging](Logging.md) and diagnostics
 Debugging tools and diagnostics can sometimes be at odds with good security practices. When that happens, we usually [err on the side of caution](https://github.com/Xpra-org/xpra/issues/1939) but not always when it affects usability: [http scripts information disclosure](https://github.com/Xpra-org/xpra/pull/3156)

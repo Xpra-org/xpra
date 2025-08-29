@@ -69,7 +69,7 @@ Start an xpra server on port 10000:
 ```shell
 xpra seamless --bind-tcp=0.0.0.0:10000 --start=xterm
 ```
-(beware: [authentication](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Authentication.md) is turned off for simplicity)
+(beware: [authentication](./Authentication.md) is turned off for simplicity)
 
 Then you can simply open your browser to connect to the session via the nginx proxy:
 ```shell
