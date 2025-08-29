@@ -7,9 +7,14 @@
 from collections.abc import Sequence
 from Foundation import NSUserNotificationCenter, NSUserNotification, NSUserNotificationDefaultSoundName
 
-from xpra.notification.base import NotifierBase, NID
-from xpra.platform.darwin.gui import log, GLib, notifylog
+from xpra.os_util import gi_import
 from xpra.util.env import envbool
+from xpra.notification.base import NotifierBase, NID
+from xpra.log import Logger
+
+log = Logger("notify")
+
+GLib = gi_import("GLib")
 
 
 class OSX_Notifier(NotifierBase):
@@ -52,7 +57,7 @@ class OSX_Notifier(NotifierBase):
         notification.setIdentifier_("%s" % nid)
         # enable sound:
         notification.setSoundName_(NSUserNotificationDefaultSoundName)
-        notifylog("do_show_notify(..) nid=%s, %s(%s)", nid, self.notification_center.deliverNotification_, notification)
+        log("do_show_notify(..) nid=%s, %s(%s)", nid, self.notification_center.deliverNotification_, notification)
         self.notifications[int(nid)] = notification
         self.notification_center.deliverNotification_(notification)
 
@@ -61,7 +66,7 @@ class OSX_Notifier(NotifierBase):
             self.gtk_notifications.remove(int(nid))
         except KeyError:
             notification = self.notifications.get(int(nid))
-            notifylog("close_notify(..) notification[%i]=%s", nid, notification)
+            log("close_notify(..) notification[%i]=%s", nid, notification)
             if notification:
                 GLib.idle_add(self.notification_center.removeDeliveredNotification_, notification)
         else:
