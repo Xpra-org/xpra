@@ -572,7 +572,7 @@ def main() -> int:  # pragma: no cover
         print("SSH:")
         try:
             import_module("paramiko")
-        except ModuleNotFoundError:
+        except ImportError:
             pass
         print_nested_dict(get_paramiko_info())
 
