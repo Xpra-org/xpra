@@ -557,7 +557,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                                    message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.CLOSE,
                                    text="\n".join(msgs))
         try:
-            image = Gtk.Image.new_from_stock(Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.BUTTON)
+            image = Gtk.Image.new_from_icon_name(Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.BUTTON)
             dialog.set_image(image)
         except Exception as e:
             log.warn(f"Warning: failed to set dialog image: {e}")

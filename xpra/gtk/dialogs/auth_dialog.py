@@ -51,7 +51,8 @@ class AuthDialog(Gtk.Window):
             GLib.timeout_add(1000, self.update_timeout)
 
         al = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
-        al.set_padding(0, 0, 10, 10)
+        al.set_margin_start(10)
+        al.set_margin_end(10)
         hbox = Gtk.HBox(homogeneous=False, spacing=10)
         al.add(hbox)
         hbox.add(self.btn("Cancel", Gtk.STOCK_NO, self.cancel))
@@ -69,7 +70,7 @@ class AuthDialog(Gtk.Window):
         btn.connect("clicked", callback)
         if stock_icon:
             # pylint: disable=no-member
-            image = Gtk.Image.new_from_stock(stock_icon, Gtk.IconSize.BUTTON)
+            image = Gtk.Image.new_from_icon_name(stock_icon, Gtk.IconSize.BUTTON)
             if image:
                 btn.set_image(image)
         return btn
