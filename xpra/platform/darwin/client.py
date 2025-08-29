@@ -90,22 +90,21 @@ class PlatformClient(StubClientMixin):
     def cg_check_display(self) -> bool:
         log("cg_check_display()")
         try:
-            c = self.client
             asleep = None
             if not can_access_display():
                 asleep = True
             else:
                 did = CG.CGMainDisplayID()
                 log("cg_check_display() CGMainDisplayID()=%#x", did)
-                if did and c:
+                if did:
                     asleep = bool(CG.CGDisplayIsAsleep(did))
                     log("cg_check_display() CGDisplayIsAsleep(%#x)=%s", did, asleep)
-            if c and asleep is not None and self.display_is_asleep != asleep:
+            if asleep is not None and self.display_is_asleep != asleep:
                 self.display_is_asleep = asleep
                 if asleep:
-                    c.suspend()
+                    self.suspend()
                 else:
-                    c.resume()
+                    self.resume()
             return True
         except Exception:
             log.error("Error checking display sleep status", exc_info=True)
