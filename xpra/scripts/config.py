@@ -1731,7 +1731,7 @@ def fixup_options(options) -> None:
         options.remote_xpra = [options.remote_xpra]
 
 
-def main(argv):
+def main(argv=()):
     from xpra.util.str_fn import nonl
 
     def print_options(o):

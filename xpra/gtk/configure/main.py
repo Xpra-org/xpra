@@ -13,7 +13,7 @@ from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode, ExitValue
 
 
-def main(args) -> ExitValue:
+def main(args=()) -> ExitValue:
     with program_context("Configure", "Configure"):
         if is_admin():
             conf = get_system_conf_file()
