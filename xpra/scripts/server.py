@@ -286,7 +286,7 @@ def set_server_features(opts, mode: str) -> None:
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
         features.x11 = (mode in ("desktop", "seamless") or opts.backend == "x11") and impcheck("x11")
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
-        features.pulseaudio = features.audio and b(opts.pulseaudio)
+        features.pulseaudio = features.audio and b(opts.pulseaudio) and impcheck("audio.pulseaudio")
         features.av_sync = features.audio and b(opts.av_sync)
         features.file = b(opts.file_transfer) or b(opts.printing)
         features.printer = b(opts.printing)
@@ -305,7 +305,7 @@ def set_server_features(opts, mode: str) -> None:
         features.idle = opts.server_idle_timeout > 0
         features.gtk = mode not in ("desktop", "seamless") or opts.backend.lower() == "gtk"
         features.tray = features.gtk and b(opts.tray) and mode == "shadow"
-        features.opengl = features.display and b(opts.opengl)
+        features.opengl = features.display and b(opts.opengl) and impcheck("opengl")
         features.bell = features.display and b(opts.bell)
         features.systray = b(opts.system_tray) and mode == "seamless"
 
