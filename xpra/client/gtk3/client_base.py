@@ -175,9 +175,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.connect("scaling-changed", self.reset_windows_cursors)
         except TypeError:
             log("no 'scaling-changed' signal")
-        # detect when the UI thread isn't responding:
-        self.UI_watcher = None
-        self.connect("first-ui-received", self.start_UI_watcher)
 
     def init(self, opts) -> None:
         GObjectXpraClient.init(self, opts)
@@ -261,19 +258,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if mh:
             self.menu_helper = None
             mh.cleanup()
-        uw = self.UI_watcher
-        if uw:
-            self.UI_watcher = None
-            uw.stop()
         UIXpraClient.cleanup(self)
-
-    def start_UI_watcher(self, _client) -> None:
-        from xpra.platform.ui_thread_watcher import get_UI_watcher
-        self.UI_watcher = get_UI_watcher()
-        assert self.UI_watcher
-        self.UI_watcher.start()
-        self.UI_watcher.add_resume_callback(self.resume)
-        self.UI_watcher.add_fail_callback(self.suspend)
 
     def get_raw_vrefresh(self) -> int:
         rate = envint("XPRA_VREFRESH", 0)

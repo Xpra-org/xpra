@@ -17,8 +17,8 @@ class UIWatcher(StubServerMixin):
         self.ui_watcher = None
 
     def run(self) -> None:
-        from xpra.platform.ui_thread_watcher import get_UI_watcher  # pylint: disable=import-outside-toplevel
-        self.ui_watcher = get_UI_watcher()
+        from xpra.platform.uithreadwatcher import get_ui_watcher  # pylint: disable=import-outside-toplevel
+        self.ui_watcher = get_ui_watcher()
         self.ui_watcher.start()
 
     def cleanup(self, stop=True) -> None:

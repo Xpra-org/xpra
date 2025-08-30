@@ -16,7 +16,7 @@ from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.common import ClipboardCallback
 from xpra.clipboard.targets import _filter_targets, TEXT_TARGETS
 from xpra.clipboard.proxy import ClipboardProxyCore
-from xpra.platform.ui_thread_watcher import get_UI_watcher
+from xpra.platform.uithreadwatcher import get_ui_watcher
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -45,12 +45,12 @@ class OSXClipboardProxy(ClipboardProxyCore):
         super().__init__(selection)
         self.update_change_count()
         # setup clipboard counter watcher:
-        w = get_UI_watcher()
+        w = get_ui_watcher()
         w.add_alive_callback(self.timer_clipboard_check)
 
     def cleanup(self) -> None:
         super().cleanup()
-        w = get_UI_watcher()
+        w = get_ui_watcher()
         if w:
             try:
                 w.remove_alive_callback(self.timer_clipboard_check)
@@ -272,7 +272,7 @@ def main() -> None:
         log.enable_debug()
 
         # init UI watcher with gobject (required by pasteboard monitoring code)
-        get_UI_watcher()
+        get_ui_watcher()
 
         log.info("testing pasteboard")
 
