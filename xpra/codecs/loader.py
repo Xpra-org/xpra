@@ -42,7 +42,6 @@ log(f"codec loader settings: {SELFTEST=}, {FULL_SELFTEST=}, {CODEC_FAIL_IMPORT=}
 
 SKIP_LIST: Sequence[str] = ()
 if OSX:
-    NOWARN.append("dec_aom")
     SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg")
 
 
