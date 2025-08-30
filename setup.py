@@ -140,7 +140,7 @@ check_pkgconfig()
 for arg in list(sys.argv):
     if arg.startswith("--pkg-config-path="):
         pcp = arg[len("--pkg-config-path="):]
-        pcps = [pcp] + os.environ.get("PKG_CONFIG_PATH", "").split(os.path.pathsep)
+        pcps = os.environ.get("PKG_CONFIG_PATH", "").split(os.path.pathsep) + [pcp]
         os.environ["PKG_CONFIG_PATH"] = os.path.pathsep.join(x for x in pcps if x)
         print("using PKG_CONFIG_PATH="+os.environ["PKG_CONFIG_PATH"])
         sys.argv.remove(arg)
