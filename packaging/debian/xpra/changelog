@@ -41,6 +41,7 @@ xpra (5.1.2-1) UNRELEASED; urgency=low
     make it easier to disable xdg menus
     remove outdated and misleading docstring
     debug failing unit tests
+    Cython compilation warning
 
  -- Antoine Martin <antoine@xpra.org>  Sat, 30 Jul 2025 16:27:08 +0700
 

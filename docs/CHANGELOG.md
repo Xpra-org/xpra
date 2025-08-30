@@ -43,6 +43,7 @@
     * [make it easier to disable xdg menus](https://github.com/Xpra-org/xpra/commit/82259530d9ae59f7f475f1b95790be3e19748702)
     * [remove outdated and misleading docstring](https://github.com/Xpra-org/xpra/commit/493d81c559c2902796b77001d7ecfb377cdf4353)
     * [debug failing unit tests](https://github.com/Xpra-org/xpra/commit/4af212c14842e611256fd09f61a891d903efa4d8) [+ fixup](https://github.com/Xpra-org/xpra/commit/454da10805aa0232f3a9bfd18f9769522510c16c)
+    * [Cython compilation warning](https://github.com/Xpra-org/xpra/commit/565ead79229c26b3995ceecb591b17b7563bdabc)
 
 ## [5.1.1] 2025-06-18
 * Platforms, build and packaging:

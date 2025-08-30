@@ -847,6 +847,7 @@ fi
    make it easier to disable xdg menus
    remove outdated and misleading docstring
    debug failing unit tests
+   Cython compilation warning
 
 * Wed Jun 18 2025 Antoine Martin <antoine@xpra.org> 5.1.1-10
 - Platforms, build and packaging:
