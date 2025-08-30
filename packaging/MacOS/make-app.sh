@@ -19,6 +19,7 @@ STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
 
 DO_TESTS="${DO_TESTS:-0}"
+DO_X11="0"
 
 BUILDNO="${BUILDNO:="0"}"
 APP_DIR="./image/Xpra.app"
@@ -31,6 +32,10 @@ else
 		echo "the xpra html5 client must be installed in ${JHBUILD_PREFIX}/share/xpra/www/"
 		exit 1
 	fi
+	if [ -d "/opt/X11" ]; then
+    BUILD_ARGS="${BUILD_ARGS} --with-x11 --pkg-config-path=/opt/X11/lib/pkgconfig --pkg-config-path=/opt/X11/share/pkgconfig"
+    DO_X11="1"
+  fi
 fi
 pandoc -v >& /dev/null
 if [ "$?" != "0" ]; then
@@ -261,6 +266,11 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	done
 fi
 
+if [ "${DO_X11}" == "1" ]; then
+  for cmd in "Xvfb" "glxgears" "glxinfo" "oclock" "setxkbmap" "uxterm" "xauth" "xcalc" "xclock" "xdpyinfo" "xev" "xeyes" "xhost" "xkill" "xload" "xlsclients" "xmodmap" "xprop" "xrandr" "xrdb" "xset" "xterm" "xwininfo"; do
+    cp "/opt/X11/bin/$cmd" "${RSCDIR}/bin/"
+  done
+fi
 
 echo
 echo "*******************************************************************************"
