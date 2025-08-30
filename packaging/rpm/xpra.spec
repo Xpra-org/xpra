@@ -1009,12 +1009,18 @@ fi
 
 
 %changelog
-* Fri Aug 29 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
+* Sat Aug 30 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warningg
    `run_scaled` script should use default python interpreterg
    PyOpenGL build patch for newer Cython versionsg
    DEB `xpra-server` packages need `adduser`g
+- MacOS:
+   silence missing `locale.alias` warning
+   handle more varied `ImportError`s and `AssertionError`
+   `/Library/` path requires root
+   examples and tools missed in path update
+   `pyproject.toml` `dependencies` cause `py2app` to fail
 - Major:
    focus breaks after 25 days or sog
    focus delay issuesg

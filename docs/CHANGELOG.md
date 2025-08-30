@@ -1,11 +1,17 @@
 # Changelog
 
-## [6.3.3] 2025-07-16
+## [6.3.3] 2025-08-30
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/0aa7eb0ff2c207bea08ce25ed9a4877f5e1b493e)
     * [`run_scaled` script should use default python interpreter](https://github.com/Xpra-org/xpra/commit/fbc5c8a141eafe0ee775143ead2bcaa7d3d9bb1e)
     * [PyOpenGL build patch for newer Cython versions](https://github.com/Xpra-org/xpra/commit/df37876a56849c1442c1e74c757dcd20e6b67378)
     * [DEB `xpra-server` packages need `adduser`](https://github.com/Xpra-org/xpra/commit/1857bb52a4e11b789f640d741e3e0bb120ea48ae)
+* MacOS:
+    * [silence missing `locale.alias` warning](https://github.com/Xpra-org/xpra/commit/b6be11762e5a9f6a8ba41fb1b854a31cac3fa8ab)
+    * [handle more varied `ImportError`s](https://github.com/Xpra-org/xpra/commit/1745d7a5d7c84a68c392ce029b340541eedd0f76) and [`AssertionError`](https://github.com/Xpra-org/xpra/commit/b08783001ab6801a788144e95d8d09d27f70b66d)
+    * [`/Library/` path requires root](https://github.com/Xpra-org/xpra/commit/51d61d8fe5091d44edce3df0adf029ffef08845e)
+    * [examples and tools missed in path update](https://github.com/Xpra-org/xpra/commit/ab0d1d3bb68da6dfaeefe6a54622f7fb8fb26348)
+    * [`pyproject.toml` `dependencies` cause `py2app` to fail](https://github.com/Xpra-org/xpra/commit/5465aeac491401414c6b18571c4b8bd2acc0323f)
 * Major:
     * [focus breaks after 25 days or so](https://github.com/Xpra-org/xpra/commit/c56c7f054eba9672b9e13d7b474fb1958600a93d)
     * [focus delay issues](https://github.com/Xpra-org/xpra/commit/4d69fcefe54ad8f3a904064d4a27ad98e6d874b1)
