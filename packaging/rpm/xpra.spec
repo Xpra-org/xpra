@@ -804,14 +804,19 @@ fi
 
 
 %changelog
-* Wed Jul 16 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
+* Sat Aug 30 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warning
+`xpra-server` DEB missing `adduser` dependency
+   MacOS switch to `Adwaita` theme
+   MacOS `locale.alias` warnings in command line tools
+   MacOS `/Library/` path requires root
 - Encodings:
-   `openh264`: expose frame number and use default settings as base
+   `openh264`: expose frame number and use default settings as base and update definitions
    expose nvidia GPU attributes as strings
    version parsing errors with newer nvidia kernel modules
 - Network:
+   ssh config port number parsing errors
    `quic` client connections should also timeout
    zeroconf mDNS errors on loopback addresses
    errors with `ssl` disabled
@@ -820,11 +825,23 @@ fi
    preserve URI form when parsing some IP protocols
    preserve URI path
 - Major:
+   focus breaks after 25 days or so
+   focus delay issues
    `vpx` decoder fails during self-test
+   never use a zero value as vertical refresh rate
+   enumerate all the keyboard layout groups
+   DPI notification message can cause connection to drop
+   webp encoder errors when scaling
+   `libproc` error when the `XRes` bindings are not available
 - Minor:
    if unpressing a key worked, record it
    map `kitty` to `text` content type
    distinguish client session running on a different display
+   preserve window positions when re-initializing OpenGL
+   reset clipboard incremental data on timeout
+   remove event receivers when windows are closed
+   incorrect double-click settings may be used
+   client errors on exit
 - Cosmetic:
    remove unused attribute
    make it easier to disable xdg menus

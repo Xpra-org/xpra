@@ -1,13 +1,18 @@
 # Changelog
 
-## [5.1.2] 2025-07-16
+## [5.1.2] 2025-08-30
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/39c80ca0e373c8ee2787a5c07613d28bda07b3d3)
+    * [`xpra-server` DEB missing `adduser` dependency](https://github.com/Xpra-org/xpra/commit/a0cc1d3dfb3db1e8dee9df99e50083b926c10b18)
+    * [MacOS switch to `Adwaita` theme](https://github.com/Xpra-org/xpra/commit/2273a2c92ec3cb91487284070c5ad9845c477df7)
+    * [MacOS `locale.alias` warnings in command line tools](https://github.com/Xpra-org/xpra/commit/ccda64fdfc98021139c4c46aabc0123e636d9234)
+    * [MacOS `/Library/` path requires root](https://github.com/Xpra-org/xpra/commit/adeb40bba6e01f5fdb30c0f65f65fe08ab26bccc)
 * Encodings:
-    * [`openh264`: expose frame number and use default settings as base](https://github.com/Xpra-org/xpra/commit/8c8c02a611c71ab6e0d86fc93f9dd05beed35a89)
+    * [`openh264`: expose frame number and use default settings as base](https://github.com/Xpra-org/xpra/commit/8c8c02a611c71ab6e0d86fc93f9dd05beed35a89) [and update definitions](https://github.com/Xpra-org/xpra/commit/df18c717db3812f8bbe6297cd28e07c4adad527d)
     * [expose nvidia GPU attributes as strings](https://github.com/Xpra-org/xpra/commit/b22335086ce36db9fe18d1139875df22abb32ee4)
     * [version parsing errors with newer nvidia kernel modules](https://github.com/Xpra-org/xpra/commit/efba061385cff96bb582afd97056339660d2cab1)
 * Network:
+    * [ssh config port number parsing errors](https://github.com/Xpra-org/xpra/commit/3982fdd94da72dec037234e0c751598465f80b60)
     * [`quic` client connections should also timeout](https://github.com/Xpra-org/xpra/commit/f1663b02d03aa9c095865b90659573f434929715)
     * [zeroconf mDNS errors on loopback addresses](https://github.com/Xpra-org/xpra/commit/6fc832dbfbf158d105cce6ca6c064ec4d32ad3e8)
     * [errors with `ssl` disabled](https://github.com/Xpra-org/xpra/commit/a9b54d11fb16e161a5c7214188ee9df5d2563d54)
@@ -16,16 +21,28 @@
     * [preserve URI form when parsing some IP protocols](https://github.com/Xpra-org/xpra/commit/7bc6fae93504a1079eded0fa3ae023fbefdc88fe)
     * [preserve URI path](https://github.com/Xpra-org/xpra/commit/c3b07f62c710bb321bfad73c808febd29e23575e)
 * Major:
+    * [focus breaks after 25 days or so](https://github.com/Xpra-org/xpra/commit/54e5c8f48347a1910cdf702c16965e3bef40ebe4)
+    * [focus delay issues](https://github.com/Xpra-org/xpra/commit/c4e2881ab59842c6a72d18253807589b57797468)
     * [`vpx` decoder fails during self-test](https://github.com/Xpra-org/xpra/commit/cf316484a170bae336b29090efb984b47fed4f2a)
+    * [never use a zero value as vertical refresh rate](https://github.com/Xpra-org/xpra/commit/906cc0dd04b957c4508e864b2dac33bf64fa1e33)
+    * [enumerate all the keyboard layout groups](https://github.com/Xpra-org/xpra/commit/a4d83d706fd34f832417af623d90c21d37b70455)
+    * [DPI notification message can cause connection to drop](https://github.com/Xpra-org/xpra/commit/ea25bd695d6fe1756765fd316c30476b2078d229)
+    * [webp encoder errors when scaling](https://github.com/Xpra-org/xpra/commit/f16a4d0b5c335587fb33aa4a392d349102065721)
+    * [`libproc` error when the `XRes` bindings are not available](https://github.com/Xpra-org/xpra/commit/aef80cf7902ef3dde9dcd6731ff1e86defc2a684)
 * Minor:
     * [if unpressing a key worked, record it](https://github.com/Xpra-org/xpra/commit/cc42db08feb25dbc8ad4ed5143aa6cbb95833a20)
     * [map `kitty` to `text` content type](https://github.com/Xpra-org/xpra/commit/9863c617754cb37af0ebd5675c5f9f5550dc77a3)
     * [distinguish client session running on a different display](https://github.com/Xpra-org/xpra/commit/7d28fdb6430a54baf9d240ef3bc0e0074f596fe6)
+    * [preserve window positions when re-initializing OpenGL](https://github.com/Xpra-org/xpra/commit/17933323bbf571c3737250102fdbb96d1b14aa98)
+    * [reset clipboard incremental data on timeout](https://github.com/Xpra-org/xpra/commit/8af41126b955ed5086dac67e661ecfe3e05c3fc1)
+    * [remove event receivers when windows are closed](https://github.com/Xpra-org/xpra/commit/d8bc30e86fb4ffc82a3f403357a571b65d4175b2)
+    * [incorrect double-click settings may be used](https://github.com/Xpra-org/xpra/commit/3fc459a4ecfc4baf4e67f090ca97513a49905032)
+    * [client errors on exit](https://github.com/Xpra-org/xpra/commit/b0748a1412919a02287b6907bea46c04b1787db5)
 * Cosmetic:
     * [remove unused attribute](https://github.com/Xpra-org/xpra/commit/80ad4d7b46bf545845cc6f6ba00e4798b224723d)
     * [make it easier to disable xdg menus](https://github.com/Xpra-org/xpra/commit/82259530d9ae59f7f475f1b95790be3e19748702)
     * [remove outdated and misleading docstring](https://github.com/Xpra-org/xpra/commit/493d81c559c2902796b77001d7ecfb377cdf4353)
-    * [debug failing unit tests](https://github.com/Xpra-org/xpra/commit/4af212c14842e611256fd09f61a891d903efa4d8)
+    * [debug failing unit tests](https://github.com/Xpra-org/xpra/commit/4af212c14842e611256fd09f61a891d903efa4d8) [+ fixup](https://github.com/Xpra-org/xpra/commit/454da10805aa0232f3a9bfd18f9769522510c16c)
 
 ## [5.1.1] 2025-06-18
 * Platforms, build and packaging:
