@@ -28,7 +28,7 @@ class PowerEventClient(StubClientMixin):
         add_handler("resume", self.resume)
 
     def start_ui_watcher(self, _client) -> None:
-        from xpra.platform.uithreadwatcher import get_ui_watcher
+        from xpra.platform.ui_thread_watcher import get_ui_watcher
         self.ui_watcher = get_ui_watcher()
         assert self.ui_watcher
         self.ui_watcher.start()
