@@ -329,7 +329,10 @@ class SocketConnection(Connection):
         self._socket = SocketPeekWrapper(self._socket, peeked)
 
     def get_raw_socket(self):
-        return self._socket
+        sock = self._socket
+        if isinstance(sock, SocketPeekWrapper):
+            return sock.socket
+        return sock
 
     def _setsockopt(self, *args) -> None:
         if self.active:
