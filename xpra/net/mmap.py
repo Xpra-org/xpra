@@ -486,6 +486,7 @@ class BaseMmapArea:
             return False
         log.info("enabled fast %s mmap transfers using %sB shared memory area",
                  self.name, std_unit(self.size, unit=1024))
+        log.info(" %r", self.filename)
         return True
 
     def gen_token(self) -> None:

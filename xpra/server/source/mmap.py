@@ -126,8 +126,6 @@ class MMAP_Connection(StubClientConnection):
         if not area.verify_token():
             mmap.close()
             return None
-        from xpra.util.stats import std_unit
-        log.info(" mmap is enabled using %sB area in %s", std_unit(size, unit=1024), filename)
         return area
 
     def parse_client_caps(self, caps: typedict) -> None:
