@@ -561,7 +561,7 @@ class SocketPeekWrapper:
             return self.recv
         return getattr(self.socket, attr)
 
-    def makefile(self, mode, bufsize=None):
+    def makefile(self, mode: str, bufsize=None):
         fileobj = self.socket.makefile(mode, bufsize)
         if self.peeked and mode and mode.startswith("r"):
             return SocketPeekFile(fileobj, self.peeked, self._update_peek)
@@ -570,7 +570,7 @@ class SocketPeekWrapper:
     def _update_peek(self, peeked: bytes):
         self.peeked = peeked
 
-    def recv(self, bufsize, flags=0) -> bytes:
+    def recv(self, bufsize: int, flags=0) -> bytes:
         if flags & socket.MSG_PEEK:
             length = len(self.peeked)
             if length >= bufsize:
