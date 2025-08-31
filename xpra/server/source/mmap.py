@@ -138,12 +138,11 @@ class MMAP_Connection(StubClientConnection):
             self.mmap_supported = False
             return
         tdcaps = typedict(mmap_caps)
-        if BACKWARDS_COMPATIBLE:
-            # also try the legacy unprefixed lookup for 'read' area:
-            read_caps = tdcaps.dictget("write") or mmap_caps
-        else:
-            read_caps = tdcaps.dictget("write", {})
+        read_caps = tdcaps.dictget("write", {})
         write_caps = tdcaps.dictget("read", {})
+        if BACKWARDS_COMPATIBLE and not write_caps:
+            # also try the legacy unprefixed lookup for the client's 'read' area:
+            write_caps = mmap_caps
         self.mmap_read_area = self.parse_area_caps("read", read_caps, 1)
         self.mmap_write_area = self.parse_area_caps("write", write_caps, 0)
         log("parse_client_caps() mmap-read=%s, mmap-write=%s", self.mmap_read_area, self.mmap_write_area)
