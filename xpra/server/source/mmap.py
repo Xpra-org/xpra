@@ -149,8 +149,10 @@ class MMAP_Connection(StubClientConnection):
 
     def get_caps(self) -> dict[str, Any]:
         mmap_caps: dict[str, Any] = {}
-        READ_PREFIXES = ("read", "") if BACKWARDS_COMPATIBLE else ("read", )
+        READ_PREFIXES = ("read", )
         WRITE_PREFIXES = ("write", )
+        if BACKWARDS_COMPATIBLE:
+            WRITE_PREFIXES = ("write", "")
         for prefixes, area in (
             (READ_PREFIXES, self.mmap_read_area),
             (WRITE_PREFIXES, self.mmap_write_area),
