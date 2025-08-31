@@ -20,7 +20,7 @@
 
 	<!-- We need to pack our own Python to avoid compatibility problems. -->
 	<binary dest="${bundle}/Contents/Resources/bin/Python">
-		${prefix}/bin/${env:PYTHON}
+		${env:PYTHON}
 	</binary>
 
 	<data dest="${bundle}/Contents/MacOS/">
