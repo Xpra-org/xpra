@@ -9,7 +9,6 @@ from time import monotonic
 from collections import deque
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import
 from xpra.util.env import envint
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.scripts.config import InitExit
@@ -18,8 +17,6 @@ from xpra.codecs.constants import VideoSpec, TransientCodecException
 from xpra.log import Logger
 
 log = Logger("remote")
-
-GLib = gi_import("GLib")
 
 ENCODER_SERVER_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 5)
 ENCODER_SERVER_SOCKET_TIMEOUT = envint("XPRA_ENCODER_SERVER_SOCKET_TIMEOUT", 1)
