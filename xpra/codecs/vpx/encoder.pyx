@@ -184,7 +184,7 @@ PACKET_KIND: Dict[int, str] = {
 COLORSPACES: Dict[str, Sequence[str]] = {
     "vp8": ("YUV420P", ),
 }
-if VPX_ENCODER_ABI_VERSION>=23:
+if VPX_ENCODER_ABI_VERSION>=23 and not OSX:
     COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
 CODECS = tuple(COLORSPACES.keys())
 
