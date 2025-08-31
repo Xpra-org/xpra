@@ -1994,7 +1994,7 @@ def no_gi_gtk_modules(mods=("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplicat
     for mod in mods:
         mod_path = f"gi.repository.{mod}"
         if sys.modules.get(mod_path):
-            raise RuntimeError(f"Gtk module {mod!r} is already loaded!")
+            raise RuntimeError(f"gi module {mod!r} is already loaded!")
         # noinspection PyTypeChecker
         sys.modules[mod_path] = None
 
