@@ -6,7 +6,7 @@ if [ -z "${JHBUILD_PREFIX}" ]; then
 	exit 1
 fi
 
-export PYTHON="python3"
+export PYTHON="${PYTHON:-${JHBUILD_PREFIX}/bin/python3}"
 PYTHON_MAJOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])'`
 PYTHON_MINOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])'`
 
