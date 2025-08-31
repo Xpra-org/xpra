@@ -10,6 +10,7 @@ from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
+from xpra.util.str_fn import csv
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.client.base.stub import StubClientMixin
 from xpra.net.mmap import init_client_mmap, clean_mmap, BaseMmapArea
@@ -105,8 +106,10 @@ class MmapClient(StubClientMixin):
         else:
             # assume file path(s) have been specified:
             filenames = opts.mmap.split(os.path.pathsep)
+            if len(filenames) >= 3:
+                raise RuntimeError("too many mmap filenames specified: %r" % csv(filenames))
             read = True
-            write = len(filenames) > 1
+            write = len(filenames) == 2
         group = opts.mmap_group
         root_w, root_h = self.get_root_size()
         # at least 256MB, or 8 fullscreen RGBX frames:
