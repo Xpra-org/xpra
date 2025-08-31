@@ -95,11 +95,9 @@ def nox() -> str:
 
 
 def reqx11(mode: str) -> None:
-    if OSX:
-        raise InitExit(ExitCode.UNSUPPORTED,f"{mode} is not supported on MacOSX")
     if find_spec("xpra.x11"):
         return
-    if WIN32:
+    if OSX or WIN32:
         raise InitExit(ExitCode.UNSUPPORTED, f"{mode} requires a build with the X11 bindings")
     raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
 
