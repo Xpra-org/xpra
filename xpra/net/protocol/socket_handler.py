@@ -849,7 +849,7 @@ class SocketProtocol:
             return
         for buf in buf_data:
             while buf and not self._closed:
-                written = self.con_write(con, buf, packet_type)
+                written = con.write(buf, packet_type)
                 # example test code, for sending small chunks very slowly:
                 # written = con.write(buf[:1024])
                 # import time
@@ -858,10 +858,6 @@ class SocketProtocol:
                     buf = buf[written:]
                     self.output_raw_packetcount += 1
         self.output_packetcount += 1
-
-    # noinspection PyMethodMayBeStatic
-    def con_write(self, con, buf: SizedBuffer, packet_type: str) -> int:
-        return con.write(buf, packet_type)
 
     def _read_thread_loop(self) -> None:
         self._io_thread_loop("read", self._read)
