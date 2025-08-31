@@ -1415,6 +1415,11 @@ class ServerCore(ServerBaseClass):
                     proto.send_now(Packet("ssl-upgrade", ssl_attrs))
                     return
 
+        # if we're here, then we should have read everything that was sent by the client,
+        # including any data we potentially peeked at:
+        disable_peek = getattr(conn, "disable_peek", noop)
+        disable_peek()
+
         # this will call auth_verified if successful
         # it may also just send challenge packets,
         # in which case we'll end up here parsing the hello again

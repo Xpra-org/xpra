@@ -328,6 +328,17 @@ class SocketConnection(Connection):
             raise RuntimeError("`peek` has already been enabled")
         self._socket = SocketPeekWrapper(self._socket, peeked)
 
+    def disable_peek(self) -> None:
+        sock = self._socket
+        log.info("disable_peek: %s", sock)
+        if not isinstance(sock, SocketPeekWrapper):
+            return
+        if sock.peeked:
+            # some of the peeked data has not been read yet
+            return
+        # unwrap it:
+        self._socket = sock.socket
+
     def get_raw_socket(self):
         sock = self._socket
         if isinstance(sock, SocketPeekWrapper):
