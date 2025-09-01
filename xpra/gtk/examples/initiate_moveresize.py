@@ -26,16 +26,18 @@ def make_window() -> Gtk.Window:
     if icon:
         window.set_icon(icon)
 
+    try:
+        from xpra.x11.gtk.display_source import init_gdk_display_source
+        can_move = True
+    except ImportError as e:
+        print("cannot initiate move without gtk x11: %s" % e)
+        can_move = False
+
     def get_pointer():
         with IgnoreWarningsContext():
             return window.get_window().get_screen().get_root_window().get_pointer()
 
     def initiate(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int) -> None:
-        try:
-            from xpra.x11.gtk.display_source import init_gdk_display_source
-        except ImportError:
-            print("cannot initiate move without gtk x11")
-            return
         init_gdk_display_source()
         from xpra.x11.bindings.core import constants, get_root_xid, X11CoreBindings
         from xpra.x11.bindings.window import X11WindowBindings
@@ -83,6 +85,9 @@ def make_window() -> Gtk.Window:
 
     def add_button(x: int, y: int, direction: MoveResize) -> None:
         btn = Gtk.Button(label=MOVERESIZE_DIRECTION_STRING[direction])
+        if direction == MoveResize.MOVE and not can_move:
+            btn.set_sensitive(False)
+            btn.set_tooltip_text("not available on this platform")
         btn.connect('button-press-event', btn_callback, direction)
         grid.attach(expand(btn), x, y, 1, 1)
 
