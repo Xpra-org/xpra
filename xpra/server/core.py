@@ -1254,7 +1254,8 @@ class ServerCore(ServerBaseClass):
                 if conn.input_bytecount == 0:
                     try:
                         data = conn.peek(200)
-                    except OSError:
+                    except (OSError, ValueError):
+                        log("cannot peek on %s", conn)
                         data = b""
                     if data:
                         messages.append(f" read buffer={data!r}")
