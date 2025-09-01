@@ -88,13 +88,6 @@ def do_ready() -> None:
         osxapp.ready()
 
 
-def get_menu_helper_class() -> Callable | None:
-    if get_OSXApplication():
-        from xpra.platform.darwin.menu import getOSXMenuHelper
-        return getOSXMenuHelper
-    return None
-
-
 def get_backends() -> list[type]:
     if get_OSXApplication():
         from xpra.platform.darwin.tray import OSXTray
