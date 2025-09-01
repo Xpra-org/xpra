@@ -95,6 +95,7 @@ SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO > 1)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
+SSL_PEEK = envbool("XPRA_SSL_PEEK", True)
 
 
 # class used to distinguish internal errors
@@ -784,7 +785,8 @@ class ServerCore(ServerBaseClass):
             if not ssl_conn:
                 return
             http = socktype == "wss"
-            if socktype == "ssl" and can_upgrade_to("wss") and self.ssl_mode.lower() in TRUE_OPTIONS or self.ssl_mode == "auto":
+            can_peek = SSL_PEEK and (self.ssl_mode.lower() in TRUE_OPTIONS or self.ssl_mode == "auto")
+            if can_peek and socktype == "ssl" and can_upgrade_to("wss"):
                 # look for HTTPS request to handle:
                 line1 = peek_data.split(b"\n")[0]
                 if line1.find(b"HTTP/") > 0 or peek_data.find(b"\x08http/") > 0:
