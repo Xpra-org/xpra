@@ -10,7 +10,7 @@ import os
 from time import time, monotonic
 
 from xpra.os_util import WIN32, OSX, POSIX, gi_import
-from xpra.util.env import envbool, ignorewarnings
+from xpra.util.env import envbool, ignorewarnings, SilenceWarningsContext
 from xpra.tray_base import TrayBase, log
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_icon_from_file, get_pixbuf_from_data
@@ -30,6 +30,17 @@ log("tray GUESS_GEOMETRY=%s", GUESS_GEOMETRY)
 SAVE = envbool("XPRA_SAVE_SYSTRAY", False)
 
 
+def get_pointer() -> tuple[int, int]:
+    with SilenceWarningsContext(DeprecationWarning):
+        x, y = get_default_root_window().get_pointer()[-3:-1]
+    return x, y
+
+
+def get_modifiers_mask():
+    with SilenceWarningsContext(DeprecationWarning):
+        return get_default_root_window().get_pointer()[-1]
+
+
 class GTKStatusIconTray(TrayBase):
 
     def __init__(self, *args, **kwargs):
@@ -47,12 +58,12 @@ class GTKStatusIconTray(TrayBase):
     def may_guess(self) -> None:
         log("may_guess() GUESS_GEOMETRY=%s, current guess=%s", GUESS_GEOMETRY, self.geometry_guess)
         if GUESS_GEOMETRY:
-            x, y = get_default_root_window().get_pointer()[-3:-1]
+            x, y = get_pointer()
             w, h = self.get_size()
             self.recalculate_geometry(x, y, w, h)
 
     def activate_menu(self, widget) -> None:
-        modifiers_mask = get_default_root_window().get_pointer()[-1]
+        modifiers_mask = get_modifiers_mask()
         log("activate_menu(%s) modifiers_mask=%s", widget, modifiers_mask)
         if (modifiers_mask & Gdk.ModifierType.SHIFT_MASK) ^ OSX:
             self.handle_click(3)
@@ -60,7 +71,7 @@ class GTKStatusIconTray(TrayBase):
             self.handle_click(1)
 
     def popup_menu(self, widget, button: int, event_time, *args) -> None:
-        modifiers_mask = get_default_root_window().get_pointer()[-1]
+        modifiers_mask = get_modifiers_mask()
         log("popup_menu(%s, %s, %s, %s) modifiers_mask=%s", widget, button, event_time, args, modifiers_mask)
         if (modifiers_mask & Gdk.ModifierType.SHIFT_MASK) ^ OSX:
             self.handle_click(1)
