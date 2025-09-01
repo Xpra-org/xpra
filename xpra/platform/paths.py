@@ -280,7 +280,10 @@ def do_get_resources_dir() -> str:
 
 def get_image(name: str):
     filename = os.path.join(get_image_dir(), name)
-    from xpra.gtk.pixbuf import get_icon_from_file
+    try:
+        from xpra.gtk.pixbuf import get_icon_from_file
+    except ImportError:
+        return None
     return get_icon_from_file(filename)
 
 
@@ -304,7 +307,10 @@ def get_icon(name: str):
     filename = get_icon_filename(name)
     if not filename:
         return None
-    from xpra.gtk.pixbuf import get_icon_from_file
+    try:
+        from xpra.gtk.pixbuf import get_icon_from_file
+    except ImportError:
+        return None
     return get_icon_from_file(filename)
 
 
