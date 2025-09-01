@@ -984,7 +984,6 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindVertexArray(0)
             glUseProgram(0)
             glDeleteBuffers(1, [pos_buffer])
-            glDisableVertexAttribArray(position)
 
             glBindTexture(target, 0)
 
