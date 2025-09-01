@@ -113,7 +113,7 @@ class DisplayManager(StubServerMixin):
         size = self.get_display_size()
         if size:
             w, h = size
-            dinfo += f" with display size {w}x{h}"
+            dinfo += f" size {w}x{h}"
         bit_depth = self.get_display_bit_depth()
         if bit_depth:
             dinfo += f"\n with {bit_depth} bit colors"
@@ -121,7 +121,7 @@ class DisplayManager(StubServerMixin):
 
     @staticmethod
     def get_display_name() -> str:
-        return get_display_name()
+        return get_display_name() or os.environ.get("DISPLAY", "")
 
     @staticmethod
     def get_display_bit_depth() -> int:
