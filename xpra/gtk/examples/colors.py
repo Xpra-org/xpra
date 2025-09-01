@@ -44,10 +44,6 @@ class AnimatedColorWindow(Gtk.Window):
         self.show_all()
         super().present()
 
-    # noinspection PyTypeChecker
-    def do_expose_event(self, *_args) -> None:
-        self.area_draw()
-
     def on_press(self, _window, event) -> None:
         if event == self.last_event:
             return
