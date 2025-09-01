@@ -28,8 +28,8 @@ ln -sf "$(realpath .)/gtk-osx-build/jhbuildrc-custom" ~/.config/jhbuildrc-custom
 
 Bootstrap:
 ```shell
-jhbuild update
 jhbuild bootstrap-gtk-osx
+jhbuild update
 ```
 
 Optional: install [pandoc](https://pandoc.org/installing.html#macos)
