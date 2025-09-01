@@ -20,6 +20,7 @@ log = Logger("util", "event")
 
 FAKE_UI_LOCKUPS = envint("XPRA_FAKE_UI_LOCKUPS")
 POLLING = envint("XPRA_UI_THREAD_POLLING", 500)
+MAX_DELTA = envint("XPRA_UI_THREAD_MAX_DELTA", 2000 + POLLING * 2)
 ANNOUNCE_TIMEOUT = envint("XPRA_ANNOUNCE_BLOCKED", POLLING)
 
 
@@ -41,9 +42,9 @@ class UIThreadWatcher:
         will run from different threads..
     """
 
-    def __init__(self, polling_timeout: int, announce_timeout: float):
+    def __init__(self, polling_timeout: int, max_delta: int, announce_timeout: float):
         self.polling_timeout = polling_timeout
-        self.max_delta: int = polling_timeout * 2
+        self.max_delta = max_delta
         self.announce_timeout: float = announce_timeout / 1000.0 if announce_timeout else float('inf')
         self.init_vars()
 
@@ -169,6 +170,6 @@ ui_watcher: UIThreadWatcher | None = None
 def get_ui_watcher() -> UIThreadWatcher | None:
     global ui_watcher
     if ui_watcher is None:
-        ui_watcher = UIThreadWatcher(POLLING, ANNOUNCE_TIMEOUT)
+        ui_watcher = UIThreadWatcher(POLLING, MAX_DELTA, ANNOUNCE_TIMEOUT)
         log("get_ui_watcher()=%s", ui_watcher)
     return ui_watcher
