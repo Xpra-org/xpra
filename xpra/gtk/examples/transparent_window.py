@@ -44,11 +44,7 @@ class TransparentWindow(Gtk.Window):
         self.show_all()
         super().present()
 
-    def do_expose_event(self, *_args) -> None:
-        self.area_draw()
-
-    def area_draw(self, *_args) -> None:
-        cr = self.get_window().cairo_create()
+    def area_draw(self, _area, cr) -> None:
         cr.set_source_rgba(1.0, 1.0, 1.0, 0.0)  # Transparent
         # Draw the background
         cr.set_operator(OPERATOR_SOURCE)

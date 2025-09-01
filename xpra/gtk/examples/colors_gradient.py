@@ -70,11 +70,7 @@ class ColorGradientWindow(Gtk.Window):
         self.queue_draw()
         return True
 
-    def do_expose_event(self, *_args) -> None:
-        self.area_draw()
-
-    def area_draw(self, *_args) -> None:
-        cr = self.get_window().cairo_create()
+    def area_draw(self, _area, cr) -> None:
         cr.save()
         cr.set_operator(OPERATOR_CLEAR)
         alloc = self.get_allocated_size()[0]

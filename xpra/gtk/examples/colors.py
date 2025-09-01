@@ -60,8 +60,7 @@ class AnimatedColorWindow(Gtk.Window):
             self.queue_draw()
         return True
 
-    def area_draw(self, *_args) -> None:
-        cr = self.get_window().cairo_create()
+    def area_draw(self, _area, cr) -> None:
         cr.set_font_size(32)
         # Clear everything:
         cr.set_operator(OPERATOR_CLEAR)
