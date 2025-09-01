@@ -28,7 +28,6 @@ def make_window() -> Gtk.Window:
         window.set_icon(icon)
 
     vbox = Gtk.VBox(homogeneous=False, spacing=10)
-    window.add(vbox)
     entry = Gtk.Entry()
     entry.set_text("hello")
     vbox.add(entry)
@@ -40,7 +39,7 @@ def make_window() -> Gtk.Window:
     textview.set_size_request(200, 80)
     vbox.add(textview)
 
-    window.add(entry)
+    window.add(vbox)
     return window
 
 
