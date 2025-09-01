@@ -23,6 +23,12 @@ POLLING = envint("XPRA_UI_THREAD_POLLING", 500)
 ANNOUNCE_TIMEOUT = envint("XPRA_ANNOUNCE_BLOCKED", POLLING)
 
 
+def run_callbacks(callbacks: list[Callable[[], None]]) -> None:
+    for callback in callbacks:
+        with log.trap_error("Error running UI watcher callback %s", callback):
+            callback()
+
+
 class UIThreadWatcher:
     """
         Allows us to register callbacks
@@ -90,12 +96,6 @@ class UIThreadWatcher:
     def remove_alive_callback(self, cb: Callable[[], None]) -> None:
         self.alive_callbacks.remove(cb)
 
-    @staticmethod
-    def run_callbacks(callbacks: list[Callable[[], None]]) -> None:
-        for callback in callbacks:
-            with log.trap_error("Error running UI watcher callback %s", callback):
-                callback()
-
     def tick(self) -> None:
         self.last_ui_thread_time = monotonic()
 
@@ -113,7 +113,7 @@ class UIThreadWatcher:
                 log.info("UI thread is running again, resuming")
                 self.announced_blocked = False
             self.ui_blocked = False
-            self.run_callbacks(self.resume_callbacks)
+            run_callbacks(self.resume_callbacks)
         return False
 
     def poll_ui_loop(self) -> None:
@@ -128,14 +128,14 @@ class UIThreadWatcher:
                     # UI thread is (still?) blocked:
                     if not self.ui_blocked:
                         self.ui_blocked = True
-                        self.run_callbacks(self.fail_callbacks)
+                        run_callbacks(self.fail_callbacks)
                     if not self.announced_blocked and delta > self.announce_timeout:
                         self.announced_blocked = True
                         log.info("UI thread is now blocked")
                 else:
                     # seems to be ok:
                     log("poll_ui_loop() ok, firing %s", self.alive_callbacks)
-                    self.run_callbacks(self.alive_callbacks)
+                    run_callbacks(self.alive_callbacks)
             now = monotonic()
             self.ui_wakeup_timer = GLib.timeout_add(0, self.ui_thread_wakeup, now)
             wstart = monotonic()
