@@ -136,16 +136,16 @@ class MMAP_Connection(StubSourceMixin):
             self.mmap_supported = False
             return
         tdcaps = typedict(mmap_caps)
-        self.mmap_read_area = self.parse_area_caps("read", tdcaps.dictget("write") or mmap_caps, 1)
+        self.mmap_read_area = self.parse_area_caps("read", tdcaps.dictget("write"), 1)
         # also try legacy unprefixed lookup for 'read' area:
-        self.mmap_write_area = self.parse_area_caps("write", tdcaps.dictget("read"), 0)
+        self.mmap_write_area = self.parse_area_caps("write", tdcaps.dictget("read") or mmap_caps, 0)
         log("parse_client_caps() mmap-read=%s, mmap-write=%s", self.mmap_read_area, self.mmap_write_area)
 
     def get_caps(self) -> dict[str, Any]:
         mmap_caps: dict[str, Any] = {}
         for prefixes, area in (
-            (("read", ""), self.mmap_read_area),
-            (("write", ), self.mmap_write_area),
+            (("read", ), self.mmap_read_area),
+            (("write", ""), self.mmap_write_area),
         ):
             if not area:
                 continue
