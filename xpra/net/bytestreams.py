@@ -330,7 +330,7 @@ class SocketConnection(Connection):
 
     def disable_peek(self) -> None:
         sock = self._socket
-        log.info("disable_peek: %s", sock)
+        log("disable_peek: %s", sock)
         if not isinstance(sock, SocketPeekWrapper):
             return
         if sock.peeked:
