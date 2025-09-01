@@ -81,8 +81,11 @@ class ConfigureGUI(BaseGUIWindow):
     # so we can call check_xshm()
     from xpra.util.system import is_Wayland
     if not is_Wayland():
-        from xpra.x11.gtk.display_source import init_gdk_display_source
-        init_gdk_display_source()
+        try:
+            from xpra.x11.display_source import init_display_source
+            init_display_source()
+        except ImportError:
+            log("unable to initialize X11 display source", exc_info=True)
 
     def __init__(self, parent: Gtk.Window | None = None):
         self.buttons: list[Gtk.CheckButton] = []
@@ -110,6 +113,9 @@ class ConfigureGUI(BaseGUIWindow):
                 if not check():
                     available = False
                     tooltip = "not available"
+            except RuntimeError as e:
+                available = False
+                tooltip = "unable to initialize: %s" % e
             except ImportError:
                 available = False
                 tooltip = "not installed or not available"
