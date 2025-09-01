@@ -104,6 +104,8 @@ def enforce_features(features, feature_map: dict[str, str]) -> None:
     for feature, modules in feature_map.items():
         enabled: bool = getattr(features, feature)
         for module in modules.split(","):
+            if not module:
+                continue
             value = sys.modules.get(module)
             if debug_features:
                 from importlib.util import find_spec

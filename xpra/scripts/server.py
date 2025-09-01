@@ -354,7 +354,7 @@ def enforce_server_features() -> None:
         "rfb": "xpra.net.rfb,xpra.server.rfb",
         "http": "xpra.net.http,xpra.server.subsystem.http",
         "tray": "xpra.server.subsystem.tray",
-        "gtk": "xpra.gtk",
+        "gtk": "xpra.gtk" if not OSX else "",
         "systray": "xpra.x11.subsystem.systray",
     })
     if not features.gtk:
