@@ -7,7 +7,7 @@
 from typing import Any
 
 from xpra.common import noop
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
@@ -59,7 +59,7 @@ class FocusWindow(StubWindow):
     def do_init_focus(self) -> None:
         # hook up the X11 gdk event notifications,
         # so we can get focus-out when grabs are active:
-        if is_X11():
+        if not (WIN32 or OSX) and is_X11():
             try:
                 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
             except ImportError as e:
