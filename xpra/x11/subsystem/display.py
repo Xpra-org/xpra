@@ -23,7 +23,6 @@ from xpra.common import (
 )
 from xpra.x11.xroot_props import root_set, root_get, root_del
 from xpra.server.subsystem.display import DisplayManager
-from xpra.platform.gui import get_display_size
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -302,9 +301,12 @@ class X11DisplayManager(DisplayManager):
 
     ######################################################################
     # display / screen / root window:
-    @staticmethod
-    def get_display_size() -> tuple[int, int]:
-        return get_display_size()
+    def get_display_size(self) -> tuple[int, int]:
+        if self.randr:
+            with xsync:
+                from xpra.x11.bindings.randr import RandRBindings
+                return RandRBindings().get_screen_size()
+        return get_root_size()
 
     def set_screen_geometry_attributes(self, w: int, h: int) -> None:
         # by default, use the screen as desktop area:
