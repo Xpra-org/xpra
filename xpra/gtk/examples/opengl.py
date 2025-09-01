@@ -12,8 +12,8 @@ def main(argv=()):
             from xpra.util.system import is_X11
             from xpra.opengl.window import get_gl_client_window_module, test_gl_client_window
             if is_X11():
-                from xpra.x11.gtk.display_source import init_gdk_display_source
-                init_gdk_display_source()
+                from xpra.gtk.util import init_display_source
+                init_display_source(False)
             opengl_props, gl_client_window_module = get_gl_client_window_module("force")
             log = Logger("opengl")
             log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
