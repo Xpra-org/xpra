@@ -13,7 +13,6 @@ from xpra.util.env import envbool, envfloat, numpy_import_context
 from xpra.opengl.check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr
 from xpra.x11.error import xsync
-from xpra.gtk.window import set_visual
 from xpra.log import Logger
 
 with numpy_import_context("OpenGL: glx context", True):
@@ -303,6 +302,7 @@ class GLXContext:
                 "enabled": False,
                 "message": "cannot access X11 display",
             }
+        from xpra.gtk.window import set_visual
         Gtk = gi_import("Gtk")
         tmp = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         tmp.resize(1, 1)
