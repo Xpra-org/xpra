@@ -25,9 +25,9 @@ class PowerEventServer(StubServerMixin):
         remove_handler("resume", self.resume_event)
 
     @staticmethod
-    def suspend_event(_args) -> None:
+    def suspend_event(*_args) -> None:
         log.info("suspending")
 
     @staticmethod
-    def resume_event(_args) -> None:
+    def resume_event(*_args) -> None:
         log.info("resuming")

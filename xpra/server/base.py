@@ -70,16 +70,16 @@ class ServerBase(ServerBaseClass):
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
         self.dotxpra = None
 
-    def suspend_event(self, args) -> None:
+    def suspend_event(self, *args) -> None:
         # if we get a `suspend_event`, we can assume that `PowerEventServer` is a superclass:
-        super().suspend_event(args)
+        super().suspend_event(*args)
         self.server_event("suspend")
         for s in self._server_sources.values():
             if hasattr(s, "go_idle"):
                 s.go_idle()
 
-    def resume_event(self, args) -> None:
-        ServerCore.resume_event(self, args)
+    def resume_event(self, *args) -> None:
+        ServerCore.resume_event(self, *args)
         self.server_event("resume")
         for s in self._server_sources.values():
             if hasattr(s, "no_idle"):
