@@ -1071,7 +1071,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     odisplay_name = display_name
     xvfb = None
     xauthority = None
-    if POSIX and not OSX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland") < 0:
+    if POSIX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland") < 0:
         # XAUTHORITY
         from xpra.x11.vfb_util import get_xauthority_path, valid_xauth, xauth_add
         xauthority = valid_xauth((load_session_file("xauthority")).decode(), uid, gid)
@@ -1174,7 +1174,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     xvfb_pid = 0
     devices = {}
-    if POSIX and not OSX and not (proxying or encoder or runner):
+    if POSIX and not (proxying or encoder or runner):
         try:
             from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
             use_uinput = not (shadowing or proxying or encoder or runner) and opts.input_devices.lower() in (

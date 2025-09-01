@@ -20,7 +20,7 @@ import os.path
 from xpra.scripts.config import InitException, get_Xdummy_confdir
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env, get_saved_env_var
-from xpra.os_util import getuid, getgid, POSIX, OSX
+from xpra.os_util import getuid, getgid, POSIX
 from xpra.util.daemon import setuidgid
 from xpra.util.io import is_writable, pollwait, osclose
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
@@ -258,8 +258,6 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
                uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
-    if OSX:
-        raise InitException("starting an Xvfb is not supported on MacOS")
     if not xvfb_cmd:
         raise InitException("the 'xvfb' command is not defined")
     if not display_name:
