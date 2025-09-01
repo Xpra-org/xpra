@@ -483,7 +483,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if status == GL_FALSE:
             glDeleteProgram(program)
             self.fail_shader(name, infolog)
-        log(f"{name} program linked: {infolog}")
+        log(f"{name} program linked: {infolog!r}")
         self.set_vao()
         status = glValidateProgram(program)
         glBindVertexArray(0)
@@ -491,7 +491,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if status == GL_FALSE:
             glDeleteProgram(program)
             self.fail_shader(name, infolog)
-        log(f"{name} program validated: {infolog}")
+        log(f"{name} program validated: {infolog!r}")
         for shader in shaders:
             glDetachShader(program, shader)
         self.programs[name] = program
