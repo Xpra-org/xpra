@@ -1896,41 +1896,35 @@ def set_client_features(opts) -> None:
     def bo(v) -> bool:
         return str(v).lower() not in FALSE_OPTIONS or str(v).lower() in OFF_OPTIONS
 
-    impwarned: set[str] = set()
+    impwarn: set[str] = set()
 
-    def impcheck(*modules) -> bool:
-        for mod in modules:
-            if find_spec(mod):
-                continue
-            if mod not in impwarned:
-                impwarned.add(mod)
-                log = get_logger()
-                log("impcheck%s", modules, exc_info=True)
-                log.warn(f"Warning: missing {mod!r} module")
-                log.warn(f" for Python {sys.version}")
-            return False
-        return True
+    def icheck(mod: str, warn=True) -> bool:
+        if find_spec(mod):
+            return True
+        if (mod not in impwarn) and warn:
+            impwarn.add(mod)
+        return False
 
     from xpra.client.base import features
     features.debug = features.debug or b(opts.debug)
     features.command = opts.commands
     features.control = opts.control
-    features.file = b(opts.file_transfer) and impcheck("xpra.net.file_transfer")
+    features.file = b(opts.file_transfer) and icheck("xpra.net.file_transfer")
     features.printer = features.file and b(opts.printing)
     features.display = opts.windows
     features.window = opts.windows
     features.cursor = opts.windows and opts.cursors
     features.gstreamer = opts.gstreamer
-    features.x11 = impcheck("xpra.x11")
-    features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("xpra.audio")
-    features.webcam = bo(opts.webcam) and impcheck("xpra.codecs")
-    features.clipboard = b(opts.clipboard) and impcheck("xpra.clipboard")
-    features.keyboard = impcheck("xpra.keyboard")
+    features.x11 = opts.backend in ("x11", "auto") and icheck("xpra.x11", not (WIN32 or OSX))
+    features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and icheck("xpra.audio")
+    features.webcam = bo(opts.webcam) and icheck("xpra.codecs")
+    features.clipboard = b(opts.clipboard) and icheck("xpra.clipboard")
+    features.keyboard = icheck("xpra.keyboard")
     features.pointer = b(opts.pointer)
-    features.notification = opts.notifications and impcheck("xpra.notification")
-    features.dbus = b(opts.dbus) and impcheck("dbus", "xpra.dbus")
+    features.notification = opts.notifications and icheck("xpra.notification")
+    features.dbus = b(opts.dbus) and icheck("dbus") and icheck("xpra.dbus")
     features.mmap = b(opts.mmap)
-    features.ssl = b(opts.ssl) and impcheck("ssl")
+    features.ssl = b(opts.ssl) and icheck("ssl")
     features.ssh = b(opts.ssh)
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
@@ -1941,6 +1935,11 @@ def set_client_features(opts) -> None:
     features.encoding = opts.windows
     features.native = envbool("XPRA_CLIENT_NATIVE_BINDINGS", True)
     features.power = envbool("XPRA_POWER_EVENTS", True)
+
+    if impwarn:
+        log = get_logger()
+        log.warn("Warning missing modules: %s", csv(impwarn))
+        log.warn(f" for Python {sys.version}")
 
 
 def enforce_client_features() -> None:
