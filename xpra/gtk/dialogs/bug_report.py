@@ -428,7 +428,7 @@ def main(argv=()) -> int:
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):
         from xpra.log import enable_color
         enable_color()
-        init_display_source()
+        init_display_source(False)
         set_default_icon("bugs.png")
         init()
 

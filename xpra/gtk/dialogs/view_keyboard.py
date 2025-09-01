@@ -175,7 +175,7 @@ def main() -> int:
         from xpra.gtk.util import quit_on_signals
         quit_on_signals("keyboard test window")
 
-        init_display_source()
+        init_display_source(False)
         w = KeyboardStateInfoWindow()
         GLib.idle_add(w.show_with_focus)
         Gtk.main()

@@ -105,7 +105,7 @@ def main() -> None:
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("GTK-Keyboard", "GTK Keyboard"):
-        init_display_source()
+        init_display_source(False)
         x = GTKKeyboardHelper(noop)
         x.query_xkbmap()
         print_nested_dict(x.get_keymap_properties())

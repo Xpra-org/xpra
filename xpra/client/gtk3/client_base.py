@@ -79,7 +79,7 @@ WINDOW_GROUPING = os.environ.get("XPRA_WINDOW_GROUPING", "group-leader-xid,class
 VREFRESH = envint("XPRA_VREFRESH", 0)
 
 inject_css_overrides()
-init_display_source()
+init_display_source(False)
 # must come after init_display_source()
 from xpra.client.gtk3.window.base import HAS_X11_BINDINGS  # noqa: E402
 

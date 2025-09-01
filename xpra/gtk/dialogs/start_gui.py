@@ -1192,7 +1192,7 @@ def main(options=None) -> int:  # pragma: no cover
     from xpra.gtk.util import init_display_source
     with program_context("xpra-start-gui", "Xpra Start GUI"):
         enable_color()
-        init_display_source()
+        init_display_source(False)
         init()
         gui = StartSession(options)
         register_os_signals(gui.app_signal)

@@ -1176,7 +1176,7 @@ def do_main(argv: list[str]) -> int:
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     from xpra.gtk.util import init_display_source
 
-    init_display_source()
+    init_display_source(False)
 
     gui_init()
     try:
