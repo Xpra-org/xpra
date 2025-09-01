@@ -95,6 +95,10 @@ def nox() -> str:
 
 
 def reqx11(mode: str) -> None:
+    if OSX:
+        # need to import gtk module early, not sure why!
+        import xpra.gtk.util
+        assert xpra.gtk.util
     if find_spec("xpra.x11"):
         return
     if OSX or WIN32:
@@ -1990,7 +1994,10 @@ def may_block_numpy() -> None:
             sys.modules["numpy"] = None
 
 
-def no_gi_gtk_modules(mods=("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication")) -> None:
+NOGI = ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication") if not OSX else ("GdkX11", )
+
+
+def no_gi_gtk_modules(mods=NOGI) -> None:
     for mod in mods:
         mod_path = f"gi.repository.{mod}"
         if sys.modules.get(mod_path):
