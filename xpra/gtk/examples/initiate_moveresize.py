@@ -31,7 +31,11 @@ def make_window() -> Gtk.Window:
             return window.get_window().get_screen().get_root_window().get_pointer()
 
     def initiate(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int) -> None:
-        from xpra.x11.gtk.display_source import init_gdk_display_source
+        try:
+            from xpra.x11.gtk.display_source import init_gdk_display_source
+        except ImportError:
+            print("cannot initiate move without gtk x11")
+            return
         init_gdk_display_source()
         from xpra.x11.bindings.core import constants, get_root_xid, X11CoreBindings
         from xpra.x11.bindings.window import X11WindowBindings

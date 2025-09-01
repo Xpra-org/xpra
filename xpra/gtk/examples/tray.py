@@ -189,8 +189,8 @@ def main() -> int:
     with program_context("tray", "Tray"):
         from xpra.util.system import is_X11
         if is_X11():
-            from xpra.x11.gtk.display_source import init_gdk_display_source
-            init_gdk_display_source()
+            from xpra.gtk.util import init_display_source
+            init_display_source(False)
         from xpra.gtk.util import quit_on_signals
         quit_on_signals("tray test")
         FakeApplication()

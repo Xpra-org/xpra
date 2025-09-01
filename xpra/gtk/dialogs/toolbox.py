@@ -18,7 +18,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.dialogs.util import hb_button
 from xpra.scripts.main import run_example
 from xpra.platform.paths import get_xpra_command
-from xpra.os_util import WIN32, gi_import
+from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.env import IgnoreWarningsContext
 from xpra.log import Logger
 
@@ -41,47 +41,47 @@ def exec_command(cmd: Sequence[str]) -> subprocess.Popen:
 
 TITLE = "Xpra Toolbox"
 
-BUTTON_GROUPS: dict[str, Iterable[tuple[str, str, str]]] = {
+BUTTON_GROUPS: dict[str, Iterable[tuple[str, str, str, bool]]] = {
     "Colors": (
-        ("Squares", "Shows RGB+Grey squares in a window", "colors-plain"),
-        ("Animated", "Shows RGB+Grey squares animated", "colors"),
-        ("Bit Depth", "Shows color gradients and visualize bit depth clipping", "colors-gradient"),
+        ("Squares", "Shows RGB+Grey squares in a window", "colors-plain", True),
+        ("Animated", "Shows RGB+Grey squares animated", "colors", True),
+        ("Bit Depth", "Shows color gradients and visualize bit depth clipping", "colors-gradient", True),
     ),
     "Transparency and Rendering": (
-        ("Circle", "Shows a semi-opaque circle in a transparent window", "transparent-window"),
-        ("RGB Squares", "RGB+Black shaded squares in a transparent window", "transparent-colors"),
-        ("OpenGL", "OpenGL window - transparent on some platforms", "opengl"),
+        ("Circle", "Shows a semi-opaque circle in a transparent window", "transparent-window", True),
+        ("RGB Squares", "RGB+Black shaded squares in a transparent window", "transparent-colors", True),
+        ("OpenGL", "OpenGL window - transparent on some platforms", "opengl", True),
     ),
     "Widgets": (
-        ("Text Entry", "Simple text entry widget", "text-entry"),
-        ("File Selector", "Open the file selector widget", "file-chooser"),
-        ("Header Bar", "Window with a custom header bar", "header-bar"),
+        ("Text Entry", "Simple text entry widget", "text-entry", True),
+        ("File Selector", "Open the file selector widget", "file-chooser", True),
+        ("Header Bar", "Window with a custom header bar", "header-bar", True),
     ),
     "Events": (
-        ("Grabs", "Test keyboard and pointer grabs", "grabs"),
-        ("Clicks", "Double and triple click events", "clicks"),
-        ("Focus", "Shows window focus events", "window-focus"),
+        ("Grabs", "Test keyboard and pointer grabs", "grabs", True),
+        ("Clicks", "Double and triple click events", "clicks", True),
+        ("Focus", "Shows window focus events", "window-focus", True),
     ),
     "Windows": (
-        ("States", "Toggle various window attributes", "window-states"),
-        ("Title", "Update the window title", "window-title"),
-        ("Opacity", "Change window opacity", "window-opacity"),
-        ("Transient", "Show transient windows", "window-transient"),
-        ("Override Redirect", "Shows an override redirect window", "window-overrideredirect"),
+        ("States", "Toggle various window attributes", "window-states", True),
+        ("Title", "Update the window title", "window-title", True),
+        ("Opacity", "Change window opacity", "window-opacity", True),
+        ("Transient", "Show transient windows", "window-transient", True),
+        ("Override Redirect", "Shows an override redirect window", "window-overrideredirect", True),
     ),
     "Geometry": (
-        ("Size constraints", "Specify window geometry size constraints", "window-geometry-hints"),
-        ("Move-Resize", "Initiate move resize from application", "initiate-moveresize"),
+        ("Size constraints", "Specify window geometry size constraints", "window-geometry-hints", True),
+        ("Move-Resize", "Initiate move resize from application", "initiate-moveresize", True),
     ),
     "Keyboard and Clipboard": (
-        ("Keyboard", "Keyboard event viewer", "view-keyboard"),
-        ("Clipboard", "Clipboard event viewer", "view-clipboard"),
+        ("Keyboard", "Keyboard event viewer", "view-keyboard", True),
+        ("Clipboard", "Clipboard event viewer", "view-clipboard", True),
     ),
     "Misc": (
-        ("Tray", "Show a system tray icon", "tray"),
-        ("Font Rendering", "Render characters with and without anti-aliasing", "fontrendering"),
-        ("Bell", "Test system bell", "bell"),
-        ("Cursors", "Show named cursors", "cursors"),
+        ("Tray", "Show a system tray icon", "tray", True),
+        ("Font Rendering", "Render characters with and without anti-aliasing", "fontrendering", True),
+        ("Bell", "Test system bell", "bell", not (WIN32 or OSX)),
+        ("Cursors", "Show named cursors", "cursors", not OSX),
     ),
 }
 
@@ -122,7 +122,7 @@ class ToolboxGUI(Gtk.Window):
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
 
-        def addhbox(blabel: str, buttons: Iterable[tuple[str, str, str]]) -> None:
+        def addhbox(blabel: str, buttons: Iterable[tuple[str, str, str, bool]]) -> None:
             self.vbox.add(label(blabel, font="sans 14"))
             hbox = Gtk.HBox(homogeneous=False, spacing=10)
             self.vbox.add(hbox)

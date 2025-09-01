@@ -98,18 +98,22 @@ def make_window() -> Gtk.Window:
     window.connect("focus-out-event", focus_out)
     window.connect("notify::has-toplevel-focus", has_toplevel_focus)
     if is_X11():
-        from xpra.x11.gtk.display_source import init_gdk_display_source
-        from xpra.x11.gtk.bindings import init_x11_filter
-        from xpra.x11.bindings.window import X11WindowBindings  # pylint: disable=no-name-in-module
-        from xpra.x11.error import xlog
-        # x11 focus events:
-        gdk_win = window.get_window()
-        xid = gdk_win.get_xid()
-        init_gdk_display_source()
-        os.environ["XPRA_X11_DEBUG_EVENTS"] = "FocusIn,FocusOut"
-        init_x11_filter()
-        with xlog:
-            X11WindowBindings().selectFocusChange(xid)
+        from xpra.gtk.util import init_display_source
+        try:
+            from xpra.x11.gtk.bindings import init_x11_filter
+        except ImportError:
+            pass
+        else:
+            from xpra.x11.bindings.window import X11WindowBindings  # pylint: disable=no-name-in-module
+            from xpra.x11.error import xlog
+            # x11 focus events:
+            gdk_win = window.get_window()
+            xid = gdk_win.get_xid()
+            init_display_source(False)
+            os.environ["XPRA_X11_DEBUG_EVENTS"] = "FocusIn,FocusOut"
+            init_x11_filter()
+            with xlog:
+                X11WindowBindings().selectFocusChange(xid)
     return window
 
 
