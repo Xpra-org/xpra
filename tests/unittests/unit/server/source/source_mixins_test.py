@@ -7,6 +7,7 @@
 import sys
 import unittest
 from io import BytesIO
+from time import monotonic
 
 from unit.test_util import LoggerSilencer, silence_error, silence_info
 
@@ -279,7 +280,7 @@ class SourceMixinsTest(unittest.TestCase):
                     "webcam_encodings"  : ("png", "jpeg"),
                 })
         wm.init_state()
-        wm.hello_sent = True
+        wm.hello_sent = monotonic()
         packets = []
 
         from xpra.codecs.video import getVideoHelper

@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from typing import Any
 from collections.abc import Sequence, Callable
 
@@ -90,7 +91,7 @@ def get_client_connection_class(caps: typedict):
     class ClientConnectionMuxer(ClientConnectionClass):
 
         def __init__(self, protocol, disconnect_cb: Callable, server, setting_changed: Callable):
-            self.hello_sent = False
+            self.hello_sent = 0.0
             from xpra.server.source.client_connection import ClientConnection
             for bc in CC_BASES:
                 try:
@@ -132,7 +133,7 @@ def get_client_connection_class(caps: typedict):
                 netlog.info(f"sending hello to {self}:")
                 print_nested_dict(capabilities, print_fn=netlog.info)
             self.send("hello", capabilities)
-            self.hello_sent = True
+            self.hello_sent = monotonic()
 
         def threaded_init_complete(self, server) -> None:
             log("threaded_init_complete(%s) calling base classes %s", server, CC_BASES)

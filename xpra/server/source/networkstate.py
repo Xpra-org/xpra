@@ -63,6 +63,7 @@ class NetworkStateMixin(StubSourceMixin):
         self.soft_bandwidth_limit = self.bandwidth_limit = self.server_bandwidth_limit
         self.bandwidth_warnings = True
         self.bandwidth_warning_time = 0
+        self.hello_sent = 0.0
 
     def init_from(self, _protocol, server) -> None:
         self.server_bandwidth_limit = server.bandwidth_limit
@@ -113,6 +114,12 @@ class NetworkStateMixin(StubSourceMixin):
     ######################################################################
     # pings:
     def ping(self) -> None:
+        if not self.hello_sent:
+            return
+        now = monotonic()
+        elapsed = now - self.hello_sent
+        if elapsed < 5:
+            return
         # NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000 * monotonic())
         pinglog("sending ping to %s with time=%s", self.protocol, now_ms)
