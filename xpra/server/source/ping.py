@@ -40,24 +40,31 @@ class PingConnection(StubClientConnection):
         self.last_ping_echoed_time = 0
         self.check_ping_echo_timers: dict[int, int] = {}
         self.client_load = (0, 0, 0)
+        self.ping_ready = False
 
     def cleanup(self) -> None:
         self.cancel_ping_echo_timers()
+        self.ping_ready = False
 
     def get_caps(self) -> dict[str, Any]:
         if BACKWARDS_COMPATIBLE:
             return {"ping-echo-sourceid": True}  # legacy flag
         return {}
 
+    def parse_client_caps(self, c: typedict) -> None:
+        self.ping_ready = True
+
     def get_info(self) -> dict[str, Any]:
         lpe = self.last_ping_echoed_time
-        if lpe > 0:
+        if lpe > 0 and self.ping_ready:
             return {
                 "last-ping-echo": int(monotonic() * 1000 - lpe),
             }
         return {}
 
     def ping(self) -> None:
+        if not self.ping_ready:
+            return
         # NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000 * monotonic())
         log("sending ping to %s with time=%s", self.protocol, now_ms)

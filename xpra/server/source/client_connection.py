@@ -76,7 +76,6 @@ class ClientConnection(StubClientConnection):
         self.encode_thread = None
         self.ordinary_packets: list[tuple[Packet, bool, bool]] = []
 
-        self.startup_completed = False
         self.suspended = False
         self.client_packet_types = ()
         self.setting_changed = setting_changed
@@ -159,7 +158,6 @@ class ClientConnection(StubClientConnection):
 
     def startup_complete(self) -> None:
         log("startup_complete()")
-        self.startup_completed = True
         self.send("startup-complete")
 
     # The encode thread loop management:
