@@ -7,10 +7,13 @@
 
 from collections.abc import Sequence
 
-from xpra.client.gui.keyboard_helper import KeyboardHelper, log
+from xpra.client.gui.keyboard_helper import KeyboardHelper, KEYCODE_DEF
 from xpra.gtk.keymap import get_gtk_keymap, get_default_keymap
 from xpra.os_util import gi_import
 from xpra.util.system import is_X11
+from xpra.log import Logger
+
+log = Logger("keyboard", "gtk")
 
 Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
@@ -84,7 +87,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
         return old_hash != self.hash
 
-    def get_full_keymap(self) -> Sequence[tuple[int, str, int, int, int]]:
+    def get_full_keymap(self) -> Sequence[KEYCODE_DEF]:
         return get_gtk_keymap()
 
     def cleanup(self) -> None:
