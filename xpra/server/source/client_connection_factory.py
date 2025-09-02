@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from typing import Dict, Any, Tuple, Type, List
 
 from xpra.server import server_features
@@ -130,7 +131,7 @@ def get_client_connection_class(caps):
                 netlog.info(f"sending hello to {self}:")
                 print_nested_dict(capabilities, print_fn=netlog.info)
             self.send("hello", capabilities)
-            self.hello_sent = True
+            self.hello_sent = monotonic()
 
         def get_info(self) -> Dict[str,Any]:
             def module_name(m):
