@@ -7,6 +7,7 @@
 import sys
 import unittest
 from io import BytesIO
+from time import monotonic
 
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -271,7 +272,7 @@ class SourceMixinsTest(unittest.TestCase):
                     "webcam_encodings"  : ("png", "jpeg"),
                     })
         wm.init_state()
-        wm.hello_sent = True
+        wm.hello_sent = monotonic()
         packets = []
         def send(*args):
             packets.append(args)

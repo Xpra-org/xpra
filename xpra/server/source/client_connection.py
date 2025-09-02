@@ -106,7 +106,7 @@ class ClientConnection(StubSourceMixin):
         return f"{classname}({self.counter} : {self.protocol})"
 
     def init_state(self):
-        self.hello_sent = False
+        self.hello_sent = 0.0
         self.info_namespace = False
         self.share = False
         self.lock = False

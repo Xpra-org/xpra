@@ -35,6 +35,7 @@ class NetworkStateMixin(StubSourceMixin):
         self.bandwidth_limit = 0
         self.client_load = (0,0,0)
         self.client_connection_data : Dict[str,Any] = {}
+        self.hello_sent = 0.0
 
     def cleanup(self) -> None:
         self.cancel_ping_echo_timers()
@@ -58,6 +59,12 @@ class NetworkStateMixin(StubSourceMixin):
     ######################################################################
     # pings:
     def ping(self) -> None:
+        if not self.hello_sent:
+            return
+        now = monotonic()
+        elapsed = now - self.hello_sent
+        if elapsed < 5:
+            return
         self.ping_timer = 0
         #NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000*monotonic())
