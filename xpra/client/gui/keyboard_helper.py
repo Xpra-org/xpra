@@ -6,13 +6,14 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Any
+from typing import Any, TypeAlias
 from collections.abc import Callable, Sequence
 
 from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
 from xpra.util.str_fn import std, csv, Ellipsizer
 from xpra.util.env import envbool
+from xpra.os_util import OSX
 from xpra.common import noop
 from xpra.log import Logger
 
@@ -21,15 +22,29 @@ log = Logger("keyboard")
 LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 DEBUG_KEY_EVENTS = tuple(x.strip().lower() for x in os.environ.get("XPRA_DEBUG_KEY_EVENTS", "").split(",") if x.strip())
 
+KEYCODE_DEF: TypeAlias = tuple[int, str, int, int, int]
 
-def stable_keycodes(keycodes: Sequence[tuple[int, str, int, int, int]]) -> tuple[tuple[int, str, int, int, int]]:
+
+def stable_keycodes(keycodes: Sequence[KEYCODE_DEF]) -> tuple[KEYCODE_DEF]:
     stable = []
     for entry in keycodes:
-        if 0 <= entry[0] < 2**16 and not entry[1].startswith("0x"):
+        if 0 <= entry[0] < 2**16 and not entry[1].startswith("0x") and (not OSX or entry[2] != 128):
             stable.append(entry)
         else:
             log("discarded keycode entry: %s", entry)
     return tuple(stable)
+
+
+def show_compare_keycodes(oldkc: Sequence[KEYCODE_DEF], newkc: Sequence[KEYCODE_DEF]):
+    #if not log.debug_enabled():
+    #    return
+    log.info("show_compare_keycodes(..)")
+    if not oldkc or not newkc or oldkc == newkc:
+        return
+    for i, entry in enumerate(oldkc):
+        newentry = newkc[i] if i < len(newkc) else None
+        if newentry != entry:
+            log.info(f"{entry} -> {newentry}")
 
 
 class KeyboardHelper:
@@ -77,7 +92,7 @@ class KeyboardHelper:
         self.keyboard.set_modifier_mappings(mappings)
 
     def reset_state(self) -> None:
-        self.keycodes: Sequence[tuple[int, str, int, int, int]] = ()
+        self.keycodes: Sequence[KEYCODE_DEF] = ()
         self.x11_keycodes: dict[int, list[str]] = {}
         self.mod_meanings: dict[str, Any] = {}
         self.mod_managed: list[str] = []
@@ -296,7 +311,9 @@ class KeyboardHelper:
         self.model, self.layout, self.layouts, self.variant, self.variants, self.options = self.get_layout_spec()
         self.query_struct = self.get_keymap_spec()
         log(f"query_xkbmap() query_struct={self.query_struct}")
+        lastkeycodes = self.keycodes
         self.keycodes = self.get_full_keymap()
+        show_compare_keycodes(lastkeycodes, self.keycodes)
         log(f"query_xkbmap() keycodes={self.keycodes}")
         self.x11_keycodes = self.keyboard.get_x11_keymap()
         log(f"query_xkbmap() {self.keyboard}.get_x11_keymap()={self.x11_keycodes}")
@@ -360,7 +377,7 @@ class KeyboardHelper:
                 hashadd(k, self.query_struct.get(k))
         self.hash = "/".join([str(x) for x in (self.layout, self.variant, h.hexdigest()) if bool(x)])
 
-    def get_full_keymap(self) -> Sequence[tuple[int, str, int, int, int]]:
+    def get_full_keymap(self) -> Sequence[KEYCODE_DEF]:
         return ()
 
     def get_keymap_properties(self, skip=()) -> dict[str, Any]:
