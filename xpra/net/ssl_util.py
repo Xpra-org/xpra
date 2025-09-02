@@ -204,7 +204,7 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
     # parse protocol:
     import ssl
     if protocol.upper() == "TLS":
-        protocol = "TLS_SERVER" if server_side else "TLS_CLIENT"
+        protocol = "TLS_SERVER" if server_side else "TLSv1_2"
     proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("TLSV", "TLSv"), None)
     if proto is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
