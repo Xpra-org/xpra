@@ -13,6 +13,7 @@ from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
 from xpra.util.str_fn import std, csv, Ellipsizer
 from xpra.util.env import envbool
+from xpra.os_util import OSX
 from xpra.common import noop
 from xpra.log import Logger
 
@@ -20,6 +21,16 @@ log = Logger("keyboard")
 
 LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 DEBUG_KEY_EVENTS = tuple(x.strip().lower() for x in os.environ.get("XPRA_DEBUG_KEY_EVENTS", "").split(",") if x.strip())
+
+
+def stable_keycodes(keycodes) -> tuple:
+    stable = []
+    for entry in keycodes:
+        if 0 <= entry[0] < 2**16 and not entry[1].startswith("0x") and (not OSX or entry[2] != 128):
+            stable.append(entry)
+        else:
+            log("discarded keycode entry: %s", entry)
+    return tuple(stable)
 
 
 class KeyboardHelper:
@@ -336,7 +347,7 @@ class KeyboardHelper:
         def hashadd(v) -> None:
             h.update(("/%s" % str(v)).encode("utf8"))
 
-        for x in (self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):
+        for x in (self.mod_meanings, self.mod_pointermissing, stable_keycodes(self.keycodes), self.x11_keycodes):
             hashadd(x)
         if self.query_struct:
             # flatten the dict in a predicatable order:
