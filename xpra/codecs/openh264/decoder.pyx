@@ -207,8 +207,7 @@ cdef class Decoder:
             yuv[2][:uvstride*(height//2)],
             ]
         log(f"openh264 decoded {src_len:8} bytes into {width}x{height} YUV420P in {int((end-start)*1000):3}ms")
-        full_range = options.boolget("full-range")
-        return ImageWrapper(0, 0, self.width, self.height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3, full_range=full_range)
+        return ImageWrapper(0, 0, self.width, self.height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3)
 
 
 def selftest(full=False):
