@@ -205,7 +205,7 @@ def parse_ssl_verify_mask(verify_flags: str) -> int:
 def parse_ssl_protocol(protocol: str, server_side=True):
     import ssl
     if protocol.lower() in ("tls", "auto"):
-        return ssl.PROTOCOL_TLS_SERVER if server_side else ssl.PROTOCOL_TLS_CLIENT
+        return ssl.PROTOCOL_TLS_SERVER if server_side else ssl.PROTOCOL_TLSv1_2
     proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("TLSV", "TLSv"), None)
     if proto is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
