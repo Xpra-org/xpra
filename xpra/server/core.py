@@ -1349,6 +1349,8 @@ class ServerCore(ServerBaseClass):
         if proto in self._potential_protocols:
             if not proto.is_closed():
                 self._log_disconnect(proto, "Connection lost")
+                for extra in packet[1:]:
+                    self._log_disconnect(proto, " %s", extra)
             self._potential_protocols.remove(proto)
         self.cleanup_protocol(proto)
 
