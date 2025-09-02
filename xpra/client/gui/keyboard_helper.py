@@ -22,6 +22,16 @@ LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 DEBUG_KEY_EVENTS = tuple(x.strip().lower() for x in os.environ.get("XPRA_DEBUG_KEY_EVENTS", "").split(",") if x.strip())
 
 
+def stable_keycodes(keycodes: Sequence[tuple[int, str, int, int, int]]) -> tuple[tuple[int, str, int, int, int]]:
+    stable = []
+    for entry in keycodes:
+        if 0 <= entry[0] < 2**16 and not entry[1].startswith("0x"):
+            stable.append(entry)
+        else:
+            log("discarded keycode entry: %s", entry)
+    return tuple(stable)
+
+
 class KeyboardHelper:
 
     def __init__(self, net_send: Callable, keyboard_sync=True,
@@ -340,7 +350,7 @@ class KeyboardHelper:
         for name, x in {
             "mod-meanings": self.mod_meanings,
             "mod-pointermissing": self.mod_pointermissing,
-            "keycodes": self.keycodes,
+            "keycodes": stable_keycodes(self.keycodes),
             "x11-keycodes": self.x11_keycodes,
         }.items():
             hashadd(name, x)
