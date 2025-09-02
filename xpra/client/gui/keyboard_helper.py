@@ -24,6 +24,17 @@ def add_xkbmap_legacy_prefix(props):
     return dict((f"xkbmap_{k}", v) for k, v in props.items())
 
 
+def stable_keycodes(keycodes):
+    stable = []
+    for entry in keycodes:
+        if 0 <= entry[0] < 2**16 and not entry[1].startswith("0x") and (not OSX or entry[2] != 128):
+            stable.append(entry)
+        else:
+            log("discarded keycode entry: %s", entry)
+    return tuple(stable)
+
+
+
 class KeyboardHelper:
 
     def __init__(self, net_send:Callable, keyboard_sync=True,
@@ -322,7 +333,7 @@ class KeyboardHelper:
         h = hashlib.sha256()
         def hashadd(v):
             h.update(("/%s" % str(v)).encode("utf8"))
-        for x in (self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):
+        for x in (self.mod_meanings, self.mod_pointermissing, stable_keycodes(self.keycodes), self.x11_keycodes):
             hashadd(x)
         if self.query_struct:
             #flatten the dict in a predicatable order:
