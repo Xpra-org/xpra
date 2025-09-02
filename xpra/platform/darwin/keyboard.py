@@ -8,6 +8,7 @@ import os
 from collections.abc import Callable, Sequence
 
 from xpra.platform.keyboard_base import KeyboardBase, log
+from xpra.util.str_fn import Ellipsizer
 
 # from xpra.os_util import gi_import
 # Gdk = gi_import("Gdk")
@@ -167,7 +168,7 @@ class Keyboard(KeyboardBase):
             code = APPLE_LAYOUTS.get(current_keyboard.split(".")[-1])
             log("get_layout_spec() current_keyboard=%s, code=%s", current_keyboard, code)
             all_keyboards = text_input_context.keyboardInputSources()
-            log("get_layout_spec() other keyboards=%s", repr(all_keyboards))
+            log("get_layout_spec() other keyboards=%s", Ellipsizer(all_keyboards))
             if code:
                 layout = code
             if all_keyboards:
