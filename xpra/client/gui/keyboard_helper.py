@@ -333,15 +333,21 @@ class KeyboardHelper:
         import hashlib
         h = hashlib.sha256()
 
-        def hashadd(v) -> None:
+        def hashadd(name: str, v) -> None:
+            log("hashadd(%r, %s)", name, Ellipsizer(v))
             h.update(f"/%{v}".encode("utf8"))
 
-        for x in (self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):
-            hashadd(x)
+        for name, x in {
+            "mod-meanings": self.mod_meanings,
+            "mod-pointermissing": self.mod_pointermissing,
+            "keycodes": self.keycodes,
+            "x11-keycodes": self.x11_keycodes,
+        }.items():
+            hashadd(name, x)
         if self.query_struct:
             # flatten the dict in a predicatable order:
             for k in sorted(self.query_struct.keys()):
-                hashadd(self.query_struct.get(k))
+                hashadd(k, self.query_struct.get(k))
         self.hash = "/".join([str(x) for x in (self.layout, self.variant, h.hexdigest()) if bool(x)])
 
     def get_full_keymap(self) -> Sequence[tuple[int, str, int, int, int]]:
