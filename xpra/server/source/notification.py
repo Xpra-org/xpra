@@ -33,6 +33,7 @@ class NotificationConnection(StubClientConnection):
     def init_state(self) -> None:
         self.send_notifications: bool = False
         self.notification_callbacks: dict[int, Callable] = {}
+        self.hello_sent = 0.0
 
     def parse_client_caps(self, c: typedict) -> None:
         if not BACKWARDS_COMPATIBLE:

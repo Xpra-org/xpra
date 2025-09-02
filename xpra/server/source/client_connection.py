@@ -99,7 +99,7 @@ class ClientConnection(StubClientConnection):
         return f"{classname}({self.counter} : {self.protocol})"
 
     def init_state(self) -> None:
-        self.hello_sent = False
+        self.hello_sent = 0.0
         self.share = False
         self.lock = False
         self.client_control_commands: Sequence[str] = ()
@@ -275,7 +275,7 @@ class ClientConnection(StubClientConnection):
             "connection_time": int(self.connection_time),
             "elapsed_time": int(monotonic() - self.connection_time),
             "counter": self.counter,
-            "hello-sent": self.hello_sent,
+            "hello-sent": bool(self.hello_sent),
             "ssh-auth-sock": self.ssh_auth_sock,
             "packet-types": self.client_packet_types,
             "control-commands": self.client_control_commands,
