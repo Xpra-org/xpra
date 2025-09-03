@@ -16,7 +16,7 @@ from xpra.common import FULL_INFO, NotificationID, SizedBuffer
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
-from xpra.util.env import envint, envbool, first_time
+from xpra.util.env import envint, envbool, first_time, envfloat
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -26,6 +26,8 @@ log = Logger("audio")
 NEW_STREAM_SAMPLE = os.environ.get("XPRA_NEW_STREAM_SAMPLE", "bell.wav")
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 NEW_STREAM_SOUND_STOP = envint("XPRA_NEW_STREAM_SOUND_STOP", 20)
+VOLUME = envfloat("XPRA_NEW_STREAM_VOLUME", 0.1)  # 0.0 to 1.0
+assert 0 < VOLUME < 2
 
 
 class FakeSink:
@@ -306,6 +308,7 @@ class AudioConnection(StubClientConnection):
             "filesrc", f"location={sample}",
             "!", "decodebin",
             "!", "audioconvert",
+            "!", f"volume volume={VOLUME}",
             "!", "autoaudiosink",
         ]
         cmd_str = " ".join(cmd)
