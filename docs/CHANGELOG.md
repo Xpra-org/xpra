@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.3] 2025-08-30
+## [6.3.3] 2025-09-03
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/0aa7eb0ff2c207bea08ce25ed9a4877f5e1b493e)
     * [`run_scaled` script should use default python interpreter](https://github.com/Xpra-org/xpra/commit/fbc5c8a141eafe0ee775143ead2bcaa7d3d9bb1e)
@@ -12,6 +12,7 @@
     * [`/Library/` path requires root](https://github.com/Xpra-org/xpra/commit/51d61d8fe5091d44edce3df0adf029ffef08845e)
     * [examples and tools missed in path update](https://github.com/Xpra-org/xpra/commit/ab0d1d3bb68da6dfaeefe6a54622f7fb8fb26348)
     * [`pyproject.toml` `dependencies` cause `py2app` to fail](https://github.com/Xpra-org/xpra/commit/5465aeac491401414c6b18571c4b8bd2acc0323f)
+    * [ignore spurious keymap changes](https://github.com/Xpra-org/xpra/commit/77c7c9dc4fdfa84ed47f16e8733ed49f33483e5e)
 * Major:
     * [focus breaks after 25 days or so](https://github.com/Xpra-org/xpra/commit/c56c7f054eba9672b9e13d7b474fb1958600a93d)
     * [focus delay issues](https://github.com/Xpra-org/xpra/commit/4d69fcefe54ad8f3a904064d4a27ad98e6d874b1)
@@ -26,6 +27,7 @@
     * [Gtk IconTheme lookup could cause race condition errors](https://github.com/Xpra-org/xpra/commit/18f6ec5e3165bd173f398e66f7198304c9f5d7a6)
     * [`libproc` error when the `XRes` bindings are not available](https://github.com/Xpra-org/xpra/commit/8df205d1cec7d5566d168f7edccfaf2807975d9d)
     * [only use `kill` signal when we trust the pid value](https://github.com/Xpra-org/xpra/commit/bb673a07da4880ffdc2c392ef885800cc5490ce3)
+    * [OpenGL compatibility fix](https://github.com/Xpra-org/xpra/commit/081f77610feeee1b54b0eb5e6d8665ddbc93c247)
 * Minor:
     * [distinguish client session running on a different display](https://github.com/Xpra-org/xpra/commit/86ffce4cb1359aebb5cc9704c72ecbe857af008d)
     * [map `kitty` to `text` content type](https://github.com/Xpra-org/xpra/commit/5cdbb33d07cc994633fcabef7250b9e04b04602d)
@@ -39,11 +41,14 @@
     * [reset clipboard incremental data on timeout](https://github.com/Xpra-org/xpra/commit/b88c381b5561cfed3f14a810e667f78a43ae29a1)
     * [ensure that the window's XID is set as early as possible](https://github.com/Xpra-org/xpra/commit/0f5d889bcec3e88b20a59ba0f4e80be453b2bf60)
     * [incorrect double-click settings may be used](https://github.com/Xpra-org/xpra/commit/286836c1bd98ac450ca5363eebf6d5237f2eeac3)
+    * [bidirectional mmap backwards compatibility](https://github.com/Xpra-org/xpra/commit/732f827822870e13720a0b8e2eb48748afc24bb5)
 * Network:
-    * [don't retry `ssl` connections forever](https://github.com/Xpra-org/xpra/commit/8ce47372d3802b873bb8b727d63921ad48d1be26)
+    * [`SSL` connection issues: downgrade to TLS v1.2](https://github.com/Xpra-org/xpra/commit/cf42cfb6b85893500ad6fd7382d2fa2a2fce84cc)
+    * [don't retry `SSL` connections forever](https://github.com/Xpra-org/xpra/commit/8ce47372d3802b873bb8b727d63921ad48d1be26)
     * [support connecting to X11 displays via TCP](https://github.com/Xpra-org/xpra/commit/f76f2e268abab50b9bda4e16ced8ad15e711c012)
     * [abstract socket filename errors with remote displays](https://github.com/Xpra-org/xpra/commit/393b7c20f75a833e66dccfadbe8a2b597f8a0746)
     * [MS Windows parsing errors with remote displays](https://github.com/Xpra-org/xpra/commit/c7c555cafb7107f26610036262e3f9d3ab348301)
+    * [early ping packets could cause connection to drop](https://github.com/Xpra-org/xpra/commit/98a37511cd10dd0fb6fcfb436ae34fd368722848)
 * Cosmetic:
     * [potentially misleading ssl validation error message](https://github.com/Xpra-org/xpra/commit/7b1e1e48be3d05c965c66cf2d406df12baddba3b)
     * [show correct test name in messages](https://github.com/Xpra-org/xpra/commit/c92484c0c78b7ed966bac79c98a21f3af6acfabc)
@@ -51,6 +56,9 @@
     * [add env var to override the 'new-stream-sound'](https://github.com/Xpra-org/xpra/commit/2ab4996ddc43b9f7f53e91518aacee92b547ca30)
     * [documentation formatting](https://github.com/Xpra-org/xpra/commit/3e1b81b08ce768c02cf95e2b3af23ec70a6b1f27)
     * [remove unused logging category](https://github.com/Xpra-org/xpra/commit/6e1f84089ffd4ee5b4920f5fd0c150df7d706140)
+    * [text entry example incomplete](https://github.com/Xpra-org/xpra/commit/72ae2a0f10ad1c5751a803484ad5f0de06906431)
+    * [Gtk deprecation warnings](https://github.com/Xpra-org/xpra/commit/f62797c21620f11a4f3b8fdcca0e1163fc20d8ac)
+    * [log more disconnection details](https://github.com/Xpra-org/xpra/commit/e6a30a154e27e94e9287226f14267ffc9f93e14c)
 
 ## [6.3.2] 2025-07-08
 * Platforms, build and packaging:

@@ -1009,7 +1009,7 @@ fi
 
 
 %changelog
-* Sat Aug 30 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
+* Wed Sep 03 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warningg
    `run_scaled` script should use default python interpreterg
@@ -1021,6 +1021,7 @@ fi
    `/Library/` path requires root
    examples and tools missed in path update
    `pyproject.toml` `dependencies` cause `py2app` to fail
+   ignore spurious keymap changes
 - Major:
    focus breaks after 25 days or sog
    focus delay issuesg
@@ -1035,6 +1036,7 @@ fi
    Gtk IconTheme lookup could cause race condition errorsg
    `libproc` error when the `XRes` bindings are not availableg
    only use `kill` signal when we trust the pid valueg
+   OpenGL compatibility fix
 - Minor:
    distinguish client session running on a different displayg
    map `kitty` to `text` content typeg
@@ -1048,18 +1050,24 @@ fi
    reset clipboard incremental data on timeoutg
    ensure that the window's XID is set as early as possibleg
    incorrect double-click settings may be usedg
+   bidirectional mmap backwards compatibility
 - Network:
-   don't retry `ssl` connections foreverg
+   `SSL` connection issues: downgrade to TLS v1.2
+   don't retry `SSL` connections foreverg
    support connecting to X11 displays via TCPg
    abstract socket filename errors with remote displaysg
    MS Windows parsing errors with remote displaysg
+   early ping packets could cause connection to drop
 - Cosmetic:
    potentially misleading ssl validation error messageg
    show correct test name in messagesg
    https linter warningsg
    add env var to override the 'new-stream-sound'g
    documentation formattingg
-   remove unused logging categoryg
+   remove unused logging category
+   text entry example incomplete
+   Gtk deprecation warnings
+   log more disconnection details
 
 * Tue Jul 08 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
 - Platforms, build and packaging:
