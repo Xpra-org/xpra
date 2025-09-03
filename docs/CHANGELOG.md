@@ -1,9 +1,10 @@
 # Changelog
 
-## [6.4] 2025-08-21
+## [6.4] 2025-09-03
 * Platforms, build and packaging:
   * [major modularization](https://github.com/Xpra-org/xpra/issues/4523)
   * [Gtk-free server](https://github.com/Xpra-org/xpra/issues/3871)
+  * [MacOS seamless X11 server](https://github.com/Xpra-org/xpra/issues/4659)
   * [faster unit tests](https://github.com/Xpra-org/xpra/issues/3680#issuecomment-3097000167)
   * [memory aligned allocations on MS Windows](https://github.com/Xpra-org/xpra/issues/4620)
   * [faster cython bindings](https://github.com/Xpra-org/xpra/issues/4617), [common utility module](https://github.com/Xpra-org/xpra/issues/4592)

@@ -1026,8 +1026,37 @@ fi
 
 
 %changelog
-* Mon Mar 31 2025 Antoine Martin <antoine@xpra.org> 6.4-10
-- TODO
+* Wed Sep 03 2025 Antoine Martin <antoine@xpra.org> 6.4-10
+- Platforms, build and packaging:
+   major modularization
+   Gtk-free server
+   MacOS seamless X11 server
+   faster unit tests
+   memory aligned allocations on MS Windows
+   faster cython bindings, common utility module
+   pulseaudio for containers
+   remove `python-avahi` mDNS backend
+   deprecate legacy features
+- Encodings:
+   nvenc AV1 encoder
+   aom AV1 decoder
+   handle 8-bit pixel depth with mmap transfers
+   convert JpegXL background images for the html5 client
+   encoder server redundancy
+- Features:
+   emulate middle click button
+   make per-window menu more easily accessible
+   record correct pid for daemonized processes
+   configurable window grouping
+   blend window border with OpenGL backend
+- Network:
+   stronger packet data types
+   honour `IdentityFile` and `IdentitiesOnly` in ssh configs
+   ssh host key verification for non-standard ports
+- Configuration:
+   configure refresh rate
+   `fakescreenfps` when supported
+
 * Tue Mar 04 2025 Antoine Martin <antoine@xpra.org> 6.3-10
 - Platforms, build and packaging:
    rewritten MS Windows build script

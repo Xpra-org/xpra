@@ -1,7 +1,35 @@
 xpra (6.4-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+    major modularization
+    Gtk-free server
+    MacOS seamless X11 server
+    faster unit tests
+    memory aligned allocations on MS Windows
+    faster cython bindings, common utility module
+    pulseaudio for containers
+    remove `python-avahi` mDNS backend
+    deprecate legacy features
+  * Encodings:
+    nvenc AV1 encoder
+    aom AV1 decoder
+    handle 8-bit pixel depth with mmap transfers
+    convert JpegXL background images for the html5 client
+    encoder server redundancy
+  * Features:
+    emulate middle click button
+    make per-window menu more easily accessible
+    record correct pid for daemonized processes
+    configurable window grouping
+    blend window border with OpenGL backend
+  * Network:
+    stronger packet data types
+    honour `IdentityFile` and `IdentitiesOnly` in ssh configs
+    ssh host key verification for non-standard ports
+  * Configuration:
+    configure refresh rate
+   `fakescreenfps` when supported
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 31 Mar 2025 21:45:48 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 03 Sep 2025 12:35:52 +0700
 
 xpra (6.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
