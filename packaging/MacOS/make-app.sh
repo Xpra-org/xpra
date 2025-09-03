@@ -17,6 +17,10 @@ STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
+ARCH="${ARCH:=`arch`}"
+if [ "${ARCH}" == "i386" ]; then
+  ARCH="x86_64"
+fi
 
 DO_TESTS="${DO_TESTS:-0}"
 
@@ -165,6 +169,7 @@ git checkout Info.plist
 sed -i '' -e "s+%VERSION%+$VERSION+g" "./Info.plist"
 sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "./Info.plist"
 sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "./Info.plist"
+sed -i '' -e "s+%ARCH%+$ARCH+g" "./Info.plist"
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	sed -i '' -e "s+Xpra+Xpra-Client+g" "./Info.plist"
 	sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" "./Info.plist"
