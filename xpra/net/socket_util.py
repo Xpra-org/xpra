@@ -20,7 +20,7 @@ from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id,
 from xpra.util.io import path_permission_info, umask_context, is_writable
 from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.parsing import parse_simple_dict
-from xpra.util.env import envint, envbool, osexpand, SilenceWarningsContext
+from xpra.util.env import envint, envbool, SilenceWarningsContext
 from xpra.util.thread import start_thread
 
 # pylint: disable=import-outside-toplevel
@@ -656,6 +656,14 @@ def normalize_local_display_name(local_display_name: str) -> str:
     return local_display_name
 
 
+def can_use_socket_path(path: str, uid: int, gid: int) -> bool:
+    sockdir = os.path.dirname(path)
+    if os.path.exists(sockdir):
+        return is_writable(sockdir, uid, gid)
+    # recurse until we find a directory:
+    return can_use_socket_path(sockdir, uid, gid)
+
+
 def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                         display_name: str, clobber,
                         mmap_group: str = "auto", socket_permissions: str = "600", username: str = "",
@@ -679,7 +687,6 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
-    homedir = osexpand("~", username, uid, gid)
     defs: dict[Any, dict] = {}
     try:
         sockpaths = {}
@@ -694,12 +701,12 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                 options = parse_simple_dict(parts[1])
             if sockpath in ("auto", "noabstract"):
                 assert display_name is not None
+                # norm_socket_paths is typically used for sockets in $HOME/.xpra/
                 for path in dotxpra.norm_socket_paths(display_name):
-                    sockdir = os.path.dirname(path)
-                    if not is_writable(sockdir, uid, gid) and sockdir.startswith(homedir):
-                        log.warn(f"Warning: skipped read-only socket path {path!r}")
-                    else:
+                    if can_use_socket_path(path, uid, gid):
                         sockpaths[path] = dict(options)
+                    else:
+                        log.info(f"insufficient permissions to use socket path {path!r}")
                 if session_dir and not WIN32:
                     path = os.path.join(session_dir, "socket")
                     sockpaths[path] = dict(options)
