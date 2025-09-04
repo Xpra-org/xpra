@@ -26,7 +26,7 @@ dnfinstall() {
   # alternative:
   # sudo dnf install -y "https://download1.rpmfusion.org/free/${distro}/rpmfusion-free-release-${MAJOR_VERSION}.noarch.rpm"
   echo "downloading the repository file"
-  sudo wget -O "/etc/yum.repos.d/${REPO}.repo" "${GITHUB_REPOS}/$DISTRO/${REPO}.repo"
+  sudo curl -o "/etc/yum.repos.d/${REPO}.repo" "${GITHUB_REPOS}/$DISTRO/${REPO}.repo"
   echo "installing 'xpra'"
   sudo dnf install -y xpra
 }
@@ -75,10 +75,10 @@ fi
 
 if [ "${ID}" == "debian" ] || [ "${ID}" == "ubuntu" ]; then
   echo "installing xpra.org gpg key"
-  sudo wget -O "/usr/share/keyrings/xpra.asc" "https://xpra.org/xpra.asc"
+  sudo curl -o "/usr/share/keyrings/xpra.asc" "https://xpra.org/xpra.asc"
   echo "installing xpra.org repository file"
   VERSION_CODENAME=$(grep -e "^VERSION_CODENAME=" /etc/os-release | awk -F= '{print $2}' | sed 's/"//g')
-  sudo wget -O "/etc/apt/sources.list.d/${REPO}.sources" "${GITHUB_REPOS}/${VERSION_CODENAME}/${REPO}.sources"
+  sudo curl -o "/etc/apt/sources.list.d/${REPO}.sources" "${GITHUB_REPOS}/${VERSION_CODENAME}/${REPO}.sources"
   sudo apt-get update
   sudo apt-get install -y xpra
   exit 0
