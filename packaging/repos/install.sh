@@ -29,6 +29,8 @@ dnfinstall() {
   sudo curl -o "/etc/yum.repos.d/${REPO}.repo" "${GITHUB_REPOS}/$DISTRO/${REPO}.repo"
   echo "installing 'xpra'"
   sudo dnf install -y xpra
+  # if an older version was installed, upgrade it:
+  sudo dnf update -y
 }
 
 if [ "${ID}" == "fedora" ]; then
