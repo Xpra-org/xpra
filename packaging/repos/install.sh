@@ -29,6 +29,7 @@ dnfinstall() {
   sudo curl -o "/etc/yum.repos.d/${REPO}.repo" "${GITHUB_REPOS}/$DISTRO/${REPO}.repo"
   echo "installing 'xpra'"
   sudo dnf install -y xpra
+  sudo dnf install -y xpra-html5
   # if an older version was installed, upgrade it:
   sudo dnf update -y
 }
@@ -83,6 +84,7 @@ if [ "${ID}" == "debian" ] || [ "${ID}" == "ubuntu" ]; then
   sudo curl -o "/etc/apt/sources.list.d/${REPO}.sources" "${GITHUB_REPOS}/${VERSION_CODENAME}/${REPO}.sources"
   sudo apt-get update
   sudo apt-get install -y xpra
+  sudo apt-get install -y xpra-html5
   exit 0
 fi
 
