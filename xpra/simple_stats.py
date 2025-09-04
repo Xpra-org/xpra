@@ -152,7 +152,7 @@ def get_list_stats(in_values, show_percentile=(5, 8, 9), show_dev=False):
             #geometric mean
             try:
                 v = int(math.pow(p, 1.0/counter))
-            except OverflowError:
+            except (ValueError, OverflowError):
                 v = find_invpow(p, counter)
             lstats["gm"] = v
         if h!=0:
