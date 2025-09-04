@@ -165,16 +165,21 @@ fi
 
 echo
 echo "*******************************************************************************"
-echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
-git checkout Info.plist
-sed -i '' -e "s+%VERSION%+$VERSION+g" "./Info.plist"
-sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "./Info.plist"
-sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "./Info.plist"
-sed -i '' -e "s+%ARCH%+$ARCH+g" "./Info.plist"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	sed -i '' -e "s+Xpra+Xpra-Client+g" "./Info.plist"
-	sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" "./Info.plist"
-fi
+echo "modifying Info.plist files with:"
+echo " VERSION=\"${VERSION}\" REVISION=\"${REVISION}${REV_MOD}\""
+echo " BUILDNO=\"${BUILDNO}\" ARCH=\"{$ARCH}\""
+for plist in "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist"; do
+  echo "modifying $plist"
+  git checkout $plist
+  sed -i '' -e "s+%VERSION%+$VERSION+g" $plist
+  sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" $plist
+  sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" $plist
+  sed -i '' -e "s+%ARCH%+$ARCH+g" $plist
+  if [ "${CLIENT_ONLY}" == "1" ]; then
+    sed -i '' -e "s+Xpra+Xpra-Client+g" $plist
+    sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" $plist
+  fi
+done
 
 echo
 echo "*******************************************************************************"
@@ -461,4 +466,5 @@ echo "Done"
 echo "*******************************************************************************"
 echo
 
-git checkout Info.plist
+# restore files we modified:
+git checkout "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist"
