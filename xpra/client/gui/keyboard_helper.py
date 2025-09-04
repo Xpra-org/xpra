@@ -38,7 +38,7 @@ def stable_keycodes(keycodes: Sequence[KEYCODE_DEF]) -> tuple[KEYCODE_DEF]:
 def show_compare_keycodes(oldkc: Sequence[KEYCODE_DEF], newkc: Sequence[KEYCODE_DEF]):
     #if not log.debug_enabled():
     #    return
-    log.info("show_compare_keycodes(..)")
+    log("show_compare_keycodes(..)")
     if not oldkc or not newkc or oldkc == newkc:
         return
     for i, entry in enumerate(oldkc):
