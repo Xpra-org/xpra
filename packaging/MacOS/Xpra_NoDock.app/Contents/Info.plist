@@ -33,7 +33,7 @@
 		<string>%ARCH%</string>
 	</array>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.12</string>
+	<string>12.0</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSPrincipalClass</key>
