@@ -209,6 +209,7 @@ server_ENABLED = DEFAULT
 rfb_ENABLED = DEFAULT
 quic_ENABLED = DEFAULT
 ssh_ENABLED = DEFAULT
+ssl_ENABLED = DEFAULT
 http_ENABLED = DEFAULT
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_exists("libsystemd")
@@ -420,7 +421,7 @@ SWITCHES += [
     "rebuild",
     "docs", "pandoc_lua",
     "annotate", "warn", "strict", "Os",
-    "shadow", "proxy", "rfb", "quic", "http", "ssh",
+    "shadow", "proxy", "rfb", "quic", "http", "ssh", "ssl",
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
     "win32_tools", "websockets_browser_cookie",
@@ -2885,6 +2886,7 @@ toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(quic_ENABLED, "xpra.net.asyncio")
 toggle_packages(quic_ENABLED, "xpra.net.quic")
 toggle_packages(ssh_ENABLED, "xpra.net.ssh")
+toggle_packages(ssl_ENABLED, "xpra.net.ssl")
 toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 toggle_packages(qrencode_ENABLED, "xpra.net.qrcode")
@@ -2965,6 +2967,8 @@ if cythonize_more_ENABLED:
         ax("xpra.net.rfb")
     if ssh_ENABLED:
         ax("xpra.net.ssh")
+    if ssl_ENABLED:
+        ax("xpra.net.ssl")
     if websockets_ENABLED:
         ax("xpra.net.websockets.headers")
         ax("xpra.net.websockets")

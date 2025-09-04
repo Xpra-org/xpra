@@ -223,7 +223,7 @@ class ServerCore(ServerBaseClass):
     def init_ssl(self, opts) -> None:
         self.ssl_mode = opts.ssl
         try:
-            from xpra.net.ssl_util import get_ssl_attributes
+            from xpra.net.ssl.file import get_ssl_attributes
         except ImportError as e:
             netlog("init_ssl(..) no ssl: %s", e)
         else:
@@ -872,7 +872,7 @@ class ServerCore(ServerBaseClass):
         ssllog("ssl_wrap_socket(%s, %s, %s)", socktype, sock, socket_options)
         kwargs = self.get_ssl_socket_options(socket_options)
         try:
-            from xpra.net.ssl_util import ssl_wrap_socket
+            from xpra.net.ssl.socket import ssl_wrap_socket
             ssl_sock = ssl_wrap_socket(sock, **kwargs)
             ssllog("_ssl_wrap_socket(%s, %s)=%s", sock, kwargs, ssl_sock)
             if ssl_sock is None:

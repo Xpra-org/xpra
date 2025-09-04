@@ -555,7 +555,8 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
 
 def get_ssl_options(desc, opts, cmdline) -> dict[str, Any]:
     try:
-        from xpra.net.ssl_util import load_ssl_options, get_ssl_attributes
+        from xpra.net.ssl.file import get_ssl_attributes
+        from xpra.net.ssl.file import load_ssl_options
     except ImportError as e:
         raise InitExit(ExitCode.UNSUPPORTED, f"ssl support is not available: {e}")
     port = desc["port"]

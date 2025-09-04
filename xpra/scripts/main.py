@@ -1415,7 +1415,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
         except InitExit as e:
             retry = display_desc.get("retry", True)
             if not retry:
-                from xpra.net.ssl_util import ssl_retry
+                from xpra.net.ssl.socket import ssl_retry
                 ssllog = Logger("ssl")
                 mods = ssl_retry(e, opts.ssl_ca_certs)
                 ssllog("do_setup_connection() ssl_retry(%s, %s)=%s", e, opts.ssl_ca_certs, mods)
@@ -2401,7 +2401,7 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
                 app.show_progress(80, "connecting to server")
                 break
             except InitExit as e:
-                from xpra.net.ssl_util import ssl_retry
+                from xpra.net.ssl.socket import ssl_retry
                 mods = ssl_retry(e, opts.ssl_ca_certs)
                 if mods:
                     for k, v in mods.items():
@@ -4494,7 +4494,9 @@ def get_remote_proxy_command_output(options, args: list[str], cmdline: list[str]
 
 
 def setup_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
-    from xpra.net.ssl_util import gen_ssl_cert, save_ssl_config_file, strip_cert
+    from xpra.net.ssl.file import strip_cert
+    from xpra.net.ssl.file import gen_ssl_cert
+    from xpra.net.ssl.file import save_ssl_config_file
     if args:
         disp, data = get_remote_proxy_command_output(options, args, cmdline, "setup-ssl")
         if not data:
@@ -4511,7 +4513,10 @@ def setup_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
 
 
 def show_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
-    from xpra.net.ssl_util import find_ssl_cert, strip_cert, KEY_FILENAME, CERT_FILENAME
+    from xpra.net.ssl.file import strip_cert
+    from xpra.net.ssl.file import find_ssl_cert
+    from xpra.net.ssl.common import CERT_FILENAME
+    from xpra.net.ssl.common import KEY_FILENAME
     if args:
         _disp, data = get_remote_proxy_command_output(options, args, cmdline, "show-ssl")
         if not data:

@@ -130,7 +130,7 @@ def connect_to_tcp(display_desc: dict[str, Any]):
 
     if dtype in ("ssl", "wss"):
         raw_sock = sock
-        from xpra.net.ssl_util import ssl_handshake, ssl_wrap_socket
+        from xpra.net.ssl.socket import ssl_handshake, ssl_wrap_socket
         # convert option names to function arguments:
         ssl_options = {k.replace("-", "_"): v for k, v in display_desc.get("ssl-options", {}).items()}
         try:
