@@ -452,29 +452,27 @@ __osx_open_signal = False
 OPEN_SIGNAL_WAIT = envint("XPRA_OSX_OPEN_SIGNAL_WAIT", 500)
 
 
-def add_open_handlers(open_file_cb: Callable, open_url_cb: Callable) -> None:
+def add_open_handlers(open_file_cb: Callable[[str], None], open_url_cb: Callable[[str], None]) -> None:
 
-    def open_URL(url) -> bool:
+    def open_URL(url: str) -> None:
         global __osx_open_signal
         __osx_open_signal = True
         log("open_URL(%s)", url)
         GLib.idle_add(open_url_cb, url)
-        return True
 
-    def open_file(_, filename: str, *args) -> bool:
+    def open_file(_, filename: str, *args) -> None:
         global __osx_open_signal
         __osx_open_signal = True
         log("open_file(%s, %s)", filename, args)
         GLib.idle_add(open_file_cb, filename)
-        return True
 
     register_file_handler(open_file)
     register_URL_handler(open_URL)
 
 
-def wait_for_open_handlers(show_cb: Callable,
-                           open_file_cb: Callable,
-                           open_url_cb: Callable,
+def wait_for_open_handlers(show_cb: Callable[[], None],
+                           open_file_cb: Callable[[str], None],
+                           open_url_cb: Callable[[str], None],
                            delay: int = OPEN_SIGNAL_WAIT) -> None:
     add_open_handlers(open_file_cb, open_url_cb)
 
@@ -497,7 +495,7 @@ def register_file_handler(handler: Callable) -> None:
         log.estr(e)
 
 
-def register_URL_handler(handler: Callable) -> None:
+def register_URL_handler(handler: Callable[[str], None]) -> None:
     log("register_URL_handler(%s)", handler)
 
     class GURLHandler(NSObject):
