@@ -28,6 +28,10 @@
 	<string>xpra</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright 2012-2021 Antoine Martin antoine@xpra.org, GNU General Public License.</string>
+	<key>LSArchitecturePriority</key>
+	<array>
+		<string>%ARCH%</string>
+	</array>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.12</string>
 	<key>LSUIElement</key>
