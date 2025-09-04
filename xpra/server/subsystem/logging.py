@@ -17,7 +17,7 @@ from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes
 from xpra.net.common import Packet
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.log import Logger, set_global_logging_handler
+from xpra.log import Logger, set_global_logging_handler, get_info as get_log_info
 
 log = Logger("server")
 
@@ -65,8 +65,10 @@ class LoggingServer(StubServerMixin):
         }
 
     def get_info(self, _proto):
+        info = get_log_info()
+        info.update(self._features())
         return {
-            LoggingServer.PREFIX: self._features(),
+            LoggingServer.PREFIX: info,
         }
 
     def cleanup_protocol(self, protocol) -> None:

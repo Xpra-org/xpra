@@ -14,7 +14,7 @@ from collections.abc import Callable
 
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.util.child_reaper import get_child_reaper, ProcInfo
-from xpra.common import noop, BACKWARDS_COMPATIBLE
+from xpra.common import noop, BACKWARDS_COMPATIBLE, FULL_INFO
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
@@ -238,7 +238,7 @@ class ChildCommandServer(StubServerMixin):
             "start-env": self.start_env,
         }
         mp = self.menu_provider
-        if mp:
+        if mp and FULL_INFO > 0:
             info.update(
                 {
                     "start-menu": mp.get_menu_data(remove_icons=True, wait=False) or {},

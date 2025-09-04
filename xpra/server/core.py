@@ -10,7 +10,6 @@ import sys
 import errno
 import socket
 import signal
-import platform
 import threading
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
@@ -18,10 +17,7 @@ from types import FrameType
 from typing import Any, NoReturn
 from collections.abc import Callable, Sequence, Iterable
 
-from xpra.util.version import (
-    XPRA_VERSION, XPRA_NUMERIC_VERSION, vparts, version_str, version_compat_check, get_version_info,
-    get_build_info, get_host_info, parse_version,
-)
+from xpra.util.version import XPRA_VERSION, version_str, version_compat_check
 from xpra.scripts.server import deadly_signal
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
@@ -42,10 +38,7 @@ from xpra.net.bytestreams import (
     Connection, SSLSocketConnection, SocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT
 )
-from xpra.net.net_util import (
-    get_network_caps, get_info as get_net_info,
-    import_netifaces, get_all_ips,
-)
+from xpra.net.net_util import get_network_caps, import_netifaces, get_all_ips
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
@@ -53,23 +46,19 @@ from xpra.net.digest import get_salt, gendigest
 from xpra.platform import set_name, threaded_server_init
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
 from xpra.os_util import (
-    force_quit, get_machine_id, POSIX,
-    get_username_for_uid, get_user_uuid, get_hex_uuid, getuid, gi_import,
+    force_quit, POSIX,
+    get_username_for_uid, get_hex_uuid, getuid, gi_import,
 )
-from xpra.util.child_reaper import get_child_reaper
-from xpra.util.system import get_env_info, get_sysconfig_info, register_SIGUSR_signals
+from xpra.util.system import register_SIGUSR_signals
 from xpra.util.io import load_binary_file, find_libexec_command
 from xpra.util.background_worker import add_work_item, quit_worker
 from xpra.util.thread import start_thread
-from xpra.common import (
-    LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS,
-    noop, ConnectionMessage, noerr, init_memcheck, BACKWARDS_COMPATIBLE,
-)
-from xpra.util.pysystem import dump_all_frames, get_frame_info
-from xpra.util.objects import typedict, notypedict, merge_dicts
+from xpra.common import LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS, noop, ConnectionMessage, noerr, init_memcheck
+from xpra.util.pysystem import dump_all_frames
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, nicestr, strtobytes, hexstr
 from xpra.util.env import envint, envbool, envfloat, first_time
-from xpra.log import Logger, get_info as get_log_info
+from xpra.log import Logger
 
 # pylint: disable=import-outside-toplevel
 
@@ -105,15 +94,6 @@ class ClientException(Exception):
     pass
 
 
-def get_thread_info(proto=None) -> dict[Any, Any]:
-    # threads:
-    if proto:
-        info_threads = proto.get_threads()
-    else:
-        info_threads = ()
-    return get_frame_info(info_threads)
-
-
 def force_close_connection(conn) -> None:
     try:
         conn.close()
@@ -128,9 +108,13 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.daemon import DaemonServer
     from xpra.server.subsystem.sessionfiles import SessionFilesServer
     from xpra.server.subsystem.splash import SplashServer
+    from xpra.server.subsystem.id import IDServer
+    from xpra.server.subsystem.info import InfoServer
+    from xpra.server.subsystem.version import VersionServer
     classes: list[type] = [
         GLibServer, PlatformServer, DaemonServer, SessionFilesServer,
         AuthenticatedServer, ControlHandler, SplashServer,
+        IDServer, InfoServer, VersionServer,
     ]
     from xpra.server import features
     if features.mdns:
@@ -166,10 +150,7 @@ class ServerCore(ServerBaseClass):
             bc.__init__(self)
         self.start_time = time()
         self.hello_request_handlers.update({
-            "version": self._handle_hello_request_version,
             "connect_test": self._handle_hello_request_connect_test,
-            "id": self._handle_hello_request_id,
-            "info": self._handle_hello_request_info,
             "screenshot": self._handle_hello_request_screenshot,
         })
         self.uuid = ""
@@ -1502,22 +1483,10 @@ class ServerCore(ServerBaseClass):
             return False
         return handler(proto, caps)
 
-    def _handle_hello_request_version(self, proto, caps: typedict) -> bool:
-        self.send_version_info(proto, caps.boolget("full-version-request", not BACKWARDS_COMPATIBLE))
-        return True
-
     def _handle_hello_request_connect_test(self, proto, caps: typedict) -> bool:
         ctr = caps.strget("connect_test_request")
         response = {"connect_test_response": ctr}
         proto.send_now(Packet("hello", response))
-        return True
-
-    def _handle_hello_request_id(self, proto, _caps: typedict) -> bool:
-        self.send_id_info(proto)
-        return True
-
-    def _handle_hello_request_info(self, proto, _caps: typedict) -> bool:
-        self.send_hello_info(proto)
         return True
 
     def _handle_hello_request_screenshot(self, proto, _caps: typedict) -> bool:
@@ -1545,10 +1514,7 @@ class ServerCore(ServerBaseClass):
         for bc in SERVER_BASES:
             capabilities |= bc.get_caps(self, source)
         capabilities |= get_digest_caps()
-        if source is None or "versions" in source.wants:
-            capabilities |= self.get_minimal_server_info()
         capabilities |= {
-            "version": vparts(XPRA_VERSION, FULL_INFO + 1),
             "start_time": int(self.start_time),
             "current_time": int(now),
             "elapsed_time": int(now - self.start_time),
@@ -1567,177 +1533,21 @@ class ServerCore(ServerBaseClass):
                 capabilities["server-log"] = server_log
         if source and "packet-types" in source.wants:
             capabilities["packet-types"] = PACKET_TYPES
-        if source is None or "versions" in source.wants:
-            capabilities["uuid"] = get_user_uuid()
-            mid = get_machine_id()
-            if mid:
-                capabilities["machine_id"] = mid
         if self.session_name:
             capabilities["session_name"] = self.session_name
         return capabilities
-
-    ######################################################################
-    # info:
-    def send_id_info(self, proto: SocketProtocol) -> None:
-        log("id info request from %s", proto._conn)
-        proto._log_stats = False
-        proto.send_now(Packet("hello", self.get_session_id_info()))
-
-    def get_session_id_info(self) -> dict[str, Any]:
-        # minimal information for identifying the session
-        id_info = {
-            "session-type": self.session_type,
-            "session-name": self.session_name,
-            "uuid": self.uuid,
-            "platform": sys.platform,
-            "pid": os.getpid(),
-            "machine-id": get_machine_id(),
-            "version": XPRA_NUMERIC_VERSION[:FULL_INFO+1],
-        }
-        display = os.environ.get("DISPLAY", "")
-        if display:
-            id_info["display"] = display
-        return id_info
-
-    def send_hello_info(self, proto: SocketProtocol) -> None:
-        # Note: this can be overridden in subclasses to pass arguments to get_ui_info()
-        # (ie: see server_base)
-        if not is_request_allowed(proto, "info"):
-            self.do_send_info(proto, {"error": "`info` requests are not enabled for this connection"})
-            return
-
-        def cb(proto, info) -> None:
-            self.do_send_info(proto, info)
-
-        self.get_all_info(cb, proto)
-
-    def do_send_info(self, proto: SocketProtocol, info: dict[str, Any]) -> None:
-        proto.send_now(Packet("hello", notypedict(info)))
-
-    def get_all_info(self, callback: Callable, proto: SocketProtocol | None = None, *args) -> None:
-        start = monotonic()
-        ui_info: dict[str, Any] = self.get_ui_info(proto, *args)
-        end = monotonic()
-        log("get_all_info: ui info collected in %ims", (end - start) * 1000)
-        start_thread(self._get_info_in_thread, "Info", daemon=True, args=(callback, ui_info, proto, args))
-
-    def _get_info_in_thread(self, callback: Callable, ui_info: dict[str, Any], proto: SocketProtocol, args):
-        log("get_info_in_thread%s", (callback, {}, proto, args))
-        start = monotonic()
-        # this runs in a non-UI thread
-        with log.trap_error("Error during info collection"):
-            info = self.get_info(proto, *args)
-            merge_dicts(ui_info, info)
-        end = monotonic()
-        log("get_all_info: non ui info collected in %ims", (end - start) * 1000)
-        callback(proto, ui_info)
-
-    def get_ui_info(self, _proto: SocketProtocol, *_args) -> dict[str, Any]:
-        # this function is for info which MUST be collected from the UI thread
-        return {}
-
-    def get_thread_info(self, proto: SocketProtocol) -> dict[str, Any]:
-        return get_thread_info(proto)
-
-    def get_minimal_server_info(self) -> dict[str, Any]:
-        return {
-            "session-type": self.session_type,
-            "uuid": self.uuid,
-            "machine-id": get_machine_id(),
-        }
-
-    def get_server_info(self) -> dict[str, Any]:
-        # this function is for non UI thread info
-        now = time()
-        info = {
-            "type": "Python",
-            "python": {"version": parse_version(platform.python_version())[:FULL_INFO + 1]},
-            "start_time": int(self.start_time),
-            "current_time": int(now),
-            "elapsed_time": int(now - self.start_time),
-            "build": self.get_build_info(),
-        }
-        return info
-
-    def get_build_info(self) -> dict[str, Any]:
-        # this function is for non UI thread info
-        info = get_version_info()
-        if FULL_INFO >= 1:
-            info.update(get_build_info())
-        return info
-
-    def get_server_load_info(self) -> dict[str, Any]:
-        if POSIX:
-            try:
-                return {"load": tuple(int(x * 1000) for x in os.getloadavg())}
-            except OSError:
-                log("cannot get load average", exc_info=True)
-        return {}
-
-    def get_server_exec_info(self) -> dict[str, Any]:
-        info: dict[str, Sequence[str] | str | int | dict] = {
-            "argv": sys.argv,
-            "path": sys.path,
-            "exec_prefix": sys.exec_prefix,
-            "executable": sys.executable,
-            "pid": os.getpid(),
-        }
-        logfile = os.environ.get("XPRA_SERVER_LOG", "")
-        if logfile:
-            info["log-file"] = logfile
-        return info
 
     def get_info(self, proto, *_args) -> dict[str, Any]:
         start = monotonic()
         # this function is for non UI thread info
         info = {}
+        for bc in SERVER_BASES:
+            info.update(bc.get_info(self, proto))
+        info["subsystems"] = self.get_subsystems()
 
-        def up(prefix, d) -> None:
-            info[prefix] = d
-
-        authenticated = proto and proto.authenticators
-        full = FULL_INFO > 0 or authenticated
-        if full:
-            si = self.get_server_info()
-            si.update(self.get_server_load_info())
-            si.update(self.get_server_exec_info())
-            if SYSCONFIG:
-                si["sysconfig"] = get_sysconfig_info()
-            si["subsystems"] = self.get_subsystems()
-        else:
-            si = self.get_minimal_server_info()
-        si.update(get_host_info(FULL_INFO or authenticated))
-        up("server", si)
-        if self.session_name:
-            info["session"] = {"name": self.session_name}
-
-        if full:
-            ni = get_net_info()
-            ni |= {
-                "sockets": self.get_socket_info(),
-                # "packet-handlers": GLibPacketHandler.get_info(self),
-                "www": {
-                    "": self._html,
-                    "websocket-upgrade": self.websocket_upgrade,
-                    "dir": self._www_dir or "",
-                    "http-headers-dirs": self._http_headers_dirs or "",
-                },
-            }
-            up("network", ni)
-            up("threads", self.get_thread_info(proto))
-            up("logging", get_log_info())
-            from xpra.platform.info import get_sys_info
-            up("sys", get_sys_info())
-            up("env", get_env_info())
-            info.update(get_child_reaper().get_info())
         end = monotonic()
         log("ServerCore.get_info took %ims", (end - start) * 1000)
         return info
-
-    def get_packet_handlers_info(self) -> dict[str, Any]:
-        return {
-            "default": sorted(self._default_packet_handlers.keys()),
-        }
 
     def get_socket_info(self) -> dict[str, Any]:
         si: dict[str, Any] = {}

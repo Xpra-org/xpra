@@ -24,7 +24,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, strtobytes, nicestr
 from xpra.util.env import envint, envbool
 from xpra.util.version import XPRA_VERSION, vparts
-from xpra.server.core import get_server_info, get_thread_info, proto_crypto_caps
+from xpra.server.core import get_server_info, proto_crypto_caps
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -220,8 +220,7 @@ class ProxyInstance:
     ################################################################################
 
     def get_proxy_info(self, proto) -> dict[str, Any]:
-        sinfo = {"threads": get_thread_info(proto)}
-        sinfo.update(get_server_info())
+        sinfo = get_server_info()
         linfo = {}
         if self.client_last_ping_latency:
             linfo["client"] = round(self.client_last_ping_latency)
