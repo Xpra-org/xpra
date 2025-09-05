@@ -59,7 +59,7 @@ find $RPM_BUILD_ROOT -regex ".*\.la$" | xargs rm -f --
 %{driverdir}/dummy_drv.so
 
 %changelog
-* Fri Aug 29 2024 Antoine Martin <antoine@xpra.org> - 0.4.1-10.xpra1
+* Thu Aug 29 2024 Antoine Martin <antoine@xpra.org> - 0.4.1-10.xpra1
 - force rebuild
 
 * Sat Jul 13 2024 Antoine Martin <antoine@xpra.org> - 0.4.1-1.xpra2
