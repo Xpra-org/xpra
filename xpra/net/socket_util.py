@@ -15,7 +15,7 @@ from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SOCKET_TIMEOUT
 from xpra.os_util import (
-    getuid, get_username_for_uid, get_groups, get_group_id, osexpand,
+    getuid, get_username_for_uid, get_groups, get_group_id, osexpand, is_writable,
     path_permission_info, umask_context, WIN32, OSX, POSIX,
     parse_encoded_bin_data,
     )
@@ -609,6 +609,14 @@ def normalize_local_display_name(local_display_name:str):
     return local_display_name
 
 
+def can_use_socket_path(path: str, uid: int, gid: int) -> bool:
+    sockdir = os.path.dirname(path)
+    if os.path.exists(sockdir):
+        return is_writable(sockdir, uid, gid)
+    # recurse until we find a directory:
+    return can_use_socket_path(sockdir, uid, gid)
+
+
 def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                         display_name:str, clobber,
                         mmap_group:str="auto", socket_permissions:str="600", username:str="",
@@ -644,9 +652,12 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                 log.info(f"ignoring invalid {sockpath!r} bind option, using 'auto'")
                 sockpath = "auto"
             if sockpath=="auto":
-                assert display_name is not None
-                for sockpath in dotxpra.norm_socket_paths(display_name):
-                    sockpaths[sockpath] = dict(options)
+                # norm_socket_paths is typically used for sockets in $HOME/.xpra/
+                for path in dotxpra.norm_socket_paths(display_name):
+                    if can_use_socket_path(path, uid, gid):
+                        sockpaths[path] = dict(options)
+                    else:
+                        log.info(f"insufficient permissions to use socket path {path!r}")
                 if session_dir and not WIN32:
                     session_socket = os.path.join(session_dir, "socket")
                     sockpaths[session_socket] = dict(options)
