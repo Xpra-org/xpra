@@ -124,6 +124,21 @@ def get_logger() -> Logger:
     return Logger("util")
 
 
+def inject_debug_logging(cmdline: list[str]) -> None:
+    # other scripts can set XPRA_DEBUG_DOTFILE="" to skip this injection:
+    debug_dotfile = os.environ.get("XPRA_DEBUG_DOTFILE", os.path.expanduser("~/.xpra/debug"))
+    from xpra.util.io import load_binary_file
+    data = load_binary_file(debug_dotfile)
+    if not data:
+        return
+    debug_categories = []
+    for line in data.splitlines():
+        debug_categories += [x for x in line.decode("latin1").strip().split(" ") if x]
+    if not debug_categories:
+        return
+    cmdline.append(f"--debug={csv(debug_categories)}")
+
+
 def main(script_file: str, cmdline: list[str]) -> ExitValue:
     set_main_thread()
     save_env()
@@ -142,6 +157,8 @@ def main(script_file: str, cmdline: list[str]) -> ExitValue:
     from xpra.platform import clean as platform_clean, command_error, command_info
     if len(cmdline) == 1:
         cmdline.append("gui")
+
+    inject_debug_logging(cmdline)
 
     def debug_exc(msg: str = "run_mode error") -> None:
         get_logger().debug(msg, exc_info=True)
