@@ -34,6 +34,10 @@ else
   # make sure the main script does not do it again:
   export XPRA_DEBUG_DOTFILE=""
 
+  echo >> ${LOG_FILE}
+  echo "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> ${LOG_FILE}
+  echo >> ${LOG_FILE}
+
   "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> ${LOG_FILE}
   echo "xpra subprocess terminated with exit code $?" >> ${LOG_FILE}
 fi
