@@ -23,11 +23,12 @@ cdef extern from "aom/aom_image.h":
         AOM_IMG_FMT_YV12
         AOM_IMG_FMT_AOMYV12
         AOM_IMG_FMT_AOMI420
-        AOM_IMG_FMT_NV12
+        # AOM_IMG_FMT_NV12
         AOM_IMG_FMT_I42016
         AOM_IMG_FMT_YV1216
         AOM_IMG_FMT_I42216
         AOM_IMG_FMT_I44416
+        AOM_IMG_FMT_PLANAR
 
     ctypedef enum aom_color_primaries:
         AOM_CICP_CP_UNSPECIFIED

@@ -8,6 +8,10 @@
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
+# libaom 3.3 as found in Ubuntu 22.04 doesn't define `AOM_IMG_FMT_NV12`,
+# so we just duplicate the definition here instead:
+cdef aom_img_fmt_t AOM_IMG_FMT_NV12 = <aom_img_fmt_t> (AOM_IMG_FMT_PLANAR | 7)
+
 
 FORMAT_STRS: Dict[aom_img_fmt_t, str] = {
     AOM_IMG_FMT_NONE: "None",
