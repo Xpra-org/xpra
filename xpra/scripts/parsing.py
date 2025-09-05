@@ -399,6 +399,7 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
                 raise ValueError("abstract sockets are not supported on MS Windows")
         elif WIN32 or OSX:
             raise RuntimeError("X11 / Wayland display names are not supported on this platform")
+        add_credentials()
         add_query()
         if display_name.startswith("@"):
             display = parsed.path[1:]
