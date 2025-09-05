@@ -44,7 +44,7 @@ from xpra.os_util import (
     gi_import,
     WIN32, OSX, POSIX
 )
-from xpra.util.io import is_socket, wait_for_socket, stderr_print, use_tty, info, warn, error
+from xpra.util.io import load_binary_file, is_socket, wait_for_socket, stderr_print, use_tty, info, warn, error
 from xpra.util.system import is_Wayland, SIGNAMES, set_proc_title, is_systemd_pid1
 from xpra.scripts.parsing import (
     get_usage,
@@ -127,7 +127,6 @@ def get_logger() -> Logger:
 def inject_debug_logging(cmdline: list[str]) -> None:
     # other scripts can set XPRA_DEBUG_DOTFILE="" to skip this injection:
     debug_dotfile = os.environ.get("XPRA_DEBUG_DOTFILE", os.path.expanduser("~/.xpra/debug"))
-    from xpra.util.io import load_binary_file
     data = load_binary_file(debug_dotfile)
     if not data:
         return
@@ -4522,7 +4521,6 @@ def setup_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
         host = disp["host"]
         save_ssl_config_file(host, port=0, filename="cert.pem", fileinfo="certificate", filedata=data)
         return ExitCode.OK
-    from xpra.util.io import load_binary_file
     _keyfile, certfile = gen_ssl_cert()
     cert = load_binary_file(certfile)
     sys.stdout.write(cert.decode("latin1"))
@@ -4549,7 +4547,6 @@ def show_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
         log.info("found an existing SSL certificate:")
         log.info(f" {keypath!r}")
         log.info(f" {certpath!r}")
-        from xpra.util.io import load_binary_file
         cert = load_binary_file(certpath)
     sys.stdout.write(cert.decode("latin1"))
     return ExitCode.OK
