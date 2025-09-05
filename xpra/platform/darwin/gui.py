@@ -5,14 +5,13 @@
 # later version. See the file COPYING for details.
 
 import ctypes
-import struct
 from weakref import WeakValueDictionary
 from typing import Any
 from collections.abc import Callable, Sequence
 
 import Quartz
 import Quartz.CoreGraphics as CG
-from AppKit import NSObject, NSAppleEventManager, NSScreen, NSBeep, NSApp
+from AppKit import NSScreen, NSBeep, NSApp
 
 from xpra.os_util import gi_import
 from xpra.common import roundup
@@ -24,8 +23,6 @@ from xpra.log import Logger
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
 pointerlog = Logger("osx", "events", "pointer")
-
-GLib = gi_import("GLib")
 
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
 OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 100)
@@ -48,12 +45,6 @@ ALPHA = {
 # if there is an easier way of doing this, I couldn't find it:
 def nodbltime() -> float:
     return -1
-
-
-# A helper to make struct since cocoa headers seem to make
-# it impossible to use kAE*
-def four_char_to_int(code: bytes) -> int:
-    return struct.unpack(b'>l', code)[0]
 
 
 GetDblTime: Callable = nodbltime
@@ -448,6 +439,7 @@ def take_screenshot() -> tuple[int, int, str, int, bytes]:
 
 def force_focus(duration=2000) -> None:
     enable_focus_workaround()
+    GLib = gi_import("GLib")
     GLib.timeout_add(duration, disable_focus_workaround)
 
 
@@ -458,68 +450,44 @@ __osx_open_signal = False
 OPEN_SIGNAL_WAIT = envint("XPRA_OSX_OPEN_SIGNAL_WAIT", 500)
 
 
-def add_open_handlers(open_file_cb: Callable[[str], None], open_url_cb: Callable[[str], None]) -> None:
-
-    def open_URL(url: str) -> None:
-        global __osx_open_signal
-        __osx_open_signal = True
-        log("open_URL(%s)", url)
-        GLib.idle_add(open_url_cb, url)
-
-    def open_file(_, filename: str, *args) -> None:
-        global __osx_open_signal
-        __osx_open_signal = True
-        log("open_file(%s, %s)", filename, args)
-        GLib.idle_add(open_file_cb, filename)
-
-    register_file_handler(open_file)
-    register_URL_handler(open_URL)
-
-
 def wait_for_open_handlers(show_cb: Callable[[], None],
                            open_file_cb: Callable[[str], None],
                            open_url_cb: Callable[[str], None],
                            delay: int = OPEN_SIGNAL_WAIT) -> None:
-    add_open_handlers(open_file_cb, open_url_cb)
+    GLib = gi_import("GLib")
+
+    def open_url(url: str) -> None:
+        global __osx_open_signal
+        if __osx_open_signal:
+            log.warn("Warning: open signal already handled, ignoring url %r", url)
+            return
+        __osx_open_signal = True
+        log("open_URL(%s)", url)
+        GLib.idle_add(open_url_cb, url)
+
+    def open_file(filename: str) -> None:
+        global __osx_open_signal
+        if __osx_open_signal:
+            log.warn("Warning: open signal already handled, ignoring file %r", filename)
+            return
+        __osx_open_signal = True
+        log("open_file(%s)", filename)
+        GLib.idle_add(open_file_cb, filename)
+
+    from xpra.platform.darwin.events import get_app_delegate
+    get_app_delegate().set_url_handler(open_url)
+    get_app_delegate().set_file_handler(open_file)
 
     def may_show() -> None:
         global __osx_open_signal
         log("may_show() osx open signal=%s", __osx_open_signal)
         if not __osx_open_signal:
+            __osx_open_signal = True
             force_focus()
             show_cb()
 
+    log("waiting for open handlers or timeout in %ims", delay)
     GLib.timeout_add(delay, may_show)
-
-
-def register_file_handler(handler: Callable) -> None:
-    log("register_file_handler(%s)", handler)
-    try:
-        get_OSXApplication().connect("NSApplicationOpenFile", handler)
-    except Exception as e:
-        log.error("Error: cannot handle file associations:")
-        log.estr(e)
-
-
-def register_URL_handler(handler: Callable[[str], None]) -> None:
-    log("register_URL_handler(%s)", handler)
-
-    class GURLHandler(NSObject):
-        # noinspection PyMethodMayBeStatic
-        def handleEvent_withReplyEvent_(self, event, reply_event):
-            log("GURLHandler.handleEvent(%s, %s)", event, reply_event)
-            url = event.descriptorForKeyword_(four_char_to_int(b'----')).stringValue()
-            log("URL=%s", url)
-            handler(url.encode())
-
-    urlh = GURLHandler.alloc()
-    urlh.init()
-    urlh.retain()
-    manager = NSAppleEventManager.sharedAppleEventManager()
-    manager.setEventHandler_andSelector_forEventClass_andEventID_(
-        urlh, 'handleEvent:withReplyEvent:',
-        four_char_to_int(b'GURL'), four_char_to_int(b'GURL')
-    )
 
 
 def disable_focus_workaround() -> None:
