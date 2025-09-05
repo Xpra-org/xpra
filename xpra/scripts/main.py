@@ -126,7 +126,7 @@ def main(script_file: str, cmdline) -> ExitValue:
         time.sleep(5)
 
     from xpra.platform import clean as platform_clean, command_error, command_info
-    if len(cmdline) == 1:
+    if len([arg for arg in cmdline if not arg.startswith("--")]) == 1:
         cmdline.append("gui")
 
     def debug_exc(msg: str = "run_mode error") -> None:
