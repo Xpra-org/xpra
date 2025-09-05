@@ -50,6 +50,12 @@ def nodbltime() -> float:
     return -1
 
 
+# A helper to make struct since cocoa headers seem to make
+# it impossible to use kAE*
+def four_char_to_int(code: bytes) -> int:
+    return struct.unpack(b'>l', code)[0]
+
+
 GetDblTime: Callable = nodbltime
 try:
     Carbon_ctypes = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
@@ -505,11 +511,6 @@ def register_URL_handler(handler: Callable[[str], None]) -> None:
             url = event.descriptorForKeyword_(four_char_to_int(b'----')).stringValue()
             log("URL=%s", url)
             handler(url.encode())
-
-    # A helper to make struct since cocoa headers seem to make
-    # it impossible to use kAE*
-    def four_char_to_int(code: bytes) -> int:
-        return struct.unpack(b'>l', code)[0]
 
     urlh = GURLHandler.alloc()
     urlh.init()
