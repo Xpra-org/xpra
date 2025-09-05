@@ -1009,7 +1009,7 @@ fi
 
 
 %changelog
-* Wed Sep 03 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
+* Fri Sep 05 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warningg
    `run_scaled` script should use default python interpreterg
@@ -1022,6 +1022,10 @@ fi
    examples and tools missed in path update
    `pyproject.toml` `dependencies` cause `py2app` to fail
    ignore spurious keymap changes
+   set architecture to avoid requiring rosetta
+   explicitly require macOS 12 or later
+   _nodock_ bundle out of date metadata
+   out of date copyright notice
 - Major:
    focus breaks after 25 days or sog
    focus delay issuesg
@@ -1037,6 +1041,7 @@ fi
    `libproc` error when the `XRes` bindings are not availableg
    only use `kill` signal when we trust the pid valueg
    OpenGL compatibility fix
+   authentication missing username
 - Minor:
    distinguish client session running on a different displayg
    map `kitty` to `text` content typeg
@@ -1051,7 +1056,9 @@ fi
    ensure that the window's XID is set as early as possibleg
    incorrect double-click settings may be usedg
    bidirectional mmap backwards compatibility
+   statistics can throw errors
 - Network:
+   regression: socket directories not created
    `SSL` connection issues: downgrade to TLS v1.2
    don't retry `SSL` connections foreverg
    support connecting to X11 displays via TCPg

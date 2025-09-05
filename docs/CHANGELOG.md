@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.3] 2025-09-03
+## [6.3.3] 2025-09-05
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/0aa7eb0ff2c207bea08ce25ed9a4877f5e1b493e)
     * [`run_scaled` script should use default python interpreter](https://github.com/Xpra-org/xpra/commit/fbc5c8a141eafe0ee775143ead2bcaa7d3d9bb1e)
@@ -13,6 +13,10 @@
     * [examples and tools missed in path update](https://github.com/Xpra-org/xpra/commit/ab0d1d3bb68da6dfaeefe6a54622f7fb8fb26348)
     * [`pyproject.toml` `dependencies` cause `py2app` to fail](https://github.com/Xpra-org/xpra/commit/5465aeac491401414c6b18571c4b8bd2acc0323f)
     * [ignore spurious keymap changes](https://github.com/Xpra-org/xpra/commit/77c7c9dc4fdfa84ed47f16e8733ed49f33483e5e)
+    * [set architecture to avoid requiring rosetta](https://github.com/Xpra-org/xpra/commit/5e25d4a280c33dc5ab3db4f5194f10f252cab04a) [everywhere](https://github.com/Xpra-org/xpra/commit/06f83dac73ab558f79a2d7cbdfc7021e50f2238f)
+    * [explicitly require macOS 12 or later](https://github.com/Xpra-org/xpra/commit/b97e3da6279abd75fd1509614d7dc68c2af01473)
+    * [_nodock_ bundle out of date metadata](https://github.com/Xpra-org/xpra/commit/83eebb44dc2f63a3476471ddf6edda4e0adc3a36)
+    * [out of date copyright notice](https://github.com/Xpra-org/xpra/commit/bea783a420d015d26571d6f7ca78a39f35f7cad8)
 * Major:
     * [focus breaks after 25 days or so](https://github.com/Xpra-org/xpra/commit/c56c7f054eba9672b9e13d7b474fb1958600a93d)
     * [focus delay issues](https://github.com/Xpra-org/xpra/commit/4d69fcefe54ad8f3a904064d4a27ad98e6d874b1)
@@ -28,6 +32,7 @@
     * [`libproc` error when the `XRes` bindings are not available](https://github.com/Xpra-org/xpra/commit/8df205d1cec7d5566d168f7edccfaf2807975d9d)
     * [only use `kill` signal when we trust the pid value](https://github.com/Xpra-org/xpra/commit/bb673a07da4880ffdc2c392ef885800cc5490ce3)
     * [OpenGL compatibility fix](https://github.com/Xpra-org/xpra/commit/081f77610feeee1b54b0eb5e6d8665ddbc93c247)
+    * [authentication missing username](https://github.com/Xpra-org/xpra/commit/28ab9dbe877ed3662a52d3aa7cfb7f045c23902a)
 * Minor:
     * [distinguish client session running on a different display](https://github.com/Xpra-org/xpra/commit/86ffce4cb1359aebb5cc9704c72ecbe857af008d)
     * [map `kitty` to `text` content type](https://github.com/Xpra-org/xpra/commit/5cdbb33d07cc994633fcabef7250b9e04b04602d)
@@ -42,7 +47,9 @@
     * [ensure that the window's XID is set as early as possible](https://github.com/Xpra-org/xpra/commit/0f5d889bcec3e88b20a59ba0f4e80be453b2bf60)
     * [incorrect double-click settings may be used](https://github.com/Xpra-org/xpra/commit/286836c1bd98ac450ca5363eebf6d5237f2eeac3)
     * [bidirectional mmap backwards compatibility](https://github.com/Xpra-org/xpra/commit/732f827822870e13720a0b8e2eb48748afc24bb5)
+    * [statistics can throw errors](https://github.com/Xpra-org/xpra/commit/350ff74386a02d8c1444eead3ac65194b10fb22e)
 * Network:
+    * [regression: socket directories not created](https://github.com/Xpra-org/xpra/commit/8ff1a2a2a8e3e7e921c8ff0c35b7f00407a58c69)
     * [`SSL` connection issues: downgrade to TLS v1.2](https://github.com/Xpra-org/xpra/commit/cf42cfb6b85893500ad6fd7382d2fa2a2fce84cc)
     * [don't retry `SSL` connections forever](https://github.com/Xpra-org/xpra/commit/8ce47372d3802b873bb8b727d63921ad48d1be26)
     * [support connecting to X11 displays via TCP](https://github.com/Xpra-org/xpra/commit/f76f2e268abab50b9bda4e16ced8ad15e711c012)
