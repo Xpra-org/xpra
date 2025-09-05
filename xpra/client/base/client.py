@@ -426,9 +426,8 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
                 if digest not in digests:
                     capabilities["digest"] = tuple(list(digests)+[digest])
         capabilities.update(FilePrintMixin.get_caps(self))
-        if self.username:
-            # set for authentication:
-            capabilities["username"] = self.username
+        # set for authentication:
+        capabilities["username"] = self.username or get_username()
         capabilities |= {
             "uuid": self.uuid,
             "compression_level": self.compression_level,
