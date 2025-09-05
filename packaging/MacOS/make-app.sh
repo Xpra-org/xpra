@@ -129,9 +129,9 @@ echo
 echo "*******************************************************************************"
 echo "py2app step:"
 PY2APP_LOG=`pwd`/py2app.log
-echo "./setup.py py2app ${BUILD_ARGS}"
+echo "XPRA_GI_BLOCK=\"*\" ${PYTHON} ./setup.py py2app ${BUILD_ARGS}"
 echo " (see ${PY2APP_LOG} for details - this may take a minute or two)"
-${PYTHON} ./setup.py py2app ${BUILD_ARGS} >& ${PY2APP_LOG}
+XPRA_GI_BLOCK="*" ${PYTHON} ./setup.py py2app ${BUILD_ARGS} >& ${PY2APP_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: py2app failed"
 	echo
