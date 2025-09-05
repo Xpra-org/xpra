@@ -9,7 +9,6 @@ from collections.abc import Callable
 from importlib import import_module
 
 from xpra.client.base.stub import StubClientMixin
-from xpra.platform.info import get_username
 from xpra.scripts.config import InitExit
 from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
 from xpra.net.common import Packet
@@ -73,8 +72,9 @@ class ChallengeClient(StubClientMixin):
         }
         if digests:
             caps["digest"] = tuple(digests)
-        # set for authentication:
-        caps["username"] = self.username or get_username()
+        if self.username:
+            # set for authentication:
+            caps["username"] = self.username
         log(f"challenge caps for handlers={self.challenge_handlers} : {caps=}")
         return caps
 
