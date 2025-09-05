@@ -28,7 +28,7 @@ def get_util_logger():
 
 
 def load_binary_file(filename) -> bytes:
-    if not os.path.exists(filename):
+    if not filename or not os.path.exists(filename):
         return b""
     try:
         with open(filename, "rb") as f:
