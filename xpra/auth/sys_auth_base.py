@@ -71,6 +71,8 @@ class SysAuthenticatorBase:
         log("auth prompt=%s, socket_dirs=%s", self.prompt, self.socket_dirs)
 
     def verify_username(self, remote_username: str) -> None:
+        if not remote_username:
+            raise ValueError("missing remote username")
         if remote_username != self.username:
             log(f"verifying username={self.username!r} vs remote={remote_username!r}")
             raise ValueError(f"invalid username {remote_username!r}")
