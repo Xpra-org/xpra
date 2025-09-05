@@ -804,18 +804,28 @@ fi
 
 
 %changelog
-* Sat Aug 30 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
+* Fri Sep 05 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warning
-`xpra-server` DEB missing `adduser` dependency
-   MacOS switch to `Adwaita` theme
-   MacOS `locale.alias` warnings in command line tools
-   MacOS `/Library/` path requires root
+   `xpra-server` DEB missing `adduser` dependency
+* MacOS:
+   switch to `Adwaita` theme
+   `locale.alias` warnings in command line tools
+   `/Library/` path requires root
+   Packaging update for python-cryptography
+   ignore spurious keymap changes
+   set architecture to avoid requiring rosetta everywhere
+   explicitly require macOS 12 or later
+   _nodock_ bundle out of date metadata
+   out of date copyright notice
 - Encodings:
-   `openh264`: expose frame number and use default settings as base and update definitions
+   `openh264`: expose frame number and use default settings as base and update definitions, fixup backport
    expose nvidia GPU attributes as strings
    version parsing errors with newer nvidia kernel modules
 - Network:
+   regression: socket directories not created
+   downgrade to TLS v1.2
+   early ping packets could cause connection to drop
    ssh config port number parsing errors
    `quic` client connections should also timeout
    zeroconf mDNS errors on loopback addresses
@@ -848,6 +858,8 @@ fi
    remove outdated and misleading docstring
    debug failing unit tests
    Cython compilation warning
+   text entry example incomplete
+   log more disconnection details
 
 * Wed Jun 18 2025 Antoine Martin <antoine@xpra.org> 5.1.1-10
 - Platforms, build and packaging:

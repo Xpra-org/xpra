@@ -1,17 +1,27 @@
 # Changelog
 
-## [5.1.2] 2025-08-30
+## [5.1.2] 2025-09-05
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/39c80ca0e373c8ee2787a5c07613d28bda07b3d3)
     * [`xpra-server` DEB missing `adduser` dependency](https://github.com/Xpra-org/xpra/commit/a0cc1d3dfb3db1e8dee9df99e50083b926c10b18)
-    * [MacOS switch to `Adwaita` theme](https://github.com/Xpra-org/xpra/commit/2273a2c92ec3cb91487284070c5ad9845c477df7)
-    * [MacOS `locale.alias` warnings in command line tools](https://github.com/Xpra-org/xpra/commit/ccda64fdfc98021139c4c46aabc0123e636d9234)
-    * [MacOS `/Library/` path requires root](https://github.com/Xpra-org/xpra/commit/adeb40bba6e01f5fdb30c0f65f65fe08ab26bccc)
+* MacOS:
+    * [switch to `Adwaita` theme](https://github.com/Xpra-org/xpra/commit/2273a2c92ec3cb91487284070c5ad9845c477df7)
+    * [`locale.alias` warnings in command line tools](https://github.com/Xpra-org/xpra/commit/ccda64fdfc98021139c4c46aabc0123e636d9234)
+    * [`/Library/` path requires root](https://github.com/Xpra-org/xpra/commit/adeb40bba6e01f5fdb30c0f65f65fe08ab26bccc)
+    * [Packaging update for python-cryptography](https://github.com/Xpra-org/xpra/commit/3feea36da572a0f07594a4a169969b54a5631fda)
+    * [ignore spurious keymap changes](https://github.com/Xpra-org/xpra/commit/6a9d079db521d06d7502ca7e30b464fd9aa2a094)
+    * [set architecture to avoid requiring rosetta](https://github.com/Xpra-org/xpra/commit/e7374629054f6c6de341cc4753d94393bb1c44fc) [everywhere](https://github.com/Xpra-org/xpra/commit/33aab1d11a908241ff4521e5859ddf9ce535b305)
+    * [explicitly require macOS 12 or later](https://github.com/Xpra-org/xpra/commit/bef981f596c0c4fc4b582a07659bc18aff0f4d79)
+    * [_nodock_ bundle out of date metadata](https://github.com/Xpra-org/xpra/commit/9724a2ed263e4d3999688e3667395e097ae37054)
+    * [out of date copyright notice](https://github.com/Xpra-org/xpra/commit/632a98be5400993f36f8a2a402193dbfda6f4131)
 * Encodings:
-    * [`openh264`: expose frame number and use default settings as base](https://github.com/Xpra-org/xpra/commit/8c8c02a611c71ab6e0d86fc93f9dd05beed35a89) [and update definitions](https://github.com/Xpra-org/xpra/commit/df18c717db3812f8bbe6297cd28e07c4adad527d)
+    * [`openh264`: expose frame number and use default settings as base](https://github.com/Xpra-org/xpra/commit/8c8c02a611c71ab6e0d86fc93f9dd05beed35a89) [and update definitions](https://github.com/Xpra-org/xpra/commit/df18c717db3812f8bbe6297cd28e07c4adad527d), [fixup backport](https://github.com/Xpra-org/xpra/commit/ebbdf48d53fd6eb36074c1169ddb6d16a629ebb3)
     * [expose nvidia GPU attributes as strings](https://github.com/Xpra-org/xpra/commit/b22335086ce36db9fe18d1139875df22abb32ee4)
     * [version parsing errors with newer nvidia kernel modules](https://github.com/Xpra-org/xpra/commit/efba061385cff96bb582afd97056339660d2cab1)
 * Network:
+    * [regression: socket directories not created](https://github.com/Xpra-org/xpra/commit/bbcded4dc4fb947dcc09ebf0ef7ae6707f12d89d)
+    * [downgrade to TLS v1.2](https://github.com/Xpra-org/xpra/commit/1cf94046cfac16f1175ee6b686f722c16093ea43)
+    * [early ping packets could cause connection to drop](https://github.com/Xpra-org/xpra/commit/e8a54c1d4eabefe16bc6ebe9e7c063561a73fc73)
     * [ssh config port number parsing errors](https://github.com/Xpra-org/xpra/commit/3982fdd94da72dec037234e0c751598465f80b60)
     * [`quic` client connections should also timeout](https://github.com/Xpra-org/xpra/commit/f1663b02d03aa9c095865b90659573f434929715)
     * [zeroconf mDNS errors on loopback addresses](https://github.com/Xpra-org/xpra/commit/6fc832dbfbf158d105cce6ca6c064ec4d32ad3e8)
@@ -38,12 +48,16 @@
     * [remove event receivers when windows are closed](https://github.com/Xpra-org/xpra/commit/d8bc30e86fb4ffc82a3f403357a571b65d4175b2)
     * [incorrect double-click settings may be used](https://github.com/Xpra-org/xpra/commit/3fc459a4ecfc4baf4e67f090ca97513a49905032)
     * [client errors on exit](https://github.com/Xpra-org/xpra/commit/b0748a1412919a02287b6907bea46c04b1787db5)
+    * [avoid image cleanup race condition warning](https://github.com/Xpra-org/xpra/commit/8da6cf74bb7b4654db7905d60c2aa99add56ca36)
+    * [statistics can throw errors](https://github.com/Xpra-org/xpra/commit/46eda2e57f1e4f4a0e32547afaff4a15032c5e5e)
 * Cosmetic:
     * [remove unused attribute](https://github.com/Xpra-org/xpra/commit/80ad4d7b46bf545845cc6f6ba00e4798b224723d)
     * [make it easier to disable xdg menus](https://github.com/Xpra-org/xpra/commit/82259530d9ae59f7f475f1b95790be3e19748702)
     * [remove outdated and misleading docstring](https://github.com/Xpra-org/xpra/commit/493d81c559c2902796b77001d7ecfb377cdf4353)
     * [debug failing unit tests](https://github.com/Xpra-org/xpra/commit/4af212c14842e611256fd09f61a891d903efa4d8) [+ fixup](https://github.com/Xpra-org/xpra/commit/454da10805aa0232f3a9bfd18f9769522510c16c)
     * [Cython compilation warning](https://github.com/Xpra-org/xpra/commit/565ead79229c26b3995ceecb591b17b7563bdabc)
+    * [text entry example incomplete](https://github.com/Xpra-org/xpra/commit/62025173389ec29dfda882b9a0e6a0535430498e)
+    * [log more disconnection details](https://github.com/Xpra-org/xpra/commit/07c18b9c5264bd1bb5034555e8ba59af2eea010e)
 
 ## [5.1.1] 2025-06-18
 * Platforms, build and packaging:
