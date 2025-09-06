@@ -15,6 +15,7 @@ xpra (6.3.3-1) UNRELEASED; urgency=low
     explicitly require macOS 12 or later
     _nodock_ bundle out of date metadata
     out of date copyright notice
+    ignore open-url and open-file events once started
   * Major:
     focus breaks after 25 days or sog
     focus delay issuesg
@@ -65,7 +66,7 @@ xpra (6.3.3-1) UNRELEASED; urgency=low
     Gtk deprecation warnings
     log more disconnection details
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 05 Sep 2025 13:45:11 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 06 Sep 2025 21:02:39 +0700
 
 xpra (6.3.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

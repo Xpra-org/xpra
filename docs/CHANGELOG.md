@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.3] 2025-09-05
+## [6.3.3] 2025-09-06
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/0aa7eb0ff2c207bea08ce25ed9a4877f5e1b493e)
     * [`run_scaled` script should use default python interpreter](https://github.com/Xpra-org/xpra/commit/fbc5c8a141eafe0ee775143ead2bcaa7d3d9bb1e)
@@ -17,6 +17,7 @@
     * [explicitly require macOS 12 or later](https://github.com/Xpra-org/xpra/commit/b97e3da6279abd75fd1509614d7dc68c2af01473)
     * [_nodock_ bundle out of date metadata](https://github.com/Xpra-org/xpra/commit/83eebb44dc2f63a3476471ddf6edda4e0adc3a36)
     * [out of date copyright notice](https://github.com/Xpra-org/xpra/commit/bea783a420d015d26571d6f7ca78a39f35f7cad8)
+    * [ignore open-url and open-file events once started](https://github.com/Xpra-org/xpra/commit/fcb29d01d643dd73e75a65ce991e3e40c6f689c4)
 * Major:
     * [focus breaks after 25 days or so](https://github.com/Xpra-org/xpra/commit/c56c7f054eba9672b9e13d7b474fb1958600a93d)
     * [focus delay issues](https://github.com/Xpra-org/xpra/commit/4d69fcefe54ad8f3a904064d4a27ad98e6d874b1)

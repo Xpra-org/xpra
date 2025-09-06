@@ -1009,7 +1009,7 @@ fi
 
 
 %changelog
-* Fri Sep 05 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
+* Sat Sep 06 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warningg
    `run_scaled` script should use default python interpreterg
@@ -1026,6 +1026,7 @@ fi
    explicitly require macOS 12 or later
    _nodock_ bundle out of date metadata
    out of date copyright notice
+   ignore open-url and open-file events once started
 - Major:
    focus breaks after 25 days or sog
    focus delay issuesg
