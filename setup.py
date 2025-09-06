@@ -2504,7 +2504,7 @@ else:
             'iconfile'          : './fs/share/icons/xpra.icns',
             'plist'             : Plist,
             'site_packages'     : False,
-            'argv_emulation'    : True,
+            'argv_emulation'    : False,
             'strip'             : False,
             'includes'          : modules,
             'excludes'          : excludes,
