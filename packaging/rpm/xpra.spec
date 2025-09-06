@@ -1076,6 +1076,7 @@ fi
    text entry example incomplete
    Gtk deprecation warnings
    log more disconnection details
+   invalid "class-instance" warnings
 
 * Tue Jul 08 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
 - Platforms, build and packaging:

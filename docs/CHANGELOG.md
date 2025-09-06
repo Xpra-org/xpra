@@ -67,6 +67,7 @@
     * [text entry example incomplete](https://github.com/Xpra-org/xpra/commit/72ae2a0f10ad1c5751a803484ad5f0de06906431)
     * [Gtk deprecation warnings](https://github.com/Xpra-org/xpra/commit/f62797c21620f11a4f3b8fdcca0e1163fc20d8ac)
     * [log more disconnection details](https://github.com/Xpra-org/xpra/commit/e6a30a154e27e94e9287226f14267ffc9f93e14c)
+    * [invalid "class-instance" warnings](https://github.com/Xpra-org/xpra/commit/36d4d87c916bb49224059bfe3b4e168d644c958e)
 
 ## [6.3.2] 2025-07-08
 * Platforms, build and packaging:

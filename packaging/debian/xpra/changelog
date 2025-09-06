@@ -65,8 +65,9 @@ xpra (6.3.3-1) UNRELEASED; urgency=low
     text entry example incomplete
     Gtk deprecation warnings
     log more disconnection details
+    invalid "class-instance" warnings
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 06 Sep 2025 21:02:39 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 06 Sep 2025 22:18:55 +0700
 
 xpra (6.3.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
