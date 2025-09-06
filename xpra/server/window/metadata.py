@@ -92,7 +92,7 @@ def _make_window_metadata(window,
         return {propname: strut}
     if propname == "class-instance":
         c_i = raw()
-        if c_i is None:
+        if not c_i:
             return {}
         return {propname: c_i}
     if propname == "client-machine":
