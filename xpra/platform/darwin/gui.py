@@ -477,6 +477,8 @@ def add_open_handlers(open_file_cb: Callable, open_url_cb: Callable) -> None:
 
     def open_URL(url) -> bool:
         global __osx_open_signal
+        if __osx_open_signal:
+            return True
         __osx_open_signal = True
         log("open_URL(%s)", url)
         GLib.idle_add(open_url_cb, url)
@@ -484,6 +486,8 @@ def add_open_handlers(open_file_cb: Callable, open_url_cb: Callable) -> None:
 
     def open_file(_, filename: str, *args) -> bool:
         global __osx_open_signal
+        if __osx_open_signal:
+            return True
         __osx_open_signal = True
         log("open_file(%s, %s)", filename, args)
         GLib.idle_add(open_file_cb, filename)
@@ -503,6 +507,7 @@ def wait_for_open_handlers(show_cb: Callable,
         global __osx_open_signal
         log("may_show() osx open signal=%s", __osx_open_signal)
         if not __osx_open_signal:
+            __osx_open_signal = True
             force_focus()
             show_cb()
 
