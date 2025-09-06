@@ -747,7 +747,7 @@ class CoreX11WindowModel(WindowModelStub):
                 log.warn(" %s", e)
             class_instance = ()
         metalog("WM_CLASS=%s", class_instance)
-        self._updateprop("class-instance", class_instance or ())
+        self._updateprop("class-instance", class_instance or ("", ""))
 
     def _handle_opaque_region_change(self) -> None:
         rectangles = []

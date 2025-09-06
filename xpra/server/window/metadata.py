@@ -67,7 +67,7 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "state": (),
     "fullscreen-monitors": (),
     "opaque-region": (),
-    "class-instance": (),
+    "class-instance": ("", ""),
     "requested-position": (),
     "relative-position": (),
     "children": (),

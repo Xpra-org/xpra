@@ -987,8 +987,8 @@ class WindowClient(StubClientMixin):
         if not OR_FORCE_GRAB:
             return False
         window_types = metadata.get("window-type", [])
-        wm_class = metadata.strtupleget("class-instance", (None, None), 2, 2)
-        c = None
+        wm_class = metadata.strtupleget("class-instance", ("", ""), 2, 2)
+        c = ""
         if wm_class:
             c = wm_class[0]
         if c:
@@ -1330,14 +1330,14 @@ class WindowClient(StubClientMixin):
             if window:
                 metadata = typedict(getattr(window, "_metadata", {}))
                 log("window_close_event(%i) metadata=%s", wid, metadata)
-                class_instance = metadata.strtupleget("class-instance", (None, None), 2, 2)
+                class_instance = metadata.strtupleget("class-instance", ("", ""))
                 title = metadata.strget("title")
                 log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
                 matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]
                 close = None
                 if matching_title_close:
                     close = "window-close event on %s window" % title
-                elif class_instance and class_instance[1] in WM_CLASS_CLOSEEXIT:
+                elif len(class_instance) == 2 and class_instance[1] in WM_CLASS_CLOSEEXIT:
                     close = "window-close event on %s window" % class_instance[0]
                 if close:
                     # honour this close request if there are no other windows:
