@@ -80,7 +80,7 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
         return {propname : strut}
     if propname == "class-instance":
         c_i = raw()
-        if c_i is None:
+        if not c_i:
             return {}
         return {propname : c_i}
     if propname == "client-machine":
