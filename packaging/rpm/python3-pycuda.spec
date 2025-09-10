@@ -27,7 +27,7 @@
 %endif
 
 Name:           %{python3}-pycuda
-Version:        2025.1.1
+Version:        2025.1.2
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
@@ -61,7 +61,7 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "bab0678d43f469c865f5fe6024f481c781ec51fefe6686acd66c672bfabea34f" ]; then
+if [ "${sha256}" != "0dd82911d72d8e03c63128ae44e99cfb7b4689094aba6cc5193d8e944717aafa" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -102,6 +102,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Wed Sep 10 2025 Antoine Martin <antoine@xpra.org> - 2025.1.2-1
+- new upstream release
+
 * Mon Jun 09 2025 Antoine Martin <antoine@xpra.org> - 2025.1.1-1
 - new upstream release
 
