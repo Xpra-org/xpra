@@ -36,9 +36,9 @@ else
   export XPRA_DEBUG_DOTFILE=""
 
   echo >> ${LOG_FILE}
-  echo "bash -x $PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.platform.darwin.argv import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> ${LOG_FILE}
+  echo "bash -x $PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> ${LOG_FILE}
   echo >> ${LOG_FILE}
 
-  bash -x "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.platform.darwin.argv import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> ${LOG_FILE}
+  bash -x "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> ${LOG_FILE}
   echo "xpra subprocess terminated with exit code $?" >> ${LOG_FILE}
 fi
