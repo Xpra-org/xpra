@@ -692,7 +692,7 @@ class ProxyServer(ProxyServerBaseClass):
             del self.instances[p]
 
     def get_info(self, proto, *_args) -> dict[str, Any]:
-        authenticated = proto and proto.authenticators
+        authenticated = bool(proto and proto.authenticators)
         if not authenticated:
             info = self.get_minimal_server_info()
         else:
