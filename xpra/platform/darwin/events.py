@@ -69,7 +69,7 @@ class AppDelegate(NSObject):
     @objc.python_method
     def set_file_handler(self, handler: Callable[[str], None]) -> None:
         log("set_file_handler(%s)", handler)
-        self.callbacks["open-file"] = handler
+        self.add_handler("open-file", handler)
 
     @objc.python_method
     def register_url_handler(self) -> None:
@@ -82,7 +82,7 @@ class AppDelegate(NSObject):
     @objc.python_method
     def set_url_handler(self, handler: Callable[[str], None]) -> None:
         log("set_url_handler(%s)", handler)
-        self.callbacks["open-url"] = handler
+        self.add_handler("open-url", handler)
 
     def handleEvent_withReplyEvent_(self, event, reply_event) -> None:
         log("handleEvent_withReplyEvent_(%s, %s)", event, reply_event)
