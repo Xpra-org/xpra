@@ -243,13 +243,13 @@ def configure_logging(options, mode: str) -> None:
         SIGPIPEStreamHandler,
     )
     setloghandler(SIGPIPEStreamHandler(to))
-    if mode in (
+    if "XPRA_LOG_FORMAT" in os.environ or mode in (
             "seamless", "desktop", "monitor", "expand",
             "shadow", "shadow-screen",
             "encoder", "encode",
             "runner",
             "recover",
-            "attach", "listen", "proxy",
+            "attach", "listen", "proxy", "gui",
             "version", "info", "id",
             "_audio_record", "_audio_play",
             "stop", "print", "showconfig", "configure", "sbom",
