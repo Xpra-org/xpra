@@ -21,6 +21,7 @@ from xpra.common import roundup
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.io import CaptureStdErr
+from xpra.util.str_fn import bytestostr
 from xpra.platform.darwin import get_OSXApplication
 from xpra.log import Logger
 
@@ -481,7 +482,7 @@ def add_open_handlers(open_file_cb: Callable, open_url_cb: Callable) -> None:
             return True
         __osx_open_signal = True
         log("open_URL(%s)", url)
-        GLib.idle_add(open_url_cb, url)
+        GLib.idle_add(open_url_cb, bytestostr(url))
         return True
 
     def open_file(_, filename: str, *args) -> bool:
