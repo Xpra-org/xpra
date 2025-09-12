@@ -674,7 +674,7 @@ class ProxyServer(ServerCore):
 
 
     def get_info(self, proto, *_args) -> Dict[str,Any]:
-        authenticated = proto and proto.authenticators
+        authenticated = bool(proto and proto.authenticators)
         if not authenticated:
             info = self.get_minimal_server_info()
         else:

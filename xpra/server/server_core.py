@@ -2503,7 +2503,7 @@ class ServerCore:
         def up(prefix, d):
             info[prefix] = d
 
-        authenticated = proto and proto.authenticators
+        authenticated = bool(proto and proto.authenticators)
         full = FULL_INFO>0 or authenticated
         if full:
             si = self.get_server_info()
