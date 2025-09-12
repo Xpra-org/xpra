@@ -1247,7 +1247,6 @@ def do_main(argv: list[str]) -> int:
                         configure_network(app.config)
                         app.update_gui_from_config()
                         if app.config.autoconnect:
-                            app.__osx_open_signal = True
                             GLib.idle_add(app.do_connect)
                         else:
                             force_focus()
@@ -1255,7 +1254,6 @@ def do_main(argv: list[str]) -> int:
 
                     def open_URL(url: str) -> None:
                         log("open_URL(%s)", url)
-                        app.__osx_open_signal = True
                         app.update_options_from_url(url)
                         # the compressors and packet encoders cannot be changed from the UI
                         # so apply them now:
