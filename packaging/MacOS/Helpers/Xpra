@@ -6,11 +6,40 @@ full_path=$(cd "$(dirname "$0")"; pwd -P)
 PYTHON="$full_path/PythonExecWrapper"
 
 #parse arguments into a string:
-args="[\"xpra\""
+args=""
 while (($#)); do
     args="$args,\"$1\""
     shift
 done
-args="$args]"
 
-exec "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], $args));"
+
+DEBUG="$(cat ${HOME}/.xpra/debug)"
+if [ -z "${DEBUG}" ]; then
+  # no debug, just exec it:
+  "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));"
+else
+  # run as a subprocess and log the output:
+  LOG_FILE="$HOME/.xpra/debug-$$.log"
+  echo "xpra debug output" > ${LOG_FILE}
+  date >> ${LOG_FILE}
+  echo >> ${LOG_FILE}
+  echo "env:" >> ${LOG_FILE}
+  env > ${LOG_FILE}
+  echo >> ${LOG_FILE}
+  echo >> ${LOG_FILE}
+  echo "args=${args}" >> ${LOG_FILE}
+  echo >> ${LOG_FILE}
+
+  # add debug arguments:
+  args="$args,\"--debug=${DEBUG}\""
+  # make sure the main script does not do it again:
+  export XPRA_DEBUG_DOTFILE=""
+  export XPRA_LOG_FORMAT="%(asctime)s %(message)s"
+
+  echo >> ${LOG_FILE}
+  echo "bash -x $PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> ${LOG_FILE}
+  echo >> ${LOG_FILE}
+
+  bash -x "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> ${LOG_FILE}
+  echo "xpra subprocess terminated with exit code $?" >> ${LOG_FILE}
+fi
