@@ -30,20 +30,14 @@ ln -sf "$(realpath .)/jhbuildrc-custom" ~/.config/jhbuildrc-custom
 Bootstrap:
 ```shell
 jhbuild bootstrap-gtk-osx
-jhbuild update
 ```
 
 Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 
 ## Build all the libraries
 ```shell
+jhbuild update
 jhbuild build
-#some python libraries have to be installed via pip in a jhbuild shell:
-jhbuild shell
-pip3 install --prefix $JHBUILD_PREFIX bcrypt
-pip3 install --prefix $JHBUILD_PREFIX packaging
-pip3 install --prefix $JHBUILD_PREFIX parsing
-pip3 install --prefix $JHBUILD_PREFIX typing_extensions
 ```
 
 ## Build and Package Xpra
