@@ -287,8 +287,14 @@ class BaseGUIWindow(Gtk.Window):
         cmd = get_xpra_command()
         cmd.append(subcommand)
         cmd += list(args)
-        proc = exec_command(cmd)
+        try:
+            proc = exec_command(cmd)
+        except OSError:
+            log.error("Error running subcommand: %s", subcommand, exc_info=True)
+            self.show()
+            return
         if proc.poll() is None:
+            log("pid=%i", proc.pid)
             self.hide()
 
             def may_exit() -> None:
