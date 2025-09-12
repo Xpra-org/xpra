@@ -35,6 +35,26 @@ jhbuild bootstrap-gtk-osx
 Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 
 ## Build all the libraries
+
+First, make sure that all the modulesets will be using the same system libffi
+as the one used by Python:
+```commandline
+cat > ${JHBUILD_PREFIX}/lib/pkgconfig/libffi.pc << EOF
+Version: 3.4.6
+Libs: -L${libdir} -lffi
+Cflags: -I${includedir}
+antoine@Mac-mini ~ % cat /Users/antoine/gtk/inst/lib/pkgconfig/libffi.pc
+prefix=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr
+libdir=${prefix}/lib
+includedir=${prefix}/include/ffi
+
+Name: libffi
+Description: Library supporting Foreign Function Interfaces
+Version: 3.4.6
+Libs: -L${libdir} -lffi
+Cflags: -I${includedir}
+EOF
+```
 ```shell
 jhbuild update
 jhbuild build
