@@ -88,10 +88,7 @@ class AppDelegate(NSObject):
         log("handleEvent_withReplyEvent_(%s, %s)", event, reply_event)
         url = event.descriptorForKeyword_(four_char_to_int(b'----')).stringValue()
         log("URL=%s", url)
-        app_delegate = get_app_delegate(False)
-        log("app_delegate=%s", app_delegate)
-        if app_delegate:
-            app_delegate.call_handlers("open-url", url)
+        self.call_handlers("open-url", url)
 
     @objc.python_method
     def register_sleep_handlers(self) -> None:
@@ -154,9 +151,10 @@ class AppDelegate(NSObject):
     @objc.python_method
     def call_handlers(self, name: str, *args) -> None:
         callbacks = self.callbacks.get(name, [])
-        log("delegate_cb(%s) callbacks=%s", name, callbacks)
+        log("call_handlers(%s) callbacks=%s", name, callbacks)
         for callback in callbacks:
             with log.trap_error("Error in %s callback %s", name, callback):
+                log("%s%s", callback, args)
                 callback(*args)
 
     @objc.python_method
