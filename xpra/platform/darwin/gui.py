@@ -462,7 +462,7 @@ def wait_for_open_handlers(show_cb: Callable[[], None],
             log.warn("Warning: open signal already handled, ignoring url %r", url)
             return
         __osx_open_signal = True
-        log("open_URL(%s)", url)
+        log("open_url(%s) will call %s", url, open_url_cb)
         GLib.idle_add(open_url_cb, url)
 
     def open_file(filename: str) -> None:
@@ -471,7 +471,7 @@ def wait_for_open_handlers(show_cb: Callable[[], None],
             log.warn("Warning: open signal already handled, ignoring file %r", filename)
             return
         __osx_open_signal = True
-        log("open_file(%s)", filename)
+        log("open_file(%s) will call %s", filename, open_file_cb)
         GLib.idle_add(open_file_cb, filename)
 
     from xpra.platform.darwin.events import get_app_delegate

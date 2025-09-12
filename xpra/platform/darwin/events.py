@@ -85,7 +85,6 @@ class AppDelegate(NSObject):
         self.callbacks["open-url"] = handler
 
     def handleEvent_withReplyEvent_(self, event, reply_event) -> None:
-        log("handleEvent_withReplyEvent_() FOO")
         log("handleEvent_withReplyEvent_(%s, %s)", event, reply_event)
         url = event.descriptorForKeyword_(four_char_to_int(b'----')).stringValue()
         log("URL=%s", url)
@@ -111,7 +110,7 @@ class AppDelegate(NSObject):
     @objc.typedSelector(b'B@:#B')
     def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag) -> bool:
         log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
-        self.delegate_cb("deiconify")
+        self.call_handlers("deiconify")
         return True
 
     @objc.typedSelector(b'v@:I')
