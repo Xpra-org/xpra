@@ -9,7 +9,7 @@ from typing import Any
 
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.widget import label
+from xpra.gtk.widget import label, setfont
 from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
@@ -29,8 +29,19 @@ def make_category_widgets(groups: dict[str, dict[str, str]], enabled: set[str], 
                           toggled=noop) -> tuple[list[Any], dict[str, Any]]:
     expanders = []
     widgets = {}
+
+    def eact(expander, *args):
+        expanded = expander.get_expanded()
+        if expanded:
+            return
+        for exp in expanders:
+            if exp != expander:
+                exp.set_expanded(False)
+
     for group, categories in groups.items():
         exp = Gtk.Expander(label=group)
+        exp.connect("activate", eact)
+        setfont(exp, "sans 18")
         grid = Gtk.Grid()
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(False)
@@ -38,13 +49,14 @@ def make_category_widgets(groups: dict[str, dict[str, str]], enabled: set[str], 
         row = 0
         for category, descr in categories.items():
             cb = Gtk.CheckButton(label=category)
+            setfont(cb, "courier 14")
             cb.set_active(category in enabled)
             cb.connect("toggled", toggled, category)
             cb.set_sensitive(sensitive)
             grid.attach(cb, 0, row, 1, 1)
             descr = CATEGORY_INFO.get(category, "")
             if descr:
-                lbl = label(descr)
+                lbl = label(descr, font="sans 14")
                 lbl.set_halign(Gtk.Align.START)
                 lbl.set_margin_start(32)
                 grid.attach(lbl, 1, row, 1, 1)
