@@ -367,9 +367,15 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
 }
 
 # flatten it:
+KNOWN_GROUPS: Sequence[str] = tuple(STRUCT_KNOWN_FILTERS.keys())
+CATEGORY_GROUP: dict[str, str] = {}
+CATEGORY_INFO: dict[str, str] = {}
 KNOWN_FILTERS: list[str] = []
-for d in STRUCT_KNOWN_FILTERS.values():
+for group, d in STRUCT_KNOWN_FILTERS.items():
     KNOWN_FILTERS += list(d.keys())
+    CATEGORY_INFO.update(d)
+    for category in d.keys():
+        CATEGORY_GROUP[category] = group
 
 
 def isenvdebug(category: str) -> bool:
