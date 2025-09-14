@@ -106,8 +106,11 @@ class GUI(BaseGUIWindow):
 
     def get_xpra_command(self, *args) -> list[str]:
         argv = list(self.argv[1:])
-        if argv.index("gui") >= 0:
-            argv.pop(argv.index("gui"))
+        try:
+            if argv.index("gui") >= 0:
+                argv.pop(argv.index("gui"))
+        except ValueError:
+            pass
         return super().get_xpra_command(*args) + argv
 
     def configure(self, button) -> None:
