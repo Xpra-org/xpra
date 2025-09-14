@@ -1621,6 +1621,7 @@ class GTKTrayMenu(MenuHelper):
 
     def make_downloadmenuitem(self) -> Gtk.ImageMenuItem:
         download = self.menuitem("Download File", "download.png", cb=self.client.send_download_request)
+        set_sensitive(download, False)
 
         def enable_download(*args) -> None:
             log("enable_download%s server_file_transfer=%s, server_start_new_commands=%s, subcommands=%s",
@@ -1638,18 +1639,16 @@ class GTKTrayMenu(MenuHelper):
 
         if features.file:
             self.after_handshake(enable_download)
-        else:
-            set_sensitive(download, False)
         return download
 
     def make_serverdebugmenuitem(self) -> Gtk.ImageMenuItem:
         configure = self.menuitem("Debug Logging", "bugs.png", cb=self.client.configure_server_debug)
+        set_sensitive(configure, False)
 
         def enable_configure(*args) -> None:
             set_sensitive(configure, True)
 
         self.after_handshake(enable_configure)
-        set_sensitive(configure, False)
         return configure
 
     def make_serverlogmenuitem(self) -> Gtk.ImageMenuItem:
