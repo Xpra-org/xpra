@@ -191,8 +191,11 @@ class GUI(Gtk.Window):
 
     def get_xpra_command(self, arg="shadow"):
         args = list(self.argv[1:])
-        if args.index("gui")>=0:
-            args.pop(args.index("gui"))
+        try:
+            if args.index("gui")>=0:
+                args.pop(args.index("gui"))
+        except ValueError:
+            pass
         return get_xpra_command()+[arg]+args
 
     def start_shadow(self, *_args):
