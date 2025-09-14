@@ -45,6 +45,7 @@ SHOW_QR = envbool("XPRA_SHOW_QR", True)
 SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
 SHOW_SERVER_LOG = envbool("XPRA_SHOW_SERVER_LOG", True)
 SHOW_DOWNLOAD = envbool("XPRA_SHOW_DOWNLOAD", True)
+SHOW_SERVERDEBUG = envbool("XPRA_SHOW_SERVERDEBUG", True)
 STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
 WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
@@ -1550,6 +1551,8 @@ class GTKTrayMenu(MenuHelper):
             menu.append(self.make_uploadmenuitem())
         if SHOW_DOWNLOAD:
             menu.append(self.make_downloadmenuitem())
+        if SHOW_SERVERDEBUG:
+            menu.append(self.make_serverdebugmenuitem())
         if SHOW_SERVER_LOG:
             menu.append(self.make_serverlogmenuitem())
         if SHOW_SHUTDOWN:
@@ -1638,6 +1641,16 @@ class GTKTrayMenu(MenuHelper):
         else:
             set_sensitive(download, False)
         return download
+
+    def make_serverdebugmenuitem(self) -> Gtk.ImageMenuItem:
+        configure = self.menuitem("Debug Logging", "bugs.png", cb=self.client.configure_server_debug)
+
+        def enable_configure(*args) -> None:
+            set_sensitive(configure, True)
+
+        self.after_handshake(enable_configure)
+        set_sensitive(configure, False)
+        return configure
 
     def make_serverlogmenuitem(self) -> Gtk.ImageMenuItem:
         def download_server_log(*_args) -> None:

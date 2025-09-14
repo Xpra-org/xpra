@@ -25,7 +25,7 @@ Gdk = gi_import("Gdk")
 
 class DebugConfig:
 
-    def __init__(self, text="Configure Debug Categories",
+    def __init__(self, text="Configure Client Debug Categories",
                  groups=STRUCT_KNOWN_FILTERS, enabled=debug_enabled_categories,
                  enable=enable_debug_for, disable=disable_debug_for):
         self.text = text
@@ -34,6 +34,7 @@ class DebugConfig:
         self.enabled = enabled
         self.enable = enable
         self.disable = disable
+        self.is_closed = False
         self.setup_window()
 
     def setup_window(self) -> None:
@@ -42,6 +43,13 @@ class DebugConfig:
         self.window.connect("delete-event", self.close)
         self.window.set_default_size(400, 300)
         self.window.set_title("Xpra Debug Config")
+
+        def window_deleted(*_args):
+            self.is_closed = True
+            self.hide()
+
+        add_close_accel(self.window, window_deleted)
+        self.window.connect("delete_event", window_deleted)
 
         icon_pixbuf = get_icon_pixbuf("bugs.png")
         if icon_pixbuf:

@@ -618,6 +618,25 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         filelog(f"load_contents: filename={filename}, {filesize} bytes, entity={entity}, openit={openit}")
         self.send_file(filename, "", data, filesize=filesize, openit=openit)
 
+    def configure_server_debug(self, *_args) -> None:
+        dialog = self.sub_dialogs.get("server-debug")
+        if dialog and not dialog.is_closed:
+            force_focus()
+            dialog.present()
+            return
+
+        def enable(category: str) -> None:
+            self.send("control-request", "debug", "enable", category)
+
+        def disable(category: str) -> None:
+            self.send("control-request", "debug", "disable", category)
+
+        from xpra.gtk.dialogs.debug import DebugConfig
+        dialog = DebugConfig("Configure Server Debug Categories",
+                             enable=enable, disable=disable)
+        dialog.show()
+        self.sub_dialogs["server-debug"] = dialog
+
     def show_about(self, *_args) -> None:
         from xpra.gtk.dialogs.about import about
         force_focus()
