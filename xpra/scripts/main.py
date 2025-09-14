@@ -272,7 +272,7 @@ def configure_logging(options, mode: str) -> None:
 
     from xpra.log import add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for
     if options.debug:
-        categories = options.debug.split(",")
+        categories = [cat.strip() for cat in options.debug.split(",") if cat.strip()]
         for cat in categories:
             if not cat:
                 continue

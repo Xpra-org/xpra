@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from typing import Any
 
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -12,6 +13,7 @@ from xpra.gtk.widget import label
 from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
+from xpra.common import noop
 from xpra.log import (
     Logger, CATEGORY_INFO, STRUCT_KNOWN_FILTERS,
     enable_color, enable_debug_for, disable_debug_for, debug_enabled_categories,
@@ -21,6 +23,35 @@ log = Logger("util")
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
+
+
+def make_category_widgets(groups: dict[str, dict[str, str]], enabled: set[str], sensitive=True,
+                          toggled=noop) -> tuple[list[Any], dict[str, Any]]:
+    expanders = []
+    widgets = {}
+    for group, categories in groups.items():
+        exp = Gtk.Expander(label=group)
+        grid = Gtk.Grid()
+        grid.set_row_homogeneous(True)
+        grid.set_column_homogeneous(False)
+        exp.add(grid)
+        row = 0
+        for category, descr in categories.items():
+            cb = Gtk.CheckButton(label=category)
+            cb.set_active(category in enabled)
+            cb.connect("toggled", toggled, category)
+            cb.set_sensitive(sensitive)
+            grid.attach(cb, 0, row, 1, 1)
+            descr = CATEGORY_INFO.get(category, "")
+            if descr:
+                lbl = label(descr)
+                lbl.set_halign(Gtk.Align.START)
+                lbl.set_margin_start(32)
+                grid.attach(lbl, 1, row, 1, 1)
+            row += 1
+            widgets[category] = cb
+        expanders.append(exp)
+    return expanders, widgets
 
 
 class DebugConfig:
@@ -61,26 +92,8 @@ class DebugConfig:
 
         vbox.add(label(self.text, font="Sans 16"))
 
-        for group, categories in self.groups.items():
-            exp = Gtk.Expander(label=group)
-            grid = Gtk.Grid()
-            grid.set_row_homogeneous(True)
-            grid.set_column_homogeneous(False)
-            exp.add(grid)
-            row = 0
-            for category, descr in categories.items():
-                cb = Gtk.CheckButton(label=category)
-                cb.set_active(category in self.enabled)
-                cb.connect("toggled", self.category_toggled, category)
-                grid.attach(cb, 0, row, 1, 1)
-                descr = CATEGORY_INFO.get(category, "")
-                if descr:
-                    lbl = label(descr)
-                    lbl.set_halign(Gtk.Align.START)
-                    lbl.set_margin_start(32)
-                    grid.attach(lbl, 1, row, 1, 1)
-                row += 1
-            vbox.pack_start(exp, True, True, 0)
+        for widget in make_category_widgets(self.groups, self.enabled, True, self.category_toggled)[0]:
+            vbox.pack_start(widget, True, True, 0)
 
         def accel_close(*_args) -> None:
             self.close()
