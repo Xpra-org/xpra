@@ -700,6 +700,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             got_server_log(b"")
         GLib.timeout_add(200, init_bug_report)
 
+    def show_debug_config(self, *_args) -> None:
+        dialog = self.sub_dialogs.get("debug-config")
+        if not dialog:
+            from xpra.gtk.dialogs.debug import DebugConfig
+            dialog = DebugConfig()
+            self.sub_dialogs["debug-config"] = dialog
+        dialog.show()
+
     def get_image(self, icon_name: str, size=None) -> Gtk.Image | None:
         with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):
             pixbuf = get_icon_pixbuf(icon_name)

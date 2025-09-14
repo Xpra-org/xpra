@@ -449,6 +449,9 @@ class MenuHelper:
     def show_bug_report(self, *args) -> None:
         self.client.show_bug_report(*args)
 
+    def show_debug_config(self, *args) -> None:
+        self.client.show_debug_config(*args)
+
     def get_image(self, icon_name, size=None):
         return self.client.get_image(icon_name, size)
 
@@ -532,7 +535,10 @@ class MenuHelper:
         return sessioninfomenuitem
 
     def make_bugreportmenuitem(self) -> Gtk.ImageMenuItem:
-        return self.menuitem("Bug Report", "bugs.png", cb=self.show_bug_report)
+        return self.menuitem("Bug Report", "forward.png", cb=self.show_bug_report)
+
+    def make_debugmenuitem(self) -> Gtk.ImageMenuItem:
+        return self.menuitem("Debug Logging", "bugs.png", cb=self.show_debug_config)
 
     def make_docsmenuitem(self) -> Gtk.ImageMenuItem:
         from xpra.scripts.main import show_docs

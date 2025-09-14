@@ -5,10 +5,10 @@
 # later version. See the file COPYING for details.
 
 import sys
-from collections.abc import Callable
 
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.widget import label
 from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
@@ -25,8 +25,10 @@ Gdk = gi_import("Gdk")
 
 class DebugConfig:
 
-    def __init__(self, groups: dict[str, dict[str, str]], enabled: set[str],
-                 enable: Callable, disable: Callable):
+    def __init__(self, text="Configure Debug Categories",
+                 groups=STRUCT_KNOWN_FILTERS, enabled=debug_enabled_categories,
+                 enable=enable_debug_for, disable=disable_debug_for):
+        self.text = text
         self.window: Gtk.Window | None = None
         self.groups = groups
         self.enabled = enabled
@@ -49,6 +51,8 @@ class DebugConfig:
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
 
+        vbox.add(label(self.text, font="Sans 16"))
+
         for group, categories in self.groups.items():
             exp = Gtk.Expander(label=group)
             grid = Gtk.Grid()
@@ -63,10 +67,10 @@ class DebugConfig:
                 grid.attach(cb, 0, row, 1, 1)
                 descr = CATEGORY_INFO.get(category, "")
                 if descr:
-                    label = Gtk.Label(label=descr)
-                    label.set_halign(Gtk.Align.START)
-                    label.set_margin_start(32)
-                    grid.attach(label, 1, row, 1, 1)
+                    lbl = label(descr)
+                    lbl.set_halign(Gtk.Align.START)
+                    lbl.set_margin_start(32)
+                    grid.attach(lbl, 1, row, 1, 1)
                 row += 1
             vbox.pack_start(exp, True, True, 0)
 
@@ -142,7 +146,9 @@ def main(argv=()) -> int:
             enable_debug_for("util")
 
         from xpra.util.glib import register_os_signals
-        app = DebugConfig(STRUCT_KNOWN_FILTERS, debug_enabled_categories, enable_debug_for, disable_debug_for)
+        app = DebugConfig("Configure Debug Categories",
+                          STRUCT_KNOWN_FILTERS, debug_enabled_categories,
+                          enable_debug_for, disable_debug_for)
         app.close = app.quit
         register_os_signals(app.quit, "Debug Config")
         try:

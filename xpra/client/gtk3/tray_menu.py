@@ -205,6 +205,7 @@ class GTKTrayMenu(MenuHelper):
         if SHOW_VERSION_CHECK:
             add(self.make_updatecheckmenuitem())
         add(self.make_bugreportmenuitem())
+        add(self.make_debugmenuitem())
         add(self.make_docsmenuitem())
         add(self.make_html5menuitem())
         info_menu_item.show_all()
