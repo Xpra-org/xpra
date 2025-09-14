@@ -265,7 +265,7 @@ class OSXMenuHelper(GTKTrayMenu):
                 if SHOW_UPLOAD and self.client.remote_file_transfer:
                     add(server_menu, self.make_uploadmenuitem())
                 if SHOW_SERVER_DEBUG:
-                    add(server_menu, self.make_debugmenuitem())
+                    add(server_menu, self.make_serverdebugmenuitem())
 
             self.after_handshake(add_ah)
             menus.append(("Server", server_menu))
