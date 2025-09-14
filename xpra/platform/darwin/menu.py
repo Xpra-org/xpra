@@ -15,7 +15,8 @@ from xpra.client.gtk3.tray_menu import (
     GTKTrayMenu,
     CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS,
     CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL,
-    SHOW_UPLOAD, SHOW_VERSION_CHECK, RUNCOMMAND_MENU, SHOW_SERVER_COMMANDS, SHOW_SHUTDOWN,
+    SHOW_UPLOAD, SHOW_SERVER_DEBUG,
+    SHOW_VERSION_CHECK, RUNCOMMAND_MENU, SHOW_SERVER_COMMANDS, SHOW_SHUTDOWN,
     SHOW_QR,
 )
 from xpra.platform.paths import get_icon
@@ -263,6 +264,8 @@ class OSXMenuHelper(GTKTrayMenu):
                     add(server_menu, self.make_servercommandsmenuitem())
                 if SHOW_UPLOAD and self.client.remote_file_transfer:
                     add(server_menu, self.make_uploadmenuitem())
+                if SHOW_SERVER_DEBUG:
+                    add(server_menu, self.make_debugmenuitem())
 
             self.after_handshake(add_ah)
             menus.append(("Server", server_menu))

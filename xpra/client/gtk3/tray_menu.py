@@ -45,7 +45,7 @@ SHOW_QR = envbool("XPRA_SHOW_QR", True)
 SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
 SHOW_SERVER_LOG = envbool("XPRA_SHOW_SERVER_LOG", True)
 SHOW_DOWNLOAD = envbool("XPRA_SHOW_DOWNLOAD", True)
-SHOW_SERVERDEBUG = envbool("XPRA_SHOW_SERVERDEBUG", True)
+SHOW_SERVER_DEBUG = envbool("XPRA_SHOW_SERVER_DEBUG", True)
 STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
 WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
@@ -1551,7 +1551,7 @@ class GTKTrayMenu(MenuHelper):
             menu.append(self.make_uploadmenuitem())
         if SHOW_DOWNLOAD:
             menu.append(self.make_downloadmenuitem())
-        if SHOW_SERVERDEBUG:
+        if SHOW_SERVER_DEBUG:
             menu.append(self.make_serverdebugmenuitem())
         if SHOW_SERVER_LOG:
             menu.append(self.make_serverlogmenuitem())
