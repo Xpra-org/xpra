@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.4] 2025-09-03
+## [6.4] 2025-09-14
 * Platforms, build and packaging:
   * [major modularization](https://github.com/Xpra-org/xpra/issues/4523)
   * [Gtk-free server](https://github.com/Xpra-org/xpra/issues/3871)
@@ -23,6 +23,7 @@
   * [record correct pid for daemonized processes](https://github.com/Xpra-org/xpra/issues/4499)
   * [configurable window grouping](https://github.com/Xpra-org/xpra/issues/4208)
   * [blend window border with OpenGL backend](https://github.com/Xpra-org/xpra/issues/4540)
+  * [easier debug logging](https://github.com/Xpra-org/xpra/issues/4662) [and toggle](https://github.com/Xpra-org/xpra/issues/4666)
 * Network:
   * [stronger packet data types](https://github.com/Xpra-org/xpra/issues/4566)
   * [honour `IdentityFile` and `IdentitiesOnly` in ssh configs](https://github.com/Xpra-org/xpra/issues/4598)

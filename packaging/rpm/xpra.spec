@@ -1026,7 +1026,7 @@ fi
 
 
 %changelog
-* Wed Sep 03 2025 Antoine Martin <antoine@xpra.org> 6.4-10
+* Sun Sep 14 2025 Antoine Martin <antoine@xpra.org> 6.4-10
 - Platforms, build and packaging:
    major modularization
    Gtk-free server
@@ -1049,6 +1049,7 @@ fi
    record correct pid for daemonized processes
    configurable window grouping
    blend window border with OpenGL backend
+   easier debug logging and toggle
 - Network:
    stronger packet data types
    honour `IdentityFile` and `IdentitiesOnly` in ssh configs

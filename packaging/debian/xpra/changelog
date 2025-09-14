@@ -21,6 +21,7 @@ xpra (6.4-1) UNRELEASED; urgency=low
     record correct pid for daemonized processes
     configurable window grouping
     blend window border with OpenGL backend
+    easier debug logging and toggle
   * Network:
     stronger packet data types
     honour `IdentityFile` and `IdentitiesOnly` in ssh configs
@@ -29,7 +30,7 @@ xpra (6.4-1) UNRELEASED; urgency=low
     configure refresh rate
    `fakescreenfps` when supported
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 03 Sep 2025 12:35:52 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 14 Sep 2025 21:51:51 +0700
 
 xpra (6.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
