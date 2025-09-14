@@ -696,6 +696,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         from xpra.client.base import features
         if features.file:
             self.download_server_log(got_server_log)
+        else:
+            got_server_log(b"")
         GLib.timeout_add(200, init_bug_report)
 
     def get_image(self, icon_name: str, size=None) -> Gtk.Image | None:
