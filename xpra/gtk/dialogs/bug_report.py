@@ -205,7 +205,7 @@ class BugReport:
             ("system", "txt", "System", get_sys_info, True,
              "Xpra version, platform and host information - including hostname and account information"),
             ("server-log", "txt", "Server Log", get_server_log, bool(self.server_log),
-             "Xpra version, platform and host information - including hostname and account information"),
+             "Server log file"),
             ("network", "txt", "Network", get_net_info, True,
              "Compression, packet encoding and encryption"),
             ("encoding", "txt", "Encodings", codec_versions, bool(codec_versions),
