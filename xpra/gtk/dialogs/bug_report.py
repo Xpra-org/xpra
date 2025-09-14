@@ -57,7 +57,7 @@ class BugReport:
 
     def __init__(self):
         self.checkboxes = {}
-        self.server_log = None
+        self.server_log = b""
         self.show_about = True
         self.get_server_info: Callable | None = None
         self.opengl_info: dict = {}
@@ -256,7 +256,7 @@ class BugReport:
         self.window.vbox = vbox
         self.window.add(vbox)
 
-    def set_server_log_data(self, filedata) -> None:
+    def set_server_log_data(self, filedata: bytes) -> None:
         self.server_log = filedata
         cb = self.checkboxes.get("server-log")
         log("set_server_log_data(%i bytes) cb=%s", len(filedata or b""), cb)
