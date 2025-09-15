@@ -11,7 +11,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, OSX
 from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
@@ -59,7 +59,7 @@ class ClientWindow(GTKClientWindowBase):
             hbi.set_from_pixbuf(pixbuf)
 
     def can_use_header_bar(self, metadata: typedict) -> bool:
-        if self.is_OR() or not self.get_decorated():
+        if self.is_OR() or not self.get_decorated() or OSX:
             return False
         hbl = (self.headerbar or "").lower().strip()
         if hbl in FALSE_OPTIONS:
