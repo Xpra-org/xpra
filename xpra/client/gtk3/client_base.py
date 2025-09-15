@@ -716,7 +716,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if features.file:
             self.download_server_log(got_server_log)
         else:
-            got_server_log(b"")
+            dialog.set_server_log_data(b"")
         GLib.timeout_add(200, init_bug_report)
 
     def show_debug_config(self, *_args) -> None:
