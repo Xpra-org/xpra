@@ -11,7 +11,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.common import noop
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, OSX
 from xpra.log import Logger
 
 log = Logger("window", "metadata")
@@ -33,7 +33,7 @@ class HeaderBarWindow(StubWindow):
             self.add_header_bar()
 
     def can_use_header_bar(self, metadata: typedict) -> bool:
-        if self.is_OR() or not self.get_decorated():
+        if self.is_OR() or not self.get_decorated() or OSX:
             return False
         hbl = (self.headerbar or "").lower().strip()
         if hbl in FALSE_OPTIONS:
