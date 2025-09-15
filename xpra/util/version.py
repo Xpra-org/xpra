@@ -23,7 +23,7 @@ XPRA_NUMERIC_VERSION: tuple[int] = xpra.__version_info__
 
 CHECK_SSL: bool = envbool("XPRA_VERSION_CHECK_SSL", True)
 SSL_CAFILE: str = ""
-if WIN32:
+if WIN32 or OSX:
     try:
         import certifi
 
@@ -318,6 +318,7 @@ def get_version_from_url(url: str) -> tuple[int, ...]:
         return ()
     try:
         context = ssl.create_default_context(cafile=SSL_CAFILE)
+        log("ssl context for cafile=%r : %s", SSL_CAFILE, context)
         response = urlopen(url, context=context)
         latest_version = response.read().rstrip(b"\n\r")
         latest_version_no = tuple(int(y) for y in latest_version.split(b"."))
