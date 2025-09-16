@@ -20,7 +20,7 @@ XPRA_VERSION = xpra.__version__     #@UndefinedVariable
 
 CHECK_SSL : bool = envbool("XPRA_VERSION_CHECK_SSL", True)
 SSL_CAFILE : str = ""
-if WIN32:
+if WIN32 or OSX:
     try:
         import certifi  #@UnresolvedImport
         SSL_CAFILE = certifi.where()
