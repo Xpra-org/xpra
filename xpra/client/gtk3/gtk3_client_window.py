@@ -13,7 +13,7 @@ from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import scaled_image, get_icon_pixbuf
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util import envbool, typedict
-from xpra.os_util import bytestostr, is_gnome
+from xpra.os_util import bytestostr, is_gnome, OSX
 from xpra.log import Logger
 
 paintlog = Logger("paint")
@@ -54,7 +54,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
             hbi.set_from_pixbuf(pixbuf)
 
     def can_use_header_bar(self, metadata:typedict) -> bool:
-        if self.is_OR() or not self.get_decorated():
+        if self.is_OR() or not self.get_decorated() or OSX:
             return False
         hbl = (self.headerbar or "").lower().strip()
         if hbl in FALSE_OPTIONS:
