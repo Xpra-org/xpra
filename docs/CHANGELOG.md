@@ -1,9 +1,10 @@
 # Changelog
 
-## [5.1.2] 2025-09-05
+## [5.1.2] 2025-09-16
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/39c80ca0e373c8ee2787a5c07613d28bda07b3d3)
     * [`xpra-server` DEB missing `adduser` dependency](https://github.com/Xpra-org/xpra/commit/a0cc1d3dfb3db1e8dee9df99e50083b926c10b18)
+    * [bundle `GioWin32` on MS Windows](https://github.com/Xpra-org/xpra/commit/21600b9381a3974420527b01b63bf082bc1f49ad)
 * MacOS:
     * [switch to `Adwaita` theme](https://github.com/Xpra-org/xpra/commit/2273a2c92ec3cb91487284070c5ad9845c477df7)
     * [`locale.alias` warnings in command line tools](https://github.com/Xpra-org/xpra/commit/ccda64fdfc98021139c4c46aabc0123e636d9234)
@@ -14,6 +15,7 @@
     * [explicitly require macOS 12 or later](https://github.com/Xpra-org/xpra/commit/bef981f596c0c4fc4b582a07659bc18aff0f4d79)
     * [_nodock_ bundle out of date metadata](https://github.com/Xpra-org/xpra/commit/9724a2ed263e4d3999688e3667395e097ae37054)
     * [out of date copyright notice](https://github.com/Xpra-org/xpra/commit/632a98be5400993f36f8a2a402193dbfda6f4131)
+    * [ignore open-url and open-file events once started](https://github.com/Xpra-org/xpra/commit/b7c0223a431fc457e4124b2109921c86da1ba95e)
 * Encodings:
     * [`openh264`: expose frame number and use default settings as base](https://github.com/Xpra-org/xpra/commit/8c8c02a611c71ab6e0d86fc93f9dd05beed35a89) [and update definitions](https://github.com/Xpra-org/xpra/commit/df18c717db3812f8bbe6297cd28e07c4adad527d), [fixup backport](https://github.com/Xpra-org/xpra/commit/ebbdf48d53fd6eb36074c1169ddb6d16a629ebb3)
     * [expose nvidia GPU attributes as strings](https://github.com/Xpra-org/xpra/commit/b22335086ce36db9fe18d1139875df22abb32ee4)
@@ -50,6 +52,7 @@
     * [client errors on exit](https://github.com/Xpra-org/xpra/commit/b0748a1412919a02287b6907bea46c04b1787db5)
     * [avoid image cleanup race condition warning](https://github.com/Xpra-org/xpra/commit/8da6cf74bb7b4654db7905d60c2aa99add56ca36)
     * [statistics can throw errors](https://github.com/Xpra-org/xpra/commit/46eda2e57f1e4f4a0e32547afaff4a15032c5e5e)
+    * [`xpra gui` fails to run subcommands](https://github.com/Xpra-org/xpra/commit/886a4c60518a216d228c45f2677dbaff6f12b7da)
 * Cosmetic:
     * [remove unused attribute](https://github.com/Xpra-org/xpra/commit/80ad4d7b46bf545845cc6f6ba00e4798b224723d)
     * [make it easier to disable xdg menus](https://github.com/Xpra-org/xpra/commit/82259530d9ae59f7f475f1b95790be3e19748702)
@@ -58,6 +61,9 @@
     * [Cython compilation warning](https://github.com/Xpra-org/xpra/commit/565ead79229c26b3995ceecb591b17b7563bdabc)
     * [text entry example incomplete](https://github.com/Xpra-org/xpra/commit/62025173389ec29dfda882b9a0e6a0535430498e)
     * [log more disconnection details](https://github.com/Xpra-org/xpra/commit/07c18b9c5264bd1bb5034555e8ba59af2eea010e)
+    * [invalid "class-instance" warnings](https://github.com/Xpra-org/xpra/commit/97b1a2cb51ff987701c2528a30b7950e0ae567f4)
+    * [authentication debug logging](https://github.com/Xpra-org/xpra/commit/c9759a596329ea076d979f6fd3293c14239db3dc)
+    * [bug report tooltip](https://github.com/Xpra-org/xpra/commit/23a952edd4977c9b7f121d0af1c9c793e974c5fa)
 
 ## [5.1.1] 2025-06-18
 * Platforms, build and packaging:

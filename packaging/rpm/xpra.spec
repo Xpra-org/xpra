@@ -804,10 +804,11 @@ fi
 
 
 %changelog
-* Fri Sep 05 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
+* Tue Sep 16 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warning
    `xpra-server` DEB missing `adduser` dependency
+   bundle `GioWin32` on MS Windows
 * MacOS:
    switch to `Adwaita` theme
    `locale.alias` warnings in command line tools
@@ -818,6 +819,7 @@ fi
    explicitly require macOS 12 or later
    _nodock_ bundle out of date metadata
    out of date copyright notice
+   ignore open-url and open-file events once started
 - Encodings:
    `openh264`: expose frame number and use default settings as base and update definitions, fixup backport
    expose nvidia GPU attributes as strings
@@ -852,6 +854,7 @@ fi
    remove event receivers when windows are closed
    incorrect double-click settings may be used
    client errors on exit
+   `xpra gui` fails to run subcommands
 - Cosmetic:
    remove unused attribute
    make it easier to disable xdg menus
@@ -860,6 +863,9 @@ fi
    Cython compilation warning
    text entry example incomplete
    log more disconnection details
+   invalid "class-instance" warnings
+   authentication debug logging
+   bug report tooltip
 
 * Wed Jun 18 2025 Antoine Martin <antoine@xpra.org> 5.1.1-10
 - Platforms, build and packaging:

@@ -2,6 +2,7 @@ xpra (5.1.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     clang 20 no longer recognizes `unreachable-code-fallthrough` warning
     `xpra-server` DEB missing `adduser` dependency
+    bundle `GioWin32` on MS Windows
   * MacOS:
     switch to `Adwaita` theme
     `locale.alias` warnings in command line tools
@@ -12,6 +13,7 @@ xpra (5.1.2-1) UNRELEASED; urgency=low
     explicitly require macOS 12 or later
     _nodock_ bundle out of date metadata
     out of date copyright notice
+    ignore open-url and open-file events once started
   * Encodings:
     `openh264`: expose frame number and use default settings as base, fixup backport
     expose nvidia GPU attributes as strings
@@ -46,6 +48,7 @@ xpra (5.1.2-1) UNRELEASED; urgency=low
     remove event receivers when windows are closed
     incorrect double-click settings may be used
     client errors on exit
+    `xpra gui` fails to run subcommands
   * Cosmetic:
     remove unused attribute
     make it easier to disable xdg menus
@@ -54,8 +57,11 @@ xpra (5.1.2-1) UNRELEASED; urgency=low
     Cython compilation warning
     text entry example incomplete
     log more disconnection details
+    invalid "class-instance" warnings
+    authentication debug logging
+    bug report tooltip
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 05 Sep 2025 13:59:49 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 16 Sep 2025 16:25:10 +0700
 
 xpra (5.1.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
