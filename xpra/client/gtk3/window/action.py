@@ -44,3 +44,12 @@ class ActionWindow(StubWindow):
 
     def show_docs(self, *args) -> None:
         self._client.show_docs(*args)
+
+    def download_server_log(self, *_args) -> None:
+        self._client.download_server_log()
+
+    def configure_server_debug(self, *args) -> None:
+        self._client.configure_server_debug(*args)
+
+    def show_debug_config(self, *args) -> None:
+        self._client.show_debug_config(*args)
