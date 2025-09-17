@@ -10,7 +10,7 @@
 from typing import Any, Dict
 
 from xpra.log import Logger
-log = Logger("util", "auth")
+log = Logger("auth")
 
 from ctypes import addressof, create_string_buffer, sizeof
 

@@ -36,7 +36,7 @@ from xpra.util.thread import start_thread
 from xpra.log import Logger
 
 log = Logger("proxy")
-authlog = Logger("proxy", "auth")
+authlog = Logger("auth")
 
 GLib = gi_import("GLib")
 
