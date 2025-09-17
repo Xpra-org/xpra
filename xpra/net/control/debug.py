@@ -4,21 +4,33 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import (
-    Logger,
-    add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for, get_all_loggers,
+    Logger, get_all_loggers,
+    add_debug_category, add_disabled_category,
+    enable_debug_for, disable_debug_for,
     add_backtrace, remove_backtrace,
+    RESTRICTED_DEBUG_CATEGORIES,
 )
 from xpra.net.control.common import ArgsControlCommand
+from xpra.util.env import envint
 from xpra.util.str_fn import csv
 
 log = Logger("util", "command")
 
+CONTROL_DEBUG = envint("XPRA_CONTROL_DEBUG", 1)
+
+SUBCOMMANDS = [
+    "status", "mark",
+]
+if CONTROL_DEBUG:
+    SUBCOMMANDS += [
+        "enable `category`", "disable `category`",
+        "add-backtrace `expression`", "remove-backtrace `expression`",
+    ]
+
 
 class DebugControl(ArgsControlCommand):
     def __init__(self):
-        subcommands = csv(f"'debug {subc}'" for subc in (
-            "enable category", "disable category", "status", "mark", "add-backtrace", "remove-backtrace",
-        ))
+        subcommands = csv(f"'debug {subc}'" for subc in SUBCOMMANDS)
         super().__init__("debug", f"usage: {subcommands}", min_args=1)
 
     def run(self, *args) -> str:
@@ -37,6 +49,8 @@ class DebugControl(ArgsControlCommand):
             for _ in range(10):
                 log.info("*" * 80)
             return "mark inserted into logfile"
+        if CONTROL_DEBUG <= 0:
+            return "debug control functions are restricted"
         if len(args) < 2:
             self.raise_error("not enough arguments")
         if log_cmd == "add-backtrace":
@@ -58,6 +72,12 @@ class DebugControl(ArgsControlCommand):
             # but we support "," for backwards compatibility:
             categories = [v.strip() for v in group.replace("+", ",").split(",")]
             if log_cmd == "enable":
+                if CONTROL_DEBUG < 2:
+                    restricted = tuple(cat for cat in RESTRICTED_DEBUG_CATEGORIES if cat in categories)
+                    if restricted:
+                        warning = "Warning: enabling debug logging is restricted for: %s" % csv(repr(cat) for cat in restricted)
+                        log.warn(warning)
+                        return warning
                 add_debug_category(*categories)
                 loggers += enable_debug_for(*categories)
             elif log_cmd == "disable":
