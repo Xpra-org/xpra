@@ -290,7 +290,7 @@ class SocketConnection(Connection):
         self.remote = remote
         self.protocol_type = "socket"
         if self.socktype_wrapped in TCP_SOCKTYPES:
-            def boolget(k, default_value):
+            def boolget(k: str, default_value: bool | None) -> bool | None:
                 v = self.options.get(k)
                 if v is None:
                     return default_value
@@ -705,11 +705,17 @@ def get_socket_config() -> dict[str, Any]:
     config = {}
     try:
         config = {
-            "vsocket.timeout": VSOCK_TIMEOUT,
-            "socket.timeout": SOCKET_TIMEOUT,
+            "vsocket": {
+                "timeout": VSOCK_TIMEOUT,
+            },
+            "socket": {
+                "timeout": SOCKET_TIMEOUT,
+                "keepalive": SOCKET_KEEPALIVE,
+                "cork": SOCKET_CORK,
+                "nodelay": str(SOCKET_NODELAY),
+                "shutdown": SOCKET_SHUTDOWN,
+            },
         }
-        if SOCKET_NODELAY is not None:
-            config["socket.nodelay"] = SOCKET_NODELAY
     except Exception:  # pragma: no cover
         log("get_net_config()", exc_info=True)
     return config
