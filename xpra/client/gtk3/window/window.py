@@ -74,7 +74,8 @@ class ClientWindow(WindowBaseClass):
             bc.set_icon(self, pixbuf)
 
     def show_xpra_menu(self, *_args) -> None:
-        mh = self._client.get_menu_helper()
+        # this is called by the headerbar
+        mh = self._client.get_window_menu_helper()
         if mh:
             mh.build()
             mh.popup(0, 0)

@@ -44,7 +44,7 @@ def show_compare_keycodes(oldkc: Sequence[KEYCODE_DEF], newkc: Sequence[KEYCODE_
     for i, entry in enumerate(oldkc):
         newentry = newkc[i] if i < len(newkc) else None
         if newentry != entry:
-            log.info(f"{entry} -> {newentry}")
+            log(f"{entry} -> {newentry}")
 
 
 class KeyboardHelper:

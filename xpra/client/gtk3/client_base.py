@@ -151,6 +151,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.pinentry_proc = None
         self.sub_dialogs = {}
         self.menu_helper = None
+        self.window_menu_helper = None
         self.keyboard_helper_class = GTKKeyboardHelper
         self.data_send_requests = {}
         # clipboard bits:
@@ -204,9 +205,18 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             from xpra.client.gtk3.tray_menu import GTKTrayMenu
             from xpra.util.objects import make_instance
             mhc = (get_menu_helper_class(), GTKTrayMenu)
-            log("make_tray_menu_helper() tray menu helper classes: %s", mhc)
+            log("get_menu_helper() tray menu helper classes: %s", mhc)
             self.menu_helper = make_instance(mhc, self)
         return self.menu_helper
+
+    def get_window_menu_helper(self):
+        if not self.window_menu_helper:
+            from xpra.client.gtk3.tray_menu import GTKTrayMenu
+            from xpra.util.objects import make_instance
+            mhc = (GTKTrayMenu, )
+            log("get_window_menu_helper() tray menu helper classes: %s", mhc)
+            self.window_menu_helper = make_instance(mhc, self)
+        return self.window_menu_helper
 
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
@@ -716,7 +726,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if features.file:
             self.download_server_log(got_server_log)
         else:
-            got_server_log(b"")
+            dialog.set_server_log_data(b"")
         GLib.timeout_add(200, init_bug_report)
 
     def show_debug_config(self, *_args) -> None:

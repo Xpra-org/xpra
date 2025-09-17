@@ -11,7 +11,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.common import noop
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, OSX
 from xpra.log import Logger
 
 log = Logger("window", "metadata")
@@ -33,7 +33,7 @@ class HeaderBarWindow(StubWindow):
             self.add_header_bar()
 
     def can_use_header_bar(self, metadata: typedict) -> bool:
-        if self.is_OR() or not self.get_decorated():
+        if self.is_OR() or not self.get_decorated() or OSX:
             return False
         hbl = (self.headerbar or "").lower().strip()
         if hbl in FALSE_OPTIONS:
@@ -77,9 +77,9 @@ class HeaderBarWindow(StubWindow):
             pixbuf = get_icon_pixbuf("transparent.png")
             self.header_bar_image = scaled_image(pixbuf, self._icon_size())
             hb.pack_start(self.header_bar_image)
-        if WINDOW_XPRA_MENU:
+        show_xpra_menu = getattr(self, "show_xpra_menu", noop)
+        if WINDOW_XPRA_MENU and show_xpra_menu != noop:
             # defined in window:
-            show_xpra_menu = getattr(self, "show_xpra_menu", noop)
             icon = Gio.ThemedIcon(name="open-menu-symbolic")
             image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
             button = Gtk.Button()

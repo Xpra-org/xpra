@@ -1857,7 +1857,7 @@ if WIN32:
             # causes warnings:
             # add_dir('lib', ["gio"])
             packages.append("gi")
-            add_gi_typelib("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0", "GObject-2.0")
+            add_gi_typelib("Gio-2.0", "GioWin32-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0", "GObject-2.0")
         if gtk3_ENABLED:
             add_gi(
                 "Atk-1.0",

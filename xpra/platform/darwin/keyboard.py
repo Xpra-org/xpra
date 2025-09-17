@@ -182,8 +182,8 @@ class Keyboard(KeyboardBase):
             else:
                 if code and code not in layouts:
                     layouts.insert(0, code)
-            log("get_layout_spec() view=%s, input_context=%s, layout=%s, layouts=%s",
-                repr(view), text_input_context, layout, layouts)
+            log("get_layout_spec() view=%r, input_context=%s", view, text_input_context)
+            log("get_layout_spec() layout=%s, layouts=%s", layout, layouts)
         except Exception as e:
             log("get_layout_spec()", exc_info=True)
             log.error("Error querying keyboard layout:")
