@@ -20,7 +20,7 @@ from xpra.net.http.common import EXTENSION_TO_MIMETYPE
 from xpra.net.http.directory_listing import list_directory
 from xpra.net.bytestreams import pretty_socket
 from xpra.util.objects import AdHocStruct
-from xpra.util.str_fn import std, csv, repr_ellipsized
+from xpra.util.str_fn import std, csv, obsc, repr_ellipsized
 from xpra.util.env import envbool
 from xpra.platform.paths import get_desktop_background_paths
 from xpra.log import Logger
@@ -304,7 +304,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         username, password = s.split(":", 1)
         if (self.username and username != self.username) or password != self.password:
             authlog("http authentication: expected %s:%s but received %s:%s",
-                    self.username or "", self.password, username, password)
+                    self.username or "", obsc(self.password), username, obsc(password))
             return auth_err("invalid credentials")
         authlog("http authentication passed")
         return True
