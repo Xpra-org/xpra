@@ -89,6 +89,7 @@ def until_concludes(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[An
             return f(*a, **kw)
         except Exception as e:
             retry = can_retry_cb(e)
+            log("can_retry(%s)=%s", e, retry)
             if not retry:
                 raise
             if LOG_TIMEOUTS > 0:
