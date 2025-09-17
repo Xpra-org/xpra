@@ -1,3 +1,8 @@
+winbar (1:0.2.4-1) UNRELEASED; urgency=low
+  * new snapshot
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 17 Sep 2025 18:13:08 +0700
+
 winbar (1:0.2.1-1) UNRELEASED; urgency=low
   * use fork to get randr patch
 
