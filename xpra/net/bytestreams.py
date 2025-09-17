@@ -39,6 +39,8 @@ SOCKET_TIMEOUT: int = envint("XPRA_SOCKET_TIMEOUT", 20)
 # this is more proper but would break the proxy server:
 SOCKET_SHUTDOWN: bool = envbool("XPRA_SOCKET_SHUTDOWN", False)
 LOG_TIMEOUTS: int = envint("XPRA_LOG_TIMEOUTS", 1)
+DIRECT_SOCKET_IO = envbool("XPRA_DIRECT_SOCKET_IO", False)
+
 
 ABORT: dict[int, str] = {
     errno.ENXIO: "ENXIO",
@@ -77,7 +79,11 @@ def can_retry(e) -> bool | str:
     return False
 
 
-def untilConcludes(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[Any], bool], f: Callable, *a, **kw) -> Any:
+def direct_socket_io(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[Any], bool], f: Callable, *a, **kw) -> Any:
+    return f(*a, **kw)
+
+
+def until_concludes(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[Any], bool], f: Callable, *a, **kw) -> Any:
     while is_active_cb():
         try:
             return f(*a, **kw)
@@ -89,6 +95,9 @@ def untilConcludes(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[Any
                 log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s",
                     is_active_cb, can_retry_cb, f, a, kw, e, retry, exc_info=LOG_TIMEOUTS >= 2)
     return None
+
+
+untilConcludes = direct_socket_io if DIRECT_SOCKET_IO else until_concludes
 
 
 def pretty_socket(s) -> str:
