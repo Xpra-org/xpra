@@ -15,7 +15,7 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("network", "protocol", "rfb")
-authlog = Logger("auth", "rfb")
+authlog = Logger("auth")
 
 
 class RFBServerProtocol(RFBProtocol):
