@@ -273,7 +273,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def handle_authentication(self) -> bool:
         if not self.password:
             return True
-        authlog = Logger("auth", "http")
+        authlog = Logger("auth")
 
         def auth_err(msg):
             self.do_AUTHHEAD()
