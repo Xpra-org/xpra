@@ -11,7 +11,7 @@ from typing import List, Callable, Dict, Tuple, Any
 from xpra.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
 from xpra.util import csv, std, envbool, ellipsizer
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, OSX
 from xpra.log import Logger
 
 log = Logger("keyboard")
