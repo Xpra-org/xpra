@@ -621,12 +621,16 @@ class SSLSocketConnection(SocketConnection):
         if getattr(e, "library", "") == "SSL":
             reason = getattr(e, "reason", "")
             if reason in SSLSocketConnection.SSL_ERROR_MESSAGES:
+                log("SSL library error, message: %r", reason)
                 return False
+            log("SSL library exception: %s, reason=%r", e, reason)
         message = e.args[0]
         if message in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
+            log("SSL timeout will be retried, messsage: %r", message)
             return True
         code = getattr(e, "code", None)
         if code in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
+            log("SSL timeout will be retried, code: %r", code)
             return True
         return super().can_retry(e)
 
