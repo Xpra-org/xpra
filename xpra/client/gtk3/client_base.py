@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
 
-from xpra.common import noop, MIN_VREFRESH, MAX_VREFRESH
+from xpra.common import noop, MIN_VREFRESH, MAX_VREFRESH, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
@@ -636,10 +636,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return
 
         def enable(category: str) -> None:
-            self.send("control-request", "debug", "enable", category)
+            packet_type = "command_request" if BACKWARDS_COMPATIBLE else "control-request"
+            self.send(packet_type, "debug", "enable", category)
 
         def disable(category: str) -> None:
-            self.send("control-request", "debug", "disable", category)
+            packet_type = "command_request" if BACKWARDS_COMPATIBLE else "control-request"
+            self.send(packet_type, "debug", "disable", category)
 
         from xpra.gtk.dialogs.debug import DebugConfig
         dialog = DebugConfig("Configure Server Debug Categories",
