@@ -20,7 +20,7 @@ from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger
 
-log = Logger("exec", "auth")
+log = Logger("auth")
 
 SKIP_UI : bool = envbool("XPRA_SKIP_UI", False)
 PINENTRY : bool = envbool("XPRA_SSH_PINENTRY", POSIX and not OSX)

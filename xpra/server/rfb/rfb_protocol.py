@@ -12,7 +12,7 @@ from xpra.net.rfb.rfb_const import RFBAuth, AUTH_STR, CLIENT_INIT
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")
-authlog = Logger("auth", "rfb")
+authlog = Logger("auth")
 
 
 class RFBServerProtocol(RFBProtocol):
