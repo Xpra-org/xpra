@@ -1593,8 +1593,9 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
                 # hide the password from the URI:
                 i = cmdline.index(uri)
                 # cmdline[i] = uri.replace(opts.password, "*"*len(opts.password))
-                cmdline[i] = uri.replace(opts.password, "********")
-                set_proc_title(" ".join(cmdline))
+                obsc_cmdline = list(cmdline)
+                obsc_cmdline[i] = uri.replace(opts.password, "********")
+                set_proc_title(" ".join(obsc_cmdline))
         # use a custom proxy command for run mode:
         if mode == "run" and display_desc.get("type", "") == "ssh":
             # when using the ssh transport,
