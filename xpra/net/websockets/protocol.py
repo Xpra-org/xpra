@@ -66,9 +66,6 @@ class WebSocketProtocol(SocketProtocol):
         return header
 
     def parse_ws_frame(self, buf: SizedBuffer) -> None:
-        if not buf:
-            self._read_queue_put(buf)
-            return
         if self.ws_data:
             ws_data = b"".join((self.ws_data, buf))
             self.ws_data = b""
