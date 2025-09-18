@@ -144,7 +144,7 @@ See [audio forwarding](../Features/Audio.md)
 </details>
 
 <details>
-  <summary>Dependency Graphs</summary>
+  <summary>MacOS Dependency Graphs</summary>
 
   These graphs were generated using `jhbuild dot` on MacOS.
   The MacOS builds include very low level build dependencies.
@@ -163,5 +163,19 @@ See [audio forwarding](../Features/Audio.md)
 
   ### MacOS Packaging Tools
   ![GTK 3](graphs/packaging-tools.png)
+
+</details>
+
+<details>
+  <summary>MS Windows Dependency Graph</summary>
+
+  This graph was generated from the [`SBOM`](https://github.com/Xpra-org/xpra/issues/4050)
+  for a "Light" build of xpra for MS Windows using:
+  ```bash
+  sbom2dot --input ./Xpra-Light-x86_64_6.4-r39169.json --output xpra.dot
+  dot -Gsize=40,50\! -Gdpi=144  -Tpng -o win32-deps.png xpra.dot
+  ```
+
+  ![MS Windows Dependencies](graphs/win32-deps.webp)
 
 </details>
