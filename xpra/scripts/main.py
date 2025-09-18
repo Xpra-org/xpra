@@ -1808,9 +1808,9 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode: str):
             if uri in cmdline and opts.password in uri:
                 # hide the password from the URI:
                 i = cmdline.index(uri)
-                # cmdline[i] = uri.replace(opts.password, "*"*len(opts.password))
-                cmdline[i] = uri.replace(opts.password, "********")
-                set_proc_title(" ".join(cmdline))
+                obsc_cmdline = list(cmdline)
+                obsc_cmdline[i] = uri.replace(opts.password, "********")
+                set_proc_title(" ".join(obsc_cmdline))
         connect_to_server(app, display_desc, opts)
     except ValueError as e:
         einfo = str(e) or type(e)
