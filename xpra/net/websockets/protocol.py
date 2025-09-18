@@ -123,12 +123,18 @@ class WebSocketProtocol(SocketProtocol):
             elif opcode == OPCODE.TEXT:
                 if first_time(f"ws-text-frame-from-{self._conn}"):
                     log.warn("Warning: handling text websocket frame as binary")
+                if not full_payload:
+                    log.warn("Warning: empty websocket text payload")
+                    continue
                 self._read_queue_put(full_payload)
             elif opcode == OPCODE.CLOSE:
+                log.info("websocket close opcode received")
                 self._process_ws_close(full_payload)
             elif opcode == OPCODE.PING:
+                log("websocket ping opcode received")
                 self._process_ws_ping(full_payload)
             elif opcode == OPCODE.PONG:
+                log("websocket pong opcode received")
                 self._process_ws_pong(full_payload)
             else:
                 log.warn("Warning unhandled websocket opcode '%s'", OPCODE_STR.get(opcode, f"{opcode:x}"))
