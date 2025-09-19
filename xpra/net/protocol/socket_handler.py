@@ -764,15 +764,22 @@ class SocketProtocol:
         buf = self.con_read()
         #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
         #add to the read queue (or whatever takes its place - see steal_connection)
-        self._process_read(buf)
         if not buf:
-            eventlog("read thread: eof")
+            eventlog("read thread: potential eof")
+            self.timeout_add(1000, self.check_eof, self.input_raw_packetcount)
+        else:
+            self._process_read(buf)
+            self.input_raw_packetcount += 1
+        return True
+
+    def check_eof(self, raw_count=0) -> bool:
+        if self.input_raw_packetcount <= raw_count:
+            eventlog("check_eof: eof detected")
             # give time to the parse thread to call close itself,
             # so it has time to parse and process the last packet received
             self.timeout_add(1000, self.close)
             return False
-        self.input_raw_packetcount += 1
-        return True
+        return False
 
     def con_read(self) -> ByteString:
         if self._pre_read:
