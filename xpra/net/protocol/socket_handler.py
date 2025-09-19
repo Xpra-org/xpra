@@ -875,7 +875,7 @@ class SocketProtocol:
         return True
 
     def check_eof(self, raw_count=0) -> bool:
-        if self.input_raw_packetcount <= raw_count:
+        if not self._closed and self.input_raw_packetcount <= raw_count:
             eventlog("check_eof: eof detected")
             # give time to the parse thread to call close itself,
             # so it has time to parse and process the last packet received
