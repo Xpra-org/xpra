@@ -278,7 +278,6 @@ yaml_ENABLED            = DEFAULT
 codecs_ENABLED          = DEFAULT
 encoders_ENABLED        = codecs_ENABLED
 decoders_ENABLED        = codecs_ENABLED
-enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
 openh264_decoder_ENABLED = openh264_ENABLED
@@ -2746,8 +2745,6 @@ tace(proc_ENABLED and proc_use_procps, "xpra.platform.posix.proc_procps", "libpr
 tace(proc_ENABLED and proc_use_libproc, "xpra.platform.posix.proc_libproc", "libproc2", language="c++")
 
 # codecs:
-toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
-
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia.cuda")
 CUDA_BIN = f"{share_xpra}/cuda"
