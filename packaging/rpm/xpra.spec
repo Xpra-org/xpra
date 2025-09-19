@@ -74,7 +74,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.3.3
+Version:			6.3.4
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -1009,6 +1009,8 @@ fi
 
 
 %changelog
+* Fri Sep 19 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
+- TODO
 * Sat Sep 06 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warningg
