@@ -346,7 +346,6 @@ rebuild_ENABLED         = not skip_build
 
 # allow some of these flags to be modified on the command line:
 ENCODER_SWITCHES = [
-    "enc_proxy",
     "enc_x264", "openh264_encoder", "nvenc", "nvjpeg_encoder",
     "vpx_encoder", "webp_encoder", "pillow_encoder",
     "amf_encoder",
