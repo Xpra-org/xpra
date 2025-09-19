@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.2] 2025-09-16
+## [5.1.2] 2025-09-19
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/39c80ca0e373c8ee2787a5c07613d28bda07b3d3)
     * [`xpra-server` DEB missing `adduser` dependency](https://github.com/Xpra-org/xpra/commit/a0cc1d3dfb3db1e8dee9df99e50083b926c10b18)
@@ -16,11 +16,19 @@
     * [_nodock_ bundle out of date metadata](https://github.com/Xpra-org/xpra/commit/9724a2ed263e4d3999688e3667395e097ae37054)
     * [out of date copyright notice](https://github.com/Xpra-org/xpra/commit/632a98be5400993f36f8a2a402193dbfda6f4131)
     * [ignore open-url and open-file events once started](https://github.com/Xpra-org/xpra/commit/b7c0223a431fc457e4124b2109921c86da1ba95e)
+    * [don't use headerbar due to rendering glitches](https://github.com/Xpra-org/xpra/commit/ad7f4556778fa2561c02a46bc6ba86f3c1e08456)
+    * [version check needs CA certificate data file](https://github.com/Xpra-org/xpra/commit/8a2c2c2bcf33d5c5c7f8e5f8f4c1db5fc178ba9f)
+* Security:
+    * [don't log http passwords in debug logging](https://github.com/Xpra-org/xpra/commit/2f22dc0e03a5233a97bfe4c2be1e1990f50c5581)
+    * [don't log authentication data using `http` debug logging](https://github.com/Xpra-org/xpra/commit/cb908966d270fcb9c5a291adc1b73aa9f09ea171)
+    * [authentication messages should only use `auth` logging category](https://github.com/Xpra-org/xpra/commit/131660fc13971a8dbfbc9d5ef6e2e4d1904f9b90)
+    * [clients should not be able to enable `auth` debug logging](https://github.com/Xpra-org/xpra/commit/6f814281e7dbba8a26f4844a671df7fb8c93f740)
 * Encodings:
     * [`openh264`: expose frame number and use default settings as base](https://github.com/Xpra-org/xpra/commit/8c8c02a611c71ab6e0d86fc93f9dd05beed35a89) [and update definitions](https://github.com/Xpra-org/xpra/commit/df18c717db3812f8bbe6297cd28e07c4adad527d), [fixup backport](https://github.com/Xpra-org/xpra/commit/ebbdf48d53fd6eb36074c1169ddb6d16a629ebb3)
     * [expose nvidia GPU attributes as strings](https://github.com/Xpra-org/xpra/commit/b22335086ce36db9fe18d1139875df22abb32ee4)
     * [version parsing errors with newer nvidia kernel modules](https://github.com/Xpra-org/xpra/commit/efba061385cff96bb582afd97056339660d2cab1)
 * Network:
+    * [SSL connections drop](https://github.com/Xpra-org/xpra/commit/684ec7e8d43dcfc3662b0301f0c1d182543e4489)
     * [regression: socket directories not created](https://github.com/Xpra-org/xpra/commit/bbcded4dc4fb947dcc09ebf0ef7ae6707f12d89d)
     * [downgrade to TLS v1.2](https://github.com/Xpra-org/xpra/commit/1cf94046cfac16f1175ee6b686f722c16093ea43)
     * [early ping packets could cause connection to drop](https://github.com/Xpra-org/xpra/commit/e8a54c1d4eabefe16bc6ebe9e7c063561a73fc73)
@@ -33,6 +41,7 @@
     * [preserve URI form when parsing some IP protocols](https://github.com/Xpra-org/xpra/commit/7bc6fae93504a1079eded0fa3ae023fbefdc88fe)
     * [preserve URI path](https://github.com/Xpra-org/xpra/commit/c3b07f62c710bb321bfad73c808febd29e23575e)
 * Major:
+    * [re-connection fails if URL contains the password](https://github.com/Xpra-org/xpra/commit/d930e2209b99e788c0e14c4199d292c4c57a6375)
     * [focus breaks after 25 days or so](https://github.com/Xpra-org/xpra/commit/54e5c8f48347a1910cdf702c16965e3bef40ebe4)
     * [focus delay issues](https://github.com/Xpra-org/xpra/commit/c4e2881ab59842c6a72d18253807589b57797468)
     * [`vpx` decoder fails during self-test](https://github.com/Xpra-org/xpra/commit/cf316484a170bae336b29090efb984b47fed4f2a)

@@ -804,7 +804,7 @@ fi
 
 
 %changelog
-* Tue Sep 16 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
+* Fri Sep 19 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warning
    `xpra-server` DEB missing `adduser` dependency
@@ -820,11 +820,19 @@ fi
    _nodock_ bundle out of date metadata
    out of date copyright notice
    ignore open-url and open-file events once started
+   don't use headerbar due to rendering glitches
+   version check needs CA certificate data file
+- Security:
+   don't log http passwords in debug logging
+   don't log authentication data using `http` debug logging
+   authentication messages should only use `auth` logging category
+   clients should not be able to enable `auth` debug logging
 - Encodings:
    `openh264`: expose frame number and use default settings as base and update definitions, fixup backport
    expose nvidia GPU attributes as strings
    version parsing errors with newer nvidia kernel modules
 - Network:
+   SSL connections drop
    regression: socket directories not created
    downgrade to TLS v1.2
    early ping packets could cause connection to drop
@@ -837,6 +845,7 @@ fi
    preserve URI form when parsing some IP protocols
    preserve URI path
 - Major:
+   re-connection fails if URL contains the password
    focus breaks after 25 days or so
    focus delay issues
    `vpx` decoder fails during self-test
