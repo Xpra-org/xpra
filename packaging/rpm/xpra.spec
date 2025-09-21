@@ -809,7 +809,7 @@ fi
    clang 20 no longer recognizes `unreachable-code-fallthrough` warning
    `xpra-server` DEB missing `adduser` dependency
    bundle `GioWin32` on MS Windows
-* MacOS:
+- MacOS:
    switch to `Adwaita` theme
    `locale.alias` warnings in command line tools
    `/Library/` path requires root
