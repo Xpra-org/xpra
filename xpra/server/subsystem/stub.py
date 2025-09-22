@@ -131,6 +131,11 @@ class StubServerMixin(superclass):
         A new client is being handled, take any action needed.
         """
 
+    def remove_client(self, ss) -> None:
+        """
+        A client is being removed, take any action needed.
+        """
+
     def send_initial_data(self, ss, caps, send_ui, share_count: int) -> None:
         """
         A new connection has been accepted, send initial data.

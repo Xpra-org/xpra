@@ -449,6 +449,8 @@ SERVER_LOAD_SKIP_OPTIONS: Sequence[str] = (
     "start-child-after-connect",
     "start-on-connect",
     "start-child-on-connect",
+    "start-on-disconnect",
+    "start-child-on-disconnect",
     "start-on-last-client-exit",
     "start-child-on-last-client-exit",
 )
@@ -1058,6 +1060,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                 "start-child", "start-child-late",
                 "start-after-connect", "start-child-after-connect",
                 "start-on-connect", "start-child-on-connect",
+                "start-on-disconnect", "start-child-on-disconnect",
                 "start-on-last-client-exit", "start-child-on-last-client-exit",
         ):
             commands += list(getattr(opts, start_prop.replace("-", "_")))

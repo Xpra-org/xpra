@@ -2355,6 +2355,7 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
                 "start-late", "start-child-late",
                 "start-after-connect", "start-child-after-connect",
                 "start-on-connect", "start-child-on-connect",
+                "start-on-disconnect", "start-child-on-disconnect",
                 "start-on-last-client-exit", "start-child-on-last-client-exit",
         ):
             setattr(opts, x.replace("-", "_"), [])
@@ -3252,6 +3253,7 @@ def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], ar
             for x in ("start", "start-child",
                       "start-after-connect", "start-child-after-connect",
                       "start-on-connect", "start-child-on-connect",
+                      "start-on-disconnect", "start-child-on-disconnect",
                       "start-on-last-client-exit", "start-child-on-last-client-exit",
                       ):
                 fn = x.replace("-", "_")

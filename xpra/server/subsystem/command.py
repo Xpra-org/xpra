@@ -102,6 +102,8 @@ class ChildCommandServer(StubServerMixin):
         self.start_child_after_connect = []
         self.start_on_connect = []
         self.start_child_on_connect = []
+        self.start_on_disconnect = []
+        self.start_child_on_disconnect = []
         self.start_on_last_client_exit = []
         self.start_child_on_last_client_exit = []
         self.exit_with_children: bool = False
@@ -135,6 +137,8 @@ class ChildCommandServer(StubServerMixin):
         self.start_child_after_connect = opts.start_child_after_connect
         self.start_on_connect = opts.start_on_connect
         self.start_child_on_connect = opts.start_child_on_connect
+        self.start_on_disconnect = opts.start_on_disconnect
+        self.start_child_on_disconnect = opts.start_child_on_disconnect
         self.start_on_last_client_exit = opts.start_on_last_client_exit
         self.start_child_on_last_client_exit = opts.start_child_on_last_client_exit
         if opts.exec_wrapper:
@@ -201,6 +205,9 @@ class ChildCommandServer(StubServerMixin):
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         self.exec_on_connect_commands()
 
+    def remove_client(self, ss) -> None:
+        self.exec_on_disconnect_commands()
+
     def send_initial_data(self, ss, caps: typedict, send_ui: bool, share_count: int) -> None:
         menu = getattr(ss, "xdg_menu", False) or getattr(ss, "menu", False)
         log(f"send_initial_data(..) {menu=}")
@@ -231,6 +238,8 @@ class ChildCommandServer(StubServerMixin):
             "start-child-after-connect": self.start_child_after_connect,
             "start-on-connect": self.start_on_connect,
             "start-child-on-connect": self.start_child_on_connect,
+            "start-on-disconnect": self.start_on_disconnect,
+            "start-child-on-disconnect": self.start_child_on_disconnect,
             "exit-with-children": self.exit_with_children,
             "start-after-connect-done": self.start_after_connect_done,
             "start-new": self.start_new_commands,
@@ -290,6 +299,10 @@ class ChildCommandServer(StubServerMixin):
             self.exec_after_connect_commands()
         log("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_on_connect)
         self._exec_commands(self.start_on_connect, self.start_child_on_connect)
+
+    def exec_on_disconnect_commands(self) -> None:
+        log("exec_on_disconnect_commands() start=%s, start_child=%s", self.start_on_disconnect, self.start_child_on_disconnect)
+        self._exec_commands(self.start_on_disconnect, self.start_child_on_disconnect)
 
     def _exec_commands(self, start_list, start_child_list) -> None:
         started = []

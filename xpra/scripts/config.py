@@ -785,6 +785,8 @@ OPTION_TYPES: dict[str, Any] = {
     "start-child-after-connect" : list,
     "start-on-connect"          : list,
     "start-child-on-connect"    : list,
+    "start-on-disconnect"       : list,
+    "start-child-on-disconnect" : list,
     "start-on-last-client-exit" : list,
     "start-child-on-last-client-exit"   : list,
     "bind"              : list,
@@ -834,6 +836,7 @@ START_COMMAND_OPTIONS : list[str] = [
     "start-late", "start-child-late",
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
+    "start-on-disconnect", "start-child-on-disconnect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
 ]
 BIND_OPTIONS : list[str] = [
@@ -932,6 +935,7 @@ PROXY_START_OVERRIDABLE_OPTIONS: list[str] = [
     "source", "source-start",
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
+    "start-on-disconnect", "start-child-on-disconnect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
     "sessions-dir",
 ]
@@ -1257,6 +1261,8 @@ def get_defaults() -> dict[str, Any]:
         "start-child-after-connect" : [],
         "start-on-connect"          : [],
         "start-child-on-connect"    : [],
+        "start-on-disconnect"          : [],
+        "start-child-on-disconnect"    : [],
         "start-on-last-client-exit" : [],
         "start-child-on-last-client-exit"   : [],
         "start-env"         : list(DEFAULT_ENV),

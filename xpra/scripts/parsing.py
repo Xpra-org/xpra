@@ -1052,6 +1052,15 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="program to spawn in server every time a client connects,"
                           " taken into account by the exit-with-children option (may be repeated)."
                           " Default: %s." % dcsv(defaults.start_child_on_connect))
+    group.add_option("--start-on-disconnect", action="append",
+                     dest="start_on_disconnect", default=defaults.start_on_disconnect,
+                     help="program to spawn in server every time a client disconnects (may be repeated)."
+                          " Default: %s." % dcsv(defaults.start_on_disconnect))
+    group.add_option("--start-child-on-disconnect", action="append",
+                     dest="start_child_on_disconnect", default=defaults.start_child_on_disconnect,
+                     help="program to spawn in server every time a client disconnects,"
+                          " taken into account by the exit-with-children option (may be repeated)."
+                          " Default: %s." % dcsv(defaults.start_child_on_disconnect))
     group.add_option("--start-on-last-client-exit", action="append",
                      dest="start_on_last_client_exit", default=defaults.start_on_last_client_exit,
                      help="program to spawn in server every time a client disconnects"

@@ -252,6 +252,7 @@ def main() -> int:  # pragma: no cover
             'exit-with-children': False,
             'start-child-after-connect': (),
             'start-on-connect': (),
+            'start-on-disconnect': (),
         }
         client.server_last_info = {"commands": commands_info}
         client.server_start_new_commands = True
