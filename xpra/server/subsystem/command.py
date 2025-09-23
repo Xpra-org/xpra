@@ -119,6 +119,12 @@ def str_expand_vars(cmd: str, attrs: dict[str, Any]) -> str:
     return cmd
 
 
+def get_attrs(source) -> dict[str, Any]:
+    if not source:
+        return {}
+    return {"client": source.get_info()}
+
+
 class ChildCommandServer(StubServerMixin):
     """
     Mixin for servers that start subcommands,
@@ -367,7 +373,7 @@ class ChildCommandServer(StubServerMixin):
         cmd_str = None
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
-            attrs = source.get_info() if source else {}
+            attrs = get_attrs(source)
             real_cmd = expand_vars(real_cmd, attrs)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
             cmd_str = " ".join(real_cmd)
