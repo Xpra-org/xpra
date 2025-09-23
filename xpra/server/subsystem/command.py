@@ -10,7 +10,7 @@ import os.path
 from time import monotonic
 from subprocess import Popen
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.util.child_reaper import get_child_reaper, ProcInfo
@@ -93,19 +93,19 @@ class ChildCommandServer(StubServerMixin):
         StubServerMixin.__init__(self)
         self.hello_request_handlers["run"] = self._handle_hello_request_run
         self.child_display: str = ""
-        self.start_commands = []
-        self.start_late_commands = []
-        self.start_child_commands = []
-        self.start_child_late_commands = []
-        self.start_after_connect = []
+        self.start_commands: Sequence[str] = []
+        self.start_late_commands: Sequence[str] = []
+        self.start_child_commands: Sequence[str] = []
+        self.start_child_late_commands: Sequence[str] = []
+        self.start_after_connect: Sequence[str] = []
         self.start_after_connect_done = False
-        self.start_child_after_connect = []
-        self.start_on_connect = []
-        self.start_child_on_connect = []
-        self.start_on_disconnect = []
-        self.start_child_on_disconnect = []
-        self.start_on_last_client_exit = []
-        self.start_child_on_last_client_exit = []
+        self.start_child_after_connect: Sequence[str] = []
+        self.start_on_connect: Sequence[str] = []
+        self.start_child_on_connect: Sequence[str] = []
+        self.start_on_disconnect: Sequence[str] = []
+        self.start_child_on_disconnect: Sequence[str] = []
+        self.start_on_last_client_exit: Sequence[str] = []
+        self.start_child_on_last_client_exit: Sequence[str] = []
         self.exit_with_children: bool = False
         self.children_count: int = 0
         self.start_after_connect_done: bool = False
@@ -304,21 +304,19 @@ class ChildCommandServer(StubServerMixin):
         log("exec_on_disconnect_commands() start=%s, start_child=%s", self.start_on_disconnect, self.start_child_on_disconnect)
         self._exec_commands(self.start_on_disconnect, self.start_child_on_disconnect)
 
-    def _exec_commands(self, start_list, start_child_list) -> None:
+    def _exec_commands(self, start_list: Sequence[str], start_child_list: Sequence[str]) -> None:
         started = []
-        if start_list:
-            for x in start_list:
-                if x:
-                    proc = self.start_command(x, x, ignore=True)
-                    if proc:
-                        started.append(proc)
-        if start_child_list:
-            for x in start_child_list:
-                if x:
-                    proc = self.start_command(x, x, ignore=False)
-                    if proc:
-                        started.append(proc)
-        procs = tuple(x for x in started if x is not None)
+        for x in start_list:
+            if x:
+                proc = self.start_command(x, x, ignore=True)
+                if proc:
+                    started.append(proc)
+        for x in start_child_list:
+            if x:
+                proc = self.start_command(x, x, ignore=False)
+                if proc:
+                    started.append(proc)
+        procs = tuple(x for x in started if x)
         if not self.session_name:
             GLib.idle_add(self.guess_session_name, procs)
 
