@@ -3,6 +3,10 @@
 ## Setup
 Install [XCode](https://developer.apple.com/xcode/) and its command line tools.
 
+If [homebrew](https://brew.sh/) or [macports](https://www.macports.org/) are installed, either remove them completely or at least move them out of the way. \
+Having these package managers installed will interfere with the `jhbuild` build process. (example [here](https://github.com/Xpra-org/gtk-osx-build/issues/47))
+
+
 <details>
   <summary>Setup gtk-osx</summary>
 
