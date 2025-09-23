@@ -11,7 +11,7 @@ import socket
 from typing import Any
 from collections.abc import Callable
 
-from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
+from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES, get_peercred_info
 from xpra.util.str_fn import csv
 from xpra.util.env import hasenv, envint, envbool, SilenceWarningsContext
 from xpra.common import FULL_INFO
@@ -448,6 +448,14 @@ class SocketConnection(Connection):
                 "type": PROTOCOL_STR.get(s.type, int(s.type)),
                 "cork": self.cork,
             }
+            if s.type == socket.AF_UNIX:
+                try:
+                    info["path"] = s.getsockname()
+                except OSError:
+                    pass
+                cred_info = get_peercred_info(s)
+                if cred_info:
+                    info["peercred"] = cred_info
         except AttributeError:
             log("do_get_socket_info()", exc_info=True)
         if self.nodelay is not None:
