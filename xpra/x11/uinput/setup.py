@@ -53,6 +53,9 @@ def get_uinput_device_path(device) -> str:
 
 
 def has_uinput() -> bool:
+    from xpra.os_util import OSX, WIN32
+    if OSX or WIN32:
+        return False
     if not envbool("XPRA_UINPUT", True):
         return False
     try:
