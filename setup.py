@@ -251,6 +251,7 @@ ism_ext_ENABLED = DEFAULT and gtk3_ENABLED and data_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
 has_pam_headers = has_header_file("security", isdir=True) or pkg_config_exists("pam", "pam_misc")
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and LINUX and has_pam_headers
+peercred_ENABLED = OSX or sys.platform.lower().find("bsd") >= 0
 
 proc_use_procps         = LINUX and has_header_file("proc/procps.h")
 proc_use_libproc        = LINUX and has_header_file("libproc2/pids.h")
@@ -391,6 +392,7 @@ SWITCH_ALIAS = {
         "lz4",
         "x11", "gtk_x11",
         "pam", "sd_listen", "proc",
+        "peercred",
     ),
 }
 
@@ -414,7 +416,7 @@ SWITCHES += [
     "gtk3", "example",
     "qt6_client", "pyglet_client", "tk_client",
     "ism_ext",
-    "pam", "xdg_open",
+    "pam", "xdg_open", "peercred",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
     "docs", "pandoc_lua",
@@ -2736,6 +2738,8 @@ if pam_ENABLED:
             "extra_link_args": ("-lpam", "-lpam_misc"),
         }
     ace("xpra.platform.pam", **pam_kwargs)
+if peercred_ENABLED:
+    ace("xpra.platform.bsd.peercred")
 
 # platform:
 tace(sd_listen_ENABLED, "xpra.platform.posix.sd_listen", "libsystemd")

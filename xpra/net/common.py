@@ -14,7 +14,7 @@ from collections.abc import Callable, Sequence
 from xpra.exit_codes import ExitCode
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop, SizedBuffer
-from xpra.os_util import LINUX, FREEBSD, WIN32
+from xpra.os_util import LINUX, WIN32, OSX
 from xpra.scripts.config import str_to_bool, InitExit
 from xpra.util.system import platform_name
 from xpra.util.str_fn import std
@@ -327,11 +327,37 @@ def get_peercred(sock) -> tuple[int, int, int] | None:
             log("getsockopt", exc_info=True)
             log.error(f"Error getting peer credentials: {e}")
             return None
-    elif FREEBSD:
-        log.warn("Warning: peercred is not yet implemented for FreeBSD")
-        # use getpeereid
-        # then pwd to get the gid?
+    elif OSX or sys.platform.lower().find("bsd") >= 0:
+        try:
+            from xpra.platform.bsd.peercred import get_peer_cred
+        except ImportError:
+            log("get_peercred(%s)", sock, exc_info=True)
+            log.warn("Warning: peercred module was not found")
+            return None
+        try:
+            uid, gid = get_peer_cred(sock.fileno())
+            return 0, uid, gid
+        except OSError as e:
+            log("get_peercred(%s)", sock, exc_info=True)
+            log.error("Error: peercred error: %s", e)
     return None
+
+
+def get_peercred_info(s) -> dict[str, int]:
+    try:
+        cred = get_peercred(s)
+    except OSError:
+        cred = {}
+    if not cred:
+        return {}
+    info: dict[str, int] = {
+        "uid": cred[1],
+        "gid": cred[2],
+    }
+    pid = cred[0]
+    if pid > 0:
+        info["pid"] = pid
+    return info
 
 
 def is_request_allowed(proto, request="info", default=True) -> bool:
