@@ -41,6 +41,8 @@ class ChildCommandMixinTest(ServerMixinTest):
         opts.start_child_after_connect = []
         opts.start_on_connect = []
         opts.start_child_on_connect = []
+        opts.start_on_disconnect = []
+        opts.start_child_on_disconnect = []
         opts.start_on_last_client_exit = []
         opts.start_child_on_last_client_exit = []
         opts.exec_wrapper = None
