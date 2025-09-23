@@ -104,9 +104,11 @@ def str_expand_vars(cmd: str, attrs: dict[str, Any]) -> str:
     if cmd.find("%") < 0:
         return cmd
 
+    processed = ""
     while True:
         m = re.search(r"%([a-zA-Z0-9_.-]+)", cmd)
         if not m:
+            processed += cmd
             break
         var = m.group(1)
         parts = var.split(".")
@@ -115,8 +117,9 @@ def str_expand_vars(cmd: str, attrs: dict[str, Any]) -> str:
             val = "%" + var
         elif not isinstance(val, (str, int, float)):
             val = str(val)
-        cmd = cmd[:m.start()] + str(val) + cmd[m.end():]
-    return cmd
+        processed += cmd[:m.start()] + str(val)
+        cmd = cmd[m.end():]
+    return processed
 
 
 def get_attrs(source) -> dict[str, Any]:
