@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import shlex
 import signal
 import os.path
@@ -79,6 +80,43 @@ def guess_session_name(procs=(), exec_wrapper=()) -> str:
             cmd_names.append(bcmd)
     log(f"guess_session_name() commands={cmd_names}")
     return csv(cmd_names)
+
+
+def dictget(dictinstance: dict, *parts: str) -> str:
+    if not parts:
+        return ""
+    value = dictinstance.get(parts[0])
+    if len(parts) > 1:
+        if isinstance(value, dict):
+            return dictget(value, *parts[1:])
+        return ""
+    return value
+
+
+def expand_vars(real_cmd: list[str], attrs: dict[str, Any]):
+    # replace all instances of %name1.name2 with attrs['name1']['name2']
+    return [str_expand_vars(cmd, attrs) for cmd in real_cmd]
+
+
+def str_expand_vars(cmd: str, attrs: dict[str, Any]) -> str:
+    if not attrs:
+        return cmd
+    if cmd.find("%") < 0:
+        return cmd
+
+    while True:
+        m = re.search(r"%([a-zA-Z0-9_.-]+)", cmd)
+        if not m:
+            break
+        var = m.group(1)
+        parts = var.split(".")
+        val = dictget(attrs, *parts)
+        if not val:
+            val = "%" + var
+        elif not isinstance(val, (str, int, float)):
+            val = str(val)
+        cmd = cmd[:m.start()] + str(val) + cmd[m.end():]
+    return cmd
 
 
 class ChildCommandServer(StubServerMixin):
@@ -203,10 +241,10 @@ class ChildCommandServer(StubServerMixin):
         return caps
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
-        self.exec_on_connect_commands()
+        self.exec_on_connect_commands(ss)
 
     def remove_client(self, ss) -> None:
-        self.exec_on_disconnect_commands()
+        self.exec_on_disconnect_commands(ss)
 
     def send_initial_data(self, ss, caps: typedict, send_ui: bool, share_count: int) -> None:
         menu = getattr(ss, "xdg_menu", False) or getattr(ss, "menu", False)
@@ -292,28 +330,28 @@ class ChildCommandServer(StubServerMixin):
             self.start_after_connect, self.start_child_after_connect)
         self._exec_commands(self.start_after_connect, self.start_child_after_connect)
 
-    def exec_on_connect_commands(self) -> None:
-        log("exec_on_connect_commands() start_after_connect_done=%s", self.start_after_connect_done)
+    def exec_on_connect_commands(self, source) -> None:
+        log("exec_on_connect_commands(%s) start_after_connect_done=%s", source, self.start_after_connect_done)
         if not self.start_after_connect_done:  # pylint: disable=access-member-before-definition
             self.start_after_connect_done = True
             self.exec_after_connect_commands()
-        log("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_on_connect)
-        self._exec_commands(self.start_on_connect, self.start_child_on_connect)
+        log("exec_on_connect_commands(%s) start=%s, start_child=%s", source, self.start_on_connect, self.start_child_on_connect)
+        self._exec_commands(self.start_on_connect, self.start_child_on_connect, source)
 
-    def exec_on_disconnect_commands(self) -> None:
-        log("exec_on_disconnect_commands() start=%s, start_child=%s", self.start_on_disconnect, self.start_child_on_disconnect)
-        self._exec_commands(self.start_on_disconnect, self.start_child_on_disconnect)
+    def exec_on_disconnect_commands(self, source) -> None:
+        log("exec_on_disconnect_commands(%s) start=%s, start_child=%s", source, self.start_on_disconnect, self.start_child_on_disconnect)
+        self._exec_commands(self.start_on_disconnect, self.start_child_on_disconnect, source)
 
-    def _exec_commands(self, start_list: Sequence[str], start_child_list: Sequence[str]) -> None:
+    def _exec_commands(self, start_list: Sequence[str], start_child_list: Sequence[str], source=None) -> None:
         started = []
         for x in start_list:
             if x:
-                proc = self.start_command(x, x, ignore=True)
+                proc = self.start_command(x, x, ignore=True, source=source)
                 if proc:
                     started.append(proc)
         for x in start_child_list:
             if x:
-                proc = self.start_command(x, x, ignore=False)
+                proc = self.start_command(x, x, ignore=False, source=source)
                 if proc:
                     started.append(proc)
         procs = tuple(x for x in started if x)
@@ -321,7 +359,7 @@ class ChildCommandServer(StubServerMixin):
             GLib.idle_add(self.guess_session_name, procs)
 
     def start_command(self, name: str, child_cmd, ignore: bool = False, callback: Callable | None = None,
-                      use_wrapper: bool = True, shell: bool = False, **kwargs):
+                      use_wrapper: bool = True, shell: bool = False, source=None, **kwargs):
         env = self.get_child_env()
         log("start_command%s exec_wrapper=%s, exec_cwd=%s",
             (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper, self.exec_cwd)
@@ -329,6 +367,8 @@ class ChildCommandServer(StubServerMixin):
         cmd_str = None
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
+            attrs = source.get_info() if source else {}
+            real_cmd = expand_vars(real_cmd, attrs)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
             cmd_str = " ".join(real_cmd)
             # pylint: disable=consider-using-with
@@ -423,7 +463,8 @@ class ChildCommandServer(StubServerMixin):
             }
         else:
             name = command[0]
-            proc = self.start_command(name, command, True)
+            ss = self.get_server_source(proto)
+            proc = self.start_command(name, command, ignore=True, source=ss)
             if not proc:
                 response = {
                     "code": ExitCode.COMPONENT_MISSING,
@@ -453,12 +494,13 @@ class ChildCommandServer(StubServerMixin):
             cmd = tuple(command)
         else:
             cmd = str(command)
-        proc = self.start_command(name, cmd, ignore)
+        ss = self.get_server_source(proto)
+        proc = self.start_command(name, cmd, ignore=ignore, source=ss)
         if len(packet) >= 5:
             shared = packet.get_bool(4)
             if proc and not shared:
-                ss = self.get_server_source(proto)
-                assert ss
+                if not ss:
+                    raise RuntimeError("no server source found for %s" % proto)
                 log(f"adding filter: pid={proc.pid} for {proto}")
                 ss.add_window_filter("window", "pid", "=", proc.pid)
         log(f"process_start_command: proc={proc}")
