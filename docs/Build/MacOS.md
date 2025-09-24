@@ -44,15 +44,15 @@ First, make sure that all the modulesets will be using the same system libffi
 as the one used by Python:
 ```commandline
 cat > ${JHBUILD_PREFIX}/lib/pkgconfig/libffi.pc << EOF
-prefix=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr
-libdir=${prefix}/lib
-includedir=${prefix}/include/ffi
+prefix=$(xcrun --show-sdk-path)
+libdir=\${prefix}/usr/lib
+includedir=\${prefix}/usr/include/ffi
 
 Name: libffi
 Description: Library supporting Foreign Function Interfaces
 Version: 3.4.6
-Libs: -L${libdir} -lffi
-Cflags: -I${includedir}
+Libs: -L\${libdir} -lffi
+Cflags: -I\${includedir}
 EOF
 ```
 ```shell
