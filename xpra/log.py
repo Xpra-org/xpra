@@ -376,7 +376,7 @@ for group, d in STRUCT_KNOWN_FILTERS.items():
     CATEGORY_INFO.update(d)
     for category in d.keys():
         CATEGORY_GROUP[category] = group
-RESTRICTED_DEBUG_CATEGORIES = ("verbose", "network", "crypto", "auth", )
+RESTRICTED_DEBUG_CATEGORIES = ("verbose", "network", "crypto", "auth", "keyboard")
 
 
 def isenvdebug(category: str) -> bool:
