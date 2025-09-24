@@ -26,7 +26,7 @@ $PACMAN ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN base-devel ${XPKG}yasm ${XPKG}nasm gcc groff subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
 #python extensions:
-for x in cryptography cffi pycparser numpy pillow appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos coverage psutil oauthlib pysocks pyopenssl importlib_resources pylsqpack aioquic service_identity pyvda watchdog pyqt6 wmi; do
+for x in cryptography cffi pycparser numpy pillow appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos coverage psutil oauthlib pysocks pyopenssl importlib_resources pylsqpack aioquic service_identity pyvda watchdog pyqt6 wmi winloop; do
 	$PACMAN ${XPKG}python-${x}
 done
 #not yet available for aarch64?:
@@ -64,10 +64,6 @@ echo "for printing support, install libpdfium"
 echo "by downloading the plain x64 pdfium binary from"
 echo "https://github.com/bblanchon/pdfium-binaries"
 echo "and place the 'pdfium.dll' in '$MSYSTEM_PREFIX/bin'"
-echo
-echo "for faster quic support, install `winloop`"
-echo "following the instructions at:"
-echo "https://github.com/Xpra-org/xpra/issues/3950"
 echo
 echo "for generating the documentation, install pandoc"
 echo "https://github.com/jgm/pandoc/releases/latest"
