@@ -136,12 +136,18 @@ class X11DisplayManager(DisplayManager):
             # ie: "off:1080p"
             onoff, sizes = opts.resize_display.split(":", 1)
         try:
-            self.initial_resolutions = parse_resolutions(sizes, opts.refresh_rate) or ()
+            self.initial_resolutions = parse_resolutions(sizes, opts.refresh_rate) or self.get_default_initial_res()
         except ValueError:
-            self.initial_resolutions = ()
+            self.initial_resolutions = self.get_default_initial_res()
+        log.warn("initial_resolutions(%s, %s)=%s", sizes, opts.refresh_rate, self.initial_resolutions)
         self.randr = onoff.lower() not in FALSE_OPTIONS
         self.randr_exact_size = False
         self.check_xvfb()
+
+    def get_default_initial_res(self) -> Sequence[tuple[int, int, int]]:
+        # desktop servers override this to use 1080p
+        # seamless servers should start with the larger default (8K)
+        return parse_env_resolutions(default_refresh_rate=self.refresh_rate)
 
     def get_caps(self, source) -> dict[str, Any]:
         caps = DisplayManager.get_caps(self, source)
@@ -226,9 +232,8 @@ class X11DisplayManager(DisplayManager):
         if self.randr and self.initial_resolutions and is_X11():
             from xpra.x11.error import xlog
             from xpra.x11.vfb_util import set_initial_resolution
-            DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions(default_refresh_rate=self.refresh_rate)
             dpi = self.dpi or self.default_dpi
-            resolutions = self.initial_resolutions or DEFAULT_VFB_RESOLUTIONS
+            resolutions = self.initial_resolutions
             with xlog:
                 set_initial_resolution(resolutions, dpi)
 

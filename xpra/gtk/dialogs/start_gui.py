@@ -1012,7 +1012,7 @@ class DisplayWindow(SessionOptions):
             pixel_depths[pd] = str(pd)
         if self.run_mode == "desktop":
             size_options: dict[str, str] = {
-                "yes": "auto",
+                "auto": "auto",
             }
             for size in SCREEN_SIZES:
                 try:

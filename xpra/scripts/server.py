@@ -1198,7 +1198,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                 uinput_uuid = get_rand_chars(UINPUT_UUID_LEN).decode("latin1")
                 write_session_file("uinput-uuid", uinput_uuid)
             vfb_geom: tuple | None = ()
-            if opts.resize_display.lower() not in ALL_BOOLEAN_OPTIONS:
+            resize = opts.resize_display.lower()
+            if resize not in ALL_BOOLEAN_OPTIONS and resize != "auto":
                 # "off:1080p" -> "1080p"
                 # "4k" -> "4k"
                 sizes = opts.resize_display.split(":", 1)[-1]

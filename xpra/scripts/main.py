@@ -2155,7 +2155,7 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 
 
 def match_client_display_size(options, display_is_remote=True) -> None:
-    if options.resize_display.lower() not in TRUE_OPTIONS:
+    if options.resize_display.lower() != "auto":
         return
     # if possible, use the current display size as initial vfb size
     root_w, root_h = get_current_root_size(display_is_remote)

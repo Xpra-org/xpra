@@ -4,12 +4,12 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Any
+from typing import Any, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
-from xpra.common import noop
+from xpra.common import noop, parse_env_resolutions
 from xpra.net.common import Packet
 from xpra.server import features
 from xpra.util.gobject import one_arg_signal, to_gsignals
@@ -96,6 +96,10 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         from xpra.x11.xroot_props import XRootPropWatcher
         self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"])
         self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
+
+    def get_default_initial_res(self) -> Sequence[tuple[int, int, int]]:
+        return parse_env_resolutions(default_res="1920x1080",
+                                     default_refresh_rate=self.refresh_rate)
 
     def root_prop_changed(self, watcher, prop: str) -> None:
         iconlog("root_prop_changed(%s, %s)", watcher, prop)

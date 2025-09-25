@@ -1168,7 +1168,7 @@ def get_defaults() -> dict[str, Any]:
         "start-via-proxy"   : False,
         "attach"            : None,
         "use-display"       : "auto",
-        "resize-display"    : ["no", "yes"][not OSX and not WIN32],
+        "resize-display"    : ["no", "auto"][not OSX and not WIN32],
         "reconnect"         : True,
         "tray"              : True,
         "pulseaudio"        : DEFAULT_PULSEAUDIO,
