@@ -1009,8 +1009,35 @@ fi
 
 
 %changelog
-* Fri Sep 19 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
-- TODO
+* Fri Sep 26 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
+- Platforms, build and packaging:
+   bundle `GioWin32` on MS Windows
+- MacOS:
+   debuggable launch script
+   URL open callback may send byte strings
+   don't use headerbar due to rendering glitches
+   version check needs CA certificate data file
+- Security:
+   don't log http passwords in debug logging
+   don't log authentication data using `http` debug logging
+   authentication messages should only use `auth` logging category
+   obscure passwords
+- Network:
+   SSL connections drop
+- Major:
+   failure to launch subcommands from `xpra gui`
+   re-connection fails if URL contains the password
+- Minor:
+   splash screen could misbehave
+   ignore options to automatically launch 'gui'
+   show file-transfer dialog menu entry
+- Cosmetic:
+   warn just once if python-cryptography is missing
+   dialog errors due to early focus events
+   ensure flag is a boolean
+   bug report tooltip
+   tray menu tooltip
+
 * Sat Sep 06 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warningg

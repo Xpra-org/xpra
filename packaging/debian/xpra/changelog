@@ -1,7 +1,33 @@
 xpra (6.3.4-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+    bundle `GioWin32` on MS Windows
+  * MacOS:
+    debuggable launch script
+    URL open callback may send byte strings
+    don't use headerbar due to rendering glitches
+    version check needs CA certificate data file
+  * Security:
+    don't log http passwords in debug logging
+    don't log authentication data using `http` debug logging
+    authentication messages should only use `auth` logging category
+    obscure passwords
+  * Network:
+    SSL connections drop
+  * Major:
+    failure to launch subcommands from `xpra gui`
+    re-connection fails if URL contains the password
+  * Minor:
+    splash screen could misbehave
+    ignore options to automatically launch 'gui'
+    show file-transfer dialog menu entry
+  * Cosmetic:
+    warn just once if python-cryptography is missing
+    dialog errors due to early focus events
+    ensure flag is a boolean
+    bug report tooltip
+    tray menu tooltip
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 19 Sep 2025 22:31:57 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 26 Sep 2025 22:34:09 +0700
 
 xpra (6.3.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

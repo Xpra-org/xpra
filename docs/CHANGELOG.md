@@ -1,7 +1,33 @@
 # Changelog
 
-## [6.3.4] 2025-09-19
-* TODO
+## [6.3.4] 2025-09-26
+* Platforms, build and packaging:
+    * [bundle `GioWin32` on MS Windows](https://github.com/Xpra-org/xpra/commit/04769592e7e63eb00fd05108c95e2b09d4ba467a)
+* MacOS:
+    * [debuggable launch script](https://github.com/Xpra-org/xpra/commit/46ef35352f18b637076d19bc237f9564572c52a7) [+ silence warnings](https://github.com/Xpra-org/xpra/commit/5149b16bcbfc7c5ce5d6d7e44fb0cfe257cbd26e)
+    * [URL open callback may send byte strings](https://github.com/Xpra-org/xpra/commit/34769557c842f82ad1531dcd4ef788a9aed0a0ae)
+    * [don't use headerbar due to rendering glitches](https://github.com/Xpra-org/xpra/commit/977b6ea1ecf7720fac2265f69fabf40d2e069137)
+    * [version check needs CA certificate data file](https://github.com/Xpra-org/xpra/commit/6439d6f573d541114cf8df25c82be1b280ce77a8)
+* Security:
+    * [don't log http passwords in debug logging](https://github.com/Xpra-org/xpra/commit/e217836bac0dfe1874881ecbcbd0226f19167e93)
+    * [don't log authentication data using `http` debug logging](https://github.com/Xpra-org/xpra/commit/7d7cebf53d987bc508ecb210b55dfd982108e7d8)
+    * [authentication messages should only use `auth` logging category](https://github.com/Xpra-org/xpra/commit/dad16f7f544cd29e0c8972670c6da3a0c3d6bf62)
+    * [obscure passwords](https://github.com/Xpra-org/xpra/commit/ceafde09931ad072de6beb48ed7528201534ffc0)
+* Network:
+    * [SSL connections drop](https://github.com/Xpra-org/xpra/commit/5a17318683002e75f58b441eb22041f5e2b37eb1)
+* Major:
+    * [failure to launch subcommands from `xpra gui`](https://github.com/Xpra-org/xpra/commit/1dd327a94ceca786cd155b3818ec3ae7c3c003aa)
+    * [re-connection fails if URL contains the password](https://github.com/Xpra-org/xpra/commit/a3104fdbb52bab92343ecffbca8aa7332912a1e1)
+* Minor:
+    * [splash screen could misbehave](https://github.com/Xpra-org/xpra/commit/2cdf432eea2b21da498e47b7256bbf11098b4655)
+    * [ignore options to automatically launch 'gui'](https://github.com/Xpra-org/xpra/commit/e115528c1fc38d60d805bd6180e4723212eeab3a)
+    * [show file-transfer dialog menu entry](https://github.com/Xpra-org/xpra/commit/8492aafe3c61a2b864479727da319a32c28a5f42)
+* Cosmetic:
+    * [warn just once if python-cryptography is missing](https://github.com/Xpra-org/xpra/commit/ca0f683e610549adbee41ae2fe73939e538d3afb)
+    * [dialog errors due to early focus events](https://github.com/Xpra-org/xpra/commit/b0d782e54aa195f582f313406c1f1819aab807b0)
+    * [ensure flag is a boolean](https://github.com/Xpra-org/xpra/commit/e756624c3527274223c11633b079a1c0d8cab9cb)
+    * [bug report tooltip](https://github.com/Xpra-org/xpra/commit/622efa852718c88894f53b5951fd3e13539fac8b)
+    * [tray menu tooltip](https://github.com/Xpra-org/xpra/commit/808632b67e42146cb37c910806fa8dfacfd7449e)
 
 ## [6.3.3] 2025-09-06
 * Platforms, build and packaging:
