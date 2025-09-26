@@ -280,7 +280,9 @@ class BaseGUIWindow(Gtk.Window):
 
     def reset_cursors(self, *_args) -> None:
         for widget in self.vbox.get_children():
-            widget.get_window().set_cursor(None)
+            gdkwin = widget.get_window()
+            if gdkwin:
+                gdkwin.set_cursor(None)
 
     def exec_subcommand(self, subcommand, *args) -> None:
         log("exec_subcommand(%s, %s)", subcommand, args)
