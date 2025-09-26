@@ -1415,7 +1415,7 @@ class GTKTrayMenuBase(MenuHelper):
             elif not remote_send_file:
                 self.download.set_tooltip_text("'send-file' subcommand is not supported by the server")
             else:
-                self.download.set_tooltip_text("Send a file to the server")
+                self.download.set_tooltip_text("Download a file from the server")
 
         self.after_handshake(enable_download)
         return self.download
