@@ -9,12 +9,21 @@ from importlib.util import find_spec
 from xpra.gtk.configure.common import run_gui
 from xpra.os_util import LINUX, POSIX, OSX
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
+from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.widget import label
+
+
+CSS = b"""
+button {
+    border-radius: 10px;
+}
+"""
 
 
 class HomeGUI(BaseGUIWindow):
 
     def __init__(self):
+        add_screen_css(CSS)
         super().__init__(
             "Configure Xpra",
             "toolbox.png",
