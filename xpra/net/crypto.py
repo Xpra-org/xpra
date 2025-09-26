@@ -10,7 +10,7 @@ import secrets
 from struct import pack
 from typing import Dict, Tuple, Any, Iterable, List
 
-from xpra.util import envint, envbool, csv
+from xpra.util import envint, envbool, csv, first_time
 from xpra.version_util import parse_version
 from xpra.os_util import hexstr, strtobytes, memoryview_to_bytes, OSX
 from xpra.net.digest import get_salt
@@ -88,7 +88,8 @@ def crypto_backend_init():
         return cryptography
     except ImportError:
         log("crypto backend init failure", exc_info=True)
-        log.error("Error: cannot import python-cryptography")
+        if first_time("no-python-cryptography"):
+            log.error("Error: cannot import python-cryptography")
     except Exception:
         log.error("Error: cannot initialize python-cryptography", exc_info=True)
     cryptography = None
