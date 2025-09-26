@@ -13,7 +13,7 @@ from collections.abc import Iterable, Sequence
 
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv, print_nested_dict, strtobytes, hexstr
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import parse_version
 from xpra.net.digest import get_salt
 from xpra.log import Logger, consume_verbose_argv
@@ -99,7 +99,8 @@ def crypto_backend_init():
         return cryptography
     except ImportError:
         log("crypto backend init failure", exc_info=True)
-        log.error("Error: cannot import python-cryptography")
+        if first_time("no-python-cryptography"):
+            log.error("Error: cannot import python-cryptography")
     except Exception:
         log.error("Error: cannot initialize python-cryptography", exc_info=True)
     cryptography = None
