@@ -934,7 +934,7 @@ class FeaturesWindow(SessionOptions):
         # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/Notification.md")
         self.bool_cb("Xpra's System Tray", "tray")
         self.bool_cb("Forward System Trays", "system-tray")
-        self.bool_cb("Notifications", "notification")
+        self.bool_cb("Notifications", "notifications")
         # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/System-Tray.md")
         # self.bool_cb("Cursors", "cursors")
         # self.bool_cb("Bell", "bell")
