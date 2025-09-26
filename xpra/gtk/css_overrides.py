@@ -76,3 +76,13 @@ def load_css(provider) -> None:
             log.error("Error: CSS loading error on")
             log.error(" '%s'", filename)
             log.estr(e)
+
+
+def add_screen_css(css: bytes) -> None:
+    style_provider = Gtk.CssProvider()
+    style_provider.load_from_data(css)
+    Gtk.StyleContext.add_provider_for_screen(
+        Gdk.Screen.get_default(),
+        style_provider,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    )

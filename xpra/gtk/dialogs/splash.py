@@ -14,6 +14,7 @@ from xpra.util.system import SIGNAMES
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk.widget import label
+from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.glib import install_signal_handlers
 from xpra.gtk.css_overrides import inject_css_overrides
@@ -32,6 +33,7 @@ TIMEOUT = envint("XPRA_SPLASH_TIMEOUT", 60)
 LINES = envint("XPRA_SPLASH_LINES", 4)
 READ_SLEEP = envint("XPRA_SPLASH_READ_SLEEP", 0)
 FOCUS_EXIT = envbool("XPRA_SPLASH_FOCUS_EXIT", True)
+FADEOUT = envbool("XPRA_SPLASH_FADEOUT", True)
 
 # alternative: "▁▂▃▄▅▆▇█▇▆▅▄▃▁"
 PULSE_CHARS = "◐◓◑◒"
@@ -41,6 +43,20 @@ else:
     DONE_CHAR = "⬤"
 
 W = 400
+
+CSS = b"""
+#splash-frame {
+    background-color: rgba(40, 40, 45, 0.90);
+    border-radius: 30px;
+}
+#progress-bar > trough {
+    border-radius: 8px;
+}
+#progress-bar > trough > progress {
+    background-color: #4CA450;
+    border-radius: 5px;
+}
+"""
 
 
 class SplashScreen(Gtk.Window):
@@ -55,6 +71,20 @@ class SplashScreen(Gtk.Window):
         title = "Xpra %s" % __version__
         self.set_title(title)
         self.set_size_request(W, 80 + 40 * LINES)
+
+        # enable transparency and compositing
+        self.set_app_paintable(True)
+        screen = self.get_screen()
+        visual = screen.get_rgba_visual()
+        if visual and self.is_composited():
+            self.set_visual(visual)
+        self.init_css()
+
+        # main container with rounded corners
+        frame = Gtk.Frame()
+        frame.set_name("splash-frame")
+        frame.set_shadow_type(Gtk.ShadowType.NONE)
+
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
         import warnings
@@ -76,12 +106,12 @@ class SplashScreen(Gtk.Window):
         if icon:
             self.set_icon(icon)
             hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
-        self.title_label = label(title, font="sans 18")
+        self.title_label = label(title, font="Adwaita sans 18")
         hbox.pack_start(self.title_label, True, True, 20)
         vbox.add(hbox)
         self.labels = []
         for i in range(LINES):
-            lbl = label(" ")
+            lbl = label(" ", font="Adwaita sans 13")
             lbl.set_opacity((i + 1) / LINES)
             self.labels.append(lbl)
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0, yscale=0)
@@ -91,6 +121,7 @@ class SplashScreen(Gtk.Window):
         self.progress_bar.set_size_request(320, 30)
         self.progress_bar.set_show_text(False)
         self.progress_bar.set_fraction(0)
+        self.progress_bar.set_name("progress-bar")
         self.progress_timer = 0
         self.fade_out_timer = 0
         self.exit_timer = 0
@@ -99,7 +130,8 @@ class SplashScreen(Gtk.Window):
         self.pulse_timer = 0
         self.pulse_counter = 0
         self.current_label_text = None
-        self.add(vbox)
+        frame.add(vbox)
+        self.add(frame)
         install_signal_handlers("", self.handle_signal)
         sigpipe = getattr(signal, "SIGPIPE", None)
         if sigpipe:  # ie: POSIX
@@ -110,6 +142,9 @@ class SplashScreen(Gtk.Window):
         self.had_top_level_focus = False
         self.fd_watch = 0
         self.connect("notify::has-toplevel-focus", self._focus_change)
+
+    def init_css(self) -> None:
+        add_screen_css(CSS)
 
     def cancel_io_watch(self) -> None:
         fd = self.fd_watch
@@ -233,7 +268,8 @@ class SplashScreen(Gtk.Window):
         if pct >= 100:
             self.cancel_pulse_timer()
             self.cancel_fade_out_timer()
-            self.fade_out_timer = GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 // 100, self.fade_out)
+            if FADEOUT:
+                self.fade_out_timer = GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 // 100, self.fade_out)
             self.cancel_exit_timer()
 
             def exit_splash() -> None:
@@ -244,7 +280,8 @@ class SplashScreen(Gtk.Window):
         else:
             self.progress_timer = GLib.timeout_add(40, self.increase_fraction, pct)
             self.opacity = min(100, max(50, 130 - pct))
-            self.set_opacity(self.opacity / 100.0)
+            if FADEOUT:
+                self.set_opacity(self.opacity / 100.0)
         set_window_progress(self, pct)
 
     def cancel_exit_timer(self) -> None:
