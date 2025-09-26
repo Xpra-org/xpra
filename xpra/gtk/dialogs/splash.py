@@ -54,7 +54,7 @@ class SplashScreen(Gtk.Window):
         self.connect("key-press-event", self.exit)
         title = "Xpra %s" % __version__
         self.set_title(title)
-        self.set_size_request(W, 40 + 40 * LINES)
+        self.set_size_request(W, 80 + 40 * LINES)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
         import warnings
@@ -67,6 +67,10 @@ class SplashScreen(Gtk.Window):
         if not OSX:
             self.set_type_hint(Gdk.WindowTypeHint.SPLASHSCREEN)
         vbox = Gtk.VBox()
+        vbox.set_margin_start(20)
+        vbox.set_margin_end(20)
+        vbox.set_margin_top(15)
+        vbox.set_margin_bottom(15)
         hbox = Gtk.HBox(homogeneous=False)
         icon = get_icon_pixbuf("xpra.png")
         if icon:
