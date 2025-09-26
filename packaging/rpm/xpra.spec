@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.1.2
+%define version 5.1.3
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -804,6 +804,8 @@ fi
 
 
 %changelog
+* Fri Sep 26 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
+- TODO
 * Fri Sep 19 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warning

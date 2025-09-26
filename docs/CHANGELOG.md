@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.1.3] 2025-09-26
+* TODO
+
 ## [5.1.2] 2025-09-19
 * Platforms, build and packaging:
     * [clang 20 no longer recognizes `unreachable-code-fallthrough` warning](https://github.com/Xpra-org/xpra/commit/39c80ca0e373c8ee2787a5c07613d28bda07b3d3)
