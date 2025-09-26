@@ -248,6 +248,7 @@ def configure_logging(options, mode: str) -> None:
             "shadow", "shadow-screen",
             "encoder", "encode",
             "runner",
+            "splash",
             "recover",
             "attach", "listen", "proxy", "gui",
             "version", "info", "id",

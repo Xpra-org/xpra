@@ -230,6 +230,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "dbus"          : "DBUS calls",
         "menu"          : "Menus",
         "events"        : "System and window events",
+        "splash"        : "Splash screen",
     },
     "Window": {
         "window"        : "All window code",
