@@ -1380,14 +1380,6 @@ class GTKTrayMenuBase(MenuHelper):
         self.transfers = self.menuitem("Transfers", "transfer.png",
                                        "Files and URLs forwarding",
                                        self.client.show_ask_data_dialog)
-        def enable_transfers(*args):
-            log("enable_transfers%s ask=%s", args, ())
-            has_ask = (self.client.remote_file_transfer_ask or
-                       self.client.remote_printing_ask or
-                       self.client.remote_open_files_ask or
-                       self.client.remote_open_url_ask)
-            set_sensitive(self.transfers, has_ask)
-        self.after_handshake(enable_transfers)
         return self.transfers
 
     def make_uploadmenuitem(self):
