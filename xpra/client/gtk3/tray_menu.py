@@ -1594,14 +1594,8 @@ class GTKTrayMenu(MenuHelper):
                                   self.client.show_ask_data_dialog)
 
         def enable_transfers(*args) -> None:
-            log("enable_transfers%s ask=%s", args, ())
-            has_ask = features.file and any((
-                self.client.remote_file_transfer_ask,
-                self.client.remote_printing_ask,
-                self.client.remote_open_files_ask,
-                self.client.remote_open_url_ask,
-            ))
-            sens_tooltip(transfers, has_ask,
+            log("enable_transfers%s", args)
+            sens_tooltip(transfers, features.file,
                          "Manage file and URL transfers",
                          "The feature is not available")
         self.after_handshake(enable_transfers)
