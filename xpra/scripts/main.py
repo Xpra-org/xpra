@@ -168,7 +168,10 @@ def main(script_file: str, cmdline: list[str]) -> ExitValue:
         options, args = do_parse_cmdline(cmdline, defaults)
         # `set_proc_title` is set here so that we can override the cmdline later
         # (don't ask me why this works)
-        set_proc_title(" ".join(cmdline))
+        if OSX:
+            set_proc_title("Xpra")
+        else:
+            set_proc_title(" ".join(cmdline))
         if not args:
             raise InitExit(-1, "xpra: need a mode")
         mode = args.pop(0)
@@ -1600,7 +1603,8 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
                 # cmdline[i] = uri.replace(opts.password, "*"*len(opts.password))
                 obsc_cmdline = list(cmdline)
                 obsc_cmdline[i] = uri.replace(opts.password, "********")
-                set_proc_title(" ".join(obsc_cmdline))
+                if not OSX:
+                    set_proc_title(" ".join(obsc_cmdline))
         # use a custom proxy command for run mode:
         if mode == "run" and display_desc.get("type", "") == "ssh":
             # when using the ssh transport,
