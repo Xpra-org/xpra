@@ -2056,7 +2056,8 @@ def make_client(opts):
     progress_process = None
     if opts.splash is not False:
         from xpra import __version__
-        progress_process = make_progress_process("Xpra Client v%s" % __version__)
+        title = opts.session_name or "Xpra Client v%s" % __version__
+        progress_process = make_progress_process(title)
 
     try:
         check_gtk_client()
