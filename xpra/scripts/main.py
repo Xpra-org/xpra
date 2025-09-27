@@ -1763,6 +1763,7 @@ def enable_listen_mode(app, error_cb: Callable, opts):
 
 def make_progress_process(title="Xpra") -> Popen | None:
     # start the splash subprocess
+    log = Logger("splash")
     env = get_exec_env()
     env["XPRA_LOG_PREFIX"] = "splash: "
     env["XPRA_WAIT_FOR_INPUT"] = "0"
@@ -1774,6 +1775,7 @@ def make_progress_process(title="Xpra") -> Popen | None:
     cmd = get_nodock_command() + ["splash"]
     try:
         progress_process = Popen(cmd, stdin=PIPE, env=env)
+        log("progress_process(%s, %s)=%s", cmd, env, progress_process)
     except OSError as e:
         werr("Error launching 'splash' subprocess", " %s" % e)
         return None
@@ -1792,7 +1794,9 @@ def make_progress_process(title="Xpra") -> Popen | None:
     setattr(progress_process, "terminate", terminate)
 
     def progress(pct: int, text: str) -> None:
-        if progress_process.poll() is not None:
+        poll = progress_process.poll()
+        log("progress(%s, %r) poll=%s", pct, text, poll)
+        if poll is not None:
             return
         stdin = progress_process.stdin
         if stdin:
