@@ -231,7 +231,7 @@ def do_get_nodock_command() -> list[str]:
     # AppStore builds have script wrappers:
     helper = os.path.join(base, "Resources", "scripts", "Xpra")
     if not os.path.exists(helper):
-        helper = os.path.join(_get_helpers_dir(), "Xpra")
+        helper = os.path.join(base, "Helpers", "Xpra")
     if not os.path.exists(helper):
         # having a dock is still better than
         # trying to run a command that does not exist!
