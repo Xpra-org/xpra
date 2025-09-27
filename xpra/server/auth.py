@@ -203,7 +203,7 @@ class AuthenticatedServer(StubServerMixin):
                 # note: we may have received a challenge_response from a previous auth module's challenge
                 try:
                     salt, digest = authenticator.get_challenge(digest_modes)
-                except ValueError as e:
+                except (AttributeError, ValueError, NameError) as e:
                     log.warn("Warning: unable to generate an authentication challenge")
                     log.warn(" %s", e)
                     fail("authentication challenge processing error")
