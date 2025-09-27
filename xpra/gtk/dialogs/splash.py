@@ -65,6 +65,19 @@ label {
 }
 """
 
+IO_CONDITIONS: dict = {
+    GLib.IOCondition.ERR: "ERR",
+    GLib.IOCondition.HUP: "HUP",
+    GLib.IOCondition.IN: "IN",
+    GLib.IOCondition.NVAL: "NVAL",
+    GLib.IOCondition.OUT: "OUT",
+    GLib.IOCondition.PRI: "PRI",
+}
+
+
+def cond(mask: int) -> str:
+    return "|".join(v for k, v in IO_CONDITIONS.items() if mask & k)
+
 
 class SplashScreen(Gtk.Window):
 
@@ -229,17 +242,16 @@ class SplashScreen(Gtk.Window):
             self.exit()
             return False
 
-    def read_stdin(self, fd, cb_condition) -> bool:
-        log(f"read_stdin({fd}, {hex(cb_condition)})")
+    def read_stdin(self, fd: int, cb_condition) -> bool:
+        log(f"read_stdin({fd}, {hex(cb_condition)}) conditions=%s", cond(cb_condition))
         if (cb_condition & GLib.IO_HUP) or (cb_condition & GLib.IO_ERR):
             self.fd_watch = 0
             self.exit_code = ExitCode.CONNECTION_LOST
             GLib.timeout_add(10 * READ_SLEEP, self.exit)
             return False
         if cb_condition == GLib.IO_IN:
-            return self.read_stdin_line()
-        # unexpected condition - continue
-        return True
+            self.read_stdin_line()
+        return self.exit_code is None
 
     def handle_stdin_line(self, line: str) -> None:
         parts = line.rstrip("\n\r").split(":", 1)
@@ -270,10 +282,12 @@ class SplashScreen(Gtk.Window):
         self.cancel_progress_timer()
         GLib.idle_add(self.progress_bar.set_fraction, pct / 100.0)
         if pct >= 100:
+            self.exit_code = 0
             self.cancel_fade_out_timer()
             if FADEOUT:
                 self.fade_out_timer = GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 // 100, self.fade_out)
             self.cancel_exit_timer()
+            self.cancel_io_watch()
 
             def exit_splash() -> None:
                 self.exit_timer = 0
