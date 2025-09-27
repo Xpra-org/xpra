@@ -254,6 +254,7 @@ def configure_logging(options, mode: str) -> None:
             "version", "info", "id",
             "_audio_record", "_audio_play",
             "stop", "print", "showconfig", "configure", "sbom",
+            "otp",
             "_dialog", "_pass",
             "pinentry",
             "opengl",
@@ -524,6 +525,7 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
             "applications-menu", "sessions-menu",
             "_proxy",
             "configure", "showconfig", "showsetting", "setting", "set", "unset",
+            "otp",
             "wait-for-x11", "wait-for-wayland",
             "xvfb-command", "xvfb",
     ):
@@ -942,6 +944,8 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         return run_dbus_session_list()
     if mode == "u2f":
         return run_u2f()
+    if mode == "otp":
+        return run_otp(args)
     if mode == "configure":
         from xpra.gtk.configure.main import main
         return main(args)
@@ -4464,6 +4468,11 @@ def run_auth(_options, args) -> ExitValue:
 def run_u2f() -> ExitValue:
     from xpra.gtk.dialogs.u2f_tool import main
     return main()
+
+
+def run_otp(args: list[str]) -> ExitValue:
+    from xpra.gtk.dialogs.otp import main
+    return main(args)
 
 
 def run_version_check(args) -> ExitValue:

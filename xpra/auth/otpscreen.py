@@ -1,0 +1,78 @@
+# This file is part of Xpra.
+# Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+import os
+import random
+from time import monotonic
+from subprocess import Popen
+from collections.abc import Sequence, Callable
+
+from xpra.util.env import get_saved_env
+from xpra.auth.sys_auth_base import SysAuthenticator, log
+from xpra.platform.paths import get_nodock_command
+from xpra.util.objects import typedict
+
+
+class Authenticator(SysAuthenticator):
+
+    def __init__(self, **kwargs):
+        log("otpscreen.Authenticator(%s)", kwargs)
+        self.mode = kwargs.pop("mode", "digits")
+        assert self.mode == "digits", "other modes have not been implemeted yet"
+        self.count = int(kwargs.pop("count", 6))
+        self.timeout = int(kwargs.pop("timeout", 120))
+        self.display = kwargs.pop("display", "auto")
+        super().__init__(**kwargs)
+        self.uid = -1
+        self.gid = -1
+        self.secret = ""
+        self.valid_until = 0.0
+        self.authenticate_check: Callable = self.authenticate_hmac
+        self.otp_dialog = None
+
+    def get_uid(self) -> int:
+        return self.uid
+
+    def get_gid(self) -> int:
+        return self.gid
+
+    def requires_challenge(self) -> bool:
+        return True
+
+    def get_password(self) -> str:
+        return self.secret
+
+    def authenticate_otp(self, caps: typedict) -> bool:
+        proc = self.otp_dialog
+        if proc and proc.poll() is None:
+            proc.terminate()
+        return self.authenticate_hmac(caps)
+
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
+        if self.salt is not None:
+            log.error("Error: authentication challenge already sent!")
+            return b"", ""
+        self.secret = "".join(str(random.randint(0, 9)) for _ in range(self.count))
+        log(f"secret is {self.secret!r}")
+        self.valid_until = monotonic() + self.timeout
+        cmd = get_nodock_command() + ["otp", self.secret, str(self.timeout)]
+        env = os.environ.copy()
+        if self.display == "auto":
+            # if the server was started from an existing display,
+            # show the OTP there
+            saved_env = get_saved_env()
+            for key in ("DISPLAY", "WAYLAND_DISPLAY"):
+                if key in saved_env:
+                    env[key] = saved_env[key]
+        elif self.display:
+            env["DISPLAY"] = self.display
+        log("otp dialog: Popen(%s, %s)", cmd, env)
+        self.otp_dialog = Popen(cmd, env=env)
+        from xpra.util.child_reaper import get_child_reaper
+        get_child_reaper().add_process(self.otp_dialog, "otp-dialog", cmd, ignore=True, forget=True)
+        return super().do_get_challenge(digests)
+
+    def __repr__(self):
+        return "otpscreen"
