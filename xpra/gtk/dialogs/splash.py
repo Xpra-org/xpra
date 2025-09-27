@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 import signal
 from math import sqrt
@@ -35,6 +36,7 @@ LINES = envint("XPRA_SPLASH_LINES", 5)
 READ_SLEEP = envint("XPRA_SPLASH_READ_SLEEP", 0)
 FOCUS_EXIT = envbool("XPRA_SPLASH_FOCUS_EXIT", True)
 FADEOUT = envbool("XPRA_SPLASH_FADEOUT", True)
+ICON = os.environ.get("XPRA_SPLASH_ICON", "xpra.png")
 
 W = 400
 
@@ -96,7 +98,7 @@ class SplashScreen(Gtk.Window):
         vbox.set_margin_top(15)
         vbox.set_margin_bottom(15)
         hbox = Gtk.HBox(homogeneous=False)
-        icon = get_icon_pixbuf("xpra.png")
+        icon = get_icon_pixbuf(ICON)
         if icon:
             self.set_icon(icon)
             hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
