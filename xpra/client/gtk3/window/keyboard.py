@@ -8,7 +8,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import first_time, envbool
-from xpra.client.gtk3.window.stub_window import StubWindow
+from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.gtk.keymap import KEY_TRANSLATIONS
 from xpra.keyboard.common import KeyEvent
 from xpra.log import Logger
@@ -20,7 +20,7 @@ log = Logger("window", "keyboard")
 UNICODE_KEYNAMES = envbool("XPRA_UNICODE_KEYNAMES", False)
 
 
-class KeyboardWindow(StubWindow):
+class KeyboardWindow(GtkStubWindow):
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.connect("key-press-event", self.handle_key_press_event)

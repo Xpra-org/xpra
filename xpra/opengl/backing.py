@@ -62,7 +62,7 @@ from xpra.common import roundup, PaintCallbacks
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color
-from xpra.client.gui.window_backing_base import fire_paint_callbacks, WindowBackingBase, WEBP_PILLOW
+from xpra.client.gui.window.backing import fire_paint_callbacks, WindowBackingBase, WEBP_PILLOW
 from xpra.opengl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
 from xpra.opengl.debug import context_init_debug, gl_marker, gl_frame_terminator
 from xpra.opengl.util import (

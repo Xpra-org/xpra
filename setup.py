@@ -2688,7 +2688,8 @@ if client_ENABLED:
     if tk_client_ENABLED:
         add_modules("xpra.client.tk")
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
-toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3.window", "xpra.client.gui")
+toggle_packages(client_ENABLED, "xpra.client.gui", "xpra.client.gui.window")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3.window")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
@@ -2919,6 +2920,7 @@ if cythonize_more_ENABLED:
             if opengl_ENABLED:
                 ax("xpra.client.gtk3.opengl")
         ax("xpra.client.gui")
+        ax("xpra.client.gui.window")
         ax("xpra.client.subsystem")
         if qt6_client_ENABLED:
             ax("xpra.client.qt6")

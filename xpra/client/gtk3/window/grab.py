@@ -9,7 +9,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, IgnoreWarningsContext
 from xpra.gtk.util import GRAB_STATUS_STRING
-from xpra.client.gtk3.window.stub_window import StubWindow
+from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.platform.gui import pointer_grab, pointer_ungrab
 from xpra.log import Logger
 
@@ -26,7 +26,7 @@ GRAB_EVENT_MASK |= Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_
 GRAB_EVENT_MASK |= Gdk.EventMask.FOCUS_CHANGE_MASK
 
 
-class GrabWindow(StubWindow):
+class GrabWindow(GtkStubWindow):
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.init_grab()

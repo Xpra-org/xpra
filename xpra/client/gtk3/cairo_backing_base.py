@@ -10,7 +10,7 @@ from collections.abc import Callable
 from cairo import Context, ImageSurface, Format, Operator
 
 from xpra.client.gui.paint_colors import get_paint_box_color
-from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks
+from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks
 from xpra.common import roundup, PaintCallbacks
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.objects import typedict

@@ -6,7 +6,7 @@
 from typing import Optional
 from collections.abc import Sequence
 
-from xpra.client.gtk3.window.stub_window import StubWindow
+from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.util.env import envbool
 from xpra.log import Logger
 
@@ -42,7 +42,7 @@ def add_border_rectangles(rectangles: Sequence[tuple[int, int, int, int]],
     return tuple((rect.x, rect.y, rect.width, rect.height) for rect in rects)
 
 
-class ShapeWindow(StubWindow):
+class ShapeWindow(GtkStubWindow):
 
     def set_shape(self, shape) -> None:
         log("set_shape(%s)", shape)

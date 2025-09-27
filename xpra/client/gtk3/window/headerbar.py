@@ -6,7 +6,7 @@
 
 from xpra.gtk.widget import scaled_image
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.client.gtk3.window.stub_window import StubWindow
+from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -25,7 +25,7 @@ WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", True)
 WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
-class HeaderBarWindow(StubWindow):
+class HeaderBarWindow(GtkStubWindow):
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.header_bar_image: Gtk.Image | None = None

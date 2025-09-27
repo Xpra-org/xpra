@@ -60,18 +60,21 @@ class ClientWindow(WindowBaseClass):
     def get_window_event_mask(self) -> Gdk.EventMask:
         mask = 0
         for bc in WINDOW_BASES:
-            mask |= bc.get_window_event_mask(self)
+            if hasattr(bc, "get_window_event_mask"):
+                mask |= bc.get_window_event_mask(self)
             log("%s.get_window_event_mask()=%s", bc, event_mask_strs(mask))
         log("get_window_event_mask()=%s", event_mask_strs(mask))
         return mask
 
     def init_widget_events(self, widget) -> None:
         for bc in WINDOW_BASES:
-            bc.init_widget_events(self, widget)
+            if hasattr(bc, "init_widget_events"):
+                bc.init_widget_events(self, widget)
 
     def set_icon(self, pixbuf: GdkPixbuf.Pixbuf) -> None:
         for bc in WINDOW_BASES:
-            bc.set_icon(self, pixbuf)
+            if hasattr(bc, "set_icon"):
+                bc.set_icon(self, pixbuf)
 
     def show_xpra_menu(self, *_args) -> None:
         # this is called by the headerbar

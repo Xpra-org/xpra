@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from xpra.os_util import gi_import
 from xpra.common import PaintCallbacks
 from xpra.client.gui.widget_base import ClientWidgetBase
-from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks
+from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks
 from xpra.util.objects import typedict
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.env import envbool

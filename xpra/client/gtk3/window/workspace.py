@@ -11,7 +11,7 @@ from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland, is_X11
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.client.gtk3.window.stub_window import StubWindow
+from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.common import WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, noop
 from xpra.gtk.util import get_default_root_window
 from xpra.log import Logger
@@ -94,7 +94,7 @@ elif WIN32 and WIN32_WORKSPACE:
 POLL_WORKSPACE = envbool("XPRA_POLL_WORKSPACE", WIN32_WORKSPACE)
 
 
-class WorkspaceWindow(StubWindow):
+class WorkspaceWindow(GtkStubWindow):
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self._can_set_workspace = CAN_SET_WORKSPACE

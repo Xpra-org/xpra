@@ -1,14 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010 Antoine Martin <antoine@xpra.org>
-# Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.gtk3.window.stub_window import StubWindow
+from xpra.client.gui.window.stub_window import StubWindow
 
 
 class ActionWindow(StubWindow):
+    """
+    This module adds actions that can be used with key shortcuts
+    """
 
     def quit(self) -> None:
         self._client.quit(0)

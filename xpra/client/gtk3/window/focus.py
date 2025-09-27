@@ -11,7 +11,7 @@ from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.client.gtk3.window.stub_window import StubWindow
+from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.util.gobject import one_arg_signal
 from xpra.gtk.util import ds_inited
 from xpra.log import Logger
@@ -27,7 +27,7 @@ FOCUS_RECHECK_DELAY = envint("XPRA_FOCUS_RECHECK_DELAY", 0)
 AUTOGRAB_WITH_FOCUS = envbool("XPRA_AUTOGRAB_WITH_FOCUS", False)
 
 
-class FocusWindow(StubWindow):
+class FocusWindow(GtkStubWindow):
     __gsignals__ = {
         "x11-focus-out-event": one_arg_signal,
         "x11-focus-in-event": one_arg_signal,

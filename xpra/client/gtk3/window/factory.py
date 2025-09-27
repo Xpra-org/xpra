@@ -10,7 +10,7 @@ from xpra.util.env import envbool
 
 def get_window_base_classes() -> tuple[type, ...]:
     from xpra.client.gtk3.window.base import GTKClientWindowBase
-    from xpra.client.gtk3.window.action import ActionWindow
+    from xpra.client.gui.window.action import ActionWindow
     from xpra.client.gtk3.window.headerbar import HeaderBarWindow
     from xpra.client.base import features
     # headerbar could be toggled using a feature:

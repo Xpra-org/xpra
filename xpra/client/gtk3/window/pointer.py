@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.client.gtk3.window.stub_window import StubWindow
+from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.client.gtk3.window.common import event_buttons
 from xpra.log import Logger
 
@@ -60,7 +60,7 @@ def _get_relative_pointer(event) -> tuple[int, int]:
     return round(event.x), round(event.y)
 
 
-class PointerWindow(StubWindow):
+class PointerWindow(GtkStubWindow):
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.cursor_data = ()
