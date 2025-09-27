@@ -187,6 +187,13 @@ def parse_padding_colors(colors_str: str) -> tuple[int, int, int]:
     return padding_colors
 
 
+def norm_scroll(value: float):
+    if SMOOTH_SCROLL_NORM == 100:
+        return value
+    smoothed = math.pow(abs(value), SMOOTH_SCROLL_NORM / 100)
+    return math.copysign(smoothed, value)
+
+
 PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS", ""))
 
 # window types we map to POPUP rather than TOPLEVEL
@@ -2641,11 +2648,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._client.readonly:
             return True
         if event.direction == Gdk.ScrollDirection.SMOOTH:
-            mouselog("smooth scroll event: %s", event)
+            log("smooth scroll event: %s, raw delta: %s,%s", event, event.delta_x, event.delta_y)
             pointer = self.get_pointer_data(event)
             device_id = -1
-            norm_x = math.pow(event.delta_x, SMOOTH_SCROLL_NORM/100)
-            norm_y = math.pow(event.delta_y, SMOOTH_SCROLL_NORM/100)
+            norm_x = norm_x = norm_scroll(event.delta_x)
+            norm_y = norm_x = norm_scroll(event.delta_y)
             self._client.wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
             return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
