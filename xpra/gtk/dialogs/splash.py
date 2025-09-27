@@ -103,7 +103,9 @@ class SplashScreen(Gtk.Window):
             self.set_icon(icon)
             hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
         self.title_label = label(title, font="Adwaita sans 18")
-        hbox.pack_start(self.title_label, True, True, 20)
+        al = Gtk.Alignment(xalign=0.2, yalign=0.5, xscale=0, yscale=0)
+        al.add(self.title_label)
+        hbox.pack_start(al, True, True, 20)
         vbox.add(hbox)
         self.labels = []
         for i in range(LINES):
