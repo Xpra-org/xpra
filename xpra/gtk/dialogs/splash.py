@@ -96,7 +96,7 @@ class SplashScreen(Gtk.Window):
         self.set_app_paintable(True)
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
-        if visual and self.is_composited():
+        if visual and screen.is_composited():
             self.set_visual(visual)
         self.init_css()
 
