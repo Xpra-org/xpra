@@ -12,7 +12,7 @@ from collections.abc import Callable, MutableSequence
 
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.client.gui.widget_base import ClientWidgetBase
-from xpra.client.gui.window_backing_base import fire_paint_callbacks
+from xpra.client.gui.window.backing import fire_paint_callbacks
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
 from xpra.common import gravity_str, force_size_constraint

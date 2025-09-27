@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from xpra.client.gui.window_backing_base import fire_paint_callbacks
+from xpra.client.gui.window.backing import fire_paint_callbacks
 from xpra.util.env import envint
 from xpra.log import Logger
 
