@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import string
 import random
 from time import monotonic
 from subprocess import Popen
@@ -14,12 +15,23 @@ from xpra.platform.paths import get_nodock_command
 from xpra.util.objects import typedict
 
 
+def gen_secret(mode: str, count: int) -> str:
+    if mode in ("digits", "numeric"):
+        options = string.digits
+    elif mode in ("alpha", "chars", "characters"):
+        options = string.ascii_uppercase
+    elif mode == "alphanumeric":
+        options = string.ascii_uppercase + string.digits
+    else:
+        raise RuntimeError(f"unsupported mode {mode!r}")
+    return "".join(random.choice(options) for _ in range(count))
+
+
 class Authenticator(SysAuthenticator):
 
     def __init__(self, **kwargs):
         log("otpscreen.Authenticator(%s)", kwargs)
         self.mode = kwargs.pop("mode", "digits")
-        assert self.mode == "digits", "other modes have not been implemeted yet"
         self.count = int(kwargs.pop("count", 6))
         self.timeout = int(kwargs.pop("timeout", 120))
         self.display = kwargs.pop("display", "auto")
@@ -53,7 +65,7 @@ class Authenticator(SysAuthenticator):
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return b"", ""
-        self.secret = "".join(str(random.randint(0, 9)) for _ in range(self.count))
+        self.secret = gen_secret(self.mode, self.count)
         log(f"secret is {self.secret!r}")
         self.valid_until = monotonic() + self.timeout
         cmd = get_nodock_command() + ["otp", self.secret, str(self.timeout)]
