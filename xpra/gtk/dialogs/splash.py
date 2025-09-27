@@ -46,12 +46,22 @@ CSS = b"""
     background-color: rgba(35, 35, 48, 0.90);
     border-radius: 20px;
 }
+title {
+    color: #f0fff0;
+}
+label {
+    color: #f0fff0;
+}
 #progress-bar > trough {
     border-radius: 8px;
+    background-color: #e0e0e0;
 }
 #progress-bar > trough > progress {
     background-color: #4CA450;
     border-radius: 5px;
+}
+#progress-bar progress {
+    background-image: linear-gradient(to right, #66bb6a, #43a047);
 }
 """
 
@@ -104,6 +114,7 @@ class SplashScreen(Gtk.Window):
             self.set_icon(icon)
             hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
         self.title_label = label(title, font="Adwaita sans 18")
+        self.title_label.set_css_name("title")
         al = Gtk.Alignment(xalign=0.2, yalign=0.5, xscale=0, yscale=0)
         al.add(self.title_label)
         hbox.pack_start(al, True, True, 20)
@@ -111,7 +122,8 @@ class SplashScreen(Gtk.Window):
         self.labels = []
         for i in range(LINES):
             lbl = label(" ", font="Adwaita sans 13")
-            lbl.set_opacity(sqrt(i + 1) / LINES)
+            lbl.set_css_name("label")
+            lbl.set_opacity(sqrt((i + 1) / LINES))
             self.labels.append(lbl)
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0, yscale=0)
             al.add(lbl)
@@ -270,7 +282,7 @@ class SplashScreen(Gtk.Window):
             self.progress_timer = GLib.timeout_add(40, self.increase_fraction, pct)
             self.opacity = min(100, max(50, 130 - pct))
             if FADEOUT:
-                self.set_opacity(sqrt(self.opacity / 100.0))
+                self.set_opacity(sqrt(sqrt(self.opacity / 100.0)))
         set_window_progress(self, pct)
 
     def cancel_exit_timer(self) -> None:
