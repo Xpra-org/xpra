@@ -22,6 +22,7 @@ from xpra.util.glib import install_signal_handlers
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.platform.gui import force_focus, set_window_progress
 from xpra.log import Logger
+from xpra.util.thread import start_thread
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -149,8 +150,11 @@ class SplashScreen(Gtk.Window):
             GLib.source_remove(fd)
 
     def run(self) -> ExitValue:
-        events = GLib.IO_IN | GLib.IO_HUP | GLib.IO_ERR
-        self.fd_watch = GLib.io_add_watch(sys.stdin.fileno(), GLib.PRIORITY_LOW, events, self.read_stdin)
+        if WIN32:
+            start_thread(self.win32_read_thread, "win32-read-thread", True)
+        else:
+            events = GLib.IO_IN | GLib.IO_HUP | GLib.IO_ERR
+            self.fd_watch = GLib.io_add_watch(sys.stdin.fileno(), GLib.PRIORITY_LOW, events, self.read_stdin)
         self.show_all()
         force_focus()
         self.present()
@@ -194,6 +198,23 @@ class SplashScreen(Gtk.Window):
             self.timeout_timer = 0
             GLib.source_remove(tt)
 
+    def win32_read_thread(self) -> None:
+        while self.exit_code is None:
+            if not self.read_stdin_line():
+                break
+
+    def read_stdin_line(self) -> bool:
+        try:
+            line = sys.stdin.readline()
+            self.line_count += 1
+            GLib.timeout_add(self.line_count * READ_SLEEP, self.handle_stdin_line, line)
+            return True
+        except OSError:
+            self.fd_watch = 0
+            self.exit_code = ExitCode.FAILURE
+            self.exit()
+            return False
+
     def read_stdin(self, fd, cb_condition) -> bool:
         log(f"read_stdin({fd}, {hex(cb_condition)})")
         if (cb_condition & GLib.IO_HUP) or (cb_condition & GLib.IO_ERR):
@@ -202,16 +223,7 @@ class SplashScreen(Gtk.Window):
             GLib.timeout_add(10 * READ_SLEEP, self.exit)
             return False
         if cb_condition == GLib.IO_IN:
-            try:
-                line = sys.stdin.readline()
-                self.line_count += 1
-                GLib.timeout_add(self.line_count * READ_SLEEP, self.handle_stdin_line, line)
-                return True
-            except OSError:
-                self.fd_watch = 0
-                self.exit_code = ExitCode.FAILURE
-                self.exit()
-                return False
+            return self.read_stdin_line()
         # unexpected condition - continue
         return True
 
