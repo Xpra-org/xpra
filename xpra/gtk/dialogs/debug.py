@@ -41,7 +41,7 @@ def make_category_widgets(groups: dict[str, dict[str, str]], enabled: set[str], 
     for group, categories in groups.items():
         exp = Gtk.Expander(label=group)
         exp.connect("activate", eact)
-        setfont(exp, "sans 18")
+        setfont(exp, "sans 16")
         grid = Gtk.Grid()
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(False)
