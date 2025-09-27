@@ -138,7 +138,10 @@ def main(script_file: str, cmdline) -> ExitValue:
         options, args = do_parse_cmdline(cmdline, defaults)
         # `set_proc_title` is set here so that we can override the cmdline later
         # (don't ask me why this works)
-        set_proc_title(" ".join(cmdline))
+        if OSX:
+            set_proc_title("Xpra")
+        else:
+            set_proc_title(" ".join(cmdline))
         if not args:
             raise InitExit(-1, "xpra: need a mode")
         mode = args.pop(0)
@@ -1810,7 +1813,8 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode: str):
                 i = cmdline.index(uri)
                 obsc_cmdline = list(cmdline)
                 obsc_cmdline[i] = uri.replace(opts.password, "********")
-                set_proc_title(" ".join(obsc_cmdline))
+                if not OSX:
+                    set_proc_title(" ".join(obsc_cmdline))
         connect_to_server(app, display_desc, opts)
     except ValueError as e:
         einfo = str(e) or type(e)
