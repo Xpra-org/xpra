@@ -39,6 +39,7 @@ class HomeGUI(BaseGUIWindow):
         if LINUX:
             self.sub("Packages", "package.png", "Install or remove xpra packages", "packages")
         self.sub("Features", "features.png", "Enable or disable feature groups", "features")
+        self.sub("Settings", "gears.png", "Configure specific settings", "settings")
         self.sub("Picture compression", "encoding.png", "Encodings, speed and quality", "encodings", "xpra.codecs")
         # self.sub("GStreamer", "gstreamer.png", "Configure the GStreamer codecs", "gstreamer")
         self.sub("Debugging", "bugs.png", "Configure debug logging", "debug")

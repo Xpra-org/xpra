@@ -26,7 +26,7 @@ FEATURES = (
     ("Clipboard", "Copy & Paste to and from the server", "xpra.clipboard"),
     ("Notifications", "Notification forwarding", "xpra.notification"),
     ("Windows", "Window forwarding", "xpra.client.gtk3"),
-    # ("Splash", "Show the splash screen GUI", "xpra.gtk.dialogs.splash")
+    # ("MMap", "Fast shared memory transfers", "xpra.net.mmap"),
     # ("Readonly", "Prevent any keyboard or pointer events from being forwarded", "xpra.client.gtk3"),
 )
 
