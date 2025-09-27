@@ -257,6 +257,7 @@ class AuthenticatedServer(StubServerMixin):
             log(f"auth_verified(..) command request={command_req}")
             GLib.idle_add(self.handle_command_request, proto, *command_req)
             return
+        proto.clean_authenticators()
         # continue processing hello packet in UI thread:
         GLib.idle_add(self.call_hello_oked, proto, caps, auth_caps)
 

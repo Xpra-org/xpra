@@ -260,6 +260,9 @@ class SysAuthenticator(SysAuthenticatorBase):
             except (OSError, KeyError):
                 log(f"cannot load password database entry for {self.username!r}", exc_info=True)
 
+    def cleanup(self):
+        """ some subclasses may need to free up some resources """
+
     def get_uid(self) -> int:
         if self.pw is None:
             raise RuntimeError(f"username {self.username!r} not found")

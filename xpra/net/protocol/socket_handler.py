@@ -1334,9 +1334,15 @@ class SocketProtocol:
             with log.trap_error("Error closing %s", c):
                 eventlog("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
+        self.clean_authenticators()
         self.terminate_queue_threads()
         self.idle_add(self.clean)
         eventlog("Protocol.close(%s) done", message)
+
+    def clean_authenticators(self):
+        for c in self.authenticators:
+            clean = getattr(c, "cleanup", noop)
+            clean()
 
     def may_log_stats(self, log_fn: Callable = log.info) -> None:
         # noinspection PySimplifyBooleanCheck
@@ -1384,6 +1390,7 @@ class SocketProtocol:
 
     def clean(self) -> None:
         # clear all references to ensure we can get garbage collected quickly:
+        self.authenticators = ()
         self._get_packet_cb = no_packet
         self._encoder = noop
         self._write_thread = None

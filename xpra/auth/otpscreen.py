@@ -56,9 +56,7 @@ class Authenticator(SysAuthenticator):
         return self.secret
 
     def authenticate_otp(self, caps: typedict) -> bool:
-        proc = self.otp_dialog
-        if proc and proc.poll() is None:
-            proc.terminate()
+        self.stop_otp_dialog()
         return self.authenticate_hmac(caps)
 
     def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
@@ -75,6 +73,15 @@ class Authenticator(SysAuthenticator):
         from xpra.util.child_reaper import get_child_reaper
         get_child_reaper().add_process(self.otp_dialog, "otp-dialog", cmd, ignore=True, forget=True)
         return super().do_get_challenge(digests)
+
+    def cleanup(self):
+        self.stop_otp_dialog()
+
+    def stop_otp_dialog(self) -> bool:
+        proc = self.otp_dialog
+        log("stop_otp_dialog() otp_dialog=%s", proc)
+        if proc and proc.poll() is None:
+            proc.terminate()
 
     def __repr__(self):
         return "otpscreen"
