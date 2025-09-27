@@ -218,8 +218,10 @@ class SplashScreen(Gtk.Window):
     def read_stdin_line(self) -> bool:
         try:
             line = sys.stdin.readline()
+            log("read_stdin_line() line=%r", line)
             self.line_count += 1
-            GLib.timeout_add(self.line_count * READ_SLEEP, self.handle_stdin_line, line)
+            if line.strip():
+                GLib.timeout_add(self.line_count * READ_SLEEP, self.handle_stdin_line, line)
             return True
         except OSError:
             self.fd_watch = 0
