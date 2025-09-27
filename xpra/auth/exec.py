@@ -8,6 +8,7 @@ import shlex
 from subprocess import Popen
 from collections.abc import Sequence
 
+from xpra.auth.common import get_exec_env
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, alnum, bytestostr
 from xpra.util.env import envint, shellsub, first_time
@@ -42,6 +43,7 @@ class Authenticator(SysAuthenticator):
         self.command = shlex.split(kwargs.pop("command", "${auth_dialog} ${info} ${timeout}"))
         self.require_challenge = kwargs.pop("require-challenge", "no").lower() in TRUE_OPTIONS
         self.timeout = kwargs.pop("timeout", TIMEOUT)
+        self.display = kwargs.pop("display", "auto")
         self.timer = 0
         self.proc = None
         self.timeout_event = False
@@ -77,14 +79,17 @@ class Authenticator(SysAuthenticator):
             "timeout": self.timeout,
             "username": alnum(self.username),
             "prompt": std(self.prompt),
+            "display": self.display,
         }
         if self.require_challenge:
             subs["password"] = bytestostr(self.unxor_response(caps))
         cmd = tuple(shellsub(v, subs) for v in self.command)
-        log(f"authenticate(..) shellsub({self.command}={cmd}")
+        log("authenticate(..) shellsub(%s)=%r", self.command, cmd)
+        env = get_exec_env(self.display)
+        log("authenticate(..) env=%s", env)
         # [self.command, info, str(self.timeout)]
         try:
-            with Popen(cmd) as proc:
+            with Popen(cmd, env=env) as proc:
                 self.proc = proc
                 log(f"authenticate(..) Popen({cmd})={proc}")
                 # if required, make sure we kill the command when it times out:

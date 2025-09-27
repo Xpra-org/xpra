@@ -3,9 +3,11 @@
 # Copyright (C) 2013 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 import os
 from typing import TypeAlias
 
+from xpra.util.env import get_saved_env
 from xpra.auth.sys_auth_base import log, DEFAULT_UID, DEFAULT_GID
 from xpra.os_util import POSIX
 
@@ -44,3 +46,20 @@ def parse_gid(v) -> int:
             log.error(f"Error: cannot find gid of {v!r}: {e}")
         return os.getgid()
     return -1
+
+
+def get_exec_env(display="auto") -> dict[str, str]:
+    env = os.environ.copy()
+    # remove usless vars:
+    for k in ("LS_COLORS", ""):
+        env.pop(k, "")
+    if display == "auto":
+        # if the server was started from an existing display,
+        # show the OTP there
+        saved_env = get_saved_env()
+        for key in ("DISPLAY", "WAYLAND_DISPLAY"):
+            if key in saved_env:
+                env[key] = saved_env[key]
+    elif display:
+        env["DISPLAY"] = display
+    return env

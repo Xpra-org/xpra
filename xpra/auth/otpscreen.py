@@ -3,13 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import random
 from time import monotonic
 from subprocess import Popen
 from collections.abc import Sequence, Callable
 
-from xpra.util.env import get_saved_env
+from xpra.auth.common import get_exec_env
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.paths import get_nodock_command
 from xpra.util.objects import typedict
@@ -58,16 +57,7 @@ class Authenticator(SysAuthenticator):
         log(f"secret is {self.secret!r}")
         self.valid_until = monotonic() + self.timeout
         cmd = get_nodock_command() + ["otp", self.secret, str(self.timeout)]
-        env = os.environ.copy()
-        if self.display == "auto":
-            # if the server was started from an existing display,
-            # show the OTP there
-            saved_env = get_saved_env()
-            for key in ("DISPLAY", "WAYLAND_DISPLAY"):
-                if key in saved_env:
-                    env[key] = saved_env[key]
-        elif self.display:
-            env["DISPLAY"] = self.display
+        env = get_exec_env(self.display)
         log("otp dialog: Popen(%s, %s)", cmd, env)
         self.otp_dialog = Popen(cmd, env=env)
         from xpra.util.child_reaper import get_child_reaper
