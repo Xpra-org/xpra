@@ -35,6 +35,7 @@ class WindowServer(StubServerMixin):
         self._max_window_id = 1
         self._window_to_id: dict[Any, int] = {}
         self._id_to_window: dict[int, Any] = {}
+        self._counter = 0
         self.window_filters = []
         self.window_min_size = 0, 0
         self.window_max_size = 2 ** 15 - 1, 2 ** 15 - 1
@@ -138,8 +139,12 @@ class WindowServer(StubServerMixin):
         self.window_filters = []
 
     def get_windows_info(self, window_ids) -> dict[int, dict[str, Any]]:
-        info = {}
-        for wid, window in self._id_to_window.items():
+        copy = self._id_to_window.copy()
+        info = {
+            "count": len(copy),
+            "total": self._counter,
+        }
+        for wid, window in copy.items():
             if window_ids is not None and wid not in window_ids:
                 continue
             info[wid] = self.get_window_info(window)
@@ -195,11 +200,11 @@ class WindowServer(StubServerMixin):
     def _add_new_window_common(self, window) -> int:
         if "xid" in window.get_property_names():
             wid = window.get_property("xid")
+            if not wid:
+                raise RuntimeError(f"failed to get window id for new window {window!r}")
         else:
             wid = self._max_window_id
             self._max_window_id = max(self._max_window_id, wid + 1)
-        if not wid:
-            raise RuntimeError(f"failed to get window id for new window {window!r}")
         self.do_add_new_window_common(wid, window)
         return wid
 
@@ -210,6 +215,7 @@ class WindowServer(StubServerMixin):
             window.managed_connect("notify::%s" % prop, self._update_metadata)
         self._window_to_id[window] = wid
         self._id_to_window[wid] = window
+        self._counter += 1
 
     def _do_send_new_window_packet(self, ptype, window, geometry) -> None:
         wid = self._window_to_id[window]
