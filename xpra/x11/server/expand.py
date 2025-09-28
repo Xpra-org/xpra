@@ -6,7 +6,7 @@
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
-from xpra.x11.server.shadow import ShadowX11Server
+from xpra.x11.shadow.server import ShadowX11Server
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.evdi.capture import EvdiDevice, find_evdi_devices, add_evdi_device  # pylint: disable=no-name-in-module
@@ -52,7 +52,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         self.last_damage: tuple = ()
 
     def init(self, opts) -> None:
-        ShadowX11Server.init(self, opts)
+        super().init(opts)
         # pylint: disable=import-outside-toplevel
         from xpra.codecs.evdi.load import load_evdi_module
         if not load_evdi_module():

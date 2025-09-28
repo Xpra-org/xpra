@@ -8,6 +8,7 @@ from collections.abc import Callable
 
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
+from xpra.util.gobject import to_gsignals
 from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.scripts.config import str_to_bool
@@ -18,6 +19,7 @@ from xpra.net.compression import Compressed
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
+GObject = gi_import("GObject")
 
 screenlog = Logger("screen")
 log = Logger("shadow")
@@ -51,9 +53,11 @@ def parse_geometries(s) -> list[list[int]]:
     return g
 
 
-class GTKShadowServerBase(ShadowServerBase):
+class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
+    __gsignals__ = to_gsignals(ShadowServerBase.SIGNALS)
 
     def __init__(self, attrs: dict[str, str]):
+        GObject.GObject.__init__(self)
         ShadowServerBase.__init__(self)
         self.multi_window = str_to_bool(attrs.get("multi-window", True))
 
@@ -76,7 +80,7 @@ class GTKShadowServerBase(ShadowServerBase):
         super().last_client_exited()
 
     def make_hello(self, source) -> dict[str, Any]:
-        caps = ShadowServerBase.make_hello(self, source)
+        caps = super().make_hello(source)
         if "features" in source.wants:
             from xpra.gtk.info import get_screen_sizes
             caps["screen_sizes"] = get_screen_sizes()
@@ -327,3 +331,6 @@ class GTKShadowServerBase(ShadowServerBase):
         w, h, encoding, rowstride, data = rwm.take_screenshot()
         assert encoding == "png"  # use fixed encoding for now
         return "screenshot", w, h, encoding, rowstride, Compressed(encoding, data)
+
+
+GObject.type_register(GTKShadowServerBase)

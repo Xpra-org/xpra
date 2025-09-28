@@ -62,6 +62,7 @@ def try_setup_capture(backends: dict[str, Callable], backend: str, *args):
 
 
 class ShadowServerBase(ServerBase):
+    SIGNALS = ServerBase.__signals__
     # 20 fps unless the client specifies more:
     DEFAULT_REFRESH_RATE: int = 20
 
@@ -101,7 +102,7 @@ class ShadowServerBase(ServerBase):
 
     def setup(self) -> None:
         if not self.session_name:
-            self.guess_session_name()
+            GLib.idle_add(self.guess_session_name)
         super().setup()
 
     def cleanup(self) -> None:
@@ -144,8 +145,10 @@ class ShadowServerBase(ServerBase):
             # adjust refresh delay to try to match:
             self.set_refresh_delay(max(10, 1000 // rrate))
 
-    def make_hello(self, _source) -> dict[str, Any]:
-        return {"shadow": True}
+    def make_hello(self, source) -> dict[str, Any]:
+        hello = super().make_hello(source)
+        hello["shadow"] = True
+        return hello
 
     def get_info(self, _proto=None, *args) -> dict[str, Any]:
         info = {

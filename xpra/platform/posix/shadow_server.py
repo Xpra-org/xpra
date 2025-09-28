@@ -71,8 +71,8 @@ def load_x11(display: str = "") -> type | None:
     gdkb = os.environ.get("GDK_BACKEND", "")
     try:
         os.environ["GDK_BACKEND"] = "x11"
-        from xpra.x11.server import shadow
-        return shadow.ShadowX11Server
+        from xpra.x11.shadow.server import ShadowX11Server
+        return ShadowX11Server
     except ImportError as e:
         debug_error(f"load_x11({display})")
         if gdkb:
