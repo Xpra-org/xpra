@@ -6,6 +6,7 @@
 from xpra.os_util import gi_import
 from xpra.client.gtk3.menu_helper import MenuHelper
 from xpra.gtk.widget import checkitem
+from xpra.common import RESOLUTION_ALIASES
 from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 
@@ -26,7 +27,7 @@ class WindowMenuHelper(MenuHelper):
         self.window = window
 
     def get_menu_items(self) -> list[Gtk.ImageMenuItem | Gtk.MenuItem]:
-        return [
+        items = [
             # menu.append(self.make_aboutmenuitem())
             self.make_infomenuitem(),
             # if self.client.client_supports_opengl:
@@ -34,6 +35,11 @@ class WindowMenuHelper(MenuHelper):
             self.make_minimizemenuitem(),
             self.make_maximizemenuitem(),
             self.make_fullscreenmenuitem(),
+        ]
+        metadata = getattr(self.window, "_metadata", {})
+        if metadata.get("content-type", "") == "desktop" and not metadata.get("size-constraints", {}):
+            items.append(self.make_resizemenuitem())
+        items += [
             self.make_abovenmenuitem(),
             self.make_grabmenuitem(),
             self.make_bordermenuitem(),
@@ -41,6 +47,7 @@ class WindowMenuHelper(MenuHelper):
             self.make_reinitmenuitem(),
             self.make_closemenuitem(),
         ]
+        return items
 
     def make_infomenuitem(self) -> Gtk.ImageMenuItem:
         def show_info(*_args) -> None:
@@ -88,6 +95,50 @@ class WindowMenuHelper(MenuHelper):
 
         self.window.connect("window-state-event", window_state_updated)
         return self.maximize_menuitem
+
+    def make_resizemenuitem(self) -> Gtk.ImageMenuItem:
+        from threading import Event
+        switching = Event()
+
+        def resize(item) -> None:
+            if switching.is_set():
+                return
+            size = item.get_label()
+            w, h = self.window.get_size()
+            current_size = f"{w}x{h}"
+            log("resize(%s) current_size=%s", size, current_size)
+            select_size(size)
+            if size != current_size:
+                self.window.resize(*map(int, size.split("x")))
+
+        items = []
+
+        def update_size(*_args) -> None:
+            w, h = self.window.get_size()
+            size = f"{w}x{h}"
+            log("update_size: %s", size)
+            select_size(size)
+
+        def select_size(size: str) -> None:
+            log("select_size(%s)", size)
+            switching.set()
+            for item in items:
+                item.set_active(item.get_label() == size)
+            switching.clear()
+
+        self.window.connect("configure-event", update_size)
+
+        sizemenu = Gtk.Menu()
+        for w, h in sorted(list(set(RESOLUTION_ALIASES.values()))):
+            text = "%dx%d" % (w, h)
+            item = checkitem(text, resize)
+            items.append(item)
+            sizemenu.append(item)
+        update_size()
+        sizemenu.show_all()
+        resize = self.menuitem("Resize", "scaling.png")
+        resize.set_submenu(sizemenu)
+        return resize
 
     def make_fullscreenmenuitem(self) -> Gtk.ImageMenuItem:
         def fullscreen(*args) -> None:
