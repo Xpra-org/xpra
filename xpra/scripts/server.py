@@ -150,6 +150,9 @@ def sanitize_env() -> None:
              "CKCON_TTY",
              "CKCON_X11_DISPLAY",
              "CKCON_X11_DISPLAY_DEVICE",
+             "WINDOWPATH",
+             "VTE_VERSION",
+             "LS_COLORS",
              )
 
 
