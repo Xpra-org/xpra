@@ -287,7 +287,7 @@ def set_server_features(opts, mode: str) -> None:
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
-        features.x11 = (mode in ("desktop", "seamless") or (mode == "shadow" and POSIX and not OSX) or opts.backend == "x11") and impcheck("x11")
+        features.x11 = (mode in ("desktop", "monitor", "seamless") or (mode == "shadow" and POSIX and not OSX) or opts.backend == "x11") and impcheck("x11")
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
         features.pulseaudio = features.audio and b(opts.pulseaudio) and impcheck("audio.pulseaudio")
         features.av_sync = features.audio and b(opts.av_sync)
@@ -306,7 +306,7 @@ def set_server_features(opts, mode: str) -> None:
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0
-        features.gtk = mode not in ("desktop", "seamless") or opts.backend.lower() == "gtk"
+        features.gtk = mode not in ("desktop", "monitor", "seamless") or opts.backend.lower() == "gtk"
         features.tray = features.gtk and b(opts.tray) and mode == "shadow"
         features.opengl = features.display and b(opts.opengl) and impcheck("opengl")
         features.bell = features.display and b(opts.bell)
