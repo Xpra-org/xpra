@@ -120,6 +120,7 @@ def enforce_features(features, feature_map: dict[str, str]) -> None:
                 if value is not None:
                     from xpra.util.io import get_util_logger
                     log = get_util_logger()
+                    log("enforce_features(%s, %s)", features, feature_map, backtrace=True)
                     log.warn(f"Warning: cannot disable {feature!r} feature")
                     log.warn(f" the module {module!r} is already loaded")
                 else:
