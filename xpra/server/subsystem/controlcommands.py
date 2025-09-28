@@ -76,7 +76,7 @@ class ServerBaseControlCommands(StubServerMixin):
                                    validation=[parse_boolean_value]),
                 ArgsControlCommand("idle-timeout", "set the idle timeout", validation=[int]),
                 ArgsControlCommand("server-idle-timeout", "set the server idle timeout", validation=[int]),
-                ArgsControlCommand("start-env", "modify the environment used to start new commands", min_args=2),
+                ArgsControlCommand("start-env", "modify the environment used to start new commands", min_args=1),
                 ArgsControlCommand("start", "executes the command arguments in the server context", min_args=1),
                 ArgsControlCommand("start-child",
                                    "executes the command arguments in the server context, as a 'child' (honouring exit-with-children)",
@@ -247,7 +247,8 @@ class ServerBaseControlCommands(StubServerMixin):
         return f"server-idle-timeout set to {t}"
 
     def control_command_start_env(self, action: str = "set", var_name: str = "", value=None) -> str:
-        assert var_name, "the environment variable name must be specified"
+        if action != "get" and not var_name:
+            raise RuntimeError("the environment variable name must be specified")
         if action == "unset":
             assert value is None, f"invalid number of arguments for {action}"
             if self.start_env.pop(var_name, None) is None:
@@ -257,6 +258,15 @@ class ServerBaseControlCommands(StubServerMixin):
             assert value, "the value must be specified"
             self.start_env[var_name] = value
             return f"{var_name}={value}"
+        if action == "get":
+            env = self.get_child_env()
+            if var_name:
+                if var_name not in env:
+                    return f"# {var_name!r} is not defined"
+                value = env[var_name]
+                return f"{var_name}={value}"
+            else:
+                return "\n".join(f"{k}={v}" for k, v in sorted(env.items()))
         return f"invalid start-env subcommand {action!r}"
 
     def control_command_start(self, *args) -> str:
