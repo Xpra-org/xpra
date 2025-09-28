@@ -5,51 +5,27 @@
 
 import os
 import sys
-from random import randint
+import mmap
 from ctypes import c_ubyte, c_uint32
 from typing import Any
 
-from xpra.common import roundup, noop, PaintCallback
-from xpra.util.env import envbool, shellsub
-from xpra.util.str_fn import csv
-from xpra.util.objects import typedict
-from xpra.os_util import get_group_id, get_int_uuid, WIN32, POSIX
+from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, validate_size, get_mmap_dir, xpra_group, get_socket_group
 from xpra.scripts.config import FALSE_OPTIONS
-from xpra.util.stats import std_unit
+from xpra.common import roundup, noop, PaintCallback
+from xpra.os_util import WIN32, POSIX, get_hex_uuid, get_group_id
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("mmap")
 
 ALWAYS_WRAP = envbool("XPRA_MMAP_ALWAYS_WRAP", False)
-MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
 MADVISE = envbool("XPRA_MMAP_MADVISE", True)
-
-DEFAULT_TOKEN_BYTES: int = 128
-
-"""
-Utility functions for communicating via mmap
-"""
+MADVISE_FLAGS = os.environ.get("XPRA_MMAP_MADVISE_FLAGS", "SEQUENTIAL,DONTFORK,UNMERGEABLE,DONTDUMP").split(",")
 
 
-def get_socket_group(socket_filename) -> int:
-    if isinstance(socket_filename, str) and os.path.exists(socket_filename):
-        s = os.stat(socket_filename)
-        return s.st_gid
-    log.warn(f"Warning: missing valid socket filename {socket_filename!r} to set mmap group")
-    return -1
-
-
-def xpra_group() -> int:
-    if POSIX:
-        try:
-            groups = os.getgroups()
-            group_id = get_group_id(MMAP_GROUP)
-            log("xpra_group() group(%s)=%s, groups=%s", MMAP_GROUP, group_id, groups)
-            if group_id and group_id in groups:
-                return group_id
-        except Exception:
-            log("xpra_group()", exc_info=True)
-    return 0
+def rerr() -> tuple[bool, bool, Any, int, Any, str]:
+    return False, False, None, 0, None, ""
 
 
 def madvise(mmap_area) -> None:
@@ -57,7 +33,6 @@ def madvise(mmap_area) -> None:
     if not hasattr(mmap, "madvise"):
         log("no mmap.madvise() on this platform")
         return
-    MADVISE_FLAGS = os.environ.get("XPRA_MMAP_MADVISE_FLAGS", "SEQUENTIAL,DONTFORK,UNMERGEABLE,DONTDUMP").split(",")
     log(f"setting MADVISE_FLAGS={MADVISE_FLAGS}")
     try:
         for flag in MADVISE_FLAGS:
@@ -95,34 +70,6 @@ def set_mmap_group(fd: int, mmap_group: str, socket_filename: str) -> None:
         os.fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
 
 
-def rerr() -> tuple[bool, bool, Any, int, Any, str]:
-    return False, False, None, 0, None, ""
-
-
-def validate_size(size: int) -> None:
-    if size < 64 * 1024 * 1024:
-        raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
-    if size > 16 * 1024 * 1024 * 1024:
-        raise ValueError("mmap is too big: %sB (maximum is 4GB)" % std_unit(size))
-
-
-def get_mmap_dir() -> str:
-    from xpra.platform.paths import get_mmap_dir as get_platform_mmap_dir
-    mmap_dir = get_platform_mmap_dir()
-    subs = os.environ.copy()
-    subs |= {
-        "UID": str(os.getuid()),
-        "GID": str(os.getgid()),
-        "PID": str(os.getpid()),
-    }
-    mmap_dir = shellsub(mmap_dir, subs)
-    if mmap_dir and not os.path.exists(mmap_dir):
-        os.mkdir(mmap_dir, 0o700)
-    if not mmap_dir or not os.path.exists(mmap_dir):
-        raise RuntimeError("mmap directory %s does not exist!" % mmap_dir)
-    return mmap_dir
-
-
 def init_client_mmap(mmap_group="", socket_filename: str = "", size: int = 128 * 1024 * 1024, filename: str = "") \
         -> tuple[bool, bool, Any, int, Any, str]:
     """
@@ -136,14 +83,12 @@ def init_client_mmap(mmap_group="", socket_filename: str = "", size: int = 128 *
     mmap_temp_file = None
     delete = True
     try:
-        import mmap
         unit = max(4096, mmap.PAGESIZE)
         # add 8 bytes for the mmap area control header zone:
         mmap_size = roundup(size + 8, unit)
         if WIN32:
             validate_size(mmap_size)
             if not filename:
-                from xpra.os_util import get_hex_uuid
                 mmap_filename = filename = "xpra-%s" % get_hex_uuid()
             mmap_area = mmap.mmap(0, mmap_size, filename)
             # not a real file:
@@ -251,7 +196,6 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None
     """
     mmap_area = None
     try:
-        import mmap
         if not WIN32:
             try:
                 f = open(mmap_filename, "r+b")
@@ -411,97 +355,3 @@ def mmap_free_size(mmap_area, mmap_size: int) -> int:
     # [------------S++++++++++++E---------]
     # so there are two chunks available (from E to the end, from the start to S)
     return (start - 8) + (mmap_size - end)
-
-
-class BaseMmapArea:
-    """
-    Represents an mmap area we can read from or write to
-    """
-
-    def __init__(self, name: str, filename="", size=0):
-        self.name = name
-        self.mmap = None
-        self.enabled = False
-        self.token: int = 0
-        self.token_index: int = 0
-        self.token_bytes: int = 0
-        self.filename = filename
-        self.size = size
-
-    def __repr__(self):
-        return "MmapArea(%s:%s:%i)" % (self.name, self.filename, self.size)
-
-    def __bool__(self):
-        return bool(self.mmap) and self.enabled and self.size > 0
-
-    def close(self) -> None:
-        mmap = self.mmap
-        if mmap:
-            try:
-                mmap.close()
-            except BufferError:
-                log("%s.close()", mmap, exc_info=True)
-            except OSError:
-                log("%s.close()", mmap, exc_info=True)
-                log.warn("Warning: failed to close %s mmap area", self.name)
-            self.mmap = None
-        self.enabled = False
-
-    def get_caps(self) -> dict[str, Any]:
-        return {
-            "file": self.filename,
-            "size": self.size,
-            "token": self.token,
-            "token_index": self.token_index,
-            "token_bytes": self.token_bytes,
-        }
-
-    def get_info(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "file": self.filename,
-            "size": self.size,
-        }
-
-    def parse_caps(self, mmap_caps: typedict) -> None:
-        self.enabled = mmap_caps.boolget("enabled", True)
-        self.token = mmap_caps.intget("token")
-        self.token_index = mmap_caps.intget("token_index", 0)
-        self.token_bytes = mmap_caps.intget("token_bytes", DEFAULT_TOKEN_BYTES)
-        self.size = self.size or mmap_caps.intget("size")
-
-    def verify_token(self) -> bool:
-        if not self.mmap:
-            raise RuntimeError("mmap object is not defined")
-        token = read_mmap_token(self.mmap, self.token_index, self.token_bytes)
-        if token == 0:
-            log.info(f"the server is not using the {self.name!r} mmap area")
-            return False
-        if token != self.token:
-            self.enabled = False
-            log.error(f"Error: {self.name!r} mmap token verification failed!")
-            log.error(f" expected {self.token:x}")
-            log.error(f" found {token:x}")
-            log.error(" mmap is disabled")
-            return False
-        log.info("enabled fast %s mmap transfers using %sB shared memory area",
-                 self.name, std_unit(self.size, unit=1024))
-        log.info(" %r", self.filename)
-        return True
-
-    def gen_token(self) -> None:
-        self.token = get_int_uuid()
-        self.token_bytes = DEFAULT_TOKEN_BYTES
-        self.token_index = randint(0, self.size - DEFAULT_TOKEN_BYTES)
-
-    def write_token(self) -> None:
-        write_mmap_token(self.mmap, self.token, self.token_index, self.token_bytes)
-
-    def write_data(self, data) -> list[tuple[int, int]]:
-        return mmap_write(self.mmap, self.size, data)
-
-    def mmap_read(self, *descr_data: tuple[int, int]) -> tuple[bytes | memoryview, PaintCallback]:
-        return mmap_read(self.mmap, *descr_data)
-
-    def get_free_size(self) -> int:
-        return mmap_free_size(self.mmap, self.size)

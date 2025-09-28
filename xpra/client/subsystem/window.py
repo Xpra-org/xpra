@@ -1632,7 +1632,7 @@ class WindowClient(StubClientMixin):
                 if coding == "mmap":
                     area = self.mmap_read_area
                     if area:
-                        from xpra.net.mmap import int_from_buffer
+                        from xpra.net.mmap.io import int_from_buffer
                         # we need to ack the data to free the space!
                         data_start = int_from_buffer(area.mmap, 0)
                         offset, length = data[-1]

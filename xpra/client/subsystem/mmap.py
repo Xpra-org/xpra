@@ -13,7 +13,8 @@ from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import csv
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.client.base.stub import StubClientMixin
-from xpra.net.mmap import init_client_mmap, clean_mmap, BaseMmapArea
+from xpra.net.mmap.io import init_client_mmap, clean_mmap
+from xpra.net.mmap.objects import BaseMmapArea
 from xpra.log import Logger
 
 log = Logger("mmap")

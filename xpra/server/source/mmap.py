@@ -10,7 +10,8 @@ from collections.abc import Sequence
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.server.source.stub import StubClientConnection
-from xpra.net.mmap import init_server_mmap, BaseMmapArea
+from xpra.net.mmap.io import init_server_mmap
+from xpra.net.mmap.objects import BaseMmapArea
 
 from xpra.log import Logger
 

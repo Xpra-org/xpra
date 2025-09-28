@@ -868,7 +868,7 @@ class WindowBackingBase:
                    options: typedict, callbacks: PaintCallbacks) -> None:
         if not self.mmap:
             raise RuntimeError("mmap paint packet without a valid mmap read area")
-        from xpra.net.mmap import mmap_read
+        from xpra.net.mmap.io import mmap_read
         # newer versions use the 'chunks' option, older versions overload the 'img_data'
         chunks = options.tupleget("chunks") or img_data
         data, free_cb = mmap_read(self.mmap.mmap, *chunks)

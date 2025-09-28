@@ -272,6 +272,7 @@ audio_ENABLED           = DEFAULT
 printing_ENABLED        = DEFAULT
 crypto_ENABLED          = DEFAULT
 mdns_ENABLED            = DEFAULT
+mmap_ENABLED            = DEFAULT
 websockets_ENABLED      = DEFAULT
 websockets_browser_cookie_ENABLED = DEFAULT
 yaml_ENABLED            = DEFAULT
@@ -408,7 +409,7 @@ SWITCHES += [
     "cython_tracing", "cythonize_more", "cython_shared",
     "modules", "data",
     "brotli", "cityhash", "qrencode",
-    "vsock", "netdev", "proc", "mdns", "lz4",
+    "vsock", "netdev", "proc", "mdns", "lz4", "mmap",
     "clipboard",
     "scripts",
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
@@ -2884,6 +2885,7 @@ toggle_packages(brotli_ENABLED, "xpra.net.brotli")
 tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlidec")
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
+toggle_packages(mmap_ENABLED, "xpra.net.mmap")
 toggle_packages(quic_ENABLED, "xpra.net.asyncio")
 toggle_packages(quic_ENABLED, "xpra.net.quic")
 toggle_packages(ssh_ENABLED, "xpra.net.ssh")
@@ -2958,6 +2960,8 @@ if cythonize_more_ENABLED:
         ax("xpra.net.http")
     if mdns_ENABLED:
         ax("xpra.net.mdns")
+    if mmap_ENABLED:
+        ax("xpra.net.mmap")
     ax("xpra.net.protocol")
     ax("xpra.net.control")
     if qrencode_ENABLED and gtk3_ENABLED:
