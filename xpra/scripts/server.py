@@ -287,7 +287,7 @@ def set_server_features(opts, mode: str) -> None:
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
-        features.x11 = (mode in ("desktop", "seamless") or opts.backend == "x11") and impcheck("x11")
+        features.x11 = (mode in ("desktop", "seamless") or (mode == "shadow" and POSIX and not OSX) or opts.backend == "x11") and impcheck("x11")
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
         features.pulseaudio = features.audio and b(opts.pulseaudio) and impcheck("audio.pulseaudio")
         features.av_sync = features.audio and b(opts.av_sync)
