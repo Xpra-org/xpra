@@ -375,6 +375,10 @@ class ClientWindowBase(ClientWidgetBase):
             title = self._get_window_title(metadata)
             self.set_title(title)
 
+        if "locale" in metadata:
+            locale = metadata.get("locale", "")
+            self.set_locale(locale)
+
         if "icon-title" in metadata:
             icon_title = metadata.strget("icon-title")
             self.set_icon_name(icon_title)
@@ -673,6 +677,9 @@ class ClientWindowBase(ClientWidgetBase):
         b = self._backing
         if b:
             b.gravity = self.window_gravity
+
+    def set_locale(self, locale: str) -> None:
+        pass  # see gtk client window base
 
     def set_window_type(self, window_types) -> None:
         pass  # see gtk client window base

@@ -882,6 +882,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
         self.when_realized("set-opaque-region", do_set_region)
 
+    def set_locale(self, locale: str) -> None:
+        self.set_x11_property("WM_LOCALE_NAME", "latin1", locale)
+
     def set_xid(self, xid: str | int) -> None:
         if xid.startswith("0x") and xid.endswith("L"):
             xid = xid[:-1]

@@ -29,6 +29,7 @@ def make_window_metadata(window, propname: str, skip_defaults=False) -> dict[str
 DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "title": "",
     "icon-title": "",
+    "locale": "",
     "command": "",
     "content-type": "",
     "pid": 0,

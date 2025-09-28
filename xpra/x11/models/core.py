@@ -190,7 +190,13 @@ class CoreX11WindowModel(WindowModelStub):
         # from _NET_WM_NAME or WM_NAME
         "title": (
             GObject.TYPE_PYOBJECT,
-            "Window title (unicode or None)", "",
+            "Window title", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        # from WM_LOCALE_NAME
+        "locale": (
+            GObject.TYPE_PYOBJECT,
+            "The name of the current locale used by the application", "",
             GObject.ParamFlags.READABLE,
         ),
         # from WM_WINDOW_ROLE
@@ -271,7 +277,7 @@ class CoreX11WindowModel(WindowModelStub):
         "xid", "depth", "has-alpha",
         "parent",
         "client-machine", "pid", "ppid", "wm-pid",
-        "title", "role",
+        "title", "locale", "role",
         "command", "shape",
         "class-instance", "protocols",
         "opaque-region",
@@ -288,6 +294,7 @@ class CoreX11WindowModel(WindowModelStub):
         "_NET_WM_PID", "WM_CLIENT_MACHINE",
         # _NET_WM_NAME is redundant, as it calls the same handler as "WM_NAME"
         "WM_NAME", "_NET_WM_NAME",
+        "WM_LOCALE_NAME",
         "WM_PROTOCOLS", "WM_CLASS", "WM_WINDOW_ROLE",
         "_NET_WM_OPAQUE_REGION",
         "WM_COMMAND",
@@ -712,7 +719,13 @@ class CoreX11WindowModel(WindowModelStub):
             name = self.prop_get("WM_NAME", "latin1", True) or ""
             metalog("WM_NAME=%s", name)
         if self._updateprop("title", sanestr(str(name) or "")):
-            metalog("wm_name changed")
+            metalog("wm_name changed: %r", name)
+
+    def _handle_wm_local_name_change(self) -> None:
+        locale = self.prop_get("WM_LOCALE_NAME", "latin1", True)
+        metalog("WM_LOCALE_NAME=%s", locale)
+        if self._updateprop("locale", sanestr(str(locale) or "")):
+            metalog("locale changed: %r", locale)
 
     def _handle_role_change(self) -> None:
         role = self.prop_get("WM_WINDOW_ROLE", "latin1") or ""
@@ -773,6 +786,7 @@ class CoreX11WindowModel(WindowModelStub):
         "_NET_WM_PID": _handle_pid_change,
         "WM_CLIENT_MACHINE": _handle_client_machine_change,
         "WM_NAME": _handle_wm_name_change,
+        "WM_LOCALE_NAME": _handle_wm_local_name_change,
         "_NET_WM_NAME": _handle_wm_name_change,
         "WM_WINDOW_ROLE": _handle_role_change,
         "WM_PROTOCOLS": _handle_protocols_change,

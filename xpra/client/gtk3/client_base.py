@@ -911,7 +911,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if POSIX:
             # this is only really supported on X11, but posix is easier to check for..
             # "strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
-            ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
+            ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors", "locale"]
         if HAS_X11_BINDINGS:
             ms += ["x11-property"]
             XSHAPE = envbool("XPRA_XSHAPE", True)
