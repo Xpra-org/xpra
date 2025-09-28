@@ -12,6 +12,7 @@ from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.util.str_fn import csv
 from xpra.gtk.widget import label
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.features import CLIPBOARDS
 
@@ -181,6 +182,8 @@ class ClipboardStateInfoWindow:
         self.window.set_border_width(20)
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_title("Clipboard Test Tool")
+
+        add_close_accel(self.window, self.destroy)
 
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
