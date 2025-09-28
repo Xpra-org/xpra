@@ -20,9 +20,9 @@ import os.path
 from xpra.scripts.config import InitException, get_Xdummy_confdir
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env, get_saved_env_var
-from xpra.os_util import getuid, getgid, POSIX
+from xpra.os_util import getuid, getgid, POSIX, OSX
 from xpra.util.daemon import setuidgid
-from xpra.util.io import is_writable, pollwait, osclose
+from xpra.util.io import is_writable, pollwait, osclose, get_status_output
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 from xpra.log import Logger
 
@@ -268,6 +268,30 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
         (xvfb_cmd, vfb_geom, pixel_depth, fps, display_name, cwd, uid, gid, username, uinput_uuid),
         XVFB_EXTRA_ARGS)
     use_display_fd = display_name[0] == "S"
+
+    if OSX and not os.path.exists("/tmp/.X11-unix"):
+        if getuid() == 0:
+            try:
+                os.mkdir("/tmp/.X11-unix", 0o1777)
+            except OSError as e:
+                raise InitException(f"failed to create /tmp/.X11-unix: {e}") from None
+        else:
+            # we can't create it directly, but running XQuartz will create it for us:
+            # best ot use an X11 utility like `xset` rather than `open -a XQuartz`
+            # because XQuartz will also launch an `xterm` - which we do not want.
+            from xpra.platform.paths import get_app_dir
+            base = get_app_dir()
+            xset = os.path.join(base, "Resources", "bin", "xset")
+            if not os.path.exists(xset) or not os.path.isfile(xset):
+                raise InitException(f"xset not found at {xset!r}")
+            log("using xset to start XQuartz and create /tmp/.X11-unix")
+            code, out, err = get_status_output([xset, "-q"])
+            if code != 0:
+                log.warn("Warning: xset failed and returned %i", code)
+                log.warn(" error output: %r", err.strip())
+            log("xset -q output: %r", out.strip())
+            if not os.path.exists("/tmp/.X11-unix"):
+                raise InitException("XQuartz failed to create /tmp/.X11-unix, cannot start Xvfb")
 
     etc_prefix = os.environ.get("XPRA_INSTALL_PREFIX", "")
     if etc_prefix.endswith("/usr"):
