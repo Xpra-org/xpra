@@ -1953,7 +1953,7 @@ def set_client_features(opts) -> None:
     features.pointer = b(opts.pointer)
     features.notification = opts.notifications and icheck("xpra.notification")
     features.dbus = b(opts.dbus) and icheck("dbus") and icheck("xpra.dbus")
-    features.mmap = b(opts.mmap)
+    features.mmap = b(opts.mmap) and icheck("xpra.net.mmap")
     features.ssl = b(opts.ssl) and icheck("ssl")
     features.ssh = b(opts.ssh)
     features.logging = b(opts.remote_logging)
