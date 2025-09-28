@@ -139,7 +139,7 @@ class X11DisplayManager(DisplayManager):
             self.initial_resolutions = parse_resolutions(sizes, opts.refresh_rate) or self.get_default_initial_res()
         except ValueError:
             self.initial_resolutions = self.get_default_initial_res()
-        log.warn("initial_resolutions(%s, %s)=%s", sizes, opts.refresh_rate, self.initial_resolutions)
+        log("initial_resolutions(%s, %s)=%s", sizes, opts.refresh_rate, self.initial_resolutions)
         self.randr = onoff.lower() not in FALSE_OPTIONS
         self.randr_exact_size = False
         self.check_xvfb()
