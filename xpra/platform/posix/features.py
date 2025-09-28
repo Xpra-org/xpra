@@ -34,6 +34,8 @@ DEFAULT_START_ENV = (
     "GTK_OVERLAY_SCROLLING=0",
     "#some versions of GTK3 honour this option, sadly not all:",
     "GTK_CSD=0",
+    "#use this to make SDL video windows minimize on focus loss:",
+    "#SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS=1",
 )
 
 DEFAULT_SSH_CMD = "ssh"
