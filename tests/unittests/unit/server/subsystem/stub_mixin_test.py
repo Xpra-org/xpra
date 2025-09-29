@@ -31,7 +31,7 @@ class EncodingMixinTest(unittest.TestCase):
         assert isinstance(x.get_caps(None), dict)
         assert isinstance(x.get_server_features(None), dict)
         assert isinstance(x.get_info(None), dict)
-        assert isinstance(x.get_ui_info(None, None), dict)
+        assert isinstance(x.get_ui_info(None), dict)
 
         caps = typedict()
         x.parse_hello(None, caps, True)

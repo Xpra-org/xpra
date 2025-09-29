@@ -28,9 +28,9 @@ class EncodingMixinTest(ServerMixinTest):
         opts.csc_modules = []
         self._test_mixin_class(EncodingServer, opts, {
             "encodings.core" : opts.encodings,
-            }, EncodingsConnection)
+        }, EncodingsConnection)
         self.handle_packet(("quality", 10))
-        #assert self.mixin.get_info().get("encodings").get
+        #assert self.mixin.get_info(self.protocol).get("encodings").get
         #    "quality"       : self._process_quality,
         #    "min-quality"   : self._process_min_quality,
         #    "speed"         : self._process_speed,

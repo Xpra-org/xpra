@@ -16,7 +16,7 @@ class MMAPMixinTest(ServerMixinTest):
     def _test_mmap(self, opts):
         from xpra.server.subsystem.mmap import MMAP_Server
         self._test_mixin_class(MMAP_Server, opts)
-        assert self.mixin.get_info().get("mmap", {}).get("supported") is True
+        assert self.mixin.get_info(self.protocol).get("mmap", {}).get("supported") is True
 
     def test_mmap_on(self):
         opts = AdHocStruct()
@@ -27,6 +27,7 @@ class MMAPMixinTest(ServerMixinTest):
         opts = AdHocStruct()
         opts.mmap = tempfile.gettempdir()+"/mmap-test-file"
         self._test_mmap(opts)
+
 
 def main():
     unittest.main()
