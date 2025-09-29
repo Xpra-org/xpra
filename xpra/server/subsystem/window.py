@@ -157,10 +157,10 @@ class WindowServer(StubServerMixin):
         for prop in window.get_property_names():
             if prop == "icons" or prop is None:
                 continue
-            metadata = make_window_metadata(window, prop)
+            metadata = make_window_metadata(window, prop, skip_defaults=False)
             info.update(metadata)
         for prop in window.get_internal_property_names():
-            metadata = make_window_metadata(window, prop)
+            metadata = make_window_metadata(window, prop, skip_defaults=False)
             info.update(metadata)
         info.update({
             "override-redirect": window.is_OR(),
