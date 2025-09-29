@@ -192,6 +192,7 @@ class SocketProtocol:
         self._write_format_thread: Thread | None = None  # started when needed
         self._source_has_more = Event()
         self.receive_pending = False
+        self.eof_pending = False
         # ssh channel may contain garbage initially,
         # tell the protocol to wait for a valid header:
         self.wait_for_header = conn.socktype == "ssh"
@@ -400,6 +401,7 @@ class SocketProtocol:
             "has_more": shm and shm.is_set(),
             "receive-pending": self.receive_pending,
             "closed": self._closed,
+            "eof-pending": self.eof_pending,
         }
         comp = self.compressor
         if comp:
@@ -867,14 +869,22 @@ class SocketProtocol:
         # log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
         # add to the read queue (or whatever takes its place - see steal_connection)
         if not buf:
-            eventlog("read thread: potential eof")
-            self.timeout_add(1000, self.check_eof, self.input_raw_packetcount)
+            if self.eof_pending:
+                eventlog("read thread: eof already pending, ignoring")
+            else:
+                socktype = getattr(self._conn, "socktype", "unknown")
+                is_ssl_socktype = socktype in ("ssl", "wss", "quic")
+                grace_period = envint(f"XPRA_{socktype.upper()}_EOF_GRACE_PERIOD", 500 + is_ssl_socktype * 2000)
+                eventlog(f"read thread: potential eof on {socktype!r} connection, using grace period={grace_period}ms")
+                self.timeout_add(grace_period, self.check_eof, self.input_raw_packetcount)
+                self.eof_pending = True
         else:
             self._process_read(buf)
             self.input_raw_packetcount += 1
         return True
 
     def check_eof(self, raw_count=0) -> bool:
+        self.eof_pending = False
         if not self._closed and self.input_raw_packetcount <= raw_count:
             eventlog("check_eof: eof detected")
             # give time to the parse thread to call close itself,
