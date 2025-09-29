@@ -301,7 +301,9 @@ class BaseWindowModel(CoreX11WindowModel):
 
     def _read_initial_X11_properties(self) -> None:
         metalog("%s.read_initial_X11_properties()", self._MODELTYPE)
-        self._updateprop("state", tuple(self._read_wm_state()))
+        wm_state = tuple(self._read_wm_state())
+        self._updateprop("state", wm_state)
+        self._gproperties["iconic"] = "_NET_WM_STATE_HIDDEN" in wm_state
         super()._read_initial_X11_properties()
         self._update_content_type()
 
