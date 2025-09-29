@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.4] 2025-09-27
+## [6.4] 2025-09-29
 * Platforms, build and packaging:
   * [major modularization](https://github.com/Xpra-org/xpra/issues/4523)
   * [Gtk-free server](https://github.com/Xpra-org/xpra/issues/3871)
@@ -28,6 +28,7 @@
   * [dynamic child command substitutions](https://github.com/Xpra-org/xpra/issues/4672)
   * [prettier splash screen](https://github.com/Xpra-org/xpra/issues/4675)
   * [simple OTP screen authentication](https://github.com/Xpra-org/xpra/issues/4674)
+  * [smarter `info` requests](https://github.com/Xpra-org/xpra/issues/4677)
 * Network:
   * [stronger packet data types](https://github.com/Xpra-org/xpra/issues/4566)
   * [honour `IdentityFile` and `IdentitiesOnly` in ssh configs](https://github.com/Xpra-org/xpra/issues/4598)
