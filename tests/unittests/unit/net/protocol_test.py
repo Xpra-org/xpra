@@ -151,7 +151,8 @@ class ProtocolTest(unittest.TestCase):
                 errs.append("not read any raw packets")
             loop.quit()
         loop = GLib.MainLoop()
-        GLib.timeout_add(500, check_failed)
+        # we use a fake `tcp` connection, so the eof will call close() after 1000+500ms:
+        GLib.timeout_add(2500, check_failed)
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
         proto.start()
         loop.run()
