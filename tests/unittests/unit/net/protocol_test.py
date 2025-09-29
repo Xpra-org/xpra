@@ -45,11 +45,13 @@ class FastMemoryConnection(Connection):
         if not self.read_buffers:
             logger = Logger("network")
             logger("read(%i) EOF", n)
+            time.sleep(0.1)
             return b""
         b = self.read_buffers[0]
         if len(b) <= n:
             return self.read_buffers.pop(0)
         self.read_buffers[0] = b[n:]
+        time.sleep(0.05)
         return b[:n]
 
     def write(self, buf, packet_type: str = "") -> int:
@@ -156,7 +158,9 @@ class ProtocolTest(unittest.TestCase):
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
         proto.start()
         loop.run()
-        assert not errs, csv(errs)
+        if errs:
+            raise RuntimeError(f"test with input data {data!r} failed: %s" % csv(errs))
+        log("invalid data test ok for %r", data)
 
     def test_encoders_and_compressors(self) -> None:
         for encoder in ("rencodeplus", ):
