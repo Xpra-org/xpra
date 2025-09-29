@@ -7,7 +7,7 @@
 from typing import Any
 
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.scripts.config import parse_with_unit
+from xpra.util.parsing import parse_with_unit
 from xpra.util.stats import std_unit
 from xpra.net.common import Packet
 from xpra.util.env import envint

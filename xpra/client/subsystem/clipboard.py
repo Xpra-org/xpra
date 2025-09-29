@@ -15,8 +15,7 @@ from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLI
 from xpra.platform.clipboard import get_backend_module
 from xpra.net.common import Packet, PacketElement
 from xpra.net import compression
-from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.util.parsing import parse_simple_dict
+from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.log import Logger
 

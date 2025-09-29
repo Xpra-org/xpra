@@ -10,7 +10,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
 from xpra.util.env import OSEnvContext
 from xpra.util.version import parse_version, dict_version_trim
-from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.common import FULL_INFO
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger

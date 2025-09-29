@@ -10,7 +10,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.log import Logger
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.util.parsing import FALSE_OPTIONS
 from xpra.net import compression
 from xpra.net.common import Packet
 from xpra.os_util import WIN32, gi_import

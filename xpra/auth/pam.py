@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.os_util import getuid
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 
 PAM_AUTH_SERVICE = os.environ.get("XPRA_PAM_AUTH_SERVICE", "login")

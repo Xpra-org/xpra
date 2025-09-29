@@ -15,7 +15,6 @@ from xpra.platform.gui import (
     get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name,
 )
 from xpra.scripts.main import check_display
-from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.common import (
     noop, adjust_monitor_refresh_rate, get_refresh_rate_for_value,
@@ -23,7 +22,7 @@ from xpra.common import (
 )
 from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
-    MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
+    MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME, FALSE_OPTIONS,
 )
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes

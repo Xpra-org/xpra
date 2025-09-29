@@ -22,7 +22,7 @@ def main():
         return
     DISPLAY = int(sys.argv[1])
     wid = int(sys.argv[2])
-    from xpra.scripts.config import str_to_bool
+    from xpra.util.parsing import str_to_bool
     flag = str_to_bool(sys.argv[3])
     test_dbus(DISPLAY, wid, flag)
 

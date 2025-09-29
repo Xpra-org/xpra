@@ -21,7 +21,7 @@ from xpra.util.str_fn import csv, decode_str
 from xpra.util.env import envint, osexpand, first_time
 from xpra.os_util import getuid, WIN32, POSIX
 from xpra.util.thread import start_thread
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.common import SSH_AGENT_DISPATCH, SizedBuffer, BACKWARDS_COMPATIBLE
 from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command, get_app_dir
 from xpra.log import Logger

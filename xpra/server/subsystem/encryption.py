@@ -10,8 +10,7 @@ from xpra.common import FULL_INFO
 from xpra.util.io import filedata_nocrlf
 from xpra.util.str_fn import strtobytes, csv, repr_ellipsized
 from xpra.util.objects import typedict
-from xpra.util.parsing import parse_encoded_bin_data
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import parse_encoded_bin_data, str_to_bool
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger

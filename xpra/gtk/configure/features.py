@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.gtk.configure.common import run_gui
 from xpra.util.config import update_config_attribute, with_config
 from xpra.gtk.widget import label

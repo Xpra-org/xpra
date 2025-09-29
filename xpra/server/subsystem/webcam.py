@@ -10,7 +10,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX
 from xpra.net.common import Packet
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 

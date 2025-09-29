@@ -11,7 +11,7 @@ from xpra.util.env import envbool
 from xpra.util.gobject import to_gsignals
 from xpra.common import noop
 from xpra.os_util import gi_import
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.server import features
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException

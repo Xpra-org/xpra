@@ -10,7 +10,7 @@ from urllib.parse import unquote
 from xpra.net.http.common import http_response, http_status_request, json_response
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.io import load_binary_file
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.util.parsing import FALSE_OPTIONS
 from xpra.net.common import HttpResponse
 from xpra.platform.paths import get_icon_filename
 from xpra.server.subsystem.stub import StubServerMixin

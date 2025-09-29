@@ -17,7 +17,7 @@ from xpra.platform.features import (
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 

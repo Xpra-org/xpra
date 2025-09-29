@@ -21,7 +21,7 @@ from xpra.scripts.session import (
     load_session_file, save_session_file
 )
 from xpra.util.io import info, warn, wait_for_socket, which
-from xpra.util.parsing import parse_str_dict
+from xpra.util.parsing import parse_str_dict, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, str_to_bool, parse_bool_or
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.main import (
     no_gtk, nox,
@@ -33,8 +33,7 @@ from xpra.scripts.main import (
 )
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
-    FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
-    parse_bool_or, str_to_bool,
+    OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     xvfb_command,
 )

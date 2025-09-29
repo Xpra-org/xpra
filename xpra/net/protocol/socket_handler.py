@@ -25,7 +25,7 @@ from xpra.util.str_fn import (
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.thread import make_thread, start_thread
 from xpra.common import noop, SizedBuffer
-from xpra.scripts.config import TRUE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
     unpack_header, pack_header, find_xpra_header,

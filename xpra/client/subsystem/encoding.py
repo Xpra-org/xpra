@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
-from xpra.scripts.config import parse_bool_or_int
+from xpra.util.parsing import parse_bool_or_int
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, noop, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
 from xpra.net import compression
@@ -190,6 +190,8 @@ class Encodings(StubClientMixin):
     def _parse_server_capabilities(self, c) -> None:
         self.server_encodings = c.strtupleget("encodings", DEFAULT_ENCODINGS)
         self.server_core_encodings = c.strtupleget("encodings.core", self.server_encodings)
+        log.warn("server_encodings=%s", self.server_encodings)
+        log.warn("server_core_encodings=%s", self.server_core_encodings)
         # old servers only supported x264:
         self.server_encodings_with_speed = c.strtupleget("encodings.with_speed", ("h264",))
         self.server_encodings_with_quality = c.strtupleget("encodings.with_quality", ("jpeg", "webp", "h264"))

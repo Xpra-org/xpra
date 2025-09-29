@@ -6,7 +6,7 @@
 import os
 from typing import Final
 
-from xpra.scripts.config import TRUE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS
 from xpra.x11.common import get_pywindow
 from xpra.x11.error import xsync
 from xpra.util.str_fn import csv

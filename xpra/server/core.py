@@ -23,7 +23,7 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
 from xpra.server.auth import AuthenticatedServer
-from xpra.scripts.config import parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
     is_request_allowed, Packet, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
@@ -1538,7 +1538,7 @@ class ServerCore(ServerBaseClass):
         return capabilities
 
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
-        log("ServerCore.get_threaded_info(%s, %s)", proto, kwargs)
+        log.warn("ServerCore.get_threaded_info(%s, %s)", proto, kwargs)
         start = monotonic()
         # this function is for non UI thread info, see also: `get_ui_info`
         info = {}

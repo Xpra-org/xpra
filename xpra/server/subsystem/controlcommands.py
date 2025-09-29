@@ -9,14 +9,13 @@ import shlex
 import os.path
 from time import monotonic
 
-from xpra.util.parsing import parse_scaling_value, from0to100
+from xpra.util.parsing import parse_scaling_value, from0to100, TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.common import ConnectionMessage, noop
 from xpra.util.io import load_binary_file
 from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit
-from xpra.scripts.config import str_to_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.control.common import ArgsControlCommand, ControlError
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger

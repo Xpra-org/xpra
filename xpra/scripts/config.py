@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import re
 import sys
 import os
 import glob
@@ -13,9 +12,13 @@ from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop, Self, BACKWARDS_COMPATIBLE
+from xpra.util.parsing import (
+    TRUE_OPTIONS, FALSE_OPTIONS,
+    str_to_bool, parse_bool_or, parse_bool_or_number, parse_number,
+)
 from xpra.util.str_fn import csv
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
+from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid, is_arm
 from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
 from xpra.util.system import is_DEB, can_use_fakescreenfps
@@ -23,11 +26,6 @@ from xpra.util.system import is_DEB, can_use_fakescreenfps
 
 def warn(msg: str) -> None:
     stderr_print(msg)
-
-
-def is_arm() -> bool:
-    import platform
-    return platform.uname()[4].startswith("arm")
 
 
 # can be overridden
@@ -1276,115 +1274,6 @@ CLONES: dict[str, str] = {}
 
 # these options should not be specified in config files:
 NO_FILE_OPTIONS = ("daemon", )
-
-
-TRUE_OPTIONS: Sequence[str | bool] = ("yes", "true", "1", "on", True)
-FALSE_OPTIONS: Sequence[str | bool] = ("no", "false", "0", "off", False)
-ALL_BOOLEAN_OPTIONS: Sequence[str | bool] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
-OFF_OPTIONS: Sequence[str] = ("off", )
-
-
-def str_to_bool(v: Any, default: bool = True) -> bool:
-    if isinstance(v, str):
-        v = v.lower().strip()
-    if v in TRUE_OPTIONS:
-        return True
-    if v in FALSE_OPTIONS:
-        return False
-    return default
-
-
-def parse_bool_or(k: str, v: Any, auto: bool | None = None) -> bool | None:
-    if isinstance(v, str):
-        v = v.lower().strip()
-    if v in TRUE_OPTIONS:
-        return True
-    if v in FALSE_OPTIONS:
-        return False
-    if v in ("auto", None):
-        # keep default - which may be None!
-        return auto
-    try:
-        return bool(int(v))
-    except ValueError:
-        warn(f"Warning: cannot parse value {v!r} for {k!r} as a boolean")
-        return auto
-
-
-def print_bool(k, v, true_str='yes', false_str='no') -> str:
-    if v is None:
-        return "auto"
-    if isinstance(v, bool):
-        if v:
-            return true_str
-        return false_str
-    warn(f"Warning: cannot print value {v!r} for {k!r} as a boolean")
-    return ""
-
-
-def parse_bool_or_int(k, v) -> int | float | bool:
-    return parse_bool_or_number(int, k, v)
-
-
-def parse_bool_or_number(numtype:Callable, k:str, v, auto=0) -> int | float | bool:
-    if isinstance(v, str):
-        v = v.lower()
-    if v in TRUE_OPTIONS:
-        return 1
-    if v in FALSE_OPTIONS:
-        return 0
-    return parse_number(numtype, k, v, auto)
-
-
-def parse_number(numtype, k, v, auto=0) -> int | float:
-    if isinstance(v, str):
-        v = v.lower()
-    if v == "auto":
-        return auto
-    try:
-        return numtype(v)
-    except (ValueError, TypeError) as e:
-        warn(f"Warning: cannot parse value {v!r} for {k} as a type {numtype}: {e}")
-        return auto
-
-
-def print_number(i, auto_value=0) -> str:
-    if i == auto_value:
-        return "auto"
-    return str(i)
-
-
-def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> int | None:
-    if isinstance(v, int):
-        return v
-    # special case for bandwidth-limit, which can be specified using units:
-    try:
-        v = str(v).lower().strip()
-        if not v or v in FALSE_OPTIONS:
-            return 0
-        if v == "auto":
-            return None
-        r = re.match(r'([0-9.]*)(.*)', v)
-        assert r
-        f = float(r.group(1))
-        unit = r.group(2).lower().strip()
-        if unit.endswith(subunit):
-            unit = unit[:-len(subunit)]     # ie: 10mbps -> 10m
-        if unit == "k":
-            f *= 1000
-        elif unit == "m":
-            f *= 1000000
-        elif unit == "g":
-            f *= 1000000000
-        elif unit in ("", "b"):
-            pass    # no multiplier
-        else:
-            raise ValueError(f"unknown unit {unit!r}")
-        if min_value is not None and f < min_value:
-            raise ValueError(f"value {f} is too low, minimum is {min_value}")
-        return int(f)
-    except Exception as e:
-        raise InitException(f"invalid value for {numtype} {v!r}: {e}") from None
 
 
 def validate_config(d=None, discard=NO_FILE_OPTIONS, extras_types=None, extras_validation=None) -> dict[str,Any]:

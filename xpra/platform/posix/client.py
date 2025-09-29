@@ -5,7 +5,7 @@
 
 from xpra.client.base.stub import StubClientMixin
 from xpra.platform.posix.gui import x11_bindings, X11WindowBindings
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.log import Logger

@@ -22,7 +22,7 @@ from xpra.net.net_util import get_info as get_net_info
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.common import FULL_INFO, ConnectionMessage
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.os_util import get_machine_id, POSIX, gi_import
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.system import get_env_info, get_sysconfig_info

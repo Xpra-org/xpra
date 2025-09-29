@@ -11,7 +11,7 @@ from xpra.util.env import envint
 from xpra.os_util import OSX
 from xpra.net.common import Packet
 from xpra.util.version import vtrim
-from xpra.scripts.config import parse_bool_or_int
+from xpra.util.parsing import parse_bool_or_int
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENCODINGS
 from xpra.codecs.loader import get_codec, codec_versions, load_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
@@ -125,7 +125,12 @@ class EncodingServer(StubServerMixin):
         getVideoHelper().cleanup()
         unload_codecs()
 
-    def get_server_features(self, _source=None) -> dict[str, Any]:
+    def get_server_features(self, source=None) -> dict[str, Any]:
+        wants = getattr(source, "wants", [])
+        if "features" in wants:
+            return {
+
+            }
         return {}
 
     def get_info(self, _proto) -> dict[str, Any]:

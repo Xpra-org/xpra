@@ -13,7 +13,8 @@ from xpra.log import Logger
 from xpra.net.bytestreams import SOCKET_TIMEOUT, SocketConnection, VSOCK_TIMEOUT
 from xpra.net.common import verify_hyperv_available, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX, DEFAULT_PORTS
 from xpra.os_util import WIN32
-from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
+from xpra.scripts.config import InitException, InitExit
+from xpra.util.parsing import TRUE_OPTIONS
 from xpra.scripts.main import CONNECT_TIMEOUT
 from xpra.util.objects import typedict
 

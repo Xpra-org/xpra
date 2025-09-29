@@ -16,7 +16,7 @@ from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SI
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
-from xpra.scripts.config import parse_number, str_to_bool
+from xpra.util.parsing import str_to_bool, parse_number
 from xpra.common import FULL_INFO, ConnectionMessage
 from xpra.os_util import get_hex_uuid, gi_import
 from xpra.exit_codes import ExitValue

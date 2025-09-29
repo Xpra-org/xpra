@@ -498,7 +498,7 @@ def parse_resolution(res_str, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -
 
 
 def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple | None:
-    from xpra.scripts.config import FALSE_OPTIONS
+    from xpra.util.parsing import FALSE_OPTIONS
     if not s or s.lower() in FALSE_OPTIONS:
         return None
     if s.lower() in ("none", "default"):

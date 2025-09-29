@@ -10,7 +10,7 @@ from math import cos, sin
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.util.parsing import FALSE_OPTIONS
 from xpra.util.objects import AtomicInteger, typedict
 from xpra.util.env import envint, numpy_import_context
 from xpra.os_util import WIN32, POSIX, gi_import

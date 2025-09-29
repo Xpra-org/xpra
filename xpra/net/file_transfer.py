@@ -21,7 +21,7 @@ from xpra.util.io import umask_context, osclose
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
-from xpra.scripts.config import str_to_bool, parse_with_unit
+from xpra.util.parsing import str_to_bool, parse_with_unit
 from xpra.common import SizedBuffer, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit

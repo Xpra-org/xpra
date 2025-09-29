@@ -13,7 +13,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import std, alnum, bytestostr
 from xpra.util.env import envint, shellsub, first_time
 from xpra.os_util import OSX, gi_import
-from xpra.scripts.config import TRUE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS
 from xpra.util.child_reaper import get_child_reaper
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.features import EXECUTABLE_EXTENSION

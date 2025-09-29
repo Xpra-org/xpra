@@ -211,3 +211,8 @@ def get_user_uuid() -> str:
 def force_quit(status=1) -> NoReturn:
     # noinspection PyProtectedMember
     os._exit(int(status))  # pylint: disable=protected-access
+
+
+def is_arm() -> bool:
+    import platform
+    return platform.uname()[4].startswith("arm")

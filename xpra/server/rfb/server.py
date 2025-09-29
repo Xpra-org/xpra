@@ -13,7 +13,7 @@ from xpra.server.rfb.protocol import RFBServerProtocol
 from xpra.server.rfb.source import RFBSource
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.server import features
-from xpra.scripts.config import str_to_bool, parse_number
+from xpra.util.parsing import str_to_bool, parse_number
 from xpra.log import Logger
 
 

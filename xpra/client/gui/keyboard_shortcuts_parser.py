@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.os_util import POSIX
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.log import Logger
 
 log = Logger("keyboard")

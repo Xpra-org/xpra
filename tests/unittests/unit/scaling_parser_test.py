@@ -6,8 +6,7 @@
 
 import unittest
 
-from xpra.util.parsing import r4cmp, fequ, scaleup_value, scaledown_value, parse_scaling, SCALING_OPTIONS
-from xpra.scripts.config import TRUE_OPTIONS
+from xpra.util.parsing import r4cmp, fequ, scaleup_value, scaledown_value, parse_scaling, SCALING_OPTIONS, TRUE_OPTIONS
 
 
 class TestVersionUtilModule(unittest.TestCase):

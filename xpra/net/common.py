@@ -15,7 +15,8 @@ from xpra.exit_codes import ExitCode
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop, SizedBuffer
 from xpra.os_util import LINUX, WIN32, OSX
-from xpra.scripts.config import str_to_bool, InitExit
+from xpra.scripts.config import InitExit
+from xpra.util.parsing import str_to_bool
 from xpra.util.system import platform_name
 from xpra.util.str_fn import std
 from xpra.util.objects import typedict

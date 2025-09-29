@@ -9,7 +9,7 @@ from typing import Any
 from xpra.net.common import Packet
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr, strtobytes
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.x11.error import xsync
 from xpra.x11.subsystem.xsettings_prop import XSettingsType

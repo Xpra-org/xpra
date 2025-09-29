@@ -9,7 +9,7 @@ import shlex
 from subprocess import Popen, PIPE
 
 from xpra.os_util import POSIX
-from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.log import Logger
 
 log = Logger("dbus")

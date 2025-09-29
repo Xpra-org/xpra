@@ -14,7 +14,7 @@ from xpra.common import FULL_INFO
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.net.common import get_ssh_port
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.platform.info import get_username
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger

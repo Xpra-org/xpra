@@ -25,7 +25,7 @@ from xpra.net.common import Packet
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr
 from xpra.platform.paths import get_icon_filename, get_python_execfile_command
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.util.parsing import FALSE_OPTIONS
 from xpra.client.gui.window_border import WindowBorder
 from xpra.util.io import find_libexec_command
 from xpra.util.thread import start_thread

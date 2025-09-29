@@ -18,7 +18,8 @@ from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.system import platform_name, is_X11
 from xpra.util.stats import std_unit_dec
-from xpra.scripts.config import get_defaults, str_to_bool, OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.scripts.config import get_defaults, OPTION_TYPES
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool
 from xpra.client.gtk3.menu_helper import BANDWIDTH_MENU_OPTIONS
 from xpra.util.objects import AtomicInteger
 from xpra.util.thread import start_thread

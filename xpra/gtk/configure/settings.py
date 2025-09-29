@@ -5,7 +5,7 @@
 
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.configure.common import run_gui
-from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.config import update_config_attribute, with_config
 from xpra.gtk.widget import label
 from xpra.os_util import gi_import, OSX, WIN32

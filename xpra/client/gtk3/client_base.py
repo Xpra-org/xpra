@@ -26,7 +26,8 @@ from xpra.util.io import load_binary_file
 from xpra.net.common import Packet
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, NotificationID, DEFAULT_METADATA_SUPPORTED, noerr
 from xpra.util.stats import std_unit
-from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
+from xpra.scripts.config import InitExit
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.gtk.cursors import cursor_types, get_default_cursor
 from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow

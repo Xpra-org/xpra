@@ -131,7 +131,7 @@ def osexpand(s: str, actual_username="", uid=0, gid=0, subs=None) -> str:
 
 
 def source_env(source=()) -> dict[str, str]:
-    from xpra.scripts.config import FALSE_OPTIONS
+    from xpra.util.parsing import FALSE_OPTIONS
     from xpra.log import Logger
     log = Logger("exec")
     log("source_env(%s)", source)

@@ -15,7 +15,7 @@ from xpra.platform.paths import get_socket_dirs
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, obsc, hexstr
 from xpra.util.env import envint
-from xpra.scripts.config import TRUE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
 from xpra.os_util import POSIX, is_admin
 from xpra.log import Logger

@@ -8,7 +8,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.log import Logger
 from xpra.util.str_fn import csv
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.common import noop
 
 log = Logger("util", "command")

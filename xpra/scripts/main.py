@@ -36,7 +36,8 @@ from xpra.util.str_fn import (
     sort_human, is_valid_hostname,
 )
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
-from xpra.util.parsing import parse_scaling
+from xpra.util.parsing import parse_scaling, TRUE_OPTIONS, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OFF_OPTIONS, str_to_bool, \
+    parse_bool_or
 from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
@@ -55,14 +56,13 @@ from xpra.scripts.parsing import (
 )
 from xpra.scripts.config import (
     XpraConfig,
-    OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS, OFF_OPTIONS, ALL_BOOLEAN_OPTIONS,
-    NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
+    OPTION_TYPES, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V5, OPTIONS_COMPAT_NAMES,
     InitException, InitInfo, InitExit,
     fixup_options,
     find_docs_path, find_html5_path,
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
-    make_defaults_struct, str_to_bool, parse_bool_or, has_audio_support, name_to_field,
+    make_defaults_struct, has_audio_support, name_to_field,
     xvfb_command,
 )
 from xpra.net.common import SOCKET_TYPES

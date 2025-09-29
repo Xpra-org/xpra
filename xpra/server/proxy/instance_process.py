@@ -27,7 +27,7 @@ from xpra.net.common import Packet
 from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, get_machine_id
 from xpra.util.env import osexpand
 from xpra.exit_codes import ExitValue, ExitCode
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
 from xpra.util.objects import typedict
 from xpra.util.str_fn import Ellipsizer

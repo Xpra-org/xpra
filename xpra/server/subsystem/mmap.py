@@ -6,7 +6,7 @@
 import os.path
 from typing import Any
 
-from xpra.scripts.config import str_to_bool
+from xpra.util.parsing import str_to_bool
 from xpra.server.subsystem.stub import StubServerMixin
 
 

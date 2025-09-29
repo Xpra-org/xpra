@@ -13,14 +13,14 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from xpra.common import GROUP, SocketState, noerr, SizedBuffer, noop
-from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
+from xpra.scripts.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SocketConnection, SOCKET_TIMEOUT
 from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, gi_import, WIN32, OSX, POSIX
 from xpra.util.io import path_permission_info, umask_context, is_writable
 from xpra.util.str_fn import csv, memoryview_to_bytes
-from xpra.util.parsing import parse_simple_dict
+from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS
 from xpra.util.env import envint, envbool, SilenceWarningsContext
 from xpra.util.thread import start_thread
 

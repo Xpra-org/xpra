@@ -15,7 +15,7 @@ from xpra.scripts.main import InitException, InitExit, shellquote
 from xpra.net.connect import host_target_string
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
-from xpra.scripts.config import str_to_bool, TRUE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS, str_to_bool
 from xpra.scripts.pinentry import input_pass, confirm
 from xpra.net.ssh.util import get_default_keyfiles, LOG_EOF
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT

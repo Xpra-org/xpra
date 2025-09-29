@@ -22,7 +22,8 @@ from importlib.util import find_spec
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.version import full_version_str
-from xpra.util.parsing import parse_simple_dict
+from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool, parse_bool_or, parse_number, \
+    print_number
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS, IP_SOCKTYPES, verify_hyperv_available
@@ -30,12 +31,10 @@ from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
 from xpra.scripts.config import (
     XpraConfig,
-    OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS,
-    InitException, InitInfo, InitExit,
+    OPTION_TYPES, InitException, InitInfo, InitExit,
     fixup_debug_option, fixup_options,
     find_docs_path, find_html5_path,
-    make_defaults_struct, str_to_bool, parse_number, print_number, parse_bool_or,
-    validate_config, name_to_field,
+    make_defaults_struct, validate_config, name_to_field,
 )
 
 MODE_ALIAS: dict[str, str] = {
