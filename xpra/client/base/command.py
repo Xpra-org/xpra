@@ -11,7 +11,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
+from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
 from xpra.common import ConnectionMessage, disconnect_is_an_error, noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
@@ -242,9 +242,7 @@ class InfoXpraClient(CommandConnectClient):
                         return repr_ellipsized(v, LINE_LIMIT)
                     if eltype == str:
                         csv_str = csv(repr(x) for x in v)
-                        if len(csv_str) < LINE_LIMIT:
-                            return csv_str
-                        return repr_ellipsized(csv_str)
+                        return ellipsize(csv_str, LINE_LIMIT)
                 return repr_ellipsized(type(v)(prettify(k, x) for x in v), LINE_LIMIT)
             elif isinstance(v, str) and v.isprintable():
                 return v

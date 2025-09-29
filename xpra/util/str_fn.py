@@ -93,11 +93,6 @@ class Ellipsizer:
 
 
 def repr_ellipsized(obj, limit=100) -> str:
-    if isinstance(obj, str):
-        s = repr(obj)
-        if len(s) > limit > 6:
-            return s[:limit // 2 - 2] + " .. " + s[2 - limit // 2:]
-        return s
     if isinstance(obj, memoryview):
         obj = obj.tobytes()
     if isinstance(obj, bytes):
@@ -105,10 +100,14 @@ def repr_ellipsized(obj, limit=100) -> str:
             s = repr(obj)
         except TypeError:
             s = binascii.hexlify(obj).decode()
-        if len(s) > limit > 6:
-            return s[:limit // 2 - 2] + " .. " + s[2 - limit // 2:]
-        return s
-    return repr_ellipsized(repr(obj), limit)
+        return ellipsize(s, limit)
+    return ellipsize(repr(obj), limit)
+
+
+def ellipsize(astr, limit=100) -> str:
+    if len(astr) > limit > 6:
+        return astr[:limit // 2 - 2] + " .. " + astr[2 - limit // 2:]
+    return astr
 
 
 def print_nested_dict(d: Mapping, prefix: str = "", lchar: str = "*", pad: int = 32,
