@@ -11,15 +11,14 @@ Autoreq: 0
 %define debug_package %{nil}
 
 Name:           python3-pynvml
-Version:        12.560.30
+Version:        13.580.82
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
 License:        BSD
 Group:          Development/Libraries/Python
-Source0:        https://files.pythonhosted.org/packages/source/n/nvidia-ml-py/nvidia-ml-py-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/n/nvidia_ml_py/nvidia_ml_py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Provides:       python-pynvml
 Requires:       python3
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
@@ -29,17 +28,17 @@ Python Bindings for the NVIDIA Management Library
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "f0254dc7400647680a072ee02509bfd46102b60bdfeca321576d4d4817e7fe97" ]; then
+if [ "${sha256}" != "0c028805dc53a0e2a6985ea801888197765ac2ef8f1c9e29a7bf0d3616a5efc7" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -n nvidia-ml-py-%{version}
+%setup -q -n nvidia_ml_py-%{version}
 
 %build
-%{__python3} ./setup.py build
+%{python3} ./setup.py build
 
 %install
-%{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
+%{python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
 rm -f %{buildroot}/%{python3_sitelib}/__pycache__/example.*
 rm -f %{buildroot}/%{python3_sitelib}/example.py
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
@@ -54,6 +53,9 @@ rm -rf %{buildroot}
 %{python3_sitelib}/nvidia_ml_py-%{version}*-py*.egg-info
 
 %changelog
+* Sun Sep 28 2025 Antoine Martin <antoine@xpra.org> - 13.580.82-1
+- new upstream release
+
 * Tue Sep 03 2024 Antoine Martin <antoine@xpra.org> - 12.560.30-1
 - new upstream release
 
