@@ -141,6 +141,8 @@ EXTENSIONS: Sequence[str] = ("png", "svg", "xpm")
 
 
 def check_xdg() -> bool:
+    if not ENABLED:
+        return False
     try:
         # pylint: disable=import-outside-toplevel
         from xdg.Menu import Menu, MenuEntry
@@ -384,7 +386,7 @@ def remove_icons(menu_data: dict) -> dict:
 
 
 def load_menu() -> dict:
-    if not ENABLED or not check_xdg():
+    if not check_xdg():
         return {}
     icon_util.large_icons.clear()
     start = monotonic()
@@ -406,13 +408,7 @@ def load_menu() -> dict:
 
 
 def load_xdg_menu_data() -> dict:
-    try:
-        from xdg.Menu import Menu  # pylint: disable=import-outside-toplevel
-    except ImportError:
-        log("load_xdg_menu_data()", exc_info=True)
-        if first_time("no-python-xdg"):
-            log.warn("Warning: cannot use application menu data:")
-            log.warn(" no python-xdg module")
+    if not check_xdg():
         return {}
     menu = do_load_xdg_menu_data()
     if not menu:
@@ -423,6 +419,7 @@ def load_xdg_menu_data() -> dict:
         entries = entries[0].Submenus
         log(f"using submenus {entries}")
     menu_data = {}
+    from xdg.Menu import Menu  # pylint: disable=import-outside-toplevel
     for i, submenu in enumerate(entries):
         if not isinstance(submenu, Menu):
             log(f"entry {submenu!r} is not a submenu")
@@ -523,7 +520,7 @@ def do_load_xdg_menu_data():
 
 def load_applications(menu_data=None):
     entries: dict[str, Any] = {}
-    if not LOAD_APPLICATIONS:
+    if not LOAD_APPLICATIONS or not check_xdg():
         return entries
 
     def already_has_name(name: str) -> bool:
