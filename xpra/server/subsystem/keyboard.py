@@ -88,7 +88,7 @@ class KeyboardServer(StubServerMixin):
     def last_client_exited(self) -> None:
         self.clear_keys_pressed()
 
-    def get_ui_info(self, _proto, client_uuids, *_args) -> dict[str, Any]:
+    def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         info = self.get_keyboard_info()
         device = self.keyboard_device
         if not self.readonly and device:

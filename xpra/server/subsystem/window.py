@@ -84,10 +84,11 @@ class WindowServer(StubServerMixin):
             "filters": tuple((uuid, repr(f)) for uuid, f in self.window_filters),
         }
 
-    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args) -> dict[str, Any]:
+    def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
+        wids = kwargs.get("wids", ())
         return {"windows": self.get_windows_info(wids)}
 
     def parse_hello(self, ss, caps: typedict, send_ui) -> None:
@@ -138,14 +139,14 @@ class WindowServer(StubServerMixin):
     def reset_window_filters(self) -> None:
         self.window_filters = []
 
-    def get_windows_info(self, window_ids) -> dict[int, dict[str, Any]]:
+    def get_windows_info(self, window_ids=()) -> dict[int, dict[str, Any]]:
         copy = self._id_to_window.copy()
         info = {
             "count": len(copy),
             "total": self._counter,
         }
         for wid, window in copy.items():
-            if window_ids is not None and wid not in window_ids:
+            if window_ids and wid not in window_ids:
                 continue
             info[wid] = self.get_window_info(window)
         return info

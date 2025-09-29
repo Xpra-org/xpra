@@ -71,7 +71,7 @@ class XSettingsServer(StubServerMixin):
     def get_caps(self, _source) -> dict[str, Any]:
         return {}
 
-    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str, Any]:
+    def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
         return {}
 
     def init_packet_handlers(self) -> None:

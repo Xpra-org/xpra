@@ -29,7 +29,7 @@ class MMAP_Server(StubServerMixin):
         else:
             self.mmap_supported = str_to_bool(opts.mmap)
 
-    def get_info(self, _proto=None) -> dict[str, Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         return {
             MMAP_Server.PREFIX: {
                 "supported": self.mmap_supported,

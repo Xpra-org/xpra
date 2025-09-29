@@ -40,7 +40,7 @@ class PingServer(StubServerMixin):
             self.ping_timer = 0
             GLib.source_remove(pt)
 
-    def get_info(self, _proto=None) -> dict[str, Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         return self.get_caps(None)
 
     def get_caps(self, _source) -> dict[str, Any]:

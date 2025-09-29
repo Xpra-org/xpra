@@ -122,8 +122,8 @@ class ShadowX11Server(GTKShadowServerBase):
         capabilities["server_type"] = "X11 Shadow"
         return capabilities
 
-    def get_info(self, proto, *_args) -> dict[str, Any]:
-        info = super().get_info(proto)
+    def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
+        info = super().get_threaded_info(proto, **kwargs)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/bindings/x11-shadow"
         return info

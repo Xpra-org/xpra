@@ -202,9 +202,11 @@ class InfoXpraClient(CommandConnectClient):
         it queries the server with an 'info' request
     """
 
-    def __init__(self, opts):
+    def __init__(self, opts, subsystems: Sequence[str]):
         super().__init__(opts)
         self.hello_extra["request"] = "info"
+        self.hello_extra["subsystems"] = tuple(subsystems)
+        log("info request for subsystems %s", subsystems)
 
     def timeout(self, *_args):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the info")

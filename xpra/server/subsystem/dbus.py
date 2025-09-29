@@ -182,7 +182,7 @@ class DbusServer(StubServerMixin):
         log(f"make_dbus_server() no dbus server for {self}")
         return None
 
-    def get_info(self, _proto=None) -> dict[str, Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         if not self.dbus_pid or not self.dbus_env:
             return {}
         return {

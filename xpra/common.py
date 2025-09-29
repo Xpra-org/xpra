@@ -514,3 +514,7 @@ def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
     if s:
         return parse_resolutions(s, default_refresh_rate)
     return (parse_resolution(os.environ.get(single_envkey, default_res), default_refresh_rate), )
+
+
+def subsystem_name(c: type) -> str:
+    return c.__name__.replace("Server", "").rstrip("_").lower()

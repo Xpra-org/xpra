@@ -358,7 +358,7 @@ class DBUS_Server(DBUS_Server_Base):
     def GetInfo(self, subsystem, callback, errback):
         self.log(".GetInfo(%s)", subsystem)
 
-        def gotinfo(_proto, info):
+        def gotinfo(_proto, info: dict) -> None:
             sub = info.get(subsystem)
             try:
                 v = dbus.types.Dictionary((str(k), native_to_dbus(v)) for k, v in sub.items())
@@ -368,6 +368,6 @@ class DBUS_Server(DBUS_Server_Base):
                 log("GetInfo:gotinfo", exc_info=True)
                 errback(str(e))
 
-        v = self.server.get_all_info(gotinfo)
+        v = self.server.get_all_info(gotinfo, subsystems=(subsystem, ))
         self.log(".GetInfo(%s)=%s", subsystem, v)
         return v

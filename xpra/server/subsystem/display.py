@@ -194,7 +194,7 @@ class DisplayManager(StubServerMixin):
                 features["display"] = display
         return features
 
-    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str, Any]:
+    def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
         max_size = self.get_max_screen_size()
         if max_size:
             return {"server": {"max_desktop_size": max_size}}

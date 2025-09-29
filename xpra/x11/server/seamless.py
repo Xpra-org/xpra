@@ -261,20 +261,21 @@ class SeamlessServer(GObject.GObject, ServerBase):
     ##########################################################################
     # info:
     #
-
-    def do_get_info(self, proto, server_sources=()) -> dict[str, Any]:
-        info = super().do_get_info(proto, server_sources)
-        info["exit-with-windows"] = self._exit_with_windows
-        info.setdefault("state", {}).update(
-            {
-                "focused": self._has_focus,
-                "grabbed": self._has_grab,
-            }
-        )
+    def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
+        info = super().get_threaded_info(proto, **kwargs)
+        # info.setdefault("server", {})["exit-with-windows"] = self._exit_with_windows
+        subsystems = kwargs.get("subsystems", ())
+        if not subsystems or "state" in subsystems:
+            info.setdefault("state", {}).update(
+                {
+                    "focused": self._has_focus,
+                    "grabbed": self._has_grab,
+                }
+            )
         return info
 
-    def get_ui_info(self, proto, wids=None, *args) -> dict[str, Any]:
-        info = super().get_ui_info(proto, wids, *args)
+    def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
+        info = super().get_ui_info(proto, **kwargs)
         # _NET_WM_NAME:
         wm = self._wm
         if wm:

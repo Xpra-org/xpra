@@ -16,7 +16,6 @@ GObject = gi_import("GObject")
 GLib = gi_import("GLib")
 
 log = Logger("server")
-log.enable_debug()
 
 
 class EVDIModel(CaptureWindowModel):

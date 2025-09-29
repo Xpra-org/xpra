@@ -53,7 +53,10 @@ from xpra.util.system import register_SIGUSR_signals
 from xpra.util.io import load_binary_file, find_libexec_command
 from xpra.util.background_worker import add_work_item, quit_worker
 from xpra.util.thread import start_thread
-from xpra.common import LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS, noop, ConnectionMessage, noerr, init_memcheck
+from xpra.common import (
+    LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS,
+    noop, ConnectionMessage, noerr, init_memcheck, subsystem_name,
+)
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, nicestr, strtobytes, hexstr
@@ -327,10 +330,7 @@ class ServerCore(ServerBaseClass):
                 log.warn("Warning: initialization thread is still active")
 
     def get_subsystems(self) -> list[str]:
-        subsystems: list[str] = []
-        for c in SERVER_BASES:
-            subsystems.append(c.__name__.replace("Server", "").rstrip("_"))
-        return subsystems
+        return [subsystem_name(c) for c in SERVER_BASES]
 
     def run(self) -> ExitValue:
         self.install_signal_handlers(self.signal_quit)
@@ -1537,13 +1537,16 @@ class ServerCore(ServerBaseClass):
             capabilities["session_name"] = self.session_name
         return capabilities
 
-    def get_info(self, proto, *_args) -> dict[str, Any]:
+    def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
+        log("ServerCore.get_threaded_info(%s, %s)", proto, kwargs)
         start = monotonic()
-        # this function is for non UI thread info
+        # this function is for non UI thread info, see also: `get_ui_info`
         info = {}
+        subsystems = kwargs.get("subsystems", ())
         for bc in SERVER_BASES:
+            if subsystems and subsystem_name(bc) not in subsystems:
+                continue
             info.update(bc.get_info(self, proto))
-        info["subsystems"] = self.get_subsystems()
 
         end = monotonic()
         log("ServerCore.get_info took %ims", (end - start) * 1000)

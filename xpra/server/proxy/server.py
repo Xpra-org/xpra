@@ -672,14 +672,14 @@ class ProxyServer(ProxyServerBaseClass):
         for p in dead:
             del self.instances[p]
 
-    def get_info(self, proto, *_args) -> dict[str, Any]:
-        authenticated = proto and proto.authenticators
+    def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
+        authenticated = bool(proto and proto.authenticators)
         if not authenticated:
             info = self.get_minimal_server_info()
         else:
             # only show more info if we have authenticated
             # as the user running the proxy server process:
-            info = super().get_info(proto)
+            info = super().get_threaded_info(proto, **kwargs)
             sessions = ()
             for authenticator in proto.authenticators:
                 auth_sessions = authenticator.get_sessions()

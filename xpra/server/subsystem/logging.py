@@ -64,7 +64,7 @@ class LoggingServer(StubServerMixin):
             "send": self.remote_logging_send,
         }
 
-    def get_info(self, _proto):
+    def get_info(self, _proto) -> dict[str, Any]:
         info = get_log_info()
         info.update(self._features())
         return {

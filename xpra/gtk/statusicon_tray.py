@@ -178,7 +178,6 @@ class GTKStatusIconTray(TrayBase):
 def main() -> None:
     log.enable_debug()
     GLib = gi_import("GLib")
-    log.enable_debug()
     s = GTKStatusIconTray(None, None, None, "test", "xpra.png", None, None, None, Gtk.main_quit)
     GLib.timeout_add(1000 * 2, s.set_blinking, True)
     GLib.timeout_add(1000 * 5, s.set_blinking, False)

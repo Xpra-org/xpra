@@ -290,8 +290,8 @@ class X11DisplayManager(DisplayManager):
             dinfo["pid"] = self.display_pid
         return info
 
-    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str, Any]:
-        info = DisplayManager.get_ui_info(self, proto, client_uuids, *args)
+    def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
+        info = DisplayManager.get_ui_info(self, proto, **kwargs)
         # randr:
         if self.randr:
             with xlog:

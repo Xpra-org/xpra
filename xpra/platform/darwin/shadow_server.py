@@ -229,8 +229,8 @@ class ShadowServer(GTKShadowServerBase):
         capabilities["server_type"] = "Python/MacOS-Shadow"
         return capabilities
 
-    def get_info(self, proto, *_args) -> dict[str, Any]:
-        info = super().get_info(proto)
+    def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
+        info = super().get_threaded_info(proto, **kwargs)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk2/osx-shadow"
         info.setdefault("damage", {}).update({

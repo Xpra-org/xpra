@@ -108,7 +108,7 @@ class HttpServer(StubServerMixin):
     def cleanup(self) -> None:
         self._http_scripts = {}
 
-    def get_info(self, _proto=None) -> dict[str, Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         return {
             HttpServer.PREFIX: {"scripts": tuple(self._http_scripts.keys())},
         }

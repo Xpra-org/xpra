@@ -108,7 +108,7 @@ class StubServerMixin(superclass):
         """
         return {}
 
-    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str, Any]:
+    def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         """
         Runtime information on this mixin,
         unlike get_info() this method will be called

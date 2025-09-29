@@ -179,8 +179,8 @@ class MdnsServer(StubServerMixin):
                 log.warn("Warning: mdns update failed")
                 log.warn(" %s", e)
 
-    def get_info(self, proto, *_args) -> dict[str, Any]:
-        authenticated = proto and proto.authenticators
+    def get_info(self, proto) -> dict[str, Any]:
+        authenticated = bool(proto and proto.authenticators)
         full = FULL_INFO > 0 or authenticated
         if full:
             return {MdnsServer.PREFIX: self.mdns}

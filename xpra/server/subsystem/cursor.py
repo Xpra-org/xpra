@@ -103,7 +103,7 @@ class CursorManager(StubServerMixin):
                 cinfo[x] = v
         return cinfo
 
-    def get_ui_info(self, _proto, _client_uuids=None, *args) -> dict[str, Any]:
+    def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         # (from UI thread)
         info: dict[str, Any] = {}
         from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size

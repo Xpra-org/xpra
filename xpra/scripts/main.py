@@ -1463,7 +1463,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
 
 
 def is_display_arg(arg: str) -> bool:
-    if arg.startswith(":"):
+    if arg.startswith(":") or arg.startswith("wayland-"):
         return True
     for prefix in SOCKET_TYPES:
         if arg.startswith(f"{prefix}://"):
@@ -1521,7 +1521,8 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
     elif mode == "info":
         basic()
         from xpra.client.base.command import InfoXpraClient
-        app = InfoXpraClient(opts)
+        extra_args, subsystems = split_display_arg(extra_args)
+        app = InfoXpraClient(opts, subsystems)
     elif mode == "id":
         basic()
         from xpra.client.base.command import IDXpraClient

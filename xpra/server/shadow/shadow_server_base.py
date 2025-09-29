@@ -150,11 +150,12 @@ class ShadowServerBase(ServerBase):
         hello["shadow"] = True
         return hello
 
-    def get_info(self, _proto=None, *args) -> dict[str, Any]:
-        info = {
+    def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
+        info = super().get_threaded_info(proto, **kwargs)
+        info.update({
             "sharing": self.sharing is not False,
             "refresh-delay": self.refresh_delay,
-        }
+        })
         if self.pointer_last_position:
             info["pointer-last-position"] = self.pointer_last_position
         return info

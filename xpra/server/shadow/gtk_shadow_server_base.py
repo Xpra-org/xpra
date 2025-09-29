@@ -86,11 +86,6 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
             caps["screen_sizes"] = get_screen_sizes()
         return caps
 
-    def get_info(self, proto=None, *args) -> dict[str, Any]:
-        info = ShadowServerBase.get_info(self, proto, *args)
-        info.update(super().get_info(proto, *args))
-        return info
-
     def accept_client_ssh_agent(self, uuid: str, ssh_auth_sock: str) -> None:
         log(f"accept_client_ssh_agent({uuid}, {ssh_auth_sock}) not setting up ssh agent forwarding for shadow servers")
 

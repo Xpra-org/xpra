@@ -7,14 +7,12 @@
 
 import os
 from time import monotonic
-from collections.abc import Sequence
 from typing import Any
 
 from xpra.server.core import ServerCore
 from xpra.util.background_worker import add_work_item
-from xpra.common import FULL_INFO, noop, ConnectionMessage, BACKWARDS_COMPATIBLE
+from xpra.common import FULL_INFO, noop, subsystem_name, ConnectionMessage, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
-from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
 from xpra.platform.dotxpra import DotXpra
 from xpra.util.objects import typedict, merge_dicts
@@ -441,71 +439,63 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # info:
-    def _process_info_request(self, proto, packet: Packet) -> None:
-        log("process_info_request(%s, %s)", proto, packet)
-        # ignoring the list of client uuids supplied in packet[1]
-        ss = self.get_server_source(proto)
-        if not ss:
-            return
-
-        try:
-            options = proto._conn.options
-            info_option = options.get("info", "yes")
-        except AttributeError:
-            info_option = "yes"
-        if not str_to_bool(info_option):
-            err = "`info` commands are not enabled on this connection"
-            log.warn(f"Warning: {err}")
-            ss.send_info_response({"error": err})
-            return
-
-        categories: Sequence[str] = []
-        # if len(packet>=2):
-        #    uuid = packet[1]
-        if len(packet) >= 4:
-            categories = packet.get_strs(3)
-
-        def info_callback(_proto, info) -> None:
-            assert proto == _proto
-            if categories:
-                info = {k: v for k, v in info.items() if k in categories}
-            ss.send_info_response(info)
-
-        self.get_all_info(info_callback, proto, None)
-
-    def send_hello_info(self, proto) -> None:
+    def send_hello_info(self, proto, **kwargs) -> None:
         self.wait_for_threaded_init()
-        start = monotonic()
+        super().send_hello_info(proto, **kwargs)
 
-        def cb(iproto, info) -> None:
-            self.do_send_info(iproto, info)
-            end = monotonic()
-            log.info("processed info request from %s in %ims",
-                     iproto._conn, (end - start) * 1000)
-
-        self.get_all_info(cb, proto, None)
-
-    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str, Any]:
+    def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
         info: dict[str, Any] = {}
+        subsystems = kwargs.get("subsystems", ())
+        log("ServerBase.get_ui_info(%s, %s) subsystems=%s", proto, kwargs, subsystems)
         for c in SERVER_BASES:
+            if subsystems and subsystem_name(c) not in subsystems:
+                continue
             with log.trap_error("Error collecting UI info from %s", c):
-                mixin_info = c.get_ui_info(self, proto, client_uuids, *args)
+                mixin_info = c.get_ui_info(self, proto, **kwargs)
                 log("%s.get_ui_info(%s, ..)=%r", c, proto, Ellipsizer(mixin_info))
                 merge_dicts(info, mixin_info)
         return info
 
-    def get_info(self, proto=None, client_uuids=None) -> dict[str, Any]:
-        log("ServerBase.get_info%s", (proto, client_uuids))
+    def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
+        log("ServerBase.get_threaded_info%s", (proto, kwargs))
         start = monotonic()
+        info: dict[str, Any] = {}
+        subsystems = kwargs.get("subsystems", ())
+
+        def up(prefix, d) -> None:
+            merge_dicts(info, {prefix: d})
+
+        for c in SERVER_BASES:
+            if subsystems and subsystem_name(c) not in subsystems:
+                continue
+            with log.trap_error(f"Error collecting information from {c}"):
+                cstart = monotonic()
+                mixin_info = c.get_info(self, proto)
+                log("%s.get_info(%s)=%r", c, proto, Ellipsizer(mixin_info))
+                merge_dicts(info, mixin_info)
+                cend = monotonic()
+                log("%s.get_info(%s) took %ims", c, proto, int(1000 * (cend - cstart)))
+
+        if not subsystems or "features" in subsystems:
+            up("features", self.get_features_info())
+        if not subsystems or "network" in subsystems:
+            up("network", {
+                "sharing": self.sharing is not False,
+                "sharing-toggle": self.sharing is None,
+                "lock": self.lock is not False,
+                "lock-toggle": self.lock is None,
+            })
+        info["subsystems"] = self.get_subsystems()
+
+        sources = tuple(self._server_sources.values())
+        client_uuids = kwargs.get("client_uuids", ())
         if client_uuids:
-            sources = tuple(ss for ss in self._server_sources.values() if ss.uuid in client_uuids)
-        else:
-            sources = tuple(self._server_sources.values())
-        log("info-request: sources=%s", sources)
-        info = self.do_get_info(proto, sources)
+            sources = tuple(ss for ss in sources if ss.uuid in client_uuids)
+        log("threaded info sources(%i)=%s", client_uuids, sources)
+        info.update(self.get_sources_info(proto, sources))
         log("ServerBase.get_info took %.1fms", 1000.0 * (monotonic() - start))
         return info
 
@@ -518,37 +508,16 @@ class ServerBase(ServerBaseClass):
         return i
 
     def get_subsystems(self) -> list[str]:
-        subsystems: list[str] = super().get_subsystems()
-        for c in SERVER_BASES:
-            subsystems.append(c.__name__.replace("Server", "").rstrip("_"))
-        return subsystems
+        return super().get_subsystems() + [subsystem_name(c) for c in SERVER_BASES]
 
-    def do_get_info(self, proto, server_sources=()) -> dict[str, Any]:
-        log("ServerBase.do_get_info%s", (proto, server_sources))
+    def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
+        log("ServerBase.get_source_info%s", (proto, server_sources))
         start = monotonic()
         info: dict[str, Any] = {}
 
         def up(prefix, d) -> None:
             merge_dicts(info, {prefix: d})
 
-        for c in SERVER_BASES:
-            with log.trap_error(f"Error collecting information from {c}"):
-                cstart = monotonic()
-                mixin_info = c.get_info(self, proto)
-                log("%s.get_info(%s)=%r", c, proto, Ellipsizer(mixin_info))
-                merge_dicts(info, mixin_info)
-                cend = monotonic()
-                log("%s.get_info(%s) took %ims", c, proto, int(1000 * (cend - cstart)))
-
-        up("features", self.get_features_info())
-        up("network", {
-            "sharing": self.sharing is not False,
-            "sharing-toggle": self.sharing is None,
-            "lock": self.lock is not False,
-            "lock-toggle": self.lock is None,
-        })
-
-        # other clients:
         info["clients"] = {
             "": sum(1 for p in self._server_sources if p != proto),
             "unauthenticated": sum(1 for p in self._potential_protocols
@@ -569,7 +538,7 @@ class ServerBase(ServerBaseClass):
                 sinfo["ui-driver"] = self.ui_driver == ss.uuid
                 cinfo[i] = sinfo
             up("client", cinfo)
-        log("ServerBase.do_get_info took %ims", (monotonic() - start) * 1000)
+        log("ServerBase.get_source_info took %ims", (monotonic() - start) * 1000)
         return info
 
     def _process_server_settings(self, proto, packet: Packet) -> None:
@@ -729,7 +698,7 @@ class ServerBase(ServerBaseClass):
         self.add_packet_handler("set_deflate", noop)  # removed in v6
         if BACKWARDS_COMPATIBLE:
             # now moved to XSettingsServer
-            self.add_packets("server-settings", "info-request", main_thread=True)
+            self.add_packets("server-settings", main_thread=True)
         self.add_packets("shutdown-server", "exit-server")
 
     # override so we can set the 'authenticated' flag:
