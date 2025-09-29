@@ -42,11 +42,13 @@ class FastMemoryConnection(Connection):
         if not self.read_buffers:
             logger = Logger("network")
             logger("read(%i) EOF", n)
+            time.sleep(0.1)
             return None
         b = self.read_buffers[0]
         if len(b)<=n:
             return self.read_buffers.pop(0)
         self.read_buffers[0] = b[n:]
+        time.sleep(0.05)
         return b[:n]
 
     def write(self, buf, packet_type=None):
