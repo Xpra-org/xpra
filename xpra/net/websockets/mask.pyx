@@ -41,6 +41,7 @@ cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
     cdef unsigned char *dcbuf = <unsigned char *> dp
     cdef unsigned char *ocbuf = <unsigned char *> op
     cdef unsigned int j
+    cdef unsigned int i
     # bytes at a time until we reach the 32-bit boundary:
     for i in range(initial_chars):
         ocbuf[align + i] = dcbuf[i] ^ mcbuf[i & 0x3]
@@ -53,14 +54,15 @@ cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
     if datalen > initial_chars:
         uint32_steps = (datalen - initial_chars) // 4
         if uint32_steps:
-            dbuf = <uint32_t*> (dp + initial_chars)
-            obuf = <uint32_t*> (op + align + initial_chars)
-            mask_value = 0
-            for i in range(4):
-                mask_value = mask_value << 8
-                mask_value += mcbuf[(3 - i + initial_chars) & 0x3]
-            for i in range(uint32_steps):
-                obuf[i] = dbuf[i] ^ mask_value
+            with nogil:
+                dbuf = <uint32_t*> (dp + initial_chars)
+                obuf = <uint32_t*> (op + align + initial_chars)
+                mask_value = 0
+                for i in range(4):
+                    mask_value = mask_value << 8
+                    mask_value += mcbuf[(3 - i + initial_chars) & 0x3]
+                for i in range(uint32_steps):
+                    obuf[i] = dbuf[i] ^ mask_value
         # bytes at a time again at the end:
         last_chars = (datalen - initial_chars) & 0x3
         for i in range(last_chars):
