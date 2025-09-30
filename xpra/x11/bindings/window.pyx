@@ -129,7 +129,7 @@ def get_mask_strs(int mask) -> list[str]:
     return masks
 
 
-cdef inline long cast_to_long(i) noexcept:
+cdef inline long cast_to_long(Atom i) noexcept nogil:
     if i < 0:
         return <long>i
     else:

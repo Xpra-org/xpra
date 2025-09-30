@@ -170,7 +170,7 @@ cdef inline const vpx_codec_iface_t  *make_codec_dx(encoding):
     raise ValueError(f"unsupported encoding: {encoding!r}")
 
 
-cdef inline vpx_img_fmt_t get_vpx_colorspace(colorspace):
+cdef inline vpx_img_fmt_t get_vpx_colorspace(colorspace) noexcept:
     if colorspace == "YUV444P":
         return VPX_IMG_FMT_I444
     return VPX_IMG_FMT_I420

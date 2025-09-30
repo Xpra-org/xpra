@@ -177,7 +177,7 @@ cdef extern from "libyuv/planar_functions.h" namespace "libyuv":
                    int width,
                    int height) nogil
 
-cdef inline str get_fiter_mode_str(FilterMode fm):
+cdef inline str get_fiter_mode_str(FilterMode fm) noexcept:
     if fm==kFilterNone:
         return "None"
     elif fm==kFilterBilinear:
