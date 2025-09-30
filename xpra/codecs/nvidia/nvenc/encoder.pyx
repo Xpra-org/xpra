@@ -1968,7 +1968,8 @@ def init_module(options: dict) -> None:
                     log("device %i supports: %s", device_id, codecs)
                 except Exception as e:
                     log("failed to test encoder with %s", cdc, exc_info=True)
-                    log.warn(" device %s is not supported: %s", get_device_name(device_id) or device_id, e)
+                    log.warn(" device %s is not supported", get_device_name(device_id) or device_id)
+                    log.warn(" %s", repr(e) or type(e))
                     devices.remove(device_id)
                     continue
                 finally:
