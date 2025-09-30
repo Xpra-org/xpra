@@ -144,7 +144,7 @@ class DotXpra:
         return list(set((v[0], v[1]) for details_values in
                         self.socket_details(check_uid, matching_state).values() for v in details_values))
 
-    def socket_paths(self, check_uid=-1, matching_state=None, matching_display=None) -> list[str]:
+    def socket_paths(self, check_uid=-1, matching_state=None, matching_display="") -> list[str]:
         paths = []
         for details in self.socket_details(check_uid, matching_state, matching_display).values():
             for _, _, socket_path in details:
@@ -197,7 +197,7 @@ class DotXpra:
 
     # find the matching sockets, and return:
     # (state, local_display, sockpath) for each socket directory we probe
-    def socket_details(self, check_uid=-1, matching_state=None, matching_display=None) \
+    def socket_details(self, check_uid=-1, matching_state=None, matching_display="") \
             -> dict[str, list[tuple[SocketState, str, str]]]:
         sd: dict[str, list[tuple[SocketState, str, str]]] = {}
         debug("socket_details%s sockdir=%s, sockdirs=%s",

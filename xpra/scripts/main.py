@@ -2989,7 +2989,7 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
         opts.exit_with_client = True
 
     if display_name.startswith("S"):
-        matching_display = None
+        matching_display = ""
     else:
         if display_name.startswith(":") and display_name.find(",") > 0:
             # remove options from display name
@@ -3006,9 +3006,9 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
 
     # get the current list of existing sockets,
     # so we can spot the new ones:
-    existing_sockets = set(dotxpra.socket_paths(check_uid=uid,
-                                                matching_state=SocketState.LIVE,
-                                                matching_display=matching_display))
+    existing_sockets: set[str] = set(dotxpra.socket_paths(check_uid=uid,
+                                                          matching_state=SocketState.LIVE,
+                                                          matching_display=matching_display))
     log(f"start_server_subprocess: existing_sockets={existing_sockets}")
 
     cmd = [script_file, mode] + args  # ie: ["/usr/bin/xpra", "start-desktop", ":100"]
@@ -3135,7 +3135,8 @@ def get_command_args(opts, uid: int, gid: int, option_types: dict[str, Any],
     return args
 
 
-def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid: str,
+def identify_new_socket(proc: Popen | None, dotxpra,
+                        existing_sockets: set[str], matching_display: str, new_server_uuid: str,
                         display_name: str, matching_uid: int = 0):
     log = Logger("server", "network")
     log("identify_new_socket%s",
@@ -3159,24 +3160,27 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                 cmd = get_nodock_command() + ["id", f"socket://{socket_path}"]
                 p = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True)
                 stdout = p.communicate()[0]
-                if p.returncode == 0:
-                    lines = stdout.splitlines()
-                    log(f"id({socket_path}): " + csv(lines))
-                    found = False
-                    display = matching_display
-                    for line in lines:
-                        if line.startswith(UUID_PREFIX):
-                            this_uuid = line[len(UUID_PREFIX):]
-                            if this_uuid == new_server_uuid:
-                                found = True
-                        elif line.startswith(DISPLAY_PREFIX):
-                            display = line[len(DISPLAY_PREFIX):]
-                            if display and display == matching_display:
-                                found = True
-                    if found:
-                        assert display, "display value not found in id output"
-                        log(f"identify_new_socket found match: path={socket_path!r}, display={display}")
-                        return socket_path, display
+                if p.returncode != 0:
+                    log("%r returned %i", cmd, p.returncode)
+                    continue
+                lines = stdout.splitlines()
+                log(f"id({socket_path}): " + csv(lines))
+                found = False
+                display = matching_display
+                for line in lines:
+                    if line.startswith(UUID_PREFIX):
+                        this_uuid = line[len(UUID_PREFIX):]
+                        if this_uuid == new_server_uuid:
+                            found = True
+                    elif line.startswith(DISPLAY_PREFIX):
+                        display = line[len(DISPLAY_PREFIX):]
+                        if display and display == matching_display:
+                            found = True
+                if not found or not display:
+                    warn(f"uuid prefix {UUID_PREFIX!r} or display value not found in `id` output for %r" % (socket_path, ))
+                    continue
+                log(f"identify_new_socket found match: path={socket_path!r}, display={display}")
+                return socket_path, display
             except Exception as e:
                 warn(f"error during server process detection: {e}")
         time.sleep(0.10)
