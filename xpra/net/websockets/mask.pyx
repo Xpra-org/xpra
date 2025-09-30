@@ -10,8 +10,10 @@ from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context
 
 from xpra.common import SizedBuffer
 
+DEF MAX_WEBSOCKET_PAYLOAD = 0x3FFFFFFF  # 2^30-1, per RFC6455
 
-def hybi_unmask(data, unsigned int offset, unsigned int datalen) -> memoryview:
+
+def hybi_unmask(data, unsigned int offset, unsigned long long datalen) -> memoryview:
     cdef uintptr_t mp
     cdef unsigned int min_len = offset + 4 + datalen
     with buffer_context(data) as bc:
@@ -29,9 +31,12 @@ def hybi_mask(mask: bytes, data: SizedBuffer) -> memoryview:
             return do_hybi_mask(<uintptr_t> int(mbc), <uintptr_t> int(dbc), len(dbc))
 
 
-cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
+cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned long long datalen):
     # we skip the first 'align' bytes in the output buffer,
     # to ensure that its alignment is the same as the input data buffer
+    if datalen > MAX_WEBSOCKET_PAYLOAD:
+        raise ValueError(f"data too large: {datalen} bytes")
+    # alignment of the data pointer:
     cdef unsigned int align = (<uintptr_t> dp) & 0x3
     cdef unsigned int initial_chars = 4 - align
     cdef MemBuf out_buf = getbuf(datalen + align, 0)
@@ -40,7 +45,6 @@ cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
     cdef unsigned char *mcbuf = <unsigned char *> mp
     cdef unsigned char *dcbuf = <unsigned char *> dp
     cdef unsigned char *ocbuf = <unsigned char *> op
-    cdef unsigned int j
     cdef unsigned int i
     # bytes at a time until we reach the 32-bit boundary:
     for i in range(initial_chars):
@@ -49,7 +53,8 @@ cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
     cdef uint32_t *dbuf
     cdef uint32_t *obuf
     cdef uint32_t mask_value
-    cdef unsigned int uint32_steps
+    cdef unsigned long long uint32_steps
+    cdef unsigned long long j
     cdef unsigned int last_chars
     if datalen > initial_chars:
         uint32_steps = (datalen - initial_chars) // 4
