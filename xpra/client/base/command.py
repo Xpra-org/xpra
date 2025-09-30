@@ -129,6 +129,7 @@ class HelloRequestClient(SendCommandConnectClient):
         return super().make_hello_base() | self.hello_request()
 
     def timeout(self, *_args) -> None:
+        log("%s client reached the timeout", type(self))  # pragma: no cover
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not disconnect us")
 
     def hello_request(self) -> dict[str, Any]:  # pragma: no cover
