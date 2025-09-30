@@ -10,6 +10,8 @@ from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context
 
 from xpra.common import SizedBuffer
 
+DEF MAX_WEBSOCKET_PAYLOAD = 0x3FFFFFFF  # 2^30-1, per RFC6455
+
 
 def hybi_unmask(data, unsigned int offset, unsigned int datalen) -> memoryview:
     cdef uintptr_t mp
@@ -30,6 +32,8 @@ def hybi_mask(mask: bytes, data: SizedBuffer) -> memoryview:
 
 
 cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
+    if datalen > MAX_WEBSOCKET_PAYLOAD:
+        raise ValueError(f"data too large: {datalen} bytes")
     # we skip the first 'align' bytes in the output buffer,
     # to ensure that its alignment is the same as the input data buffer
     cdef unsigned int align = (<uintptr_t> dp) & 0x3
