@@ -55,7 +55,7 @@ def init_damage_events() -> bool:
     return True
 
 
-cdef object parse_DamageNotify(Display *d, XEvent *e):
+cdef dict parse_DamageNotify(Display *d, XEvent *e):
     cdef XDamageNotifyEvent * damage_e = <XDamageNotifyEvent*>e
     return {
         "window": e.xany.window,

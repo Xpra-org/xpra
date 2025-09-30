@@ -1297,7 +1297,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRFreeScreenResources(rsc)
 
 
-cdef object parse_ScreenChangeNotify(Display *d, XEvent *e):
+cdef dict parse_ScreenChangeNotify(Display *d, XEvent *e):
     cdef XRRScreenChangeNotifyEvent *scn_e = <XRRScreenChangeNotifyEvent*> e
     return {
         "window": scn_e.window,

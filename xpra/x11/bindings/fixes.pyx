@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List
+from typing import List, Dict
 
 from xpra.x11.bindings.xlib cimport (
     Display, Window, XRectangle, Atom, Time, Bool, XEvent, XID,
@@ -117,7 +117,7 @@ def init_xfixes_events() -> bool:
     return True
 
 
-cdef object parse_XFSelectionNotify(Display *d, XEvent *e):
+cdef dict parse_XFSelectionNotify(Display *d, XEvent *e):
     cdef XFixesSelectionNotifyEvent * selectionnotify_e = <XFixesSelectionNotifyEvent*> e
     return {
         "window": selectionnotify_e.window,
@@ -129,7 +129,7 @@ cdef object parse_XFSelectionNotify(Display *d, XEvent *e):
     }
 
 
-cdef object parse_CursorNotify(Display *d, XEvent *e):
+cdef dict parse_CursorNotify(Display *d, XEvent *e):
     cdef XFixesCursorNotifyEvent * cursor_e = <XFixesCursorNotifyEvent*> e
     return {
         "window": cursor_e.window,

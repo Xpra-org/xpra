@@ -85,14 +85,14 @@ def init_xkb_events() -> bool:
     return True
 
 
-cdef object parse_XKBNotify(Display *d, XEvent *e):
+cdef dict parse_XKBNotify(Display *d, XEvent *e):
     cdef XkbAnyEvent * xkb_e = <XkbAnyEvent*> e
     # note we could just cast directly to XkbBellNotifyEvent
     # but this would be dirty, and we may want to catch
     # other types of XKB events in the future
     verbose("XKBNotify event received xkb_type=%s", xkb_e.xkb_type)
     if xkb_e.xkb_type != XkbBellNotify:
-        return None
+        return {}
     bell_e = <XkbBellNotifyEvent*>e
     # no idea why window is not set in XkbBellNotifyEvent
     # since we can fire it from a specific window

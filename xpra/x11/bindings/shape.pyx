@@ -60,7 +60,7 @@ def init_xshape_events() -> bool:
     return True
 
 
-cdef object parse_ShapeNotify(Display *d, XEvent *e):
+cdef dict parse_ShapeNotify(Display *d, XEvent *e):
     cdef XShapeEvent *shape_e = <XShapeEvent*> e
     return {
         "window": shape_e.window,
