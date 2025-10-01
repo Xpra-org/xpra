@@ -864,7 +864,7 @@ class AuthenticationManager:
         all_agent_keys = agent.get_keys()
         log("agent keys: %s", all_agent_keys)
         log("allowed key fingerprints: %s", allowed_key_fingerprints)
-        agent_keys = [x for x in all_agent_keys if x.fingerprint in allowed_key_fingerprints]
+        agent_keys = [x for x in all_agent_keys if x.get_fingerprint() in allowed_key_fingerprints]
         log("agent keys matching fingerprints: %s", agent_keys)
         if not self.configbool("identitiesonly", False):
             for agent_key in all_agent_keys:
