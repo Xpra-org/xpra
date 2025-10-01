@@ -71,8 +71,8 @@ def is_socket(sockpath: str, check_uid: int = -1) -> bool:
 
 def is_writable(path: str, uid: int, gid: int) -> bool:
     from xpra.os_util import getuid
-    if uid == getuid():
-        return os.access(path, os.W_OK)
+    if uid == getuid() and os.access(path, os.W_OK):
+        return True
     try:
         s = os.stat(path)
     except OSError as e:
