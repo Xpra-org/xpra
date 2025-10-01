@@ -1,20 +1,25 @@
 # Changelog
 
-## [6.3.4] 2025-09-26
+## [6.3.4] 2025-10-01
 * Platforms, build and packaging:
     * [bundle `GioWin32` on MS Windows](https://github.com/Xpra-org/xpra/commit/04769592e7e63eb00fd05108c95e2b09d4ba467a)
+    * [pynvml 13.580.82](https://github.com/Xpra-org/xpra/commit/4342f8f56e8bb4319f5834c38e8fe329a3cd8b19)
 * MacOS:
     * [debuggable launch script](https://github.com/Xpra-org/xpra/commit/46ef35352f18b637076d19bc237f9564572c52a7) [+ silence warnings](https://github.com/Xpra-org/xpra/commit/5149b16bcbfc7c5ce5d6d7e44fb0cfe257cbd26e)
     * [URL open callback may send byte strings](https://github.com/Xpra-org/xpra/commit/34769557c842f82ad1531dcd4ef788a9aed0a0ae)
     * [don't use headerbar due to rendering glitches](https://github.com/Xpra-org/xpra/commit/977b6ea1ecf7720fac2265f69fabf40d2e069137)
     * [version check needs CA certificate data file](https://github.com/Xpra-org/xpra/commit/6439d6f573d541114cf8df25c82be1b280ce77a8)
+    * [extra dock icon shown](https://github.com/Xpra-org/xpra/commit/88e7118de58e4eb822ae1b622059c4c89fc4c6fe)
+    * [`bin` shown as application name](https://github.com/Xpra-org/xpra/commit/5cad6d7593c88f99de45933430d3308811c370c5)
+    * [smooth scrolling errors out](https://github.com/Xpra-org/xpra/commit/e376b9f40174be2ee4655f6713ceaf8eb7371157)
 * Security:
     * [don't log http passwords in debug logging](https://github.com/Xpra-org/xpra/commit/e217836bac0dfe1874881ecbcbd0226f19167e93)
     * [don't log authentication data using `http` debug logging](https://github.com/Xpra-org/xpra/commit/7d7cebf53d987bc508ecb210b55dfd982108e7d8)
     * [authentication messages should only use `auth` logging category](https://github.com/Xpra-org/xpra/commit/dad16f7f544cd29e0c8972670c6da3a0c3d6bf62)
     * [obscure passwords](https://github.com/Xpra-org/xpra/commit/ceafde09931ad072de6beb48ed7528201534ffc0)
 * Network:
-    * [SSL connections drop](https://github.com/Xpra-org/xpra/commit/5a17318683002e75f58b441eb22041f5e2b37eb1)
+    * [SSL connections drop](https://github.com/Xpra-org/xpra/commit/5a17318683002e75f58b441eb22041f5e2b37eb1), [prevent flood](https://github.com/Xpra-org/xpra/commit/69a7babf99d6084ec47aef5464b228d198c0a028), [matching test update](https://github.com/Xpra-org/xpra/commit/7523ff6280316c97168199d33c9d0146c8233c45)
+    * [validate websocket payload size](https://github.com/Xpra-org/xpra/commit/ec82719ed3de09e489cfbf6b63b3def3f4183866)
 * Major:
     * [failure to launch subcommands from `xpra gui`](https://github.com/Xpra-org/xpra/commit/1dd327a94ceca786cd155b3818ec3ae7c3c003aa)
     * [re-connection fails if URL contains the password](https://github.com/Xpra-org/xpra/commit/a3104fdbb52bab92343ecffbca8aa7332912a1e1)
@@ -22,12 +27,18 @@
     * [splash screen could misbehave](https://github.com/Xpra-org/xpra/commit/2cdf432eea2b21da498e47b7256bbf11098b4655)
     * [ignore options to automatically launch 'gui'](https://github.com/Xpra-org/xpra/commit/e115528c1fc38d60d805bd6180e4723212eeab3a)
     * [show file-transfer dialog menu entry](https://github.com/Xpra-org/xpra/commit/8492aafe3c61a2b864479727da319a32c28a5f42)
+    * [clipboard tool fails to set text](https://github.com/Xpra-org/xpra/commit/afed6bc7eb7a450c48c67280cb23b5c182a92993), [doesn't handle shortcuts](https://github.com/Xpra-org/xpra/commit/d689a4c4e7f4c1b8f2302c1ae18aa497524f8a09)
+    * [window iconified state not initialized correctly](https://github.com/Xpra-org/xpra/commit/b84c0400b1133f80d4f079a3423e496f20d900ae)
+    * [expose all window metadata via `xpra info`](https://github.com/Xpra-org/xpra/commit/9e8570d2184672e762a32b0729b90d8f4404c8e3)
+    * [honour pyxdg disabled flag](https://github.com/Xpra-org/xpra/commit/bb660dcbbfd2f33194d256513756a199cffe19c0), [use it in unit tests](https://github.com/Xpra-org/xpra/commit/c1226c967ff26fa9602d9ebebcff52e092714fbd)
 * Cosmetic:
     * [warn just once if python-cryptography is missing](https://github.com/Xpra-org/xpra/commit/ca0f683e610549adbee41ae2fe73939e538d3afb)
     * [dialog errors due to early focus events](https://github.com/Xpra-org/xpra/commit/b0d782e54aa195f582f313406c1f1819aab807b0)
     * [ensure flag is a boolean](https://github.com/Xpra-org/xpra/commit/e756624c3527274223c11633b079a1c0d8cab9cb)
     * [bug report tooltip](https://github.com/Xpra-org/xpra/commit/622efa852718c88894f53b5951fd3e13539fac8b)
     * [tray menu tooltip](https://github.com/Xpra-org/xpra/commit/808632b67e42146cb37c910806fa8dfacfd7449e)
+    * [typo](https://github.com/Xpra-org/xpra/commit/279eeba0050cadc32d526431a6a1778eb729df6e)
+    * [test log spam](https://github.com/Xpra-org/xpra/commit/48fdeaf82193ec21e74326ec4a0693dcc1044644)
 
 ## [6.3.3] 2025-09-06
 * Platforms, build and packaging:
