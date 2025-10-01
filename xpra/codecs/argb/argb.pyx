@@ -18,10 +18,10 @@ from xpra.log import Logger
 log = Logger("encoding")
 
 
-cdef inline unsigned int round8up(unsigned int n) nogil:
+cdef inline unsigned int round8up(unsigned int n) noexcept nogil:
     return (n + 7) & ~7
 
-cdef inline unsigned char clamp(int v) nogil:
+cdef inline unsigned char clamp(int v) noexcept nogil:
     if v>255:
         return 255
     return <unsigned char> v
