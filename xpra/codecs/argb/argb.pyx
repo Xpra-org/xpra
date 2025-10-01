@@ -19,11 +19,11 @@ from xpra.log import Logger
 log = Logger("encoding")
 
 
-cdef inline unsigned int round8up(unsigned int n) nogil:
+cdef inline unsigned int round8up(unsigned int n) noexcept nogil:
     return (n + 7) & ~7
 
 
-cdef inline unsigned char clamp(int v) nogil:
+cdef inline unsigned char clamp(int v) noexcept nogil:
     if v>255:
         return 255
     return <unsigned char> v
@@ -735,7 +735,7 @@ def bit_to_rectangles(buf, unsigned int w, unsigned int h) -> List[Tuple[int,int
         return bitdata_to_rectangles(bits, len(bc), w, h)
 
 
-cdef object bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len,
+cdef list bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len,
                            const unsigned int w, const unsigned int h):
     rectangles = []
     cdef unsigned int rowstride = round8up(w)//8
