@@ -13,7 +13,7 @@ from xpra.common import SizedBuffer
 DEF MAX_WEBSOCKET_PAYLOAD = 0x3FFFFFFF  # 2^30-1, per RFC6455
 
 
-def hybi_unmask(data, unsigned int offset, unsigned int datalen) -> memoryview:
+def hybi_unmask(data, unsigned int offset, unsigned long long datalen) -> memoryview:
     cdef uintptr_t mp
     cdef unsigned int min_len = offset + 4 + datalen
     with buffer_context(data) as bc:
@@ -31,7 +31,7 @@ def hybi_mask(mask: bytes, data: SizedBuffer) -> memoryview:
             return do_hybi_mask(<uintptr_t> int(mbc), <uintptr_t> int(dbc), len(dbc))
 
 
-cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
+cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned long long datalen):
     if datalen > MAX_WEBSOCKET_PAYLOAD:
         raise ValueError(f"data too large: {datalen} bytes")
     # we skip the first 'align' bytes in the output buffer,
