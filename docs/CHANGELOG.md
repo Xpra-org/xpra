@@ -29,6 +29,7 @@
   * [prettier splash screen](https://github.com/Xpra-org/xpra/issues/4675)
   * [simple OTP screen authentication](https://github.com/Xpra-org/xpra/issues/4674)
   * [smarter `info` requests](https://github.com/Xpra-org/xpra/issues/4677)
+  * [expose environment for launching client applications](https://github.com/Xpra-org/xpra/issues/4676)
 * Network:
   * [stronger packet data types](https://github.com/Xpra-org/xpra/issues/4566)
   * [honour `IdentityFile` and `IdentitiesOnly` in ssh configs](https://github.com/Xpra-org/xpra/issues/4598)
