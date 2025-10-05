@@ -1,0 +1,725 @@
+# This file is part of Xpra.
+# Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+from libc.stdint cimport uintptr_t, uint8_t, uint32_t, uint64_t, int32_t
+
+
+ctypedef void wlr_session
+ctypedef void wlr_swapchain
+
+
+cdef extern from "drm/drm_fourcc.h":
+    # RGB 15 / 16 bit:
+    uint32_t DRM_FORMAT_BGRX5551
+    uint32_t DRM_FORMAT_ARGB1555
+    uint32_t DRM_FORMAT_ABGR1555
+    uint32_t DRM_FORMAT_RGBA5551
+    uint32_t DRM_FORMAT_BGRA5551
+    uint32_t DRM_FORMAT_RGB565
+    uint32_t DRM_FORMAT_BGR565
+    # 24-bit:
+    uint32_t DRM_FORMAT_RGB888
+    uint32_t DRM_FORMAT_BGR888
+    # 32-bit no alpha:
+    uint32_t DRM_FORMAT_XRGB8888
+    uint32_t DRM_FORMAT_XBGR8888
+    uint32_t DRM_FORMAT_RGBX8888
+    uint32_t DRM_FORMAT_BGRX8888
+    # 32-bit with alpha:
+    uint32_t DRM_FORMAT_ARGB8888
+    uint32_t DRM_FORMAT_ABGR8888
+    uint32_t DRM_FORMAT_RGBA8888
+    uint32_t DRM_FORMAT_BGRA8888
+    # 30-bit no alpha:
+    uint32_t DRM_FORMAT_XRGB2101010
+    uint32_t DRM_FORMAT_XBGR2101010
+    uint32_t DRM_FORMAT_RGBX1010102
+    uint32_t DRM_FORMAT_BGRX1010102
+    # 30-bit with alpha:
+    uint32_t DRM_FORMAT_ARGB2101010
+    uint32_t DRM_FORMAT_ABGR2101010
+    uint32_t DRM_FORMAT_RGBA1010102
+    uint32_t DRM_FORMAT_BGRA1010102
+    # 64-bit:
+    uint32_t DRM_FORMAT_XRGB16161616
+    uint32_t DRM_FORMAT_XBGR16161616
+    uint32_t DRM_FORMAT_ARGB16161616
+    uint32_t DRM_FORMAT_ABGR16161616
+
+
+cdef extern from "wayland-util.h":
+    cdef struct wl_list:
+        wl_list *prev
+        wl_list *next
+
+
+cdef extern from "wayland-server-core.h":
+    cdef struct wl_global:
+        pass
+    cdef struct wl_display:
+        pass
+    ctypedef struct wl_event_loop:
+        pass
+    cdef struct wl_listener:
+        void (*notify)(wl_listener *listener, void *data)
+        wl_list link
+    ctypedef struct wl_signal:
+        wl_list listener_list
+
+    wl_display *wl_display_create()
+    void wl_display_destroy(wl_display *display)
+    void wl_display_destroy_clients(wl_display *display)
+    void wl_display_run(wl_display *display)
+    wl_event_loop *wl_display_get_event_loop(wl_display *display)
+    const char *wl_display_add_socket_auto(wl_display *display)
+    void wl_signal_add(wl_signal *signal, wl_listener *listener) nogil
+    void wl_list_remove(wl_list *elm) nogil
+    wl_event_loop *wl_event_loop_create()
+    void wl_event_loop_destroy(wl_event_loop *loop)
+
+    ctypedef void (*wl_notify_func_t)(wl_listener *listener, void *data)
+    cdef struct wl_listener:
+        wl_list link
+        wl_notify_func_t notify
+
+
+cdef extern from "wayland-server-protocol.h":
+    cdef enum wl_output_subpixel:
+        WL_OUTPUT_SUBPIXEL_UNKNOWN
+        WL_OUTPUT_SUBPIXEL_NONE
+        WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB
+        WL_OUTPUT_SUBPIXEL_HORIZONTAL_BGR
+        WL_OUTPUT_SUBPIXEL_VERTICAL_RGB
+        WL_OUTPUT_SUBPIXEL_VERTICAL_BGR
+
+    cdef enum wl_output_transform:
+        WL_OUTPUT_TRANSFORM_NORMAL
+        WL_OUTPUT_TRANSFORM_90
+        WL_OUTPUT_TRANSFORM_180
+        WL_OUTPUT_TRANSFORM_270
+        WL_OUTPUT_TRANSFORM_FLIPPED
+        WL_OUTPUT_TRANSFORM_FLIPPED_90
+        WL_OUTPUT_TRANSFORM_FLIPPED_180
+        WL_OUTPUT_TRANSFORM_FLIPPED_270
+
+
+cdef extern from "wlr/util/box.h":
+    cdef struct wlr_box:
+        int x
+        int y
+        int width
+        int height
+
+
+cdef extern from "wlr/util/addon.h":
+    cdef struct wlr_addon_set:
+        pass
+
+
+cdef extern from "wlr/util/log.h":
+    cdef enum wlr_log_importance:
+        WLR_SILENT
+        WLR_ERROR
+        WLR_INFO
+        WLR_DEBUG
+
+    void wlr_log_init(wlr_log_importance verbosity, void *callback)
+    void wlr_log(wlr_log_importance verbosity, const char *fmt, ...) nogil
+
+
+cdef extern from "wlr/types/wlr_buffer.h":
+    enum wlr_buffer_data_ptr_access_flag:
+        WLR_BUFFER_DATA_PTR_ACCESS_READ
+        WLR_BUFFER_DATA_PTR_ACCESS_WRITE
+
+    enum wlr_buffer_cap:
+        WLR_BUFFER_CAP_DATA_PTR
+        WLR_BUFFER_CAP_DMABUF
+        WLR_BUFFER_CAP_SHM
+
+    cdef struct wlr_buffer_events:
+        wl_signal destroy
+        wl_signal release
+
+    ctypedef void* wlr_buffer_impl
+    cdef struct wlr_buffer:
+        const wlr_buffer_impl *impl
+        int width, height
+        bint dropped
+        size_t n_locks
+        bint accessing_data_ptr
+        wlr_buffer_events events
+        wlr_addon_set addons
+
+    cdef struct wlr_client_buffer:
+        wlr_buffer base
+        wlr_texture *texture
+        wlr_buffer *source
+
+    wlr_buffer *wlr_buffer_lock(wlr_buffer *buffer)
+    void wlr_buffer_unlock(wlr_buffer *buffer)
+
+    cdef struct wlr_dmabuf_attributes:
+        int32_t width
+        int32_t height
+        uint32_t format
+        uint64_t modifier
+        int32_t n_planes
+        uint32_t offset[4]
+        uint32_t stride[4]
+        int32_t fd[4]
+    bint wlr_buffer_get_dmabuf(wlr_buffer *buffer, wlr_dmabuf_attributes *attribs)
+
+    cdef struct wlr_shm_attributes:
+        int fd
+        uint32_t width
+        uint32_t height
+        uint32_t stride
+        uint32_t format
+        void *data
+        size_t size
+    bint wlr_buffer_get_shm(wlr_buffer *buffer, wlr_shm_attributes *attribs)
+
+    bint wlr_buffer_begin_data_ptr_access(wlr_buffer *buffer, uint32_t flags,
+                                          void **data, uint32_t *format, size_t *stride)
+    void wlr_buffer_end_data_ptr_access(wlr_buffer *buffer)
+
+
+cdef extern from "wlr/render/wlr_texture.h":
+    cdef struct wlr_renderer_events:
+        wl_signal destroy
+        wl_signal lost
+    cdef struct wlr_renderer_features:
+        bint output_color_transform
+        bint timeline
+    cdef struct wlr_renderer:
+        uint32_t render_buffer_caps
+        wlr_renderer_events events
+        wlr_renderer_features features
+    cdef struct wlr_texture:
+        wlr_texture_impl *impl
+        uint32_t width
+        uint32_t height
+        wlr_renderer *renderer
+
+    cdef struct wlr_texture_read_pixels_options:
+        # Memory location to read pixels into
+        void *data
+        # Format used for writing the pixel data
+        uint32_t format
+        # Stride in bytes for the data
+        uint32_t stride
+        # Destination offsets
+        uint32_t dst_x
+        uint32_t dst_y
+        # Source box of the texture to read from. If empty, the full texture is assumed.
+        const wlr_box src_box
+
+    bint wlr_texture_read_pixels(wlr_texture *texture, wlr_texture_read_pixels_options *options) nogil
+    void wlr_texture_destroy(wlr_texture *texture)
+
+    wlr_texture *wlr_texture_from_buffer(wlr_renderer *renderer, wlr_buffer *buffer)
+
+
+cdef extern from "wlr/render/pass.h":
+    cdef enum wlr_render_blend_mode:
+        WLR_RENDER_BLEND_MODE_PREMULTIPLIED
+        WLR_RENDER_BLEND_MODE_NONE
+
+    cdef enum wlr_scale_filter_mode:
+        WLR_SCALE_FILTER_BILINEAR
+        WLR_SCALE_FILTER_NEAREST
+
+    cdef struct pixman_region32_t:
+        pass
+
+    cdef struct wlr_render_texture_options:
+        wlr_texture *texture
+        # wlr_fbox src_box
+        wlr_box dst_box
+        const float *alpha
+        const pixman_region32_t *clip
+        # wlr_drm_syncobj_timeline *wait_timeline
+        uint64_t wait_point
+
+    cdef struct wlr_render_pass:
+        pass
+
+    cdef struct wlr_buffer_pass_options:
+        pass
+
+    wlr_render_pass *wlr_renderer_begin_buffer_pass(wlr_renderer *renderer,
+                       wlr_buffer *buffer, const wlr_buffer_pass_options *options)
+    bint wlr_render_pass_submit(wlr_render_pass *render_pass)
+    void wlr_render_pass_add_texture(wlr_render_pass *render_pass, const wlr_render_texture_options *options)
+
+    cdef struct wlr_render_color:
+        float r, g, b, a;
+
+    cdef struct wlr_render_rect_options:
+        wlr_box box
+        wlr_render_color color
+        # const pixman_region32_t *clip
+        wlr_render_blend_mode blend_mode
+
+    cdef struct wlr_render_color:
+        float r
+        float g
+        float b
+        float a
+
+    void wlr_render_pass_add_rect(wlr_render_pass *render_pass, const wlr_render_rect_options *options)
+
+
+cdef extern from "wlr/render/pixman.h":
+    wlr_renderer *wlr_pixman_renderer_create()
+
+
+cdef extern from "wlr/types/wlr_output.h":
+    cdef enum wlr_output_mode_aspect_ratio:
+        WLR_OUTPUT_MODE_ASPECT_RATIO_NONE
+        WLR_OUTPUT_MODE_ASPECT_RATIO_4_3
+        WLR_OUTPUT_MODE_ASPECT_RATIO_16_9
+        WLR_OUTPUT_MODE_ASPECT_RATIO_64_27
+        WLR_OUTPUT_MODE_ASPECT_RATIO_256_135
+
+    cdef enum wlr_output_adaptive_sync_status:
+        WLR_OUTPUT_ADAPTIVE_SYNC_DISABLED
+        WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED
+
+    cdef enum wlr_output_state_field:
+        WLR_OUTPUT_STATE_BUFFER
+        WLR_OUTPUT_STATE_DAMAGE
+        WLR_OUTPUT_STATE_MODE
+        WLR_OUTPUT_STATE_ENABLED
+        WLR_OUTPUT_STATE_SCALE
+        WLR_OUTPUT_STATE_TRANSFORM
+        WLR_OUTPUT_STATE_ADAPTIVE_SYNC_ENABLED
+        WLR_OUTPUT_STATE_GAMMA_LUT
+        WLR_OUTPUT_STATE_RENDER_FORMAT
+        WLR_OUTPUT_STATE_SUBPIXEL
+        WLR_OUTPUT_STATE_LAYERS
+        WLR_OUTPUT_STATE_WAIT_TIMELINE
+        WLR_OUTPUT_STATE_SIGNAL_TIMELINE
+
+    cdef enum wlr_output_state_mode_type:
+        WLR_OUTPUT_STATE_MODE_FIXED
+        WLR_OUTPUT_STATE_MODE_CUSTOM
+
+    cdef struct wlr_output_mode:
+        int32_t width
+        int32_t height
+        int32_t refresh     # mHz
+        bint preferred
+        wlr_output_mode_aspect_ratio picture_aspect_ratio
+        # wl_list link
+
+    cdef struct wlr_output_state:
+        uint32_t committed
+        bint allow_reconfiguration
+
+    cdef struct wlr_output_events:
+        wl_signal frame
+        wl_signal damage
+        wl_signal needs_frame
+        wl_signal precommit
+        wl_signal commit
+        wl_signal present
+        wl_signal bind
+        wl_signal description
+        wl_signal request_state
+        wl_signal destroy
+
+    ctypedef void wlr_output_cursor
+    ctypedef void wlr_output_impl
+    ctypedef void wl_event_source
+    cdef struct wlr_output:
+        const wlr_output_impl *impl
+        wlr_backend *backend
+        wl_event_loop *event_loop
+
+        #wl_global *global
+        wl_list resources
+
+        char *name
+        char *description
+        char *make
+        char *model
+        char *serial
+        int32_t phys_width
+        int32_t phys_height
+
+        wl_list modes
+        wlr_output_mode *current_mode
+        int32_t width
+        int32_t height
+        int32_t refresh     # mHz, may be zero
+
+        bint enabled
+        float scale
+        wl_output_subpixel subpixel
+        wl_output_transform transform
+        wlr_output_adaptive_sync_status adaptive_sync_status
+        uint32_t render_format
+        bint adaptive_sync_supported
+        bint needs_frame
+        bint frame_pending
+        bint non_desktop
+        uint32_t commit_seq
+        wlr_output_events events
+        wl_event_source *idle_frame
+        wl_event_source *idle_done
+        int attach_render_locks
+        wl_list cursors
+        wlr_output_cursor *hardware_cursor
+        wlr_swapchain *cursor_swapchain
+        wlr_buffer *cursor_front_buffer
+        int software_cursor_locks
+        wl_list layers
+        wlr_allocator *allocator
+        wlr_renderer *renderer
+        wlr_swapchain *swapchain
+        wlr_addon_set addons
+        void *data
+
+    void wlr_output_init_render(wlr_output *output, wlr_allocator *allocator, wlr_renderer *renderer) nogil
+    void wlr_output_schedule_frame(wlr_output *output) nogil
+    void wlr_output_state_init(wlr_output_state *state) nogil
+    int wlr_output_commit_state(wlr_output *output, const wlr_output_state *state) nogil
+    void wlr_output_state_finish(wlr_output_state *state) nogil
+
+
+cdef extern from "wlr/types/wlr_xdg_shell.h":
+    cdef enum wlr_xdg_surface_role:
+        WLR_XDG_SURFACE_ROLE_NONE
+        WLR_XDG_SURFACE_ROLE_TOPLEVEL
+        WLR_XDG_SURFACE_ROLE_POPUP
+    cdef enum wlr_xdg_surface_state_field:
+        WLR_XDG_SURFACE_STATE_WINDOW_GEOMETRY
+    cdef struct wlr_xdg_surface_state:
+        uint32_t committed
+        wlr_box geometry
+        uint32_t configure_serial
+    ctypedef struct wlr_xdg_surface_events:
+        wl_signal destroy
+        wl_signal ping_timeout
+        wl_signal new_popup
+        wl_signal configure
+        wl_signal ack_configure
+    cdef struct wlr_xdg_surface:
+        # wlr_xdg_client *client
+        # wl_resource *resource
+        wlr_surface *surface
+        wl_list link
+        wlr_xdg_surface_role role
+        # wl_resource *role_resource
+        wlr_xdg_toplevel *toplevel
+        # wlr_xdg_popup *popup
+        wl_list popups
+        int configured
+        wl_event_source *configure_idle
+        uint32_t scheduled_serial
+        wl_list configure_list
+        wlr_xdg_surface_state current
+        wlr_xdg_surface_state pending
+        int initialized
+        bint initial_commit
+        wlr_box geometry
+        wlr_xdg_surface_events events
+        void *data
+    cdef struct wlr_xdg_toplevel_requested:
+        int maximized
+        int fullscreen
+    cdef struct wlr_xdg_toplevel_events:
+        wl_signal request_maximize
+        wl_signal request_fullscreen
+        wl_signal request_minimize
+        wl_signal request_move
+        wl_signal request_resize
+        wl_signal request_show_window_menu
+        wl_signal set_parent
+        wl_signal set_title
+        wl_signal set_app_id
+    cdef struct wlr_xdg_toplevel:
+        char *title
+        char *app_id
+        wlr_xdg_toplevel_events events
+        wlr_xdg_toplevel_requested requested
+    cdef struct wlr_xdg_toplevel_resize_event:
+        int edges
+
+    ctypedef struct wlr_xdg_shell_events:
+        wl_signal new_surface
+        wl_signal new_toplevel
+        wl_signal new_popup
+        wl_signal destroy
+    cdef struct wlr_xdg_shell:
+        # wl_global *global
+        uint32_t version
+        wl_list clients;
+        wl_list popup_grabs
+        uint32_t ping_timeout
+        wlr_xdg_shell_events events
+        void *data
+        wl_listener display_destroy
+
+    wlr_xdg_shell *wlr_xdg_shell_create(wl_display *display, int version)
+    void wlr_xdg_toplevel_set_size(wlr_xdg_toplevel *toplevel, int width, int height) nogil
+    void wlr_xdg_surface_schedule_configure(wlr_xdg_surface *surface) nogil
+
+
+cdef extern from "wlr/types/wlr_scene.h":
+    cdef struct wlr_scene_output:
+        pass
+    cdef struct wlr_scene_node:
+        pass
+    cdef struct wlr_scene_tree:
+        wlr_scene_node node
+    cdef struct wlr_scene:
+        wlr_scene_tree tree
+
+    wlr_scene *wlr_scene_create()
+    void wlr_scene_node_destroy(wlr_scene_node *node)
+    wlr_scene_tree *wlr_scene_xdg_surface_create(wlr_scene_tree *parent, wlr_xdg_surface *xdg_surface)
+    wlr_scene_output *wlr_scene_output_create(wlr_scene *scene, wlr_output *output) nogil
+    int wlr_scene_output_commit(wlr_scene_output *scene_output, const wlr_output_state *state) nogil
+
+
+cdef extern from "wlr/backend.h":
+    cdef struct wlr_backend_output_state:
+        wlr_output *output
+        wlr_output_state base
+
+    ctypedef void wlr_backend_impl
+    cdef struct wlr_backend_features:
+        bint timeline
+    cdef struct wlr_backend_events:
+        wl_signal destroy
+        wl_signal new_input
+        wl_signal new_output
+
+    cdef struct wlr_backend:
+        wlr_backend_impl *impl
+        uint32_t buffer_caps
+        wlr_backend_features features
+        wlr_backend_events events
+
+    wlr_backend *wlr_backend_autocreate(wl_event_loop *loop, wlr_session **session_ptr)
+    bint wlr_backend_start(wlr_backend *backend)
+    void wlr_backend_destroy(wlr_backend *backend)
+    int wlr_backend_get_drm_fd(wlr_backend *backend)
+    bint wlr_backend_test(wlr_backend *backend, const wlr_backend_output_state *states, size_t states_len)
+    bint wlr_backend_commit(wlr_backend *backend, const wlr_backend_output_state *states, size_t states_len)
+
+
+cdef extern from "wlr/backend/headless.h":
+    wlr_backend *wlr_headless_backend_create(wl_event_loop *loop)
+    wlr_output *wlr_headless_add_output(wlr_backend *backend, unsigned int width, unsigned int height)
+
+cdef extern from "wlr/render/interface.h":
+    cdef struct wlr_renderer_impl:
+        const wlr_drm_format_set *(*get_texture_formats)(wlr_renderer *renderer, uint32_t buffer_caps)
+        void (*destroy)(wlr_renderer *renderer)
+        int (*get_drm_fd)(wlr_renderer *renderer)
+        wlr_texture *(*texture_from_buffer)(wlr_renderer *renderer, wlr_buffer *buffer);
+        wlr_render_pass *(*begin_buffer_pass)(wlr_renderer *renderer, wlr_buffer *buffer, const wlr_buffer_pass_options *options)
+        wlr_render_timer *(*render_timer_create)(wlr_renderer *renderer)
+
+    cdef struct wlr_render_timer_impl:
+        int (*get_duration_ns)(wlr_render_timer *timer)
+        void (*destroy)(wlr_render_timer *timer)
+
+    cdef struct wlr_render_timer:
+        const wlr_render_timer_impl *impl
+
+    cdef struct wlr_texture_impl:
+        bint (*update_from_buffer)(wlr_texture *texture, wlr_buffer *buffer, pixman_region32_t *damage)
+        bint (*read_pixels)(wlr_texture *texture, const wlr_texture_read_pixels_options *options)
+        uint32_t (*preferred_read_format)(wlr_texture *texture)
+        void (*destroy)(wlr_texture *texture)
+
+
+cdef extern from "wlr/render/wlr_renderer.h":
+    ctypedef struct wlr_renderer:
+        pass
+    wlr_renderer *wlr_renderer_autocreate(wlr_backend *backend)
+    void wlr_renderer_init_wl_display(wlr_renderer *renderer, wl_display *wl_display)
+    void wlr_renderer_destroy(wlr_renderer *renderer)
+    const wlr_drm_format_set *wlr_renderer_get_texture_formats(wlr_renderer *r, uint32_t buffer_caps)
+
+
+cdef extern from "wlr/render/drm_format_set.h":
+    cdef struct wlr_drm_format:
+        uint32_t format
+        size_t len
+        size_t capacity
+        uint64_t *modifiers
+
+    cdef struct wlr_drm_format_set:
+        size_t len
+        size_t capacity
+        wlr_drm_format *formats
+
+    void wlr_drm_format_set_finish(wlr_drm_format_set *set)
+    const wlr_drm_format *wlr_drm_format_set_get(const wlr_drm_format_set *set, uint32_t format)
+    void wlr_drm_format_finish(wlr_drm_format *format)
+
+
+cdef extern from "wlr/render/allocator.h":
+    cdef struct wlr_allocator_interface:
+        pass
+
+    cdef struct wlr_allocator_events:
+        wl_signal destroy
+
+    cdef struct wlr_allocator:
+        wlr_allocator_interface *impl
+        uint32_t buffer_caps
+        wlr_allocator_events events
+
+    wlr_allocator *wlr_allocator_autocreate(wlr_backend *backend, wlr_renderer *renderer)
+    void wlr_allocator_init(wlr_allocator *alloc, const wlr_allocator_interface *impl, uint32_t buffer_caps)
+    void wlr_allocator_destroy(wlr_allocator *alloc)
+    wlr_buffer *wlr_allocator_create_buffer(wlr_allocator *alloc, int width, int height, const wlr_drm_format *format)
+
+
+cdef extern from "wlr/types/wlr_compositor.h":
+    cdef enum wlr_surface_state_field:
+        WLR_SURFACE_STATE_BUFFER
+        WLR_SURFACE_STATE_SURFACE_DAMAGE
+        WLR_SURFACE_STATE_BUFFER_DAMAGE
+        WLR_SURFACE_STATE_OPAQUE_REGION
+        WLR_SURFACE_STATE_INPUT_REGION
+        WLR_SURFACE_STATE_TRANSFORM
+        WLR_SURFACE_STATE_SCALE
+        WLR_SURFACE_STATE_FRAME_CALLBACK_LIST
+        WLR_SURFACE_STATE_VIEWPORT
+        WLR_SURFACE_STATE_OFFSET
+    ctypedef struct wlr_surface_state:
+        uint32_t committed
+        uint32_t seq
+        wlr_buffer *buffer
+        int32_t dx, dy
+        pixman_region32_t surface_damage
+        pixman_region32_t buffer_damage
+        pixman_region32_t opaque
+        pixman_region32_t input
+        wl_output_transform transform
+        int32_t scale
+        wl_list frame_callback_list
+
+        int width
+        int height
+        int buffer_width
+        int buffer_height
+
+        wl_list subsurfaces_below
+        wl_list subsurfaces_above
+    cdef struct wlr_compositor:
+        pass
+    cdef struct wlr_surface_role:
+        const char *name
+        bint no_object
+        void (*client_commit)(wlr_surface *surface)
+        void (*commit)(wlr_surface *surface)
+        void (*map)(wlr_surface *surface)
+        void (*unmap)(wlr_surface *surface)
+        void (*destroy)(wlr_surface *surface)
+    ctypedef struct wlr_surface_events:
+        wl_signal client_commit
+        wl_signal commit
+        wl_signal map
+        wl_signal unmap
+        wl_signal new_subsurface
+        wl_signal destroy
+    cdef struct wlr_surface:
+        #wl_resource resource
+        wlr_compositor *compositor
+        wlr_client_buffer *buffer
+        pixman_region32_t buffer_damage
+        pixman_region32_t opaque_region
+        pixman_region32_t input_region
+        wlr_surface_state current
+        wlr_surface_state pending
+        wl_list cached
+        bint mapped
+        wlr_surface_role *role
+        #wl_resource *role_resource
+        wlr_surface_events events
+        wl_list current_outputs
+        wlr_addon_set addons
+        void *data
+    wlr_compositor *wlr_compositor_create(wl_display *display, int version, wlr_renderer *renderer)
+
+
+cdef extern from "wlr/types/wlr_data_device.h":
+    ctypedef struct wlr_data_device_manager:
+        pass
+    wlr_data_device_manager *wlr_data_device_manager_create(wl_display *display)
+
+
+
+# Internal structures
+cdef struct server:
+    wl_display *display
+    wlr_backend *backend
+    wlr_renderer *renderer
+    wlr_allocator *allocator
+
+    wlr_compositor *compositor
+    wlr_xdg_shell *xdg_shell
+    wlr_scene *scene
+
+    wl_listener new_output
+    wl_listener new_xdg_surface
+
+cdef struct output:
+    wl_list link
+    server *srv
+    wlr_output *wlr_output
+    wlr_scene_output *scene_output
+
+    wl_listener frame
+    wl_listener destroy
+
+cdef struct xdg_surface:
+    server *srv
+    wlr_xdg_surface *wlr_xdg_surface
+    wlr_scene_tree *scene_tree
+
+    wl_listener map
+    wl_listener unmap
+    wl_listener destroy
+    wl_listener commit
+    wl_listener request_move
+    wl_listener request_resize
+    wl_listener request_maximize
+    wl_listener request_fullscreen
+    wl_listener request_minimize
+    wl_listener set_title
+    wl_listener set_app_id
+
+    uint8_t *pixels
+    int width
+    int height
+
+
+# Callback function declarations
+cdef void output_frame(wl_listener *listener, void *data) noexcept
+cdef void output_destroy_handler(wl_listener *listener, void *data) noexcept
+cdef void new_output(wl_listener *listener, void *data) noexcept
+cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept
+cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept
+cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcept
+cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept
+cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept
+cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept
+cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept
+cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noexcept
+cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexcept
+cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noexcept
+cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept
+cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept
+cdef void capture_surface_pixels(xdg_surface *surface) noexcept

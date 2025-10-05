@@ -241,7 +241,8 @@ def has_header_file(name, isdir=False) -> bool:
 
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
-wayland_ENABLED = not WIN32 and not OSX and pkg_config_exists("wayland-client")
+wayland_client_ENABLED = not WIN32 and not OSX and pkg_config_exists("wayland-client")
+wayland_server_ENABLED = not WIN32 and not OSX and pkg_config_exists("wlroots-0.19")
 xinput_ENABLED = x11_ENABLED
 uinput_ENABLED = x11_ENABLED
 dbus_ENABLED = DEFAULT and (x11_ENABLED or WIN32) and not OSX
@@ -415,6 +416,7 @@ SWITCHES += [
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
     "gtk_x11", "service",
     "gtk3", "example",
+    "wayland_client", "wayland_server",
     "qt6_client", "pyglet_client", "tk_client",
     "ism_ext",
     "pam", "xdg_open", "peercred",
@@ -2901,9 +2903,14 @@ tace(vsock_ENABLED, "xpra.net.vsock.vsock")
 toggle_packages(lz4_ENABLED, "xpra.net.lz4")
 tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 
-toggle_packages(wayland_ENABLED, "xpra.wayland")
-tace(wayland_ENABLED, "xpra.wayland.wait_for_display", "wayland-client")
-
+toggle_packages(wayland_client_ENABLED or wayland_server_ENABLED, "xpra.wayland")
+tace(wayland_client_ENABLED, "xpra.wayland.wait_for_display", "wayland-client")
+if wayland_server_ENABLED and not os.path.exists("./xpra/wayland/xdg-shell-protocol.h"):
+    subprocess.run(["wayland-scanner", "server-header",
+                    "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml",
+                    "./xpra/wayland/xdg-shell-protocol.h"])
+tace(wayland_server_ENABLED, "xpra.wayland.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1",
+     extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
 
 if cythonize_more_ENABLED:
     def ax(base):
@@ -3020,7 +3027,7 @@ if cythonize_more_ENABLED:
             ax("xpra.x11.server")
         if uinput_ENABLED:
             ax("xpra.x11.uinput")
-    if wayland_ENABLED:
+    if wayland_client_ENABLED or wayland_server_ENABLED:
         ax("xpra.wayland")
 
     ax("xpra.util")
