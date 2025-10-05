@@ -46,10 +46,6 @@ from xpra.wayland.wlroots cimport (
 cdef object g_pixel_callback = None
 
 
-cdef extern from "wayland-server-core.h":
-    pass
-
-
 # Helper macros as inline functions with compile-time offset calculation
 cdef inline output* output_from_frame(wl_listener *listener) nogil:
     cdef size_t offset = <size_t>(<char*>&(<output*>0).frame - <char*>0)
