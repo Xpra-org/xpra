@@ -177,14 +177,12 @@ cdef extern from "libyuv/planar_functions.h" namespace "libyuv":
                    int width,
                    int height) nogil
 
-cdef inline str get_fiter_mode_str(FilterMode fm):
-    if fm == kFilterNone:
-        return "None"
-    elif fm == kFilterBilinear:
-        return "Bilinear"
-    elif fm == kFilterBox:
-        return "Box"
-    return "invalid"
+
+FILTER_STR: Dict[FilterMode, str] = {
+    kFilterNone : "None",
+    kFilterBilinear: "Bilinear",
+    kFilterBox: "Box",
+}
 
 
 cdef inline FilterMode get_filtermode(int speed, int downscaling) noexcept nogil:
@@ -449,7 +447,7 @@ cdef class Converter:
             if self.output_buffer==NULL:
                 raise RuntimeError("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         log("buffer size=%i, yuv_scaling=%s, rgb_scaling=%s, filtermode=%s",
-            self.out_buffer_size, self.yuv_scaling, self.rgb_scaling, get_fiter_mode_str(self.filtermode))
+            self.out_buffer_size, self.yuv_scaling, self.rgb_scaling, FILTER_STR.get(self.filtermode, "unknown"))
 
     def init_yuv_scaled_buffer(self, yuv_format, int width, int height) -> None:
         assert self.yuv_scaling
