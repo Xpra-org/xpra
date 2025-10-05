@@ -375,7 +375,10 @@ def make_desktop_server():
     return XpraDesktopServer()
 
 
-def make_seamless_server(clobber):
+def make_seamless_server(backend: str, clobber):
+    if backend == "wayland":
+        from xpra.wayland.server import WaylandSeamlessServer
+        return WaylandSeamlessServer()
     from xpra.x11.server.seamless import SeamlessServer
     return SeamlessServer(clobber)
 
@@ -715,7 +718,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         opts.forward_xdg_open = mode == "seamless"
 
     if not proxying and not shadowing and POSIX and not OSX:
-        if opts.backend.lower() not in ("auto", "gtk", "x11"):
+        if opts.backend.lower() not in ("auto", "gtk", "x11", "wayland"):
             raise InitExit(ExitCode.UNSUPPORTED, f"{mode!r} requires the 'x11' backend, not {opts.backend!r}")
         if opts.backend.lower() in ("auto", "gtk"):
             os.environ["GDK_BACKEND"] = "x11"
@@ -875,7 +878,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             del e
 
     clobber = int(upgrading) * CLOBBER_UPGRADE | int(use_display or 0) * CLOBBER_USE_DISPLAY
-    start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS
+    start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
     xauth_data: str = get_hex_uuid() if start_vfb else ""
 
     # if pam is present, try to create a new session:
@@ -1356,7 +1359,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             app = make_runner_server()
         else:
             if starting or upgrading_seamless:
-                app = make_seamless_server(clobber)
+                app = make_seamless_server(opts.backend, clobber)
             elif starting_desktop or upgrading_desktop:
                 app = make_desktop_server()
             else:
