@@ -138,6 +138,7 @@ cdef inline xdg_surface* xdg_surface_from_set_app_id(wl_listener *listener) nogi
 
 
 log = Logger("wayland")
+cdef bint debug = log.is_debug_enabled()
 
 
 # Callback implementations
@@ -162,7 +163,8 @@ cdef void capture_surface_pixels(xdg_surface *surface) noexcept nogil:
     height = texture.height
 
     if surface.width != width or surface.height != height:
-        free(surface.pixels)
+        if surface.pixels:
+            free(surface.pixels)
         surface.width = width
         surface.height = height
         surface.pixels = <uint8_t*> malloc(width * height * 4)
@@ -223,11 +225,17 @@ cdef void capture_surface_pixels(xdg_surface *surface) noexcept nogil:
                 pass
 
 cdef void output_frame(wl_listener *listener, void *data) noexcept nogil:
+    if debug:
+        with gil:
+            log("output_frame(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
     cdef output *out = output_from_frame(listener)
     wlr_scene_output_commit(out.scene_output, NULL)
     wlr_output_schedule_frame(out.wlr_output)
 
 cdef void output_destroy_handler(wl_listener *listener, void *data) noexcept nogil:
+    if debug:
+        with gil:
+            log("output_destroy_handler(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
     cdef output *out = output_from_destroy(listener)
     wl_list_remove(&out.frame.link)
     wl_list_remove(&out.destroy.link)
@@ -301,10 +309,17 @@ cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcep
     wl_list_remove(&surface.set_title.link)
     wl_list_remove(&surface.set_app_id.link)
 
-    free(surface.pixels)
+    if surface.pixels:
+        free(surface.pixels)
     free(surface)
+    if debug:
+        with gil:
+            log("xdg surface freed")
 
 cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
+    if debug:
+        with gil:
+            log("xdg_surface_commit(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
     cdef xdg_surface *surface = xdg_surface_from_commit(listener)
     cdef wlr_xdg_surface *xdg_surface = surface.wlr_xdg_surface
 
@@ -317,31 +332,43 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
     if xdg_surface.surface.mapped:
         capture_surface_pixels(surface)
 
-cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept:
-    log.info("Surface REQUEST MOVE")
+cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept nogil:
+    if debug:
+        with gil:
+            log("Surface REQUEST MOVE")
 
-cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept:
+cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept nogil:
     cdef wlr_xdg_toplevel_resize_event *event = <wlr_xdg_toplevel_resize_event*>data
-    log.info("Surface REQUEST RESIZE (edges: %d)", event.edges)
+    if debug:
+        with gil:
+            log("Surface REQUEST RESIZE (edges: %d)", event.edges)
 
-cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept:
-    log.info("Surface REQUEST MAXIMIZE")
+cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept nogil:
+    if debug:
+        with gil:
+            log("Surface REQUEST MAXIMIZE")
 
-cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noexcept:
-    log.info("Surface REQUEST FULLSCREEN")
+cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noexcept nogil:
+    if debug:
+        with gil:
+            log("Surface REQUEST FULLSCREEN")
 
-cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexcept:
-    log.info("Surface REQUEST MINIMIZE")
+cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexcept nogil:
+    if debug:
+        with gil:
+            log("Surface REQUEST MINIMIZE")
 
-cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noexcept:
+cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noexcept nogil:
     cdef xdg_surface *surface = xdg_surface_from_set_title(listener)
     if surface.wlr_xdg_surface.toplevel.title:
-        log.info("Surface SET TITLE: %s", surface.wlr_xdg_surface.toplevel.title)
+        with gil:
+            log.info("Surface SET TITLE: %s", surface.wlr_xdg_surface.toplevel.title)
 
-cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept:
+cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept nogil:
     cdef xdg_surface *surface = xdg_surface_from_set_app_id(listener)
     if surface.wlr_xdg_surface.toplevel.app_id:
-        log.info("Surface SET APP_ID: %s", surface.wlr_xdg_surface.toplevel.app_id)
+        with gil:
+            log.info("Surface SET APP_ID: %s", surface.wlr_xdg_surface.toplevel.app_id)
 
 cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     cdef server *srv = server_from_new_xdg_surface(listener)
