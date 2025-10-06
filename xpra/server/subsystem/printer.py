@@ -120,11 +120,13 @@ class PrinterServer(StubServerMixin):
         except Exception:
             log.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
             printing = False
-        # verify that we can talk to the socket:
-        auth_classes: Sequence[AuthDef] = self.auth_classes.get("socket", ())
-        if printing and auth_classes:
+        # verify that we can talk to the socket
+        # (weak dependency on `auth_classes`)
+        auth_classes: dict[str, Sequence[AuthDef]] = getattr(self, "auth_classes", {})
+        socket_auth_classes: Sequence[AuthDef] = auth_classes.get("socket", ())
+        if printing and socket_auth_classes:
             fail: list[str] = []
-            for auth_class in auth_classes:
+            for auth_class in socket_auth_classes:
                 try:
                     # this should be the name of the auth module:
                     auth_name = auth_class[0]
