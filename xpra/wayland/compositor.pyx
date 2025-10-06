@@ -17,35 +17,80 @@ from xpra.wayland.wlroots cimport (
     wl_display_create, wl_display_destroy_clients, wl_display_destroy, wl_display_run,
     wl_listener, wl_signal_add, wl_signal,
     wlr_xdg_surface_events,
-    wlr_backend_destroy, wlr_renderer_destroy, wlr_allocator_destroy, wlr_scene_node_destroy,
-    wlr_compositor_create, wlr_xdg_shell_create, wlr_scene_create,
+    wlr_backend, wlr_backend_start, wlr_backend_destroy,
+    wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
+    wlr_compositor, wlr_compositor_create,
+    wlr_xdg_shell_create,
+    wlr_scene, wlr_scene_create, wlr_scene_node_destroy, wlr_scene_output_create,
+    wlr_scene_xdg_surface_create, wlr_scene_tree, wlr_scene_output, wlr_scene_output_commit,
     wl_display_add_socket_auto,
-    wlr_backend_start,
     wl_event_loop, wl_display_get_event_loop, wl_event_loop_get_fd, wl_event_loop_dispatch,
     wl_display_flush_clients,
-    wlr_renderer_init_wl_display, wlr_allocator_autocreate,
-    wlr_renderer_autocreate, wlr_headless_backend_create,
+    wlr_renderer, wlr_renderer_autocreate, wlr_renderer_destroy, wlr_renderer_init_wl_display,
+    wlr_headless_backend_create,
     wlr_surface, wlr_texture, wlr_client_buffer, wlr_box, wlr_output, wlr_output_state,
     wlr_xdg_toplevel, wlr_xdg_surface,
     wlr_texture_read_pixels_options, wlr_texture_read_pixels,
     wlr_xdg_toplevel_resize_event, wlr_xdg_toplevel_set_size,
     wlr_xdg_surface_schedule_configure,
-    wlr_scene_output_create, wlr_scene_xdg_surface_create,
-    wlr_scene_output_commit, wlr_output_commit_state, wlr_output_state_finish,
+    wlr_output_commit_state, wlr_output_state_finish,
     wlr_output_state_init, wlr_output_schedule_frame, wlr_output_init_render,
     wlr_headless_add_output,
     wlr_data_device_manager_create,
-    wl_list_remove,
+    wl_list, wl_list_remove,
     WLR_ERROR, WLR_INFO, WLR_DEBUG,
     DRM_FORMAT_ABGR8888,
     WLR_XDG_SURFACE_ROLE_NONE,
     WLR_XDG_SURFACE_ROLE_TOPLEVEL,
-    xdg_surface,
-    server, output,
 )
 
 # Global Python callback storage
 cdef object g_pixel_callback = None
+
+
+# Internal structures
+cdef struct server:
+    wl_display *display
+    wlr_backend *backend
+    wlr_renderer *renderer
+    wlr_allocator *allocator
+
+    wlr_compositor *compositor
+    wlr_xdg_shell *xdg_shell
+    wlr_scene *scene
+
+    wl_listener new_output
+    wl_listener new_xdg_surface
+
+cdef struct output:
+    wl_list link
+    server *srv
+    wlr_output *wlr_output
+    wlr_scene_output *scene_output
+
+    wl_listener frame
+    wl_listener destroy
+
+cdef struct xdg_surface:
+    server *srv
+    wlr_xdg_surface *wlr_xdg_surface
+    wlr_scene_tree *scene_tree
+
+    wl_listener map
+    wl_listener unmap
+    wl_listener destroy
+    wl_listener commit
+    wl_listener request_move
+    wl_listener request_resize
+    wl_listener request_maximize
+    wl_listener request_fullscreen
+    wl_listener request_minimize
+    wl_listener set_title
+    wl_listener set_app_id
+
+    uint8_t *pixels
+    int width
+    int height
 
 
 # Helper macros as inline functions with compile-time offset calculation

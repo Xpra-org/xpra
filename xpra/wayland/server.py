@@ -25,6 +25,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         pass
 
     @staticmethod
+    def get_display_size():
+        return 1024, 768
+
+    @staticmethod
     def get_display_description() -> str:
         return "Wayland Display (details missing)"
 
