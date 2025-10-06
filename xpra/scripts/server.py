@@ -49,7 +49,7 @@ from xpra.os_util import (
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, find_group,
     get_hex_uuid, )
 from xpra.util.system import SIGNAMES
-from xpra.util.str_fn import nicestr
+from xpra.util.str_fn import nicestr, csv
 from xpra.util.io import is_writable, stderr_print
 from xpra.util.env import unsetenv, envbool, envint, osexpand, get_saved_env, get_saved_env_var, source_env
 from xpra.util.child_reaper import get_child_reaper
@@ -238,19 +238,14 @@ def set_server_features(opts, mode: str) -> None:
     def b(v) -> bool:
         return str(v).lower() not in FALSE_OPTIONS
 
-    impwarned: set[str] = set()
+    missing: set[str] = set()
     from importlib.util import find_spec
 
     def impcheck(*modules) -> bool:
         for mod in modules:
             if find_spec(f"xpra.{mod}"):
                 continue
-            if mod not in impwarned:
-                impwarned.add(mod)
-                log = get_logger()
-                log(f"impcheck{modules}", exc_info=True)
-                log.warn(f"Warning: missing {mod!r} module")
-                log.warn(f" for Python {sys.version}")
+            missing.add(mod)
             return False
         return True
 
@@ -310,6 +305,11 @@ def set_server_features(opts, mode: str) -> None:
         features.opengl = features.display and b(opts.opengl) and impcheck("opengl")
         features.bell = features.display and b(opts.bell)
         features.systray = b(opts.system_tray) and mode == "seamless"
+
+    if missing:
+        log = get_logger()
+        log.warn("Warning: missing modules: %s", csv(missing))
+        log.warn(f" for Python {sys.version}")
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()
