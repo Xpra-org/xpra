@@ -26,9 +26,6 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor = WaylandCompositor()
         self.wayland_fd_source = 0
 
-    def load_existing_windows(self):
-        pass
-
     @staticmethod
     def get_display_size():
         return 1024, 768

@@ -70,6 +70,9 @@ class WindowServer(StubServerMixin):
         # self._window_to_id = {}
         # self._id_to_window = {}
 
+    def load_existing_windows(self) -> None:
+        """ this method is overriden by most types of servers """
+
     def last_client_exited(self) -> None:
         self._focus(None, 0, [])
 
