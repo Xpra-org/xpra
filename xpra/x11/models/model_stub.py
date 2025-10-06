@@ -4,41 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-from typing import Any
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.log import Logger
+from xpra.util.gobject import AutoPropGObjectMixin, PROPERTIES_DEBUG
 
-log = Logger("x11", "window")
-metalog = Logger("x11", "window", "metadata")
+log = Logger("x11", "window", "metadata")
 
 GObject = gi_import("GObject")
-
-PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
-
-
-class AutoPropGObjectMixin:
-    """Mixin for automagic property support in GObjects.
-
-    Make sure this is the first entry on your parent list, so super().__init__
-    will work right."""
-
-    def __init__(self):
-        self._gproperties: dict[str, Any] = {}
-
-    def do_get_property(self, pspec):
-        return self._gproperties.get(pspec.name)
-
-    def do_set_property(self, pspec, value) -> None:
-        self._internal_set_property(pspec.name, value)
-
-    def _internal_set_property(self, name: str, value) -> None:
-        if name in PROPERTIES_DEBUG:
-            metalog.info("_internal_set_property(%r, %r)", name, value, backtrace=True)
-        self._gproperties[name] = value
-        self.notify(name)
 
 
 class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
@@ -111,8 +85,8 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     @staticmethod
     def get_logger(property_name) -> Callable:
         if property_name in PROPERTIES_DEBUG:
-            return metalog.info
-        return metalog.debug
+            return log.info
+        return log.debug
 
     def _updateprop(self, name: str, value) -> bool:
         """ Updates the property and fires notify(),
