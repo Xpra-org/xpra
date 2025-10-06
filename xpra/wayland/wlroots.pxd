@@ -60,7 +60,7 @@ cdef extern from "wayland-server-core.h":
         pass
     cdef struct wl_display:
         pass
-    ctypedef struct wl_event_loop:
+    cdef struct wl_event_loop:
         pass
     cdef struct wl_listener:
         void (*notify)(wl_listener *listener, void *data)
@@ -78,6 +78,10 @@ cdef extern from "wayland-server-core.h":
     void wl_list_remove(wl_list *elm) nogil
     wl_event_loop *wl_event_loop_create()
     void wl_event_loop_destroy(wl_event_loop *loop)
+    int wl_event_loop_get_fd(wl_event_loop *loop)
+    int wl_event_loop_dispatch(wl_event_loop *loop, int timeout)
+
+    void wl_display_flush_clients(wl_display *display)
 
     ctypedef void (*wl_notify_func_t)(wl_listener *listener, void *data)
     cdef struct wl_listener:

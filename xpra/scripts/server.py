@@ -274,6 +274,14 @@ def set_server_features(opts, mode: str) -> None:
         features.ssh = features.gtk = features.tray = features.opengl = False
         features.bell = features.systray = False
     else:
+        if opts.backend == "x11" or mode in ("desktop", "monitor"):
+            x11 = True
+        elif mode == "shadow":
+            x11 = POSIX
+        elif mode == "seamless":
+            x11 = opts.backend == "auto"
+        else:
+            x11 = False
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
         features.mdns = opts.mdns and impcheck("net.mdns")
@@ -281,7 +289,7 @@ def set_server_features(opts, mode: str) -> None:
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
-        features.x11 = (mode in ("desktop", "monitor", "seamless") or (mode == "shadow" and POSIX and not OSX) or opts.backend == "x11") and impcheck("x11")
+        features.x11 = x11 and impcheck("x11")
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
         features.pulseaudio = features.audio and b(opts.pulseaudio) and impcheck("audio.pulseaudio")
         features.av_sync = features.audio and b(opts.av_sync)
@@ -1183,15 +1191,17 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     xvfb_pid = 0
     devices = {}
     if POSIX and not (proxying or encoder or runner):
-        try:
-            from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
-            use_uinput = not (shadowing or proxying or encoder or runner) and opts.input_devices.lower() in (
-                "uinput", "auto",
-            ) and has_uinput()
-        except ImportError:
-            create_input_devices = noop
-            UINPUT_UUID_LEN = 0
-            use_uinput = False
+        use_uinput = False
+        if opts.backend != "wayland":
+            try:
+                from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
+                use_uinput = not (shadowing or proxying or encoder or runner) and opts.input_devices.lower() in (
+                    "uinput", "auto",
+                ) and has_uinput()
+            except ImportError:
+                create_input_devices = noop
+                UINPUT_UUID_LEN = 0
+                use_uinput = False
         uinput_uuid = ""
         if start_vfb:
             progress(40, "starting a virtual display")

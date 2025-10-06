@@ -358,12 +358,13 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "error"         : "X11 errors",
     },
     "Platform": {
-        "platform"      : "All platform support code",
-        "import"        : "Platform support import code",
-        "osx"           : "Mac OS X platform support code",
-        "win32"         : "Microsoft Windows platform support code",
+        "platform"      : "All platforms",
+        "import"        : "Platform support import",
+        "osx"           : "Mac OS X platform",
+        "win32"         : "Microsoft Windows platform",
+        "posix"         : "Posix platform",
         "d3d11"         : "Microsoft Direct 3D 11",
-        "posix"         : "Posix platform code",
+        "wayland"       : "Wayland",
     },
 }
 

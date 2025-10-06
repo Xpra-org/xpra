@@ -114,6 +114,7 @@ class ClipboardServer(StubServerMixin):
                 log.error("Error: reading clipboard filter file %s - clipboard disabled!",
                           self.clipboard_filter_file, exc_info=True)
                 return
+        clipboard_class = "unknown"
         try:
             from xpra.platform.clipboard import get_backend_module
             clipboard_class = get_backend_module()
@@ -136,7 +137,7 @@ class ClipboardServer(StubServerMixin):
             self._clipboards = CLIPBOARDS
         except Exception:
             # log("gdk clipboard helper failure", exc_info=True)
-            log.error("Error: failed to setup clipboard helper", exc_info=True)
+            log.error(f"Error: failed to setup clipboard helper {clipboard_class!r}", exc_info=True)
             self.clipboard = False
 
     def parse_hello_ui_clipboard(self, ss) -> None:

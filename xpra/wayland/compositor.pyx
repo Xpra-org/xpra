@@ -21,7 +21,9 @@ from xpra.wayland.wlroots cimport (
     wlr_compositor_create, wlr_xdg_shell_create, wlr_scene_create,
     wl_display_add_socket_auto,
     wlr_backend_start,
-    wl_display_get_event_loop, wlr_renderer_init_wl_display, wlr_allocator_autocreate,
+    wl_event_loop, wl_display_get_event_loop, wl_event_loop_get_fd, wl_event_loop_dispatch,
+    wl_display_flush_clients,
+    wlr_renderer_init_wl_display, wlr_allocator_autocreate,
     wlr_renderer_autocreate, wlr_headless_backend_create,
     wlr_surface, wlr_texture, wlr_client_buffer, wlr_box, wlr_output, wlr_output_state,
     wlr_xdg_toplevel, wlr_xdg_surface,
@@ -357,7 +359,8 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
 # Python interface
 cdef class WaylandCompositor:
     cdef server srv
-    cdef const char* socket_name
+    cdef const char *socket_name
+    cdef wl_event_loop *event_loop
 
     def __cinit__(self):
         memset(&self.srv, 0, sizeof(server))
@@ -372,7 +375,8 @@ cdef class WaylandCompositor:
         if not self.srv.display:
             raise RuntimeError("Failed to create display")
 
-        self.srv.backend = wlr_headless_backend_create(wl_display_get_event_loop(self.srv.display))
+        self.event_loop = wl_display_get_event_loop(self.srv.display)
+        self.srv.backend = wlr_headless_backend_create(self.event_loop)
         if not self.srv.backend:
             raise RuntimeError("Failed to create headless backend")
 
@@ -411,6 +415,13 @@ cdef class WaylandCompositor:
         os.environ["WAYLAND_DISPLAY"] = self.socket_name.decode()
 
         return self.socket_name.decode('utf-8')
+
+    def get_event_loop_fd(self) -> int:
+        return wl_event_loop_get_fd(self.event_loop)
+
+    def process_events(self) -> None:
+        wl_event_loop_dispatch(self.event_loop, 0)
+        wl_display_flush_clients(self.srv.display)
 
     def run(self):
         """Run the compositor event loop"""
