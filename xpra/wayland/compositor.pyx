@@ -291,30 +291,30 @@ cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept nogil:
     with gil:
         log.info("XDG surface UNMAPPED")
 
-cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcept nogil:
+cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcept:
     cdef xdg_surface *surface = xdg_surface_from_destroy(listener)
+    toplevel = surface.wlr_xdg_surface.toplevel != NULL
 
-    with gil:
-        log.info("XDG surface DESTROYED")
+    log.info("XDG surface DESTROYED, toplevel=%s", bool(toplevel))
 
     wl_list_remove(&surface.map.link)
     wl_list_remove(&surface.unmap.link)
     wl_list_remove(&surface.destroy.link)
     wl_list_remove(&surface.commit.link)
-    wl_list_remove(&surface.request_move.link)
-    wl_list_remove(&surface.request_resize.link)
-    wl_list_remove(&surface.request_maximize.link)
-    wl_list_remove(&surface.request_fullscreen.link)
-    wl_list_remove(&surface.request_minimize.link)
-    wl_list_remove(&surface.set_title.link)
-    wl_list_remove(&surface.set_app_id.link)
+    if toplevel:
+        wl_list_remove(&surface.request_move.link)
+        wl_list_remove(&surface.request_resize.link)
+        wl_list_remove(&surface.request_maximize.link)
+        wl_list_remove(&surface.request_fullscreen.link)
+        wl_list_remove(&surface.request_minimize.link)
+        wl_list_remove(&surface.set_title.link)
+        wl_list_remove(&surface.set_app_id.link)
 
     if surface.pixels:
         free(surface.pixels)
     free(surface)
     if debug:
-        with gil:
-            log("xdg surface freed")
+        log("xdg surface freed")
 
 cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
     if debug:
