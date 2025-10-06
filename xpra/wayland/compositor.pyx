@@ -239,7 +239,8 @@ cdef void output_destroy_handler(wl_listener *listener, void *data) noexcept nog
     cdef output *out = output_from_destroy(listener)
     wl_list_remove(&out.frame.link)
     wl_list_remove(&out.destroy.link)
-    wl_list_remove(&out.link)
+    # out.link is for a list we don't manage:
+    # wl_list_remove(&out.link)
     free(out)
 
 cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
@@ -301,13 +302,19 @@ cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcep
     wl_list_remove(&surface.unmap.link)
     wl_list_remove(&surface.destroy.link)
     wl_list_remove(&surface.commit.link)
-    if toplevel:
+    if surface.request_move.link.next != NULL:
         wl_list_remove(&surface.request_move.link)
+    if surface.request_resize.link.next != NULL:
         wl_list_remove(&surface.request_resize.link)
+    if surface.request_maximize.link.next != NULL:
         wl_list_remove(&surface.request_maximize.link)
+    if surface.request_fullscreen.link.next != NULL:
         wl_list_remove(&surface.request_fullscreen.link)
+    if surface.request_minimize.link.next != NULL:
         wl_list_remove(&surface.request_minimize.link)
+    if surface.set_title.link.next != NULL:
         wl_list_remove(&surface.set_title.link)
+    if surface.set_app_id.link.next != NULL:
         wl_list_remove(&surface.set_app_id.link)
 
     if surface.pixels:
@@ -513,6 +520,13 @@ cdef class WaylandCompositor:
         """Clean up compositor resources"""
         if self.srv.display:
             wl_display_destroy_clients(self.srv.display)
+
+            if self.srv.new_xdg_surface.link.next != NULL:
+                wl_list_remove(&self.srv.new_xdg_surface.link)
+
+            if self.srv.new_output.link.next != NULL:
+                wl_list_remove(&self.srv.new_output.link)
+
             if self.srv.scene:
                 wlr_scene_node_destroy(&self.srv.scene.tree.node)
             if self.srv.allocator:
