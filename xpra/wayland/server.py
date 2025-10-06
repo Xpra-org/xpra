@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# This file is part of Xpra.
+# Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 from xpra.util.gobject import to_gsignals
 from xpra.wayland.compositor import WaylandCompositor
@@ -18,6 +22,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def __init__(self):
         GObject.GObject.__init__(self)
         ServerBase.__init__(self)
+        self.session_type: str = "wayland"
         self.compositor = WaylandCompositor()
         self.wayland_fd_source = 0
 
@@ -33,7 +38,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return "Wayland Display (details missing)"
 
     def wayland_io_callback(self, fd: int, condition):
-        log.info("wayland_io_callback%s", (fd, condition))
+        log("wayland_io_callback%s", (fd, condition))
         if condition & GLib.IO_IN:
             self.compositor.process_events()
         elif condition & GLib.IO_ERR:
@@ -41,13 +46,12 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return GLib.SOURCE_CONTINUE
 
     def do_run(self) -> None:
-        log.info("do_run()")
+        log("WaylandSeamlessServer.do_run()")
         self.compositor.initialize()
         fd = self.compositor.get_event_loop_fd()
         conditions = GLib.IO_IN | GLib.IO_ERR
-        log.info("wayland compositor event loop fd=%i", fd)
+        log("wayland compositor event loop fd=%i", fd)
         self.wayland_fd_source = GLib.unix_fd_add_full(GLib.PRIORITY_DEFAULT, fd, conditions, self.wayland_io_callback)
-        log.info("do_run()")
         super().do_run()
 
     def cleanup(self):
@@ -55,6 +59,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if fd:
             self.wayland_fd_source = 0
             GLib.source_remove(fd)
+        c = self.compositor
+        if c:
+            c.cleanup()
+            self.compositor = None
 
 
 GObject.type_register(WaylandSeamlessServer)
