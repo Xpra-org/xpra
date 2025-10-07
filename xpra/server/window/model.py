@@ -9,6 +9,7 @@ from collections.abc import Callable
 from xpra.os_util import gi_import
 from xpra.log import Logger
 from xpra.util.gobject import AutoPropGObjectMixin, PROPERTIES_DEBUG
+from xpra.util.str_fn import Ellipsizer
 
 log = Logger("x11", "window", "metadata")
 
@@ -97,7 +98,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         logger = self.get_logger(name)
         cur = self._gproperties.get(name, None)
         if name not in self._gproperties or cur != value:
-            logger("updateprop(%s, %s) previous value=%s", name, value, cur)
+            logger("updateprop(%s, %s) previous value=%s", name, Ellipsizer(value), Ellipsizer(cur))
             self._gproperties[name] = value
             if self._setup_done and self._managed:
                 self.notify(name)

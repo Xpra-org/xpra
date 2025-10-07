@@ -4,8 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.util.gobject import to_gsignals
-from xpra.wayland.compositor import WaylandCompositor
+from xpra.wayland.compositor import WaylandCompositor, add_event_listener
+from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -25,10 +28,76 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.session_type: str = "wayland"
         self.compositor = WaylandCompositor()
         self.wayland_fd_source = 0
+        self.register_events()
+        os.environ["GDK_BACKEND"] = "wayland"
+
+    def register_events(self) -> None:
+        add_event_listener("new-surface", self._new_surface)
+        add_event_listener("metadata", self._metadata)
+        add_event_listener("surface-pixels", self._surface_pixels)
+        add_event_listener("map", self._map)
+        add_event_listener("unmap", self._unmap)
+        add_event_listener("destroy", self._destroy)
+
+    def _new_surface(self, wid, role: str, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
+        window = Window()
+        window.setup()
+        window._internal_set_property("title", title)
+        window._internal_set_property("iconic", True)
+        window._internal_set_property("geometry", geom)
+        window._internal_set_property("pixel-data", b"")
+        self.do_add_new_window_common(wid, window)
+        if geom != (0, 0, 0, 0):
+            self._do_send_new_window_packet("new-window", window, geom)
+
+    def _metadata(self, wid, prop: str, value) -> None:
+        window = self._id_to_window.get(wid)
+        if not window:
+            log.warn("Warning: cannot set metadata %s=%r", prop, value)
+            log.warn(" window %i not found!", wid)
+            return
+        assert prop in ("title", "role")
+        window._internal_set_property(prop, value)
+
+    def _surface_pixels(self, wid: int, bdata: bytes) -> None:
+        window = self._id_to_window.get(wid)
+        if not window:
+            log.warn("Warning: cannot update window %i: not found!", wid)
+            return
+        window._updateprop("pixel-data", bdata)
+        self.refresh_window(window)
+
+    def _map(self, wid: int, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
+        window = self._id_to_window.get(wid)
+        if not window:
+            log.warn("Warning: cannot map window %i: not found!", wid)
+            return
+        old_geom = window.get_property("geometry")
+        window._updateprop("geometry", geom)
+        window._updateprop("title", title)
+        if old_geom == (0, 0, 0, 0):
+            self._do_send_new_window_packet("new-window", window, geom)
+
+    def _unmap(self, wid: int) -> None:
+        window = self._id_to_window.get(wid)
+        if not window:
+            return
+        window.set_property("iconic", True)
+
+    def _destroy(self, wid: int) -> None:
+        self._remove_wid(wid)
+
+    @staticmethod
+    def get_cursor_data() -> None:
+        return None
+
+    @staticmethod
+    def set_desktop_geometry(w: int, h: int) -> None:
+        pass
 
     @staticmethod
     def get_display_size():
-        return 1024, 768
+        return 3840, 2160
 
     @staticmethod
     def get_display_description() -> str:

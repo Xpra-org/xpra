@@ -189,6 +189,13 @@ class WindowServer(StubServerMixin):
 
     def _remove_window(self, window) -> int:
         wid = self._window_to_id[window]
+        self.do_remove_window(wid, window)
+
+    def _remove_wid(self, wid: int) -> int:
+        window = self._id_to_window[wid]
+        self.do_remove_window(wid, window)
+
+    def do_remove_window(self, wid: int, window) -> int:
         log("remove_window: %s - %s", wid, window)
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsConnection):
@@ -366,7 +373,42 @@ class WindowServer(StubServerMixin):
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
     def send_initial_windows(self, ss, sharing=False) -> None:
-        raise NotImplementedError()
+        # We send the new-window packets sorted by id because this sorts them
+        # from oldest to newest -- and preserving window creation order means
+        # that the earliest override-redirect windows will be on the bottom,
+        # which is usually how things work.  (I don't know that anyone cares
+        # about this kind of correctness at all, but hey, doesn't hurt.)
+        log("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
+        for wid in sorted(self._id_to_window.keys()):
+            window = self._id_to_window[wid]
+            if not window.is_managed():
+                # we keep references to windows that aren't meant to be displayed..
+                continue
+            # most of the code here is duplicated from the send functions,
+            # so we can send just to the new client and request damage
+            # just for the new client too:
+            if window.is_tray():
+                # code more or less duplicated from _send_new_tray_window_packet:
+                w, h = window.get_dimensions()
+                if ss.system_tray:
+                    ss.new_tray(wid, window, w, h)
+                    ss.damage(wid, window, 0, 0, w, h)
+                elif not sharing:
+                    # park it outside the visible area
+                    window.move_resize(-200, -200, w, h)
+            elif window.is_OR():
+                # code more or less duplicated from _send_new_or_window_packet:
+                x, y, w, h = window.get_property("geometry")
+                wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
+                ss.new_window("new-override-redirect", wid, window, x, y, w, h, wprops)
+                ss.damage(wid, window, 0, 0, w, h)
+            else:
+                # code more or less duplicated from send_new_window_packet:
+                if not sharing:
+                    window.hide()
+                x, y, w, h = window.get_property("geometry")
+                wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
+                ss.new_window("new-window", wid, window, x, y, w, h, wprops)
 
     ######################################################################
     # focus:

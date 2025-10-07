@@ -23,54 +23,58 @@ class Window(WindowModelStub):
             "current coordinates (x, y, w, h, border) for the window", "",
             GObject.ParamFlags.READABLE,
         ),
-        # bits per pixel
         "depth": (
             GObject.TYPE_INT,
             "window bit depth", "",
             -1, 64, -1,
             GObject.ParamFlags.READABLE,
         ),
-        # if the window depth is 32 bit
         "has-alpha": (
             GObject.TYPE_BOOLEAN,
             "Does the window use transparency", "",
             False,
             GObject.ParamFlags.READABLE,
         ),
-        # from WM_CLIENT_MACHINE
         "client-machine": (
             GObject.TYPE_PYOBJECT,
             "Host where client process is running", "",
             GObject.ParamFlags.READABLE,
         ),
-        # from XResGetClientPid
         "pid": (
             GObject.TYPE_INT,
             "PID of owning process", "",
             -1, 65535, -1,
             GObject.ParamFlags.READABLE,
         ),
-        # from _NET_WM_NAME or WM_NAME
         "title": (
             GObject.TYPE_PYOBJECT,
             "Window title", "",
             GObject.ParamFlags.READABLE,
         ),
-        # from WM_WINDOW_ROLE
         "role": (
             GObject.TYPE_PYOBJECT,
             "The window's role (ICCCM session management)", "",
             GObject.ParamFlags.READABLE,
         ),
-        # from WM_COMMAND
         "command": (
             GObject.TYPE_PYOBJECT,
             "Command used to start or restart the client", "",
             GObject.ParamFlags.READABLE,
         ),
+        "iconic": (
+            GObject.TYPE_BOOLEAN,
+            "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
+            True,
+            GObject.ParamFlags.READWRITE,
+        ),
+        "pixel-data": (
+            GObject.TYPE_PYOBJECT,
+            "Temporary holding place for pixel buffer", "",
+            GObject.ParamFlags.READABLE,
+        ),
     }
 
-    __common_signals__ = {
+    __gsignals__ = {
         # signals we emit:
         "unmanaged": one_arg_signal,
         "initiate-moveresize": one_arg_signal,
@@ -121,18 +125,28 @@ class Window(WindowModelStub):
             return
 
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper | None:
-        return None
+        assert x == 0 and y == 0
+        pixels = self._gproperties["pixel-data"]
+        x, y, w, h = self._gproperties["geometry"]
+        assert width == w and height == h
+        return ImageWrapper(0, 0, w, h, pixels, "BGRX", 24, w * 4)
 
     def get_dimensions(self) -> tuple[int, int]:
         # just extracts the size from the geometry:
-        return 800, 600
+        return self._gproperties["geometry"][2:4]
 
     def get_geometry(self) -> tuple[int, int, int, int]:
-        return 0, 0, 800, 600
+        return self._gproperties["geometry"]
 
     ################################
     # Actions
     ################################
+
+    def hide(self):
+        pass
+
+    def show(self):
+        pass
 
     def raise_window(self) -> None:
         pass

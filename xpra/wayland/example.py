@@ -30,9 +30,6 @@ def main():
     # Create compositor instance
     compositor = WaylandCompositor()
 
-    # Set pixel capture callback
-    compositor.set_pixel_callback(pixel_callback)
-
     # Initialize the compositor
     socket = compositor.initialize()
     print(f"Compositor initialized on socket: {socket}")

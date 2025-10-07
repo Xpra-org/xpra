@@ -6,12 +6,16 @@
 # cython: language_level=3
 
 import os
+from typing import Dict, List
 from collections.abc import Callable
 
 from xpra.log import Logger
+from xpra.util.str_fn import Ellipsizer
+
 from libc.stdlib cimport malloc, free, calloc
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t, uint64_t, uint8_t
+
 
 # Import definitions from .pxd file
 from xpra.wayland.wlroots cimport (
@@ -33,7 +37,8 @@ from xpra.wayland.wlroots cimport (
     wlr_surface, wlr_texture, wlr_client_buffer, wlr_box, wlr_output, wlr_output_state,
     wlr_xdg_toplevel, wlr_xdg_surface,
     wlr_texture_read_pixels_options, wlr_texture_read_pixels,
-    wlr_xdg_toplevel_resize_event, wlr_xdg_toplevel_set_size,
+    wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event,
+    wlr_xdg_toplevel_set_size,
     wlr_xdg_surface_schedule_configure,
     wlr_output_commit_state, wlr_output_state_finish,
     wlr_output_state_init, wlr_output_schedule_frame, wlr_output_init_render,
@@ -46,8 +51,33 @@ from xpra.wayland.wlroots cimport (
     WLR_XDG_SURFACE_ROLE_TOPLEVEL,
 )
 
-# Global Python callback storage
-cdef object g_pixel_callback = None
+# generic event listeners:
+event_listeners: Dict[str, List[Callable]] = {}
+
+
+def add_event_listener(event_name: str, callback: Callable) -> None:
+    global event_listeners
+    event_listeners.setdefault(event_name, []).append(callback)
+
+
+def remove_event_listener(event_name: str, callback: Callable) -> None:
+    global event_listeners
+    callbacks = event_listeners.get(event_name)
+    if not callbacks:
+        return
+    if callback not in callbacks:
+        return
+    callbacks.remove(callback)
+    if not callbacks:
+        event_listeners.pop(event_name)
+
+
+def emit(event_name: str, *args) -> None:
+    global event_listeners
+    callbacks = event_listeners.get(event_name, ())
+    log("emit%s callbacks=%s", Ellipsizer(tuple([event_name] + list(args))), callbacks)
+    for callback in callbacks:
+        callback(*args)
 
 
 # Internal structures
@@ -93,6 +123,10 @@ cdef struct xdg_surface:
     uint8_t *pixels
     int width
     int height
+    unsigned long wid
+
+
+cdef unsigned long wid = 0
 
 
 # Helper macros as inline functions with compile-time offset calculation
@@ -126,6 +160,26 @@ cdef inline xdg_surface* xdg_surface_from_destroy(wl_listener *listener) noexcep
 
 cdef inline xdg_surface* xdg_surface_from_commit(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).commit - <char*>0)
+    return <xdg_surface*>(<char*>listener - offset)
+
+cdef inline xdg_surface* xdg_surface_from_request_move(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_move - <char*>0)
+    return <xdg_surface*>(<char*>listener - offset)
+
+cdef inline xdg_surface* xdg_surface_from_request_resize(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_resize - <char*>0)
+    return <xdg_surface*>(<char*>listener - offset)
+
+cdef inline xdg_surface* xdg_surface_from_request_maximize(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_maximize - <char*>0)
+    return <xdg_surface*>(<char*>listener - offset)
+
+cdef inline xdg_surface* xdg_surface_from_request_fullscreen(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_fullscreen - <char*>0)
+    return <xdg_surface*>(<char*>listener - offset)
+
+cdef inline xdg_surface* xdg_surface_from_request_minimize(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_minimize - <char*>0)
     return <xdg_surface*>(<char*>listener - offset)
 
 cdef inline xdg_surface* xdg_surface_from_set_title(wl_listener *listener) noexcept nogil:
@@ -195,34 +249,11 @@ cdef void capture_surface_pixels(xdg_surface *surface) noexcept nogil:
         with gil:
             log.error("Error: failed to read texture pixels")
         return
-    cdef uint64_t sum_r = 0
-    cdef uint64_t sum_g = 0
-    cdef uint64_t sum_b = 0
-    cdef int total_pixels = width * height
-
-    cdef int i
-    for i in range(total_pixels):
-        sum_r += surface.pixels[i * 4 + 0]
-        sum_g += surface.pixels[i * 4 + 1]
-        sum_b += surface.pixels[i * 4 + 2]
 
     with gil:
-        log("Captured %ix%i pixels | Avg RGB: (%i, %i, %i)",
-            width, height,
-            sum_r / total_pixels,
-            sum_g / total_pixels,
-            sum_b / total_pixels)
+        bdata = surface.pixels[:width * height * 4]
+        emit("surface-pixels", surface.wid, bdata)
 
-    # Call Python callback if set
-    if g_pixel_callback is not None:
-        with gil:
-            try:
-                # Create memoryview of pixel data
-                # cdef uint8_t[:,:,::1] pixel_array = <uint8_t[:height,:width,:4]>surface.pixels
-                pixel_array = b""
-                g_pixel_callback(pixel_array, width, height)
-            except:
-                pass
 
 cdef void output_frame(wl_listener *listener, void *data) noexcept nogil:
     if debug:
@@ -231,6 +262,7 @@ cdef void output_frame(wl_listener *listener, void *data) noexcept nogil:
     cdef output *out = output_from_frame(listener)
     wlr_scene_output_commit(out.scene_output, NULL)
     wlr_output_schedule_frame(out.wlr_output)
+
 
 cdef void output_destroy_handler(wl_listener *listener, void *data) noexcept nogil:
     if debug:
@@ -242,6 +274,7 @@ cdef void output_destroy_handler(wl_listener *listener, void *data) noexcept nog
     # out.link is for a list we don't manage:
     # wl_list_remove(&out.link)
     free(out)
+
 
 cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
     cdef server *srv = server_from_new_output(listener)
@@ -274,29 +307,31 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
     with gil:
         log.info("Output %r initialized", name)
 
+
 cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
     cdef xdg_surface *surface = xdg_surface_from_map(listener)
     cdef wlr_xdg_toplevel *toplevel = surface.wlr_xdg_surface.toplevel
-
+    cdef wlr_box *geometry = &surface.wlr_xdg_surface.geometry
     with gil:
-        log.info("XDG surface MAPPED:")
-        if toplevel.title:
-            title = toplevel.title.decode("utf8")
-            log.info("  Title: %r", title)
-        if toplevel.app_id:
-            app_id = toplevel.app_id.decode("utf8")
-            log.info("  App ID: %r", app_id)
+        title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
+        app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
+        geom = (geometry.x, geometry.y, geometry.width, geometry.height)
+        log("XDG surface MAPPED: %r, geometry=%s", title, geom)
+        emit("map", surface.wid, title, app_id, geom)
+
 
 cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept nogil:
+    # cdef wlr_xdg_surface wx_surface = <wlr_xdg_surface*> data
     cdef xdg_surface *surface = xdg_surface_from_unmap(listener)
     with gil:
-        log.info("XDG surface UNMAPPED")
+        log("XDG surface UNMAPPED")
+        emit("unmap", surface.wid)
+
 
 cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcept:
     cdef xdg_surface *surface = xdg_surface_from_destroy(listener)
     toplevel = surface.wlr_xdg_surface.toplevel != NULL
-
-    log.info("XDG surface DESTROYED, toplevel=%s", bool(toplevel))
+    log("XDG surface DESTROYED, toplevel=%s", bool(toplevel))
 
     wl_list_remove(&surface.map.link)
     wl_list_remove(&surface.unmap.link)
@@ -319,9 +354,12 @@ cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcep
 
     if surface.pixels:
         free(surface.pixels)
+    cdef unsigned long wid = surface.wid
     free(surface)
     if debug:
         log("xdg surface freed")
+        emit("destroy", wid)
+
 
 cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
     if debug:
@@ -339,31 +377,53 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
     if xdg_surface.surface.mapped:
         capture_surface_pixels(surface)
 
+
 cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept nogil:
+    cdef xdg_surface *surface = xdg_surface_from_request_move(listener)
+    cdef wlr_xdg_toplevel_move_event *event = <wlr_xdg_toplevel_move_event*> data
     if debug:
         with gil:
             log("Surface REQUEST MOVE")
+    with gil:
+        emit("move", surface.wid, event.serial)
+
 
 cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept nogil:
+    cdef xdg_surface *surface = xdg_surface_from_request_resize(listener)
     cdef wlr_xdg_toplevel_resize_event *event = <wlr_xdg_toplevel_resize_event*>data
     if debug:
         with gil:
             log("Surface REQUEST RESIZE (edges: %d)", event.edges)
+    with gil:
+        emit("resize", surface.wid, event.serial)
+
 
 cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept nogil:
+    cdef xdg_surface *surface = xdg_surface_from_request_maximize(listener)
     if debug:
         with gil:
             log("Surface REQUEST MAXIMIZE")
+    with gil:
+        emit("maximize", surface.wid)
+
 
 cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noexcept nogil:
+    cdef xdg_surface *surface = xdg_surface_from_request_fullscreen(listener)
     if debug:
         with gil:
             log("Surface REQUEST FULLSCREEN")
+    with gil:
+        emit("fullscreen", surface.wid)
+
 
 cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexcept nogil:
+    cdef xdg_surface *surface = xdg_surface_from_request_minimize(listener)
     if debug:
         with gil:
             log("Surface REQUEST MINIMIZE")
+    with gil:
+        emit("minimize", surface.wid)
+
 
 cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noexcept nogil:
     cdef xdg_surface *surface = xdg_surface_from_set_title(listener)
@@ -371,11 +431,13 @@ cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noex
         with gil:
             log.info("Surface SET TITLE: %s", surface.wlr_xdg_surface.toplevel.title)
 
+
 cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept nogil:
     cdef xdg_surface *surface = xdg_surface_from_set_app_id(listener)
     if surface.wlr_xdg_surface.toplevel.app_id:
         with gil:
             log.info("Surface SET APP_ID: %s", surface.wlr_xdg_surface.toplevel.app_id)
+
 
 cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     cdef server *srv = server_from_new_xdg_surface(listener)
@@ -393,6 +455,10 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     surface.pixels = NULL
     surface.width = 0
     surface.height = 0
+    global wid
+    wid += 1
+    surface.wid = wid
+    log("allocated wid=%i", wid)
 
     surface.scene_tree = wlr_scene_xdg_surface_create(&srv.scene.tree, xdg_surf)
 
@@ -408,31 +474,40 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     surface.commit.notify = xdg_surface_commit
     wl_signal_add(&xdg_surf.surface.events.commit, &surface.commit)
 
-    if xdg_surf.toplevel:
+    cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
+    log("toplevel=%#x", <uintptr_t> toplevel)
+    if toplevel:
         log.info("Surface has toplevel, attaching toplevel handlers")
 
         surface.request_move.notify = xdg_toplevel_request_move
-        wl_signal_add(&xdg_surf.toplevel.events.request_move, &surface.request_move)
+        wl_signal_add(&toplevel.events.request_move, &surface.request_move)
 
         surface.request_resize.notify = xdg_toplevel_request_resize
-        wl_signal_add(&xdg_surf.toplevel.events.request_resize, &surface.request_resize)
+        wl_signal_add(&toplevel.events.request_resize, &surface.request_resize)
 
         surface.request_maximize.notify = xdg_toplevel_request_maximize
-        wl_signal_add(&xdg_surf.toplevel.events.request_maximize, &surface.request_maximize)
+        wl_signal_add(&toplevel.events.request_maximize, &surface.request_maximize)
 
         surface.request_fullscreen.notify = xdg_toplevel_request_fullscreen
-        wl_signal_add(&xdg_surf.toplevel.events.request_fullscreen, &surface.request_fullscreen)
+        wl_signal_add(&toplevel.events.request_fullscreen, &surface.request_fullscreen)
 
         surface.request_minimize.notify = xdg_toplevel_request_minimize
-        wl_signal_add(&xdg_surf.toplevel.events.request_minimize, &surface.request_minimize)
+        wl_signal_add(&toplevel.events.request_minimize, &surface.request_minimize)
 
         surface.set_title.notify = xdg_toplevel_set_title_handler
-        wl_signal_add(&xdg_surf.toplevel.events.set_title, &surface.set_title)
+        wl_signal_add(&toplevel.events.set_title, &surface.set_title)
 
         surface.set_app_id.notify = xdg_toplevel_set_app_id_handler
-        wl_signal_add(&xdg_surf.toplevel.events.set_app_id, &surface.set_app_id)
+        wl_signal_add(&toplevel.events.set_app_id, &surface.set_app_id)
 
     log("All listeners attached")
+    role = "toplevel" if xdg_surf.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL else ""
+    title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
+    app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
+    log("configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
+    geom = (xdg_surf.geometry.x, xdg_surf.geometry.y, xdg_surf.geometry.width, xdg_surf.geometry.height)
+    log("geometry=%s", geom)
+    emit("new-surface", wid, role, title, app_id, geom)
 
 
 # Python interface
@@ -506,15 +581,6 @@ cdef class WaylandCompositor:
         """Run the compositor event loop"""
         log.info("Entering main event loop...")
         wl_display_run(self.srv.display)
-
-    def set_pixel_callback(self, callback: Callable):
-        """Set a callback to be called when pixels are captured
-
-        The callback should accept (pixel_array, width, height) where
-        pixel_array is a numpy-compatible memoryview of shape (height, width, 4)
-        """
-        global g_pixel_callback
-        g_pixel_callback = callback
 
     def cleanup(self) -> None:
         """Clean up compositor resources"""
