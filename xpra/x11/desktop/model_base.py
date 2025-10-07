@@ -11,9 +11,9 @@ from xpra.util.system import get_generic_os_name
 from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.util.gobject import no_arg_signal, one_arg_signal
+from xpra.server.window.model import WindowModelStub
 from xpra.x11.error import xlog
 from xpra.x11.common import get_wm_name, X11Event
-from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.damage import WindowDamageHandler
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
