@@ -96,43 +96,43 @@ cdef struct xdg_surface:
 
 
 # Helper macros as inline functions with compile-time offset calculation
-cdef inline output* output_from_frame(wl_listener *listener) nogil:
+cdef inline output* output_from_frame(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<output*>0).frame - <char*>0)
     return <output*>(<char*>listener - offset)
 
-cdef inline output* output_from_destroy(wl_listener *listener) nogil:
+cdef inline output* output_from_destroy(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<output*>0).destroy - <char*>0)
     return <output*>(<char*>listener - offset)
 
-cdef inline server* server_from_new_output(wl_listener *listener) nogil:
+cdef inline server* server_from_new_output(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<server*>0).new_output - <char*>0)
     return <server*>(<char*>listener - offset)
 
-cdef inline server* server_from_new_xdg_surface(wl_listener *listener) nogil:
+cdef inline server* server_from_new_xdg_surface(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<server*>0).new_xdg_surface - <char*>0)
     return <server*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_map(wl_listener *listener) nogil:
+cdef inline xdg_surface* xdg_surface_from_map(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).map - <char*>0)
     return <xdg_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_unmap(wl_listener *listener) nogil:
+cdef inline xdg_surface* xdg_surface_from_unmap(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).unmap - <char*>0)
     return <xdg_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_destroy(wl_listener *listener) nogil:
+cdef inline xdg_surface* xdg_surface_from_destroy(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).destroy - <char*>0)
     return <xdg_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_commit(wl_listener *listener) nogil:
+cdef inline xdg_surface* xdg_surface_from_commit(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).commit - <char*>0)
     return <xdg_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_set_title(wl_listener *listener) nogil:
+cdef inline xdg_surface* xdg_surface_from_set_title(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).set_title - <char*>0)
     return <xdg_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_set_app_id(wl_listener *listener) nogil:
+cdef inline xdg_surface* xdg_surface_from_set_app_id(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).set_app_id - <char*>0)
     return <xdg_surface*>(<char*>listener - offset)
 
