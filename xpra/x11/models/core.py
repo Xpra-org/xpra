@@ -315,7 +315,6 @@ class CoreX11WindowModel(WindowModelStub):
         self.xid: int = xid
         self._composite = None
         self._damage_forward_handle = None
-        self._setup_done = False
         self._kill_count = 0
         self._xshape = False
         self._shape_timer = 0
