@@ -447,8 +447,23 @@ cdef extern from "wlr/types/wlr_xdg_shell.h":
         char *app_id
         wlr_xdg_toplevel_events events
         wlr_xdg_toplevel_requested requested
+    ctypedef struct wlr_seat_client:
+        pass
+    cdef struct wlr_xdg_toplevel_move_event:
+        wlr_xdg_toplevel *toplevel
+        wlr_seat_client *seat
+        uint32_t serial
     cdef struct wlr_xdg_toplevel_resize_event:
-        int edges
+        wlr_xdg_toplevel *toplevel
+        wlr_seat_client *seat
+        uint32_t serial
+        uint32_t edges
+    cdef struct wlr_xdg_toplevel_show_window_menu_event:
+        wlr_xdg_toplevel *toplevel
+        wlr_seat_client *seat
+        uint32_t serial
+        int32_t x
+        int32_t y
 
     ctypedef struct wlr_xdg_shell_events:
         wl_signal new_surface
