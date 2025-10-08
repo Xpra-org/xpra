@@ -179,7 +179,7 @@ class GTKServerBase(ServerBase):
             return
         self.cursor_suspended = False
         ss = self.get_server_source(proto)
-        if ss:
+        if ss and hasattr(ss, "send_cursor"):
             ss.send_cursor()
 
     def do_get_info(self, proto, *args) -> dict[str, Any]:
