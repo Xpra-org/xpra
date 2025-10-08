@@ -613,18 +613,25 @@ cdef class WaylandCompositor:
 
         if self.srv.scene:
             wlr_scene_node_destroy(&self.srv.scene.tree.node)
+            self.srv.scene = NULL
         if self.srv.cursor:
             wlr_cursor_destroy(self.srv.cursor)
+            self.srv.cursor = NULL
         if self.srv.output_layout:
             wlr_output_layout_destroy(self.srv.output_layout)
+            self.srv.output_layout = NULL
         if self.srv.seat:
             wlr_seat_destroy(self.srv.seat)
+            self.srv.seat = NULL
         if self.srv.allocator:
             wlr_allocator_destroy(self.srv.allocator)
+            self.srv.allocator = NULL
         if self.srv.renderer:
             wlr_renderer_destroy(self.srv.renderer)
+            self.srv.renderer = NULL
         if self.srv.backend:
             wlr_backend_destroy(self.srv.backend)
+            self.srv.backend = NULL
         wl_display_destroy(self.srv.display)
         self.srv.display = NULL
 
