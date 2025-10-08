@@ -17,7 +17,7 @@ class NoPointerDevice:
 
     @staticmethod
     def move_pointer(x: int, y: int, props: dict) -> None:
-        log("npointer.move_pointer%s", (x, y, props))
+        log("nopointer.move_pointer%s", (x, y, props))
 
     @staticmethod
     def get_position() -> tuple[int, int]:
@@ -25,7 +25,7 @@ class NoPointerDevice:
 
     @staticmethod
     def click(button: int, pressed: bool, props: dict) -> None:
-        log("npointer.click(%i, %s, %s)", button, pressed, props)
+        log("nopointer.click(%i, %s, %s)", button, pressed, props)
 
     @staticmethod
     def wheel_motion(button: int, distance: float) -> None:
