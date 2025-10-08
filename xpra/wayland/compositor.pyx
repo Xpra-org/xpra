@@ -11,10 +11,12 @@ from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.util.str_fn import Ellipsizer
+from xpra.codecs.image import ImageWrapper
 
 from libc.stdlib cimport malloc, free, calloc
 from libc.string cimport memset
-from libc.stdint cimport uintptr_t, uint64_t, uint8_t
+from libc.stdint cimport uintptr_t, uint64_t, uint32_t, uint8_t
+from xpra.buffers.membuf cimport getbuf, MemBuf
 
 
 # Import definitions from .pxd file
@@ -120,7 +122,6 @@ cdef struct xdg_surface:
     wl_listener set_title
     wl_listener set_app_id
 
-    uint8_t *pixels
     int width
     int height
     unsigned long wid
@@ -196,11 +197,10 @@ cdef bint debug = log.is_debug_enabled()
 
 
 # Callback implementations
-cdef void capture_surface_pixels(xdg_surface *surface) noexcept nogil:
+cdef void capture_surface_pixels(xdg_surface *surface) noexcept:
     cdef wlr_surface *wlr_surface = surface.wlr_xdg_surface.surface
     cdef wlr_client_buffer *client_buffer
     cdef wlr_texture *texture
-    cdef int width, height
     cdef wlr_box src_box
     cdef wlr_texture_read_pixels_options opts
 
@@ -213,25 +213,16 @@ cdef void capture_surface_pixels(xdg_surface *surface) noexcept nogil:
     if not texture:
         return
 
-    width = texture.width
-    height = texture.height
+    cdef uint32_t width = texture.width
+    cdef uint32_t height = texture.height
+    cdef uint32_t stride = width * 4
+    cdef uint32_t texture_size = stride * height
+    cdef MemBuf texture_buffer = getbuf(texture_size, 0)
+    log("Allocated pixel buffer: %dx%d (%d bytes)", width, height, texture_size)
 
-    if surface.width != width or surface.height != height:
-        if surface.pixels:
-            free(surface.pixels)
-        surface.width = width
-        surface.height = height
-        surface.pixels = <uint8_t*> malloc(width * height * 4)
-
-        with gil:
-            if not surface.pixels:
-                log.error("Error: failed to allocate pixel buffer")
-                return
-            log("Allocated pixel buffer: %dx%d (%d bytes)", width, height, width * height * 4)
-
-    opts.data = surface.pixels
+    opts.data = <void*> texture_buffer.get_mem()
     opts.format = DRM_FORMAT_ABGR8888
-    opts.stride = width * 4
+    opts.stride = stride
     opts.dst_x = 0
     opts.dst_y = 0
     # we can't modify src_box because it is declared as const,
@@ -244,15 +235,16 @@ cdef void capture_surface_pixels(xdg_surface *surface) noexcept nogil:
     iptr = <int*> &opts.src_box.height
     iptr[0] = height
 
-    cdef bint success = wlr_texture_read_pixels(texture, &opts)
+    cdef bint success
+    with nogil:
+        success = wlr_texture_read_pixels(texture, &opts)
     if not success:
-        with gil:
-            log.error("Error: failed to read texture pixels")
+        log.error("Error: failed to read texture pixels")
         return
 
-    with gil:
-        bdata = surface.pixels[:width * height * 4]
-        emit("surface-pixels", surface.wid, bdata)
+    pixels = memoryview(texture_buffer)
+    image = ImageWrapper(0, 0, width, height, pixels, "BGRA", 32, stride)
+    emit("surface-image", surface.wid, image)
 
 
 cdef void output_frame(wl_listener *listener, void *data) noexcept nogil:
@@ -352,8 +344,6 @@ cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcep
     if surface.set_app_id.link.next != NULL:
         wl_list_remove(&surface.set_app_id.link)
 
-    if surface.pixels:
-        free(surface.pixels)
     cdef unsigned long wid = surface.wid
     free(surface)
     if debug:
@@ -375,7 +365,8 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
         wlr_xdg_surface_schedule_configure(xdg_surface)
 
     if xdg_surface.surface.mapped:
-        capture_surface_pixels(surface)
+        with gil:
+            capture_surface_pixels(surface)
 
 
 cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept nogil:
@@ -452,7 +443,6 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     surface = <xdg_surface*>calloc(1, sizeof(xdg_surface))
     surface.srv = srv
     surface.wlr_xdg_surface = xdg_surf
-    surface.pixels = NULL
     surface.width = 0
     surface.height = 0
     global wid

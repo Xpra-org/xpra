@@ -6,6 +6,7 @@
 
 import os
 
+from xpra.codecs.image import ImageWrapper
 from xpra.util.gobject import to_gsignals
 from xpra.wayland.compositor import WaylandCompositor, add_event_listener
 from xpra.wayland.models.window import Window
@@ -34,7 +35,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def register_events(self) -> None:
         add_event_listener("new-surface", self._new_surface)
         add_event_listener("metadata", self._metadata)
-        add_event_listener("surface-pixels", self._surface_pixels)
+        add_event_listener("surface-image", self._surface_image)
         add_event_listener("map", self._map)
         add_event_listener("unmap", self._unmap)
         add_event_listener("destroy", self._destroy)
@@ -59,12 +60,15 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         assert prop in ("title", "role")
         window._internal_set_property(prop, value)
 
-    def _surface_pixels(self, wid: int, bdata: bytes) -> None:
+    def _surface_image(self, wid: int, image: ImageWrapper) -> None:
         window = self._id_to_window.get(wid)
         if not window:
             log.warn("Warning: cannot update window %i: not found!", wid)
             return
-        window._updateprop("pixel-data", bdata)
+        prev_image = window._gproperties.get("image")
+        window._updateprop("image", image)
+        if prev_image:
+            prev_image.free()
         self.refresh_window(window)
 
     def _map(self, wid: int, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:

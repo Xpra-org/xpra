@@ -67,9 +67,9 @@ class Window(WindowModelStub):
             True,
             GObject.ParamFlags.READWRITE,
         ),
-        "pixel-data": (
+        "image": (
             GObject.TYPE_PYOBJECT,
-            "Temporary holding place for pixel buffer", "",
+            "ImageWrapper of the surface pixels", "",
             GObject.ParamFlags.READABLE,
         ),
     }
@@ -126,10 +126,10 @@ class Window(WindowModelStub):
 
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper | None:
         assert x == 0 and y == 0
-        pixels = self._gproperties["pixel-data"]
+        image = self._gproperties["image"]
         x, y, w, h = self._gproperties["geometry"]
         assert width == w and height == h
-        return ImageWrapper(0, 0, w, h, pixels, "BGRX", 24, w * 4)
+        return image
 
     def get_dimensions(self) -> tuple[int, int]:
         # just extracts the size from the geometry:
