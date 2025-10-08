@@ -118,6 +118,10 @@ cdef extern from "wayland-server-protocol.h":
         WL_POINTER_AXIS_SOURCE_CONTINUOUS
         WL_POINTER_AXIS_SOURCE_WHEEL_TILT
 
+    cdef enum wl_keyboard_key_state:
+        WL_KEYBOARD_KEY_STATE_RELEASED
+        WL_KEYBOARD_KEY_STATE_PRESSED
+
 
 cdef extern from "wlr/util/box.h":
     cdef struct wlr_box:
@@ -441,6 +445,43 @@ cdef extern from "wlr/types/wlr_seat.h":
     void wlr_seat_pointer_notify_axis(wlr_seat *seat, uint32_t time_msec, wl_pointer_axis orientation,
                                        double value, int32_t value_discrete, wl_pointer_axis_source source,
                                        wl_pointer_axis_relative_direction relative_direction)
+
+    void wlr_seat_keyboard_notify_key(wlr_seat *seat, uint32_t time_msec, uint32_t key, uint32_t state)
+    void wlr_seat_keyboard_notify_modifiers(wlr_seat *seat, wlr_keyboard_modifiers *modifiers)
+    void wlr_seat_keyboard_notify_enter(wlr_seat *seat, wlr_surface *surface,
+                                        uint32_t *keycodes, size_t num_keycodes, wlr_keyboard_modifiers *modifiers)
+    void wlr_seat_set_keyboard(wlr_seat *seat, wlr_input_device *dev)
+
+    wlr_keyboard* wlr_seat_get_keyboard(wlr_seat *seat)
+
+
+cdef extern from "wlr/types/wlr_keyboard.h":
+    cdef struct wlr_keyboard_modifiers:
+        uint32_t depressed
+        uint32_t latched
+        uint32_t locked
+        uint32_t group
+
+    cdef struct wlr_keyboard:
+        wlr_keyboard_modifiers modifiers
+        # ... other fields
+
+    enum wlr_keyboard_modifier:
+        WLR_MODIFIER_SHIFT
+        WLR_MODIFIER_CAPS
+        WLR_MODIFIER_CTRL
+        WLR_MODIFIER_ALT
+        WLR_MODIFIER_MOD2
+        WLR_MODIFIER_MOD3
+        WLR_MODIFIER_LOGO
+        WLR_MODIFIER_MOD5
+
+    void wlr_seat_keyboard_notify_key(wlr_seat *seat, uint32_t time_msec, uint32_t key, uint32_t state)
+    void wlr_seat_keyboard_notify_modifiers(wlr_seat *seat, wlr_keyboard_modifiers *modifiers)
+    void wlr_seat_keyboard_notify_enter(wlr_seat *seat, wlr_surface *surface, uint32_t *keycodes,
+                                        size_t num_keycodes, wlr_keyboard_modifiers *modifiers)
+    void wlr_seat_set_keyboard(wlr_seat *seat, wlr_input_device *dev)
+    wlr_keyboard* wlr_seat_get_keyboard(wlr_seat *seat)
 
 
 cdef extern from "wlr/types/wlr_cursor.h":

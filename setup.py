@@ -2913,6 +2913,8 @@ tace(wayland_server_ENABLED, "xpra.wayland.compositor", "wlroots-0.19,libdrm,way
      extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
 tace(wayland_server_ENABLED, "xpra.wayland.pointer", "wlroots-0.19,wayland-server",
      extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
+tace(wayland_server_ENABLED, "xpra.wayland.keyboard", "wlroots-0.19,wayland-server",
+     extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
 toggle_packages(wayland_server_ENABLED, "xpra.wayland.models")
 
 if cythonize_more_ENABLED:

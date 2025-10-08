@@ -43,6 +43,17 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         add_event_listener("unmap", self._unmap)
         add_event_listener("destroy", self._destroy)
 
+    def make_keyboard_device(self):
+        return self.compositor.get_keyboard_device()
+
+    @staticmethod
+    def get_keyboard_config(props=None):
+        # p = typedict(props or {})
+        from xpra.wayland.keyboard_config import KeyboardConfig
+        keyboard_config = KeyboardConfig()
+        log("get_keyboard_config(..)=%s", keyboard_config)
+        return keyboard_config
+
     def make_pointer_device(self):
         return self.compositor.get_pointer_device()
 

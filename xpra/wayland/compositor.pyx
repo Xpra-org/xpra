@@ -18,6 +18,7 @@ from libc.string cimport memset
 from libc.stdint cimport uintptr_t, uint64_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport getbuf, MemBuf
 from xpra.wayland.pointer import WaylandPointer
+from xpra.wayland.keyboard import WaylandKeyboard
 
 
 # Import definitions from .pxd file
@@ -522,7 +523,6 @@ cdef class WaylandCompositor:
         self.socket_name = ""
 
     def initialize(self) -> None:
-        """Initialize the compositor"""
         log.info("Starting headless compositor...")
 
         self.srv.display = wl_display_create()
@@ -636,8 +636,10 @@ cdef class WaylandCompositor:
         self.srv.display = NULL
 
     def get_pointer_device(self):
-        return None
-        # return WaylandPointer(<uintptr_t> self.srv.seat, <uintptr_t> self.srv.cursor)
+        return None #WaylandPointer(<uintptr_t> self.srv.seat, <uintptr_t> self.srv.cursor)
+
+    def get_keyboard_device(self):
+        return None #WaylandKeyboard(<uintptr_t> self.srv.seat)
 
     def __dealloc__(self):
         self.cleanup()
