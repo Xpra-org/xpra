@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+# Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+from time import monotonic
+from typing import Tuple
+
+from xpra.log import Logger
+
+from libc.stdint cimport uintptr_t, uint64_t, uint32_t, int32_t
+from xpra.wayland.wlroots cimport (
+    wlr_cursor, wlr_seat, wlr_surface, wlr_xdg_surface,
+    wlr_axis_orientation, wlr_button_state,
+    wlr_cursor_warp, wlr_cursor_move,
+    wlr_seat_pointer_notify_motion, wlr_seat_pointer_notify_button, wlr_seat_pointer_notify_axis,
+    wlr_seat_pointer_notify_enter, wlr_seat_pointer_notify_frame,
+    wlr_seat_pointer_notify_clear_focus,
+    wlr_button_state, wlr_axis_orientation,
+    WLR_BUTTON_PRESSED, WLR_BUTTON_RELEASED,
+    WL_POINTER_AXIS_VERTICAL_SCROLL,
+    WL_POINTER_AXIS_SOURCE_WHEEL, WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL
+)
+
+
+log = Logger("wayland", "pointer")
+
+base_time = monotonic()
+
+
+cdef uint32_t get_time_msec():
+    return round((monotonic() - base_time) * 1000)
+
+
+cdef class WaylandPointer:
+    cdef wlr_cursor *cursor
+    cdef wlr_seat *seat
+
+    def __init__(self, uintptr_t seat_ptr, uintptr_t cursor_ptr):
+        self.seat = <wlr_seat*>seat_ptr
+        self.cursor = <wlr_cursor*>cursor_ptr
+
+    def has_precise_wheel(self) -> bool:
+        return True
+
+    def get_position(self) -> Tuple[int, int]:
+        return self.cursor.x, self.cursor.y
+
+    def move_pointer(self, x: int, y: int, props: dict) -> None:
+        log("move_pointer(%i, %i, %s)", x, y, props)
+        self.cursor.x = x
+        self.cursor.y = y
+        # wlr_cursor_warp(self.cursor, NULL, x, y)
+        cdef uint32_t time = get_time_msec()
+        wlr_seat_pointer_notify_motion(self.seat, time, x, y)
+        wlr_seat_pointer_notify_frame(self.seat)
+        # requires a device?
+        # wlr_cursor_move(self.cursor, NULL, delta_x, delta_y)
+
+    def enter_surface(self, uintptr_t xdg_surface_ptr, x: int, y: int) -> bool:
+        cdef wlr_xdg_surface *xdg_surface = <wlr_xdg_surface*> xdg_surface_ptr
+        cdef wlr_surface *surface = xdg_surface.surface
+        if not surface:
+            log("surface is NULL")
+            return False
+        if not surface.mapped:
+            log("surface is not mapped")
+            return False
+        log("enter_surface(%#x, %i, %i) surface=%#x", xdg_surface_ptr, x, y, <uintptr_t> surface)
+        wlr_seat_pointer_notify_enter(self.seat, surface, x, y)
+        return True
+
+    def leave_surface(self):
+        wlr_seat_pointer_notify_clear_focus(self.seat)
+
+    def click(self, button: int, pressed: bool, props: dict) -> None:
+        cdef uint32_t time = get_time_msec()
+        cdef wlr_button_state state = WLR_BUTTON_PRESSED if pressed else WLR_BUTTON_RELEASED
+        wlr_seat_pointer_notify_button(self.seat, time, button, state)
+        wlr_seat_pointer_notify_frame(self.seat)
+
+    def wheel_motion(self, button: int, distance: float) -> None:
+        cdef uint32_t time = get_time_msec()
+        wlr_seat_pointer_notify_axis(self.seat, time, WL_POINTER_AXIS_VERTICAL_SCROLL,
+                                     distance, round(distance),
+                                     WL_POINTER_AXIS_SOURCE_WHEEL, WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL)
+        wlr_seat_pointer_notify_frame(self.seat)

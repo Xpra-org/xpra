@@ -2911,6 +2911,8 @@ if wayland_server_ENABLED and not os.path.exists("./xpra/wayland/xdg-shell-proto
                     "./xpra/wayland/xdg-shell-protocol.h"])
 tace(wayland_server_ENABLED, "xpra.wayland.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1",
      extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
+tace(wayland_server_ENABLED, "xpra.wayland.pointer", "wlroots-0.19,wayland-server",
+     extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
 toggle_packages(wayland_server_ENABLED, "xpra.wayland.models")
 
 if cythonize_more_ENABLED:

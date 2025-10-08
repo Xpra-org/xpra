@@ -170,10 +170,7 @@ tests/unittests/test-file*
 /xpra/x11/models/*.c
 /xpra/x11/server/*.c
 /xpra/x11/*.c
-/xpra/wayland/wait_for_display.c
-/xpra/wayland/wait.c
-/xpra/wayland/compositor.c
-/xpra/wayland/wlroots.c
+/xpra/wayland/*.c
 /xpra/wayland/xdg-shell-protocol.h
 /xpra/*.c
 

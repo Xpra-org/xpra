@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections.abc import Sequence
 
 from xpra.codecs.image import ImageWrapper
 from xpra.util.gobject import to_gsignals
@@ -29,6 +30,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.session_type: str = "wayland"
         self.compositor = WaylandCompositor()
         self.wayland_fd_source = 0
+        self.focused = 0
+        self.pointer_focus = 0
         self.register_events()
         os.environ["GDK_BACKEND"] = "wayland"
 
@@ -40,9 +43,47 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         add_event_listener("unmap", self._unmap)
         add_event_listener("destroy", self._destroy)
 
-    def _new_surface(self, wid, role: str, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
+    def make_pointer_device(self):
+        return self.compositor.get_pointer_device()
+
+    def _focus(self, _server_source, wid: int, modifiers) -> None:
+        if self.focused == wid:
+            return
+        surface = self.get_surface(wid)
+        if surface:
+            self.focused = wid
+
+    def get_surface(self, wid: int) -> int:
+        window = self._id_to_window.get(wid)
+        if not window:
+            return 0
+        return window._gproperties["surface"]
+
+    def set_pointer_focus(self, wid: int, pointer: Sequence) -> bool:
+        log("set_pointer_focus(%i) current focus=%i", wid, self.pointer_focus)
+        if self.pointer_focus == wid:
+            return True
+        if self.pointer_focus:
+            self.pointer_device.leave_surface()
+            self.pointer_focus = 0
+        surface = self.get_surface(wid)
+        log("surface(%i)=%#x", wid, surface)
+        if surface and len(pointer) >= 4:
+            x, y = pointer[2:4]
+            if self.pointer_device.enter_surface(surface, x, y):
+                self.pointer_focus = wid
+                return True
+        return False
+
+    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
+        self.set_pointer_focus(wid, pointer)
+        log("pointer: %r",pointer)
+        return super().do_process_mouse_common(proto, device_id, wid, pointer, props)
+
+    def _new_surface(self, surface, wid, role: str, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
         window = Window()
         window.setup()
+        window._internal_set_property("surface", surface)
         window._internal_set_property("title", title)
         window._internal_set_property("iconic", True)
         window._internal_set_property("geometry", geom)

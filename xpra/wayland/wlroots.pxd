@@ -104,6 +104,20 @@ cdef extern from "wayland-server-protocol.h":
         WL_OUTPUT_TRANSFORM_FLIPPED_180
         WL_OUTPUT_TRANSFORM_FLIPPED_270
 
+    cdef enum wl_pointer_axis:
+        WL_POINTER_AXIS_VERTICAL_SCROLL
+        WL_POINTER_AXIS_HORIZONTAL_SCROLL
+
+    cdef enum wl_pointer_axis_relative_direction:
+        WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL
+        WL_POINTER_AXIS_RELATIVE_DIRECTION_INVERTED
+
+    cdef enum wl_pointer_axis_source:
+        WL_POINTER_AXIS_SOURCE_WHEEL
+        WL_POINTER_AXIS_SOURCE_FINGER
+        WL_POINTER_AXIS_SOURCE_CONTINUOUS
+        WL_POINTER_AXIS_SOURCE_WHEEL_TILT
+
 
 cdef extern from "wlr/util/box.h":
     cdef struct wlr_box:
@@ -389,6 +403,95 @@ cdef extern from "wlr/types/wlr_output.h":
     void wlr_output_state_init(wlr_output_state *state) nogil
     int wlr_output_commit_state(wlr_output *output, const wlr_output_state *state) nogil
     void wlr_output_state_finish(wlr_output_state *state) nogil
+
+
+cdef extern from "wlr/types/wlr_output_layout.h":
+    cdef struct wlr_output_layout:
+        pass
+
+    wlr_output_layout* wlr_output_layout_create(wl_display *display)
+    void wlr_output_layout_destroy(wlr_output_layout *layout)
+    void wlr_output_layout_add_auto(wlr_output_layout *layout, wlr_output *output) nogil
+
+
+cdef extern from "wlr/types/wlr_seat.h":
+    cdef struct wlr_seat:
+        pass
+
+    ctypedef struct wlr_input_device:
+        pass
+
+    cdef enum wlr_button_state:
+        WLR_BUTTON_RELEASED
+        WLR_BUTTON_PRESSED
+
+    cdef struct wlr_axis_orientation:
+        int32_t acc_discrete[2]
+        int32_t last_discrete[2]
+        double acc_axis
+
+    wlr_seat* wlr_seat_create(wl_display *display, const char *name)
+    void wlr_seat_destroy(wlr_seat *seat)
+    void wlr_seat_set_capabilities(wlr_seat *seat, uint32_t capabilities)
+    void wlr_seat_pointer_notify_enter(wlr_seat *seat, wlr_surface *surface, double sx, double sy)
+    void wlr_seat_pointer_notify_motion(wlr_seat *seat, uint32_t time_msec, double sx, double sy)
+    void wlr_seat_pointer_notify_button(wlr_seat *seat, uint32_t time_msec, uint32_t button, uint32_t state)
+    void wlr_seat_pointer_notify_frame(wlr_seat *seat)
+    void wlr_seat_pointer_notify_clear_focus(wlr_seat *seat)
+    void wlr_seat_pointer_notify_axis(wlr_seat *seat, uint32_t time_msec, wl_pointer_axis orientation,
+                                       double value, int32_t value_discrete, wl_pointer_axis_source source,
+                                       wl_pointer_axis_relative_direction relative_direction)
+
+
+cdef extern from "wlr/types/wlr_cursor.h":
+    cdef struct wlr_cursor:
+        double x
+        double y
+
+    wlr_cursor* wlr_cursor_create()
+    void wlr_cursor_destroy(wlr_cursor *cursor)
+    void wlr_cursor_attach_output_layout(wlr_cursor *cursor, wlr_output_layout *layout)
+    void wlr_cursor_warp(wlr_cursor *cursor, wlr_input_device *device, double lx, double ly)
+    void wlr_cursor_move(wlr_cursor *cursor, wlr_input_device *device, double delta_x, double delta_y)
+
+
+cdef extern from "wlr/types/wlr_pointer.h":
+    cdef struct wlr_pointer:
+        pass
+    cdef struct wlr_pointer_axis_event:
+        wlr_pointer *pointer;
+        uint32_t time_msec
+        wl_pointer_axis_source source
+        wl_pointer_axis orientation
+        wl_pointer_axis_relative_direction relative_direction
+        double delta
+        int32_t delta_discrete
+
+cdef extern from "wlr/types/wlr_virtual_pointer_v1.h":
+    cdef struct wlr_virtual_pointer_v1:
+        wlr_pointer pointer
+        # wl_resource *resource
+        # Vertical and horizontal:
+        wlr_pointer_axis_event axis_event[2];
+        wl_pointer_axis axis
+        bint axis_valid[2]
+        wl_list link
+
+    cdef struct wlr_virtual_pointer_manager_v1_events:
+        wl_signal new_virtual_pointer
+        wl_signal destroy
+
+    cdef struct wlr_virtual_pointer_manager_v1:
+        # wl_global *global
+        wl_list virtual_pointers
+        wlr_virtual_pointer_manager_v1_events events
+
+    cdef struct wlr_virtual_pointer_v1_new_pointer_event:
+        wlr_virtual_pointer_v1 *new_pointer
+        # Suggested by client; may be NULL
+        wlr_seat *suggested_seat
+        wlr_output *suggested_output
+    wlr_virtual_pointer_manager_v1* wlr_virtual_pointer_manager_v1_create(wl_display *display)
 
 
 cdef extern from "wlr/types/wlr_xdg_shell.h":

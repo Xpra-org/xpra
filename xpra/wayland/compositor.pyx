@@ -17,6 +17,7 @@ from libc.stdlib cimport malloc, free, calloc
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t, uint64_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport getbuf, MemBuf
+from xpra.wayland.pointer import WaylandPointer
 
 
 # Import definitions from .pxd file
@@ -26,8 +27,11 @@ from xpra.wayland.wlroots cimport (
     wl_listener, wl_signal_add, wl_signal,
     wlr_xdg_surface_events,
     wlr_backend, wlr_backend_start, wlr_backend_destroy,
+    wlr_seat, wlr_cursor, wlr_output_layout,
+    wlr_seat_create, wlr_seat_set_capabilities, wlr_seat_destroy,
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
     wlr_compositor, wlr_compositor_create,
+    wlr_cursor_create, wlr_cursor_destroy,
     wlr_xdg_shell_create,
     wlr_scene, wlr_scene_create, wlr_scene_node_destroy, wlr_scene_output_create,
     wlr_scene_xdg_surface_create, wlr_scene_tree, wlr_scene_output, wlr_scene_output_commit,
@@ -42,6 +46,7 @@ from xpra.wayland.wlroots cimport (
     wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event,
     wlr_xdg_toplevel_set_size,
     wlr_xdg_surface_schedule_configure,
+    wlr_output_layout_add_auto, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
     wlr_output_commit_state, wlr_output_state_finish,
     wlr_output_state_init, wlr_output_schedule_frame, wlr_output_init_render,
     wlr_headless_add_output,
@@ -92,7 +97,10 @@ cdef struct server:
     wlr_compositor *compositor
     wlr_xdg_shell *xdg_shell
     wlr_scene *scene
-
+    wlr_seat *seat
+    wlr_cursor *cursor
+    wlr_output_layout *output_layout
+    char *seat_name
     wl_listener new_output
     wl_listener new_xdg_surface
 
@@ -292,6 +300,8 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
 
     out.scene_output = wlr_scene_output_create(srv.scene, wlr_out)
 
+    wlr_output_layout_add_auto(srv.output_layout, wlr_out)
+
     wlr_output_state_init(&state)
     wlr_output_commit_state(wlr_out, &state)
     wlr_output_state_finish(&state)
@@ -436,6 +446,7 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     cdef xdg_surface *surface
 
     log("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
+    log(" wlr_surface(%#x)=%#x", <uintptr_t> xdg_surf, <uintptr_t> xdg_surf.surface)
 
     if xdg_surf.role != WLR_XDG_SURFACE_ROLE_NONE and xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
         return
@@ -497,7 +508,7 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     log("configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
     geom = (xdg_surf.geometry.x, xdg_surf.geometry.y, xdg_surf.geometry.width, xdg_surf.geometry.height)
     log("geometry=%s", geom)
-    emit("new-surface", wid, role, title, app_id, geom)
+    emit("new-surface", <uintptr_t> xdg_surf, wid, role, title, app_id, geom)
 
 
 # Python interface
@@ -544,6 +555,22 @@ cdef class WaylandCompositor:
 
         self.srv.scene = wlr_scene_create()
 
+        # Create output layout for multi-monitor support
+        self.srv.output_layout = wlr_output_layout_create(self.srv.display)
+        if not self.srv.output_layout:
+            raise RuntimeError("Failed to create output layout")
+
+        # Create cursor
+        self.srv.cursor = wlr_cursor_create()
+        if not self.srv.cursor:
+            raise RuntimeError("Failed to create cursor")
+        wlr_cursor_attach_output_layout(self.srv.cursor, self.srv.output_layout)
+
+        # Create seat for input handling
+        self.srv.seat_name = b"seat0"
+        self.srv.seat = wlr_seat_create(self.srv.display, self.srv.seat_name)
+        wlr_seat_set_capabilities(self.srv.seat, 7)  # WL_SEAT_CAPABILITY_POINTER | KEYBOARD | TOUCH
+
         self.srv.new_output.notify = new_output
         wl_signal_add(&self.srv.backend.events.new_output, &self.srv.new_output)
 
@@ -574,25 +601,36 @@ cdef class WaylandCompositor:
 
     def cleanup(self) -> None:
         """Clean up compositor resources"""
-        if self.srv.display:
-            wl_display_destroy_clients(self.srv.display)
+        if not self.srv.display:
+            return
+        wl_display_destroy_clients(self.srv.display)
 
-            if self.srv.new_xdg_surface.link.next != NULL:
-                wl_list_remove(&self.srv.new_xdg_surface.link)
+        if self.srv.new_xdg_surface.link.next != NULL:
+            wl_list_remove(&self.srv.new_xdg_surface.link)
 
-            if self.srv.new_output.link.next != NULL:
-                wl_list_remove(&self.srv.new_output.link)
+        if self.srv.new_output.link.next != NULL:
+            wl_list_remove(&self.srv.new_output.link)
 
-            if self.srv.scene:
-                wlr_scene_node_destroy(&self.srv.scene.tree.node)
-            if self.srv.allocator:
-                wlr_allocator_destroy(self.srv.allocator)
-            if self.srv.renderer:
-                wlr_renderer_destroy(self.srv.renderer)
-            if self.srv.backend:
-                wlr_backend_destroy(self.srv.backend)
-            wl_display_destroy(self.srv.display)
-            self.srv.display = NULL
+        if self.srv.scene:
+            wlr_scene_node_destroy(&self.srv.scene.tree.node)
+        if self.srv.cursor:
+            wlr_cursor_destroy(self.srv.cursor)
+        if self.srv.output_layout:
+            wlr_output_layout_destroy(self.srv.output_layout)
+        if self.srv.seat:
+            wlr_seat_destroy(self.srv.seat)
+        if self.srv.allocator:
+            wlr_allocator_destroy(self.srv.allocator)
+        if self.srv.renderer:
+            wlr_renderer_destroy(self.srv.renderer)
+        if self.srv.backend:
+            wlr_backend_destroy(self.srv.backend)
+        wl_display_destroy(self.srv.display)
+        self.srv.display = NULL
+
+    def get_pointer_device(self):
+        return None
+        # return WaylandPointer(<uintptr_t> self.srv.seat, <uintptr_t> self.srv.cursor)
 
     def __dealloc__(self):
         self.cleanup()

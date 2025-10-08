@@ -18,6 +18,11 @@ GObject = gi_import("GObject")
 
 class Window(WindowModelStub):
     __gproperties__ = {
+        "surface": (
+            GObject.TYPE_POINTER,
+            "The wayland surface pointer", "",
+            GObject.ParamFlags.READABLE,
+        ),
         "geometry": (
             GObject.TYPE_PYOBJECT,
             "current coordinates (x, y, w, h, border) for the window", "",
