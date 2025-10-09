@@ -38,6 +38,7 @@ READ_SLEEP = envint("XPRA_SPLASH_READ_SLEEP", 0)
 FOCUS_EXIT = envbool("XPRA_SPLASH_FOCUS_EXIT", True)
 FADEOUT = envbool("XPRA_SPLASH_FADEOUT", True)
 ICON = os.environ.get("XPRA_SPLASH_ICON", "xpra.png")
+THREADED_READ = envbool("XPRA_SPLASH_THREADED_READ", WIN32)
 
 W = 400
 
@@ -175,7 +176,7 @@ class SplashScreen(Gtk.Window):
             GLib.source_remove(fd)
 
     def run(self) -> ExitValue:
-        if WIN32:
+        if THREADED_READ:
             start_thread(self.win32_read_thread, "win32-read-thread", True)
         else:
             events = GLib.IO_IN | GLib.IO_HUP | GLib.IO_ERR
