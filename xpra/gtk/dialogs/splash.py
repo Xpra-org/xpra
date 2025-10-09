@@ -169,18 +169,8 @@ class SplashScreen(Gtk.Window):
     def init_css(self) -> None:
         add_screen_css(CSS)
 
-    def cancel_io_watch(self) -> None:
-        fd = self.fd_watch
-        if fd:
-            self.fd_watch = 0
-            GLib.source_remove(fd)
-
     def run(self) -> ExitValue:
-        if THREADED_READ:
-            start_thread(self.win32_read_thread, "win32-read-thread", True)
-        else:
-            events = GLib.IO_IN | GLib.IO_HUP | GLib.IO_ERR
-            self.fd_watch = GLib.io_add_watch(sys.stdin.fileno(), GLib.PRIORITY_LOW, events, self.read_stdin)
+        start_thread(self.read_thread, "read-thread", True)
         self.show_all()
         force_focus()
         self.present()
@@ -224,7 +214,7 @@ class SplashScreen(Gtk.Window):
             self.timeout_timer = 0
             GLib.source_remove(tt)
 
-    def win32_read_thread(self) -> None:
+    def read_thread(self) -> None:
         while self.exit_code is None:
             if not self.read_stdin_line():
                 break
@@ -288,7 +278,6 @@ class SplashScreen(Gtk.Window):
             if FADEOUT:
                 self.fade_out_timer = GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 // 100, self.fade_out)
             self.cancel_exit_timer()
-            self.cancel_io_watch()
 
             def exit_splash() -> None:
                 self.exit_timer = 0
@@ -342,7 +331,6 @@ class SplashScreen(Gtk.Window):
         log("exit%s calling %s", args, Gtk.main_quit)
         if self.exit_code is None:
             self.exit_code = 0
-        self.cancel_io_watch()
         self.cancel_progress_timer()
         self.cancel_timeout_timer()
         self.cancel_fade_out_timer()
