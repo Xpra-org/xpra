@@ -13,6 +13,7 @@ from xpra import __version__
 from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.system import SIGNAMES
+from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk.widget import label
@@ -22,7 +23,6 @@ from xpra.util.glib import install_signal_handlers
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.platform.gui import force_focus, set_window_progress
 from xpra.log import Logger
-from xpra.util.thread import start_thread
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -163,7 +163,6 @@ class SplashScreen(Gtk.Window):
         self.pct = 0
         self.start_time = monotonic()
         self.had_top_level_focus = False
-        self.fd_watch = 0
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
     def init_css(self) -> None:
@@ -216,33 +215,20 @@ class SplashScreen(Gtk.Window):
 
     def read_thread(self) -> None:
         while self.exit_code is None:
-            if not self.read_stdin_line():
-                break
-
-    def read_stdin_line(self) -> bool:
-        try:
-            line = sys.stdin.readline()
-            log("read_stdin_line() line=%r", line)
-            self.line_count += 1
-            if line.strip():
-                GLib.timeout_add(self.line_count * READ_SLEEP, self.handle_stdin_line, line)
-            return True
-        except OSError:
-            self.fd_watch = 0
-            self.exit_code = ExitCode.FAILURE
-            self.exit()
-            return False
-
-    def read_stdin(self, fd: int, cb_condition) -> bool:
-        log(f"read_stdin({fd}, {hex(cb_condition)}) conditions=%s", cond(cb_condition))
-        if (cb_condition & GLib.IO_HUP) or (cb_condition & GLib.IO_ERR):
-            self.fd_watch = 0
-            self.exit_code = ExitCode.CONNECTION_LOST
-            GLib.timeout_add(10 * READ_SLEEP, self.exit)
-            return False
-        if cb_condition == GLib.IO_IN:
-            self.read_stdin_line()
-        return self.exit_code is None
+            try:
+                line = sys.stdin.readline()
+                log("read_stdin_line() line=%r", line)
+                if not line:
+                    # EOF
+                    self.exit()
+                    return
+                self.line_count += 1
+                if line.strip():
+                    GLib.timeout_add(self.line_count * READ_SLEEP, self.handle_stdin_line, line)
+            except OSError:
+                self.exit_code = ExitCode.FAILURE
+                self.exit()
+                return
 
     def handle_stdin_line(self, line: str) -> None:
         parts = line.rstrip("\n\r").split(":", 1)
