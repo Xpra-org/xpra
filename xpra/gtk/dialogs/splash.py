@@ -5,7 +5,7 @@
 
 import sys
 import signal
-from time import sleep, monotonic
+from time import monotonic
 
 from xpra import __version__
 from xpra.util.env import envint, envbool, ignorewarnings
@@ -18,6 +18,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import install_signal_handlers
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.platform.gui import force_focus, set_window_progress
+from xpra.util.thread import start_thread
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -104,18 +105,10 @@ class SplashScreen(Gtk.Window):
         self.pct = 0
         self.start_time = monotonic()
         self.had_top_level_focus = False
-        self.fd_watch = 0
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
-    def cancel_io_watch(self) -> None:
-        fd = self.fd_watch
-        if fd:
-            self.fd_watch = 0
-            GLib.source_remove(fd)
-
     def run(self) -> ExitValue:
-        events = GLib.IO_IN | GLib.IO_HUP | GLib.IO_ERR
-        self.fd_watch = GLib.io_add_watch(sys.stdin.fileno(), GLib.PRIORITY_LOW, events, self.read_stdin)
+        start_thread(self.read_thread, "read-thread", True)
         self.show_all()
         force_focus()
         self.present()
@@ -171,26 +164,21 @@ class SplashScreen(Gtk.Window):
         self.pulse_counter += 1
         return True
 
-    def read_stdin(self, fd, cb_condition) -> bool:
-        log(f"read_stdin({fd}, {hex(cb_condition)})")
-        if (cb_condition & GLib.IO_HUP) or (cb_condition & GLib.IO_ERR):
-            self.fd_watch = 0
-            self.exit_code = ExitCode.CONNECTION_LOST
-            self.exit()
-            return False
-        if cb_condition == GLib.IO_IN:
+    def read_thread(self) -> None:
+        while self.exit_code is None:
             try:
                 line = sys.stdin.readline()
-                GLib.idle_add(self.handle_stdin_line, line)
-                sleep(READ_SLEEP)
-                return True
+                log("read_stdin_line() line=%r", line)
+                if not line:
+                    # EOF
+                    self.exit()
+                    return
+                if line.strip():
+                    GLib.timeout_add(10, self.handle_stdin_line, line)
             except OSError:
-                self.fd_watch = 0
                 self.exit_code = ExitCode.FAILURE
                 self.exit()
-                return False
-        # unexpected condition - continue
-        return True
+                return
 
     def handle_stdin_line(self, line: str) -> None:
         parts = line.rstrip("\n\r").split(":", 1)
@@ -289,7 +277,6 @@ class SplashScreen(Gtk.Window):
         log("exit%s calling %s", args, Gtk.main_quit)
         if self.exit_code is None:
             self.exit_code = 0
-        self.cancel_io_watch()
         self.cancel_progress_timer()
         self.cancel_timeout_timer()
         self.cancel_fade_out_timer()
