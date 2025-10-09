@@ -776,8 +776,13 @@ cdef extern from "wlr/types/wlr_compositor.h":
 
         wl_list subsurfaces_below
         wl_list subsurfaces_above
+    cdef struct wlr_compositor_events:
+        wl_signal new_surface
+        wl_signal destroy
     cdef struct wlr_compositor:
-        pass
+        # struct wl_global *global
+        wlr_renderer *renderer
+        wlr_compositor_events events
     cdef struct wlr_surface_role:
         const char *name
         bint no_object
