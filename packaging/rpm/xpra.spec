@@ -345,6 +345,7 @@ Requires:			%{package_prefix}-audio = %{version}-%{release}
 Requires:			pulseaudio
 Requires:			pulseaudio-module-x11
 Requires:			pulseaudio-utils
+Recommends:			pavucontrol
 %if 0%{?run_tests}
 BuildRequires:		gstreamer1
 BuildRequires:		gstreamer1-plugins-good
@@ -465,6 +466,15 @@ Requires:			libXdamage
 Requires:			libXres
 Requires:			libXfixes
 Requires:			libXrandr
+Suggests:           xterm
+Suggests:           xclip
+Suggests:           glx-utils
+Suggests:           xprop
+Suggests:           xrandr
+Suggests:           xdpyinfo
+Suggests:           xdriinfo
+Suggests:           xwininfo
+Suggests:           VirtualGL
 %if 0%{?fedora}
 Suggests:			xmodmap
 Suggests:			xrandr
