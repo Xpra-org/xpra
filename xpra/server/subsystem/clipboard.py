@@ -114,6 +114,24 @@ class ClipboardServer(StubServerMixin):
                 log.error("Error: reading clipboard filter file %s - clipboard disabled!",
                           self.clipboard_filter_file, exc_info=True)
                 return
+        clipboard_class = self.get_clipboard_class()
+        if not clipboard_class:
+            log.warn("Warning: no clipboard backend class, clipboard is disabled!")
+            self.clipboard = True
+            return
+        log("clipboard_class=%s",clipboard_class)
+        kwargs = {
+            "filters": clipboard_filter_res,
+            "can-send": self.clipboard_direction in ("to-client", "both"),
+            "can-receive": self.clipboard_direction in ("to-server", "both"),
+        }
+        self._clipboard_helper = clipboard_class(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
+        self._clipboard_helper.init_proxies_claim()
+        self._clipboards = CLIPBOARDS
+        self.clipboard = True
+
+    @staticmethod
+    def get_clipboard_class():
         clipboard_class = "unknown"
         try:
             from xpra.platform.clipboard import get_backend_module
@@ -124,21 +142,12 @@ class ClipboardServer(StubServerMixin):
             mod = ".".join(parts[:-1])
             class_name = parts[-1]
             module = import_module(mod)
-            ClipboardClass = getattr(module, class_name)
-            log("ClipboardClass for %s: %s", clipboard_class, ClipboardClass)
-            kwargs = {
-                "filters": clipboard_filter_res,
-                "can-send": self.clipboard_direction in ("to-client", "both"),
-                "can-receive": self.clipboard_direction in ("to-server", "both"),
-            }
-            self._clipboard_helper = ClipboardClass(self.send_clipboard_packet,
-                                                    self.clipboard_progress, **kwargs)
-            self._clipboard_helper.init_proxies_claim()
-            self._clipboards = CLIPBOARDS
-        except Exception:
-            # log("gdk clipboard helper failure", exc_info=True)
-            log.error(f"Error: failed to setup clipboard helper {clipboard_class!r}", exc_info=True)
-            self.clipboard = False
+            return getattr(module, class_name)
+        except (ImportError, AttributeError) as e:
+            log("get_clipboard_class()", exc_info=True)
+            log.error(f"Error: unable to load the clipboard helper class {clipboard_class!r}")
+            log.estr(e)
+            return None
 
     def parse_hello_ui_clipboard(self, ss) -> None:
         # take the clipboard if no-one else has it yet:

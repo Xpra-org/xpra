@@ -57,6 +57,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def make_pointer_device(self):
         return self.compositor.get_pointer_device()
 
+    @staticmethod
+    def get_clipboard_class():
+        return None  # TODO: WaylandClipboard
+
     def _focus(self, _server_source, wid: int, modifiers) -> None:
         if self.focused == wid:
             return
