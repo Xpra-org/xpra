@@ -651,23 +651,26 @@ def get_splash_progress(mode: str, daemon: bool, splash: bool, display: str) -> 
     # once we initialize servers earlier
     progress: Callable[[int, str], None] = noop
     splash_process = None
+    use_stderr = PROGRESS_TO_STDERR
     if is_splash_enabled(mode, daemon, splash, display):
         # use splash screen to show server startup progress:
         mode_str = MODE_TO_NAME.get(mode, "").split(" Upgrade")[0]
         title = f"Xpra {mode_str} Server {__version__}"
         splash_process = make_progress_process(title)
-        progress = splash_process.progress
-        from atexit import register
+        if splash_process:
+            progress = splash_process.progress
+            from atexit import register
 
-        def progress_exit() -> None:
-            progress(100, "exiting")
-        register(progress_exit)
-    else:
-        if PROGRESS_TO_STDERR:
-            def progress_to_stderr(*args) -> None:
-                stderr_print(" ".join(str(x) for x in args))
+            def progress_exit() -> None:
+                progress(100, "exiting")
+            register(progress_exit)
+        else:
+            use_stderr = True
+    if progress == noop and use_stderr:
+        def progress_to_stderr(*args) -> None:
+            stderr_print(" ".join(str(x) for x in args))
 
-            progress = progress_to_stderr
+        progress = progress_to_stderr
     progress(10, "initializing environment")
     return splash_process, progress
 
