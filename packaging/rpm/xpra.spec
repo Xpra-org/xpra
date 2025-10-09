@@ -1009,34 +1009,48 @@ fi
 
 
 %changelog
-* Fri Sep 26 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
+* Thu Oct 09 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
 - Platforms, build and packaging:
    bundle `GioWin32` on MS Windows
+   pynvml 13.580.82
 - MacOS:
-   debuggable launch script
+   debuggable launch script + silence warnings
    URL open callback may send byte strings
    don't use headerbar due to rendering glitches
    version check needs CA certificate data file
+   extra dock icon shown
+   `bin` shown as application name
+   smooth scrolling errors out
 - Security:
    don't log http passwords in debug logging
    don't log authentication data using `http` debug logging
    authentication messages should only use `auth` logging category
    obscure passwords
 - Network:
-   SSL connections drop
+   SSL connections drop, prevent flood, matching test update
+   validate websocket payload size without first clamping it
+   socket directory checks too strict and incomplete
 - Major:
    failure to launch subcommands from `xpra gui`
    re-connection fails if URL contains the password
 - Minor:
+   remove unnecessary exception handler - ~150 times faster
    splash screen could misbehave
    ignore options to automatically launch 'gui'
    show file-transfer dialog menu entry
+   clipboard tool fails to set text, doesn't handle shortcuts
+   window iconified state not initialized correctly
+   expose all window metadata via `xpra info`
+   honour pyxdg disabled flag, use it in unit tests
 - Cosmetic:
    warn just once if python-cryptography is missing
    dialog errors due to early focus events
    ensure flag is a boolean
    bug report tooltip
    tray menu tooltip
+   typo
+   test log spam
+   cursor packet warnings when cursors are disabled
 
 * Sat Sep 06 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
 - Platforms, build and packaging:

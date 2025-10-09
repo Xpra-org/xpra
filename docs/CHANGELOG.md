@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.4] 2025-10-01
+## [6.3.4] 2025-10-09
 * Platforms, build and packaging:
     * [bundle `GioWin32` on MS Windows](https://github.com/Xpra-org/xpra/commit/04769592e7e63eb00fd05108c95e2b09d4ba467a)
     * [pynvml 13.580.82](https://github.com/Xpra-org/xpra/commit/4342f8f56e8bb4319f5834c38e8fe329a3cd8b19)
@@ -19,11 +19,13 @@
     * [obscure passwords](https://github.com/Xpra-org/xpra/commit/ceafde09931ad072de6beb48ed7528201534ffc0)
 * Network:
     * [SSL connections drop](https://github.com/Xpra-org/xpra/commit/5a17318683002e75f58b441eb22041f5e2b37eb1), [prevent flood](https://github.com/Xpra-org/xpra/commit/69a7babf99d6084ec47aef5464b228d198c0a028), [matching test update](https://github.com/Xpra-org/xpra/commit/7523ff6280316c97168199d33c9d0146c8233c45)
-    * [validate websocket payload size](https://github.com/Xpra-org/xpra/commit/ec82719ed3de09e489cfbf6b63b3def3f4183866)
+    * [validate websocket payload size](https://github.com/Xpra-org/xpra/commit/ec82719ed3de09e489cfbf6b63b3def3f4183866) [without first clamping it](https://github.com/Xpra-org/xpra/commit/430f868148be54d937e50babac2b87a9f2f5e5be)
+    * [socket directory checks too strict](https://github.com/Xpra-org/xpra/commit/0034f04ceb5ad12e324f90d899ca5d8be9fc1fe2) [and incomplete](https://github.com/Xpra-org/xpra/commit/e3aa647bbdae06b6f5ac692f1f9e42737fe23b9e)
 * Major:
     * [failure to launch subcommands from `xpra gui`](https://github.com/Xpra-org/xpra/commit/1dd327a94ceca786cd155b3818ec3ae7c3c003aa)
     * [re-connection fails if URL contains the password](https://github.com/Xpra-org/xpra/commit/a3104fdbb52bab92343ecffbca8aa7332912a1e1)
 * Minor:
+    * [remove unnecessary exception handler - ~150 times faster](https://github.com/Xpra-org/xpra/commit/af9bd4b6beb955a0cb6de3b6820552afdf774357)
     * [splash screen could misbehave](https://github.com/Xpra-org/xpra/commit/2cdf432eea2b21da498e47b7256bbf11098b4655)
     * [ignore options to automatically launch 'gui'](https://github.com/Xpra-org/xpra/commit/e115528c1fc38d60d805bd6180e4723212eeab3a)
     * [show file-transfer dialog menu entry](https://github.com/Xpra-org/xpra/commit/8492aafe3c61a2b864479727da319a32c28a5f42)
@@ -39,6 +41,7 @@
     * [tray menu tooltip](https://github.com/Xpra-org/xpra/commit/808632b67e42146cb37c910806fa8dfacfd7449e)
     * [typo](https://github.com/Xpra-org/xpra/commit/279eeba0050cadc32d526431a6a1778eb729df6e)
     * [test log spam](https://github.com/Xpra-org/xpra/commit/48fdeaf82193ec21e74326ec4a0693dcc1044644)
+    * [cursor packet warnings when cursors are disabled](https://github.com/Xpra-org/xpra/commit/e26b09d06f6a6410b7e40a2f355b7c27a674e6f1)
 
 ## [6.3.3] 2025-09-06
 * Platforms, build and packaging:
