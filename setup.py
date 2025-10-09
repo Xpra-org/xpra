@@ -2398,6 +2398,8 @@ else:
             if data_ENABLED:
                 for etc_dir in ("http-headers", "content-type", "content-categories", "content-parent"):
                     dirtodir(f"fs/etc/xpra/{etc_dir}", f"/etc/xpra/{etc_dir}")
+                if audio_ENABLED:
+                    dirtodir("fs/etc/xpra/pulse", "/etc/xpra/pulse")
 
     # add build_conf to build step
     cmdclass |= {

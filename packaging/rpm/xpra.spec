@@ -792,6 +792,9 @@ rm -rf $RPM_BUILD_ROOT
 %files -n %{package_prefix}-audio
 %{python3_sitearch}/xpra/audio/
 
+%files -n %{package_prefix}-audio-server
+%config %{_sysconfdir}/xpra/pulse/*
+
 %files -n %{package_prefix}-client
 %{python3_sitearch}/xpra/client/base/
 %pycached %{python3_sitearch}/xpra/client/__init__.py
