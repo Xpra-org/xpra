@@ -1060,7 +1060,7 @@ def _do_run_server(script_file: str, cmdline,
             get_logger().warn(f"Warning: bind-rdp sockets cannot be used with {mode!r} mode")
             opts.bind_rdp = []
 
-    progress(30, "creating sockets")
+    progress(30, "creating network sockets")
     from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
     retry = 10 * int(mode.startswith("upgrade"))
     sockets = create_sockets(opts, error_cb, retry=retry, sd_listen=POSIX and not OSX, ssh_upgrades=opts.ssh_upgrade)
@@ -1445,7 +1445,7 @@ def _do_run_server(script_file: str, cmdline,
 
             xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID")
 
-    progress(80, "initializing server")
+    progress(40, "initializing server")
     if "backend" not in mode_attrs:
         mode_attrs["backend"] = opts.backend
     if shadowing:
@@ -1489,6 +1489,7 @@ def _do_run_server(script_file: str, cmdline,
         if not app.validate():
             progress(100, "server validation failed")
             return 1
+        progress(60, "creating local sockets")
         init_local_sockets()
         app.init_sockets(sockets)
         from xpra.server import features
