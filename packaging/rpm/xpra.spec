@@ -1012,10 +1012,12 @@ fi
 
 
 %changelog
-* Thu Oct 09 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
+* Fri Oct 10 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
 - Platforms, build and packaging:
    bundle `GioWin32` on MS Windows
    pynvml 13.580.82
+   Debian Forky builds and repository
+   missing `xpra-audio-server` RPMs
 - MacOS:
    debuggable launch script + silence warnings
    URL open callback may send byte strings
@@ -1045,6 +1047,7 @@ fi
    window iconified state not initialized correctly
    expose all window metadata via `xpra info`
    honour pyxdg disabled flag, use it in unit tests
+   splash screen progresses slowly
 - Cosmetic:
    warn just once if python-cryptography is missing
    dialog errors due to early focus events
@@ -1054,6 +1057,8 @@ fi
    typo
    test log spam
    cursor packet warnings when cursors are disabled
+   splash subcommand to honour debug logging
+   extra step showing initialization progress
 
 * Sat Sep 06 2025 Antoine Martin <antoine@xpra.org> 6.3.3-10
 - Platforms, build and packaging:

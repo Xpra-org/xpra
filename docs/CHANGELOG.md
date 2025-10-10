@@ -1,9 +1,11 @@
 # Changelog
 
-## [6.3.4] 2025-10-09
+## [6.3.4] 2025-10-10
 * Platforms, build and packaging:
     * [bundle `GioWin32` on MS Windows](https://github.com/Xpra-org/xpra/commit/04769592e7e63eb00fd05108c95e2b09d4ba467a)
     * [pynvml 13.580.82](https://github.com/Xpra-org/xpra/commit/4342f8f56e8bb4319f5834c38e8fe329a3cd8b19)
+    * [Debian Forky builds](https://github.com/Xpra-org/xpra/commit/e74fa6b6d90616ef3a826dec44e874f202c55a58) and [repository](https://github.com/Xpra-org/xpra/commit/f8ccb4c175548ec00fc9a55695409b9229753e8d)
+    * [missing `xpra-audio-server` RPMs](https://github.com/Xpra-org/xpra/commit/14fc74bdf03034690b0301c1ddb14d0ffc403a50)
 * MacOS:
     * [debuggable launch script](https://github.com/Xpra-org/xpra/commit/46ef35352f18b637076d19bc237f9564572c52a7) [+ silence warnings](https://github.com/Xpra-org/xpra/commit/5149b16bcbfc7c5ce5d6d7e44fb0cfe257cbd26e)
     * [URL open callback may send byte strings](https://github.com/Xpra-org/xpra/commit/34769557c842f82ad1531dcd4ef788a9aed0a0ae)
@@ -33,6 +35,7 @@
     * [window iconified state not initialized correctly](https://github.com/Xpra-org/xpra/commit/b84c0400b1133f80d4f079a3423e496f20d900ae)
     * [expose all window metadata via `xpra info`](https://github.com/Xpra-org/xpra/commit/9e8570d2184672e762a32b0729b90d8f4404c8e3)
     * [honour pyxdg disabled flag](https://github.com/Xpra-org/xpra/commit/bb660dcbbfd2f33194d256513756a199cffe19c0), [use it in unit tests](https://github.com/Xpra-org/xpra/commit/c1226c967ff26fa9602d9ebebcff52e092714fbd)
+    * [splash screen progresses slowly](https://github.com/Xpra-org/xpra/commit/dd75c1724a01e0e10597d1249ee0465bf1581eee)
 * Cosmetic:
     * [warn just once if python-cryptography is missing](https://github.com/Xpra-org/xpra/commit/ca0f683e610549adbee41ae2fe73939e538d3afb)
     * [dialog errors due to early focus events](https://github.com/Xpra-org/xpra/commit/b0d782e54aa195f582f313406c1f1819aab807b0)
@@ -42,6 +45,8 @@
     * [typo](https://github.com/Xpra-org/xpra/commit/279eeba0050cadc32d526431a6a1778eb729df6e)
     * [test log spam](https://github.com/Xpra-org/xpra/commit/48fdeaf82193ec21e74326ec4a0693dcc1044644)
     * [cursor packet warnings when cursors are disabled](https://github.com/Xpra-org/xpra/commit/e26b09d06f6a6410b7e40a2f355b7c27a674e6f1)
+    * [splash subcommand to honour debug logging](https://github.com/Xpra-org/xpra/commit/df3af84aea48c7990cf570f0c904ccafdd029b8b)
+    * [extra step showing initialization progress](https://github.com/Xpra-org/xpra/commit/320c06fd231481fabd1c2a6967d465dbd4df2a20)
 
 ## [6.3.3] 2025-09-06
 * Platforms, build and packaging:
