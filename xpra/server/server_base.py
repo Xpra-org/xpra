@@ -222,6 +222,9 @@ class ServerBase(ServerBaseClass):
     ######################################################################
     # shutdown / exit commands:
     def _process_exit_server(self, _proto, packet : PacketType=()) -> None:
+        if not self.client_shutdown:
+            log.warn("Warning: ignoring exit request")
+            return
         reason = ConnectionMessage.SERVER_EXIT
         message = "Exiting in response to client request"
         if len(packet)>1:
