@@ -24,6 +24,7 @@ if os.name != "posix" or os.getuid() != 0:
     LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", LOG_PREFIX)
     DEBUG_MODULES = tuple(x.strip() for x in os.environ.get("XPRA_DEBUG_MODULES", "").split(",") if x.strip())
 NOPREFIX_FORMAT: Final[str] = "%(message)s"
+EMOJIS = os.environ.get("XPRA_EMOJIS", "1") == "1"
 
 
 BACKTRACE_LEVEL = int(os.environ.get("XPRA_LOG_BACKTRACE_LEVEL", logging.CRITICAL))
@@ -38,6 +39,7 @@ logging.root.setLevel(logging.INFO)
 debug_enabled_categories: set[str] = set()
 debug_disabled_categories: set[str] = set()
 backtrace_expressions: set[re.Pattern] = set()
+emojis = False
 
 
 MODULE_FILE = os.path.join(os.sep, "xpra", "log.py")        # ie: "/xpra/log.py"
@@ -171,6 +173,9 @@ def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT) -> None:
         csh = ColorStreamHandler(to)
         csh.setFormatter(logging.Formatter(format_string))
         setloghandler(csh)
+        if EMOJIS:
+            global emojis
+            emojis = True
 
 
 def enable_format(format_string: str) -> None:
@@ -544,9 +549,19 @@ class Logger:
         self.log(logging.INFO, msg, *args, **kwargs)
 
     def warn(self, msg: str, *args, **kwargs) -> None:
+        if emojis:
+            if msg.startswith("Warning:"):
+                msg = "⚠️  " + msg[len("Warning:"):].strip()
+            elif msg.startswith(" "):
+                msg = "   " + msg.strip()
         self.log(logging.WARN, msg, *args, **kwargs)
 
     def error(self, msg: str, *args, **kwargs) -> None:
+        if emojis:
+            if msg.startswith("Error:"):
+                msg = "🔴 " + msg[len("Error:"):].strip()
+            elif msg.startswith(" "):
+                msg = "   " + msg.strip()
         self.log(logging.ERROR, msg, *args, **kwargs)
 
     def estr(self, e, **kwargs) -> None:
