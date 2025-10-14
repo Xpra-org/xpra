@@ -244,7 +244,7 @@ class InfoXpraClient(CommandConnectClient):
                     eltype = tuple(eltypes)[0]
                     if eltype in (int, bool, float):
                         return repr_ellipsized(v, LINE_LIMIT)
-                    if eltype == str:
+                    if eltype is str:
                         csv_str = csv(repr(x) for x in v)
                         return ellipsize(csv_str, LINE_LIMIT)
                 return repr_ellipsized(type(v)(prettify(k, x) for x in v), LINE_LIMIT)

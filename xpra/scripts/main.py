@@ -4748,7 +4748,7 @@ def run_setting(setunset: bool, args) -> ExitValue:
 
     if len(args) < 2:
         raise InitException("specify a setting to modify and its value")
-    if otype == list:
+    if otype is list:
         value = args[1:]
     else:
         if len(args) > 2:
