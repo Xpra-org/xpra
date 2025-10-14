@@ -874,7 +874,7 @@ class SocketProtocol:
             else:
                 socktype = getattr(self._conn, "socktype", "unknown")
                 is_ssl_socktype = socktype in ("ssl", "wss", "quic")
-                grace_period = envint(f"XPRA_{socktype.upper()}_EOF_GRACE_PERIOD", 500 + is_ssl_socktype * 2000)
+                grace_period = envint(f"XPRA_{socktype.upper()}_EOF_GRACE_PERIOD", 10 + is_ssl_socktype * 2000)
                 eventlog(f"read thread: potential eof on {socktype!r} connection, using grace period={grace_period}ms")
                 self.timeout_add(grace_period, self.check_eof, self.input_raw_packetcount)
                 self.eof_pending = True
