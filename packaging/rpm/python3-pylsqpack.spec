@@ -9,13 +9,14 @@
 %endif
 
 Name:           %{python3}-pylsqpack
-Version:        0.3.19
+Version:        0.3.23
 Release:        1%{?dist}
 Summary:        pylsqpack is a wrapper around the ls-qpack library
 Group:          Development/Languages
 License:        MIT
 URL:            https://github.com/aiortc/pylsqpack
 Source0:        https://files.pythonhosted.org/packages/source/p/pylsqpack/pylsqpack-%{version}.tar.gz
+Patch0:         pylsqpack-licensenonsense.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
@@ -30,12 +31,12 @@ to read or write HTTP/3 headers compressed with QPACK.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "529fa3e3d6f1b0eec92b434503c0ec551cb714023cc1710911f665fab6a86ebd" ]; then
+if [ "${sha256}" != "f55b126940d8b3157331f123d4428d703a698a6db65a6a7891f7ec1b90c86c56" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n pylsqpack-%{version}
-
+%patch -P 0 -p1
 
 %build
 %{python3} setup.py build
@@ -59,6 +60,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Oct 14 2025 Antoine Martin <antoine@xpra.org> - 0.3.23-1
+- new upstream release
+
 * Thu Feb 06 2025 Antoine Martin <antoine@xpra.org> - 0.3.19-1
 - new upstream release
 
