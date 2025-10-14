@@ -6,12 +6,12 @@
 
 import time
 
-from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all, contains_rect #@UnresolvedImport (cython)
+from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all, contains_rect
 
 
-#collected with the server "-d encoding"
-#then converted to rectangles with:
-#grep damage\( damage.txt | grep -v WindowModel | sed 's/.*damage(/(/g' | sed 's/, {}.*/),/g'  | awk '{print $1"\t"$2"\t"$3"\t"$4}'
+# collected with the server "-d encoding"
+# then converted to rectangles with:
+# grep damage\( damage.txt | grep -v WindowModel | sed 's/.*damage(/(/g' | sed 's/, {}.*/),/g'  | awk '{print $1"\t"$2"\t"$3"\t"$4}'
 R1 = [
     (2348,    59,    16,    1412),
     (2348,    59,    16,    1412),
@@ -378,7 +378,7 @@ R1 = [
     (89,    62,    1,    13),
     (82,    75,    8,    1),
     (83,    62,    6,    13)
-    ]
+]
 R2 = [
     (1268,    59,    16,    1082),
     (2,    61,    8,    15),
@@ -522,9 +522,10 @@ R2 = [
     (1268,    59,    16,    1082),
     (1268,    59,    16,    1082),
     (2,    61,    8,    15)
-    ]
+]
 
 N = 10000
+
 
 def test_gvim_damage_performance(rectangles):
     start = time.time()
@@ -535,7 +536,7 @@ def test_gvim_damage_performance(rectangles):
             rects.append(r)
     end = time.time()
     print("created %s rectangles %s times in %.3fms" % (len(rectangles), N, (end-start)*1000.0/N))
-    #now try add rectangle:
+    # now try add rectangle:
     start = time.time()
     for _ in range(N):
         rects = []
@@ -544,7 +545,7 @@ def test_gvim_damage_performance(rectangles):
             add_rectangle(rects, r)
     end = time.time()
     print("add_rectangle %s rectangles %s times in %.3fms" % (len(rectangles), N, (end-start)*1000.0/N))
-    #now try remove rectangle:
+    # now try remove rectangle:
     start = time.time()
     for _ in range(N):
         rects = []
@@ -568,7 +569,7 @@ def test_merge_all():
     R = [rectangle(*v) for v in R1+R2]
     n = N*10
     for _ in range(n):
-        v = merge_all(R)
+        merge_all(R)
     end = time.time()
     print("merged %s rectangles %s times in %.3fms" % (len(R), n, (end-start)*1000.0/N))
 
@@ -582,6 +583,7 @@ def main():
 
     print("")
     test_merge_all()
+
 
 if __name__ == "__main__":
     main()

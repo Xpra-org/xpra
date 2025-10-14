@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 import csv
-import collections, math
+import math
+import collections
 
 #----------------------------------------------------------------
 # The files this generator acts upon are the CSV files output
@@ -77,64 +78,70 @@ reps = 5     # Number of data files in each set
 # Set any of the values in the following lists to 1 in order to
 # include that test app, or metric column in the chart page.
 #
-apps = {"glxgears": 0,
-        "glxspheres": 0,
-        "glxspheres64": 0,
-        "moebiusgears": 0,
-        "polytopes": 0,
+apps = {
+    "glxgears": 0,
+    "glxspheres": 0,
+    "glxspheres64": 0,
+    "moebiusgears": 0,
+    "polytopes": 0,
 
-        "x11perf": 0, # Not reliable
-        "xterm": 0,
-        "gtkperf": 0,
-        "memscroller": 0,
-        "deluxe": 0,
+    "x11perf": 0,  # Not reliable
+    "xterm": 0,
+    "gtkperf": 0,
+    "memscroller": 0,
+    "deluxe": 0,
 
-        "eruption": 1,
-        "vlc sound visual": 1,
-        "vlc video": 1,
-        "xonotic-glx": 1}
+    "eruption": 1,
+    "vlc sound visual": 1,
+    "vlc video": 1,
+    "xonotic-glx": 1,
+}
 
-metrics = {"Regions/s": 1,
-           "Pixels/s Sent": 1,
-           "Encoding Pixels/s": 1,
-           "Decoding Pixels/s": 1,
-           "Application packets in/s": 1,
-           "Application bytes in/s": 1,
-           "Application packets out/s": 1,
-           "Application bytes out/s": 1,
-           "Frame Total Latency": 1,
-           "Client Frame Latency": 1,
-           "client user cpu_pct": 1,
-           "client system cpu pct": 1,
-           "client number of threads": 1,
-           "client vsize (MB)": 1,
-           "client rss (MB)": 1,
-           "server user cpu_pct": 1,
-           "server system cpu pct": 1,
-           "server number of threads": 1,
-           "server vsize (MB)": 1,
-           "server rss (MB)": 1,
-           "Min Batch Delay (ms)": 1,
-           "Avg Batch Delay (ms)": 1,
-           "Max Batch Delay (ms)": 1,
-           "Min Damage Latency (ms)": 1,
-           "Avg Damage Latency (ms)": 1,
-           "Max Damage Latency (ms)": 1,
-           "Min Quality": 1,
-           "Avg Quality": 1,
-           "Max Quality": 1,
-           "Min Speed": 0,
-           "Avg Speed": 0,
-           "Max Speed": 0}
+metrics = {
+    "Regions/s": 1,
+    "Pixels/s Sent": 1,
+    "Encoding Pixels/s": 1,
+    "Decoding Pixels/s": 1,
+    "Application packets in/s": 1,
+    "Application bytes in/s": 1,
+    "Application packets out/s": 1,
+    "Application bytes out/s": 1,
+    "Frame Total Latency": 1,
+    "Client Frame Latency": 1,
+    "client user cpu_pct": 1,
+    "client system cpu pct": 1,
+    "client number of threads": 1,
+    "client vsize (MB)": 1,
+    "client rss (MB)": 1,
+    "server user cpu_pct": 1,
+    "server system cpu pct": 1,
+    "server number of threads": 1,
+    "server vsize (MB)": 1,
+    "server rss (MB)": 1,
+    "Min Batch Delay (ms)": 1,
+    "Avg Batch Delay (ms)": 1,
+    "Max Batch Delay (ms)": 1,
+    "Min Damage Latency (ms)": 1,
+    "Avg Damage Latency (ms)": 1,
+    "Max Damage Latency (ms)": 1,
+    "Min Quality": 1,
+    "Avg Quality": 1,
+    "Max Quality": 1,
+    "Min Speed": 0,
+    "Avg Speed": 0,
+    "Max Speed": 0,
+}
 
-encodings = {"png": 1,
-             "rgb": 1,
-             "rgb24": 0,
-             "h264": 1,
-             "jpeg": 1,
-             "vp8": 1,
-             "vp9": 1,
-             "mmap": 1}
+encodings = {
+    "png": 1,
+    "rgb": 1,
+    "rgb24": 0,
+    "h264": 1,
+    "jpeg": 1,
+    "vp8": 1,
+    "vp9": 1,
+    "mmap": 1,
+}
 
 header_dupes = []
 headers = {}
@@ -145,12 +152,17 @@ displayed_encodings = {}
 
 ENCODING_RGB24 = "rgb24"
 
+
 def tree():
     return collections.defaultdict(tree)
+
+
 tests = tree()
+
 
 def ftree():
     return collections.defaultdict(float)
+
 
 # Create test map -- schema:
 # {metric: {encoding: {id: {app: {rep: avg_value}}}}}
@@ -185,7 +197,7 @@ def accumulate_values(file_name, rep, param, uniqueId):
                     exit()
 
                 if (encodings[encoding] == 1):
-                    displayed_encodings[encoding] = encoding;
+                    displayed_encodings[encoding] = encoding
                     if (encoding == ENCODING_RGB24):
                         if (rgb_values is None):
                             rgb_values = ftree()
@@ -212,6 +224,7 @@ def accumulate_values(file_name, rep, param, uniqueId):
                             rgb_values = None
         rownum += 1
     ifile.close()
+
 
 def write_html():
     app_count = 0
@@ -333,22 +346,27 @@ def write_html():
     ofile.write('</html>\n')
     ofile.close()
 
+
 def col_index(label):
     return headers[label]
+
 
 def get_value(row, label):
     return row[col_index(label)].strip()
 
+
 def get_metric(row, label):
     cell = row[col_index(label)]
-    if cell is None or cell is '':
+    if cell is None or cell == '':
         cell = '0'
     return cell.strip()
+
 
 def sanitize(dirName):
     # Make the directory name valid as a javascript variable
     newName = dirName.replace('.', '_')
     return newName
+
 
 def get_headers(row):
     index = 0
@@ -359,29 +377,31 @@ def get_headers(row):
         headers[col] = index
         index += 1
 
+
 def print_headers():
     for entry in headers:
         print(entry + " " + str(headers[entry]))
     for entry in header_dupes:
         print("Found dupe: %s" % entry)
 
+
 def main():
     for param in params:
         param_id = param_name = param['id']
-        if ('dir' in param.keys()):
+        if 'dir' in param.keys():
             param_id = sanitize(param['dir'])
-        if ('display' in param.keys()):
+        if 'display' in param.keys():
             param_name = param['display']
         param_ids.append(param_id)
         param_names.append(param_name)
 
     for param in params:
         uniqueId = param['id']
-        if ('dir' in param.keys()):
+        if 'dir' in param.keys():
             uniqueId = sanitize(param['dir'])
 
         for rep in range(0, reps):
-            if ('dir' in param.keys()):
+            if 'dir' in param.keys():
                 file_name = base_dir + '/' + param['dir'] + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
             else:
                 file_name = base_dir + '/' + prefix + '_' + param['id'] + '_' + str(rep+1) + '.csv'
@@ -390,6 +410,6 @@ def main():
     write_html()
     print('\nCreated: charts.html\n')
 
+
 if __name__ == "__main__":
     main()
-

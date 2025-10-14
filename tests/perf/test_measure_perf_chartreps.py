@@ -145,12 +145,17 @@ param_names = []
 
 ENCODING_RGB24 = "rgb24"
 
+
 def tree():
     return collections.defaultdict(tree)
+
+
 tests = tree()
+
 
 def ftree():
     return collections.defaultdict(float)
+
 
 # Create test map -- schema:
 # {metric: {encoding: {id: {app: {rep: avg_value}}}}}
@@ -202,6 +207,7 @@ def accumulate_values(file_name, rep, param, uniqueId):
                             rgb_values = None
         rownum += 1
     ifile.close()
+
 
 def write_html():
     app_count = 0
@@ -329,22 +335,27 @@ def write_html():
     ofile.write('</html>\n')
     ofile.close()
 
+
 def col_index(label):
     return headers[label]
+
 
 def get_value(row, label):
     return row[col_index(label)].strip()
 
+
 def get_metric(row, label):
     cell = row[col_index(label)]
-    if cell is None or cell is '':
+    if cell is None or cell == '':
         cell = '0'
     return cell.strip()
+
 
 def sanitize(dirName):
     # Make the directory name valid as a javascript variable
     newName = dirName.replace('.', '_')
     return newName
+
 
 def get_headers(row):
     index = 0
@@ -355,35 +366,37 @@ def get_headers(row):
         headers[col] = index
         index += 1
 
+
 def print_headers():
     for entry in headers:
         print(entry + " " + str(headers[entry]))
     for entry in header_dupes:
         print("Found dupe: %s" % entry)
 
+
 def main():
     for param in params:
         param_id = param_name = param['id']
-        if ('dir' in param.keys()):
+        if 'dir' in param.keys():
             param_id = sanitize(param['dir'])
-        if (needReallyUniqueId):
-            param_id = param['id'] + '_' + sanitize(param['dir']);
+        if needReallyUniqueId:
+            param_id = param['id'] + '_' + sanitize(param['dir'])
 
-        if ('display' in param.keys()):
+        if 'display' in param.keys():
             param_name = param['display']
         param_ids.append(param_id)
         param_names.append(param_name)
 
     for param in params:
         uniqueId = param['id']
-        if ('dir' in param.keys()):
+        if 'dir' in param.keys():
             uniqueId = sanitize(param['dir'])
 
-        if (needReallyUniqueId):
-            uniqueId = param['id'] + '_' + sanitize(param['dir']);
+        if needReallyUniqueId:
+            uniqueId = param['id'] + '_' + sanitize(param['dir'])
 
-        #file_name = base_dir + '/' + param['dir'] + '/' + param['prefix'] + '_' + param['id'] + '_x.csv'
-        #print file_name
+        # file_name = base_dir + '/' + param['dir'] + '/' + param['prefix'] + '_' + param['id'] + '_x.csv'
+        # print file_name
 
         for rep in range(0, reps):
             if ('dir' in param.keys()):
@@ -394,6 +407,6 @@ def main():
     write_html()
     print('\nCreated: charts.html\n')
 
+
 if __name__ == "__main__":
     main()
-
