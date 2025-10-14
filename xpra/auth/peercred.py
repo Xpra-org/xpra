@@ -82,15 +82,20 @@ class Authenticator(SysAuthenticator):
                     if allow_owner and uid == getuid():
                         log(f"matched owner: {uid}")
                         return True
-                    if allow_uids is not None and uid not in allow_uids:
-                        log.warn("Warning: peercred access denied,")
-                        log.warn(" uid %i is not in the whitelist: %s", uid, csv(allow_uids))
+                    if allow_uids is not None and uid in allow_uids:
+                        log(f"matched uid: {uid} from allow list: %s", csv(allow_uids))
+                        return True
+                    if allow_gids is not None and gid in allow_gids:
+                        log(f"matched gid: {gid} from allow list: %s", csv(allow_gids))
                         return False
-                    if allow_gids is not None and gid not in allow_gids:
-                        log.warn("Warning: peercred access denied,")
-                        log.warn(" gid %i is not in the whitelist: %s", gid, csv(allow_gids))
-                        return False
-                    return True
+                    log.warn("Warning: peercred access denied,")
+                    if allow_owner:
+                        log.warn(f" does not match owner {uid}")
+                    if allow_uids:
+                        log.warn(" does not match allowed uids %s", csv(allow_uids))
+                    if allow_gids:
+                        log.warn(" does not match allowed gids %s", csv(allow_gids))
+                    return False
 
                 if check():
                     self.peercred_check = True
