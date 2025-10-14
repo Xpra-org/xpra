@@ -14,6 +14,9 @@ log = Logger("events")
 
 NOTIFY_SUSPEND_EVENTS = envbool("XPRA_NOTIFY_SUSPEND_EVENTS", True)
 
+NOTIFY_MESSAGE_TITLE = "Server Suspending"
+NOTIFY_MESSAGE_BODY = "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon."
+
 
 class SuspendServer(StubServerMixin):
     """
@@ -27,8 +30,7 @@ class SuspendServer(StubServerMixin):
             ss.emit("suspend")
         if NOTIFY_SUSPEND_EVENTS:
             for source in self._server_sources.values():
-                source.may_notify(NotificationID.IDLE, "Server Suspending",
-                                  "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon.",
+                source.may_notify(NotificationID.IDLE, NOTIFY_MESSAGE_TITLE, NOTIFY_MESSAGE_BODY,
                                   expire_timeout=10 * 1000, icon_name="shutdown")
 
     def _process_resume(self, proto, packet: Packet) -> None:
