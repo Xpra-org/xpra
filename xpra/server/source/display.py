@@ -60,6 +60,10 @@ class DisplayConnection(StubClientConnection):
         return info
 
     def parse_client_caps(self, c: typedict) -> None:
+        if BACKWARDS_COMPATIBLE and isinstance(c.get("display"), str):
+            # we can't use a string for anything
+            log.info("legacy `display` caps not supported")
+            return
         display_caps = c.dictget("display", {})
         if not BACKWARDS_COMPATIBLE and not display_caps:
             raise ValueError("missing display capabilities")
