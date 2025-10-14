@@ -529,7 +529,7 @@ class WindowClient(StubClientMixin):
     def send_wheel_delta(self, device_id: int, wid: int, button: int, distance, pointer=None, props=None) -> float:
         modifiers = self.get_current_modifiers()
         buttons: Sequence[int] = ()
-        pointerlog("send_wheel_deltas%s precise wheel=%s, modifiers=%s, pointer=%s",
+        pointerlog("send_wheel_delta%s precise wheel=%s, modifiers=%s, pointer=%s",
                    (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
             # send the exact value multiplied by 1000 (as an int)
@@ -564,14 +564,16 @@ class WindowClient(StubClientMixin):
         # this is a different entry point for mouse wheel events,
         # which provides finer grained deltas (if supported by the server)
         # accumulate deltas:
-        self.wheel_deltax += deltax
-        self.wheel_deltay += deltay
-        button = self.wheel_map.get(6 + int(self.wheel_deltax > 0), 0)  # RIGHT=7, LEFT=6
-        if button > 0:
-            self.wheel_deltax = self.send_wheel_delta(device_id, wid, button, self.wheel_deltax, pointer, props)
-        button = self.wheel_map.get(5 - int(self.wheel_deltay > 0), 0)  # UP=4, DOWN=5
-        if button > 0:
-            self.wheel_deltay = self.send_wheel_delta(device_id, wid, button, self.wheel_deltay, pointer, props)
+        if deltax:
+            self.wheel_deltax += deltax
+            button = self.wheel_map.get(6 + int(self.wheel_deltax > 0), 0)  # RIGHT=7, LEFT=6
+            if button > 0:
+                self.wheel_deltax = self.send_wheel_delta(device_id, wid, button, self.wheel_deltax, pointer, props)
+        if deltay:
+            self.wheel_deltay += deltay
+            button = self.wheel_map.get(5 - int(self.wheel_deltay > 0), 0)  # UP=4, DOWN=5
+            if button > 0:
+                self.wheel_deltay = self.send_wheel_delta(device_id, wid, button, self.wheel_deltay, pointer, props)
         pointerlog("wheel_event%s new deltas=%s,%s",
                    (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
 
