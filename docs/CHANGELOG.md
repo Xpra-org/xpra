@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.3.5] 2025-10-15
+* Platforms, build and packaging:
+    * [`pylsqpack` 0.3.23](https://github.com/Xpra-org/xpra/commit/e28f4ab9d5a50873435511c401558bd2d7fb40b3)
+    * [`aioquic` 1.3.0](https://github.com/Xpra-org/xpra/commit/768d17f7b541e999256e33029b90f8561e092d37)
+* Security:
+    * [`peercred` authentication module bypass](https://github.com/Xpra-org/xpra/commit/47f136cc2f28fec99e9c8e0693f55ab35f86fbae)
+* Major:
+    * [`XPRA_CLIENT_CAN_SHUTDOWN` should also be honoured with `exit` requests](https://github.com/Xpra-org/xpra/commit/4a9abba2c4aad2649b3544aaf83aa8e480641089)
+    * [scroll wheel spurious events](https://github.com/Xpra-org/xpra/commit/db4fdf178cff6cbc94aae6d7181916a05e3a3d6b)
+
 ## [6.3.4] 2025-10-10
 * Platforms, build and packaging:
     * [bundle `GioWin32` on MS Windows](https://github.com/Xpra-org/xpra/commit/04769592e7e63eb00fd05108c95e2b09d4ba467a)

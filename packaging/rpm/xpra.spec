@@ -1012,6 +1012,16 @@ fi
 
 
 %changelog
+* Wed Oct 15 2025 Antoine Martin <antoine@xpra.org> 6.3.4-11
+- Platforms, build and packaging:
+   `pylsqpack` 0.3.23
+   `aioquic` 1.3.0
+- Security:
+   `peercred` authentication module bypass
+- Major:
+   `XPRA_CLIENT_CAN_SHUTDOWN` should also be honoured with `exit` requests
+   scroll wheel spurious events
+
 * Fri Oct 10 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
 - Platforms, build and packaging:
    bundle `GioWin32` on MS Windows
