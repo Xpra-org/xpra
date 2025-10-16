@@ -154,6 +154,8 @@ class Packet(Sequence):
         v = self.data[i]
         if isinstance(v, bytes):
             return v
+        if v == "":
+            return b""
         return bytes(v)
 
     def get_buffer(self, i: int) -> SizedBuffer:
