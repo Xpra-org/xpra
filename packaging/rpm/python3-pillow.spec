@@ -15,7 +15,7 @@
 
 
 Name:           %{package_prefix}%{srcname}
-Version:        11.1.0
+Version:        12.0.0
 Release:        1%{?dist}
 Summary:        Python image processing library
 
@@ -23,6 +23,7 @@ Summary:        Python image processing library
 License:        MIT
 URL:            http://python-pillow.github.io/
 Source0:        https://files.pythonhosted.org/packages/source/p/pillow/pillow-%{version}.tar.gz
+Patch0:         pillow-licensenonsense.patch
 
 BuildRequires:  freetype-devel
 BuildRequires:  gcc
@@ -47,7 +48,7 @@ internal representation, and powerful image processing capabilities.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "368da70808b36d73b4b390a8ffac11069f8a5c85f29eff1f1b01bcf3ef5b2a20" ]; then
+if [ "${sha256}" != "87d4f8125c9988bfbed67af47dd7a953e2fc7b0cc1e7800ec6d2080d490bb353" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -74,6 +75,9 @@ CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
 %exclude %{python3_sitearch}/PIL/__pycache__/ImageQt*
 
 %changelog
+* Thu Oct 16 2025 Antoine Martin <antoine@xpra.org> - 12.0.0-1
+- new upstream release
+
 * Tue Oct 15 2024 Antoine Martin <antoine@xpra.org> - 11.0.0-1
 - new upstream release
 

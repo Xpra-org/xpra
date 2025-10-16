@@ -1,0 +1,12 @@
+--- a/pyproject.toml	2025-10-16 00:11:51.000000000 +0700
++++ b/pyproject.toml	2025-10-16 12:22:37.566319702 +0700
+@@ -15,8 +15,7 @@
+ keywords = [
+   "Imaging",
+ ]
+-license = "MIT-CMU"
+-license-files = [ "LICENSE" ]
++license = {text = "MIT-CMU"}
+ authors = [
+   { name = "Jeffrey A. Clark", email = "aclark@aclark.net" },
+ ]
