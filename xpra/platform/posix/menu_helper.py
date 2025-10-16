@@ -271,12 +271,12 @@ def add_entry_icon(entry_props: dict[str, Any], category: str):
     entry_props["IconType"] = ext
 
 
-def find_glob_icon(*names: str, category: str = "categories") -> tuple | None:
+def find_glob_icon(*names: str, category: str = "categories") -> str:
     if not LOAD_GLOB:
-        return None
+        return ""
     icondirs = getattr(IconTheme, "icondirs", [])
     if not icondirs:
-        return None
+        return ""
     dirnames = (category,)
     pathnames = []
     for name in names:
@@ -295,8 +295,8 @@ def find_glob_icon(*names: str, category: str = "categories") -> tuple | None:
                 v = icon_util.load_icon_from_file(f)
                 if v:
                     log(f"found icon for {names} with glob {pathname!r}: {f}")
-                    return v
-    return None
+                    return f
+    return ""
 
 
 def noicondata(d: dict) -> dict:
