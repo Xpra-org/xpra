@@ -327,6 +327,7 @@ class EncodingsConnection(StubClientConnection):
             if k in c:
                 self.encoding_options[ek] = c.boolget(k)
         # 2: standardized encoding options:
+        self.icons_encoding_options.update(self.encoding_options.pop("icons", None) or {})
         for k in c.keys():
             if k.startswith("theme.") or k.startswith("encoding.icons."):
                 self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c.get(k)
