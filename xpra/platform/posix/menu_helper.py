@@ -125,8 +125,8 @@ if LOAD_FROM_THEME:
                         themes[theme.name] = theme
 
             addtheme(Config.icon_theme)
-            addtheme(get_saved_env().get("XDG_MENU_PREFIX"))
-            addtheme(get_saved_env().get("XDG_SESSION_DESKTOP"))
+            addtheme(get_saved_env().get("XDG_MENU_PREFIX", ""))
+            addtheme(get_saved_env().get("XDG_SESSION_DESKTOP", ""))
             if len(themes) < MAX_THEMES:
                 for x in glob.glob(f"{sys.prefix}/share/icons/*/index.theme"):
                     parts = x.split(os.path.sep)
@@ -172,7 +172,7 @@ def load_entry_icon(props: dict):
         if name and name not in names:
             names.append(name)
     for x in ("Exec", "TryExec"):
-        cmd = props.get(x)
+        cmd = props.get(x, "")
         if cmd and not cmd.endswith(os.path.sep):
             cmd = os.path.basename(cmd)
             if cmd not in names:
@@ -547,7 +547,7 @@ def load_applications(menu_data=None):
                 ed = load_xdg_entry(me.DesktopEntry)
                 if not ed:
                     continue
-                app_name = ed.get("Name") or ""
+                app_name = ed.get("Name", "")
                 if app_name and not already_has_name(app_name):
                     entries[app_name] = ed
     log("entries(%s)=%s", LOAD_APPLICATIONS, remove_icons(entries))
