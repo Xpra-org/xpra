@@ -174,7 +174,7 @@ def load_entry_icon(props: dict):
     for x in ("Exec", "TryExec"):
         cmd = props.get(x, "")
         if cmd and not cmd.endswith(os.path.sep):
-            cmd = os.path.basename(cmd)
+            cmd = os.path.basename(cmd).split(" ")[0]
             if cmd not in names:
                 names.append(cmd)
     filename = find_icon(*names)
