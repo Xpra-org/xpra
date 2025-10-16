@@ -91,17 +91,23 @@ class WindowIconSource:
 
     def get_info(self) -> dict[str, Any]:
         idata = self.window_icon_data
-        if not idata:
-            return {}
-        w, h, fmt, data = idata
-        return {
-            "icon": {
+        info = {
+            "png": self.has_png,
+            "default": self.has_default,
+            "theme_default": self.theme_default_icons,
+            "greedy": self.window_icon_greedy,
+            "icon-size": self.window_icon_size,
+            "icon-max-size": self.window_icon_max_size,
+        }
+        if idata:
+            w, h, fmt, data = idata
+            info["current"] = {
                 "width": w,
                 "height": h,
                 "format": fmt,
                 "bytes": len(data),
             }
-        }
+        return {"icon": info}
 
     @staticmethod
     def get_fallback_window_icon():
@@ -147,7 +153,8 @@ class WindowIconSource:
             return
         # this runs in the UI thread
         icons = self.window.get_property("icons")
-        log("send_window_icon window %s found %i icons", self.window, len(icons or ()))
+        log("send_window_icon window %s found %i icons, window_icon_greedy=%s, has_default=%s",
+            self.window, len(icons or ()), self.window_icon_greedy, self.has_default)
         if not icons:
             if self.client_has_theme_icon():
                 log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
