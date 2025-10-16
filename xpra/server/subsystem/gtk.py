@@ -12,7 +12,7 @@ from xpra.os_util import gi_import
 from xpra.util.system import is_X11
 from xpra.util.version import dict_version_trim
 from xpra.util.screen import prettify_plug_name
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, noop
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.gtk.info import get_screen_sizes
 from xpra.server import features
@@ -20,6 +20,8 @@ from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("server", "gtk")
+
+get_default_window_icon_fallback = noop
 
 
 def gdk_init() -> None:
@@ -30,12 +32,15 @@ def gdk_init() -> None:
         log.warn(f"Warning: unable to initialize gdk display source: {e}")
         return
     init_gdk_display_source()
-    # inject Gtk into the windowicon lookup:
-    try:
-        from xpra.server.window import windowicon
-        windowicon.get_default_window_icon = get_default_window_icon
-    except ImportError:
-        pass
+    global get_default_window_icon_fallback
+    if get_default_window_icon_fallback == noop:
+        # inject Gtk into the windowicon lookup:
+        try:
+            from xpra.server.window import windowicon
+            get_default_window_icon_fallback = windowicon.do_get_default_window_icon
+            windowicon.get_default_window_icon = get_default_window_icon
+        except ImportError:
+            pass
 
 
 def get_default_window_icon(size: int, wmclass_name: str):
@@ -63,7 +68,7 @@ def get_default_window_icon(size: int, wmclass_name: str):
                 return w, h, "RGBA", pixbuf.get_pixels()
         except Exception:
             log("%s.load_icon()", i, exc_info=True)
-    return None
+    return get_default_window_icon_fallback(size, wmclass_name)
 
 
 class GTKServer(StubServerMixin):

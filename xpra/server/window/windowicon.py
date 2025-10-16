@@ -15,7 +15,7 @@ try:
 except ImportError:
     Image = None
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.io import load_binary_file
 from xpra.net import compression
 from xpra.util.str_fn import csv, memoryview_to_bytes
@@ -35,11 +35,38 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 MAX_ARGB_PIXELS = envint("XPRA_MAX_ARGB_PIXELS", 1024)
 
 
-def no_default_window_icon(_size: int, _name: str):
+def do_get_default_window_icon(size: int, name: str):
+    log("do_get_default_window_icon(%i, %s)", size, name)
+    if POSIX and not OSX and Image:
+        try:
+            from xpra.platform.posix.menu_helper import find_icon
+            filename = find_icon(name)
+            log("find_icon(%s)=%s", name, filename)
+            if filename:
+                img = Image.open(filename)
+                img.load()
+                w = int(img.width)
+                h = int(img.height)
+                log("size=%ix%i", w, h)
+                if w != size or h != size:
+                    try:
+                        NEAREST = Image.Resampling.NEAREST
+                    except AttributeError:
+                        NEAREST = Image.NEAREST
+                    img = img.resize((w, h), NEAREST)
+                from io import BytesIO
+                buf = BytesIO()
+                img.save(buf, "png")
+                data = buf.getvalue()
+                buf.close()
+                img.close()
+                return size, size, "png", data
+        except (OSError, ValueError, TypeError, ImportError) as e:
+            log("do_get_default_window_icon(%i, %r) %s", size, name, e)
     return ""
 
 
-get_default_window_icon = no_default_window_icon
+get_default_window_icon = do_get_default_window_icon
 
 
 class WindowIconSource:
@@ -58,7 +85,7 @@ class WindowIconSource:
         log("WindowIconSource(%s, %s) has_png=%s",
             window_icon_encodings, icons_encoding_options, self.has_png)
 
-        self.window_icon_data = None
+        self.window_icon_data: tuple[int, int, str, bytes] | None = None
         self.send_window_icon_timer = 0
         self.theme_default_icons = icons_encoding_options.strtupleget("default.icons")
         self.window_icon_greedy = icons_encoding_options.boolget("greedy", False)
