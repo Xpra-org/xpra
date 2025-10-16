@@ -60,6 +60,10 @@ class ClientDisplayMixin(StubSourceMixin):
         return info
 
     def parse_client_caps(self, c: typedict) -> None:
+        if isinstance(c.get("display"), str):
+            # we can't use a string for anything
+            log.info("legacy `display` caps not supported")
+            return
         self.vrefresh = c.intget("vrefresh", -1)
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
