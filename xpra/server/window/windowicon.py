@@ -202,7 +202,7 @@ class WindowIconSource:
             if self.has_default:
                 # client will set the default itself,
                 # send a mostly empty packet:
-                packet = ("window-icon", self.wid, 0, 0, "default", "")
+                packet = ("window-icon", self.wid, 0, 0, "default", b"")
                 log("queuing window icon update: %s", packet)
                 # this is cheap, so don't use the encode thread,
                 # and make sure we don't send another one via the timer:
