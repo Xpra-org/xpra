@@ -415,20 +415,20 @@ class WindowServer(StubServerMixin):
     def _process_focus(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
-        wid = packet.get_wid()
-        focuslog("process_focus: wid=%s", wid)
-        if len(packet) >= 3:
-            modifiers = packet.get_strs(2)
-        else:
-            modifiers = None
         ss = self.get_server_source(proto)
         if ss:
-            self._focus(ss, wid, modifiers)
-            # if the client focused one of our windows, count this as a user event:
-            if wid > 0:
-                ss.emit("user-event", "focus")
+            return
+        wid = packet.get_wid()
+        focuslog("process_focus: wid=%s", wid)
+        modifiers = None
+        if len(packet) >= 3:
+            modifiers = packet.get_strs(2)
+        self._focus(ss, wid, modifiers)
+        # if the client focused one of our windows, count this as a user event:
+        if wid > 0:
+            ss.emit("user-event", "focus")
 
-    def _focus(self, _server_source, wid, modifiers) -> None:
+    def _focus(self, _server_source, wid: int, modifiers) -> None:
         focuslog("_focus(%s,%s)", wid, modifiers)
 
     def get_focus(self) -> int:
