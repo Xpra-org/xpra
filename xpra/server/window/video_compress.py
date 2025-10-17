@@ -2460,6 +2460,10 @@ class WindowVideoSource(WindowSource):
         videolog("do_video_encode(%s, %s, %s)", encoding, image, options)
         x, y, w, h = image.get_geometry()[:4]
         src_format = image.get_pixel_format()
+        if not src_format:
+            log.warn("Warning: cannot encode an image without a valid pixel format!")
+            log.warn(" %s", image)
+            return ()
         if self.pixel_format != src_format:
             videolog.warn("Warning: image pixel format unexpectedly changed from %s to %s",
                           self.pixel_format, src_format)
