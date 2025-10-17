@@ -625,8 +625,13 @@ cdef extern from "wlr/types/wlr_xdg_shell.h":
         wl_listener display_destroy
 
     wlr_xdg_shell *wlr_xdg_shell_create(wl_display *display, int version)
-    void wlr_xdg_toplevel_set_size(wlr_xdg_toplevel *toplevel, int width, int height) nogil
-    void wlr_xdg_surface_schedule_configure(wlr_xdg_surface *surface) nogil
+    uint32_t wlr_xdg_toplevel_set_size(wlr_xdg_toplevel *toplevel, int width, int height) nogil
+    uint32_t wlr_xdg_toplevel_set_activated(wlr_xdg_toplevel *toplevel, bint activated) nogil
+    uint32_t wlr_xdg_toplevel_set_maximized(wlr_xdg_toplevel *toplevel, bint maximized) nogil
+    uint32_t wlr_xdg_toplevel_set_fullscreen(wlr_xdg_toplevel *toplevel, bint fullscreen) nogil
+    uint32_t wlr_xdg_toplevel_set_resizing(wlr_xdg_toplevel *toplevel, bint resizing) nogil
+    uint32_t wlr_xdg_toplevel_set_tiled(wlr_xdg_toplevel *toplevel, uint32_t tiled_edges) nogil
+    uint32_t wlr_xdg_surface_schedule_configure(wlr_xdg_surface *surface) nogil
 
 
 cdef extern from "wlr/types/wlr_xdg_decoration_v1.h":

@@ -47,7 +47,7 @@ from xpra.wayland.wlroots cimport (
     wlr_xdg_toplevel, wlr_xdg_surface,
     wlr_texture_read_pixels_options, wlr_texture_read_pixels,
     wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event,
-    wlr_xdg_toplevel_set_size,
+    wlr_xdg_toplevel_set_size, wlr_xdg_toplevel_set_activated,
     wlr_xdg_surface_schedule_configure,
     wlr_output_layout_add_auto, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
     wlr_output_commit_state, wlr_output_state_finish,
@@ -684,6 +684,16 @@ cdef class WaylandCompositor:
 
     def get_keyboard_device(self):
         return None #WaylandKeyboard(<uintptr_t> self.srv.seat)
+
+    def resize(self, surf: int, width: int, height: int) -> None:
+        cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)
+        cdef wlr_xdg_toplevel *toplevel = surface.toplevel
+        wlr_xdg_toplevel_set_size(toplevel, width, height)
+
+    def focus(self, surf: int, focused: bool) -> None:
+        cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)
+        cdef wlr_xdg_toplevel *toplevel = surface.toplevel
+        wlr_xdg_toplevel_set_activated(toplevel, focused)
 
     def __dealloc__(self):
         self.cleanup()
