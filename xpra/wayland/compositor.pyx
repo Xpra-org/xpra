@@ -219,17 +219,10 @@ cdef bint debug = log.is_debug_enabled()
 # Callback implementations
 cdef void capture_surface_pixels(xdg_surface *surface) noexcept:
     cdef wlr_surface *wlr_surface = surface.wlr_xdg_surface.surface
-    cdef wlr_client_buffer *client_buffer
-    cdef wlr_texture *texture
-    cdef wlr_box src_box
-    cdef wlr_texture_read_pixels_options opts
-
-    if not wlr_surface.buffer:
+    cdef wlr_client_buffer *client_buffer = wlr_surface.buffer
+    if not client_buffer:
         return
-
-    client_buffer = wlr_surface.buffer
-    texture = client_buffer.texture
-
+    cdef wlr_texture *texture = client_buffer.texture
     if not texture:
         return
 
@@ -240,6 +233,7 @@ cdef void capture_surface_pixels(xdg_surface *surface) noexcept:
     cdef MemBuf texture_buffer = getbuf(texture_size, 0)
     log("Allocated pixel buffer: %dx%d (%d bytes)", width, height, texture_size)
 
+    cdef wlr_texture_read_pixels_options opts
     opts.data = <void*> texture_buffer.get_mem()
     opts.format = DRM_FORMAT_ABGR8888
     opts.stride = stride
@@ -248,8 +242,13 @@ cdef void capture_surface_pixels(xdg_surface *surface) noexcept:
     # we can't modify src_box because it is declared as const,
     # but since we also cannot initialize the struct with the value we need,
     # let's patch it up by hand afterwards - yes this is safe
+    cdef wlr_box src_box
     memset(<void *> &opts.src_box, 0, sizeof(wlr_box))
     cdef int *iptr
+    iptr = <int*> &opts.src_box.x
+    iptr[0] = surface.wlr_xdg_surface.geometry.x
+    iptr = <int*> &opts.src_box.y
+    iptr[0] = surface.wlr_xdg_surface.geometry.y
     iptr = <int*> &opts.src_box.width
     iptr[0] = width
     iptr = <int*> &opts.src_box.height
@@ -338,9 +337,9 @@ cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
     with gil:
         title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
         app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
-        geom = (geometry.x, geometry.y, geometry.width, geometry.height)
-        log("XDG surface MAPPED: %r, geometry=%s", title, geom)
-        emit("map", surface.wid, title, app_id, geom)
+        size = (geometry.width, geometry.height)
+        log("XDG surface MAPPED: %r, size=%s", title, size)
+        emit("map", surface.wid, title, app_id, size)
 
 
 cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept nogil:
@@ -544,9 +543,9 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
     app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
     log("configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
-    geom = (xdg_surf.geometry.x, xdg_surf.geometry.y, xdg_surf.geometry.width, xdg_surf.geometry.height)
-    log("geometry=%s", geom)
-    emit("new-surface", <uintptr_t> xdg_surf, wid, title, app_id, geom)
+    size = (xdg_surf.geometry.width, xdg_surf.geometry.height)
+    log("size=%s", size)
+    emit("new-surface", <uintptr_t> xdg_surf, wid, title, app_id, size)
 
 
 # Python interface

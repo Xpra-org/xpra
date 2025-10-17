@@ -633,6 +633,8 @@ cdef extern from "wlr/types/wlr_xdg_shell.h":
     uint32_t wlr_xdg_toplevel_set_tiled(wlr_xdg_toplevel *toplevel, uint32_t tiled_edges) nogil
     uint32_t wlr_xdg_surface_schedule_configure(wlr_xdg_surface *surface) nogil
 
+    void wlr_xdg_surface_get_geometry(wlr_xdg_surface *surface, wlr_box *box)
+
 
 cdef extern from "wlr/types/wlr_xdg_decoration_v1.h":
     ctypedef enum wlr_xdg_toplevel_decoration_v1_mode:

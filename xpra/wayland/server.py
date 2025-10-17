@@ -129,7 +129,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.resize(surface, w, h)
         self.refresh_window(window)
 
-    def _new_surface(self, surface: int, wid: int, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
+    def _new_surface(self, surface: int, wid: int, title: str, app_id: str, size: tuple[int, int]) -> None:
+        geom = (0, 0, size[0], size[1])
         window = Window()
         window.setup()
         window._internal_set_property("surface", surface)
@@ -141,7 +142,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._internal_set_property("depth", 32)
         window._internal_set_property("decorations", False)
         self.do_add_new_window_common(wid, window)
-        if geom != (0, 0, 0, 0):
+        if size != (0, 0):
             self._do_send_new_window_packet("new-window", window, geom)
         #surface = self.get_surface(wid)
         #log.warn("surface(%i)=%#x", wid, surface)
@@ -168,16 +169,16 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._updateprop("image", image)
         # we can't free the previous image, which may still be referenced by the window compression thread
 
-    def _map(self, wid: int, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
+    def _map(self, wid: int, title: str, app_id: str, size: tuple[int, int]) -> None:
         window = self._id_to_window.get(wid)
         if not window:
             log.warn("Warning: cannot map window %i: not found!", wid)
             return
         old_geom = window.get_property("geometry")
+        geom = (old_geom[0], old_geom[1], size[0], size[1])
         window._updateprop("geometry", geom)
         window._updateprop("title", title)
         window._updateprop("app-id", app_id)
-
         if old_geom == (0, 0, 0, 0):
             self._do_send_new_window_packet("new-window", window, geom)
 

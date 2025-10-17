@@ -25,7 +25,7 @@ class Window(WindowModelStub):
         ),
         "geometry": (
             GObject.TYPE_PYOBJECT,
-            "current coordinates (x, y, w, h, border) for the window", "",
+            "current coordinates (x, y, w, h) for the window", "",
             GObject.ParamFlags.READABLE,
         ),
         "decorations": (
