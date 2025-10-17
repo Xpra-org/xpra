@@ -105,7 +105,7 @@ class RFBSource:
     def update_mouse(self, *args) -> None:
         log("update_mouse%s", args)
 
-    def damage(self, _wid, window, x, y, w, h, options=None) -> None:
+    def damage(self, _wid: int, window, x: int, y: int, w: int, h: int, options=None) -> None:
         polling = options and options.get("polling", False)
         p = self.protocol
         if polling and p is None or p.queue_size() >= 2:

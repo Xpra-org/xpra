@@ -671,7 +671,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self._do_send_new_window_packet("new-override-redirect", window, geometry)
         self.refresh_window(window)
 
-    def _send_new_tray_window_packet(self, wid, window) -> None:
+    def _send_new_tray_window_packet(self, wid: int, window) -> None:
         ww, wh = window.get_dimensions()
         for ss in self.window_sources():
             ss.new_tray(wid, window, ww, wh)

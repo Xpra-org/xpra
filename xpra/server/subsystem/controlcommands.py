@@ -693,7 +693,7 @@ class ServerBaseControlCommands(StubServerMixin):
             vs.set_detection(detection)
         return "video region detection %s for window %i" % (["disabled", "enabled"][int(detection)], wid)
 
-    def control_command_video_region(self, wid, x: int, y: int, w: int, h: int) -> str:
+    def control_command_video_region(self, wid: int, x: int, y: int, w: int, h: int) -> str:
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_region(x, y, w, h)
         return "video region set to %s for window %i" % ((x, y, w, h), wid)

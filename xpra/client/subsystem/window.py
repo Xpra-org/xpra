@@ -674,7 +674,7 @@ class WindowClient(StubClientMixin):
         from xpra.platform.systray import get_forwarding_backends
         return get_forwarding_backends()
 
-    def setup_system_tray(self, client, app_id, wid, w, h, metadata):
+    def setup_system_tray(self, client, app_id, wid: int, w: int, h: int, metadata: typedict):
         tray_widget = None
 
         # this is a tray forwarded for a remote application

@@ -372,11 +372,11 @@ class WindowsConnection(StubClientConnection):
         for ws in tuple(self.window_sources.values()):
             ws.init_encoders()
 
-    def map_window(self, wid, window, coords=None) -> None:
+    def map_window(self, wid: int, window, coords=None) -> None:
         ws = self.make_window_source(wid, window)
         ws.map(coords)
 
-    def unmap_window(self, wid, _window) -> None:
+    def unmap_window(self, wid: int, _window) -> None:
         ws = self.window_sources.get(wid)
         if ws:
             ws.unmap()

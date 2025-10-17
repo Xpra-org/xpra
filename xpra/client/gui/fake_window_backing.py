@@ -18,7 +18,7 @@ FAKE_BACKING_DELAY = envint("XPRA_FAKE_BACKING_DELAY", 5)
 class FakeBacking:
     HAS_ALPHA = True
 
-    def __init__(self, wid, *_args):
+    def __init__(self, wid: int, *_args):
         self.wid = wid
         self.fake_delay = FAKE_BACKING_DELAY
         self._video_encoder = None

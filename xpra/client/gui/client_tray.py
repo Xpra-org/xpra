@@ -33,7 +33,7 @@ class ClientTray(ClientWidgetBase):
     DEFAULT_SIZE = [64, 64]
     DEFAULT_GEOMETRY: tuple[int, int, int, int] = tuple(DEFAULT_LOCATION + DEFAULT_SIZE)
 
-    def __init__(self, client, wid, w, h, metadata, tray_widget, mmap_area):
+    def __init__(self, client, wid: int, w: int, h: int, metadata, tray_widget, mmap_area):
         log("ClientTray%s", (client, wid, w, h, tray_widget, mmap_area))
         super().__init__(client, wid, True)
         self._size = w, h

@@ -1083,7 +1083,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         screen = Gdk.Screen.get_default()
         screen.connect("size-changed", self.screen_size_changed)
 
-    def window_grab(self, wid, window) -> None:
+    def window_grab(self, wid: int, window) -> None:
         event_mask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
         event_mask |= Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK
         event_mask |= Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK
