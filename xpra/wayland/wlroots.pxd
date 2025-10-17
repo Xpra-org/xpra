@@ -640,6 +640,9 @@ cdef extern from "wlr/types/wlr_xdg_decoration_v1.h":
         WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE
         WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
 
+    cdef struct wlr_xdg_toplevel_decoration_v1_state:
+        wlr_xdg_toplevel_decoration_v1_mode mode
+
     cdef struct wlr_xdg_decoration_manager_v1_events:
         wl_signal new_toplevel_decoration
         wl_signal destroy
@@ -661,8 +664,10 @@ cdef extern from "wlr/types/wlr_xdg_decoration_v1.h":
 
         wl_list link  # wlr_xdg_decoration_manager_v1::decorations
 
-        wlr_xdg_toplevel_decoration_v1_mode current_mode
-        wlr_xdg_toplevel_decoration_v1_mode pending_mode
+        wlr_xdg_toplevel_decoration_v1_state current
+        wlr_xdg_toplevel_decoration_v1_state pending
+
+        wlr_xdg_toplevel_decoration_v1_mode scheduled_mode
         wlr_xdg_toplevel_decoration_v1_mode requested_mode
 
         bint added

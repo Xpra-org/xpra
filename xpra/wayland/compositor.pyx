@@ -325,8 +325,11 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
 cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept nogil:
     cdef server *srv = server_from_new_toplevel_decoration(listener)
     cdef wlr_xdg_toplevel_decoration_v1 *decoration = <wlr_xdg_toplevel_decoration_v1*>data
+    cdef wlr_xdg_toplevel *toplevel = decoration.toplevel
+    cdef bint ssd = decoration.requested_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
     wlr_xdg_toplevel_decoration_v1_set_mode(decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
-
+    with gil:
+        emit("ssd", <uintptr_t> toplevel, bool(ssd))
 
 cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
     cdef xdg_surface *surface = xdg_surface_from_map(listener)

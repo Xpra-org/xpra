@@ -139,6 +139,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._internal_set_property("geometry", geom)
         window._internal_set_property("image", None)
         window._internal_set_property("depth", 32)
+        window._internal_set_property("decorations", False)
         self.do_add_new_window_common(wid, window)
         if geom != (0, 0, 0, 0):
             self._do_send_new_window_packet("new-window", window, geom)

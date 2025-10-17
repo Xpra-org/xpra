@@ -28,6 +28,12 @@ class Window(WindowModelStub):
             "current coordinates (x, y, w, h, border) for the window", "",
             GObject.ParamFlags.READABLE,
         ),
+        "decorations": (
+            GObject.TYPE_BOOLEAN,
+            "Should the window be decorated?", "",
+            False,
+            GObject.ParamFlags.READABLE,
+        ),
         "depth": (
             GObject.TYPE_INT,
             "window bit depth", "",
@@ -97,9 +103,9 @@ class Window(WindowModelStub):
 
     # things that we expose:
     _property_names = [
-        "depth", "has-alpha",
+        "depth", "has-alpha", "decorations",
         "client-machine", "pid",
-        "title", "role",
+        "title", "role", "app-id",
         "command",
     ]
     # exposed and changing (should be watched for notify signals):
