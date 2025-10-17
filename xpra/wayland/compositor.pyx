@@ -58,6 +58,7 @@ from xpra.wayland.wlroots cimport (
     WLR_XDG_SURFACE_ROLE_NONE,
     WLR_XDG_SURFACE_ROLE_TOPLEVEL,
 )
+from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
 
 # generic event listeners:
 event_listeners: Dict[str, List[Callable]] = {}
@@ -375,10 +376,28 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
         wlr_xdg_toplevel_set_size(xdg_surface.toplevel, 800, 600)
         wlr_xdg_surface_schedule_configure(xdg_surface)
 
-    if xdg_surface.surface.mapped:
-        with gil:
+    cdef wlr_surface *wlr_surface = surface.wlr_xdg_surface.surface
+    with gil:
+        rects = []
+        if wlr_surface.mapped:
+            rects = get_damage_areas(&wlr_surface.buffer_damage)
             capture_surface_pixels(surface)
+        emit("commit", surface.wid, bool(wlr_surface.mapped), rects)
 
+
+cdef object get_damage_areas(pixman_region32_t *damage):
+    cdef int n_rects = 0
+    cdef pixman_box32_t *rects = pixman_region32_rectangles(damage, &n_rects)
+
+    rectangles = []
+    cdef int i
+    for i in range(n_rects):
+        x = rects[i].x1
+        y = rects[i].y1
+        w = rects[i].x2 - rects[i].x1
+        h = rects[i].y2 - rects[i].y1
+        rectangles.append((x, y, w, h))
+    return rectangles
 
 cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept nogil:
     cdef xdg_surface *surface = xdg_surface_from_request_move(listener)
@@ -636,7 +655,7 @@ cdef class WaylandCompositor:
         self.srv.display = NULL
 
     def get_pointer_device(self):
-        return None #WaylandPointer(<uintptr_t> self.srv.seat, <uintptr_t> self.srv.cursor)
+        return WaylandPointer(<uintptr_t> self.srv.seat, <uintptr_t> self.srv.cursor)
 
     def get_keyboard_device(self):
         return None #WaylandKeyboard(<uintptr_t> self.srv.seat)

@@ -41,6 +41,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         add_event_listener("surface-image", self._surface_image)
         add_event_listener("map", self._map)
         add_event_listener("unmap", self._unmap)
+        add_event_listener("commit", self._commit)
         add_event_listener("destroy", self._destroy)
 
     def make_keyboard_device(self):
@@ -55,7 +56,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return keyboard_config
 
     def make_pointer_device(self):
-        return self.compositor.get_pointer_device()
+        return None  # self.compositor.get_pointer_device()
 
     @staticmethod
     def get_clipboard_class():
@@ -102,7 +103,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._internal_set_property("title", title)
         window._internal_set_property("iconic", True)
         window._internal_set_property("geometry", geom)
-        window._internal_set_property("pixel-data", b"")
+        window._internal_set_property("image", None)
+        window._internal_set_property("depth", 32)
         self.do_add_new_window_common(wid, window)
         if geom != (0, 0, 0, 0):
             self._do_send_new_window_packet("new-window", window, geom)
@@ -125,7 +127,6 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._updateprop("image", image)
         if prev_image:
             prev_image.free()
-        self.refresh_window(window)
 
     def _map(self, wid: int, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
         window = self._id_to_window.get(wid)
@@ -143,6 +144,18 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if not window:
             return
         window.set_property("iconic", True)
+
+    def _commit(self, wid: int, mapped: bool, rects: Sequence[tuple[int, int, int, int]]) -> None:
+        window = self._id_to_window.get(wid)
+        if not window:
+            return
+        options = {
+            "damage": True,
+        }
+        last = len(rects) - 1
+        for i, (x, y, w, h) in enumerate(rects):
+            options["more"] = i != last
+            self.refresh_window_area(window, x, y, w, h, options=options)
 
     def _destroy(self, wid: int) -> None:
         self._remove_wid(wid)
