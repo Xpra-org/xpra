@@ -629,6 +629,54 @@ cdef extern from "wlr/types/wlr_xdg_shell.h":
     void wlr_xdg_surface_schedule_configure(wlr_xdg_surface *surface) nogil
 
 
+cdef extern from "wlr/types/wlr_xdg_decoration_v1.h":
+    ctypedef enum wlr_xdg_toplevel_decoration_v1_mode:
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_NONE
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
+
+    cdef struct wlr_xdg_decoration_manager_v1_events:
+        wl_signal new_toplevel_decoration
+        wl_signal destroy
+
+    cdef struct wlr_xdg_decoration_manager_v1:
+        wl_list decorations  # List of wlr_xdg_toplevel_decoration_v1
+        wlr_xdg_decoration_manager_v1_events events
+        void *data
+
+    cdef struct wlr_xdg_toplevel_decoration_v1_events:
+        wl_signal destroy
+        wl_signal request_mode
+
+    cdef struct wlr_xdg_toplevel_decoration_v1:
+        void *resource  # wl_resource
+        wlr_xdg_surface *surface
+        wlr_xdg_toplevel *toplevel
+        wlr_xdg_decoration_manager_v1 *manager
+
+        wl_list link  # wlr_xdg_decoration_manager_v1::decorations
+
+        wlr_xdg_toplevel_decoration_v1_mode current_mode
+        wlr_xdg_toplevel_decoration_v1_mode pending_mode
+        wlr_xdg_toplevel_decoration_v1_mode requested_mode
+
+        bint added
+
+        wlr_xdg_toplevel_decoration_v1_events events
+
+        # Listeners
+        wl_listener surface_destroy
+        wl_listener surface_configure
+        wl_listener surface_ack_configure
+        wl_listener surface_commit
+
+        void *data
+
+    wlr_xdg_decoration_manager_v1 *wlr_xdg_decoration_manager_v1_create(wl_display *display) nogil
+
+    void wlr_xdg_toplevel_decoration_v1_set_mode(wlr_xdg_toplevel_decoration_v1 *decoration, wlr_xdg_toplevel_decoration_v1_mode mode) nogil
+
+
 cdef extern from "wlr/types/wlr_scene.h":
     cdef struct wlr_scene_output:
         pass

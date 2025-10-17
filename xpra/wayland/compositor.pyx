@@ -32,6 +32,8 @@ from xpra.wayland.wlroots cimport (
     wlr_seat_create, wlr_seat_set_capabilities, wlr_seat_destroy,
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
     wlr_compositor, wlr_compositor_create,
+    wlr_xdg_decoration_manager_v1, wlr_xdg_toplevel_decoration_v1, wlr_xdg_decoration_manager_v1_create,
+    wlr_xdg_toplevel_decoration_v1_set_mode, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
     wlr_cursor_create, wlr_cursor_destroy,
     wlr_xdg_shell_create,
     wlr_scene, wlr_scene_create, wlr_scene_node_destroy, wlr_scene_output_create,
@@ -101,6 +103,9 @@ cdef struct server:
     wlr_xdg_shell *xdg_shell
     wlr_scene *scene
     wlr_seat *seat
+    wlr_xdg_decoration_manager_v1 *decoration_manager
+    wl_listener new_toplevel_decoration
+
     wlr_cursor *cursor
     wlr_output_layout *output_layout
     char *seat_name
@@ -152,6 +157,10 @@ cdef inline output* output_from_destroy(wl_listener *listener) noexcept nogil:
 
 cdef inline server* server_from_new_output(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<server*>0).new_output - <char*>0)
+    return <server*>(<char*>listener - offset)
+
+cdef inline server* server_from_new_toplevel_decoration(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<server*>0).new_toplevel_decoration - <char*>0)
     return <server*>(<char*>listener - offset)
 
 cdef inline server* server_from_new_xdg_surface(wl_listener *listener) noexcept nogil:
@@ -313,6 +322,12 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
         log.info("Output %r initialized", name)
 
 
+cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept nogil:
+    cdef server *srv = server_from_new_toplevel_decoration(listener)
+    cdef wlr_xdg_toplevel_decoration_v1 *decoration = <wlr_xdg_toplevel_decoration_v1*>data
+    wlr_xdg_toplevel_decoration_v1_set_mode(decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+
+
 cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
     cdef xdg_surface *surface = xdg_surface_from_map(listener)
     cdef wlr_xdg_toplevel *toplevel = surface.wlr_xdg_surface.toplevel
@@ -320,7 +335,6 @@ cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
     with gil:
         title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
         app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
-        role = "toplevel" if xdg_surf.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL else ""
         geom = (geometry.x, geometry.y, geometry.width, geometry.height)
         log("XDG surface MAPPED: %r, geometry=%s", title, geom)
         emit("map", surface.wid, title, app_id, geom)
@@ -580,6 +594,13 @@ cdef class WaylandCompositor:
         if not self.srv.output_layout:
             raise RuntimeError("Failed to create output layout")
 
+        self.srv.decoration_manager = wlr_xdg_decoration_manager_v1_create(self.srv.display)
+        if not self.srv.decoration_manager:
+            log.warn("Warning: unable to create the decoration manager")
+        else:
+            self.srv.new_toplevel_decoration.notify = new_toplevel_decoration
+            wl_signal_add(&self.srv.decoration_manager.events.new_toplevel_decoration, &self.srv.new_toplevel_decoration)
+
         # Create cursor
         self.srv.cursor = wlr_cursor_create()
         if not self.srv.cursor:
@@ -630,6 +651,9 @@ cdef class WaylandCompositor:
 
         if self.srv.new_output.link.next != NULL:
             wl_list_remove(&self.srv.new_output.link)
+
+        if self.srv.new_toplevel_decoration.link.next != NULL:
+            wl_list_remove(&self.srv.new_toplevel_decoration.link)
 
         if self.srv.scene:
             wlr_scene_node_destroy(&self.srv.scene.tree.node)

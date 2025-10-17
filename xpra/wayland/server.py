@@ -109,6 +109,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.do_add_new_window_common(wid, window)
         if geom != (0, 0, 0, 0):
             self._do_send_new_window_packet("new-window", window, geom)
+        #surface = self.get_surface(wid)
+        #log.warn("surface(%i)=%#x", wid, surface)
+        #self.pointer_device.enter_surface(surface, 23, 1)
 
     def _metadata(self, wid, prop: str, value) -> None:
         window = self._id_to_window.get(wid)
