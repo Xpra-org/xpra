@@ -56,6 +56,11 @@ class Window(WindowModelStub):
             "Window title", "",
             GObject.ParamFlags.READABLE,
         ),
+        "app-id": (
+            GObject.TYPE_PYOBJECT,
+            "Window app id", "",
+            GObject.ParamFlags.READABLE,
+        ),
         "role": (
             GObject.TYPE_PYOBJECT,
             "The window's role (ICCCM session management)", "",

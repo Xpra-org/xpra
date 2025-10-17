@@ -56,6 +56,7 @@ from xpra.wayland.wlroots cimport (
     WLR_ERROR, WLR_INFO, WLR_DEBUG,
     DRM_FORMAT_ABGR8888,
     WLR_XDG_SURFACE_ROLE_NONE,
+    WLR_XDG_SURFACE_ROLE_POPUP,
     WLR_XDG_SURFACE_ROLE_TOPLEVEL,
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
@@ -319,6 +320,7 @@ cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
     with gil:
         title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
         app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
+        role = "toplevel" if xdg_surf.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL else ""
         geom = (geometry.x, geometry.y, geometry.width, geometry.height)
         log("XDG surface MAPPED: %r, geometry=%s", title, geom)
         emit("map", surface.wid, title, app_id, geom)
@@ -522,13 +524,12 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
         wl_signal_add(&toplevel.events.set_app_id, &surface.set_app_id)
 
     log("All listeners attached")
-    role = "toplevel" if xdg_surf.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL else ""
     title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
     app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
     log("configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
     geom = (xdg_surf.geometry.x, xdg_surf.geometry.y, xdg_surf.geometry.width, xdg_surf.geometry.height)
     log("geometry=%s", geom)
-    emit("new-surface", <uintptr_t> xdg_surf, wid, role, title, app_id, geom)
+    emit("new-surface", <uintptr_t> xdg_surf, wid, title, app_id, geom)
 
 
 # Python interface

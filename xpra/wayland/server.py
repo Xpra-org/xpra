@@ -96,11 +96,12 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         log("pointer: %r",pointer)
         return super().do_process_mouse_common(proto, device_id, wid, pointer, props)
 
-    def _new_surface(self, surface, wid, role: str, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
+    def _new_surface(self, surface: int, wid: int, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
         window = Window()
         window.setup()
         window._internal_set_property("surface", surface)
         window._internal_set_property("title", title)
+        window._internal_set_property("app-id", app_id)
         window._internal_set_property("iconic", True)
         window._internal_set_property("geometry", geom)
         window._internal_set_property("image", None)
@@ -136,6 +137,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         old_geom = window.get_property("geometry")
         window._updateprop("geometry", geom)
         window._updateprop("title", title)
+        window._updateprop("app-id", app_id)
+
         if old_geom == (0, 0, 0, 0):
             self._do_send_new_window_packet("new-window", window, geom)
 
