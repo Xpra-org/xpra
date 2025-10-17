@@ -115,7 +115,8 @@ class Window(WindowModelStub):
         self._internal_set_property("client-machine", gethostname())
 
     def __repr__(self) -> str:  # pylint: disable=arguments-differ
-        return "WaylandWindow"
+        surf = self._gproperties.get("surface", 0)
+        return "WaylandWindow(%#x)" % surf
 
     def setup(self) -> None:
         self._managed = True
@@ -138,8 +139,9 @@ class Window(WindowModelStub):
         assert x == 0 and y == 0
         image = self._gproperties["image"]
         x, y, w, h = self._gproperties["geometry"]
-        assert width == w and height == h
-        return image
+        if width == w and height == h:
+            return image
+        return image.get_sub_image(x, y, width, height)
 
     def get_dimensions(self) -> tuple[int, int]:
         # just extracts the size from the geometry:

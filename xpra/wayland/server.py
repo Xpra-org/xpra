@@ -13,6 +13,7 @@ from xpra.wayland.compositor import WaylandCompositor, add_event_listener
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
 from xpra.net.common import Packet
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -69,6 +70,22 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             return 0
         return window._gproperties["surface"]
 
+    def _focus(self, _server_source, wid: int, modifiers) -> None:
+        if self.focused == wid:
+            return
+        log("_focus(%s, %s) current focus=%i", wid, modifiers, self.focused)
+        for window_id, state in {
+            self.focused: False,        # unfocus
+            wid: True,                  # focus
+        }.items():
+            if not window_id:
+                continue
+            window = self._id_to_window.get(window_id)
+            surface = self.get_surface(window_id)
+            if window and surface:
+                self.compositor.focus(surface, state)
+        self.focused = wid
+
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> bool:
         log("set_pointer_focus(%i) current focus=%i", wid, self.pointer_focus)
         if self.pointer_focus == wid:
@@ -112,22 +129,6 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.resize(surface, w, h)
         self.refresh_window(window)
 
-    def _focus(self, _server_source, wid: int, modifiers) -> None:
-        if self.focused == wid:
-            return
-        log("_focus(%s,%s)", wid, modifiers)
-        for window_id, state in {
-            self.focused: False,        # unfocus
-            wid: True,                  # focus
-        }.items():
-            if not window_id:
-                continue
-            window = self._id_to_window.get(window_id)
-            surface = self.get_surface(window_id)
-            if window and surface:
-                self.compositor.focus(surface, state)
-        self.focused = wid
-
     def _new_surface(self, surface: int, wid: int, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
         window = Window()
         window.setup()
@@ -160,10 +161,11 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             log.warn("Warning: cannot update window %i: not found!", wid)
             return
         log("new surface image for window %i: %s", wid, image)
-        prev_image = window._gproperties.get("image")
+        # don't free this image after use,
+        # we will replace it with a new one when needed
+        image.free = noop
         window._updateprop("image", image)
-        if prev_image:
-            prev_image.free()
+        # we can't free the previous image, which may still be referenced by the window compression thread
 
     def _map(self, wid: int, title: str, app_id: str, geom: tuple[int, int, int, int]) -> None:
         window = self._id_to_window.get(wid)
