@@ -87,21 +87,25 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.focused = wid
 
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
-        log("set_pointer_focus(%i) current focus=%i", wid, self.pointer_focus)
+        log("set_pointer_focus(%i, %s)", wid, pointer)
         if self.pointer_focus == wid:
+            log(" unchanged")
             # no change
             return
+        log(" current focus=%i", self.pointer_focus)
         if self.pointer_focus and wid == 0:
             # no window has the focus:
             self.pointer_device.leave_surface()
             self.pointer_focus = 0
             return
         surface = self.get_surface(wid)
-        log("surface(%i)=%#x", wid, surface)
-        if surface and len(pointer) >= 4:
-            x, y = pointer[2:4]
-            if self.pointer_device.enter_surface(surface, x, y):
-                self.pointer_focus = wid
+        log.error("surface(%i)=%#x", wid, surface)
+        if surface:
+            if len(pointer) >= 4:
+                x, y = pointer[2:4]
+                if self.pointer_device.enter_surface(surface, x, y):
+                    self.pointer_focus = wid
+            self.keyboard_device.focus(surface)
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
         self.set_pointer_focus(wid, pointer)

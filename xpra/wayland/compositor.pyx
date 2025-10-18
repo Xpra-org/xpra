@@ -31,6 +31,7 @@ from xpra.wayland.wlroots cimport (
     wlr_seat, wlr_cursor, wlr_output_layout,
     wlr_seat_create, wlr_seat_set_capabilities, wlr_seat_destroy,
     WL_SEAT_CAPABILITY_POINTER, WL_SEAT_CAPABILITY_KEYBOARD, WL_SEAT_CAPABILITY_TOUCH,
+    wlr_seat_keyboard_notify_enter,
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
     wlr_compositor, wlr_compositor_create,
     wlr_xdg_decoration_manager_v1, wlr_xdg_toplevel_decoration_v1, wlr_xdg_decoration_manager_v1_create,
@@ -683,7 +684,7 @@ cdef class WaylandCompositor:
         return WaylandPointer(<uintptr_t> self.srv.seat, <uintptr_t> self.srv.cursor)
 
     def get_keyboard_device(self):
-        return None #WaylandKeyboard(<uintptr_t> self.srv.seat)
+        return WaylandKeyboard(<uintptr_t> self.srv.seat)
 
     def resize(self, surf: int, width: int, height: int) -> None:
         cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)

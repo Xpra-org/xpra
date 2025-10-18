@@ -10,6 +10,22 @@ ctypedef void wlr_session
 ctypedef void wlr_swapchain
 
 
+DEF WLR_KEYBOARD_KEYS_CAP = 32
+DEF WLR_LED_COUNT = 3
+DEF WLR_MODIFIER_COUNT = 8
+
+
+cdef extern from "xkbcommon/xkbcommon.h":
+    ctypedef struct xkb_keymap:
+        pass
+
+    ctypedef struct xkb_state:
+        pass
+
+    ctypedef uint32_t xkb_led_index_t
+    ctypedef uint32_t xkb_mod_index_t
+
+
 cdef extern from "drm/drm_fourcc.h":
     # RGB 15 / 16 bit:
     uint32_t DRM_FORMAT_BGRX5551
@@ -456,20 +472,62 @@ cdef extern from "wlr/types/wlr_seat.h":
     void wlr_seat_keyboard_notify_enter(wlr_seat *seat, wlr_surface *surface,
                                         uint32_t *keycodes, size_t num_keycodes, wlr_keyboard_modifiers *modifiers)
     void wlr_seat_set_keyboard(wlr_seat *seat, wlr_input_device *dev)
+    void wlr_seat_keyboard_clear_focus(wlr_seat *seat)
 
     wlr_keyboard* wlr_seat_get_keyboard(wlr_seat *seat)
 
 
 cdef extern from "wlr/types/wlr_keyboard.h":
+    cdef struct wlr_seat_keyboard_state:
+        wlr_surface *focused_surface
+
     cdef struct wlr_keyboard_modifiers:
         uint32_t depressed
         uint32_t latched
         uint32_t locked
         uint32_t group
 
+    cdef struct wlr_keyboard_repeat_info:
+        int32_t rate
+        int32_t delay
+
+    cdef struct wlr_keyboard_events:
+        wl_signal key
+        wl_signal modifiers
+        wl_signal keymap
+        wl_signal repeat_info
+        wl_signal destroy
+
+    ctypedef struct wlr_keyboard_impl:
+        pass
+
     cdef struct wlr_keyboard:
+        wlr_input_device *base
+        const wlr_keyboard_impl *impl
+        void *data
+
+        # Keymap information
+        char *keymap_string
+        size_t keymap_size
+        xkb_keymap *keymap
+        xkb_state *xkb_state
+
+        # XKB indexes
+        xkb_led_index_t led_indexes[WLR_LED_COUNT]
+        xkb_mod_index_t mod_indexes[WLR_MODIFIER_COUNT]
+
+        # Currently pressed keys
+        uint32_t keycodes[WLR_KEYBOARD_KEYS_CAP]
+        size_t num_keycodes
+
+        # Current modifier state
         wlr_keyboard_modifiers modifiers
-        # ... other fields
+
+        # Repeat configuration
+        wlr_keyboard_repeat_info repeat_info
+
+        # Events
+        wlr_keyboard_events events
 
     enum wlr_keyboard_modifier:
         WLR_MODIFIER_SHIFT
@@ -480,13 +538,6 @@ cdef extern from "wlr/types/wlr_keyboard.h":
         WLR_MODIFIER_MOD3
         WLR_MODIFIER_LOGO
         WLR_MODIFIER_MOD5
-
-    void wlr_seat_keyboard_notify_key(wlr_seat *seat, uint32_t time_msec, uint32_t key, uint32_t state)
-    void wlr_seat_keyboard_notify_modifiers(wlr_seat *seat, wlr_keyboard_modifiers *modifiers)
-    void wlr_seat_keyboard_notify_enter(wlr_seat *seat, wlr_surface *surface, uint32_t *keycodes,
-                                        size_t num_keycodes, wlr_keyboard_modifiers *modifiers)
-    void wlr_seat_set_keyboard(wlr_seat *seat, wlr_input_device *dev)
-    wlr_keyboard* wlr_seat_get_keyboard(wlr_seat *seat)
 
 
 cdef extern from "wlr/types/wlr_cursor.h":

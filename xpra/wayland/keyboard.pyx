@@ -12,6 +12,7 @@ from libc.stdint cimport uintptr_t, uint64_t, uint32_t, int32_t
 from xpra.wayland.wlroots cimport (
     wlr_seat, wlr_surface, wlr_xdg_surface,
     wlr_seat_keyboard_notify_key, wlr_seat_keyboard_notify_modifiers, wlr_keyboard_modifiers,
+    wlr_seat_keyboard_notify_enter, wlr_seat_keyboard_clear_focus,
     WL_KEYBOARD_KEY_STATE_PRESSED, WL_KEYBOARD_KEY_STATE_RELEASED,
 )
 
@@ -62,3 +63,23 @@ cdef class WaylandKeyboard:
         mods.locked = locked
         mods.group = group
         wlr_seat_keyboard_notify_modifiers(self.seat, &mods)
+
+    def focus(self, uintptr_t xdg_surface_ptr) -> None:
+        if not xdg_surface_ptr:
+            wlr_seat_keyboard_clear_focus(self.seat)
+            log("focus(%#x) cleared focus", xdg_surface_ptr)
+            return
+        cdef wlr_xdg_surface *xdg_surface = <wlr_xdg_surface*> xdg_surface_ptr
+        cdef wlr_surface *surface = xdg_surface.surface
+        if not surface:
+            log("surface is NULL, cleared focus")
+            return
+        cdef uint32_t keycodes[1]
+        keycodes[0] = 0
+        cdef wlr_keyboard_modifiers mods
+        mods.depressed = 0
+        mods.latched = 0
+        mods.locked = 0
+        mods.group = 0
+        wlr_seat_keyboard_notify_enter(self.seat, surface, <uint32_t*> &keycodes, 0, &mods)
+        log.warn("keyboard.focus(%#x) done", xdg_surface_ptr)
