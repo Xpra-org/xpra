@@ -121,7 +121,7 @@ cdef struct output:
     wl_listener frame
     wl_listener destroy
 
-cdef struct xdg_surface:
+cdef struct xpra_surface:
     server *srv
     wlr_xdg_surface *wlr_xdg_surface
     wlr_scene_tree *scene_tree
@@ -167,49 +167,49 @@ cdef inline server* server_from_new_xdg_surface(wl_listener *listener) noexcept 
     cdef size_t offset = <size_t>(<char*>&(<server*>0).new_xdg_surface - <char*>0)
     return <server*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_map(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).map - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_map(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).map - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_unmap(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).unmap - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_unmap(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).unmap - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_destroy(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).destroy - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_destroy(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).destroy - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_commit(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).commit - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_commit(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).commit - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_request_move(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_move - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_request_move(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_move - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_request_resize(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_resize - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_request_resize(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_resize - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_request_maximize(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_maximize - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_request_maximize(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_maximize - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_request_fullscreen(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_fullscreen - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_request_fullscreen(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_fullscreen - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_request_minimize(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).request_minimize - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_request_minimize(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_minimize - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_set_title(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).set_title - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_set_title(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).set_title - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
-cdef inline xdg_surface* xdg_surface_from_set_app_id(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xdg_surface*>0).set_app_id - <char*>0)
-    return <xdg_surface*>(<char*>listener - offset)
+cdef inline xpra_surface* xpra_surface_from_set_app_id(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).set_app_id - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
 
 
 log = Logger("wayland")
@@ -217,7 +217,7 @@ cdef bint debug = log.is_debug_enabled()
 
 
 # Callback implementations
-cdef void capture_surface_pixels(xdg_surface *surface) noexcept:
+cdef void capture_surface_pixels(xpra_surface *surface) noexcept:
     cdef wlr_surface *wlr_surface = surface.wlr_xdg_surface.surface
     cdef wlr_client_buffer *client_buffer = wlr_surface.buffer
     if not client_buffer:
@@ -330,7 +330,7 @@ cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept no
         emit("ssd", <uintptr_t> toplevel, bool(ssd))
 
 cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
-    cdef xdg_surface *surface = xdg_surface_from_map(listener)
+    cdef xpra_surface *surface = xpra_surface_from_map(listener)
     cdef wlr_xdg_toplevel *toplevel = surface.wlr_xdg_surface.toplevel
     cdef wlr_box *geometry = &surface.wlr_xdg_surface.geometry
     with gil:
@@ -343,14 +343,14 @@ cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
 
 cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept nogil:
     # cdef wlr_xdg_surface wx_surface = <wlr_xdg_surface*> data
-    cdef xdg_surface *surface = xdg_surface_from_unmap(listener)
+    cdef xpra_surface *surface = xpra_surface_from_unmap(listener)
     with gil:
         log("XDG surface UNMAPPED")
         emit("unmap", surface.wid)
 
 
 cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcept:
-    cdef xdg_surface *surface = xdg_surface_from_destroy(listener)
+    cdef xpra_surface *surface = xpra_surface_from_destroy(listener)
     toplevel = surface.wlr_xdg_surface.toplevel != NULL
     log("XDG surface DESTROYED, toplevel=%s", bool(toplevel))
 
@@ -384,7 +384,7 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
     if debug:
         with gil:
             log("xdg_surface_commit(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
-    cdef xdg_surface *surface = xdg_surface_from_commit(listener)
+    cdef xpra_surface *surface = xpra_surface_from_commit(listener)
     cdef wlr_xdg_surface *xdg_surface = surface.wlr_xdg_surface
 
     if xdg_surface.toplevel != NULL and xdg_surface.initialized and not xdg_surface.configured:
@@ -417,7 +417,7 @@ cdef object get_damage_areas(pixman_region32_t *damage):
     return rectangles
 
 cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept nogil:
-    cdef xdg_surface *surface = xdg_surface_from_request_move(listener)
+    cdef xpra_surface *surface = xpra_surface_from_request_move(listener)
     cdef wlr_xdg_toplevel_move_event *event = <wlr_xdg_toplevel_move_event*> data
     if debug:
         with gil:
@@ -427,7 +427,7 @@ cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept 
 
 
 cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept nogil:
-    cdef xdg_surface *surface = xdg_surface_from_request_resize(listener)
+    cdef xpra_surface *surface = xpra_surface_from_request_resize(listener)
     cdef wlr_xdg_toplevel_resize_event *event = <wlr_xdg_toplevel_resize_event*>data
     if debug:
         with gil:
@@ -437,7 +437,7 @@ cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcep
 
 
 cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept nogil:
-    cdef xdg_surface *surface = xdg_surface_from_request_maximize(listener)
+    cdef xpra_surface *surface = xpra_surface_from_request_maximize(listener)
     if debug:
         with gil:
             log("Surface REQUEST MAXIMIZE")
@@ -446,7 +446,7 @@ cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexc
 
 
 cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noexcept nogil:
-    cdef xdg_surface *surface = xdg_surface_from_request_fullscreen(listener)
+    cdef xpra_surface *surface = xpra_surface_from_request_fullscreen(listener)
     if debug:
         with gil:
             log("Surface REQUEST FULLSCREEN")
@@ -455,7 +455,7 @@ cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noe
 
 
 cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexcept nogil:
-    cdef xdg_surface *surface = xdg_surface_from_request_minimize(listener)
+    cdef xpra_surface *surface = xpra_surface_from_request_minimize(listener)
     if debug:
         with gil:
             log("Surface REQUEST MINIMIZE")
@@ -464,14 +464,14 @@ cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexc
 
 
 cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noexcept nogil:
-    cdef xdg_surface *surface = xdg_surface_from_set_title(listener)
+    cdef xpra_surface *surface = xpra_surface_from_set_title(listener)
     if surface.wlr_xdg_surface.toplevel.title:
         with gil:
             log.info("Surface SET TITLE: %s", surface.wlr_xdg_surface.toplevel.title)
 
 
 cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept nogil:
-    cdef xdg_surface *surface = xdg_surface_from_set_app_id(listener)
+    cdef xpra_surface *surface = xpra_surface_from_set_app_id(listener)
     if surface.wlr_xdg_surface.toplevel.app_id:
         with gil:
             log.info("Surface SET APP_ID: %s", surface.wlr_xdg_surface.toplevel.app_id)
@@ -485,7 +485,7 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
         return
 
     log(" wlr_surface(%#x)=%#x", <uintptr_t> xdg_surf, <uintptr_t> xdg_surf.surface)
-    cdef xdg_surface *surface = <xdg_surface*>calloc(1, sizeof(xdg_surface))
+    cdef xpra_surface *surface = <xpra_surface*>calloc(1, sizeof(xpra_surface))
     surface.srv = srv
     surface.wlr_xdg_surface = xdg_surf
     surface.width = 0
