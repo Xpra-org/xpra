@@ -85,6 +85,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             if window and surface:
                 self.compositor.focus(surface, state)
         self.focused = wid
+        self.compositor.flush()
 
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
         log("set_pointer_focus(%i, %s)", wid, pointer)
@@ -106,11 +107,15 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
                 if self.pointer_device.enter_surface(surface, x, y):
                     self.pointer_focus = wid
             self.keyboard_device.focus(surface)
+        self.compositor.flush()
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
         self.set_pointer_focus(wid, pointer)
         log("pointer: %r",pointer)
-        return super().do_process_mouse_common(proto, device_id, wid, pointer, props)
+        try:
+            return super().do_process_mouse_common(proto, device_id, wid, pointer, props)
+        finally:
+            self.compositor.flush()
 
     def _process_map_window(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -121,6 +126,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         w = packet.get_i16(4)
         h = packet.get_i16(5)
         self.compositor.resize(surface, w, h)
+        self.compositor.flush()
         self.refresh_window(window)
 
     def _process_configure_window(self, proto, packet: Packet) -> None:
@@ -132,6 +138,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         w = packet.get_u16(4)
         h = packet.get_u16(5)
         self.compositor.resize(surface, w, h)
+        self.compositor.flush()
         self.refresh_window(window)
 
     def _new_surface(self, surface: int, wid: int, title: str, app_id: str, size: tuple[int, int]) -> None:

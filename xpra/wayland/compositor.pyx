@@ -650,6 +650,9 @@ cdef class WaylandCompositor:
 
     def process_events(self) -> None:
         wl_event_loop_dispatch(self.event_loop, 0)
+        self.flush()
+
+    def flush(self) -> None:
         wl_display_flush_clients(self.srv.display)
 
     def run(self) -> None:
