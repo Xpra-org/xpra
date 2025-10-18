@@ -89,7 +89,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
         log("set_pointer_focus(%i, %s)", wid, pointer)
         if self.pointer_focus == wid:
-            log(" unchanged")
+            log(" focus unchanged")
             # no change
             return
         log(" current focus=%i", self.pointer_focus)
@@ -99,7 +99,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             self.pointer_focus = 0
             return
         surface = self.get_surface(wid)
-        log.error("surface(%i)=%#x", wid, surface)
+        log("surface(%i)=%#x", wid, surface)
         if surface:
             if len(pointer) >= 4:
                 x, y = pointer[2:4]

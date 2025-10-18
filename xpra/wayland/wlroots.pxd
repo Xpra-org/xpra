@@ -16,7 +16,7 @@ DEF WLR_MODIFIER_COUNT = 8
 
 
 cdef extern from "xkbcommon/xkbcommon.h":
-    ctypedef struct xkb_keymap:
+    cdef struct xkb_keymap:
         pass
 
     ctypedef struct xkb_state:
@@ -24,6 +24,51 @@ cdef extern from "xkbcommon/xkbcommon.h":
 
     ctypedef uint32_t xkb_led_index_t
     ctypedef uint32_t xkb_mod_index_t
+
+    cdef enum xkb_context_flags:
+        XKB_CONTEXT_NO_FLAGS
+        XKB_CONTEXT_NO_DEFAULT_INCLUDES
+        XKB_CONTEXT_NO_ENVIRONMENT_NAMES
+        XKB_CONTEXT_NO_SECURE_GETENV
+
+    cdef enum xkb_keymap_compile_flags:
+        XKB_KEYMAP_COMPILE_NO_FLAGS = 0
+
+    cdef enum xkb_state_component:
+        XKB_STATE_MODS_DEPRESSED
+        XKB_STATE_MODS_LATCHED
+        XKB_STATE_MODS_LOCKED
+        XKB_STATE_MODS_EFFECTIVE
+        XKB_STATE_LAYOUT_DEPRESSED
+        XKB_STATE_LAYOUT_LATCHED
+        XKB_STATE_LAYOUT_LOCKED
+        XKB_STATE_LAYOUT_EFFECTIVE
+        XKB_STATE_LEDS
+
+    cdef enum xkb_state_match:
+        XKB_STATE_MATCH_ANY
+        XKB_STATE_MATCH_ALL
+        XKB_STATE_MATCH_NON_EXCLUSIVE
+
+    cdef enum xkb_key_direction:
+        XKB_KEY_UP
+        XKB_KEY_DOWN
+
+    cdef struct xkb_context:
+        pass
+
+    cdef struct xkb_rule_names:
+        const char *rules
+        const char *model
+        const char *layout
+        const char *variant
+        const char *options
+
+    xkb_context* xkb_context_new(xkb_context_flags flags)
+    void xkb_context_unref(xkb_context *context)
+
+    xkb_keymap* xkb_keymap_new_from_names(xkb_context *context, const xkb_rule_names *names, xkb_keymap_compile_flags flags)
+    void xkb_keymap_unref(xkb_keymap *keymap)
 
 
 cdef extern from "drm/drm_fourcc.h":
@@ -77,6 +122,8 @@ cdef extern from "wayland-server-core.h":
     cdef struct wl_display:
         pass
     cdef struct wl_event_loop:
+        pass
+    cdef struct wl_client:
         pass
     ctypedef void (*wl_notify_func_t)(wl_listener *listener, void *data)
     cdef struct wl_listener:
@@ -439,11 +486,27 @@ cdef extern from "wlr/types/wlr_output_layout.h":
     void wlr_output_layout_add_auto(wlr_output_layout *layout, wlr_output *output) nogil
 
 
+cdef extern from "wlr/types/wlr_input_device.h":
+    cdef enum wlr_input_device_type:
+        WLR_INPUT_DEVICE_KEYBOARD
+        WLR_INPUT_DEVICE_POINTER
+        WLR_INPUT_DEVICE_TOUCH
+        WLR_INPUT_DEVICE_TABLET
+        WLR_INPUT_DEVICE_TABLET_PAD
+        WLR_INPUT_DEVICE_SWITCH
+
+    cdef struct wlr_input_device:
+        wlr_input_device_type type
+        unsigned int vendor
+        unsigned int product
+        char *name
+        void *data
+
+    wlr_keyboard* wlr_keyboard_from_input_device(wlr_input_device *device)
+
+
 cdef extern from "wlr/types/wlr_seat.h":
     cdef struct wlr_seat:
-        pass
-
-    ctypedef struct wlr_input_device:
         pass
 
     cdef enum wlr_button_state:
@@ -476,6 +539,10 @@ cdef extern from "wlr/types/wlr_seat.h":
 
     wlr_keyboard* wlr_seat_get_keyboard(wlr_seat *seat)
 
+cdef extern from "wlr/interfaces/wlr_keyboard.h":
+    cdef struct wlr_keyboard_impl:
+        const char *name
+        void (*led_update)(wlr_keyboard *keyboard, uint32_t leds)
 
 cdef extern from "wlr/types/wlr_keyboard.h":
     cdef struct wlr_seat_keyboard_state:
@@ -497,9 +564,6 @@ cdef extern from "wlr/types/wlr_keyboard.h":
         wl_signal keymap
         wl_signal repeat_info
         wl_signal destroy
-
-    ctypedef struct wlr_keyboard_impl:
-        pass
 
     cdef struct wlr_keyboard:
         wlr_input_device *base
@@ -538,6 +602,25 @@ cdef extern from "wlr/types/wlr_keyboard.h":
         WLR_MODIFIER_MOD3
         WLR_MODIFIER_LOGO
         WLR_MODIFIER_MOD5
+
+    void wlr_keyboard_set_keymap(wlr_keyboard *kb, xkb_keymap *keymap)
+    void wlr_keyboard_set_repeat_info(wlr_keyboard *kb, int32_t rate, int32_t delay)
+
+
+cdef extern from "wlr/types/wlr_virtual_keyboard_v1.h":
+
+    cdef struct wlr_virtual_keyboard_manager_v1:
+        wl_signal events_new_virtual_keyboard
+        void *data
+
+    cdef struct wlr_virtual_keyboard_v1:
+        wlr_keyboard keyboard
+        wl_client *client
+        wl_signal events_destroy
+        void *data
+
+    wlr_virtual_keyboard_manager_v1* wlr_virtual_keyboard_manager_v1_create(wl_display *display)
+    void wlr_virtual_keyboard_manager_v1_destroy(wlr_virtual_keyboard_manager_v1 *manager)
 
 
 cdef extern from "wlr/types/wlr_cursor.h":
@@ -787,6 +870,12 @@ cdef extern from "wlr/backend.h":
     int wlr_backend_get_drm_fd(wlr_backend *backend)
     bint wlr_backend_test(wlr_backend *backend, const wlr_backend_output_state *states, size_t states_len)
     bint wlr_backend_commit(wlr_backend *backend, const wlr_backend_output_state *states, size_t states_len)
+
+
+cdef extern from "wlr/backend/multi.h":
+    bint wlr_backend_is_multi(wlr_backend *backend)
+    void wlr_multi_backend_add(wlr_backend *multi, wlr_backend *backend)
+    void wlr_multi_backend_remove(wlr_backend *multi, wlr_backend *backend)
 
 
 cdef extern from "wlr/backend/headless.h":
