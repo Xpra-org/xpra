@@ -43,14 +43,14 @@ cdef void free_buf(const void *p, size_t l, void *arg) noexcept nogil:
 cdef MemBuf getbuf(size_t l, int readonly=1):
     cdef const void *p = xmemalign(l)
     if p == NULL:
-        raise RuntimeError(f"failed to allocate {l} bytes of memory")
+        raise MemoryError(f"failed to allocate {l} bytes of memory")
     return MemBuf_init(p, l, &free_buf, NULL, readonly)
 
 
 cdef MemBuf padbuf(size_t l, size_t padding, int readonly=1):
     cdef const void *p = xmemalign(l+padding)
     if p == NULL:
-        raise RuntimeError(f"failed to allocate {l} bytes of memory")
+        raise MemoryError(f"failed to allocate {l} bytes of memory")
     return MemBuf_init(p, l, &free_buf, NULL, readonly)
 
 

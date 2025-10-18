@@ -364,7 +364,7 @@ cdef class XImageWrapper:
         self.pixels = memalign(py_buf.len)
         if self.pixels == NULL:
             PyBuffer_Release(&py_buf)
-            raise RuntimeError("memalign failed!")
+            raise MemoryError("memalign failed for %i bytes" % py_buf.len)
         assert self.pixels!=NULL
         self.aligned = True
         #from now on, we own the buffer,
@@ -439,7 +439,7 @@ cdef class XImageWrapper:
         cdef void *new_buf
         new_buf = memalign(newsize + rowstride)
         if new_buf == NULL:
-            raise RuntimeError("memalign failed!")
+            raise MemoryError("memalign failed for %i bytes!" % (newsize + rowstride))
         cdef void *to = new_buf
         cdef unsigned int oldstride = self.rowstride                     #using a local variable is faster
         #Note: we don't zero the buffer,
