@@ -26,7 +26,7 @@ log = Logger("wayland", "keyboard")
 base_time = monotonic()
 
 
-cdef uint32_t get_time_msec():
+cdef inline uint32_t get_time_msec() noexcept:
     return round((monotonic() - base_time) * 1000)
 
 
@@ -133,7 +133,6 @@ cdef class WaylandKeyboard:
         if not surface:
             log("surface is NULL, cleared focus")
             return
-        if self.keyboard != NULL:
-            wlr_seat_keyboard_notify_enter(self.seat, surface,
-                                           self.keyboard.keycodes, self.keyboard.num_keycodes, &self.keyboard.modifiers)
+
+        wlr_seat_keyboard_notify_enter(self.seat, surface, NULL, 0, NULL)
         log.warn("keyboard.focus(%#x) done", xdg_surface_ptr)

@@ -28,7 +28,7 @@ log = Logger("wayland", "pointer")
 base_time = monotonic()
 
 
-cdef uint32_t get_time_msec():
+cdef inline uint32_t get_time_msec() noexcept:
     return round((monotonic() - base_time) * 1000)
 
 
