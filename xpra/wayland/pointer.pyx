@@ -37,8 +37,13 @@ cdef class WaylandPointer:
     cdef wlr_seat *seat
 
     def __init__(self, uintptr_t seat_ptr, uintptr_t cursor_ptr):
-        self.seat = <wlr_seat*>seat_ptr
-        self.cursor = <wlr_cursor*>cursor_ptr
+        log("WaylandPointer(%#x, %#x)", seat_ptr, cursor_ptr)
+        self.seat = <wlr_seat*> seat_ptr
+        self.cursor = <wlr_cursor*> cursor_ptr
+        if not seat_ptr:
+            raise ValueError("seat pointer is NULL")
+        if not cursor_ptr:
+            raise ValueError("cursor pointer is NULL")
 
     def has_precise_wheel(self) -> bool:
         return True
@@ -66,11 +71,13 @@ cdef class WaylandPointer:
         if not surface.mapped:
             log("surface is not mapped")
             return False
-        log("enter_surface(%#x, %i, %i) surface=%#x", xdg_surface_ptr, x, y, <uintptr_t> surface)
+        log("enter_surface(%#x, %i, %i) seat=%#x, surface=%#x",
+            xdg_surface_ptr, x, y, <uintptr_t> self.seat, <uintptr_t> surface)
         wlr_seat_pointer_notify_enter(self.seat, surface, x, y)
         return True
 
     def leave_surface(self):
+        log("leave_surface()")
         wlr_seat_pointer_notify_clear_focus(self.seat)
 
     def click(self, button: int, pressed: bool, props: dict) -> None:

@@ -294,7 +294,7 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
 
     with gil:
         name = wlr_out.name.decode()
-        log.info("New output: %r", name)
+        log("new output: %r", name)
 
     wlr_output_init_render(wlr_out, srv.allocator, srv.renderer)
 
@@ -539,9 +539,9 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     log("All listeners attached")
     title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
     app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
-    log("configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
     size = (xdg_surf.geometry.width, xdg_surf.geometry.height)
-    log("size=%s", size)
+    log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
+    log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
     emit("new-surface", <uintptr_t> xdg_surf, wid, title, app_id, size)
 
 

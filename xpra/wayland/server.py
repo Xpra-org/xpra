@@ -58,7 +58,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return keyboard_config
 
     def make_pointer_device(self):
-        return None  # self.compositor.get_pointer_device()
+        return self.compositor.get_pointer_device()
 
     @staticmethod
     def get_clipboard_class():
@@ -68,7 +68,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window = self._id_to_window.get(wid)
         if not window:
             return 0
-        return window._gproperties["surface"]
+        return window._gproperties.get("surface", 0)
 
     def _focus(self, _server_source, wid: int, modifiers) -> None:
         if self.focused == wid:
@@ -228,9 +228,12 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             log.error("Error: IO_ERR on wayland compositor fd %i", fd)
         return GLib.SOURCE_CONTINUE
 
+    def setup(self) -> None:
+        self.compositor.initialize()
+        super().setup()
+
     def do_run(self) -> None:
         log("WaylandSeamlessServer.do_run()")
-        self.compositor.initialize()
         fd = self.compositor.get_event_loop_fd()
         conditions = GLib.IO_IN | GLib.IO_ERR
         log("wayland compositor event loop fd=%i", fd)
