@@ -290,8 +290,6 @@ cdef void output_destroy_handler(wl_listener *listener, void *data) noexcept nog
 cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
     cdef server *srv = server_from_new_output(listener)
     cdef wlr_output *wlr_out = <wlr_output*>data
-    cdef output *out
-    cdef wlr_output_state state
 
     with gil:
         name = wlr_out.name.decode()
@@ -299,7 +297,7 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
 
     wlr_output_init_render(wlr_out, srv.allocator, srv.renderer)
 
-    out = <output*>calloc(1, sizeof(output))
+    cdef output *out = <output*>calloc(1, sizeof(output))
     out.srv = srv
     out.wlr_output = wlr_out
 
@@ -313,6 +311,7 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
 
     wlr_output_layout_add_auto(srv.output_layout, wlr_out)
 
+    cdef wlr_output_state state
     wlr_output_state_init(&state)
     wlr_output_commit_state(wlr_out, &state)
     wlr_output_state_finish(&state)
@@ -481,15 +480,12 @@ cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noe
 cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     cdef server *srv = server_from_new_xdg_surface(listener)
     cdef wlr_xdg_surface *xdg_surf = <wlr_xdg_surface*>data
-    cdef xdg_surface *surface
-
     log("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
-    log(" wlr_surface(%#x)=%#x", <uintptr_t> xdg_surf, <uintptr_t> xdg_surf.surface)
-
     if xdg_surf.role != WLR_XDG_SURFACE_ROLE_NONE and xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
         return
 
-    surface = <xdg_surface*>calloc(1, sizeof(xdg_surface))
+    log(" wlr_surface(%#x)=%#x", <uintptr_t> xdg_surf, <uintptr_t> xdg_surf.surface)
+    cdef xdg_surface *surface = <xdg_surface*>calloc(1, sizeof(xdg_surface))
     surface.srv = srv
     surface.wlr_xdg_surface = xdg_surf
     surface.width = 0
