@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from libc.stdint cimport uintptr_t, uint8_t, uint32_t, uint64_t, int32_t
-
+from libc.time cimport timespec
 
 ctypedef void wlr_session
 ctypedef void wlr_swapchain
@@ -1112,6 +1112,8 @@ cdef extern from "wlr/types/wlr_compositor.h":
         wlr_addon_set addons
         void *data
     wlr_compositor *wlr_compositor_create(wl_display *display, int version, wlr_renderer *renderer)
+
+    void wlr_surface_send_frame_done(wlr_surface *surface, const timespec *when)
 
 
 cdef extern from "wlr/types/wlr_data_device.h":

@@ -16,9 +16,17 @@ from xpra.codecs.image import ImageWrapper
 from libc.stdlib cimport malloc, free, calloc
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t, uint64_t, uint32_t, uint8_t
+from libc.time cimport timespec
+
 from xpra.buffers.membuf cimport getbuf, MemBuf
 from xpra.wayland.pointer import WaylandPointer
 from xpra.wayland.keyboard import WaylandKeyboard
+
+
+cdef extern from "time.h":
+    int clock_gettime(int clk_id, timespec *tp)
+    cdef int CLOCK_MONOTONIC
+    cdef int CLOCK_REALTIME
 
 
 # Import definitions from .pxd file
@@ -53,7 +61,7 @@ from xpra.wayland.wlroots cimport (
     wlr_xdg_surface_schedule_configure,
     wlr_output_layout_add_auto, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
     wlr_output_commit_state, wlr_output_state_finish,
-    wlr_output_state_init, wlr_output_schedule_frame, wlr_output_init_render,
+    wlr_output_state_init, wlr_output_schedule_frame, wlr_output_init_render, wlr_surface_send_frame_done,
     wlr_headless_add_output,
     wlr_data_device_manager_create,
     wl_list, wl_list_remove,
@@ -544,6 +552,14 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
     log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
     emit("new-surface", <uintptr_t> xdg_surf, wid, title, app_id, size)
+
+
+def frame_done(surf: int) -> None:
+    log.warn("frame_done(%#x)", surf)
+    cdef timespec now
+    clock_gettime(CLOCK_MONOTONIC, &now)
+    cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)
+    wlr_surface_send_frame_done(surface.surface, &now)
 
 
 # Python interface

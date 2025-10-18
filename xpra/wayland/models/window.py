@@ -8,6 +8,7 @@ from socket import gethostname
 from xpra.util.gobject import one_arg_signal
 from xpra.codecs.image import ImageWrapper
 from xpra.server.window.model import WindowModelStub
+from xpra.wayland.compositor import frame_done
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -121,8 +122,8 @@ class Window(WindowModelStub):
         self._internal_set_property("client-machine", gethostname())
 
     def __repr__(self) -> str:  # pylint: disable=arguments-differ
-        surf = self._gproperties.get("surface", 0)
-        return "WaylandWindow(%#x)" % surf
+        surface = self._gproperties.get("surface", 0)
+        return "WaylandWindow(%#x)" % surface
 
     def setup(self) -> None:
         self._managed = True
@@ -140,6 +141,9 @@ class Window(WindowModelStub):
     def acknowledge_changes(self) -> None:
         if not self._managed:
             return
+        surface = self._gproperties.get("surface", 0)
+        if surface:
+            frame_done(surface)
 
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper | None:
         assert x == 0 and y == 0
