@@ -32,7 +32,7 @@ cdef extern from "xkbcommon/xkbcommon.h":
         XKB_CONTEXT_NO_SECURE_GETENV
 
     cdef enum xkb_keymap_compile_flags:
-        XKB_KEYMAP_COMPILE_NO_FLAGS = 0
+        XKB_KEYMAP_COMPILE_NO_FLAGS
 
     cdef enum xkb_state_component:
         XKB_STATE_MODS_DEPRESSED
@@ -64,11 +64,16 @@ cdef extern from "xkbcommon/xkbcommon.h":
         const char *variant
         const char *options
 
+    cdef enum xkb_keymap_format:
+        XKB_KEYMAP_FORMAT_TEXT_V1
+
     xkb_context* xkb_context_new(xkb_context_flags flags)
     void xkb_context_unref(xkb_context *context)
 
     xkb_keymap* xkb_keymap_new_from_names(xkb_context *context, const xkb_rule_names *names, xkb_keymap_compile_flags flags)
     void xkb_keymap_unref(xkb_keymap *keymap)
+
+    char *xkb_keymap_get_as_string(xkb_keymap *keymap, xkb_keymap_format format)
 
 
 cdef extern from "drm/drm_fourcc.h":
@@ -115,6 +120,15 @@ cdef extern from "wayland-util.h":
         wl_list *prev
         wl_list *next
 
+    ctypedef struct wl_array:
+        size_t size
+        size_t alloc
+        void *data
+
+    void wl_array_init(wl_array *array)
+    void wl_array_release(wl_array *array)
+    void *wl_array_add(wl_array *array, size_t size)
+
 
 cdef extern from "wayland-server-core.h":
     cdef struct wl_global:
@@ -125,6 +139,19 @@ cdef extern from "wayland-server-core.h":
         pass
     cdef struct wl_client:
         pass
+    cdef struct wl_resource:
+        pass
+
+    ctypedef struct wl_interface:
+        const char *name
+        int version
+        int method_count
+        const void *methods
+        int event_count
+        const void *events
+
+    ctypedef void (*wl_global_bind_func_t)(wl_client *client, void *data, uint32_t version, uint32_t id)
+
     ctypedef void (*wl_notify_func_t)(wl_listener *listener, void *data)
     cdef struct wl_listener:
         wl_notify_func_t notify
@@ -146,6 +173,24 @@ cdef extern from "wayland-server-core.h":
     int wl_event_loop_dispatch(wl_event_loop *loop, int timeout)
 
     void wl_display_flush_clients(wl_display *display)
+
+    wl_global* wl_global_create(wl_display *display, const wl_interface *interface,
+                                int version, void *data, wl_global_bind_func_t bind)
+    void wl_global_destroy(wl_global *_global)
+
+    wl_resource* wl_resource_create(wl_client *client, const wl_interface *interface, int version, uint32_t id)
+    void wl_resource_set_implementation(wl_resource *resource, const void *implementation, void *data,
+        void (*destroy)(wl_resource *resource)
+    )
+
+    void wl_resource_destroy(wl_resource *resource)
+    void* wl_resource_get_user_data(wl_resource *resource)
+    void wl_resource_post_event(wl_resource *resource, uint32_t opcode, ...)
+    wl_client* wl_resource_get_client(wl_resource *resource)
+
+    wl_client* wl_client_create(wl_display *display, int fd)
+    void wl_client_destroy(wl_client *client)
+    wl_display* wl_client_get_display(wl_client *client)
 
 
 cdef extern from "wayland-server-protocol.h":
@@ -189,6 +234,36 @@ cdef extern from "wayland-server-protocol.h":
     cdef enum wl_keyboard_key_state:
         WL_KEYBOARD_KEY_STATE_RELEASED
         WL_KEYBOARD_KEY_STATE_PRESSED
+
+    cdef enum wl_keyboard_keymap_format:
+        WL_KEYBOARD_KEYMAP_FORMAT_NO_KEYMAP
+        WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1
+
+    cdef extern const wl_interface wl_keyboard_interface
+
+    int WL_KEYBOARD_KEYMAP
+    int WL_KEYBOARD_ENTER
+    int WL_KEYBOARD_LEAVE
+    int WL_KEYBOARD_KEY
+    int WL_KEYBOARD_MODIFIERS
+    int WL_KEYBOARD_REPEAT_INFO
+
+cdef extern from "wayland-client.h":
+    ctypedef struct wl_display:
+        pass
+
+    ctypedef struct wl_proxy:
+        pass
+
+    ctypedef struct wl_registry:
+        pass
+
+    # Client-side display functions
+    wl_display* wl_display_connect_to_fd(int fd)
+    void wl_display_disconnect(wl_display *display)
+    int wl_display_dispatch(wl_display *display)
+    int wl_display_roundtrip(wl_display *display)
+    int wl_display_get_fd(wl_display *display)
 
 
 cdef extern from "wlr/util/box.h":
@@ -506,8 +581,18 @@ cdef extern from "wlr/types/wlr_input_device.h":
 
 
 cdef extern from "wlr/types/wlr_seat.h":
+    cdef struct wlr_seat_client:
+        wl_client *client
+        wl_resource *seat_resource
+        wl_list link
+        # Keyboard resources for this client
+        wl_list keyboards
+        wl_list pointers
+        wl_list touches
+
     cdef struct wlr_seat:
-        pass
+        wl_list clients  # wlr_seat_client list
+        char *name
 
     cdef enum wlr_button_state:
         WLR_BUTTON_RELEASED
@@ -538,6 +623,7 @@ cdef extern from "wlr/types/wlr_seat.h":
     void wlr_seat_keyboard_clear_focus(wlr_seat *seat)
 
     wlr_keyboard* wlr_seat_get_keyboard(wlr_seat *seat)
+    wlr_seat_client* wlr_seat_client_for_wl_client(wlr_seat *seat, wl_client *client)
 
 cdef extern from "wlr/interfaces/wlr_keyboard.h":
     cdef struct wlr_keyboard_impl:
@@ -609,18 +695,25 @@ cdef extern from "wlr/types/wlr_keyboard.h":
 
 cdef extern from "wlr/types/wlr_virtual_keyboard_v1.h":
 
+    cdef struct wlr_virtual_keyboard_manager_v1_events:
+        wl_signal new_virtual_keyboard
+        wl_signal destroy
+
     cdef struct wlr_virtual_keyboard_manager_v1:
-        wl_signal events_new_virtual_keyboard
+        wl_global *_global
+        wl_list virtual_keyboards
+        wlr_virtual_keyboard_manager_v1_events events
         void *data
 
     cdef struct wlr_virtual_keyboard_v1:
         wlr_keyboard keyboard
-        wl_client *client
-        wl_signal events_destroy
-        void *data
+        wl_resource *resource
+        wlr_seat *seat
+        bint has_keymap
+        wl_list link
 
     wlr_virtual_keyboard_manager_v1* wlr_virtual_keyboard_manager_v1_create(wl_display *display)
-    void wlr_virtual_keyboard_manager_v1_destroy(wlr_virtual_keyboard_manager_v1 *manager)
+    wlr_virtual_keyboard_v1 *wlr_input_device_get_virtual_keyboard(wlr_input_device *wlr_dev)
 
 
 cdef extern from "wlr/types/wlr_cursor.h":
@@ -730,8 +823,6 @@ cdef extern from "wlr/types/wlr_xdg_shell.h":
         char *app_id
         wlr_xdg_toplevel_events events
         wlr_xdg_toplevel_requested requested
-    ctypedef struct wlr_seat_client:
-        pass
     cdef struct wlr_xdg_toplevel_move_event:
         wlr_xdg_toplevel *toplevel
         wlr_seat_client *seat
