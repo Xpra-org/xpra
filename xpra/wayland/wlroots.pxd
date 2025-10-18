@@ -86,6 +86,11 @@ cdef extern from "wayland-server-core.h":
 
 
 cdef extern from "wayland-server-protocol.h":
+    cdef enum wl_seat_capability:
+        WL_SEAT_CAPABILITY_POINTER
+        WL_SEAT_CAPABILITY_KEYBOARD
+        WL_SEAT_CAPABILITY_TOUCH
+
     cdef enum wl_output_subpixel:
         WL_OUTPUT_SUBPIXEL_UNKNOWN
         WL_OUTPUT_SUBPIXEL_NONE

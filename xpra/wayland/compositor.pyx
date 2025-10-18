@@ -30,6 +30,7 @@ from xpra.wayland.wlroots cimport (
     wlr_backend, wlr_backend_start, wlr_backend_destroy,
     wlr_seat, wlr_cursor, wlr_output_layout,
     wlr_seat_create, wlr_seat_set_capabilities, wlr_seat_destroy,
+    WL_SEAT_CAPABILITY_POINTER, WL_SEAT_CAPABILITY_KEYBOARD, WL_SEAT_CAPABILITY_TOUCH,
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
     wlr_compositor, wlr_compositor_create,
     wlr_xdg_decoration_manager_v1, wlr_xdg_toplevel_decoration_v1, wlr_xdg_decoration_manager_v1_create,
@@ -608,7 +609,8 @@ cdef class WaylandCompositor:
         # Create seat for input handling
         self.srv.seat_name = b"seat0"
         self.srv.seat = wlr_seat_create(self.srv.display, self.srv.seat_name)
-        wlr_seat_set_capabilities(self.srv.seat, 7)  # WL_SEAT_CAPABILITY_POINTER | KEYBOARD | TOUCH
+        cdef int caps = WL_SEAT_CAPABILITY_POINTER | WL_SEAT_CAPABILITY_KEYBOARD | WL_SEAT_CAPABILITY_TOUCH
+        wlr_seat_set_capabilities(self.srv.seat, caps)
 
         self.srv.new_output.notify = new_output
         wl_signal_add(&self.srv.backend.events.new_output, &self.srv.new_output)
