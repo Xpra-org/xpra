@@ -76,6 +76,19 @@ cdef extern from "xkbcommon/xkbcommon.h":
     char *xkb_keymap_get_as_string(xkb_keymap *keymap, xkb_keymap_format format)
 
 
+cdef extern from "linux/input-event-codes.h":
+    int BTN_MOUSE       # 0x110
+    int BTN_LEFT
+    int BTN_RIGHT
+    int BTN_MIDDLE
+    int BTN_SIDE
+    int BTN_EXTRA
+    int BTN_FORWARD
+    int BTN_BACK
+    int BTN_TASK
+
+
+
 cdef extern from "drm/drm_fourcc.h":
     # RGB 15 / 16 bit:
     uint32_t DRM_FORMAT_BGRX5551

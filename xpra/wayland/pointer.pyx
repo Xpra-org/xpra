@@ -19,7 +19,8 @@ from xpra.wayland.wlroots cimport (
     wlr_button_state, wlr_axis_orientation,
     WLR_BUTTON_PRESSED, WLR_BUTTON_RELEASED,
     WL_POINTER_AXIS_VERTICAL_SCROLL,
-    WL_POINTER_AXIS_SOURCE_WHEEL, WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL
+    WL_POINTER_AXIS_SOURCE_WHEEL, WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL,
+    BTN_MOUSE,
 )
 
 
@@ -35,11 +36,15 @@ cdef inline uint32_t get_time_msec() noexcept:
 cdef class WaylandPointer:
     cdef wlr_cursor *cursor
     cdef wlr_seat *seat
+    cdef uint32_t offset_x
+    cdef uint32_t offset_y
 
     def __init__(self, uintptr_t seat_ptr, uintptr_t cursor_ptr):
         log("WaylandPointer(%#x, %#x)", seat_ptr, cursor_ptr)
         self.seat = <wlr_seat*> seat_ptr
         self.cursor = <wlr_cursor*> cursor_ptr
+        self.offset_x = 0
+        self.offset_y = 0
         if not seat_ptr:
             raise ValueError("seat pointer is NULL")
         if not cursor_ptr:
@@ -57,7 +62,9 @@ cdef class WaylandPointer:
         self.cursor.y = y
         # wlr_cursor_warp(self.cursor, NULL, x, y)
         cdef uint32_t time = get_time_msec()
-        wlr_seat_pointer_notify_motion(self.seat, time, x, y)
+        cdef uint32_t relx = x + self.offset_x
+        cdef uint32_t rely = y + self.offset_y
+        wlr_seat_pointer_notify_motion(self.seat, time, relx, rely)
         wlr_seat_pointer_notify_frame(self.seat)
         # requires a device?
         # wlr_cursor_move(self.cursor, NULL, delta_x, delta_y)
@@ -73,17 +80,24 @@ cdef class WaylandPointer:
             return False
         log.warn("enter_surface(%#x, %i, %i) seat=%#x, surface=%#x",
             xdg_surface_ptr, x, y, <uintptr_t> self.seat, <uintptr_t> surface)
-        wlr_seat_pointer_notify_enter(self.seat, surface, x, y)
+        self.offset_x = xdg_surface.geometry.x
+        self.offset_y = xdg_surface.geometry.y
+        cdef uint32_t relx = x + self.offset_x
+        cdef uint32_t rely = y + self.offset_y
+        wlr_seat_pointer_notify_enter(self.seat, surface, relx, rely)
         return True
 
     def leave_surface(self):
         log.warn("leave_surface()")
         wlr_seat_pointer_notify_clear_focus(self.seat)
+        self.offset_x = 0
+        self.offset_y = 0
 
     def click(self, button: int, pressed: bool, props: dict) -> None:
         cdef uint32_t time = get_time_msec()
+        cdef uint32_t code = BTN_MOUSE + (button - 1)
         cdef wlr_button_state state = WLR_BUTTON_PRESSED if pressed else WLR_BUTTON_RELEASED
-        wlr_seat_pointer_notify_button(self.seat, time, button, state)
+        wlr_seat_pointer_notify_button(self.seat, time, code, state)
         wlr_seat_pointer_notify_frame(self.seat)
 
     def wheel_motion(self, button: int, distance: float) -> None:
