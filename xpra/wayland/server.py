@@ -13,7 +13,7 @@ from xpra.wayland.compositor import WaylandCompositor, add_event_listener
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
 from xpra.net.common import Packet
-from xpra.common import noop
+from xpra.common import noop, MoveResize, SOURCE_INDICATION_NORMAL
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -47,6 +47,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         add_event_listener("unmap", self._unmap)
         add_event_listener("commit", self._commit)
         add_event_listener("destroy", self._destroy)
+        add_event_listener("move", self._move)
         add_event_listener("new-output", self._new_output)
 
     def make_keyboard_device(self):
@@ -236,6 +237,29 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def _destroy(self, wid: int) -> None:
         self._remove_wid(wid)
+
+    def _move(self, wid: int, serial: int) -> None:
+        window = self._id_to_window.get(wid)
+        if not window:
+            log.warn("Warning: cannot move window %i: not found!", wid)
+            return
+        # x_root, y_root, direction, button, source_indication = event.data
+        # find clients that handle windows:
+        wsources = self.window_sources()
+        if not wsources:
+            return
+        # prefer the "UI driver" if we find it:
+        driversources = [ss for ss in wsources if self.ui_driver == ss.uuid]
+        if driversources:
+            source = driversources[0]
+        else:
+            source = wsources[0]
+        # must use relative position!
+        x_root, y_root = self.pointer_device.get_position()
+        direction = MoveResize.MOVE
+        button = 1
+        source_indication = SOURCE_INDICATION_NORMAL
+        source.initiate_moveresize(wid, window, x_root, y_root, direction, button, source_indication)
 
     def _new_output(self, name: str, props: dict):
         log("new output %r=%r", name, props)

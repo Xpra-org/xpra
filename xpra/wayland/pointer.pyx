@@ -54,7 +54,7 @@ cdef class WaylandPointer:
         return True
 
     def get_position(self) -> Tuple[int, int]:
-        return self.cursor.x, self.cursor.y
+        return round(self.cursor.x), round(self.cursor.y)
 
     def move_pointer(self, x: int, y: int, props: dict) -> None:
         log("move_pointer(%i, %i, %s)", x, y, props)

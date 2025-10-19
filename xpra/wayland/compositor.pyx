@@ -512,6 +512,7 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
     cdef xpra_surface *surface = xpra_surface_from_commit(listener)
     cdef wlr_xdg_surface *xdg_surface = surface.wlr_xdg_surface
 
+    register_toplevel_handlers(surface)
     # Fallback: If configure wasn't sent yet (toplevel wasn't ready), send it now
     if xdg_surface.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL and xdg_surface.toplevel != NULL and xdg_surface.initialized and not xdg_surface.configured:
         with gil:
@@ -568,10 +569,8 @@ cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept nogi
 cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept nogil:
     cdef xpra_surface *surface = xpra_surface_from_request_move(listener)
     cdef wlr_xdg_toplevel_move_event *event = <wlr_xdg_toplevel_move_event*> data
-    if debug:
-        with gil:
-            log("Surface REQUEST MOVE")
     with gil:
+        log("Surface REQUEST MOVE")
         emit("move", surface.wid, event.serial)
 
 
@@ -616,7 +615,9 @@ cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noex
     cdef xpra_surface *surface = xpra_surface_from_set_title(listener)
     if surface.wlr_xdg_surface.toplevel.title:
         with gil:
-            log.info("Surface SET TITLE: %s", surface.wlr_xdg_surface.toplevel.title)
+            title = surface.wlr_xdg_surface.toplevel.title.decode("utf8")
+            log("Surface SET TITLE: %s", title)
+            emit("title", title)
 
 
 cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept nogil:
@@ -629,11 +630,11 @@ cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noe
 cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     cdef server *srv = server_from_new_xdg_surface(listener)
     cdef wlr_xdg_surface *xdg_surf = <wlr_xdg_surface*>data
-    log("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
+    log.warn("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
     if xdg_surf.role != WLR_XDG_SURFACE_ROLE_NONE and xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
         return
 
-    log(" wlr_surface(%#x)=%#x", <uintptr_t> xdg_surf, <uintptr_t> xdg_surf.surface)
+    log.warn(" wlr_surface(%#x)=%#x", <uintptr_t> xdg_surf, <uintptr_t> xdg_surf.surface)
     cdef xpra_surface *surface = <xpra_surface*>calloc(1, sizeof(xpra_surface))
     surface.srv = srv
     surface.wlr_xdg_surface = xdg_surf
@@ -663,31 +664,9 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     wl_signal_add(&xdg_surf.surface.events.new_subsurface, &surface.new_subsurface)
 
     cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
-    log("toplevel=%#x", <uintptr_t> toplevel)
+    log.warn("toplevel=%#x", <uintptr_t> toplevel)
+    register_toplevel_handlers(surface)
     if toplevel:
-        log.info("Surface has toplevel, attaching toplevel handlers")
-
-        surface.request_move.notify = xdg_toplevel_request_move
-        wl_signal_add(&toplevel.events.request_move, &surface.request_move)
-
-        surface.request_resize.notify = xdg_toplevel_request_resize
-        wl_signal_add(&toplevel.events.request_resize, &surface.request_resize)
-
-        surface.request_maximize.notify = xdg_toplevel_request_maximize
-        wl_signal_add(&toplevel.events.request_maximize, &surface.request_maximize)
-
-        surface.request_fullscreen.notify = xdg_toplevel_request_fullscreen
-        wl_signal_add(&toplevel.events.request_fullscreen, &surface.request_fullscreen)
-
-        surface.request_minimize.notify = xdg_toplevel_request_minimize
-        wl_signal_add(&toplevel.events.request_minimize, &surface.request_minimize)
-
-        surface.set_title.notify = xdg_toplevel_set_title_handler
-        wl_signal_add(&toplevel.events.set_title, &surface.set_title)
-
-        surface.set_app_id.notify = xdg_toplevel_set_app_id_handler
-        wl_signal_add(&toplevel.events.set_app_id, &surface.set_app_id)
-
         # Send initial configure for the toplevel
         log("Sending initial configure for toplevel")
         wlr_xdg_toplevel_set_size(toplevel, 0, 0)  # 0, 0 = let client choose initial size
@@ -700,6 +679,41 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
     log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
     emit("new-surface", <uintptr_t> xdg_surf, wid, title, app_id, size)
+
+
+cdef void register_toplevel_handlers(xpra_surface *surface) noexcept nogil:
+    cdef wlr_xdg_surface *xdg_surf = surface.wlr_xdg_surface
+    cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
+    if toplevel == NULL:
+        # no toplevel yet
+        return
+    if surface.request_move.link.next != NULL:
+        # already done
+        return
+
+    with gil:
+        log.info("Surface has toplevel, attaching toplevel handlers")
+
+    surface.request_move.notify = xdg_toplevel_request_move
+    wl_signal_add(&toplevel.events.request_move, &surface.request_move)
+
+    surface.request_resize.notify = xdg_toplevel_request_resize
+    wl_signal_add(&toplevel.events.request_resize, &surface.request_resize)
+
+    surface.request_maximize.notify = xdg_toplevel_request_maximize
+    wl_signal_add(&toplevel.events.request_maximize, &surface.request_maximize)
+
+    surface.request_fullscreen.notify = xdg_toplevel_request_fullscreen
+    wl_signal_add(&toplevel.events.request_fullscreen, &surface.request_fullscreen)
+
+    surface.request_minimize.notify = xdg_toplevel_request_minimize
+    wl_signal_add(&toplevel.events.request_minimize, &surface.request_minimize)
+
+    surface.set_title.notify = xdg_toplevel_set_title_handler
+    wl_signal_add(&toplevel.events.set_title, &surface.set_title)
+
+    surface.set_app_id.notify = xdg_toplevel_set_app_id_handler
+    wl_signal_add(&toplevel.events.set_app_id, &surface.set_app_id)
 
 
 def frame_done(surf: int) -> None:

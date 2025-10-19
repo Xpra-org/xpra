@@ -725,10 +725,10 @@ class SeamlessServer(GObject.GObject, ServerBase):
         # prefer the "UI driver" if we find it:
         driversources = [ss for ss in wsources if self.ui_driver == ss.uuid]
         if driversources:
-            driversources[0].initiate_moveresize(wid, window, *event.data)
-            return
-        # otherwise, fallback to the first one:
-        wsources[0].initiate_moveresize(wid, window, *event.data)
+            source = driversources[0]
+        else:
+            source = wsources[0]
+        source.initiate_moveresize(wid, window, *event.data)
 
     def _restack_window(self, window, detail, sibling) -> None:
         wid = self._window_to_id[window]
