@@ -146,5 +146,6 @@ cdef class WaylandKeyboard:
             log("surface is NULL, cleared focus")
             return
 
-        wlr_seat_keyboard_notify_enter(self.seat, surface, NULL, 0, NULL)
+        wlr_seat_keyboard_notify_enter(self.seat, surface,
+                                       self.keyboard.keycodes, self.keyboard.num_keycodes, &self.keyboard.modifiers)
         log("keyboard.focus(%#x) done", xdg_surface_ptr)
