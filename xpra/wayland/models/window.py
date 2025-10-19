@@ -154,7 +154,6 @@ class Window(WindowModelStub):
             flush_clients(display)
 
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper | None:
-        assert x == 0 and y == 0
         image = self._gproperties["image"]
         x, y, w, h = self._gproperties["geometry"]
         if width == w and height == h:
