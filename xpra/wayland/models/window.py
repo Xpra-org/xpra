@@ -8,7 +8,7 @@ from socket import gethostname
 from xpra.util.gobject import one_arg_signal
 from xpra.codecs.image import ImageWrapper
 from xpra.server.window.model import WindowModelStub
-from xpra.wayland.compositor import frame_done
+from xpra.wayland.compositor import frame_done, flush_clients
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -19,6 +19,11 @@ GObject = gi_import("GObject")
 
 class Window(WindowModelStub):
     __gproperties__ = {
+        "display": (
+            GObject.TYPE_POINTER,
+            "The wayland display pointer", "",
+            GObject.ParamFlags.READABLE,
+        ),
         "surface": (
             GObject.TYPE_POINTER,
             "The wayland surface pointer", "",
@@ -144,6 +149,9 @@ class Window(WindowModelStub):
         surface = self._gproperties.get("surface", 0)
         if surface:
             frame_done(surface)
+        display = self._gproperties.get("display", 0)
+        if display:
+            flush_clients(display)
 
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper | None:
         assert x == 0 and y == 0

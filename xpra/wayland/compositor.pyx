@@ -555,11 +555,15 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
 
 
 def frame_done(surf: int) -> None:
-    log.warn("frame_done(%#x)", surf)
     cdef timespec now
     clock_gettime(CLOCK_MONOTONIC, &now)
     cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)
     wlr_surface_send_frame_done(surface.surface, &now)
+
+
+def flush_clients(disp: int) -> None:
+    cdef wl_display *display = <wl_display*> (<uintptr_t> disp)
+    wl_display_flush_clients(display)
 
 
 # Python interface
@@ -647,6 +651,9 @@ cdef class WaylandCompositor:
 
     def get_event_loop_fd(self) -> int:
         return wl_event_loop_get_fd(self.event_loop)
+
+    def get_display_ptr(self) -> int:
+        return <uintptr_t> self.srv.display
 
     def process_events(self) -> None:
         wl_event_loop_dispatch(self.event_loop, 0)

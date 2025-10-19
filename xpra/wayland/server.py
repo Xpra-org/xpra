@@ -145,6 +145,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         geom = (0, 0, size[0], size[1])
         window = Window()
         window.setup()
+        display = self.compositor.get_display_ptr()
+        window._internal_set_property("display", display)
         window._internal_set_property("surface", surface)
         window._internal_set_property("title", title)
         window._internal_set_property("app-id", app_id)
