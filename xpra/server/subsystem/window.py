@@ -416,7 +416,7 @@ class WindowServer(StubServerMixin):
         if self.readonly:
             return
         ss = self.get_server_source(proto)
-        if ss:
+        if not ss:
             return
         wid = packet.get_wid()
         focuslog("process_focus: wid=%s", wid)
