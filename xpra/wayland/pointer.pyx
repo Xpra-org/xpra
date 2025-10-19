@@ -71,13 +71,13 @@ cdef class WaylandPointer:
         if not surface.mapped:
             log("surface is not mapped")
             return False
-        log("enter_surface(%#x, %i, %i) seat=%#x, surface=%#x",
+        log.warn("enter_surface(%#x, %i, %i) seat=%#x, surface=%#x",
             xdg_surface_ptr, x, y, <uintptr_t> self.seat, <uintptr_t> surface)
         wlr_seat_pointer_notify_enter(self.seat, surface, x, y)
         return True
 
     def leave_surface(self):
-        log("leave_surface()")
+        log.warn("leave_surface()")
         wlr_seat_pointer_notify_clear_focus(self.seat)
 
     def click(self, button: int, pressed: bool, props: dict) -> None:

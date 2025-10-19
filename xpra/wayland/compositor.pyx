@@ -824,10 +824,12 @@ cdef class WaylandCompositor:
     def resize(self, surf: int, width: int, height: int) -> None:
         cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)
         cdef wlr_xdg_toplevel *toplevel = surface.toplevel
+        log("wlr_xdg_toplevel_set_size(%#x, %i, %i)", <uintptr_t> toplevel, width, height)
         wlr_xdg_toplevel_set_size(toplevel, width, height)
 
     def focus(self, surf: int, focused: bool) -> None:
         cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)
         cdef wlr_xdg_toplevel *toplevel = surface.toplevel
+        log("wlr_xdg_toplevel_set_activated(%#x, %s)", <uintptr_t> toplevel, focused)
         wlr_xdg_toplevel_set_activated(toplevel, focused)
 
