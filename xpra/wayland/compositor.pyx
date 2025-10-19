@@ -456,6 +456,7 @@ cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
     cdef xpra_surface *surface = xpra_surface_from_map(listener)
     cdef wlr_xdg_toplevel *toplevel = surface.wlr_xdg_surface.toplevel
     cdef wlr_box *geometry = &surface.wlr_xdg_surface.geometry
+    register_toplevel_handlers(surface)
     with gil:
         title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
         app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
@@ -467,6 +468,7 @@ cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
 cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept nogil:
     # cdef wlr_xdg_surface wx_surface = <wlr_xdg_surface*> data
     cdef xpra_surface *surface = xpra_surface_from_unmap(listener)
+    unregister_toplevel_handlers(surface)
     with gil:
         log("XDG surface UNMAPPED")
         emit("unmap", surface.wid)
@@ -481,22 +483,8 @@ cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcep
     wl_list_remove(&surface.unmap.link)
     wl_list_remove(&surface.destroy.link)
     wl_list_remove(&surface.commit.link)
-    if surface.new_subsurface.link.next != NULL:
-        wl_list_remove(&surface.new_subsurface.link)
-    if surface.request_move.link.next != NULL:
-        wl_list_remove(&surface.request_move.link)
-    if surface.request_resize.link.next != NULL:
-        wl_list_remove(&surface.request_resize.link)
-    if surface.request_maximize.link.next != NULL:
-        wl_list_remove(&surface.request_maximize.link)
-    if surface.request_fullscreen.link.next != NULL:
-        wl_list_remove(&surface.request_fullscreen.link)
-    if surface.request_minimize.link.next != NULL:
-        wl_list_remove(&surface.request_minimize.link)
-    if surface.set_title.link.next != NULL:
-        wl_list_remove(&surface.set_title.link)
-    if surface.set_app_id.link.next != NULL:
-        wl_list_remove(&surface.set_app_id.link)
+
+    unregister_toplevel_handlers(surface)
 
     cdef unsigned long wid = surface.wid
     free(surface)
@@ -715,6 +703,28 @@ cdef void register_toplevel_handlers(xpra_surface *surface) noexcept nogil:
 
     surface.set_app_id.notify = xdg_toplevel_set_app_id_handler
     wl_signal_add(&toplevel.events.set_app_id, &surface.set_app_id)
+
+
+cdef void unregister_toplevel_handlers(xpra_surface *surface) noexcept nogil:
+    cdef wlr_xdg_surface *xdg_surf = surface.wlr_xdg_surface
+    cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
+
+    if surface.new_subsurface.link.next != NULL:
+        wl_list_remove(&surface.new_subsurface.link)
+    if surface.request_move.link.next != NULL:
+        wl_list_remove(&surface.request_move.link)
+    if surface.request_resize.link.next != NULL:
+        wl_list_remove(&surface.request_resize.link)
+    if surface.request_maximize.link.next != NULL:
+        wl_list_remove(&surface.request_maximize.link)
+    if surface.request_fullscreen.link.next != NULL:
+        wl_list_remove(&surface.request_fullscreen.link)
+    if surface.request_minimize.link.next != NULL:
+        wl_list_remove(&surface.request_minimize.link)
+    if surface.set_title.link.next != NULL:
+        wl_list_remove(&surface.set_title.link)
+    if surface.set_app_id.link.next != NULL:
+        wl_list_remove(&surface.set_app_id.link)
 
 
 def frame_done(surf: int) -> None:
