@@ -512,13 +512,14 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
     cdef xpra_surface *surface = xpra_surface_from_commit(listener)
     cdef wlr_xdg_surface *xdg_surface = surface.wlr_xdg_surface
 
-    register_toplevel_handlers(surface)
-    # Fallback: If configure wasn't sent yet (toplevel wasn't ready), send it now
-    if xdg_surface.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL and xdg_surface.toplevel != NULL and xdg_surface.initialized and not xdg_surface.configured:
-        with gil:
-            log("Surface initialized, sending first configure")
-        wlr_xdg_toplevel_set_size(xdg_surface.toplevel, 0, 0)
-        wlr_xdg_surface_schedule_configure(xdg_surface)
+    if xdg_surface.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL and xdg_surface.toplevel != NULL:
+        register_toplevel_handlers(surface)
+        # Fallback: If configure wasn't sent yet (toplevel wasn't ready), send it now
+        if xdg_surface.initialized and not xdg_surface.configured:
+            with gil:
+                log("Surface initialized, sending first configure")
+            wlr_xdg_toplevel_set_size(xdg_surface.toplevel, 0, 0)
+            wlr_xdg_surface_schedule_configure(xdg_surface)
 
     cdef wlr_box *geometry = &xdg_surface.geometry
     cdef wlr_surface *wlr_surface = surface.wlr_xdg_surface.surface
@@ -665,8 +666,8 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
 
     cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
     log("toplevel=%#x", <uintptr_t> toplevel)
-    register_toplevel_handlers(surface)
     if toplevel:
+        register_toplevel_handlers(surface)
         # Send initial configure for the toplevel
         log("Sending initial configure for toplevel")
         wlr_xdg_toplevel_set_size(toplevel, 0, 0)  # 0, 0 = let client choose initial size
