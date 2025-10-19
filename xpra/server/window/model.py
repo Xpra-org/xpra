@@ -144,3 +144,6 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     def has_alpha(self) -> bool:
         """ Does the pixel data have an alpha channel? """
         return bool(self.get("has-alpha", False))
+
+    def uses_xshm(self) -> bool:
+        return False

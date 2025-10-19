@@ -35,6 +35,7 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "pid": 0,
     "ppid": 0,
     "wm-pid": 0,
+    "app-id": "",
     "workspace": WORKSPACE_UNSET,
     "bypass-compositor": 0,
     "depth": 24,
