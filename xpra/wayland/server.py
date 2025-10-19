@@ -256,7 +256,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             source = wsources[0]
         # must use relative position!
         x_root, y_root = self.pointer_device.get_position()
-        direction = MoveResize.MOVE
+        direction = int(MoveResize.MOVE)
         button = 1
         source_indication = SOURCE_INDICATION_NORMAL
         source.initiate_moveresize(wid, window, x_root, y_root, direction, button, source_indication)
