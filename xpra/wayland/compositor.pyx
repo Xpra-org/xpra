@@ -66,10 +66,23 @@ from xpra.wayland.wlroots cimport (
     wlr_data_device_manager_create,
     wl_list, wl_list_remove,
     WLR_ERROR, WLR_INFO, WLR_DEBUG,
-    DRM_FORMAT_ABGR8888,
+    DRM_FORMAT_ABGR8888, WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
     WLR_XDG_SURFACE_ROLE_NONE,
     WLR_XDG_SURFACE_ROLE_POPUP,
     WLR_XDG_SURFACE_ROLE_TOPLEVEL,
+    WL_OUTPUT_TRANSFORM_NORMAL, WL_OUTPUT_TRANSFORM_90, WL_OUTPUT_TRANSFORM_180, WL_OUTPUT_TRANSFORM_270,
+    WL_OUTPUT_TRANSFORM_FLIPPED, WL_OUTPUT_TRANSFORM_FLIPPED_90, WL_OUTPUT_TRANSFORM_FLIPPED_180, WL_OUTPUT_TRANSFORM_FLIPPED_270,
+    WL_OUTPUT_SUBPIXEL_UNKNOWN, WL_OUTPUT_SUBPIXEL_NONE,
+    WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB, WL_OUTPUT_SUBPIXEL_HORIZONTAL_BGR,
+    WL_OUTPUT_SUBPIXEL_VERTICAL_RGB, WL_OUTPUT_SUBPIXEL_VERTICAL_BGR,
+    DRM_FORMAT_BGRX5551, DRM_FORMAT_ARGB1555, DRM_FORMAT_ABGR1555, DRM_FORMAT_RGBA5551, DRM_FORMAT_BGRA5551,
+    DRM_FORMAT_RGB565, DRM_FORMAT_BGR565, DRM_FORMAT_RGB888, DRM_FORMAT_BGR888,
+    DRM_FORMAT_XRGB8888, DRM_FORMAT_XBGR8888, DRM_FORMAT_RGBX8888, DRM_FORMAT_BGRX8888,
+    DRM_FORMAT_ARGB8888, DRM_FORMAT_ABGR8888, DRM_FORMAT_RGBA8888, DRM_FORMAT_BGRA8888,
+    DRM_FORMAT_XRGB2101010, DRM_FORMAT_XBGR2101010, DRM_FORMAT_RGBX1010102,
+    DRM_FORMAT_BGRX1010102, DRM_FORMAT_ARGB2101010, DRM_FORMAT_ABGR2101010,
+    DRM_FORMAT_RGBA1010102, DRM_FORMAT_BGRA1010102, DRM_FORMAT_XRGB16161616,
+    DRM_FORMAT_XBGR16161616, DRM_FORMAT_ARGB16161616, DRM_FORMAT_ABGR16161616,
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
 
@@ -301,10 +314,6 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
     cdef server *srv = server_from_new_output(listener)
     cdef wlr_output *wlr_out = <wlr_output*>data
 
-    with gil:
-        name = wlr_out.name.decode()
-        log("new output: %r", name)
-
     wlr_output_init_render(wlr_out, srv.allocator, srv.renderer)
 
     cdef output *out = <output*>calloc(1, sizeof(output))
@@ -327,7 +336,104 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
     wlr_output_state_finish(&state)
 
     with gil:
-        log.info("Output %r initialized", name)
+        name = wlr_out.name.decode()
+        log("new output: %r", name)
+        log(" virtual output %r initialized", name)
+        emit("new-output", name, get_output_info(wlr_out))
+
+
+cdef void add(info: dict, key: str, char* value):
+    if value != NULL:
+        info[key] = value.decode()
+
+cdef object get_output_info(wlr_output *output):
+    info = {
+        "name": output.name.decode(),
+    }
+    add(info, "description", output.description)
+    add(info, "make", output.make)
+    add(info, "model", output.model)
+    add(info, "serial", output.serial)
+    info.update({
+        "physical-width": output.phys_width,
+        "physical-height": output.phys_height,
+        "width": output.width,
+        "height": output.height,
+        "enabled": bool(output.enabled),
+        # float:
+        #"scale": output.scale,
+    })
+    if output.refresh:
+        info["vertical-refresh"] = round(output.refresh / 1000)
+        info["refresh"] = output.refresh        # MHz
+    subpixel = {
+        WL_OUTPUT_SUBPIXEL_UNKNOWN: "",
+        WL_OUTPUT_SUBPIXEL_NONE: "none",
+        WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB: "RGB",
+        WL_OUTPUT_SUBPIXEL_HORIZONTAL_BGR: "BGR",
+        WL_OUTPUT_SUBPIXEL_VERTICAL_RGB: "VRGB",
+        WL_OUTPUT_SUBPIXEL_VERTICAL_BGR: "VBGR",
+    }.get(output.subpixel)
+    if subpixel:
+        info["subpixel"] = subpixel
+    transform = {
+        WL_OUTPUT_TRANSFORM_NORMAL: "",
+        WL_OUTPUT_TRANSFORM_90: "90",
+        WL_OUTPUT_TRANSFORM_180: "180",
+        WL_OUTPUT_TRANSFORM_270: "270",
+        WL_OUTPUT_TRANSFORM_FLIPPED: "flipped",
+        WL_OUTPUT_TRANSFORM_FLIPPED_90: "flipped-90",
+        WL_OUTPUT_TRANSFORM_FLIPPED_180: "flipped-180",
+        WL_OUTPUT_TRANSFORM_FLIPPED_270: "flipped-270",
+    }.get(output.transform)
+    if transform:
+        info["transform"] = transform
+    if output.adaptive_sync_supported:
+        info["adaptive-sync"] = output.adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED
+    if output.needs_frame:
+        info["needs-frame"] = True
+    if output.frame_pending:
+        info["frame-pending"] = True
+    if output.non_desktop:
+        info["non-desktop"] = True
+    info["commit-sequence"] = output.commit_seq
+    info["render-format"] = get_render_format(output.render_format)
+    # wl_list modes
+    # wlr_output_mode *current_mode
+    return info
+
+cdef str get_render_format(uint32_t fmt):
+    return {
+        DRM_FORMAT_BGRX5551: "BGRX5551",
+        DRM_FORMAT_ARGB1555: "ARGB1555",
+        DRM_FORMAT_ABGR1555: "ABGR1555",
+        DRM_FORMAT_RGBA5551: "RGBA5551",
+        DRM_FORMAT_BGRA5551: "BGRA5551",
+        DRM_FORMAT_RGB565: "RGB565",
+        DRM_FORMAT_BGR565: "BGR565",
+        DRM_FORMAT_RGB888: "RGB888",
+        DRM_FORMAT_BGR888: "BGR888",
+        DRM_FORMAT_XRGB8888: "XRGB8888",
+        DRM_FORMAT_XBGR8888: "XBGR8888",
+        DRM_FORMAT_RGBX8888: "RGBX8888",
+        DRM_FORMAT_BGRX8888: "BGRX8888",
+        DRM_FORMAT_ARGB8888: "ARGB8888",
+        DRM_FORMAT_ABGR8888: "ABGR8888",
+        DRM_FORMAT_RGBA8888: "RGBA8888",
+        DRM_FORMAT_BGRA8888: "BGRA8888",
+        DRM_FORMAT_XRGB2101010: "XRGB2101010",
+        DRM_FORMAT_XBGR2101010: "XBGR2101010",
+        DRM_FORMAT_RGBX1010102: "RGBX1010102",
+        DRM_FORMAT_BGRX1010102: "BGRX1010102",
+        DRM_FORMAT_ARGB2101010: "ARGB2101010",
+        DRM_FORMAT_ABGR2101010: "ABGR2101010",
+        DRM_FORMAT_RGBA1010102: "RGBA1010102",
+        DRM_FORMAT_BGRA1010102: "BGRA1010102",
+        DRM_FORMAT_XRGB16161616: "XRGB16161616",
+        DRM_FORMAT_XBGR16161616: "XBGR16161616",
+        DRM_FORMAT_ARGB16161616: "ARGB16161616",
+        DRM_FORMAT_ABGR16161616: "ABGR16161616",
+    }.get(fmt, "")
 
 
 cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept nogil:
@@ -577,7 +683,7 @@ cdef class WaylandCompositor:
         self.socket_name = ""
 
     def initialize(self) -> None:
-        log.info("Starting headless compositor...")
+        log("starting headless wayland compositor")
 
         self.srv.display = wl_display_create()
         if not self.srv.display:
@@ -644,7 +750,7 @@ cdef class WaylandCompositor:
         if not wlr_backend_start(self.srv.backend):
             raise RuntimeError("Failed to start backend")
 
-        log.info("Compositor running on WAYLAND_DISPLAY=%s", self.socket_name)
+        log.info("compositor running on WAYLAND_DISPLAY=%s", self.socket_name)
         os.environ["WAYLAND_DISPLAY"] = self.socket_name
 
         return self.socket_name
@@ -666,6 +772,9 @@ cdef class WaylandCompositor:
         """Run the compositor event loop"""
         log.info("Entering main event loop...")
         wl_display_run(self.srv.display)
+
+    def __dealloc__(self):
+        self.cleanup()
 
     def cleanup(self) -> None:
         """Clean up compositor resources"""
@@ -722,5 +831,3 @@ cdef class WaylandCompositor:
         cdef wlr_xdg_toplevel *toplevel = surface.toplevel
         wlr_xdg_toplevel_set_activated(toplevel, focused)
 
-    def __dealloc__(self):
-        self.cleanup()

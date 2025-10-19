@@ -34,6 +34,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.wayland_fd_source = 0
         self.focused = 0
         self.pointer_focus = 0
+        self.outputs: list[dict] = []
         self.register_events()
         os.environ["GDK_BACKEND"] = "wayland"
 
@@ -45,6 +46,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         add_event_listener("unmap", self._unmap)
         add_event_listener("commit", self._commit)
         add_event_listener("destroy", self._destroy)
+        add_event_listener("new-output", self._new_output)
 
     def make_keyboard_device(self):
         return self.compositor.get_keyboard_device()
@@ -88,7 +90,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.flush()
 
     def fake_key(self, keycode: int, press: bool) -> None:
-        log.info("fake_key(%i, %s)", keycode, press)
+        log("fake_key(%i, %s)", keycode, press)
         super().fake_key(keycode, press)
         self.compositor.flush()
 
@@ -222,6 +224,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def _destroy(self, wid: int) -> None:
         self._remove_wid(wid)
 
+    def _new_output(self, name: str, props: dict):
+        log("new output %r=%r", name, props)
+        self.outputs.append(props)
+
     @staticmethod
     def get_cursor_data() -> None:
         return None
@@ -234,9 +240,15 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def get_display_size():
         return 3840, 2160
 
-    @staticmethod
-    def get_display_description() -> str:
-        return "Wayland Display (details missing)"
+    def get_display_description(self) -> str:
+        details = ""
+        if len(self.outputs) == 1:
+            info = self.outputs[0]
+            name = info.get("name", "")
+            width = info.get("width", 0)
+            height = info.get("height", 0)
+            details = f" {name!r} : {width}x{height}"
+        return f"Wayland Display{details}"
 
     def wayland_io_callback(self, fd: int, condition):
         log("wayland_io_callback%s", (fd, condition))

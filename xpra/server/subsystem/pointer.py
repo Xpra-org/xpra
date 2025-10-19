@@ -86,7 +86,6 @@ class PointerServer(StubServerMixin):
         pointer = devices.get("pointer")
         touchpad = devices.get("touchpad")
         log("init_virtual_devices(%s) got pointer=%s, touchpad=%s", devices, pointer, touchpad)
-        self.input_devices = "xtest"
         if pointer:
             uinput_device = pointer.get("uinput")
             device_path = pointer.get("device")
@@ -106,10 +105,11 @@ class PointerServer(StubServerMixin):
                 # since I can't imagine how we can have a touchpad device without a display!
                 if "display-geometry-changed" in self.__signals__:
                     self.connect("display-geometry-changed", self.update_touchpad_size)
-        try:
-            log.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
-        except Exception as e:
-            log("cannot get pointer device class from %s: %s", self.pointer_device, e)
+        if self.pointer_device:
+            try:
+                log.info("pointer device emulation using %r", str(self.pointer_device).replace("PointerDevice", ""))
+            except Exception as e:
+                log("cannot get pointer device class from %s: %s", self.pointer_device, e)
 
     def update_touchpad_size(self) -> None:
         td = self.touchpad_device

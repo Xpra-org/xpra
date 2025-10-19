@@ -17,6 +17,11 @@ class X11PointerServer(PointerServer):
         PointerServer.__init__(self)
         self.input_devices_format = ""
 
+    def init(self, opts) -> None:
+        super().init(opts)
+        if self.input_devices == "auto":
+            self.input_devices = "xtest"
+
     def make_pointer_device(self):
         try:
             from xpra.x11.server.xtest_pointer import XTestPointerDevice

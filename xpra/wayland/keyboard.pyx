@@ -48,14 +48,13 @@ cdef class WaylandKeyboard:
     cdef wlr_keyboard_impl keyboard_impl
 
     def __init__(self, uintptr_t seat_ptr):
-        log.info("WaylandKeyboard(%#x)", seat_ptr)
         self.seat = <wlr_seat*>seat_ptr
         if not seat_ptr:
             raise ValueError("seat pointer is NULL")
         self.keyboard = <wlr_keyboard*> calloc(1, sizeof(wlr_keyboard))
         if not self.keyboard:
             raise MemoryError("failed to allocate keyboard")
-        log.info("wlr_keyboard=%#x", <uintptr_t> self.keyboard)
+        log("wlr_keyboard=%#x", <uintptr_t> self.keyboard)
         self.keyboard_impl.name = b"xpra-virtual-keyboard"
         self.keyboard_impl.led_update = virtual_keyboard_led_update
         wlr_keyboard_init(self.keyboard, &self.keyboard_impl, b"virtual-keyboard")
@@ -63,6 +62,9 @@ cdef class WaylandKeyboard:
         # set a default repeat rate:
         wlr_keyboard_set_repeat_info(self.keyboard, 25, 600)
         wlr_seat_set_keyboard(self.seat, self.keyboard)
+
+    def __repr__(self):
+        return "WaylandKeyboard(%#x)" % (<uintptr_t> self.seat)
 
     def cleanup(self) -> None:
         if self.keyboard:
@@ -106,10 +108,10 @@ cdef class WaylandKeyboard:
         """ this is not a real keyboard """
 
     def set_repeat_rate(self, delay: int, interval: int) -> None:
-        cdef uint32_t irate = interval
+        cdef uint32_t irate = round(1000 / interval)
         cdef uint32_t idelay = delay
         if self.keyboard != NULL:
-            wlr_keyboard_set_repeat_info(self.keyboard, idelay, irate)
+            wlr_keyboard_set_repeat_info(self.keyboard, irate, idelay)
             log("wlr_keyboard_set_repeat_info(%#x, %i, %i)", <uintptr_t> self.keyboard, irate, idelay)
 
     def get_keycodes_down(self) -> Sequence[int]:
