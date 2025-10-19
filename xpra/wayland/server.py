@@ -73,7 +73,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return window._gproperties.get("surface", 0)
 
     def _focus(self, _server_source, wid: int, modifiers) -> None:
-        log.warn("_focus(%s, %s) current focus=%i", wid, modifiers, self.focused)
+        log("_focus(%s, %s) current focus=%i", wid, modifiers, self.focused)
         if self.focused == wid:
             return
         for window_id, state in {
@@ -197,13 +197,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if not window:
             log.warn("Warning: cannot map window %i: not found!", wid)
             return
-        old_geom = window.get_property("geometry")
-        geom = (old_geom[0], old_geom[1], size[0], size[1])
-        window._updateprop("geometry", geom)
         window._updateprop("title", title)
         window._updateprop("app-id", app_id)
-        if old_geom == (0, 0, 0, 0):
-            self._do_send_new_window_packet("new-window", window, geom)
+        self.update_size(window, size)
 
     def _unmap(self, wid: int) -> None:
         window = self._id_to_window.get(wid)
@@ -211,10 +207,11 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             return
         window.set_property("iconic", True)
 
-    def _commit(self, wid: int, mapped: bool, rects: Sequence[tuple[int, int, int, int]]) -> None:
+    def _commit(self, wid: int, mapped: bool, size: tuple[int, int], rects: Sequence[tuple[int, int, int, int]]) -> None:
         window = self._id_to_window.get(wid)
         if not window:
             return
+        self.update_size(window, size)
         options = {
             "damage": True,
         }
@@ -222,6 +219,16 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         for i, (x, y, w, h) in enumerate(rects):
             options["more"] = i != last
             self.refresh_window_area(window, x, y, w, h, options=options)
+
+    def update_size(self, window, size: tuple[int, int]) -> None:
+        old_geom = window.get_property("geometry")
+        w, h = size
+        if old_geom[2] == w and old_geom[3] == h:
+            return
+        geom = (old_geom[0], old_geom[1], w, h)
+        window._updateprop("geometry", geom)
+        if (old_geom[2] == old_geom[3] == 0) and size[0] and size[1]:
+            self._do_send_new_window_packet("new-window", window, geom)
 
     def _destroy(self, wid: int) -> None:
         self._remove_wid(wid)

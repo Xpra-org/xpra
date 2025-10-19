@@ -503,19 +503,22 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
     cdef xpra_surface *surface = xpra_surface_from_commit(listener)
     cdef wlr_xdg_surface *xdg_surface = surface.wlr_xdg_surface
 
+    # Fallback: If configure wasn't sent yet (toplevel wasn't ready), send it now
     if xdg_surface.toplevel != NULL and xdg_surface.initialized and not xdg_surface.configured:
         with gil:
             log("Surface initialized, sending first configure")
-        wlr_xdg_toplevel_set_size(xdg_surface.toplevel, 800, 600)
+        wlr_xdg_toplevel_set_size(xdg_surface.toplevel, 0, 0)
         wlr_xdg_surface_schedule_configure(xdg_surface)
 
+    cdef wlr_box *geometry = &xdg_surface.geometry
     cdef wlr_surface *wlr_surface = surface.wlr_xdg_surface.surface
     with gil:
+        size = (geometry.width, geometry.height)
         rects = []
         if wlr_surface.mapped:
             rects = get_damage_areas(&wlr_surface.buffer_damage)
             capture_surface_pixels(surface)
-        emit("commit", surface.wid, bool(wlr_surface.mapped), rects)
+        emit("commit", surface.wid, bool(wlr_surface.mapped), size, rects)
 
 
 cdef object get_damage_areas(pixman_region32_t *damage):
@@ -650,6 +653,11 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
 
         surface.set_app_id.notify = xdg_toplevel_set_app_id_handler
         wl_signal_add(&toplevel.events.set_app_id, &surface.set_app_id)
+
+        # Send initial configure for the toplevel
+        log("Sending initial configure for toplevel")
+        wlr_xdg_toplevel_set_size(toplevel, 0, 0)  # 0, 0 = let client choose initial size
+        wlr_xdg_surface_schedule_configure(xdg_surf)
 
     log("All listeners attached")
     title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
