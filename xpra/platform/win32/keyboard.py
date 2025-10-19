@@ -159,7 +159,7 @@ def clear_keys_pressed() -> None:
     SetKeyboardState(keystate)
 
 
-def fake_key(keycode, press):
+def fake_key(keycode: int, press: bool):
     if keycode <= 0:
         log.warn("no keycode found for %s", keycode)
         return

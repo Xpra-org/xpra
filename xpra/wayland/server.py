@@ -87,6 +87,11 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.focused = wid
         self.compositor.flush()
 
+    def fake_key(self, keycode: int, press: bool) -> None:
+        log.info("fake_key(%i, %s)", keycode, press)
+        super().fake_key(keycode, press)
+        self.compositor.flush()
+
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
         log("set_pointer_focus(%i, %s)", wid, pointer)
         if self.pointer_focus == wid:

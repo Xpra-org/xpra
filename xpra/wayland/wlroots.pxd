@@ -619,16 +619,12 @@ cdef extern from "wlr/types/wlr_seat.h":
     void wlr_seat_keyboard_notify_modifiers(wlr_seat *seat, wlr_keyboard_modifiers *modifiers)
     void wlr_seat_keyboard_notify_enter(wlr_seat *seat, wlr_surface *surface,
                                         uint32_t *keycodes, size_t num_keycodes, wlr_keyboard_modifiers *modifiers)
-    void wlr_seat_set_keyboard(wlr_seat *seat, wlr_input_device *dev)
+    void wlr_seat_set_keyboard(wlr_seat *seat, wlr_keyboard *dev)
     void wlr_seat_keyboard_clear_focus(wlr_seat *seat)
 
     wlr_keyboard* wlr_seat_get_keyboard(wlr_seat *seat)
     wlr_seat_client* wlr_seat_client_for_wl_client(wlr_seat *seat, wl_client *client)
 
-cdef extern from "wlr/interfaces/wlr_keyboard.h":
-    cdef struct wlr_keyboard_impl:
-        const char *name
-        void (*led_update)(wlr_keyboard *keyboard, uint32_t leds)
 
 cdef extern from "wlr/types/wlr_keyboard.h":
     cdef struct wlr_seat_keyboard_state:
@@ -689,8 +685,29 @@ cdef extern from "wlr/types/wlr_keyboard.h":
         WLR_MODIFIER_LOGO
         WLR_MODIFIER_MOD5
 
+    cdef struct wlr_keyboard_key_event:
+        uint32_t time_msec
+        uint32_t keycode
+        bint update_state       # if backend doesn't update modifiers on its own
+        wl_keyboard_key_state state
+
     void wlr_keyboard_set_keymap(wlr_keyboard *kb, xkb_keymap *keymap)
     void wlr_keyboard_set_repeat_info(wlr_keyboard *kb, int32_t rate, int32_t delay)
+
+
+cdef extern from "wlr/interfaces/wlr_keyboard.h":
+    cdef struct wlr_keyboard_impl:
+        const char *name
+        void (*led_update)(wlr_keyboard *keyboard, uint32_t leds)
+
+    void wlr_keyboard_init(wlr_keyboard *keyboard, const wlr_keyboard_impl *impl, const char *name)
+    void wlr_keyboard_finish(wlr_keyboard *keyboard)
+
+    void wlr_keyboard_notify_key(wlr_keyboard *keyboard, wlr_keyboard_key_event *event)
+    void wlr_keyboard_notify_modifiers(
+        wlr_keyboard *keyboard,
+        uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked, uint32_t group
+    )
 
 
 cdef extern from "wlr/types/wlr_virtual_keyboard_v1.h":

@@ -237,7 +237,7 @@ class KeyboardServer(StubServerMixin):
                     pressed: bool, modifiers: list, keyval: int, keystr: str, group: int):
         return ss.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
-    def fake_key(self, keycode, press) -> None:
+    def fake_key(self, keycode: int, press: bool) -> None:
         log("fake_key(%s, %s)", keycode, press)
         if self.keyboard_device:
             self.keyboard_device.press_key(keycode, press)

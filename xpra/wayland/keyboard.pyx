@@ -8,11 +8,12 @@ from typing import Tuple
 
 from xpra.log import Logger
 
+from libc.stdlib cimport free, calloc
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t, uint64_t, uint32_t, int32_t
 from xpra.wayland.wlroots cimport (
-    wlr_seat, wlr_surface, wlr_xdg_surface, wlr_keyboard, wlr_keyboard_impl,
-    wlr_seat_keyboard_notify_key, wlr_seat_keyboard_notify_modifiers,
+    wlr_seat, wlr_surface, wlr_xdg_surface, wlr_keyboard, wlr_keyboard_impl, wlr_keyboard_init, wlr_keyboard_finish,
+    wlr_seat_set_keyboard, wlr_seat_keyboard_notify_key, wlr_seat_keyboard_notify_modifiers,
     wlr_seat_keyboard_notify_enter, wlr_seat_keyboard_clear_focus,
     wlr_keyboard_modifiers, wlr_keyboard_set_repeat_info,
     WL_KEYBOARD_KEY_STATE_PRESSED, WL_KEYBOARD_KEY_STATE_RELEASED,
@@ -41,28 +42,32 @@ cdef void virtual_keyboard_led_update(wlr_keyboard *wlr_kb, uint32_t leds) noexc
     log.info("led-update: %#x", leds)
 
 
-# Global keyboard implementation struct
-cdef wlr_keyboard_impl keyboard_impl
-keyboard_impl.name = b"xpra-virtual-keyboard"
-keyboard_impl.led_update = virtual_keyboard_led_update
-
-
 cdef class WaylandKeyboard:
     cdef wlr_seat *seat
     cdef wlr_keyboard *keyboard
+    cdef wlr_keyboard_impl keyboard_impl
 
     def __init__(self, uintptr_t seat_ptr):
+        log.info("WaylandKeyboard(%#x)", seat_ptr)
         self.seat = <wlr_seat*>seat_ptr
         if not seat_ptr:
             raise ValueError("seat pointer is NULL")
-        # self.keyboard = wlr_keyboard_create(&keyboard_impl, b"xpra-virtual-keyboard")
-        # if self.keyboard == NULL:
-        #    raise RuntimeError("Failed to create wlr_keyboard")
-        # self.set_layout()
+        self.keyboard = <wlr_keyboard*> calloc(1, sizeof(wlr_keyboard))
+        if not self.keyboard:
+            raise MemoryError("failed to allocate keyboard")
+        log.info("wlr_keyboard=%#x", <uintptr_t> self.keyboard)
+        self.keyboard_impl.name = b"xpra-virtual-keyboard"
+        self.keyboard_impl.led_update = virtual_keyboard_led_update
+        wlr_keyboard_init(self.keyboard, &self.keyboard_impl, b"virtual-keyboard")
+        self.set_layout()
+        # set a default repeat rate:
+        wlr_keyboard_set_repeat_info(self.keyboard, 25, 600)
+        wlr_seat_set_keyboard(self.seat, self.keyboard)
 
     def cleanup(self) -> None:
-        if self.keyboard != NULL:
-            # wlr_keyboard_destroy(self.keyboard)
+        if self.keyboard:
+            wlr_keyboard_finish(self.keyboard)
+            free(self.keyboard)
             self.keyboard = NULL
 
     def set_layout(self, layout="us", model="pc105", variant="", options="") -> None:
@@ -90,17 +95,22 @@ cdef class WaylandKeyboard:
         xkb_context_unref(context)
 
     def press_key(self, keycode: int, press: bool) -> None:
-        log("press_key%s", (keycode, press))
         cdef uint32_t time_msec = get_time_msec()
         cdef uint32_t state = WL_KEYBOARD_KEY_STATE_PRESSED if press else WL_KEYBOARD_KEY_STATE_RELEASED
-        wlr_seat_keyboard_notify_key(self.seat, time_msec, keycode, state)
+        if self.keyboard != NULL:
+            log("wlr_seat_keyboard_notify_key(%#x, %i, %i, %i)", <uintptr_t> self.seat, time_msec, keycode, state)
+            wlr_seat_keyboard_notify_key(self.seat, time_msec, keycode - 8, state)
+
 
     def clear_keys_pressed(self, keycodes) -> None:
         """ this is not a real keyboard """
 
     def set_repeat_rate(self, delay: int, interval: int) -> None:
+        cdef uint32_t irate = interval
+        cdef uint32_t idelay = delay
         if self.keyboard != NULL:
-            wlr_keyboard_set_repeat_info(self.keyboard, delay, interval)
+            wlr_keyboard_set_repeat_info(self.keyboard, idelay, irate)
+            log("wlr_keyboard_set_repeat_info(%#x, %i, %i)", <uintptr_t> self.keyboard, irate, idelay)
 
     def get_keycodes_down(self) -> Sequence[int]:
         return ()
@@ -135,4 +145,4 @@ cdef class WaylandKeyboard:
             return
 
         wlr_seat_keyboard_notify_enter(self.seat, surface, NULL, 0, NULL)
-        log.warn("keyboard.focus(%#x) done", xdg_surface_ptr)
+        log("keyboard.focus(%#x) done", xdg_surface_ptr)
