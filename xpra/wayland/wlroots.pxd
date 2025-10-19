@@ -1109,6 +1109,7 @@ cdef extern from "wlr/types/wlr_compositor.h":
         # struct wl_global *global
         wlr_renderer *renderer
         wlr_compositor_events events
+
     cdef struct wlr_surface_role:
         const char *name
         bint no_object
@@ -1144,6 +1145,17 @@ cdef extern from "wlr/types/wlr_compositor.h":
     wlr_compositor *wlr_compositor_create(wl_display *display, int version, wlr_renderer *renderer)
 
     void wlr_surface_send_frame_done(wlr_surface *surface, const timespec *when)
+
+
+cdef extern from "wlr/types/wlr_subcompositor.h":
+    cdef struct wlr_subcompositor_events:
+        wl_signal destroy
+
+    cdef struct wlr_subcompositor:
+        # wl_global *global
+        wlr_subcompositor_events events
+
+    wlr_subcompositor *wlr_subcompositor_create(wl_display *display)
 
 
 cdef extern from "wlr/types/wlr_data_device.h":

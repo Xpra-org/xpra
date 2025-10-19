@@ -42,6 +42,7 @@ from xpra.wayland.wlroots cimport (
     wlr_seat_keyboard_notify_enter,
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
     wlr_compositor, wlr_compositor_create,
+    wlr_subcompositor, wlr_subcompositor_create,
     wlr_xdg_decoration_manager_v1, wlr_xdg_toplevel_decoration_v1, wlr_xdg_decoration_manager_v1_create,
     wlr_xdg_toplevel_decoration_v1_set_mode, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
     wlr_cursor_create, wlr_cursor_destroy,
@@ -123,6 +124,7 @@ cdef struct server:
     wlr_allocator *allocator
 
     wlr_compositor *compositor
+    wlr_subcompositor *subcompositor
     wlr_xdg_shell *xdg_shell
     wlr_scene *scene
     wlr_seat *seat
@@ -715,6 +717,7 @@ cdef class WaylandCompositor:
             raise RuntimeError("Failed to create allocator")
 
         self.srv.compositor = wlr_compositor_create(self.srv.display, 5, self.srv.renderer)
+        self.srv.subcompositor = wlr_subcompositor_create(self.srv.display)
         wlr_data_device_manager_create(self.srv.display)
 
         self.srv.xdg_shell = wlr_xdg_shell_create(self.srv.display, 3)
