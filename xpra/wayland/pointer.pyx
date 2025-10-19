@@ -78,7 +78,7 @@ cdef class WaylandPointer:
         if not surface.mapped:
             log("surface is not mapped")
             return False
-        log.warn("enter_surface(%#x, %i, %i) seat=%#x, surface=%#x",
+        log("enter_surface(%#x, %i, %i) seat=%#x, surface=%#x",
             xdg_surface_ptr, x, y, <uintptr_t> self.seat, <uintptr_t> surface)
         self.offset_x = xdg_surface.geometry.x
         self.offset_y = xdg_surface.geometry.y
@@ -88,7 +88,7 @@ cdef class WaylandPointer:
         return True
 
     def leave_surface(self):
-        log.warn("leave_surface()")
+        log("leave_surface()")
         wlr_seat_pointer_notify_clear_focus(self.seat)
         self.offset_x = 0
         self.offset_y = 0
