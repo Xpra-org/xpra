@@ -1148,6 +1148,33 @@ cdef extern from "wlr/types/wlr_compositor.h":
 
 
 cdef extern from "wlr/types/wlr_subcompositor.h":
+
+    cdef struct wlr_subsurface_parent_state:
+        int32_t x
+        int32_t y
+        wl_list link
+
+    cdef struct wlr_subsurface_events:
+        wl_signal destroy
+
+    cdef struct wlr_subsurface:
+        wl_resource *resource
+        wlr_surface *surface
+        wlr_surface *parent
+
+        wlr_subsurface_parent_state current
+        wlr_subsurface_parent_state pending
+
+        uint32_t cached_seq
+        bint has_cache
+
+        bint synchronized
+        bint added
+
+        wlr_subsurface_events events
+
+        void *data
+
     cdef struct wlr_subcompositor_events:
         wl_signal destroy
 

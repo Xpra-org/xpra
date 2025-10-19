@@ -42,7 +42,7 @@ from xpra.wayland.wlroots cimport (
     wlr_seat_keyboard_notify_enter,
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
     wlr_compositor, wlr_compositor_create,
-    wlr_subcompositor, wlr_subcompositor_create,
+    wlr_subcompositor, wlr_subcompositor_create, wlr_subsurface,
     wlr_xdg_decoration_manager_v1, wlr_xdg_toplevel_decoration_v1, wlr_xdg_decoration_manager_v1_create,
     wlr_xdg_toplevel_decoration_v1_set_mode, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
     wlr_cursor_create, wlr_cursor_destroy,
@@ -155,6 +155,7 @@ cdef struct xpra_surface:
     wl_listener unmap
     wl_listener destroy
     wl_listener commit
+    wl_listener new_subsurface
     wl_listener request_move
     wl_listener request_resize
     wl_listener request_maximize
@@ -206,6 +207,10 @@ cdef inline xpra_surface* xpra_surface_from_destroy(wl_listener *listener) noexc
 
 cdef inline xpra_surface* xpra_surface_from_commit(wl_listener *listener) noexcept nogil:
     cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).commit - <char*>0)
+    return <xpra_surface*>(<char*>listener - offset)
+
+cdef inline xpra_surface* xpra_surface_from_new_subsurface(wl_listener *listener) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).new_subsurface - <char*>0)
     return <xpra_surface*>(<char*>listener - offset)
 
 cdef inline xpra_surface* xpra_surface_from_request_move(wl_listener *listener) noexcept nogil:
@@ -476,6 +481,8 @@ cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcep
     wl_list_remove(&surface.unmap.link)
     wl_list_remove(&surface.destroy.link)
     wl_list_remove(&surface.commit.link)
+    if surface.new_subsurface.link.next != NULL:
+        wl_list_remove(&surface.new_subsurface.link)
     if surface.request_move.link.next != NULL:
         wl_list_remove(&surface.request_move.link)
     if surface.request_resize.link.next != NULL:
@@ -536,6 +543,27 @@ cdef object get_damage_areas(pixman_region32_t *damage):
         h = rects[i].y2 - rects[i].y1
         rectangles.append((x, y, w, h))
     return rectangles
+
+
+cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept nogil:
+    cdef xpra_surface *parent_surface = xpra_surface_from_new_subsurface(listener)
+    cdef wlr_subsurface *subsurface = <wlr_subsurface*>data
+
+    with gil:
+        log("New SUBSURFACE created, parent wid=%i", parent_surface.wid)
+        log(" subsurface wlr_surface=%#x, parent wlr_surface=%#x",
+            <uintptr_t>subsurface.surface, <uintptr_t>subsurface.parent)
+
+        # Get dimensions if available
+        width = subsurface.surface.current.width if subsurface.surface else 0
+        height = subsurface.surface.current.height if subsurface.surface else 0
+
+        global wid
+        wid += 1
+        log("allocated wid=%i", wid)
+        # TODO: allocate xpra_surface and populate it
+        emit("new-subsurface", parent_surface.wid, wid, <uintptr_t> subsurface.surface, width, height)
+
 
 cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept nogil:
     cdef xpra_surface *surface = xpra_surface_from_request_move(listener)
@@ -629,6 +657,10 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
 
     surface.commit.notify = xdg_surface_commit
     wl_signal_add(&xdg_surf.surface.events.commit, &surface.commit)
+
+    # Listen for subsurfaces created on this surface
+    surface.new_subsurface.notify = handle_new_subsurface
+    wl_signal_add(&xdg_surf.surface.events.new_subsurface, &surface.new_subsurface)
 
     cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
     log("toplevel=%#x", <uintptr_t> toplevel)

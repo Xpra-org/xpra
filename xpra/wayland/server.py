@@ -40,6 +40,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def register_events(self) -> None:
         add_event_listener("new-surface", self._new_surface)
+        add_event_listener("new-subsurface", self._new_subsurface)
         add_event_listener("metadata", self._metadata)
         add_event_listener("surface-image", self._surface_image)
         add_event_listener("map", self._map)
@@ -170,6 +171,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.do_add_new_window_common(wid, window)
         if size != (0, 0):
             self._do_send_new_window_packet("new-window", window, geom)
+
+    def _new_subsurface(self, *args):
+        log.warn("new-subsurface: %s", args)
 
     def _metadata(self, wid: int, prop: str, value) -> None:
         window = self._id_to_window.get(wid)
