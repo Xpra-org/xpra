@@ -630,11 +630,11 @@ cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noe
 cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     cdef server *srv = server_from_new_xdg_surface(listener)
     cdef wlr_xdg_surface *xdg_surf = <wlr_xdg_surface*>data
-    log.warn("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
+    log("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
     if xdg_surf.role != WLR_XDG_SURFACE_ROLE_NONE and xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
         return
 
-    log.warn(" wlr_surface(%#x)=%#x", <uintptr_t> xdg_surf, <uintptr_t> xdg_surf.surface)
+    log(" wlr_surface(%#x)=%#x", <uintptr_t> xdg_surf, <uintptr_t> xdg_surf.surface)
     cdef xpra_surface *surface = <xpra_surface*>calloc(1, sizeof(xpra_surface))
     surface.srv = srv
     surface.wlr_xdg_surface = xdg_surf
@@ -664,7 +664,7 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     wl_signal_add(&xdg_surf.surface.events.new_subsurface, &surface.new_subsurface)
 
     cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
-    log.warn("toplevel=%#x", <uintptr_t> toplevel)
+    log("toplevel=%#x", <uintptr_t> toplevel)
     register_toplevel_handlers(surface)
     if toplevel:
         # Send initial configure for the toplevel
@@ -692,7 +692,7 @@ cdef void register_toplevel_handlers(xpra_surface *surface) noexcept nogil:
         return
 
     with gil:
-        log.info("Surface has toplevel, attaching toplevel handlers")
+        log("Surface has toplevel, attaching toplevel handlers")
 
     surface.request_move.notify = xdg_toplevel_request_move
     wl_signal_add(&toplevel.events.request_move, &surface.request_move)
