@@ -242,7 +242,7 @@ def has_header_file(name, isdir=False) -> bool:
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 wayland_client_ENABLED = not WIN32 and not OSX and pkg_config_exists("wayland-client")
-wayland_server_ENABLED = not WIN32 and not OSX and pkg_config_exists("wlroots-0.19")
+wayland_server_ENABLED = not WIN32 and not OSX and pkg_config_exists("wlroots-0.19") and pkg_config_exists("wayland-server")
 xinput_ENABLED = x11_ENABLED
 uinput_ENABLED = x11_ENABLED
 dbus_ENABLED = DEFAULT and (x11_ENABLED or WIN32) and not OSX
@@ -2905,10 +2905,12 @@ tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 
 toggle_packages(wayland_client_ENABLED or wayland_server_ENABLED, "xpra.wayland")
 tace(wayland_client_ENABLED, "xpra.wayland.wait_for_display", "wayland-client")
-if wayland_server_ENABLED and not os.path.exists("./xpra/wayland/xdg-shell-protocol.h"):
+XDG_SHELL_PROTOCOL_HEADER = "./xpra/wayland/xdg-shell-protocol.h"
+if wayland_server_ENABLED and not os.path.exists(XDG_SHELL_PROTOCOL_HEADER):
+    print("generating %r" % XDG_SHELL_PROTOCOL_HEADER)
     subprocess.run(["wayland-scanner", "server-header",
                     "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml",
-                    "./xpra/wayland/xdg-shell-protocol.h"])
+                    XDG_SHELL_PROTOCOL_HEADER])
 tace(wayland_server_ENABLED, "xpra.wayland.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1",
      extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
 tace(wayland_server_ENABLED, "xpra.wayland.pointer", "wlroots-0.19,wayland-server",

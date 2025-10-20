@@ -588,6 +588,8 @@ Requires:           wlroots-0.19
 BuildRequires:		pkgconfig(wlroots-0.19)
 BuildRequires:		wayland-devel
 BuildRequires:      libxkbcommon-devel
+BuildRequires:		wayland-protocols-devel
+BuildRequires:		wayland-tools
 BuildRequires:		kernel-headers
 %description -n %{package_prefix}-server-wayland
 This package contains the experimental xpra server using wayland as backend.
