@@ -12,6 +12,7 @@ from collections.abc import Callable
 from xpra.log import Logger
 from xpra.util.str_fn import Ellipsizer
 from xpra.codecs.image import ImageWrapper
+from xpra.common import MoveResize
 
 from libc.stdlib cimport malloc, free, calloc
 from libc.string cimport memset
@@ -84,6 +85,7 @@ from xpra.wayland.wlroots cimport (
     DRM_FORMAT_BGRX1010102, DRM_FORMAT_ARGB2101010, DRM_FORMAT_ABGR2101010,
     DRM_FORMAT_RGBA1010102, DRM_FORMAT_BGRA1010102, DRM_FORMAT_XRGB16161616,
     DRM_FORMAT_XBGR16161616, DRM_FORMAT_ARGB16161616, DRM_FORMAT_ABGR16161616,
+    WLR_EDGE_TOP, WLR_EDGE_BOTTOM, WLR_EDGE_LEFT, WLR_EDGE_RIGHT
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
 
@@ -596,14 +598,34 @@ cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept 
         emit("move", surface.wid, event.serial)
 
 
+EDGES: Dict[int, str] = {
+    WLR_EDGE_TOP: "TOP",
+    WLR_EDGE_BOTTOM: "BOTTOM",
+    WLR_EDGE_LEFT: "LEFT",
+    WLR_EDGE_RIGHT: "RIGHT",
+}
+
+EDGES_MAP: dict[int, MoveResize] = {
+    WLR_EDGE_TOP: MoveResize.SIZE_TOP,
+    WLR_EDGE_TOP | WLR_EDGE_LEFT: MoveResize.SIZE_TOPLEFT,
+    WLR_EDGE_TOP | WLR_EDGE_RIGHT: MoveResize.SIZE_TOPRIGHT,
+    WLR_EDGE_BOTTOM: MoveResize.SIZE_BOTTOM,
+    WLR_EDGE_BOTTOM | WLR_EDGE_LEFT: MoveResize.SIZE_BOTTOMLEFT,
+    WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT: MoveResize.SIZE_BOTTOMRIGHT,
+    WLR_EDGE_LEFT: MoveResize.SIZE_LEFT,
+    WLR_EDGE_RIGHT: MoveResize.SIZE_RIGHT,
+}
+
+
 cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept nogil:
     cdef xpra_surface *surface = xpra_surface_from_request_resize(listener)
     cdef wlr_xdg_toplevel_resize_event *event = <wlr_xdg_toplevel_resize_event*>data
-    if debug:
-        with gil:
-            log("Surface REQUEST RESIZE (edges: %d)", event.edges)
     with gil:
-        emit("resize", surface.wid, event.serial)
+        if debug:
+            edges = tuple(edge_name for edge_val, edge_name in EDGES.items() if event.edges & edge_val)
+            log("Surface REQUEST RESIZE edges: %d - %r", event.edges, edges)
+        enumval = EDGES_MAP.get(event.edges, MoveResize.CANCEL)
+        emit("resize", surface.wid, event.serial, enumval)
 
 
 cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept nogil:

@@ -45,9 +45,13 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         add_event_listener("surface-image", self._surface_image)
         add_event_listener("map", self._map)
         add_event_listener("unmap", self._unmap)
+        add_event_listener("minimize", self._minimize)
+        add_event_listener("maximize", self._maximize)
+        add_event_listener("fullscreen", self._fullscreen)
         add_event_listener("commit", self._commit)
         add_event_listener("destroy", self._destroy)
         add_event_listener("move", self._move)
+        add_event_listener("resize", self._resize)
         add_event_listener("new-output", self._new_output)
 
     def make_keyboard_device(self):
@@ -164,7 +168,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._internal_set_property("surface", surface)
         window._internal_set_property("title", title)
         window._internal_set_property("app-id", app_id)
-        window._internal_set_property("iconic", True)
+        window._internal_set_property("iconic", False)
         window._internal_set_property("geometry", geom)
         window._internal_set_property("image", None)
         window._internal_set_property("depth", 32)
@@ -211,6 +215,27 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if not window:
             return
         window.set_property("iconic", True)
+
+    def _minimize(self, wid: int) -> None:
+        self._toggle_state(wid, "iconic")
+
+    def _maximize(self, wid: int) -> None:
+        window = self._id_to_window.get(wid)
+        if not window:
+            return
+        window._updateprop("iconic", False)
+        self._toggle_state(wid, "maximized")
+
+    def _fullscreen(self, wid: int) -> None:
+        self._toggle_state(wid, "fullscreen")
+
+    def _toggle_state(self, wid, name: str) -> None:
+        window = self._id_to_window.get(wid)
+        if not window:
+            log.warn("Warning: cannot toggle %r state, window %i not found", name, wid)
+            return
+        current = window._gproperties.get(name, None)
+        window._updateprop(name, not current)
 
     def _commit(self, wid: int, mapped: bool,
                 size: tuple[int, int],
@@ -263,6 +288,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         button = 1
         source_indication = SOURCE_INDICATION_NORMAL
         source.initiate_moveresize(wid, window, x_root, y_root, direction, button, source_indication)
+
+    def _resize(self, wid: int, serial: int, moveresize: int) -> None:
+        log.info(f"resize wid {wid} moveresize={moveresize}")
 
     def _new_output(self, name: str, props: dict):
         log("new output %r=%r", name, props)

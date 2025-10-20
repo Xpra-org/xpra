@@ -303,6 +303,14 @@ cdef extern from "wlr/util/log.h":
     void wlr_log(wlr_log_importance verbosity, const char *fmt, ...) nogil
 
 
+cdef extern from "wlr/util/edges.h":
+    cdef enum wlr_edges:
+        WLR_EDGE_NONE
+        WLR_EDGE_TOP
+        WLR_EDGE_BOTTOM
+        WLR_EDGE_LEFT
+        WLR_EDGE_RIGHT
+
 cdef extern from "wlr/types/wlr_buffer.h":
     enum wlr_buffer_data_ptr_access_flag:
         WLR_BUFFER_DATA_PTR_ACCESS_READ

@@ -89,6 +89,18 @@ class Window(WindowModelStub):
             True,
             GObject.ParamFlags.READWRITE,
         ),
+        "maximized": (
+            GObject.TYPE_BOOLEAN,
+            "Is the window maximized", "",
+            False,
+            GObject.ParamFlags.READWRITE,
+        ),
+        "fullscreen": (
+            GObject.TYPE_BOOLEAN,
+            "Is the window maximized", "",
+            False,
+            GObject.ParamFlags.READWRITE,
+        ),
         "image": (
             GObject.TYPE_PYOBJECT,
             "ImageWrapper of the surface pixels", "",
@@ -113,10 +125,12 @@ class Window(WindowModelStub):
         "client-machine", "pid",
         "title", "role", "app-id",
         "command",
+        "iconic", "maximized", "fullscreen",
     ]
     # exposed and changing (should be watched for notify signals):
     _dynamic_property_names = [
         "title", "command",
+        "iconic", "maximized", "fullscreen",
     ]
     # should not be exported to the clients:
     _internal_property_names = []
@@ -132,6 +146,7 @@ class Window(WindowModelStub):
 
     def setup(self) -> None:
         self._managed = True
+        self._setup_done = True
 
     def unmanage(self, exiting=False) -> None:
         if self._managed:
