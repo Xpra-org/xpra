@@ -305,6 +305,7 @@ class EncodingsMixin(StubSourceMixin):
             if k in c:
                 self.encoding_options[ek] = c.boolget(k)
         #2: standardized encoding options:
+        self.icons_encoding_options.update(self.encoding_options.pop("icons", None) or {})
         for k in c.keys():
             #yaml gives us str..
             k = bytestostr(k)
