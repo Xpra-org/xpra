@@ -42,7 +42,7 @@ from xpra.wayland.wlroots cimport (
     wlr_seat_keyboard_notify_enter,
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
     wlr_compositor, wlr_compositor_create,
-    wlr_subcompositor, wlr_subcompositor_create, wlr_subsurface,
+    wlr_subcompositor, wlr_subcompositor_create, wlr_subsurface, wlr_surface_for_each_surface,
     wlr_xdg_decoration_manager_v1, wlr_xdg_toplevel_decoration_v1, wlr_xdg_decoration_manager_v1_create,
     wlr_xdg_toplevel_decoration_v1_set_mode, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
     wlr_cursor_create, wlr_cursor_destroy,
@@ -510,14 +510,16 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
             wlr_xdg_surface_schedule_configure(xdg_surface)
 
     cdef wlr_box *geometry = &xdg_surface.geometry
-    cdef wlr_surface *wlr_surface = surface.wlr_xdg_surface.surface
+    cdef wlr_surface *wlr_surface = xdg_surface.surface
     with gil:
         size = (geometry.width, geometry.height)
         rects = []
         if wlr_surface.mapped:
             rects = get_damage_areas(&wlr_surface.buffer_damage)
             capture_surface_pixels(surface)
-        emit("commit", surface.wid, bool(wlr_surface.mapped), size, rects)
+
+        subsurfaces = collect_surfaces(wlr_surface)
+        emit("commit", surface.wid, bool(wlr_surface.mapped), size, rects, subsurfaces)
 
 
 cdef object get_damage_areas(pixman_region32_t *damage):
@@ -535,9 +537,40 @@ cdef object get_damage_areas(pixman_region32_t *damage):
     return rectangles
 
 
+cdef void collect_surface_callback(wlr_surface *surface, int sx, int sy, void *user_data) noexcept:
+    """
+    Callback that gets called for each surface in the tree.
+    user_data is expected to be a Python list.
+    """
+    # Cast user_data back to a Python list
+    surfaces = <object> user_data
+    # Store the surface pointer as an integer (or you could wrap it)
+    surfaces.append({
+        "surface": <uintptr_t> surface,
+        "x": sx,
+        "y": sy
+    })
+
+
+cdef list collect_surfaces(wlr_surface *surface):
+    """
+    Collect all surfaces in the subsurface tree.
+
+    Args:
+        root_surface_ptr: Pointer to the root wlr_surface (as integer)
+
+    Returns:
+        List of dicts containing surface pointers and their positions
+        [{"surface": ptr, "x": int, "y": int}, ...]
+    """
+    surfaces = []
+    wlr_surface_for_each_surface(surface, collect_surface_callback, <void*>surfaces)
+    return surfaces
+
+
 cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept nogil:
     cdef xpra_surface *parent_surface = xpra_surface_from_new_subsurface(listener)
-    cdef wlr_subsurface *subsurface = <wlr_subsurface*>data
+    cdef wlr_subsurface *subsurface = <wlr_subsurface*> data
 
     with gil:
         log("New SUBSURFACE created, parent wid=%i", parent_surface.wid)

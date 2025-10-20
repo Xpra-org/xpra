@@ -212,7 +212,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             return
         window.set_property("iconic", True)
 
-    def _commit(self, wid: int, mapped: bool, size: tuple[int, int], rects: Sequence[tuple[int, int, int, int]]) -> None:
+    def _commit(self, wid: int, mapped: bool,
+                size: tuple[int, int],
+                rects: Sequence[tuple[int, int, int, int]],
+                subsurfaces: list[tuple[int, int, int]]) -> None:
         window = self._id_to_window.get(wid)
         if not window:
             return

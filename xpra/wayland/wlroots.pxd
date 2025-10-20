@@ -1142,8 +1142,11 @@ cdef extern from "wlr/types/wlr_compositor.h":
         wl_list current_outputs
         wlr_addon_set addons
         void *data
-    wlr_compositor *wlr_compositor_create(wl_display *display, int version, wlr_renderer *renderer)
 
+    ctypedef void (*wlr_surface_iterator_func_t)(wlr_surface *surface, int sx, int sy, void *user_data)
+    void wlr_surface_for_each_surface(wlr_surface *surface, wlr_surface_iterator_func_t iterator, void *user_data)
+
+    wlr_compositor *wlr_compositor_create(wl_display *display, int version, wlr_renderer *renderer)
     void wlr_surface_send_frame_done(wlr_surface *surface, const timespec *when)
 
 
