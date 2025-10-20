@@ -234,10 +234,10 @@ def find_theme_icon(*names):
 
 def find_glob_icon(*names, category:str="categories"):
     if not LOAD_GLOB:
-        return None
+        return ""
     icondirs = getattr(IconTheme, "icondirs", [])
     if not icondirs:
-        return None
+        return ""
     dirnames = (category, )
     pathnames = []
     for name in names:
@@ -256,8 +256,8 @@ def find_glob_icon(*names, category:str="categories"):
                 v = icon_util.load_icon_from_file(f)
                 if v:
                     log(f"found icon for {names} with glob {pathname!r}: {f}")
-                    return v
-    return None
+                    return f
+    return ""
 
 
 def noicondata(d:Dict) -> Dict:
