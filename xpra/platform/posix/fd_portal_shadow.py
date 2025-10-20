@@ -59,7 +59,7 @@ class PortalShadow(GTKShadowServerBase):
         self.authenticating_client = None
         self.capture: Capture | None = None
         self.portal_interface = get_portal_interface()
-        self.input_devices = 0
+        self.input_devices_count = 0
         log(f"PortalShadow({attrs}) portal_interface={self.portal_interface}")
 
     def notify_new_user(self, ss) -> None:
@@ -233,8 +233,8 @@ class PortalShadow(GTKShadowServerBase):
         log(f"on_start_response starting pipewire capture for {streams}")
         for node_id, props in streams:
             self.start_pipewire_capture(int(node_id), typedict(props))
-        self.input_devices = res.intget("devices")
-        if not self.input_devices and not self.readonly:
+        self.input_devices_count = res.intget("devices")
+        if not self.input_devices_count and not self.readonly:
             # ss.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
             log.warn("Warning: no input devices,")
             log.warn(" keyboard and pointer events cannot be forwarded")

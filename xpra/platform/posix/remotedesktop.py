@@ -24,7 +24,7 @@ class RemoteDesktop(PortalShadow):
     def __init__(self, attrs: dict[str, str]):
         super().__init__(attrs)
         self.session_type = "remote desktop shadow"
-        self.input_devices = 0
+        self.input_devices_count = 0
         self.keymap = Gdk.Keymap.get_default()
         if not self.keymap:
             log.warn("Warning: no access to the keymap, cannot simulate key events")
@@ -33,7 +33,7 @@ class RemoteDesktop(PortalShadow):
         keylog.info("key mapping not implemented - YMMV")
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        if self.readonly or not self.input_devices:
+        if self.readonly or not self.input_devices_count:
             return False
         win = self._id_to_window.get(wid)
         if not win:
@@ -70,7 +70,7 @@ class RemoteDesktop(PortalShadow):
             dbus_interface=REMOTEDESKTOP_IFACE)
 
     def _process_key_action(self, proto, packet: Packet) -> None:
-        if self.readonly or not self.input_devices or not self.keymap:
+        if self.readonly or not self.input_devices_count or not self.keymap:
             return
         keyname = packet.get_str(2)
         pressed = packet.get_bool(3)
