@@ -17,6 +17,7 @@ autoprov: no
 
 %if 0%{?fedora}0%{?el10}
 %global debug_package %{nil}
+%global wayland 1
 %endif
 
 #on RHEL, there is only one python>=3.10 build at present,
@@ -131,6 +132,7 @@ Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
 Suggests:           %{package_prefix}-client-tk = %{version}-%{release}
+Suggests:			%{package_prefix}-server-wayland = %{version}-%{release}
 %if 0%{?pyqt6}
 Suggests:           %{package_prefix}-client-qt6 = %{version}-%{release}
 %endif
@@ -575,6 +577,24 @@ Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbi
 This package contains the xpra server.
 
 
+%if 0%{?wayland}
+%package -n %{package_prefix}-server-wayland
+Summary:			xpra wayland server
+Conflicts:			python3-xpra-server < 6
+Obsoletes:			python3-xpra-server < 6
+Requires:			xpra-filesystem >= 5
+Requires:			%{package_prefix}-server = %{version}-%{release}
+Requires:           wlroots-0.19
+BuildRequires:		pkgconfig(wlroots-0.19)
+BuildRequires:		wayland-devel
+BuildRequires:      libxkbcommon-devel
+BuildRequires:		kernel-headers
+%description -n %{package_prefix}-server-wayland
+This package contains the experimental xpra server using wayland as backend.
+
+%endif
+
+
 %prep
 #sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 #if [ "${sha256}" != "ffff" ]; then
@@ -855,6 +875,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libexecdir}/xpra/auth_dialog
 %{_libexecdir}/xpra/xpra*
 %{_libexecdir}/xpra/daemonizer
+
+%if 0%{?wayland}
+%files -n %{package_prefix}-server-wayland
+%{python3_sitearch}/xpra/wayland
+%endif
 
 %check
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra-launcher.desktop
