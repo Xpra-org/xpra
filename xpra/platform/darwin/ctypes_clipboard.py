@@ -189,7 +189,11 @@ class OSXClipboardProxy(ClipboardProxyCore):
             return
         if dformat == 8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", Ellipsizer(data))
-            self.set_clipboard_text(bytestostr(data))
+            try:
+                text = data.decode("utf8")
+            except UnicodeDecodeError:
+                text = bytestostr(data)
+            self.set_clipboard_text(text)
         if dformat == 8 and dtype in IMAGE_FORMATS:
             log("we got a %s image", dtype)
             self.set_image_data(dtype, data)
