@@ -1,0 +1,11 @@
+--- a/pyproject.toml	2025-10-11 15:50:06.000000000 +0700
++++ b/pyproject.toml	2025-10-14 14:20:16.460068252 +0700
+@@ -7,7 +7,7 @@
+ description = "An implementation of QUIC and HTTP/3"
+ readme = "README.rst"
+ requires-python = ">=3.10"
+-license = "BSD-3-Clause"
++license = {text = "BSD-3-Clause"}
+ authors = [
+     { name = "Jeremy Lainé", email = "jeremy.laine@m4x.org" },
+ ]
