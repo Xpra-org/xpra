@@ -14,7 +14,7 @@ from xpra.common import MIN_DPI, MAX_DPI, BACKWARDS_COMPATIBLE
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
-log = Logger("av-sync")
+log = Logger("display")
 
 
 class DisplayConnection(StubClientConnection):
