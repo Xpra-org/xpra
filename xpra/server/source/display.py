@@ -14,7 +14,7 @@ from xpra.common import MIN_DPI, MAX_DPI
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
-log = Logger("av-sync")
+log = Logger("screen")
 
 
 class ClientDisplayMixin(StubSourceMixin):
