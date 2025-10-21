@@ -338,7 +338,7 @@ class DisplayManager(StubServerMixin):
             rrate = min(vrefresh)
             if self.refresh_rate:
                 rrate = get_refresh_rate_for_value(self.refresh_rate, rrate)
-            rrate //= 1000
+            rrate = round(rrate / 1000)
         log("get_client_refresh_rate(%s)=%s (from %s)", ss, rrate, vrefresh)
         return rrate
 
