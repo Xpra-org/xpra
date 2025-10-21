@@ -722,7 +722,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def get_screen_size_mm(self) -> Tuple[int, int]:
         sizes = self.get_screen_sizes_mm()
         tw, th = 0, 0
-        for w,h in sizes:
+        log("screen sizes for all screens: %s", sizes)
+        for w, h in sizes:
             tw += w
             th += h
         return tw, th

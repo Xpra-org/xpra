@@ -506,6 +506,7 @@ class X11DisplayManager(DisplayManager):
         if wmm == 0 or hmm == 0:
             wmm = round(desired_w * 25.4 / xdpi)
             hmm = round(desired_h * 25.4 / ydpi)
+            log(f"display dimensions for dpi {xdpi}x{ydpi} and resolution {desired_w}x{desired_h} is {wmm}x{hmm}")
         from xpra.x11.bindings.randr import RandRBindings
         if DUMMY_WIDTH_HEIGHT_MM:
             # FIXME: we assume there is only one output:
@@ -562,6 +563,8 @@ class X11DisplayManager(DisplayManager):
         log("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
         actual_xdpi = round(root_w * 25.4 / wmm)
         actual_ydpi = round(root_h * 25.4 / hmm)
+        log("actual DPI calculated from display dimensions %ix%i and resolution %ix%i: %ix%i",
+            wmm, hmm, root_w, root_h, actual_xdpi, actual_ydpi)
         if abs(actual_xdpi - xdpi) <= 1 and abs(actual_ydpi - ydpi) <= 1:
             log.info("DPI set to %s x %s", actual_xdpi, actual_ydpi)
             log("wanted: %s x %s", xdpi, ydpi)
