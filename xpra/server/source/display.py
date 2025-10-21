@@ -33,7 +33,7 @@ class DisplayConnection(StubClientConnection):
         self.desktop_size: tuple[int, int] | None = None
         self.desktop_mode_size: tuple[int, int] | None = None
         self.desktop_size_unscaled: tuple[int, int] | None = None
-        self.desktop_size_server: tuple[int, int] | None = None
+        self.desktop_size_server: tuple[int, int] = (0, 0)
         self.desktop_fullscreen: bool = False
         self.screen_sizes: list = []
         self.monitors: dict[int, Any] = {}
@@ -180,7 +180,7 @@ class DisplayConnection(StubClientConnection):
         log("updated_desktop_size%s desktop_size=%s", (root_w, root_h, max_w, max_h), self.desktop_size)
         if not self.hello_sent:
             return False
-        if not self.desktop_size_server or tuple(self.desktop_size_server) != (root_w, root_h):
+        if self.desktop_size_server != (root_w, root_h):
             self.desktop_size_server = root_w, root_h
             self.send("desktop_size", root_w, root_h, max_w, max_h)
             return True
