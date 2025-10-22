@@ -556,7 +556,7 @@ def make_ssh_server_connection(conn, socket_options: dict,
             if getattr(proxy_channel, "proxy_process", None):
                 log("proxy channel is handled using a subprocess")
                 return None
-            from xpra.net.ssh.paramiko_client import SSHSocketConnection
+            from xpra.net.ssh.paramiko.util import SSHSocketConnection
             return SSHSocketConnection(proxy_channel, sock,
                                        conn.local, conn.endpoint, conn.target,
                                        socket_options=socket_options)

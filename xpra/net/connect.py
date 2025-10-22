@@ -2,6 +2,7 @@
 # Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 import socket
 import time
 from time import monotonic
@@ -26,8 +27,8 @@ def debug(msg: str, *args) -> None:
 
 def connect_to_ssh(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=noop):
     if display_desc.get("is_paramiko", False):
-        from xpra.net.ssh import paramiko_client
-        conn = paramiko_client.connect_to(display_desc)
+        from xpra.net.ssh.paramiko.client import connect_to
+        conn = connect_to(display_desc)
     else:
         from xpra.net.ssh import exec_client
         conn = exec_client.connect_to(display_desc, opts, debug_cb, ssh_fail_cb)

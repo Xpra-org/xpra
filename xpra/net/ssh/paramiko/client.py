@@ -200,10 +200,10 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     log(f"connect_to({display_desc})")
     # plain socket attributes:
     host: str = display_desc["host"]
-    port: int = display_desc.get("port", 22)
-    peername: tuple[str, int] | tuple[str, int, int, int] = (host, port)
+    port: int = display_desc.get("port", 0)
     # ssh and command attributes:
-    username: str = display_desc.get("username") or get_username()
+    default_username = get_username()
+    username = display_desc.get("username", "")
     if "proxy_host" in display_desc:
         display_desc.setdefault("proxy_username", get_username())
     password: str = display_desc.get("password", "")
@@ -214,10 +214,6 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     display_as_args: list[str] = display_desc["display_as_args"]  # ie: "--start=xterm :10"
     paramiko_config: dict = display_desc.copy()
     paramiko_config.update(display_desc.get("paramiko-config", {}))
-    socket_info: dict[str, Any] = {
-        "host": host,
-        "port": port,
-    }
 
     def fail(msg: str) -> NoReturn:
         log("connect_to(%s)", display_desc, exc_info=True)
@@ -264,14 +260,16 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     if host_config:
         log(f"got host config for {host!r}: {host_config}")
         host = safeget("hostname", host)
-        username = safeget("user", username)
-        port = safeget("port", port)
+        # don't override the username specified on the display string
+        username = username or safeget("user", username) or default_username
+        port = port or safeget("port", port) or 22
+        log.warn("host config port=%i", port)
         paramiko_config["port"] = port  # ensure paramiko_config has the same port
         try:
             port = int(port)
         except (TypeError, ValueError):
             raise InitExit(ExitCode.SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
-        proxycommand = host_config.get("proxycommand")
+        proxycommand = host_config.get("proxycommand", "")
         if proxycommand:
             log(f"found proxycommand={proxycommand!r} for host {host!r}")
             from paramiko import ProxyCommand
@@ -280,7 +278,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             from xpra.util.child_reaper import get_child_reaper
             cmd = getattr(sock, "cmd", [])
 
-            def proxycommand_ended(proc):
+            def proxycommand_ended(proc) -> None:
                 log(f"proxycommand_ended({proc}) exit code={proc.poll()}")
 
             get_child_reaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
@@ -300,8 +298,8 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
                           paramiko_config)
             chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
             peername = (host, port)
-            conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-            conn.target = host_target_string("ssh", username, host, port, display)
+            conn = SSHProxyCommandConnection(chan, peername, peername, {"host": host, "port": port})
+            conn.target = host_target_string("ssh", username, host, port or 22, display)
             conn.timeout = SOCKET_TIMEOUT
             conn.start_stderr_reader()
             conn.process = (sock.process, "ssh", cmd)
@@ -314,7 +312,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     if "proxy_host" in display_desc:
         proxy_host = display_desc["proxy_host"]
         proxy_port = int(display_desc.get("proxy_port", 22))
-        proxy_username = display_desc.get("proxy_username", username)
+        proxy_username = display_desc.get("proxy_username", username) or default_username
         proxy_password = display_desc.get("proxy_password", password)
         proxy_keys = get_keyfiles("proxy_key")
         sock = socket_connect(proxy_host, proxy_port)
@@ -328,13 +326,14 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         log("Opening proxy channel")
         chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
         transport = do_connect(chan_to_middle, host, port,
-                               username, password,
+                               username or default_username, password,
                                host_config,
                                keys,
                                paramiko_config)
         chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
-        conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-        to_str = host_target_string("ssh", username, host, port, display)
+        peername = (proxy_host, proxy_port)
+        conn = SSHProxyCommandConnection(chan, peername, peername, {"host": proxy_host, "port": proxy_port})
+        to_str = host_target_string("ssh", username or default_username, host, port, display)
         proxy_str = host_target_string("ssh", proxy_username, proxy_host, proxy_port)
         conn.target = f"{to_str} via {proxy_str}"
         conn.timeout = SOCKET_TIMEOUT
@@ -348,7 +347,11 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     sock = None
     transport = None
     sockname = host
+    username = username or default_username
+    peername = ()
+    port = port or 22
     while not transport:
+        log("opening socket connection to %r:%i", host, port)
         sock = socket_connect(host, port)
         if not sock:
             fail(f"SSH failed to connect to {host}:{port}")
@@ -394,7 +397,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     else:
         chan = run_remote_xpra(transport, proxy_command, remote_xpra,
                                socket_dir, display_as_args, paramiko_config)
-    conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
+    conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), {"host": host, "port": port})
     conn.target = host_target_string("ssh", username, host, port, display)
     conn.timeout = SOCKET_TIMEOUT
     conn.start_stderr_reader()

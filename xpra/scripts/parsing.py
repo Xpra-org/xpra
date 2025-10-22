@@ -359,7 +359,8 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
         port = parsed.port or default_port
         desc["host"] = host
         desc["local"] = is_local(host)
-        desc["port"] = port
+        if port:
+            desc["port"] = port
         return host, port
 
     def add_path() -> None:
@@ -461,7 +462,7 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
         if opts.remote_xpra:
             desc["remote_xpra"] = opts.remote_xpra
         add_credentials()
-        add_host_port(22)
+        add_host_port(0)
         add_path()
         add_query()
         display = desc.get("display", "")
