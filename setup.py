@@ -2891,7 +2891,7 @@ toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(mmap_ENABLED, "xpra.net.mmap")
 toggle_packages(quic_ENABLED, "xpra.net.asyncio")
 toggle_packages(quic_ENABLED, "xpra.net.quic")
-toggle_packages(ssh_ENABLED, "xpra.net.ssh")
+toggle_packages(ssh_ENABLED, "xpra.net.ssh", "xpra.net.ssh.paramiko")
 toggle_packages(ssl_ENABLED, "xpra.net.ssl")
 toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
@@ -2988,6 +2988,7 @@ if cythonize_more_ENABLED:
         ax("xpra.net.rfb")
     if ssh_ENABLED:
         ax("xpra.net.ssh")
+        ax("xpra.net.ssh.paramiko")
     if ssl_ENABLED:
         ax("xpra.net.ssl")
     if websockets_ENABLED:
