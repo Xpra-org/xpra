@@ -263,7 +263,6 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         # don't override the username specified on the display string
         username = username or safeget("user", username) or default_username
         port = port or safeget("port", port) or 22
-        log.warn("host config port=%i", port)
         paramiko_config["port"] = port  # ensure paramiko_config has the same port
         try:
             port = int(port)
