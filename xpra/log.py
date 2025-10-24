@@ -31,6 +31,9 @@ BACKTRACE_LEVEL = int(os.environ.get("XPRA_LOG_BACKTRACE_LEVEL", logging.CRITICA
 BACKTRACE_REGEXES: Sequence[str] = tuple(
     x for x in os.environ.get("XPRA_LOG_BACKTRACE_REGEXES", "").split("|") if x
 )
+DEBUG_REGEXES: Sequence[str] = tuple(
+    x for x in os.environ.get("XPRA_DEBUG_REGEXES", "").split("|") if x
+)
 
 
 logging.basicConfig(format=LOG_FORMAT)
@@ -39,6 +42,7 @@ logging.root.setLevel(logging.INFO)
 debug_enabled_categories: set[str] = set()
 debug_disabled_categories: set[str] = set()
 backtrace_expressions: set[re.Pattern] = set()
+debug_expressions: set[re.Pattern] = set()
 emojis = False
 
 
@@ -121,7 +125,21 @@ def remove_backtrace(*expressions: str) -> None:
             pass
 
 
+def add_debug_expression(*expressions: str) -> None:
+    for e in expressions:
+        debug_expressions.add(re.compile(e))
+
+
+def remove_debug_expression(*expressions: str) -> None:
+    for e in expressions:
+        try:
+            debug_expressions.remove(re.compile(e))
+        except KeyError:
+            pass
+
+
 add_backtrace(*BACKTRACE_REGEXES)
+add_debug_expression(*DEBUG_REGEXES)
 
 
 default_level: int = logging.DEBUG
@@ -398,6 +416,7 @@ def get_info() -> dict[str, Any]:
         },
         "backtrace-level": BACKTRACE_LEVEL,
         "backtrace-expressions": tuple(bt.pattern for bt in backtrace_expressions),
+        "debug-expressions": tuple(bt.pattern for bt in debug_expressions),
         "handler": getattr(global_logging_handler, "__name__", "<unknown>"),
         "prefix": LOG_PREFIX,
         "format": LOG_FORMAT,
@@ -509,10 +528,13 @@ class Logger:
     def critical(self, enable=False) -> None:
         self.level_override = logging.CRITICAL if enable else 0
 
-    def log(self, level, msg: str, *args, **kwargs) -> None:
+    def log(self, level: int, msg: str, *args, **kwargs) -> None:
         level_override = self.level_override or level
         if level_override <= self.min_level:
-            return
+            if any(exp.match(msg) for exp in debug_expressions):
+                level_override = logging.INFO
+            else:
+                return
         exc_info = kwargs.get("exc_info", None)
         # noinspection PySimplifyBooleanCheck
         if exc_info is True:
@@ -543,7 +565,7 @@ class Logger:
         global_logging_handler(self._logger.log, level_override or level, msg, *args, **kwargs)
 
     def __call__(self, msg: str, *args, **kwargs) -> None:
-        if self.debug_enabled:
+        if self.debug_enabled or (debug_expressions and any(exp.match(msg) for exp in debug_expressions)):
             self.log(logging.DEBUG, msg, *args, **kwargs)
 
     def info(self, msg: str, *args, **kwargs) -> None:

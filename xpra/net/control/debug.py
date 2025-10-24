@@ -8,6 +8,7 @@ from xpra.log import (
     add_debug_category, add_disabled_category,
     enable_debug_for, disable_debug_for,
     add_backtrace, remove_backtrace,
+    add_debug_expression, remove_debug_expression,
     RESTRICTED_DEBUG_CATEGORIES,
 )
 from xpra.net.control.common import ArgsControlCommand
@@ -35,7 +36,7 @@ class DebugControl(ArgsControlCommand):
 
     def run(self, *args) -> str:
         if not args:
-            return "debug subcommands: mark, add-backtrace, remove-backtrace, enable, disable"
+            return "debug subcommands: mark, add-backtrace, remove-backtrace, add-regex, remove-regex, enable, disable"
         if len(args) == 1 and args[0] == "status":
             return "logging is enabled for: " + csv(str(x) for x in get_all_loggers() if x.is_debug_enabled())
         log_cmd = args[0]
@@ -61,6 +62,14 @@ class DebugControl(ArgsControlCommand):
             expressions = args[1:]
             remove_backtrace(*expressions)
             return f"removed backtrace expressions {expressions}"
+        if log_cmd == "add-regex":
+            expressions = args[1:]
+            add_debug_expression(*expressions)
+            return f"added debug expressions {expressions}"
+        if log_cmd == "remove-regex":
+            expressions = args[1:]
+            remove_debug_expression(*expressions)
+            return f"removed debug expressions {expressions}"
         if log_cmd not in ("enable", "disable"):
             self.raise_error("only 'enable' and 'disable' verbs are supported")
         # each argument is a group
