@@ -510,7 +510,8 @@ class Logger:
         self.level_override = logging.CRITICAL if enable else 0
 
     def log(self, level, msg: str, *args, **kwargs) -> None:
-        if level <= self.min_level:
+        level_override = self.level_override or level
+        if level_override <= self.min_level:
             return
         exc_info = kwargs.get("exc_info", None)
         # noinspection PySimplifyBooleanCheck
@@ -538,8 +539,8 @@ class Logger:
                     pass
                 else:
                     for rec in frame_summary.splitlines():
-                        global_logging_handler(self._logger.log, self.level_override or level, rec)
-        global_logging_handler(self._logger.log, self.level_override or level, msg, *args, **kwargs)
+                        global_logging_handler(self._logger.log, level_override, rec)
+        global_logging_handler(self._logger.log, level_override or level, msg, *args, **kwargs)
 
     def __call__(self, msg: str, *args, **kwargs) -> None:
         if self.debug_enabled:
