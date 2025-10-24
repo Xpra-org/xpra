@@ -75,25 +75,25 @@ class FullDebugContext:
         debug_enabled_categories.update(self.debug_enabled_categories)
 
 
-def add_debug_category(*cat) -> None:
+def add_debug_category(*cat: str) -> None:
     remove_disabled_category(*cat)
     for c in cat:
         debug_enabled_categories.add(ALIASES.get(c, c))
 
 
-def remove_debug_category(*cat) -> None:
+def remove_debug_category(*cat: str) -> None:
     for c in cat:
         c = ALIASES.get(c, c)
         if c in debug_enabled_categories:
             debug_enabled_categories.remove(c)
 
 
-def is_debug_enabled(category: str) -> bool:
+def is_debug_enabled(cat: str) -> bool:
     if "all" in debug_enabled_categories:
         return True
-    if category in debug_enabled_categories:
+    if cat in debug_enabled_categories:
         return True
-    return isenvdebug(category) or isenvdebug("ALL")
+    return isenvdebug(cat) or isenvdebug("ALL")
 
 
 def add_disabled_category(*cat: str) -> None:
