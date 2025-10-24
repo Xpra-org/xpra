@@ -94,7 +94,7 @@ class DisplayConnection(StubClientConnection):
         self.monitors = {}
         if monitors:
             for i, mon_def in monitors.items():
-                vdef = self.monitors.setdefault(i, {})
+                vdef = self.monitors.setdefault(int(i), {})
                 td = typedict(mon_def)
                 aconv: dict[str, Callable] = {
                     "geometry": td.inttupleget,
@@ -201,7 +201,7 @@ class DisplayConnection(StubClientConnection):
         monitors = self.screen_sizes[0][5]
         mdef = {}
         for i, m in enumerate(monitors):
-            mdef[i] = {
+            mdef[int(i)] = {
                 "name": bytestostr(m[0]),
                 # "primary"?
                 # "automatic" : True?
