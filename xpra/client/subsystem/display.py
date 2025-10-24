@@ -62,6 +62,9 @@ class DisplayClient(StubClientMixin):
         self.opengl_props: dict[str, Any] = {}
         self.client_supports_opengl: bool = False
 
+        self._last_screen_settings = ()
+        self._current_screen_sizes = []
+
         self.server_desktop_size = None
         self.server_actual_desktop_size = None
         self.server_max_desktop_size = None
@@ -94,7 +97,7 @@ class DisplayClient(StubClientMixin):
             self.screen_size_change_timer = 0
             GLib.source_remove(ssct)
 
-    def get_screen_sizes(self, xscale=1, yscale=1):
+    def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         raise NotImplementedError()
 
     def get_root_size(self) -> tuple[int, int]:

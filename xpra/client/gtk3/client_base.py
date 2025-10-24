@@ -939,7 +939,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def get_monitors_info(self) -> dict[int, Any]:
         return get_monitors_info(self.xscale, self.yscale)
 
-    def get_screen_sizes(self, xscale=1, yscale=1) -> list:
+    def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         return get_screen_sizes(xscale, yscale)
 
     def reset_windows_cursors(self, *_args) -> None:
