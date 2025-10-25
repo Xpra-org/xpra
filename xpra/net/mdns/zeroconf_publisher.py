@@ -220,10 +220,13 @@ class ZeroconfPublisher:
 
     def update_txt(self, txt) -> None:
         props = txt_rec(txt)
+        zc = self.zeroconf
+        if not zc:
+            return
         self.kwargs["properties"] = props
         si = ServiceInfo(**self.kwargs)
         try:
-            self.zeroconf.update_service(si)
+            zc.update_service(si)
             self.service = si
         except KeyError as e:
             # probably a race condition with cleanup
