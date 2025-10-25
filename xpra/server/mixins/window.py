@@ -274,7 +274,7 @@ class WindowServer(StubServerMixin):
         else:
             options = typedict({})
             client_properties = {}
-        if wid == -1:
+        if wid in (-1, 0):
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:
             wid_windows = {wid: self._id_to_window.get(wid)}
