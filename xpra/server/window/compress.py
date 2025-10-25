@@ -204,7 +204,7 @@ class WindowSource(WindowIconSource):
                  server_core_encodings: Sequence[str], server_encodings: Sequence[str],
                  encoding: str, encodings: Sequence[str], core_encodings: Sequence[str],
                  window_icon_encodings: Sequence[str],
-                 encoding_options:typedict, icons_encoding_options: typedict,
+                 encoding_options: typedict, icons_encoding_options: typedict,
                  rgb_formats: Sequence[str],
                  default_encoding_options,
                  mmap_write_area, bandwidth_limit: int, jitter: int, datagram=0):
@@ -320,11 +320,11 @@ class WindowSource(WindowIconSource):
 
         # general encoding tunables (mostly used by video encoders):
         # keep track of the target encoding_quality: (event time, info, encoding speed):
-        self._encoding_quality: deque[tuple[float,int]] = deque(maxlen=100)
-        self._encoding_quality_info: dict[str,Any] = {}
+        self._encoding_quality: deque[tuple[float, int]] = deque(maxlen=100)
+        self._encoding_quality_info: dict[str, Any] = {}
         # keep track of the target encoding_speed: (event time, info, encoding speed):
-        self._encoding_speed: deque[tuple[float,int]] = deque(maxlen=100)
-        self._encoding_speed_info: dict[str,Any] = {}
+        self._encoding_speed: deque[tuple[float, int]] = deque(maxlen=100)
+        self._encoding_speed_info: dict[str, Any] = {}
         # they may have fixed values:
         deo = typedict(default_encoding_options)
         self._fixed_quality = deo.intget("quality", -1)
@@ -1632,7 +1632,7 @@ class WindowSource(WindowIconSource):
 
         # create a new delayed region:
         regions = [rectangle(x, y, w, h)]
-        delay = options.get("delay", self.batch_config.delay)
+        delay = int(options.get("delay", self.batch_config.delay))
         resize_elapsed = int(1000*(now-self.statistics.last_resized))
         if resize_elapsed < 500:
             try:
@@ -2657,7 +2657,7 @@ class WindowSource(WindowIconSource):
         now = monotonic()
         if decode_time > 0:
             latency = int(1000 * (now - damage_time))
-            self.global_statistics.record_latency(self.wid, damage_packet_sequence, decode_time, queued_at,
+            self.global_statistics.record_latency(self.wid, damage_packet_sequence, int(decode_time), queued_at,
                                                   pixels, bytecount, latency)
         # we can ignore some packets:
         # * the first frame (frame=0) of video encoders can take longer to decode
