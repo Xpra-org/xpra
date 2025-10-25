@@ -31,6 +31,7 @@ LOAD_FROM_RESOURCES: bool = envbool("XPRA_XDG_LOAD_FROM_RESOURCES", ENABLED)
 LOAD_FROM_PIXMAPS: bool = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", ENABLED)
 LOAD_FROM_THEME: bool = envbool("XPRA_XDG_LOAD_FROM_THEME", ENABLED)
 LOAD_GLOB: bool = envbool("XPRA_XDG_LOAD_GLOB", False)
+LOAD_FROM_MENU: bool = envbool("XPRA_XDG_LOAD_FROM_MENU", False)
 
 EXPORT_ICONS: bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
 DEBUG_COMMANDS: list[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
@@ -188,7 +189,7 @@ def load_entry_icon(props: dict):
             cmd = os.path.basename(cmd).split(" ")[0]
             if cmd not in names:
                 names.append(cmd)
-    filename = find_icon(*names)
+    filename = _find_icon(*names)
     icondata = None
     if filename:
         icondata = icon_util.load_icon_from_file(filename)
@@ -196,18 +197,24 @@ def load_entry_icon(props: dict):
             bdata, ext = icondata
             props["IconData"] = bdata
             props["IconType"] = ext
+            props["IconFile"] = filename
     if not icondata:
         log(f"no icon found for {names} from {props}")
     return props
 
 
-def find_icon(*names: str) -> str:
+def _find_icon(*names: str) -> str:
     if not EXPORT_ICONS:
         return ""
     return find_resources_icon(*names) or \
         find_pixmap_icon(*names) or \
         find_theme_icon(*names) or \
         find_glob_icon(*names, category="apps")
+
+
+def find_icon(*names: str) -> str:
+    """ this function must not be called when loading the menus """
+    return _find_icon(*names) or find_menu_icon(*names)
 
 
 def find_resources_icon(*names: str) -> str:
@@ -307,6 +314,29 @@ def find_glob_icon(*names: str, category: str = "categories") -> str:
                 if v:
                     log(f"found icon for {names} with glob {pathname!r}: {f}")
                     return f
+    return ""
+
+
+def find_menu_icon(*names: str) -> str:
+    """
+    find a menu entry matching the name,
+    then search using the icon name from this menu entry
+    """
+    if not LOAD_FROM_MENU:
+        return ""
+    menu_data = load_menu()
+    for category, cdata in menu_data.items():
+        entries = cdata.get("Entries", ())
+        for name, edata in entries.items():
+            cmd = os.path.basename(edata.get("Exec", "")).split(" ")[0]
+            filename = edata.get("IconFile", "")
+            if not filename:
+                continue
+            # icondata = edata.get("IconData", b"")
+            # if icondata and (name and name in names) or (cmd and cmd in names):
+            #    return icondata
+            if (name and name in names) or (cmd and cmd in names):
+                return filename
     return ""
 
 
@@ -584,12 +614,13 @@ def load_desktop_sessions() -> dict[str, Any]:
                 name = de.getName()
                 if not entry.get("IconData"):
                     names = get_icon_names_for_session(name.lower())
-                    icon_filename = find_icon(*names)
+                    icon_filename = _find_icon(*names)
                     if icon_filename:
                         icondata = icon_util.load_icon_from_file(icon_filename)
                         if icondata:
                             entry["IconData"] = icondata[0]
                             entry["IconType"] = icondata[1]
+                            entry["IconFile"] = icon_filename
                 xsessions[name] = entry
             except Exception as e:
                 log("load_desktop_sessions(%s)", remove_icons, exc_info=True)
