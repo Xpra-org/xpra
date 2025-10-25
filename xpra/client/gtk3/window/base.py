@@ -1367,7 +1367,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self._size, (w, h), (dx, dy), self._backing, self._iconified)
         self._size = (w, h)
         self._set_backing_size(w, h)
-        self.send_configure_event()
+        self.send_configure_event(dx == 0 and dy == 0 and self._size == (w, h))
         if self._backing and not self._iconified:
             geomlog("configure event: queueing redraw")
             self.repaint(0, 0, w, h)
