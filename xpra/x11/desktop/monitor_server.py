@@ -232,7 +232,7 @@ class XpraMonitorServer(DesktopServerBase):
         delta_x, delta_y = model.resize_delta
         wid = self._window_to_id[model]
         w, h = model.get_dimensions()
-        screenlog("monitor_resized(%s) size=%s, delta=%s, wid=%i",
+        screenlog("monitor_resized(%s) size=%s, delta=%s, wid=%#x",
                   model, (w, h), (delta_x, delta_y), wid)
         for ss in self.window_sources():
             ss.resize_window(wid, model, w, h)

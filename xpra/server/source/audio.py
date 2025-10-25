@@ -302,7 +302,8 @@ class AudioConnection(StubClientConnection):
         log(f"new_stream_sound() sample={sample!r}, exists={os.path.exists(sample)}")
         if not os.path.exists(sample):
             return
-        gst_launch = os.path.abspath(os.path.normpath(which("gst-launch-1.0") or "gst-launch-1.0"))
+        gst_launch_cmd = which("gst-launch-1.0") or "gst-launch-1.0"
+        gst_launch = os.path.abspath(os.path.normpath(gst_launch_cmd))
         cmd = [
             gst_launch, "-q",
             "filesrc", f"location={sample}",

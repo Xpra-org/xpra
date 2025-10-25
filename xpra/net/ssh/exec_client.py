@@ -98,8 +98,8 @@ def get_ssh_command(display_desc: dict) -> list[str]:
     for x in cmd:
         if not isinstance(x, str):
             raise InitException(f"argument is not a string: {x} ({type(x)}), found in command: {cmd}")
-    executable = which(cmd[0])
-    if not executable or not os.path.exists(executable):
+    executable = which(cmd[0]) or ""
+    if not os.path.exists(executable):
         log.warn(f"Warning: ssh command {cmd[0]!r} not found!")
         log.warn(" trying to continue anyway..")
     return cmd

@@ -795,7 +795,7 @@ class ClientWindowBase(ClientWidgetBase):
         raise NotImplementedError("no repaint on %s" % type(self))
 
     def refresh_window(self, *args) -> None:
-        log("refresh_window(%s) wid=%s", args, self.wid)
+        log("refresh_window(%s) wid=%#x", args, self.wid)
         self._client.send_refresh(self.wid)
 
     def refresh_all_windows(self, *_args) -> None:

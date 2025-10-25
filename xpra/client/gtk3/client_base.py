@@ -1421,7 +1421,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def find_window(self, metadata: typedict, metadata_key: str = "transient-for"):
         fwid = metadata.intget(metadata_key, -1)
-        log("find_window(%s, %s) wid=%s", metadata, metadata_key, fwid)
+        log("find_window(%s, %s) wid=%#x", metadata, metadata_key, fwid)
         if fwid > 0:
             return self._id_to_window.get(fwid)
         return None

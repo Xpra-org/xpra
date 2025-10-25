@@ -515,7 +515,7 @@ class WindowSource(WindowIconSource):
 
     def cleanup(self) -> None:
         self.cancel_damage(MAX_SEQUENCE)
-        log("encoding_totals for wid=%s with primary encoding=%s : %s",
+        log("encoding_totals for wid=%#x with primary encoding=%s : %s",
             self.wid, self.encoding, self.statistics.encoding_totals)
         self.init_vars()
         self._mmap = None
@@ -860,7 +860,7 @@ class WindowSource(WindowIconSource):
         self.schedule_av_sync_update()
 
     def schedule_av_sync_update(self, delay=0) -> None:
-        avsynclog("schedule_av_sync_update(%i) wid=%i, delay=%i, target=%i, timer=%s",
+        avsynclog("schedule_av_sync_update(%i) wid=%#x, delay=%i, target=%i, timer=%s",
                   delay, self.wid, self.av_sync_delay, self.av_sync_delay_target, self.av_sync_timer)
         if self.av_sync_timer:
             return
@@ -880,7 +880,7 @@ class WindowSource(WindowIconSource):
             return
         # limit the rate of change:
         rdelta = min(AV_SYNC_RATE_CHANGE, max(-AV_SYNC_RATE_CHANGE, delta))
-        avsynclog("update_av_sync_delay() wid=%i, current=%s, target=%s, adding %s (capped to +-%s from %s)",
+        avsynclog("update_av_sync_delay() wid=%#x, current=%s, target=%s, adding %s (capped to +-%s from %s)",
                   self.wid, self.av_sync_delay, self.av_sync_delay_target, rdelta, AV_SYNC_RATE_CHANGE, delta)
         self.av_sync_delay += rdelta
         if self.av_sync_delay != self.av_sync_delay_target:
@@ -993,7 +993,7 @@ class WindowSource(WindowIconSource):
             self.max_small_regions = 20
             self.max_bytes_percent = 40
         self.assign_encoding_getter()
-        log("update_encoding_options(%s) wid=%i, want_alpha=%s, speed=%i, quality=%i",
+        log("update_encoding_options(%s) wid=%#x, want_alpha=%s, speed=%i, quality=%i",
             force_reload, self.wid, self._want_alpha, self._current_speed, self._current_quality)
         log("lossless threshold: %s / %s, rgb auto threshold=%i (min=%i, max=%i)",
             self._lossless_threshold_base, self._lossless_threshold_pixel_boost,
@@ -1221,7 +1221,7 @@ class WindowSource(WindowIconSource):
         damage requests for a window.
         Damage methods will check this value via 'is_cancelled(sequence)'.
         """
-        damagelog("cancel_damage(%s) wid=%s, dropping delayed region %s, %s queued encodes, and all sequences up to %s",
+        damagelog("cancel_damage(%s) wid=%#x, dropping delayed region %s, %s queued encodes, and all sequences up to %s",
                   limit, self.wid, self._damage_delayed, len(self.encode_queue), self._sequence)
         # for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = limit or self._sequence
@@ -1295,7 +1295,7 @@ class WindowSource(WindowIconSource):
         now = monotonic()
         lr = self.statistics.last_recalculate
         elapsed = now-lr
-        statslog("calculate_batch_delay for wid=%i current batch delay=%i, last update %.1f seconds ago",
+        statslog("calculate_batch_delay for wid=%#x current batch delay=%i, last update %.1f seconds ago",
                  self.wid, bc.delay, elapsed)
         if bc.delay <= 2*bc.start_delay and lr > 0 and elapsed < 60 and self.get_packets_backlog() == 0:
             # delay is low-ish, figure out if we should bother updating it
@@ -1305,27 +1305,27 @@ class WindowSource(WindowIconSource):
             since_last = tuple((pixels, compressed_size) for t, _, pixels, _, compressed_size, _
                                in tuple(self.statistics.encoding_stats) if t >= lr)
             if len(since_last) <= 5:
-                statslog("calculate_batch_delay for wid=%i, skipping - only %i events since the last update",
+                statslog("calculate_batch_delay for wid=%#x, skipping - only %i events since the last update",
                          self.wid, len(since_last))
                 return
             pixel_count = sum(v[0] for v in since_last)
             ww, wh = self.window_dimensions
             if pixel_count <= ww*wh:
-                statslog("calculate_batch_delay for wid=%i, skipping - only %i pixels updated since the last update",
+                statslog("calculate_batch_delay for wid=%#x, skipping - only %i pixels updated since the last update",
                          self.wid, pixel_count)
                 return
             if not self._mmap:
-                statslog("calculate_batch_delay for wid=%i, %i pixels updated since the last update",
+                statslog("calculate_batch_delay for wid=%#x, %i pixels updated since the last update",
                          self.wid, pixel_count)
                 # if pixel_count < 8*ww*wh:
                 nbytes = sum(v[1] for v in since_last)
                 # less than 16KB/s since last time? (or <=64KB)
                 max_bytes = max(4, int(elapsed))*16*1024
                 if nbytes <= max_bytes:
-                    statslog("calculate_batch_delay for wid=%i, skipping - only %i bytes sent since the last update",
+                    statslog("calculate_batch_delay for wid=%#x, skipping - only %i bytes sent since the last update",
                              self.wid, nbytes)
                     return
-                statslog("calculate_batch_delay for wid=%i, %i bytes sent since the last update", self.wid, nbytes)
+                statslog("calculate_batch_delay for wid=%#x, %i bytes sent since the last update", self.wid, nbytes)
         calculate_batch_delay(self.wid, self.window_dimensions, has_focus,
                               other_is_fullscreen, other_is_maximized,
                               self.is_OR, self.soft_expired, bc,
@@ -1378,7 +1378,7 @@ class WindowSource(WindowIconSource):
         speed = max(0, self._fixed_min_speed, speed)
         speed = int(min(self._fixed_max_speed, speed))
         self._current_speed = speed
-        statslog("update_speed() speed=%2i (target=%2i, max=%2i) for wid=%i, info=%s",
+        statslog("update_speed() speed=%2i (target=%2i, max=%2i) for wid=%#x, info=%s",
                  speed, target, max_speed, self.wid, info)
         self._encoding_speed_info = info
         self._encoding_speed.append((monotonic(), speed))
@@ -1455,7 +1455,7 @@ class WindowSource(WindowIconSource):
         quality = max(0, self._fixed_min_quality, quality)
         quality = int(min(self._fixed_max_quality, quality))
         self._current_quality = quality
-        statslog("update_quality() quality=%2i (target=%2i) for wid=%i, info=%s", quality, target, self.wid, info)
+        statslog("update_quality() quality=%2i (target=%2i) for wid=%#x, info=%s", quality, target, self.wid, info)
         self._encoding_quality_info = info
         self._encoding_quality.append((now, quality))
         ww, wh = self.window_dimensions
@@ -1516,7 +1516,7 @@ class WindowSource(WindowIconSource):
         elif self.content_type == "video":
             raw_delay = raw_delay*3//2
         delay = max(min_delay, min(max_delay, raw_delay))
-        refreshlog("update_refresh_attributes() wid=%i, sizef=%.2f, content-type=%s, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i",
+        refreshlog("update_refresh_attributes() wid=%#x, sizef=%.2f, content-type=%s, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i",
                    self.wid, sizef, self.content_type, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
         self.do_set_auto_refresh_delay(min_delay, delay)
         rs = AUTO_REFRESH_SPEED
@@ -1571,7 +1571,7 @@ class WindowSource(WindowIconSource):
         if options is None:
             options = {}
         if options.pop("damage", False):
-            damagelog("damage%s wid=%i", (x, y, w, h, options), self.wid)
+            damagelog("damage%s wid=%#x", (x, y, w, h, options), self.wid)
             self.statistics.last_damage_events.append((now, x, y, w, h))
             self.global_statistics.damage_events_count += 1
             self.statistics.damage_events_count += 1
@@ -1623,7 +1623,7 @@ class WindowSource(WindowIconSource):
                         continue
                     if override or k not in existing_options:
                         existing_options[k] = options[k]
-            damagelog("do_damage%-24s wid=%s, using existing %i delayed regions created %ims ago",
+            damagelog("do_damage%-24s wid=%#x, using existing %i delayed regions created %ims ago",
                       (x, y, w, h, options), self.wid, len(regions), 1000*(now-delayed.damage_time))
             if not self.expire_timer and not self.soft_timer and self.soft_expired == 0:
                 log.error("Error: bug, found a delayed region without a timer!")
@@ -1681,7 +1681,7 @@ class WindowSource(WindowIconSource):
         lad = (now, delay)
         self.batch_config.last_delays.append(lad)
         self.batch_config.last_delay = lad
-        damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %4i in %3i ms",
+        damagelog("do_damage%-24s wid=%#x, scheduling batching expiry for sequence %4i in %3i ms",
                   (x, y, w, h, options), self.wid, self._sequence, expire_delay)
         damagelog(" delay=%i, elapsed=%i, resize_elapsed=%i, congestion_elapsed=%i, batch=%i, min=%i, inc=%i",
                   delay, elapsed, resize_elapsed, congestion_elapsed, self.batch_config.delay, min_delay, inc)
@@ -2114,7 +2114,7 @@ class WindowSource(WindowIconSource):
             return nodata("sequence %s is cancelled", sequence)
         image = self.window.get_image(x, y, w, h)
         if image is None:
-            return nodata("no pixel data for window %s, wid=%s", self.window, self.wid)
+            return nodata("no pixel data for window %s, wid=%#x", self.window, self.wid)
         # image may have been clipped to the new window size during resize:
         w = image.get_width()
         h = image.get_height()
@@ -2176,7 +2176,7 @@ class WindowSource(WindowIconSource):
         now = monotonic()
         item = (w, h, damage_time, now, image, coding, sequence, eoptions, flush)
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
-        log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
+        log("process_damage_region: wid=%#x, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
             self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         return True
 
@@ -2609,7 +2609,7 @@ class WindowSource(WindowIconSource):
                     send_speed = (avg_send_speed*100 + cur_send_speed*late_pct)//2//(100+late_pct)
                 else:
                     send_speed = avg_send_speed
-        bandwidthlog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps) for wid=%i",
+        bandwidthlog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps) for wid=%#x",
                      source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024, self.wid)
         rtt = self.refresh_target_time
         if rtt:

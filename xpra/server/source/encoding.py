@@ -228,7 +228,7 @@ class EncodingsConnection(StubClientConnection):
         self.calculate_window_pixels[wid] = v
         if v < MIN_PIXEL_RECALCULATE:
             return  # not enough pixel updates
-        statslog("may_recalculate(%i, %i) total %i pixels, scheduling recalculate work item", wid, pixel_count, v)
+        statslog("may_recalculate(%#x, %i) total %i pixels, scheduling recalculate work item", wid, pixel_count, v)
         self.calculate_window_ids.add(wid)
         if self.calculate_timer:
             # already due

@@ -167,7 +167,7 @@ class XI2_Window:
         # send plain motion first, if any:
         props = self.get_pointer_extra_args(event)
         if unused_valuators:
-            xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i",
+            xinputlog("do_xi_motion(%s, %s) wid=%#x / focus=%s / window wid=%#x",
                       event, device, wid, window._client._focused, window.wid)
             xinputlog(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
                       event.device, pointer_data, modifiers, buttons)

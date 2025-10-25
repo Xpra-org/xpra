@@ -245,7 +245,7 @@ class ShadowServerBase(ServerBase):
     # refresh
 
     def start_refresh(self, wid: int) -> None:
-        log("start_refresh(%i) mapped=%s, timer=%s", wid, self.mapped, self.refresh_timer)
+        log("start_refresh(%#x) mapped=%s, timer=%s", wid, self.mapped, self.refresh_timer)
         if wid not in self.mapped:
             self.mapped.append(wid)
         self.start_refresh_timer()
@@ -264,7 +264,7 @@ class ShadowServerBase(ServerBase):
                 self.start_refresh(wid)
 
     def stop_refresh(self, wid: int) -> None:
-        log("stop_refresh(%i) mapped=%s", wid, self.mapped)
+        log("stop_refresh(%#x) mapped=%s", wid, self.mapped)
         try:
             self.mapped.remove(wid)
         except ValueError:
@@ -333,7 +333,7 @@ class ShadowServerBase(ServerBase):
         if not rwm:
             pointerlog("poll_pointer_position() model not found for position=%s", (x, y))
             return
-        pointerlog("poll_pointer_position() wid=%i, position=%s, relative=%s", wid, (x, y), (rx, ry))
+        pointerlog("poll_pointer_position() wid=%#x, position=%s, relative=%s", wid, (x, y), (rx, ry))
         for ss in self._server_sources.values():
             um = getattr(ss, "update_mouse", None)
             if um:

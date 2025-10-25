@@ -430,11 +430,10 @@ class AudioClient(StubClientMixin):
                 return
             codec = matching_codecs[0]
 
-            def sink_ready(*args) -> bool:
+            def sink_ready(*args) -> None:
                 scodec = codec
                 log("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)
                 self.send(AUDIO_CONTROL_PACKET, "start", scodec)
-                return False
 
             self.on_sink_ready = sink_ready
             enabled = self.start_audio_sink(codec)

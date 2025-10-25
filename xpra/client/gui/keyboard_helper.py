@@ -247,7 +247,7 @@ class KeyboardHelper:
             log.info("key event %s on window %i", key_event, wid)
 
     def send_key_action(self, wid: int, key_event: KeyEvent) -> None:
-        log("send_key_action(%s, %s)", wid, key_event)
+        log("send_key_action(%#x, %s)", wid, key_event)
         packet = ["key-action", wid]
         for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
             packet.append(getattr(key_event, x))

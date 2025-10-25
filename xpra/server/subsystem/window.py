@@ -196,7 +196,7 @@ class WindowServer(StubServerMixin):
         self.do_remove_window(wid, window)
 
     def do_remove_window(self, wid: int, window) -> int:
-        log("remove_window: %s - %s", wid, window)
+        log("remove_window: %#x - %s", wid, window)
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsConnection):
                 ss.lost_window(wid, window)
@@ -242,7 +242,7 @@ class WindowServer(StubServerMixin):
                     parent = self._id_to_window.get(transient_for)
                     parent_ws = ss.get_window_source(transient_for)
                     pos = self.get_window_position(parent)
-                    geomlog("transient-for=%s : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
+                    geomlog("transient-for=%s : %#x, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
                     if pos and parent and parent_ws:
                         mapped_at = parent_ws.mapped_at
                         if mapped_at:
@@ -299,7 +299,7 @@ class WindowServer(StubServerMixin):
             wid_windows = {wid: self._id_to_window.get(wid)}
         else:
             # may have been destroyed since the request was made
-            log("invalid window specified for refresh: %s", wid)
+            log("invalid window specified for refresh: %#x", wid)
             return
         eventslog("process_buffer_refresh for windows: %s options=%s, client_properties=%s",
                   wid_windows, options, client_properties)
@@ -419,7 +419,7 @@ class WindowServer(StubServerMixin):
         if not ss:
             return
         wid = packet.get_wid()
-        focuslog("process_focus: wid=%s", wid)
+        focuslog("process_focus: wid=%#x", wid)
         modifiers = None
         if len(packet) >= 3:
             modifiers = packet.get_strs(2)
@@ -429,7 +429,7 @@ class WindowServer(StubServerMixin):
             ss.emit("user-event", "focus")
 
     def _focus(self, _server_source, wid: int, modifiers) -> None:
-        focuslog("_focus(%s,%s)", wid, modifiers)
+        focuslog("_focus(%#x, %s)", wid, modifiers)
 
     def get_focus(self) -> int:
         # can be overridden by subclasses that do manage focus

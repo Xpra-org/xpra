@@ -1085,7 +1085,7 @@ class WindowVideoSource(WindowSource):
                 log("call_encode: sequence %s is cancelled", sequence)
                 return
             now = monotonic()
-            log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms, frame delay=%3ims",   # noqa: E501
+            log("process_damage_region: wid=%#x, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms, frame delay=%3ims",   # noqa: E501
                 self.wid, sequence, ew, eh, encoding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
             item = (ew, eh, damage_time, now, eimage, encoding, sequence, eoptions, flush)
             if av_delay <= 0:
@@ -1145,14 +1145,14 @@ class WindowVideoSource(WindowSource):
         # free all items in the encode queue:
         self.encode_from_queue_due = 0
         eqt: int = self.encode_from_queue_timer
-        avsynclog("cancel_encode_from_queue() timer=%s for wid=%i", eqt, self.wid)
+        avsynclog("cancel_encode_from_queue() timer=%s for wid=%#x", eqt, self.wid)
         if eqt:
             self.encode_from_queue_timer = 0
             GLib.source_remove(eqt)
 
     def free_encode_queue_images(self) -> None:
         eq = self.encode_queue
-        avsynclog("free_encode_queue_images() freeing %i images for wid=%i", len(eq), self.wid)
+        avsynclog("free_encode_queue_images() freeing %i images for wid=%#x", len(eq), self.wid)
         if not eq:
             return
         self.encode_queue = []
@@ -1180,7 +1180,7 @@ class WindowVideoSource(WindowSource):
         # note: we use a queue here to ensure we preserve the order
         # (so we encode frames in the same order they were grabbed)
         eq = self.encode_queue
-        avsynclog("encode_from_queue: %s items for wid=%i", len(eq), self.wid)
+        avsynclog("encode_from_queue: %s items for wid=%#x", len(eq), self.wid)
         if not eq:
             return      # nothing to encode, must have been picked off already
         self.update_av_sync_delay()
@@ -1234,7 +1234,7 @@ class WindowVideoSource(WindowSource):
             avsynclog("encode_from_queue: nothing due")
             return
         first_due = max(ENCODE_QUEUE_MIN_GAP, min(still_due))
-        avsynclog("encode_from_queue: first due in %ims, due list=%s (av-sync delay=%i, actual=%i, for wid=%i)",
+        avsynclog("encode_from_queue: first due in %ims, due list=%s (av-sync delay=%i, actual=%i, for wid=%#x)",
                   first_due, still_due, self.av_sync_delay, av_delay, self.wid)
         GLib.idle_add(self.schedule_encode_from_queue, first_due)
 
@@ -1767,7 +1767,7 @@ class WindowVideoSource(WindowSource):
                         # higher than minimum, should not be used unless we have no choice:
                         score = round(score*100)
                     sscaling[score] = (num, denom)
-                scalinglog("scaling scores%s wid=%i, current=%s, pps=%s, target=%s, fps=%s, denom_mult=%s, scores=%s",
+                scalinglog("scaling scores%s wid=%#x, current=%s, pps=%s, target=%s, fps=%s, denom_mult=%s, scores=%s",
                            (width, height, max_w, max_h),
                            self.wid, self.actual_scaling, pps, target, ffps, denom_mult, sscaling)
                 if sscaling:

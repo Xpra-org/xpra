@@ -158,7 +158,7 @@ class RFBServer(StubServerMixin):
         wid = self._get_rfb_desktop_wid()
 
         def process_pointer_event() -> None:
-            pointerlog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
+            pointerlog("RFB PointerEvent(%#x, %s, %s) desktop wid=%#x", buttons, x, y, wid)
             device_id = -1
             self._move_pointer(device_id, wid, (x, y))
             if buttons != self.rfb_buttons:
@@ -185,7 +185,7 @@ class RFBServer(StubServerMixin):
     def process_rfb_key_event(self, source, pressed, p1, p2, key):
         wid = self._get_rfb_desktop_wid()
         keyname = RFB_KEYNAMES.get(key)
-        keylog("RFB KeyEvent(%s, %s, %s, %s) keyname=%s, desktop wid=%s", pressed, p1, p2, key, keyname, wid)
+        keylog("RFB KeyEvent(%s, %s, %s, %s) keyname=%s, desktop wid=%#x", pressed, p1, p2, key, keyname, wid)
         if not keyname:
             if 0 < key < 255:
                 keyname = chr(key)

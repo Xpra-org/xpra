@@ -28,7 +28,7 @@ class GLClientWindowBase(ClientWindow):
 
     def spinner(self, ok: bool) -> None:
         b = self._backing
-        log("spinner(%s) opengl window %s: backing=%s", ok, self.wid, b)
+        log("spinner(%s) opengl window %#x: backing=%s", ok, self.wid, b)
         if not b:
             return
         b.paint_spinner = self.can_have_spinner() and not ok

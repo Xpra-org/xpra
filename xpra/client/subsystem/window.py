@@ -652,8 +652,8 @@ class WindowClient(StubClientMixin):
         metadata = typedict()
         if len(packet) >= 5:
             metadata = typedict(packet.get_dict(4))
-        traylog("tray %i metadata=%s", wid, metadata)
-        assert wid not in self._id_to_window, "we already have a window %s: %s" % (wid, self._id_to_window.get(wid))
+        traylog("tray %#x metadata=%s", wid, metadata)
+        assert wid not in self._id_to_window, "we already have a window %#x: %s" % (wid, self._id_to_window.get(wid))
         app_id = wid
         tray = self.setup_system_tray(self, app_id, wid, w, h, metadata)
         traylog("process_new_tray(%s) tray=%s", packet, tray)
@@ -705,7 +705,7 @@ class WindowClient(StubClientMixin):
             if tray_widget:
                 geom = tray_widget.get_geometry()
             else:
-                geom = None
+                geom = ()
             traylog("tray_geometry(%s) widget=%s, geometry=%s tray=%s", args, tray_widget, geom, tray)
             if tray and geom:
                 tray.move_resize(*geom)
@@ -827,7 +827,7 @@ class WindowClient(StubClientMixin):
         icon = img
         save_time = int(time())
         if SAVE_WINDOW_ICONS:
-            filename = "client-window-%i-icon-%i.png" % (wid, save_time)
+            filename = "client-window-%#x-icon-%i.png" % (wid, save_time)
             icon.save(filename, "png")
             iconlog("client window icon saved to %s", filename)
         if self.overlay_image and self.overlay_image != img:
@@ -854,13 +854,13 @@ class WindowClient(StubClientMixin):
             xpra_corner = Image.new("RGBA", (width, height))
             xpra_corner.paste(xpra_resized, (width - overlay_width, height - overlay_height, width, height))
             if SAVE_WINDOW_ICONS:
-                filename = "client-window-%i-icon-xpracorner-%i.png" % (wid, save_time)
+                filename = "client-window-%#x-icon-xpracorner-%i.png" % (wid, save_time)
                 xpra_corner.save(filename, "png")
                 iconlog("client xpracorner window icon saved to %s", filename)
             composite = Image.alpha_composite(icon, xpra_corner)
             icon = composite
             if SAVE_WINDOW_ICONS:
-                filename = "client-window-%i-icon-composited-%i.png" % (wid, save_time)
+                filename = "client-window-%#x-icon-composited-%i.png" % (wid, save_time)
                 icon.save(filename, "png")
                 iconlog("client composited window icon saved to %s", filename)
         return icon
@@ -879,7 +879,7 @@ class WindowClient(StubClientMixin):
         metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
         assert wid not in self._id_to_window, "we already have a window {}: {}".format(wid, self._id_to_window.get(wid))
         if w < 1 or h < 1:
-            log.error("Error: window %i dimensions %ix%i are invalid", wid, w, h)
+            log.error("Error: window %#x dimensions %ix%i are invalid", wid, w, h)
             w, h = 1, 1
         rel_pos = metadata.inttupleget("relative-position")
         parent = metadata.intget("parent")
@@ -905,7 +905,7 @@ class WindowClient(StubClientMixin):
             client_properties = typedict()
         geom = (wx, wy, ww, wh)
         backing_size = (bw, bh)
-        geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s",
+        geomlog("process_new_common: wid=%#x, OR=%s, geometry(%s)=%s / %s",
                 wid, override_redirect, packet[2:6], geom, backing_size)
         return self.make_new_window(wid, geom, backing_size, metadata, override_redirect, client_properties)
 
@@ -970,7 +970,7 @@ class WindowClient(StubClientMixin):
         if window is None:
             log.warn("no more options.. this window will not be shown, sorry")
             return None
-        log("make_new_window(..) window(%i)=%s", wid, window)
+        log("make_new_window(..) window(%#x)=%s", wid, window)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         if SHOW_DELAY >= 0:
@@ -982,7 +982,7 @@ class WindowClient(StubClientMixin):
     def show_window(self, wid: int, window, metadata, override_redirect: bool) -> None:
         window.show_all()
         if override_redirect and self.should_force_grab(metadata):
-            grablog.warn("forcing grab for OR window %i, matches %s", wid, OR_FORCE_GRAB)
+            grablog.warn("forcing grab for OR window %#x, matches %s", wid, OR_FORCE_GRAB)
             self.window_grab(wid, window)
 
     def should_force_grab(self, metadata: typedict) -> bool:
@@ -1013,13 +1013,13 @@ class WindowClient(StubClientMixin):
             if not title:
                 title = str(pid)
             cmd = get_python_execfile_command() + [SIGNAL_WATCHER_COMMAND] + [f"signal watcher for {std(title)}"]
-            execlog(f"assign_signal_watcher_pid({wid}, {pid}) starting {cmd}")
+            execlog(f"assign_signal_watcher_pid({wid:x}, {pid}) starting {cmd}")
             try:
                 proc = Popen(cmd,
                              stdin=PIPE, stdout=PIPE, stderr=STDOUT,
                              start_new_session=True)
             except OSError as e:
-                execlog("assign_signal_watcher_pid(%s, %s)", wid, pid, exc_info=True)
+                execlog("assign_signal_watcher_pid(%#x, %s)", wid, pid, exc_info=True)
                 execlog.error("Error: cannot execute signal listener")
                 execlog.estr(e)
                 proc = None
@@ -1066,7 +1066,7 @@ class WindowClient(StubClientMixin):
                         execlog(f"Warning: signal {signame!r} cannot be forwarded to this server")
             except Exception as e:
                 log.error("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid), exc_info=True)
-                log.error("Error: processing signal watcher output for pid %i of window %i", pid, wid)
+                log.error("Error: processing signal watcher output for pid %i of window %#x", pid, wid)
                 log.estr(e)
         if proc.poll():
             # watcher ended, stop watching its stdout
@@ -1280,7 +1280,7 @@ class WindowClient(StubClientMixin):
         if len(packet) > 4:
             resize_counter = int(packet[4])
         window = self._id_to_window.get(wid)
-        geomlog("_process_window_resized%s resizing window %s (id=%s) to %s", packet[1:], window, wid, (aw, ah))
+        geomlog("_process_window_resized%s resizing window %s (wid=%#x) to %s", packet[1:], window, wid, (aw, ah))
         if window:
             window.resize(aw, ah, resize_counter)
 
@@ -1314,9 +1314,9 @@ class WindowClient(StubClientMixin):
         if self.window_close_action == "forward":
             self.send("close-window", wid)
         elif self.window_close_action == "ignore":
-            log("close event for window %i ignored", wid)
+            log("close event for window %#x ignored", wid)
         elif self.window_close_action == "disconnect":
-            log.info("window-close set to disconnect, exiting (window %i)", wid)
+            log.info("window-close set to disconnect, exiting (window %#x)", wid)
             self.quit(0)
         elif self.window_close_action == "shutdown":
             self.send("shutdown-server", "shutdown on window close")
@@ -1324,17 +1324,17 @@ class WindowClient(StubClientMixin):
             # forward unless this looks like a desktop,
             # this allows us to behave more like VNC:
             window = self._id_to_window.get(wid)
-            log("window_close_event(%i) window=%s", wid, window)
+            log("window_close_event(%#x) window=%s", wid, window)
             if self.server_is_desktop:
                 log.info("window-close event on desktop or shadow window, disconnecting")
                 self.quit(0)
                 return
             if window:
                 metadata = typedict(getattr(window, "_metadata", {}))
-                log("window_close_event(%i) metadata=%s", wid, metadata)
+                log("window_close_event(%#x) metadata=%s", wid, metadata)
                 class_instance = metadata.strtupleget("class-instance", ("", ""))
                 title = metadata.strget("title")
-                log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
+                log("window_close_event(%#x) title=%r, class-instance=%s", wid, title, class_instance)
                 matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]
                 close = None
                 if matching_title_close:
@@ -1374,11 +1374,11 @@ class WindowClient(StubClientMixin):
                 # trays and OR windows cannot be made modal
                 continue
             if w._metadata.boolget("modal") and not w.get_modal():
-                metalog("re-enabling modal flag on %s", wid)
+                metalog("re-enabling modal flag on %#x", wid)
                 window.set_modal(True)
 
     def destroy_window(self, wid: int, window) -> None:
-        log("destroy_window(%s, %s)", wid, window)
+        log("destroy_window(%s#x, %s)", wid, window)
         window.destroy()
         if self._window_with_grab == wid:
             log("destroying window %s which has grab, ungrabbing!", wid)
@@ -1387,7 +1387,7 @@ class WindowClient(StubClientMixin):
         if self.pointer_grabbed == wid:
             self.pointer_grabbed = None
         # deal with signal watchers:
-        execlog("looking for window %i in %s", wid, self._signalwatcher_to_wids)
+        execlog("looking for window %#x in %s", wid, self._signalwatcher_to_wids)
         for signalwatcher, wids in tuple(self._signalwatcher_to_wids.items()):
             if wid in wids:
                 execlog("removing %i from %s for signalwatcher %s", wid, wids, signalwatcher)
@@ -1404,7 +1404,7 @@ class WindowClient(StubClientMixin):
     def destroy_all_windows(self) -> None:
         for wid, window in self._id_to_window.items():
             try:
-                log("destroy_all_windows() destroying %s / %s", wid, window)
+                log("destroy_all_windows() destroying %#x / %s", wid, window)
                 self.destroy_window(wid, window)
             except (RuntimeError, ValueError):
                 log(f"destroy_all_windows() failed to destroy {window}", exc_info=True)
@@ -1434,7 +1434,7 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # focus:
     def send_focus(self, wid: int) -> None:
-        focuslog("send_focus(%s)", wid)
+        focuslog("send_focus(%#x)", wid)
         self.send("focus", wid, self.get_current_modifiers())
 
     def has_focus(self, wid: int) -> bool:
@@ -1442,7 +1442,7 @@ class WindowClient(StubClientMixin):
 
     def update_focus(self, wid: int, gotit: bool) -> bool:
         focused = self._focused
-        focuslog(f"update_focus({wid}, {gotit}) focused={focused}, grabbed={self._window_with_grab}")
+        focuslog(f"update_focus({wid:x}, {gotit}) focused={focused}, grabbed={self._window_with_grab}")
         if gotit:
             if focused is not wid:
                 self.send_focus(wid)
@@ -1459,7 +1459,7 @@ class WindowClient(StubClientMixin):
                 # if this window lost focus, it must have had it!
                 # (catch up - makes things like OR windows work:
                 # their parent receives the focus-out event)
-                focuslog(f"window {wid} lost a focus it did not have!? (simulating focus before losing it)")
+                focuslog(f"window {wid:x} lost a focus it did not have!? (simulating focus before losing it)")
                 self.send_focus(wid)
             if focused and not self.lost_focus_timer:
                 # send the lost-focus via a timer and re-check it
@@ -1498,21 +1498,21 @@ class WindowClient(StubClientMixin):
         self._window_with_grab = None
 
     def do_force_ungrab(self, wid: int) -> None:
-        grablog("do_force_ungrab(%s)", wid)
+        grablog("do_force_ungrab(%#x)", wid)
         # ungrab via dedicated server packet:
         self.send_force_ungrab(wid)
 
     def _process_pointer_grab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
-        grablog("grabbing %s: %s", wid, window)
+        grablog("grabbing %#x: %s", wid, window)
         if window:
             self.window_grab(wid, window)
 
     def _process_pointer_ungrab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
-        grablog("ungrabbing %s: %s", wid, window)
+        grablog("ungrabbing %#x: %s", wid, window)
         self.window_ungrab()
 
     ######################################################################
@@ -1659,16 +1659,16 @@ class WindowClient(StubClientMixin):
                 decode_time = round(end * 1000 * 1000 - start * 1000 * 1000)
                 self.pixel_counter.append((start, end, width * height))
                 dms = "%sms" % (int(decode_time / 100) / 10.0)
-                paintlog("record_decode_time(%s, %s) wid=%s, %s: %sx%s, %s",
+                paintlog("record_decode_time(%s, %s) wid=%#x, %s: %sx%s, %s",
                          success, message, wid, coding, width, height, dms)
             elif success == 0:
                 decode_time = WINDOW_DECODE_ERROR
-                paintlog("record_decode_time(%s, %s) decoding error on wid=%s, %s: %sx%s",
+                paintlog("record_decode_time(%s, %s) decoding error on wid=%#x, %s: %sx%s",
                          success, message, wid, coding, width, height)
             else:
                 assert success < 0
                 decode_time = WINDOW_DECODE_SKIPPED
-                paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%s, %s: %sx%s",
+                paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%#x, %s: %sx%s",
                          success, message, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, repr_ellipsized(message, 512))
 
@@ -1686,7 +1686,7 @@ class WindowClient(StubClientMixin):
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, options, [record_decode_time])
         except Exception as e:
-            drawlog.error("Error drawing on window %i", wid)
+            drawlog.error("Error drawing on window %#x", wid)
             drawlog.error(f" using encoding {coding} with {options=}", exc_info=True)
             GLib.idle_add(record_decode_time, False, str(e))
             raise

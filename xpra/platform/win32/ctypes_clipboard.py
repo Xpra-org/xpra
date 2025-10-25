@@ -641,7 +641,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         self.with_clipboard_lock(get_text, errback)
 
-    def set_clipboard_text(self, text: str):
+    def set_clipboard_text(self, text: str) -> None:
         # convert to wide char
         # get the length in wide chars:
         if CONVERT_LINE_ENDINGS:
@@ -649,27 +649,27 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), None, 0)
         if not wlen:
             set_err("failed to prepare to convert to wide char")
-            return True
+            return
         log("MultiByteToWideChar wlen=%i", wlen)
         # allocate some memory for it:
         l = (wlen + 1) * 2
         buf = GlobalAlloc(GMEM_MOVEABLE, l)
         if not buf:
             set_err("failed to allocate %i bytes of global memory" % l)
-            return True
+            return
         log("GlobalAlloc buf=%#x", buf)
         locked = GlobalLock(buf)
         if not locked:
             set_err("failed to lock buffer %#x" % buf)
             GlobalFree(buf)
-            return True
+            return
         try:
             locked_buf = cast(locked, LPWSTR)
             wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), locked_buf, wlen)
             if not wlen:
                 set_err("failed to convert to wide char")
                 GlobalFree(buf)
-                return True
+                return
         finally:
             GlobalUnlock(locked)
         # we're going to alter the clipboard ourselves,

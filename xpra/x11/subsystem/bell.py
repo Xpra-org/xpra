@@ -93,7 +93,7 @@ class BellServer(StubServerMixin):
         rxid = get_root_xid()
         if event.window != rxid and event.window_model is not None:
             wid = self._window_to_id.get(event.window_model, 0)
-        log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
+        log("_bell_signaled(%s,%r) wid=%#x", wm, event, wid)
         for ss in self.window_sources():
             ss.bell(wid, event.device, event.percent,
                     event.pitch, event.duration, event.bell_class, event.bell_id, event.name)

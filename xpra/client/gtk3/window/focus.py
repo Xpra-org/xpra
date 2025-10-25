@@ -80,11 +80,11 @@ class FocusWindow(GtkStubWindow):
         # other platforms should be getting regular focus events instead:
 
         def focus_in(_window, event) -> None:
-            log("focus-in-event for wid=%s", self.wid)
+            log("focus-in-event for wid=%#x", self.wid)
             self.do_x11_focus_in_event(event)
 
         def focus_out(_window, event) -> None:
-            log("focus-out-event for wid=%s", self.wid)
+            log("focus-out-event for wid=%#x", self.wid)
             self.do_x11_focus_out_event(event)
 
         self.connect("focus-in-event", focus_in)
@@ -106,7 +106,7 @@ class FocusWindow(GtkStubWindow):
 
     def send_latest_focus(self) -> None:
         focused = self._client._focused
-        log("send_latest_focus() wid=%i, focused=%s, latest=%s", self.wid, focused, self._focus_latest)
+        log("send_latest_focus() wid=%#x, focused=%s, latest=%s", self.wid, focused, self._focus_latest)
         if self._focus_latest:
             self._focus()
         else:

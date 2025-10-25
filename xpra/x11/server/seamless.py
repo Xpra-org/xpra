@@ -465,7 +465,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             # pre-map the window if any client will be showing it
             sources = tuple(self._server_sources.values())
             if sources:
-                log("pre-mapping window %i for %s at %s", wid, sources, geometry)
+                log("pre-mapping window %#x for %s at %s", wid, sources, geometry)
                 geometry = self.clamp_window(*geometry)[1]
                 self.client_configure_window(window, geometry)
                 window.show()
@@ -616,7 +616,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             ss.show_desktop(show)
 
     def _focus(self, server_source, wid: int, modifiers) -> None:
-        focuslog("focus wid=%s has_focus=%s", wid, self._has_focus)
+        focuslog("focus wid=%#x has_focus=%#x", wid, self._has_focus)
         if self.last_raised != wid:
             self.last_raised = None
         if self._has_focus == wid:
@@ -627,7 +627,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         had_focus = self._id_to_window.get(hfid)
 
         def reset_focus() -> None:
-            focuslog("reset_focus() %s / %s had focus", hfid, had_focus)
+            focuslog("reset_focus() %#x / %#x had focus", hfid, had_focus)
             # this will call clear_keys_pressed() if the server is an InputServer:
             clear_keys_pressed: Callable[[], None] = getattr(self, "clear_keys_pressed", noop)
             clear_keys_pressed()
@@ -695,7 +695,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
     def _window_grab(self, window, event) -> None:
         grab_id = self._window_to_id.get(window, -1)
-        grablog("window_grab(%s, %s) has_grab=%s, has focus=%s, grab window=%s",
+        grablog("window_grab(%s, %s) has_grab=%#x, has focus=%#x, grab window=%s",
                 window, event, self._has_grab, self._has_focus, grab_id)
         if grab_id < 0 or self._has_grab == grab_id:
             return
@@ -705,7 +705,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
     def _window_ungrab(self, window, event) -> None:
         grab_id = self._window_to_id.get(window, -1)
-        grablog("window_ungrab(%s, %s) has_grab=%s, has focus=%s, grab window=%s",
+        grablog("window_ungrab(%s, %s) has_grab=%#x, has focus=%#x, grab window=%s",
                 window, event, self._has_grab, self._has_focus, grab_id)
         if not self._has_grab:
             return
@@ -732,7 +732,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
     def _restack_window(self, window, detail, sibling) -> None:
         wid = self._window_to_id[window]
-        focuslog("restack window(%s) wid=%s, current focus=%s", (window, detail, sibling), wid, self._has_focus)
+        focuslog("restack window(%s) wid=%#x, current focus=%s", (window, detail, sibling), wid, self._has_focus)
         if self.last_raised != wid:
             # ensure we will raise the window for the next pointer event
             self.last_raised = None
@@ -818,7 +818,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         h = packet.get_u16(5)
         window = self._lookup_window(wid)
         if not window:
-            windowlog("cannot map window %i: not found, already removed?", wid)
+            windowlog("cannot map window %#x: not found, already removed?", wid)
             return
         if window.is_OR():
             windowlog.warn("Warning: received map event on OR window %s", wid)
@@ -826,7 +826,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        geomlog("client %s mapped window %i - %s, at: %s", ss, wid, window, (x, y, w, h))
+        geomlog("client %s mapped window %#x - %s, at: %s", ss, wid, window, (x, y, w, h))
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         cp = {}
         if len(packet) >= 7:
@@ -849,7 +849,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         wid = packet.get_wid()
         window = self._lookup_window(wid)
         if not window:
-            log("cannot unmap window %i: not found, already removed?", wid)
+            log("cannot unmap window %#x: not found, already removed?", wid)
             return
         assert not window.is_OR()
         ss = self.get_server_source(proto)
@@ -864,7 +864,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             state = packet.get_dict(3)
             self._set_window_state(proto, wid, window, state)
         if window.get_property("shown"):
-            geomlog("client %s unmapped window %s - %s", ss, wid, window)
+            geomlog("client %s unmapped window %#x - %s", ss, wid, window)
             for ss in self.window_sources():
                 ss.unmap_window(wid, window)
             window.unmap()
@@ -916,7 +916,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         h = packet.get_u16(5)
         window = self._lookup_window(wid)
         if not window:
-            geomlog("cannot configure window %i: not found, already removed?", wid)
+            geomlog("cannot configure window %#x: not found, already removed?", wid)
             return
         ss = self.get_server_source(proto)
         if not ss:
@@ -1091,7 +1091,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             log.warn(f"Warning: window {wid} not found")
             return
         pid = w.get_property("pid")
-        log("window-signal %s for wid=%i, pid=%s", sig, wid, pid)
+        log("window-signal %s for wid=%#x, pid=%s", sig, wid, pid)
         if not pid:
             log.warn(f"Warning: no pid found for window {wid}, cannot send {sig}")
             return

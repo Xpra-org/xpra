@@ -178,7 +178,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         watcher_pid = metadata.intget("watcher-pid", 0)
         if watcher_pid and HAS_X11_BINDINGS:
             def set_watcher_pid() -> None:
-                log("using watcher pid=%i for wid=%i", watcher_pid, self.wid)
+                log("using watcher pid=%i for wid=%#x", watcher_pid, self.wid)
                 self.do_set_x11_property("_NET_WM_PID", "u32", watcher_pid)
             self.when_realized("watcher", set_watcher_pid)
         # add platform hooks
@@ -568,7 +568,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def unfreeze(self) -> None:
         if not self._frozen or not self._iconified:
             return
-        log("unfreeze() wid=%i, frozen=%s, iconified=%s", self.wid, self._frozen, self._iconified)
+        log("unfreeze() wid=%#x, frozen=%s, iconified=%s", self.wid, self._frozen, self._iconified)
         if not self._frozen or not self._iconified:
             # has been deiconified already
             return
@@ -885,7 +885,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def set_locale(self, locale: str) -> None:
         self.set_x11_property("WM_LOCALE_NAME", "latin1", locale)
 
-    def set_xid(self, xid: str | int) -> None:
+    def set_xid(self, xid: str) -> None:
         if xid.startswith("0x") and xid.endswith("L"):
             xid = xid[:-1]
         try:
@@ -1132,7 +1132,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             def set_root_transient() -> None:
                 # root is a gdk window, so we need to ensure we have one
                 # backing our gtk window to be able to call set_transient_for on it
-                log("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s",
+                log("%s.apply_transient_for(%#x) gdkwindow=%s, mapped=%s",
                     self, wid, self.get_window(), self.get_mapped())
                 self.get_window().set_transient_for(get_default_root_window())
 
@@ -1140,7 +1140,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         else:
             # gtk window is easier:
             window = self._client._id_to_window.get(wid)
-            log("%s.apply_transient_for(%s) window=%s", self, wid, window)
+            log("%s.apply_transient_for(%#x) window=%s", self, wid, window)
             if window and isinstance(window, Gtk.Window):
                 self.set_transient_for(window)
 
@@ -1254,7 +1254,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if wfs and len(wfs) == 4:
                 state["frame"] = self.crect(*wfs)
                 self._current_frame_extents = wfs
-        geomlog("map-window wid=%s, geometry=%s, client props=%s, state=%s", self.wid, (x, y, w, h), props, state)
+        geomlog("map-window wid=%#x, geometry=%s, client props=%s, state=%s", self.wid, (x, y, w, h), props, state)
         sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
         if self._backing is None:
             # we may have cleared the backing, so we must re-create one:
@@ -1304,7 +1304,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         else:
             plug_name = "%i" % mid
         plug_name += " %ix%i at %i,%i" % (geom.width, geom.height, geom.x, geom.y)
-        eventslog.info("window %i has been moved to monitor %i: %s", self.wid, mid, plug_name)
+        eventslog.info("window %#x has been moved to monitor %i: %s", self.wid, mid, plug_name)
 
     def update_relative_position(self) -> None:
         x, y = self.get_position()
@@ -1477,7 +1477,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         context.clip()
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
-        geomlog("window %i move_resize%s", self.wid, (x, y, w, h, resize_counter))
+        geomlog("window %#x move_resize%s", self.wid, (x, y, w, h, resize_counter))
         x, y = self.adjusted_position(x, y)
         w = max(1, w)
         h = max(1, h)

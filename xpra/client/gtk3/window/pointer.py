@@ -230,7 +230,7 @@ class PointerWindow(GtkStubWindow):
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
-        log("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i",
+        log("do_motion_notify_event(%s) wid=%#x / focus=%s / window wid=%#x",
             event, wid, self._client._focused, self.wid)
         log(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
             _device_info(event), pointer_data, modifiers, buttons)
@@ -309,7 +309,7 @@ class PointerWindow(GtkStubWindow):
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
-        log("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i",
+        log("_button_action(%s, %s, %s) wid=%#x / focus=%s / window wid=%#x",
             button, event, depressed, wid, self._client._focused, self.wid)
         log(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
             _device_info(event), pointer_data, modifiers, buttons)

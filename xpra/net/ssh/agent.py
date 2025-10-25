@@ -28,7 +28,7 @@ def setup_ssh_auth_sock(session_dir: str) -> str:
     # the current value from the environment:
     # ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
     # or "SSH_AUTH_SOCK=/run/user/1000/keyring/ssh"
-    cur_sockpath = os.environ.pop("SSH_AUTH_SOCK", None)
+    cur_sockpath = os.environ.pop("SSH_AUTH_SOCK", "")
     # ie: "/run/user/1000/xpra/10/ssh/agent.default"
     agent_default_sockpath = get_ssh_agent_path("agent.default")
     if os.path.islink(agent_default_sockpath):

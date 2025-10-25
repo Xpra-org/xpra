@@ -93,7 +93,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
                 continue
             window = self._id_to_window.get(window_id)
             surface = self.get_surface(window_id)
-            log("focus: wid=%i, state=%s, window=%s, surface=%#x", window_id, state, window, surface)
+            log("focus: wid=%#x, state=%s, window=%s, surface=%#x", window_id, state, window, surface)
             if window and surface:
                 self.compositor.focus(surface, state)
                 if state:

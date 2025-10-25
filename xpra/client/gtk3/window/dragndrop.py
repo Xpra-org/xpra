@@ -44,7 +44,7 @@ def drag_drop_cb(widget, context, x: int, y: int, time: int) -> None:
 
 
 def drag_motion_cb(wid: int, context, x: int, y: int, time: int) -> bool:
-    log("drag_motion_cb%s", (wid, context, x, y, time))
+    log("drag_motion_cb(%#x, %s, %i, %i, %i)", wid, context, x, y, time)
     Gdk.drag_status(context, Gdk.DragAction.COPY, time)
     return True  # accept this data
 
@@ -77,7 +77,7 @@ class DragNDropWindow(GtkStubWindow):
         self.connect("drag_data_received", self.drag_got_data_cb)
 
     def drag_got_data_cb(self, wid: int, context, x: int, y: int, selection, info, time: int) -> None:
-        log("drag_got_data_cb%s", (wid, context, x, y, selection, info, time))
+        log("drag_got_data_cb(%#x, %s, %i, %i, %r, %s, %i)", wid, context, x, y, selection, info, time)
         if self.is_readonly():
             return
         targets = list(x.name() for x in context.list_targets())

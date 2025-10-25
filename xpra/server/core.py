@@ -1584,7 +1584,7 @@ class ServerCore(ServerBaseClass):
             if socktype not in ("tcp", "ssl", "ws", "wss", "ssh"):
                 # we expose addresses only for TCP sockets
                 continue
-            upnp_address = sock.options.get("upnp-address")
+            upnp_address = sock.options.get("upnp-address", ())
             if upnp_address:
                 add_address(socktype, *upnp_address)
             if len(address) != 2 or not isinstance(address[0], str) or not isinstance(address[1], int):

@@ -25,7 +25,7 @@ assert 1 < AUTO_BANDWIDTH_PCT <= 100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT
 
 
 def parse_speed(v) -> int:
-    return parse_with_unit("speed", v)
+    return parse_with_unit("speed", v) or 0
 
 
 class BandwidthClient(StubClientMixin):

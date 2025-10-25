@@ -238,7 +238,7 @@ class WindowIconSource:
             # and delay sending it by a bit to allow basic icon batching:
             w, h = self.window_icon_data[:2]
             delay = min(1000, max(50, w * h * self.batch_config.delay_per_megapixel // 1000000))
-            log("send_window_icon() window=%s, wid=%s, compression scheduled in %sms for batch delay=%i",
+            log("send_window_icon() window=%s, wid=%#x, compression scheduled in %sms for batch delay=%i",
                 self.window, self.wid, delay, self.batch_config.delay_per_megapixel)
             self.send_window_icon_timer = GLib.timeout_add(delay, self.call_in_encode_thread,
                                                            True, self.compress_and_send_window_icon)
@@ -250,7 +250,7 @@ class WindowIconSource:
         if not idata or not self.has_png:
             return
         w, h, pixel_format, pixel_data = idata
-        log("compress_and_send_window_icon() %ix%i in %s format, %i bytes for wid=%i",
+        log("compress_and_send_window_icon() %ix%i in %s format, %i bytes for wid=%#x",
             w, h, pixel_format, len(pixel_data), self.wid)
         if pixel_format not in ("BGRA", "RGBA", "png"):
             raise RuntimeError(f"invalid window icon format {pixel_format}")

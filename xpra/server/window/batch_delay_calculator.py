@@ -299,7 +299,7 @@ def get_target_quality(window_dimensions: tuple[int, int], batch,
         latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
 
     # target is the lowest value of all those limits:
-    target = max(min(pixels_bl_q, bandwidth_q, congestion_q, batch_q, latency_q, 1), 0)
+    target = float(max(min(pixels_bl_q, bandwidth_q, congestion_q, batch_q, latency_q, 1), 0))
 
     info: dict[str, Any] = {}
     # boost based on recent compression ratio

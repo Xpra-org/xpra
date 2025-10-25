@@ -169,7 +169,7 @@ class ServerBase(ServerBaseClass):
     def _request_exit(self, reason: ConnectionMessage | str = "") -> None:
         message = "Exiting in response to client request"
         if reason:
-            message += ": " + reason
+            message += f": {reason}"
         log.info(message)
         self.cleanup_all_protocols(reason=reason)
         GLib.timeout_add(500, self.clean_quit, ServerExitMode.EXIT)
@@ -567,7 +567,7 @@ class ServerBase(ServerBaseClass):
                 if not k.startswith("encoding"):
                     ncp[k] = v
             if ncp:
-                log("set_client_properties updating window %s of source %s with %s", wid, ss.uuid, ncp)
+                log("set_client_properties updating window %#x of source %s with %s", wid, ss.uuid, ncp)
                 client_properties = self.client_properties.setdefault(wid, {}).setdefault(ss.uuid, {})
                 client_properties.update(ncp)
 

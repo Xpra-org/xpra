@@ -679,7 +679,7 @@ class WindowBackingBase:
         options = typedict(options)
         options["speed"] = speed
         for score in sorted(csc_scores):
-            for dst_format, spec in csc_scores.get(score):
+            for dst_format, spec in csc_scores.get(score, ()):
                 try:
                     csc = spec.codec_class()
                     width = dst_width if (spec.can_scale and PREFER_CSC_SCALING) else src_width

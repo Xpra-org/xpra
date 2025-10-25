@@ -575,7 +575,7 @@ cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept nogi
     cdef wlr_subsurface *subsurface = <wlr_subsurface*> data
 
     with gil:
-        log("New SUBSURFACE created, parent wid=%i", parent_surface.wid)
+        log("New SUBSURFACE created, parent wid=%#x", parent_surface.wid)
         log(" subsurface wlr_surface=%#x, parent wlr_surface=%#x",
             <uintptr_t>subsurface.surface, <uintptr_t>subsurface.parent)
 
@@ -585,7 +585,7 @@ cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept nogi
 
         global wid
         wid += 1
-        log("allocated wid=%i", wid)
+        log("allocated wid=%#x", wid)
         # TODO: allocate xpra_surface and populate it
         emit("new-subsurface", parent_surface.wid, wid, <uintptr_t> subsurface.surface, width, height)
 
@@ -687,7 +687,7 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     global wid
     wid += 1
     surface.wid = wid
-    log("allocated wid=%i", wid)
+    log("allocated wid=%#x", wid)
 
     surface.scene_tree = wlr_scene_xdg_surface_create(&srv.scene.tree, xdg_surf)
 
