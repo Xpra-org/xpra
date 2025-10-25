@@ -281,7 +281,7 @@ class PointerServer(StubServerMixin):
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         # (this is called within a `xswallow` context)
         x, y = self._get_pointer_abs_coordinates(wid, pos)
-        self.device_move_pointer(device_id, wid, (x, y), props)
+        self.device_move_pointer(device_id, wid, (x, y), props or {})
 
     def device_move_pointer(self, device_id: int, wid: int, pos, props: dict):
         device = self.get_pointer_device(device_id)
