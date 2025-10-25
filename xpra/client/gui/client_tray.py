@@ -202,7 +202,7 @@ class ClientTray(ClientWidgetBase):
             tw.cleanup()
 
     def __repr__(self):
-        return f"ClientTray({self.wid}:{self.title})"
+        return f"ClientTray({self.wid:#x}:{self.title})"
 
 
 class TrayBacking(WindowBackingBase):

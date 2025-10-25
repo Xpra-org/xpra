@@ -302,7 +302,7 @@ class XpraMonitorServer(DesktopServerBase):
         model = self._id_to_window.get(wid)
         screenlog("removing monitor for wid %i : %s", wid, model)
         if not model:
-            raise ValueError(f"monitor {wid} not found")
+            raise ValueError(f"monitor {wid:#x} not found")
         if len(self._id_to_window) <= 1:
             raise RuntimeError("cannot remove the last monitor")
         delta_x = -model.get_definition().get("width", 0)

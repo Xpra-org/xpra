@@ -358,7 +358,7 @@ class GLWindowBackingBase(WindowBackingBase):
         return props
 
     def __repr__(self):
-        return f"GLWindowBacking({self.wid}, {self.size})"
+        return f"GLWindowBacking({self.wid:#x}, {self.size})"
 
     def init(self, ww: int, wh: int, bw: int, bh: int) -> None:
         # re-init gl projection with new dimensions

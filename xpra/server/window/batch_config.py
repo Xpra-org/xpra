@@ -148,4 +148,4 @@ class DamageBatchConfig:
         return c
 
     def __repr__(self):
-        return f"DamageBatchConfig({self.wid})"
+        return f"DamageBatchConfig({self.wid:#x})"

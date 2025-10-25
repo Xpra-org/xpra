@@ -516,7 +516,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         cb = self.on_realize_cb
         self.on_realize_cb = {}
         for callback, args in cb.values():
-            with eventslog.trap_error(f"Error on realize callback {callback} for window {self.wid}"):
+            with eventslog.trap_error(f"Error on realize callback {callback} for window {self.wid:#x}"):
                 callback(*args)
         if HAS_X11_BINDINGS:
             # request frame extents if the window manager supports it
@@ -1376,6 +1376,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return self._client_properties.copy()
 
     def send_configure_event(self, skip_geometry=False) -> None:
+        metalog("send_configure_event(%s)", skip_geometry)
         assert skip_geometry or not self.is_OR()
         x, y, w, h = self.get_drawing_area_geometry()
         w = max(1, w)

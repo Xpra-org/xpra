@@ -290,7 +290,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         source.initiate_moveresize(wid, window, x_root, y_root, direction, button, source_indication)
 
     def _resize(self, wid: int, serial: int, moveresize: int) -> None:
-        log.info(f"resize wid {wid} moveresize={moveresize}")
+        log.info(f"resize wid {wid:#x} moveresize={moveresize}")
 
     def _new_output(self, name: str, props: dict):
         log("new output %r=%r", name, props)

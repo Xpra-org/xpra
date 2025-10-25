@@ -195,7 +195,7 @@ class WindowVideoSource(WindowSource):
         self.video_stream_file = None
 
     def __repr__(self) -> str:
-        return f"WindowVideoSource({self.wid} : {self.window_dimensions})"
+        return f"WindowVideoSource({self.wid:#x} : {self.window_dimensions})"
 
     def init_vars(self) -> None:
         super().init_vars()
@@ -459,12 +459,12 @@ class WindowVideoSource(WindowSource):
                 exclude.append(x)
                 continue
             csc_modes = self.full_csc_modes.strtupleget(x)
-            if (not csc_modes or x not in self.core_encodings) and first_time(f"nocsc-{x}-{self.wid}"):
+            if (not csc_modes or x not in self.core_encodings) and first_time(f"nocsc-{x}-{self.wid:#x}"):
                 exclude.append(x)
                 msg_args = ("Warning: client does not support any csc modes with %s on window %i", x, self.wid)
                 if x == "jpega" and not self.supports_transparency:
                     log(f"skipping {x} since client does not support transparency")
-                elif not init and first_time(f"no-csc-{x}-{self.wid}"):
+                elif not init and first_time(f"no-csc-{x}-{self.wid:#x}"):
                     log.warn(*msg_args)
                 else:
                     log(*msg_args)
@@ -490,9 +490,9 @@ class WindowVideoSource(WindowSource):
                     # switch to GStreamer mode if all the GPU accelerated options require it:
                     if self.stream_mode == "auto" and len(accel_types) == 1 and tuple(accel_types)[0] == "gstreamer":
                         self.stream_mode = "gstreamer"
-                    if first_time(f"gpu-stream-{self.wid}"):
+                    if first_time(f"gpu-stream-{self.wid:#x}"):
                         videolog.info(f"found GPU accelerated encoders for: {csv(common_accel)}")
-                        videolog.info(f"switching to {encoding!r} encoding for {self.content_type!r} window {self.wid}")
+                        videolog.info(f"switching to {encoding!r} encoding for {self.content_type!r} window {self.wid:#x}")
                         if self.stream_mode == "gstreamer":
                             videolog.info("using 'gstreamer' stream mode")
         super().update_encoding_selection(encoding, exclude, init)
@@ -1847,7 +1847,7 @@ class WindowVideoSource(WindowSource):
         h = height & self.height_mask
         scores = self.get_video_pipeline_options(encodings, w, h, src_format)
         if not scores:
-            if not self.is_cancelled() and first_time(f"no-scores-{src_format}-{self.wid}"):
+            if not self.is_cancelled() and first_time(f"no-scores-{src_format}-{self.wid:#x}"):
                 self.pipeline_setup_error(encodings, width, height, src_format,"no video pipeline options found")
             return False
 
@@ -1862,7 +1862,7 @@ class WindowVideoSource(WindowSource):
         if self.setup_pipeline(scores, width, height, src_format):
             return True
 
-        if not self.is_cancelled() and first_time(f"novideo-{src_format}-{self.wid}"):
+        if not self.is_cancelled() and first_time(f"novideo-{src_format}-{self.wid:#x}"):
             self.pipeline_setup_error(encodings, width, height, src_format,"failed to setup a video pipeline", scores)
         return False
 
@@ -2403,9 +2403,9 @@ class WindowVideoSource(WindowSource):
         super().do_schedule_auto_refresh(encoding, scroll_data, region, client_options, options)
 
     def video_fallback(self, image: ImageWrapper, options, warn=False, info="") -> tuple:
-        if warn and first_time(f"non-video-{self.wid}"):
+        if warn and first_time(f"non-video-{self.wid:#x}"):
             videolog.warn("Warning: using non-video fallback encoding")
-            videolog.warn(f" for {image} of window {self.wid}")
+            videolog.warn(f" for {image} of window {self.wid:#x}")
             videolog.warn(f" {info}")
         else:
             videolog(f"video fallback: {info}")

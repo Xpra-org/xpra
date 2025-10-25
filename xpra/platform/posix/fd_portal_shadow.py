@@ -96,7 +96,7 @@ class PortalShadow(GTKShadowServerBase):
         raise NotImplementedError()
 
     def start_refresh(self, wid: int) -> None:
-        log(f"start_refresh({wid})")
+        log(f"start_refresh({wid:#x})")
 
     def setup_capture(self) -> None:
         """
@@ -289,9 +289,9 @@ class PortalShadow(GTKShadowServerBase):
     def capture_new_image(self, capture, coding: str, data, client_info: dict) -> None:
         wid = capture.node_id
         model = self._id_to_window.get(wid)
-        log(f"capture_new_image({capture}, {coding}, {type(data)}, {client_info}) model({wid})={model}")
+        log(f"capture_new_image({capture}, {coding}, {type(data)}, {client_info}) model({wid:#x})={model}")
         if not model:
-            log.error(f"Error: cannot find window model for node {wid}")
+            log.error(f"Error: cannot find window model for node {wid:#x}")
             return
         if isinstance(data, ImageWrapper):
             self.refresh_window(model)
@@ -313,7 +313,7 @@ class PortalShadow(GTKShadowServerBase):
 
     def capture_error(self, capture, message) -> None:
         wid = capture.node_id
-        log(f"capture_error({capture}, {message}) wid={wid}")
+        log(f"capture_error({capture}, {message}) wid={wid:#x}")
         log.error("Error capturing screen:")
         log.estr(message)
         model = self._id_to_window.get(wid)
@@ -324,4 +324,4 @@ class PortalShadow(GTKShadowServerBase):
 
     def capture_state_changed(self, capture, state) -> None:
         wid = capture.node_id
-        log(f"screencast capture state changed for model {wid}: {state!r}")
+        log(f"screencast capture state changed for model {wid:#x}: {state!r}")

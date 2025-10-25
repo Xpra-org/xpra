@@ -188,7 +188,7 @@ class XpraTkClient:
             window.draw(x, y, width, height, coding, data, rowstride)
             decode_time = int(1000 * (monotonic() - now))
         else:
-            message = f"Warning: window {wid} not found"
+            message = f"Warning: window {wid:#x} not found"
             log.warn(message)
             decode_time = -1
         self.send("damage-sequence", packet_sequence, wid, width, height, decode_time, message)

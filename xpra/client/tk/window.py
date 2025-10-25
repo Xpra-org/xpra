@@ -70,7 +70,7 @@ class ClientWindow(Toplevel):
         if "title" in metadata:
             self.title(metadata.strget("title"))
         else:
-            log(f"unused window metadata {self.wid}: {metadata}")
+            log(f"unused window metadata {self.wid:#x}: {metadata}")
 
     def show(self) -> None:
         self.deiconify()

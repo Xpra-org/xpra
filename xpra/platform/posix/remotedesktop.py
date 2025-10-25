@@ -37,7 +37,7 @@ class RemoteDesktop(PortalShadow):
             return False
         win = self._id_to_window.get(wid)
         if not win:
-            pointerlog.error(f"Error: window {wid} not found")
+            pointerlog.error(f"Error: window {wid:#x} not found")
             return False
         x, y = pointer[:2]
         node_id = win.pipewire_id

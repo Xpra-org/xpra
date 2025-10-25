@@ -116,7 +116,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.finalize_window()
 
     def __repr__(self):
-        return f"ClientWindow({self.wid})"
+        return f"ClientWindow({self.wid:#x})"
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self._backing = None

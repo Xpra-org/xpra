@@ -969,7 +969,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             else:
                 if window.is_OR() and not skip_geometry:
                     log.warn("Warning: ignoring invalid configure geometry packet")
-                    log.warn(f" for OR window {wid}")
+                    log.warn(f" for OR window {wid:#x}")
                     return
                 self.last_client_configure_event = monotonic()
                 if is_ui_driver and len(packet) >= 9:
@@ -1088,20 +1088,20 @@ class SeamlessServer(GObject.GObject, ServerBase):
             return
         w = self._lookup_window(wid)
         if not w:
-            log.warn(f"Warning: window {wid} not found")
+            log.warn(f"Warning: window {wid:#x} not found")
             return
         pid = w.get_property("pid")
         log("window-signal %s for wid=%#x, pid=%s", sig, wid, pid)
         if not pid:
-            log.warn(f"Warning: no pid found for window {wid}, cannot send {sig}")
+            log.warn(f"Warning: no pid found for window {wid:#x}, cannot send {sig}")
             return
         try:
             sigval = getattr(signal, sig)  # ie: signal.SIGINT
             os.kill(pid, sigval)
-            log.info(f"sent signal {sig!r} to pid {pid} for window {wid}")
+            log.info(f"sent signal {sig!r} to pid {pid} for window {wid:#x}")
         except Exception as e:
             log("_process_window_signal(%s, %s)", proto, packet, exc_info=True)
-            log.error(f"Error: failed to send signal {sig!r} to pid {pid} for window {wid}")
+            log.error(f"Error: failed to send signal {sig!r} to pid {pid} for window {wid:#x}")
             log.estr(e)
 
     def refresh_window_area(self, window, x: int, y: int, width: int, height: int, options=None) -> None:

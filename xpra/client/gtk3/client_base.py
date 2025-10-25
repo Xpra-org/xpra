@@ -1124,7 +1124,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def _process_raise_window(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
-        focuslog(f"going to raise window {wid} - {window}")
+        focuslog(f"going to raise window {wid:#x} - {window}")
         if window:
             if window.has_toplevel_focus():
                 log("window already has top level focus")

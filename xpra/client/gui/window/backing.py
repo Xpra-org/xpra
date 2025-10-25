@@ -317,8 +317,8 @@ class WindowBackingBase:
         elif g == Gravity.SouthEast:
             sx, dx = east_x()
             sy, dy = south_y()
-        elif g == Gravity.Static and first_time(f"Gravity.Static-{self.wid}"):
-            log.warn(f"Warning: window {self.wid} requested static gravity")
+        elif g == Gravity.Static and first_time(f"Gravity.Static-{self.wid:#x}"):
+            log.warn(f"Warning: window {self.wid:#x} requested static gravity")
             log.warn(" this is not implemented yet")
         w = min(bw, oldw)
         h = min(bh, oldh)
@@ -733,7 +733,7 @@ class WindowBackingBase:
 
             if self._backing is None:
                 restart("no backing")
-                message = f"window {self.wid} is already gone!"
+                message = f"window {self.wid:#x} is already gone!"
                 log(message)
                 fire_paint_callbacks(callbacks, -1, message)
                 return

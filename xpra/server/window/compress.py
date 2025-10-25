@@ -387,7 +387,7 @@ class WindowSource(WindowIconSource):
         self._damage_cancelled = 0
 
     def __repr__(self) -> str:
-        return f"WindowSource({self.wid} : {self.window_dimensions})"
+        return f"WindowSource({self.wid:#x} : {self.window_dimensions})"
 
     def ui_thread_check(self) -> None:
         if not UI_THREAD_CHECK:
@@ -1531,7 +1531,7 @@ class WindowSource(WindowIconSource):
                 rq -= round(sqrt(1000*1000//bwl))
             rs = min(50, max(0, rs))
             rq = min(99, max(80, rq, self._current_quality+30))
-        refreshlog(f"update_refresh_attributes() wid={self.wid}, refresh quality={rq}%, refresh speed={rs}%, for cv={cv:.2f}, {bwl=}")
+        refreshlog(f"update_refresh_attributes() wid={self.wid:#x}, refresh quality={rq}%, refresh speed={rs}%, for cv={cv:.2f}, {bwl=}")
         self.refresh_quality = rq
         self.refresh_speed = rs
 
@@ -1580,7 +1580,7 @@ class WindowSource(WindowIconSource):
             damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
             return
         if ww > MAX_WINDOW_SIZE or wh > MAX_WINDOW_SIZE:
-            if first_time(f"window-oversize-{self.wid}"):
+            if first_time(f"window-oversize-{self.wid:#x}"):
                 damagelog("")
                 damagelog.warn("Warning: invalid window dimensions %ix%i for window %i", ww, wh, self.wid)
                 damagelog.warn(" window updates will be dropped until this is corrected")
@@ -1844,7 +1844,7 @@ class WindowSource(WindowIconSource):
             if actual_delay > self.batch_config.timeout_delay:
                 log("send_delayed for wid %s, elapsed time %ims is above limit of %.1f",
                     self.wid, actual_delay, self.batch_config.timeout_delay)
-                key = f"timeout-damage-delay:{self.wid}-{damage_time}"
+                key = f"timeout-damage-delay:{self.wid:#x}-{damage_time}"
                 if first_time(key):
                     log.warn("Warning: timeout on screen updates for window %i,", self.wid)
                     log.warn(" already delayed for more than %i seconds", actual_delay//1000)
@@ -2642,7 +2642,7 @@ class WindowSource(WindowIconSource):
         if decode_time > 0:
             self.statistics.client_decode_time.append((monotonic(), width*height, decode_time))
         elif decode_time == WINDOW_DECODE_SKIPPED:
-            log(f"client skipped decoding sequence {damage_packet_sequence} for window {self.wid}")
+            log(f"client skipped decoding sequence {damage_packet_sequence} for window {self.wid:#x}")
         elif decode_time == WINDOW_NOT_FOUND:
             log.warn("Warning: client cannot find window %i", self.wid)
         elif decode_time == WINDOW_DECODE_ERROR:

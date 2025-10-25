@@ -202,7 +202,7 @@ class Qt6Client:
             window.draw(x, y, width, height, coding, data, rowstride)
             decode_time = int(1000 * (monotonic() - now))
         else:
-            message = f"Warning: window {wid} not found"
+            message = f"Warning: window {wid:#x} not found"
             log.warn(message)
             decode_time = -1
         self.send("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
@@ -210,7 +210,7 @@ class Qt6Client:
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
         metadata = packet.get_dict(2)
-        log.info(f"window {wid}: {metadata}")
+        log.info(f"window {wid:#x}: {metadata}")
 
     def update_focus(self, wid=0) -> None:
         if self.focused == wid:

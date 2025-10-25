@@ -1013,7 +1013,7 @@ class WindowClient(StubClientMixin):
             if not title:
                 title = str(pid)
             cmd = get_python_execfile_command() + [SIGNAL_WATCHER_COMMAND] + [f"signal watcher for {std(title)}"]
-            execlog(f"assign_signal_watcher_pid({wid:x}, {pid}) starting {cmd}")
+            execlog(f"assign_signal_watcher_pid({wid:#x}, {pid}) starting {cmd}")
             try:
                 proc = Popen(cmd,
                              stdin=PIPE, stdout=PIPE, stderr=STDOUT,
@@ -1442,7 +1442,7 @@ class WindowClient(StubClientMixin):
 
     def update_focus(self, wid: int, gotit: bool) -> bool:
         focused = self._focused
-        focuslog(f"update_focus({wid:x}, {gotit}) focused={focused}, grabbed={self._window_with_grab}")
+        focuslog(f"update_focus({wid:#x}, {gotit}) focused={focused}, grabbed={self._window_with_grab}")
         if gotit:
             if focused is not wid:
                 self.send_focus(wid)
@@ -1459,7 +1459,7 @@ class WindowClient(StubClientMixin):
                 # if this window lost focus, it must have had it!
                 # (catch up - makes things like OR windows work:
                 # their parent receives the focus-out event)
-                focuslog(f"window {wid:x} lost a focus it did not have!? (simulating focus before losing it)")
+                focuslog(f"window {wid:#x} lost a focus it did not have!? (simulating focus before losing it)")
                 self.send_focus(wid)
             if focused and not self.lost_focus_timer:
                 # send the lost-focus via a timer and re-check it

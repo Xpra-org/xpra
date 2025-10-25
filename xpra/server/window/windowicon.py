@@ -297,7 +297,7 @@ class WindowIconSource:
                     LANCZOS = Image.LANCZOS
                 image = image.resize((rw, rh), LANCZOS)
             if SAVE_WINDOW_ICONS:
-                filename = f"server-window-{self.wid}-icon-{int(monotonic())}.png"
+                filename = f"server-window-{self.wid:#x}-icon-{int(monotonic())}.png"
                 image.save(filename, 'PNG')
                 log("server window icon saved to %s", filename)
 

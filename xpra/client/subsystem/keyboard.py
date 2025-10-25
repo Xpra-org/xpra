@@ -144,7 +144,7 @@ class KeyboardClient(StubClientMixin):
         if not kh:
             return False
         wid = self._window_to_id[window]
-        log(f"handle_key_action({window}, {key_event}) wid={wid}")
+        log(f"handle_key_action({window}, {key_event}) wid={wid:#x}")
         if kh.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
             return False
         if self.readonly:

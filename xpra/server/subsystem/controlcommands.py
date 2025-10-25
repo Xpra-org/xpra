@@ -166,7 +166,7 @@ class ServerBaseControlCommands(StubServerMixin):
         if not isinstance(wid, int):
             raise ValueError(f"argument should have been an int, but found {type(wid)}")
         self._focus(None, wid, None)
-        return f"gave focus to window {wid}"
+        return f"gave focus to window {wid:#x}"
 
     def control_command_map(self, wid: int) -> str:
         if self.readonly:
@@ -174,11 +174,11 @@ class ServerBaseControlCommands(StubServerMixin):
         if not isinstance(wid, int):
             raise ValueError(f"argument should have been an int, but found {type(wid)}")
         window = self._id_to_window.get(wid)
-        assert window, f"window {wid} not found"
+        assert window, f"window {wid:#x} not found"
         if window.is_tray():
-            return f"cannot map tray window {wid}"
+            return f"cannot map tray window {wid:#x}"
         if window.is_OR():
-            return f"cannot map override redirect window {wid}"
+            return f"cannot map override redirect window {wid:#x}"
         window.show()
         # window.set_owner(dm)
         # iconic = window.get_property("iconic")
@@ -195,14 +195,14 @@ class ServerBaseControlCommands(StubServerMixin):
         if not isinstance(wid, int):
             raise ValueError(f"argument should have been an int, but found {type(wid)}")
         window = self._id_to_window.get(wid)
-        assert window, f"window {wid} not found"
+        assert window, f"window {wid:#x} not found"
         if window.is_tray():
-            return f"cannot unmap tray window {wid}"
+            return f"cannot unmap tray window {wid:#x}"
         if window.is_OR():
-            return f"cannot unmap override redirect window {wid}"
+            return f"cannot unmap override redirect window {wid:#x}"
         window.hide()
         self.repaint_root_overlay()
-        return f"unmapped window {wid}"
+        return f"unmapped window {wid:#x}"
 
     def control_command_suspend(self) -> str:
         for csource in tuple(self._server_sources.values()):
@@ -501,7 +501,7 @@ class ServerBaseControlCommands(StubServerMixin):
         typeinfo = "%s " % (conv or "string")
         value = conv_fn(value)
         self.client_properties.setdefault(wid, {}).setdefault(uuid, {})[prop] = value
-        return f"property {prop!r} set to {typeinfo} value {value!r} for window {wid}, client {uuid}"
+        return f"property {prop!r} set to {typeinfo} value {value!r} for window {wid:#x}, client {uuid}"
 
     def control_command_name(self, name: str) -> str:
         self.session_name = name
@@ -527,7 +527,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 if wid in self._id_to_window:
                     wids.append(wid)
                 else:
-                    log(f"window id {wid} does not exist")
+                    log(f"window id {wid:#x} does not exist")
         wss = []
         for csource in tuple(self._server_sources.values()):
             for wid in wids:
@@ -671,12 +671,12 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def _control_video_subregions_from_wid(self, wid: int) -> list:
         if wid not in self._id_to_window:
-            raise ControlError(f"invalid window {wid}")
+            raise ControlError(f"invalid window {wid:#x}")
         video_subregions = []
         for ws in self._ws_from_args(wid):
             vs = getattr(ws, "video_subregion", None)
             if not vs:
-                log.warn(f"Warning: cannot set video region enabled flag on window {wid}")
+                log.warn(f"Warning: cannot set video region enabled flag on window {wid:#x}")
                 log.warn(f" no video subregion attribute found in {type(ws)}")
                 continue
             video_subregions.append(vs)
@@ -701,12 +701,12 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_video_region_exclusion_zones(self, wid: int, zones) -> str:
         for vs in self._control_video_subregions_from_wid(wid):
             vs.set_exclusion_zones(zones)
-        return f"video exclusion zones set to {zones} for window {wid}"
+        return f"video exclusion zones set to {zones} for window {wid:#x}"
 
     def control_command_reset_video_region(self, wid: int) -> str:
         for vs in self._control_video_subregions_from_wid(wid):
             vs.reset()
-        return f"reset video region heuristics for window {wid}"
+        return f"reset video region heuristics for window {wid:#x}"
 
     def control_command_lock_batch_delay(self, wid: int, delay: int) -> None:
         for ws in self._ws_from_args(wid):
@@ -787,32 +787,32 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_workspace(self, wid: int, workspace: int) -> str:
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError(f"window {wid} does not exist")
+            raise ControlError(f"window {wid:#x} does not exist")
         if "workspace" not in window.get_property_names():
             raise ControlError(f"cannot set workspace on window {window}")
         if workspace < 0:
             raise ControlError(f"invalid workspace value: {workspace}")
         window.set_property("workspace", workspace)
-        return f"window {wid} moved to workspace {workspace}"
+        return f"window {wid:#x} moved to workspace {workspace}"
 
     def control_command_close(self, wid: int) -> str:
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError(f"window {wid} does not exist")
+            raise ControlError(f"window {wid:#x} does not exist")
         window.request_close()
         return f"requested window {window} closed"
 
     def control_command_delete(self, wid: int) -> str:
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError(f"window {wid} does not exist")
+            raise ControlError(f"window {wid:#x} does not exist")
         window.send_delete()
         return f"requested window {window} deleted"
 
     def control_command_move(self, wid: int, x: int, y: int) -> str:
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError(f"window {wid} does not exist")
+            raise ControlError(f"window {wid:#x} does not exist")
         ww, wh = window.get_dimensions()
         count = 0
         for source in tuple(self._server_sources.values()):
@@ -820,31 +820,31 @@ class ServerBaseControlCommands(StubServerMixin):
             if move_resize_window:
                 move_resize_window(wid, window, x, y, ww, wh)
                 count += 1
-        return f"window {wid} moved to {x},{y} for {count} clients"
+        return f"window {wid:#x} moved to {x},{y} for {count} clients"
 
     def control_command_resize(self, wid: int, w: int, h: int) -> str:
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError(f"window {wid} does not exist")
+            raise ControlError(f"window {wid:#x} does not exist")
         count = 0
         for source in tuple(self._server_sources.values()):
             resize_window = getattr(source, "resize_window", None)
             if resize_window:
                 resize_window(wid, window, w, h)
                 count += 1
-        return f"window {wid} resized to {w}x{h} for {count} clients"
+        return f"window {wid:#x} resized to {w}x{h} for {count} clients"
 
     def control_command_moveresize(self, wid: int, x: int, y: int, w: int, h: int) -> str:
         window = self._id_to_window.get(wid)
         if not window:
-            raise ControlError(f"window {wid} does not exist")
+            raise ControlError(f"window {wid:#x} does not exist")
         count = 0
         for source in tuple(self._server_sources.values()):
             move_resize_window = getattr(source, "move_resize_window", None)
             if move_resize_window:
                 move_resize_window(wid, window, x, y, w, h)
                 count += 1
-        return f"window {wid} moved to {x},{y} and resized to {w}x{h} for {count} clients"
+        return f"window {wid:#x} moved to {x},{y} and resized to {w}x{h} for {count} clients"
 
     def _process_control_request(self, protocol, packet: Packet) -> None:
         """ client sent a command request through its normal channel """
