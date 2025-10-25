@@ -2,6 +2,7 @@
 # Copyright (C) 2010 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 import os.path
 from threading import Lock
 from typing import Any

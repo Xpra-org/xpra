@@ -5,11 +5,12 @@
 # later version. See the file COPYING for details.
 
 import sys
+from typing import Any
 
 from xpra.platform import platform_import
 
 
-def load_menu() -> dict:
+def load_menu(_force_reload=False) -> dict[str, dict[str, Any]]:
     return {}
 
 

@@ -108,7 +108,7 @@ def load_dir(d: str) -> dict[str, dict[str, Any]]:
     return menu
 
 
-def load_menu() -> dict[str, dict[str, Any]]:
+def load_menu(_force_reload=False) -> dict[str, dict[str, Any]]:
     menu = {}
     for menu_dir in (get_common_startmenu_dir(), get_startmenu_dir()):
         # ie: "C:\ProgramData\Microsoft\Windows\Start Menu"

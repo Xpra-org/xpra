@@ -31,7 +31,7 @@ LOAD_FROM_RESOURCES: bool = envbool("XPRA_XDG_LOAD_FROM_RESOURCES", ENABLED)
 LOAD_FROM_PIXMAPS: bool = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", ENABLED)
 LOAD_FROM_THEME: bool = envbool("XPRA_XDG_LOAD_FROM_THEME", ENABLED)
 LOAD_GLOB: bool = envbool("XPRA_XDG_LOAD_GLOB", False)
-LOAD_FROM_MENU: bool = envbool("XPRA_XDG_LOAD_FROM_MENU", False)
+LOAD_FROM_MENU: bool = envbool("XPRA_XDG_LOAD_FROM_MENU", True)
 
 EXPORT_ICONS: bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
 DEBUG_COMMANDS: list[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
@@ -52,6 +52,9 @@ log(f" {DEBUG_COMMANDS=}")
 log(f" {EXPORT_TERMINAL_APPLICATIONS=}")
 log(f" {EXPORT_SELF=}")
 log(f" {LOAD_APPLICATIONS=}")
+
+
+load_lock = RLock()
 
 
 def isvalidtype(v) -> bool:
@@ -322,19 +325,15 @@ def find_menu_icon(*names: str) -> str:
     find a menu entry matching the name,
     then search using the icon name from this menu entry
     """
-    if not LOAD_FROM_MENU:
+    if not LOAD_FROM_MENU or not menu_cache:
         return ""
-    menu_data = load_menu()
-    for category, cdata in menu_data.items():
+    for category, cdata in menu_cache.items():
         entries = cdata.get("Entries", ())
         for name, edata in entries.items():
             cmd = os.path.basename(edata.get("Exec", "")).split(" ")[0]
             filename = edata.get("IconFile", "")
             if not filename:
                 continue
-            # icondata = edata.get("IconData", b"")
-            # if icondata and (name and name in names) or (cmd and cmd in names):
-            #    return icondata
             if (name and name in names) or (cmd and cmd in names):
                 return filename
     return ""
@@ -426,26 +425,33 @@ def remove_icons(menu_data: dict) -> dict:
     return filt
 
 
-def load_menu() -> dict:
+menu_cache: dict[str, dict[str, Any]] = {}
+
+
+def load_menu(force_reload=False) -> dict[str, dict[str, Any]]:
+    global menu_cache
     if not check_xdg():
-        return {}
-    icon_util.large_icons.clear()
-    start = monotonic()
-    with IconLoadingContext():
-        xdg_menu_data = load_xdg_menu_data()
-    end = monotonic()
-    if xdg_menu_data:
-        count = sum(len(x) for x in xdg_menu_data.values())
-        submenus = len(xdg_menu_data)
-        elapsed = end - start
-        log.info(f"loaded {count} start menu entries from {submenus} sub-menus in {elapsed:.1f} seconds")
-    n_large = len(icon_util.large_icons)
-    if n_large:
-        log.warn(f"Warning: found {n_large} large icons:")
-        for filename, size in icon_util.large_icons:
-            log.warn(f" {filename!r} ({size // 1024} KB)")
-        log.warn(" more bandwidth will be used by the start menu data")
-    return xdg_menu_data
+        return menu_cache
+    if menu_cache and not force_reload:
+        return menu_cache
+    with load_lock:
+        icon_util.large_icons.clear()
+        start = monotonic()
+        with IconLoadingContext():
+            menu_cache = load_xdg_menu_data()
+        end = monotonic()
+        if menu_cache:
+            count = sum(len(x) for x in menu_cache.values())
+            submenus = len(menu_cache)
+            elapsed = end - start
+            log.info(f"loaded {count} start menu entries from {submenus} sub-menus in {elapsed:.1f} seconds")
+        n_large = len(icon_util.large_icons)
+        if n_large:
+            log.warn(f"Warning: found {n_large} large icons:")
+            for filename, size in icon_util.large_icons:
+                log.warn(f" {filename!r} ({size // 1024} KB)")
+            log.warn(" more bandwidth will be used by the start menu data")
+    return menu_cache
 
 
 def load_xdg_menu_data() -> dict:
