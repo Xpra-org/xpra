@@ -41,7 +41,7 @@ def do_get_default_window_icon(size: int, name: str):
         try:
             from xpra.platform.posix.menu_helper import find_icon
             filename = find_icon(name)
-            log("find_icon(%s)=%s", name, filename)
+            log("find_icon(%r)=%r", name, filename)
             if filename:
                 img = Image.open(filename)
                 img.load()

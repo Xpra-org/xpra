@@ -41,6 +41,17 @@ LOAD_APPLICATIONS: list[str] = os.environ.get(
     f"{sys.prefix}/share/applications"
 ).split(":")
 
+log("menu helper settings:")
+log(f" {LOAD_FROM_RESOURCES=}")
+log(f" {LOAD_FROM_PIXMAPS=}")
+log(f" {LOAD_FROM_THEME=}")
+log(f" {LOAD_GLOB=}")
+log(f" {EXPORT_ICONS=}")
+log(f" {DEBUG_COMMANDS=}")
+log(f" {EXPORT_TERMINAL_APPLICATIONS=}")
+log(f" {EXPORT_SELF=}")
+log(f" {LOAD_APPLICATIONS=}")
+
 
 def isvalidtype(v) -> bool:
     if isinstance(v, (list, tuple, Generator)):
