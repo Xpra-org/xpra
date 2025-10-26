@@ -118,7 +118,7 @@ class ClientWindow(Window):
         skip_geometry = False
         self.client.send("configure-window", self.wid, x, y, w, h, props, counter, state, skip_geometry)
 
-    def draw(self, x, y, w, h, coding, data, stride) -> None:
+    def draw(self, x: int, y: int, w: int, h: int, coding: str, data, stride: int) -> None:
         if coding in ("png", "jpg", "webp"):
             from PIL import Image
             from io import BytesIO

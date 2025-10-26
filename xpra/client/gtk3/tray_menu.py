@@ -1639,7 +1639,7 @@ class GTKTrayMenu(MenuHelper):
         configure = self.menuitem("Debug Logging", "bugs.png", cb=self.client.configure_server_debug)
         set_sensitive(configure, False)
 
-        def enable_configure(*args) -> None:
+        def enable_configure(*_args) -> None:
             set_sensitive(configure, True)
 
         self.after_handshake(enable_configure)

@@ -134,7 +134,7 @@ class ClientWindow(Toplevel):
         h = self.winfo_height()
         self.client.send("map-window", self.wid, x, y, w, h, {}, ())
 
-    def on_unmap(self, event) -> None:
+    def on_unmap(self, _event) -> None:
         self.client.send("close-window", self.wid)
 
     def on_configure(self, event) -> None:
@@ -146,10 +146,10 @@ class ClientWindow(Toplevel):
         skip_geometry = False
         self.client.send("configure-window", self.wid, x, y, w, h, props, counter, state, skip_geometry)
 
-    def on_destroy(self, event=None) -> None:
+    def on_destroy(self, _event=None) -> None:
         self.client.send("close-window", self.wid)
 
-    def on_resize(self, event) -> None:
+    def on_resize(self, _event) -> None:
         counter = 0
         props = {}
         x = self.winfo_x()
@@ -160,7 +160,7 @@ class ClientWindow(Toplevel):
         skip_geometry = False
         self.client.send("configure-window", self.wid, x, y, w, h, props, counter, state, skip_geometry)
 
-    def draw(self, x, y, w, h, coding, data, stride) -> None:
+    def draw(self, x: int, y: int, _w: int, _h: int, coding: str, data, _stride: int) -> None:
         if coding not in ("png", "jpg", "webp"):
             raise ValueError(f"unsupported format {coding!r}")
         img = Image.open(BytesIO(data))

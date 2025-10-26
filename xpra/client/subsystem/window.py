@@ -61,17 +61,22 @@ PAINT_DELAY: int = envint("XPRA_PAINT_DELAY", -1)
 WM_CLASS_CLOSEEXIT: list[str] = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
 TITLE_CLOSEEXIT: list[str] = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
-OR_FORCE_GRAB_STR: str = os.environ.get("XPRA_OR_FORCE_GRAB", "DIALOG:sun-awt-X11")
-OR_FORCE_GRAB: dict[str, list[str]] = {}
-for s in OR_FORCE_GRAB_STR.split(","):
-    if not s:
-        continue
-    parts = s.split(":")
-    if len(parts) == 1:
-        OR_FORCE_GRAB.setdefault("*", []).append(s)
-    else:
-        OR_FORCE_GRAB.setdefault(parts[0], []).append(parts[1])
 
+def get_grab_defs(grab_str: str) -> dict[str, list[str]]:
+    grab_defs: dict[str, list[str]] = {}
+    for s in OR_FORCE_GRAB_STR.split(","):
+        if not s:
+            continue
+        parts = s.split(":")
+        if len(parts) == 1:
+            grab_defs.setdefault("*", []).append(s)
+        else:
+            grab_defs.setdefault(parts[0], []).append(parts[1])
+    return grab_defs
+
+
+OR_FORCE_GRAB_STR: str = os.environ.get("XPRA_OR_FORCE_GRAB", "DIALOG:sun-awt-X11")
+OR_FORCE_GRAB = get_grab_defs(OR_FORCE_GRAB_STR)
 SKIP_DUPLICATE_BUTTON_EVENTS: bool = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
 
 DYNAMIC_TRAY_ICON: bool = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())

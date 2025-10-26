@@ -536,12 +536,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         ui_openit = bool(r[3])
         return True, ui_printit, ui_openit
 
+    def close_file_size_warning(self) -> None:
+        dialog = self.sub_dialogs.pop("file-size-warning")
+        if dialog:
+            # close previous warning
+            dialog.close()
+
     def file_size_warning(self, action: str, location: str, basefilename: str, filesize: int, limit: int) -> None:
-        def close_file_size_warning() -> None:
-            dialog = self.sub_dialogs.pop("file-size-warning")
-            if dialog:
-                # close previous warning
-                dialog.close()
 
         parent = None
         msgs = (
@@ -557,7 +558,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             dialog.set_image(image)
         except Exception as e:
             log.warn(f"Warning: failed to set dialog image: {e}")
-        dialog.connect("response", close_file_size_warning)
+        dialog.connect("response", self.close_file_size_warning)
         dialog.show()
 
     def download_server_log(self, callback: Callable[[str, int], None] = noop) -> None:

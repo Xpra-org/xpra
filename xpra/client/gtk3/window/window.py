@@ -28,18 +28,23 @@ Gio = gi_import("Gio")
 
 WINDOW_BASES = get_window_base_classes()
 WindowBaseClass = type("WindowBaseClass", WINDOW_BASES, {})
-ALL_GSIGNALS = {}
-for bc in WINDOW_BASES:
-    gsignals = getattr(bc, "__gsignals__", {})
-    ALL_GSIGNALS.update(gsignals)
-log(f"WindowBaseClass: {WINDOW_BASES=} - gsignals: {ALL_GSIGNALS.keys()}")
+log(f"WindowBaseClass: {WINDOW_BASES=}")
+
+
+def get_all_gsignals() -> dict[str, Any]:
+    all_gsignals = {}
+    for bc in WINDOW_BASES:
+        gsignals = getattr(bc, "__gsignals__", {})
+        all_gsignals.update(gsignals)
+    log(f"gsignals: {all_gsignals.keys()}")
+    return all_gsignals
 
 
 class ClientWindow(WindowBaseClass):
     """
     GTK3 version of the ClientWindow class
     """
-    __gsignals__ = ALL_GSIGNALS
+    __gsignals__ = get_all_gsignals()
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.menu_helper = None
