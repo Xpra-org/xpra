@@ -87,7 +87,8 @@ cdef void init_x11_events():
         KeyPress            : ("x11-key-press-event", ""),
         EnterNotify         : ("x11-enter-event", ""),
         LeaveNotify         : ("x11-leave-event", ""),
-        MotionNotify        : ("x11-motion-event", "")
+        MotionNotify        : ("x11-motion-event", ""),
+        GenericEvent        : ("x11-generic-event", ""),
     })
     add_x_event_type_names({
         KeyPress            : "KeyPress",
@@ -472,7 +473,7 @@ cdef object parse_xevent(Display *d, XEvent *e):
         return None
 
     cdef object event_args = x_event_signals.get(etype)
-    if etype != GenericEvent and event_args is None:
+    if not event_args:
         log("no signal handler for %s", event_type)
         return None
 
@@ -483,7 +484,7 @@ cdef object parse_xevent(Display *d, XEvent *e):
         return None
 
     attrs = parser(d, e)
-    if attrs is None:
+    if not attrs:
         return None
 
     cdef object pyev = X11Event(etype, event_type, bool(e.xany.send_event), e.xany.serial, e.xany.window)
