@@ -1,14 +1,32 @@
 # Changelog
 
-## [6.3.5] 2025-10-15
+## [6.3.5] 2025-10-26
 * Platforms, build and packaging:
+    * [`pillow` 12.0.0](https://github.com/Xpra-org/xpra/commit/b30aca50b65ee7971393f2f1753428de797cf17f)
     * [`pylsqpack` 0.3.23](https://github.com/Xpra-org/xpra/commit/e28f4ab9d5a50873435511c401558bd2d7fb40b3)
     * [`aioquic` 1.3.0](https://github.com/Xpra-org/xpra/commit/768d17f7b541e999256e33029b90f8561e092d37)
+    * [update pre-commit hooks](https://github.com/Xpra-org/xpra/commit/b41d336d6c669d00742da4c9bf44e4f52b800738), [fix linter warning](https://github.com/Xpra-org/xpra/commit/cfbd5f5e827065056f59500c43c9fd77a60824b3)
 * Security:
     * [`peercred` authentication module bypass](https://github.com/Xpra-org/xpra/commit/47f136cc2f28fec99e9c8e0693f55ab35f86fbae)
 * Major:
+    * [MacOS clipboard transfers fail on unicode strings](https://github.com/Xpra-org/xpra/commit/697dcf42c708ab52d742850976c4eb779f1c8056)
     * [`XPRA_CLIENT_CAN_SHUTDOWN` should also be honoured with `exit` requests](https://github.com/Xpra-org/xpra/commit/4a9abba2c4aad2649b3544aaf83aa8e480641089)
     * [scroll wheel spurious events](https://github.com/Xpra-org/xpra/commit/db4fdf178cff6cbc94aae6d7181916a05e3a3d6b)
+    * [icon encoding options not parsed](https://github.com/Xpra-org/xpra/commit/eccd5d15368bb9f0d195810b9831514ab016feb3)
+    * [horizontal DPI not honoured](https://github.com/Xpra-org/xpra/commit/29b0ab430bd8069812c2f590a4577d7164c7aa6f)
+    * [window refresh compatibility for newer clients](https://github.com/Xpra-org/xpra/commit/996968f190644253852ff58c899272053ac7bf0a)
+* Minor:
+    * [bell events cause type errors](https://github.com/Xpra-org/xpra/commit/b7da94f327879b437545c3acf662ccf207516fa2)
+    * [use rounding on effective refresh rate](https://github.com/Xpra-org/xpra/commit/acc56479b1b13d5e19faf905aa72871555373f94)
+    * [validate monitor index data type](https://github.com/Xpra-org/xpra/commit/24a4764ed0c884b50d49513546b497b37e27bd9d)
+* Cosmetic:
+    * [icon path should always be a string](https://github.com/Xpra-org/xpra/commit/22c0017f9ebe51527bfe3b73654a1ed003d008c3)
+    * [icon data type warning](https://github.com/Xpra-org/xpra/commit/2b9dca708941d5607c6aefc3e1362dbdcec720de)
+    * [try harder to find an icon for commands](https://github.com/Xpra-org/xpra/commit/d2e9dc088d592a03544f112651b2c13b161aae9e)
+    * [avoid display capability warnings with outdated clients](https://github.com/Xpra-org/xpra/commit/7b3220cb4e64f0e21de00434bdf3d5673aff4f82)
+    * [file leak warning](https://github.com/Xpra-org/xpra/commit/4e9e0f3001cdaf681427dbbeea935d0deb9876fe)
+    * [incorrect logging category](https://github.com/Xpra-org/xpra/commit/dfbf47f0e4aff912788c092cc01e2f5c383da5b3)
+    * [mDNS splatter on shutdown](https://github.com/Xpra-org/xpra/commit/5591b8f486d095ab7e24079e2f931c0412aade5f)
 
 ## [6.3.4] 2025-10-10
 * Platforms, build and packaging:
