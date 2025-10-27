@@ -34,6 +34,7 @@ if USE_XSHM:
         log.warn(" %s", e)
         USE_XSHM = False
 
+XPresent = None
 USE_XPRESENT = envbool("XPRA_XPRESENT", False)
 if USE_XPRESENT:
     try:
@@ -42,7 +43,6 @@ if USE_XPRESENT:
         XPresent = XPresentBindings()
     except ImportError:
         log.warn("Warning: unable to load the X11 Present bindings", exc_info=True)
-        XPresent = None
 
 
 class WindowDamageHandler:
