@@ -229,11 +229,11 @@ class ServerCore(ServerBaseClass):
             from xpra.net.ssl.file import get_ssl_attributes
         except ImportError as e:
             netlog("init_ssl(..) no ssl: %s", e)
-        else:
-            self._ssl_attributes = get_ssl_attributes(opts, True)
-            netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
-        if opts.ssl.lower() not in FALSE_OPTIONS:
-            self.ssl_upgrade = opts.ssl_upgrade
+            self.ssl_upgrade = False
+            return
+        self._ssl_attributes = get_ssl_attributes(opts, True)
+        netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
+        self.ssl_upgrade = opts.ssl.lower() not in FALSE_OPTIONS
 
     def setup(self) -> None:
         self.init_uuid()
