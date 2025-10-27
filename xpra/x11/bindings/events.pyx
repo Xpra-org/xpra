@@ -207,13 +207,6 @@ def get_x_event_type_name(event: int) -> str:
     return x_event_type_names.get(event, "")
 
 
-generic_event_parsers : Dict[int, Callable] = {}
-
-
-def add_generic_event_parser(extension_opcode: int, parser : Callable) -> None:
-    generic_event_parsers[extension_opcode] = parser
-
-
 cdef str atom_str(Display *display, Atom atom):
     if not atom:
         return ""
@@ -232,13 +225,19 @@ cdef str atom_str(Display *display, Atom atom):
 
 
 cdef dict parse_GenericEvent(Display *d, XEvent *e):
-    global generic_event_parsers
-    pyparser = generic_event_parsers.get(e.xcookie.extension)
-    if pyparser:
-        log("calling GenericEvent parser %s(%s)", pyparser, <uintptr_t> &e.xcookie)
-        return pyparser(<uintptr_t> &e.xcookie)
-    log("no GenericEvent parser for extension %s", e.xcookie.extension)
-    return {}
+    cdef int etype = e.xcookie.extension
+    cdef str event_type = x_event_type_names.get(etype, "") or str(etype)
+    if etype == GenericEvent:
+        log.warn("Warning: GenericEvent extension type is invalid")
+        return {}
+    if etype < 0 or etype >= MAX_XEVENTS:
+        log.warn("Warning: event type %i out of range", etype)
+        return None
+    cdef PARSE_XEVENT parser = parsers[etype]
+    if parser is NULL:
+        log.warn("no parser for generic event %s/%s", event_type, etype)
+        return {}
+    return parser(d, e)
 
 
 cdef dict parse_MapRequest(Display *d, XEvent *e):
