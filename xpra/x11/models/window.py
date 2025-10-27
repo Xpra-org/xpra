@@ -923,7 +923,7 @@ class WindowModel(BaseWindowModel):
         return None
 
     def get_wm_state(self, prop: str) -> bool:
-        state_names = self._state_properties.get(prop)
+        state_names = self._state_properties.get(prop, ())
         assert state_names, f"invalid window state {prop}"
         log("get_wm_state(%s) state_names=%s", prop, state_names)
         # this is a virtual property for _NET_WM_STATE:

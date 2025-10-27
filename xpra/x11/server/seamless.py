@@ -76,6 +76,28 @@ def log_composite_error(msg: str) -> NoReturn:
     raise InitExit(ExitCode.COMPONENT_MISSING, "the composite extension is not available: %s" % msg)
 
 
+def clamp_window(x: int, y: int, w: int, h: int):
+    if not CLAMP_WINDOW_TO_ROOT:
+        return False, (x, y, w, h)
+    with xsync:
+        rw, rh = X11WindowBindings().get_root_size()
+    # clamp to root window size
+    mod = False
+    if x + w < 0:
+        x = 0
+        mod = True
+    elif x >= rw:
+        x = max(0, min(x, rw - w))
+        mod = True
+    if y + h < 0:
+        y = 0
+        mod = True
+    elif y >= rh:
+        y = max(0, min(y, rh - h))
+        mod = True
+    return mod, (x, y, w, h)
+
+
 class SeamlessServer(GObject.GObject, ServerBase):
     __gsignals__ = GSIGNALS
 
@@ -466,7 +488,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             sources = tuple(self._server_sources.values())
             if sources:
                 log("pre-mapping window %#x for %s at %s", wid, sources, geometry)
-                geometry = self.clamp_window(*geometry)[1]
+                geometry = clamp_window(*geometry)[1]
                 self.client_configure_window(window, geometry)
                 window.show()
                 for s in sources:
@@ -873,31 +895,10 @@ class SeamlessServer(GObject.GObject, ServerBase):
             window.hide()
             self.repaint_root_overlay()
 
-    def clamp_window(self, x: int, y: int, w: int, h: int):
-        if not CLAMP_WINDOW_TO_ROOT:
-            return False, (x, y, w, h)
-        with xsync:
-            rw, rh = X11WindowBindings().get_root_size()
-        # clamp to root window size
-        mod = False
-        if x + w < 0:
-            x = 0
-            mod = True
-        elif x >= rw:
-            x = max(0, min(x, rw - w))
-            mod = True
-        if y + h < 0:
-            y = 0
-            mod = True
-        elif y >= rh:
-            y = max(0, min(y, rh - h))
-            mod = True
-        return mod, (x, y, w, h)
-
     def client_clamp_window(self, proto, wid: int, window, x: int, y: int, w: int, h: int, resize_counter: int = 0):
         if not CLAMP_WINDOW_TO_ROOT:
             return x, y, w, h
-        mod, geom = self.clamp_window(x, y, w, h)
+        mod, geom = clamp_window(x, y, w, h)
         if mod:
             # tell this client to honour the new location
             ss = self.get_server_source(proto)
@@ -1126,7 +1127,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             self.repaint_root_overlay_timer = 0
             GLib.source_remove(rrot)
 
-    def do_repaint_root_overlay(self) -> bool:
+    def do_repaint_root_overlay(self) -> None:
         self.repaint_root_overlay_timer = 0
         with xsync:
             root_width, root_height = X11WindowBindings().get_root_size()

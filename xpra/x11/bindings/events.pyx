@@ -235,7 +235,7 @@ cdef dict parse_GenericEvent(Display *d, XEvent *e):
         return None
     cdef PARSE_XEVENT parser = parsers[etype]
     if parser is NULL:
-        log.warn("no parser for generic event %s/%s", event_type, etype)
+        log("no parser for generic event %s/%s", event_type, etype)
         return {}
     return parser(d, e)
 

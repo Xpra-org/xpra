@@ -97,7 +97,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycodes_for_modifier_keynames: dict[str, list[int]] = {}
         self.modifier_client_keycodes: dict[str, list] = {}
         self.compute_modifier_map()
-        self.keycode_mappings = {}
+        self.keycode_mappings: dict[int, list[str]] = {}
         self.keyval_mappings = {}
 
     def __repr__(self):
@@ -473,7 +473,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 for m in mappings:  # ie: (37, 'Control_L'), (105, 'Control_R')
                     if len(m) == 2:
                         keynames.append(m[1])  # ie: 'Control_L'
-                self.keynames_for_mod[modifier] = set(keynames)
+                self.keynames_for_mod[modifier] = keynames
             self.compute_modifier_keynames()
             self.compute_client_modifier_keycodes()
             log("set_default_keymap: keynames_for_mod=%s", self.keynames_for_mod)
@@ -566,7 +566,7 @@ class KeyboardConfig(KeyboardConfigBase):
             keycode = self.keycode_translation.get((keyname, level), -1)
             if keycode < 0:
                 continue
-            keysyms = self.keycode_mappings.get(keycode)
+            keysyms = self.keycode_mappings.get(keycode, ())
             klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
             uq_keysyms = set(keysyms)
             if len(uq_keysyms) <= 1 or (len(keysyms) > level0 and keysyms[level0] == ""):
@@ -673,7 +673,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 if modifier in mm:
                     log("modifier is server managed: %s", modifier)
                     continue
-                keynames = self.keynames_for_mod.get(modifier)
+                keynames = self.keynames_for_mod.get(modifier, ())
                 if is_ignored(modifier, keynames):
                     log("modifier '%s' ignored (in ignored keynames=%s)", modifier, keynames)
                     continue

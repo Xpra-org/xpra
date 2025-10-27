@@ -195,8 +195,8 @@ class WindowDamageHandler:
             return None
 
         # try XShm:
+        shm = None  # XShmWrapper instance
         try:
-            shm = None  # XShmWrapper instance
             with xsync:
                 shm = self.get_xshm_handle()
                 if shm:

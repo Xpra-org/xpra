@@ -65,7 +65,7 @@ def noXenter() -> None:
     """
 
 
-def noXexit(flush=True) -> Any:
+def noXexit(_flush=True) -> Any:
     return None
 
 

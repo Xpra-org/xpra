@@ -43,6 +43,23 @@ def apply_monitor_config(monitor_defs: dict) -> None:
         screenlog.estr(e)
 
 
+def _adjust_monitor(model, delta_x: int, delta_y: int) -> None:
+    screenlog("adjust_monitors(%s, %i, %i)", model, delta_x, delta_y)
+    if delta_x == 0 and delta_y == 0:
+        return
+    x, y = model.get_geometry()[:2]
+    new_x = max(0, x + delta_x)
+    new_y = max(0, y + delta_y)
+    if new_x != x or new_y != y:
+        screenlog(f"adjusting monitor {model} from {x},{y} to {new_x},{new_y}")
+        mdef = model.get_definition()
+        mdef |= {
+            "x": new_x,
+            "y": new_y,
+        }
+        model.init(mdef)
+
+
 class XpraMonitorServer(DesktopServerBase):
     """
         Virtualizes monitors
@@ -271,23 +288,7 @@ class XpraMonitorServer(DesktopServerBase):
         if (delta_x == 0 and delta_y == 0) or not models:
             return
         for wid, model in models.items():
-            self._adjust_monitor(model, delta_x, delta_y)
-
-    def _adjust_monitor(self, model, delta_x: int, delta_y: int) -> None:
-        screenlog("adjust_monitors(%s, %i, %i)", model, delta_x, delta_y)
-        if delta_x == 0 and delta_y == 0:
-            return
-        x, y = model.get_geometry()[:2]
-        new_x = max(0, x + delta_x)
-        new_y = max(0, y + delta_y)
-        if new_x != x or new_y != y:
-            screenlog(f"adjusting monitor {model} from {x},{y} to {new_x},{new_y}")
-            mdef = model.get_definition()
-            mdef |= {
-                "x": new_x,
-                "y": new_y,
-            }
-            model.init(mdef)
+            _adjust_monitor(model, delta_x, delta_y)
 
     def get_monitor_config(self) -> dict[int, dict]:
         monitor_defs = {}
@@ -327,11 +328,11 @@ class XpraMonitorServer(DesktopServerBase):
         # find the wid to use:
         # prefer just incrementing the wid, but we cannot go higher than 16
 
-        def rightof(wid: int):
-            mdef = self._id_to_window[wid].get_definition()
-            x = mdef.get("x", 0) + mdef.get("width", 0)
-            y = mdef.get("y", 0)  # +monitor.get("height", 0)
-            return x, y
+        def rightof(other_wid: int):
+            mdef = self._id_to_window[other_wid].get_definition()
+            ox = mdef.get("x", 0) + mdef.get("width", 0)
+            oy = mdef.get("y", 0)  # +monitor.get("height", 0)
+            return ox, oy
 
         # find a gap we can use in the window ids before 16:
         wid = 1

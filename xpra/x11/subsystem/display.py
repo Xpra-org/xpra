@@ -587,8 +587,8 @@ class X11DisplayManager(DisplayManager):
     def mirror_client_monitor_layout(self) -> dict[int, Any]:
         if not self.randr:
             return {}
+        from xpra.x11.bindings.randr import RandRBindings
         with xsync:
-            from xpra.x11.bindings.randr import RandRBindings
             if not RandRBindings().is_dummy16():
                 raise RuntimeError("cannot match monitor layout without RandR 1.6")
         # if we have a single UI client,

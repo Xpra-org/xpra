@@ -130,13 +130,13 @@ class MotifWMHints:
     # "status":
     TEAROFF_WINDOW  = 0
 
-    FLAGS_STR = {
+    FLAGS_STR: dict[int, str] = {
         FUNCTIONS_BIT      : "functions",
         DECORATIONS_BIT    : "decorations",
         INPUT_MODE_BIT     : "input",
         STATUS_BIT         : "status",
     }
-    FUNCTIONS_STR = {
+    FUNCTIONS_STR: dict[int, str] = {
         ALL_BIT        : "all",
         RESIZE_BIT     : "resize",
         MOVE_BIT       : "move",
@@ -150,7 +150,7 @@ class MotifWMHints:
         BELOW_BIT      : "below",
         MAXIMUS_BIT    : "maximus",
     }
-    DECORATIONS_STR = {
+    DECORATIONS_STR: dict[int, str] = {
         ALL_BIT      : "all",
         BORDER_BIT   : "border",
         RESIZEH_BIT  : "resizeh",
@@ -159,14 +159,14 @@ class MotifWMHints:
         MINIMIZE_BIT : "minimize",
         MAXIMIZE_BIT : "maximize",
     }
-    INPUT_STR = {
+    INPUT_STR: dict[int, str] = {
         MODELESS                   : "modeless",
         PRIMARY_APPLICATION_MODAL  : "primary-application-modal",
         SYSTEM_MODAL               : "system-modal",
         FULL_APPLICATION_MODAL     : "full-application-modal",
     }
 
-    STATUS_STR = {
+    STATUS_STR: dict[int, str] = {
         TEAROFF_WINDOW : "tearoff",
     }
 

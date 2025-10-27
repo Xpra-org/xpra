@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections.abc import Sequence
 
 from xpra.util.str_fn import csv
 from xpra.os_util import gi_import
@@ -56,7 +57,7 @@ def add_fallback_receiver(signal: str, handler) -> None:
 
 
 def remove_fallback_receiver(signal: str, handler) -> None:
-    receivers = fallback_receivers.get(signal)
+    receivers = fallback_receivers.get(signal, [])
     if receivers:
         receivers.remove(handler)
     log("remove_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
@@ -93,7 +94,7 @@ def set_debug_events() -> None:
         else:
             log("unknown X11 debug event type: %s", name)
             continue
-        #add to correct set:
+        # add to correct set:
         for e in events:
             event_set.add(e)
     events = debug_set.difference(ignore_set)
@@ -108,7 +109,7 @@ def cleanup_all_event_receivers() -> None:
     event_receivers_map.clear()
 
 
-def _maybe_send_event(debug: bool, handlers: set | None, signal: str, event, hinfo="window") -> None:
+def _maybe_send_event(debug: bool, handlers: Sequence | set, signal: str, event, hinfo="window") -> None:
     if not handlers:
         if debug:
             log.info("  no handler registered for %s (%s)", hinfo, handlers)
@@ -137,14 +138,14 @@ def route_event(etype: int, event, signal: str, parent_signal: str) -> None:
     debug = etype in debug_route_events
     if debug:
         log.info(f"{event}")
-    handlers: set | None = None
+    handlers: Sequence | set = ()
     if event.window == event.delivered_to:
         window = event.window
         if signal:
             if debug:
                 log.info(f"  delivering {signal!r} to window itself: {window:x}")
             if window:
-                handlers = event_receivers_map.get(window)
+                handlers = event_receivers_map.get(window, ())
                 _maybe_send_event(debug, handlers, signal, event, "window %#x" % window)
         elif debug:
             log.info(f"  received event on window {window:x} itself but have no signal for that")
@@ -157,7 +158,7 @@ def route_event(etype: int, event, signal: str, parent_signal: str) -> None:
             else:
                 if debug:
                     log.info(f"  delivering {parent_signal!r} to parent window: {window:x}")
-                handlers = event_receivers_map.get(window)
+                handlers = event_receivers_map.get(window, ())
                 _maybe_send_event(debug, handlers, parent_signal, event, "parent window %#x" % window)
         else:
             if debug:
@@ -165,19 +166,17 @@ def route_event(etype: int, event, signal: str, parent_signal: str) -> None:
 
     # fallback only fires if nothing else has fired yet:
     if not handlers:
-        global fallback_receivers
         if signal:
-            handlers = fallback_receivers.get(signal)
+            handlers = fallback_receivers.get(signal, ())
             _maybe_send_event(debug, handlers, signal, event, "fallback-signal")
         if parent_signal:
-            handlers = fallback_receivers.get(parent_signal)
+            handlers = fallback_receivers.get(parent_signal, ())
             _maybe_send_event(debug, handlers, parent_signal, event, "fallback-parent-signal")
 
     # always fire those:
-    global catchall_receivers
     if signal:
-        handlers = catchall_receivers.get(signal)
+        handlers = catchall_receivers.get(signal, ())
         _maybe_send_event(debug, handlers, signal, event, "catchall-signal")
     if parent_signal:
-        handlers = catchall_receivers.get(parent_signal)
+        handlers = catchall_receivers.get(parent_signal, ())
         _maybe_send_event(debug, handlers, parent_signal, event, "catchall-parent-signal")

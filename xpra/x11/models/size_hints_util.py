@@ -55,9 +55,11 @@ def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
                 w, h = v
                 int(w)
                 int(h)
+                if w < 0 or w >= MAX_WINDOW_SIZE:
+                    raise ValueError("width out of range")
+                if h < 0 or h >= MAX_WINDOW_SIZE:
+                    raise ValueError("height out of range")
             except (ValueError, TypeError, IndexError):
-                w, h = None, None
-            if (w is None or h is None) or w >= MAX_WINDOW_SIZE or h >= MAX_WINDOW_SIZE:
                 log("clearing invalid size hint value for %s: %s", attr, v)
                 del size_hints[attr]
     sanitize_min_max(size_hints)
