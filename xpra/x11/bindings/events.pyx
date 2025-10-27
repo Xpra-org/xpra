@@ -130,8 +130,9 @@ cdef void init_x11_events():
     set_debug_events()
 
 
-cdef PARSE_XEVENT[256] parsers
-for i in range(256):
+DEF MAX_XEVENTS = 256
+cdef PARSE_XEVENT[MAX_XEVENTS] parsers
+for i in range(MAX_XEVENTS):
     parsers[i] = NULL
 
 
@@ -139,7 +140,7 @@ cdef void add_parser(unsigned int event, PARSE_XEVENT parser) noexcept:
     """
     Add a parser for the given event type.
     """
-    if event < 0 or event >= 256:
+    if event < 0 or event >= MAX_XEVENTS:
         raise ValueError(f"Invalid event type: {event}")
     parsers[event] = parser
 
@@ -475,6 +476,10 @@ cdef object parse_xevent(Display *d, XEvent *e):
     cdef object event_args = x_event_signals.get(etype)
     if not event_args:
         log("no signal handler for %s", event_type)
+        return None
+
+    if etype < 0 or etype >= MAX_XEVENTS:
+        log.warn("Warning: event type %i out of range", etype)
         return None
 
     log("parse_xevent event=%s/%s window=%#x", event_args, event_type, e.xany.window)
