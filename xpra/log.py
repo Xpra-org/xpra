@@ -258,6 +258,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
     "Window": {
         "window"        : "All window code",
         "damage"        : "Window X11 repaint events",
+        "present"       : "Window X11 present events",
         "geometry"      : "Window geometry",
         "shape"         : "Window shape forwarding (XShape)",
         "focus"         : "Window focus",

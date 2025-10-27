@@ -16,7 +16,7 @@ log = Logger("x11")
 
 ALL_X11_BINDINGS = (
     "classhint", "composite", "core", "damage", "display_source", "events", "fixes", "keyboard",
-    "randr", "record", "res", "saveset", "shape", "shm", "test",
+    "present", "randr", "record", "res", "saveset", "shape", "shm", "test",
     "wait_for_x_server", "window", "xi2", "ximage", "xkb", "xwait", "xwayland",
 )
 

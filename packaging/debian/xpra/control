@@ -11,6 +11,7 @@ Build-Depends: debhelper (>= 8)
               ,libx11-dev
               ,libxcomposite-dev
               ,libxdamage-dev
+              ,libxpresent-dev
               ,libxtst-dev
               ,libxkbfile-dev
               ,libxres-dev

@@ -34,6 +34,16 @@ if USE_XSHM:
         log.warn(" %s", e)
         USE_XSHM = False
 
+USE_XPRESENT = envbool("XPRA_XPRESENT", False)
+if USE_XPRESENT:
+    try:
+        from xpra.x11.bindings.present import XPresentBindings, init_present_events
+        init_present_events()
+        XPresent = XPresentBindings()
+    except ImportError:
+        log.warn("Warning: unable to load the X11 Present bindings", exc_info=True)
+        XPresent = None
+
 
 class WindowDamageHandler:
     XShmEnabled = USE_XSHM
@@ -55,6 +65,7 @@ class WindowDamageHandler:
         self._use_xshm: bool = use_xshm
         self._damage_handle: int = 0
         self._xshm_handle = None  # XShmWrapper instance
+        self._present_handle: int = 0
         self._contents_handle = None  # DrawableWrapper instance
         self._border_width: int = 0
 
@@ -69,6 +80,8 @@ class WindowDamageHandler:
         self._border_width = geom[-1]
         self._damage_handle = XDamage.XDamageCreate(self.xid)
         log("damage handle(%#x)=%#x", self.xid, self._damage_handle)
+        if XPresent:
+            self._present_handle = XPresent.SelectInput(self.xid)
         add_event_receiver(self.xid, self, self.MAX_RECEIVERS)
 
     def destroy(self) -> None:
@@ -80,9 +93,10 @@ class WindowDamageHandler:
         remove_event_receiver(self.xid, self)
         self.xid = 0
         self.destroy_damage_handle()
+        self.destroy_present_handle()
 
     def destroy_damage_handle(self) -> None:
-        log("close_damage_handle()")
+        log("destroy_damage_handle()")
         self.invalidate_pixmap()
         dh = self._damage_handle
         if dh:
@@ -96,6 +110,14 @@ class WindowDamageHandler:
                 sh.cleanup()
         # note: this should be redundant, but it's cheap and safer
         self.invalidate_pixmap()
+
+    def destroy_present_handle(self) -> None:
+        log("destroy_present_handle()")
+        ph = self._present_handle
+        if ph:
+            self._present_handle = 0
+            with xlog:
+                XPresent.FreeInput(self.xid, ph)
 
     def acknowledge_changes(self) -> None:
         sh = self._xshm_handle

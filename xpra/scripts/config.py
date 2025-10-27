@@ -159,6 +159,10 @@ def add_ext_net_dpi_fps(cmd: list[str], depth=24, dpi=0, fps=0) -> list[str]:
         "+extension", "RANDR",
         "+extension", "RENDER",
         "-extension", "DOUBLE-BUFFER",
+    ]
+    if os.environ.get("XPRA_XPRESENT", "0") == "1":
+        cmd += ["+extension", "Present"]
+    cmd += [
         "-nolisten", "tcp",
         "-noreset",
         "-auth", "$XAUTHORITY",

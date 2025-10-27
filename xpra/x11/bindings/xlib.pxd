@@ -6,10 +6,12 @@
 
 # @ReservedAssignment
 
+
 ctypedef unsigned char BYTE
 ctypedef unsigned char CARD8
 ctypedef unsigned short CARD16
 ctypedef unsigned long CARD32
+ctypedef unsigned long CARD64
 ctypedef int BOOL
 ctypedef int Bool
 ctypedef int Status
