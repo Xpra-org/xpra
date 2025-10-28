@@ -10,9 +10,9 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.objects import typedict
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint, envbool, IgnoreWarningsContext
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
-from xpra.client.gtk3.window.common import event_buttons
+from xpra.client.gtk3.window.common import mask_buttons
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -24,6 +24,8 @@ log = Logger("window", "pointer")
 SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
 SMOOTH_SCROLL_NORM = envint("XPRA_SMOOTH_SCROLL_NORM", 50 if OSX else 100)
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
+SIMULATE_MOUSE_UP = envbool("XPRA_SIMULATE_MOUSE_UP", True)
+BUTTON_POLLING_DELAY = envint("XPRA_BUTTON_POLLING_DELAY", 50)
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
 
@@ -74,6 +76,7 @@ class PointerWindow(GtkStubWindow):
         self.remove_pointer_overlay_timer = 0
         self.show_pointer_overlay_timer = 0
         self.button_pressed: dict[int, int] = {}
+        self.button_polling_timer = 0
 
     def cleanup(self) -> None:
         self.cancel_show_pointer_overlay_timer()
@@ -229,6 +232,10 @@ class PointerWindow(GtkStubWindow):
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
+        if self.button_polling_timer:
+            self.cancel_button_polling()
+            self.do_poll_buttons(pointer_data, modifiers, buttons)
+            self.start_button_polling()
         wid = self.get_mouse_event_wid(*pointer_data)
         log("do_motion_notify_event(%s) wid=%#x / focus=%s / window wid=%#x",
             event, wid, self._client._focused, self.wid)
@@ -266,7 +273,7 @@ class PointerWindow(GtkStubWindow):
         pointer_data = self.get_pointer_data(event)
         # FIXME: state is used for both mods and buttons??
         modifiers = self._client.mask_to_names(event.state)
-        buttons = event_buttons(event)
+        buttons = mask_buttons(event.state)
         v = pointer_data, modifiers, buttons
         log("pointer_modifiers(%s)=%s (x_root=%s, y_root=%s, window_offset=%s)",
             event, v, event.x_root, event.y_root, self.window_offset)
@@ -337,7 +344,48 @@ class PointerWindow(GtkStubWindow):
             self.button_pressed[button] = server_button
         else:
             self.button_pressed.pop(button, None)
+            if not self.button_pressed:
+                self.cancel_button_polling()
         send_button(server_button, depressed)
+
+    def cancel_button_polling(self) -> None:
+        log("cancel_button_polling()")
+        bpt = self.button_polling_timer
+        if bpt:
+            self.button_polling_timer = 0
+            GLib.source_remove(bpt)
+
+    def start_button_polling(self) -> None:
+        log("start_button_polling()")
+        if self.button_polling_timer:
+            return
+        self.button_polling_timer = GLib.timeout_add(BUTTON_POLLING_DELAY, self.poll_buttons)
+
+    def poll_buttons(self) -> bool:
+        with IgnoreWarningsContext():
+            x, y, mask = self.get_root_window().get_pointer()[-3:]
+        buttons = mask_buttons(mask)
+        modifiers = self._client.mask_to_names(mask)
+        self.do_poll_buttons((x, y), modifiers, buttons)
+        if not self.button_pressed:
+            self.button_polling_timer = 0
+            return False
+        return True
+
+    def do_poll_buttons(self, pointer_data: Sequence[int], modifiers: list[str], buttons: Sequence[int]) -> None:
+        pressed = tuple(self.button_pressed.keys())
+        log("do_poll_buttons(%s, %s) pressed=%s", pointer_data, buttons, pressed)
+        for button in pressed:
+            if button not in buttons:
+                log(f"button {button=} unpressed")
+                if SIMULATE_MOUSE_UP:
+                    device_id = 0
+                    wid = self.get_mouse_event_wid()
+                    server_button = self.translate_button(button, modifiers)
+                    sprops = {}
+                    self._client.send_button(device_id, wid, server_button, False, pointer_data, modifiers, buttons,
+                                             sprops)
+                    self.button_pressed.pop(button, None)
 
     def do_button_press_event(self, event) -> None:
         self._button_action(event.button, event, True)

@@ -115,8 +115,8 @@ BUTTON_MASK: dict[int, int] = {
 }
 
 
-def event_buttons(event) -> list[int]:
-    return [button for mask, button in BUTTON_MASK.items() if event.state & mask]
+def mask_buttons(state: int) -> list[int]:
+    return [button for mask, button in BUTTON_MASK.items() if state & mask]
 
 
 wth = Gdk.WindowTypeHint

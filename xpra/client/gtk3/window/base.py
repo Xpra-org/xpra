@@ -30,7 +30,7 @@ from xpra.common import (
 from xpra.net.common import PacketElement
 from xpra.client.gui.window_base import ClientWindowBase
 from xpra.client.gtk3.window.common import (
-    use_x11_bindings, is_awt, is_popup, event_buttons,
+    use_x11_bindings, is_awt, is_popup, mask_buttons,
     WINDOW_NAME_TO_HINT, ALL_WINDOW_TYPES, BUTTON_MASK,
 )
 from xpra.platform.gui import (
@@ -976,7 +976,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def motion_moveresize(self, event) -> None:
         x_root, y_root, direction, button, start_buttons, wx, wy, ww, wh = self.moveresize_event
         dirstr = MOVERESIZE_DIRECTION_STRING.get(direction, direction)
-        buttons = event_buttons(event)
+        buttons = mask_buttons(event.state)
         geomlog("motion_moveresize(%s) direction=%s, buttons=%s", event, dirstr, buttons)
         if start_buttons is None:
             # first time around, store the buttons
@@ -1049,6 +1049,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def cancel_moveresize_timer(self) -> None:
         mrt = self.moveresize_timer
+        geomlog("cancel_moveresize_timer() timer=%i", mrt)
         if mrt:
             self.moveresize_timer = 0
             GLib.source_remove(mrt)
@@ -1095,19 +1096,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 MoveResize.MOVE_KEYBOARD, MoveResize.SIZE_KEYBOARD, MoveResize.CANCEL,
         ):
             # button seems to be missing!
-            # find the client button that is likely to have triggered this event:
-            # pressed = getattr(self, "button_pressed", {})
-            # button = tuple(pressed.keys())[0]
-            # log.warn("using button %i", button)
             for bmask, bval in BUTTON_MASK.items():
                 if bmask & mask:
                     button = bval
-                    log.warn(f"guessed button {button=}")
+                    log(f"guessed button {button=}")
                     break
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_x11(x, y, direction, button, source_indication)
-            return
-        if direction == MoveResize.CANCEL:
+        elif direction == MoveResize.CANCEL:
             self.moveresize_event = None
             self.moveresize_data = None
             self.cancel_moveresize_timer()
@@ -1126,6 +1122,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             wx, wy = self.get_window().get_root_origin()
             ww, wh = self.get_size()
             self.moveresize_event = [x_root, y_root, direction, button, None, wx, wy, ww, wh]
+        poll = getattr(self, "start_button_polling", noop)
+        poll()
 
     def initiate_moveresize_x11(self, x_root: int, y_root: int, direction: int,
                                 button: int, source_indication: int) -> None:
