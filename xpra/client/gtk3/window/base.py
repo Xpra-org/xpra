@@ -1099,7 +1099,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             for bmask, bval in BUTTON_MASK.items():
                 if bmask & mask:
                     button = bval
-                    log(f"guessed button {button=}")
+                    log(f"guessed {button=}")
                     break
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_x11(x, y, direction, button, source_indication)

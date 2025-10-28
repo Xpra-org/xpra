@@ -474,7 +474,7 @@ cdef object parse_xevent(Display *d, XEvent *e):
 
     cdef object event_args = x_event_signals.get(etype)
     if not event_args:
-        log("no signal handler for %s", event_type)
+        log("no signal handler for %s (%i)", event_type, etype)
         return None
 
     if etype < 0 or etype >= MAX_XEVENTS:
