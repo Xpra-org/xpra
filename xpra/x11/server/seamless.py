@@ -649,7 +649,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         had_focus = self._id_to_window.get(hfid)
 
         def reset_focus() -> None:
-            focuslog("reset_focus() %#x / %#x had focus", hfid, had_focus)
+            focuslog("reset_focus() %#x / %s had focus", hfid, had_focus)
             # this will call clear_keys_pressed() if the server is an InputServer:
             clear_keys_pressed: Callable[[], None] = getattr(self, "clear_keys_pressed", noop)
             clear_keys_pressed()
