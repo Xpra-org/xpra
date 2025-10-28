@@ -31,7 +31,7 @@ from xpra.net.common import PacketElement
 from xpra.client.gui.window_base import ClientWindowBase
 from xpra.client.gtk3.window.common import (
     use_x11_bindings, is_awt, is_popup, event_buttons,
-    WINDOW_NAME_TO_HINT, ALL_WINDOW_TYPES,
+    WINDOW_NAME_TO_HINT, ALL_WINDOW_TYPES, BUTTON_MASK,
 )
 from xpra.platform.gui import (
     set_fullscreen_monitors, set_shaded,
@@ -86,7 +86,8 @@ if use_x11_bindings():
 
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
-MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
+MOVERESIZE_GUESS_BUTTON = envbool("XPRA_MOVERESIZE_GUESS_BUTTON", True)
+MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX and not OSX)
 MOVERESIZE_GDK = envbool("XPRA_MOVERESIZE_GDK", True)
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".") >= 0
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
@@ -1088,8 +1089,21 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # x, y = x_root, y_root
         # use the current position instead:
         with IgnoreWarningsContext():
-            p = self.get_root_window().get_pointer()[-3:-1]
-        x, y = p[0], p[1]
+            p = self.get_root_window().get_pointer()[-3:]
+        x, y, mask = p
+        if MOVERESIZE_GUESS_BUTTON and button <= 0 and direction not in (
+                MoveResize.MOVE_KEYBOARD, MoveResize.SIZE_KEYBOARD, MoveResize.CANCEL,
+        ):
+            # button seems to be missing!
+            # find the client button that is likely to have triggered this event:
+            # pressed = getattr(self, "button_pressed", {})
+            # button = tuple(pressed.keys())[0]
+            # log.warn("using button %i", button)
+            for bmask, bval in BUTTON_MASK.items():
+                if bmask & mask:
+                    button = bval
+                    log.warn(f"guessed button {button=}")
+                    break
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_x11(x, y, direction, button, source_indication)
             return
