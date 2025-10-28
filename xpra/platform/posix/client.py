@@ -8,7 +8,7 @@ from xpra.platform.posix.gui import x11_bindings, X11WindowBindings
 from xpra.util.parsing import str_to_bool
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
-from xpra.log import Logger
+from xpra.log import Logger, is_debug_enabled
 
 GLib = gi_import("GLib")
 
@@ -38,6 +38,17 @@ def add_xi2_method_overrides() -> None:
         WINDOW_ADD_HOOKS.append(XI2_Window)
 
 
+def xi2_debug() -> None:
+    # adds the xi2 event names to X11 event logger:
+    if not is_debug_enabled("x11"):
+        return
+    try:
+        from xpra.x11.bindings.xi2 import init_xi2_events
+        init_xi2_events(False)
+    except ImportError:
+        xinputlog("xi2_debug()", exc_info=True)
+
+
 class PlatformClient(StubClientMixin):
     def __init__(self):
         self._xsettings_enabled = False
@@ -52,12 +63,9 @@ class PlatformClient(StubClientMixin):
             self.setup_xprops()
 
     def init_ui(self, opts) -> None:
-        # `input_devices` is defined in WindowClient:
-        input_devices = getattr(self, "input_devices", "")
-        if input_devices in ("xi", "auto"):
-            # this would trigger warnings with our temporary opengl windows:
-            # only enable it after we have connected:
-            self.after_handshake(self.setup_xi)
+        # this would trigger warnings with our temporary opengl windows:
+        # only enable it after we have connected:
+        self.after_handshake(self.setup_xi)
 
     def init_x11_filter(self) -> None:
         if self._x11_filter:
@@ -138,19 +146,26 @@ class PlatformClient(StubClientMixin):
         GLib.timeout_add(100, self.do_setup_xi)
 
     def do_setup_xi(self) -> bool:
-        # the optional `server_input_devices` attribute belongs in the `WindowsClient`:
+        # the optional `input_devices` and `server_input_devices` attributes belong in the `WindowsClient`:
+        input_devices = getattr(self, "input_devices", "")
         server_input_devices = getattr(self, "server_input_devices", "")
+
+        if input_devices not in ("xi", "auto"):
+            xi2_debug()
+            return False
+
         if server_input_devices not in ("xi", "uinput"):
             xinputlog("server does not support xi input devices")
             if server_input_devices:
                 log(" server uses: %r", server_input_devices)
+            xi2_debug()
             return False
+
         try:
             from xpra.x11.error import xsync, XError  # pylint: disable=import-outside-toplevel
-            assert X11WindowBindings(), "no X11 window bindings"
             from xpra.x11.bindings.xi2 import X11XI2Bindings  # @UnresolvedImport
+            assert X11WindowBindings(), "no X11 window bindings"
             XI2 = X11XI2Bindings()
-            assert XI2, "no XI2 window bindings"
             # this may fail when windows are being destroyed,
             # ie: when another client disconnects because we are stealing the session
             try:
