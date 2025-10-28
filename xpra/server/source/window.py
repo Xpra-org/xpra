@@ -260,7 +260,7 @@ class WindowsConnection(StubClientConnection):
     ######################################################################
     # windows:
     def initiate_moveresize(self, wid: int, window, x_root: int, y_root: int,
-                            direction: int, button: int, source_indication) -> None:
+                            direction: int, button: int, source_indication: int) -> None:
         if not self.can_send_window(window):
             return
         log("initiate_moveresize sending to %s", self)
