@@ -139,6 +139,7 @@ elif WIN32 and WIN32_WORKSPACE:
 
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
+MOVERESIZE_GUESS_BUTTON = envbool("XPRA_MOVERESIZE_GUESS_BUTTON", True)
 MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
 MOVERESIZE_GDK = envbool("XPRA_MOVERESIZE_GDK", True)
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
@@ -2052,9 +2053,21 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # the values we get are bogus!
         # x, y = x_root, y_root
         # use the current position instead:
+        # the values we get are bogus!
+        # x, y = x_root, y_root
+        # use the current position instead:
         with IgnoreWarningsContext():
-            p = self.get_root_window().get_pointer()[-3:-1]
-        x, y = p[0], p[1]
+            p = self.get_root_window().get_pointer()[-3:]
+        x, y, mask = p
+        if MOVERESIZE_GUESS_BUTTON and button <= 0 and direction not in (
+                MoveResize.MOVE_KEYBOARD, MoveResize.SIZE_KEYBOARD, MoveResize.CANCEL,
+        ):
+            # button seems to be missing!
+            for bmask, bval in BUTTON_MASK.items():
+                if bmask & mask:
+                    button = bval
+                    log(f"guessed button {button=}")
+                    break
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_x11(x, y, direction, button, source_indication)
             return
