@@ -1218,9 +1218,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         context.set_line_cap(LINE_CAP_ROUND)
         context.translate(w / 2, h / 2)
         from xpra.client.gui.spinner import cv
-        count = int(monotonic() * 4.0)
-        for i in range(8):  # 8 lines
-            context.set_source_rgba(0, 0, 0, cv.trs[count % 8][i])
+        data_line = int(monotonic() * 4.0) % cv.NLINES
+        for i in range(cv.NLINES):  # 8 lines
+            context.set_source_rgba(0, 0, 0, cv.trs[data_line][i])
             context.move_to(0.0, -dim / 4.0)
             context.line_to(0.0, -dim)
             context.rotate(math.pi / 4)
