@@ -1365,6 +1365,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         h = max(1, h)
         ox, oy = self._pos
         dx, dy = x - ox, y - oy
+        skip_geometry = dx == 0 and dy == 0 and self._size == (w, h)
         self._pos = (x, y)
         self.update_relative_position()
         gdkwin = self.get_window()
@@ -1379,7 +1380,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self._size, (w, h), (dx, dy), self._backing, self._iconified)
         self._size = (w, h)
         self._set_backing_size(w, h)
-        self.send_configure_event(dx == 0 and dy == 0 and self._size == (w, h))
+        self.send_configure_event(skip_geometry)
         if self._backing and not self._iconified:
             geomlog("configure event: queueing redraw")
             self.repaint(0, 0, w, h)
