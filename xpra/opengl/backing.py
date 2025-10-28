@@ -902,6 +902,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # since we specify the location in the shader:
         position = 0
         n_spinners = 10
+        pct = 80
         if not self.spinner_vao:
             self.spinner_vao = glGenVertexArrays(1)
             vbuf = glGenBuffers(1)
@@ -910,8 +911,8 @@ class GLWindowBackingBase(WindowBackingBase):
             for i in range(n_spinners):
                 deg = i * step
                 verts += [0, 0, 0, 1]
-                verts += [sin(deg), cos(deg), 0, 1]
-                verts += [sin(deg + step / 2), cos(deg + step / 2), 0, 1]
+                verts += [sin(deg) * pct / 100, cos(deg) * pct / 100, 0, 1]
+                verts += [sin(deg + step / 2) * pct / 100, cos(deg + step / 2) * pct / 100, 0, 1]
             glBindVertexArray(self.spinner_vao)
 
             glBindBuffer(GL_ARRAY_BUFFER, vbuf)
