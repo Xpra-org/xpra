@@ -902,17 +902,27 @@ class GLWindowBackingBase(WindowBackingBase):
         # since we specify the location in the shader:
         position = 0
         n_spinners = 10
-        pct = 80
+        inner_pct = 20
+        outer_pct = 80
         if not self.spinner_vao:
             self.spinner_vao = glGenVertexArrays(1)
             vbuf = glGenBuffers(1)
             verts = []
             step = 2 * pi / n_spinners
+
+            def pos(pct: int, deg: float) -> list[float]:
+                return [sin(deg) * pct / 100, cos(deg) * pct / 100, 0, 1]
+
             for i in range(n_spinners):
                 deg = i * step
-                verts += [0, 0, 0, 1]
-                verts += [sin(deg) * pct / 100, cos(deg) * pct / 100, 0, 1]
-                verts += [sin(deg + step / 2) * pct / 100, cos(deg + step / 2) * pct / 100, 0, 1]
+                # trapezoid:
+                inner_left = pos(inner_pct, deg)
+                inner_right = pos(inner_pct, deg + step / 2)
+                outer_left = pos(outer_pct, deg)
+                outer_right = pos(outer_pct, deg + step / 2)
+                # as two triangles:
+                verts += inner_left + inner_right + outer_left
+                verts += outer_left + outer_right + inner_right
             glBindVertexArray(self.spinner_vao)
 
             glBindBuffer(GL_ARRAY_BUFFER, vbuf)
@@ -929,7 +939,7 @@ class GLWindowBackingBase(WindowBackingBase):
         for step in range(n_spinners):
             v = (round(abs(step-now*3)) % n_spinners) / n_spinners
             glUniform4f(color, v, v, v, v)
-            glDrawArrays(GL_TRIANGLES, step * 3, 3)
+            glDrawArrays(GL_TRIANGLES, step * 6, 6)
 
         glBindVertexArray(0)
 
