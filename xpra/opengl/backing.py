@@ -938,11 +938,13 @@ class GLWindowBackingBase(WindowBackingBase):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glBlendEquation(GL_FUNC_ADD)
 
+        def c(val: float) -> float:
+            return max(0, min(1, val))
         color = glGetUniformLocation(program, "color")
         now = monotonic()
         for step in range(n_spinners):
-            v = (round(abs(step-now*3)) % n_spinners) / n_spinners
-            glUniform4f(color, v, v, v, 0.8 - v * 0.6)
+            v = (round(abs(step - now * 3)) % n_spinners) / n_spinners
+            glUniform4f(color, c(v), c(v), c(v + 0.1), c(0.8 - v * 0.6))
             glDrawArrays(GL_TRIANGLES, step * 6, 6)
 
         glBindVertexArray(0)
