@@ -190,8 +190,9 @@ class WindowServer(StubServerMixin):
     def _remove_window(self, window) -> int:
         wid = self._window_to_id[window]
         self.do_remove_window(wid, window)
+        return wid
 
-    def _remove_wid(self, wid: int) -> int:
+    def _remove_wid(self, wid: int) -> None:
         window = self._id_to_window[wid]
         self.do_remove_window(wid, window)
 

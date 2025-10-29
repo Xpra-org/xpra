@@ -752,7 +752,7 @@ def get_workarea() -> tuple[int, int, int, int] | None:
 MONITORINFOF_PRIMARY = 1
 
 
-def get_workareas() -> list[tuple[int, int, int, int]]:
+def get_workareas() -> Sequence[tuple[int, int, int, int]]:
     try:
         workareas: list[tuple[int, int, int, int]] = []
         for m in EnumDisplayMonitors():

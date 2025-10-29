@@ -115,7 +115,7 @@ BUTTON_MASK: dict[int, int] = {
 }
 
 
-def mask_buttons(state: int) -> list[int]:
+def mask_buttons(state: int | Gdk.ModifierType) -> list[int]:
     return [button for mask, button in BUTTON_MASK.items() if state & mask]
 
 

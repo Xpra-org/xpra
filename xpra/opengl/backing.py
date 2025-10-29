@@ -942,7 +942,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glBlendEquation(GL_FUNC_ADD)
 
         def c(val: float) -> float:
-            return max(0, min(1, val))
+            return max(0.0, min(1.0, val))
         color = glGetUniformLocation(program, "color")
         now = monotonic()
         for step in range(n_spinners):
