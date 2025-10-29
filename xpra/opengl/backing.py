@@ -8,7 +8,6 @@ import os
 import struct
 from time import monotonic
 from typing import Any
-from math import sin, cos, pi
 from ctypes import c_float, c_void_p
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager, nullcontext
@@ -895,6 +894,7 @@ class GLWindowBackingBase(WindowBackingBase):
         save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], width, height, self._alpha_enabled)
 
     def draw_spinner(self) -> None:
+        from math import sin, cos, pi
         # no need to call glGetAttribLocation(program, "position")
         # since we specify the location in the shader:
         position = 0
@@ -933,7 +933,10 @@ class GLWindowBackingBase(WindowBackingBase):
 
         program = self.programs["fixed-color"]
         glUseProgram(program)
-        from OpenGL.GL import glEnable, GL_BLEND, GL_FUNC_ADD, glBlendEquation, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+        from OpenGL.GL import (
+            glEnable, glDisable,
+            GL_BLEND, GL_FUNC_ADD, glBlendEquation, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+        )
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glBlendEquation(GL_FUNC_ADD)
@@ -943,12 +946,12 @@ class GLWindowBackingBase(WindowBackingBase):
         color = glGetUniformLocation(program, "color")
         now = monotonic()
         for step in range(n_spinners):
-            v = (round(abs(step - now * 3)) % n_spinners) / n_spinners
-            glUniform4f(color, c(v), c(v), c(v + 0.1), c(0.8 - v * 0.6))
+            v = (1 + sin(step * 2 * pi / n_spinners - now * 4)) / 2
+            glUniform4f(color, c(v), c(v), c(v + 0.1), c(v))
             glDrawArrays(GL_TRIANGLES, step * 6, 6)
 
         glBindVertexArray(0)
-        glEnable(GL_BLEND)
+        glDisable(GL_BLEND)
 
     def draw_pointer(self, xscale=1.0, yscale=1.0) -> None:
         px, py, _, _, _, start_time = self.pointer_overlay
