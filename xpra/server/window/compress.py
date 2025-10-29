@@ -2640,7 +2640,7 @@ class WindowSource(WindowIconSource):
         statslog("packet decoding sequence %s for window %s: %sx%s took %.1fms",
                  damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time > 0:
-            self.statistics.client_decode_time.append((monotonic(), width*height, decode_time))
+            self.statistics.client_decode_time.append((monotonic(), width*height, int(decode_time)))
         elif decode_time == WINDOW_DECODE_SKIPPED:
             log(f"client skipped decoding sequence {damage_packet_sequence} for window {self.wid:#x}")
         elif decode_time == WINDOW_NOT_FOUND:
@@ -2675,9 +2675,9 @@ class WindowSource(WindowIconSource):
             latency = netlatency + sendlatency + decode_time + ack_tolerance
             # late_by and latency are in ms, timestamps are in seconds:
             actual = int(1000 * (now - queued_at))
-            late_by = actual-latency
+            late_by = actual - latency
             if late_by > 0 and (live_time >= 1000 or pixels >= 4096):
-                actual_send_latency = actual - netlatency-decode_time
+                actual_send_latency = round(actual - netlatency - decode_time)
                 late_pct = actual_send_latency * 100 // (1 + sendlatency)
                 if pixels <= 4096 or actual_send_latency <= 0:
                     # small packets can really skew things, don't bother
