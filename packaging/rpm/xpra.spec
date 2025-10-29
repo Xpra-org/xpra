@@ -804,8 +804,46 @@ fi
 
 
 %changelog
-* Fri Sep 26 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
-- TODO
+* Wed Oct 29 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
+- Platforms, build and packaging:
+   Debian Forky
+   `pynvml 13.580.82`
+   `pylsqpack 0.3.23`
+   `aioquic 1.3.0`
+   typo in specfile
+- Major:
+   some application windows cannot be moved or resized
+   unused exception handling speedup
+   socket permission check too strict
+   honour shutdown flag with `exit` requests
+   mouse wheel spurious events
+   missing icon capabilities
+- Minor:
+   don't send cursor data to clients that don't support it
+   clipboard tool failed to set text
+   don't skip default values in window info
+   only schedule an eof timer check once
+   unit tests must now wait longer for connection failures
+   honour flag disabling `pyxdg` menus
+   window `iconic` attribute may not be initialized
+   validate websocket payload more strictly
+   icon path lookup could return bogus data
+   refresh rate was rounded down
+- Cosmetic:
+   file leak warnings
+   MacOS menu title too long
+   focus reset errors
+   bell events errors
+   window-icon no-data packets causes type errors
+   remove arguments from command string to match icon names
+   warn just once when `python-cryptography` is not available
+   Download file menu entry tooltip said upload
+   always enable access to file transfer dialog
+   typo in manual
+   unit test debug log spam
+   unit tests too slow when `pyxdg` menus are loaded
+   logging category
+
 * Fri Sep 19 2025 Antoine Martin <antoine@xpra.org> 5.1.2-10
 - Platforms, build and packaging:
    clang 20 no longer recognizes `unreachable-code-fallthrough` warning

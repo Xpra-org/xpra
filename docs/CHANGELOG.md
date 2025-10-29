@@ -1,7 +1,44 @@
 # Changelog
 
-## [5.1.3] 2025-09-26
-* TODO
+## [5.1.3] 2025-09-29
+* Platforms, build and packaging:
+    * [Debian Forky](https://github.com/Xpra-org/xpra/commit/feb249a22306d07b3a5d6d94db03831c1c68487a)
+    * [`pynvml 13.580.82`](https://github.com/Xpra-org/xpra/commit/1689dadee1185fa3a853d1e084a3dae7f301ca32)
+    * [`pylsqpack 0.3.23`](https://github.com/Xpra-org/xpra/commit/4de25f5f41e3b7c27b57611b88016f22c2b0be54)
+    * [`aioquic 1.3.0`](https://github.com/Xpra-org/xpra/commit/2ede2cb2f7ae448d5eea4c86aca56936eb3093d6)
+    * [typo in specfile](https://github.com/Xpra-org/xpra/commit/36b468b0fdba7fbda3b066b5e145a0aa5cb2e987)
+* Major:
+    * [some application windows cannot be moved or resized](https://github.com/Xpra-org/xpra/commit/d22a52def560f42be88c2207859a090ed09ae074)
+    * [unused exception handling speedup](https://github.com/Xpra-org/xpra/commit/8d0c5af072dc72f236754a06544a10304d1760f8)
+    * [socket permission check too strict](https://github.com/Xpra-org/xpra/commit/a67833b25f267345753fb4d3cd5ec3709f438dbf)
+    * [honour shutdown flag with `exit` requests](https://github.com/Xpra-org/xpra/commit/0bd401b53dd79568e4c0dc64d5b87d495dd80620)
+    * [mouse wheel spurious events](https://github.com/Xpra-org/xpra/commit/a6f517af6c84b57a648c33733291f3c5aad162bb)
+    * [missing icon capabilities](https://github.com/Xpra-org/xpra/commit/3743874fdc31985a1cb070bff19c007eb1538aed)
+* Minor:
+    * [don't send cursor data to clients that don't support it](https://github.com/Xpra-org/xpra/commit/d739efd8cb5177a4283dd8eb98c7eecea6afc8e0)
+    * [clipboard tool failed to set text](https://github.com/Xpra-org/xpra/commit/b8ce4f4a2a128dcfbea9384a1519224e33179a32)
+    * [don't skip default values in window info](https://github.com/Xpra-org/xpra/commit/4fd88e42dc1db09138064ee5ebdc8c9f10c6d474)
+    * [only schedule an eof timer check once](https://github.com/Xpra-org/xpra/commit/f345236f009f1b1ae89f3a40fd619ea473aeff41)
+    * [unit tests must now wait longer for connection failures](https://github.com/Xpra-org/xpra/commit/e7bc879a536da79209e6ed7668c1f55b83c4c494)
+    * [honour flag disabling `pyxdg` menus](https://github.com/Xpra-org/xpra/commit/49ff526689ca2f2b4fe024ade7dc84e5197138c1)
+    * [window `iconic` attribute may not be initialized](https://github.com/Xpra-org/xpra/commit/d283ca54043375cae41f0c5e78902911cce23a40)
+    * [validate websocket payload more strictly](https://github.com/Xpra-org/xpra/commit/78004499a07859ddaaed6d5bd2f0b5c5eb5b189b)
+    * [icon path lookup could return bogus data](https://github.com/Xpra-org/xpra/commit/ef1d046f0f838a846c4f75abdf85758c19faa83c)
+    * [refresh rate was rounded down](https://github.com/Xpra-org/xpra/commit/f1949ab117ee6d5141227e538b30c9f299fdf01e)
+* Cosmetic:
+    * [file leak warnings](https://github.com/Xpra-org/xpra/commit/b4ef16c979f8008b72e852c69469f8e250b3ba7e)
+    * [MacOS menu title too long](https://github.com/Xpra-org/xpra/commit/8210f2bdc263c2d36bdce8e31ec2f869829ad8df)
+    * [focus reset errors](https://github.com/Xpra-org/xpra/commit/de802fda9b5eb30530f8b679de5dd4ed076793c9)
+    * [bell events errors](https://github.com/Xpra-org/xpra/commit/6900e3de3ecc360456544d4fbf17c9a2031f4cf9)
+    * [window-icon no-data packets causes type errors](https://github.com/Xpra-org/xpra/commit/cd23117bee76a2c047a52caf5668e265af0c36b9)
+    * [remove arguments from command string to match icon names](https://github.com/Xpra-org/xpra/commit/2c679e060d235bfc415ef3aa5aeb0ce96f2bc78d)
+    * [warn just once when `python-cryptography` is not available](https://github.com/Xpra-org/xpra/commit/3677a6f7ea06b825a803ef6555f43fe44ba51dfb)
+    * [Download file menu entry tooltip said upload](https://github.com/Xpra-org/xpra/commit/fef6b0afbb1e2bb0df6ab8d1e42938520bd91792)
+    * [always enable access to file transfer dialog](https://github.com/Xpra-org/xpra/commit/764c08c6a800faca4c1c8c3e3eeb0583da2aa793)
+    * [typo in manual](https://github.com/Xpra-org/xpra/commit/e60d6ebd04c7b3185cac0e7fd48569a41dddf90d)
+    * [unit test debug log spam](https://github.com/Xpra-org/xpra/commit/e8b10bd9b8c41bdaf09056713ad8d7893f0f997e)
+    * [unit tests too slow when `pyxdg` menus are loaded](https://github.com/Xpra-org/xpra/commit/fedca99bcf52d916c8fd9dc66a730705abf4b022)
+    * [logging category](https://github.com/Xpra-org/xpra/commit/650801be125db8e75bc49decc327633121c57ed8)
 
 ## [5.1.2] 2025-09-19
 * Platforms, build and packaging:
