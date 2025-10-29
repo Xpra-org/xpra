@@ -15,8 +15,10 @@ autoprov: no
 %global __requires_exclude ^(libnvjpeg|libnvidia-).*\\.so.*$
 %global __requires_exclude %__requires_exclude|^/usr/bin/python.*$
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el10}
 %global debug_package %{nil}
+%endif
+%if 0%{?fedora}
 %global wayland 1
 %endif
 
