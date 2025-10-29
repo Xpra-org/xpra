@@ -2687,7 +2687,7 @@ class WindowSource(WindowIconSource):
         else:
             log.warn(" unknown cause")
         self.global_statistics.decode_errors += 1
-        if self.window:
+        if self.window and not self.decode_error_refresh_timer:
             delay = min(1000, 250+self.global_statistics.decode_errors*100)
             self.decode_error_refresh_timer = GLib.timeout_add(delay, self.decode_error_refresh)
 
