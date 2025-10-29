@@ -1012,15 +1012,34 @@ fi
 
 
 %changelog
-* Wed Oct 15 2025 Antoine Martin <antoine@xpra.org> 6.3.4-11
+* Wed Oct 29 2025 Antoine Martin <antoine@xpra.org> 6.3.4-11
 - Platforms, build and packaging:
+   `pillow` 12.0.0
    `pylsqpack` 0.3.23
    `aioquic` 1.3.0
+   update pre-commit hooks
 - Security:
    `peercred` authentication module bypass
 - Major:
+   workaround applications misusing window move-resize messages, ie: electron
+   MacOS clipboard transfers fail on unicode strings
    `XPRA_CLIENT_CAN_SHUTDOWN` should also be honoured with `exit` requests
    scroll wheel spurious events
+   icon encoding options not parsed
+   horizontal DPI not honoured
+   window refresh compatibility for newer clients
+- Minor:
+   bell events cause type errors
+   use rounding on effective refresh rate
+   validate monitor index data type
+- Cosmetic:
+   icon path should always be a string
+   icon data type warning
+   try harder to find an icon for commands
+   avoid display capability warnings with outdated clients
+   file leak warning
+   incorrect logging category
+   mDNS splatter on shutdown
 
 * Fri Oct 10 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
 - Platforms, build and packaging:

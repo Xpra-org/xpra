@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.5] 2025-10-26
+## [6.3.5] 2025-10-29
 * Platforms, build and packaging:
     * [`pillow` 12.0.0](https://github.com/Xpra-org/xpra/commit/b30aca50b65ee7971393f2f1753428de797cf17f)
     * [`pylsqpack` 0.3.23](https://github.com/Xpra-org/xpra/commit/e28f4ab9d5a50873435511c401558bd2d7fb40b3)
@@ -9,6 +9,7 @@
 * Security:
     * [`peercred` authentication module bypass](https://github.com/Xpra-org/xpra/commit/47f136cc2f28fec99e9c8e0693f55ab35f86fbae)
 * Major:
+    * [workaround applications misusing window move-resize messages, ie: electron](https://github.com/Xpra-org/xpra/commit/b72db268c0871f51fdc7e3f1d4f0583a57f4db1e)
     * [MacOS clipboard transfers fail on unicode strings](https://github.com/Xpra-org/xpra/commit/697dcf42c708ab52d742850976c4eb779f1c8056)
     * [`XPRA_CLIENT_CAN_SHUTDOWN` should also be honoured with `exit` requests](https://github.com/Xpra-org/xpra/commit/4a9abba2c4aad2649b3544aaf83aa8e480641089)
     * [scroll wheel spurious events](https://github.com/Xpra-org/xpra/commit/db4fdf178cff6cbc94aae6d7181916a05e3a3d6b)
