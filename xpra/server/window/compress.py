@@ -1954,12 +1954,12 @@ class WindowSource(WindowIconSource):
             return get_best_encoding(w, h, options, coding)
 
         def send_full_window_update(cause) -> None:
-            actual_encoding = get_encoding(ww, wh)
+            encoding = get_encoding(ww, wh)
             log("send_delayed_regions: using full window update %sx%s as %5s: %s, from %s",
-                ww, wh, actual_encoding, cause, get_best_encoding)
-            if not actual_encoding:
+                ww, wh, encoding, cause, get_best_encoding)
+            if not encoding:
                 raise RuntimeError(f"no encoding for {ww}x{wh} full screen update")
-            self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
+            self.process_damage_region(damage_time, 0, 0, ww, wh, encoding, options)
 
         if exclude_region is None:
             if self.full_frames_only or self.encoding == "stream":
@@ -2560,12 +2560,12 @@ class WindowSource(WindowIconSource):
             screenshort_file = os.path.join(self.screen_updates_directory, "screenshot.webp")
 
             def save_screenshot() -> None:
-                w, h = self.window_dimensions
-                image = self.window.get_image(0, 0, w, h)
+                ww, wh = self.window_dimensions
+                image = self.window.get_image(0, 0, ww, wh)
                 rgb_format = image.get_pixel_format()
                 if image and rgb_format in ("BGRX", "BGRA"):
                     from PIL import Image
-                    img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", rgb_format, 0, 1)
+                    img = Image.frombuffer("RGB", (ww, wh), image.get_pixels(), "raw", rgb_format, 0, 1)
                     img.save(screenshort_file, format="PNG")
             GLib.idle_add(save_screenshot)
 
