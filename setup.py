@@ -2640,7 +2640,8 @@ if x11_ENABLED:
         ace("xpra.x11.bindings.test", "xtst")
         ace("xpra.x11.bindings.shape", "xext")
         ace("xpra.x11.bindings.damage", "xdamage")
-        ace("xpra.x11.bindings.present", "xpresent")
+        if pkg_config_exists("xpresent"):
+            ace("xpra.x11.bindings.present", "xpresent")
         ace("xpra.x11.bindings.fixes", "xfixes")
         ace("xpra.x11.bindings.cursor", "xcursor")
         ace("xpra.x11.bindings.keyboard", "xkbfile")
