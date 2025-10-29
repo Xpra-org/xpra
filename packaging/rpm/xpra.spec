@@ -457,7 +457,9 @@ BuildRequires:		pkgconfig(xkbfile)
 BuildRequires:		pkgconfig(xtst)
 BuildRequires:		pkgconfig(xcomposite)
 BuildRequires:		pkgconfig(xdamage)
+%if 0%{?fedora}
 BuildRequires:		pkgconfig(xpresent)
+%endif
 BuildRequires:		pkgconfig(xres)
 BuildRequires:		pkgconfig(xfixes)
 BuildRequires:		pkgconfig(xrandr)
