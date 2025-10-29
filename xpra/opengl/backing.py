@@ -895,15 +895,12 @@ class GLWindowBackingBase(WindowBackingBase):
         save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], width, height, self._alpha_enabled)
 
     def draw_spinner(self) -> None:
-        program = self.programs["fixed-color"]
-        glUseProgram(program)
-
         # no need to call glGetAttribLocation(program, "position")
         # since we specify the location in the shader:
         position = 0
         n_spinners = 10
         inner_pct = 20
-        outer_pct = 80
+        outer_pct = 70
         if not self.spinner_vao:
             self.spinner_vao = glGenVertexArrays(1)
             vbuf = glGenBuffers(1)
@@ -934,14 +931,22 @@ class GLWindowBackingBase(WindowBackingBase):
         else:
             glBindVertexArray(self.spinner_vao)
 
+        program = self.programs["fixed-color"]
+        glUseProgram(program)
+        from OpenGL.GL import glEnable, GL_BLEND, GL_FUNC_ADD, glBlendEquation, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glBlendEquation(GL_FUNC_ADD)
+
         color = glGetUniformLocation(program, "color")
         now = monotonic()
         for step in range(n_spinners):
             v = (round(abs(step-now*3)) % n_spinners) / n_spinners
-            glUniform4f(color, v, v, v, v)
+            glUniform4f(color, v, v, v, 0.8 - v * 0.6)
             glDrawArrays(GL_TRIANGLES, step * 6, 6)
 
         glBindVertexArray(0)
+        glEnable(GL_BLEND)
 
     def draw_pointer(self, xscale=1.0, yscale=1.0) -> None:
         px, py, _, _, _, start_time = self.pointer_overlay
