@@ -2557,7 +2557,7 @@ class WindowSource(WindowIconSource):
 
         self.screen_updates_index += 1
         if client_options.get("flush", 0) == 0:
-            screenshort_file = os.path.join(self.screen_updates_directory, "screenshot.webp")
+            screenshort_file = os.path.join(self.screen_updates_directory, "screenshot.png")
 
             def save_screenshot() -> None:
                 ww, wh = self.window_dimensions
