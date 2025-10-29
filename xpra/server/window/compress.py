@@ -2557,17 +2557,17 @@ class WindowSource(WindowIconSource):
 
         self.screen_updates_index += 1
         if client_options.get("flush", 0) == 0:
-            screenshort_file = os.path.join(self.screen_updates_directory, "screenshot.png")
+            GLib.idle_add(self.save_screenshot)
 
-            def save_screenshot() -> None:
-                ww, wh = self.window_dimensions
-                image = self.window.get_image(0, 0, ww, wh)
-                rgb_format = image.get_pixel_format()
-                if image and rgb_format in ("BGRX", "BGRA"):
-                    from PIL import Image
-                    img = Image.frombuffer("RGB", (ww, wh), image.get_pixels(), "raw", rgb_format, 0, 1)
-                    img.save(screenshort_file, format="PNG")
-            GLib.idle_add(save_screenshot)
+    def save_screenshot(self) -> None:
+        ww, wh = self.window_dimensions
+        image = self.window.get_image(0, 0, ww, wh)
+        rgb_format = image.get_pixel_format()
+        if image and rgb_format in ("BGRX", "BGRA"):
+            from PIL import Image
+            img = Image.frombuffer("RGB", (ww, wh), image.get_pixels(), "raw", rgb_format, 0, 1)
+            screenshort_file = os.path.join(self.screen_updates_directory, "screenshot.png")
+            img.save(screenshort_file, format="PNG")
 
     def networksend_congestion_event(self, source, late_pct: int, cur_send_speed: int = 0) -> None:
         gs = self.global_statistics
