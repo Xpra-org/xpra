@@ -61,12 +61,17 @@ def kmlog(keyname: str, msg: str, *args) -> None:
 
 def get_levels(mode: bool, shift: bool, group: bool) -> list[int]:
     levels: list[int] = []
+
+    # try both boolean options, current one first:
+    def pair(bval: bool) -> tuple[int, int]:
+        return int(bval), int(not bval)
+
     # try to preserve the mode (harder to toggle):
-    for m in (int(mode), int(not mode)):
+    for m in pair(mode):
         # try to preserve shift state:
-        for s in (int(shift), int(not shift)):
+        for s in pair(shift):
             # group is comparatively easier to toggle (one function call):
-            for g in (int(group), int(not group)):
+            for g in pair(group):
                 level = int(g) * 4 + int(m) * 2 + int(s) * 1
                 levels.append(level)
     return levels
