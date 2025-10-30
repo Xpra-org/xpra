@@ -33,15 +33,34 @@ log = Logger("splash")
 inject_css_overrides()
 
 TIMEOUT = envint("XPRA_SPLASH_TIMEOUT", 60)
-LINES = envint("XPRA_SPLASH_LINES", 5)
 READ_SLEEP = envint("XPRA_SPLASH_READ_SLEEP", 0)
 FOCUS_EXIT = envbool("XPRA_SPLASH_FOCUS_EXIT", True)
 FADEOUT = envbool("XPRA_SPLASH_FADEOUT", True)
 ICON = os.environ.get("XPRA_SPLASH_ICON", "xpra.png")
 TITLE = os.environ.get("XPRA_SPLASH_TITLE", "Xpra %s" % __version__)
+SIZE = os.environ.get("XPRA_SPLASH_SIZE", "normal")
 THREADED_READ = envbool("XPRA_SPLASH_THREADED_READ", WIN32)
 
-W = 400
+if SIZE == "small":
+    W = 240
+    FONT_SIZE = 12
+    LINE_SIZE = 30
+    MARGIN = 5
+    LINES = 3
+elif SIZE == "big":
+    W = 600
+    FONT_SIZE = 15
+    LINE_SIZE = 50
+    MARGIN = 25
+    LINES = 7
+else:
+    W = 400
+    FONT_SIZE = 13
+    LINE_SIZE = 40
+    MARGIN = 15
+    LINES = 5
+LINES = envint("XPRA_SPLASH_LINES", LINES)
+
 
 CSS = b"""
 #splash-frame {
@@ -91,7 +110,7 @@ class SplashScreen(Gtk.Window):
         self.connect("button-press-event", self.exit)
         self.connect("key-press-event", self.exit)
         self.set_title(title)
-        self.set_size_request(W, 80 + 40 * LINES)
+        self.set_size_request(W, 20 + MARGIN + LINE_SIZE * (1 + LINES))
 
         # enable transparency and compositing
         self.set_app_paintable(True)
@@ -118,10 +137,10 @@ class SplashScreen(Gtk.Window):
         if not OSX:
             self.set_type_hint(Gdk.WindowTypeHint.SPLASHSCREEN)
         vbox = Gtk.VBox()
-        vbox.set_margin_start(20)
-        vbox.set_margin_end(20)
-        vbox.set_margin_top(15)
-        vbox.set_margin_bottom(15)
+        vbox.set_margin_start(MARGIN + 5)
+        vbox.set_margin_end(MARGIN + 5)
+        vbox.set_margin_top(MARGIN)
+        vbox.set_margin_bottom(MARGIN)
         hbox = Gtk.HBox(homogeneous=False)
         if icon_name:
             image = Gtk.Image()
@@ -145,7 +164,7 @@ class SplashScreen(Gtk.Window):
                 start_thread(download, "download-icon", daemon=True)
             else:
                 set_icon(icon_name)
-        self.title_label = label(title, font="Adwaita sans 18")
+        self.title_label = label(title, font=f"Adwaita sans {FONT_SIZE+5}")
         self.title_label.set_css_name("title")
         al = Gtk.Alignment(xalign=0.2, yalign=0.5, xscale=0, yscale=0)
         al.add(self.title_label)
@@ -153,7 +172,7 @@ class SplashScreen(Gtk.Window):
         vbox.add(hbox)
         self.labels = []
         for i in range(LINES):
-            lbl = label(" ", font="Adwaita sans 13")
+            lbl = label(" ", font=f"Adwaita sans {FONT_SIZE}")
             lbl.set_css_name("label")
             lbl.set_opacity(sqrt((i + 1) / LINES))
             self.labels.append(lbl)
@@ -161,7 +180,7 @@ class SplashScreen(Gtk.Window):
             al.add(lbl)
             vbox.pack_start(al, True, True, 4)
         self.progress_bar = Gtk.ProgressBar()
-        self.progress_bar.set_size_request(320, 30)
+        self.progress_bar.set_size_request(W - 40 - MARGIN * 2, LINE_SIZE - 10)
         self.progress_bar.set_show_text(False)
         self.progress_bar.set_fraction(0)
         self.progress_bar.set_name("progress-bar")
