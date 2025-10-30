@@ -279,9 +279,9 @@ class WindowsConnection(StubClientConnection):
         else:
             metadata = self._make_metadata(window, prop)
             if prop in PROPERTIES_DEBUG:
-                metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, metadata)
+                metalog.info("make_metadata(%#x, %s, %r)=%s", wid, window, prop, metadata)
             else:
-                metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, metadata)
+                metalog("make_metadata(%#x, %s, %r)=%s", wid, window, prop, metadata)
             if metadata:
                 self.send("window-metadata", wid, metadata)
 
@@ -289,7 +289,7 @@ class WindowsConnection(StubClientConnection):
     # xpra window metadata values that depend on that property
     def _make_metadata(self, window, propname: str, skip_defaults=False) -> dict[str, Any]:
         if propname not in self.metadata_supported:
-            metalog("make_metadata: client does not support '%s'", propname)
+            metalog("make_metadata: client does not support %r", propname)
             return {}
         metadata = make_window_metadata(window, propname, skip_defaults=skip_defaults)
         if self.readonly:
@@ -312,6 +312,7 @@ class WindowsConnection(StubClientConnection):
         if not self.can_send_window(window):
             return
         send_props = list(window.get_property_names())
+        metalog("new window properties: %r", send_props)
         send_raw_icon = "icons" in send_props
         if send_raw_icon:
             send_props.remove("icons")
@@ -319,12 +320,12 @@ class WindowsConnection(StubClientConnection):
         for prop in send_props:
             v = self._make_metadata(window, prop, skip_defaults=True)
             if prop in PROPERTIES_DEBUG:
-                metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
+                metalog.info("make_metadata(%#x, %s, %r)=%s", wid, window, prop, v)
             else:
-                metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
+                metalog("make_metadata(%#x, %s, %r)=%s", wid, window, prop, v)
             metadata.update(v)
-        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s",
-            packet_type, window, wid, x, y, w, h, client_properties, send_props, metadata)
+        log("new_window(%s, %#x, %s, %i, %i, %i, %i, %s) metadata(%s)=%s",
+            packet_type, wid, window, x, y, w, h, client_properties, send_props, metadata)
         self.send_async(packet_type, wid, x, y, w, h, metadata, client_properties or {})
         if send_raw_icon:
             self.send_window_icon(wid, window)
@@ -382,7 +383,7 @@ class WindowsConnection(StubClientConnection):
             ws.unmap()
 
     def restack_window(self, wid: int, window, detail: int, sibling: int) -> None:
-        focuslog("restack_window%s", (wid, window, detail, sibling))
+        focuslog("restack_window(%#x, %s, %i, %i)", wid, window, detail, sibling)
         if not self.can_send_window(window):
             return
         if not self.window_restack:
@@ -425,7 +426,7 @@ class WindowsConnection(StubClientConnection):
             for x in ("min_delay", "max_delay", "timeout_delay", "delay"):
                 if x in batch_props:
                     setattr(ws.batch_config, x, batch_props.intget(x))
-            log("batch config updated for window %s: %s", wid, ws.batch_config)
+            log("batch config updated for window %#x: %s", wid, ws.batch_config)
 
     def set_client_properties(self, wid: int, window, new_client_properties: typedict) -> None:
         assert self.send_windows
