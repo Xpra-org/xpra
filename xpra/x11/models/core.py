@@ -154,7 +154,7 @@ class CoreX11WindowModel(WindowModelStub):
             -1, 64, -1,
             GObject.ParamFlags.READABLE,
         ),
-        # if the window depth is 32 bit
+        # is there an alpha channel?
         "has-alpha": (
             GObject.TYPE_BOOLEAN,
             "Does the window use transparency", "",
