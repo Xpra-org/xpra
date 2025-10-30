@@ -38,6 +38,7 @@ READ_SLEEP = envint("XPRA_SPLASH_READ_SLEEP", 0)
 FOCUS_EXIT = envbool("XPRA_SPLASH_FOCUS_EXIT", True)
 FADEOUT = envbool("XPRA_SPLASH_FADEOUT", True)
 ICON = os.environ.get("XPRA_SPLASH_ICON", "xpra.png")
+TITLE = os.environ.get("XPRA_SPLASH_TITLE", "Xpra %s" % __version__)
 THREADED_READ = envbool("XPRA_SPLASH_THREADED_READ", WIN32)
 
 W = 400
@@ -82,14 +83,13 @@ def cond(mask: int) -> str:
 
 class SplashScreen(Gtk.Window):
 
-    def __init__(self):
+    def __init__(self, title=TITLE, icon_name=ICON):
         self.exit_code = None
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.connect("delete_event", self.exit)
         self.add_events(Gdk.EventType.BUTTON_PRESS)
         self.connect("button-press-event", self.exit)
         self.connect("key-press-event", self.exit)
-        title = "Xpra %s" % __version__
         self.set_title(title)
         self.set_size_request(W, 80 + 40 * LINES)
 
@@ -123,10 +123,28 @@ class SplashScreen(Gtk.Window):
         vbox.set_margin_top(15)
         vbox.set_margin_bottom(15)
         hbox = Gtk.HBox(homogeneous=False)
-        icon = get_icon_pixbuf(ICON)
-        if icon:
-            self.set_icon(icon)
-            hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
+        if icon_name:
+            image = Gtk.Image()
+            hbox.pack_start(image, False, False, 20)
+
+            def set_icon(filename: str) -> None:
+                icon = get_icon_pixbuf(filename)
+                if icon:
+                    image.set_from_pixbuf(icon)
+
+            if icon_name.startswith("http"):
+                def download() -> None:
+                    from urllib.request import urlretrieve
+                    from xpra.platform.paths import get_xpra_tmp_dir
+                    ext = os.path.splitext(icon_name)[1]
+                    icon_tmp = os.path.join(get_xpra_tmp_dir(), f"splash-icon.{ext}")
+                    urlretrieve(icon_name, icon_tmp)
+                    GLib = gi_import("GLib")
+                    GLib.idle_add(set_icon, icon_tmp)
+                from xpra.util.thread import start_thread
+                start_thread(download, "download-icon", daemon=True)
+            else:
+                set_icon(icon_name)
         self.title_label = label(title, font="Adwaita sans 18")
         self.title_label.set_css_name("title")
         al = Gtk.Alignment(xalign=0.2, yalign=0.5, xscale=0, yscale=0)
@@ -326,14 +344,23 @@ class SplashScreen(Gtk.Window):
         GLib.idle_add(self.exit)
 
 
-def main(_args) -> ExitValue:
+def main(args: list[str]) -> ExitValue:
     import os
     if os.environ.get("XPRA_HIDE_DOCK") is None:
         os.environ["XPRA_HIDE_DOCK"] = "1"
+    icon = ICON
+    title = TITLE
+    for arg in args:
+        if arg.startswith("--icon="):
+            icon = arg[len("--icon="):]
+        elif arg.startswith("--title="):
+            title = arg[len("--title="):]
+        elif arg.startswith("--session-name="):
+            title = arg[len("--session-name="):]
     from xpra.platform import program_context
     with program_context("splash", "Splash"):
         Gtk.Window.set_auto_startup_notification(setting=False)
-        w = SplashScreen()
+        w = SplashScreen(title, icon)
         from xpra.gtk.window import add_close_accel
         add_close_accel(w, Gtk.main_quit)
         return w.run()
