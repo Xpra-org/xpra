@@ -216,3 +216,8 @@ def force_quit(status=1) -> NoReturn:
 def is_arm() -> bool:
     import platform
     return platform.uname()[4].startswith("arm")
+
+
+def crash() -> NoReturn:
+    import ctypes  # pylint: disable=import-outside-toplevel
+    ctypes.string_at(0)

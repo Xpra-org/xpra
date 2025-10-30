@@ -155,7 +155,7 @@ class SplashScreen(Gtk.Window):
         self.line_count = 0
         frame.add(vbox)
         self.add(frame)
-        install_signal_handlers("", self.handle_signal)
+        install_signal_handlers("Splash", self.handle_signal)
         sigpipe = getattr(signal, "SIGPIPE", None)
         if sigpipe:  # ie: POSIX
             signal.signal(sigpipe, self.handle_signal)
@@ -176,10 +176,7 @@ class SplashScreen(Gtk.Window):
         self.timeout_timer = GLib.timeout_add(TIMEOUT * 1000, self.timeout)
         scrash = envint("XPRA_SPLASH_CRASH", -1)
         if scrash >= 0:
-            def crash() -> None:
-                import ctypes  # pylint: disable=import-outside-toplevel
-                ctypes.string_at(0)
-
+            from xpra.os_util import crash
             GLib.timeout_add(scrash, crash)
         self.start_time = monotonic()
         Gtk.main()

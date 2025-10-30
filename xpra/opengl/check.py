@@ -314,8 +314,8 @@ def check_PyOpenGL_support(force_enable: bool) -> dict[str, Any]:
     redirected_loggers: dict[str, tuple[Logger, list, bool]] = {}
     try:
         if CRASH:
-            import ctypes
-            ctypes.string_at(0)
+            from xpra.os_util import crash
+            crash()
             raise RuntimeError("should have crashed!")
         if TIMEOUT > 0:
             import time
