@@ -61,6 +61,24 @@ def kmlog(keyname: str, msg: str, *args) -> None:
     lfn(msg, *args)
 
 
+def get_levels(mode: bool, shift: bool, group: bool) -> list[int]:
+    levels: list[int] = []
+
+    # try both boolean options, current one first:
+    def pair(bval: bool) -> tuple[int, int]:
+        return int(bval), int(not bval)
+
+    # try to preserve the mode (harder to toggle):
+    for m in pair(mode):
+        # try to preserve shift state:
+        for s in pair(shift):
+            # group is comparatively easier to toggle (one function call):
+            for g in pair(group):
+                level = int(g) * 4 + int(m) * 2 + int(s) * 1
+                levels.append(level)
+    return levels
+
+
 class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
         super().__init__()
@@ -522,15 +540,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 if name in ("ISO_Level3_Shift", "Mode_switch"):
                     mode = 1
                     break
-        levels = []
-        # try to preserve the mode (harder to toggle):
-        for m in (int(bool(mode)), int(not mode)):
-            # try to preserve shift state:
-            for s in (int(bool(shift)), int(not shift)):
-                # group is comparatively easier to toggle (one function call):
-                for g in (int(bool(group)), int(not group)):
-                    level = int(g) * 4 + int(m) * 2 + int(s) * 1
-                    levels.append(level)
+        levels = get_levels(mode, shift, group)
         kml("will try levels: %s", levels)
         for level in levels:
             keycode = self.keycode_translation.get((keyname, level), -1)

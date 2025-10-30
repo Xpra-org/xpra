@@ -1153,7 +1153,9 @@ cdef GUID c_parseguid(src) except *:
         raise ValueError("invalid GUID format: expected %s characters but got %s" % (len(sample_guid), len(src)))
     cdef int i
     #validate the input bytestring:
-    hexords = tuple(x for x in b"0123456789ABCDEF")
+    hexords = []
+    for c in "0123456789ABCDEF":
+        hexords.append(ord(c))
     for i in range(len(sample_guid)):
         if sample_guid[i]==ord(b"-"):
             #dash must be in the same place:
