@@ -8,6 +8,7 @@ import os
 import struct
 from time import monotonic
 from typing import Any
+from math import sin, cos, pi
 from ctypes import c_float, c_void_p
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager, nullcontext
@@ -44,7 +45,7 @@ from OpenGL.GL import (
     glDrawArrays, GL_TRIANGLE_STRIP, GL_TRIANGLES,
     glEnableVertexAttribArray, glVertexAttribPointer, glDisableVertexAttribArray,
     glGenVertexArrays, glBindVertexArray, glDeleteVertexArrays,
-    glUseProgram, GL_TEXTURE_RECTANGLE, glGetUniformLocation, glUniform1i, glUniform2f, glUniform4f,
+    glUseProgram, GL_TEXTURE_RECTANGLE, glGetUniformLocation, glUniform1i, glUniform1f, glUniform2f, glUniform4f,
 )
 from OpenGL.GL.ARB.framebuffer_object import (
     GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
@@ -90,6 +91,7 @@ NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
 ALWAYS_RGBA = envbool("XPRA_OPENGL_ALWAYS_RGBA", False)
 FORCE_SPINNER = envbool("XPRA_OPENGL_FORCE_SPINNER", False)
 SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
+USE_ALERT = envbool("XPRA_OPENGL_ALERT", False)
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
@@ -191,7 +193,8 @@ TEX_FBO = 5  # FBO texture (guaranteed up-to-date window contents)
 TEX_TMP_FBO = 6
 TEX_CURSOR = 7
 TEX_FPS = 8
-N_TEXTURES = 9
+TEX_ALERT = 9
+N_TEXTURES = 10
 
 
 class TemporaryViewport:
@@ -254,6 +257,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.pending_fbo_paint: list[tuple[int, int, int, int]] = []
         self.last_flush = monotonic()
         self.last_present_fbo_error = ""
+        self.alert_uploaded = 0
         self.bit_depth = pixel_depth
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
         self.opengl_init()
@@ -893,8 +897,13 @@ class GLWindowBackingBase(WindowBackingBase):
         width, height = self.size
         save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], width, height, self._alpha_enabled)
 
-    def draw_spinner(self) -> None:
-        from math import sin, cos, pi
+    def draw_spinner(self):
+        if USE_ALERT:
+            self.draw_alert()
+        else:
+            self.do_draw_spinner()
+
+    def do_draw_spinner(self) -> None:
         # no need to call glGetAttribLocation(program, "position")
         # since we specify the location in the shader:
         position = 0
@@ -953,6 +962,46 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindVertexArray(0)
         glDisable(GL_BLEND)
 
+    def upload_alert_texture(self) -> bool:
+        if self.alert_uploaded != 0:
+            # we have already done it:
+            return self.alert_uploaded > 0
+        texture = self.textures[TEX_ALERT]
+        from xpra.platform.paths import get_icon_filename
+        icon = get_icon_filename("alert")
+        if not icon:
+            self.alert_uploaded = -1
+            log("icon 'alert' not found!")
+            return False
+        from PIL import Image
+        image = Image.open(icon)
+        if image.mode != "RGBA":
+            self.alert_uploaded = -1
+            log(f"icon {icon!r} mode is {image.mode!r}, not RGBA")
+            return False
+        image = image.resize((64, 64))
+        pixels = image.tobytes()
+        iw, ih = image.size
+        glActiveTexture(GL_TEXTURE0)
+        upload_rgba_texture(int(texture), iw, ih, pixels)
+        self.alert_uploaded = 1
+        return True
+
+    def draw_alert(self):
+        if not self.upload_alert_texture():
+            return
+        w, h = 64, 64
+        rw, rh = self.render_size
+        x = 10
+        y = rh - h - 10
+        alert = self.textures[TEX_ALERT]
+        fbo = self.textures[TEX_FBO]
+        weight = (1 + sin(monotonic() * 5)) / 4     # sine wave that ranges from 0 to 0.5
+        self.combine_texture("blend", x, y, w, h, {
+            "rgba": alert,
+            "dst": fbo,
+        }, {"weight": weight})
+
     def draw_pointer(self, xscale=1.0, yscale=1.0) -> None:
         px, py, _, _, _, start_time = self.pointer_overlay
         elapsed = monotonic() - start_time
@@ -973,26 +1022,37 @@ class GLWindowBackingBase(WindowBackingBase):
         texture = int(self.textures[TEX_CURSOR])
         self.overlay_texture(texture, x, y, w, h)
 
-    def overlay_texture(self, texture: int, x: int, y: int, w: int, h: int) -> None:
-        self.combine_texture("overlay", x, y, w, h, {"rgba": texture})
+    def overlay_texture(self, texture: int, x: int, y: int, w: int, h: int, opacity=0.4) -> None:
+        self.combine_texture("overlay", x, y, w, h, {"rgba": texture}, {"opacity": opacity})
 
-    def combine_texture(self, program: str, x: int, y: int, w: int, h: int, texture_map: dict) -> None:
-        log("combine_texture%s", (program, x, y, w, h, texture_map))
+    def combine_texture(self, program_name: str, x: int, y: int, w: int, h: int, texture_map: dict, uniforms: dict) -> None:
+        log("combine_texture%s", (program_name, x, y, w, h, texture_map))
         # paint this texture
 
         wh = self.render_size[1]
         target = GL_TEXTURE_RECTANGLE
         # the region we're updating (reversed):
         with TemporaryViewport(x, wh - y - h, w, h):
-            program = self.programs[program]
+            program = self.programs[program_name]
             glUseProgram(program)
             index = 0
             for prg_var, texture in texture_map.items():
                 glActiveTexture(GL_TEXTURE0 + index)
                 glBindTexture(target, texture)
                 tex_loc = glGetUniformLocation(program, prg_var)
+                # log("glGetUniformLocation(%s, %r)=%i", program_name, prg_var, tex_loc)
                 glUniform1i(tex_loc, index)  # 0 -> TEXTURE_0
                 index += 1
+
+            for prg_var, value in uniforms.items():
+                loc = glGetUniformLocation(program, prg_var)
+                # log("glGetUniformLocation(%s, %r)=%i", program_name, prg_var, loc)
+                if isinstance(value, int):
+                    glUniform1i(loc, value)
+                elif isinstance(value, float):
+                    glUniform1f(loc, value)
+                else:
+                    raise TypeError(f"Unsupported type {type(value)}")
 
             viewport_pos = glGetUniformLocation(program, "viewport_pos")
             glUniform2f(viewport_pos, x, y)
@@ -1032,8 +1092,8 @@ class GLWindowBackingBase(WindowBackingBase):
         for x, y, w, h in rects:
             self.combine_texture("blend", x, y, w, h, {
                 "rgba": texture,
-                "fbo": fbo,
-            })
+                "dst": fbo,
+            }, {})
 
     def paint_box(self, encoding: str, x: int, y: int, w: int, h: int) -> None:
         # show region being painted if debug paint box is enabled only:

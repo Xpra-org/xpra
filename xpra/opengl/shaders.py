@@ -169,16 +169,22 @@ BLEND_SHADER = f"""
 layout(origin_upper_left) in vec4 gl_FragCoord;
 uniform vec2 viewport_pos;
 uniform sampler2DRect rgba;
-uniform sampler2DRect fbo;
+uniform sampler2DRect dst;
+uniform float weight = 0.5;
 layout(location = 0) out vec4 frag_color;
 
 void main()
 {{
     vec2 tex_pos = gl_FragCoord.xy - viewport_pos.xy;
     vec4 tex_color = texture(rgba, mod(tex_pos, textureSize(rgba)));
-    vec2 fbo_pos = vec2(gl_FragCoord.x, textureSize(fbo).y - gl_FragCoord.y);
-    vec4 fbo_color = texture(fbo, fbo_pos);
-    frag_color = mix(tex_color, fbo_color, 0.5);
+    vec2 dst_pos = vec2(gl_FragCoord.x, textureSize(dst).y - gl_FragCoord.y);
+    vec4 dst_color = texture(dst, dst_pos);
+
+    float w = weight;
+    if (tex_color.a < 0.1 ) {{
+        w = 1.0;
+    }}
+    frag_color = mix(tex_color, dst_color, w);
 }}
 """
 
