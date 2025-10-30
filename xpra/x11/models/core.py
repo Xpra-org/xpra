@@ -113,6 +113,8 @@ X11PROPERTY_SYNC_BLOCKLIST = os.environ.get("XPRA_X11PROPERTY_SYNC_BLOCKLIST",
                                             "_GTK,WM_,_NET,Xdnd").split(",")
 SHAPE_DELAY = envint("XPRA_SHAPE_DELAY", 100)
 
+DEFAULT_ACTIONS = tuple(x for x in os.environ.get("XPRA_WINDOW_DEFAULT_ACTIONS", "").split(",") if x.trim())
+
 
 def sanestr(s: str) -> str:
     return s.strip("\0").replace("\0", " ")
@@ -247,6 +249,11 @@ class CoreX11WindowModel(WindowModelStub):
             "Compositor can assume that there is no transparency for this region", "",
             GObject.ParamFlags.READWRITE,
         ),
+        "actions": (
+            GObject.TYPE_PYOBJECT,
+            "Custom window actions", "",
+            GObject.ParamFlags.READWRITE,
+        ),
     }
 
     __common_signals__ = {
@@ -259,6 +266,7 @@ class CoreX11WindowModel(WindowModelStub):
         "bell": one_arg_signal,
         "client-contents-changed": one_arg_signal,
         "motion": one_arg_signal,
+        "action": one_arg_signal,
         # x11 events we catch (and often re-emit as something else):
         "x11-property-notify-event": one_arg_signal,
         "x11-xkb-event": one_arg_signal,
@@ -280,11 +288,11 @@ class CoreX11WindowModel(WindowModelStub):
         "title", "locale", "role",
         "command", "shape",
         "class-instance", "protocols",
-        "opaque-region",
+        "opaque-region", "actions",
     ]
     # exposed and changing (should be watched for notify signals):
     _dynamic_property_names = [
-        "title", "command", "shape", "class-instance", "protocols", "opaque-region",
+        "title", "command", "shape", "class-instance", "protocols", "opaque-region", "actions",
     ]
     # should not be exported to the clients:
     _internal_property_names = [
@@ -505,6 +513,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("allowed-actions", self._DEFAULT_NET_WM_ALLOWED_ACTIONS)
         self._updateprop("shape", self._read_xshape())
         self._updateprop("parent", parent)
+        self._updateprop("actions", DEFAULT_ACTIONS)
         # note: some of those are technically mutable,
         # but we don't export them as "dynamic" properties, so this won't be propagated
         # maybe we want to catch errors parsing _NET_WM_ICON ?

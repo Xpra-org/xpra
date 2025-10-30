@@ -99,6 +99,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._iconified = False
         self._focused = False
         self._opaque_region = ()
+        self._actions = ()
         self.window_gravity = OVERRIDE_GRAVITY or DEFAULT_GRAVITY
         self.border = border
         self.max_window_size = max_window_size
@@ -494,6 +495,9 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "content-type" in metadata:
             self.content_type = metadata.strget("content-type")
+
+        if "actions" in metadata:
+            self._actions = metadata.strtupleget("actions")
 
     def set_x11_property(self, *x11_property) -> None:
         pass  # see gtk client window base

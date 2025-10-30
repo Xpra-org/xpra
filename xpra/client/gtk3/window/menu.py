@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.os_util import gi_import
 from xpra.client.gtk3.menu_helper import MenuHelper
 from xpra.gtk.widget import checkitem
@@ -47,6 +49,9 @@ class WindowMenuHelper(MenuHelper):
             self.make_reinitmenuitem(),
             self.make_closemenuitem(),
         ]
+        actions: Sequence[str] = self.window._actions
+        if actions:
+            items.append(self.make_actionsmenu(actions))
         return items
 
     def make_infomenuitem(self) -> Gtk.ImageMenuItem:
@@ -215,3 +220,24 @@ class WindowMenuHelper(MenuHelper):
             self.window.close()
 
         return self.menuitem("Close", "close.png", cb=close)
+
+    def make_actionsmenu(self, actions: Sequence[str]) -> Gtk.ImageMenuItem:
+
+        def action_menuitem(action: str, icon_name="") -> Gtk.ImageMenuItem:
+
+            def action_cb() -> None:
+                wid = self.window.wid
+                log("action_cb() for window %#x, action=%s", wid, action)
+                self.client.send("window-action", wid, action)
+            return self.menuitem(action, icon_name, cb=action_cb)
+
+        if len(actions) == 1:
+            return action_menuitem(actions[0], "forward.png")
+
+        # use a submenu:
+        actions_menu = self.menuitem("Actions", "forward.png", "")
+        actions_submenu = Gtk.Menu()
+        actions_menu.set_submenu(actions_submenu)
+        for action in actions:
+            actions_submenu.append(action_menuitem(action))
+        return actions_menu

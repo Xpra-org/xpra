@@ -373,6 +373,16 @@ class WindowServer(StubServerMixin):
     def _process_configure_window(self, proto, packet: Packet) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
+    def _process_window_action(self, proto, packet: Packet) -> None:
+        wid = packet.get_wid()
+        action = packet.get_str(2)
+        window = self._id_to_window.get(wid)
+        if not window:
+            log.warn("Warning: invalid window %#x", wid)
+            return
+        log.info("received window action %r on window %#x from %s", action, wid, proto)
+        window.emit("action", action)
+
     def send_initial_windows(self, ss, sharing=False) -> None:
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
@@ -444,4 +454,5 @@ class WindowServer(StubServerMixin):
             "configure-window", "close-window",
             "focus",
             "damage-sequence", "buffer-refresh",
+            "window-action",
             main_thread=True)

@@ -351,6 +351,7 @@ DEFAULT_METADATA_SUPPORTED = (
     "set-initial-position", "requested-position",
     "content-type",
     "parent", "relative-position",
+    "actions",
 )
 
 

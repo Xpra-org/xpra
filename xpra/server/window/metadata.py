@@ -77,6 +77,7 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "shape": {},
     "size-constraints": {},
     "strut": {},
+    "actions": (),
 }
 
 
