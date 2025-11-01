@@ -904,22 +904,19 @@ class GLWindowBackingBase(WindowBackingBase):
             self.do_draw_spinner()
 
     def do_draw_spinner(self) -> None:
-        # no need to call glGetAttribLocation(program, "position")
-        # since we specify the location in the shader:
-        position = 0
-        n_spinners = 10
+        from xpra.client.gui.spinner import cv
         inner_pct = 20
         outer_pct = 70
         if not self.spinner_vao:
             self.spinner_vao = glGenVertexArrays(1)
             vbuf = glGenBuffers(1)
             verts = []
-            step = 2 * pi / n_spinners
+            step = 2 * pi / cv.NLINES
 
             def pos(pct: int, deg: float) -> list[float]:
                 return [sin(deg) * pct / 100, cos(deg) * pct / 100, 0, 1]
 
-            for i in range(n_spinners):
+            for i in range(cv.NLINES):
                 deg = i * step
                 # trapezoid:
                 inner_left = pos(inner_pct, deg)
@@ -934,6 +931,9 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindBuffer(GL_ARRAY_BUFFER, vbuf)
             # noinspection PyCallingNonCallable,PyTypeChecker
             glBufferData(GL_ARRAY_BUFFER, (c_float * len(verts))(*verts), GL_STATIC_DRAW)
+            # no need to call glGetAttribLocation(program, "position")
+            # since we specify the location in the shader:
+            position = 0
             glVertexAttribPointer(position, 4, GL_FLOAT, GL_FALSE, 0, None)
             glEnableVertexAttribArray(position)
             glBindBuffer(GL_ARRAY_BUFFER, 0)
@@ -954,8 +954,8 @@ class GLWindowBackingBase(WindowBackingBase):
             return max(0.0, min(1.0, val))
         color = glGetUniformLocation(program, "color")
         now = monotonic()
-        for step in range(n_spinners):
-            v = (1 + sin(step * 2 * pi / n_spinners - now * 4)) / 2
+        for step in range(cv.NLINES):
+            v = (1 + sin(step * 2 * pi / cv.NLINES - now * 4)) / 2
             glUniform4f(color, c(v), c(v), c(v + 0.1), c(v))
             glDrawArrays(GL_TRIANGLES, step * 6, 6)
 
