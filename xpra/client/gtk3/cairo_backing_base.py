@@ -402,6 +402,8 @@ class CairoBackingBase(WindowBackingBase):
             iw, ih, pixels = WindowBackingBase.get_alert_icon()
             if iw and ih and pixels:
                 CairoBackingBase.alert_image = iw, ih, make_image_surface(Format.ARGB32, "RGBA", pixels, iw, ih, iw * 4)
+            else:
+                CairoBackingBase.alert_image = 0, 0, None
         return CairoBackingBase.alert_image
 
     def draw_alert_icon(self, context) -> None:

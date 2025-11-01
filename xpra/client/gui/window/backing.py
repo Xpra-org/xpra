@@ -35,6 +35,7 @@ WEBP_YUV = envbool("XPRA_WEBP_YUV", False)
 REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
 SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
 ALERT_MODE = os.environ.get("XPRA_ALERT_MODE", "spinner")
+ALERT_ICON = os.environ.get("XPRA_ALERT_ICON", "alert")
 # prefer csc scaling to cairo's own scaling:
 PREFER_CSC_SCALING = envbool("XPRA_PREFER_CSC_SCALING", True)
 
@@ -123,9 +124,10 @@ def choose_decoder(decoders_for_cs: list[CodecSpec], max_setup_cost=100) -> Code
 
 def load_alert_icon() -> tuple[int, int, bytes]:
     from xpra.platform.paths import get_icon_filename
-    filename = get_icon_filename("alert")
+    filename = get_icon_filename(ALERT_ICON)
+    log("load_alert_icon() get_icon_filename(%s)=%r", ALERT_ICON, filename)
     if not filename:
-        log("icon 'alert' not found!")
+        log("icon %r not found!", ALERT_ICON)
         return 0, 0, b""
     try:
         from PIL import Image
@@ -133,8 +135,10 @@ def load_alert_icon() -> tuple[int, int, bytes]:
         log(f"cannot load alert icon {filename!r} without PIL")
         return 0, 0, b""
     image = Image.open(filename)
-    if image.mode != "RGBA":
-        log(f"icon {filename!r} mode is {image.mode!r}, not RGBA")
+    if image.mode == "P":
+        image = image.convert("RGBA")
+    elif image.mode != "RGBA":
+        log.warn(f"Warning: icon {filename!r} mode is {image.mode!r}, not RGBA")
         return 0, 0, b""
     image = image.resize((64, 64))
     pixels = image.tobytes()
