@@ -1076,7 +1076,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.combine_texture("blend", x, y, w, h, {
                 "rgba": texture,
                 "dst": fbo,
-            }, {})
+            }, {"weight": 0.5})
 
     def paint_box(self, encoding: str, x: int, y: int, w: int, h: int) -> None:
         # show region being painted if debug paint box is enabled only:
