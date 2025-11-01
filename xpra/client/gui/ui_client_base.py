@@ -19,7 +19,7 @@ from xpra.os_util import gi_import
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized
-from xpra.util.env import envint
+from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base import features
 from xpra.log import Logger
@@ -33,6 +33,7 @@ log = Logger("client")
 log("UIXpraClient base classes: %s", CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
+FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
 
 
 class UIXpraClient(ClientBaseClass):
@@ -114,6 +115,8 @@ class UIXpraClient(ClientBaseClass):
             c.init_ui(self, opts)
 
     def run(self) -> ExitValue:
+        if FORCE_ALERT:
+            self.schedule_timer_redraw()
         for c in CLIENT_BASES:
             c.run(self)
         return self.exit_code or 0
@@ -443,30 +446,36 @@ class UIXpraClient(ClientBaseClass):
         windows = tuple(getattr(self, "_id_to_window", {}).values())
         if not windows:
             return
-        ok = self._server_ok
-        # ensure every window has the latest state:
-        for w in windows:
-            if not w.is_tray():
-                w.set_alert_state(not ok)
+        ok = self._server_ok or FORCE_ALERT
         if ok:
             log.info("server is OK again")
             return
-
         log.info("server is not responding, drawing alert state over the windows")
+        self.schedule_timer_redraw()
+
+    def schedule_timer_redraw(self) -> None:
+        log("schedule_timer_redraw()")
 
         def timer_redraw() -> bool:
             if self._protocol is None:
                 # no longer connected!
                 return False
-            self.refresh_windows()
-            return not self.server_ok()  # repaint again until ok
+            ok = self._server_ok and not FORCE_ALERT
+            log("timer_redraw() ok=%s", ok)
+            # ensure every window has the latest state:
+            for window in self._id_to_window.values():
+                if not window.is_tray():
+                    window.set_alert_state(not ok)
+            self.redraw_windows()
+            return not ok  # repaint again until ok
 
         GLib.idle_add(self.redraw_windows)
         GLib.timeout_add(250, timer_redraw)
 
-    def refresh_windows(self) -> None:
+    def redraw_windows(self) -> None:
+        # redraws all the windows without requesting a refresh from the server:
         for window in self._id_to_window.values():
-            window.refresh()
+            window.redraw()
 
     ######################################################################
     # packets:

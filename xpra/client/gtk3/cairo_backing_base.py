@@ -274,14 +274,12 @@ class CairoBackingBase(WindowBackingBase):
         if backing is None:
             return
         self.paint_backing_offset_border(context, w, h)
-        self.clip_to_backing(context, w, h)
-        context.save()
+        if not self.clip_to_backing(context, w, h):
+            return
         self.cairo_draw_backing(context, backing)
         self.cairo_draw_pointer(context)
-        context.restore()
-        self.cairo_paint_border(context)
-        if self.alert_state:
-            self.cairo_draw_alert(context)
+        self.cairo_draw_border(context)
+        self.cairo_draw_alert(context)
 
     def paint_backing_offset_border(self, context, w: int, h: int) -> None:
         left, top, right, bottom = self.offsets
@@ -303,27 +301,24 @@ class CairoBackingBase(WindowBackingBase):
             context.fill()
             context.restore()
 
-    def clip_to_backing(self, context, w: int, h: int) -> None:
+    def clip_to_backing(self, context, w: int, h: int) -> bool:
         left, top, right, bottom = self.offsets
         clip_rect = (left, top, w - left - right, h - top - bottom)
         context.rectangle(*clip_rect)
         log("clip_to_backing%s rectangle=%s", (context, w, h), clip_rect)
         context.clip()
-
-    def cairo_draw_backing(self, context, backing) -> None:
-        # try:
-        #    log("clip rectangles=%s", context.copy_clip_rectangle_list())
-        # except:
-        #    log.error("clip:", exc_info=True)
         ww, wh = self.render_size
         w, h = self.size
         if ww == 0 or w == 0 or wh == 0 or h == 0:
-            return
+            return False
         if w != ww or h != wh:
             context.scale(ww / w, wh / h)
         x, y = self.offsets[:2]
         if x != 0 or y != 0:
             context.translate(x, y)
+        return True
+
+    def cairo_draw_backing(self, context, backing) -> None:
         context.set_operator(Operator.SOURCE)
         context.set_source_surface(backing, 0, 0)
         context.paint()
@@ -333,22 +328,22 @@ class CairoBackingBase(WindowBackingBase):
             px, py, _size, start_time = self.pointer_overlay[2:]
             cairo_paint_pointer_overlay(context, self.cursor_data, px, py, start_time)
 
-    def cairo_paint_border(self, context, clip_area=None) -> None:
-        log("cairo_paint_border(%s, %s)", context, clip_area)
+    def cairo_draw_border(self, context, clip_area=None) -> None:
+        log("cairo_draw_border(%s, %s)", context, clip_area)
         b = self.border
         if b is None or not b.shown:
             return
-        rw, rh = self.get_size()
-        hsize = min(self.border.size, rw)
-        vsize = min(self.border.size, rh)
-        if rw <= hsize or rh <= vsize:
-            rects = ((0, 0, rw, rh), )
+        w, h = self.size
+        hsize = min(self.border.size, w)
+        vsize = min(self.border.size, h)
+        if w <= hsize or h <= vsize:
+            rects = ((0, 0, w, h), )
         else:
             rects = (
-                (0, 0, rw, vsize),                              # top
-                (rw - hsize, vsize, hsize, rh - vsize * 2),     # right
-                (0, rh - vsize, rw, vsize),                     # bottom
-                (0, vsize, hsize, rh - vsize * 2),              # left
+                (0, 0, w, vsize),                             # top
+                (w - hsize, vsize, hsize, h - vsize * 2),     # right
+                (0, h - vsize, w, vsize),                     # bottom
+                (0, vsize, hsize, h - vsize * 2),             # left
             )
 
         for x, y, w, h in rects:
@@ -393,14 +388,11 @@ class CairoBackingBase(WindowBackingBase):
             self.fps_refresh_timer = GLib.timeout_add(1000, refresh_screen)
 
     def cairo_draw_alert(self, context, area=None) -> None:
-        log("%s.cairo_draw_alert(%s, %s)", self, context, area)
-        c = self._client
-        if not c:
+        if not self.alert_state:
             return
+        log("%s.cairo_draw_alert(%s, %s)", self, context, area)
         from math import pi
-        ww, wh = self.get_size()
-        w = c.cx(ww)
-        h = c.cy(wh)
+        w, h = self.size
         # add grey semi-opaque layer on top:
         context.set_operator(OPERATOR_OVER)
         context.set_source_rgba(0.2, 0.2, 0.2, 0.4)

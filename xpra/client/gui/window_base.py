@@ -864,7 +864,7 @@ class ClientWindowBase(ClientWidgetBase):
         window_types = self._metadata.strtupleget("window-type")
         return bool(set(window_types) & SHOW_SPINNER_WINDOW_TYPES)
 
-    def refresh(self):
+    def redraw(self):
         # queue a repaint request
         w, h = self.get_size()
         self.repaint(0, 0, w, h)

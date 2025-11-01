@@ -89,7 +89,6 @@ CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
 NVJPEG = envbool("XPRA_OPENGL_NVJPEG", True)
 NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
 ALWAYS_RGBA = envbool("XPRA_OPENGL_ALWAYS_RGBA", False)
-FORCE_SPINNER = envbool("XPRA_OPENGL_FORCE_SPINNER", False)
 SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
 USE_ALERT = envbool("XPRA_OPENGL_ALERT", False)
 
@@ -876,7 +875,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.pointer_overlay:
             self.draw_pointer(xscale, yscale)
 
-        if self.alert_state or FORCE_SPINNER:
+        if self.alert_state:
             self.draw_alert()
 
         if self.border and self.border.shown:
