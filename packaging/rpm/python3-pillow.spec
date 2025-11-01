@@ -32,7 +32,7 @@ BuildRequires:  libimagequant-devel
 BuildRequires:  libjpeg-devel
 BuildRequires:  libwebp-devel
 BuildRequires:  zlib-devel
-
+BuildRequires:  %{package_prefix}pybind11
 BuildRequires:  %{package_prefix}devel
 BuildRequires:  %{package_prefix}setuptools
 
