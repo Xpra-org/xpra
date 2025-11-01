@@ -249,7 +249,6 @@ class GLWindowBackingBase(WindowBackingBase):
         self.debug_setup = False
         self.border: WindowBorder = WindowBorder(shown=False)
         self.paint_screen = False
-        self.paint_spinner = False
         self.offscreen_fbo = None
         self.tmp_fbo = None
         self.vao = None
@@ -877,7 +876,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.pointer_overlay:
             self.draw_pointer(xscale, yscale)
 
-        if self.paint_spinner or FORCE_SPINNER:
+        if self.alert_state or FORCE_SPINNER:
             self.draw_spinner()
 
         if self.border and self.border.shown:

@@ -168,6 +168,7 @@ class WindowBackingBase:
         self.fps_buffer_update_time: float = 0
         self.fps_value: int = 0
         self.fps_refresh_timer: int = 0
+        self.alert_state = False
         self.paint_stats: dict[str, int] = {}
 
     def recpaint(self, encoding: str) -> None:
