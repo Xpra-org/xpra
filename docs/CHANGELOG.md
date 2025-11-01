@@ -1,11 +1,12 @@
 # Changelog
 
-## [6.3.5] 2025-10-29
+## [6.3.5] 2025-11-02
 * Platforms, build and packaging:
     * [`pillow` 12.0.0](https://github.com/Xpra-org/xpra/commit/b30aca50b65ee7971393f2f1753428de797cf17f)
     * [`pylsqpack` 0.3.23](https://github.com/Xpra-org/xpra/commit/e28f4ab9d5a50873435511c401558bd2d7fb40b3)
     * [`aioquic` 1.3.0](https://github.com/Xpra-org/xpra/commit/768d17f7b541e999256e33029b90f8561e092d37)
     * [update pre-commit hooks](https://github.com/Xpra-org/xpra/commit/b41d336d6c669d00742da4c9bf44e4f52b800738), [fix linter warning](https://github.com/Xpra-org/xpra/commit/cfbd5f5e827065056f59500c43c9fd77a60824b3)
+    * [support building with Cython 3.2.0 beta](https://github.com/Xpra-org/xpra/commit/773d838f29206b080c4fdb16e15d974ddbc71cbe)
 * Security:
     * [`peercred` authentication module bypass](https://github.com/Xpra-org/xpra/commit/47f136cc2f28fec99e9c8e0693f55ab35f86fbae)
 * Major:
@@ -20,6 +21,8 @@
     * [bell events cause type errors](https://github.com/Xpra-org/xpra/commit/b7da94f327879b437545c3acf662ccf207516fa2)
     * [use rounding on effective refresh rate](https://github.com/Xpra-org/xpra/commit/acc56479b1b13d5e19faf905aa72871555373f94)
     * [validate monitor index data type](https://github.com/Xpra-org/xpra/commit/24a4764ed0c884b50d49513546b497b37e27bd9d)
+    * [avoid decode error refresh storms](https://github.com/Xpra-org/xpra/commit/b07359b9c8e274959e5e64298a45020d2e13215c)
+    * [missing pointer overlay with cairo backend](https://github.com/Xpra-org/xpra/commit/98a8cdfcfce9c65add1278e740c2febcf514e2b7)
 * Cosmetic:
     * [icon path should always be a string](https://github.com/Xpra-org/xpra/commit/22c0017f9ebe51527bfe3b73654a1ed003d008c3)
     * [icon data type warning](https://github.com/Xpra-org/xpra/commit/2b9dca708941d5607c6aefc3e1362dbdcec720de)
@@ -28,6 +31,7 @@
     * [file leak warning](https://github.com/Xpra-org/xpra/commit/4e9e0f3001cdaf681427dbbeea935d0deb9876fe)
     * [incorrect logging category](https://github.com/Xpra-org/xpra/commit/dfbf47f0e4aff912788c092cc01e2f5c383da5b3)
     * [mDNS splatter on shutdown](https://github.com/Xpra-org/xpra/commit/5591b8f486d095ab7e24079e2f931c0412aade5f)
+    * [file extension of debug screenshot](https://github.com/Xpra-org/xpra/commit/d11bea7b0468534316b7976c0c39cbb0cbde0028)
 
 ## [6.3.4] 2025-10-10
 * Platforms, build and packaging:

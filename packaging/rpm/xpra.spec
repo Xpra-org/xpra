@@ -1012,12 +1012,13 @@ fi
 
 
 %changelog
-* Wed Oct 29 2025 Antoine Martin <antoine@xpra.org> 6.3.4-11
+* Sun Nov 02 2025 Antoine Martin <antoine@xpra.org> 6.3.4-11
 - Platforms, build and packaging:
    `pillow` 12.0.0
    `pylsqpack` 0.3.23
    `aioquic` 1.3.0
    update pre-commit hooks
+   support building with Cython 3.2.0 beta
 - Security:
    `peercred` authentication module bypass
 - Major:
@@ -1032,6 +1033,8 @@ fi
    bell events cause type errors
    use rounding on effective refresh rate
    validate monitor index data type
+   avoid decode error refresh storms
+   missing pointer overlay with cairo backend
 - Cosmetic:
    icon path should always be a string
    icon data type warning
@@ -1040,6 +1043,7 @@ fi
    file leak warning
    incorrect logging category
    mDNS splatter on shutdown
+   file extension of debug screenshot
 
 * Fri Oct 10 2025 Antoine Martin <antoine@xpra.org> 6.3.4-10
 - Platforms, build and packaging:
