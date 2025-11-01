@@ -5,16 +5,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import math
 import os.path
 from time import monotonic
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from cairo import (  # pylint: disable=no-name-in-module
-    RectangleInt, Region,  # @UnresolvedImport
-    OPERATOR_OVER, LINE_CAP_ROUND,  # @UnresolvedImport
-)
+from cairo import RectangleInt, Region
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
@@ -1156,76 +1152,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if window and isinstance(window, Gtk.Window):
                 self.set_transient_for(window)
 
-    def cairo_paint_border(self, context, clip_area=None) -> None:
-        log("cairo_paint_border(%s, %s)", context, clip_area)
-        b = self.border
-        if b is None or not b.shown:
-            return
-        rw, rh = self.get_size()
-        hsize = min(self.border.size, rw)
-        vsize = min(self.border.size, rh)
-        if rw <= hsize or rh <= vsize:
-            rects = ((0, 0, rw, rh), )
-        else:
-            rects = (
-                (0, 0, rw, vsize),                              # top
-                (rw - hsize, vsize, hsize, rh - vsize * 2),     # right
-                (0, rh - vsize, rw, vsize),                     # bottom
-                (0, vsize, hsize, rh - vsize * 2),              # left
-            )
-
-        for x, y, w, h in rects:
-            if w <= 0 or h <= 0:
-                continue
-            r = Gdk.Rectangle()
-            r.x = x
-            r.y = y
-            r.width = w
-            r.height = h
-            rect = r
-            if clip_area:
-                rect = clip_area.intersect(r)
-            if rect.width == 0 or rect.height == 0:
-                continue
-            context.save()
-            context.rectangle(x, y, w, h)
-            context.clip()
-            context.set_source_rgba(self.border.red, self.border.green, self.border.blue, self.border.alpha)
-            context.fill()
-            context.paint()
-            context.restore()
-
-    def paint_spinner(self, context, area=None) -> None:
-        log("%s.paint_spinner(%s, %s)", self, context, area)
-        c = self._client
-        if not c:
-            return
-        ww, wh = self.get_size()
-        w = c.cx(ww)
-        h = c.cy(wh)
-        # add grey semi-opaque layer on top:
-        context.set_operator(OPERATOR_OVER)
-        context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
-        # we can't use the area as rectangle with:
-        # context.rectangle(area)
-        # because those would be unscaled dimensions
-        # it is easier and safer to repaint the whole window:
-        context.rectangle(0, 0, w, h)
-        context.fill()
-        # add spinner:
-        dim = min(w / 3.0, h / 3.0, 100.0)
-        context.set_line_width(dim / 10.0)
-        context.set_line_cap(LINE_CAP_ROUND)
-        context.translate(w / 2, h / 2)
-        from xpra.client.gui.spinner import cv
-        data_line = int(monotonic() * 4.0) % cv.NLINES
-        for i in range(cv.NLINES):  # 8 lines
-            context.set_source_rgba(0, 0, 0, cv.trs[data_line][i])
-            context.move_to(0.0, -dim / 4.0)
-            context.line_to(0.0, -dim)
-            context.rotate(math.pi / 4)
-            context.stroke()
-
     def spinner(self, _ok) -> None:
         c = self._client
         if not self.can_have_spinner() or not c:
@@ -1460,35 +1386,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         geomlog("center_backing(%i, %i) window size=%ix%i, backing offsets=%s", w, h, ww, wh, self._backing.offsets)
         # adjust pointer coordinates:
         self.window_offset = ox, oy
-
-    def paint_backing_offset_border(self, backing, context) -> None:
-        w, h = self.get_size()
-        left, top, right, bottom = backing.offsets
-        if left != 0 or top != 0 or right != 0 or bottom != 0:
-            from xpra.client.gtk3.window.common import PADDING_COLORS
-            context.save()
-            context.set_source_rgb(*PADDING_COLORS)
-            coords = (
-                (0, 0, left, h),  # left hand side padding
-                (0, 0, w, top),  # top padding
-                (w - right, 0, right, h),  # RHS
-                (0, h - bottom, w, bottom),  # bottom
-            )
-            geomlog("paint_backing_offset_border(%s, %s) offsets=%s, size=%s, rgb=%s, coords=%s",
-                    backing, context, backing.offsets, (w, h), PADDING_COLORS, coords)
-            for rx, ry, rw, rh in coords:
-                if rw > 0 and rh > 0:
-                    context.rectangle(rx, ry, rw, rh)
-            context.fill()
-            context.restore()
-
-    def clip_to_backing(self, backing, context) -> None:
-        w, h = self.get_size()
-        left, top, right, bottom = backing.offsets
-        clip_rect = (left, top, w - left - right, h - top - bottom)
-        context.rectangle(*clip_rect)
-        geomlog("clip_to_backing%s rectangle=%s", (backing, context), clip_rect)
-        context.clip()
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
         geomlog("window %#x move_resize%s", self.wid, (x, y, w, h, resize_counter))

@@ -31,9 +31,9 @@ class GLClientWindowBase(ClientWindow):
         log("spinner(%s) opengl window %#x: backing=%s", ok, self.wid, b)
         if not b:
             return
-        b.paint_spinner = self.can_have_spinner() and not ok
-        log("spinner(%s) backing=%s, paint_screen=%s, paint_spinner=%s",
-            ok, b._backing, b.paint_screen, b.paint_spinner)
+        b.alert_state = self.can_have_spinner() and not ok
+        log("spinner(%s) backing=%s, paint_screen=%s, alert_state=%s",
+            ok, b._backing, b.paint_screen, b.alert_state)
         if b._backing and b.paint_screen:
             w, h = self.get_size()
             self.repaint(0, 0, w, h)

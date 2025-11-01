@@ -7,7 +7,7 @@
 from time import monotonic
 from typing import Any
 from collections.abc import Callable
-from cairo import Context, ImageSurface, Format, Operator
+from cairo import Context, ImageSurface, Format, Operator, OPERATOR_OVER, LINE_CAP_ROUND
 
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks
@@ -267,12 +267,50 @@ class CairoBackingBase(WindowBackingBase):
         self._backing.flush()
         fire_paint_callbacks(callbacks)
 
-    def cairo_draw(self, context) -> None:
+    def cairo_draw(self, context, w: int, h: int) -> None:
         backing = self._backing
-        log("cairo_draw: backing=%s, size=%s, render-size=%s, offsets=%s, pointer_overlay=%s",
-            backing, self.size, self.render_size, self.offsets, self.pointer_overlay)
+        log("cairo_draw: window size=%s, backing=%s, size=%s, render-size=%s, offsets=%s, pointer_overlay=%s",
+            backing, (w, h), self.size, self.render_size, self.offsets, self.pointer_overlay)
         if backing is None:
             return
+        self.paint_backing_offset_border(context, w, h)
+        self.clip_to_backing(context, w, h)
+        context.save()
+        self.cairo_draw_backing(context, backing)
+        self.cairo_draw_pointer(context)
+        context.restore()
+        self.cairo_paint_border(context)
+        if self.alert_state:
+            self.cairo_draw_alert(context)
+
+    def paint_backing_offset_border(self, context, w: int, h: int) -> None:
+        left, top, right, bottom = self.offsets
+        if left != 0 or top != 0 or right != 0 or bottom != 0:
+            from xpra.client.gtk3.window.common import PADDING_COLORS
+            context.save()
+            context.set_source_rgb(*PADDING_COLORS)
+            coords = (
+                (0, 0, left, h),  # left hand side padding
+                (0, 0, w, top),  # top padding
+                (w - right, 0, right, h),  # RHS
+                (0, h - bottom, w, bottom),  # bottom
+            )
+            log("paint_backing_offset_border(%s, %i, %i) offsets=%s, size=%s, rgb=%s, coords=%s",
+                context, w, h, self.offsets, (w, h), PADDING_COLORS, coords)
+            for rx, ry, rw, rh in coords:
+                if rw > 0 and rh > 0:
+                    context.rectangle(rx, ry, rw, rh)
+            context.fill()
+            context.restore()
+
+    def clip_to_backing(self, context, w: int, h: int) -> None:
+        left, top, right, bottom = self.offsets
+        clip_rect = (left, top, w - left - right, h - top - bottom)
+        context.rectangle(*clip_rect)
+        log("clip_to_backing%s rectangle=%s", (context, w, h), clip_rect)
+        context.clip()
+
+    def cairo_draw_backing(self, context, backing) -> None:
         # try:
         #    log("clip rectangles=%s", context.copy_clip_rectangle_list())
         # except:
@@ -290,12 +328,51 @@ class CairoBackingBase(WindowBackingBase):
         context.set_source_surface(backing, 0, 0)
         context.paint()
 
+    def cairo_draw_pointer(self, context):
         if self.pointer_overlay and self.cursor_data:
             px, py, _size, start_time = self.pointer_overlay[2:]
-            spx = round(w * px / ww)
-            spy = round(h * py / wh)
-            cairo_paint_pointer_overlay(context, self.cursor_data, x + spx, y + spy, start_time)
+            cairo_paint_pointer_overlay(context, self.cursor_data, px, py, start_time)
 
+    def cairo_paint_border(self, context, clip_area=None) -> None:
+        log("cairo_paint_border(%s, %s)", context, clip_area)
+        b = self.border
+        if b is None or not b.shown:
+            return
+        rw, rh = self.get_size()
+        hsize = min(self.border.size, rw)
+        vsize = min(self.border.size, rh)
+        if rw <= hsize or rh <= vsize:
+            rects = ((0, 0, rw, rh), )
+        else:
+            rects = (
+                (0, 0, rw, vsize),                              # top
+                (rw - hsize, vsize, hsize, rh - vsize * 2),     # right
+                (0, rh - vsize, rw, vsize),                     # bottom
+                (0, vsize, hsize, rh - vsize * 2),              # left
+            )
+
+        for x, y, w, h in rects:
+            if w <= 0 or h <= 0:
+                continue
+            r = Gdk.Rectangle()
+            r.x = x
+            r.y = y
+            r.width = w
+            r.height = h
+            rect = r
+            if clip_area:
+                rect = clip_area.intersect(r)
+            if rect.width == 0 or rect.height == 0:
+                continue
+            context.save()
+            context.rectangle(x, y, w, h)
+            context.clip()
+            context.set_source_rgba(self.border.red, self.border.green, self.border.blue, self.border.alpha)
+            context.fill()
+            context.paint()
+            context.restore()
+
+    def cairo_draw_fps(self, context):
         if self.is_show_fps() and self.fps_image:
             x, y = 10, 10
             context.translate(x, y)
@@ -314,3 +391,35 @@ class CairoBackingBase(WindowBackingBase):
 
             self.cancel_fps_refresh()
             self.fps_refresh_timer = GLib.timeout_add(1000, refresh_screen)
+
+    def cairo_draw_alert(self, context, area=None) -> None:
+        log("%s.cairo_draw_alert(%s, %s)", self, context, area)
+        c = self._client
+        if not c:
+            return
+        from math import pi
+        ww, wh = self.get_size()
+        w = c.cx(ww)
+        h = c.cy(wh)
+        # add grey semi-opaque layer on top:
+        context.set_operator(OPERATOR_OVER)
+        context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
+        # we can't use the area as rectangle with:
+        # context.rectangle(area)
+        # because those would be unscaled dimensions
+        # it is easier and safer to repaint the whole window:
+        context.rectangle(0, 0, w, h)
+        context.fill()
+        # add spinner:
+        dim = min(w / 3.0, h / 3.0, 100.0)
+        context.set_line_width(dim / 10.0)
+        context.set_line_cap(LINE_CAP_ROUND)
+        context.translate(w / 2, h / 2)
+        from xpra.client.gui.spinner import cv
+        data_line = int(monotonic() * 4.0) % cv.NLINES
+        for i in range(cv.NLINES):  # 8 lines
+            context.set_source_rgba(0, 0, 0, cv.trs[data_line][i])
+            context.move_to(0.0, -dim / 4.0)
+            context.line_to(0.0, -dim)
+            context.rotate(pi / 4)
+            context.stroke()
