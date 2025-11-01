@@ -1744,15 +1744,6 @@ class WindowClient(StubClientMixin):
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
 
-    def redraw_spinners(self) -> None:
-        # draws spinner on top of the window, or not (plain repaint)
-        # depending on whether the server is ok or not
-        ok = self.server_ok()
-        log("redraw_spinners() ok=%s", ok)
-        for w in self._id_to_window.values():
-            if not w.is_tray():
-                w.spinner(ok)
-
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self) -> None:

@@ -265,9 +265,6 @@ class ClientWindowBase(ClientWidgetBase):
     def apply_transient_for(self, wid: int) -> None:
         raise NotImplementedError
 
-    def paint_spinner(self, context, area) -> None:
-        raise NotImplementedError
-
     def xget_u32_property(self, target, name: str, default_value=0) -> int:
         return default_value
 
@@ -853,20 +850,24 @@ class ClientWindowBase(ClientWidgetBase):
         if backing:
             backing.eos()
 
-    def spinner(self, _ok) -> None:
-        if not self.can_have_spinner():
+    def set_alert_state(self, alert_state: bool) -> None:
+        can = self.can_have_alert()
+        backing = self._backing
+        log("set_alert_state(%s) can_have_alert=%s, backing=%s", alert_state, can, backing)
+        if not can or not backing:
             return
-        log("spinner(%s) queueing redraw")
-        # with normal windows, we just queue a draw request
-        # and let the expose event paint the spinner
-        w, h = self.get_size()
-        self.repaint(0, 0, w, h)
+        backing.alert_state = alert_state
 
-    def can_have_spinner(self) -> bool:
+    def can_have_alert(self) -> bool:
         if self._backing is None:
             return False
         window_types = self._metadata.strtupleget("window-type")
         return bool(set(window_types) & SHOW_SPINNER_WINDOW_TYPES)
+
+    def refresh(self):
+        # queue a repaint request
+        w, h = self.get_size()
+        self.repaint(0, 0, w, h)
 
     def _unfocus(self) -> bool:
         # overriden in FocusWindow

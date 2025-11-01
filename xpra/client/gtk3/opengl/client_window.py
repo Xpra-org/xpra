@@ -26,18 +26,6 @@ class GLClientWindowBase(ClientWindow):
     def is_GL(self) -> bool:
         return True
 
-    def spinner(self, ok: bool) -> None:
-        b = self._backing
-        log("spinner(%s) opengl window %#x: backing=%s", ok, self.wid, b)
-        if not b:
-            return
-        b.alert_state = self.can_have_spinner() and not ok
-        log("spinner(%s) backing=%s, paint_screen=%s, alert_state=%s",
-            ok, b._backing, b.paint_screen, b.alert_state)
-        if b._backing and b.paint_screen:
-            w, h = self.get_size()
-            self.repaint(0, 0, w, h)
-
     def queue_draw_area(self, x: int, y: int, w: int, h: int) -> None:
         b = self._backing
         if not b:

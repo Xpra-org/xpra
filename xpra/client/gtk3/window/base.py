@@ -1152,15 +1152,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if window and isinstance(window, Gtk.Window):
                 self.set_transient_for(window)
 
-    def spinner(self, _ok) -> None:
-        c = self._client
-        if not self.can_have_spinner() or not c:
-            return
-        # with normal windows, we just queue a draw request
-        # and let the expose event paint the spinner
-        w, h = self.get_size()
-        self.repaint(0, 0, w, h)
-
     def do_map_event(self, event) -> None:
         log("%s.do_map_event(%s) OR=%s", self, event, self._override_redirect)
         Gtk.Window.do_map_event(self, event)

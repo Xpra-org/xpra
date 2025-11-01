@@ -877,7 +877,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.draw_pointer(xscale, yscale)
 
         if self.alert_state or FORCE_SPINNER:
-            self.draw_spinner()
+            self.draw_alert()
 
         if self.border and self.border.shown:
             self.draw_border()
@@ -896,9 +896,9 @@ class GLWindowBackingBase(WindowBackingBase):
         width, height = self.size
         save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], width, height, self._alpha_enabled)
 
-    def draw_spinner(self):
+    def draw_alert(self):
         if USE_ALERT:
-            self.draw_alert()
+            self.draw_alert_icon()
         else:
             self.do_draw_spinner()
 
@@ -986,7 +986,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.alert_uploaded = 1
         return True
 
-    def draw_alert(self):
+    def draw_alert_icon(self):
         if not self.upload_alert_texture():
             return
         w, h = 64, 64

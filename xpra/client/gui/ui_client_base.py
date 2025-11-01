@@ -440,21 +440,33 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # network and status:
     def server_connection_state_change(self) -> None:
-        if not self._server_ok and hasattr(self, "redraw_spinners"):
-            log.info("server is not responding, drawing spinners over the windows")
+        windows = tuple(getattr(self, "_id_to_window", {}).values())
+        if not windows:
+            return
+        ok = self._server_ok
+        # ensure every window has the latest state:
+        for w in windows:
+            if not w.is_tray():
+                w.set_alert_state(not ok)
+        if ok:
+            log.info("server is OK again")
+            return
 
-            def timer_redraw() -> bool:
-                if self._protocol is None:
-                    # no longer connected!
-                    return False
-                ok = self.server_ok()
-                self.redraw_spinners()
-                if ok:
-                    log.info("server is OK again")
-                return not ok  # repaint again until ok
+        log.info("server is not responding, drawing alert state over the windows")
 
-            GLib.idle_add(self.redraw_spinners)
-            GLib.timeout_add(250, timer_redraw)
+        def timer_redraw() -> bool:
+            if self._protocol is None:
+                # no longer connected!
+                return False
+            self.refresh_windows()
+            return not self.server_ok()  # repaint again until ok
+
+        GLib.idle_add(self.redraw_windows)
+        GLib.timeout_add(250, timer_redraw)
+
+    def refresh_windows(self) -> None:
+        for window in self._id_to_window.values():
+            window.refresh()
 
     ######################################################################
     # packets:
