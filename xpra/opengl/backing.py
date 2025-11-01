@@ -8,7 +8,7 @@ import os
 import struct
 from time import monotonic
 from typing import Any
-from math import sin, cos, pi
+from math import sin, pi
 from ctypes import c_float, c_void_p
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager, nullcontext
@@ -897,42 +897,33 @@ class GLWindowBackingBase(WindowBackingBase):
         width, height = self.size
         save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], width, height, self._alpha_enabled)
 
+    def create_spinner_vao(self):
+        from xpra.client.gui.spinner import gen_trapezoids
+        positions = []
+        for inner_left, inner_right, outer_left, outer_right in gen_trapezoids():
+            # as two triangles:
+            positions += [inner_left] + [inner_right] + [outer_left]
+            positions += [outer_left] + [outer_right] + [inner_right]
+        # convert to a flat list of 4 coordinates for uploading to an OpenGL buffer:
+        verts = []
+        for pos in positions:
+            verts += [pos[0], pos[1], 0, 1]
+
+        self.spinner_vao = glGenVertexArrays(1)
+        glBindVertexArray(self.spinner_vao)
+
+        vbuf = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vbuf)
+        # noinspection PyCallingNonCallable,PyTypeChecker
+        glBufferData(GL_ARRAY_BUFFER, (c_float * len(verts))(*verts), GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, None)
+        glEnableVertexAttribArray(0)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+
     def draw_alert_spinner(self) -> None:
-        from xpra.client.gui.spinner import cv
-        inner_pct = 20
-        outer_pct = 70
+        from xpra.client.gui.spinner import NLINES
         if not self.spinner_vao:
-            self.spinner_vao = glGenVertexArrays(1)
-            vbuf = glGenBuffers(1)
-            verts = []
-            step = 2 * pi / cv.NLINES
-
-            def pos(pct: int, deg: float) -> list[float]:
-                return [sin(deg) * pct / 100, cos(deg) * pct / 100, 0, 1]
-
-            for i in range(cv.NLINES):
-                deg = i * step
-                # trapezoid:
-                inner_left = pos(inner_pct, deg)
-                inner_right = pos(inner_pct, deg + step / 2)
-                outer_left = pos(outer_pct, deg)
-                outer_right = pos(outer_pct, deg + step / 2)
-                # as two triangles:
-                verts += inner_left + inner_right + outer_left
-                verts += outer_left + outer_right + inner_right
-            glBindVertexArray(self.spinner_vao)
-
-            glBindBuffer(GL_ARRAY_BUFFER, vbuf)
-            # noinspection PyCallingNonCallable,PyTypeChecker
-            glBufferData(GL_ARRAY_BUFFER, (c_float * len(verts))(*verts), GL_STATIC_DRAW)
-            # no need to call glGetAttribLocation(program, "position")
-            # since we specify the location in the shader:
-            position = 0
-            glVertexAttribPointer(position, 4, GL_FLOAT, GL_FALSE, 0, None)
-            glEnableVertexAttribArray(position)
-            glBindBuffer(GL_ARRAY_BUFFER, 0)
-        else:
-            glBindVertexArray(self.spinner_vao)
+            self.create_spinner_vao()
 
         program = self.programs["fixed-color"]
         glUseProgram(program)
@@ -946,10 +937,11 @@ class GLWindowBackingBase(WindowBackingBase):
 
         def c(val: float) -> float:
             return max(0.0, min(1.0, val))
+        glBindVertexArray(self.spinner_vao)
         color = glGetUniformLocation(program, "color")
         now = monotonic()
-        for step in range(cv.NLINES):
-            v = (1 + sin(step * 2 * pi / cv.NLINES - now * 4)) / 2
+        for step in range(NLINES):
+            v = (1 + sin(step * 2 * pi / NLINES - now * 4)) / 2
             glUniform4f(color, c(v), c(v), c(v + 0.1), c(v))
             glDrawArrays(GL_TRIANGLES, step * 6, 6)
 

@@ -422,27 +422,33 @@ class CairoBackingBase(WindowBackingBase):
 
     def draw_alert_spinner(self, context) -> None:
         log("%s.cairo_draw_alert(%s)", self, context)
-        from math import pi
+        from math import pi, sin
         w, h = self.size
         # add grey semi-opaque layer on top:
         context.set_operator(OPERATOR_OVER)
         context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
-        # we can't use the area as rectangle with:
-        # context.rectangle(area)
-        # because those would be unscaled dimensions
-        # it is easier and safer to repaint the whole window:
         context.rectangle(0, 0, w, h)
         context.fill()
-        # add spinner:
+
         dim = min(w / 3.0, h / 3.0, 100.0)
         context.set_line_width(dim / 10.0)
         context.set_line_cap(LINE_CAP_ROUND)
         context.translate(w / 2, h / 2)
-        from xpra.client.gui.spinner import cv
-        data_line = int(monotonic() * 4.0) % cv.NLINES
-        for i in range(cv.NLINES):  # 8 lines
-            context.set_source_rgba(0, 0, 0, cv.trs[data_line][i])
-            context.move_to(0.0, -dim / 4.0)
-            context.line_to(0.0, -dim)
-            context.rotate(pi / 4)
-            context.stroke()
+
+        def coords(x: float, y: float) -> tuple[float, float]:
+            # scale 0..1 to real coordinates:
+            return x * w / 2, y * h / 2
+
+        from xpra.client.gui.spinner import gen_trapezoids, NLINES
+        now = monotonic()
+        step = 0
+        for inner_left, inner_right, outer_left, outer_right in gen_trapezoids():  # 8 lines
+            alpha = (1 + sin(step * 2 * pi / NLINES - now * 4)) / 2
+            context.set_source_rgba(0, 0, 0, alpha)
+            context.move_to(*coords(*inner_left))
+            context.line_to(*coords(*outer_left))
+            context.line_to(*coords(*outer_right))
+            context.line_to(*coords(*inner_right))
+            context.close_path()
+            context.fill()
+            step += 1

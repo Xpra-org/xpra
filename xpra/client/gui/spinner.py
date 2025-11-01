@@ -4,18 +4,26 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-class cv:
-    trs: tuple[tuple[float, float, float, float, float, float, float, float]] = (
-        (0.00, 0.15, 0.30, 0.50, 0.65, 0.80, 0.90, 1.00),
-        (1.00, 0.00, 0.15, 0.30, 0.50, 0.65, 0.80, 0.90),
-        (0.90, 1.00, 0.00, 0.15, 0.30, 0.50, 0.65, 0.80),
-        (0.80, 0.90, 1.00, 0.00, 0.15, 0.30, 0.50, 0.65),
-        (0.65, 0.80, 0.90, 1.00, 0.00, 0.15, 0.30, 0.50),
-        (0.50, 0.65, 0.80, 0.90, 1.00, 0.00, 0.15, 0.30),
-        (0.30, 0.50, 0.65, 0.80, 0.90, 1.00, 0.00, 0.15),
-        (0.15, 0.30, 0.50, 0.65, 0.80, 0.90, 1.00, 0.00)
-    )
+from typing import TypeAlias
+from math import pi, sin, cos
 
-    SPEED = 100
-    CLIMIT = 1000
-    NLINES = 8
+POS: TypeAlias = tuple[float, float]
+NLINES = 8
+
+
+def pos(pct: int, degree: float) -> POS:
+    return sin(degree) * pct / 100, cos(degree) * pct / 100
+
+
+def gen_trapezoids(inner_pct=20, outer_pct=70) -> list[tuple[POS, POS, POS, POS]]:
+    step = 2 * pi / NLINES
+    traps = []
+    for i in range(NLINES):
+        deg = i * step
+        # each trapezoid has 4 coordinates:
+        inner_left = pos(inner_pct, deg)
+        inner_right = pos(inner_pct, deg + step / 2)
+        outer_left = pos(outer_pct, deg)
+        outer_right = pos(outer_pct, deg + step / 2)
+        traps.append((inner_left, inner_right, outer_left, outer_right))
+    return traps
