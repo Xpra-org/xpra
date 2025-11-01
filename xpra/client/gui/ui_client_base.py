@@ -470,7 +470,7 @@ class UIXpraClient(ClientBaseClass):
             return not ok  # repaint again until ok
 
         GLib.idle_add(self.redraw_windows)
-        GLib.timeout_add(250, timer_redraw)
+        GLib.timeout_add(100, timer_redraw)
 
     def redraw_windows(self) -> None:
         # redraws all the windows without requesting a refresh from the server:

@@ -64,7 +64,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
 
 class CairoBackingBase(WindowBackingBase):
     HAS_ALPHA = envbool("XPRA_ALPHA", True)
-    alert_image = None
+    alert_image = ()
 
     def __init__(self, wid: int, window_alpha: bool, _pixel_depth=0):
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
@@ -401,19 +401,22 @@ class CairoBackingBase(WindowBackingBase):
         if not CairoBackingBase.alert_image:
             iw, ih, pixels = WindowBackingBase.get_alert_icon()
             if iw and ih and pixels:
-                CairoBackingBase.alert_image = make_image_surface(Format.ARGB32, "RGBA", pixels, iw, ih, iw * 4)
+                CairoBackingBase.alert_image = iw, ih, make_image_surface(Format.ARGB32, "RGBA", pixels, iw, ih, iw * 4)
         return CairoBackingBase.alert_image
 
     def draw_alert_icon(self, context) -> None:
-        image = self.get_alert_image()
-        if not image:
+        iw, ih, image = self.get_alert_image()
+        if iw == 0 or ih == 0 or not image:
             return
+        from math import sin
         w, h = self.size
-        x, y = 10, h - 64 - 10
+        x = 10
+        y = h - ih - 10
+        alpha = (1 + sin(monotonic() * 5)) / 2
         context.translate(x, y)
         context.set_operator(Operator.OVER)
         context.set_source_surface(image, 0, 0)
-        context.paint()
+        context.paint_with_alpha(alpha)
 
     def draw_alert_spinner(self, context) -> None:
         log("%s.cairo_draw_alert(%s)", self, context)
