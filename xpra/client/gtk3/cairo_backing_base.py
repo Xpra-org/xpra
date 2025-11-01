@@ -10,13 +10,18 @@ from collections.abc import Callable
 from cairo import Context, ImageSurface, Format, Operator, OPERATOR_OVER, LINE_CAP_ROUND
 
 from xpra.client.gui.paint_colors import get_paint_box_color
-from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks
-from xpra.common import roundup, PaintCallbacks
+from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks, ALERT_MODE
+from xpra.common import roundup, PaintCallbacks, noop
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.log import Logger
+
+try:
+    from xpra.gtk.cairo_image import make_image_surface
+except ImportError:
+    make_image_surface = noop
 
 GLib = gi_import("GLib")
 Gdk = gi_import("Gdk")
@@ -32,15 +37,10 @@ for attr in dir(Format):
 
 
 def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_time) -> None:
-    if not cursor_data:
+    if not cursor_data or make_image_surface == noop:
         return
     elapsed = max(0, monotonic() - start_time)
     if elapsed > 6:
-        return
-    # pylint: disable=import-outside-toplevel
-    try:
-        from xpra.client.gtk3.cairo_image import make_image_surface
-    except ImportError:
         return
 
     cw = cursor_data[3]
@@ -64,6 +64,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
 
 class CairoBackingBase(WindowBackingBase):
     HAS_ALPHA = envbool("XPRA_ALPHA", True)
+    alert_image = None
 
     def __init__(self, wid: int, window_alpha: bool, _pixel_depth=0):
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
@@ -387,10 +388,35 @@ class CairoBackingBase(WindowBackingBase):
             self.cancel_fps_refresh()
             self.fps_refresh_timer = GLib.timeout_add(1000, refresh_screen)
 
-    def cairo_draw_alert(self, context, area=None) -> None:
+    def cairo_draw_alert(self, context) -> None:
         if not self.alert_state:
             return
-        log("%s.cairo_draw_alert(%s, %s)", self, context, area)
+        if ALERT_MODE == "icon":
+            self.draw_alert_icon(context)
+        else:
+            self.draw_alert_spinner(context)
+
+    @staticmethod
+    def get_alert_image():
+        if not CairoBackingBase.alert_image:
+            iw, ih, pixels = WindowBackingBase.get_alert_icon()
+            if iw and ih and pixels:
+                CairoBackingBase.alert_image = make_image_surface(Format.ARGB32, "RGBA", pixels, iw, ih, iw * 4)
+        return CairoBackingBase.alert_image
+
+    def draw_alert_icon(self, context) -> None:
+        image = self.get_alert_image()
+        if not image:
+            return
+        w, h = self.size
+        x, y = 10, h - 64 - 10
+        context.translate(x, y)
+        context.set_operator(Operator.OVER)
+        context.set_source_surface(image, 0, 0)
+        context.paint()
+
+    def draw_alert_spinner(self, context) -> None:
+        log("%s.cairo_draw_alert(%s)", self, context)
         from math import pi
         w, h = self.size
         # add grey semi-opaque layer on top:

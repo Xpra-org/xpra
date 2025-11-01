@@ -34,6 +34,7 @@ WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", False)
 REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
 SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
+ALERT_MODE = os.environ.get("XPRA_ALERT_MODE", "spinner")
 # prefer csc scaling to cairo's own scaling:
 PREFER_CSC_SCALING = envbool("XPRA_PREFER_CSC_SCALING", True)
 
@@ -120,12 +121,35 @@ def choose_decoder(decoders_for_cs: list[CodecSpec], max_setup_cost=100) -> Code
     return chosen
 
 
+def load_alert_icon() -> tuple[int, int, bytes]:
+    from xpra.platform.paths import get_icon_filename
+    filename = get_icon_filename("alert")
+    if not filename:
+        log("icon 'alert' not found!")
+        return 0, 0, b""
+    try:
+        from PIL import Image
+    except ImportError:
+        log(f"cannot load alert icon {filename!r} without PIL")
+        return 0, 0, b""
+    image = Image.open(filename)
+    if image.mode != "RGBA":
+        log(f"icon {filename!r} mode is {image.mode!r}, not RGBA")
+        return 0, 0, b""
+    image = image.resize((64, 64))
+    pixels = image.tobytes()
+    iw, ih = image.size
+    image.close()
+    return iw, ih, pixels
+
+
 class WindowBackingBase:
     """
     Generic superclass for all Backing code,
     see CairoBackingBase and GTKWindowBacking subclasses for actual implementations
     """
     RGB_MODES: Sequence[str] = ()
+    alert_icon = ()
 
     def __init__(self, wid: int, window_alpha: bool):
         load_video()
@@ -170,6 +194,12 @@ class WindowBackingBase:
         self.fps_refresh_timer: int = 0
         self.alert_state = False
         self.paint_stats: dict[str, int] = {}
+
+    @staticmethod
+    def get_alert_icon() -> tuple[int, int, bytes]:
+        if not WindowBackingBase.alert_icon:
+            WindowBackingBase.alert_icon = load_alert_icon()
+        return WindowBackingBase.alert_icon
 
     def recpaint(self, encoding: str) -> None:
         self.paint_stats[encoding] = self.paint_stats.get(encoding, 0) + 1

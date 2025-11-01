@@ -62,7 +62,7 @@ from xpra.common import roundup, PaintCallbacks
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color
-from xpra.client.gui.window.backing import fire_paint_callbacks, WindowBackingBase, WEBP_PILLOW
+from xpra.client.gui.window.backing import fire_paint_callbacks, WindowBackingBase, WEBP_PILLOW, ALERT_MODE
 from xpra.opengl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
 from xpra.opengl.debug import context_init_debug, gl_marker, gl_frame_terminator
 from xpra.opengl.util import (
@@ -90,7 +90,6 @@ NVJPEG = envbool("XPRA_OPENGL_NVJPEG", True)
 NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
 ALWAYS_RGBA = envbool("XPRA_OPENGL_ALWAYS_RGBA", False)
 SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
-USE_ALERT = envbool("XPRA_OPENGL_ALERT", False)
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
@@ -876,7 +875,10 @@ class GLWindowBackingBase(WindowBackingBase):
             self.draw_pointer(xscale, yscale)
 
         if self.alert_state:
-            self.draw_alert()
+            if ALERT_MODE == "icon":
+                self.draw_alert_icon()
+            else:
+                self.draw_alert_spinner()
 
         if self.border and self.border.shown:
             self.draw_border()
@@ -895,13 +897,7 @@ class GLWindowBackingBase(WindowBackingBase):
         width, height = self.size
         save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], width, height, self._alpha_enabled)
 
-    def draw_alert(self):
-        if USE_ALERT:
-            self.draw_alert_icon()
-        else:
-            self.do_draw_spinner()
-
-    def do_draw_spinner(self) -> None:
+    def draw_alert_spinner(self) -> None:
         from xpra.client.gui.spinner import cv
         inner_pct = 20
         outer_pct = 70
@@ -965,21 +961,10 @@ class GLWindowBackingBase(WindowBackingBase):
             # we have already done it:
             return self.alert_uploaded > 0
         texture = self.textures[TEX_ALERT]
-        from xpra.platform.paths import get_icon_filename
-        icon = get_icon_filename("alert")
-        if not icon:
+        iw, ih, pixels = WindowBackingBase.get_alert_icon()
+        if iw == 0 or ih == 0 or not pixels:
             self.alert_uploaded = -1
-            log("icon 'alert' not found!")
             return False
-        from PIL import Image
-        image = Image.open(icon)
-        if image.mode != "RGBA":
-            self.alert_uploaded = -1
-            log(f"icon {icon!r} mode is {image.mode!r}, not RGBA")
-            return False
-        image = image.resize((64, 64))
-        pixels = image.tobytes()
-        iw, ih = image.size
         glActiveTexture(GL_TEXTURE0)
         upload_rgba_texture(int(texture), iw, ih, pixels)
         self.alert_uploaded = 1
