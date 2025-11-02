@@ -1,4 +1,4 @@
-xpra (6.3.4-2) UNRELEASED; urgency=low
+xpra (6.3.5-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     `pillow` 12.0.0
     `pylsqpack` 0.3.23
@@ -31,7 +31,7 @@ xpra (6.3.4-2) UNRELEASED; urgency=low
     mDNS splatter on shutdown
     file extension of debug screenshot
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 02 Nov 2025 00:07:02 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 02 Nov 2025 18:46:57 +0700
 
 xpra (6.3.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

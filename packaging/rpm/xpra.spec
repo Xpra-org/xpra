@@ -74,7 +74,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.3.4
+Version:			6.3.5
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -1012,7 +1012,7 @@ fi
 
 
 %changelog
-* Sun Nov 02 2025 Antoine Martin <antoine@xpra.org> 6.3.4-11
+* Sun Nov 02 2025 Antoine Martin <antoine@xpra.org> 6.3.5-10
 - Platforms, build and packaging:
    `pillow` 12.0.0
    `pylsqpack` 0.3.23
