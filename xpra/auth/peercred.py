@@ -87,7 +87,7 @@ class Authenticator(SysAuthenticator):
                         return True
                     if allow_gids is not None and gid in allow_gids:
                         log(f"matched gid: {gid} from allow list: %s", csv(allow_gids))
-                        return False
+                        return True
                     log.warn("Warning: peercred access denied,")
                     if allow_owner:
                         log.warn(f" does not match owner {uid}")
