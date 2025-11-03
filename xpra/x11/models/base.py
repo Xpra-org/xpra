@@ -10,6 +10,7 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.env import first_time
 from xpra.common import WORKSPACE_UNSET, WORKSPACE_ALL
+from xpra.x11.common import _NET_WM_STATE_ADD, _NET_WM_STATE_REMOVE, _NET_WM_STATE_TOGGLE, STATE_STRING
 from xpra.x11.error import xsync, xlog
 from xpra.x11.models.core import CoreX11WindowModel, Above, RESTACKING_STR
 from xpra.x11.bindings.core import constants
@@ -32,15 +33,6 @@ def get_pyatom(value: int):
         return X11Window.get_atom_name(value)
 
 
-# _NET_WM_STATE:
-_NET_WM_STATE_REMOVE = 0
-_NET_WM_STATE_ADD = 1
-_NET_WM_STATE_TOGGLE = 2
-STATE_STRING: dict[int, str] = {
-    _NET_WM_STATE_REMOVE: "REMOVE",
-    _NET_WM_STATE_ADD: "ADD",
-    _NET_WM_STATE_TOGGLE: "TOGGLE",
-}
 WithdrawnState: Final[int] = constants["WithdrawnState"]
 IconicState: Final[int] = constants["IconicState"]
 NormalState: Final[int] = constants["NormalState"]

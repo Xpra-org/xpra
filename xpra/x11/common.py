@@ -30,6 +30,16 @@ get_pywindow = nolookup
 REPR_FUNCTIONS: dict[type, Callable[[Any], Any]] = {}
 
 
+_NET_WM_STATE_REMOVE = 0
+_NET_WM_STATE_ADD = 1
+_NET_WM_STATE_TOGGLE = 2
+STATE_STRING: dict[int, str] = {
+    _NET_WM_STATE_REMOVE: "REMOVE",
+    _NET_WM_STATE_ADD: "ADD",
+    _NET_WM_STATE_TOGGLE: "TOGGLE",
+}
+
+
 DEFAULT_NET_SUPPORTED: list[str] = [
     "_NET_SUPPORTED",  # a bit redundant, perhaps...
     "_NET_SUPPORTING_WM_CHECK",
