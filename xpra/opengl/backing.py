@@ -990,8 +990,8 @@ class GLWindowBackingBase(WindowBackingBase):
         upload_rgba_texture(texture, 1, 1, pixel)
 
         rw, rh = self.render_size
-        hsize = min(self.border.size, rw)
-        vsize = min(self.border.size, rh)
+        hsize = min(b.size, rw)
+        vsize = min(b.size, rh)
         if rw <= hsize or rh <= vsize:
             rects = ((0, 0, rw, rh), )
         else:

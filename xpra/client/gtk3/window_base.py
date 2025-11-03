@@ -2128,8 +2128,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if b is None or not b.shown:
             return
         rw, rh = self.get_size()
-        hsize = min(self.border.size, rw)
-        vsize = min(self.border.size, rh)
+        hsize = min(b.size, rw)
+        vsize = min(b.size, rh)
         if rw <= hsize or rh <= vsize:
             rects = ((0, 0, rw, rh), )
         else:
@@ -2156,7 +2156,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             context.save()
             context.rectangle(x, y, w, h)
             context.clip()
-            context.set_source_rgba(self.border.red, self.border.green, self.border.blue, self.border.alpha)
+            context.set_source_rgba(b.red, b.green, b.blue, b.alpha)
             context.fill()
             context.paint()
             context.restore()
