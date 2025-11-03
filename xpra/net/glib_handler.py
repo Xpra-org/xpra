@@ -49,10 +49,7 @@ class GLibPacketHandler:
         # replace any previously defined handlers:
         self.remove_packet_handlers(packet_type)
         log("add_packet_handler%s", (packet_type, handler, main_thread))
-        if main_thread:
-            handlers = self._authenticated_ui_packet_handlers
-        else:
-            handlers = self._authenticated_packet_handlers
+        handlers = self._authenticated_ui_packet_handlers if main_thread else self._authenticated_packet_handlers
         handlers[packet_type] = handler
 
     def add_packets(self, *packet_types: str, main_thread=False) -> None:
