@@ -41,7 +41,7 @@ Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 ## Build all the libraries
 
 First, make sure that all the modulesets will be using the same system libffi
-as the one used by Python:
+as the one used by Python, so run this command from a `jhbuild shell`:
 ```commandline
 cat > ${JHBUILD_PREFIX}/lib/pkgconfig/libffi.pc << EOF
 prefix=$(xcrun --show-sdk-path)
