@@ -202,6 +202,7 @@ def send_client_message(xid, message_type: str, *values) -> None:
     SubstructureRedirectMask = constants["SubstructureRedirectMask"]
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
     root_xid = get_root_xid()
+    log("sendClientMessage(%#x, %#x, %s, %#x, %r, %r)", root_xid, xid, False, event_mask, message_type, values)
     X11Window.sendClientMessage(root_xid, xid, False, event_mask, message_type, *values)
 
 

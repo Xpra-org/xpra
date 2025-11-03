@@ -853,6 +853,18 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
         self.when_realized("fullscreen", do_set_fullscreen)
 
+    def set_focused(self, focused: bool) -> None:
+        if not HAS_X11_BINDINGS:
+            return
+        from xpra.platform.posix.gui import _send_client_message
+        from xpra.x11.common import _NET_WM_STATE_ADD
+
+        def do_focused() -> None:
+            log.error("do_focused!")
+            with xlog:
+                _send_client_message(self.get_window(), "_NET_WM_STATE", _NET_WM_STATE_ADD, "_NET_WM_STATE_FOCUSED")
+        self.when_realized("focused", do_focused)
+
     def set_opaque_region(self, rectangles=()):
         if self._opaque_region == rectangles:
             return

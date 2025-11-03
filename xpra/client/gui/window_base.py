@@ -462,6 +462,9 @@ class ClientWindowBase(ClientWidgetBase):
         if "skip-pager" in metadata:
             self.set_skip_pager(metadata.boolget("skip-pager"))
 
+        if "focused" in metadata:
+            self.set_focused(metadata.boolget("focused"))
+
         if "opaque-region" in metadata:
             self.set_opaque_region(metadata.tupleget("opaque-region"))
 
@@ -526,6 +529,10 @@ class ClientWindowBase(ClientWidgetBase):
         if self._skip_pager != skip_pager:
             self._skip_pager = skip_pager
             self.set_skip_pager_hint(skip_pager)
+
+    def set_focused(self, focused: bool) -> None:
+        # only implemented for X11
+        pass
 
     def set_opaque_region(self, rectangles: tuple | None) -> None:
         pass  # see gtk client window base

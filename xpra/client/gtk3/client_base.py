@@ -915,7 +915,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             # "strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
             ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors", "locale"]
         if HAS_X11_BINDINGS:
-            ms += ["x11-property"]
+            ms += ["x11-property", "focused"]
             XSHAPE = envbool("XPRA_XSHAPE", True)
             if XSHAPE:
                 ms += ["shape"]
