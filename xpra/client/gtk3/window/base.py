@@ -860,7 +860,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         from xpra.x11.common import _NET_WM_STATE_ADD
 
         def do_focused() -> None:
-            log.error("do_focused!")
             with xlog:
                 _send_client_message(self.get_window(), "_NET_WM_STATE", _NET_WM_STATE_ADD, "_NET_WM_STATE_FOCUSED")
         self.when_realized("focused", do_focused)
