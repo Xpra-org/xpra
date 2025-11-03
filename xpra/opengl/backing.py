@@ -213,6 +213,10 @@ class TemporaryViewport:
         return "TemporaryViewport"
 
 
+def clamp(val: float) -> float:
+    return max(0.0, min(1.0, val))
+
+
 class GLWindowBackingBase(WindowBackingBase):
     """
     The logic is as follows:
@@ -874,14 +878,18 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.pointer_overlay:
             self.draw_pointer(xscale, yscale)
 
+        border = self.border
         if self.alert_state:
-            if ALERT_MODE == "icon":
+            if "icon" in ALERT_MODE:
                 self.draw_alert_icon()
-            else:
+            if "spinner" in ALERT_MODE:
                 self.draw_alert_spinner()
+            if "border" in ALERT_MODE:
+                alpha = clamp(0.1 + (0.9 + sin(monotonic() * 5)) / 2)
+                border = WindowBorder(True, 1.0, 0.0, 0.0, alpha, 10)
 
-        if self.border and self.border.shown:
-            self.draw_border()
+        if border and border.shown:
+            self.draw_border(border)
 
         if self.is_show_fps():
             self.draw_fps()
@@ -935,14 +943,12 @@ class GLWindowBackingBase(WindowBackingBase):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glBlendEquation(GL_FUNC_ADD)
 
-        def c(val: float) -> float:
-            return max(0.0, min(1.0, val))
         glBindVertexArray(self.spinner_vao)
         color = glGetUniformLocation(program, "color")
         now = monotonic()
         for step in range(NLINES):
             v = (1 + sin(step * 2 * pi / NLINES - now * 4)) / 2
-            glUniform4f(color, c(v), c(v), c(v + 0.1), c(v))
+            glUniform4f(color, clamp(v), clamp(v), clamp(v + 0.1), clamp(v))
             glDrawArrays(GL_TRIANGLES, step * 6, 6)
 
         glBindVertexArray(0)
@@ -1043,17 +1049,16 @@ class GLWindowBackingBase(WindowBackingBase):
 
             glBindTexture(target, 0)
 
-    def draw_border(self) -> None:
-        b = self.border
-        rgba = tuple(max(0, min(255, round(v * 256))) for v in (b.red, b.green, b.blue, b.alpha))
+    def draw_border(self, border) -> None:
+        rgba = tuple(max(0, min(255, round(v * 256))) for v in (border.red, border.green, border.blue, border.alpha))
         pixel = struct.pack(b"!BBBB", *rgba)
 
         texture = int(self.textures[TEX_RGB])
         upload_rgba_texture(texture, 1, 1, pixel)
 
         rw, rh = self.render_size
-        hsize = min(self.border.size, rw)
-        vsize = min(self.border.size, rh)
+        hsize = min(border.size, rw)
+        vsize = min(border.size, rh)
         if rw <= hsize or rh <= vsize:
             rects = ((0, 0, rw, rh), )
         else:
@@ -1068,7 +1073,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.combine_texture("blend", x, y, w, h, {
                 "rgba": texture,
                 "dst": fbo,
-            }, {"weight": 0.5})
+            }, {"weight": border.alpha})
 
     def paint_box(self, encoding: str, x: int, y: int, w: int, h: int) -> None:
         # show region being painted if debug paint box is enabled only:

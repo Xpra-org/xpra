@@ -181,7 +181,7 @@ void main()
     vec4 dst_color = texture(dst, dst_pos);
 
     float w = weight;
-    if (tex_color.a < 0.1 ) {{
+    if (tex_color.a < 0.01 ) {{
         w = 1.0;
     }}
     frag_color = mix(tex_color, dst_color, w);

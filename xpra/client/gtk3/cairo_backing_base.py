@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from math import pi, sin
 from time import monotonic
 from typing import Any
 from collections.abc import Callable
@@ -11,6 +12,7 @@ from cairo import Context, ImageSurface, Format, Operator, OPERATOR_OVER, LINE_C
 
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks, ALERT_MODE
+from xpra.client.gui.window_border import WindowBorder
 from xpra.common import roundup, PaintCallbacks, noop
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.objects import typedict
@@ -34,6 +36,10 @@ FORMATS = {-1: "INVALID"}
 for attr in dir(Format):
     if attr.isupper():
         FORMATS[getattr(Format, attr)] = attr
+
+
+def clamp(val: float) -> float:
+    return max(0.0, min(1.0, val))
 
 
 def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_time) -> None:
@@ -279,7 +285,6 @@ class CairoBackingBase(WindowBackingBase):
             return
         self.cairo_draw_backing(context, backing)
         self.cairo_draw_pointer(context)
-        self.cairo_draw_border(context)
         self.cairo_draw_alert(context)
 
     def paint_backing_offset_border(self, context, w: int, h: int) -> None:
@@ -329,14 +334,13 @@ class CairoBackingBase(WindowBackingBase):
             px, py, _size, start_time = self.pointer_overlay[2:]
             cairo_paint_pointer_overlay(context, self.cursor_data, px, py, start_time)
 
-    def cairo_draw_border(self, context, clip_area=None) -> None:
-        log("cairo_draw_border(%s, %s)", context, clip_area)
-        b = self.border
-        if b is None or not b.shown:
+    def cairo_draw_border(self, context, border) -> None:
+        log("cairo_draw_border(%s, %s)", context, border)
+        if border is None or not border.shown:
             return
         w, h = self.size
-        hsize = min(self.border.size, w)
-        vsize = min(self.border.size, h)
+        hsize = min(border.size, w)
+        vsize = min(border.size, h)
         if w <= hsize or h <= vsize:
             rects = ((0, 0, w, h), )
         else:
@@ -356,14 +360,12 @@ class CairoBackingBase(WindowBackingBase):
             r.width = w
             r.height = h
             rect = r
-            if clip_area:
-                rect = clip_area.intersect(r)
             if rect.width == 0 or rect.height == 0:
                 continue
             context.save()
             context.rectangle(x, y, w, h)
             context.clip()
-            context.set_source_rgba(self.border.red, self.border.green, self.border.blue, self.border.alpha)
+            context.set_source_rgba(border.red, border.green, border.blue, border.alpha)
             context.fill()
             context.paint()
             context.restore()
@@ -391,10 +393,15 @@ class CairoBackingBase(WindowBackingBase):
     def cairo_draw_alert(self, context) -> None:
         if not self.alert_state:
             return
-        if ALERT_MODE == "icon":
+        if "icon" in ALERT_MODE:
             self.draw_alert_icon(context)
-        else:
+        if "spinner" in ALERT_MODE:
             self.draw_alert_spinner(context)
+        border = self.border
+        if "border" in ALERT_MODE:
+            alpha = clamp(0.1 + (0.9 + sin(monotonic() * 5)) / 2)
+            border = WindowBorder(True, 1.0, 0.0, 0.0, alpha, 10)
+        self.cairo_draw_border(context, border)
 
     @staticmethod
     def get_alert_image():
@@ -415,16 +422,18 @@ class CairoBackingBase(WindowBackingBase):
         x = 10
         y = h - ih - 10
         alpha = (1 + sin(monotonic() * 5)) / 2
+        context.save()
         context.translate(x, y)
         context.set_operator(Operator.OVER)
         context.set_source_surface(image, 0, 0)
         context.paint_with_alpha(alpha)
+        context.restore()
 
     def draw_alert_spinner(self, context) -> None:
         log("%s.cairo_draw_alert(%s)", self, context)
-        from math import pi, sin
         w, h = self.size
         # add grey semi-opaque layer on top:
+        context.save()
         context.set_operator(OPERATOR_OVER)
         context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
         context.rectangle(0, 0, w, h)
@@ -452,3 +461,4 @@ class CairoBackingBase(WindowBackingBase):
             context.close_path()
             context.fill()
             step += 1
+        context.restore()
