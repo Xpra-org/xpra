@@ -50,8 +50,11 @@ def do_send_menu_data(ss, menu) -> None:
     else:
         # not supported by this connection
         return
-    ss.send_setting_change(attr, menu)
-    log(f"{len(menu)} menu data entries sent to {ss}")
+
+    def do_send() -> None:
+        ss.send_setting_change(attr, menu)
+        log(f"{len(menu)} menu data entries sent to {ss}")
+    GLib.idle_add(do_send)
 
 
 def guess_session_name(procs=(), exec_wrapper=()) -> str:
