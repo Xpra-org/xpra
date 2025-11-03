@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Rounded triangle outline with all corners properly rounded -->
+  <path d="M 100 45 L 165 155 Q 170 165 160 165 L 40 165 Q 30 165 35 155 L 100 45 Z"
+        fill="none"
+        stroke="#FF0000"
+        stroke-width="12"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+
+  <!-- Red exclamation mark - tapered and shorter, centered -->
+  <path d="M 89 90 L 109 90 L 103 130 L 95 130 Z" fill="#FF0000"/>
+
+  <!-- Exclamation dot - smaller, centered -->
+  <circle cx="99" cy="143" r="6" fill="#FF0000"/>
+</svg>
