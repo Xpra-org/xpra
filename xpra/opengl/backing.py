@@ -880,6 +880,8 @@ class GLWindowBackingBase(WindowBackingBase):
 
         border = self.border
         if self.alert_state:
+            if "shade" in ALERT_MODE:
+                self.draw_alert_shade()
             if "icon" in ALERT_MODE:
                 self.draw_alert_icon()
             if "spinner" in ALERT_MODE:
@@ -968,7 +970,19 @@ class GLWindowBackingBase(WindowBackingBase):
         self.alert_uploaded = 1
         return True
 
-    def draw_alert_icon(self):
+    def draw_alert_shade(self) -> None:
+        rw, rh = self.render_size
+        rgba = tuple(max(0, min(255, round(v * 256))) for v in (0.2, 0.2, 0.2, 0.4))
+        pixel = struct.pack(b"!BBBB", *rgba)
+        texture = int(self.textures[TEX_RGB])
+        upload_rgba_texture(texture, 1, 1, pixel)
+        fbo = self.textures[TEX_FBO]
+        self.combine_texture("blend", 0, 0, rw, rh, {
+            "rgba": texture,
+            "dst": fbo,
+        }, {"weight": 0.4})
+
+    def draw_alert_icon(self) -> None:
         if not self.upload_alert_texture():
             return
         w, h = 64, 64

@@ -393,6 +393,8 @@ class CairoBackingBase(WindowBackingBase):
     def cairo_draw_alert(self, context) -> None:
         if not self.alert_state:
             return
+        if "shade" in ALERT_MODE:
+            self.draw_alert_shade(context)
         if "icon" in ALERT_MODE:
             self.draw_alert_icon(context)
         if "spinner" in ALERT_MODE:
@@ -402,6 +404,15 @@ class CairoBackingBase(WindowBackingBase):
             alpha = clamp(0.1 + (0.9 + sin(monotonic() * 5)) / 2)
             border = WindowBorder(True, 1.0, 0.0, 0.0, alpha, 10)
         self.cairo_draw_border(context, border)
+
+    def draw_alert_shade(self, context) -> None:
+        w, h = self.size
+        context.save()
+        context.set_operator(OPERATOR_OVER)
+        context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
+        context.rectangle(0, 0, w, h)
+        context.fill()
+        context.restore()
 
     @staticmethod
     def get_alert_image():
@@ -432,13 +443,7 @@ class CairoBackingBase(WindowBackingBase):
     def draw_alert_spinner(self, context) -> None:
         log("%s.cairo_draw_alert(%s)", self, context)
         w, h = self.size
-        # add grey semi-opaque layer on top:
         context.save()
-        context.set_operator(OPERATOR_OVER)
-        context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
-        context.rectangle(0, 0, w, h)
-        context.fill()
-
         dim = min(w / 3.0, h / 3.0, 100.0)
         context.set_line_width(dim / 10.0)
         context.set_line_cap(LINE_CAP_ROUND)
