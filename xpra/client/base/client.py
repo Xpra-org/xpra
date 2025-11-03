@@ -219,6 +219,7 @@ class XpraClientBase(ClientBaseClass):
     def make_protocol(self, conn):
         if not conn:
             raise ValueError("no connection")
+        self.add_packet_handler("setting-change", noop)
         protocol_class = get_client_protocol_class(conn.socktype)
         netlog("setup_connection(%s) timeout=%s, socktype=%s, protocol-class=%s",
                conn, conn.timeout, conn.socktype, protocol_class)

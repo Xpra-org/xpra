@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
-from xpra.common import ConnectionMessage, disconnect_is_an_error, noop, BACKWARDS_COMPATIBLE
+from xpra.common import ConnectionMessage, disconnect_is_an_error, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
 from xpra.net.common import Packet, PacketElement
@@ -58,7 +58,6 @@ class CommandConnectClient(GObjectXpraClient):
         self.hello_extra["wants"] = []
 
     def make_protocol(self, conn):
-        self.add_packet_handler("setting-change", noop)
         protocol = super().make_protocol(conn)
         if conn.timeout > 0:
             self.command_timeout = GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
