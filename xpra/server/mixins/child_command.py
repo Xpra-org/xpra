@@ -180,8 +180,11 @@ class ChildCommandServer(StubServerMixin):
             return
         if not getattr(ss, "xdg_menu", False):
             return
-        ss.send_setting_change("xdg-menu", xdg_menu)
-        log(f"{len(xdg_menu)} menu data entries sent to {ss}")
+
+        def do_send() -> None:
+            ss.send_setting_change("xdg-menu", xdg_menu)
+            log(f"{len(xdg_menu)} menu data entries sent to {ss}")
+        GLib.idle_add(do_send)
 
     def send_updated_menu(self, xdg_menu) -> None:
         log("send_updated_menu(%s)", Ellipsizer(xdg_menu))
