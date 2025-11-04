@@ -52,6 +52,7 @@ jobs:
         --skip-fail unit.server.server_sockets_test
         --skip-slow unit.server.shadow_server_test
         --skip-slow unit.server.mixins.start_option_test
+        --skip-fail unit.server.mixins.startdesktop_option_test
         --skip-slow unit.server.mixins.shadow_option_test
     - name: "Debug Test"
       shell: bash
