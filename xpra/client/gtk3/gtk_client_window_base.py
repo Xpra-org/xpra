@@ -1962,7 +1962,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             context.save()
             context.rectangle(x, y, w, h)
             context.clip()
-            context.set_source_rgba(self.border.red, self.border.green, self.border.blue, self.border.alpha)
+            context.set_source_rgba(b.red, b.green, b.blue, b.alpha)
             context.fill()
             context.paint()
             context.restore()
