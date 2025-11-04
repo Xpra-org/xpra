@@ -2696,7 +2696,7 @@ if client_ENABLED:
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
 toggle_packages(client_ENABLED, "xpra.client.gui", "xpra.client.gui.window")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3.window")
-toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and bool(MINGW_PREFIX)), "gi")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
         language="c++",
