@@ -7,6 +7,8 @@
     * [`pylsqpack 0.3.23`](https://github.com/Xpra-org/xpra/commit/4de25f5f41e3b7c27b57611b88016f22c2b0be54)
     * [`aioquic 1.3.0`](https://github.com/Xpra-org/xpra/commit/2ede2cb2f7ae448d5eea4c86aca56936eb3093d6)
     * [typo in specfile](https://github.com/Xpra-org/xpra/commit/36b468b0fdba7fbda3b066b5e145a0aa5cb2e987)
+    * [cython 3.2.0b3 workarounds](https://github.com/Xpra-org/xpra/commit/5c0fee362285e7ae1b2b8552490f28d70389bb56)
+    * [skip tests failing on CI](https://github.com/Xpra-org/xpra/commit/340af66b15606827788b3cd458905a4888ebce39)
 * Major:
     * [some application windows cannot be moved or resized](https://github.com/Xpra-org/xpra/commit/d22a52def560f42be88c2207859a090ed09ae074)
     * [unused exception handling speedup](https://github.com/Xpra-org/xpra/commit/8d0c5af072dc72f236754a06544a10304d1760f8)
@@ -25,6 +27,8 @@
     * [validate websocket payload more strictly](https://github.com/Xpra-org/xpra/commit/78004499a07859ddaaed6d5bd2f0b5c5eb5b189b)
     * [icon path lookup could return bogus data](https://github.com/Xpra-org/xpra/commit/ef1d046f0f838a846c4f75abdf85758c19faa83c)
     * [refresh rate was rounded down](https://github.com/Xpra-org/xpra/commit/f1949ab117ee6d5141227e538b30c9f299fdf01e)
+    * [redundant window refresh on decode error](https://github.com/Xpra-org/xpra/commit/be463afa6ff63dbeb74dcd431e1b9711d62ffa3c)
+    * [use thread safe variable](https://github.com/Xpra-org/xpra/commit/4d5a901fcef159d482dd76481540ec9446d8d287)
 * Cosmetic:
     * [file leak warnings](https://github.com/Xpra-org/xpra/commit/b4ef16c979f8008b72e852c69469f8e250b3ba7e)
     * [MacOS menu title too long](https://github.com/Xpra-org/xpra/commit/8210f2bdc263c2d36bdce8e31ec2f869829ad8df)

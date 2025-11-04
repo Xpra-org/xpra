@@ -5,6 +5,8 @@ xpra (5.1.3-1) UNRELEASED; urgency=low
     `pylsqpack 0.3.23`
     `aioquic 1.3.0`
     typo in specfile
+    cython 3.2.0b3 workarounds
+    skip tests failing on CI
   * Major:
     some application windows cannot be moved or resized
     unused exception handling speedup
@@ -23,6 +25,8 @@ xpra (5.1.3-1) UNRELEASED; urgency=low
     validate websocket payload more strictly
     icon path lookup could return bogus data
     refresh rate was rounded down
+    redundant window refresh on decode error
+    use thread safe variable
   * Cosmetic:
     file leak warnings
     MacOS menu title too long
@@ -38,7 +42,7 @@ xpra (5.1.3-1) UNRELEASED; urgency=low
     unit tests too slow when `pyxdg` menus are loaded
     logging category
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 29 Oct 2025 14:47:43 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 04 Nov 2025 16:36:34 +0700
 
 xpra (5.1.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

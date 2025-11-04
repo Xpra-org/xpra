@@ -804,13 +804,15 @@ fi
 
 
 %changelog
-* Wed Oct 29 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
+* Tue Nov 04 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
 - Platforms, build and packaging:
    Debian Forky
    `pynvml 13.580.82`
    `pylsqpack 0.3.23`
    `aioquic 1.3.0`
    typo in specfile
+   cython 3.2.0b3 workarounds
+   skip tests failing on CI
 - Major:
    some application windows cannot be moved or resized
    unused exception handling speedup
@@ -829,6 +831,8 @@ fi
    validate websocket payload more strictly
    icon path lookup could return bogus data
    refresh rate was rounded down
+   redundant window refresh on decode error
+   use thread safe variable
 - Cosmetic:
    file leak warnings
    MacOS menu title too long
