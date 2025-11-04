@@ -299,7 +299,7 @@ cuda_rebuild_ENABLED    = cuda_kernels_ENABLED and not WIN32
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 gstreamer_ENABLED       = DEFAULT
 gstreamer_audio_ENABLED = gstreamer_ENABLED
-gstreamer_video_ENABLED = gstreamer_ENABLED
+gstreamer_video_ENABLED = gstreamer_ENABLED and not OSX
 example_ENABLED         = DEFAULT
 win32_tools_ENABLED     = WIN32 and DEFAULT
 
