@@ -2703,7 +2703,7 @@ if client_ENABLED and WIN32 and MINGW_PREFIX:
         extra_link_args=("-luuid", "-lshlwapi", "-lole32", "-static-libgcc"))
 
 if client_ENABLED or server_ENABLED:
-    add_packages("xpra.codecs")
+    add_modules("xpra.codecs")
     add_packages("xpra.challenge")
 toggle_packages(keyboard_ENABLED, "xpra.keyboard")
 toggle_packages(keyboard_ENABLED, "xpra.pointer")
