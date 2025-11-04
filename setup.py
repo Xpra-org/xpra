@@ -324,7 +324,7 @@ cuda_rebuild_ENABLED    = None if (nvidia_ENABLED and not WIN32) else False
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_exists("libyuv")
 gstreamer_ENABLED       = DEFAULT
 gstreamer_audio_ENABLED = gstreamer_ENABLED
-gstreamer_video_ENABLED = gstreamer_ENABLED
+gstreamer_video_ENABLED = gstreamer_ENABLED and not OSX
 example_ENABLED         = DEFAULT
 win32_tools_ENABLED     = WIN32 and DEFAULT
 
@@ -2643,7 +2643,7 @@ if client_ENABLED and WIN32 and MINGW_PREFIX:
         extra_link_args=("-luuid", "-lshlwapi", "-lole32", "-static-libgcc"))
 
 if client_ENABLED or server_ENABLED:
-    add_packages("xpra.codecs")
+    add_modules("xpra.codecs")
     add_packages("xpra.challenge")
 toggle_packages(keyboard_ENABLED, "xpra.keyboard")
 if client_ENABLED or server_ENABLED:

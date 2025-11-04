@@ -14,6 +14,7 @@ echo "Building Xpra for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}"
 
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
+GSTREAMER_VIDEO="${GSTREAMER_VIDEO:=0}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
@@ -26,6 +27,11 @@ DO_TESTS="${DO_TESTS:-0}"
 
 BUILDNO="${BUILDNO:="0"}"
 APP_DIR="./image/Xpra.app"
+if [ "${GSTREAMER_VIDEO}" == "1" ]; then
+  BUILD_ARGS="${BUILD_ARGS} --with-gstreamer_video"
+else
+  BUILD_ARGS="${BUILD_ARGS} --without-gstreamer_video"
+fi
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	APP_DIR="./image/Xpra-Client.app"
 	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy"
@@ -149,6 +155,11 @@ echo "py2app forgets uvloop._noop"
 UVLOOPDIR="./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/uvloop/"
 mkdir ${UVLOOPDIR}
 cp ${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/uvloop/_noop.py ${UVLOOPDIR}/
+
+if [ "${GSTREAMER_VIDEO}" == "0" ]; then
+  echo "removing gstreamer video codec explicitly"
+  rm -fr "./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/xpra/codecs/gstreamer"
+fi
 
 echo
 echo "*******************************************************************************"
