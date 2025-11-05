@@ -20,7 +20,7 @@ STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
 ARCH="${ARCH:=`arch`}"
 if [ "${ARCH}" == "i386" ]; then
-  ARCH="x86_64"
+	ARCH="x86_64"
 fi
 
 DO_TESTS="${DO_TESTS:-0}"
@@ -29,9 +29,9 @@ DO_X11="0"
 BUILDNO="${BUILDNO:="0"}"
 APP_DIR="./image/Xpra.app"
 if [ "${GSTREAMER_VIDEO}" == "1" ]; then
-  BUILD_ARGS="${BUILD_ARGS} --with-gstreamer_video"
+	BUILD_ARGS="${BUILD_ARGS} --with-gstreamer_video"
 else
-  BUILD_ARGS="${BUILD_ARGS} --without-gstreamer_video"
+	BUILD_ARGS="${BUILD_ARGS} --without-gstreamer_video"
 fi
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	APP_DIR="./image/Xpra-Client.app"
@@ -43,9 +43,9 @@ else
 		exit 1
 	fi
 	if [ -d "/opt/X11" ]; then
-    BUILD_ARGS="${BUILD_ARGS} --with-x11 --pkg-config-path=/opt/X11/lib/pkgconfig --pkg-config-path=/opt/X11/share/pkgconfig"
-    DO_X11="1"
-  fi
+		BUILD_ARGS="${BUILD_ARGS} --with-x11 --pkg-config-path=/opt/X11/lib/pkgconfig --pkg-config-path=/opt/X11/share/pkgconfig"
+		DO_X11="1"
+	fi
 fi
 pandoc -v >& /dev/null
 if [ "$?" != "0" ]; then
@@ -162,8 +162,8 @@ mkdir ${UVLOOPDIR}
 cp ${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/uvloop/_noop.py ${UVLOOPDIR}/
 
 if [ "${GSTREAMER_VIDEO}" == "0" ]; then
-  echo "removing gstreamer video codec explicitly"
-  rm -fr "./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/xpra/codecs/gstreamer"
+	echo "removing gstreamer video codec explicitly"
+	rm -fr "./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/xpra/codecs/gstreamer"
 fi
 
 echo
@@ -184,16 +184,16 @@ echo "modifying Info.plist files with:"
 echo " VERSION=\"${VERSION}\" REVISION=\"${REVISION}${REV_MOD}\""
 echo " BUILDNO=\"${BUILDNO}\" ARCH=\"${ARCH}\""
 for plist in "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist"; do
-  echo "modifying $plist"
-  git checkout $plist
-  sed -i '' -e "s+%VERSION%+$VERSION+g" $plist
-  sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" $plist
-  sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" $plist
-  sed -i '' -e "s+%ARCH%+$ARCH+g" $plist
-  if [ "${CLIENT_ONLY}" == "1" ]; then
-    sed -i '' -e "s+Xpra+Xpra-Client+g" $plist
-    sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" $plist
-  fi
+	echo "modifying $plist"
+	git checkout $plist
+	sed -i '' -e "s+%VERSION%+$VERSION+g" $plist
+	sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" $plist
+	sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" $plist
+	sed -i '' -e "s+%ARCH%+$ARCH+g" $plist
+	if [ "${CLIENT_ONLY}" == "1" ]; then
+		sed -i '' -e "s+Xpra+Xpra-Client+g" $plist
+		sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" $plist
+	fi
 done
 
 echo
@@ -288,13 +288,13 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 fi
 
 if [ "${DO_X11}" == "1" ]; then
-  for cmd in "Xvfb" "glxgears" "glxinfo" "oclock" "setxkbmap" "uxterm" "xauth" "xcalc" "xclock" "xdpyinfo" "xev" "xeyes" "xhost" "xkill" "xload" "xlsclients" "xmodmap" "xprop" "xrandr" "xrdb" "xset" "xterm" "xwininfo"; do
-    cp "/opt/X11/bin/${cmd}" "${RSCDIR}/bin/"
-  done
-  for lib in "libGL" "libICE" "libOSMesa" "libX11" "libXRes" "libXau" "libXaw" "libXcomposite" "libXcursor" "libXdamage" "libXext" "libXfixes" "libXfont" "libXpm" "libXpresent" "libXrandr" "libXrender" "libXt" "libXtst" "libxkbfile" "libxshmfence"; do
-    cp "/opt/X11/lib/${lib}.*" "${RSCDIR}/lib/"
-  done
-  cp -r "/opt/X11/lib/dri" "${RSCDIR}/lib/"
+	for cmd in "Xvfb" "glxgears" "glxinfo" "oclock" "setxkbmap" "uxterm" "xauth" "xcalc" "xclock" "xdpyinfo" "xev" "xeyes" "xhost" "xkill" "xload" "xlsclients" "xmodmap" "xprop" "xrandr" "xrdb" "xset" "xterm" "xwininfo"; do
+		cp "/opt/X11/bin/${cmd}" "${RSCDIR}/bin/"
+	done
+	for lib in "libGL" "libICE" "libOSMesa" "libX11" "libXRes" "libXau" "libXaw" "libXcomposite" "libXcursor" "libXdamage" "libXext" "libXfixes" "libXfont" "libXpm" "libXpresent" "libXrandr" "libXrender" "libXt" "libXtst" "libxkbfile" "libxshmfence"; do
+		cp "/opt/X11/lib/${lib}.*" "${RSCDIR}/lib/"
+	done
+	cp -r "/opt/X11/lib/dri" "${RSCDIR}/lib/"
 fi
 
 echo
@@ -453,7 +453,7 @@ RMP=""
 KMP=""
 for file_name in `ls *Image*`; do
 	plugin_name=`echo $file_name | sed 's+\.py.*++g'`
-    echo "$file_name" | egrep "Bmp|Ico|Image.py|ImageChops|ImageCms|ImageChops|ImageColor|ImageDraw|ImageFile|ImageFilter|ImageFont|ImageGrab|ImageMode|ImageOps|ImagePalette|ImagePath|ImageSequence|ImageStat|ImageTransform|Jpeg|Tiff|Png|Ppm|Xpm|WebP" >& /dev/null
+		echo "$file_name" | egrep "Bmp|Ico|Image.py|ImageChops|ImageCms|ImageChops|ImageColor|ImageDraw|ImageFile|ImageFilter|ImageFont|ImageGrab|ImageMode|ImageOps|ImagePalette|ImagePath|ImageSequence|ImageStat|ImageTransform|Jpeg|Tiff|Png|Ppm|Xpm|WebP" >& /dev/null
 	if [ "$?" == "0" ]; then
 		KMP="${KMP} $plugin_name"
 	else
@@ -486,9 +486,9 @@ done
 #gstreamer dylibs are easier
 #all of them look like this: libgstXYZ-1.0.0.dylib / libgstXYZ-1.0.dylib
 for x in `ls libgst*-1.0.0.dylib`; do
-  SHORT="`echo $x | sed 's/1.0.0/1.0/g'`"
-  cmp -s "$x" "$SHORT"
-  if [ "$?" == "0" ]; then
+	SHORT="`echo $x | sed 's/1.0.0/1.0/g'`"
+	cmp -s "$x" "$SHORT"
+	if [ "$?" == "0" ]; then
 		echo "(re)symlinking $SHORT to $x"
 		rm $SHORT
 		ln -sf $x $SHORT
