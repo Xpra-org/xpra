@@ -18,8 +18,8 @@ autoprov: no
 %endif
 
 Name:		%{python3}-cython
-Version:	3.2.0b3
-Release:	0%{?dist}
+Version:	3.2.0
+Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
@@ -42,7 +42,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "4463c5739b8c472323be8d71b9de02fa7360bea0d9d6f4751540bfe58db51a5d" ]; then
+if [ "${sha256}" != "4e65b26c139fb513749218298f6291480ae972b98c13ba1c51b5d55f68c215d0" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -78,6 +78,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Wed Nov 05 2025 Antoine Martin <antoine@xpra.org> 3.2.0-1
+- new upstream release
+
 * Thu Oct 30 2025 Antoine Martin <antoine@xpra.org> 3.2.0b3-0
 - new upstream release
 
