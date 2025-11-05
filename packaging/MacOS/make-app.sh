@@ -389,8 +389,10 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	PLUGINS="app audio coreelements cutter removesilence faac faad flac oss osxaudio speex volume vorbis wav lame opus ogg gdp isomp4 matroska"
 	#video sink for testing:
 	PLUGINS="${PLUGINS} autodetect osxvideo"
-	#video support:
-	PLUGINS="${PLUGINS} vpx x264 aom openh264 videoconvert videorate videoscale libav"
+	if [ "${GSTREAMER_VIDEO}" == "1" ]; then
+		#video support:
+		PLUGINS="${PLUGINS} vpx x264 aom openh264 videoconvert videorate videoscale libav"
+	fi
 	for x in $PLUGINS; do
 		echo "* keeping "$x
 		mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
