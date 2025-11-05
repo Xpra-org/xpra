@@ -64,7 +64,8 @@ class MMAP_Connection(StubSourceMixin):
     def init_from(self, _protocol, server) -> None:
         self.mmap_supported = server.mmap_supported
         if server.mmap_filename:
-            self.mmap_filenames = server.mmap_filename.split(os.path.pathsep)
+            sep = "," if (server.mmap_filename.count(",") == 1 or server.mmap_filename.count(":") > 1) else os.path.pathsep
+            self.mmap_filenames = server.mmap_filename.split(sep)
         self.mmap_min_size = server.mmap_min_size
 
     def init_state(self) -> None:
