@@ -120,11 +120,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             return
         surface = self.get_surface(wid)
         log("surface(%i)=%#x", wid, surface)
-        if surface:
-            if len(pointer) >= 4:
-                x, y = pointer[2:4]
-                if self.pointer_device.enter_surface(surface, x, y):
-                    self.pointer_focus = wid
+        if surface and len(pointer) >= 4:
+            x, y = pointer[2:4]
+            if self.pointer_device.enter_surface(surface, x, y):
+                self.pointer_focus = wid
         self.compositor.flush()
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:

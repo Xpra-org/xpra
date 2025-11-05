@@ -429,7 +429,7 @@ class CairoBackingBase(WindowBackingBase):
         if iw == 0 or ih == 0 or not image:
             return
         from math import sin
-        w, h = self.size
+        _, h = self.size
         x = 10
         y = h - ih - 10
         alpha = (1 + sin(monotonic() * 5)) / 2

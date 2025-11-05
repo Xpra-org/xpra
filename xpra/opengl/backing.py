@@ -986,7 +986,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if not self.upload_alert_texture():
             return
         w, h = 64, 64
-        rw, rh = self.render_size
+        _, rh = self.render_size
         x = 10
         y = rh - h - 10
         alert = self.textures[TEX_ALERT]
