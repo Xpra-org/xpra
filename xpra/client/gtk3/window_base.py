@@ -2664,8 +2664,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             log("smooth scroll event: %s, raw delta: %s,%s", event, event.delta_x, event.delta_y)
             pointer = self.get_pointer_data(event)
             device_id = -1
-            norm_x = norm_x = norm_scroll(event.delta_x)
-            norm_y = norm_x = norm_scroll(event.delta_y)
+            norm_x = norm_scroll(event.delta_x)
+            norm_y = norm_scroll(event.delta_y)
             self._client.wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
             return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
