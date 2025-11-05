@@ -217,6 +217,10 @@ def clamp(val: float) -> float:
     return max(0.0, min(1.0, val))
 
 
+def charclamp(val: int | float) -> int:
+    return max(0, min(255, round(val)))
+
+
 class GLWindowBackingBase(WindowBackingBase):
     """
     The logic is as follows:
@@ -972,7 +976,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def draw_alert_shade(self) -> None:
         rw, rh = self.render_size
-        rgba = tuple(max(0, min(255, round(v * 256))) for v in (0.2, 0.2, 0.2, 0.4))
+        rgba = charclamp(0.2 * 256), charclamp(0.2 * 256), charclamp(0.2 * 256), charclamp(0.4 * 256)
         pixel = struct.pack(b"!BBBB", *rgba)
         texture = int(self.textures[TEX_RGB])
         upload_rgba_texture(texture, 1, 1, pixel)
@@ -1064,7 +1068,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
 
     def draw_border(self, border) -> None:
-        rgba = tuple(max(0, min(255, round(v * 256))) for v in (border.red, border.green, border.blue, border.alpha))
+        rgba = charclamp(256 * border.red), charclamp(256 * border.green), charclamp(256 * border.blue), charclamp(256 * border.alpha)
         pixel = struct.pack(b"!BBBB", *rgba)
 
         texture = int(self.textures[TEX_RGB])
@@ -1118,7 +1122,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def draw_rectangle(self, x: int, y: int, w: int, h: int, size=1, red=0, green=0, blue=0, alpha=0, bh=0) -> None:
         log("draw_rectangle%s", (x, y, w, h, size, red, green, blue, alpha, bh))
-        rgba = tuple(max(0, min(255, v)) for v in (red, green, blue, alpha))
+        rgba = charclamp(red), charclamp(green), charclamp(blue), charclamp(alpha)
         pixel = struct.pack(b"!BBBB", *rgba)
         texture = int(self.textures[TEX_RGB])
         glActiveTexture(GL_TEXTURE0)
