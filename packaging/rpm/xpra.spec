@@ -74,7 +74,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.3.5
+Version:			6.3.6
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -1012,6 +1012,23 @@ fi
 
 
 %changelog
+* Wed Nov 05 2025 Antoine Martin <antoine@xpra.org> 6.3.6-10
+- Platforms, build and packaging:
+   don't bundle GStreamer video codecs on MacOS to avoid crashes
+   don't even ship the GStreamer video modules on MacOS
+   duplicated modules
+- Major:
+   spurious horizontal scroll events
+   `peercred` doesn't allow gid matches
+   support mmap filenames with `:` in them
+   system tray is blank with mmap
+- Minor:
+   prevent early `setting-change` packets from breaking handshake
+   try harder to prevent menu message race condition
+   missing icon for xvfb configure GUI
+- Cosmetic:
+   use the "safer" copied attribute
+
 * Sun Nov 02 2025 Antoine Martin <antoine@xpra.org> 6.3.5-10
 - Platforms, build and packaging:
    `pillow` 12.0.0

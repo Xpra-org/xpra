@@ -1,5 +1,22 @@
 # Changelog
 
+## [6.3.6] 2025-11-05
+* Platforms, build and packaging:
+    * [don't bundle GStreamer video codecs on MacOS to avoid crashes](https://github.com/Xpra-org/xpra/commit/1f5d97190310c89c9b9a84b435e0a9fb25be955f)
+    * [don't even ship the GStreamer video modules on MacOS](https://github.com/Xpra-org/xpra/commit/f86eb69ccaa3a22f32d0ba51f3be02cf0c477ea2)
+    * [duplicated modules](https://github.com/Xpra-org/xpra/commit/b20396b8e005fbe560f00ba592fd16211929da98)
+* Major:
+    * [spurious horizontal scroll events](https://github.com/Xpra-org/xpra/commit/5046f028b94e71dcb297380c9f32919a82d222ec)
+    * [`peercred` doesn't allow gid matches](https://github.com/Xpra-org/xpra/commit/c642a936e3bd851a3fff4bbaa76220d7c3600116)
+    * [support mmap filenames with `:` in them](https://github.com/Xpra-org/xpra/commit/95755198968b2e435b74fa9382fa4705fc4764c4)
+    * [system tray is blank with mmap](https://github.com/Xpra-org/xpra/commit/0f6566e8349240a5c153c16ff184f50be7667259)
+* Minor:
+    * [prevent early `setting-change` packets from breaking handshake](https://github.com/Xpra-org/xpra/commit/65c5d04c4e2c712b2f405b7b85b4e70842453d86)
+    * [try harder to prevent menu message race condition](https://github.com/Xpra-org/xpra/commit/28897660db1acefd3ff0b50114793aec7bea87cc)
+    * [missing icon for xvfb configure GUI](https://github.com/Xpra-org/xpra/commit/86216fa2e4f170effcdcae99604881f140147842)
+* Cosmetic:
+    * [use the "safer" copied attribute](https://github.com/Xpra-org/xpra/commit/b33673d74c4f8d1b3a23188b7770cdd4b3cffeb9)
+
 ## [6.3.5] 2025-11-02
 * Platforms, build and packaging:
     * [`pillow` 12.0.0](https://github.com/Xpra-org/xpra/commit/b30aca50b65ee7971393f2f1753428de797cf17f)
