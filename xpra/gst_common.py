@@ -76,13 +76,6 @@ def get_default_appsrc_attributes() -> Dict[str,Any]:
         }
 
 
-def wrap_buffer(data):
-    mf = Gst.MemoryFlags
-    return Gst.Buffer.new_wrapped_full(
-        mf.PHYSICALLY_CONTIGUOUS | mf.READONLY,
-        data, len(data),
-        0, None, None)
-
 def make_buffer(data):
     buf = Gst.Buffer.new_allocate(None, len(data), None)
     buf.fill(0, data)
