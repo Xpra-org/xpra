@@ -15,7 +15,7 @@ from xpra.util.env import envbool, first_time
 from xpra.codecs.constants import VideoSpec, get_profile
 from xpra.gstreamer.common import (
     import_gst, normv, get_all_plugin_names,
-    get_caps_str, get_element_str, wrap_buffer,
+    get_caps_str, get_element_str,
     get_default_appsink_attributes, get_default_appsrc_attributes,
     BUFFER_FORMAT, GST_FLOW_OK,
 )
@@ -71,7 +71,7 @@ def make_spec(element: str, encoding: str, cs_in: str, css_out: Sequence[str],
         output_colorspaces=css_out,
         has_lossless_mode=False,
         codec_class=ElementEncoderClass(element), codec_type=f"gstreamer-{element}",
-        quality=40, speed=40,
+        quality=40, speed=20,
         setup_cost=100, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
         width_mask=width_mask, height_mask=height_mask,
         min_w=64, min_h=64,
@@ -267,7 +267,7 @@ class Encoder(VideoPipeline):
 
     def compress_image(self, image: ImageWrapper, options: typedict):
         if image.get_planes() == ImageWrapper.PACKED:
-            data = image.get_pixels()
+            data = image.get_pixels()[:]
             rowstride = image.get_rowstride()
             want_rowstride = roundup(self.width, 2) * len(self.colorspace)
             if rowstride != want_rowstride and not image.restride(want_rowstride):
@@ -279,7 +279,7 @@ class Encoder(VideoPipeline):
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None
-        return self.process_buffer(wrap_buffer(data), options)
+        return self.process_buffer(Gst.Buffer.new_wrapped(data), options)
 
 
 GObject.type_register(Encoder)
