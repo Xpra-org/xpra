@@ -34,7 +34,7 @@ WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", False)
 REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
 SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
-ALERT_MODE = os.environ.get("XPRA_ALERT_MODE", "border").split(",")
+ALERT_MODE = os.environ.get("XPRA_ALERT_MODE", "shade,small-spinner").split(",")
 ALERT_ICON = os.environ.get("XPRA_ALERT_ICON", "alert")
 # prefer csc scaling to cairo's own scaling:
 PREFER_CSC_SCALING = envbool("XPRA_PREFER_CSC_SCALING", True)

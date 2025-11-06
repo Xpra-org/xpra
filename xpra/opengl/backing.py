@@ -886,10 +886,18 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.alert_state:
             if "shade" in ALERT_MODE:
                 self.draw_alert_shade()
+            if "dark-shade" in ALERT_MODE:
+                self.draw_alert_shade(0.2)
+            if "light-shade" in ALERT_MODE:
+                self.draw_alert_shade(0.8)
             if "icon" in ALERT_MODE:
                 self.draw_alert_icon()
             if "spinner" in ALERT_MODE:
                 self.draw_alert_spinner()
+            if "small-spinner" in ALERT_MODE:
+                self.draw_alert_spinner(40)
+            if "big-spinner" in ALERT_MODE:
+                self.draw_alert_spinner(90)
             if "border" in ALERT_MODE:
                 alpha = clamp(0.1 + (0.9 + sin(monotonic() * 5)) / 2)
                 border = WindowBorder(True, 1.0, 0.0, 0.0, alpha, 10)
@@ -911,10 +919,10 @@ class GLWindowBackingBase(WindowBackingBase):
         width, height = self.size
         save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], width, height, self._alpha_enabled)
 
-    def create_spinner_vao(self):
+    def create_spinner_vao(self, outer_pct=50):
         from xpra.client.gui.spinner import gen_trapezoids
         positions = []
-        for inner_left, inner_right, outer_left, outer_right in gen_trapezoids():
+        for inner_left, inner_right, outer_left, outer_right in gen_trapezoids(outer_pct=outer_pct):
             # as two triangles:
             positions += [inner_left] + [inner_right] + [outer_left]
             positions += [outer_left] + [outer_right] + [inner_right]
@@ -934,10 +942,10 @@ class GLWindowBackingBase(WindowBackingBase):
         glEnableVertexAttribArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-    def draw_alert_spinner(self) -> None:
+    def draw_alert_spinner(self, outer_pct=70) -> None:
         from xpra.client.gui.spinner import NLINES
         if not self.spinner_vao:
-            self.create_spinner_vao()
+            self.create_spinner_vao(outer_pct)
 
         program = self.programs["fixed-color"]
         glUseProgram(program)
@@ -974,9 +982,9 @@ class GLWindowBackingBase(WindowBackingBase):
         self.alert_uploaded = 1
         return True
 
-    def draw_alert_shade(self) -> None:
+    def draw_alert_shade(self, shade=0.5) -> None:
         rw, rh = self.render_size
-        rgba = charclamp(0.2 * 256), charclamp(0.2 * 256), charclamp(0.2 * 256), charclamp(0.4 * 256)
+        rgba = charclamp(0.2 * 256), charclamp(0.2 * 256), charclamp(0.2 * 256), charclamp(shade * 256)
         pixel = struct.pack(b"!BBBB", *rgba)
         texture = int(self.textures[TEX_RGB])
         upload_rgba_texture(texture, 1, 1, pixel)

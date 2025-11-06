@@ -395,21 +395,29 @@ class CairoBackingBase(WindowBackingBase):
             return
         if "shade" in ALERT_MODE:
             self.draw_alert_shade(context)
+        if "dark-shade" in ALERT_MODE:
+            self.draw_alert_shade(context, 0.8)
+        if "light-shade" in ALERT_MODE:
+            self.draw_alert_shade(context, 0.2)
         if "icon" in ALERT_MODE:
             self.draw_alert_icon(context)
         if "spinner" in ALERT_MODE:
             self.draw_alert_spinner(context)
+        if "small-spinner" in ALERT_MODE:
+            self.draw_alert_spinner(context, 40)
+        if "big-spinner" in ALERT_MODE:
+            self.draw_alert_spinner(context, 90)
         border = self.border
         if "border" in ALERT_MODE:
             alpha = clamp(0.1 + (0.9 + sin(monotonic() * 5)) / 2)
             border = WindowBorder(True, 1.0, 0.0, 0.0, alpha, 10)
         self.cairo_draw_border(context, border)
 
-    def draw_alert_shade(self, context) -> None:
+    def draw_alert_shade(self, context, shade=0.5) -> None:
         w, h = self.size
         context.save()
         context.set_operator(OPERATOR_OVER)
-        context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
+        context.set_source_rgba(0.2, 0.2, 0.2, shade)
         context.rectangle(0, 0, w, h)
         context.fill()
         context.restore()
@@ -440,7 +448,7 @@ class CairoBackingBase(WindowBackingBase):
         context.paint_with_alpha(alpha)
         context.restore()
 
-    def draw_alert_spinner(self, context) -> None:
+    def draw_alert_spinner(self, context, outer_pct=70) -> None:
         log("%s.cairo_draw_alert(%s)", self, context)
         w, h = self.size
         context.save()
@@ -456,9 +464,9 @@ class CairoBackingBase(WindowBackingBase):
         from xpra.client.gui.spinner import gen_trapezoids, NLINES
         now = monotonic()
         step = 0
-        for inner_left, inner_right, outer_left, outer_right in gen_trapezoids():  # 8 lines
-            alpha = (1 + sin(step * 2 * pi / NLINES - now * 4)) / 2
-            context.set_source_rgba(0, 0, 0, alpha)
+        for inner_left, inner_right, outer_left, outer_right in gen_trapezoids(outer_pct=outer_pct):  # 8 lines
+            alpha = 0.3 + (1 + sin(step * 2 * pi / NLINES + now * 4)) / 3
+            context.set_source_rgba(alpha, alpha, alpha, alpha)
             context.move_to(*coords(*inner_left))
             context.line_to(*coords(*outer_left))
             context.line_to(*coords(*outer_right))
