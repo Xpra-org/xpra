@@ -75,6 +75,11 @@ autoprov: no
 
 Name:				%{package_prefix}
 Version:			6.3.6
+%if 0%{?fedora}
+# this problematic flag is forced upon us by Fedora:
+# https://github.com/Xpra-org/xpra/issues/4706
+Epoch:				1
+%endif
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -131,6 +136,7 @@ Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
 Suggests:           %{package_prefix}-client-tk = %{version}-%{release}
+Suggests:			%{package_prefix}-server-wayland = %{version}-%{release}
 %if 0%{?pyqt6}
 Suggests:           %{package_prefix}-client-qt6 = %{version}-%{release}
 %endif
@@ -153,6 +159,7 @@ including the python client, server and HTML5 client.
 
 %package -n xpra-filesystem
 Summary:			Common filesystem files for all xpra packages
+Provides:           %{package_prefix}-filesystem
 BuildArch:          noarch
 Requires(post):     coreutils
 %if 0%{?fedora}
@@ -171,6 +178,7 @@ This package is independent of the python version used.
 %package -n %{package_prefix}-common
 Summary:			Common files for xpra packages
 Group:				Networking
+Provides:           %{package_prefix}-common
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 6
 Obsoletes:			xpra-common-client < 6
@@ -235,6 +243,7 @@ This package contains the files which are shared between the xpra client and ser
 
 %package -n %{package_prefix}-codecs
 Summary:			Picture and video codecs for xpra clients and servers.
+Provides:           %{package_prefix}-codecs
 Suggests:			%{package_prefix}-codecs-extra
 Suggests:			%{package_prefix}-codecs-amd
 Suggests:			%{package_prefix}-codecs-nvidia
@@ -271,6 +280,7 @@ This package contains extra picture and video codecs used by xpra clients and se
 
 %package -n %{package_prefix}-codecs-extras
 Summary:			Extra picture and video codecs for xpra clients and servers.
+Provides:           %{package_prefix}-codecs-extra
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 %if ! 0%{?el10}
 %ifnarch riscv64
@@ -303,6 +313,7 @@ These codecs may have patent or licensing issues.
 %if 0%{amf_codecs}
 %package -n %{package_prefix}-codecs-amd
 Summary:			AMF video codecs for AMD GPUs
+Provides:           %{package_prefix}-codecs-amd
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Requires:			libamdenc-amdgpu-pro
 %description -n %{package_prefix}-codecs-amd
@@ -314,6 +325,7 @@ this is used by both xpra clients and servers.
 %if 0%{?nvidia_codecs}
 %package -n %{package_prefix}-codecs-nvidia
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
+Provides:           %{package_prefix}-codecs-nvidia
 BuildRequires:		cuda
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Requires:			%{python3}-pycuda
@@ -326,6 +338,7 @@ this is used by both xpra clients and servers.
 
 %package -n %{package_prefix}-audio
 Summary:			%{python3} build of xpra audio support
+Provides:           %{package_prefix}-audio
 Conflicts:			python3-xpra-audio < 6
 Obsoletes:			python3-xpra-audio < 6
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -342,10 +355,12 @@ This package contains audio support for xpra.
 
 %package -n %{package_prefix}-audio-server
 Summary:			%{python3} build of xpra audio server support
+Provides:           %{package_prefix}-audio-server
 Requires:			%{package_prefix}-audio = %{version}-%{release}
 Requires:			pulseaudio
 Requires:			pulseaudio-module-x11
 Requires:			pulseaudio-utils
+Recommends:			pavucontrol
 %if 0%{?run_tests}
 BuildRequires:		gstreamer1
 BuildRequires:		gstreamer1-plugins-good
@@ -358,6 +373,7 @@ This package contains audio support for xpra servers.
 
 %package -n %{package_prefix}-client
 Summary:			xpra client
+Provides:           %{package_prefix}-client
 Conflicts:			python3-xpra-client < 6
 Obsoletes:			python3-xpra-client < 6
 Requires:			xpra-filesystem >= 5
@@ -377,6 +393,7 @@ This package contains the xpra client.
 
 %package -n %{package_prefix}-client-gtk3
 Summary:			GTK3 xpra client
+Provides:           %{package_prefix}-client-gtk3
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			gtk3
 Requires:           %{python3}-cairo
@@ -399,40 +416,44 @@ Suggests:           %{package_prefix}-client-gnome
 BuildRequires:		xclip
 %endif
 %endif
-%description -n%{package_prefix}-client-gtk3
+%description -n %{package_prefix}-client-gtk3
 This package contains the GTK3 xpra client.
 
 
 %if 0%{?pyqt6}
 %package -n %{package_prefix}-client-qt6
 Summary:			Experimental xpra Qt6 client
+Provides:           %{package_prefix}-client-qt6
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-pyqt6
-%description -n%{package_prefix}-client-qt6
+%description -n %{package_prefix}-client-qt6
 This package contains an experimental client using the Qt6 toolkit.
 %endif
 
 %if 0%{?pyglet}
 %package -n %{package_prefix}-client-pyglet
 Summary:			Experimental xpra pyglet client
+Provides:           %{package_prefix}-client-pyglet
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-pyglet
-%description -n%{package_prefix}-client-pyglet
+%description -n %{package_prefix}-client-pyglet
 This package contains an experimental client using the pyglet toolkit.
 %endif
 
 
 %package -n %{package_prefix}-client-tk
 Summary:			Experimental xpra tk client
+Provides:           %{package_prefix}-client-tk
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-tkinter
 Requires:			%{python3}-pillow-tk
-%description -n%{package_prefix}-client-tk
+%description -n %{package_prefix}-client-tk
 This package contains an experimental client using the tkinter toolkit.
 
 
 %package -n %{package_prefix}-client-gnome
 Summary:			Gnome integration for the xpra client
+Provides:           %{package_prefix}-client-gnome
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 %if 0%{?el8}
 # sadly removed from Fedora and RHEL9
@@ -442,7 +463,7 @@ Requires(post):     gnome-shell
 Requires:			gnome-shell-extension-appindicator
 Requires(post):		gnome-shell-extension-common
 %endif
-%description -n%{package_prefix}-client-gnome
+%description -n %{package_prefix}-client-gnome
 This package installs the GNOME Shell extensions
 that can help in restoring the system tray functionality.
 It also includes the %{gnome_shell_extension} extension which
@@ -492,6 +513,7 @@ This package contains the x11 bindings
 
 %package -n %{package_prefix}-server
 Summary:			xpra server
+Provides:           %{package_prefix}-server
 Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
 Requires:			xpra-filesystem >= 5
