@@ -3,11 +3,13 @@ xpra (6.3.6-1) UNRELEASED; urgency=low
     don't bundle GStreamer video codecs on MacOS to avoid crashes
     don't even ship the GStreamer video modules on MacOS
     duplicated modules
+    workaround for Fedora's unnecessary breakage
   * Major:
     spurious horizontal scroll events
     `peercred` doesn't allow gid matches
     support mmap filenames with `:` in them
     system tray is blank with mmap
+    GStreamer crash
   * Minor:
     prevent early `setting-change` packets from breaking handshake
     try harder to prevent menu message race condition
@@ -15,7 +17,7 @@ xpra (6.3.6-1) UNRELEASED; urgency=low
   * Cosmetic:
     use the "safer" copied attribute
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 05 Nov 2025 23:04:35 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 07 Nov 2025 20:22:41 +0700
 
 xpra (6.3.5-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
