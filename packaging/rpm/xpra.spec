@@ -180,6 +180,7 @@ This package is independent of the python version used.
 %package -n %{package_prefix}-common
 Summary:			Common files for xpra packages
 Group:				Networking
+Provides:           %{package_prefix}-common
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 6
 Obsoletes:			xpra-common-client < 6
@@ -239,6 +240,7 @@ This package contains the files which are shared between the xpra client and ser
 
 %package -n %{package_prefix}-codecs
 Summary:			Picture and video codecs for xpra clients and servers.
+Provides:           %{package_prefix}-codecs
 Suggests:			%{package_prefix}-codecs-extra
 Suggests:			%{package_prefix}-codecs-amd
 Suggests:			%{package_prefix}-codecs-nvidia
@@ -311,6 +313,7 @@ These codecs may have patent or licensing issues.
 %if 0%{amf_codecs}
 %package -n %{package_prefix}-codecs-amd
 Summary:			AMF video codecs for AMD GPUs
+Provides:           %{package_prefix}-codecs-amd
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Requires:			libamdenc-amdgpu-pro
 %description -n %{package_prefix}-codecs-amd
@@ -322,6 +325,7 @@ this is used by both xpra clients and servers.
 %if 0%{?nvidia_codecs}
 %package -n %{package_prefix}-codecs-nvidia
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
+Provides:           %{package_prefix}-codecs-nvidia
 BuildRequires:		cuda
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Requires:			%{python3}-pycuda
@@ -334,6 +338,7 @@ this is used by both xpra clients and servers.
 
 %package -n %{package_prefix}-audio
 Summary:			%{python3} build of xpra audio support
+Provides:           %{package_prefix}-audio
 Conflicts:			python3-xpra-audio < 6
 Obsoletes:			python3-xpra-audio < 6
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -350,6 +355,7 @@ This package contains audio support for xpra.
 
 %package -n %{package_prefix}-audio-server
 Summary:			%{python3} build of xpra audio server support
+Provides:           %{package_prefix}-audio-server
 Requires:			%{package_prefix}-audio = %{version}-%{release}
 Requires:			pulseaudio
 Requires:			pulseaudio-module-x11
@@ -367,6 +373,7 @@ This package contains audio support for xpra servers.
 
 %package -n %{package_prefix}-client
 Summary:			xpra client
+Provides:           %{package_prefix}-client
 Conflicts:			python3-xpra-client < 6
 Obsoletes:			python3-xpra-client < 6
 Requires:			xpra-filesystem >= 5
@@ -415,6 +422,7 @@ This package contains the GTK3 xpra client.
 %if 0%{?pyqt6}
 %package -n %{package_prefix}-client-qt6
 Summary:			Experimental xpra Qt6 client
+Provides:           %{package_prefix}-client-qt6
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-pyqt6
 %description -n %{package_prefix}-client-qt6
@@ -424,6 +432,7 @@ This package contains an experimental client using the Qt6 toolkit.
 %if 0%{?pyglet}
 %package -n %{package_prefix}-client-pyglet
 Summary:			Experimental xpra pyglet client
+Provides:           %{package_prefix}-client-pyglet
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-pyglet
 %description -n %{package_prefix}-client-pyglet
@@ -433,6 +442,7 @@ This package contains an experimental client using the pyglet toolkit.
 
 %package -n %{package_prefix}-client-tk
 Summary:			Experimental xpra tk client
+Provides:           %{package_prefix}-client-tk
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-tkinter
 Requires:			%{python3}-pillow-tk
@@ -442,6 +452,7 @@ This package contains an experimental client using the tkinter toolkit.
 
 %package -n %{package_prefix}-client-gnome
 Summary:			Gnome integration for the xpra client
+Provides:           %{package_prefix}-client-gnome
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 %if 0%{?el8}
 # sadly removed from Fedora and RHEL9
@@ -512,6 +523,7 @@ This package contains the x11 bindings
 
 %package -n %{package_prefix}-server
 Summary:			xpra server
+Provides:           %{package_prefix}-server
 Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
 Requires:			xpra-filesystem >= 5
@@ -590,6 +602,7 @@ This package contains the xpra server.
 %if 0%{?wayland}
 %package -n %{package_prefix}-server-wayland
 Summary:			xpra wayland server
+Provides:           %{package_prefix}-server-wayland
 Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
 Requires:			xpra-filesystem >= 5
