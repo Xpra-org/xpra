@@ -162,6 +162,7 @@ including the python client, server and HTML5 client.
 
 %package -n xpra-filesystem
 Summary:			Common filesystem files for all xpra packages
+Provides:           %{package_prefix}-filesystem
 BuildArch:          noarch
 Requires(post):     coreutils
 %if 0%{?fedora}
@@ -281,6 +282,7 @@ This package contains extra picture and video codecs used by xpra clients and se
 
 %package -n %{package_prefix}-codecs-extras
 Summary:			Extra picture and video codecs for xpra clients and servers.
+Provides:           %{package_prefix}-codecs-extra
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 %if ! 0%{?el10}
 %ifnarch riscv64
@@ -393,6 +395,7 @@ This package contains the xpra client.
 
 %package -n %{package_prefix}-client-gtk3
 Summary:			GTK3 xpra client
+Provides:           %{package_prefix}-client-gtk3
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			gtk3
 Requires:           %{python3}-cairo
@@ -471,6 +474,7 @@ is required for querying and activating keyboard input sources.
 
 %package -n %{package_prefix}-x11
 Summary:			X11 bindings
+Provides:           %{package_prefix}-x11
 BuildRequires:		pkgconfig(xkbfile)
 BuildRequires:		pkgconfig(xtst)
 BuildRequires:		pkgconfig(xcomposite)
