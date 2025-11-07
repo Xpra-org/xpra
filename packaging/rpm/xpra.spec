@@ -403,7 +403,7 @@ Suggests:           %{package_prefix}-client-gnome
 BuildRequires:		xclip
 %endif
 %endif
-%description -n%{package_prefix}-client-gtk3
+%description -n %{package_prefix}-client-gtk3
 This package contains the GTK3 xpra client.
 
 
@@ -412,7 +412,7 @@ This package contains the GTK3 xpra client.
 Summary:			Experimental xpra Qt6 client
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-pyqt6
-%description -n%{package_prefix}-client-qt6
+%description -n %{package_prefix}-client-qt6
 This package contains an experimental client using the Qt6 toolkit.
 %endif
 
@@ -421,7 +421,7 @@ This package contains an experimental client using the Qt6 toolkit.
 Summary:			Experimental xpra pyglet client
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-pyglet
-%description -n%{package_prefix}-client-pyglet
+%description -n %{package_prefix}-client-pyglet
 This package contains an experimental client using the pyglet toolkit.
 %endif
 
@@ -431,7 +431,7 @@ Summary:			Experimental xpra tk client
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-tkinter
 Requires:			%{python3}-pillow-tk
-%description -n%{package_prefix}-client-tk
+%description -n %{package_prefix}-client-tk
 This package contains an experimental client using the tkinter toolkit.
 
 
@@ -446,7 +446,7 @@ Requires(post):     gnome-shell
 Requires:			gnome-shell-extension-appindicator
 Requires(post):		gnome-shell-extension-common
 %endif
-%description -n%{package_prefix}-client-gnome
+%description -n %{package_prefix}-client-gnome
 This package installs the GNOME Shell extensions
 that can help in restoring the system tray functionality.
 It also includes the %{gnome_shell_extension} extension which
