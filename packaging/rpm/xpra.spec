@@ -53,6 +53,11 @@ echo CentOS / RHEL 7.x is no longer supported
 
 Name:				xpra
 Version:			%{version}
+%if 0%{?fedora}
+# this problematic flag is forced upon us by Fedora:
+# https://github.com/Xpra-org/xpra/issues/4706
+Epoch:				1
+%endif
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -102,6 +107,7 @@ This metapackage installs the xpra in full, including the python client, server 
 %package common
 Summary:			Common files for xpra packages
 Group:				Networking
+Provides:			xpra-common
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 5
 Conflicts:			python2-xpra
@@ -173,6 +179,7 @@ This package contains the files which are shared between the xpra client and ser
 %package codecs
 Summary:			Picture and video codecs for xpra clients and servers.
 Group:				Networking
+Provides:			xpra-codecs
 Suggests:			xpra-codecs-extra
 Suggests:			xpra-codecs-nvidia
 Requires:			xpra-common = %{version}-%{release}
@@ -206,6 +213,7 @@ This package contains extra picture and video codecs used by xpra clients and se
 
 %package codecs-extras
 Summary:			Extra picture and video codecs for xpra clients and servers.
+Provides:			xpra-codecs-extras
 #before switching to EPEL / rpmfusion, we were using private libraries:
 #Conflicts:			x264-xpra
 #Conflicts:			ffmpeg-xpra
@@ -248,6 +256,7 @@ These codecs may have patent or licensing issues.
 %package codecs-nvidia
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
 Group:				Networking
+Provides:			xpra-codecs-nvidia
 BuildRequires:		cuda
 Requires:			xpra-codecs = %{version}-%{release}
 Requires:			python3-pycuda
@@ -261,6 +270,7 @@ this is used by both xpra clients and servers.
 %package audio
 Summary:			python3 build of xpra audio support
 Group:				Networking
+Provides:			xpra-audio
 #Provides:			python3-xpra-audio
 Obsoletes:			python3-xpra-audio < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
@@ -287,6 +297,7 @@ This package contains audio support for xpra.
 %package client
 Summary:			xpra client
 Group:				Networking
+Provides:			xpra-client
 #Provides:			python3-xpra-client
 Obsoletes:			python3-xpra-client < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
@@ -305,6 +316,7 @@ This package contains the xpra client.
 %package client-gtk3
 Summary:			GTK3 xpra client
 Group:				Networking
+Provides:			xpra-client-gtk3
 Requires:			xpra-client = %{version}-%{release}
 Requires:			gtk3
 Requires:           		python3-cairo
@@ -335,6 +347,7 @@ This package contains the GTK3 xpra client.
 
 %package x11
 Summary:			X11 bindings
+Provides:			xpra-x11
 BuildRequires:		pkgconfig(xkbfile)
 BuildRequires:		pkgconfig(xtst)
 BuildRequires:		pkgconfig(xcomposite)
@@ -379,6 +392,7 @@ This package contains the x11 bindings
 %package server
 Summary:			xpra server
 Group:				Networking
+Provides:			xpra-server
 #Provides:			python3-xpra-server
 Obsoletes:			python3-xpra-server < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
