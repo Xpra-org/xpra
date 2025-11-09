@@ -1378,7 +1378,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             else:
                 assert starting_monitor or upgrading_monitor
                 app = make_monitor_server()
-            app.init_virtual_devices(devices)
     except ImportError as e:
         log.error("Error: the server cannot be started,")
         log.error(" some critical component is missing:")
@@ -1409,6 +1408,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         app.init_sockets(sockets)
         progress(90, "finalizing")
         app.setup()
+        if devices and hasattr(app, "init_virtual_devices"):
+            app.init_virtual_devices(devices)
     except InitInfo as e:
         for m in str(e).split("\n"):
             log.info("%s", m)
