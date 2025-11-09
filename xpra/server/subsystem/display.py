@@ -357,7 +357,7 @@ class DisplayManager(StubServerMixin):
         elif len(packet) >= 11:
             # fallback to the older global attribute:
             v = packet[10]
-            if 0 < v < 240 and hasattr(ss, "vrefresh") and getattr(ss, "vrefresh") != v:
+            if 0 < v < 240 and getattr(ss, "vrefresh", 0) != v:
                 ss.vrefresh = v
         if len(packet) >= 10:
             # added in 0.16 for scaled client displays:
