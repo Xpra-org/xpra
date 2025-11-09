@@ -1034,7 +1034,7 @@ fi
 
 
 %changelog
-* Fri Nov 07 2025 Antoine Martin <antoine@xpra.org> 6.3.6-10
+* Sun Nov 09 2025 Antoine Martin <antoine@xpra.org> 6.3.6-10
 - Platforms, build and packaging:
    don't bundle GStreamer video codecs on MacOS to avoid crashes
    don't even ship the GStreamer video modules on MacOS
@@ -1046,6 +1046,8 @@ fi
    support mmap filenames with `:` in them
    system tray is blank with mmap
    GStreamer crash
+   desktop scaling miscalculations for monitor data
+   better backwards compatibility for display data
 - Minor:
    prevent early `setting-change` packets from breaking handshake
    try harder to prevent menu message race condition

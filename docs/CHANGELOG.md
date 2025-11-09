@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.6] 2025-11-07
+## [6.3.6] 2025-11-09
 * Platforms, build and packaging:
     * [don't bundle GStreamer video codecs on MacOS to avoid crashes](https://github.com/Xpra-org/xpra/commit/1f5d97190310c89c9b9a84b435e0a9fb25be955f)
     * [don't even ship the GStreamer video modules on MacOS](https://github.com/Xpra-org/xpra/commit/f86eb69ccaa3a22f32d0ba51f3be02cf0c477ea2)
@@ -12,6 +12,8 @@
     * [support mmap filenames with `:` in them](https://github.com/Xpra-org/xpra/commit/95755198968b2e435b74fa9382fa4705fc4764c4)
     * [system tray is blank with mmap](https://github.com/Xpra-org/xpra/commit/0f6566e8349240a5c153c16ff184f50be7667259)
     * [GStreamer crash](https://github.com/Xpra-org/xpra/commit/a942cd05a6d5ad5ec972284345a7bcf7da5307dc)
+    * [desktop scaling miscalculations for monitor data](https://github.com/Xpra-org/xpra/commit/74c9122fb587029e39cd0c6fcaa5cc693f63456e)
+    * [better backwards compatibility for display data](https://github.com/Xpra-org/xpra/commit/a8b8c9b2717e9b76d25aa98586a01c3063e6da22)
 * Minor:
     * [prevent early `setting-change` packets from breaking handshake](https://github.com/Xpra-org/xpra/commit/65c5d04c4e2c712b2f405b7b85b4e70842453d86)
     * [try harder to prevent menu message race condition](https://github.com/Xpra-org/xpra/commit/28897660db1acefd3ff0b50114793aec7bea87cc)
