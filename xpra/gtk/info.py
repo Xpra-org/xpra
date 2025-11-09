@@ -247,15 +247,15 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
                     continue
                 if isinstance(value, Gdk.Rectangle):
                     value = (
-                        round(xscale * value.x),
-                        round(yscale * value.y),
-                        round(xscale * value.width),
-                        round(yscale * value.height),
+                        round(value.x / xscale),
+                        round(value.y / yscale),
+                        round(value.width / xscale),
+                        round(value.height / yscale),
                     )
                 elif attr == "width-mm":
-                    value = round(xscale * value)
+                    value = round(value / xscale)
                 elif attr == "height-mm":
-                    value = round(yscale * value)
+                    value = round(value / yscale)
                 elif attr == "subpixel-layout":
                     value = {
                         Gdk.SubpixelLayout.UNKNOWN: "unknown",

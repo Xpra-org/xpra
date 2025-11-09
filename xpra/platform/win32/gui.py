@@ -917,7 +917,7 @@ def show_desktop(b) -> None:
         log.warn("failed to call show_desktop(%s): %s", b, e)
 
 
-def get_monitors_info(xscale=1, yscale=1) -> dict[int, Any]:
+def get_monitors_info(xscale=1.0, yscale=1.0) -> dict[int, Any]:
     from xpra.gtk.info import get_monitors_info
     monitors_info = get_monitors_info(xscale, yscale)
     if MONITOR_DPI:
