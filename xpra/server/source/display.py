@@ -69,7 +69,7 @@ class DisplayConnection(StubClientConnection):
             display_caps = c.dictget("display", {})
             if not BACKWARDS_COMPATIBLE and not display_caps:
                 raise ValueError("missing display capabilities")
-            c = typedict(display_caps)
+            c = typedict(display_caps or c)
         if BACKWARDS_COMPATIBLE:
             self.vrefresh = c.intget("refresh-rate", c.intget("vrefresh", -1))
         else:
