@@ -222,7 +222,7 @@ SOURCE_INDICATION_STRING: Final[dict[int, str]] = {
 # magic value for "workspace" window property, means unset
 WORKSPACE_UNSET: Final[int] = 65535
 WORKSPACE_ALL: Final[int] = 0xffffffff
-WORKSPACE_NAMES = {
+WORKSPACE_NAMES: dict[int, str] = {
     WORKSPACE_UNSET  : "unset",
     WORKSPACE_ALL    : "all",
 }

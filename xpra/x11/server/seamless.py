@@ -1041,8 +1041,8 @@ class SeamlessServer(GObject.GObject, ServerBase):
         """
         workspace = typedict(new_client_properties).intget("workspace", -1)
 
-        def wn(w):
-            return WORKSPACE_NAMES.get(w, w)
+        def wn(w) -> str:
+            return WORKSPACE_NAMES.get(w) or str(w)
 
         workspacelog("workspace from client properties %s: %s", new_client_properties, wn(workspace))
         if workspace >= 0:
