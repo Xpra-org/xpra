@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.3] 2025-09-29
+## [5.1.3] 2025-11-10
 * Platforms, build and packaging:
     * [Debian Forky](https://github.com/Xpra-org/xpra/commit/feb249a22306d07b3a5d6d94db03831c1c68487a)
     * [`pynvml 13.580.82`](https://github.com/Xpra-org/xpra/commit/1689dadee1185fa3a853d1e084a3dae7f301ca32)
@@ -9,6 +9,9 @@
     * [typo in specfile](https://github.com/Xpra-org/xpra/commit/36b468b0fdba7fbda3b066b5e145a0aa5cb2e987)
     * [cython 3.2.0b3 workarounds](https://github.com/Xpra-org/xpra/commit/5c0fee362285e7ae1b2b8552490f28d70389bb56)
     * [skip tests failing on CI](https://github.com/Xpra-org/xpra/commit/340af66b15606827788b3cd458905a4888ebce39)
+    * [don't bundle GStreamer video codecs to avoid crashes](https://github.com/Xpra-org/xpra/commit/bc04be471f409c9f3d60dc8fd14a6c50b02ff477)
+    * [don't even ship the GStreamer video modules](https://github.com/Xpra-org/xpra/commit/0fee0378b1233739b733f5517acf4d550ab1bba6)
+    * [workaround for Fedora's unnecessary breakage](https://github.com/Xpra-org/xpra/commit/139ea6e571998531bb3237a9e45b15e6db2f2e05)
 * Major:
     * [some application windows cannot be moved or resized](https://github.com/Xpra-org/xpra/commit/d22a52def560f42be88c2207859a090ed09ae074)
     * [unused exception handling speedup](https://github.com/Xpra-org/xpra/commit/8d0c5af072dc72f236754a06544a10304d1760f8)
@@ -16,6 +19,8 @@
     * [honour shutdown flag with `exit` requests](https://github.com/Xpra-org/xpra/commit/0bd401b53dd79568e4c0dc64d5b87d495dd80620)
     * [mouse wheel spurious events](https://github.com/Xpra-org/xpra/commit/a6f517af6c84b57a648c33733291f3c5aad162bb)
     * [missing icon capabilities](https://github.com/Xpra-org/xpra/commit/3743874fdc31985a1cb070bff19c007eb1538aed)
+    * [GStreamer crash](https://github.com/Xpra-org/xpra/commit/06588c7b264c0501bca8d607ead492c0d56a12a7)
+    * [desktop scaling miscalculations for monitor data](https://github.com/Xpra-org/xpra/commit/eba18d2a07dd94834ce1b4d5c6c12ff68eb3de16)
 * Minor:
     * [don't send cursor data to clients that don't support it](https://github.com/Xpra-org/xpra/commit/d739efd8cb5177a4283dd8eb98c7eecea6afc8e0)
     * [clipboard tool failed to set text](https://github.com/Xpra-org/xpra/commit/b8ce4f4a2a128dcfbea9384a1519224e33179a32)

@@ -818,7 +818,7 @@ fi
 
 
 %changelog
-* Tue Nov 04 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
+* Mon Nov 10 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
 - Platforms, build and packaging:
    Debian Forky
    `pynvml 13.580.82`
@@ -827,6 +827,9 @@ fi
    typo in specfile
    cython 3.2.0b3 workarounds
    skip tests failing on CI
+   don't bundle GStreamer video codecs to avoid crashes
+   don't even ship the GStreamer video modules
+   workaround for Fedora's unnecessary breakage
 - Major:
    some application windows cannot be moved or resized
    unused exception handling speedup
@@ -834,6 +837,8 @@ fi
    honour shutdown flag with `exit` requests
    mouse wheel spurious events
    missing icon capabilities
+   GStreamer crash
+   desktop scaling miscalculations for monitor data
 - Minor:
    don't send cursor data to clients that don't support it
    clipboard tool failed to set text
