@@ -75,11 +75,9 @@ autoprov: no
 
 Name:				%{package_prefix}
 Version:			6.3.6
-%if 0%{?fedora}
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
-%endif
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
