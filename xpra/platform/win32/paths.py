@@ -90,7 +90,7 @@ def do_get_icon_dir() -> str:
 
 
 def do_get_default_log_dirs() -> list[str]:
-    dd = _get_data_dir()
+    dd = _get_data_dir(False)
     temp = tempfile.gettempdir()
     if dd == temp:
         return [temp]
@@ -178,7 +178,7 @@ def do_get_default_conf_dirs() -> list[str]:
 
 
 def do_get_user_conf_dirs(_uid) -> list[str]:
-    dd = _get_data_dir()
+    dd = _get_data_dir(True)
     # ie: "C:\Users\<user name>\AppData\Roaming"
     SYSTEMROOT = os.environ.get("SYSTEMROOT", "")
     # ie: when running as a system service, we may get:
