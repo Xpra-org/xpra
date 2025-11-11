@@ -47,12 +47,17 @@ def get_appdata_dir(roaming=True) -> str:
         # UAC in vista onwards will not allow us to write where the software is installed,
         # so we place the log file (etc) in "~/Application Data"
         appdata = os.environ.get("APPDATA" if roaming else "LOCALAPPDATA", "")
+    if appdata and not os.path.exists(appdata):
+        try:
+            os.mkdir(appdata)
+        except OSError as e:
+            get_util_logger().warn("Warning: %r does not exist and cannot be created:", appdata)
+            get_util_logger().warn(" %s", e)
+            appdata = ""
     if not appdata:
         # we need some kind of path..
         appdata = tempfile.gettempdir()
         assert appdata, "cannot find any usable directory for log files"
-    if not os.path.exists(appdata):
-        os.mkdir(appdata)
     data_dir = os.path.join(appdata, "Xpra")
     return data_dir
 
