@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.3] 2025-11-10
+## [5.1.3] 2025-11-11
 * Platforms, build and packaging:
     * [Debian Forky](https://github.com/Xpra-org/xpra/commit/feb249a22306d07b3a5d6d94db03831c1c68487a)
     * [`pynvml 13.580.82`](https://github.com/Xpra-org/xpra/commit/1689dadee1185fa3a853d1e084a3dae7f301ca32)
@@ -11,7 +11,7 @@
     * [skip tests failing on CI](https://github.com/Xpra-org/xpra/commit/340af66b15606827788b3cd458905a4888ebce39)
     * [don't bundle GStreamer video codecs to avoid crashes](https://github.com/Xpra-org/xpra/commit/bc04be471f409c9f3d60dc8fd14a6c50b02ff477)
     * [don't even ship the GStreamer video modules](https://github.com/Xpra-org/xpra/commit/0fee0378b1233739b733f5517acf4d550ab1bba6)
-    * [workaround for Fedora's unnecessary breakage](https://github.com/Xpra-org/xpra/commit/139ea6e571998531bb3237a9e45b15e6db2f2e05)
+    * [workaround for Fedora's unnecessary breakage](https://github.com/Xpra-org/xpra/commit/139ea6e571998531bb3237a9e45b15e6db2f2e05) [and for EL](https://github.com/Xpra-org/xpra/commit/d42f62c82f3f661415a2dad2cb89c317f1b54703)
 * Major:
     * [some application windows cannot be moved or resized](https://github.com/Xpra-org/xpra/commit/d22a52def560f42be88c2207859a090ed09ae074)
     * [unused exception handling speedup](https://github.com/Xpra-org/xpra/commit/8d0c5af072dc72f236754a06544a10304d1760f8)

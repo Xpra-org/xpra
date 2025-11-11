@@ -816,7 +816,7 @@ fi
 
 
 %changelog
-* Mon Nov 10 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
+* Tue Nov 11 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
 - Platforms, build and packaging:
    Debian Forky
    `pynvml 13.580.82`
@@ -827,7 +827,7 @@ fi
    skip tests failing on CI
    don't bundle GStreamer video codecs to avoid crashes
    don't even ship the GStreamer video modules
-   workaround for Fedora's unnecessary breakage
+   workaround for Fedora's unnecessary breakage and for EL
 - Major:
    some application windows cannot be moved or resized
    unused exception handling speedup
