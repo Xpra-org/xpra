@@ -125,14 +125,12 @@ BuildRequires:		pkgconfig
 BuildRequires:		%{python3}-setuptools
 BuildRequires:		coreutils
 Recommends:			xpra-html5 >= 5
-Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-extra = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-amd = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
 Recommends:			%{package_prefix}-x11 = %{version}-%{release}
-Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
@@ -607,7 +605,6 @@ Summary:			xpra wayland server
 Provides:           %{package_prefix}-server-wayland
 Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
-Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Requires:           wlroots-0.19
 BuildRequires:		pkgconfig(wlroots-0.19)
