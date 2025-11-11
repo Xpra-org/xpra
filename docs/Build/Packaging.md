@@ -33,6 +33,9 @@ For slimmer installations, you may also want to use `apt`'s `--no-install-recomm
 | <nobr>`xpra-codecs-amd`</nobr>     | extra proprietary AMD codecs: `amf` encoder                                                                                                                                            |
 | <nobr>`xpra-codecs-nvidia`</nobr>  | extra proprietary NVidia codecs: `nvenc`, `nvjpeg`, `nvdec`, `nvfbc`, etc                                                                                                              |
 
+Here is a visual representation of the dependencies between the sub-packages:
+
+![subpackages.png](subpackages.png)
 
 ---
 
