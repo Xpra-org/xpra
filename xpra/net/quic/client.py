@@ -61,7 +61,7 @@ WS_HEADERS: dict[str, str] = {
 class ClientWebSocketConnection(XpraQuicConnection):
 
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
-                 host: str, port: int, info=None, options=None) -> None:
+                 host: str, port: int, info=None, options=None):
         super().__init__(connection, stream_id, transmit, host, port, "wss", info, options)
         self.write_buffer = SimpleQueue()
 
@@ -106,7 +106,7 @@ class ClientWebSocketConnection(XpraQuicConnection):
 
 
 class WebSocketClient(QuicConnectionProtocol):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._http: HttpConnection | None = None
         self._push_types: dict[str, int] = {}

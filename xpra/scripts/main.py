@@ -2224,10 +2224,10 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args: list[st
         from xpra import server
         assert server
         from xpra.scripts.server import do_run_server
+        return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
     except ImportError:
         error_cb("`xpra-server` is not installed")
         sys.exit(1)
-    return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
 
 
 def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:

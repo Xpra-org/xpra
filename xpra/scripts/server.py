@@ -1194,6 +1194,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     xvfb_pid = 0
     devices = {}
     if POSIX and not (proxying or encoder or runner):
+        create_input_devices = noop
+        UINPUT_UUID_LEN = 0
         use_uinput = False
         if opts.backend != "wayland":
             try:
@@ -1202,8 +1204,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                     "uinput", "auto",
                 ) and has_uinput()
             except ImportError:
-                create_input_devices = noop
-                UINPUT_UUID_LEN = 0
                 use_uinput = False
         uinput_uuid = ""
         if start_vfb:

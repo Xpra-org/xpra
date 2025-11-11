@@ -32,7 +32,6 @@ class mdns_sessions(SessionsGUI):
 
         def add(service_type: str) -> None:
             instance = listener_class(service_type,
-                                      mdns_found=None,
                                       mdns_add=self.mdns_add,
                                       mdns_remove=self.mdns_remove,
                                       mdns_update=self.mdns_update)

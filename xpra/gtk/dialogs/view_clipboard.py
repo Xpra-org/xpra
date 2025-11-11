@@ -189,7 +189,7 @@ class ClipboardStateInfoWindow:
         vbox.set_spacing(15)
 
         self.log: deque[str] = deque(maxlen=25)
-        for x in range(25):
+        for _ in range(25):
             self.log.append("")
         self.events = label("", font="monospace 9")
 

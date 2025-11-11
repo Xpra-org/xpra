@@ -30,7 +30,7 @@ def make_category_widgets(groups: dict[str, dict[str, str]], enabled: set[str], 
     expanders = []
     widgets = {}
 
-    def eact(expander, *args):
+    def eact(expander, *_args):
         expanded = expander.get_expanded()
         if expanded:
             return

@@ -6,6 +6,7 @@
 
 import signal
 import threading
+from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noop
@@ -42,7 +43,7 @@ class XpraProxy:
         self._name = name
         self._client_conn = client_conn
         self._server_conn = server_conn
-        self._quit_cb: Callable = quit_cb or self.do_quit
+        self._quit_cb: Callable[[Any], None] = quit_cb or self.do_quit
         self._closed = False
         self._to_client = threading.Thread(target=self._to_client_loop, daemon=True)
         self._to_server = threading.Thread(target=self._to_server_loop, daemon=True)
@@ -115,7 +116,7 @@ class XpraProxy:
             self._server_conn.close()
         except OSError:
             pass
-        quit_cb: Callable = self._quit_cb
+        quit_cb: Callable[[Any], None] = self._quit_cb
         self._quit_cb = noop
         quit_cb(self)
 

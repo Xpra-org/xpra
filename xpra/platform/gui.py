@@ -55,7 +55,6 @@ def set_default_icon(icon_filename: str) -> None:
 
 
 def get_default_icon() -> str:
-    global _default_icon
     return _default_icon
 
 
@@ -322,7 +321,7 @@ take_screenshot: Callable = noop
 
 
 def get_info_base() -> dict[str, Any]:
-    def fname(v):
+    def fname(v) -> str:
         try:
             return v.__name__
         except AttributeError:

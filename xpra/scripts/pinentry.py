@@ -264,9 +264,9 @@ def confirm(info=(), title: str = "Confirm Key", prompt: str = "Are you sure you
     sys.stderr.flush()
     try:
         line = sys.stdin.readline().rstrip(os.linesep)
+        return line.lower() in ("y", "yes")
     except KeyboardInterrupt:
         sys.exit(128 + signal.SIGINT)
-    return line.lower() in ("y", "yes")
 
 
 def input_pass(prompt: str) -> str:

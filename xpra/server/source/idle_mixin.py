@@ -29,7 +29,7 @@ class IdleConnection(StubClientConnection):
             return True
         return BACKWARDS_COMPATIBLE and caps.boolget("mouse")
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self.idle_timeout = 0
         # duplicated from clientconnection:

@@ -33,7 +33,7 @@ class HttpRequestHandler:
                  scope: dict,
                  stream_id: int,
                  transmit: Callable[[], None],
-                 ) -> None:
+                 ):
         self.xpra_server = xpra_server
         self.authority = authority
         self.connection = connection

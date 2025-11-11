@@ -40,7 +40,7 @@ aioquic_version_info = parse_version(aioquic_version)
 
 class XpraQuicConnection(Connection):
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
-                 host: str, port: int, socktype="wss", info=None, options=None) -> None:
+                 host: str, port: int, socktype="wss", info=None, options=None):
         Connection.__init__(self, (host, port), socktype, info=info, options=options)
         self.socktype_wrapped = "quic"
         self.connection: HttpConnection = connection

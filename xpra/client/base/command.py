@@ -565,7 +565,7 @@ class VersionXpraClient(HelloRequestClient):
 class ControlXpraClient(CommandConnectClient):
     """ Allows us to send commands to a server.
     """
-    def __init__(self, opts, command: Sequence[str]) -> None:
+    def __init__(self, opts, command: Sequence[str]):
         super().__init__(opts)
         self.command = command
 
@@ -598,7 +598,7 @@ class RunClient(CommandConnectClient):
     Requests the server to start a command
     """
 
-    def __init__(self, opts, command: Sequence[str]) -> None:
+    def __init__(self, opts, command: Sequence[str]):
         super().__init__(opts)
         self.command = command
 

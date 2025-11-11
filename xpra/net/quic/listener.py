@@ -42,7 +42,7 @@ Handler = Union[HttpRequestHandler, ServerWebSocketConnection, ServerWebTranspor
 
 
 class HttpServerProtocol(QuicConnectionProtocol):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs):
         self._xpra_server = kwargs.pop("xpra_server", None)
         log(f"HttpServerProtocol({args}, {kwargs}) xpra-server={self._xpra_server}")
         super().__init__(*args, **kwargs)

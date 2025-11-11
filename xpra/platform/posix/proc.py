@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-def nopid(pid: int) -> int:
+def nopid(_pid: int) -> int:
     return 0
 
 

@@ -32,7 +32,7 @@ class SessionTicketStore:
     Simple in-memory store for session tickets.
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.tickets: dict[bytes, SessionTicket] = {}
 
     def add(self, ticket: SessionTicket) -> None:

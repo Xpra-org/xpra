@@ -79,7 +79,7 @@ def can_retry(e) -> bool | str:
     return False
 
 
-def direct_socket_io(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[Any], bool], f: Callable, *a, **kw) -> Any:
+def direct_socket_io(_is_active_cb: Callable[[], bool], _can_retry_cb: Callable[[Any], bool], f: Callable, *a, **kw) -> Any:
     return f(*a, **kw)
 
 
