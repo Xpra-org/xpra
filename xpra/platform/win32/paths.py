@@ -265,7 +265,6 @@ if getattr(sys, 'frozen', False) is True:
 
 
 def do_get_app_dir() -> str:
-    global APP_DIR
     if APP_DIR:
         return APP_DIR
     from xpra.platform.paths import default_get_app_dir  # imported here to prevent import loop
