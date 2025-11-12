@@ -168,12 +168,16 @@ class Window(WindowModelStub):
         if display:
             flush_clients(display)
 
-    def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper | None:
+    def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper:
         image = self._gproperties["image"]
-        x, y, w, h = self._gproperties["geometry"]
-        if width == w and height == h:
+        w, h = self._gproperties["geometry"][2:4]
+        if x >= w or y >= h:
+            raise ValueError("invalid position %ix%i for window of size %ix%i" % (x, y, w, h))
+        if x == 0 and y == 0 and width == w and height == h:
             return image
-        return image.get_sub_image(x, y, width, height)
+        iw = min(width, w - x)
+        ih = min(height, h - y)
+        return image.get_sub_image(x, y, iw, ih)
 
     def get_dimensions(self) -> tuple[int, int]:
         # just extracts the size from the geometry:
