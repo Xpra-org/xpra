@@ -10,15 +10,18 @@ import tempfile
 import platform
 from ctypes import (
     WinDLL,  # @UnresolvedImport
-    create_unicode_buffer
-    )
-from ctypes.wintypes import MAX_PATH
+    create_unicode_buffer,
+    HRESULT
+)
+from ctypes.wintypes import MAX_PATH, HWND, INT, HANDLE, DWORD, LPWSTR
 from typing import List
 
 from xpra.os_util import get_util_logger
 
 shell32 = WinDLL("shell32", use_last_error=True)
 SHGetFolderPath = shell32.SHGetFolderPathW
+SHGetFolderPath.argtypes = [HWND, INT, HANDLE, DWORD, LPWSTR]
+SHGetFolderPath.restype = HRESULT
 
 CSIDL_APPDATA = 26
 CSIDL_LOCAL_APPDATA = 28
