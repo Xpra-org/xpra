@@ -1,3 +1,15 @@
+xpra (6.3.7-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    also use epoch RPM workaround for EL builds
+  * MS Windows fixes:
+    ensure we always find a writeable location
+    failure to run the client with some unicode usernames
+    don't sync log files over the network
+  * Cosmetic:
+    cleanly remove all dbus event handlers on exit
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 13 Nov 2025 22:26:58 +0700
+
 xpra (6.3.6-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     don't bundle GStreamer video codecs on MacOS to avoid crashes

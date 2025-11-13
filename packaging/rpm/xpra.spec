@@ -74,7 +74,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.3.6
+Version:			6.3.7
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1032,6 +1032,16 @@ fi
 
 
 %changelog
+* Thu Nov 13 2025 Antoine Martin <antoine@xpra.org> 6.3.7-10
+- Platforms, build and packaging:
+   also use epoch RPM workaround for EL builds
+- MS Windows fixes:
+   ensure we always find a writeable location
+   failure to run the client with some unicode usernames
+   don't sync log files over the network
+- Cosmetic:
+   cleanly remove all dbus event handlers on exit
+
 * Sun Nov 09 2025 Antoine Martin <antoine@xpra.org> 6.3.6-10
 - Platforms, build and packaging:
    don't bundle GStreamer video codecs on MacOS to avoid crashes

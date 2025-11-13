@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.3.7] 2025-11-13
+* Platforms, build and packaging:
+    * [also use epoch RPM workaround for EL builds](https://github.com/Xpra-org/xpra/commit/5092675c1ff7f3720b734148cf339558be3c1349)
+* MS Windows fixes:
+    * [ensure we always find a writeable location](https://github.com/Xpra-org/xpra/commit/8c55ccce3f71cdebf7913f33b5b7334ed988cba7)
+    * [failure to run the client with some unicode usernames](https://github.com/Xpra-org/xpra/commit/710af8b961ad4c3ae4881b1d2da9067139680db3)
+    * [don't sync log files over the network](https://github.com/Xpra-org/xpra/commit/acb851c2a2f8d4c67140831ebba9eeeb4d298436)
+* Cosmetic:
+    * [cleanly remove all dbus event handlers on exit](https://github.com/Xpra-org/xpra/commit/8a1caf18c4d5aebf035cadf016545cd3d7493b5d)
+
 ## [6.3.6] 2025-11-09
 * Platforms, build and packaging:
     * [don't bundle GStreamer video codecs on MacOS to avoid crashes](https://github.com/Xpra-org/xpra/commit/1f5d97190310c89c9b9a84b435e0a9fb25be955f)
