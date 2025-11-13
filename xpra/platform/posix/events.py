@@ -8,7 +8,7 @@ import sys
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
-from xpra.util.env import envbool, first_time
+from xpra.util.env import envbool, envint, first_time
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -19,6 +19,7 @@ log = Logger("posix", "dbus", "events")
 DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", True)
 DBUS_LOGIN1 = envbool("XPRA_DBUS_LOGIN1", True)
 DBUS_UPOWER = envbool("XPRA_DBUS_UPOWER", True)
+FAKE_POWER_EVENTS = envint("XPRA_FAKE_POWER_EVENTS", 0)
 
 bus_signal_match: dict[tuple[str, Callable], list[Callable[[], None]]] = {}
 
@@ -108,7 +109,7 @@ def add_handler(event: str, handler: Callable) -> None:
     log(f"add_handler({event!r}, {handler})")
 
     def forward(*args) -> None:
-        log(f"dbus event: {event!r}, calling {handler}")
+        log(f"event: {event!r}, calling {handler}")
         try:
             handler(args)
         except Exception as e:
@@ -145,6 +146,25 @@ def add_handler(event: str, handler: Callable) -> None:
             if (active and event == "suspend") or (not active and event == "resume"):
                 forward(active)
         add(get_session_bus, active_changed, "ActiveChanged", SCREENSAVER_IFACE_NAME, SCREENSAVER_BUS_NAME)
+
+    if FAKE_POWER_EVENTS:
+        def emit_fake_event() -> bool:
+            log.warn("Warning: faking %r event", event)
+            forward()
+            return False
+
+        def faker() -> None:
+            # each event type will have its own delay offset:
+            delay = sum(ord(c)*50 for c in event) % (1000 * FAKE_POWER_EVENTS)
+            GLib.timeout_add(delay, emit_fake_event)
+            return True
+
+        source = GLib.timeout_add(FAKE_POWER_EVENTS * 1000, faker)
+
+        def cleanup() -> None:
+            GLib.source_remove(source)
+
+        bus_signal_match.setdefault((event, handler), []).append(cleanup)
 
 
 def remove_handler(event: str, handler: Callable) -> None:
