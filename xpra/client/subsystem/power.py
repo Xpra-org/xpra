@@ -28,17 +28,19 @@ class PowerEventClient(StubClientMixin):
         add_handler("resume", self.resume)
 
     def start_ui_watcher(self, _client) -> None:
+        if self.ui_watcher:
+            return
         from xpra.platform.ui_thread_watcher import get_ui_watcher
         self.ui_watcher = get_ui_watcher()
         assert self.ui_watcher
         self.ui_watcher.start()
-        self.ui_watcher.add_resume_callback(self.resume_os_event)
-        self.ui_watcher.add_fail_callback(self.suspend_os_event)
+        self.ui_watcher.add_resume_callback(self.ui_unpause)
+        self.ui_watcher.add_fail_callback(self.ui_pause)
 
     def cleanup(self) -> None:
         from xpra.platform.events import remove_handler
-        remove_handler("suspend", self.suspend_os_event)
-        remove_handler("resume", self.resume_os_event)
+        remove_handler("suspend", self.suspend)
+        remove_handler("resume", self.resume)
         uw = self.ui_watcher
         if uw:
             self.ui_watcher = None
@@ -49,13 +51,19 @@ class PowerEventClient(StubClientMixin):
         if uiw:
             uiw.tick()
 
-    def suspend_os_event(self):
+    def ui_pause(self):
         self.ui_thread_tick()
-        self.suspend()
+        self.pause()
 
-    def resume_os_event(self):
+    def ui_unpause(self):
         self.ui_thread_tick()
-        self.resume()
+        self.unpause()
+
+    def pause(self) -> None:
+        log(f"{self} pause")
+
+    def unpause(self) -> None:
+        log(f"{self} unpause")
 
     def suspend(self) -> None:
         log.info(f"{self} suspending")

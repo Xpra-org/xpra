@@ -140,3 +140,13 @@ class StubClientMixin:
         """
         The client is going to resume
         """
+
+    def pause(self) -> None:
+        """
+        Updates should be temporarily reduced
+        """
+
+    def unpause(self) -> None:
+        """
+        Updates can proceed at the normal rate
+        """

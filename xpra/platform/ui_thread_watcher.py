@@ -68,9 +68,10 @@ class UIThreadWatcher:
             log("not starting an IO polling thread")
         if FAKE_UI_LOCKUPS > 0:
             # watch out: sleeping in UI thread!
-            def sleep_in_ui_thread(*args):
+            def sleep_in_ui_thread() -> bool:
                 t = threading.current_thread()
-                log.warn("sleep_in_ui_thread%s pausing %s for %ims", args, t, FAKE_UI_LOCKUPS)
+                name = getattr(t, "name", str(t))
+                log.warn("Warning: pausing %r for %ims", name, FAKE_UI_LOCKUPS)
                 time.sleep(FAKE_UI_LOCKUPS / 1000.0)
                 return True
 

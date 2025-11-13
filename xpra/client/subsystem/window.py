@@ -1525,14 +1525,14 @@ class WindowClient(StubClientMixin):
     def suspend(self) -> None:
         log.info("system is suspending")
         self._suspended_at = time()
-        # tell the server to slow down refresh for all the windows:
-        self.control_refresh(-1, True, False)
+        self.refresh_slowly()
 
     def resume(self) -> None:
         elapsed = 0.0
         if self._suspended_at > 0:
             elapsed = max(0.0, time() - self._suspended_at)
             self._suspended_at = 0
+        # this will reset the refresh rate too:
         self.send_refresh_all()
         if elapsed < 1:
             # not really suspended
@@ -1540,12 +1540,21 @@ class WindowClient(StubClientMixin):
             return
         delta = datetime.timedelta(seconds=int(elapsed))
         log.info("system resumed, was suspended for %s", str(delta).lstrip("0:"))
-        # this will reset the refresh rate too:
         if self.opengl_enabled and OPENGL_REINIT_WINDOWS:
             # with opengl, the buffers sometimes contain garbage after resuming,
             # this should create new backing buffers:
             self.reinit_windows()
         self.reinit_window_icons()
+
+    def pause(self) -> None:
+        self.refresh_slowly()
+
+    def refresh_slowly(self) -> None:
+        # tell the server to slow down refresh for all the windows:
+        self.control_refresh(-1, True, False)
+
+    def unpause(self) -> None:
+        self.send_refresh_all()
 
     def control_refresh(self, wid: int, suspend_resume, refresh, quality=100,
                         options=None, client_properties=None) -> None:
