@@ -20,7 +20,7 @@ DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", True)
 DBUS_LOGIN1 = envbool("XPRA_DBUS_LOGIN1", True)
 DBUS_UPOWER = envbool("XPRA_DBUS_UPOWER", True)
 
-bus_signal_match: dict[tuple[str, Callable], Callable[[], None]] = {}
+bus_signal_match: dict[tuple[str, Callable], list[Callable[[], None]]] = {}
 
 
 def load_dbus() -> bool:
@@ -119,7 +119,7 @@ def add_handler(event: str, handler: Callable) -> None:
     def add(*args):
         cleanup = add_bus_handler(*args)
         if cleanup:
-            bus_signal_match[(event, handler)] = cleanup
+            bus_signal_match.setdefault((event, handler), []).append(cleanup)
 
     # (deprecated - may not be available) UPower events:
     if DBUS_UPOWER:
@@ -150,5 +150,5 @@ def add_handler(event: str, handler: Callable) -> None:
 def remove_handler(event: str, handler: Callable) -> None:
     remove = bus_signal_match.get((event, handler))
     log(f"remove_handler({event!r}, {handler}) calling {remove}")
-    if remove:
-        remove()
+    for x in remove:
+        x()
