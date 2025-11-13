@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.1.3
+%define version 5.1.4
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -816,6 +816,12 @@ fi
 
 
 %changelog
+* Thu Nov 13 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
+- MS Windows fixes:
+   ensure we always find a writeable location
+   failure to run the client with some unicode usernames
+   don't sync log files over the network
+
 * Tue Nov 11 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
 - Platforms, build and packaging:
    Debian Forky

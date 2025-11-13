@@ -1,3 +1,11 @@
+xpra (5.1.4-1) UNRELEASED; urgency=low
+  * MS Windows fixes:
+    ensure we always find a writeable location
+    failure to run the client with some unicode usernames
+    don't sync log files over the network
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 13 Nov 2025 22:34:59 +0700
+
 xpra (5.1.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     Debian Forky
