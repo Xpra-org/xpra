@@ -1144,7 +1144,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if window:
             window.restack(other_window, above)
 
-    def opengl_setup_failure(self, summary="Xpra OpenGL Acceleration Failure", body="") -> None:
+    def opengl_setup_failure(self, summary="Xpra OpenGL GPU Acceleration Failure", body="") -> None:
         OK = "0"
         DISABLE = "1"
 
