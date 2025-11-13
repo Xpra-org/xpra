@@ -77,6 +77,7 @@ class UIThreadWatcher:
             GLib.timeout_add(10 * 1000 + FAKE_UI_LOCKUPS, sleep_in_ui_thread)
 
     def stop(self) -> None:
+        self.cancel_ui_wakeup_timer()
         self.exit.set()
 
     def add_fail_callback(self, cb: Callable[[], None]) -> None:
@@ -158,6 +159,9 @@ class UIThreadWatcher:
                     self.ui_thread_wakeup()
         self.init_vars()
         log("poll_ui_loop() ended")
+        self.cancel_ui_wakeup_timer()
+
+    def cancel_ui_wakeup_timer(self) -> None:
         uiwt = self.ui_wakeup_timer
         if uiwt:
             self.ui_wakeup_timer = 0
