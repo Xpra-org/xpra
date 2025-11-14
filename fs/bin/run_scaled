@@ -141,7 +141,7 @@ def get_argv() -> list[str]:
     xvfb = which("Xvfb") or ""
     if xvfb:
         from xpra.scripts.config import get_Xvfb_command
-        argv.append("--xvfb=%s" % shlex.join(get_Xvfb_command(width, height, dpi * scale)))
+        argv.append("--xvfb=%s" % shlex.join(get_Xvfb_command(width, height, dpi=dpi * scale)))
     if width > 0 and height > 0:
         argv.append("--resize-display=%ix%i" % (width // scale, height // scale))
     if 10 < dpi < 1000:
