@@ -85,7 +85,7 @@ def get_screen_spec() -> tuple[int, int, int]:
                 width = screen.get_width()
                 height = screen.get_height()
                 if 0 < width < 2 ** 16 and 0 < height < 2 ** 16:
-                    dpi = (dpiv(width, screen.get_width_mm()) + dpiv(height, screen.get_height_mm())) // 2
+                    dpi = round((dpiv(width, screen.get_width_mm()) + dpiv(height, screen.get_height_mm())) / 2)
     return width, height, dpi
 
 
