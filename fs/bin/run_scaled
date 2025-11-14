@@ -54,6 +54,8 @@ def parse_scale(scale: str) -> float:
 
 def dpiv(size: int, size_mm: int) -> int:
     """ convert a screen size ratio into a DPI value """
+    if size_mm <= 0:
+        return 0
     return round(size * 25.4 / size_mm)
 
 
