@@ -587,6 +587,14 @@ cdef class Encoder:
             "frame": self.frames,
             "full-range": image.get_full_range(),
         }
+        if frame_info.eFrameType == videoFrameTypeInvalid:
+            raise ValueError("invalid frame type")
+        elif frame_info.eFrameType == videoFrameTypeIDR:
+            client_options["type"] = "IDR"
+        # elif frame_info.eFrameType == videoFrameTypeI:
+        #    client_options["type"] = "I"
+        # elif frame_info.eFrameType == videoFrameTypeP:
+        #    client_options["type"] = "P"
         self.frames += 1
         if frame_info.eFrameType==videoFrameTypeSkip:
             client_options["skip"] = True
