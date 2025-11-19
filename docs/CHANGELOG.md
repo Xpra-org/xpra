@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.5] 2025-11-19
+* TODO
+
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:
   * [major modularization](https://github.com/Xpra-org/xpra/issues/4523)

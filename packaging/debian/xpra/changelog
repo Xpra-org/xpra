@@ -1,3 +1,8 @@
+xpra (6.5-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 19 Nov 2025 22:26:55 +0700
+
 xpra (6.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     major modularization
