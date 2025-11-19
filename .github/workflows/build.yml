@@ -3,7 +3,8 @@ name: Build
 on:
   push:
     branches:
-      - v5.x
+      tags:
+        - 'v5.1.[0-9]+'
 
 
 jobs:
