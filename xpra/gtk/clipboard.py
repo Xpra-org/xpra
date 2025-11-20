@@ -8,7 +8,7 @@ from time import monotonic
 from xpra.util.gobject import n_arg_signal, one_arg_signal
 from xpra.clipboard.common import ClipboardCallback
 from xpra.clipboard.targets import TEXT_TARGETS
-from xpra.clipboard.proxy import ClipboardProxyCore
+from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.os_util import gi_import
 from xpra.util.str_fn import Ellipsizer
@@ -142,11 +142,16 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def get_contents(self, target: str, got_contents: ClipboardCallback, time=0) -> None:
         log("get_contents(%s, %s, %i) have-token=%s",
             target, got_contents, time, self._have_token)
-        if target == "TARGETS":
+
+        def get_targets():
             r = self.clipboard.wait_for_targets()
             if r and len(r) == 2 and r[0]:
-                targets = r[1]
-                atoms = tuple(x.name() for x in targets)
+                return r[1]
+            return []
+
+        if target == "TARGETS":
+            atoms = tuple(x.name() for x in get_targets())
+            if len(atoms) != 0:
                 got_contents("ATOM", 32, atoms)
                 return
         elif target in TEXT_TARGETS:
@@ -155,8 +160,16 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 got_contents(target, 8, text)
                 return
         else:
-            # data = wait_for_contents(target)?
-            pass
+            atom = next((x for x in get_targets() if x.name() == target), None)
+            if atom != None:
+                sel = self.clipboard.wait_for_contents(atom)
+                if sel != None:
+                    data = sel.get_data()
+                    if target in ("image/png", "image/jpeg"):
+                        data = filter_data(dtype=target, dformat=8, data=data)
+                    got_contents(target, 8 , data)
+            log.warn("Warning: can't find request target atom {target}")
+
         got_contents(target, 0, b"")
 
 
