@@ -21,6 +21,59 @@ log = Logger("clipboard")
 DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
 
 
+def filter_data(dtype: str = "", dformat: int = 0, data=b"", trusted: bool = False, output_dtype="") -> bytes:
+    log("filter_data(%s, %s, %i %s, %s, %s)", dtype, dformat, len(data), type(data), trusted, output_dtype)
+    if not data:
+        return data
+    IMAGE_OVERLAY = os.environ.get("XPRA_CLIPBOARD_IMAGE_OVERLAY", None)
+    if IMAGE_OVERLAY and not os.path.exists(IMAGE_OVERLAY):
+        IMAGE_OVERLAY = None
+    IMAGE_STAMP = envbool("XPRA_CLIPBOARD_IMAGE_STAMP", False)
+    SANITIZE_IMAGES = envbool("XPRA_SANITIZE_IMAGES", True)
+    isimage = dtype in ("image/png", "image/jpeg", "image/tiff")
+    modimage = IMAGE_STAMP or IMAGE_OVERLAY or (SANITIZE_IMAGES and not trusted)
+    if isimage and ((output_dtype and dtype != output_dtype) or modimage):
+        # pylint: disable=import-outside-toplevel
+        from xpra.codecs.pillow.decoder import open_only
+        img_type = dtype.split("/")[-1]
+        img = open_only(data, (img_type,))
+        has_alpha = img.mode == "RGBA"
+        if not has_alpha and IMAGE_OVERLAY:
+            img = img.convert("RGBA")
+        w, h = img.size
+        if IMAGE_OVERLAY:
+            from PIL import Image
+            overlay = Image.open(IMAGE_OVERLAY)
+            if overlay.mode != "RGBA":
+                log.warn("Warning: cannot use overlay image '%s'", IMAGE_OVERLAY)
+                log.warn(" invalid mode '%s'", overlay.mode)
+            else:
+                log("adding clipboard image overlay to %s", dtype)
+                try:
+                    LANCZOS = Image.Resampling.LANCZOS
+                except AttributeError:
+                    LANCZOS = Image.LANCZOS
+                overlay_resized = overlay.resize((w, h), LANCZOS)
+                composite = Image.alpha_composite(img, overlay_resized)
+                if not has_alpha and img.mode == "RGBA":
+                    composite = composite.convert("RGB")
+                img = composite
+        if IMAGE_STAMP:
+            log("adding clipboard image stamp to %s", dtype)
+            from datetime import datetime
+            from PIL import ImageDraw
+            img_draw = ImageDraw.Draw(img)
+            w, h = img.size
+            img_draw.text((10, max(0, h // 2 - 16)), 'via Xpra, %s' % datetime.now().isoformat(), fill='black')
+        # now save it:
+        img_type = (output_dtype or dtype).split("/")[-1]
+        buf = BytesIO()
+        img.save(buf, img_type.upper())  # ie: "PNG"
+        data = buf.getvalue()
+        buf.close()
+    return data
+
+
 class ClipboardProxyCore:
     def __init__(self, selection):
         self._selection: str = selection
@@ -179,56 +232,3 @@ class ClipboardProxyCore:
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         raise NotImplementedError()
-
-    def filter_data(self, dtype: str = "", dformat: int = 0, data=b"", trusted: bool = False, output_dtype="") -> bytes:
-        log("filter_data(%s, %s, %i %s, %s, %s)",
-            dtype, dformat, len(data), type(data), trusted, output_dtype)
-        if not data:
-            return data
-        IMAGE_OVERLAY = os.environ.get("XPRA_CLIPBOARD_IMAGE_OVERLAY", None)
-        if IMAGE_OVERLAY and not os.path.exists(IMAGE_OVERLAY):
-            IMAGE_OVERLAY = None
-        IMAGE_STAMP = envbool("XPRA_CLIPBOARD_IMAGE_STAMP", False)
-        SANITIZE_IMAGES = envbool("XPRA_SANITIZE_IMAGES", True)
-        isimage = dtype in ("image/png", "image/jpeg", "image/tiff")
-        modimage = IMAGE_STAMP or IMAGE_OVERLAY or (SANITIZE_IMAGES and not trusted)
-        if isimage and ((output_dtype and dtype != output_dtype) or modimage):
-            # pylint: disable=import-outside-toplevel
-            from xpra.codecs.pillow.decoder import open_only
-            img_type = dtype.split("/")[-1]
-            img = open_only(data, (img_type,))
-            has_alpha = img.mode == "RGBA"
-            if not has_alpha and IMAGE_OVERLAY:
-                img = img.convert("RGBA")
-            w, h = img.size
-            if IMAGE_OVERLAY:
-                from PIL import Image
-                overlay = Image.open(IMAGE_OVERLAY)
-                if overlay.mode != "RGBA":
-                    log.warn("Warning: cannot use overlay image '%s'", IMAGE_OVERLAY)
-                    log.warn(" invalid mode '%s'", overlay.mode)
-                else:
-                    log("adding clipboard image overlay to %s", dtype)
-                    try:
-                        LANCZOS = Image.Resampling.LANCZOS
-                    except AttributeError:
-                        LANCZOS = Image.LANCZOS
-                    overlay_resized = overlay.resize((w, h), LANCZOS)
-                    composite = Image.alpha_composite(img, overlay_resized)
-                    if not has_alpha and img.mode == "RGBA":
-                        composite = composite.convert("RGB")
-                    img = composite
-            if IMAGE_STAMP:
-                log("adding clipboard image stamp to %s", dtype)
-                from datetime import datetime
-                from PIL import ImageDraw
-                img_draw = ImageDraw.Draw(img)
-                w, h = img.size
-                img_draw.text((10, max(0, h // 2 - 16)), 'via Xpra, %s' % datetime.now().isoformat(), fill='black')
-            # now save it:
-            img_type = (output_dtype or dtype).split("/")[-1]
-            buf = BytesIO()
-            img.save(buf, img_type.upper())  # ie: "PNG"
-            data = buf.getvalue()
-            buf.close()
-        return data

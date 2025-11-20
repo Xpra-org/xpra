@@ -15,7 +15,7 @@ from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.common import ClipboardCallback
 from xpra.clipboard.targets import _filter_targets, TEXT_TARGETS
-from xpra.clipboard.proxy import ClipboardProxyCore
+from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
 from xpra.platform.ui_thread_watcher import get_ui_watcher
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.os_util import gi_import
@@ -142,7 +142,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
             return None
         length = CFDataGetLength(img_data)
         img_data = CFDataGetBytes(img_data, (0, length), None)
-        img_data = self.filter_data(dtype=src_dtype, dformat=8, data=img_data, trusted=False, output_dtype=target)
+        img_data = filter_data(dtype=src_dtype, dformat=8, data=img_data, trusted=False, output_dtype=target)
         log("get_image_contents(%s)=%i %s", target, len(img_data or ()), type(img_data))
         return img_data
 

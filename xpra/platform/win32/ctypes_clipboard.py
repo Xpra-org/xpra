@@ -36,7 +36,7 @@ from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.core import MAX_CLIPBOARD_PACKET_SIZE
 from xpra.clipboard.common import ClipboardCallback
 from xpra.clipboard.targets import _filter_targets, TEXT_TARGETS
-from xpra.clipboard.proxy import ClipboardProxyCore
+from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
 from xpra.common import roundup, noop
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.util.env import envint, envbool
@@ -382,7 +382,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if target in ("image/png", "image/jpeg"):
             def got_image(img_data, trusted=False):
                 log("got_image(%i bytes)", len(img_data))
-                img_data = self.filter_data(dtype=target, dformat=8, data=img_data, trusted=trusted)
+                img_data = filter_data(dtype=target, dformat=8, data=img_data, trusted=trusted)
                 got_contents(target, 8, img_data)
 
             img_format = target.split("/")[-1].upper()  # ie: "PNG" or "JPEG"

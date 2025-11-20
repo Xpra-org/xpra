@@ -11,7 +11,7 @@ from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.clipboard.common import ClipboardCallback, env_timeout
 from xpra.clipboard.targets import must_discard_extra, must_discard, TEXT_TARGETS
-from xpra.clipboard.proxy import ClipboardProxyCore
+from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
 from xpra.util.env import first_time
 from xpra.util.gobject import one_arg_signal, n_arg_signal
 from xpra.util.str_fn import Ellipsizer, bytestostr, csv, memoryview_to_bytes
@@ -551,7 +551,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.got_local_contents(target, dtype, dformat, data)
 
     def got_local_contents(self, target: str, dtype="", dformat: int = 8, data=b"") -> None:
-        data = self.filter_data(dtype, dformat, data)
+        data = filter_data(dtype, dformat, data)
         target_requests = self.local_requests.pop(target, {})
         for timer, got_contents in target_requests.values():
             if log.is_debug_enabled():
