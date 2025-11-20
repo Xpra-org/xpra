@@ -28,12 +28,15 @@ MAX_CLIPBOARD_PACKET_SIZE: Final[int] = 16 * 1024 * 1024
 MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
-CLIPBOARDS: list[str] = list(PLATFORM_CLIPBOARDS)
-CLIPBOARDS_ENV: str | None = os.environ.get("XPRA_CLIPBOARDS")
-if CLIPBOARDS_ENV is not None:
-    CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS_ENV.split(",")]
-del CLIPBOARDS_ENV
 
+def _get_clipboards() -> list[str]:
+    clipboards_env = os.environ.get("XPRA_CLIPBOARDS")
+    if clipboards_env is None:
+        return PLATFORM_CLIPBOARDS
+    return [x.upper().strip() for x in clipboards_env.split(",")]
+
+
+CLIPBOARDS = _get_clipboards()
 TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
 
 # targets we never wish to handle:
