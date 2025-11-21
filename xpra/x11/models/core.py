@@ -705,9 +705,12 @@ class CoreX11WindowModel(WindowModelStub):
                     handler(self)
             except XError as e:
                 log("_handle_property_change", exc_info=True)
-                log.error("Error processing property change for '%s'", name)
-                log.error(" on window %#x", self.xid)
-                log.estr(e)
+                with xswallow:
+                    # only actually log the error if the window still exists (has a geometry):
+                    if X11Window.getGeometry(self.xid):
+                        log.error("Error processing property change for '%s'", name)
+                        log.error(" on window %#x", self.xid)
+                        log.estr(e)
 
     # specific properties:
     def _handle_pid_change(self) -> None:
