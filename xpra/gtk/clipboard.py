@@ -151,26 +151,22 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
         if target == "TARGETS":
             atoms = tuple(x.name() for x in get_targets())
-            if len(atoms) != 0:
-                got_contents("ATOM", 32, atoms)
-                return
-        elif target in TEXT_TARGETS:
+            got_contents("ATOM", 32, atoms)
+            return
+        if target in TEXT_TARGETS:
             text = self.clipboard.wait_for_text()
-            if text:
-                got_contents(target, 8, text)
+            got_contents(target, 8, text or "")
+            return
+        atom = next((x for x in get_targets() if x.name() == target), None)
+        if atom:
+            sel = self.clipboard.wait_for_contents(atom)
+            if sel:
+                data = sel.get_data()
+                if target in ("image/png", "image/jpeg"):
+                    data = filter_data(dtype=target, dformat=8, data=data)
+                got_contents(target, 8, data)
                 return
-        else:
-            atom = next((x for x in get_targets() if x.name() == target), None)
-            if atom != None:
-                sel = self.clipboard.wait_for_contents(atom)
-                if sel != None:
-                    data = sel.get_data()
-                    if target in ("image/png", "image/jpeg"):
-                        data = filter_data(dtype=target, dformat=8, data=data)
-                    got_contents(target, 8 , data)
-                    return
-            log.warn("Warning: can't find request target atom {target}")
-
+        log.warn("Warning: can't find request target atom {target}")
         got_contents(target, 0, b"")
 
 
