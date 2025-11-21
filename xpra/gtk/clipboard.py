@@ -168,6 +168,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     if target in ("image/png", "image/jpeg"):
                         data = filter_data(dtype=target, dformat=8, data=data)
                     got_contents(target, 8 , data)
+                    return
             log.warn("Warning: can't find request target atom {target}")
 
         got_contents(target, 0, b"")
