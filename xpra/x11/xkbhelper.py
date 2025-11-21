@@ -60,18 +60,15 @@ def clean_keyboard_state() -> None:
         X11Keyboard.ungrab_all_keys()
     with xlog:
         X11Keyboard.set_layout_group(0)
-    keycodes = {}
     with xlog:
         keycodes = X11Keyboard.get_keycodes_down()
-    if keycodes:
-        with xlog:
-            try:
-                from xpra.x11.bindings.test import XTestBindings
-            except ImportError:
-                pass
-            else:
-                XTest = XTestBindings()
-                XTest.unpress_keys(tuple(keycodes.keys()))
+        try:
+            from xpra.x11.bindings.test import XTestBindings
+        except ImportError:
+            pass
+        else:
+            XTest = XTestBindings()
+            XTest.unpress_keys(tuple(keycodes.keys()))
 
 
 ################################################################################
