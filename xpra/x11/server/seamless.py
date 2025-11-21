@@ -232,7 +232,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             # normally we set this value when we receive the NotifyUngrab
             # but at this point in the cleanup, we probably won't, so force set it:
             self._has_grab = 0
-            self.X11_ungrab()
+            self.x11_ungrab()
         super().do_cleanup()
 
     def last_client_exited(self) -> None:
@@ -240,7 +240,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         super().last_client_exited()
         if self._has_grab:
             self._has_grab = 0
-            self.X11_ungrab()
+            self.x11_ungrab()
 
     def update_size_constraints(self, minw, minh, maxw, maxh) -> None:
         wm = self._wm

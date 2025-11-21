@@ -627,6 +627,10 @@ class X11DisplayManager(DisplayManager):
         grablog("force ungrab from %s", proto)
         x11_ungrab()
 
+    @staticmethod
+    def x11_ungrab():
+        x11_ungrab()
+
     # noinspection PyMethodMayBeStatic
     def init_packet_handlers(self) -> None:
         DisplayManager.init_packet_handlers(self)
