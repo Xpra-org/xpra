@@ -23,14 +23,14 @@ DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
 
 def filter_data(dtype: str = "", dformat: int = 0, data=b"", trusted: bool = False, output_dtype="") -> bytes:
     log("filter_data(%s, %s, %i %s, %s, %s)", dtype, dformat, len(data), type(data), trusted, output_dtype)
-    if not data:
+    isimage = dtype in ("image/png", "image/jpeg", "image/tiff")
+    if not data or not isimage:
         return data
     IMAGE_OVERLAY = os.environ.get("XPRA_CLIPBOARD_IMAGE_OVERLAY", None)
     if IMAGE_OVERLAY and not os.path.exists(IMAGE_OVERLAY):
         IMAGE_OVERLAY = None
     IMAGE_STAMP = envbool("XPRA_CLIPBOARD_IMAGE_STAMP", False)
     SANITIZE_IMAGES = envbool("XPRA_SANITIZE_IMAGES", True)
-    isimage = dtype in ("image/png", "image/jpeg", "image/tiff")
     modimage = IMAGE_STAMP or IMAGE_OVERLAY or (SANITIZE_IMAGES and not trusted)
     if isimage and ((output_dtype and dtype != output_dtype) or modimage):
         # pylint: disable=import-outside-toplevel

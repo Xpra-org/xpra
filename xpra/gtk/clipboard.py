@@ -160,8 +160,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             sel = self.clipboard.wait_for_contents(atom)
             if sel:
                 data = sel.get_data()
-                if target in ("image/png", "image/jpeg"):
-                    data = filter_data(dtype=target, dformat=8, data=data)
+                data = filter_data(dtype=target, dformat=8, data=data)
                 got_contents(target, 8, data)
                 return
         log.warn("Warning: can't find request target atom {target}")
