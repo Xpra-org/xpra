@@ -29,11 +29,11 @@ MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
 
-def _get_clipboards() -> list[str]:
+def _get_clipboards() -> Sequence[str]:
     clipboards_env = os.environ.get("XPRA_CLIPBOARDS")
     if clipboards_env is None:
         return PLATFORM_CLIPBOARDS
-    return [x.upper().strip() for x in clipboards_env.split(",")]
+    return tuple(x.upper().strip() for x in clipboards_env.split(","))
 
 
 CLIPBOARDS = _get_clipboards()
