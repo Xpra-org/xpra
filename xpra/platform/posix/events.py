@@ -153,7 +153,7 @@ def add_handler(event: str, handler: Callable) -> None:
             forward()
             return False
 
-        def faker() -> None:
+        def faker() -> bool:
             # each event type will have its own delay offset:
             delay = sum(ord(c)*50 for c in event) % (1000 * FAKE_POWER_EVENTS)
             GLib.timeout_add(delay, emit_fake_event)
