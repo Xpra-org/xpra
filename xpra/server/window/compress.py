@@ -182,10 +182,6 @@ def free_image_wrapper(image: ImageWrapper) -> None:
     GLib.idle_add(do_free_image)
 
 
-def nopreprocess(image: ImageWrapper) -> ImageWrapper:
-    return image
-
-
 class WindowSource(WindowIconSource):
     """
     We create a Window Source for each window we send pixels for.
@@ -388,7 +384,6 @@ class WindowSource(WindowIconSource):
 
         log("initial encoding for %s: %s", self.wid, self.encoding)
         # ready to service:
-        self.preprocess = nopreprocess
         self._damage_cancelled = 0
 
     def __repr__(self) -> str:
@@ -2120,7 +2115,6 @@ class WindowSource(WindowIconSource):
         image = self.window.get_image(x, y, w, h)
         if image is None:
             return nodata("no pixel data for window %s, wid=%#x", self.window, self.wid)
-        image = self.preprocess(image)
         # image may have been clipped to the new window size during resize:
         w = image.get_width()
         h = image.get_height()
