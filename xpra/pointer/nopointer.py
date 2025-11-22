@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.log import Logger
 
 log = Logger("x11", "server", "pointer")
@@ -24,7 +26,7 @@ class NoPointerDevice:
         return 0, 0
 
     @staticmethod
-    def click(button: int, pressed: bool, props: dict) -> None:
+    def click(position: Sequence[int], button: int, pressed: bool, props: dict) -> None:
         log("nopointer.click(%i, %s, %s)", button, pressed, props)
 
     @staticmethod

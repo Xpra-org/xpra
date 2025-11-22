@@ -322,13 +322,13 @@ class PointerServer(StubServerMixin):
         if self.process_mouse_common(proto, device_id, wid, pointer, props):
             self.button_action(device_id, wid, pointer, button, pressed, props)
 
-    def button_action(self, device_id: int, wid: int, pointer, button: int, pressed: bool, props: dict) -> None:
+    def button_action(self, device_id: int, wid: int, pointer: tuple, button: int, pressed: bool, props: dict) -> None:
         device = self.get_pointer_device(device_id)
         assert device, "pointer device %s not found" % device_id
         if button in (4, 5) and wid:
             self.record_wheel_event(wid, button)
         log("%s%s", device.click, (button, pressed, props))
-        device.click(button, pressed, props)
+        device.click(pointer, button, pressed, props)
 
     def _process_pointer(self, proto, packet: Packet) -> None:
         # v5 packet format

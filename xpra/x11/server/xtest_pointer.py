@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.x11.error import xsync
 from xpra.x11.bindings.test import XTestBindings
 from xpra.log import Logger
@@ -30,8 +32,8 @@ class XTestPointerDevice:
             return X11KeyboardBindings().query_pointer()
 
     @staticmethod
-    def click(button: int, pressed: bool, props: dict) -> None:
-        log("xtest_fake_button(%i, %s, %s)", button, pressed, props)
+    def click(position: Sequence[int], button: int, pressed: bool, props: dict) -> None:
+        log("xtest_fake_button(%s, %i, %s, %s)", position, button, pressed, props)
         with xsync:
             XTestBindings().xtest_fake_button(button, pressed)
 
