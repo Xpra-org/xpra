@@ -132,8 +132,9 @@ class GTKServer(StubServerMixin):
     def late_cleanup(self, stop=True) -> None:
         from xpra.gtk.util import close_gtk_display
         close_gtk_display()
-        from xpra.x11.gtk.display_source import close_gdk_display_source
-        close_gdk_display_source()
+        if is_X11():
+            from xpra.x11.gtk.display_source import close_gdk_display_source
+            close_gdk_display_source()
 
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
