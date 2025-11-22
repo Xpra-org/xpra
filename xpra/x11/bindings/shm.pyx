@@ -343,9 +343,9 @@ cdef class XShmBindingsInstance(X11CoreBindingsInstance):
     def __cinit__(self):
         self.has_xshm = XShmQueryExtension(self.display)
         dn = get_display_name()
-        log("XShmQueryExtension()=%s on display {dn!r}", bool(self.has_xshm))
+        log("XShmQueryExtension()=%s on display %r", bool(self.has_xshm), dn)
         if not self.has_xshm:
-            log.warn(f"Warning: no XShm support on display {dn!r}")
+            log.warn("Warning: no XShm support on display %r", dn)
 
     def has_XShm(self) -> bool:
         return bool(self.has_xshm)
