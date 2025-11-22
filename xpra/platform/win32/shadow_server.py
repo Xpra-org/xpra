@@ -526,9 +526,8 @@ class ShadowServer(GTKShadowServerBase):
             self.get_server_source(proto).emit("user-event", "button-action")
             self.button_action(did, wid, pointer, button, pressed, props)
 
-    def button_action(self, device_id, wid: int, pointer, button: int, pressed: bool, props) -> None:
-        x, y = pointer[:2]
-        self.pointer_device.click(x, y, button, pressed)
+    def button_action(self, device_id, wid: int, pointer, button: int, pressed: bool, props: dict) -> None:
+        self.pointer_device.click(pointer, button, pressed, props)
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)

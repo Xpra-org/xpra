@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from collections.abc import Sequence
 from typing import Tuple
 
 from xpra.log import Logger
@@ -93,7 +94,7 @@ cdef class WaylandPointer:
         self.offset_x = 0
         self.offset_y = 0
 
-    def click(self, button: int, pressed: bool, props: dict) -> None:
+    def click(self, position: Sequence[int], button: int, pressed: bool, props: dict) -> None:
         cdef uint32_t time = get_time_msec()
         cdef uint32_t code = BTN_MOUSE + (button - 1)
         cdef wlr_button_state state = WLR_BUTTON_PRESSED if pressed else WLR_BUTTON_RELEASED
