@@ -84,7 +84,7 @@ def wm_check(upgrading=False) -> bool:
     cwm_so = info.get("_NEW_WM_CM_S0")
     ewmh_xid = info.get("_NET_SUPPORTING_WM_CHECK", 0)
     xpra_name = name and name.lower().startswith("xpra")
-    log.info(f"wm_check({upgrading}) {info=}")
+    log(f"wm_check({upgrading}) {info=}")
     if not upgrading and not (ewmh_xid or wm_so or cwm_so):
         log("no window manager on %s", display_name)
         return True
