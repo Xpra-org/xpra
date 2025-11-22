@@ -316,21 +316,8 @@ def get_sysconfig_info() -> dict[str, Any]:
 def platform_release(release):
     log = get_util_logger()
     if WIN32:
-        try:
-            import wmi
-        except ImportError:
-            log(f"platform_release({release}) no wmi", exc_info=True)
-            if release.endswith("Server"):
-                return release.replace("Server", "-Server")  # ie: "2025Server" -> "2025-Server"
-        else:
-            try:
-                computer = wmi.WMI()
-                os_info = computer.Win32_OperatingSystem()[0]
-                return os_info.Name.split('|')[0]
-            except Exception as e:
-                log.debug("wmi query", exc_info=True)
-                log.warn("Warning: failed to query OS using wmi")
-                log.warn(f" {e}")
+        from xpra.platform.win32 import os_name
+        return os_name or release.replace("Server", "-Server")  # ie: "2025Server" -> "2025-Server"
     if OSX:
         systemversion_plist = "/System/Library/CoreServices/SystemVersion.plist"
         try:

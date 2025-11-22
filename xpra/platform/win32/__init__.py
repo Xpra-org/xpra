@@ -313,6 +313,28 @@ def command_error(message) -> None:
     _show_message(message, MB_ICONEXCLAMATION | MB_SYSTEMMODAL)
 
 
+os_name = ""
+
+
+def threaded_server_init() -> None:
+    from xpra.log import Logger
+    log = Logger("win32")
+    try:
+        import wmi
+    except ImportError:
+        log("threaded_server_init()", exc_info=True)
+        return
+    try:
+        computer = wmi.WMI()
+        os_info = computer.Win32_OperatingSystem()[0]
+        global os_name
+        os_name = os_info.Name.split('|')[0]
+    except Exception as e:
+        log.debug("wmi query", exc_info=True)
+        log.warn("Warning: failed to query OS using wmi")
+        log.warn(f" {e}")
+
+
 def do_clean() -> None:
     if _wait_for_input:
         print("\nPress Enter to close")
