@@ -313,7 +313,7 @@ def get_sysconfig_info() -> dict[str, Any]:
     return sysinfo
 
 
-def platform_release(release):
+def platform_release(release: str) -> str:
     log = get_util_logger()
     if WIN32:
         try:
@@ -358,7 +358,7 @@ def platform_name(sys_platform=sys.platform, release="") -> str:
         "os2": "OS/2",
     }
 
-    def rel(v):
+    def rel(v) -> str:
         if isinstance(release, (tuple, list)):
             values = [v] + list(release)
         else:
