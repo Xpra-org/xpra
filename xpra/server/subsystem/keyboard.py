@@ -63,7 +63,7 @@ class KeyboardServer(StubServerMixin):
 
     def make_keyboard_device(self):
         from xpra.platform.keyboard import get_keyboard_device
-        self.keyboard_device = get_keyboard_device()
+        return get_keyboard_device()
 
     def cleanup(self) -> None:
         self.stop_keymap_timer()
