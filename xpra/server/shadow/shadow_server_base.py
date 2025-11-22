@@ -139,6 +139,10 @@ class ShadowServerBase(ServerBase):
                 descr += "\n  %-16s %4ix%-4i at %4i,%-4i" % (title, w, h, x, y)
         return descr
 
+    @staticmethod
+    def set_desktop_geometry(w: int, h: int) -> None:
+        pass
+
     def apply_refresh_rate(self, ss) -> None:
         rrate = super().apply_refresh_rate(ss)
         if rrate > 0:
