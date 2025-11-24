@@ -479,8 +479,10 @@ cdef MemBuf do_encode_yuv(tjhandle compressor, pfstr, planes,
 def selftest(full=False) -> None:
     log("jpeg selftest")
     from xpra.codecs.checks import make_test_image
+    img = make_test_image("BGRA", 32, 32)
     for q in (0, 50, 100):
+        options = typedict({"quality" : q})
         for encoding in ("jpeg", "jpega"):
-            img = make_test_image("BGRA", 32, 32)
-            v = encode(encoding, img, typedict({"quality" : q}))
+            log("%s at %i quality", encoding, q)
+            v = encode(encoding, img, options)
             assert v, "encode output was empty!"
