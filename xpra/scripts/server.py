@@ -285,7 +285,7 @@ def set_server_features(opts, mode: str) -> None:
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
         features.mdns = opts.mdns and impcheck("net.mdns")
-        features.notification = features.dbus and opts.notifications and impcheck("notification")
+        features.notification = (features.dbus or WIN32 or OSX) and opts.notifications and impcheck("notification")
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
