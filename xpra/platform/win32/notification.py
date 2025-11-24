@@ -8,5 +8,13 @@ from collections.abc import Callable
 
 
 def get_backends() -> list[Callable]:
-    from xpra.platform.win32.notifier import Win32_Notifier
-    return [Win32_Notifier, ]
+    try:
+        from xpra.platform.win32.notifier import Win32_Notifier
+        return [Win32_Notifier, ]
+    except ImportError as e:
+        from xpra.log import Logger
+        log = Logger("win32")
+        log("get_backends()", exc_info=True)
+        log.error("Error: failed to load Win32 Notifier")
+        log.estr(e)
+        return []
