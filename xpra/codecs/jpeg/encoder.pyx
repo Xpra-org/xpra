@@ -317,7 +317,7 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
     try:
         cdata = encode_rgb(compressor, image, quality, grayscale)
         if not cdata:
-            return None
+            return ()
         now = monotonic()
         may_save_image("jpeg", cdata, now)
         bpp = 24
