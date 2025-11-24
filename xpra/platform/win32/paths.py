@@ -166,11 +166,11 @@ def do_get_ssh_known_hosts_files() -> list[str]:
 
 
 def do_get_state_dir() -> str:
-    return "%APPDATA%\\Xpra\\state"
+    return "%LOCALAPPDATA%\\Xpra\\state"
 
 
 def do_get_sessions_dir() -> str:
-    return "%APPDATA%\\Xpra\\sessions"
+    return "%LOCALAPPDATA%\\Xpra\\sessions"
 
 
 def do_get_default_conf_dirs() -> list[str]:
