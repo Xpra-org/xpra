@@ -484,4 +484,3 @@ def selftest(full=False) -> None:
             img = make_test_image("BGRA", 32, 32)
             v = encode(encoding, img, typedict({"quality" : q}))
             assert v, "encode output was empty!"
-            from xpra.util.str_fn import hexstr
