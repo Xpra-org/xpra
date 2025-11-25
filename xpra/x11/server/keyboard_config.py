@@ -212,16 +212,23 @@ class KeyboardConfig(KeyboardConfigBase):
         """
         m = hashlib.sha256()
 
-        def hashadd(v) -> None:
+        def hashadd(name: str, v) -> None:
+            log("hashadd(%s, %r)", name, v)
             m.update(("/%s" % str(v)).encode("utf8"))
 
-        hashadd(super().get_hash())
-        for x in (self.raw, self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):
-            hashadd(x)
+        hashadd("base", super().get_hash())
+        for name, value in {
+            "raw": self.raw,
+            "mod-meanings": self.mod_meanings,
+            "mod-pointermissing": self.mod_pointermissing,
+            "keycodes": self.keycodes,
+            "x11-keycodes": self.x11_keycodes,
+        }.items():
+            hashadd(name, value)
         if self.query_struct:
             # flatten the dict in a predicatable order:
             for k in sorted(self.query_struct.keys()):
-                hashadd(self.query_struct.get(k))
+                hashadd(k, self.query_struct.get(k))
         return "%s/%s/%s/%s" % (self.layout, self.variant, self.options, m.hexdigest())
 
     def compute_modifiers(self) -> None:
