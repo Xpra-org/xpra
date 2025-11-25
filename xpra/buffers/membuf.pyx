@@ -40,6 +40,10 @@ cdef void free_buf(const void *p, size_t l, void *arg) noexcept nogil:
     xmemfree(<void *>p)
 
 
+cdef void free_mem(const void *p, size_t l, void *arg) noexcept nogil:
+    free(<void *>p)
+
+
 cdef MemBuf getbuf(size_t l, int readonly=1):
     cdef const void *p = xmemalign(l)
     if p == NULL:
@@ -55,9 +59,13 @@ cdef MemBuf padbuf(size_t l, size_t padding, int readonly=1):
 
 
 cdef MemBuf makebuf(void *p, size_t l, int readonly=1):
+    """
+    wraps the given memory as a `MemBuf`,
+    it will be freed using `free()`
+    """
     if p == NULL:
         raise ValueError(f"invalid NULL buffer pointer")
-    return MemBuf_init(p, l, &free_buf, NULL, readonly)
+    return MemBuf_init(p, l, &free_mem, NULL, readonly)
 
 
 cdef MemBuf wrapbuf(void *p, size_t l, int readonly=1):
