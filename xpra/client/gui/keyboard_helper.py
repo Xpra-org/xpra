@@ -351,10 +351,10 @@ class KeyboardHelper:
                   self.options or "",
                   self.backend or "", self.name or "")
 
-    def send_keymap(self) -> None:
-        log("send_keymap()")
+    def send_keymap(self, force=False) -> None:
+        log("send_keymap(%s)", force)
         props = {"keymap": self.get_keymap_properties()}
-        self.send("keymap-changed", props)
+        self.send("keymap-changed", props, force)
 
     def update_hash(self) -> None:
         import hashlib

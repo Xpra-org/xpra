@@ -4,6 +4,9 @@
 # later version. See the file COPYING for details.
 
 from xpra.util.str_fn import csv
+from xpra.util.env import envbool
+
+DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 
 
 class KeyEvent:
