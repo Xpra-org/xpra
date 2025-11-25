@@ -125,6 +125,7 @@ tests/unittests/test-file*
 /xpra/client/*.c
 /xpra/client/gtk3/opengl/*.c
 /xpra/client/gtk3/window/*.c
+/xpra/client/gui/window/*.c
 /xpra/clipboard/*.c
 /xpra/codecs/nvidia/*/*.c
 /xpra/codecs/nvidia/*/*.cpp
@@ -169,6 +170,9 @@ tests/unittests/test-file*
 /xpra/x11/desktop/*.c
 /xpra/x11/models/*.c
 /xpra/x11/server/*.c
+/xpra/x11/gtk/error.c
+/xpra/x11/subsystem/*.c
+/xpra/x11/uinput/*.c
 /xpra/x11/*.c
 /xpra/wayland/*.c
 /xpra/wayland/xdg-shell-protocol.h
