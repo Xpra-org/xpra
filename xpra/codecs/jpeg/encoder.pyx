@@ -485,4 +485,5 @@ def selftest(full=False) -> None:
         for encoding in ("jpeg", "jpega"):
             log("%s at %i quality", encoding, q)
             v = encode(encoding, img, options)
+            log("encoded: %r", v)
             assert v, "encode output was empty!"
