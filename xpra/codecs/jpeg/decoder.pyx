@@ -17,7 +17,8 @@ from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t, uint8_t
 from libc.string cimport memset  # pylint: disable=syntax-error
 
-LOG_PERF = envbool("XPRA_JPEG_LOG_PERF", False)
+cdef int LOG_PERF = envbool("XPRA_JPEG_LOG_PERF", False)
+cdef int JPEGA = envbool("XPRA_TURBOJPEG_JPEGA", True)
 
 ctypedef int TJSAMP
 ctypedef int TJPF
@@ -120,7 +121,9 @@ def get_version() -> Tuple[int, int]:
 
 
 def get_encodings() -> Sequence[str]:
-    return ("jpeg", "jpega")
+    if JPEGA:
+        return ("jpeg", "jpega")
+    return ("jpeg", )
 
 
 cdef inline int roundup(int n, int m) noexcept nogil:

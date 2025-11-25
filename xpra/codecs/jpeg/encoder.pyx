@@ -23,6 +23,7 @@ from xpra.log import Logger
 log = Logger("encoder", "jpeg")
 
 cdef int YUV = envbool("XPRA_TURBOJPEG_YUV", True)
+cdef int JPEGA = envbool("XPRA_TURBOJPEG_JPEGA", True)
 
 
 ctypedef int TJSAMP
@@ -112,7 +113,9 @@ def get_info() -> Dict[str, Any]:
 
 
 def get_encodings() -> Sequence[str]:
-    return ("jpeg", "jpega")
+    if JPEGA:
+        return ("jpeg", "jpega")
+    return ("jpeg", )
 
 
 if YUV:
@@ -124,7 +127,7 @@ JPEGA_INPUT_COLORSPACES = ("BGRA", "RGBA", )
 
 def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
-    for encoding in ("jpeg", "jpega"):
+    for encoding in get_encodings():
         in_css = JPEG_INPUT_COLORSPACES if encoding == "jpeg" else JPEGA_INPUT_COLORSPACES
 
         for in_cs in in_css:
@@ -175,7 +178,7 @@ cdef class Encoder:
             raise RuntimeError("Error: failed to instantiate a JPEG compressor")
 
     def init_context(self, encoding: str, width : int, height : int, src_format: str, options: typedict) -> None:
-        assert encoding in ("jpeg", "jpega"), "invalid encoding: %s" % encoding
+        assert encoding in get_encodings(), "invalid encoding: %s" % encoding
         if encoding == "jpeg":
             assert src_format in JPEG_INPUT_COLORSPACES
         elif encoding == "jpega":
@@ -280,7 +283,7 @@ JPEGA_INPUT_FORMATS = ("RGBA", "BGRA", "ABGR", "ARGB")
 
 
 def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
-    assert coding in ("jpeg", "jpega")
+    assert coding in get_encodings()
     rgb_format = image.get_pixel_format()
     if coding == "jpega" and rgb_format.find("A")<0:
         #why did we select 'jpega' then!?
@@ -482,7 +485,7 @@ def selftest(full=False) -> None:
     img = make_test_image("BGRA", 32, 32)
     for q in (0, 50, 100):
         options = typedict({"quality" : q})
-        for encoding in ("jpeg", "jpega"):
+        for encoding in get_encodings():
             log("%s at %i quality", encoding, q)
             v = encode(encoding, img, options)
             log("encoded: %r", v)
