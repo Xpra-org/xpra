@@ -11,6 +11,7 @@ from time import monotonic
 from xpra.os_util import gi_import
 from xpra.util.str_fn import bytestostr, Ellipsizer
 from xpra.util.objects import typedict
+from xpra.keyboard.common import DELAY_KEYBOARD_DATA
 from xpra.common import noerr, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
 from xpra.server.subsystem.stub import StubServerMixin
@@ -136,7 +137,8 @@ class KeyboardServer(StubServerMixin):
             # always clear modifiers before setting a new keymap
             ss.make_keymask_match(c.strtupleget("modifiers"))
         self.set_keyboard_repeat(delay, interval)
-        self.set_keymap(ss)
+        if not DELAY_KEYBOARD_DATA:
+            self.set_keymap(ss)
 
     def get_keyboard_info(self) -> dict[str, Any]:
         start = monotonic()
@@ -180,6 +182,9 @@ class KeyboardServer(StubServerMixin):
         if self.readonly:
             return
         props = typedict(packet.get_dict(1))
+        force = True
+        if len(packet) > 2:
+            force = packet.get_bool(2)
         ss = self.get_server_source(proto)
         if ss is None:
             return
@@ -191,7 +196,7 @@ class KeyboardServer(StubServerMixin):
         kc = getattr(ss, "keyboard_config", None)
         if kc and kc.enabled:
             kc.parse_options(props)
-            self.set_keymap(ss, True)
+            self.set_keymap(ss, force)
             modifiers = props.get("modifiers", [])
             ss.make_keymask_match(modifiers)
 

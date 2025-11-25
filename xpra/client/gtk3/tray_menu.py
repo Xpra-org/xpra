@@ -1263,7 +1263,7 @@ class GTKTrayMenu(MenuHelper):
             kh.send_layout()
             log.info(f"{msg}: {descr!r}")
             if not backend:
-                kh.send_keymap()
+                kh.send_keymap(True)
 
     def populate_ibus_keyboard_layouts(self, ibus_layouts: dict) -> None:
         self.layout_submenu = Gtk.Menu()

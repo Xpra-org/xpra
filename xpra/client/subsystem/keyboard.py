@@ -9,15 +9,12 @@ from collections.abc import Sequence
 
 from xpra.client.base.stub import StubClientMixin
 from xpra.client.gui.keyboard_helper import KeyboardHelper
-from xpra.keyboard.common import KeyEvent
-from xpra.util.env import envbool
+from xpra.keyboard.common import KeyEvent, DELAY_KEYBOARD_DATA
 from xpra.util.objects import typedict
 from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("keyboard")
-
-DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 
 
 def noauto(val: str | Sequence | None) -> str | Sequence | None:
