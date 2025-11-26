@@ -100,8 +100,8 @@ class CGFakeKeyboard:
         fake_key(keycode, press)
 
     @staticmethod
-    def clear_keys_pressed(_keycodes) -> None:
-        pass
+    def clear_keys_pressed(keycodes) -> None:
+        log("clear_keys_pressed(%s) not implemented yet", keycodes)
 
     @staticmethod
     def set_repeat_rate(self, delay: int, interval: int) -> None:

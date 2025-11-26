@@ -191,16 +191,16 @@ class Window(WindowModelStub):
     ################################
 
     def hide(self):
-        pass
+        """ this is not exposed to the windows """
 
     def show(self):
-        pass
+        """ this is not exposed to the windows """
 
     def raise_window(self) -> None:
-        pass
+        """ no-op: windows are unaware of their stacking status """
 
     def set_active(self) -> None:
-        pass
+        """ this is not available under Wayland? """
 
     def request_close(self) -> bool:
-        pass
+        log.warn("Warning: close-request not implemented yet for Wayland")

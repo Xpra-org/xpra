@@ -301,7 +301,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     @staticmethod
     def set_desktop_geometry(w: int, h: int) -> None:
-        pass
+        """ not implemented yet """
 
     @staticmethod
     def get_display_size():
