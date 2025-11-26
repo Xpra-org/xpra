@@ -269,6 +269,22 @@ def _from_utf8(v: bytes) -> str:
     return v.decode("UTF-8")
 
 
+def _to_u8(v: int) -> bytes:
+    return struct.pack(b"@B", v)
+
+
+def _from_u8(v: bytes) -> int:
+    return struct.unpack(b"@B", v)[0]
+
+
+def _to_u16(v: int) -> bytes:
+    return struct.pack(b"@H", v)
+
+
+def _from_u16(v: bytes) -> int:
+    return struct.unpack(b"@H", v)[0]
+
+
 def _to_long(v: int) -> bytes:
     return struct.pack(b"@L", v)
 
@@ -294,6 +310,8 @@ PROP_TYPES: dict[str, tuple[type, str, int, Callable[[Any], bytes], Callable[[by
     # that Xutf8TextPropertyToTextlist exists.
     "latin1": (str, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
     "state": (int, "WM_STATE", 32, _to_state, _from_state, b""),
+    "u8": (int, "CARDINAL", 8, _to_u8, _from_u8, b""),
+    "u16": (int, "CARDINAL", 16, _to_u16, _from_u16, b""),
     "u32": (int, "CARDINAL", 32, _to_long, _from_long, b""),
     "integer": (int, "INTEGER", 32, _to_long, _from_long, b""),
     "strut": (NetWMStrut, "CARDINAL", 32, unsupported, NetWMStrut, None),

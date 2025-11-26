@@ -9,7 +9,7 @@ from collections.abc import Iterable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
-from xpra.x11.error import xsync
+from xpra.x11.error import xsync, xswallow
 from xpra.x11.common import X11Event
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
@@ -121,18 +121,42 @@ def get_desktop_names() -> Sequence[str]:
     return names.split("\0")
 
 
+def _get_icc_xformat(prop="_ICC_PROFILE") -> int:
+    fmt = ()
+    with xswallow:
+        fmt = X11WindowBindings().GetWindowPropertyType(get_root_xid(), prop)
+    if not fmt:
+        return 0
+    xtype, xformat = fmt
+    if xtype != "CARDINAL":
+        log.warn("Warning: unexpected type for %r: %r", prop, xtype)
+        return 0
+    if xformat not in (8, 16, 32):
+        log.warn("Warning: unexpected format for %r: %r", prop, xformat)
+        return 0
+    return xformat
+
+
 def get_icc_profile() -> bytes:
-    data = root_get("_ICC_PROFILE", ["u32"]) or ()
+    xformat = _get_icc_xformat("_ICC_PROFILE")
+    if not xformat:
+        return b""
+    data = root_get("_ICC_PROFILE", [f"u{xformat}"]) or ()
+    if not data:
+        return b""
     try:
         return bytes(data)
     except ValueError as e:
         log("get_icc_profile() data=%r", data, exc_info=True)
         log.error("Error parsing _ICC_PROFILE: %s", e)
-        return b""
+    return b""
 
 
 def get_icc_version() -> int:
-    return root_get("_ICC_PROFILE_IN_X_VERSION", "u32") or 0
+    xformat = _get_icc_xformat("_ICC_PROFILE_IN_X_VERSION")
+    if not xformat:
+        return 0
+    return root_get("_ICC_PROFILE_IN_X_VERSION", f"u{xformat}") or 0
 
 
 def get_icc_data() -> dict[str, bytes | str | int]:
