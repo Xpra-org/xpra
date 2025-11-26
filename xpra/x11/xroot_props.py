@@ -126,6 +126,7 @@ def get_icc_profile() -> bytes:
     try:
         return bytes(data)
     except ValueError as e:
+        log("get_icc_profile() data=%r", data, exc_info=True)
         log.error("Error parsing _ICC_PROFILE: %s", e)
         return b""
 
