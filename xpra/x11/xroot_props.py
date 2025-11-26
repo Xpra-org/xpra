@@ -224,3 +224,32 @@ class XRootPropWatcher(GObject.GObject):
 
 
 GObject.type_register(XRootPropWatcher)
+
+
+def main() -> int:
+    from xpra.platform import program_context
+    from xpra.log import enable_color, consume_verbose_argv
+    with program_context("X11-Root-Properties"):
+        enable_color()
+        consume_verbose_argv(sys.argv, "all")
+
+        from xpra.x11.bindings.display_source import init_display_source
+        init_display_source()
+
+        log.info("workareas=%s", get_workareas())
+        log.info("workarea=%s", get_workarea())
+        log.info("current-desktop=%s", get_current_desktop())
+        log.info("desktop-geometry=%s", get_desktop_geometry())
+        log.info("number-of-desktops=%s", get_number_of_desktops())
+        log.info("root-size=%s", get_root_size())
+        log.info("desktop-names=%s", get_desktop_names())
+        log.info("icc-profile=%s", get_icc_profile())
+        log.info("icc-version=%s", get_icc_version())
+        log.info("xkb-rules-names=%s", get_xkb_rules_names())
+        log.info("xresources=%s", get_xresources())
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
