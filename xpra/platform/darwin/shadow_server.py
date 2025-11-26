@@ -213,7 +213,7 @@ class ShadowServer(GTKShadowServerBase):
             self._update_modifiers(proto, wid, props.get("modifiers"))
         pointer = self.process_mouse_common(proto, device_id, wid, pointer)
         if pointer:
-            self.button_action(device_id, wid, pointer, button, pressed, props)
+            self.button_action(device_id, wid, button, pressed, props)
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         x, y = pos[:2]

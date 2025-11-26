@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Sequence
-
 from AppKit import NSEvent
 import Quartz.CoreGraphics as CG
 
@@ -49,22 +47,24 @@ def click(x, y, button: int, pressed: bool):
 
 
 class MacOSPointer:
-    __slots__ = ()
+    __slots__ = ("position",)
+
+    def __init__(self):
+        self.position = 0, 0
 
     def __repr__(self):
         return "MacOSPointer"
 
-    @staticmethod
-    def move_pointer(x: int, y: int, _props: dict) -> None:
+    def move_pointer(self, x: int, y: int, _props: dict) -> None:
+        self.position = x, y
         move_pointer(x, y)
 
     @staticmethod
     def get_position() -> tuple[int, int]:
         return get_position()
 
-    @staticmethod
-    def click(position: Sequence[int], button: int, pressed: bool, _props: dict) -> None:
-        x, y = position[:2]
+    def click(self, button: int, pressed: bool, _props: dict) -> None:
+        x, y = self.position
         click(x, y, button, pressed)
 
     @staticmethod
