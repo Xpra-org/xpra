@@ -725,7 +725,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
             width = xrrs[size_id].width
             height = xrrs[size_id].height
-            assert width>0 and height>0, f"invalid XRR size: {width}x{height}"
+            assert width >= 0 and height >= 0, f"invalid XRR size: {width}x{height}"
             return int(width), int(height)
         finally:
             XRRFreeScreenConfigInfo(config)
