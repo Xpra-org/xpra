@@ -195,6 +195,9 @@ class ClientTray(ClientWidgetBase):
                 pixels = memoryview_to_bytes(pixels)
             tw.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
 
+    def redraw(self):
+        """ not supported yet - not needed anyway? """
+
     def destroy(self) -> None:
         tw = self.tray_widget
         if tw:
