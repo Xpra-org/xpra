@@ -261,7 +261,8 @@ def get_randr_dpi() -> tuple[int, int]:
             dpix = round(w * 25.4 / wmm)
             dpiy = round(h * 25.4 / hmm)
             log("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
-            return dpix, dpiy
+            if w > 0 and h > 0:
+                return dpix, dpiy
     return -1, -1
 
 

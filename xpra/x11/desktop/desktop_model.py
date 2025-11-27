@@ -92,7 +92,7 @@ class ScreenDesktopModel(DesktopModelBase):
     def update_size(self) -> bool:
         with xsync:
             w, h = RandR.get_screen_size()
-        if (w, h) == (self.width, self.height):
+        if (w, h) == (self.width, self.height) or w <= 0 or h <= 0:
             return False
         self.width, self.height = w, h
         return True
