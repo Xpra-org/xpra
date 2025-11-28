@@ -1977,18 +1977,19 @@ def run_set_monitor(options, args: list[str]) -> int:
     if jsondata == "-":
         mdata = sys.stdin.read()
     elif os.path.isfile(jsondata):
-        import json
-        mdata = json.loads(load_binary_file(jsondata))
+        mdata = load_binary_file(jsondata)
     else:
         # assume this is the json data:
         mdata = jsondata
+    import json
+    monitors = json.loads(mdata)
     from xpra.common import validated_monitor_data
-    monitors = validated_monitor_data(mdata)
-    if not monitors:
+    mdef = validated_monitor_data(monitors)
+    if not mdef:
         raise InitExit(ExitCode.FAILURE, "invalid monitor data")
 
     from xpra.common import adjust_monitor_refresh_rate
-    mdef = adjust_monitor_refresh_rate(options.refresh_rate, monitors)
+    mdef = adjust_monitor_refresh_rate(options.refresh_rate, mdef)
 
     from xpra.x11.bindings.display_source import set_display_name, init_display_source
     set_display_name(display)
