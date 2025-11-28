@@ -518,7 +518,7 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
             "autostart",
             "encoding", "video",
             "nvinfo", "webcam",
-            "keyboard", "gtk-info", "gui-info", "network-info",
+            "keyboard", "gtk-info", "gui-info", "network-info", "monitor-info",
             "compression", "packet-encoding", "path-info",
             "printing-info", "version-info", "version-check", "toolbox",
             "initenv", "setup-ssl", "show-ssl",
@@ -903,6 +903,10 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "network-info":
         from xpra.net import net_util
         return net_util.main()
+    if mode == "monitor-info":
+        return run_monitor_info(options, args)
+    if mode == "set-monitor":
+        return run_set_monitor(options, args)
     if mode == "compression":
         from xpra.net import compression
         return compression.main()
@@ -1921,6 +1925,80 @@ def run_opengl_probe() -> tuple[str, dict]:
     message = probe_message()
     log(f"probe_message()={message!r}")
     return message, props
+
+
+def _monitors_args(args: list[str]) -> tuple[str, str]:
+    from xpra.log import consume_verbose_argv
+    consume_verbose_argv(args, "screen", "randr")
+    if not args:
+        raise InitExit(ExitCode.FILE_NOT_FOUND, "monitor data is missing")
+    jsondata = ""
+    display = ""
+    for arg in args:
+        if arg.startswith(":"):
+            if display:
+                raise InitExit(ExitCode.FAILURE, "duplicated display on command line")
+            display = arg
+        else:
+            if jsondata:
+                raise InitExit(ExitCode.FAILURE, "duplicated monitor data on command line")
+            jsondata = arg
+    if not jsondata:
+        raise InitExit(ExitCode.FAILURE, "missing JSON monitor data argument")
+    display = display or os.environ.get("DISPLAY", "")
+    if not display and not (WIN32 or OSX):
+        raise InitExit(ExitCode.FAILURE, "missing display argument")
+    return display, jsondata
+
+
+def run_monitor_info(options, args: list[str]) -> int:
+    # should we honour desktop scaling here?
+    # parse_scaling(options.desktop_scaling, w, h)
+    display, jsondata = _monitors_args(args)
+    if display:
+        from xpra.gtk.util import verify_gdk_display
+        verify_gdk_display(display)
+    import json
+    from xpra.gtk.info import get_monitors_info
+    from xpra.common import adjust_monitor_refresh_rate
+    monitors = get_monitors_info()
+    data = adjust_monitor_refresh_rate(options.refresh_rate, monitors)
+    minfo = json.dumps(data, indent="\t")
+    if jsondata == "-":
+        sys.stdout.write(minfo)
+    else:
+        with open(jsondata, "wb") as f:
+            f.write(minfo.encode("utf8"))
+    return 0
+
+
+def run_set_monitor(options, args: list[str]) -> int:
+    display, jsondata = _monitors_args(args)
+    if jsondata == "-":
+        mdata = sys.stdin.read()
+    elif os.path.isfile(jsondata):
+        mdata = load_binary_file(jsondata)
+    else:
+        # assume this is the json data:
+        mdata = jsondata
+    import json
+    monitors = json.loads(mdata)
+    from xpra.common import validated_monitor_data
+    mdef = validated_monitor_data(monitors)
+    if not mdef:
+        raise InitExit(ExitCode.FAILURE, "invalid monitor data")
+
+    from xpra.common import adjust_monitor_refresh_rate
+    mdef = adjust_monitor_refresh_rate(options.refresh_rate, mdef)
+
+    from xpra.x11.bindings.display_source import set_display_name, init_display_source
+    set_display_name(display)
+    init_display_source()
+    from xpra.x11.bindings.randr import RandRBindings
+    from xpra.x11.error import xsync
+    with xsync:
+        RandRBindings().set_crtc_config(mdef)
+    return 0
 
 
 def set_client_features(opts) -> None:

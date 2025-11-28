@@ -49,10 +49,10 @@ def set_display_name(name: str) -> None:
 
 
 def init_display_source() -> None:
-    display_name = os.environ.get("DISPLAY", "")
-    if not display_name:
+    display = display_name or os.environ.get("DISPLAY", "")
+    if not display:
         raise ValueError("cannot open display, the environment variable DISPLAY is not set!")
-    return do_init_display_source(display_name)
+    return do_init_display_source(display)
 
 
 cdef uintptr_t do_init_display_source(display_name: str):
