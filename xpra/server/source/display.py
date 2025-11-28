@@ -4,13 +4,13 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Iterable, Callable, Sequence
+from collections.abc import Iterable, Sequence
 
 from xpra.util.env import first_time
 from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
 from xpra.util.screen import get_screen_info
-from xpra.common import MIN_DPI, MAX_DPI, BACKWARDS_COMPATIBLE
+from xpra.common import MIN_DPI, MAX_DPI, BACKWARDS_COMPATIBLE, validated_monitor_data
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
@@ -93,42 +93,7 @@ class DisplayConnection(StubClientConnection):
         self.opengl_props = c.dictget("opengl", {})
 
     def set_monitors(self, monitors: dict[int, dict]) -> None:
-        self.monitors = {}
-        if monitors:
-            for i, mon_def in monitors.items():
-                vdef = self.monitors.setdefault(int(i), {})
-                td = typedict(mon_def)
-                aconv: dict[str, Callable] = {
-                    "geometry": td.inttupleget,
-                    "primary": td.boolget,
-                    "refresh-rate": td.intget,
-                    "scale-factor": td.intget,
-                    "width-mm": td.intget,
-                    "height-mm": td.intget,
-                    "manufacturer": td.strget,
-                    "model": td.strget,
-                    "subpixel-layout": td.strget,
-                    "workarea": td.inttupleget,
-                    "name": td.strget,
-                }
-                for attr, conv in aconv.items():
-                    v = conv(attr)
-                    if v is not None:
-                        vdef[attr] = v
-                # generate a name if we don't have one:
-                name = vdef.get("name")
-                if not name:
-                    manufacturer = vdef.get("manufacturer")
-                    model = vdef.get("model")
-                    if manufacturer and model:
-                        # ie: 'manufacturer': 'DEL', 'model': 'DELL P2715Q'
-                        if model.startswith(manufacturer):
-                            name = model
-                        else:
-                            name = f"{manufacturer} {model}"
-                    else:
-                        name = manufacturer or model or f"{i}"
-                    vdef["name"] = name
+        self.monitors = validated_monitor_data(monitors)
         log("set_monitors(%s) monitors=%s", monitors, self.monitors)
 
     def set_screen_sizes(self, screen_sizes: Iterable) -> None:

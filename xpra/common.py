@@ -71,6 +71,46 @@ def get_default_video_max_size() -> tuple[int, int]:
     return 4096, 4096
 
 
+def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
+    from xpra.util.objects import typedict
+    validated: dict[int, dict[str, Any]] = {}
+    for i, mon_def in monitors.items():
+        vdef = validated.setdefault(int(i), {})
+        td = typedict(mon_def)
+        aconv: dict[str, Callable] = {
+            "geometry": td.inttupleget,
+            "primary": td.boolget,
+            "refresh-rate": td.intget,
+            "scale-factor": td.intget,
+            "width-mm": td.intget,
+            "height-mm": td.intget,
+            "manufacturer": td.strget,
+            "model": td.strget,
+            "subpixel-layout": td.strget,
+            "workarea": td.inttupleget,
+            "name": td.strget,
+        }
+        for attr, conv in aconv.items():
+            v = conv(attr)
+            if v is not None:
+                vdef[attr] = v
+        # generate a name if we don't have one:
+        name = vdef.get("name")
+        if not name:
+            manufacturer = vdef.get("manufacturer")
+            model = vdef.get("model")
+            if manufacturer and model:
+                # ie: 'manufacturer': 'DEL', 'model': 'DELL P2715Q'
+                if model.startswith(manufacturer):
+                    name = model
+                else:
+                    name = f"{manufacturer} {model}"
+            else:
+                name = manufacturer or model or f"{i}"
+            vdef["name"] = name
+    return validated
+
+
 def force_size_constraint(width: int, height: int) -> dict[str, dict[str, Any]]:
     size = width, height
     return {
