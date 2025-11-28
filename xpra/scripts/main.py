@@ -1946,7 +1946,7 @@ def _monitors_args(args: list[str]) -> tuple[str, str]:
     if not jsondata:
         raise InitExit(ExitCode.FAILURE, "missing JSON monitor data argument")
     display = display or os.environ.get("DISPLAY", "")
-    if not display:
+    if not display and not (WIN32 or OSX):
         raise InitExit(ExitCode.FAILURE, "missing display argument")
     return display, jsondata
 
@@ -1955,8 +1955,9 @@ def run_monitor_info(options, args: list[str]) -> int:
     # should we honour desktop scaling here?
     # parse_scaling(options.desktop_scaling, w, h)
     display, jsondata = _monitors_args(args)
-    from xpra.gtk.util import verify_gdk_display
-    verify_gdk_display(display)
+    if display:
+        from xpra.gtk.util import verify_gdk_display
+        verify_gdk_display(display)
     import json
     from xpra.gtk.info import get_monitors_info
     from xpra.common import adjust_monitor_refresh_rate
