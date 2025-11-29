@@ -141,7 +141,7 @@ class ShadowServerBase(ServerBase):
 
     @staticmethod
     def set_desktop_geometry(w: int, h: int) -> None:
-        pass
+        """ shadow servers don't modify the existing resolution """
 
     def apply_refresh_rate(self, ss) -> None:
         rrate = super().apply_refresh_rate(ss)
