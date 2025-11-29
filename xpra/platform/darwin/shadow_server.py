@@ -17,7 +17,7 @@ from xpra.exit_codes import ExitCode
 from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
-from xpra.platform.darwin.pointer import click, move_pointer
+from xpra.platform.darwin.pointer import move_pointer
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 from xpra.log import Logger
 
@@ -214,14 +214,6 @@ class ShadowServer(GTKShadowServerBase):
         pointer = self.process_mouse_common(proto, device_id, wid, pointer)
         if pointer:
             self.button_action(device_id, wid, button, pressed, props)
-
-    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
-        x, y = pos[:2]
-        move_pointer(x, y)
-
-    def button_action(self, device_id: int, wid: int, pointer, button: int, pressed: bool, props):
-        x, y = pointer[:2]
-        click(x, y, button, pressed)
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)

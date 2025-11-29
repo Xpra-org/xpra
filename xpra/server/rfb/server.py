@@ -168,7 +168,7 @@ class RFBServer(StubServerMixin):
                     if buttons & mask != self.rfb_buttons & mask:
                         pressed = bool(buttons & mask)
                         pointerlog(" %spressing button %i", ["un", ""][pressed], 1 + button)
-                        self.button_action(device_id, 0, (x, y), 1 + button, pressed)
+                        self.button_action(device_id, 0, 1 + button, pressed)
                 self.rfb_buttons = buttons
 
         GLib.idle_add(process_pointer_event)
