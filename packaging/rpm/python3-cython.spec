@@ -18,13 +18,13 @@ autoprov: no
 %endif
 
 Name:		%{python3}-cython
-Version:	3.2.1
+Version:	3.2.2
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://github.com/cython/cython/archive/refs/tags/%{version}.tar.gz
+Source0:    https://github.com/cython/cython/releases/download/%{version}/cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   %{python3}
 Provides:   %{python3}-Cython = %{version}-%{release}
@@ -42,7 +42,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "72d00515d74df2eaffe3802800448b6055d8d2f2dbc4564fa1e2e1c770a16f20" ]; then
+if [ "${sha256}" != "c3add3d483acc73129a61d105389344d792c17e7c1cee24863f16416bd071634" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
