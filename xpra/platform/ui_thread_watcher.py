@@ -30,6 +30,10 @@ def run_callbacks(callbacks: list[Callable[[], None]]) -> None:
             callback()
 
 
+def log_message(message:str):
+    log.info(message)
+
+
 class UIThreadWatcher:
     """
         Allows us to register callbacks
@@ -57,6 +61,7 @@ class UIThreadWatcher:
         self.last_ui_thread_time: float = 0
         self.ui_wakeup_timer: int = 0
         self.exit: Event = Event()
+        self.show_message = log_message
 
     def start(self) -> None:
         if self.last_ui_thread_time > 0:
