@@ -18,8 +18,8 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-const { Gio } = imports.gi;
-const { getInputSourceManager } = imports.ui.status.keyboard;
+import Gio from 'gi://Gio';
+import * as getInputSourceManager from 'resource:///org/gnome/shell/ui/status/keyboard.js';
 
 const XMLInterface = `<node>
   <interface name="xpra_org.InputSourceManager">
@@ -40,7 +40,7 @@ function init(meta) {
     return new InputSourceManagerInterface();
 }
 
-class InputSourceManagerInterface {
+export default class InputSourceManagerInterface {
     enable() {
         this._ism = new ISMWrapper();
         this._dbusObj= Gio.DBusExportedObject.wrapJSObject(XMLInterface, this._ism);
