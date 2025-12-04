@@ -1,10 +1,16 @@
 # Changelog
 
-## [5.1.4] 2025-11-13
+## [5.1.4] 2025-12-04
+* Platforms, build and packaging:
+    * [re-enable build tests for release tags](https://github.com/Xpra-org/xpra/commit/1cee002b6325c9907f9ded53dcc998318c84b312)
 * MS Windows fixes:
     * [ensure we always find a writeable location](https://github.com/Xpra-org/xpra/commit/07f799c94823a9cb6e329f1231a4de3e1101a848)
     * [failure to run the client with some unicode usernames](https://github.com/Xpra-org/xpra/commit/7082c0a08206a5162e23f50828823c8306e52df9)
     * [don't sync log files over the network](https://github.com/Xpra-org/xpra/commit/85f07281470ce3da4a0287461bd29dbeb383c576)
+* Major:
+    * [errors with some virtual monitors with zero dimensions](https://github.com/Xpra-org/xpra/commit/3888b6e2a3c273d630acaa4519eb5d2253e70736)
+    * [errors update virtual screen geometry when monitors are turned off](https://github.com/Xpra-org/xpra/commit/1a4bdceae77587806bfc05cd1343b203c5f9d741)
+    * [`openh264` encoder streams missing metadata required by html5 client](https://github.com/Xpra-org/xpra/commit/0fd0a5093d24057a3bef5a3890f451bfe473f1b0)
 
 ## [5.1.3] 2025-11-11
 * Platforms, build and packaging:

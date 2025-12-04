@@ -816,11 +816,17 @@ fi
 
 
 %changelog
-* Thu Nov 13 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
+* Thu Dec 04 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
+- Platforms, build and packaging:
+   re-enable build tests for release tags
 - MS Windows fixes:
    ensure we always find a writeable location
    failure to run the client with some unicode usernames
    don't sync log files over the network
+- Major:
+   errors with some virtual monitors with zero dimensions
+   errors update virtual screen geometry when monitors are turned off
+   `openh264` encoder streams missing metadata required by html5 client
 
 * Tue Nov 11 2025 Antoine Martin <antoine@xpra.org> 5.1.3-10
 - Platforms, build and packaging:

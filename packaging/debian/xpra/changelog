@@ -1,10 +1,16 @@
 xpra (5.1.4-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    re-enable build tests for release tags
   * MS Windows fixes:
     ensure we always find a writeable location
     failure to run the client with some unicode usernames
     don't sync log files over the network
+  * Major:
+    errors with some virtual monitors with zero dimensions
+    errors update virtual screen geometry when monitors are turned off
+    `openh264` encoder streams missing metadata required by html5 client
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 13 Nov 2025 22:34:59 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 04 Nov 2025 16:10:15 +0700
 
 xpra (5.1.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
