@@ -93,7 +93,7 @@ if [ "${ID}" == "rockylinux" ]; then
   exit 0
 fi
 if [ "${ID}" == "oraclelinux" ]; then
-  sudo dnf config-manager --set-enabled "ol${VERSION}_codeready_builder"
+  sudo dnf config-manager --set-enabled "ol${VERSION_ID}_codeready_builder"
   sudo dnf config-manager --set-enabled epel-release
   sudo dnf config-manager --set-enabled powertools
   dnfinstall OracleLinux
