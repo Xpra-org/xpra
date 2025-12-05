@@ -8,7 +8,7 @@ from time import monotonic
 from xpra.util.gobject import n_arg_signal, one_arg_signal
 from xpra.clipboard.common import ClipboardCallback
 from xpra.clipboard.targets import TEXT_TARGETS
-from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
+from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.os_util import gi_import
 from xpra.util.str_fn import Ellipsizer
@@ -163,7 +163,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             if sel:
                 data = sel.get_data()
                 if target in ("image/png", "image/jpeg"):
-                    data = filter_data(dtype=target, dformat=8, data=data)
+                    data = self.filter_data(dtype=target, dformat=8, data=data)
                 got_contents(target, 8, data)
                 return
         log.warn("Warning: can't find request target atom {target}")
