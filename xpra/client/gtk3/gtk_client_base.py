@@ -11,7 +11,7 @@ from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
 from typing import Dict, Any, List, Type, Tuple, Optional
-from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
+from gi.repository import Gtk, Gdk, GdkPixbuf, GLib  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
@@ -226,6 +226,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         UIXpraClient.cleanup(self)
 
     def start_UI_watcher(self, _client) -> None:
+        GLib.timeout_add(5000, self.do_start_UI_watcher)
+
+    def do_start_UI_watcher(self) -> None:
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         self.UI_watcher = get_UI_watcher(self.timeout_add, self.source_remove)
         self.UI_watcher.start()
