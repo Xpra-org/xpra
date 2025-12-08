@@ -644,7 +644,7 @@ class KeyboardConfig(KeyboardConfigBase):
         # this is only called from an existing xsync context in this module
         return mask_to_names(X11Keyboard.query_mask(), self.modifier_map)
 
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=0, ignored_modifier_keynames=None) -> None:
+    def make_keymask_match(self, modifier_list: Sequence[str], ignored_modifier_keycode=0, ignored_modifier_keynames=None) -> None:
         """
             Given a list of modifiers that should be set, try to press the right keys
             to make the server's modifier list match it.

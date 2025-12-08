@@ -9,7 +9,7 @@ from typing import Any
 from time import monotonic
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import bytestostr, Ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.util.objects import typedict
 from xpra.keyboard.common import DELAY_KEYBOARD_DATA
 from xpra.common import noerr, BACKWARDS_COMPATIBLE
@@ -197,7 +197,7 @@ class KeyboardServer(StubServerMixin):
         if kc and kc.enabled:
             kc.parse_options(props)
             self.set_keymap(ss, force)
-            modifiers = props.get("modifiers", [])
+            modifiers = props.strtupleget("modifiers")
             ss.make_keymask_match(modifiers)
 
     def _process_key_action(self, proto, packet: Packet) -> None:
@@ -214,9 +214,6 @@ class KeyboardServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if not hasattr(ss, "keyboard_config"):
             return
-        keyname = str(keyname)
-        keystr = str(keystr)
-        modifiers = list(str(x) for x in modifiers)
         self.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
         log("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)
@@ -329,8 +326,6 @@ class KeyboardServer(StubServerMixin):
         keyval = packet.get_u32(3)
         client_keycode = packet.get_u32(4)
         modifiers = packet.get_strs(5)
-        keyname = bytestostr(keyname)
-        modifiers = [bytestostr(x) for x in modifiers]
         group = 0
         if len(packet) >= 7:
             group = packet.get_u8(6)

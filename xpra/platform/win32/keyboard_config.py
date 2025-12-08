@@ -52,7 +52,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         return True
             return False  # not found
 
-        def change_mask(modifiers, press, info) -> None:
+        def change_mask(modifiers: set[str], press: bool, info: str) -> None:
             for modifier in modifiers:
                 if is_ignored(modifier):
                     log("change_mask: ignoring %s", modifier)

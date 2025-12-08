@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import Ellipsizer
@@ -74,10 +75,10 @@ class KeyboardConnection(StubClientConnection):
             kc.compute_modifier_keynames()
         log("keys_changed() updated keyboard config=%s", self.keyboard_config)
 
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=0, ignored_modifier_keynames=None):
+    def make_keymask_match(self, modifiers: Sequence[str], ignored_modifier_keycode=0, ignored_modifier_keynames=None) -> None:
         kc = self.keyboard_config
         if kc and kc.enabled:
-            kc.make_keymask_match(modifier_list, ignored_modifier_keycode, ignored_modifier_keynames)
+            kc.make_keymask_match(modifiers, ignored_modifier_keycode, ignored_modifier_keynames)
 
     def set_default_keymap(self):
         log("set_default_keymap() keyboard_config=%s", self.keyboard_config)

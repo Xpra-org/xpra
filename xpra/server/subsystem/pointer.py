@@ -6,6 +6,7 @@
 # pylint: disable-msg=E1101
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
@@ -302,7 +303,7 @@ class PointerServer(StubServerMixin):
             self._move_pointer(device_id, wid, pointer, props)
         return True
 
-    def _update_modifiers(self, proto, wid: int, modifiers) -> None:
+    def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -310,6 +311,7 @@ class PointerServer(StubServerMixin):
             if self.ui_driver and self.ui_driver != ss.uuid:
                 return
             if hasattr(ss, "keyboard_config"):
+                modifiers = [x for x in modifiers if x]
                 ss.make_keymask_match(modifiers)
             if wid == self.get_focus():
                 ss.emit("user-event", "focus-changed")
@@ -317,7 +319,7 @@ class PointerServer(StubServerMixin):
     def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool,
                                  pointer, props: dict) -> None:
         if "modifiers" in props:
-            self._update_modifiers(proto, wid, props.get("modifiers"))
+            self._update_modifiers(proto, wid, props.get("modifiers", ()))
         props = {}
         if self.process_mouse_common(proto, device_id, wid, pointer, props):
             self.button_action(device_id, wid, button, pressed, props)
