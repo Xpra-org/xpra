@@ -151,7 +151,7 @@ class Keyboard(KeyboardBase):
         self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R") or "control"
         self.super_modifier = self.modifier_keys.get("Super_L") or self.modifier_keys.get("Super_R") or ""
         self.hyper_modifier = self.modifier_keys.get("Hyper_L") or self.modifier_keys.get("Hyper_R") or ""
-        self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
+        self.num_lock_modifier = self.modifier_keys.get("Num_Lock") or ""
         log("set_modifier_mappings(%s) meta=%s, control=%s, super=%s, hyper=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.super_modifier, self.hyper_modifier, self.num_lock_modifier)
         #find the keysyms and keycodes to use for each key we may translate:
         for orig_keysym, keysyms in KEYS_TRANSLATION_OPTIONS.items():
@@ -221,7 +221,7 @@ class Keyboard(KeyboardBase):
             if (mask & modmask) and modname:
                 names.append(modname)
         #don't trust GTK with numlock:
-        if self.num_lock_modifier is not None:
+        if self.num_lock_modifier:
             if self.num_lock_state and self.num_lock_modifier not in names:
                 names.append(self.num_lock_modifier)
             elif not self.num_lock_state and self.num_lock_modifier in names:
