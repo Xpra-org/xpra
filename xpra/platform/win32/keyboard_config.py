@@ -40,6 +40,8 @@ class KeyboardConfig(KeyboardConfigBase):
             return
 
         def is_ignored(modifier) -> bool:
+            if not modifier:
+                return True
             if not ignored_modifier_keynames:
                 return False
             for keyname in ignored_modifier_keynames:  # ie: ["Control_R"]

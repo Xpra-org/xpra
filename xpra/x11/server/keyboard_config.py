@@ -682,6 +682,8 @@ class KeyboardConfig(KeyboardConfigBase):
             m: set[str] = set()
             mm = self.mod_managed or ()
             for modifier in modifiers:
+                if not modifier:
+                    continue
                 if modifier in mm:
                     log("modifier is server managed: %s", modifier)
                     continue
