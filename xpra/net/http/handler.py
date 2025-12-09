@@ -16,6 +16,7 @@ from collections.abc import Iterable, Callable
 from xpra.common import FULL_INFO
 from xpra.net.common import HttpResponse
 from xpra.net.http.common import EXTENSION_TO_MIMETYPE
+from xpra.util.io import load_binary_file
 from xpra.util.objects import AdHocStruct
 from xpra.util.str_fn import std, csv, obsc, repr_ellipsized
 from xpra.util.env import envbool
@@ -288,7 +289,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         with log.trap_error("Error processing POST request"):
-            length = int(self.headers.get('content-length'))
+            length = int(self.headers.get('content-length', 0))
             data = self.rfile.read(length)
             log("POST data=%s (%i bytes)", data, length)
             self.post_data = data
@@ -369,6 +370,18 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def send_error(self, code, message=None, explain=None) -> None:
+        custom = os.path.join(self.web_root, f"{code}.html")
+        if os.path.exists(custom) and os.path.isfile(custom):
+            body = load_binary_file(custom)
+            if body:
+                self.send_response(code, message)
+                self.send_header('Connection', 'close')
+                self.send_header("Content-Type", self.error_content_type)
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                if self.command != 'HEAD' and body:
+                    self.wfile.write(body)
+                return
         try:
             super().send_error(code, message, explain)
         except OSError:
