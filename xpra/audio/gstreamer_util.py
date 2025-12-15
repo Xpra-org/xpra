@@ -422,9 +422,9 @@ def get_source_plugins() -> list[str]:
     if OSX:
         sources.append("osxaudiosrc")
     elif WIN32:
+        sources.append("wasapi2src")
         sources.append("directsoundsrc")
         sources.append("wasapisrc")
-        sources.append("wasapi2src")
     sources.append("autoaudiosrc")
     if POSIX:
         sources += ["alsasrc",
@@ -464,9 +464,9 @@ def get_sink_plugins() -> list[str]:
     if OSX:
         SINKS.append("osxaudiosink")
     elif WIN32:
+        SINKS.append("wasapi2sink")
         SINKS.append("directsoundsink")
         SINKS.append("wasapisink")
-        SINKS.append("wasapi2sink")
     SINKS.append("autoaudiosink")
     if POSIX and not OSX:
         try:
