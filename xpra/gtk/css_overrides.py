@@ -56,7 +56,7 @@ def get_style_provider() -> Gtk.CssProvider:
 def load_css(provider) -> None:
     css_dir = os.path.join(get_resources_dir(), "css")
     if not os.path.exists(css_dir) or not os.path.isdir(css_dir):
-        log.error("Error: cannot find directory '%s'", css_dir)
+        log.error("Error: cannot find CSS directory %r", css_dir)
         return
     filename = None
 
