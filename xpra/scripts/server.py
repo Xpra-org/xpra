@@ -255,7 +255,7 @@ def set_server_features(opts, mode: str) -> None:
     features.control = opts.control and impcheck("net.control")
     features.mmap = b(opts.mmap) and impcheck("net.mmap")
     features.ssl = b(opts.ssl)
-    features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
+    features.dbus = b(opts.dbus) and bool(find_spec("dbus")) and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
     features.shell = opts.shell
     features.watcher = envbool("XPRA_UI_THREAD_WATCHER", True)
