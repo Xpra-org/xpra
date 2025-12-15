@@ -232,8 +232,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         blocklisted = tuple(client for client in BLOCKLISTED_CLIPBOARD_CLIENTS if client in wininfo)
         if blocklisted:
             if first_time(f"clipboard-blocklisted:{blocklisted}"):
-                log.warn(f"receiving clipboard requests from blocklisted client: {wininfo}")
-                log.warn(" all requests will be silently ignored")
+                log.warn("receiving clipboard requests from blocklisted client:")
+                log.warn(f" {wininfo},")
+                log.warn(" all further requests will be silently ignored")
             log("responding with nodata for blocklisted client '%s'", wininfo)
             return
         if not self.owned:
