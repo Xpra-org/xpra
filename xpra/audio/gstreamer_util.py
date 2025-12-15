@@ -74,9 +74,13 @@ NAME_TO_SRC_PLUGIN: dict[str, str] = {
     "pulse"         : "pulsesrc",
     "direct"        : "directsoundsrc",
     "wasapi"        : "wasapisrc",
+    "wasapi2"       : "wasapi2src",
 }
 SRC_TO_NAME_PLUGIN = reverse_dict(NAME_TO_SRC_PLUGIN)
-SRC_HAS_DEVICE_NAME = ["alsasrc", "osssrc", "oss4src", "jackaudiosrc", "pulsesrc", "directsoundsrc", "osxaudiosrc"]
+SRC_HAS_DEVICE_NAME = [
+    "alsasrc", "osssrc", "oss4src", "jackaudiosrc", "pulsesrc", "directsoundsrc", "osxaudiosrc",
+    "wasapisrc",  "wasapi2src",
+]
 PLUGIN_TO_DESCRIPTION: dict[str, str] = {
     "pulsesrc"      : "Pulseaudio",
     "jacksrc"       : "JACK Audio Connection Kit",
@@ -93,6 +97,7 @@ NAME_TO_INFO_PLUGIN: dict[str, str] = {
     "pulse"         : "PulseAudio",
     "direct"        : "Microsoft Windows Direct Sound",
     "wasapi"        : "Windows Audio Session API",
+    "wasapi2"       : "Windows Audio Session API",
 }
 
 # format: encoder, container-formatter, decoder, container-parser, stream-compressor
@@ -248,7 +253,6 @@ def get_decoders() -> CODEC_DEFS:
 
 
 def init_codecs() -> dict[str, bool]:
-    global CODECS
     if CODECS or import_gst() is None:
         return CODECS or {}
     # populate CODECS:
@@ -420,6 +424,7 @@ def get_source_plugins() -> list[str]:
     elif WIN32:
         sources.append("directsoundsrc")
         sources.append("wasapisrc")
+        sources.append("wasapi2src")
     sources.append("autoaudiosrc")
     if POSIX:
         sources += ["alsasrc",
@@ -461,6 +466,7 @@ def get_sink_plugins() -> list[str]:
     elif WIN32:
         SINKS.append("directsoundsink")
         SINKS.append("wasapisink")
+        SINKS.append("wasapi2sink")
     SINKS.append("autoaudiosink")
     if POSIX and not OSX:
         try:
@@ -687,7 +693,7 @@ def get_pulse_sink_defaults() -> dict[str, Any]:
                               env_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
 
 
-def get_directsound_source_defaults(device_name_match=None, want_monitor_device=True, remote=None) -> dict[str, Any]:
+def get_win32_device(device_name_match=None, want_monitor_device=True, remote=None) -> dict[str, Any]:
     try:
         from xpra.platform.win32.directsound import get_devices, get_capture_devices
         if not want_monitor_device:
@@ -733,12 +739,20 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
     return {}
 
 
+def get_wasapi_defaults(*args):
+    defaults = get_win32_device(*args)
+    defaults["low-latency"] = True
+    return defaults
+
+
 # a list of functions to call to get the plugin options
 # at runtime (so we can perform runtime checks on remote data,
-# to avoid audio loops for example)
-DEFAULT_SRC_PLUGIN_OPTIONS : dict[str, Callable] = {
-    "test"                  : get_test_defaults,
-    "direct"                : get_directsound_source_defaults,
+# to avoid audio loops for example, or query the actual list of devices)
+DEFAULT_SRC_PLUGIN_OPTIONS: dict[str, Callable] = {
+    "test": get_test_defaults,
+    "direct": get_win32_device,
+    "wasapi": get_wasapi_defaults,
+    "wasapi2": get_wasapi_defaults,
 }
 DEFAULT_SINK_PLUGIN_OPTIONS : dict[str, Any] = {}
 if POSIX and not OSX:

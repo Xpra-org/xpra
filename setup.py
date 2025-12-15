@@ -1921,7 +1921,7 @@ if WIN32:
                 # muxers:
                 "gdp", "matroska", "ogg", "isomp4",
                 "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
-                "coreelements", "directsound", "directsoundsrc", "wasapi",
+                "coreelements", "directsound", "directsoundsrc", "wasapi", "wasapi2",
                 # codecs:
                 "opus", "opusparse", "flac", "lame", "mpg123", "faac", "faad",
                 "volume", "vorbis", "wavenc", "wavpack", "wavparse",
