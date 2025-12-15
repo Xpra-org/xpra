@@ -123,7 +123,7 @@ def connect_to(display_desc: dict, opts=None, debug_cb: Callable = noop, ssh_fai
         env["PLINK_PROTOCOL"] = "ssh"
     else:
         env = display_desc.get("env", get_saved_env())
-    kwargs = get_ssh_kwargs()
+    kwargs = get_ssh_kwargs(opts and opts.exit_ssh)
     cmd = get_ssh_command(display_desc)
     try:
         debug_cb(f"starting {cmd[0]} tunnel")
