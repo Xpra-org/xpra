@@ -1,7 +1,12 @@
 # Changelog
 
 ## [6.4.1] 2025-12-15
-* TODO
+* Platforms, build and packaging:
+  * [cython 3.2.3](https://github.com/Xpra-org/xpra/commit/24259e0b223d35fdc293ee49d23d2dd863b2ff98)
+* Major:
+  * [broken Gtk Wayland clipboard](https://github.com/Xpra-org/xpra/commit/6fd2cd83ad2f69159287f6549032b30f3feb4696)
+  * [`exit-ssh` option was getting lost](https://github.com/Xpra-org/xpra/commit/8c7c57cecf4227c085c19403bcc92a36abb2e3ba)
+  * [secondary connections cannot use keyboard when sharing](https://github.com/Xpra-org/xpra/commit/ae984a1392baaf015282f924cf08ec426d2df6f8)
 
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:

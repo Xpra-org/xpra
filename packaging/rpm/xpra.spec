@@ -1085,7 +1085,13 @@ fi
 
 %changelog
 * Mon Dec 15 2025 Antoine Martin <antoine@xpra.org> 6.4.1-10
-- TODO
+- Platforms, build and packaging:
+   cython 3.2.3
+- Major:
+   broken Gtk Wayland clipboard
+   `exit-ssh` option was getting lost
+   secondary connections cannot use keyboard when sharing
+
 * Sun Sep 14 2025 Antoine Martin <antoine@xpra.org> 6.4-10
 - Platforms, build and packaging:
    major modularization

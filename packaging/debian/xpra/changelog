@@ -1,5 +1,10 @@
 xpra (6.4.1-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+    cython 3.2.3
+  * Major:
+    broken Gtk Wayland clipboard
+    `exit-ssh` option was getting lost
+    secondary connections cannot use keyboard when sharing
 
  -- Antoine Martin <antoine@xpra.org>  Mon, 15 Dec 2025 22:46:55 +0700
 
