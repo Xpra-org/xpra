@@ -170,6 +170,9 @@ def env_from_sourcing(file_to_source_path: str, include_unexported_variables: bo
     from xpra.log import Logger
     log = Logger("exec")
     cmd: list[str] = shlex.split(file_to_source_path)
+    if len(cmd) == 1 and os.path.isabs(file_to_source_path) and not os.path.exists(file_to_source_path):
+        log.error("Error: cannot source %r, path does not exist", file_to_source_path)
+        return {}
 
     def abscmd(s: str) -> str:
         if os.path.isabs(s):
