@@ -97,7 +97,7 @@ def get_test_gl_icon() -> tuple[str, int, int, int, bytes]:
     gl_icon = get_icon_filename("opengl", ext="png")
     if gl_icon:
         try:
-            from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
+            from PIL import Image, __version__ as pil_version  # @UnresolvedImport pylint: disable=import-outside-toplevel
         except ImportError as e:
             log(f"testing without icon: {e}")
         else:
@@ -109,13 +109,14 @@ def get_test_gl_icon() -> tuple[str, int, int, int, bytes]:
             noalpha.paste(img, mask=img.split()[3])  # 3 is the alpha channel
             buf = BytesIO()
             try:
-                noalpha.save(buf, format="JPEG")
+                noalpha.save(buf, format="jpeg")
                 data = buf.getvalue()
                 buf.close()
                 encoding = "jpeg"
             except KeyError as e:
                 log("save()", exc_info=True)
-                log.warn("OpenGL using png as jpeg is not supported by Pillow: %s", e)
+                log.warn("Warning: OpenGL rendering test using png instead of jpeg")
+                log.warn(" because jpeg not supported by Pillow %s: %s", pil_version, e)
                 data = load_binary_file(gl_icon)
     if not data:
         data = bytes([0]) * stride * h
