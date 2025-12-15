@@ -189,10 +189,6 @@ class KeyboardServer(StubServerMixin):
         if ss is None:
             return
         log("received new keymap from client: %s", Ellipsizer(packet))
-        other_ui_clients = [s.uuid for s in self._server_sources.values() if s != ss and s.ui_client]
-        if other_ui_clients:
-            log.warn("Warning: ignoring keymap change as there are %i other clients", len(other_ui_clients))
-            return
         kc = getattr(ss, "keyboard_config", None)
         if kc and kc.enabled:
             kc.parse_options(props)
