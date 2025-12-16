@@ -852,8 +852,7 @@ def install_repo(repo_variant="") -> None:
     variant = distro[2]  # ie: "noble"
     if distro[0] in ("Debian", "Ubuntu") or variant in DEB_VARIANTS:
         if variant not in DEB_VARIANTS:
-            print(f"Debian / Ubuntu variant {variant} is not supported by this subcommand")
-            sys.exit(1)
+            raise ValueError(f"Debian / Ubuntu variant {variant} is not supported by this subcommand")
         to = "/etc/apt/sources.list.d/"
         setup_cmds.append(["wget", "-O", "/usr/share/keyrings/xpra.asc", "https://xpra.org/xpra.asc"])
         setup_cmds.append(["chmod", "644", "/usr/share/keyrings/xpra.asc"])
@@ -890,9 +889,7 @@ def install_repo(repo_variant="") -> None:
             variant = "CentOS-Stream"
             add_epel()
         else:
-            print("'install%s-repo' subcommand is only supported on DEB and RPM based distributions" % repo_variant)
-            print(" detected distribution: %s" % " ".join(distro))
-            sys.exit(1)
+            raise ValueError(f"unsupported distribution {distro}")
         to = "/etc/yum.repos.d/"
         if repo_variant != "-lts":
             setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra.repo", to])
