@@ -163,6 +163,29 @@ def is_RPM() -> bool:
     ))
 
 
+def is_Arch() -> bool:
+    if not POSIX:
+        return False
+    try:
+        v = load_os_release_file()
+        if not v:
+            return False
+        os_release = {}
+        for line in v.splitlines():
+            if not line or "=" not in line:
+                continue
+            k, vstr = line.split("=", 1)
+            os_release[k] = vstr.strip().strip('"')
+        distro_id = os_release.get("ID", "").lower()
+        if distro_id in ("arch", "manjaro"):
+            return True
+        id_like = os_release.get("ID_LIKE", "").lower().split()
+        return any(x in id_like for x in ("arch", "archlinux"))
+    except Exception:
+        pass
+    return is_distribution_variant("Arch") or is_distribution_variant("Manjaro")
+
+
 _linux_distribution = ("", "", "")
 
 
