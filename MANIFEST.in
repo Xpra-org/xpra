@@ -14,6 +14,7 @@ recursive-include docs *
 recursive-include tests __init__.py perf scripts
 recursive-include tests/unittests run unit
 recursive-include packaging/debian *
+recursive-include packaging/arch *
 recursive-include packaging/MacOS *
 recursive-include packaging/MSWindows *
 recursive-include packaging/rpm *
