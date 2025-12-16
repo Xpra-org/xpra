@@ -25,6 +25,7 @@ from xpra.scripts.main import (
     check_display,
     find_session_by_name,
     find_mode_pos,
+    strip_attach_extra_positional_args,
 )
 from xpra.net.connect import connect_to, get_host_target_string
 
@@ -82,6 +83,16 @@ class TestMain(unittest.TestCase):
             '--start-child=rstudio',
         ]
         assert find_mode_pos(args, "seamless")==1
+
+    def test_strip_attach_extra_positional_args(self):
+        cmdline = ["xpra", "attach", "ssh://localhost/2", "dolphin"]
+        assert strip_attach_extra_positional_args(cmdline) == ["xpra", "attach", "ssh://localhost/2"]
+
+        cmdline = ["xpra", "attach", "ssh://localhost/2", "--encoding", "h264"]
+        assert strip_attach_extra_positional_args(cmdline) == cmdline
+
+        cmdline = ["xpra", "attach", "ssh://localhost/2", "--encoding", "h264", "dolphin"]
+        assert strip_attach_extra_positional_args(cmdline) == ["xpra", "attach", "ssh://localhost/2", "--encoding", "h264"]
 
     def test_host_parsing(self):
         try:
