@@ -6,13 +6,13 @@
 from time import monotonic
 from typing import Any
 
-from xpra.os_util import gi_import
+from xpra.os_util import OSX, gi_import
 from xpra.exit_codes import ExitCode
 from xpra.platform.features import REINIT_WINDOWS
 from xpra.platform.gui import (
     get_vrefresh,
     get_antialias_info, get_icc_info, get_display_icc_info, show_desktop,
-    get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name,
+    get_xdpi, get_ydpi, get_display_scale_factor, get_number_of_desktops, get_desktop_names, get_wm_name,
 )
 from xpra.scripts.main import check_display
 from xpra.net.common import MAX_PACKET_SIZE, Packet
@@ -22,11 +22,11 @@ from xpra.common import (
 )
 from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
-    MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME, FALSE_OPTIONS,
+    MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME, FALSE_OPTIONS, TRUE_OPTIONS,
 )
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.env import envint
+from xpra.util.env import envbool, envint
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
@@ -37,6 +37,28 @@ workspacelog = Logger("client", "workspace")
 scalinglog = Logger("scaling")
 
 MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
+OSX_AUTO_HIDPI = envbool("XPRA_OSX_AUTO_HIDPI", True)
+
+
+def get_platform_default_scaling(*, osx: bool, enabled: bool, desktop_scaling_opt: str,
+                                 display_scale_factor: float) -> tuple[float, float] | None:
+    """Return a default scaling tuple derived from the platform scale factor.
+
+    When enabled, this makes HiDPI clients (notably macOS Retina) report
+    device-pixel geometry to the server by default when the user didn't specify
+    an explicit scaling value.
+    """
+    if not (osx and enabled):
+        return None
+    if desktop_scaling_opt not in TRUE_OPTIONS:
+        return None
+    try:
+        sf = float(display_scale_factor)
+    except Exception:
+        return None
+    if sf <= 1.0:
+        return None
+    return 1.0 / sf, 1.0 / sf
 
 
 class DisplayClient(StubClientMixin):
@@ -58,6 +80,10 @@ class DisplayClient(StubClientMixin):
         self.desktop_fullscreen = False
         self.desktop_scaling = False
         self.screen_size_change_timer = 0
+        self.platform_scaling_opt: str = ""
+        self.platform_scale_factor_applied: float = 1.0
+        self.platform_scale_factor_pending: float | None = None
+        self.platform_scale_poll_timer = 0
         self.opengl_enabled: bool = False
         self.opengl_props: dict[str, Any] = {}
         self.client_supports_opengl: bool = False
@@ -78,12 +104,29 @@ class DisplayClient(StubClientMixin):
     def init(self, opts) -> None:
         self.desktop_fullscreen = opts.desktop_fullscreen
         self.desktop_scaling = opts.desktop_scaling
+        self.platform_scaling_opt = str(opts.desktop_scaling)
         self.refresh_rate = opts.refresh_rate
         self.dpi = int(opts.dpi)
         self.can_scale = opts.desktop_scaling not in FALSE_OPTIONS
         scalinglog("can_scale(%s)=%s", opts.desktop_scaling, self.can_scale)
         if self.can_scale:
             self.parse_scaling(opts.desktop_scaling)
+            self.apply_platform_default_scaling(opts.desktop_scaling)
+
+    def apply_platform_default_scaling(self, desktop_scaling_opt: str) -> None:
+        if not (fequ(self.xscale, 1.0) and fequ(self.yscale, 1.0)):
+            return
+        scaling = get_platform_default_scaling(
+            osx=OSX,
+            enabled=OSX_AUTO_HIDPI,
+            desktop_scaling_opt=desktop_scaling_opt,
+            display_scale_factor=get_display_scale_factor(),
+        )
+        if not scaling:
+            return
+        self.initial_scaling = scaling
+        self.xscale, self.yscale = scaling
+        scalinglog("applied platform default scaling=%s for desktop-scaling=%r", scaling, desktop_scaling_opt)
 
     def parse_scaling(self, desktop_scaling: str) -> None:
         root_w, root_h = self.get_root_size()
@@ -96,6 +139,10 @@ class DisplayClient(StubClientMixin):
         if ssct:
             self.screen_size_change_timer = 0
             GLib.source_remove(ssct)
+        pspt = self.platform_scale_poll_timer
+        if pspt:
+            self.platform_scale_poll_timer = 0
+            GLib.source_remove(pspt)
 
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         raise NotImplementedError()
@@ -295,8 +342,65 @@ class DisplayClient(StubClientMixin):
                     log.warn(" please see https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Xdummy.md")
         # now that we have the server's screen info, allow scale changes:
         self.scale_change_embargo = 0
+        self.start_platform_scale_tracking()
         self.set_max_packet_size()
         self.send_icc_data()
+
+    def start_platform_scale_tracking(self) -> None:
+        """Best-effort dynamic HiDPI adjustment for macOS.
+
+        Xpra's scaling is session-global, but on macOS the application may move
+        between monitors with different backing scale factors. When enabled and
+        `desktop-scaling` is left as a boolean (the default), we periodically
+        poll the active screen scale factor and adjust the session scaling to
+        keep the server rendering at device-pixel resolution.
+
+        Opt-out using `XPRA_OSX_AUTO_HIDPI=0` or by specifying an explicit
+        `--desktop-scaling=...` value.
+        """
+        if self.platform_scale_poll_timer:
+            return
+        if not (OSX and OSX_AUTO_HIDPI and self.can_scale):
+            return
+        if self.platform_scaling_opt not in TRUE_OPTIONS:
+            return
+        # We need server caps (notably max desktop size) before we can validate
+        # a scaling change.
+        if not self.server_max_desktop_size:
+            return
+        self.platform_scale_factor_applied = get_display_scale_factor()
+        self.platform_scale_factor_pending = None
+
+        def poll() -> bool:
+            if not (OSX and OSX_AUTO_HIDPI and self.can_scale):
+                return False
+            if self.platform_scaling_opt not in TRUE_OPTIONS:
+                return False
+            if not self.server_max_desktop_size:
+                return True
+            sf = get_display_scale_factor()
+            if sf <= 1.0:
+                sf = 1.0
+            self.platform_scale_factor_pending = sf
+            # Ignore tiny fluctuations.
+            if r4cmp(sf, 1000.0) == r4cmp(self.platform_scale_factor_applied, 1000.0):
+                return True
+            # Avoid fighting other scaling changes (embargo / pending resize).
+            if self.screen_size_change_timer or monotonic() < self.scale_change_embargo:
+                return True
+            self.platform_scale_factor_applied = sf
+            self.platform_scale_factor_pending = None
+            target_scale = 1.0 / self.platform_scale_factor_applied
+            if not (fequ(self.xscale, target_scale) and fequ(self.yscale, target_scale)):
+                scalinglog.info(
+                    "macOS display scale factor changed to %s, adjusting desktop scaling",
+                    self.platform_scale_factor_applied,
+                )
+                self.scaleset(target_scale, target_scale)
+            return True
+
+        # Poll at a low frequency to avoid churn.
+        self.platform_scale_poll_timer = GLib.timeout_add(1000, poll)
 
     def send_icc_data(self) -> None:
         if SYNC_ICC and "configure-display" in self.server_packet_types:

@@ -183,6 +183,31 @@ def get_workareas() -> Sequence[tuple[int, int, int, int]]:
     return workareas
 
 
+
+def get_display_scale_factor() -> float:
+    """Return the backing scale factor for the active screen.
+
+    On macOS, this will typically be 2.0 for Retina displays.
+
+    Notes:
+    - This uses `NSScreen.mainScreen()` so the value tracks the screen that
+      contains the application's key window.
+    - Xpra scaling is session-global, so this is only a best-effort hint.
+    """
+    try:
+        screen = NSScreen.mainScreen()
+        if not screen:
+            screens = NSScreen.screens()
+            if screens:
+                screen = screens[0]
+        if not screen:
+            return 1.0
+        return max(1.0, float(screen.backingScaleFactor()))
+    except Exception:
+        log("get_display_scale_factor() failed", exc_info=True)
+        return 1.0
+
+
 def get_display_size() -> tuple[int, int]:
     Gdk = gi_import("Gdk")
     screen = Gdk.Screen.get_default
