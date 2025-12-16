@@ -1371,6 +1371,48 @@ def exec_reconnect(script_file: str, cmdline: list[str]) -> ExitCode:
         return ExitCode.FAILURE
 
 
+def strip_attach_extra_positional_args(cmdline: list[str]) -> list[str]:
+    """
+    When reconnecting we re-exec the client using `attach`.
+
+    For `seamless`/`desktop`/`monitor`, positional non-connection arguments are
+    treated as implicit `--start-child` commands, but those must not be kept
+    during reconnect (otherwise `attach` will treat them as extra display args).
+
+    This function keeps the first display argument after `attach`, plus any
+    subsequent options (and their values), and drops any extra positional args.
+    """
+    try:
+        attach_pos = cmdline.index("attach")
+    except ValueError:
+        return cmdline
+
+    display_pos = None
+    for i in range(attach_pos + 1, len(cmdline)):
+        arg = cmdline[i]
+        if arg.startswith("-"):
+            continue
+        if is_display_arg(arg) or is_connection_arg(arg):
+            display_pos = i
+            break
+    if display_pos is None:
+        return cmdline
+
+    cleaned = cmdline[:display_pos + 1]
+    expecting_option_value = False
+    for arg in cmdline[display_pos + 1:]:
+        if expecting_option_value:
+            cleaned.append(arg)
+            expecting_option_value = False
+            continue
+        if arg.startswith("-"):
+            cleaned.append(arg)
+            expecting_option_value = arg.startswith("--") and "=" not in arg
+            continue
+        # extra positional argument after the display: drop it
+    return cleaned
+
+
 def win32_reconnect(script_file: str, cmdline: list[str]) -> ExitCode:
     # the cx_Freeze wrapper changes the cwd to the directory containing the exe,
     # so we have to re-construct the actual path to the exe:
@@ -2574,6 +2616,7 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
                         i += 1
                     continue
             attach_args.append(arg)
+        attach_args = strip_attach_extra_positional_args(attach_args)
         return exec_reconnect(script_file, attach_args)
     return r
 
