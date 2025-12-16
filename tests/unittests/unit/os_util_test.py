@@ -17,6 +17,7 @@ from xpra.util.io import livefds
 from xpra.util.system import (
     is_Ubuntu, is_Debian, is_unity,
     is_gnome, is_kde, is_WSL,
+    is_Arch,
 )
 from xpra.util.str_fn import strtobytes, bytestostr, hexstr, memoryview_to_bytes
 
@@ -42,6 +43,7 @@ class TestOSUtil(unittest.TestCase):
     def test_distribution_variant(self):
         is_Ubuntu()
         is_Debian()
+        is_Arch()
         is_WSL()
 
     def test_de(self):
