@@ -182,7 +182,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         if prop == "client-machine":
             return socket.gethostname()
         if prop == "window-type":
-            return ["NORMAL"]
+            return ["DESKTOP"]
         if prop == "shadow":
             return True
         if prop == "class-instance":
