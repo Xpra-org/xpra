@@ -55,6 +55,9 @@ class KeyboardConnection(StubClientConnection):
         mck = getattr(self.keyboard_config, "modifier_client_keycodes", None)
         if mck:
             caps["modifier_keycodes"] = mck
+        modifiers = getattr(self.keyboard_config, "keynames_for_mod", {})
+        if modifiers:
+            caps["modifiers-keynames"] = modifiers
         return caps
 
     def send_ibus_layouts(self, ibus_layouts: dict) -> None:
