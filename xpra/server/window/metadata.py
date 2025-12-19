@@ -63,6 +63,7 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "override-redirect": False,
     "tray": False,
     "shadow": False,
+    "desktop": False,
     "set-initial-position": False,
     "allowed-actions": (),
     "protocols": (),
