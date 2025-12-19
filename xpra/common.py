@@ -428,6 +428,7 @@ def get_run_info(subcommand="server") -> Sequence[str]:
         osinfo = " on " + platform_name(sys.platform,
                                         pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
     except OSError:
+        pinfo = {}
         log("platform name error:", exc_info=True)
         osinfo = ""
     if POSIX:
@@ -445,6 +446,9 @@ def get_run_info(subcommand="server") -> Sequence[str]:
             run_info.append(f" {uid=}, {gid=}")
     run_info.append(" running with pid %s%s" % (os.getpid(), osinfo))
     vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO + 1])
+    arch = pinfo.get("machine", "")
+    if arch:
+        vinfo += f" {arch}"
     run_info.append(f" {sys.implementation.name} {vinfo}")
     return run_info
 
