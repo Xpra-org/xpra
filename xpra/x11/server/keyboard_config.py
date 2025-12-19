@@ -101,9 +101,11 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycode_translation = {}
         self.keycodes_for_modifier_keynames: dict[str, list[int]] = {}
         self.modifier_client_keycodes: dict[str, list] = {}
-        self.compute_modifier_map()
         self.keycode_mappings: dict[int, list[str]] = {}
         self.keyval_mappings = {}
+
+        self.compute_modifiers()
+        self.compute_modifier_map()
 
     def __repr__(self):
         return "KeyboardConfig(%s / %s / %s)" % (self.layout, self.variant, self.options)
