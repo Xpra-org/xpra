@@ -2860,7 +2860,7 @@ if amf_ENABLED:
         amf_kwargs = pkgconfig("amf")
     except ValueError:
         amf_kwargs = {
-            "extra_compile_args": "-I" + find_header_file("AMF", isdir=True) + "/AMF",
+            "extra_compile_args": "-I" + find_header_file("AMF", isdir=True),
             # "extra_link_args": ("-lpam", "-lpam_misc"),
         }
         print(f"using default amf args: {amf_kwargs}")
