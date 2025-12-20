@@ -1243,8 +1243,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             plug_name = model
         else:
             plug_name = "%i" % mid
-        plug_name += " %ix%i at %i,%i" % (geom.width, geom.height, geom.x, geom.y)
-        eventslog.info("window %#x has been moved to monitor %i: %s", self.wid, mid, plug_name)
+        plug_name += " %ix%i" % (geom.width, geom.height)
+        if geom.x or geom.y:
+            plug_name += " at %i,%i" % (geom.x, geom.y)
+        window_info = self.get_title() or hex(self.wid)
+        eventslog.info("window %r has been moved to monitor %i: %s", window_info, mid, plug_name)
 
     def update_relative_position(self) -> None:
         x, y = self.get_position()
