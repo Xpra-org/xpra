@@ -42,8 +42,12 @@ def apply_monitor_config(monitor_defs: dict) -> None:
             RandRBindings().set_crtc_config(monitor_defs)
     except XError as e:
         screenlog("apply_monitor_config(%s)", monitor_defs, exc_info=True)
-        screenlog.error("Error applying changes to the monitor configuration")
+        screenlog.error("Error: applying changes to the monitor configuration")
         screenlog.estr(e)
+        for mi, mdef in monitor_defs.items():
+            screenlog.error(" * monitor %i", mi)
+            for k, v in mdef.items():
+                screenlog.error("   %s = %s", k, v)
 
 
 def _adjust_monitor(model, delta_x: int, delta_y: int) -> None:
