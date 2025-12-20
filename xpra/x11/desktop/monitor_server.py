@@ -133,8 +133,13 @@ class XpraMonitorServer(DesktopServerBase):
         with (xlog):
             monitors = RandRBindings().get_monitor_properties()
             screenlog("load_existing_windows() found monitors=%r", monitors)
+            outputs = set()
             for i, monitor in monitors.items():
-                self.add_monitor_model(i + 1, monitor)
+                moutputs = set(monitor.get("outputs", ()))
+                # skip this monitor if we already have another one with the same outputs:
+                if monitor.get("primary") or not outputs.issuperset(moutputs):
+                    outputs.update(moutputs)
+                    self.add_monitor_model(i + 1, monitor)
         # does not fire: (because of GTK?)
         # RandR.select_crtc_output_changes()
         # screen = gdk.Screen.get_default()
