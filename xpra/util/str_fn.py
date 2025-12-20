@@ -135,6 +135,8 @@ def print_nested_dict(d: Mapping, prefix: str = "", lchar: str = "*", pad: int =
                     return binascii.hexlify(v).decode("latin1")
             except TypeError:
                 pass
+        if isinstance(v, (bytes, bytearray)):
+            v = repr(v)
         return nonl(pver(v, ", ", ", "))
 
     indent = pad - len(prefix) - len(lchar)
