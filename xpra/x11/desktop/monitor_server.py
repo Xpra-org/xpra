@@ -132,6 +132,7 @@ class XpraMonitorServer(DesktopServerBase):
     def load_existing_windows(self) -> None:
         with (xlog):
             monitors = RandRBindings().get_monitor_properties()
+            screenlog("load_existing_windows() found monitors=%r", monitors)
             for i, monitor in monitors.items():
                 self.add_monitor_model(i + 1, monitor)
         # does not fire: (because of GTK?)
@@ -235,6 +236,7 @@ class XpraMonitorServer(DesktopServerBase):
         return mods
 
     def add_monitor_model(self, wid: int, monitor):
+        screenlog("add_monitor_model(%i, %r)", wid, monitor)
         from xpra.x11.desktop.monitor_model import MonitorDesktopModel
         model = MonitorDesktopModel(monitor)
         model.setup()
@@ -315,6 +317,7 @@ class XpraMonitorServer(DesktopServerBase):
         self.reconfigure_monitors()
 
     def add_monitor(self, width: int, height: int) -> None:
+        screenlog("add_monitor(%i, %i)", width, height)
         count = len(self._id_to_window)
         if count >= 16:
             raise RuntimeError(f"already too many monitors: {count}")
@@ -328,7 +331,7 @@ class XpraMonitorServer(DesktopServerBase):
         # find the wid to use:
         # prefer just incrementing the wid, but we cannot go higher than 16
 
-        def rightof(other_wid: int):
+        def rightof(other_wid: int) -> tuple[int, int]:
             mdef = self._id_to_window[other_wid].get_definition()
             ox = mdef.get("x", 0) + mdef.get("width", 0)
             oy = mdef.get("y", 0)  # +monitor.get("height", 0)
