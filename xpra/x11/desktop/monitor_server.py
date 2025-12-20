@@ -9,6 +9,7 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitException
 from xpra.net.common import Packet
+from xpra.util.env import envbool
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.server.subsystem.window import WindowsConnection
 from xpra.x11.common import X11Event
@@ -26,6 +27,8 @@ iconlog = Logger("icon")
 
 MIN_SIZE = 640, 350
 MAX_SIZE = 8192, 8192
+
+DELETE_UNUSED_MONITORS = envbool("XPRA_DELETE_UNUSED_MONITORS", True)
 
 
 def get_screen_size() -> tuple[int, int]:
@@ -130,16 +133,25 @@ class XpraMonitorServer(DesktopServerBase):
         return get_screen_size()
 
     def load_existing_windows(self) -> None:
-        with (xlog):
+        delete = []
+        with xlog:
             monitors = RandRBindings().get_monitor_properties()
             screenlog("load_existing_windows() found monitors=%r", monitors)
             outputs = set()
             for i, monitor in monitors.items():
+                name = monitor.get("name", "")
                 moutputs = set(monitor.get("outputs", ()))
                 # skip this monitor if we already have another one with the same outputs:
                 if monitor.get("primary") or not outputs.issuperset(moutputs):
                     outputs.update(moutputs)
                     self.add_monitor_model(i + 1, monitor)
+                elif name.startswith("VFB"):
+                    delete.append(name)
+        if DELETE_UNUSED_MONITORS:
+            screenlog("deleting unused monitors: %s", delete)
+            for name in delete:
+                with xlog:
+                    RandRBindings().DeleteMonitor(name)
         # does not fire: (because of GTK?)
         # RandR.select_crtc_output_changes()
         # screen = gdk.Screen.get_default()

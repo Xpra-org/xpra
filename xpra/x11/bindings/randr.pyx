@@ -1061,6 +1061,13 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenResources(rsc)
 
+    def DeleteMonitor(self, name: str):
+        log(f"DeleteMonitor(%r)", name)
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef Atom name_atom = self.str_to_atom(name)
+        XRRDeleteMonitor(self.display, window, name_atom)
+        self.XSync()
+
     def set_crtc_config(self, monitor_defs: Dict) -> None:
         self.context_check("set_crtc_config")
         log(f"set_crtc_config({monitor_defs})")
