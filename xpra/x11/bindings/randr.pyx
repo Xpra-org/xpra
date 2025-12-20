@@ -1247,18 +1247,32 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             finally:
                 XRRFreeMonitors(monitors)
             self.XSync()
-            #rename the ones we do use
-            #which makes it easier to prevent name Atom conflicts:
-            #we use a temporary name that is guaranteed to never conflict
-            #when we finally modify the monitors to use the unique name we actually want:
+            # rename monitors if they would conflict
+            # using a `VFBTEMP` temporary name that is guaranteed to never conflict
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+            all_names = []
+            delete = []
             try:
                 for mi in range(nmonitors):
+                    name = self.get_atom_name(monitors[mi].name)
+                    all_names.append(name)
+                for mi in range(nmonitors):
+                    name = self.get_atom_name(monitors[mi].name)
+                    new_name = prettify_plug_name(m.get("name", "")) or ("VFB-%i" % mi)
+                    if name == new_name:
+                        continue
+                    if new_name not in all_names:
+                        continue
+                    delete.append(name)
                     monitors[mi].name = self.str_to_atom(f"VFBTEMP{mi}")
                     XRRSetMonitor(self.display, window, &monitors[mi])
             finally:
                 XRRFreeMonitors(monitors)
             self.XSync()
+            # ensure the ones we renamed no longer exist:
+            for name in delete:
+                XRRDeleteMonitor(self.display, window, self.str_to_atom(name))
+
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
             if not monitors:
                 log.error("Error: failed to retrieve the list of monitors")
