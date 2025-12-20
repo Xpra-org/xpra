@@ -1296,7 +1296,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     monitor = &monitors[mi]
                     monitor.name = self.str_to_atom(name)
                     monitor.primary = m.get("primary", primary==mi)
-                    monitor.automatic = m.get("automatic", True)
+                    monitor.automatic = False    # ignore client property: m.get("automatic", True)
                     monitor.x = x
                     monitor.y = y
                     monitor.width = width
