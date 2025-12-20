@@ -1110,7 +1110,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef RROutput output
         cdef XRROutputInfo *output_info = NULL
         cdef XRRMonitorInfo *monitors
-        cdef XRRMonitorInfo monitor
+        cdef XRRMonitorInfo *monitor
         primary = 0
         #we can't have monitor names the same as output names!?
         output_names = []
@@ -1241,9 +1241,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             try:
                 #we only need as many monitors as we have crtcs,
                 for mi in range(len(monitor_defs), nmonitors):
-                    name_atom = monitors[mi].name
-                    log(f"deleting monitor {mi}: %s", self.get_atom_name(name_atom))
-                    XRRDeleteMonitor(self.display, window, name_atom)
+                    monitor = &monitors[mi]
+                    log(f"deleting monitor {mi}: %s", self.get_atom_name(monitor.name))
+                    XRRDeleteMonitor(self.display, window, monitor.name)
             finally:
                 XRRFreeMonitors(monitors)
             self.XSync()
@@ -1286,13 +1286,14 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 mi = 0
                 for i, m  in monitor_defs.items():
                     log(f"matching monitor index {mi} to {i}: {m}")
-                    name = (prettify_plug_name(m.get("name", "")) or ("VFB-%i" % mi))
+                    name = prettify_plug_name(m.get("name", "")) or ("VFB-%i" % mi)
                     if name in output_names:
                         name = "VFB-%i" % mi
                     while (name in names.values() or name in active_names.values()) and names.get(mi)!=name and active_names.get(mi)!=name:
                         name += "-%i" % mi
                     x, y, width, height = m["geometry"]
                     active_names[mi] = name
+                    monitor = &monitors[mi]
                     monitor.name = self.str_to_atom(name)
                     monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = m.get("automatic", True)
@@ -1311,7 +1312,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         (monitor.x, monitor.y, monitor.width, monitor.height),
                         monitor.mwidth, monitor.mheight)
                     log.info(f"monitor {mi} is {name!r} {monitor.width}x{monitor.height}")
-                    XRRSetMonitor(self.display, window, &monitor)
+                    XRRSetMonitor(self.display, window, monitor)
                     mi += 1
             finally:
                 XRRFreeMonitors(monitors)
