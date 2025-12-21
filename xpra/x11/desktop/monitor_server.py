@@ -23,7 +23,6 @@ GLib = gi_import("GLib")
 log = Logger("server")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
-iconlog = Logger("icon")
 
 MIN_SIZE = 640, 350
 MAX_SIZE = 8192, 8192
@@ -256,7 +255,7 @@ class XpraMonitorServer(DesktopServerBase):
                 model.notify("title")
         return mods
 
-    def add_monitor_model(self, wid: int, monitor):
+    def add_monitor_model(self, wid: int, monitor: dict[str, Any]):
         screenlog("add_monitor_model(%i, %r)", wid, monitor)
         from xpra.x11.desktop.monitor_model import MonitorDesktopModel
         model = MonitorDesktopModel(monitor)
