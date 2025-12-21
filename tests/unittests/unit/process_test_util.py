@@ -93,6 +93,7 @@ class DisplayContext(OSEnvContext):
 
 
 class ProcessTestUtil(unittest.TestCase):
+    test_xvfb_command = TEST_XVFB_COMMAND
 
     def __init__(self, methodName='runTest'):
         if not hasattr(self, "runTest"):
@@ -311,7 +312,7 @@ class ProcessTestUtil(unittest.TestCase):
         return "%s%i" % (DISPLAY_PREFIX, cls.find_free_display_no())
 
     @classmethod
-    def start_Xvfb(cls, display=None, screens=((1024, 768),), depth=24, extensions=("Composite",)) -> subprocess.Popen:
+    def start_Xvfb(cls, display="") -> subprocess.Popen:
         assert POSIX
         if display is None:
             display = cls.find_free_display()
@@ -324,32 +325,14 @@ class ProcessTestUtil(unittest.TestCase):
             ):  #DBUS_SESSION_BUS_ADDRESS
                 #keep it
                 env[x] = os.environ.get(x)
-        real_display = os.environ.get("DISPLAY", "")
-        cmd = [cls.which(TEST_XVFB_COMMAND)]
-        is_xephyr = TEST_XVFB_COMMAND.find("Xephyr") >= 0
-        if is_xephyr:
-            if len(screens) > 1 or not real_display:
-                #we can't use Xephyr for multi-screen
-                cmd = [cls.which("Xvfb")]
-            elif real_display:
-                env["DISPLAY"] = real_display
-        for ext in extensions:
-            if ext.startswith("-"):
-                cmd += ["-extension", ext[1:]]
-            else:
-                cmd += ["+extension", ext]
-        cmd += ["-nolisten", "tcp", "-noreset"]
-        #"-auth", self.default_env["XAUTHORITY"]]
-        depth_str = "%i+%i" % (depth, 32)
-        for i, screen in enumerate(screens):
-            (w, h) = screen
-            cmd += ["-screen"]
-            if not is_xephyr:
-                cmd += ["%i" % i]
-            cmd += ["%ix%ix%s" % (w, h, depth_str)]
+        from xpra.scripts.config import xvfb_command
+        cmd = xvfb_command(cls.test_xvfb_command, depth=24, dpi=0, fps=0)
         cmd.append(display)
-        env["XPRA_LOG_DIR"] = tempfile.gettempdir()
-        cmd_expanded = [osexpand(v) for v in cmd]
+        tmpdir = tempfile.gettempdir()
+        env["XPRA_LOG_DIR"] = tmpdir
+        env["XPRA_SESSION_DIR"] = tmpdir
+        env["XORG_CONFIG_PREFIX"] = ""
+        cmd_expanded = [osexpand(v, subs=env) for v in cmd]
         cmdstr = " ".join("'%s'" % x for x in cmd_expanded)
         if SHOW_XORG_OUTPUT:
             stdout = sys.stdout

@@ -46,13 +46,13 @@ class X11ClientTest(X11ClientTestUtil):
         assert pollwait(client2, CLIENT_TIMEOUT) is not None, "client2 has not terminated"
         server.terminate()
 
-    def Xtest_connect(self):
+    def test_connect(self):
         self.do_test_connect()
 
-    def Xtest_sharing(self):
+    def test_sharing(self):
         self.do_test_connect(False, server_args=("--sharing=yes",))
 
-    def Xtest_opengl(self):
+    def test_opengl(self):
         self.do_test_connect(client_args=("--opengl=yes",))
 
     def Xtest_multiscreen(self):
@@ -82,7 +82,7 @@ class X11ClientTest(X11ClientTestUtil):
             finally:
                 xvfb.terminate()
 
-    def Xtest_depth(self):
+    def test_depth(self):
         for server_depth in (16, 24, 30):
             server_display = self.find_free_display()
             log("depth=%i starting test server on %s", server_depth, server_display)
