@@ -722,7 +722,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def get_screen_size_mm(self) -> Tuple[int, int]:
         sizes = self.get_screen_sizes_mm()
         tw, th = 0, 0
-        log("screen sizes for all screens: %s", sizes)
+        log("screen sizes for all screens in mm: %s", sizes)
         for w, h in sizes:
             tw += w
             th += h
@@ -830,7 +830,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                     if output_info!=NULL:
                                         output_names.append(decode_str(output_info.name))
                                         XRRFreeOutputInfo(output_info)
-                                log(f"{csv(output_names)} : {rate}")
+                                log(f"refresh rate for {csv(output_names)} : {rate}")
                                 rates[crtc] = rate
                             break
                 finally:
@@ -850,7 +850,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef RROutput output
         if mode:
             output = self.get_current_output()
-            log(f"adding mode {mode:#x} to output {output:#x}")
+            log(f"adding mode {name!r} ({mode:#x}) to output {output:#x}")
             XRRAddOutputMode(self.display, output, mode)
         return mode
 
