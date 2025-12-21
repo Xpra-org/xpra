@@ -314,7 +314,7 @@ class ProcessTestUtil(unittest.TestCase):
     @classmethod
     def start_Xvfb(cls, display="") -> subprocess.Popen:
         assert POSIX
-        if display is None:
+        if not display:
             display = cls.find_free_display()
         env = {}
         for x in list(os.environ.keys()):
