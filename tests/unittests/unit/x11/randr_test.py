@@ -63,20 +63,20 @@ class RandrTest(ServerTestUtil):
                     assert randr.has_mode(w, h)
                     assert randr.get_screen_size() == (w, h), f"expected {w}x{h}, got {randr.get_screen_size()}"
 
-                # html5 client random screen sizes - cannot be one of the default sizes:
-                # TEST_SIZES = ((790, 774), (816, 782))
-                TEST_SIZES = ((790, 774), )
-                for w, h in TEST_SIZES:
-                    test_crtc_config(w, h, {
-                        0: {'name': 'Canvas', 'geometry': (0, 0, w, h), 'width-mm': 209, 'height-mm': 205}
-                    })
-
-                # slightly different monitor definition style:
-                w, h = 751, 1122
-                test_crtc_config(w, h,{
-                    0: {'geometry': (0, 0, w, h), 'x': 0, 'y': 0, 'width': w, 'height': h,
+                test_crtc_config(751, 1122,{
+                    0: {'geometry': (0, 0, 751, 1122), 'x': 0, 'y': 0, 'width': 751, 'height': 1122,
                         'name': 'VFB-0', 'index': 0}
                 })
+
+                test_crtc_config(1383, 1476, {
+                    0: {'name': 'Canvas', 'geometry': (0, 0, 1383, 1476), 'width-mm': 366, 'height-mm': 391}
+                })
+
+                # html5 client random screen sizes - cannot be one of the default sizes:
+                test_crtc_config(790, 774, {
+                    0: {'name': 'Foo', 'geometry': (0, 0, 790, 774), 'width-mm': 209, 'height-mm': 205}
+                })
+
             finally:
                 xvfb.terminate()
 
