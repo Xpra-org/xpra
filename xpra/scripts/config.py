@@ -151,17 +151,20 @@ def get_Xdummy_confdir() -> str:
     return base+"/xorg.conf.d/$PID"
 
 
+X11_ENABLED_EXTENSIONS = tuple(os.environ.get("XPRA_X11_ENABLED_EXTENSIONS", "GLX,RANDR,RENDER,Composite").split(","))
+X11_DISABLED_EXTENSIONS = tuple(os.environ.get("XPRA_X11_DISABLED_EXTENSIONS", "DOUBLE-BUFFER").split(","))
+
+
 def add_ext_net_dpi_fps(cmd: list[str], depth=24, dpi=0, fps=0) -> list[str]:
-    if depth > 8:
-        cmd += ["+extension", "Composite"]
-    cmd += [
-        "+extension", "GLX",
-        "+extension", "RANDR",
-        "+extension", "RENDER",
-        "-extension", "DOUBLE-BUFFER",
-    ]
+    extensions = list(X11_ENABLED_EXTENSIONS)
+    if depth <= 8 and "Composite" in extensions:
+        extensions.remove("Composite")
     if os.environ.get("XPRA_XPRESENT", "0") == "1":
-        cmd += ["+extension", "Present"]
+        extensions.append("Present")
+    for extension in extensions:
+        cmd += ["+extension", extension]
+    for extension in X11_DISABLED_EXTENSIONS:
+        cmd += ["-extension", extension]
     cmd += [
         "-nolisten", "tcp",
         "-noreset",
