@@ -12,15 +12,18 @@ from xpra.os_util import OSX, POSIX
 from unit.server_test_util import ServerTestUtil
 from xpra.log import Logger
 from xpra.util.env import OSEnvContext
+from xpra.util.system import is_Debian, is_Ubuntu
 
 log = Logger("randr")
+
+FULL_TEST = not (is_Debian() or is_Ubuntu())
 
 
 class RandrTest(ServerTestUtil):
 
     def start_test_xvfb(self, *args):
         display = self.find_free_display()
-        ServerTestUtil.test_xvfb_command = "Xdummy"
+        ServerTestUtil.test_xvfb_command = "Xdummy" if FULL_TEST else "Xvfb"
         xvfb = self.start_Xvfb(display)
         time.sleep(1)
         assert display in self.find_X11_displays()
@@ -52,7 +55,7 @@ class RandrTest(ServerTestUtil):
                 if not randr.is_dummy16():
                     log.warn("no dummy 1.6 support!")
                     return
-                log("randr 1.6, testing monitor configs")
+                log("dummy 1.6 driver, testing monitor configs")
 
                 def test_crtc_config(w: int, h: int, config: dict) -> None:
                     assert not randr.has_mode(w, h)
