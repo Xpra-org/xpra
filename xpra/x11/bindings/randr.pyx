@@ -96,11 +96,18 @@ MODE_FLAGS_STR: Dict[int, str] = {
     RR_ClockDivideBy2   : "ClockDivideBy2",
 }
 
-ROTATIONS: Dict[int, str] = {
+ROTATIONS: Dict[int, int] = {
     RR_Rotate_0             : 0,
     RR_Rotate_90            : 90,
     RR_Rotate_180           : 180,
     RR_Rotate_270           : 270,
+}
+
+ROTATION_CONST: Dict[int, int] = {
+    0: RR_Rotate_0,
+    90: RR_Rotate_90,
+    180: RR_Rotate_180,
+    270: RR_Rotate_270,
 }
 
 CONNECTION_STR: Dict[int, str] = {
@@ -1193,12 +1200,15 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     else:
                         noutput = 0
 
+                    rotation_int = m.get("rotation", 0)
+                    rotation = ROTATION_CONST.get(rotation_int, RR_Rotate_0)
+
                     log("XRRSetCrtcConfig(%#x, %#x, %i, %i, %i, %i, %i, %i, %#x, %i)",
                             <uintptr_t> self.display, <uintptr_t> rsc, crtc,
-                            CurrentTime, x, y, mode, RR_Rotate_0, <uintptr_t> &output, noutput)
+                            CurrentTime, x, y, mode, rotation, <uintptr_t> &output, noutput)
                     r = XRRSetCrtcConfig(self.display, rsc, crtc,
                           CurrentTime, x, y, mode,
-                          RR_Rotate_0, &output, noutput)
+                          rotation, &output, noutput)
                     if r:
                         raise RuntimeError(f"failed to set crtc config for monitor {i}")
                     mmw = m.get("width-mm", 0) or dpi96(width)
