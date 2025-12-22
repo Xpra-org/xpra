@@ -63,7 +63,15 @@ class XpraClient(GTKXpraClient):
         if not screen:
             # wayland?
             return -1
-        return round(screen.get_resolution())
+        res = round(screen.get_resolution())
+        if OSX:
+            # On macOS Quartz, Gdk often reports the point-based resolution (72).
+            # Xpra uses 96 DPI as the baseline for X11 semantics; HiDPI is then
+            # represented via screen scaling.
+            if res <= 0 or res == 72:
+                return 96
+        return res
+
 
     def get_xdpi(self) -> int:
         xdpi = get_xdpi()
