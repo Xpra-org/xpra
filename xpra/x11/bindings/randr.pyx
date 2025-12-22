@@ -8,6 +8,7 @@ import struct
 from typing import Dict, List, Tuple
 from time import monotonic
 
+from libc.string cimport memset
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom, XEvent,
     XDefaultRootWindow,
@@ -22,7 +23,7 @@ from xpra.x11.bindings.events cimport add_parser, add_event_type
 
 from xpra.common import DEFAULT_REFRESH_RATE
 from xpra.util.env import envint, envbool, first_time
-from xpra.util.str_fn import csv, decode_str, strtobytes
+from xpra.util.str_fn import csv, decode_str
 from xpra.util.screen import prettify_plug_name
 from xpra.log import Logger
 
@@ -96,11 +97,18 @@ MODE_FLAGS_STR: Dict[int, str] = {
     RR_ClockDivideBy2   : "ClockDivideBy2",
 }
 
-ROTATIONS: Dict[int, str] = {
+ROTATIONS: Dict[int, int] = {
     RR_Rotate_0             : 0,
     RR_Rotate_90            : 90,
     RR_Rotate_180           : 180,
     RR_Rotate_270           : 270,
+}
+
+ROTATION_CONST: Dict[int, int] = {
+    0: RR_Rotate_0,
+    90: RR_Rotate_90,
+    180: RR_Rotate_180,
+    270: RR_Rotate_270,
 }
 
 CONNECTION_STR: Dict[int, str] = {
@@ -295,6 +303,8 @@ cdef extern from "X11/extensions/Xrandr.h":
     int XDisplayHeight(Display *display, int screen_number)
 
     short XRRConfigCurrentRate(XRRScreenConfiguration *config)
+
+    Status XRRGetScreenSizeRange(Display *dpy, Window window, int *minWidth, int *minHeight, int *maxWidth, int *maxHeight)
 
     ctypedef struct XRRMonitorInfo:
         Atom name
@@ -542,22 +552,27 @@ cdef dict monitor_properties(Display *display):
     props = {}
     for i in range(nmonitors):
         m = &monitors[i]
-        props[i] = {
-            "index"     : i,
-            "name"      : get_XAtom(display, m.name),
-            "primary"   : bool(m.primary),
-            "automatic" : bool(m.automatic),
-            "x"         : m.x,
-            "y"         : m.y,
-            "width"     : m.width,
-            "height"    : m.height,
-            "width-mm"  : m.mwidth,
-            "height-mm" : m.mheight,
-            #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
-            "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
-        }
+        mprops = _monitor_properties(display, m)
+        mprops["index"] = i
+        props[i] = mprops
     XRRFreeMonitors(monitors)
     return props
+
+
+cdef object _monitor_properties(Display *display, XRRMonitorInfo *m):
+    return {
+        "name"      : get_XAtom(display, m.name),
+        "primary"   : bool(m.primary),
+        "automatic" : bool(m.automatic),
+        "x"         : m.x,
+        "y"         : m.y,
+        "width"     : m.width,
+        "height"    : m.height,
+        "width-mm"  : m.mwidth,
+        "height-mm" : m.mheight,
+        #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
+        "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
+    }
 
 
 def get_monitor_properties(display: int) -> dict:
@@ -722,7 +737,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def get_screen_size_mm(self) -> Tuple[int, int]:
         sizes = self.get_screen_sizes_mm()
         tw, th = 0, 0
-        log("screen sizes for all screens: %s", sizes)
+        log("screen sizes for all screens in mm: %s", sizes)
         for w, h in sizes:
             tw += w
             th += h
@@ -749,39 +764,36 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return sizes
 
     def get_screen_size(self) -> Tuple[int, int]:
-        return self._get_screen_size()
-
-    def _get_screen_size(self):
-        self.context_check("get-screen-size")
-        cdef XRRScreenSize *xrrs
-        cdef Rotation original_rotation
-        cdef int num_sizes = 0
-        cdef SizeID size_id
-        cdef int width, height
         cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenConfiguration *config = XRRGetScreenInfo(self.display, window)
-        if config==NULL:
-            raise RuntimeError("failed to get screen info")
+        cdef XRRCrtcInfo *crtc_info = NULL
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        if not rsc:
+            raise RuntimeError("cannot access screen resources")
+        maxx = maxy = 0
         try:
-            xrrs = XRRConfigSizes(config, &num_sizes)
-            if num_sizes==0:
-                #on Xwayland, we get no sizes...
-                #so fallback to DisplayWidth / DisplayHeight:
-                return XDisplayWidth(self.display, 0), XDisplayHeight(self.display, 0)
-            if xrrs==NULL:
-                raise RuntimeError("failed to get screen sizes")
-            size_id = XRRConfigCurrentConfiguration(config, &original_rotation)
-            if size_id<0:
-                raise RuntimeError("failed to get current configuration")
-            if size_id>=num_sizes:
-                raise RuntimeError(f"invalid XRR size ID {size_id} (num sizes={num_sizes})")
-
-            width = xrrs[size_id].width
-            height = xrrs[size_id].height
-            assert width >= 0 and height >= 0, f"invalid XRR size: {width}x{height}"
-            return int(width), int(height)
+            for crtc in range(rsc.ncrtc):
+                crtc_info = XRRGetCrtcInfo(self.display, rsc, rsc.crtcs[crtc])
+                if crtc_info==NULL:
+                    log.warn(f"Warning: no CRTC info for {crtc}")
+                    continue
+                if crtc_info.noutput == 0:
+                    continue
+                try:
+                    maxx = max(maxx, crtc_info.x + crtc_info.width)
+                    maxy = max(maxy, crtc_info.y + crtc_info.height)
+                finally:
+                    XRRFreeCrtcInfo(crtc_info)
         finally:
-            XRRFreeScreenConfigInfo(config)
+            XRRFreeScreenResources(rsc)
+        return maxx, maxy
+
+    def get_screen_size_range(self) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef int minWidth, minHeight, maxWidth, maxHeight
+        cdef Status status = XRRGetScreenSizeRange(self.display, window, &minWidth, &minHeight, &maxWidth, &maxHeight)
+        if status <= 0:
+            raise RuntimeError("unable to query screen size range")
+        return (minWidth, minHeight), (maxWidth, maxHeight)
 
     def get_vrefresh(self) -> int:
         voutputs = self.get_vrefresh_outputs()
@@ -830,7 +842,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                     if output_info!=NULL:
                                         output_names.append(decode_str(output_info.name))
                                         XRRFreeOutputInfo(output_info)
-                                log(f"{csv(output_names)} : {rate}")
+                                log(f"refresh rate for {csv(output_names)} : {rate}")
                                 rates[crtc] = rate
                             break
                 finally:
@@ -850,7 +862,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef RROutput output
         if mode:
             output = self.get_current_output()
-            log(f"adding mode {mode:#x} to output {output:#x}")
+            log(f"adding mode {name!r} ({mode:#x}) to output {output:#x}")
             XRRAddOutputMode(self.display, output, mode)
         return mode
 
@@ -1061,6 +1073,13 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenResources(rsc)
 
+    def DeleteMonitor(self, name: str):
+        log(f"DeleteMonitor(%r)", name)
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef Atom name_atom = self.str_to_atom(name)
+        XRRDeleteMonitor(self.display, window, name_atom)
+        self.XSync()
+
     def set_crtc_config(self, monitor_defs: Dict) -> None:
         self.context_check("set_crtc_config")
         log(f"set_crtc_config({monitor_defs})")
@@ -1105,7 +1124,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef XRRMonitorInfo *monitors
         cdef XRRMonitorInfo monitor
         primary = 0
-        #we can't have monitor names the same as output names!?
+        # we can't have monitor names the same as output names,
+        # with the dummy driver, we have 16 outputs:
+        # DUMMY0 to DUMMY15
         output_names = []
         new_modes = {}
         try:
@@ -1186,12 +1207,15 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     else:
                         noutput = 0
 
+                    rotation_int = m.get("rotation", 0)
+                    rotation = ROTATION_CONST.get(rotation_int, RR_Rotate_0)
+
                     log("XRRSetCrtcConfig(%#x, %#x, %i, %i, %i, %i, %i, %i, %#x, %i)",
                             <uintptr_t> self.display, <uintptr_t> rsc, crtc,
-                            CurrentTime, x, y, mode, RR_Rotate_0, <uintptr_t> &output, noutput)
+                            CurrentTime, x, y, mode, rotation, <uintptr_t> &output, noutput)
                     r = XRRSetCrtcConfig(self.display, rsc, crtc,
                           CurrentTime, x, y, mode,
-                          RR_Rotate_0, &output, noutput)
+                          rotation, &output, noutput)
                     if r:
                         raise RuntimeError(f"failed to set crtc config for monitor {i}")
                     mmw = m.get("width-mm", 0) or dpi96(width)
@@ -1224,57 +1248,57 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         XRRFreeCrtcInfo(crtc_info)
                         crtc_info = NULL
             self.XSync()
-            #now configure the monitors
+
+            # delete all non-automatic monitors:
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
             if not monitors:
                 log.error("Error: failed to retrieve the list of monitors")
-                return False
-            log(f"got {nmonitors} monitors for {len(monitor_defs)} crtcs")
-            #start by removing the ones we don't use:
-            try:
-                #we only need as many monitors as we have crtcs,
-                for mi in range(len(monitor_defs), nmonitors):
-                    name_atom = monitors[mi].name
-                    log(f"deleting monitor {mi}: %s", self.get_atom_name(name_atom))
-                    XRRDeleteMonitor(self.display, window, name_atom)
-            finally:
-                XRRFreeMonitors(monitors)
-            self.XSync()
-            #rename the ones we do use
-            #which makes it easier to prevent name Atom conflicts:
-            #we use a temporary name that is guaranteed to never conflict
-            #when we finally modify the monitors to use the unique name we actually want:
-            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
-            try:
-                for mi in range(nmonitors):
-                    monitors[mi].name = self.str_to_atom(f"VFBTEMP{mi}")
-                    XRRSetMonitor(self.display, window, &monitors[mi])
-            finally:
-                XRRFreeMonitors(monitors)
-            self.XSync()
+                return
+            for mi in range(nmonitors):
+                name = self.get_atom_name(monitors[mi].name)
+                if not monitors[mi].automatic:
+                    log("deleting %i: %r", mi, name)
+                    XRRDeleteMonitor(self.display, window, monitors[mi].name)
+                else:
+                    log("keeping %i: %r", mi, name)
+            XRRFreeMonitors(monitors)
+
+            # retrieve again:
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
             if not monitors:
                 log.error("Error: failed to retrieve the list of monitors")
-                return False
+                return
+            monitor_names = []
+            for mi in range(nmonitors):
+                name = self.get_atom_name(monitors[mi].name)
+                if name not in monitor_names:
+                    monitor_names.append(name)
+            log("monitors: %s", monitor_names)
+
+            all_names = output_names + monitor_names
+            log("reserved names: %s", csv(all_names))
+            active_names = []
             try:
-                names = {}
-                for mi in range(nmonitors):
-                    names[mi] = self.get_atom_name(monitors[mi].name)
-                log(f"found {nmonitors} monitors still active: %s", csv(names.values()))
-                active_names = {}
                 mi = 0
+                ext_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                seq = 0
                 for i, m  in monitor_defs.items():
-                    log(f"matching monitor index {mi} to {i}: {m}")
-                    name = (prettify_plug_name(m.get("name", "")) or ("VFB-%i" % mi))
-                    if name in output_names:
-                        name = "VFB-%i" % mi
-                    while (name in names.values() or name in active_names.values()) and names.get(mi)!=name and active_names.get(mi)!=name:
-                        name += "-%i" % mi
+                    basename = "VFB" if mi == 0 else f"VFB{mi}"
+                    name = prettify_plug_name(m.get("name", ""))
+                    if not name or name in all_names:
+                        name = basename
+                    while name in all_names and seq < len(ext_chars):
+                        ext = ext_chars[seq:seq+1]
+                        seq += 1
+                        name = f"{basename}{ext}"
+                    all_names.append(name)
+                    active_names.append(name)
+                    log(f"matching monitor index {mi} to {i}: {m}, using name={name!r}")
                     x, y, width, height = m["geometry"]
-                    active_names[mi] = name
+                    memset(&monitor, 0, sizeof(XRRMonitorInfo))
                     monitor.name = self.str_to_atom(name)
                     monitor.primary = m.get("primary", primary==mi)
-                    monitor.automatic = m.get("automatic", True)
+                    monitor.automatic = False    # ignore client property: m.get("automatic", True)
                     monitor.x = x
                     monitor.y = y
                     monitor.width = width
@@ -1294,6 +1318,30 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     mi += 1
             finally:
                 XRRFreeMonitors(monitors)
+
+            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+            if not monitors:
+                log.error("Error: failed to retrieve the list of monitors")
+                return
+            all_names = []
+            delete = []
+            try:
+                for mi in range(nmonitors):
+                    name = self.get_atom_name(monitors[mi].name)
+                    all_names.append(name)
+                    if name not in active_names:
+                        delete.append(name)
+            finally:
+                XRRFreeMonitors(monitors)
+            self.XSync()
+            log("active_names=%s", active_names)
+            log("all names=%s", all_names)
+            log("delete=%s", delete)
+            for name in delete:
+                atom = self.str_to_atom(name)
+                XRRDeleteMonitor(self.display, window, atom)
+            log("status=%s", self.get_all_screen_properties())
+            self.XSync()
         finally:
             XRRFreeScreenResources(rsc)
 
