@@ -763,38 +763,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             sizes.append((w, h))
         return sizes
 
-    def get_screen_size_legacy(self) -> Tuple[int, int]:
-        self.context_check("get-screen-size")
-        cdef XRRScreenSize *xrrs
-        cdef Rotation original_rotation
-        cdef int num_sizes = 0
-        cdef SizeID size_id
-        cdef int width, height
-        cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenConfiguration *config = XRRGetScreenInfo(self.display, window)
-        if config==NULL:
-            raise RuntimeError("failed to get screen info")
-        try:
-            xrrs = XRRConfigSizes(config, &num_sizes)
-            if num_sizes==0:
-                #on Xwayland, we get no sizes...
-                #so fallback to DisplayWidth / DisplayHeight:
-                return XDisplayWidth(self.display, 0), XDisplayHeight(self.display, 0)
-            if xrrs==NULL:
-                raise RuntimeError("failed to get screen sizes")
-            size_id = XRRConfigCurrentConfiguration(config, &original_rotation)
-            if size_id<0:
-                raise RuntimeError("failed to get current configuration")
-            if size_id>=num_sizes:
-                raise RuntimeError(f"invalid XRR size ID {size_id} (num sizes={num_sizes})")
-
-            width = xrrs[size_id].width
-            height = xrrs[size_id].height
-            assert width >= 0 and height >= 0, f"invalid XRR size: {width}x{height}"
-            return int(width), int(height)
-        finally:
-            XRRFreeScreenConfigInfo(config)
-
     def get_screen_size(self) -> Tuple[int, int]:
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRCrtcInfo *crtc_info = NULL
