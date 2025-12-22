@@ -8,6 +8,7 @@ import struct
 from typing import Dict, List, Tuple
 from time import monotonic
 
+from libc.string cimport memset
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom, XEvent,
     XDefaultRootWindow,
@@ -22,7 +23,7 @@ from xpra.x11.bindings.events cimport add_parser, add_event_type
 
 from xpra.common import DEFAULT_REFRESH_RATE
 from xpra.util.env import envint, envbool, first_time
-from xpra.util.str_fn import csv, decode_str, strtobytes
+from xpra.util.str_fn import csv, decode_str
 from xpra.util.screen import prettify_plug_name
 from xpra.log import Logger
 
@@ -303,6 +304,8 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     short XRRConfigCurrentRate(XRRScreenConfiguration *config)
 
+    Status XRRGetScreenSizeRange(Display *dpy, Window window, int *minWidth, int *minHeight, int *maxWidth, int *maxHeight)
+
     ctypedef struct XRRMonitorInfo:
         Atom name
         Bool primary
@@ -549,22 +552,27 @@ cdef dict monitor_properties(Display *display):
     props = {}
     for i in range(nmonitors):
         m = &monitors[i]
-        props[i] = {
-            "index"     : i,
-            "name"      : get_XAtom(display, m.name),
-            "primary"   : bool(m.primary),
-            "automatic" : bool(m.automatic),
-            "x"         : m.x,
-            "y"         : m.y,
-            "width"     : m.width,
-            "height"    : m.height,
-            "width-mm"  : m.mwidth,
-            "height-mm" : m.mheight,
-            #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
-            "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
-        }
+        mprops = _monitor_properties(display, m)
+        mprops["index"] = i
+        props[i] = mprops
     XRRFreeMonitors(monitors)
     return props
+
+
+cdef object _monitor_properties(Display *display, XRRMonitorInfo *m):
+    return {
+        "name"      : get_XAtom(display, m.name),
+        "primary"   : bool(m.primary),
+        "automatic" : bool(m.automatic),
+        "x"         : m.x,
+        "y"         : m.y,
+        "width"     : m.width,
+        "height"    : m.height,
+        "width-mm"  : m.mwidth,
+        "height-mm" : m.mheight,
+        #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
+        "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
+    }
 
 
 def get_monitor_properties(display: int) -> dict:
@@ -755,10 +763,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             sizes.append((w, h))
         return sizes
 
-    def get_screen_size(self) -> Tuple[int, int]:
-        return self._get_screen_size()
-
-    def _get_screen_size(self):
+    def get_screen_size_legacy(self) -> Tuple[int, int]:
         self.context_check("get-screen-size")
         cdef XRRScreenSize *xrrs
         cdef Rotation original_rotation
@@ -789,6 +794,38 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             return int(width), int(height)
         finally:
             XRRFreeScreenConfigInfo(config)
+
+    def get_screen_size(self) -> Tuple[int, int]:
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRCrtcInfo *crtc_info = NULL
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        if not rsc:
+            raise RuntimeError("cannot access screen resources")
+        maxx = maxy = 0
+        try:
+            for crtc in range(rsc.ncrtc):
+                crtc_info = XRRGetCrtcInfo(self.display, rsc, rsc.crtcs[crtc])
+                if crtc_info==NULL:
+                    log.warn(f"Warning: no CRTC info for {crtc}")
+                    continue
+                if crtc_info.noutput == 0:
+                    continue
+                try:
+                    maxx = max(maxx, crtc_info.x + crtc_info.width)
+                    maxy = max(maxy, crtc_info.y + crtc_info.height)
+                finally:
+                    XRRFreeCrtcInfo(crtc_info)
+        finally:
+            XRRFreeScreenResources(rsc)
+        return maxx, maxy
+
+    def get_screen_size_range(self) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef int minWidth, minHeight, maxWidth, maxHeight
+        cdef Status status = XRRGetScreenSizeRange(self.display, window, &minWidth, &minHeight, &maxWidth, &maxHeight)
+        if status <= 0:
+            raise RuntimeError("unable to query screen size range")
+        return (minWidth, minHeight), (maxWidth, maxHeight)
 
     def get_vrefresh(self) -> int:
         voutputs = self.get_vrefresh_outputs()
@@ -1117,9 +1154,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef RROutput output
         cdef XRROutputInfo *output_info = NULL
         cdef XRRMonitorInfo *monitors
-        cdef XRRMonitorInfo *monitor
+        cdef XRRMonitorInfo monitor
         primary = 0
-        #we can't have monitor names the same as output names!?
+        # we can't have monitor names the same as output names,
+        # with the dummy driver, we have 16 outputs:
+        # DUMMY0 to DUMMY15
         output_names = []
         new_modes = {}
         try:
@@ -1241,69 +1280,54 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         XRRFreeCrtcInfo(crtc_info)
                         crtc_info = NULL
             self.XSync()
-            #now configure the monitors
-            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
-            if not monitors:
-                log.error("Error: failed to retrieve the list of monitors")
-                return False
-            log(f"got {nmonitors} monitors for {len(monitor_defs)} crtcs")
-            #start by removing the ones we don't use:
-            try:
-                #we only need as many monitors as we have crtcs,
-                for mi in range(len(monitor_defs), nmonitors):
-                    monitor = &monitors[mi]
-                    log(f"deleting monitor {mi}: %s", self.get_atom_name(monitor.name))
-                    XRRDeleteMonitor(self.display, window, monitor.name)
-            finally:
-                XRRFreeMonitors(monitors)
-            self.XSync()
-            # rename monitors if they would conflict
-            # using a `VFBTEMP` temporary name that is guaranteed to never conflict
-            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
-            all_names = []
-            delete = []
-            try:
-                for mi in range(nmonitors):
-                    name = self.get_atom_name(monitors[mi].name)
-                    all_names.append(name)
-                for mi in range(nmonitors):
-                    name = self.get_atom_name(monitors[mi].name)
-                    new_name = prettify_plug_name(m.get("name", "")) or ("VFB-%i" % mi)
-                    if name == new_name:
-                        continue
-                    if new_name not in all_names:
-                        continue
-                    delete.append(name)
-                    monitors[mi].name = self.str_to_atom(f"VFBTEMP{mi}")
-                    XRRSetMonitor(self.display, window, &monitors[mi])
-            finally:
-                XRRFreeMonitors(monitors)
-            self.XSync()
-            # ensure the ones we renamed no longer exist:
-            for name in delete:
-                XRRDeleteMonitor(self.display, window, self.str_to_atom(name))
 
+            # delete all non-automatic monitors:
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
             if not monitors:
                 log.error("Error: failed to retrieve the list of monitors")
-                return False
+                return
+            for mi in range(nmonitors):
+                name = self.get_atom_name(monitors[mi].name)
+                if not monitors[mi].automatic:
+                    log("deleting %i: %r", mi, name)
+                    XRRDeleteMonitor(self.display, window, monitors[mi].name)
+                else:
+                    log("keeping %i: %r", mi, name)
+            XRRFreeMonitors(monitors)
+
+            # retrieve again:
+            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+            if not monitors:
+                log.error("Error: failed to retrieve the list of monitors")
+                return
+            monitor_names = []
+            for mi in range(nmonitors):
+                name = self.get_atom_name(monitors[mi].name)
+                if name not in monitor_names:
+                    monitor_names.append(name)
+            log("monitors: %s", monitor_names)
+
+            all_names = output_names + monitor_names
+            log("reserved names: %s", csv(all_names))
+            active_names = []
             try:
-                names = {}
-                for mi in range(nmonitors):
-                    names[mi] = self.get_atom_name(monitors[mi].name)
-                log(f"found {nmonitors} monitors still active: %s", csv(names.values()))
-                active_names = {}
                 mi = 0
+                ext_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                seq = 0
                 for i, m  in monitor_defs.items():
-                    log(f"matching monitor index {mi} to {i}: {m}")
-                    name = prettify_plug_name(m.get("name", "")) or ("VFB-%i" % mi)
-                    if name in output_names:
-                        name = "VFB-%i" % mi
-                    while (name in names.values() or name in active_names.values()) and names.get(mi)!=name and active_names.get(mi)!=name:
-                        name += "-%i" % mi
+                    basename = "VFB" if mi == 0 else f"VFB{mi}"
+                    name = prettify_plug_name(m.get("name", ""))
+                    if not name or name in all_names:
+                        name = basename
+                    while name in all_names and seq < len(ext_chars):
+                        ext = ext_chars[seq:seq+1]
+                        seq += 1
+                        name = f"{basename}{ext}"
+                    all_names.append(name)
+                    active_names.append(name)
+                    log(f"matching monitor index {mi} to {i}: {m}, using name={name!r}")
                     x, y, width, height = m["geometry"]
-                    active_names[mi] = name
-                    monitor = &monitors[mi]
+                    memset(&monitor, 0, sizeof(XRRMonitorInfo))
                     monitor.name = self.str_to_atom(name)
                     monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = False    # ignore client property: m.get("automatic", True)
@@ -1322,10 +1346,34 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         (monitor.x, monitor.y, monitor.width, monitor.height),
                         monitor.mwidth, monitor.mheight)
                     log.info(f"monitor {mi} is {name!r} {monitor.width}x{monitor.height}")
-                    XRRSetMonitor(self.display, window, monitor)
+                    XRRSetMonitor(self.display, window, &monitor)
                     mi += 1
             finally:
                 XRRFreeMonitors(monitors)
+
+            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+            if not monitors:
+                log.error("Error: failed to retrieve the list of monitors")
+                return
+            all_names = []
+            delete = []
+            try:
+                for mi in range(nmonitors):
+                    name = self.get_atom_name(monitors[mi].name)
+                    all_names.append(name)
+                    if name not in active_names:
+                        delete.append(name)
+            finally:
+                XRRFreeMonitors(monitors)
+            self.XSync()
+            log("active_names=%s", active_names)
+            log("all names=%s", all_names)
+            log("delete=%s", delete)
+            for name in delete:
+                atom = self.str_to_atom(name)
+                XRRDeleteMonitor(self.display, window, atom)
+            log("status=%s", self.get_all_screen_properties())
+            self.XSync()
         finally:
             XRRFreeScreenResources(rsc)
 

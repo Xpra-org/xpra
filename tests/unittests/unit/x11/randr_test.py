@@ -58,23 +58,49 @@ class RandrTest(ServerTestUtil):
                 log("dummy 1.6 driver, testing monitor configs")
 
                 def test_crtc_config(w: int, h: int, config: dict) -> None:
-                    assert not randr.has_mode(w, h)
+                    log("test_crtc_config(%i, %i, %s", w, h, config)
                     randr.set_crtc_config(config)
-                    assert randr.has_mode(w, h)
+                    for monitor in config.values():
+                        mw, mh = monitor["geometry"][2:4]
+                        assert randr.has_mode(mw, mh)
                     assert randr.get_screen_size() == (w, h), f"expected {w}x{h}, got {randr.get_screen_size()}"
+                    retrieved = randr.get_monitor_properties()
+                    assert len(retrieved) == len(config), "expected %i monitors configured but got %i: %s vs %s" % (
+                        len(config), len(retrieved), config, retrieved,
+                    )
 
                 test_crtc_config(751, 1122,{
                     0: {'geometry': (0, 0, 751, 1122), 'x': 0, 'y': 0, 'width': 751, 'height': 1122,
-                        'name': 'VFB-0', 'index': 0}
+                        'name': 'VFB-0', 'index': 0},
                 })
 
                 test_crtc_config(1383, 1476, {
-                    0: {'name': 'Canvas', 'geometry': (0, 0, 1383, 1476), 'width-mm': 366, 'height-mm': 391}
+                    0: {'name': 'Canvas', 'geometry': (0, 0, 1383, 1476), 'width-mm': 366, 'height-mm': 391},
                 })
 
-                # html5 client random screen sizes - cannot be one of the default sizes:
                 test_crtc_config(790, 774, {
-                    0: {'name': 'Foo', 'geometry': (0, 0, 790, 774), 'width-mm': 209, 'height-mm': 205}
+                    0: {'name': 'Foo', 'geometry': (0, 0, 790, 774), 'width-mm': 209, 'height-mm': 205},
+                })
+
+                # dual monitor
+                test_crtc_config(3840, 1080, {
+                    0: {'name': 'DP-0', 'geometry': (0, 0, 1920, 1080), 'width-mm': 209, 'height-mm': 205},
+                    1: {'name': 'HDMI-1', 'geometry': (1920, 0, 1920, 1080),
+                        'width-mm': 209, 'height-mm': 205, 'refresh-rate': 144000},
+                })
+
+                test_crtc_config(4480, 2160, {
+                    0: {'name': 'VGA', 'geometry': (0, 0, 640, 480),
+                        'width-mm': 100, 'height-mm': 80, 'refresh-rate': 50000},
+                    1: {'name': 'DP-1', 'geometry': (640, 0, 3840, 2160), 'width-mm': 209, 'height-mm': 205},
+                })
+
+                # single again:
+                test_crtc_config(1024, 768,{
+                    0: {'name': 'SVGA', 'geometry': (0, 0, 1024, 768), 'width-mm': 150, 'height-mm': 120},
+                })
+                test_crtc_config(1024, 768,{
+                    0: {'name': 'SVGA', 'geometry': (0, 0, 1024, 768), 'width-mm': 150, 'height-mm': 120},
                 })
 
             finally:
