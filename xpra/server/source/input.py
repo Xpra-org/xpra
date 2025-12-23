@@ -72,12 +72,16 @@ class InputMixin(StubSourceMixin):
     def get_caps(self) -> Dict[str,Any]:
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
+        caps = {}
         kc = self.keyboard_config
         if kc:
             mck = getattr(kc, "modifier_client_keycodes", None)
             if mck:
-                return {"modifier_keycodes" : mck}
-        return {}
+                caps["modifier_keycodes"] = mck
+        modifiers = getattr(self.keyboard_config, "keynames_for_mod", {})
+        if modifiers:
+            caps["modifiers-keynames"] = modifiers
+        return caps
 
 
     def set_layout(self, layout:str, variant:str, options):
