@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.1.4
+%define version 5.1.5
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -816,6 +816,17 @@ fi
 
 
 %changelog
+* Tue Dec 23 2025 Antoine Martin <antoine@xpra.org> 5.1.5-10
+- Keyboard:
+   don't send empty modifier strings
+   default keyboard configuration should have default modifier mappings
+   help clients figure out modifier mappings
+- Major:
+   virtual monitor geometry synchronization
+- Minor:
+   spurious UI thread events on client startup
+   expose `desktop` flag for desktop windows
+
 * Thu Dec 04 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
 - Platforms, build and packaging:
    re-enable build tests for release tags

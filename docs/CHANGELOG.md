@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.1.5] 2025-12-23
+* Major:
+    * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/18344cff9a1aab0d2f323aa7f1b557f80314f50a)
+* Keyboard:
+    * [don't send empty modifier strings](https://github.com/Xpra-org/xpra/commit/d7e9e48c28ea9aa91b1b210cd08c8e11c2f3dec9)
+    * [default keyboard configuration should have default modifier mappings](https://github.com/Xpra-org/xpra/commit/4d605f1a5f58c03aed0230e17b70ca0f73f03b59)
+    * [help clients figure out modifier mappings](https://github.com/Xpra-org/xpra/commit/eef78cba394471ff1fccac708304cf4843ad55f0)
+* Minor:
+    * [spurious UI thread events on client startup](https://github.com/Xpra-org/xpra/commit/316a5762aae49ba256f7516a19919fb727bd9f7a)
+    * [expose `desktop` flag for desktop windows](https://github.com/Xpra-org/xpra/commit/84744d437e25d2bc942136d63048907d31ced4ed)
+
 ## [5.1.4] 2025-12-04
 * Platforms, build and packaging:
     * [re-enable build tests for release tags](https://github.com/Xpra-org/xpra/commit/1cee002b6325c9907f9ded53dcc998318c84b312)
