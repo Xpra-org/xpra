@@ -95,6 +95,9 @@ class KeyboardConfig(KeyboardConfigBase):
         self.modifiers_filter = []
         self.keycode_mappings = {}
 
+        self.compute_modifiers()
+        self.compute_modifier_map()
+
     def __repr__(self):
         return "KeyboardConfig(%s / %s / %s)" % (self.layout, self.variant, self.options)
 
