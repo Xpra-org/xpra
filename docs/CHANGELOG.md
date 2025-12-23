@@ -3,10 +3,19 @@
 ## [6.4.1] 2025-12-15
 * Platforms, build and packaging:
   * [cython 3.2.3](https://github.com/Xpra-org/xpra/commit/24259e0b223d35fdc293ee49d23d2dd863b2ff98)
+  * [AMF headers include path](https://github.com/Xpra-org/xpra/commit/0019e6483ec1f2422548d057a1983b3e4f10f362)
+  * [can't use loose match without `difflib`](https://github.com/Xpra-org/xpra/commit/43e726dc0a008e67cc53ebd274710834c94e72ab)
 * Major:
+  * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/390af2f04be8ce871c0dbe4a5a04290e496f34b2)
   * [broken Gtk Wayland clipboard](https://github.com/Xpra-org/xpra/commit/6fd2cd83ad2f69159287f6549032b30f3feb4696)
   * [`exit-ssh` option was getting lost](https://github.com/Xpra-org/xpra/commit/8c7c57cecf4227c085c19403bcc92a36abb2e3ba)
+  * [auto-reconnect from seamless ssh start](https://github.com/Xpra-org/xpra/commit/f3b01cceae2820b248afd345e307ccfda02ae0bf)
+* Keyboard:
   * [secondary connections cannot use keyboard when sharing](https://github.com/Xpra-org/xpra/commit/ae984a1392baaf015282f924cf08ec426d2df6f8)
+  * [default keyboard configuration should have default modifier mappings](https://github.com/Xpra-org/xpra/commit/7da9c0c741e4147baacfb2f71c74bc774b2bdd5a)
+  * [help clients figure out modifier mappings](https://github.com/Xpra-org/xpra/commit/12f3b526e00a4ea00ccc115150d563f3ec3926b1)
+* Minor:
+  * [expose `desktop` flag for desktop windows](https://github.com/Xpra-org/xpra/commit/1b37200c4f89c33f53d9515db448e98b70f853d5)
 
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:

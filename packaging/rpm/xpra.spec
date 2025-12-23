@@ -1087,10 +1087,19 @@ fi
 * Mon Dec 15 2025 Antoine Martin <antoine@xpra.org> 6.4.1-10
 - Platforms, build and packaging:
    cython 3.2.3
+   AMF headers include path
+   can't use loose match without `difflib`
 - Major:
+   virtual monitor geometry synchronization
    broken Gtk Wayland clipboard
    `exit-ssh` option was getting lost
+   auto-reconnect from seamless ssh start
+- Keyboard:
    secondary connections cannot use keyboard when sharing
+   default keyboard configuration should have default modifier mappings
+   help clients figure out modifier mappings
+- Minor:
+   expose `desktop` flag for desktop windows
 
 * Sun Sep 14 2025 Antoine Martin <antoine@xpra.org> 6.4-10
 - Platforms, build and packaging:
