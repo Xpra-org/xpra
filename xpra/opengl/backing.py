@@ -129,7 +129,7 @@ PIXEL_DATA_FORMAT: dict[str, Sequence[IntConstant]] = {
     # (meaning: uploading one channel at a time)
     "NV12": (GL_LUMINANCE, GL_LUMINANCE_ALPHA),  # Y is one channel, UV contains two channels
 }
-PIXEL_UPLOAD_FORMAT: dict[str, Any] = {
+PIXEL_UPLOAD_FORMAT: dict[str, Sequence[IntConstant] | IntConstant] = {
     "r210": GL_UNSIGNED_INT_2_10_10_10_REV,
     "R210": GL_UNSIGNED_INT_10_10_10_2,
     "RGB565": GL_UNSIGNED_SHORT_5_6_5,

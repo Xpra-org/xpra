@@ -81,6 +81,7 @@ def get_palette(dc) -> list:
     log("palette size: %s", count)
     palette = []
     if count > 0:
+        # noinspection PyCallingNonCallable
         buf = (PALETTEENTRY * count)()
         r = GetSystemPaletteEntries(dc, 0, count, byref(buf))
         for i in range(min(count, r)):

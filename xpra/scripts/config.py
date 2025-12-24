@@ -367,7 +367,7 @@ def get_build_info() -> list[str]:
     else:
         bit = build.get("bit")
         if bit:
-            einfo += ", "+bit
+            einfo += f", {bit}"
     info.insert(0, einfo)
     by = build.get("by", "")
     on = build.get("on", "")

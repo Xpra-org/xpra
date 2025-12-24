@@ -304,7 +304,7 @@ class SocketConnection(Connection):
             log("%s options: cork=%s, nodelay=%s", self.socktype_wrapped, self.cork, self.nodelay)
             if self.nodelay:
                 self.do_set_nodelay(self.nodelay)
-            keepalive = boolget("keepalive", SOCKET_KEEPALIVE)
+            keepalive = boolget("keepalive", SOCKET_KEEPALIVE) or False
             try:
                 self._setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, int(keepalive))
                 if keepalive:

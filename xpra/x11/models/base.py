@@ -376,7 +376,7 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("transient-for", transient_for)
 
     def _handle_window_type_change(self) -> None:
-        window_types = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
+        window_types: Sequence[str] | None = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
         metalog("_NET_WM_WINDOW_TYPE=%s", window_types)
         if not window_types:
             window_type = self._guess_window_type()
@@ -470,12 +470,12 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("content-type", content_type)
 
     def _handle_xpra_quality_change(self) -> None:
-        quality = self.prop_get("_XPRA_QUALITY", "u32", True) or -1
+        quality: int = self.prop_get("_XPRA_QUALITY", "u32", True) or -1
         metalog("quality=%s", quality)
         self._updateprop("quality", max(-1, min(100, quality)))
 
     def _handle_xpra_speed_change(self) -> None:
-        speed = self.prop_get("_XPRA_SPEED", "u32", True) or -1
+        speed: int = self.prop_get("_XPRA_SPEED", "u32", True) or -1
         metalog("speed=%s", speed)
         self._updateprop("speed", max(-1, min(100, speed)))
 
@@ -565,7 +565,7 @@ class BaseWindowModel(CoreX11WindowModel):
         return state_name in self.get_property("state")
 
     def _read_wm_state(self) -> list[str]:
-        wm_state = self.prop_get("_NET_WM_STATE", ["atom"])
+        wm_state: Sequence[str] = self.prop_get("_NET_WM_STATE", ["atom"])
         metalog("read _NET_WM_STATE=%s", wm_state)
         return wm_state or []
 

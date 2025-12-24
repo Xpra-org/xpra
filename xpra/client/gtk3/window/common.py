@@ -41,8 +41,8 @@ def use_x11_bindings() -> bool:
     return bool(_use_x11)
 
 
-def parse_padding_colors(colors_str: str) -> tuple[int, int, int]:
-    padding_colors = 0, 0, 0
+def parse_padding_colors(colors_str: str) -> tuple[float, float, float]:
+    padding_colors = 0.0, 0.0, 0.0
     if colors_str:
         try:
             padding_colors = tuple(float(x.strip()) for x in colors_str.split(","))
@@ -51,7 +51,7 @@ def parse_padding_colors(colors_str: str) -> tuple[int, int, int]:
             log.warn("Warning: invalid padding colors specified,")
             log.warn(" %s", e)
             log.warn(" using black")
-            padding_colors = 0, 0, 0
+            padding_colors = 0.0, 0.0, 0.0
     log("parse_padding_colors(%s)=%s", colors_str, padding_colors)
     return padding_colors
 

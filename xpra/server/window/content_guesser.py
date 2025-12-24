@@ -289,7 +289,7 @@ def get_parent_to_type() -> dict[str, Any]:
 
 
 def guess_content_type_from_parent(window) -> str:
-    ppid = getprop(window, "ppid")
+    ppid = int(getprop(window, "ppid") or 0)
     if not ppid:
         return ""
     return guess_content_from_parent_pid(ppid)

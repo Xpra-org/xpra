@@ -74,6 +74,7 @@ def get_cursor_data(hCursor) -> list | None:
 
         buf_size = bm.bmWidthBytes * h
         buftype = c_char * buf_size
+        # noinspection PyCallingNonCallable
         buf = buftype()
         buf.value = b""
         r = GetBitmapBits(bitmap, buf_size, byref(buf))

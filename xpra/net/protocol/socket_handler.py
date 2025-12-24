@@ -391,14 +391,14 @@ class SocketProtocol:
     def parse_remote_caps(self, _caps: typedict) -> None:
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
 
-    def get_info(self, alias_info: bool = ALIAS_INFO) -> dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         shm = self._source_has_more
-        info: dict[str, str | int | bool | dict] = {
+        info: dict[str, str | int | bool | dict | list[str]] = {
             "large_packets": self.large_packets,
             "compression_level": self.compression_level,
             "chunks": self.chunks,
             "max_packet_size": self.max_packet_size,
-            "has_more": shm and shm.is_set(),
+            "has_more": bool(shm) and shm.is_set(),
             "receive-pending": self.receive_pending,
             "closed": self._closed,
             "eof-pending": self.eof_pending,

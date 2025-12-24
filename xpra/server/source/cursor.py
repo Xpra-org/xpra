@@ -120,19 +120,20 @@ class CursorsConnection(StubClientConnection):
         if self.last_cursor_sent and self.last_cursor_sent[2:9] == cursor_data[2:9]:
             log("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
             return
-        self.last_cursor_sent = cursor_data[:9]
+        self.last_cursor_sent = tuple(cursor_data[:9])
         w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
         # compress pixels if needed:
         encoding = "raw"
         if pixels is not None:
-            cpixels: bytes | Compressed = memoryview_to_bytes(pixels)
+            bin_pixels = memoryview_to_bytes(pixels)
+            cpixels: bytes | Compressed = bin_pixels
             try:
                 from PIL import Image
             except ImportError:
                 Image = None
             if "png" in self.cursor_encodings and Image:
                 log(f"do_send_cursor() got {len(cpixels)} bytes of pixel data for {w}x{h} cursor named {name!r}")
-                img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w * 4, 1)
+                img = Image.frombytes("RGBA", (w, h), bin_pixels, "raw", "BGRA", w * 4, 1)
                 buf = BytesIO()
                 img.save(buf, "PNG")
                 pngdata = buf.getvalue()

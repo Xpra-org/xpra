@@ -113,7 +113,7 @@ def connect_to_quic(display_desc: dict[str, Any], opts):
         assert aioquic
     except ImportError as e:
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR, f"cannot use quic sockets: {e}") from None
-    fast_open = display_desc.get("fast-open", FAST_OPEN)
+    fast_open = bool(display_desc.get("fast-open", FAST_OPEN))
     conn = quic_connect(host, port, path, fast_open,
                         ssl_cert, ssl_key, ssl_key_password,
                         ssl_ca_certs, ssl_server_verify_mode, ssl_server_name)
@@ -277,10 +277,9 @@ def display_desc_to_uri(display_desc: dict[str, Any]) -> str:
     username = display_desc.get("username")
     if username is not None:
         uri += username
-    password = display_desc.get("password")
-    if password is not None:
-        uri += ":" + password
-    if username is not None or password is not None:
+    if "password" in display_desc:
+        uri += ":" + display_desc.get("password", "")
+    if username is not None or "password" in display_desc:
         uri += "@"
     if dtype in ("ssh", "tcp", "ssl", "ws", "wss", "quic"):
         # TODO: re-add 'proxy_host' arguments here

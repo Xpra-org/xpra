@@ -793,7 +793,7 @@ class CoreX11WindowModel(WindowModelStub):
         log("_NET_WM_USER_TIME(%#x)=%i", xid, time)
 
     # these handlers must not generate X11 errors (must use XSync)
-    _x11_property_handlers: dict[str, Callable[[], None]] = {
+    _x11_property_handlers: dict[str, Callable[[Any], None]] = {
         "_NET_WM_PID": _handle_pid_change,
         "WM_CLIENT_MACHINE": _handle_client_machine_change,
         "WM_NAME": _handle_wm_name_change,

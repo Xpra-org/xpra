@@ -48,7 +48,7 @@ PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 HOSTS_PREFER_IPV4 = os.environ.get("XPRA_HOSTS_PREFER_IPV4", "localhost,127.0.0.1").split(",")
 FAST_OPEN = envbool("XPRA_QUIC_FAST_OPEN", aioquic_version_info >= (1, 2))
 
-WS_HEADERS: dict[str, str] = {
+WS_HEADERS: dict[str, str | int] = {
     ":method": "CONNECT",
     ":scheme": "https",
     ":protocol": "websocket",

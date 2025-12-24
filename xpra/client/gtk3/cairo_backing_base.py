@@ -424,7 +424,7 @@ class CairoBackingBase(WindowBackingBase):
 
     @staticmethod
     def get_alert_image():
-        if not CairoBackingBase.alert_image:
+        if not CairoBackingBase.alert_image and make_image_surface != noop:
             iw, ih, pixels = WindowBackingBase.get_alert_icon()
             if iw and ih and pixels:
                 CairoBackingBase.alert_image = iw, ih, make_image_surface(Format.ARGB32, "RGBA", pixels, iw, ih, iw * 4)
