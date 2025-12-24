@@ -64,7 +64,7 @@ TITLE_CLOSEEXIT: list[str] = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").spl
 
 def get_grab_defs(grab_str: str) -> dict[str, list[str]]:
     grab_defs: dict[str, list[str]] = {}
-    for s in OR_FORCE_GRAB_STR.split(","):
+    for s in grab_str.split(","):
         if not s:
             continue
         parts = s.split(":")
