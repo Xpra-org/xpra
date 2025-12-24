@@ -1404,11 +1404,9 @@ def strip_attach_extra_positional_args(cmdline: list[str]) -> list[str]:
         if expecting_option_value:
             cleaned.append(arg)
             expecting_option_value = False
-            continue
-        if arg.startswith("-"):
+        elif arg.startswith("-"):
             cleaned.append(arg)
             expecting_option_value = arg.startswith("--") and "=" not in arg
-            continue
         # extra positional argument after the display: drop it
     return cleaned
 
