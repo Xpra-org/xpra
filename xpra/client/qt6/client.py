@@ -126,7 +126,7 @@ class Qt6Client:
                 for index, data in self.raw_packets.items():
                     packet[index] = data
                 self.raw_packets = {}
-            self.process_packet(packet)
+            self.process_packet(Packet(*packet))
 
     def process_packet(self, packet: Packet) -> None:
         packet_type = packet.get_type()
