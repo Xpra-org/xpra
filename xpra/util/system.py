@@ -252,7 +252,7 @@ def is_X11() -> bool:
         from xpra import x11
         assert x11
     except ImportError:
-        get_util_logger().debug("failed to load x11 bindings", exc_info=True)
+        get_util_logger().debug("failed to load x11 bindings", backtrace=True)
         # x11 is not installed, so assume it isn't used
         return False
     gdk_backend = os.environ.get("GDK_BACKEND", "")
