@@ -574,7 +574,7 @@ class Logger:
 
     def warn(self, msg: str, *args, **kwargs) -> None:
         if emojis:
-            if msg.startswith("Warning:"):
+            if msg.startswith("Warning:") or msg.startswith("Warning "):
                 msg = "⚠️  " + msg[len("Warning:"):].strip()
             elif msg.startswith(" "):
                 msg = "   " + msg.strip()
@@ -582,7 +582,7 @@ class Logger:
 
     def error(self, msg: str, *args, **kwargs) -> None:
         if emojis:
-            if msg.startswith("Error:"):
+            if msg.startswith("Error:") or msg.startswith("Error "):
                 msg = "🔴 " + msg[len("Error:"):].strip()
             elif msg.startswith(" "):
                 msg = "   " + msg.strip()
