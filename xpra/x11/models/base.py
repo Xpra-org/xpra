@@ -344,7 +344,7 @@ class BaseWindowModel(CoreX11WindowModel):
             state = tuple(state)
         metalog("sync_state: setting _NET_WM_STATE=%s on %#x", state, self.xid)
         with xlog:
-            self.prop_set("_NET_WM_STATE", ["atom"], state)
+            self.array_set("_NET_WM_STATE", "atom", state)
 
     def set_wm_state(self, state: int) -> None:
         metalog("set_wm_state(%s)", state)
@@ -376,7 +376,7 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("transient-for", transient_for)
 
     def _handle_window_type_change(self) -> None:
-        window_types: Sequence[str] | None = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
+        window_types: Sequence[str] | None = self.array_get("_NET_WM_WINDOW_TYPE", "atom")
         metalog("_NET_WM_WINDOW_TYPE=%s", window_types)
         if not window_types:
             window_type = self._guess_window_type()
@@ -395,7 +395,7 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("workspace", workspace)
 
     def _handle_fullscreen_monitors_change(self) -> None:
-        fsm = self.prop_get("_NET_WM_FULLSCREEN_MONITORS", ["u32"], True)
+        fsm = self.array_get("_NET_WM_FULLSCREEN_MONITORS", "u32", True)
         metalog("_NET_WM_FULLSCREEN_MONITORS=%s", fsm)
         self._updateprop("fullscreen-monitors", tuple(fsm or ()))
 
@@ -565,7 +565,7 @@ class BaseWindowModel(CoreX11WindowModel):
         return state_name in self.get_property("state")
 
     def _read_wm_state(self) -> list[str]:
-        wm_state: Sequence[str] = self.prop_get("_NET_WM_STATE", ["atom"])
+        wm_state: Sequence[str] = self.array_get("_NET_WM_STATE", "atom")
         metalog("read _NET_WM_STATE=%s", wm_state)
         return wm_state or []
 
@@ -715,7 +715,7 @@ class BaseWindowModel(CoreX11WindowModel):
                 log.warn("Warning: invalid list of _NET_WM_FULLSCREEN_MONITORS:%s - ignored", event.data)
                 return False
             log("_NET_WM_FULLSCREEN_MONITORS: monitors=%s", monitors)
-            self.prop_set("_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
+            self.array_set("_NET_WM_FULLSCREEN_MONITORS", "u32", monitors)
             return True
         if event.message_type == "_NET_RESTACK_WINDOW":
             source = {1: "application", 2: "pager"}.get(event.data[0], "default (%s)" % event.data[0])

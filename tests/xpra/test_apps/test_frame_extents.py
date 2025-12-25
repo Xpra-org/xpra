@@ -3,7 +3,7 @@
 from xpra.os_util import gi_import
 
 from xpra.x11.gtk.display_source import init_gdk_display_source
-from xpra.x11.prop import prop_get
+from xpra.x11.prop import array_get
 from xpra.x11.bindings.core import constants
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.error import xsync
@@ -27,7 +27,7 @@ def main():
     X11Window = X11WindowBindings()
 
     def print_extents():
-        v = prop_get(win.get_window(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+        v = array_get(win.get_window(), "_NET_FRAME_EXTENTS", "u32", ignore_errors=False)
         print("_NET_FRAME_EXTENTS: %s" % str(v))
         with xsync:
             SubstructureNotifyMask = constants["SubstructureNotifyMask"]

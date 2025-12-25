@@ -22,7 +22,7 @@ from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
-from xpra.x11.xroot_props import root_get, root_set
+from xpra.x11.xroot_props import array_set, root_set, root_array_get
 from xpra.x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
@@ -619,7 +619,7 @@ class CoreX11WindowModel(WindowModelStub):
         actions = self.get_property("allowed-actions") or []
         metalog("sync_allowed_actions: setting _NET_WM_ALLOWED_ACTIONS=%s on %#x", actions, self.xid)
         with xswallow:
-            self.prop_set("_NET_WM_ALLOWED_ACTIONS", ["atom"], actions)
+            self.array_set("_NET_WM_ALLOWED_ACTIONS", "atom", actions)
 
     def _handle_frame_changed(self, *_args) -> None:
         # legacy name for _sync_frame() called from Wm
@@ -631,13 +631,13 @@ class CoreX11WindowModel(WindowModelStub):
         v = self.get_property("frame")
         framelog("sync_frame: frame(%#x)=%s", self.xid, v)
         if not v and (not self.is_OR() and not self.is_tray()):
-            v = root_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"])
+            v = root_array_get("DEFAULT_NET_FRAME_EXTENTS", "u32")
         if not v:
             # default for OR, or if we don't have any other value:
             v = (0, 0, 0, 0)
         framelog("sync_frame: setting _NET_FRAME_EXTENTS=%s on %#x", v, self.xid)
         with xswallow:
-            self.prop_set("_NET_FRAME_EXTENTS", ["u32"], v)
+            self.array_set("_NET_FRAME_EXTENTS", "u32", v)
 
     _py_property_handlers: dict[str, Callable] = {
         "allowed-actions": _sync_allowed_actions,
@@ -658,11 +658,24 @@ class CoreX11WindowModel(WindowModelStub):
             ignore_errors = True
         return prop_get(self.xid, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
 
+    def array_get(self, key, ptype, ignore_errors: bool | None = None, raise_xerrors=False) -> object:
+        """
+            Get an X11 property from the client window,
+            using the automatic type conversion code from prop.py
+            Ignores property errors during setup_client.
+        """
+        if ignore_errors is None and (not self._setup_done or not self._managed):
+            ignore_errors = True
+        return prop_get(self.xid, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
+
     def prop_del(self, key: str) -> None:
         prop_del(self.xid, key)
 
     def prop_set(self, key: str, ptype, value) -> None:
         prop_set(self.xid, key, ptype, value)
+
+    def array_set(self, key: str, ptype, value: Sequence) -> None:
+        array_set(self.xid, key, ptype, value)
 
     def do_x11_property_notify_event(self, event: X11Event) -> None:
         # X11: PropertyNotify
@@ -775,7 +788,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def _handle_opaque_region_change(self) -> None:
         rectangles: list[tuple[int, int, int, int]] = []
-        v: Sequence[int] = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
+        v: Sequence[int] = tuple(self.array_get("_NET_WM_OPAQUE_REGION", "u32") or [])
         if OPAQUE_REGION and len(v) % 4 == 0:
             while v:
                 rvalues = tuple((coord if coord < 2 ** 32 else -1) for coord in v[:4])

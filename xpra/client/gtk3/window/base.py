@@ -51,7 +51,7 @@ alphalog = Logger("alpha")
 
 HAS_X11_BINDINGS = False
 
-prop_get = None
+prop_get = array_get = None
 prop_set = prop_del = noop
 X11Window = X11Core = None
 
@@ -59,7 +59,7 @@ X11Window = X11Core = None
 if use_x11_bindings():
     try:
         from xpra.x11.error import xlog, verify_sync
-        from xpra.x11.prop import prop_get, prop_set, prop_del
+        from xpra.x11.prop import array_get, prop_get, prop_set, prop_del
         from xpra.x11.bindings.core import X11CoreBindings, set_context_check, constants, get_root_xid
         from xpra.x11.bindings.window import X11WindowBindings
 
@@ -919,7 +919,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         xid = self.get_window().get_xid()
         if atom == "_NET_FRAME_EXTENTS":
-            v = prop_get(xid, "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+            v = array_get(xid, "_NET_FRAME_EXTENTS", "u32", ignore_errors=False)
             statelog("_NET_FRAME_EXTENTS: %s", v)
             if v:
                 if v == self._current_frame_extents:
@@ -942,11 +942,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         if atom == "XKLAVIER_STATE":
             # unused for now, but log it:
-            xklavier_state = prop_get(xid, "XKLAVIER_STATE", ["integer"], ignore_errors=False)
+            xklavier_state = array_get(xid, "XKLAVIER_STATE", "integer", ignore_errors=False)
             log("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
             return
         if atom == "_NET_WM_STATE":
-            wm_state_atoms = prop_get(xid, "_NET_WM_STATE", ["atom"], ignore_errors=False)
+            wm_state_atoms = array_get(xid, "_NET_WM_STATE", "atom", ignore_errors=False)
             # code mostly duplicated from xpra/x11/gtk/window.py:
             WM_STATE_NAME = {
                 "fullscreen": ("_NET_WM_STATE_FULLSCREEN",),

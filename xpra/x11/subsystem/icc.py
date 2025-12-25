@@ -50,7 +50,7 @@ class ICCServer(StubServerMixin):
     def set_icc_profile(self) -> None:
         if not SYNC_ICC:
             return
-        from xpra.x11.xroot_props import root_set
+        from xpra.x11.xroot_props import root_set, root_array_set
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
         if len(ui_clients) != 1:
             log("%i UI clients, resetting ICC profile to default", len(ui_clients))
@@ -62,7 +62,7 @@ class ICCServer(StubServerMixin):
             if data:
                 log("set_icc_profile() icc data for %s: %s (%i bytes)", ui_clients[0], hexstr(data), len(data))
                 self.icc_profile = data
-                root_set("_ICC_PROFILE", ["u32"], data)
+                root_array_set("_ICC_PROFILE", "u32", data)
                 root_set("_ICC_PROFILE_IN_X_VERSION", "u32", 0 * 100 + 4)  # 0.4 -> 0*100+4*1
                 return
         log("no icc data found in %s", icc)

@@ -328,22 +328,22 @@ PROP_SIZES = {
 
 def prop_encode(etype : list | tuple | str, value):
     if isinstance(etype, (list, tuple)):
-        return _prop_encode_list(etype[0], value)
-    return _prop_encode_scalar(etype, value)
+        return prop_encode_list(etype[0], value)
+    return prop_encode_scalar(etype, value)
 
 
-def _prop_encode_scalar(etype: str, value) -> tuple[str, int, bytes]:
+def prop_encode_scalar(etype: str, value) -> tuple[str, int, bytes]:
     pytype, atom, formatbits, serialize = PROP_TYPES[etype][:4]
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return atom, formatbits, serialize(value)
 
 
-def _prop_encode_list(etype: str, value) -> tuple[str, int, bytes]:
+def prop_encode_list(etype: str, value: Sequence) -> tuple[str, int, bytes]:
     _, atom, formatbits, _, _, terminator = PROP_TYPES[etype]
     if terminator is None:
         raise ValueError(f"cannot encode lists of {etype!r}")
     value = tuple(value)
-    serialized = tuple(_prop_encode_scalar(etype, v)[2] for v in value)
+    serialized = tuple(prop_encode_scalar(etype, v)[2] for v in value)
     # Strings in X really are null-separated, not null-terminated (ICCCM
     # 2.7.1, see also note in 4.1.2.5)
     return atom, formatbits, terminator.join(x for x in serialized if x is not None)
@@ -351,18 +351,18 @@ def _prop_encode_list(etype: str, value) -> tuple[str, int, bytes]:
 
 def prop_decode(etype: str | list | tuple, data: bytes):
     if isinstance(etype, (list, tuple)):
-        return _prop_decode_list(etype[0], data)
-    return _prop_decode_scalar(etype, data)
+        return prop_decode_list(etype[0], data)
+    return prop_decode_scalar(etype, data)
 
 
-def _prop_decode_scalar(etype: str, data: bytes):
+def prop_decode_scalar(etype: str, data: bytes):
     pytype, _, _, _, deserialize, _ = PROP_TYPES[etype]
     value = deserialize(data)
     assert value is None or isinstance(value, pytype), "expected a %s but value is a %s" % (pytype, type(value))
     return value
 
 
-def _prop_decode_list(etype: str, data) -> list:
+def prop_decode_list(etype: str, data) -> list:
     _, _, formatbits, _, _, terminator = PROP_TYPES[etype]
     if terminator:
         datums = data.split(terminator)
@@ -375,5 +375,5 @@ def _prop_decode_list(etype: str, data) -> list:
         while data:
             datums.append(data[:nbytes])
             data = data[nbytes:]
-    props = (_prop_decode_scalar(etype, datum) for datum in datums)
+    props = (prop_decode_scalar(etype, datum) for datum in datums)
     return [x for x in props if x is not None]

@@ -13,7 +13,7 @@ from xpra.x11.error import xsync, xswallow
 from xpra.x11.common import X11Event
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.prop import prop_set, prop_get, prop_del
+from xpra.x11.prop import array_get, array_set, prop_set, prop_get, prop_del
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
@@ -22,14 +22,24 @@ log = Logger("x11", "util")
 GObject = gi_import("GObject")
 
 
-def root_set(prop: str, vtype: list | tuple | str, value) -> None:
+def root_set(prop: str, vtype: str, value) -> None:
     rxid = get_root_xid()
     prop_set(rxid, prop, vtype, value)
 
 
-def root_get(prop: str, vtype: list | tuple | str):
+def root_array_set(prop: str, vtype: str, value: Sequence) -> None:
+    rxid = get_root_xid()
+    array_set(rxid, prop, vtype, value)
+
+
+def root_get(prop: str, vtype: str):
     rxid = get_root_xid()
     return prop_get(rxid, prop, vtype, ignore_errors=True)
+
+
+def root_array_get(prop: str, vtype: str):
+    rxid = get_root_xid()
+    return array_get(rxid, prop, vtype, ignore_errors=True)
 
 
 def root_del(prop: str) -> None:
@@ -39,17 +49,17 @@ def root_del(prop: str) -> None:
 
 def set_supported() -> None:
     from xpra.x11.common import NET_SUPPORTED
-    root_set("_NET_SUPPORTED", ["atom"], NET_SUPPORTED)
+    root_array_set("_NET_SUPPORTED", "atom", NET_SUPPORTED)
 
 
 def set_workarea(x: int, y: int, width: int, height: int) -> None:
     v = (x, y, width, height)
     log("_NET_WORKAREA=%s", v)
-    root_set("_NET_WORKAREA", ["u32"], v)
+    root_array_set("_NET_WORKAREA", "u32", v)
 
 
 def get_workareas() -> Sequence[tuple[int, int, int, int]]:
-    net_workarea = root_get("_NET_WORKAREA", ["u32"]) or ()
+    net_workarea = root_array_get("_NET_WORKAREA", "u32") or ()
     # workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
     nworkareas = len(net_workarea) // 4
     desktop = get_current_desktop()
@@ -76,7 +86,7 @@ def get_workarea() -> tuple[int, int, int, int]:
 def set_desktop_list(desktops: Sequence[str]) -> None:
     log("set_desktop_list(%s)", desktops)
     root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
-    root_set("_NET_DESKTOP_NAMES", ["utf8"], desktops)
+    root_array_set("_NET_DESKTOP_NAMES", "utf8", desktops)
 
 
 def set_current_desktop(index: int) -> None:
@@ -90,11 +100,11 @@ def get_current_desktop() -> int:
 def set_desktop_geometry(width: int, height: int) -> None:
     v = (width, height)
     log("_NET_DESKTOP_GEOMETRY=%s", v)
-    root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
+    root_array_set("_NET_DESKTOP_GEOMETRY", "u32", v)
 
 
 def get_desktop_geometry() -> tuple[int, int]:
-    desktop_geometry = root_get("_NET_DESKTOP_GEOMETRY", ["u32"])
+    desktop_geometry = root_array_get("_NET_DESKTOP_GEOMETRY", "u32")
     if desktop_geometry and len(desktop_geometry) == 2:
         return int(desktop_geometry[0]), int(desktop_geometry[1])
     return get_root_size()
@@ -111,7 +121,7 @@ def get_root_size() -> tuple[int, int]:
 
 
 def set_desktop_viewport(x=0, y=0) -> None:
-    root_set("_NET_DESKTOP_VIEWPORT", ["u32"], (x, y))
+    root_array_set("_NET_DESKTOP_VIEWPORT", "u32", (x, y))
 
 
 def get_desktop_names() -> Sequence[str]:
@@ -141,7 +151,7 @@ def get_icc_profile() -> bytes:
     xformat = _get_icc_xformat("_ICC_PROFILE")
     if not xformat:
         return b""
-    data = root_get("_ICC_PROFILE", [f"u{xformat}"]) or ()
+    data = root_array_get("_ICC_PROFILE", f"u{xformat}") or ()
     if not data:
         return b""
     try:

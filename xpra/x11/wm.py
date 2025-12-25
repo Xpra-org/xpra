@@ -12,14 +12,15 @@ from xpra.common import MAX_WINDOW_SIZE
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xsync, xswallow, xlog
 from xpra.x11.common import Unmanageable, FRAME_EXTENTS, X11Event
-from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
+from xpra.x11.prop import prop_set, prop_get, prop_del, raw_prop_set
+from xpra.x11.prop_conv import prop_encode_list
 from xpra.x11.selection.manager import ManagerSelection
 from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.window_info import window_name, window_info
 from xpra.x11.xroot_props import (
     set_desktop_list, set_current_desktop, set_desktop_viewport, set_desktop_geometry, get_desktop_geometry,
     set_supported, set_workarea,
-    root_set, root_get,
+    root_set, array_set, root_array_get, root_array_set,
 )
 from xpra.x11.bindings.core import constants, get_root_xid, X11CoreBindings
 from xpra.x11.bindings.window import X11WindowBindings
@@ -187,7 +188,7 @@ class Wm(GObject.GObject):
         framelog("set_default_frame_extents(%s)", v)
         if not v or len(v) != 4:
             v = (0, 0, 0, 0)
-        root_set("DEFAULT_NET_FRAME_EXTENTS", ["u32"], v)
+        root_array_set("DEFAULT_NET_FRAME_EXTENTS", "u32", v)
         # update the models that are using the global default value:
         for win in self._windows.values():
             if win.is_OR() or win.is_tray():
@@ -244,8 +245,8 @@ class Wm(GObject.GObject):
         # in a moment we'll get a signal telling us about the window that
         # doesn't exist anymore, will remove it from the list, and then call
         # _update_window_list again.
-        dtype, dformat, window_xids = prop_encode(["u32"], tuple(self._windows_in_order))
-        log("prop_encode(%s)=%s", self._windows_in_order, (dtype, dformat, window_xids))
+        dtype, dformat, window_xids = prop_encode_list("u32", tuple(self._windows_in_order))
+        log("prop_encode_list('u32', %s)=%s", self._windows_in_order, (dtype, dformat, window_xids))
         with xlog:
             for prop in ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING"):
                 raw_prop_set(rxid, prop, "WINDOW", dformat, window_xids)
@@ -272,11 +273,11 @@ class Wm(GObject.GObject):
                 xid = event.window
                 if not X11Window.is_override_redirect(xid):
                     # use the global default:
-                    frame = root_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"])
+                    frame = root_array_get("DEFAULT_NET_FRAME_EXTENTS", "u32")
                 if not frame or len(frame) != 4:
                     frame = NO_FRAME
                 framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, xid)
-                prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
+                array_set(event.window, "_NET_FRAME_EXTENTS", "u32", frame)
 
     def _lost_wm_selection(self, *_args) -> None:
         self.emit("quit")

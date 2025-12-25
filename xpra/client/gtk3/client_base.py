@@ -771,10 +771,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if not HAS_X11_BINDINGS:
             # nothing more we can do!
             return {}
-        from xpra.x11.prop import prop_get
+        from xpra.x11.prop import array_get
         gdkwin = window.get_window()
         assert gdkwin
-        v = prop_get(gdkwin.get_xid(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
+        v = array_get(gdkwin.get_xid(), "_NET_FRAME_EXTENTS", "u32", ignore_errors=False)
         framelog(f"get_frame_extents({window.get_title()})={v}")
         if not v:
             return {}

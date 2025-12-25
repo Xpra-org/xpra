@@ -51,7 +51,7 @@ def use_x11_bindings() -> bool:
 if use_x11_bindings():
     try:
         from xpra.x11.error import xlog
-        from xpra.x11.prop import prop_get
+        from xpra.x11.prop import array_get
         from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.send_wm import send_wm_workspace
     except ImportError as x11e:
@@ -72,7 +72,7 @@ if use_x11_bindings():
                 return False
             try:
                 # in theory this is not a proper check, meh - that will do
-                supported = prop_get(root_xid, "_NET_SUPPORTED", ["atom"], ignore_errors=True) or ()
+                supported = array_get(root_xid, "_NET_SUPPORTED", "atom", ignore_errors=True) or ()
                 return "_NET_WM_DESKTOP" in supported
             except Exception as we:
                 log("x11 workspace bindings error", exc_info=True)

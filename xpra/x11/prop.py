@@ -66,8 +66,14 @@ def _to_atom(a) -> bytes:
 PROP_TYPES["atom"] = (str, "ATOM", 32, _to_atom, _get_atom, b"")
 
 
-def prop_set(xid: int, key: str, etype: list | tuple | str, value) -> None:
+def prop_set(xid: int, key: str, etype: str, value) -> None:
     dtype, dformat, data = prop_encode(etype, value)
+    raw_prop_set(xid, key, dtype, dformat, data)
+
+
+def array_set(xid: int, key: str, etype: str, value) -> None:
+    actual_type = [etype]
+    dtype, dformat, data = prop_encode(actual_type, value)
     raw_prop_set(xid, key, dtype, dformat, data)
 
 
@@ -90,6 +96,7 @@ def prop_type_get(xid: int, key: str):
 def prop_get(xid: int, key: str, etype, ignore_errors: bool = False, raise_xerrors: bool = False):
     # ie: 0x4000, "_NET_WM_PID", "u32"
     if isinstance(etype, (list, tuple)):
+        log.warn("Warning: deprecated call to prop_get for %r", key)
         scalar_type = etype[0]
     else:
         scalar_type = etype  # ie: "u32"
@@ -99,6 +106,16 @@ def prop_get(xid: int, key: str, etype, ignore_errors: bool = False, raise_xerro
     if data is None:
         return None
     return do_prop_decode(key, etype, data, ignore_errors)
+
+
+def array_get(xid: int, key: str, etype: str, ignore_errors: bool = False, raise_xerrors: bool = False) -> list | None:
+    # ie: 0x4000, "_NET_WM_PID", "u32"
+    type_atom = PROP_TYPES[etype][1]  # ie: "CARDINAL"
+    buffer_size = PROP_SIZES.get(etype, 65536)
+    data = raw_prop_get(xid, key, type_atom, buffer_size, ignore_errors, raise_xerrors)
+    if data is None:
+        return None
+    return do_prop_decode(key, [etype], data, ignore_errors)
 
 
 def raw_prop_get(xid: int, key: str, type_atom: str, buffer_size: int = 65536,
