@@ -3,6 +3,7 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     cython 3.2.3
     AMF headers include path
     can't use loose match without `difflib`
+    MS Windows client errors on control-c
   * Major:
     virtual monitor geometry synchronization
     broken Gtk Wayland clipboard
@@ -14,8 +15,16 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     help clients figure out modifier mappings
   * Minor:
     expose `desktop` flag for desktop windows
+    future correctness: use argument provided
+    Qt6 client failed to run
+    handle missing gtk widget component more gracefully
+  * Cosmetic:
+    confusing message
+    more useful message
+    show the source of the error
+    some exceptions have no message
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 15 Dec 2025 22:46:55 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 25 Dec 2025 23:19:27 +0700
 
 xpra (6.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

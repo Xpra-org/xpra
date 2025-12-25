@@ -1084,11 +1084,12 @@ fi
 
 
 %changelog
-* Mon Dec 15 2025 Antoine Martin <antoine@xpra.org> 6.4.1-10
+* Thu Dec 25 2025 Antoine Martin <antoine@xpra.org> 6.4.1-10
 - Platforms, build and packaging:
    cython 3.2.3
    AMF headers include path
    can't use loose match without `difflib`
+   MS Windows client errors on control-c
 - Major:
    virtual monitor geometry synchronization
    broken Gtk Wayland clipboard
@@ -1100,6 +1101,14 @@ fi
    help clients figure out modifier mappings
 - Minor:
    expose `desktop` flag for desktop windows
+   future correctness: use argument provided
+   Qt6 client failed to run
+   handle missing gtk widget component more gracefully
+- Cosmetic:
+   confusing message
+   more useful message
+   show the source of the error
+   some exceptions have no message
 
 * Sun Sep 14 2025 Antoine Martin <antoine@xpra.org> 6.4-10
 - Platforms, build and packaging:

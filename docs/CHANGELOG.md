@@ -1,10 +1,11 @@
 # Changelog
 
-## [6.4.1] 2025-12-15
+## [6.4.1] 2025-12-23
 * Platforms, build and packaging:
   * [cython 3.2.3](https://github.com/Xpra-org/xpra/commit/24259e0b223d35fdc293ee49d23d2dd863b2ff98)
   * [AMF headers include path](https://github.com/Xpra-org/xpra/commit/0019e6483ec1f2422548d057a1983b3e4f10f362)
   * [can't use loose match without `difflib`](https://github.com/Xpra-org/xpra/commit/43e726dc0a008e67cc53ebd274710834c94e72ab)
+  * [MS Windows client errors on control-c](https://github.com/Xpra-org/xpra/commit/183259716df3b0ffa13fb6c0fffcc957734c60a3)
 * Major:
   * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/390af2f04be8ce871c0dbe4a5a04290e496f34b2)
   * [broken Gtk Wayland clipboard](https://github.com/Xpra-org/xpra/commit/6fd2cd83ad2f69159287f6549032b30f3feb4696)
@@ -16,6 +17,14 @@
   * [help clients figure out modifier mappings](https://github.com/Xpra-org/xpra/commit/12f3b526e00a4ea00ccc115150d563f3ec3926b1)
 * Minor:
   * [expose `desktop` flag for desktop windows](https://github.com/Xpra-org/xpra/commit/1b37200c4f89c33f53d9515db448e98b70f853d5)
+  * [future correctness: use argument provided](https://github.com/Xpra-org/xpra/commit/a39e99e905b57f0049db3502f28ccebc5ee0badd)
+  * [Qt6 client failed to run](https://github.com/Xpra-org/xpra/commit/ffee44af591d175ffe63652ce322585286567834)
+  * [handle missing gtk widget component more gracefully](https://github.com/Xpra-org/xpra/commit/78039aedc0637b5e4095548935890ee9e33e042a)
+* Cosmetic:
+  * [confusing message](https://github.com/Xpra-org/xpra/commit/eb8340b68b849a5a19bdbc10bebdef5bc0960f35)
+  * [more useful message](https://github.com/Xpra-org/xpra/commit/e8580af46ce3c0f3f980f494b1778e1c77e48ae9)
+  * [show the source of the error](https://github.com/Xpra-org/xpra/commit/5fac46f4cc71c989c73b9cf3cb4ef97d911f27c5)
+  * [some exceptions have no message](https://github.com/Xpra-org/xpra/commit/7e3b270ae10b506595ccee70fa2c610d63a7c38b)
 
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:
