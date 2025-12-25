@@ -1538,7 +1538,8 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
         app = make_client(error_cb, opts)
     except RuntimeError as e:
         #exceptions at this point are still initialization exceptions
-        raise InitException(e.args[0]) from None
+        msg = (e.args[0] if e.args else str(e)) or str(type(e))
+        raise InitException(msg) from None
     app.show_progress(30, "client configuration")
     try:
         app.init(opts)
