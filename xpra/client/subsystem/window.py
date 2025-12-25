@@ -32,7 +32,7 @@ from xpra.util.thread import start_thread
 from xpra.util.str_fn import std, bytestostr, strtobytes, memoryview_to_bytes
 from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.system import is_Ubuntu, is_Wayland
-from xpra.util.objects import typedict, make_instance
+from xpra.util.objects import typedict, make_instance, AdHocStruct
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool, first_time
 from xpra.client.base.stub import StubClientMixin
@@ -175,9 +175,17 @@ def show_border_help() -> None:
     log.info("  eg: blue")
 
 
+def red():
+    color = AdHocStruct()
+    color.red = 65536
+    color.green = 0
+    color.blue = 0
+    color.alpha = 16384
+    return color
+
+
 def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
     # ie: "auto,5:off"
-    from xpra.gtk.widget import color_parse
     parts = [x.strip() for x in border_str.replace(",", ":").split(":", 2)]
     color_str = parts[0]
     if color_str.lower() in ("none", "no", "off", "0"):
@@ -193,15 +201,19 @@ def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
         color_str = "#%s" % m.hexdigest()[:6]
         log(f"border color derived from {display_name}: {color_str}")
     try:
+        from xpra.gtk.widget import color_parse
         color = color_parse(color_str)
         assert color is not None
+    except ImportError:
+        log.warn("Warning: xpra.gtk.widget not available, unable to parse color")
+        color = red()
     except Exception as e:
         if warn:
             log.warn(f"Warning: invalid border color specified '{color_str!r}'")
             if str(e):
                 log.warn(" %s", e)
             show_border_help()
-        color = color_parse("red")
+        color = red()
     alpha = 0.6
     size = 4
     enabled = parts[-1] != "off"
