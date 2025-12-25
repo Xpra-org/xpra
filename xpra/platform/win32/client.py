@@ -72,12 +72,13 @@ def get_keyboard_layout_id() -> int:
     name_buf = create_string_buffer(win32con.KL_NAMELENGTH)
     if not GetKeyboardLayoutName(name_buf):
         return 0
-    log(f"layout-name={name_buf.value!r}")
+    name_str = name_buf.value.decode("latin1")
+    log(f"layout-name={name_str!r}")
     try:
         # win32 API returns a hex string
-        return int(name_buf.value, 16)
+        return int(name_str, 16)
     except ValueError:
-        log.warn("Warning: failed to parse keyboard layout code '%s'", name_buf.value)
+        log.warn("Warning: failed to parse keyboard layout code %r", name_str)
     return 0
 
 
