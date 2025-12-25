@@ -1136,7 +1136,7 @@ class ClientExtras:
             locked = getattr(kh, "locked", False)
             if POLL_LAYOUT and self.keyboard_poll_timer==0 and not locked:
                 self.keyboard_poll_timer = GLib.timeout_add(POLL_LAYOUT, self.poll_layout)
-            if nCode<0:
+            if nCode<0 or not lParam:
                 #docs say we should not process this event:
                 return CallNextHookEx(0, nCode, wParam, lParam)
             try:
