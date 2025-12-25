@@ -3099,7 +3099,7 @@ if cythonize_more_ENABLED:
         ax("xpra.notification")
     ace("xpra.platform.dotxpra_common")
     ace("xpra.platform.paths")
-    ace("xpra.platform.ui_thread_watcher")
+    ace("xpra.util.ui_thread_watcher")
     if LINUX:
         ace("xpra.platform.posix.shadow_server")
     if scripts_ENABLED:
