@@ -42,6 +42,8 @@ def encode(coding : str, image, options : Dict) -> Tuple[str,Compressed,Dict[str
     else:
         raise ValueError(f"unsupported pixel format {pixel_format!r}")
     supports_transparency = options.get("alpha", True)
+    if not rgb_formats:
+        raise ValueError(f"no rgb formats for {pixel_format!r} input")
     if pixel_format not in rgb_formats:
         log("rgb_encode reformatting because %s not in %s, supports_transparency=%s",
             pixel_format, rgb_formats, supports_transparency)
