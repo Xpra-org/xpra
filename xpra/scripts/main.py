@@ -2164,7 +2164,7 @@ def no_gi_gtk_modules(mods=NOGI) -> None:
 
 def make_client(opts):
     backend = opts.backend or "gtk"
-    BACKENDS = ("qt", "gtk", "pyglet", "tk", "auto")
+    BACKENDS = ("qt", "gtk", "pyglet", "tk", "win32", "auto")
     if backend == "qt":
         no_gi_gtk_modules()
         try:
@@ -2188,6 +2188,14 @@ def make_client(opts):
             return make_tk_client()
         except ImportError as e:
             get_logger().debug("importing tk client", backtrace=True)
+            raise InitExit(ExitCode.COMPONENT_MISSING, f"the tk client component is missing: {e}") from None
+    if backend == "win32":
+        no_gi_gtk_modules()
+        try:
+            from xpra.client.win32.client import make_client as make_win32_client
+            return make_win32_client()
+        except ImportError as e:
+            get_logger().debug("importing win32 client", backtrace=True)
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the tk client component is missing: {e}") from None
     if backend not in ("gtk", "auto"):
         raise ValueError(f"invalid gui backend {backend!r}, must be one of: "+csv(BACKENDS))
