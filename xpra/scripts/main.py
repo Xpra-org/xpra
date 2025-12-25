@@ -1687,7 +1687,8 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
         log = get_logger()
         log("failed to create the client", exc_info=True)
         # exceptions at this point are still initialization exceptions
-        raise InitException(e.args[0]) from None
+        msg = (e.args[0] if e.args else str(e)) or str(type(e))
+        raise InitException(msg) from None
     app.show_progress(30, "client configuration")
     try:
         app.init(opts)
@@ -2172,7 +2173,7 @@ def make_client(opts):
             from xpra.client.qt6.client import make_client as make_qt6_client
             return make_qt6_client()
         except ImportError as e:
-            get_logger().debug("importing qt6 client", exc_info=True)
+            get_logger().debug("importing qt6 client", backtrace=True)
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the qt6 client component is missing: {e}") from None
     if backend == "pyglet":
         no_gi_gtk_modules()
@@ -2180,7 +2181,7 @@ def make_client(opts):
             from xpra.client.pyglet.client import make_client as make_pyglet_client
             return make_pyglet_client()
         except ImportError as e:
-            get_logger().debug("importing qt6 client", exc_info=True)
+            get_logger().debug("importing pyglet client", backtrace=True)
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the pyglet client component is missing: {e}") from None
     if backend == "tk":
         no_gi_gtk_modules()
@@ -2188,7 +2189,7 @@ def make_client(opts):
             from xpra.client.tk.client import make_client as make_tk_client
             return make_tk_client()
         except ImportError as e:
-            get_logger().debug("importing qt6 client", exc_info=True)
+            get_logger().debug("importing tk client", backtrace=True)
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the tk client component is missing: {e}") from None
     if backend not in ("gtk", "auto"):
         raise ValueError(f"invalid gui backend {backend!r}, must be one of: "+csv(BACKENDS))
