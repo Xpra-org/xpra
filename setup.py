@@ -218,6 +218,7 @@ client_ENABLED = DEFAULT
 qt6_client_ENABLED = False
 pyglet_client_ENABLED = False
 tk_client_ENABLED = False
+win32_client_ENABLED = WIN32
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
 cython_shared_ENABLED = True
@@ -417,7 +418,7 @@ SWITCHES += [
     "gtk_x11", "service",
     "gtk3", "example",
     "wayland_client", "wayland_server",
-    "qt6_client", "pyglet_client", "tk_client",
+    "qt6_client", "pyglet_client", "tk_client", "win32_client",
     "ism_ext",
     "pam", "xdg_open", "peercred",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
@@ -2791,6 +2792,8 @@ if client_ENABLED:
         add_modules("xpra.client.pyglet")
     if tk_client_ENABLED:
         add_modules("xpra.client.tk")
+    if win32_client_ENABLED:
+        add_modules("xpra.client.win32")
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
 toggle_packages(client_ENABLED, "xpra.client.gui", "xpra.client.gui.window")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3.window")
@@ -3045,6 +3048,8 @@ if cythonize_more_ENABLED:
             ax("xpra.client.pyglet")
         if tk_client_ENABLED:
             ax("xpra.client.tk")
+        if win32_client_ENABLED:
+            ax("xpra.client.win32")
     if client_ENABLED or server_ENABLED:
         ax("xpra.challenge")
     if clipboard_ENABLED:
