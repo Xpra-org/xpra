@@ -226,7 +226,7 @@ class PlatformClient(StubClientMixin):
             if POLL_LAYOUT and self._keyboard_poll_timer == 0 and not locked:
                 self._keyboard_poll_timer = GLib.timeout_add(POLL_LAYOUT, self.poll_layout)
             # docs say we should not process events with ncode < 0:
-            if ncode >= 0 and kh and kh.keyboard:
+            if ncode >= 0 and kh and kh.keyboard and lparam:
                 try:
                     scan_code = lparam.contents.scan_code
                     vk_code = lparam.contents.vk_code
@@ -243,6 +243,7 @@ class PlatformClient(StubClientMixin):
                             # swallow this event:
                             return 1
                 except Exception as e:
+                    keylog("low_level_keyboard_handler(%i, %i, %r)", ncode, wparam, lparam, exc_info=True)
                     keylog.error("Error: low level keyboard hook failed")
                     keylog.estr(e)
             return CallNextHookEx(0, ncode, wparam, lparam)
