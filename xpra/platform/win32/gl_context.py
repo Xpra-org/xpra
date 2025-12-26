@@ -24,9 +24,11 @@ from xpra.platform.win32.common import (
 from xpra.platform.win32.glwin32 import (
     wglCreateContext, wglMakeCurrent, wglDeleteContext,
     HGLRC,
-    PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL,
+)
+from xpra.platform.win32.common import (
+    PIXELFORMATDESCRIPTOR, PAINTSTRUCT,
+    PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL,
     PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_SUPPORT_COMPOSITION, PFD_MAIN_PLANE,
-    PAINTSTRUCT,
 )
 from xpra.log import Logger
 
