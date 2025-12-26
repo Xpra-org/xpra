@@ -12,7 +12,8 @@ import errno
 import signal
 import datetime
 import math
-from collections import deque
+import sys
+from collections import deque, namedtuple
 from time import sleep, time, monotonic
 from queue import SimpleQueue
 from threading import Thread
@@ -32,7 +33,7 @@ from xpra.util.thread import start_thread
 from xpra.util.str_fn import std, bytestostr, strtobytes, memoryview_to_bytes
 from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.system import is_Ubuntu, is_Wayland
-from xpra.util.objects import typedict, make_instance, AdHocStruct
+from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool, first_time
 from xpra.client.base.stub import StubClientMixin
@@ -175,13 +176,31 @@ def show_border_help() -> None:
     log.info("  eg: blue")
 
 
-def red():
-    color = AdHocStruct()
-    color.red = 65536
-    color.green = 0
-    color.blue = 0
-    color.alpha = 16384
-    return color
+RGBColor = namedtuple("RGBColor", ("red", "green", "blue"))
+
+
+def parse_color(color_str: str) -> RGBColor:
+    if "gi.repository.Gtk" in sys.modules:
+        try:
+            from xpra.gtk.widget import color_parse
+            color = color_parse(color_str)
+            assert color is not None
+            return RGBColor(int(color.red // 256), int(color.green // 256), int(color.blue // 256))
+        except Exception as e:
+            log(f"gtk failed to parse border color '{color_str!r}'")
+            if str(e):
+                log(" %s", e)
+    # try pillow:
+    try:
+        from PIL import ImageColor
+        return RGBColor(*ImageColor.getrgb(color_str))
+    except ValueError:
+        log(f"pillow failed to parse border color '{color_str!r}'")
+
+    log.warn(f"Warning: failed to parse border color {color_str!r}")
+    show_border_help()
+    # use red:
+    return RGBColor(256, 0, 0)
 
 
 def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
@@ -200,20 +219,7 @@ def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
             m.update(strtobytes(display_name))
         color_str = "#%s" % m.hexdigest()[:6]
         log(f"border color derived from {display_name}: {color_str}")
-    try:
-        from xpra.gtk.widget import color_parse
-        color = color_parse(color_str)
-        assert color is not None
-    except ImportError:
-        log.warn("Warning: xpra.gtk.widget not available, unable to parse color")
-        color = red()
-    except Exception as e:
-        if warn:
-            log.warn(f"Warning: invalid border color specified '{color_str!r}'")
-            if str(e):
-                log.warn(" %s", e)
-            show_border_help()
-        color = red()
+    color = parse_color(color_str)
     alpha = 0.6
     size = 4
     enabled = parts[-1] != "off"
@@ -233,7 +239,7 @@ def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
         if size >= 45:
             log.warn(f"Warning: border size is too large: {size}, clipping it")
             size = 45
-    border = WindowBorder(enabled, color.red / 65536.0, color.green / 65536.0, color.blue / 65536.0, alpha, size)
+    border = WindowBorder(enabled, color.red / 256.0, color.green / 256.0, color.blue / 256.0, alpha, size)
     log("parse_border(%s)=%s", border_str, border)
     return border
 
