@@ -11,8 +11,8 @@ from cairo import Format
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
-from xpra.client.gtk3.cairo_backing_base import CairoBackingBase, FORMATS
-from xpra.gtk.cairo_image import make_image_surface, CAIRO_FORMATS
+from xpra.cairo.backing_base import CairoBackingBase, FORMATS
+from xpra.cairo.image import make_image_surface, CAIRO_FORMATS
 from xpra.log import Logger
 
 log = Logger("paint", "cairo")

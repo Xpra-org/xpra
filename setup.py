@@ -249,6 +249,7 @@ uinput_ENABLED = x11_ENABLED
 dbus_ENABLED = DEFAULT and (x11_ENABLED or WIN32) and not OSX
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
+cairo_ENABLED = DEFAULT
 ism_ext_ENABLED = DEFAULT and gtk3_ENABLED and data_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
 has_pam_headers = has_header_file("security", isdir=True) or pkg_config_exists("pam", "pam_misc")
@@ -416,7 +417,7 @@ SWITCHES += [
     "scripts",
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
     "gtk_x11", "service",
-    "gtk3", "example",
+    "gtk3", "cairo", "example",
     "wayland_client", "wayland_server",
     "qt6_client", "pyglet_client", "tk_client", "win32_client",
     "ism_ext",
@@ -721,8 +722,11 @@ def install_dev_env_command() -> list[str]:
             "brotli": ("pkgconfig(libbrotlidec)", "pkgconfig(libbrotlienc)", ),
             "qrencode": ("pkgconfig(libqrencode)", ),
             "gtk3": (
-                f"{py3}-gobject", "pkgconfig(pygobject-3.0)", "pkgconfig(py3cairo)", "pkgconfig(gtk+-3.0)",
+                f"{py3}-gobject", "pkgconfig(pygobject-3.0)", "pkgconfig(gtk+-3.0)",
                 "pkgconfig(gobject-introspection-1.0)",
+            ),
+            "cairo": (
+                "pkgconfig(py3cairo)",
             ),
             "nvidia|tests": (f"{py3}-numpy", ),
             "drm": ("pkgconfig(libdrm)", ),
@@ -771,7 +775,8 @@ def install_dev_env_command() -> list[str]:
             "webp": ("libwebp-dev", ),
             "jpeg_decoder|jpeg_encoder": ("libturbojpeg-dev", ),
             "spng_decoder|spng_encoder": ("libspng-dev", ),
-            "gtk3": ("libgtk-3-dev", "python3-cairo-dev", "python-gi-dev"),
+            "gtk3": ("libgtk-3-dev", "python-gi-dev"),
+            "cairo": ("python3-cairo-dev", ),
             "sd_listen": ("python-gi-dev", ),
             "pam": ("libpam0g-dev", ),
             "proc": ("libproc2-dev", ),
@@ -794,9 +799,9 @@ def install_dev_env_command() -> list[str]:
             "brotli": ("brotli", ),
             "qrencode": ("qrencode", ),
             "gtk3": (
-                "gtk3", "python-gobject", "python-cairo",
-                "gobject-introspection",
+                "gtk3", "python-gobject", "gobject-introspection",
             ),
+            "cairo": ("python-cairo", ),
             "nvidia|tests": ("python-numpy", ),
             "drm": ("libdrm", ),
             "vpx": ("libvpx", ),
@@ -2762,7 +2767,8 @@ if gtk_x11_ENABLED:
     ace("xpra.x11.gtk.display_source", "gdk-3.0")
     ace("xpra.x11.gtk.bindings,xpra/x11/gtk/gdk_x11_macros.c", "gdk-3.0,xdamage,xfixes")
 
-tace(client_ENABLED and gtk3_ENABLED, "xpra.gtk.cairo_image", "py3cairo",
+toggle_packages(cairo_ENABLED, "xpra.cairo")
+tace(cairo_ENABLED, "xpra.cairo.image", "py3cairo",
      extra_compile_args=["-Wno-error=parentheses-equality"] if CC_is_clang() else [], optimize=3)
 
 
@@ -3074,6 +3080,8 @@ if cythonize_more_ENABLED:
         ax("xpra.gtk.configure")
         if example_ENABLED:
             ax("xpra.gtk.examples")
+    if cairo_ENABLED:
+        ax("xpra.cairo")
     if keyboard_ENABLED:
         ax("xpra.keyboard")
     if http_ENABLED:

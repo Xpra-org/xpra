@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from math import pi, sin
 from time import monotonic
 from typing import Any
@@ -21,7 +22,7 @@ from xpra.os_util import gi_import
 from xpra.log import Logger
 
 try:
-    from xpra.gtk.cairo_image import make_image_surface
+    from xpra.cairo.image import make_image_surface
 except ImportError:
     make_image_surface = noop
 
@@ -31,6 +32,25 @@ Gdk = gi_import("Gdk")
 log = Logger("paint", "cairo")
 
 COPY_OLD_BACKING = envbool("XPRA_CAIRO_COPY_OLD_BACKING", True)
+
+
+def parse_padding_colors(colors_str: str) -> tuple[float, float, float]:
+    padding_colors = 0.0, 0.0, 0.0
+    if colors_str:
+        try:
+            padding_colors = tuple(float(x.strip()) for x in colors_str.split(","))
+            assert len(padding_colors) == 3, "you must specify 3 components"
+        except Exception as e:
+            log.warn("Warning: invalid padding colors specified,")
+            log.warn(" %s", e)
+            log.warn(" using black")
+            padding_colors = 0.0, 0.0, 0.0
+    log("parse_padding_colors(%s)=%s", colors_str, padding_colors)
+    return padding_colors
+
+
+PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS", ""))
+
 
 FORMATS = {-1: "INVALID"}
 for attr in dir(Format):
@@ -290,7 +310,6 @@ class CairoBackingBase(WindowBackingBase):
     def paint_backing_offset_border(self, context, w: int, h: int) -> None:
         left, top, right, bottom = self.offsets
         if left != 0 or top != 0 or right != 0 or bottom != 0:
-            from xpra.client.gtk3.window.common import PADDING_COLORS
             context.save()
             context.set_source_rgb(*PADDING_COLORS)
             coords = (

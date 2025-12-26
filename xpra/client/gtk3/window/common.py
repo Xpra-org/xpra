@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
@@ -40,23 +39,6 @@ def use_x11_bindings() -> bool:
         _use_x11 = _use_x11_bindings()
     return bool(_use_x11)
 
-
-def parse_padding_colors(colors_str: str) -> tuple[float, float, float]:
-    padding_colors = 0.0, 0.0, 0.0
-    if colors_str:
-        try:
-            padding_colors = tuple(float(x.strip()) for x in colors_str.split(","))
-            assert len(padding_colors) == 3, "you must specify 3 components"
-        except Exception as e:
-            log.warn("Warning: invalid padding colors specified,")
-            log.warn(" %s", e)
-            log.warn(" using black")
-            padding_colors = 0.0, 0.0, 0.0
-    log("parse_padding_colors(%s)=%s", colors_str, padding_colors)
-    return padding_colors
-
-
-PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS", ""))
 
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
 

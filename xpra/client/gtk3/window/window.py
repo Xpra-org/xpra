@@ -96,7 +96,7 @@ class ClientWindow(WindowBaseClass):
         self.menu_helper.popup(0, 0)
 
     def get_backing_class(self) -> type:
-        from xpra.client.gtk3.cairo_backing import CairoBacking
+        from xpra.cairo.backing import CairoBacking
         return CairoBacking
 
     def xget_u32_property(self, target, name: str, default_value=0) -> int:

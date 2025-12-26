@@ -794,6 +794,7 @@ rm -rf $RPM_BUILD_ROOT
 %pycached %{python3_sitearch}/xpra/codecs/protocols.py
 %pycached %{python3_sitearch}/xpra/codecs/screenshot.py
 %pycached %{python3_sitearch}/xpra/codecs/video.py
+%{python3_sitearch}/xpra/cairo/
 %{python3_sitearch}/xpra/dbus/
 %{python3_sitearch}/xpra/gtk/
 %{python3_sitearch}/xpra/keyboard/
