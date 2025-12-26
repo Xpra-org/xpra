@@ -465,10 +465,10 @@ class WindowClient(StubClientMixin):
             # features:
             "bell": self.client_supports_bell,
             "windows": self.windows_enabled,
+            "window": self.get_window_caps(),
             "auto_refresh_delay": int(self.auto_refresh_delay * 1000),
             # system tray forwarding:
             "system_tray": self.client_supports_system_tray,
-            "window": self.get_window_caps(),
             "encoding": {
                 "eos": True,
             },
@@ -476,6 +476,8 @@ class WindowClient(StubClientMixin):
         return caps
 
     def get_window_caps(self) -> dict[str, Any]:
+        if not self.windows_enabled:
+            return {}
         return {
             # implemented in the gtk client:
             "min-size": self.min_window_size,
