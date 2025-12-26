@@ -238,7 +238,9 @@ class UIXpraClient(ClientBaseClass):
             "lock": self.client_lock,
         }
         for c in CLIENT_BASES:
-            caps.update(c.get_caps(self))
+            ccaps = c.get_caps(self)
+            log("%s.get_caps()=%s", c, ccaps)
+            caps.update(ccaps)
         if FULL_INFO > 0:
             caps["session-type"] = get_session_type()
         return caps
