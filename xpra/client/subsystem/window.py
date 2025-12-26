@@ -1223,7 +1223,7 @@ class WindowClient(StubClientMixin):
         return None
 
     def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
-        return (self.ClientWindowClass,)
+        raise NotImplementedError()
 
     def _process_new_window(self, packet: Packet) -> None:
         return self._process_new_common(packet, False)

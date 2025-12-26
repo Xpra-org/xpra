@@ -46,11 +46,11 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def run(self) -> ExitValue:
         XpraClientBase.run(self)
+        self.glib_mainloop = GLib.MainLoop()
         self.run_loop()
         return self.exit_code or ExitCode.OK
 
     def run_loop(self) -> None:
-        self.glib_mainloop = GLib.MainLoop()
         self.glib_mainloop.run()
 
     def make_hello(self) -> dict[str, Any]:
