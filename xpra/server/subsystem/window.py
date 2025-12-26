@@ -130,11 +130,10 @@ class WindowServer(StubServerMixin):
         pass
 
     def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
-        if not send_ui:
-            return
-        if not isinstance(ss, WindowsConnection):
-            return
-        self.send_initial_windows(ss, share_count > 0)
+        iswc = isinstance(ss, WindowsConnection)
+        log("send_initial_data send_ui=%i, handles windows=%s, share-count=%i", send_ui, iswc, share_count)
+        if send_ui and iswc:
+            self.send_initial_windows(ss, share_count > 0)
 
     def is_shown(self, _window) -> bool:
         return True
