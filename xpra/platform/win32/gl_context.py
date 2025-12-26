@@ -122,7 +122,7 @@ class WGLContext:
         if not reg_atom:
             return {"info": "disabled: failed to register window class, %s" % FormatError()}
         style = WS_OVERLAPPED | WS_SYSMENU
-        window_name = "Xpra OpenGL Test"
+        window_name = b"Xpra OpenGL Test"
         self.hwnd = CreateWindowExA(0, reg_atom, window_name, style,
                                     CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
                                     0, 0, h_inst, None)

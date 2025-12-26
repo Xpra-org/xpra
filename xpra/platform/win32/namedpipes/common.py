@@ -64,11 +64,6 @@ kernel32 = WinDLL("kernel32", use_last_error=True)
 WaitForSingleObject = kernel32.WaitForSingleObject
 WaitForSingleObject.argtypes = [HANDLE, DWORD]
 WaitForSingleObject.restype = DWORD
-CreateEventA = kernel32.CreateEventA
-CreateEventA.restype = HANDLE
-SetEvent = kernel32.SetEvent
-SetEvent.argtypes = [HANDLE]
-SetEvent.restype = BOOL
 ReadFile = kernel32.ReadFile
 ReadFile.argtypes = [HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED]
 ReadFile.restype = BOOL

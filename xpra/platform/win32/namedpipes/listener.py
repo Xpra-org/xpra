@@ -18,12 +18,12 @@ from xpra.util.str_fn import strtobytes
 from xpra.platform.win32.common import (
     CloseHandle, ERROR_IO_PENDING, FormatMessageSystem,
     GetCurrentProcess,
-    SECURITY_ATTRIBUTES,
+    SECURITY_ATTRIBUTES, CreateEventA,
 )
 from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, INFINITE, WAIT_STR, INVALID_HANDLE,
     SECURITY_DESCRIPTOR, TOKEN_USER, TOKEN_PRIMARY_GROUP,
-    CreateEventA, CreateNamedPipeA, ConnectNamedPipe,
+    CreateNamedPipeA, ConnectNamedPipe,
     WaitForSingleObject, GetLastError,
     SetSecurityDescriptorDacl, SetSecurityDescriptorSacl,
     InitializeSecurityDescriptor,

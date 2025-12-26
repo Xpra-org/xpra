@@ -17,15 +17,15 @@ from xpra.net.bytestreams import Connection
 from xpra.net.common import ConnectionClosedException
 from xpra.platform.win32.common import (
     CloseHandle, FormatMessageSystem,
+    CreateEventA, SetEvent,
     ERROR_PIPE_BUSY, ERROR_PIPE_NOT_CONNECTED,
     IO_ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING,
 )
 from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, WAIT_STR, INVALID_HANDLE,
     INFINITE,
-    CreateEventA, CreateFileA,
-    ReadFile, WriteFile, SetEvent,
-    DisconnectNamedPipe, FlushFileBuffers, WaitNamedPipeA,
+    CreateFileA,
+    ReadFile, WriteFile, DisconnectNamedPipe, FlushFileBuffers, WaitNamedPipeA,
     GetLastError, SetNamedPipeHandleState, WaitForSingleObject, GetOverlappedResult,
 )
 from xpra.platform.win32.constants import (

@@ -208,7 +208,7 @@ class win32NotifyIcon:
 
     def create_window(self) -> None:
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        window_name = "%s StatusIcon Window" % bytestostr(self.title)
+        window_name = f"{self.title} StatusIcon Window".encode("latin1")
         niwc = get_notifyicon_wnd_class()
         args = (0, niwc.NIclassAtom, window_name, style,
                 win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0,
