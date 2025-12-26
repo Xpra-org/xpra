@@ -228,36 +228,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if HAS_X11_BINDINGS:
                 self.setup_frame_request_windows()
         UIXpraClient.run(self)
-        self.gtk_main()
-        log(f"GTKXpraClient.run_main_loop() main loop ended, returning exit_code={self.exit_code}", )
-        if self.exit_code is not None:
-            return self.exit_code
-        return ExitCode.OK
-
-    def gtk_main(self) -> None:
-        log(f"GTKXpraClient.gtk_main() calling {Gtk.main}", )
-        Gtk.main()
-        log("GTKXpraClient.gtk_main() ended")
-
-    def quit(self, exit_code: ExitValue = 0) -> None:
-        log(f"GTKXpraClient.quit({exit_code}) current exit_code={self.exit_code}")
-        if self.exit_code is None:
-            self.exit_code = exit_code
-        if Gtk.main_level() > 0:
-            # if for some reason cleanup() hangs, maybe this will fire...
-            GLib.timeout_add(4 * 1000, self.exit)
-            # try harder!:
-            GLib.timeout_add(5 * 1000, self.force_quit, exit_code)
-        self.cleanup()
-        log(f"GTKXpraClient.quit({exit_code}) cleanup done, main_level={Gtk.main_level()}")
-        if Gtk.main_level() > 0:
-            log(f"GTKXpraClient.quit({exit_code}) main loop at level {Gtk.main_level()}, calling gtk quit via timeout")
-            GLib.timeout_add(500, self.exit)
-
-    def exit(self) -> None:
-        self.show_progress(100, "terminating")
-        log(f"GTKXpraClient.exit() calling {Gtk.main_quit}", )
-        Gtk.main_quit()
+        return GObjectXpraClient.run(self)
 
     def cleanup(self) -> None:
         log("GTKXpraClient.cleanup()")

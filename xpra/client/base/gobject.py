@@ -4,12 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 from typing import Any
 
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
-from xpra.exit_codes import ExitValue
+from xpra.exit_codes import ExitValue, ExitCode
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -46,7 +47,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
     def run(self) -> ExitValue:
         XpraClientBase.run(self)
         self.run_loop()
-        return self.exit_code or 0
+        return self.exit_code or ExitCode.OK
 
     def run_loop(self) -> None:
         self.glib_mainloop = GLib.MainLoop()
@@ -58,12 +59,21 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
             capabilities["keyboard"] = False
         return capabilities
 
-    def quit(self, exit_code: ExitValue = 0) -> None:
+    def quit(self, exit_code: ExitValue = ExitCode.OK) -> None:
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code
-        self.cleanup()
-        GLib.timeout_add(50, self.exit_loop)
+        self.exit_loop()
+        # if for some reason cleanup() hangs, maybe this will fire...
+        GLib.timeout_add(4 * 1000, self.exit)
+        # try harder!:
+        GLib.timeout_add(5 * 1000, self.force_quit, exit_code)
 
     def exit_loop(self) -> None:
         self.glib_mainloop.quit()
+        self.cleanup()
+
+    def exit(self) -> None:
+        self.show_progress(100, "terminating")
+        log(f"exit() calling {sys.exit}")
+        sys.exit(int(self.exit_code or ExitCode.OK))
