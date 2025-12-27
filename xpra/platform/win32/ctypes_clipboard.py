@@ -251,16 +251,20 @@ def w_to_utf8(data):
     return b
 
 
-def rgb_to_bitmap(img_data) -> HBITMAP:
+def data_to_bitmap(img_data) -> HBITMAP:
     from PIL import Image
     buf = BytesIO(img_data)
     img = Image.open(buf)
     if img.mode != "RGBA":
         img = img.convert("RGBA")
-    rgb_data = img.tobytes("raw", "BGRA")
+    rgba_data = img.tobytes("raw", "BGRA")
     w, h = img.size
-    log("rgb_to_bitmap(%s) image size=%s, BGR buffer=%i bytes",
-        Ellipsizer(rgb_data), img.size, len(rgb_data))
+    return rgba_to_bitmap(w, h, rgba_data)
+
+
+def rgba_to_bitmap(w: int, h: int, rgba_data) -> HBITMAP:
+    log("rgba_to_bitmap(%i, %i, %s) BGR buffer=%i bytes",
+        w, h, Ellipsizer(rgba_data), len(rgba_data))
     header = BITMAPINFOHEADER()
     memset(byref(header), 0, sizeof(BITMAPINFOHEADER))
     header.biSize = sizeof(BITMAPINFOHEADER)
@@ -276,10 +280,10 @@ def rgb_to_bitmap(img_data) -> HBITMAP:
     bitmapinfo.bmiColors = 0
     memmove(byref(bitmapinfo.bmiHeader), byref(header), sizeof(BITMAPINFOHEADER))
     # noinspection PyTypeChecker
-    buftype = c_char * len(rgb_data)
+    buftype = c_char * len(rgba_data)
     # noinspection PyCallingNonCallable
     rgb_buf = buftype()
-    rgb_buf.value = rgb_data
+    rgb_buf.value = rgba_data
     pbuf = cast(byref(rgb_buf), c_void_p)
     hdc = GetDC(None)
     try:
@@ -559,7 +563,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 finally:
                     GlobalUnlock(data)
                 image_formats[fmt] = data_handle
-        bitmap = rgb_to_bitmap(img_data)
+        bitmap = data_to_bitmap(img_data)
         image_formats[win32con.CF_BITMAP] = bitmap
         self.do_set_clipboard_image(image_formats)
 
