@@ -54,7 +54,7 @@ class ClientWindow(Window):
     def on_show(self) -> None:
         x, y = self.get_location()
         w, h = self.get_size()
-        self.client.send("map-window", self.wid, x, y, w, h, {}, ())
+        self.client.send("map-window", self.wid, x, y, w, h, {}, {})
 
     def on_hide(self) -> None:
         self.client.send("unmap-window", self.wid)

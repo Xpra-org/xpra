@@ -6,25 +6,168 @@
 
 import win32con
 from io import BytesIO
-from ctypes.wintypes import HWND, ATOM
-from ctypes import byref, sizeof
+from collections.abc import MutableSequence, Callable
+from ctypes.wintypes import HWND, HBITMAP
+from ctypes import byref, sizeof, cast, c_void_p, WinError, get_last_error, POINTER, memmove
 
+from xpra.common import roundup
+from xpra.os_util import gi_import
 from xpra.platform.win32.common import (
     GetModuleHandleA,
     WNDPROC, WNDCLASSEX, RegisterClassExW, CreateWindowExW, DefWindowProcW,
-    GetDC, ReleaseDC,
+    CreateCompatibleDC,  # ReleaseDC,
     LoadCursor,
     ShowWindow, UpdateWindow, InvalidateRect,
-    BeginPaint, EndPaint, PAINTSTRUCT,
+    BeginPaint, EndPaint, PAINTSTRUCT, BitBlt,
+    BITMAPV5HEADER, CreateDIBSection, SelectObject,
+    CREATESTRUCT,
+    AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW,
 )
+from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.client.win32.common import WM_MESSAGES
+from xpra.platform.win32.keyboard_config import VK_NAMES
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("client", "window")
 
+GObject = gi_import("GObject")
 
-class ClientWindow(object):
+
+ACTIVATION: dict[int, str] = {
+    win32con.WA_ACTIVE: "active",
+    win32con.WA_CLICKACTIVE: "clickactive",
+    win32con.WA_INACTIVE: "inactive",
+}
+MOUSE_VK_MASK: dict[int, str] = {
+    win32con.MK_CONTROL: "control",
+    win32con.MK_SHIFT: "shift",
+}
+MK_XBUTTON1 = 0x0020
+MK_XBUTTON2 = 0x0040
+MOUSE_BUTTON_MASK: dict[int, int] = {
+    win32con.MK_LBUTTON: 1,
+    win32con.MK_MBUTTON: 2,
+    win32con.MK_RBUTTON: 3,
+    MK_XBUTTON1: 4,
+    MK_XBUTTON2: 5,
+}
+
+BUTTON_MAP: dict[int, int] = {
+    win32con.WM_LBUTTONDOWN: 1,
+    win32con.WM_MBUTTONDOWN: 2,
+    win32con.WM_RBUTTONDOWN: 3,
+    win32con.WM_LBUTTONUP: 1,
+    win32con.WM_MBUTTONUP: 2,
+    win32con.WM_RBUTTONUP: 3,
+}
+WM_NCXBUTTONDOWN = 0x00AB
+WM_NCXBUTTONUP = 0x00AC
+WM_NCXBUTTONDBLCLK = 0x00AD
+WM_MOUSEHWHEEL = 0x020E
+
+
+def get_vk_mask(wparam: int) -> tuple[str]:
+    return _vk_mask(wparam, MOUSE_VK_MASK)
+
+
+def get_vk_buttons(wparam: int) -> tuple[int]:
+    return _vk_mask(wparam, MOUSE_BUTTON_MASK)
+
+
+def _vk_mask(wparam: int, mask: dict) -> tuple:
+    values = []
+    for mask, value in mask.items():
+        if wparam & mask:
+            values.append(value)
+    return tuple(values)
+
+
+def get_xy_lparam(lparam: int) -> tuple[int, int]:
+    """
+        Extract signed X and Y coordinates from a Windows LPARAM value.
+
+        Args:
+            lparam: The LPARAM value containing packed coordinates
+
+        Returns:
+            tuple: (x, y) as signed integers
+        """
+    # Extract low-order 16 bits (X coordinate)
+    x = lparam & 0xFFFF
+    # Convert to signed int16
+    if x >= 0x8000:
+        x -= 0x10000
+
+    # Extract high-order 16 bits (Y coordinate)
+    y = (lparam >> 16) & 0xFFFF
+    # Convert to signed int16
+    if y >= 0x8000:
+        y -= 0x10000
+
+    return x, y
+
+
+def get_bit_range(value: int, start: int, end: int):
+    """
+    Extract a range of bits from an integer and return them shifted to bit 0.
+
+    Args:
+        value: The integer to extract bits from
+        start: Starting bit position (0-indexed, inclusive)
+        end: Ending bit position (0-indexed, exclusive)
+
+    Returns:
+        int: The extracted bits shifted to start at bit 0
+
+    Example:
+        get_bit_range(0xff00, 8, 10) returns 0x3
+
+        0xff00 = 0b1111111100000000
+        Bits [8:10) = bits at positions 8 and 9 = 0b11 = 0x3
+    """
+    # Calculate the number of bits to extract
+    num_bits = end - start
+
+    # Create a mask with num_bits set to 1
+    mask = (1 << num_bits) - 1
+
+    # Shift the value right by start positions and apply the mask
+    return (value >> start) & mask
+
+
+def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, has_menu=False) -> tuple[int, int, int, int]:
+    """
+    Convert the window's internal geometry into system coordinates,
+    which include the top bar and borders.
+    """
+    rect = RECT()
+    rect.left = x
+    rect.top = y
+    rect.right = x + w
+    rect.bottom = y + h
+    AdjustWindowRectEx(byref(rect), style, has_menu, exstyle)
+    x = rect.left
+    y = rect.top
+    w = rect.right - x
+    h = rect.bottom - y
+    return x, y, w, h
+
+
+class ClientWindow(GObject.GObject):
+
+    __gsignals__ = {
+        "mapped": no_arg_signal,
+        "focused": no_arg_signal,
+        "lost-focus": no_arg_signal,
+        "moved": no_arg_signal,
+        "resized": no_arg_signal,
+        "mouse-move": n_arg_signal(4),
+        "mouse-click": n_arg_signal(6),
+        "wheel": n_arg_signal(5),
+        "key": n_arg_signal(4),
+    }
+
     module_handle = GetModuleHandleA(None)
     log("module-handle=%#x", module_handle)
 
@@ -32,27 +175,35 @@ class ClientWindow(object):
                  override_redirect, client_properties,
                  border, max_window_size, pixel_depth,
                  headerbar):
+        GObject.GObject.__init__(self)
         self.wid = wid
-        if metadata.boolget("set-initial-position", False):
-            self.x = geom[0]
-            self.y = geom[1]
-        else:
-            self.x = win32con.CW_USEDEFAULT
-            self.y = win32con.CW_USEDEFAULT
-        self.width = geom[2]
-        self.height = geom[3]
+        self.x = geom[0]
+        self.y = geom[1]
+        self.width = max(1, geom[2])
+        self.height = max(1, geom[3])
+        self.alpha = metadata.boolget("has-alpha", False)
         self.metadata = metadata
         self.wnd_proc = WNDPROC(self.wnd_proc_cb)
-        self.class_atom = self.create_wnd_class()
+        self.wc = self.create_wnd_class()
+        self.class_atom = RegisterClassExW(byref(self.wc))
+        self.hwnd = 0
+        self.hdc = 0
+        self.pixels = c_void_p()
+        self.bitmap = 0
+
+    def create(self):
         log("class-atom=%s", self.class_atom)
         self.hwnd = self.create_window()
         log("hwnd=%s", self.hwnd)
-        self.hdc = GetDC(self.hwnd)
+        self.hdc = CreateCompatibleDC(None)
+        log("CreateCompatibleDC()=%#x", self.hdc)
+        self.bitmap = self.create_backing()
+        log("bitmap=%#x", self.bitmap)
 
     def __repr__(self):
-        return "Win32ClientWindow(%i)" % self.wid
+        return "Win32ClientWindow(%#x)" % self.wid
 
-    def create_wnd_class(self) -> ATOM:
+    def create_wnd_class(self) -> WNDCLASSEX:
         # we must keep a reference to the WNDPROC wrapper:
         wc = WNDCLASSEX()
         wc.cbSize = sizeof(WNDCLASSEX)
@@ -62,59 +213,175 @@ class ClientWindow(object):
         wc.hCursor = LoadCursor(0, win32con.IDC_ARROW)
         wc.hbrBackground = win32con.COLOR_WINDOW + 1
         wc.lpszClassName = "XpraWindowClass"
-        return RegisterClassExW(byref(wc))
+        return wc
+
+    def get_system_geometry(self, exstyle: int) -> tuple[int, int, int, int]:
+        """
+        Convert the window's internal geometry into system coordinates,
+        which include the top bar and borders.
+        """
+        return system_geometry(self.x, self.y, self.width, self.height, self.wc.style, exstyle)
 
     def create_window(self) -> HWND:
         title = self.metadata.strget("title", "")
-        alpha = self.metadata.boolget("has-alpha", False)
         dwexstyle = win32con.WS_EX_ACCEPTFILES | win32con.WS_EX_OVERLAPPEDWINDOW | win32con.WS_EX_APPWINDOW
-        if alpha:
-            log.warn("Warning: painting will require using UpdateLayeredWindow!")
+        if self.alpha:
+            log.warn("Warning: painting with alpha requires using UpdateLayeredWindow!")
             dwexstyle |= win32con.WS_EX_LAYERED
-        # dwexstyle = win32con.WS_EX_OVERLAPPEDWINDOW
+        x, y, w, h = self.get_system_geometry(dwexstyle)
+        log("create_window() system-geometry(%s)=%s", (self.x, self.y, self.width, self.height), (x, y, w, h))
+        if not self.metadata.boolget("set-initial-position", False):
+            x = win32con.CW_USEDEFAULT
+            y = win32con.CW_USEDEFAULT
         return CreateWindowExW(
             dwexstyle,
             self.class_atom,
             title,
             win32con.WS_OVERLAPPEDWINDOW | win32con.WS_VISIBLE,
-            self.x, self.y, self.width, self.height,
+            x, y, w, h,
             0,
             0,
             self.module_handle,
             None
         )
 
+    def create_backing(self) -> HBITMAP:
+        header = BITMAPV5HEADER()
+        header.bV5Size = sizeof(BITMAPV5HEADER)
+        header.bV5Width = self.width
+        header.bV5Height = -self.height
+        header.bV5Planes = 1
+        header.bV5BitCount = 8 * (3 + int(self.alpha))
+        header.bV5Compression = win32con.BI_RGB
+        # header.bV5RedMask = 0x000000ff
+        # header.bV5GreenMask = 0x0000ff00
+        # header.bV5BlueMask = 0x00ff0000
+        # header.bV5AlphaMask = 0xff000000
+        bitmap = CreateDIBSection(self.hdc, byref(header), win32con.DIB_RGB_COLORS, byref(self.pixels), None, 0)
+        if not self.pixels or not bitmap:
+            log.error("Error creating bitmap backing of size %ix%i", self.width, self.height)
+            raise WinError(get_last_error())
+        SelectObject(self.hdc, bitmap)
+        return bitmap
+
     def wnd_proc_cb(self, hwnd: int, msg: int, wparam: int, lparam) -> int:
         msg_str = WM_MESSAGES.get(msg, str(msg))
         log("wnd_proc_cb(%i, %s, %i, %#x)", hwnd, msg_str, wparam, lparam)
-        if msg == win32con.WM_PAINT:
-            ps = PAINTSTRUCT()
-            hdc = BeginPaint(hwnd, byref(ps))
-            log("paint hdc=%#x", hdc)
-            try:
-                # self.paint()
+        try:
+            if msg == win32con.WM_CREATE:
+                create = cast(lparam, POINTER(CREATESTRUCT)).contents
+                self.x = create.x
+                self.y = create.y
+                self.width = create.cx
+                self.height = create.cy
+                self.emit("mapped")
+            if msg == win32con.WM_MOVE:
+                self.x = lparam & 0xffff
+                self.y = (lparam >> 16) & 0xffff
+                self.emit("moved")
+            if msg == win32con.WM_SIZE:
+                self.width = lparam & 0xffff
+                self.height = (lparam >> 16) & 0xffff
+                self.emit("resized")
+            if msg == win32con.WM_SETFOCUS:
+                self.emit("focused")
+            if msg == win32con.WM_KILLFOCUS:
+                self.emit("lost-focus")
+            if msg == win32con.WM_ACTIVATE:
+                log.info("%s: %s", msg_str, ACTIVATION.get(wparam, "unknown"))
+            if msg == win32con.WM_MOUSEMOVE:
+                x, y = get_xy_lparam(lparam)
+                vkeys = get_vk_mask(wparam)
+                buttons = get_vk_buttons(wparam)
+                self.emit("mouse-move", x, y, vkeys, buttons)
+            if msg in (
+                win32con.WM_LBUTTONDBLCLK, win32con.WM_MBUTTONDBLCLK, win32con.WM_RBUTTONDBLCLK,
+            ):
+                # should be handled as fast clicks and trigger double-clicks on the server
                 pass
-            finally:
-                EndPaint(hwnd, byref(ps))
-            return 0
-        if msg == win32con.WM_DESTROY:
-            if self.hdc:
-                ReleaseDC(self.hwnd, self.hdc)
-                self.hdc = 0
-            return 0
+            if msg in (
+                win32con.WM_LBUTTONDOWN, win32con.WM_MBUTTONDOWN, win32con.WM_RBUTTONDOWN,
+                win32con.WM_LBUTTONUP, win32con.WM_MBUTTONUP, win32con.WM_RBUTTONUP,
+            ):
+                button = BUTTON_MAP.get(msg, 0)
+                assert button > 0
+                pressed = msg in (win32con.WM_LBUTTONDOWN, win32con.WM_MBUTTONDOWN, win32con.WM_RBUTTONDOWN)
+                x, y = get_xy_lparam(lparam)
+                vkeys = get_vk_mask(wparam)
+                buttons = get_vk_buttons(wparam)
+                self.emit("mouse-click", button, pressed, x, y, vkeys, buttons)
+            if msg in (
+                # non-client area events:
+                win32con.WM_NCLBUTTONDOWN, win32con.WM_NCLBUTTONDBLCLK, win32con.WM_NCLBUTTONUP,
+                win32con.WM_NCMBUTTONDOWN, win32con.WM_NCMBUTTONDBLCLK, win32con.WM_NCMBUTTONUP,
+                win32con.WM_NCRBUTTONDOWN, win32con.WM_NCRBUTTONDBLCLK, win32con.WM_NCRBUTTONUP,
+                WM_NCXBUTTONDOWN, WM_NCXBUTTONDBLCLK, WM_NCXBUTTONUP,
+            ):
+                pass
+            if msg in (win32con.WM_MOUSEWHEEL, WM_MOUSEHWHEEL):
+                vertical = msg == win32con.WM_MOUSEWHEEL
+                vkeys = get_vk_mask(wparam & 0xffff)
+                delta = (wparam >> 16) & 0xffff
+                x, y = get_xy_lparam(lparam)
+                self.emit("wheel", x, y, vertical, vkeys, delta)
+            if msg in (win32con.WM_KEYDOWN, win32con.WM_KEYUP):
+                vkcode = wparam
+                if 32 < vkcode < 128:
+                    keyname = chr(vkcode)
+                else:
+                    keyname = VK_NAMES.get(vkcode, "")
+                scancode = get_bit_range(lparam, 16, 24)
+                # extended = lparam & (2 << 24)
+                pressed = msg == win32con.WM_KEYDOWN
+                self.emit("key", pressed, vkcode, keyname, scancode)
+            if msg == win32con.WM_PAINT:
+                ps = PAINTSTRUCT()
+                hdc = BeginPaint(hwnd, byref(ps))
+                log("paint hdc=%#x", hdc)
+                try:
+                    BitBlt(hdc, 0, 0, self.width, self.height, self.hdc, 0, 0, win32con.SRCCOPY)
+                finally:
+                    EndPaint(hwnd, byref(ps))
+                return 0
+            if msg == win32con.WM_DESTROY:
+                self.destroy()
+                return 0
+        except Exception:
+            log.error("Error handling %s message", msg_str, exc_info=True)
         return DefWindowProcW(hwnd, msg, wparam, lparam)
 
     def update_metadata(self, metadata: typedict):
         self.metadata.update(metadata)
 
-    def draw(self, x: int, y: int, _w: int, _h: int, coding: str, data, _stride: int) -> None:
+    def draw_region(self, x: int, y: int, width: int, height: int,
+                    coding: str, img_data, rowstride: int,
+                    options: typedict, callbacks: MutableSequence[Callable]):
         if coding not in ("png", "jpg", "webp"):
             raise ValueError(f"unsupported format {coding!r}")
         from PIL import Image
-        img = Image.open(BytesIO(data))
-        log("img=%s", img)
-        # todo: update backing with image
+        img = Image.open(BytesIO(img_data))
+        log.warn("%s update: %s", coding, img)
+        log.warn("pixels=%#x", self.pixels.value)
+        mode = "RGBA" if self.alpha else "RGB"
+        if img.mode != mode:
+            img = img.convert(mode)
+        pixels = img.tobytes("raw", mode)
+        stride = roundup(self.width * 3, 4)
+        offset = y * stride + x * 3
+        dst = c_void_p(self.pixels.value + offset)
+        # memmove(dst, pixels, len(pixels))
         InvalidateRect(self.hwnd, None, True)
+
+    def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
+        exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
+        wx, wy, ww, wh = system_geometry(x, y, w, h, self.wc.style, exstyle)
+        flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
+        # flags |= win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
+        log.warn("move_resize%s system geometry=%s, flags=%#x", (x, y, w, h, resize_counter), (wx, wy, ww, wh), flags)
+        if False:
+            SetWindowPos(self.hwnd, 0, wx, wy, ww, wh, flags)
+        # this should already trigger WM_MOVE and update the position
+        # so we don't need to do it here, it may even be incorrect to do so
 
     def is_tray(self) -> bool:
         return False
@@ -129,3 +396,6 @@ class ClientWindow(object):
 
     def destroy(self) -> None:
         pass
+
+
+GObject.type_register(ClientWindow)

@@ -135,7 +135,7 @@ class ClientWindow(QMainWindow):
             y = self.pos().y() + self.label.pos().y()
             w, h = self.get_canvas_size()
             if not self.metadata.get("override-redirect"):
-                self.send("map-window", self.wid, x, y, w, h)
+                self.send("map-window", self.wid, x, y, w, h, {}, {})
         elif etype == QEvent.Type.Hide:
             log("hidden - iconified?")
         elif etype == QEvent.Type.Move:
