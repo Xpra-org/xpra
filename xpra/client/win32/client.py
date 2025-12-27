@@ -32,11 +32,20 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
     def __init__(self):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
+        self.win32_message_source = 0
 
     def run_loop(self) -> None:
         from xpra.client.win32.glib import inject_windows_message_source
         inject_windows_message_source(self.glib_mainloop)
         super().run_loop()
+
+    def cleanup(self) -> None:
+        wms = self.win32_message_source
+        if wms:
+            self.win32_message_source = 0
+            GLib.source_remove(wms)
+        GObjectXpraClient.cleanup(self)
+        UIXpraClient.cleanup(self)
 
     def client_toolkit(self) -> str:
         return "Win32"
