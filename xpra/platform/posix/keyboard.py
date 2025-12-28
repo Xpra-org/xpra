@@ -34,7 +34,7 @@ def get_locale_status() -> dict[str, str]:
         parts = line.lstrip(" ").split(": ")
         if len(parts) == 2:
             locale[parts[0]] = parts[1]
-    log("locale(%s)=%s", out, locale)
+    log("locale(%r)=%r", out, locale)
     return locale
 
 
