@@ -7,15 +7,15 @@
 import win32con
 from io import BytesIO
 from collections.abc import MutableSequence, Callable
-from ctypes.wintypes import HWND, HBITMAP
+from ctypes.wintypes import HWND
 from ctypes import byref, sizeof, cast, c_void_p, WinError, get_last_error, POINTER, memmove
 
 from xpra.common import roundup
 from xpra.os_util import gi_import
 from xpra.platform.win32.common import (
     GetModuleHandleA,
-    WNDPROC, WNDCLASSEX, RegisterClassExW, CreateWindowExW, DefWindowProcW,
-    CreateCompatibleDC,  # ReleaseDC,
+    WNDPROC, WNDCLASSEX, RegisterClassExW, CreateWindowExW, DestroyWindow, DefWindowProcW,
+    CreateCompatibleDC, DeleteDC, DeleteObject,  # ReleaseDC,
     LoadCursor,
     ShowWindow, UpdateWindow, InvalidateRect,
     BeginPaint, EndPaint, PAINTSTRUCT, BitBlt,
@@ -197,7 +197,7 @@ class ClientWindow(GObject.GObject):
         log("hwnd=%s", self.hwnd)
         self.hdc = CreateCompatibleDC(None)
         log("CreateCompatibleDC()=%#x", self.hdc)
-        self.bitmap = self.create_backing()
+        self.create_backing(self.width, self.height)
         log("bitmap=%#x", self.bitmap)
 
     def __repr__(self):
@@ -245,11 +245,11 @@ class ClientWindow(GObject.GObject):
             None
         )
 
-    def create_backing(self) -> HBITMAP:
+    def create_backing(self, width: int, height: int):
         header = BITMAPV5HEADER()
         header.bV5Size = sizeof(BITMAPV5HEADER)
-        header.bV5Width = self.width
-        header.bV5Height = -self.height
+        header.bV5Width = width
+        header.bV5Height = -height
         header.bV5Planes = 1
         header.bV5BitCount = 8 * (3 + int(self.alpha))
         header.bV5Compression = win32con.BI_RGB
@@ -259,10 +259,28 @@ class ClientWindow(GObject.GObject):
         # header.bV5AlphaMask = 0xff000000
         bitmap = CreateDIBSection(self.hdc, byref(header), win32con.DIB_RGB_COLORS, byref(self.pixels), None, 0)
         if not self.pixels or not bitmap:
-            log.error("Error creating bitmap backing of size %ix%i", self.width, self.height)
+            log.error("Error creating bitmap backing of size %ix%i", width, height)
             raise WinError(get_last_error())
         SelectObject(self.hdc, bitmap)
-        return bitmap
+
+        if self.bitmap:
+            # copy old bitmap contents
+            temp_dc = CreateCompatibleDC(None)
+            SelectObject(temp_dc, self.bitmap)
+
+            # rect = RECT(0, 0, width, height)
+            # FillRect(self.hdc, byref(rect), GetStockObject(BLACK_BRUSH))
+
+            # Copy overlapping region
+            copy_width = min(width, self.width)
+            copy_height = min(height, self.height)
+
+            BitBlt(self.hdc, 0, 0, copy_width, copy_height, temp_dc, 0, 0, win32con.SRCCOPY)
+
+            DeleteDC(temp_dc)
+            DeleteObject(self.bitmap)
+
+        self.bitmap = bitmap
 
     def wnd_proc_cb(self, hwnd: int, msg: int, wparam: int, lparam) -> int:
         msg_str = WM_MESSAGES.get(msg, str(msg))
@@ -272,17 +290,23 @@ class ClientWindow(GObject.GObject):
                 create = cast(lparam, POINTER(CREATESTRUCT)).contents
                 self.x = create.x
                 self.y = create.y
-                self.width = create.cx
-                self.height = create.cy
+                if self.width != create.cx or self.height != create.cy:
+                    self.create_backing(create.cx, create.cy)
+                    self.width = create.cx
+                    self.height = create.cy
                 self.emit("mapped")
             if msg == win32con.WM_MOVE:
                 self.x = lparam & 0xffff
                 self.y = (lparam >> 16) & 0xffff
                 self.emit("moved")
             if msg == win32con.WM_SIZE:
-                self.width = lparam & 0xffff
-                self.height = (lparam >> 16) & 0xffff
-                self.emit("resized")
+                width = lparam & 0xffff
+                height = (lparam >> 16) & 0xffff
+                if width != self.width or height != self.height:
+                    self.create_backing(width, height)
+                    self.width = width
+                    self.height = height
+                    self.emit("resized")
             if msg == win32con.WM_SETFOCUS:
                 self.emit("focused")
             if msg == win32con.WM_KILLFOCUS:
@@ -335,13 +359,14 @@ class ClientWindow(GObject.GObject):
                 pressed = msg == win32con.WM_KEYDOWN
                 self.emit("key", pressed, vkcode, keyname, scancode)
             if msg == win32con.WM_PAINT:
-                ps = PAINTSTRUCT()
-                hdc = BeginPaint(hwnd, byref(ps))
-                log("paint hdc=%#x", hdc)
-                try:
-                    BitBlt(hdc, 0, 0, self.width, self.height, self.hdc, 0, 0, win32con.SRCCOPY)
-                finally:
-                    EndPaint(hwnd, byref(ps))
+                if self.bitmap:
+                    ps = PAINTSTRUCT()
+                    hdc = BeginPaint(hwnd, byref(ps))
+                    log("paint hdc=%#x", hdc)
+                    try:
+                        BitBlt(hdc, 0, 0, self.width, self.height, self.hdc, 0, 0, win32con.SRCCOPY)
+                    finally:
+                        EndPaint(hwnd, byref(ps))
                 return 0
             if msg == win32con.WM_DESTROY:
                 self.destroy()
@@ -356,20 +381,34 @@ class ClientWindow(GObject.GObject):
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
                     options: typedict, callbacks: MutableSequence[Callable]):
-        if coding not in ("png", "jpg", "webp"):
+        log("draw_region%s", (x, y, width, height, coding, type(img_data), rowstride, options, callbacks))
+        bitmap_bpp = 3 + int(self.alpha)
+        bitmap_stride = roundup(self.width * bitmap_bpp, 4)
+        if coding in ("rgb24", "rgb32"):
+            pixels = img_data
+        elif coding in ("png", "jpg", "webp"):
+            from PIL import Image
+            img = Image.open(BytesIO(img_data))
+            mode = "RGBA" if self.alpha else "RGB"
+            if img.mode != mode:
+                img = img.convert(mode)
+            pixels = img.tobytes("raw", mode)
+            rowstride = len(mode) * img.size[0]
+        else:
             raise ValueError(f"unsupported format {coding!r}")
-        from PIL import Image
-        img = Image.open(BytesIO(img_data))
-        log.warn("%s update: %s", coding, img)
-        log.warn("pixels=%#x", self.pixels.value)
-        mode = "RGBA" if self.alpha else "RGB"
-        if img.mode != mode:
-            img = img.convert(mode)
-        pixels = img.tobytes("raw", mode)
-        stride = roundup(self.width * 3, 4)
-        offset = y * stride + x * 3
+
+        offset = y * bitmap_stride + x * bitmap_bpp
         dst = c_void_p(self.pixels.value + offset)
-        # memmove(dst, pixels, len(pixels))
+        log(f"draw_region {offset=} {dst=} {bitmap_bpp=} {bitmap_stride=} {rowstride=}")
+        if rowstride == bitmap_stride and x == 0 and y >= 0 and width == self.width and y + height <= self.height:
+            # happy path: copy all at once
+            memmove(dst, pixels, rowstride * height)
+        else:
+            # slow path: copy each row separately
+            rowlen = min(width, self.width - x) * bitmap_bpp
+            for i in range(min(height, self.height - y)):
+                dst = c_void_p(self.pixels.value + offset + i * bitmap_stride)
+                memmove(dst, pixels[i * rowstride:], rowlen)
         InvalidateRect(self.hwnd, None, True)
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
@@ -395,7 +434,18 @@ class ClientWindow(GObject.GObject):
         pass
 
     def destroy(self) -> None:
-        pass
+        bitmap = self.bitmap
+        if bitmap:
+            self.bitmap = 0
+            DeleteObject(bitmap)
+        hdc = self.hdc
+        if hdc:
+            self.hdc = 0
+            DeleteDC(hdc)
+        hwnd = self.hwnd
+        if hwnd:
+            self.hwnd = 0
+            DestroyWindow(hwnd)
 
 
 GObject.type_register(ClientWindow)
