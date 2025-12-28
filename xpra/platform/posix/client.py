@@ -9,6 +9,7 @@ from xpra.util.parsing import str_to_bool
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.log import Logger, is_debug_enabled
+from xpra.util.system import is_Wayland
 
 GLib = gi_import("GLib")
 
@@ -58,7 +59,7 @@ class PlatformClient(StubClientMixin):
         self._xi_setup_failures = 0
 
     def init(self, opts) -> None:
-        self._xsettings_enabled = not (OSX or WIN32) and str_to_bool(opts.xsettings)
+        self._xsettings_enabled = not (OSX or WIN32 or is_Wayland()) and str_to_bool(opts.xsettings)
         if self._xsettings_enabled:
             self.setup_xprops()
 
@@ -149,6 +150,12 @@ class PlatformClient(StubClientMixin):
         # the optional `input_devices` and `server_input_devices` attributes belong in the `WindowsClient`:
         input_devices = getattr(self, "input_devices", "")
         server_input_devices = getattr(self, "server_input_devices", "")
+
+        if input_devices.lower() in ("noxi2", "nox"):
+            return False
+
+        if input_devices == "auto" and is_Wayland():
+            return False
 
         if input_devices not in ("xi", "auto"):
             xi2_debug()
