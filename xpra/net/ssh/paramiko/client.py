@@ -722,9 +722,13 @@ class AuthenticationManager:
         log("agent keys matching fingerprints: %s", agent_keys)
         if not self.configbool("identitiesonly", False):
             for agent_key in all_agent_keys:
-                if agent_key not in agent_keys:
+                try:
+                    if agent_key not in agent_keys:
+                        agent_keys.append(agent_key)
+                except NotImplementedError:
+                    log("auth_agent()", exc_info=True)
+                    log.warn("Warning: failed to compare agent keys")
                     agent_keys.append(agent_key)
-            log("usable agent keys: %s", agent_keys)
         if not agent_keys:
             log.info("no ssh agent keys")
             return
