@@ -22,7 +22,7 @@ from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
-from xpra.x11.xroot_props import array_set, root_set, root_array_get
+from xpra.x11.xroot_props import array_set, array_get, root_set, root_array_get
 from xpra.x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
@@ -659,14 +659,7 @@ class CoreX11WindowModel(WindowModelStub):
         return prop_get(self.xid, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
 
     def array_get(self, key, ptype, ignore_errors: bool | None = None, raise_xerrors=False) -> object:
-        """
-            Get an X11 property from the client window,
-            using the automatic type conversion code from prop.py
-            Ignores property errors during setup_client.
-        """
-        if ignore_errors is None and (not self._setup_done or not self._managed):
-            ignore_errors = True
-        return prop_get(self.xid, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
+        return array_get(self.xid, key, ptype, ignore_errors, raise_xerrors)
 
     def prop_del(self, key: str) -> None:
         prop_del(self.xid, key)
