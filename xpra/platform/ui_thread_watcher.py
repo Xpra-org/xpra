@@ -107,7 +107,6 @@ class UIThreadWatcher:
             elapsed = monotonic() - scheduled_at
         else:
             elapsed = 0
-        self.ui_wakeup_timer = 0
         log("ui_thread_wakeup(%s) elapsed=%.2fms", scheduled_at, 1000 * elapsed)
         self.last_ui_thread_time = monotonic()
         # UI thread was blocked?
@@ -117,6 +116,7 @@ class UIThreadWatcher:
                 self.announced_blocked = False
             self.ui_blocked = False
             run_callbacks(self.resume_callbacks)
+        self.ui_wakeup_timer = 0
         return False
 
     def poll_ui_loop(self) -> None:
