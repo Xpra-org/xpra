@@ -1627,7 +1627,6 @@ class WindowClient(StubClientMixin):
             self._draw_queue.put(packet)
 
     def _process_eos(self, packet: Packet) -> None:
-        log.warn("draw packet!")
         self._draw_queue.put(packet)
 
     def send_damage_sequence(self, wid: int, packet_sequence: int, width: int, height: int,
@@ -1637,7 +1636,6 @@ class WindowClient(StubClientMixin):
         self.send_now("damage-sequence", *packet)
 
     def _draw_thread_loop(self):
-        log.warn("_draw_thread_loop()")
         while self.exit_code is None:
             packet = self._draw_queue.get()
             if packet is None:
@@ -1662,7 +1660,6 @@ class WindowClient(StubClientMixin):
         width = packet.get_u16(4)
         height = packet.get_u16(5)
         coding = packet.get_str(6)
-        log.warn("do draw %s: %s", window, coding)
         # mmap can send a tuple, otherwise it's a buffer, see #4496:
         data = packet[7]
         packet_sequence = packet.get_u64(8)
