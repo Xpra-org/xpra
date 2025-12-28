@@ -77,6 +77,16 @@ def array_set(xid: int, key: str, etype: str, value) -> None:
     raw_prop_set(xid, key, dtype, dformat, data)
 
 
+def array_get(xid: int, key: str, etype: str, ignore_errors: bool = False, raise_xerrors: bool = False) -> None:
+    # ie: 0x4000, "_NET_WM_PID", "u32"
+    type_atom = PROP_TYPES[etype][1]  # ie: "CARDINAL"
+    buffer_size = PROP_SIZES.get(etype, 65536)
+    data = raw_prop_get(xid, key, type_atom, buffer_size, ignore_errors, raise_xerrors)
+    if data is None:
+        return None
+    return do_prop_decode(key, [etype], data, ignore_errors)
+
+
 def raw_prop_set(xid: int, key: str, dtype: str, dformat: int, data) -> None:
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
@@ -106,16 +116,6 @@ def prop_get(xid: int, key: str, etype, ignore_errors: bool = False, raise_xerro
     if data is None:
         return None
     return do_prop_decode(key, etype, data, ignore_errors)
-
-
-def array_get(xid: int, key: str, etype: str, ignore_errors: bool = False, raise_xerrors: bool = False) -> list | None:
-    # ie: 0x4000, "_NET_WM_PID", "u32"
-    type_atom = PROP_TYPES[etype][1]  # ie: "CARDINAL"
-    buffer_size = PROP_SIZES.get(etype, 65536)
-    data = raw_prop_get(xid, key, type_atom, buffer_size, ignore_errors, raise_xerrors)
-    if data is None:
-        return None
-    return do_prop_decode(key, [etype], data, ignore_errors)
 
 
 def raw_prop_get(xid: int, key: str, type_atom: str, buffer_size: int = 65536,
