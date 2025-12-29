@@ -546,6 +546,9 @@ class ClientWindow(GObject.GObject):
     def is_tray(self) -> bool:
         return False
 
+    def is_OR(self) -> bool:
+        return self.metadata.get("override-redirect", False)
+
     def show_all(self):
         ShowWindow(self.hwnd, win32con.SW_SHOW)
         UpdateWindow(self.hwnd)
