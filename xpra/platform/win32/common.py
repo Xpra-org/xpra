@@ -468,6 +468,12 @@ ReleaseDC = user32.ReleaseDC
 ReleaseDC.restype = c_int
 ReleaseDC.argtypes = [HWND, HDC]
 mouse_event = user32.mouse_event
+ToUnicode = user32.ToUnicode
+ToUnicode.argtypes = [UINT, UINT, PBYTE, LPWSTR, c_int, UINT]
+ToUnicode.restype = c_int
+MessageBeep = user32.MessageBeep
+MessageBeep.argtypes = [UINT]
+MessageBeep.restype = BOOL
 
 LoadIconA = user32.LoadIconA
 LoadIconA.restype = HICON
@@ -768,6 +774,9 @@ EndPaint.restype = HDC
 GetObjectA = gdi32.GetObjectA
 GetObjectA.argtypes = [HGDIOBJ, INT, LPVOID]
 GetObjectA.restype = INT
+SetDIBits = gdi32.SetDIBits
+SetDIBits.argtypes = [HDC, HBITMAP, UINT, UINT, c_void_p, POINTER(BITMAPV5HEADER), UINT]
+SetDIBits.restype = c_int
 
 # wrap EnumDisplayMonitors to hide the callback function:
 MonitorEnumProc = WINFUNCTYPE(BOOL, HMONITOR, HDC, POINTER(RECT), LPARAM)

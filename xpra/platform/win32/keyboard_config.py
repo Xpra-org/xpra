@@ -111,7 +111,7 @@ VIRTUAL_KEYS = [
     ("SUBTRACT", "KP_Subtract"),
     ("ADD", "KP_Add"),
     ("NONAME", "NoSymbol"),
-    ("RETURN", "KP_Enter"),
+    ("RETURN", "Return"),
     ("NUMPAD0", "KP_0"),
     ("NUMPAD1", "KP_1"),
     ("NUMPAD2", "KP_2"),
@@ -165,7 +165,7 @@ VIRTUAL_KEYS = [
     ("RETURN", "Return"),
     ("SELECT", "Select"),
     ("SEPARATOR", "Separator"),
-    ("SPACE", "Space"),
+    # ("SPACE", "Space"),
     ("SPACE", "space"),
     ("SUBTRACT", "minus"),
     ("TAB", "Tab"),
@@ -380,6 +380,18 @@ def init_vk_names() -> dict[int, str]:
 
 VK_NAMES = init_vk_names()
 log("VK_NAMES=%s", VK_NAMES)
+
+
+def init_vk_map() -> dict[str, str]:
+    vk_map: dict[str, str] = {}
+    for vk_name, x11_name in VIRTUAL_KEYS:
+        if vk_name in vk_map:
+            continue
+        vk_map[vk_name] = x11_name
+    return vk_map
+
+
+VK_X11_MAP = init_vk_map()
 
 
 def init_keycodes() -> dict[str, int]:

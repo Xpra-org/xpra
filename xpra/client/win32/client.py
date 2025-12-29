@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import signal
+import win32con
 from typing import Any
 from ctypes import wintypes, byref
 from collections.abc import Sequence
@@ -13,14 +14,40 @@ from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal
 from xpra.client.base.gobject import GObjectXpraClient
 from xpra.client.gui.ui_client_base import UIXpraClient
-from xpra.platform.win32.common import GetCursorPos
+from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState
+from xpra.platform.win32.keyboard_config import VK_NAMES
 from xpra.log import Logger
 
 log = Logger("client")
 netlog = Logger("client", "network")
+keylog = Logger("client", "keyboard")
 
 GLib = gi_import("GLib")
 GObject = gi_import("GObject")
+
+
+BELL_MAP: dict[str, int] = {
+    "TerminalBell" : win32con.MB_ICONEXCLAMATION,
+
+}
+
+
+def get_modifiers() -> list[str]:
+    modifiers = []
+    if GetKeyState(win32con.VK_SHIFT) & 0x8000:
+        modifiers.append("shift")
+    if GetKeyState(win32con.VK_CONTROL) & 0x8000:
+        modifiers.append("control")
+    if GetKeyState(win32con.VK_MENU) & 0x8000:
+        modifiers.append("mod1")  # Alt = mod1 in X11 terminology
+    # Check toggle keys (low bit set when toggled on)
+    if GetKeyState(win32con.VK_CAPITAL) & 0x0001:
+        modifiers.append("lock")  # Caps Lock
+    if GetKeyState(win32con.VK_NUMLOCK) & 0x0001:
+        modifiers.append("mod2")  # Num Lock
+    if GetKeyState(win32con.VK_SCROLL) & 0x0001:
+        modifiers.append("mod3")  # Scroll Lock
+    return modifiers
 
 
 class XpraWin32Client(GObjectXpraClient, UIXpraClient):
@@ -81,6 +108,10 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
     def make_hello(self) -> dict[str, Any]:
         capabilities = GObjectXpraClient.make_hello(self)
         capabilities |= UIXpraClient.make_hello(self)
+        capabilities |= {
+            "keyboard": True,
+            "pointer": True,
+        }
         return capabilities
 
     def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
@@ -89,35 +120,35 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
 
     def register_window(self, wid: int, window) -> None:
         super().register_window(wid, window)
-        window.connect("mapped", self.window_mapped)
-        window.connect("focused", self.window_focused)
-        window.connect("lost-focus", self.window_lost_focus)
-        window.connect("moved", self.window_moved)
-        window.connect("resized", self.window_resized)
-        window.connect("mouse-move", self.window_mouse_moved)
-        window.connect("mouse-click", self.window_mouse_clicked)
-        window.connect("wheel", self.window_wheel)
-        window.connect("key", self.window_key)
+        window.connect("mapped", self.window_mapped_event)
+        window.connect("focused", self.window_focused_event)
+        window.connect("lost-focus", self.window_lost_focus_event)
+        window.connect("moved", self.window_moved_event)
+        window.connect("resized", self.window_resized_event)
+        window.connect("mouse-move", self.window_mouse_moved_event)
+        window.connect("mouse-click", self.window_mouse_clicked_event)
+        window.connect("wheel", self.window_wheel_event)
+        window.connect("key", self.window_key_event)
         window.create()
 
-    def window_mapped(self, window) -> None:
-        log("window_mapped(%s)", window)
+    def window_mapped_event(self, window) -> None:
+        log("window_mapped_event(%s)", window)
         self.send("map-window", window.wid, window.x, window.y, window.width, window.height, {}, {})
 
-    def window_focused(self, window) -> None:
-        log("window_focused(%s)", window)
+    def window_focused_event(self, window) -> None:
+        log("window_focused_event(%s)", window)
         self.update_focus(window.wid, True)
 
-    def window_lost_focus(self, window) -> None:
+    def window_lost_focus_event(self, window) -> None:
         log("window_lost_focus(%s)", window)
         self.update_focus(window.wid, False)
 
-    def window_moved(self, window) -> None:
-        log("window_moved(%s)", window)
+    def window_moved_event(self, window) -> None:
+        log("window_moved_event(%s)", window)
         self.send_configure(window)
 
-    def window_resized(self, window) -> None:
-        log("window_resized(%s)", window)
+    def window_resized_event(self, window) -> None:
+        log("window_resized_event(%s)", window)
         self.send_configure(window)
 
     def send_configure(self, window) -> None:
@@ -135,24 +166,24 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         log.warn("send_configure: geometry=%s", (window.x, window.y, window.width, window.height))
         self.send("configure-window", *packet)
 
-    def window_mouse_moved(self, window, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
-        log.warn("window_mouse_moved(%s, %i, %i, %s, %s)", window, x, y, vk, buttons)
+    def window_mouse_moved_event(self, window, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
+        log.warn("window_mouse_moved_event(%s, %i, %i, %s, %s)", window, x, y, vk, buttons)
         device_id = -1
         modifiers = vk
         props = {}
-        pos = (x, y, x - window.x, y-window.y)
+        pos = (window.x + x, window.y + y, x, y)
         self.send_mouse_position(device_id, window.wid, pos, modifiers=modifiers, buttons=buttons, props=props)
 
-    def window_mouse_clicked(self, window, button, pressed, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
-        log.warn("window_mouse_clicked(%s, %i, %i, %s, %s)", window, x, y, vk, buttons)
+    def window_mouse_clicked_event(self, window, button, pressed, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
+        log.warn("window_mouse_clicked_event(%s, %i, %s, %i, %i, %s, %s)", window, button, pressed, x, y, vk, buttons)
         device_id = -1
         modifiers = vk
         props = {}
         pos = (x, y, x - window.x, y-window.y)
         self.send_button(device_id, window.wid, button, pressed, pos, modifiers=modifiers, buttons=buttons, props=props)
 
-    def window_wheel(self, window, x: int, y: int, vertical: bool, vk: Sequence[str], delta: int) -> None:
-        log.warn("window_wheel(%s, %i, %i, %s, %s, %s)", window, x, y, vertical, vk, delta)
+    def window_wheel_event(self, window, x: int, y: int, vertical: bool, vk: Sequence[str], delta: int) -> None:
+        log.warn("window_wheel_event(%s, %i, %i, %s, %s, %s)", window, x, y, vertical, vk, delta)
         device_id = -1
         props = {}
         pos = (x, y, x - window.x, y - window.y)
@@ -162,8 +193,25 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
             button += 4
         self.wheel_delta = self.send_wheel_delta(device_id, window.wid, button, abs(wheel_delta), pointer=pos, props=props)
 
-    def window_key(self, window, pressed: bool, vkcode: int, keyname: str, scancode: int) -> None:
-        log.warn("window_key(%s, %s, %i, %r, %i)", window, pressed, vkcode, keyname, scancode)
+    def window_key_event(self, window, pressed: bool, vk_code: int, string: str, scancode: int) -> None:
+        keylog("window_key_event(%s, %s, %i, %r, %i)", window, pressed, vk_code, string, scancode)
+        mods = get_modifiers()
+        keyval = scancode
+        keycode = vk_code
+        keyname = VK_NAMES.get(vk_code, string)
+        group = 0
+        # for now, we still translate to X11 key names:
+        if keyname.startswith("VK_"):
+            from xpra.platform.win32.keyboard_config import VK_X11_MAP
+            keyname = VK_X11_MAP.get(keyname[3:], keyname)
+        self.send("key-action", window.wid, keyname, pressed, mods, keyval, string, keycode, group)
+
+    # server event
+    def window_bell(self, window, device: int, percent: int, pitch: int, duration: int, bell_class,
+                    bell_id: int, bell_name: str) -> None:
+        # how can we use the bell class to choose the type?
+        log.info("window-bell %s, %i, %s", bell_class, bell_id, bell_name)
+        MessageBeep(win32con.MB_OK)
 
 
 GObject.type_register(XpraWin32Client)

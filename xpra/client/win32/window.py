@@ -7,9 +7,10 @@
 import win32con
 from io import BytesIO
 from collections.abc import MutableSequence, Callable
-from ctypes.wintypes import HWND
-from ctypes import byref, sizeof, cast, c_void_p, WinError, get_last_error, POINTER, memmove
+from ctypes.wintypes import HWND, BYTE
+from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER, memmove
 
+from xpra.client.gui.window.backing import fire_paint_callbacks
 from xpra.common import roundup
 from xpra.os_util import gi_import
 from xpra.platform.win32.common import (
@@ -18,14 +19,15 @@ from xpra.platform.win32.common import (
     CreateCompatibleDC, DeleteDC, DeleteObject,  # ReleaseDC,
     LoadCursor,
     ShowWindow, UpdateWindow, InvalidateRect,
-    BeginPaint, EndPaint, PAINTSTRUCT, BitBlt,
+    BeginPaint, EndPaint, PAINTSTRUCT, BitBlt, SetDIBits,
+    GetDC, ReleaseDC,
     BITMAPV5HEADER, CreateDIBSection, SelectObject,
     CREATESTRUCT,
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW,
+    GetKeyboardState, ToUnicode,
 )
 from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.client.win32.common import WM_MESSAGES
-from xpra.platform.win32.keyboard_config import VK_NAMES
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
@@ -147,10 +149,10 @@ def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, ha
     rect.right = x + w
     rect.bottom = y + h
     AdjustWindowRectEx(byref(rect), style, has_menu, exstyle)
-    x = rect.left
-    y = rect.top
-    w = rect.right - x
-    h = rect.bottom - y
+    x = int(rect.left)
+    y = int(rect.top)
+    w = int(rect.right - x)
+    h = int(rect.bottom - y)
     return x, y, w, h
 
 
@@ -349,15 +351,17 @@ class ClientWindow(GObject.GObject):
                 x, y = get_xy_lparam(lparam)
                 self.emit("wheel", x, y, vertical, vkeys, delta)
             if msg in (win32con.WM_KEYDOWN, win32con.WM_KEYUP):
-                vkcode = wparam
-                if 32 < vkcode < 128:
-                    keyname = chr(vkcode)
-                else:
-                    keyname = VK_NAMES.get(vkcode, "")
+                vk_code = wparam
+                # Use ToUnicode to convert VK code to character
+                keyboard_state = (BYTE * 256)()
+                GetKeyboardState(keyboard_state)
+                result = (c_wchar * 4)()
+                count = ToUnicode(vk_code, 0, keyboard_state, result, 4, 0)
+                keyname = result.value if count > 0 else ""
                 scancode = get_bit_range(lparam, 16, 24)
                 # extended = lparam & (2 << 24)
                 pressed = msg == win32con.WM_KEYDOWN
-                self.emit("key", pressed, vkcode, keyname, scancode)
+                self.emit("key", pressed, vk_code, keyname, scancode)
             if msg == win32con.WM_PAINT:
                 if self.bitmap:
                     ps = PAINTSTRUCT()
@@ -385,6 +389,41 @@ class ClientWindow(GObject.GObject):
         bitmap_bpp = 3 + int(self.alpha)
         bitmap_stride = roundup(self.width * bitmap_bpp, 4)
         if coding in ("rgb24", "rgb32"):
+            if (coding == "rgb32" and not self.alpha) or (coding == "rgb24" and self.alpha):
+                # mismatch between RGB format received and the HBITMAP buffer format
+                # so use a temporary Bitmap and BitBlt:
+                if rowstride == 0 or rowstride % 4 != 0:
+                    raise ValueError("invalid rowstride %i" % rowstride)
+
+                hdc = GetDC(None)
+                hdc_src = CreateCompatibleDC(hdc)
+                hdc_dst = CreateCompatibleDC(hdc)
+
+                rgb = BITMAPV5HEADER()
+                rgb.bV5Size = sizeof(BITMAPV5HEADER)
+                rgb.bV5Width = rowstride // (4 if coding == "rgb32" else 3)
+                rgb.bV5Height = -height
+                rgb.bV5Planes = 1
+                rgb.bV5BitCount = 32 if coding == "rgb32" else 24
+                rgb.bV5Compression = win32con.BI_RGB
+
+                # use a temporary bitmap:
+                bitmap = CreateDIBSection(hdc, byref(rgb), win32con.DIB_RGB_COLORS, byref(c_void_p()), None, 0)
+                SetDIBits(hdc, bitmap, 0, height, img_data, byref(rgb), win32con.DIB_RGB_COLORS)
+                old_src = SelectObject(hdc_src, bitmap)
+                old_dst = SelectObject(hdc_dst, self.bitmap)
+                try:
+                    # Blit the rectangle to target
+                    BitBlt(hdc_dst, x, y, width, height, hdc_src, 0, 0, win32con.SRCCOPY)
+                finally:
+                    SelectObject(hdc_src, old_src)
+                    SelectObject(hdc_dst, old_dst)
+                    DeleteObject(bitmap)
+                    DeleteDC(hdc_src)
+                    DeleteDC(hdc_dst)
+                    ReleaseDC(None, hdc)
+            elif coding == "rgb24" and self.alpha:
+                pass
             pixels = img_data
         elif coding in ("png", "jpg", "webp"):
             from PIL import Image
@@ -410,6 +449,7 @@ class ClientWindow(GObject.GObject):
                 dst = c_void_p(self.pixels.value + offset + i * bitmap_stride)
                 memmove(dst, pixels[i * rowstride:], rowlen)
         InvalidateRect(self.hwnd, None, True)
+        fire_paint_callbacks(callbacks)
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
         exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
