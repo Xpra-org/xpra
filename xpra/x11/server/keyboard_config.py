@@ -355,7 +355,7 @@ class KeyboardConfig(KeyboardConfigBase):
             return
         log("set_keymap(%s) layout=%r, variant=%r, options=%r, query-struct=%r",
             translate_only, self.layout, self.variant, self.options, self.query_struct)
-        if translate_only:
+        if translate_only or not self.keycodes:
             self.keycode_translation = set_keycode_translation(self.x11_keycodes, self.keycodes)
             self.add_gtk_keynames()
             self.add_loose_matches()
