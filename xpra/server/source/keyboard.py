@@ -117,7 +117,7 @@ class KeyboardConnection(StubClientConnection):
                 self.keyboard_config = current_keyboard_config
 
     def get_keycode(self, client_keycode: int, keyname: str, pressed: bool,
-                    modifiers, keyval, keystr: str, group: int) -> tuple[int, int]:
+                    modifiers: list[str], keyval, keystr: str, group: int) -> tuple[int, int]:
         kc = self.keyboard_config
         if kc is None:
             log.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)
