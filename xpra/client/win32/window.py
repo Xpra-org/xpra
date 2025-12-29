@@ -15,7 +15,8 @@ from xpra.common import roundup
 from xpra.os_util import gi_import
 from xpra.platform.win32.common import (
     GetModuleHandleA,
-    WNDPROC, WNDCLASSEX, RegisterClassExW, CreateWindowExW, DestroyWindow, DefWindowProcW,
+    WNDPROC, WNDCLASSEX, RegisterClassExW, UnregisterClassW,
+    CreateWindowExW, DestroyWindow, DefWindowProcW,
     CreateCompatibleDC, DeleteDC, DeleteObject,  # ReleaseDC,
     LoadCursor,
     ShowWindow, UpdateWindow, InvalidateRect,
@@ -230,6 +231,7 @@ class ClientWindow(GObject.GObject):
         self.width = max(1, geom[2])
         self.height = max(1, geom[3])
         self.alpha = metadata.boolget("has-alpha", False)
+        metadata["override-redirect"] = override_redirect
         self.metadata = metadata
         self.wnd_proc = WNDPROC(self.wnd_proc_cb)
         self.wc = self.create_wnd_class()
@@ -240,9 +242,9 @@ class ClientWindow(GObject.GObject):
         self.bitmap = 0
         self.hicon = 0
         self.hicons: set[HICON] = set()
+        log("new window: %s", metadata)
 
     def create(self):
-        log("class-atom=%s", self.class_atom)
         self.hwnd = self.create_window()
         log("hwnd=%s", self.hwnd)
         self.hdc = CreateCompatibleDC(None)
@@ -262,7 +264,7 @@ class ClientWindow(GObject.GObject):
         wc.hInstance = self.module_handle
         wc.hCursor = LoadCursor(0, win32con.IDC_ARROW)
         wc.hbrBackground = win32con.COLOR_WINDOW + 1
-        wc.lpszClassName = "XpraWindowClass"
+        wc.lpszClassName = "XpraWindowClass%i" % self.wid
         return wc
 
     def get_system_geometry(self, exstyle: int) -> tuple[int, int, int, int]:
@@ -274,7 +276,14 @@ class ClientWindow(GObject.GObject):
 
     def create_window(self) -> HWND:
         title = self.metadata.strget("title", "")
-        dwexstyle = win32con.WS_EX_ACCEPTFILES | win32con.WS_EX_OVERLAPPEDWINDOW | win32con.WS_EX_APPWINDOW
+        dwexstyle = 0
+        style = win32con.WS_VISIBLE
+        if self.metadata.get("override-redirect", False):
+            dwexstyle |= win32con.WS_EX_TOOLWINDOW | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_TOPMOST
+            style |= win32con.WS_POPUP
+        else:
+            dwexstyle |= win32con.WS_EX_ACCEPTFILES | win32con.WS_EX_OVERLAPPEDWINDOW | win32con.WS_EX_APPWINDOW
+            style |= win32con.WS_OVERLAPPEDWINDOW
         if self.alpha:
             log.warn("Warning: painting with alpha requires using UpdateLayeredWindow!")
             dwexstyle |= win32con.WS_EX_LAYERED
@@ -283,17 +292,9 @@ class ClientWindow(GObject.GObject):
         if not self.metadata.boolget("set-initial-position", False):
             x = win32con.CW_USEDEFAULT
             y = win32con.CW_USEDEFAULT
-        return CreateWindowExW(
-            dwexstyle,
-            self.class_atom,
-            title,
-            win32con.WS_OVERLAPPEDWINDOW | win32con.WS_VISIBLE,
-            x, y, w, h,
-            0,
-            0,
-            self.module_handle,
-            None
-        )
+        return CreateWindowExW(dwexstyle, self.class_atom, title, style,
+                               x, y, w, h,
+                               0, 0, self.module_handle, None)
 
     def create_backing(self, width: int, height: int):
         header = BITMAPV5HEADER()
@@ -417,7 +418,7 @@ class ClientWindow(GObject.GObject):
 
                 # for now, we still translate to X11 key names:
                 keyname = VK_NAMES.get(vk_code, string)
-                log.info("vk_code: %d, string=%r, local_string=%r, scancode=%i, extended=%s, keyname=%r", vk_code, string, local_string, scancode, extended, keyname)
+                log("vk_code: %d, string=%r, local_string=%r, scancode=%i, extended=%s, keyname=%r", vk_code, string, local_string, scancode, extended, keyname)
                 if keyname.startswith("VK_"):
                     from xpra.platform.win32.keyboard_config import VK_X11_MAP
                     keyname = VK_X11_MAP.get(keyname[3:], keyname)
@@ -578,6 +579,10 @@ class ClientWindow(GObject.GObject):
         if hwnd:
             self.hwnd = 0
             DestroyWindow(hwnd)
+        wc = self.wc
+        if wc:
+            self.wc = None
+            UnregisterClassW(wc.lpszClassName, self.module_handle)
 
 
 GObject.type_register(ClientWindow)
