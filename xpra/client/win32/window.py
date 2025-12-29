@@ -7,7 +7,7 @@
 import win32con
 from io import BytesIO
 from collections.abc import MutableSequence, Callable
-from ctypes.wintypes import HWND, BYTE
+from ctypes.wintypes import HWND, BYTE, HICON
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER, memmove
 
 from xpra.client.gui.window.backing import fire_paint_callbacks
@@ -20,10 +20,11 @@ from xpra.platform.win32.common import (
     LoadCursor,
     ShowWindow, UpdateWindow, InvalidateRect,
     BeginPaint, EndPaint, PAINTSTRUCT, BitBlt, SetDIBits,
+    ICONINFO, CreateIconIndirect, DestroyIcon, CreateBitmap,
     GetDC, ReleaseDC,
     BITMAPV5HEADER, CreateDIBSection, SelectObject,
     CREATESTRUCT,
-    AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW,
+    AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, SendMessageW,
     GetKeyboardState, ToUnicode, MapVirtualKeyW,
 )
 from xpra.platform.win32.keyboard_config import VK_NAMES
@@ -33,6 +34,7 @@ from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("client", "window")
+iconlog = Logger("icon")
 
 GObject = gi_import("GObject")
 
@@ -139,6 +141,49 @@ def get_bit_range(value: int, start: int, end: int):
     return (value >> start) & mask
 
 
+def img_to_hicon(img) -> HICON:
+    log("update_icon(%s) size=%s", img, img.size)
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    width, height = img.size
+
+    hdc = GetDC(0)
+    memdc = CreateCompatibleDC(hdc)
+
+    rgb = BITMAPV5HEADER()
+    rgb.bV5Size = sizeof(BITMAPV5HEADER)
+    rgb.bV5Width = width * 4
+    rgb.bV5Height = -height
+    rgb.bV5Planes = 1
+    rgb.bV5BitCount = 32
+    rgb.bV5Compression = win32con.BI_RGB
+
+    bits = c_void_p()
+    hbm_color = CreateDIBSection(memdc, rgb, 0, byref(bits), None, 0)
+
+    # Copy RGBA data to the bitmap
+    bgra = img.tobytes("raw", "BGRA")
+    memmove(bits, bgra, len(bgra))
+
+    # Create mask bitmap (for alpha channel)
+    hbm_mask = CreateBitmap(width, height, 1, 1, None)
+
+    iconinfo = ICONINFO()
+    iconinfo.fIcon = True
+    iconinfo.xHotspot = 0
+    iconinfo.yHotspot = 0
+    iconinfo.hbmMask = hbm_mask
+    iconinfo.hbmColor = hbm_color
+
+    hicon = CreateIconIndirect(byref(iconinfo))
+
+    DeleteObject(hbm_color)
+    DeleteObject(hbm_mask)
+    DeleteDC(memdc)
+    ReleaseDC(0, hdc)
+    return hicon
+
+
 def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, has_menu=False) -> tuple[int, int, int, int]:
     """
     Convert the window's internal geometry into system coordinates,
@@ -193,6 +238,8 @@ class ClientWindow(GObject.GObject):
         self.hdc = 0
         self.pixels = c_void_p()
         self.bitmap = 0
+        self.hicon = 0
+        self.hicons: set[HICON] = set()
 
     def create(self):
         log("class-atom=%s", self.class_atom)
@@ -390,7 +437,7 @@ class ClientWindow(GObject.GObject):
                             keyname = "Shift_R"
                 scancode = get_bit_range(lparam, 16, 24)
                 pressed = msg == win32con.WM_KEYDOWN
-                self.emit("key", keyname, pressed, vk_code, keyname, scancode)
+                self.emit("key", keyname, pressed, vk_code, string, scancode)
             if msg == win32con.WM_PAINT:
                 if self.bitmap:
                     ps = PAINTSTRUCT()
@@ -400,6 +447,10 @@ class ClientWindow(GObject.GObject):
                         BitBlt(hdc, 0, 0, self.width, self.height, self.hdc, 0, 0, win32con.SRCCOPY)
                     finally:
                         EndPaint(hwnd, byref(ps))
+                return 0
+            if msg == win32con.WM_GETICON:
+                if self.hicon:
+                    return self.hicon
                 return 0
             if msg == win32con.WM_DESTROY:
                 self.destroy()
@@ -500,13 +551,25 @@ class ClientWindow(GObject.GObject):
         # InvalidateRect(self.hwnd, None, True)
 
     def update_icon(self, img):
-        pass
+        iconlog("update_icon(%s) size=%s", img, img.size)
+        self.hicon = img_to_hicon(img)
+        iconlog("hicon=%#x", self.hicon)
+        for size in (win32con.ICON_SMALL, win32con.ICON_BIG):
+            old = SendMessageW(self.hwnd, win32con.WM_SETICON, size, self.hicon)
+            if old in self.hicons:
+                DestroyIcon(old)
+                self.hicons.remove(old)
+        self.hicons.add(self.hicon)
 
     def destroy(self) -> None:
         bitmap = self.bitmap
         if bitmap:
             self.bitmap = 0
             DeleteObject(bitmap)
+        self.hicon = 0
+        for hicon in tuple(self.hicons):
+            DestroyIcon(hicon)
+        self.hicons.clear()
         hdc = self.hdc
         if hdc:
             self.hdc = 0

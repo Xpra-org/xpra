@@ -389,6 +389,11 @@ LogicalToPhysicalPoint = user32.LogicalToPhysicalPoint
 LogicalToPhysicalPoint.argtypes = [HWND, POINTER(POINT)]
 LogicalToPhysicalPoint.restype = BOOL
 SendMessageA = user32.SendMessageA
+SendMessageA.argtypes = [HWND, UINT, WPARAM, LPARAM]
+SendMessageA.restype = LRESULT
+SendMessageW = user32.SendMessageW
+SendMessageW.argtypes = [HWND, UINT, WPARAM, LPARAM]
+SendMessageW.restype = LRESULT
 PostMessageA = user32.PostMessageA
 FindWindowA = user32.FindWindowA
 GetWindowRect = user32.GetWindowRect
@@ -496,7 +501,7 @@ LoadImageW.argtypes = [HINSTANCE, LPCWSTR, UINT, INT, INT, UINT]
 LoadImageW.restype = HANDLE
 CreateIconIndirect = user32.CreateIconIndirect
 CreateIconIndirect.restype = HICON
-CreateIconIndirect.argtypes = [POINTER(ICONINFO)]
+CreateIconIndirect.argtypes = [PICONINFO]
 GetDC = user32.GetDC
 GetDC.argtypes = [HWND]
 GetDC.restype = HDC
@@ -580,7 +585,6 @@ CreatePopupMenu.argtypes = []
 AppendMenu = user32.AppendMenuW
 AppendMenu.restype = BOOL
 AppendMenu.argtypes = [HMENU, UINT, UINT, LPCWSTR]
-
 
 # clipboard functions:
 
