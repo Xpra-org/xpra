@@ -30,7 +30,7 @@ from xpra.util.parsing import FALSE_OPTIONS
 from xpra.client.gui.window_border import WindowBorder
 from xpra.util.io import find_libexec_command
 from xpra.util.thread import start_thread
-from xpra.util.str_fn import std, bytestostr, strtobytes, memoryview_to_bytes
+from xpra.util.str_fn import std, strtobytes, memoryview_to_bytes
 from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.system import is_Ubuntu, is_Wayland
 from xpra.util.objects import typedict, make_instance
@@ -827,7 +827,6 @@ class WindowClient(StubClientMixin):
     def _window_icon_image(self, wid: int, width: int, height: int, coding: str, data):
         # convert the data into a pillow image,
         # adding the icon overlay (if enabled)
-        coding = bytestostr(coding)
         try:
             # pylint: disable=import-outside-toplevel
             from PIL import Image
@@ -1085,7 +1084,7 @@ class WindowClient(StubClientMixin):
             return False
         if cb_condition == GLib.IOCondition.IN:
             try:
-                signame = bytestostr(proc.stdout.readline()).strip("\n\r")
+                signame = proc.stdout.readline().decode("latin1").strip("\n\r")
                 execlog("signal_watcher_event: %s", signame)
                 if signame:
                     if signame in self.server_window_signals:
