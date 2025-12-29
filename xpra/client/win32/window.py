@@ -13,6 +13,9 @@ from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_er
 from xpra.client.gui.window.backing import fire_paint_callbacks
 from xpra.common import roundup
 from xpra.os_util import gi_import
+from xpra.util.str_fn import memoryview_to_bytes
+from xpra.util.gobject import n_arg_signal, no_arg_signal
+from xpra.util.objects import typedict
 from xpra.platform.win32.common import (
     GetModuleHandleA,
     WNDPROC, WNDCLASSEX, RegisterClassExW, UnregisterClassW,
@@ -29,13 +32,12 @@ from xpra.platform.win32.common import (
     GetKeyboardState, ToUnicode, MapVirtualKeyW,
 )
 from xpra.platform.win32.keyboard_config import VK_NAMES
-from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.client.win32.common import WM_MESSAGES
-from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("client", "window")
 iconlog = Logger("icon")
+drawlog = Logger("draw")
 
 GObject = gi_import("GObject")
 
@@ -466,7 +468,12 @@ class ClientWindow(GObject.GObject):
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
                     options: typedict, callbacks: MutableSequence[Callable]):
-        log("draw_region%s", (x, y, width, height, coding, type(img_data), rowstride, options, callbacks))
+        drawlog("draw_region%s", (x, y, width, height, coding, type(img_data), rowstride, options, callbacks))
+        if options.boolget("lz4"):
+            from xpra.net.lz4.lz4 import decompress
+            img_data = decompress(img_data)
+            drawlog("lz4 decompressed: %r (%s)", img_data, type(img_data))
+            img_data = memoryview_to_bytes(img_data)
         bitmap_bpp = 3 + int(self.alpha)
         bitmap_stride = roundup(self.width * bitmap_bpp, 4)
         if coding in ("rgb24", "rgb32"):
@@ -487,6 +494,7 @@ class ClientWindow(GObject.GObject):
                 rgb.bV5Planes = 1
                 rgb.bV5BitCount = 32 if coding == "rgb32" else 24
                 rgb.bV5Compression = win32con.BI_RGB
+                drawlog("converting from %i bits to alpha=%s", rgb.bV5BitCount, self.alpha)
 
                 # use a temporary bitmap:
                 bitmap = CreateDIBSection(hdc, byref(rgb), win32con.DIB_RGB_COLORS, byref(c_void_p()), None, 0)
@@ -519,7 +527,7 @@ class ClientWindow(GObject.GObject):
 
         offset = y * bitmap_stride + x * bitmap_bpp
         dst = c_void_p(self.pixels.value + offset)
-        log(f"draw_region {offset=} {dst=} {bitmap_bpp=} {bitmap_stride=} {rowstride=}")
+        drawlog(f"draw_region {offset=} {dst=} {bitmap_bpp=} {bitmap_stride=} {rowstride=}")
         if rowstride == bitmap_stride and x == 0 and y >= 0 and width == self.width and y + height <= self.height:
             # happy path: copy all at once
             memmove(dst, pixels, rowstride * height)
@@ -529,7 +537,8 @@ class ClientWindow(GObject.GObject):
             for i in range(min(height, self.height - y)):
                 dst = c_void_p(self.pixels.value + offset + i * bitmap_stride)
                 memmove(dst, pixels[i * rowstride:], rowlen)
-        InvalidateRect(self.hwnd, None, True)
+        if options.intget("flush", 0) == 0:
+            InvalidateRect(self.hwnd, None, True)
         fire_paint_callbacks(callbacks)
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
