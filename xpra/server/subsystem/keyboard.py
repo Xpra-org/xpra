@@ -202,7 +202,8 @@ class KeyboardServer(StubServerMixin):
         wid = packet.get_wid()
         keyname = packet.get_str(2)
         pressed = packet.get_bool(3)
-        modifiers = packet.get_strs(4)
+        # `get_keycode` may have to change modifiers to match the key, so we need a mutable list:
+        modifiers = list(packet.get_strs(4))
         keyval = packet.get_u32(5)
         keystr = packet.get_str(6)
         client_keycode = packet.get_u32(7)
@@ -232,7 +233,7 @@ class KeyboardServer(StubServerMixin):
         ss.emit("user-event", "key-action")
 
     def get_keycode(self, ss, client_keycode: int, keyname: str,
-                    pressed: bool, modifiers: list, keyval: int, keystr: str, group: int):
+                    pressed: bool, modifiers: list[str], keyval: int, keystr: str, group: int):
         return ss.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def fake_key(self, keycode: int, press: bool) -> None:

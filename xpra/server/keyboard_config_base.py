@@ -52,7 +52,7 @@ class KeyboardConfigBase:
         """ should be overridden to match the modifier state specified """
 
     def get_keycode(self, client_keycode: int, keyname: str, pressed: bool,
-                    modifiers, keyval: int, keystr: str, group: int) -> tuple[int, int]:
+                    modifiers: list[str], keyval: int, keystr: str, group: int) -> tuple[int, int]:
         if not keyname and client_keycode < 0:
             return -1, group
         if not pressed:
@@ -70,7 +70,7 @@ class KeyboardConfigBase:
         return keycode, group
 
     def do_get_keycode(self, client_keycode: int, keyname: str, pressed: bool,
-                       modifiers, keyval: int, keystr: str, group: int) -> tuple[int, int]:
+                       modifiers: list[str], keyval: int, keystr: str, group: int) -> tuple[int, int]:
         from xpra.log import Logger  # pylint: disable=import-outside-toplevel
         log = Logger("keyboard")
         log("do_get_keycode%s", (client_keycode, keyname, pressed, modifiers, keyval, keystr, group))
