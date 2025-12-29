@@ -24,8 +24,9 @@ from xpra.platform.win32.common import (
     BITMAPV5HEADER, CreateDIBSection, SelectObject,
     CREATESTRUCT,
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW,
-    GetKeyboardState, ToUnicode,
+    GetKeyboardState, ToUnicode, MapVirtualKeyW,
 )
+from xpra.platform.win32.keyboard_config import VK_NAMES
 from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.client.win32.common import WM_MESSAGES
 from xpra.util.objects import typedict
@@ -167,7 +168,7 @@ class ClientWindow(GObject.GObject):
         "mouse-move": n_arg_signal(4),
         "mouse-click": n_arg_signal(6),
         "wheel": n_arg_signal(5),
-        "key": n_arg_signal(4),
+        "key": n_arg_signal(5),
     }
 
     module_handle = GetModuleHandleA(None)
@@ -352,16 +353,44 @@ class ClientWindow(GObject.GObject):
                 self.emit("wheel", x, y, vertical, vkeys, delta)
             if msg in (win32con.WM_KEYDOWN, win32con.WM_KEYUP):
                 vk_code = wparam
+                extended = lparam & (2 << 24)
+                scancode = (lparam >> 16) & 0xff
+
                 # Use ToUnicode to convert VK code to character
                 keyboard_state = (BYTE * 256)()
+                # first retrieve using an empty keyboard state:
+                result = (c_wchar * 4)()
+                count = ToUnicode(vk_code, 0, keyboard_state, result, 4, 0)
+                string = result.value if count > 0 else ""
+                # then with the current keyboard state:
                 GetKeyboardState(keyboard_state)
                 result = (c_wchar * 4)()
                 count = ToUnicode(vk_code, 0, keyboard_state, result, 4, 0)
-                keyname = result.value if count > 0 else ""
+                local_string = result.value if count > 0 else ""
+
+                # for now, we still translate to X11 key names:
+                keyname = VK_NAMES.get(vk_code, string)
+                log.info("vk_code: %d, string=%r, local_string=%r, scancode=%i, extended=%s, keyname=%r", vk_code, string, local_string, scancode, extended, keyname)
+                if keyname.startswith("VK_"):
+                    from xpra.platform.win32.keyboard_config import VK_X11_MAP
+                    keyname = VK_X11_MAP.get(keyname[3:], keyname)
+                if not string:
+                    if vk_code == win32con.VK_CONTROL:
+                        keyname = "Control_R" if extended else "Control_L"
+                    elif vk_code == win32con.VK_MENU:
+                        keyname = "MENU"
+                    elif vk_code == win32con.VK_SHIFT:
+                        MAPVK_VSC_TO_VK_EX = 3
+                        vk = MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK_EX)
+                        VK_LSHIFT = 0xA0
+                        VK_RSHIFT = 0xA1
+                        if vk == VK_LSHIFT:
+                            keyname = "Shift_L"
+                        elif vk == VK_RSHIFT:
+                            keyname = "Shift_R"
                 scancode = get_bit_range(lparam, 16, 24)
-                # extended = lparam & (2 << 24)
                 pressed = msg == win32con.WM_KEYDOWN
-                self.emit("key", pressed, vk_code, keyname, scancode)
+                self.emit("key", keyname, pressed, vk_code, keyname, scancode)
             if msg == win32con.WM_PAINT:
                 if self.bitmap:
                     ps = PAINTSTRUCT()
