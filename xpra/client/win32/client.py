@@ -119,6 +119,7 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
     def register_window(self, wid: int, window) -> None:
         super().register_window(wid, window)
         window.connect("mapped", self.window_mapped_event)
+        window.connect("closed", self.window_closed)
         window.connect("focused", self.window_focused_event)
         window.connect("lost-focus", self.window_lost_focus_event)
         window.connect("moved", self.window_moved_event)
@@ -132,6 +133,10 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
     def window_mapped_event(self, window) -> None:
         log("window_mapped_event(%s)", window)
         self.send("map-window", window.wid, window.x, window.y, window.width, window.height, {}, {})
+
+    def window_closed(self, window) -> None:
+        log("window_closed(%s)", window)
+        self.send("close-window", window.wid)
 
     def window_focused_event(self, window) -> None:
         log("window_focused_event(%s)", window)

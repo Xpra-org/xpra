@@ -217,6 +217,7 @@ class ClientWindow(GObject.GObject):
         "mouse-click": n_arg_signal(6),
         "wheel": n_arg_signal(5),
         "key": n_arg_signal(5),
+        "closed": no_arg_signal,
     }
 
     module_handle = GetModuleHandleA(None)
@@ -306,10 +307,6 @@ class ClientWindow(GObject.GObject):
         header.bV5Planes = 1
         header.bV5BitCount = 8 * (3 + int(self.alpha))
         header.bV5Compression = win32con.BI_RGB
-        # header.bV5RedMask = 0x000000ff
-        # header.bV5GreenMask = 0x0000ff00
-        # header.bV5BlueMask = 0x00ff0000
-        # header.bV5AlphaMask = 0xff000000
         bitmap = CreateDIBSection(self.hdc, byref(header), win32con.DIB_RGB_COLORS, byref(self.pixels), None, 0)
         if not self.pixels or not bitmap:
             log.error("Error creating bitmap backing of size %ix%i", width, height)
@@ -348,6 +345,9 @@ class ClientWindow(GObject.GObject):
                     self.width = create.cx
                     self.height = create.cy
                 self.emit("mapped")
+            if msg == win32con.WM_CLOSE:
+                self.emit("closed")
+                return 0
             if msg == win32con.WM_MOVE:
                 self.x = lparam & 0xffff
                 self.y = (lparam >> 16) & 0xffff
@@ -469,6 +469,9 @@ class ClientWindow(GObject.GObject):
                     coding: str, img_data, rowstride: int,
                     options: typedict, callbacks: MutableSequence[Callable]):
         drawlog("draw_region%s", (x, y, width, height, coding, type(img_data), rowstride, options, callbacks))
+        if not self.hwnd:
+            fire_paint_callbacks(callbacks, False, "window has already been destroyed")
+            return
         if options.boolget("lz4"):
             from xpra.net.lz4.lz4 import decompress
             img_data = decompress(img_data)
@@ -514,7 +517,7 @@ class ClientWindow(GObject.GObject):
             elif coding == "rgb24" and self.alpha:
                 pass
             pixels = img_data
-        elif coding in ("png", "jpg", "webp"):
+        elif coding in ("png", "jpeg", "webp"):
             from PIL import Image
             img = Image.open(BytesIO(img_data))
             mode = "RGBA" if self.alpha else "RGB"
@@ -575,6 +578,7 @@ class ClientWindow(GObject.GObject):
         self.hicons.add(self.hicon)
 
     def destroy(self) -> None:
+        log("destroy() bitmap=%s hwnd=%#x", self.bitmap, self.hwnd)
         bitmap = self.bitmap
         if bitmap:
             self.bitmap = 0
