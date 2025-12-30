@@ -39,7 +39,7 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "workspace": WORKSPACE_UNSET,
     "bypass-compositor": 0,
     "depth": 24,
-    "opacity": 100,
+    "opacity": -1,
     "quality": -1,
     "speed": -1,
     "decorations": -1,
