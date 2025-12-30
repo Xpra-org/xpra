@@ -571,10 +571,11 @@ class ClientWindow(GObject.GObject):
             from PIL import Image
             img = Image.open(BytesIO(img_data))
             mode = "RGBA" if self.alpha else "RGB"
+            output_mode = "BGRA" if self.alpha else "BGR"
             if img.mode != mode:
                 img = img.convert(mode)
-            pixels = img.tobytes("raw", mode)
-            rowstride = len(mode) * img.size[0]
+            pixels = img.tobytes("raw", output_mode)
+            rowstride = len(output_mode) * img.size[0]
         else:
             err(f"unsupported format {coding!r}")
             return
