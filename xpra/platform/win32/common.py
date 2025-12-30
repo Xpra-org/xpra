@@ -485,7 +485,12 @@ ScreenToClient.restype = BOOL
 ClientToScreen = user32.ClientToScreen
 ClientToScreen.argtypes = [HWND, POINTER(POINT)]
 ClientToScreen.restype = BOOL
-
+SetWindowTextA = user32.SetWindowTextA
+SetWindowTextA.argtypes = [HWND, LPCTSTR]
+SetWindowTextA.restype = BOOL
+SetWindowTextW = user32.SetWindowTextW
+SetWindowTextW.argtypes = [HWND, LPCWSTR]
+SetWindowTextW.restype = BOOL
 
 LoadIconA = user32.LoadIconA
 LoadIconA.restype = HICON

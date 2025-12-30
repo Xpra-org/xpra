@@ -30,6 +30,7 @@ from xpra.platform.win32.common import (
     CREATESTRUCT,
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, SendMessageW,
     GetKeyboardState, ToUnicode, MapVirtualKeyW,
+    SetWindowTextW,
 )
 from xpra.platform.win32.keyboard_config import VK_NAMES
 from xpra.client.win32.common import WM_MESSAGES
@@ -259,12 +260,18 @@ class ClientWindow(GObject.GObject):
         # state:
         self.minimized = False
         self.maximized = False
+        self.fullscreen = False
         self.state_updates = {}
+        self.fullscreen_monitors = ()
         log("new window: %s", metadata)
 
     def create(self):
         self.hwnd = self.create_window() or 0
         if not self.hwnd:
+            log.error("Error creating window")
+            log.error(" geometry=%s", (self.x, self.y, self.width, self.height))
+            log.error(" alpha=%s", self.alpha)
+            log.error(" metadata=%s", self.metadata)
             raise WinError(get_last_error())
         log("hwnd=%s", self.hwnd)
         self.hdc = CreateCompatibleDC(None)
@@ -309,7 +316,7 @@ class ClientWindow(GObject.GObject):
             dwexstyle |= win32con.WS_EX_LAYERED
         x, y, w, h = self.get_system_geometry(dwexstyle)
         log("create_window() system-geometry(%s)=%s", (self.x, self.y, self.width, self.height), (x, y, w, h))
-        if not self.metadata.boolget("set-initial-position", False):
+        if not self.metadata.boolget("override-redirect", False) and not self.metadata.boolget("set-initial-position", False):
             x = win32con.CW_USEDEFAULT
             y = win32con.CW_USEDEFAULT
         return CreateWindowExW(dwexstyle, self.class_atom, title, style,
@@ -504,6 +511,59 @@ class ClientWindow(GObject.GObject):
 
     def update_metadata(self, metadata: typedict):
         self.metadata.update(metadata)
+        self.set_metadata(metadata)
+
+    def set_metadata(self, metadata: typedict):
+        if "title" in metadata:
+            SetWindowTextW(self.hwnd, metadata.strget("title", ""))
+        if "size-constraints" in metadata:
+            self.size_constraints = typedict(metadata.dictget("size-constraints", {}))
+        # if "transient-for" in metadata:
+        #    self.apply_transient_for(metadata.intget("transient-for"))
+        # set parent?
+        if "maximized" in metadata:
+            self.maximized = metadata.boolget("maximized")
+            if self.maximized:
+                ShowWindow(self.hwnd, win32con.SW_MAXIMIZE)
+            else:
+                ShowWindow(self.hwnd, win32con.SW_RESTORE)
+        if "fullscreen-monitors" in metadata:
+            self.fullscreen_monitors = metadata.inttupleget("fullscreen-monitors")
+        if "fullscreen" in metadata:
+            self.fullscreen = metadata.boolget("fullscreen")
+            # todo: set style and dimensions of monitors specified in `self.fullscreen_monitors`
+        if "iconic" in metadata:
+            self.minimized = metadata.boolget("iconic")
+            if self.minimized:
+                ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
+            else:
+                ShowWindow(self.hwnd, win32con.SW_RESTORE)
+        if "decorations" in metadata:
+            pass
+            # decorated = metadata.boolget("decorations", True)
+        if "above" in metadata:
+            change = win32con.HWND_TOPMOST if metadata.boolget("above") else win32con.HWND_NOTOPMOST
+            SetWindowPos(self.hwnd, change, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+
+        if "below" in metadata:
+            if metadata.boolget("below"):
+                # todo: this is not sticky!
+                # re-add it on WM_WINDOWPOSCHANGING
+                SetWindowPos(self.hwnd, win32con.HWND_BOTTOM, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+
+        if "shaded" in metadata:
+            # need to be implemented manually
+            pass
+
+        if "sticky" in metadata:
+            # not supported via an API?
+            pass
+
+        if "skip-taskbar" in metadata:
+            pass
+
+        if "skip-pager" in metadata:
+            pass
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
