@@ -479,6 +479,13 @@ ToUnicode.restype = c_int
 MessageBeep = user32.MessageBeep
 MessageBeep.argtypes = [UINT]
 MessageBeep.restype = BOOL
+ScreenToClient = user32.ScreenToClient
+ScreenToClient.argtypes = [HWND, POINTER(POINT)]
+ScreenToClient.restype = BOOL
+ClientToScreen = user32.ClientToScreen
+ClientToScreen.argtypes = [HWND, POINTER(POINT)]
+ClientToScreen.restype = BOOL
+
 
 LoadIconA = user32.LoadIconA
 LoadIconA.restype = HICON

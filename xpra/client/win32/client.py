@@ -6,7 +6,8 @@
 import signal
 import win32con
 from typing import Any
-from ctypes import wintypes, byref
+from ctypes import byref
+from ctypes.wintypes import POINT
 from collections.abc import Sequence
 
 from xpra.exit_codes import ExitValue
@@ -14,7 +15,7 @@ from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal
 from xpra.client.base.gobject import GObjectXpraClient
 from xpra.client.gui.ui_client_base import UIXpraClient
-from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState
+from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
 from xpra.log import Logger
 
 log = Logger("client")
@@ -95,7 +96,7 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         return ()
 
     def get_mouse_position(self) -> tuple:
-        pos = wintypes.POINT()
+        pos = POINT()
         GetCursorPos(byref(pos))
         return pos.x, pos.y
 
@@ -178,12 +179,21 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         log("send_configure: geometry=%s", (window.x, window.y, window.width, window.height))
         self.send("configure-window", *packet)
 
+    def _pointer_data(self, window, x: int, y: int) -> tuple[int, int, int, int]:
+        absx = window.x + x
+        absy = window.y + y
+        coords = POINT()
+        if ClientToScreen(window.hwnd, byref(coords)):
+            absx = int(coords.x)
+            absy = int(coords.y)
+        return absx, absy, x, y
+
     def window_mouse_moved_event(self, window, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
         log("window_mouse_moved_event(%s, %i, %i, %s, %s)", window, x, y, vk, buttons)
         device_id = -1
         modifiers = vk
         props = {}
-        pos = (window.x + x, window.y + y, x, y)
+        pos = self._pointer_data(window, x, y)
         self.send_mouse_position(device_id, window.wid, pos, modifiers=modifiers, buttons=buttons, props=props)
 
     def window_mouse_clicked_event(self, window, button, pressed, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
@@ -191,14 +201,14 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         device_id = -1
         modifiers = vk
         props = {}
-        pos = (x, y, x - window.x, y-window.y)
+        pos = self._pointer_data(window, x, y)
         self.send_button(device_id, window.wid, button, pressed, pos, modifiers=modifiers, buttons=buttons, props=props)
 
     def window_wheel_event(self, window, x: int, y: int, vertical: bool, vk: Sequence[str], delta: int) -> None:
         log("window_wheel_event(%s, %i, %i, %s, %s, %s)", window, x, y, vertical, vk, delta)
         device_id = -1
         props = {}
-        pos = (x, y, x - window.x, y - window.y)
+        pos = self._pointer_data(window, x, y)
         wheel_delta = self.wheel_delta + delta
         button = 4 if wheel_delta > 0 else 5
         if not vertical:
