@@ -75,6 +75,15 @@ WM_NCXBUTTONDBLCLK = 0x00AD
 WM_MOUSEHWHEEL = 0x020E
 
 
+SIZE_SUBCOMMAND: dict[int: str] = {
+    win32con.SIZE_MAXHIDE: "MAXHIDE",
+    win32con.SIZE_MAXIMIZED: "MAXIMIZED",
+    win32con.SIZE_MAXSHOW: "MAXSHOW",
+    win32con.SIZE_MINIMIZED: "MINIMIZED",
+    win32con.SIZE_RESTORED: "RESTORED",
+}
+
+
 def get_vk_mask(wparam: int) -> tuple[str]:
     return _vk_mask(wparam, MOUSE_VK_MASK)
 
@@ -210,7 +219,9 @@ class ClientWindow(GObject.GObject):
     __gsignals__ = {
         "mapped": no_arg_signal,
         "focused": no_arg_signal,
-        "lost-focus": no_arg_signal,
+        "minimized": no_arg_signal,
+        "maximized": no_arg_signal,
+        "focus-lost": no_arg_signal,
         "moved": no_arg_signal,
         "resized": no_arg_signal,
         "mouse-move": n_arg_signal(4),
@@ -245,6 +256,10 @@ class ClientWindow(GObject.GObject):
         self.bitmap = 0
         self.hicon = 0
         self.hicons: set[HICON] = set()
+        # state:
+        self.minimized = False
+        self.maximized = False
+        self.state_updates = {}
         log("new window: %s", metadata)
 
     def create(self):
@@ -355,15 +370,35 @@ class ClientWindow(GObject.GObject):
             if msg == win32con.WM_SIZE:
                 width = lparam & 0xffff
                 height = (lparam >> 16) & 0xffff
-                if width != self.width or height != self.height:
-                    self.create_backing(width, height)
-                    self.width = width
-                    self.height = height
-                    self.emit("resized")
+                log("WM_SIZE %r: %ix%i", SIZE_SUBCOMMAND.get(wparam, str(wparam)), width, height)
+                if wparam == win32con.SIZE_MINIMIZED:
+                    if not self.minimized:
+                        self.minimized = True
+                        self.state_updates["minimized"] = True
+                        self.emit("minimized")
+                    return 0
+                elif wparam == win32con.SIZE_MAXIMIZED:
+                    if not self.maximized:
+                        self.maximized = True
+                        self.state_updates["maximized"] = True
+                        self.emit("maximized")
+                    return 0
+                elif wparam == win32con.SIZE_MAXHIDE:
+                    return 0
+                elif wparam == win32con.SIZE_MAXSHOW:
+                    return 0
+                elif wparam == win32con.SIZE_RESTORED:
+                    if width != self.width or height != self.height:
+                        self.create_backing(width, height)
+                        self.width = width
+                        self.height = height
+                        self.emit("resized")
+                else:
+                    log("unexpected WM_SIZE wparam %#x", wparam)
             if msg == win32con.WM_SETFOCUS:
                 self.emit("focused")
             if msg == win32con.WM_KILLFOCUS:
-                self.emit("lost-focus")
+                self.emit("focus-lost")
             if msg == win32con.WM_ACTIVATE:
                 log.info("%s: %s", msg_str, ACTIVATION.get(wparam, "unknown"))
             if msg == win32con.WM_MOUSEMOVE:
@@ -472,6 +507,15 @@ class ClientWindow(GObject.GObject):
         if not self.hwnd:
             fire_paint_callbacks(callbacks, False, "window has already been destroyed")
             return
+
+        def done() -> None:
+            if options.intget("flush", 0) == 0:
+                InvalidateRect(self.hwnd, None, True)
+            fire_paint_callbacks(callbacks)
+
+        def err(msg: str) -> None:
+            fire_paint_callbacks(callbacks, False, msg)
+
         if options.boolget("lz4"):
             from xpra.net.lz4.lz4 import decompress
             img_data = decompress(img_data)
@@ -484,7 +528,8 @@ class ClientWindow(GObject.GObject):
                 # mismatch between RGB format received and the HBITMAP buffer format
                 # so use a temporary Bitmap and BitBlt:
                 if rowstride == 0 or rowstride % 4 != 0:
-                    raise ValueError("invalid rowstride %i" % rowstride)
+                    err("invalid rowstride %i" % rowstride)
+                    return
 
                 hdc = GetDC(None)
                 hdc_src = CreateCompatibleDC(hdc)
@@ -514,8 +559,8 @@ class ClientWindow(GObject.GObject):
                     DeleteDC(hdc_src)
                     DeleteDC(hdc_dst)
                     ReleaseDC(None, hdc)
-            elif coding == "rgb24" and self.alpha:
-                pass
+                done()
+                return
             pixels = img_data
         elif coding in ("png", "jpeg", "webp"):
             from PIL import Image
@@ -526,7 +571,8 @@ class ClientWindow(GObject.GObject):
             pixels = img.tobytes("raw", mode)
             rowstride = len(mode) * img.size[0]
         else:
-            raise ValueError(f"unsupported format {coding!r}")
+            err(f"unsupported format {coding!r}")
+            return
 
         offset = y * bitmap_stride + x * bitmap_bpp
         dst = c_void_p(self.pixels.value + offset)
@@ -540,9 +586,10 @@ class ClientWindow(GObject.GObject):
             for i in range(min(height, self.height - y)):
                 dst = c_void_p(self.pixels.value + offset + i * bitmap_stride)
                 memmove(dst, pixels[i * rowstride:], rowlen)
-        if options.intget("flush", 0) == 0:
-            InvalidateRect(self.hwnd, None, True)
-        fire_paint_callbacks(callbacks)
+        done()
+
+    def eos(self):
+        pass
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
         exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)

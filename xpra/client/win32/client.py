@@ -121,7 +121,9 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         window.connect("mapped", self.window_mapped_event)
         window.connect("closed", self.window_closed)
         window.connect("focused", self.window_focused_event)
-        window.connect("lost-focus", self.window_lost_focus_event)
+        window.connect("focus-lost", self.window_focus_lost_event)
+        window.connect("minimized", self.window_minimized_event)
+        window.connect("maximized", self.window_maximized_event)
         window.connect("moved", self.window_moved_event)
         window.connect("resized", self.window_resized_event)
         window.connect("mouse-move", self.window_mouse_moved_event)
@@ -142,9 +144,15 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         log("window_focused_event(%s)", window)
         self.update_focus(window.wid, True)
 
-    def window_lost_focus_event(self, window) -> None:
+    def window_focus_lost_event(self, window) -> None:
         log("window_lost_focus(%s)", window)
         self.update_focus(window.wid, False)
+
+    def window_minimized_event(self, window) -> None:
+        self.send("unmap-window", window.wid)
+
+    def window_maximized_event(self, window) -> None:
+        self.send_configure(window, True)
 
     def window_moved_event(self, window) -> None:
         log("window_moved_event(%s)", window)
@@ -154,10 +162,11 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         log("window_resized_event(%s)", window)
         self.send_configure(window)
 
-    def send_configure(self, window) -> None:
+    def send_configure(self, window, skip_geometry=False) -> None:
         props = {}
         resize_counter = 0
-        state = {}
+        state = window.state_updates
+        window.state_updates = {}
         skip_geometry = False
         packet = [window.wid, window.x, window.y, window.width, window.height, props, resize_counter, state, skip_geometry]
         # pwid = window.wid
