@@ -1084,7 +1084,7 @@ fi
 
 
 %changelog
-* Thu Dec 25 2025 Antoine Martin <antoine@xpra.org> 6.4.1-10
+* Tue Dec 30 2025 Antoine Martin <antoine@xpra.org> 6.4.1-10
 - Platforms, build and packaging:
    cython 3.2.3
    AMF headers include path
@@ -1095,20 +1095,26 @@ fi
    broken Gtk Wayland clipboard
    `exit-ssh` option was getting lost
    auto-reconnect from seamless ssh start
+   handle paramiko failure to compare agent keys more gracefully
+   Wayland client crash loading X11 bindings
 - Keyboard:
    secondary connections cannot use keyboard when sharing
    default keyboard configuration should have default modifier mappings
    help clients figure out modifier mappings
+   use a default translation map if we don't have keycode definitions
+   some keys could not be accessed
 - Minor:
    expose `desktop` flag for desktop windows
    future correctness: use argument provided
    Qt6 client failed to run
    handle missing gtk widget component more gracefully
+   cleanup errors if setup failed
 - Cosmetic:
    confusing message
    more useful message
    show the source of the error
    some exceptions have no message
+   prevent cleanup warnings
 
 * Sun Sep 14 2025 Antoine Martin <antoine@xpra.org> 6.4-10
 - Platforms, build and packaging:
