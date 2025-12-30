@@ -263,7 +263,9 @@ class ClientWindow(GObject.GObject):
         log("new window: %s", metadata)
 
     def create(self):
-        self.hwnd = self.create_window()
+        self.hwnd = self.create_window() or 0
+        if not self.hwnd:
+            raise WinError(get_last_error())
         log("hwnd=%s", self.hwnd)
         self.hdc = CreateCompatibleDC(None)
         log("CreateCompatibleDC()=%#x", self.hdc)
@@ -476,15 +478,18 @@ class ClientWindow(GObject.GObject):
                 scancode = get_bit_range(lparam, 16, 24)
                 pressed = msg == win32con.WM_KEYDOWN
                 self.emit("key", keyname, pressed, vk_code, string, scancode)
+            if msg == win32con.WM_ERASEBKGND:
+                log("skipped erase background")
+                return 1
             if msg == win32con.WM_PAINT:
-                if self.bitmap:
-                    ps = PAINTSTRUCT()
-                    hdc = BeginPaint(hwnd, byref(ps))
-                    log("paint hdc=%#x", hdc)
-                    try:
+                ps = PAINTSTRUCT()
+                hdc = BeginPaint(hwnd, byref(ps))
+                log("paint hdc=%#x", hdc)
+                try:
+                    if self.bitmap:
                         BitBlt(hdc, 0, 0, self.width, self.height, self.hdc, 0, 0, win32con.SRCCOPY)
-                    finally:
-                        EndPaint(hwnd, byref(ps))
+                finally:
+                    EndPaint(hwnd, byref(ps))
                 return 0
             if msg == win32con.WM_GETICON:
                 if self.hicon:
