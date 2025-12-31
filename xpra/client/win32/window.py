@@ -165,7 +165,7 @@ def img_to_hicon(img) -> HICON:
 
     rgb = BITMAPV5HEADER()
     rgb.bV5Size = sizeof(BITMAPV5HEADER)
-    rgb.bV5Width = width * 4
+    rgb.bV5Width = width
     rgb.bV5Height = -height
     rgb.bV5Planes = 1
     rgb.bV5BitCount = 32
