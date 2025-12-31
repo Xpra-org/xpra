@@ -177,7 +177,7 @@ class WindowIconSource:
     def send_window_icon(self) -> None:
         # some of this code could be moved to the work queue half, meh
         assert self.ui_thread == threading.current_thread()
-        if self.suspended:
+        if self.suspended or not self.has_png:
             return
         # this runs in the UI thread
         icons = self.window.get_property("icons")
