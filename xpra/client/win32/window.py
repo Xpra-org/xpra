@@ -373,8 +373,20 @@ class ClientWindow(GObject.GObject):
                 self.emit("closed")
                 return 0
             if msg == win32con.WM_MOVE:
-                self.x = lparam & 0xffff
-                self.y = (lparam >> 16) & 0xffff
+                x = lparam & 0xffff
+                y = (lparam >> 16) & 0xffff
+                if x >= 2**15:
+                    x = x - 2**16
+                if y >= 2**15:
+                    y = y - 2**16
+                if x == -32000 and y == -32000:
+                    if self.minimized:
+                        return 0
+                    self.minimized = True
+                    self.emit("minimized")
+                    return 0
+                self.x = x
+                self.y = y
                 self.emit("moved")
             if msg == win32con.WM_SIZE:
                 width = lparam & 0xffff
