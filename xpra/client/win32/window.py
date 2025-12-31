@@ -565,6 +565,13 @@ class ClientWindow(GObject.GObject):
         if "skip-pager" in metadata:
             pass
 
+    def set_alert_state(self, alert_state: bool) -> None:
+        pass
+
+    def redraw(self):
+        if self.hwnd:
+            InvalidateRect(self.hwnd, None, True)
+
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
                     options: typedict, callbacks: MutableSequence[Callable]):
@@ -575,7 +582,7 @@ class ClientWindow(GObject.GObject):
 
         def done() -> None:
             if options.intget("flush", 0) == 0:
-                InvalidateRect(self.hwnd, None, True)
+                self.redraw()
             fire_paint_callbacks(callbacks)
 
         def err(msg: str) -> None:
