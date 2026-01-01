@@ -265,7 +265,8 @@ class ClientWindow(GObject.GObject):
         self.width = max(1, geom[2])
         self.height = max(1, geom[3])
         self.alpha = metadata.boolget("has-alpha", False)
-        metadata["override-redirect"] = override_redirect
+        if override_redirect:
+            metadata["override-redirect"] = override_redirect
         self.metadata = metadata
         self.wnd_proc = WNDPROC(self.wnd_proc_cb)
         self.wc = self.create_wnd_class()
@@ -282,7 +283,7 @@ class ClientWindow(GObject.GObject):
         self.fullscreen = False
         self.state_updates = {}
         self.fullscreen_monitors = ()
-        log("new window: %s", metadata)
+        log("new window: %s", self.metadata)
 
     def create(self):
         self.hwnd = self.create_window() or 0
@@ -324,7 +325,7 @@ class ClientWindow(GObject.GObject):
         title = self.metadata.strget("title", "")
         dwexstyle = 0
         style = win32con.WS_VISIBLE
-        if self.metadata.get("override-redirect", False):
+        if self.is_OR():
             dwexstyle |= win32con.WS_EX_TOOLWINDOW | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_TOPMOST
             style |= win32con.WS_POPUP
         else:
@@ -335,7 +336,7 @@ class ClientWindow(GObject.GObject):
             dwexstyle |= win32con.WS_EX_LAYERED
         x, y, w, h = self.get_system_geometry(dwexstyle)
         log("create_window() system-geometry(%s)=%s", (self.x, self.y, self.width, self.height), (x, y, w, h))
-        if not self.metadata.boolget("override-redirect", False) and not self.metadata.boolget("set-initial-position", False):
+        if not self.is_OR() and not self.metadata.boolget("set-initial-position", False):
             x = win32con.CW_USEDEFAULT
             y = win32con.CW_USEDEFAULT
         return CreateWindowExW(dwexstyle, self.class_atom, title, style,
