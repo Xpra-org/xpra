@@ -41,6 +41,7 @@ iconlog = Logger("icon")
 drawlog = Logger("draw")
 
 GObject = gi_import("GObject")
+GLib = gi_import("GLib")
 
 
 ACTIVATION: dict[int, str] = {
@@ -283,7 +284,7 @@ class ClientWindow(GObject.GObject):
         self.fullscreen = False
         self.state_updates = {}
         self.fullscreen_monitors = ()
-        log("new window: %s", self.metadata)
+        log("new window: %#x %s", self.wid, self.metadata)
 
     def create(self):
         self.hwnd = self.create_window() or 0
@@ -441,7 +442,7 @@ class ClientWindow(GObject.GObject):
             if msg == win32con.WM_KILLFOCUS:
                 self.emit("focus-lost")
             if msg == win32con.WM_ACTIVATE:
-                log.info("%s: %s", msg_str, ACTIVATION.get(wparam, "unknown"))
+                log("%s: %s", msg_str, ACTIVATION.get(wparam, "unknown"))
             if msg == win32con.WM_MOUSEMOVE:
                 x, y = get_xy_lparam(lparam)
                 vkeys = get_vk_mask(wparam)
@@ -535,7 +536,16 @@ class ClientWindow(GObject.GObject):
                     return self.hicon
                 return 0
             if msg == win32con.WM_DESTROY:
-                self.destroy()
+                # Cleanup GDI resources (bitmaps, DCs, icons)
+                # but NOT the window class yet
+                log("WM_DESTROY: cleaning up GDI resources")
+                self.cleanup_gdi()
+                # Don't return 0 here - let DefWindowProc handle it
+            if msg == win32con.WM_NCDESTROY:
+                # This is the LAST message - window is fully destroyed
+                log("WM_NCDESTROY: will unregister window class")
+                # Use GLib idle to defer until message handler completes
+                GLib.idle_add(self.cleanup_class)
                 return 0
         except Exception:
             log.error("Error handling %s message", msg_str, exc_info=True)
@@ -730,27 +740,39 @@ class ClientWindow(GObject.GObject):
         self.hicons.add(self.hicon)
 
     def destroy(self) -> None:
-        log("destroy() bitmap=%s hwnd=%#x", self.bitmap, self.hwnd)
+        """Called by the client to initiate window destruction"""
+        log("destroy() hwnd=%#x", self.hwnd)
+        hwnd = self.hwnd
+        if hwnd:
+            self.hwnd = 0
+            # Just destroy the window - cleanup happens in WM_NCDESTROY
+            DestroyWindow(hwnd)
+            # The message loop will handle the rest
+
+    def cleanup_gdi(self) -> None:
         bitmap = self.bitmap
         if bitmap:
             self.bitmap = 0
             DeleteObject(bitmap)
+
         self.hicon = 0
         for hicon in tuple(self.hicons):
             DestroyIcon(hicon)
         self.hicons.clear()
+
         hdc = self.hdc
         if hdc:
             self.hdc = 0
             DeleteDC(hdc)
-        hwnd = self.hwnd
-        if hwnd:
-            self.hwnd = 0
-            DestroyWindow(hwnd)
+
+    def cleanup_class(self) -> None:
+        ca = self.class_atom
         wc = self.wc
-        if wc:
-            self.wc = None
-            UnregisterClassW(wc.lpszClassName, self.module_handle)
+        if ca and wc:
+            self.class_atom = 0
+            result = UnregisterClassW(wc.lpszClassName, self.module_handle)
+            if not result:
+                log.warn("UnregisterClassW failed: %s", get_last_error())
 
 
 GObject.type_register(ClientWindow)
