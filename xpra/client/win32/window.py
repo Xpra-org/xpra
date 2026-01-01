@@ -101,6 +101,25 @@ def _vk_mask(wparam: int, mask: dict) -> tuple:
     return tuple(values)
 
 
+def to_signed_coordinate(coord) -> int:
+    """
+    Convert a 16-bit unsigned coordinate to a signed coordinate.
+
+    Windows uses signed coordinates, but when read as unsigned values,
+    negative coordinates (like -32000 for minimized windows) appear
+    as large positive values (like 33536).
+
+    Args:
+        coord: Unsigned 16-bit coordinate value (0-65535)
+
+    Returns:
+        Signed coordinate value (-32768 to 32767)
+    """
+    if coord > 32767:
+        return coord - 65536
+    return coord
+
+
 def get_xy_lparam(lparam: int) -> tuple[int, int]:
     """
         Extract signed X and Y coordinates from a Windows LPARAM value.
@@ -113,17 +132,10 @@ def get_xy_lparam(lparam: int) -> tuple[int, int]:
         """
     # Extract low-order 16 bits (X coordinate)
     x = lparam & 0xFFFF
-    # Convert to signed int16
-    if x >= 0x8000:
-        x -= 0x10000
-
     # Extract high-order 16 bits (Y coordinate)
     y = (lparam >> 16) & 0xFFFF
-    # Convert to signed int16
-    if y >= 0x8000:
-        y -= 0x10000
 
-    return x, y
+    return to_signed_coordinate(x), to_signed_coordinate(y)
 
 
 def get_bit_range(value: int, start: int, end: int):
@@ -208,11 +220,18 @@ def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, ha
     rect.right = x + w
     rect.bottom = y + h
     AdjustWindowRectEx(byref(rect), style, has_menu, exstyle)
-    x = int(rect.left)
-    y = int(rect.top)
-    w = int(rect.right - x)
-    h = int(rect.bottom - y)
-    return x, y, w, h
+    x1, y1, x2, y2 = rect_to_signed(rect)
+    return x1, y1, x2 - x1, y2 - y1
+
+
+def rect_to_signed(rect: RECT) -> tuple[int, int, int, int]:
+    """Convert RECT coordinates to signed values."""
+    return (
+        to_signed_coordinate(rect.left & 0xFFFF),
+        to_signed_coordinate(rect.top & 0xFFFF),
+        to_signed_coordinate(rect.right & 0xFFFF),
+        to_signed_coordinate(rect.bottom & 0xFFFF)
+    )
 
 
 class ClientWindow(GObject.GObject):

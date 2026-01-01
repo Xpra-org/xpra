@@ -143,11 +143,13 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
 
     def window_focused_event(self, window) -> None:
         log("window_focused_event(%s)", window)
-        self.update_focus(window.wid, True)
+        if not window.is_OR():
+            self.update_focus(window.wid, True)
 
     def window_focus_lost_event(self, window) -> None:
         log("window_lost_focus(%s)", window)
-        self.update_focus(window.wid, False)
+        if not window.is_OR():
+            self.update_focus(window.wid, False)
 
     def window_minimized_event(self, window) -> None:
         self.send("unmap-window", window.wid)

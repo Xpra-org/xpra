@@ -181,6 +181,20 @@ class BITMAPV5HEADER(Structure):
 
 PBITMAPV5HEADER = POINTER(BITMAPV5HEADER)
 
+
+class WINDOWPLACEMENT(Structure):
+    _fields_ = [
+        ('flags', UINT),
+        ('showCmd', UINT),
+        ('ptMinPosition', POINT),
+        ('ptMaxPosition', POINT),
+        ('rcNormalPosition', RECT),
+        ('rcDevice', RECT),
+    ]
+
+
+PWINDOWPLACEMENT = POINTER(WINDOWPLACEMENT)
+
 CCHDEVICENAME = 32
 
 
@@ -491,6 +505,9 @@ SetWindowTextA.restype = BOOL
 SetWindowTextW = user32.SetWindowTextW
 SetWindowTextW.argtypes = [HWND, LPCWSTR]
 SetWindowTextW.restype = BOOL
+GetWindowPlacement = user32.GetWindowPlacement
+GetWindowPlacement.restype = BOOL
+GetWindowPlacement.argtypes = [HWND, PWINDOWPLACEMENT]
 
 LoadIconA = user32.LoadIconA
 LoadIconA.restype = HICON
