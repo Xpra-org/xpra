@@ -665,7 +665,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             reset_focus()
             return
         if window.is_OR():
-            focuslog.warn("Warning: cannot focus OR window: %s", window)
+            focuslog("cannot focus OR window: %s", window)
             return
         if not window.is_managed():
             focuslog.warn("Warning: window %s is no longer managed!", window)
