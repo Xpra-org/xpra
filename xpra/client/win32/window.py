@@ -139,34 +139,6 @@ def get_xy_lparam(lparam: int) -> tuple[int, int]:
     return to_signed_coordinate(x), to_signed_coordinate(y)
 
 
-def get_bit_range(value: int, start: int, end: int):
-    """
-    Extract a range of bits from an integer and return them shifted to bit 0.
-
-    Args:
-        value: The integer to extract bits from
-        start: Starting bit position (0-indexed, inclusive)
-        end: Ending bit position (0-indexed, exclusive)
-
-    Returns:
-        int: The extracted bits shifted to start at bit 0
-
-    Example:
-        get_bit_range(0xff00, 8, 10) returns 0x3
-
-        0xff00 = 0b1111111100000000
-        Bits [8:10) = bits at positions 8 and 9 = 0b11 = 0x3
-    """
-    # Calculate the number of bits to extract
-    num_bits = end - start
-
-    # Create a mask with num_bits set to 1
-    mask = (1 << num_bits) - 1
-
-    # Shift the value right by start positions and apply the mask
-    return (value >> start) & mask
-
-
 def img_to_hicon(img) -> HICON:
     log("update_icon(%s) size=%s", img, img.size)
     if img.mode != "RGBA":
@@ -514,7 +486,7 @@ class ClientWindow(GObject.GObject):
                             keyname = "Shift_L"
                         elif vk == VK_RSHIFT:
                             keyname = "Shift_R"
-                scancode = get_bit_range(lparam, 16, 24)
+                scancode = (lparam >> 16) & 0xff
                 pressed = msg == win32con.WM_KEYDOWN
                 self.emit("key", keyname, pressed, vk_code, string, scancode)
             if msg == win32con.WM_ERASEBKGND:
