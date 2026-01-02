@@ -3,7 +3,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from ctypes import sizeof, byref, c_void_p, memmove
+from ctypes.wintypes import HICON
+
 import win32con
+
+from xpra.platform.win32.common import (
+    GetDC, CreateCompatibleDC, BITMAPV5HEADER, CreateDIBSection, CreateBitmap,
+    ICONINFO, CreateIconIndirect, DeleteObject, DeleteDC, ReleaseDC,
+)
+
 
 WM_MESSAGES: dict[int, str] = {
     win32con.WM_NULL: "WM_NULL",
@@ -66,3 +75,82 @@ WM_MESSAGES: dict[int, str] = {
     win32con.WM_SYSCOMMAND: "WM_SYSCOMMAND",
     win32con.WM_SETCURSOR: "WM_SETCURSOR",
 }
+
+
+def to_signed_coordinate(coord) -> int:
+    """
+    Convert a 16-bit unsigned coordinate to a signed coordinate.
+
+    Windows uses signed coordinates, but when read as unsigned values,
+    negative coordinates (like -32000 for minimized windows) appear
+    as large positive values (like 33536).
+
+    Args:
+        coord: Unsigned 16-bit coordinate value (0-65535)
+
+    Returns:
+        Signed coordinate value (-32768 to 32767)
+    """
+    if coord > 32767:
+        return coord - 65536
+    return coord
+
+
+def get_xy_lparam(lparam: int) -> tuple[int, int]:
+    """
+        Extract signed X and Y coordinates from a Windows LPARAM value.
+
+        Args:
+            lparam: The LPARAM value containing packed coordinates
+
+        Returns:
+            tuple: (x, y) as signed integers
+        """
+    # Extract low-order 16 bits (X coordinate)
+    x = lparam & 0xFFFF
+    # Extract high-order 16 bits (Y coordinate)
+    y = (lparam >> 16) & 0xFFFF
+
+    return to_signed_coordinate(x), to_signed_coordinate(y)
+
+
+def img_to_hicon(img) -> HICON:
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    width, height = img.size
+
+    hdc = GetDC(0)
+    memdc = CreateCompatibleDC(hdc)
+
+    rgb = BITMAPV5HEADER()
+    rgb.bV5Size = sizeof(BITMAPV5HEADER)
+    rgb.bV5Width = width
+    rgb.bV5Height = -height
+    rgb.bV5Planes = 1
+    rgb.bV5BitCount = 32
+    rgb.bV5Compression = win32con.BI_RGB
+
+    bits = c_void_p()
+    hbm_color = CreateDIBSection(memdc, rgb, 0, byref(bits), None, 0)
+
+    # Copy RGBA data to the bitmap
+    bgra = img.tobytes("raw", "BGRA")
+    memmove(bits, bgra, len(bgra))
+
+    # Create mask bitmap (for alpha channel)
+    hbm_mask = CreateBitmap(width, height, 1, 1, None)
+
+    iconinfo = ICONINFO()
+    iconinfo.fIcon = True
+    iconinfo.xHotspot = 0
+    iconinfo.yHotspot = 0
+    iconinfo.hbmMask = hbm_mask
+    iconinfo.hbmColor = hbm_color
+
+    hicon = CreateIconIndirect(byref(iconinfo))
+
+    DeleteObject(hbm_color)
+    DeleteObject(hbm_mask)
+    DeleteDC(memdc)
+    ReleaseDC(0, hdc)
+    return hicon

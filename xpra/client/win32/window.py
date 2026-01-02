@@ -5,35 +5,29 @@
 # later version. See the file COPYING for details.
 
 import win32con
-from io import BytesIO
 from collections.abc import MutableSequence, Callable
-from ctypes.wintypes import HWND, BYTE, HICON
-from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER, memmove
+from ctypes.wintypes import HWND, BYTE, HICON, HDC
+from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
 from xpra.client.gui.window.backing import fire_paint_callbacks
-from xpra.common import roundup
+from xpra.client.win32.gdi_backing import GDIBacking
 from xpra.os_util import gi_import
-from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.util.objects import typedict
 from xpra.platform.win32.common import (
     GetModuleHandleA,
     WNDPROC, WNDCLASSEX, RegisterClassExW, UnregisterClassW,
     CreateWindowExW, DestroyWindow, DefWindowProcW,
-    CreateCompatibleDC, DeleteDC, DeleteObject,  # ReleaseDC,
+    CreateCompatibleDC, DeleteDC,
     LoadCursor,
-    ShowWindow, UpdateWindow, InvalidateRect,
-    BeginPaint, EndPaint, PAINTSTRUCT, BitBlt, SetDIBits,
-    ICONINFO, CreateIconIndirect, DestroyIcon, CreateBitmap,
-    GetDC, ReleaseDC,
-    BITMAPV5HEADER, CreateDIBSection, SelectObject,
-    CREATESTRUCT,
+    ShowWindow, UpdateWindow,
+    DestroyIcon, CREATESTRUCT,
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, SendMessageW,
     GetKeyboardState, ToUnicode, MapVirtualKeyW,
     SetWindowTextW,
 )
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
-from xpra.client.win32.common import WM_MESSAGES
+from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
 from xpra.log import Logger
 
 log = Logger("client", "window")
@@ -102,86 +96,6 @@ def _vk_mask(wparam: int, mask: dict) -> tuple:
     return tuple(values)
 
 
-def to_signed_coordinate(coord) -> int:
-    """
-    Convert a 16-bit unsigned coordinate to a signed coordinate.
-
-    Windows uses signed coordinates, but when read as unsigned values,
-    negative coordinates (like -32000 for minimized windows) appear
-    as large positive values (like 33536).
-
-    Args:
-        coord: Unsigned 16-bit coordinate value (0-65535)
-
-    Returns:
-        Signed coordinate value (-32768 to 32767)
-    """
-    if coord > 32767:
-        return coord - 65536
-    return coord
-
-
-def get_xy_lparam(lparam: int) -> tuple[int, int]:
-    """
-        Extract signed X and Y coordinates from a Windows LPARAM value.
-
-        Args:
-            lparam: The LPARAM value containing packed coordinates
-
-        Returns:
-            tuple: (x, y) as signed integers
-        """
-    # Extract low-order 16 bits (X coordinate)
-    x = lparam & 0xFFFF
-    # Extract high-order 16 bits (Y coordinate)
-    y = (lparam >> 16) & 0xFFFF
-
-    return to_signed_coordinate(x), to_signed_coordinate(y)
-
-
-def img_to_hicon(img) -> HICON:
-    log("update_icon(%s) size=%s", img, img.size)
-    if img.mode != "RGBA":
-        img = img.convert("RGBA")
-    width, height = img.size
-
-    hdc = GetDC(0)
-    memdc = CreateCompatibleDC(hdc)
-
-    rgb = BITMAPV5HEADER()
-    rgb.bV5Size = sizeof(BITMAPV5HEADER)
-    rgb.bV5Width = width
-    rgb.bV5Height = -height
-    rgb.bV5Planes = 1
-    rgb.bV5BitCount = 32
-    rgb.bV5Compression = win32con.BI_RGB
-
-    bits = c_void_p()
-    hbm_color = CreateDIBSection(memdc, rgb, 0, byref(bits), None, 0)
-
-    # Copy RGBA data to the bitmap
-    bgra = img.tobytes("raw", "BGRA")
-    memmove(bits, bgra, len(bgra))
-
-    # Create mask bitmap (for alpha channel)
-    hbm_mask = CreateBitmap(width, height, 1, 1, None)
-
-    iconinfo = ICONINFO()
-    iconinfo.fIcon = True
-    iconinfo.xHotspot = 0
-    iconinfo.yHotspot = 0
-    iconinfo.hbmMask = hbm_mask
-    iconinfo.hbmColor = hbm_color
-
-    hicon = CreateIconIndirect(byref(iconinfo))
-
-    DeleteObject(hbm_color)
-    DeleteObject(hbm_mask)
-    DeleteDC(memdc)
-    ReleaseDC(0, hdc)
-    return hicon
-
-
 def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, has_menu=False) -> tuple[int, int, int, int]:
     """
     Convert the window's internal geometry into system coordinates,
@@ -244,10 +158,9 @@ class ClientWindow(GObject.GObject):
         self.wnd_proc = WNDPROC(self.wnd_proc_cb)
         self.wc = self.create_wnd_class()
         self.class_atom = RegisterClassExW(byref(self.wc))
-        self.hwnd = 0
-        self.hdc = 0
+        self.hwnd: HWND = 0
+        self.hdc: HDC = 0
         self.pixels = c_void_p()
-        self.bitmap = 0
         self.hicon = 0
         self.hicons: set[HICON] = set()
         # state:
@@ -256,6 +169,7 @@ class ClientWindow(GObject.GObject):
         self.fullscreen = False
         self.state_updates = {}
         self.fullscreen_monitors = ()
+        self.backing = None
         log("new window: %#x %s", self.wid, self.metadata)
 
     def create(self):
@@ -269,8 +183,7 @@ class ClientWindow(GObject.GObject):
         log("hwnd=%s", self.hwnd)
         self.hdc = CreateCompatibleDC(None)
         log("CreateCompatibleDC()=%#x", self.hdc)
-        self.create_backing(self.width, self.height)
-        log("bitmap=%#x", self.bitmap)
+        self.backing = GDIBacking(self.hdc, self.hwnd, self.width, self.height, self.alpha)
 
     def __repr__(self):
         return "Win32ClientWindow(%#x)" % self.wid
@@ -316,39 +229,6 @@ class ClientWindow(GObject.GObject):
                                x, y, w, h,
                                0, 0, self.module_handle, None)
 
-    def create_backing(self, width: int, height: int):
-        header = BITMAPV5HEADER()
-        header.bV5Size = sizeof(BITMAPV5HEADER)
-        header.bV5Width = width
-        header.bV5Height = -height
-        header.bV5Planes = 1
-        header.bV5BitCount = 8 * (3 + int(self.alpha))
-        header.bV5Compression = win32con.BI_RGB
-        bitmap = CreateDIBSection(self.hdc, byref(header), win32con.DIB_RGB_COLORS, byref(self.pixels), None, 0)
-        if not self.pixels or not bitmap:
-            log.error("Error creating bitmap backing of size %ix%i", width, height)
-            raise WinError(get_last_error())
-        SelectObject(self.hdc, bitmap)
-
-        if self.bitmap:
-            # copy old bitmap contents
-            temp_dc = CreateCompatibleDC(None)
-            SelectObject(temp_dc, self.bitmap)
-
-            # rect = RECT(0, 0, width, height)
-            # FillRect(self.hdc, byref(rect), GetStockObject(BLACK_BRUSH))
-
-            # Copy overlapping region
-            copy_width = min(width, self.width)
-            copy_height = min(height, self.height)
-
-            BitBlt(self.hdc, 0, 0, copy_width, copy_height, temp_dc, 0, 0, win32con.SRCCOPY)
-
-            DeleteDC(temp_dc)
-            DeleteObject(self.bitmap)
-
-        self.bitmap = bitmap
-
     def wnd_proc_cb(self, hwnd: int, msg: int, wparam: int, lparam) -> int:
         msg_str = WM_MESSAGES.get(msg, str(msg))
         log("wnd_proc_cb(%i, %s, %i, %#x)", hwnd, msg_str, wparam, lparam)
@@ -357,8 +237,9 @@ class ClientWindow(GObject.GObject):
                 create = cast(lparam, POINTER(CREATESTRUCT)).contents
                 self.x = create.x
                 self.y = create.y
-                if self.width != create.cx or self.height != create.cy:
-                    self.create_backing(create.cx, create.cy)
+                backing = self.backing
+                if backing and (self.width != create.cx or self.height != create.cy):
+                    backing.resize(create.cx, create.cy)
                     self.width = create.cx
                     self.height = create.cy
                 self.emit("mapped")
@@ -402,8 +283,9 @@ class ClientWindow(GObject.GObject):
                 elif wparam == win32con.SIZE_MAXSHOW:
                     return 0
                 elif wparam == win32con.SIZE_RESTORED:
-                    if width != self.width or height != self.height:
-                        self.create_backing(width, height)
+                    backing = self.backing
+                    if backing and (width != self.width or height != self.height):
+                        backing.resize(width, height)
                         self.width = width
                         self.height = height
                         self.emit("resized")
@@ -493,14 +375,9 @@ class ClientWindow(GObject.GObject):
                 log("skipped erase background")
                 return 1
             if msg == win32con.WM_PAINT:
-                ps = PAINTSTRUCT()
-                hdc = BeginPaint(hwnd, byref(ps))
-                log("paint hdc=%#x", hdc)
-                try:
-                    if self.bitmap:
-                        BitBlt(hdc, 0, 0, self.width, self.height, self.hdc, 0, 0, win32con.SRCCOPY)
-                finally:
-                    EndPaint(hwnd, byref(ps))
+                backing = self.backing
+                if backing:
+                    backing.paint()
                 return 0
             if msg == win32con.WM_GETICON:
                 if self.hicon:
@@ -510,7 +387,7 @@ class ClientWindow(GObject.GObject):
                 # Cleanup GDI resources (bitmaps, DCs, icons)
                 # but NOT the window class yet
                 log("WM_DESTROY: cleaning up GDI resources")
-                self.cleanup_gdi()
+                self.cleanup()
                 # Don't return 0 here - let DefWindowProc handle it
             if msg == win32con.WM_NCDESTROY:
                 # This is the LAST message - window is fully destroyed
@@ -581,101 +458,20 @@ class ClientWindow(GObject.GObject):
     def set_alert_state(self, alert_state: bool) -> None:
         pass
 
-    def redraw(self):
-        if self.hwnd:
-            InvalidateRect(self.hwnd, None, True)
-
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
                     options: typedict, callbacks: MutableSequence[Callable]):
-        drawlog("draw_region%s", (x, y, width, height, coding, type(img_data), rowstride, options, callbacks))
-        if not self.hwnd:
-            fire_paint_callbacks(callbacks, False, "window has already been destroyed")
+        backing = self.backing
+        if not backing:
+            fire_paint_callbacks(callbacks, False, "window does not have a backing!")
             return
 
-        def done() -> None:
-            if options.intget("flush", 0) == 0:
-                self.redraw()
-            fire_paint_callbacks(callbacks)
-
-        def err(msg: str) -> None:
-            fire_paint_callbacks(callbacks, False, msg)
-
-        if options.boolget("lz4"):
-            from xpra.net.lz4.lz4 import decompress
-            img_data = decompress(img_data)
-            drawlog("lz4 decompressed: %r (%s)", img_data, type(img_data))
-            img_data = memoryview_to_bytes(img_data)
-        bitmap_bpp = 3 + int(self.alpha)
-        bitmap_stride = roundup(self.width * bitmap_bpp, 4)
-        if coding in ("rgb24", "rgb32"):
-            if (coding == "rgb32" and not self.alpha) or (coding == "rgb24" and self.alpha):
-                # mismatch between RGB format received and the HBITMAP buffer format
-                # so use a temporary Bitmap and BitBlt:
-                if rowstride == 0 or rowstride % 4 != 0:
-                    err("invalid rowstride %i" % rowstride)
-                    return
-
-                hdc = GetDC(None)
-                hdc_src = CreateCompatibleDC(hdc)
-                hdc_dst = CreateCompatibleDC(hdc)
-
-                rgb = BITMAPV5HEADER()
-                rgb.bV5Size = sizeof(BITMAPV5HEADER)
-                rgb.bV5Width = rowstride // (4 if coding == "rgb32" else 3)
-                rgb.bV5Height = -height
-                rgb.bV5Planes = 1
-                rgb.bV5BitCount = 32 if coding == "rgb32" else 24
-                rgb.bV5Compression = win32con.BI_RGB
-                drawlog("converting from %i bits to alpha=%s", rgb.bV5BitCount, self.alpha)
-
-                # use a temporary bitmap:
-                bitmap = CreateDIBSection(hdc, byref(rgb), win32con.DIB_RGB_COLORS, byref(c_void_p()), None, 0)
-                SetDIBits(hdc, bitmap, 0, height, img_data, byref(rgb), win32con.DIB_RGB_COLORS)
-                old_src = SelectObject(hdc_src, bitmap)
-                old_dst = SelectObject(hdc_dst, self.bitmap)
-                try:
-                    # Blit the rectangle to target
-                    BitBlt(hdc_dst, x, y, width, height, hdc_src, 0, 0, win32con.SRCCOPY)
-                finally:
-                    SelectObject(hdc_src, old_src)
-                    SelectObject(hdc_dst, old_dst)
-                    DeleteObject(bitmap)
-                    DeleteDC(hdc_src)
-                    DeleteDC(hdc_dst)
-                    ReleaseDC(None, hdc)
-                done()
-                return
-            pixels = img_data
-        elif coding in ("png", "jpeg", "webp"):
-            from PIL import Image
-            img = Image.open(BytesIO(img_data))
-            mode = "RGBA" if self.alpha else "RGB"
-            output_mode = "BGRA" if self.alpha else "BGR"
-            if img.mode != mode:
-                img = img.convert(mode)
-            pixels = img.tobytes("raw", output_mode)
-            rowstride = len(output_mode) * img.size[0]
-        else:
-            err(f"unsupported format {coding!r}")
-            return
-
-        offset = y * bitmap_stride + x * bitmap_bpp
-        dst = c_void_p(self.pixels.value + offset)
-        drawlog(f"draw_region {offset=} {dst=} {bitmap_bpp=} {bitmap_stride=} {rowstride=}")
-        if rowstride == bitmap_stride and x == 0 and y >= 0 and width == self.width and y + height <= self.height:
-            # happy path: copy all at once
-            memmove(dst, pixels, rowstride * height)
-        else:
-            # slow path: copy each row separately
-            rowlen = min(width, self.width - x) * bitmap_bpp
-            for i in range(min(height, self.height - y)):
-                dst = c_void_p(self.pixels.value + offset + i * bitmap_stride)
-                memmove(dst, pixels[i * rowstride:], rowlen)
-        done()
+        backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     def eos(self):
-        pass
+        backing = self.backing
+        if backing:
+            backing.eos()
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
         exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
@@ -720,11 +516,11 @@ class ClientWindow(GObject.GObject):
             DestroyWindow(hwnd)
             # The message loop will handle the rest
 
-    def cleanup_gdi(self) -> None:
-        bitmap = self.bitmap
-        if bitmap:
-            self.bitmap = 0
-            DeleteObject(bitmap)
+    def cleanup(self) -> None:
+        backing = self.backing
+        if backing:
+            self.backing = None
+            backing.cleanup()
 
         self.hicon = 0
         for hicon in tuple(self.hicons):
