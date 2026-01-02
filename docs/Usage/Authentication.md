@@ -125,7 +125,7 @@ xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt -
 ### Password File
 
 * with the `file` module, the password-file contains a single password, the whole file is the password (including any trailing newline characters). To write a password to a file without the trailing newline character, you can use `echo -n "thepassword" > password.txt`
-* with `multifile`, the password-file contains a list of authentication values, see [proxy server](Proxy-Server) - this module is deprecated in favour of the `sqlite` module which is much easier to configure
+* with `multifile`, the password-file contains a list of authentication values, see [proxy server](Proxy-Server.md) - this module is deprecated in favour of the `sqlite` module which is much easier to configure
 
 ### Usernames
 The username can be specified:

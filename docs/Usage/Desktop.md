@@ -5,7 +5,7 @@ This feature requires X11 server support and is not available on MacOS or MS Win
 The behaviour is more similar to VNC but with the added benefits of the xpra protocol: audio, printer forwarding, etc. (see [features](../Features/README.md))
 
 You can also connect using VNC clients.\
-To access an existing desktop session, use the [shadow server](Shadow) which is also available on MacOS and MS Windows.
+To access an existing desktop session, use the [shadow server](Shadow.md) which is also available on MacOS and MS Windows.
 
 
 ## Usage
