@@ -7,7 +7,6 @@ from time import monotonic
 from typing import NoReturn
 from collections.abc import Sequence
 
-from xpra.util.env import first_time
 from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
@@ -17,7 +16,7 @@ log = Logger("encoding", "argb")
 
 def noswap(image, rgb_formats, _supports_transparency) -> NoReturn:
     pixel_format = image.get_pixel_format()
-    raise RuntimeError(f"cannot convert from {pixel_format} to {csv(rgb_formats)} without the argb module")
+    raise RuntimeError(f"cannot convert from {pixel_format!r} to {csv(rgb_formats)} without the argb module")
 
 
 argb_swap = noswap
@@ -102,12 +101,7 @@ def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_trans
     if not target_rgb:
         log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
         # try argb module:
-        if argb_swap(image, rgb_formats, supports_transparency):
-            return True
-        warning_key = f"rgb_reformat({pixel_format}, {rgb_formats}, {supports_transparency})"
-        if first_time(warning_key):
-            log.warn(f"Warning: cannot convert {pixel_format!r} to one of: "+csv(rgb_formats))
-        return False
+        return argb_swap(image, rgb_formats, supports_transparency)
     assert Image
     input_format, target_format = target_rgb[0]
     start = monotonic()

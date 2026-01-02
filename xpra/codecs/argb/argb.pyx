@@ -725,7 +725,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False) -> bool:
     warning_key = "format-not-handled-%s" % pixel_format
     if first_time(warning_key):
         log.warn("Warning: no matching argb function,")
-        log.warn(" cannot convert %s to one of: %s", pixel_format, csv(rgb_formats))
+        log.warn(" cannot convert %r to one of: %s", pixel_format, csv(rgb_formats))
     return False
 
 
