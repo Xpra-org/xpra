@@ -28,7 +28,7 @@ from xpra.platform.win32.common import (
     EnumDisplayMonitors,
     GetCursorPos,
     PostMessageA,
-    CreateWindowExA, CreatePopupMenu, AppendMenu,
+    CreateWindowExA, CreatePopupMenu, AppendMenuW,
     LoadIconA,
     DefWindowProcA, RegisterWindowMessageA, RegisterClassExA,
     LoadImageW, DestroyIcon,
@@ -36,6 +36,8 @@ from xpra.platform.win32.common import (
     PostQuitMessage,
     GetModuleHandleExA,
     GetStockObject,
+    SetForegroundWindow,
+    TrackPopupMenu,
 )
 from xpra.log import Logger
 
@@ -519,13 +521,13 @@ def main(args):
 
     def click_callback(_button, _pressed):
         menu = CreatePopupMenu()
-        AppendMenu(menu, win32con.MF_STRING, 1024, "Generate balloon")
-        AppendMenu(menu, win32con.MF_STRING, 1025, "Exit")
+        AppendMenuW(menu, win32con.MF_STRING, 1024, "Generate balloon")
+        AppendMenuW(menu, win32con.MF_STRING, 1025, "Exit")
         pos = POINT()
-        GetCursorPos(addressof(pos))  # NOSONAR
+        GetCursorPos(byref(pos))
         hwnd = tray.hwnd
-        user32.SetForegroundWindow(hwnd)
-        user32.TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos.x, pos.y, 0, hwnd, None)  # @UndefinedVariable
+        SetForegroundWindow(hwnd)
+        TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos.x, pos.y, 0, hwnd, None)  # @UndefinedVariable
         PostMessageA(hwnd, win32con.WM_NULL, 0, 0)
 
     def command_callback(hwnd, cid):

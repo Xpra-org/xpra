@@ -117,6 +117,11 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         from xpra.client.win32.window import ClientWindow
         return (ClientWindow, )
 
+    @staticmethod
+    def get_menu_helper_class():
+        from xpra.client.win32.menu import TrayMenu
+        return TrayMenu
+
     def register_window(self, wid: int, window) -> None:
         super().register_window(wid, window)
         window.connect("mapped", self.window_mapped_event)

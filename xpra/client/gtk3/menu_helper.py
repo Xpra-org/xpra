@@ -11,10 +11,11 @@ from xpra.common import noop
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool, IgnoreWarningsContext
 from xpra.os_util import OSX, gi_import
+from xpra.client.gui.menu_helper import MenuHelper, ImageMenuItem, MenuItem
 from xpra.codecs.icon_util import INKSCAPE_RE
 from xpra.gtk.widget import scaled_image, menuitem
 from xpra.gtk.pixbuf import get_pixbuf_from_data
-from xpra.gtk.dialogs.about import about, close_about
+from xpra.gtk.dialogs.about import close_about
 from xpra.platform.gui import get_icon_size
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
@@ -367,39 +368,13 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding: Callable, se
 # pylint: disable=import-outside-toplevel
 
 
-class MenuHelper:
-
-    def __init__(self, client):
-        self.menu = None
-        self.menu_shown = False
-        self.menu_icon_size = get_icon_size()
-        self.handshake_menuitem: Callable = self.do_handshake_menuitem
-        self.set_client(client)
-
-    def set_client(self, client) -> None:
-        if client:
-            self.client = client
-
-            def shortcut() -> None:
-                self.handshake_menuitem = self.menuitem
-
-            client.after_handshake(shortcut)
-
-    def build(self):
-        log(f"build() menu={self.menu}")
-        if self.menu is None:
-            try:
-                self.menu = self.setup_menu()
-            except Exception as e:
-                log.error("Error: failed to setup menu", exc_info=True)
-                log.estr(e)
-        return self.menu
+class GTKMenuHelper(MenuHelper):
 
     def setup_menu(self):
         log("setup_menu()")
         return self.do_setup_menu(self.get_menu_items())
 
-    def do_setup_menu(self, items: Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]):
+    def do_setup_menu(self, items: Sequence[ImageMenuItem | MenuItem]):
         menu = Gtk.Menu()
         for menu_item in items:
             menu.append(menu_item)
@@ -407,70 +382,24 @@ class MenuHelper:
         menu.show_all()
         return menu
 
-    def get_menu_items(self) -> list[Gtk.ImageMenuItem | Gtk.MenuItem]:
+    def get_menu_items(self) -> list[ImageMenuItem | MenuItem]:
         raise NotImplementedError()
 
+    def set_sensitive(self, menuitem, sensitive: bool):
+        set_sensitive(menuitem, sensitive)
+
     def cleanup(self) -> None:
-        self.close_menu()
+        super().cleanup()
         close_about()
 
-    def close_menu(self) -> None:
-        if self.menu_shown:
-            self.menu.popdown()
-            self.menu_shown = False
-
-    def menu_deactivated(self, *args) -> None:
-        log(f"menu_deactivated{args}")
-        self.menu_shown = False
-
-    def activate(self, button=1, time=0) -> None:
-        log("activate(%s, %s)", button, time)
-        self.show_menu(button, time)
-
-    def popup(self, button: int, time) -> None:
-        log("popup(%s, %s)", button, time)
-        self.show_menu(button, time)
-
-    def show_menu(self, button: int, time) -> None:
-        self.close_menu()
-        if not self.menu:
-            log.warn("Warning: menu is not available yet")
-            return
+    def do_show_menu(self, button: int, time) -> None:
         with IgnoreWarningsContext():
             self.menu.popup(None, None, None, None, button, time)
-        self.menu_shown = True
-
-    def show_shortcuts(self, *args) -> None:
-        self.client.show_shorcuts(*args)
-
-    def show_session_info(self, *args) -> None:
-        self.client.show_session_info(*args)
-
-    def show_bug_report(self, *args) -> None:
-        self.client.show_bug_report(*args)
-
-    def show_debug_config(self, *args) -> None:
-        self.client.show_debug_config(*args)
 
     def get_image(self, icon_name, size=None):
         return self.client.get_image(icon_name, size)
 
-    def after_handshake(self, cb: Callable, *args) -> None:
-        if self.client:
-            self.client.after_handshake(cb, *args)
-
-    def do_handshake_menuitem(self, *args, **kwargs) -> Gtk.ImageMenuItem:
-        """ Same as menuitem() but this one will be disabled until we complete the server handshake """
-        mi = self.menuitem(*args, **kwargs)
-        set_sensitive(mi, False)
-
-        def enable_menuitem(*_args) -> None:
-            set_sensitive(mi, True)
-
-        self.after_handshake(enable_menuitem)
-        return mi
-
-    def menuitem(self, title, icon_name="", tooltip="", cb: Callable = noop, **kwargs) -> Gtk.ImageMenuItem:
+    def menuitem(self, title, icon_name="", tooltip="", cb: Callable = noop, **kwargs) -> ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """
         image = None
         if MENU_ICONS:
@@ -486,10 +415,7 @@ class MenuHelper:
 
         return menuitem(title, image, tooltip, menu_cb)
 
-    def make_aboutmenuitem(self) -> Gtk.ImageMenuItem:
-        return self.menuitem("About Xpra", "xpra.png", cb=about)
-
-    def make_updatecheckmenuitem(self) -> Gtk.ImageMenuItem:
+    def make_updatecheckmenuitem(self) -> ImageMenuItem:
         def show_update_window() -> None:
             from xpra.gtk.dialogs.update_status import get_update_status_window
             w = get_update_status_window()
@@ -498,7 +424,7 @@ class MenuHelper:
 
         return self.menuitem("Check for updates", "update.png", cb=show_update_window)
 
-    def make_qrmenuitem(self) -> Gtk.ImageMenuItem:
+    def make_qrmenuitem(self) -> ImageMenuItem:
         try:
             from xpra.net.qrcode.qrencode import encode_image
         except ImportError as e:
@@ -525,7 +451,7 @@ class MenuHelper:
             qr_menuitem.set_tooltip_text("qrencode library is missing")
         return qr_menuitem
 
-    def make_sessioninfomenuitem(self) -> Gtk.ImageMenuItem:
+    def make_sessioninfomenuitem(self) -> ImageMenuItem:
         def show_session_info_cb(*_args) -> None:
             # we define a generic callback to remove the arguments
             # (which contain the menu widget and are of no interest to the 'show_session_info' function)
@@ -534,41 +460,11 @@ class MenuHelper:
         sessioninfomenuitem = self.handshake_menuitem("Session Info", "statistics.png", cb=show_session_info_cb)
         return sessioninfomenuitem
 
-    def make_bugreportmenuitem(self) -> Gtk.ImageMenuItem:
+    def make_bugreportmenuitem(self) -> ImageMenuItem:
         return self.menuitem("Bug Report", "forward.png", cb=self.show_bug_report)
 
-    def make_debugmenuitem(self) -> Gtk.ImageMenuItem:
+    def make_debugmenuitem(self) -> ImageMenuItem:
         return self.menuitem("Debug Logging", "bugs.png", cb=self.show_debug_config)
 
-    def make_docsmenuitem(self) -> Gtk.ImageMenuItem:
-        from xpra.scripts.main import show_docs
-        from xpra.scripts.config import find_docs_path
-        docs_menuitem = self.menuitem("Documentation", "documentation.png", cb=show_docs)
-        if not find_docs_path():
-            docs_menuitem.set_tooltip_text("documentation not found!")
-            set_sensitive(docs_menuitem, False)
-        return docs_menuitem
-
-    def make_html5menuitem(self) -> Gtk.ImageMenuItem:
-        def show_html5() -> None:
-            from xpra.scripts.main import run_html5
-            from xpra.util.thread import start_thread
-            url_options = {}
-            try:
-                for k in ("port", "host", "username", "mode", "display"):
-                    v = self.client.display_desc.get(k)
-                    if v is not None:
-                        url_options[k] = v
-            except Exception:
-                pass
-            start_thread(run_html5, "open HTML5 client", True, args=(url_options,))
-
-        from xpra.scripts.config import find_html5_path
-        html5_menuitem = self.menuitem("HTML5 client", "browser.png", cb=show_html5)
-        if not find_html5_path():
-            html5_menuitem.set_tooltip_text("html5 client not found!")
-            set_sensitive(html5_menuitem, False)
-        return html5_menuitem
-
-    def make_closemenuitem(self) -> Gtk.ImageMenuItem:
+    def make_closemenuitem(self) -> ImageMenuItem:
         return self.menuitem("Close Menu", "close.png", cb=self.close_menu)

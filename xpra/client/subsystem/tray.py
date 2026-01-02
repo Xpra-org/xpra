@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 #  pylint: disable-msg=E1101
 
-from xpra.platform.systray import get_backends, get_menu_helper_class
+from xpra.platform.systray import get_backends
 from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.objects import make_instance
 from xpra.util.env import envint, envbool
@@ -95,9 +95,16 @@ class TrayClient(StubClientMixin):
         and for showing the menu on windows via a shortcut,
         this method is overriden in the gtk3.client
         """
-        mhc = (get_menu_helper_class(), )
+        mhc = (self.get_menu_helper_class(), )
+        log("get_menu_helper() mhc=%s", mhc)
         self.menu_helper = make_instance(mhc, self)
+        log("get_menu_helper()=%s", self.menu_helper)
         return self.menu_helper
+
+    @staticmethod
+    def get_menu_helper_class():
+        from xpra.platform.systray import get_menu_helper_class
+        return get_menu_helper_class()
 
     def show_menu(self, *_args) -> None:
         if self.menu_helper:

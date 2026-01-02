@@ -6,7 +6,7 @@
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.client.gtk3.menu_helper import MenuHelper
+from xpra.client.gtk3.menu_helper import GTKMenuHelper
 from xpra.gtk.widget import checkitem
 from xpra.common import RESOLUTION_ALIASES
 from xpra.platform.gui import get_icon_size
@@ -22,7 +22,7 @@ def ticked_icon(state: bool) -> str:
     return "ticked.png" if state else "unticked.png"
 
 
-class WindowMenuHelper(MenuHelper):
+class WindowMenuHelper(GTKMenuHelper):
 
     def __init__(self, client, window):
         super().__init__(client)

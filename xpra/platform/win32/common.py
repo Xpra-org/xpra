@@ -608,12 +608,21 @@ GetThreadDesktop.argtypes = [DWORD]
 GetUserObjectInformationA = user32.GetUserObjectInformationA
 GetUserObjectInformationA.restype = BOOL
 GetUserObjectInformationA.argtypes = [HANDLE, INT, LPVOID, DWORD, LPDWORD]
+SetForegroundWindow = user32.SetForegroundWindow
+SetForegroundWindow.restype = BOOL
+SetForegroundWindow.argtypes = [HWND]
+TrackPopupMenu = user32.TrackPopupMenu
+TrackPopupMenu.restype = BOOL
+TrackPopupMenu.argtypes = [HMENU, UINT, c_int, c_int, c_int, HWND, POINTER(RECT)]
 CreatePopupMenu = user32.CreatePopupMenu
 CreatePopupMenu.restype = HMENU
 CreatePopupMenu.argtypes = []
-AppendMenu = user32.AppendMenuW
-AppendMenu.restype = BOOL
-AppendMenu.argtypes = [HMENU, UINT, UINT, LPCWSTR]
+DestroyMenu = user32.DestroyMenu
+DestroyMenu.restype = BOOL
+DestroyMenu.argtypes = [HMENU]
+AppendMenuW = user32.AppendMenuW
+AppendMenuW.restype = BOOL
+AppendMenuW.argtypes = [HMENU, UINT, UINT, LPCWSTR]
 
 # clipboard functions:
 
