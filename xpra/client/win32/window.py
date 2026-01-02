@@ -25,6 +25,8 @@ from xpra.platform.win32.common import (
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, SendMessageW,
     GetKeyboardState, ToUnicode, MapVirtualKeyW,
     SetWindowTextW,
+    InvalidateRect,
+    BeginPaint, EndPaint, PAINTSTRUCT,
 )
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
@@ -183,7 +185,7 @@ class ClientWindow(GObject.GObject):
         log("hwnd=%s", self.hwnd)
         self.hdc = CreateCompatibleDC(None)
         log("CreateCompatibleDC()=%#x", self.hdc)
-        self.backing = GDIBacking(self.hdc, self.hwnd, self.width, self.height, self.alpha)
+        self.backing = GDIBacking(self.wid, self.hdc, self.hwnd, self.width, self.height, self.alpha)
 
     def __repr__(self):
         return "Win32ClientWindow(%#x)" % self.wid
@@ -375,9 +377,13 @@ class ClientWindow(GObject.GObject):
                 log("skipped erase background")
                 return 1
             if msg == win32con.WM_PAINT:
+                ps = PAINTSTRUCT()
+                hdc = BeginPaint(self.hwnd, byref(ps))
                 backing = self.backing
+                log("paint hdc=%#x, backing=%s", hdc, backing)
                 if backing:
-                    backing.paint()
+                    backing.paint(hdc)
+                EndPaint(self.hwnd, byref(ps))
                 return 0
             if msg == win32con.WM_GETICON:
                 if self.hicon:
@@ -465,8 +471,20 @@ class ClientWindow(GObject.GObject):
         if not backing:
             fire_paint_callbacks(callbacks, False, "window does not have a backing!")
             return
+        if coding == "void":
+            fire_paint_callbacks(callbacks)
+            return
+        if options.intget("flush", 0) == 0:
+            callbacks.append(self.draw_callback)
 
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
+
+    def draw_callback(self, success: int | bool, message: str):
+        if success and self.hwnd:
+            GLib.idle_add(self.redraw)
+
+    def redraw(self) -> None:
+        InvalidateRect(self.hwnd, None, True)
 
     def eos(self):
         backing = self.backing
@@ -520,7 +538,7 @@ class ClientWindow(GObject.GObject):
         backing = self.backing
         if backing:
             self.backing = None
-            backing.cleanup()
+            backing.close()
 
         self.hicon = 0
         for hicon in tuple(self.hicons):

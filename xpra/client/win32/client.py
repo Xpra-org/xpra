@@ -61,6 +61,7 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         UIXpraClient.__init__(self)
         self.win32_message_source = 0
         self.wheel_delta = 0
+        self.client_type = "win32"
 
     def __repr__(self):
         return "XpraWin32Client"
