@@ -32,7 +32,7 @@ from xpra.platform.win32.common import (
     GetKeyboardState, ToUnicode, MapVirtualKeyW,
     SetWindowTextW,
 )
-from xpra.platform.win32.keyboard_config import VK_NAMES
+from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.common import WM_MESSAGES
 from xpra.log import Logger
 
@@ -499,7 +499,6 @@ class ClientWindow(GObject.GObject):
                 keyname = VK_NAMES.get(vk_code, string)
                 log("vk_code: %d, string=%r, local_string=%r, scancode=%i, extended=%s, keyname=%r", vk_code, string, local_string, scancode, extended, keyname)
                 if keyname.startswith("VK_"):
-                    from xpra.platform.win32.keyboard_config import VK_X11_MAP
                     keyname = VK_X11_MAP.get(keyname[3:], keyname)
                 if not string:
                     if vk_code == win32con.VK_CONTROL:
