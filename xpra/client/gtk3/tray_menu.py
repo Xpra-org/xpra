@@ -14,7 +14,7 @@ from xpra.util.env import envbool, ignorewarnings
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.common import BACKWARDS_COMPATIBLE, RESOLUTION_ALIASES, ConnectionMessage, uniq
 from xpra.client.gtk3.menu_helper import (
-    MenuHelper,
+    GTKMenuHelper,
     BANDWIDTH_MENU_OPTIONS,
     QUALITY_OPTIONS, MIN_QUALITY_OPTIONS,
     SPEED_OPTIONS, MIN_SPEED_OPTIONS,
@@ -119,7 +119,7 @@ def _hide_window(win) -> None:
     win.freeze()
 
 
-class GTKTrayMenu(MenuHelper):
+class GTKTrayMenu(GTKMenuHelper):
 
     def setup_menu(self) -> Gtk.Menu:
         log("setup_menu()")
