@@ -420,5 +420,4 @@ class PointerServer(StubServerMixin):
             "wheel-motion",
             main_thread=True
         )
-        self.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync_enabled_status, True)
         self.add_packet_handler("button-action", self._process_button_action, True)  # pre v5
