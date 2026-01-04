@@ -128,14 +128,21 @@ class MmapClient(StubClientMixin):
         self.clean_areas()
 
     def clean_areas(self) -> None:
+        def clean(area: MmapArea | None) -> None:
+            try:
+                if not area:
+                    return
+            except ValueError as e:
+                log("clean(%r) %s ignored", area, e)
+                return
+            area.cleanup()
+
         mra = self.mmap_read_area
-        if mra:
-            mra.cleanup()
-            self.mmap_read_area = None
+        self.mmap_read_area = None
+        clean(mra)
         mwa = self.mmap_write_area
-        if mwa:
-            mwa.cleanup()
-            self.mmap_write_area = None
+        self.mmap_write_area = None
+        clean(mwa)
 
     def setup_connection(self, conn) -> None:
         log("setup_connection(%s) mmap supported=%s", conn, self.mmap_supported)
