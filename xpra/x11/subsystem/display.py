@@ -9,7 +9,6 @@ from subprocess import Popen
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX
-from xpra.util.screen import log_screen_sizes
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import XPRA_VERSION
 from xpra.x11.error import xlog, xsync, xswallow, XError
@@ -312,50 +311,6 @@ class X11DisplayManager(DisplayManager):
                 from xpra.x11.bindings.randr import RandRBindings
                 return RandRBindings().get_screen_size()
         return get_root_size()
-
-    def set_screen_geometry_attributes(self, w: int, h: int) -> None:
-        # by default, use the screen as desktop area:
-        self.set_desktop_geometry_attributes(w, h)
-
-    def set_desktop_geometry_attributes(self, w: int, h: int) -> None:
-        self.calculate_desktops()
-        self.calculate_workarea(w, h)
-        self.set_desktop_geometry(w, h)
-
-    def parse_screen_info(self, ss) -> tuple[int, int]:
-        return self.do_parse_screen_info(ss, ss.desktop_size)
-
-    def do_parse_screen_info(self, ss, desktop_size) -> tuple[int, int]:
-        log("do_parse_screen_info%s", (ss, desktop_size))
-        dw, dh = None, None
-        if desktop_size:
-            try:
-                dw, dh = desktop_size
-                log.info(" client root window size is %sx%s", dw, dh)
-                if ss.screen_sizes:
-                    log_screen_sizes(dw, dh, ss.screen_sizes)
-            except Exception:
-                dw, dh = None, None
-        best = self.configure_best_screen_size()
-        if not best:
-            return desktop_size
-        sw, sh = best
-        # we will tell the client about the size chosen in the hello we send back,
-        # so record this size as the current server desktop size to avoid change notifications:
-        ss.desktop_size_server = sw, sh
-        # prefer desktop size, fallback to screen size:
-        w = dw or sw
-        h = dh or sh
-        # clamp to max supported:
-        max_size = self.get_max_screen_size()
-        if max_size:
-            maxw, maxh = max_size
-            w = min(w, maxw)
-            h = min(h, maxh)
-        self.set_desktop_geometry_attributes(w, h)
-        self.apply_refresh_rate(ss)
-        log("configure_best_screen_size()=%s", (w, h))
-        return w, h
 
     def get_all_screen_sizes(self) -> Sequence[tuple[int, int]]:
         # workaround for #2910: the resolutions we add are not seen by XRRSizes!
