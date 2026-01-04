@@ -192,13 +192,13 @@ class KeyboardServer(StubServerMixin):
             return
         log("received new keymap from client: %s", Ellipsizer(packet))
         kc = getattr(ss, "keyboard_config", None)
-        if kc and kc.enabled:
-            if kc.parse_options(props) or force:
-                self.set_keymap(ss, force)
-
-            if "modifiers" in props:
-                modifiers = props.strtupleget("modifiers")
-                ss.make_keymask_match(modifiers)
+        if not kc or not kc.enabled:
+            return
+        if kc.parse_options(props) or force:
+            ss.make_keymask_match([])
+            self.set_keymap(ss, force)
+        if "modifiers" in props:
+            ss.make_keymask_match(props.strtupleget("modifiers"))
 
     def _process_keyboard_config(self, proto, packet: Packet) -> None:
         if self.readonly:
@@ -213,11 +213,10 @@ class KeyboardServer(StubServerMixin):
 
         force = props.boolget("force", False)
         if kc.parse(props) or force:
+            ss.make_keymask_match([])
             self.set_keymap(ss, force)
-
         if "modifiers" in props:
-            modifiers = props.strtupleget("modifiers")
-            ss.make_keymask_match(modifiers)
+            ss.make_keymask_match(props.strtupleget("modifiers"))
 
     def _process_key_action(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
