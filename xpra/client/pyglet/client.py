@@ -175,7 +175,7 @@ class XpraPygletClient:
         self.windows[wid] = window
         window.show()
 
-    def _process_lost_window(self, packet: Packet) -> None:
+    def _process_window_close(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.windows.get(wid)
         if window:

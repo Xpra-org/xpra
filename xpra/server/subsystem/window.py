@@ -365,6 +365,9 @@ class WindowServer(StubServerMixin):
         else:
             ss.unmap_window(wid, window)
 
+    def _process_window_close(self, proto, packet: Packet) -> None:
+        log.info("_process_window_close(%s, %s)", proto, packet)
+
     def _process_window_map(self, proto, packet: Packet) -> None:
         log.info("_process_window_map(%s, %s)", proto, packet)
 
