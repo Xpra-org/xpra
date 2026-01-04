@@ -192,9 +192,11 @@ class KeyboardServer(StubServerMixin):
         kc = getattr(ss, "keyboard_config", None)
         if kc and kc.enabled:
             kc.parse_options(props)
+            ss.make_keymask_match([])
             self.set_keymap(ss, force)
-            modifiers = props.get("modifiers", [])
-            ss.make_keymask_match(modifiers)
+            if "modifiers" in props:
+                modifiers = props.get("modifiers", [])
+                ss.make_keymask_match(modifiers)
 
     def _process_key_action(self, proto, packet: Packet) -> None:
         if self.readonly:
