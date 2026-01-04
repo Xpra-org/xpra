@@ -12,6 +12,7 @@ from typing import Any
 from queue import SimpleQueue
 from multiprocessing import Process
 
+from xpra.net.packet_type import INFO_RESPONSE
 from xpra.server.proxy.instance_base import ProxyInstance
 from xpra.server.proxy.queue_scheduler import QueueScheduler
 from xpra.util.daemon import setuidgid
@@ -277,7 +278,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
         log.info("New proxy instance control connection received:")
         log.info(" '%s'", sc)
         protocol = SocketProtocol(sc, self.process_control_packet, scheduler=self)
-        protocol.large_packets.append("info-response")
+        protocol.large_packets.append(INFO_RESPONSE)
         self.potential_protocols.append(protocol)
         protocol.enable_default_encoder()
         protocol.start()

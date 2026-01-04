@@ -210,7 +210,5 @@ class PingClient(StubClientMixin):
         log(f"got ping, sending echo time={echotime} for {sid=}")
         self.send("ping_echo", echotime, l1, l2, l3, int(1000.0 * sl), sid)
 
-    ######################################################################
-    # packets:
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(*PingClient.PACKET_TYPES)

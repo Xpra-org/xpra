@@ -10,6 +10,7 @@ import re
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.net.common import Packet
+from xpra.net.packet_type import INFO_REQUEST, INFO_RESPONSE
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
@@ -47,7 +48,7 @@ class ServerInfoClient(StubClientMixin):
         if not self.info_request_pending:
             self.info_request_pending = True
             window_ids = ()  # no longer used or supported by servers
-            self.send("info-request", [self.uuid], window_ids, categories)
+            self.send(INFO_REQUEST, [self.uuid], window_ids, categories)
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("info-response")
+        self.add_packets(INFO_RESPONSE)

@@ -79,11 +79,6 @@ class NotificationClient(StubClientMixin):
             }
         return caps
 
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets(f"{NotificationClient.PREFIX}-show", f"{NotificationClient.PREFIX}-close")
-        self.add_legacy_alias("notify_show", f"{NotificationClient.PREFIX}-show")
-        self.add_legacy_alias("notify_close", f"{NotificationClient.PREFIX}-close")
-
     def make_notifier(self):
         nc = self.get_notifier_classes()
         log("make_notifier() notifier classes: %s", nc)
@@ -192,3 +187,8 @@ class NotificationClient(StubClientMixin):
     def get_tray_window(self, _app_name, _hints):
         # overridden in subclass to use the correct window if we can find it
         return self.tray
+
+    def init_authenticated_packet_handlers(self) -> None:
+        self.add_packets(f"{NotificationClient.PREFIX}-show", f"{NotificationClient.PREFIX}-close")
+        self.add_legacy_alias("notify_show", f"{NotificationClient.PREFIX}-show")
+        self.add_legacy_alias("notify_close", f"{NotificationClient.PREFIX}-close")

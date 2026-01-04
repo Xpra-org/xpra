@@ -13,6 +13,7 @@ from collections.abc import Callable, Iterable
 from xpra.audio.common import AUDIO_DATA_PACKET
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
+from xpra.net.packet_type import INFO_RESPONSE
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
@@ -448,7 +449,7 @@ class ProxyInstance:
             self.server_last_ping_latency = 1000 * monotonic() - self.server_last_ping_echo
             log("ping-echo: server latency=%.1fms", self.server_last_ping_latency)
             return
-        elif packet_type == "info-response":
+        elif packet_type == INFO_RESPONSE:
             # adds proxy info:
             # note: this is only seen by the client application
             # "xpra info" is a new connection, which talks to the proxy server...

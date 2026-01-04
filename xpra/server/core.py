@@ -17,6 +17,7 @@ from types import FrameType
 from typing import Any, NoReturn
 from collections.abc import Callable, Sequence, Iterable
 
+from xpra.net.packet_type import INFO_RESPONSE
 from xpra.util.version import XPRA_VERSION, version_str, version_compat_check
 from xpra.scripts.server import deadly_signal
 from xpra.exit_codes import ExitValue, ExitCode
@@ -986,7 +987,7 @@ class ServerCore(ServerBaseClass):
         def xpra_protocol_class(conn):
             """ adds xpra protocol tweaks after creating the instance """
             protocol = protocol_class(conn, self.process_packet)
-            protocol.large_packets.append("info-response")
+            protocol.large_packets.append(INFO_RESPONSE)
             return protocol
 
         return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class, pre_read)

@@ -13,6 +13,7 @@ from threading import Event
 from collections import deque
 from queue import SimpleQueue
 
+from xpra.net.packet_type import INFO_RESPONSE
 from xpra.util.thread import start_thread
 from xpra.common import FULL_INFO, noop, BACKWARDS_COMPATIBLE
 from xpra.util.objects import AtomicInteger, typedict, notypedict
@@ -298,7 +299,7 @@ class ClientConnection(StubClientConnection):
         return info
 
     def send_info_response(self, info: dict) -> None:
-        self.send_async("info-response", notypedict(info))
+        self.send_async(INFO_RESPONSE, notypedict(info))
 
     def send_setting_change(self, setting: str, value: PacketElement) -> None:
         self.send_more("setting-change", setting, value)

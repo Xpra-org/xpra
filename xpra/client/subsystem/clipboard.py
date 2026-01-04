@@ -332,5 +332,6 @@ class ClipboardClient(StubClientMixin):
                                                  level=9, can_inline=False, brotli=True)
         return ProtocolCompressible(compressible.datatype, compressible.data)
 
-    def clipboard_notify(self, n: int) -> None:
+    @staticmethod
+    def clipboard_notify(n: int) -> None:
         log("clipboard_notify(%i)", n)

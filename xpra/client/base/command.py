@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.net.packet_type import PRINT_FILE, DISPLAY_REQUEST_SCREENSHOT
+from xpra.net.packet_type import PRINT_FILE, DISPLAY_REQUEST_SCREENSHOT, INFO_REQUEST, INFO_RESPONSE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
@@ -404,14 +404,14 @@ class InfoTimerClient(MonitorXpraClient):
         if not self.info_request_pending:
             self.info_request_pending = True
             window_ids = ()  # no longer used or supported by servers
-            self.send("info-request", [self.uuid], window_ids, categories)
+            self.send(INFO_REQUEST, [self.uuid], window_ids, categories)
         if not self.info_timer:
             self.info_timer = GLib.timeout_add((self.REFRESH_RATE + 2) * 1000, self.info_timeout)
         return True
 
     def init_packet_handlers(self) -> None:
         MonitorXpraClient.init_packet_handlers(self)
-        self.add_packets("info-response")
+        self.add_packets(INFO_RESPONSE)
 
     def _process_server_event(self, packet: Packet) -> None:
         self.log("server event: %s" % (packet,))
