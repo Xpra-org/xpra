@@ -75,7 +75,7 @@ class XSettingsServer(StubServerMixin):
         return {}
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("server-settings", "info-request", main_thread=True)
+        self.add_packets("server-settings", main_thread=True)
 
     def _process_server_settings(self, _proto, packet: Packet) -> None:
         settings = packet.get_dict(1)
