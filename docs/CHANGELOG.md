@@ -1,11 +1,12 @@
 # Changelog
 
-## [6.4.1] 2025-12-30
+## [6.4.1] 2026-01-04
 * Platforms, build and packaging:
   * [cython 3.2.3](https://github.com/Xpra-org/xpra/commit/24259e0b223d35fdc293ee49d23d2dd863b2ff98)
   * [AMF headers include path](https://github.com/Xpra-org/xpra/commit/0019e6483ec1f2422548d057a1983b3e4f10f362)
   * [can't use loose match without `difflib`](https://github.com/Xpra-org/xpra/commit/43e726dc0a008e67cc53ebd274710834c94e72ab)
   * [MS Windows client errors on control-c](https://github.com/Xpra-org/xpra/commit/183259716df3b0ffa13fb6c0fffcc957734c60a3)
+  * [MS Windows packaging fix for python-pillow](https://github.com/Xpra-org/xpra/commit/d951521b77f41f10d7eab65b7b01723179547a17)
 * Major:
   * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/390af2f04be8ce871c0dbe4a5a04290e496f34b2)
   * [broken Gtk Wayland clipboard](https://github.com/Xpra-org/xpra/commit/6fd2cd83ad2f69159287f6549032b30f3feb4696)
@@ -19,18 +20,27 @@
   * [help clients figure out modifier mappings](https://github.com/Xpra-org/xpra/commit/12f3b526e00a4ea00ccc115150d563f3ec3926b1)
   * [use a default translation map if we don't have keycode definitions](https://github.com/Xpra-org/xpra/commit/c9b82bb68aafd2bd3c24b2cc81d8ff93d05661dc)
   * [some keys could not be accessed](https://github.com/Xpra-org/xpra/commit/ead158c4f76a083abea2c55bd01e1bf1c54029b2)
+  * [skip modifiers warning during initialization](https://github.com/Xpra-org/xpra/commit/757efd71abddb671cdd4689adac343bac895aabd)
+  * [clear modifiers before changing the keymap](https://github.com/Xpra-org/xpra/commit/96dfdd1b5c59be3faf9053105038b8cefa92b33a)
+  * [client keyboard 'options' attribute was not forwarded](https://github.com/Xpra-org/xpra/commit/af20a599156b55098ba759af9bcb024f96a5cad2)
+  * [honour layout and variant overrides](https://github.com/Xpra-org/xpra/commit/c7ece8c7d7239be8006c3b287599d4ede1d62410)
 * Minor:
   * [expose `desktop` flag for desktop windows](https://github.com/Xpra-org/xpra/commit/1b37200c4f89c33f53d9515db448e98b70f853d5)
   * [future correctness: use argument provided](https://github.com/Xpra-org/xpra/commit/a39e99e905b57f0049db3502f28ccebc5ee0badd)
   * [Qt6 client failed to run](https://github.com/Xpra-org/xpra/commit/ffee44af591d175ffe63652ce322585286567834)
   * [handle missing gtk widget component more gracefully](https://github.com/Xpra-org/xpra/commit/78039aedc0637b5e4095548935890ee9e33e042a)
   * [cleanup errors if setup failed](https://github.com/Xpra-org/xpra/commit/017f5617402138862d5322068e26d75280a269d0)
+  * [wrong location for handler registration](https://github.com/Xpra-org/xpra/commit/913b2c48b7c32768f488d51abaea935eb76266f0)
 * Cosmetic:
   * [confusing message](https://github.com/Xpra-org/xpra/commit/eb8340b68b849a5a19bdbc10bebdef5bc0960f35)
   * [more useful message](https://github.com/Xpra-org/xpra/commit/e8580af46ce3c0f3f980f494b1778e1c77e48ae9)
   * [show the source of the error](https://github.com/Xpra-org/xpra/commit/5fac46f4cc71c989c73b9cf3cb4ef97d911f27c5)
   * [some exceptions have no message](https://github.com/Xpra-org/xpra/commit/7e3b270ae10b506595ccee70fa2c610d63a7c38b)
   * [prevent cleanup warnings](https://github.com/Xpra-org/xpra/commit/058d4ddbc56f7625209411047ae9d10151b56cb7)
+  * [more resilient mmap cleanup](https://github.com/Xpra-org/xpra/commit/313bc44eacb722ab57300376dfedd82e845a9d22)
+  * [broken links in documentation](https://github.com/Xpra-org/xpra/commit/574fa4dbef48d71a96e508623900b2da97dd1515)
+  * [overwritten cursor attributes](https://github.com/Xpra-org/xpra/commit/3d8a8633d3b48c411d36bb5efe5c33fe1f7459d1)
+  * [always log full failure details at debug level](https://github.com/Xpra-org/xpra/commit/f0c1761ec32eed72f943dbaf15e89fcf05ba2654)
 
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:

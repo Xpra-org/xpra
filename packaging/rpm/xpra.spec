@@ -1084,12 +1084,13 @@ fi
 
 
 %changelog
-* Tue Dec 30 2025 Antoine Martin <antoine@xpra.org> 6.4.1-10
+* Sun Jan 04 2026 Antoine Martin <antoine@xpra.org> 6.4.1-10
 - Platforms, build and packaging:
    cython 3.2.3
    AMF headers include path
    can't use loose match without `difflib`
    MS Windows client errors on control-c
+   MS Windows packaging fix for python-pillow
 - Major:
    virtual monitor geometry synchronization
    broken Gtk Wayland clipboard
@@ -1103,18 +1104,27 @@ fi
    help clients figure out modifier mappings
    use a default translation map if we don't have keycode definitions
    some keys could not be accessed
+   skip modifiers warning during initialization
+   clear modifiers before changing the keymap
+   client keyboard 'options' attribute was not forwarded
+   honour layout and variant overrides
 - Minor:
    expose `desktop` flag for desktop windows
    future correctness: use argument provided
    Qt6 client failed to run
    handle missing gtk widget component more gracefully
    cleanup errors if setup failed
+   wrong location for handler registration
 - Cosmetic:
    confusing message
    more useful message
    show the source of the error
    some exceptions have no message
    prevent cleanup warnings
+   more resilient mmap cleanup
+   boken links in documentation
+   overwritten cursor attributes
+   always log full failure details at debug level
 
 * Sun Sep 14 2025 Antoine Martin <antoine@xpra.org> 6.4-10
 - Platforms, build and packaging:
