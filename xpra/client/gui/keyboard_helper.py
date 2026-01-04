@@ -353,7 +353,7 @@ class KeyboardHelper:
     def get_keymap_properties(self, skip=()):
         props = {}
         for x in (
-            "layout", "layouts", "variant", "variants",
+            "layout", "layouts", "variant", "variants", "options",
             "raw", "layout_groups",
             "query_struct", "mod_meanings",
             "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes",
