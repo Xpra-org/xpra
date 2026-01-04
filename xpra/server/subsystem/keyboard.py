@@ -255,7 +255,9 @@ class KeyboardServer(StubServerMixin):
         client_keycode = attrs.intget("keycode", 0)
         group = attrs.intget("group", 0)
         ss = self.get_server_source(proto)
-        if not hasattr(ss, "keyboard_config"):
+        keyboard_config = getattr(ss, "keyboard_config", None)
+        log(f"keyboard event: {wid=}, {keyname=!r}, {pressed}, {attrs}, {keyboard_config=}")
+        if not keyboard_config:
             return
         self.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)

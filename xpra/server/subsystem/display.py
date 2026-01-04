@@ -258,7 +258,7 @@ class DisplayManager(StubServerMixin):
             h = min(h, maxh)
         self.set_desktop_geometry_attributes(w, h)
         self.apply_refresh_rate(ss)
-        log("configure_best_screen_size()=%s", (w, h))
+        log("do_parse_screen_info(..)=%s", (w, h))
         return w, h
 
     def schedule_screen_changed(self, screen):
