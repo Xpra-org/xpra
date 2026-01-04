@@ -465,7 +465,6 @@ class KeyboardConfig(KeyboardConfigBase):
             keymap = get_gtk_keymap()
         except ImportError:
             log("add_gtk_keynames()", exc_info=True)
-            log.warn("Warning: unable to use gtk keymap")
             return
         log("add_gtk_keynames() gtk keymap=%s", Ellipsizer(keymap))
         for _, keyname, keycode, _, _ in keymap:
