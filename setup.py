@@ -2278,6 +2278,10 @@ if WIN32:
     if yaml_ENABLED:
         external_includes.append("yaml")
 
+    if codecs_ENABLED:
+        external_includes.append("decimal")
+        external_includes.append("_pydecimal")
+
     external_includes.append("cairo")
     external_includes.append("certifi")
 
