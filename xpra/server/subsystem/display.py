@@ -6,6 +6,7 @@
 import os
 from typing import Any
 
+from xpra.net.packet_type import DISPLAY_CONFIGURE
 from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.rectangle import rectangle
 from xpra.util.objects import typedict
@@ -339,51 +340,30 @@ class DisplayManager(StubServerMixin):
 
     def _process_desktop_size(self, proto, packet: Packet) -> None:
         log("new desktop size from %s: %s", proto, packet)
-        ss = self.get_server_source(proto)
-        if ss is None:
-            return
-        width = packet.get_u16(1)
-        height = packet.get_u16(2)
-        ss.desktop_size = (width, height)
-        if len(packet) >= 12:
-            ss.set_monitors(packet[11])
-        elif len(packet) >= 11:
-            # fallback to the older global attribute:
-            v = packet[10]
-            if 0 < v < 240 and getattr(ss, "vrefresh", 0) != v:
-                ss.vrefresh = v
-        if len(packet) >= 10:
-            # added in 0.16 for scaled client displays:
-            xdpi = packet.get_u16(8)
-            ydpi = packet.get_u16(9)
-            if xdpi != self.xdpi or ydpi != self.ydpi:
-                self.xdpi, self.ydpi = xdpi, ydpi
-                log("new dpi: %ix%i", self.xdpi, self.ydpi)
-                self.dpi = round((self.xdpi + self.ydpi) / 2)
-                self.dpi_changed()
-        if len(packet) >= 8:
-            # added in 0.16 for scaled client displays:
-            dsw = packet.get_u16(6)
-            dsh = packet.get_u16(7)
-            ss.desktop_size_unscaled = (dsw, dsh)
-        if len(packet) >= 6:
-            desktops = packet.get_u8(4)
-            desktop_names = packet.get_strs(5)
-            ss.set_desktops(desktops, desktop_names)
-            self.calculate_desktops()
-        if len(packet) >= 4:
-            ss.set_screen_sizes(packet[3])
-        log("client requesting new size: %sx%s", width, height)
-        self.set_screen_size(width, height)
-        self.set_desktop_geometry_attributes(width, height)
-        if len(packet) >= 4:
-            log.info("received updated display dimensions")
-            log.info("client display size is %sx%s", width, height)
-            log_screen_sizes(width, height, ss.screen_sizes)
-            self.calculate_workarea(width, height)
-        self.apply_refresh_rate(ss)
-        # ensures that DPI and antialias information gets reset:
-        self.update_all_server_settings()
+        assert BACKWARDS_COMPATIBLE
+        root_w = packet.get_u16(1)
+        root_h = packet.get_u16(2)
+        ndesktops = packet.get_u8(3)
+        desktop_names = packet.get_strs(4)
+        u_root_w = packet.get_u16(5)
+        u_root_h = packet.get_u16(6)
+        xdpi = packet.get_u16(7)
+        ydpi = packet.get_u16(8)
+        rrate = packet.get_u16(9)
+        monitors = packet.get_dict(10)
+        attrs: dict[str, Any] = {
+            "desktop-size": (root_w, root_h),
+            "desktop-size-unscaled": (u_root_w, u_root_h),
+            "monitors": monitors,
+            "dpi": {"x": xdpi, "y": ydpi},
+        }
+        if ndesktops:
+            attrs["desktops"] = ndesktops
+            attrs["desktop-names"] = desktop_names or ()
+        if rrate:
+            attrs["vrefresh"] = rrate
+        packet = Packet(DISPLAY_CONFIGURE, attrs)
+        self._process_display_configure(proto, packet)
 
     def set_screen_size(self, width: int, height: int):
         """ subclasses should override this method if they support resizing """
@@ -518,6 +498,8 @@ class DisplayManager(StubServerMixin):
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
-        self.add_legacy_alias("configure-display", "display-configure")
-        self.add_legacy_alias("screenshot", "display-request-screenshot")
-        self.add_packets("desktop_size", "display-configure", "display-request-screenshot", main_thread=True)
+        self.add_packets("display-configure", "display-request-screenshot", main_thread=True)
+        if BACKWARDS_COMPATIBLE:
+            self.add_legacy_alias("configure-display", "display-configure")
+            self.add_legacy_alias("screenshot", "display-request-screenshot")
+            self.add_packets("desktop_size", main_thread=True)

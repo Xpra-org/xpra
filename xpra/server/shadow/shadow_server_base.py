@@ -20,7 +20,7 @@ from xpra.net.packet_type import WINDOW_CREATE
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
-from xpra.common import NotificationID, ConnectionMessage
+from xpra.common import NotificationID, ConnectionMessage, BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -413,6 +413,7 @@ class ShadowServerBase(ServerBase):
         return self.get_display_size()
 
     def _process_desktop_size(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         # just record the screen size info in the source
         ss = self.get_server_source(proto)
         if ss and len(packet) >= 4:
