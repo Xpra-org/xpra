@@ -104,7 +104,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycode_mappings: dict[int, list[str]] = {}
         self.keyval_mappings = {}
 
-        self.compute_modifiers()
+        self.compute_modifiers(True)
         self.compute_modifier_map()
 
     def __repr__(self):
@@ -226,7 +226,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 hashadd(self.query_struct.get(k))
         return "%s/%s/%s/%s" % (self.layout, self.variant, self.options, m.hexdigest())
 
-    def compute_modifiers(self) -> None:
+    def compute_modifiers(self, initial=False) -> None:
         log("compute_modifiers() raw=%s", self.raw)
         if self.raw:
             with xsync:
@@ -257,7 +257,8 @@ class KeyboardConfig(KeyboardConfigBase):
                 if MAP_MISSING_MODIFIERS:
                     map_missing_modifiers(self.keynames_for_mod)
             else:
-                log.info("client did not supply any modifier definitions, using defaults")
+                if not initial:
+                    log.info("client did not supply any modifier definitions, using defaults")
                 self.keynames_for_mod = get_modifiers_from_meanings(DEFAULT_MODIFIER_MEANINGS)
                 if MAP_MISSING_MODIFIERS:
                     map_missing_modifiers(self.keynames_for_mod)
