@@ -10,6 +10,7 @@ from ctypes import byref
 from ctypes.wintypes import POINT
 from collections.abc import Sequence
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitValue
 from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from xpra.os_util import gi_import
@@ -224,13 +225,24 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
             button += 4
         self.wheel_delta = self.send_wheel_delta(device_id, window.wid, button, abs(wheel_delta), pointer=pos, props=props)
 
-    def window_key_event(self, window, keyname: str, pressed: bool, vk_code: int, string: str, scancode: int) -> None:
-        keylog("window_key_event(%s, %r, %s, %i, %r, %i)", window, keyname, pressed, vk_code, string, scancode)
+    def window_key_event(self, window, keyname: str, pressed: bool, vk_code: int, string: str, scancode: int, extended: bool) -> None:
+        keylog("window_key_event(%s, %r, %s, %i, %r, %i)", window, keyname, pressed, vk_code, string, scancode, extended)
         mods = get_modifiers()
-        keyval = scancode
-        keycode = vk_code
-        group = 0
-        self.send("key-action", window.wid, keyname, pressed, mods, keyval, string, keycode, group)
+        if BACKWARDS_COMPATIBLE:
+            keyval = scancode
+            keycode = vk_code
+            group = 0
+            self.send("key-action", window.wid, keyname, pressed, mods, keyval, string, keycode, group)
+        else:
+            self.send("keyboard-event", window.wid, keyname, pressed, {
+                "modifiers": mods,
+                "string": string,
+                "keyval": scancode,
+                "keycode": vk_code,
+                "scancode": scancode,
+                "vk_code": vk_code,
+                "extended": extended,
+            })
 
     # server event
     @staticmethod

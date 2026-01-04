@@ -372,7 +372,7 @@ class ClientWindow(GObject.GObject):
                             keyname = "Shift_R"
                 scancode = (lparam >> 16) & 0xff
                 pressed = msg == win32con.WM_KEYDOWN
-                self.emit("key", keyname, pressed, vk_code, string, scancode)
+                self.emit("key", keyname, pressed, vk_code, string, scancode, extended)
             if msg == win32con.WM_ERASEBKGND:
                 log("skipped erase background")
                 return 1
