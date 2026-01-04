@@ -272,7 +272,7 @@ PACKET_TYPES: list[str] = [
     "input-devices",
     # keyboard:
     "set-keyboard-sync-enabled",
-    "key-action", "key-repeat",
+    "key-action",
     "layout-changed", "keymap-changed",
     # webcam:
     "webcam-stop", "webcam-ack",

@@ -359,43 +359,7 @@ class KeyboardServer(StubServerMixin):
         self.keys_timedout[keycode] = now
 
     def _process_key_repeat(self, proto, packet: Packet) -> None:
-        if self.readonly:
-            return
-        ss = self.get_server_source(proto)
-        if not hasattr(ss, "keyboard_config"):
-            return
-        wid = packet.get_wid()
-        keyname = packet.get_str(2)
-        keyval = packet.get_u32(3)
-        client_keycode = packet.get_u32(4)
-        modifiers = packet.get_strs(5)
-        group = 0
-        if len(packet) >= 7:
-            group = packet.get_u8(6)
-        keystr = ""
-        keycode, group = ss.get_keycode(client_keycode, keyname, modifiers, keyval, keystr, group)
-        if group >= 0:
-            self.set_keyboard_layout_group(group)
-        # key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
-        ss.make_keymask_match(modifiers)
-        if not ss.keyboard_config.sync:
-            # this check should be redundant: clients should not send key-repeat without
-            # having keyboard_sync enabled
-            return
-        if keycode not in self.keys_pressed:
-            # the key is no longer pressed, has it timed out?
-            when_timedout = self.keys_timedout.get(keycode, None)
-            if when_timedout:
-                del self.keys_timedout[keycode]
-            now = monotonic()
-            if when_timedout and (now - when_timedout) < 30:
-                # not so long ago, just re-press it now:
-                log("key %s/%s, had timed out, re-pressing it", keycode, keyname)
-                self.keys_pressed[keycode] = keyname
-                self.fake_key(keycode, True)
-        is_mod = ss.is_modifier(keyname, keycode)
-        self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, is_mod, self.key_repeat_interval)
-        ss.emit("user-event", "key-repeat")
+        assert BACKWARDS_COMPATIBLE
 
     def _process_keyboard_sync(self, proto, packet: Packet) -> None:
         if self.readonly:
