@@ -360,7 +360,12 @@ class KeyboardHelper:
             ):
             if x in skip:
                 continue
-            v = getattr(self, x)
+            v = None
+            if x in ("layout", "variant"):
+                # let the 'layout_option' and 'variant_option' override:
+                v = getattr(self, f"{x}_option", "")
+            if not v:
+                v = getattr(self, x)
             if v:
                 props[x] = v
         props["sync"] = self.keyboard_sync
