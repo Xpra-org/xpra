@@ -53,7 +53,7 @@ class CursorClient(StubClientMixin):
             "max": get_max_cursor_size(),
         }.items():
             if min(size) > 0:
-                cursor_caps.setdefault("size", {})[name] = size
+                cursor_caps[name] = size
         if BACKWARDS_COMPATIBLE:
             dsize = get_default_cursor_size()
             if max(dsize) > 0:
