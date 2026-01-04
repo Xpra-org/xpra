@@ -11,6 +11,7 @@ from ctypes.wintypes import POINT
 from collections.abc import Sequence
 
 from xpra.exit_codes import ExitValue
+from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal
 from xpra.client.base.gobject import GObjectXpraClient
@@ -141,11 +142,11 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
 
     def window_mapped_event(self, window) -> None:
         log("window_mapped_event(%s)", window)
-        self.send("map-window", window.wid, window.x, window.y, window.width, window.height, {}, {})
+        self.send(WINDOW_MAP, window.wid, window.x, window.y, window.width, window.height, {}, {})
 
     def window_closed(self, window) -> None:
         log("window_closed(%s)", window)
-        self.send("close-window", window.wid)
+        self.send(WINDOW_CLOSE, window.wid)
 
     def window_focused_event(self, window) -> None:
         log("window_focused_event(%s)", window)
@@ -158,7 +159,7 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
             self.update_focus(window.wid, False)
 
     def window_minimized_event(self, window) -> None:
-        self.send("unmap-window", window.wid)
+        self.send(WINDOW_UNMAP, window.wid)
 
     def window_maximized_event(self, window) -> None:
         self.send_configure(window, True)
@@ -185,7 +186,7 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         # packet.append(self.get_mouse_position())
         # packet.append(self._client.get_current_modifiers())
         log("send_configure: geometry=%s", (window.x, window.y, window.width, window.height))
-        self.send("configure-window", *packet)
+        self.send(WINDOW_CONFIGURE, *packet)
 
     def _pointer_data(self, window, x: int, y: int) -> tuple[int, int, int, int]:
         absx = window.x + x

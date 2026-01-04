@@ -13,6 +13,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noop, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import LOGGING_EVENT
 from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes
 from xpra.net.common import Packet
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
@@ -168,19 +169,19 @@ class LoggingServer(StubServerMixin):
                             data = source.compressed_wrapper("text", data.encode("utf8"), level=1)
                         except Exception:
                             pass
-                    source.send("logging", level, data, dtime)
+                    source.send(LOGGING_EVENT, level, data, dtime)
                     exc_info = kwargs.get("exc_info")
                     # noinspection PySimplifyBooleanCheck
                     if exc_info is True:
                         exc_info = sys.exc_info()
                     if exc_info and exc_info[0]:
                         for x in traceback.format_tb(exc_info[2]):
-                            self.send("logging", level, x, dtime)
+                            self.send(LOGGING_EVENT, level, x, dtime)
                         try:
                             etypeinfo = exc_info[0].__name__
                         except AttributeError:
                             etypeinfo = str(exc_info[0])
-                        source.send("logging", level, "%s: %s" % (etypeinfo, exc_info[1]), dtime)
+                        source.send(LOGGING_EVENT, level, "%s: %s" % (etypeinfo, exc_info[1]), dtime)
                 except Exception as e:
                     if self._closing:
                         return

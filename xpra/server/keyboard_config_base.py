@@ -35,6 +35,9 @@ class KeyboardConfigBase:
         self.sync = keymap_dict.boolget("sync", True)
         return int(oldsync != self.sync)
 
+    def apply(self, translate_only=False) -> None:
+        """ should be overridden to apply the keyboard configuration """
+
     def get_hash(self) -> str:
         return ""
 

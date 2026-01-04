@@ -15,6 +15,7 @@ from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
 from xpra.common import FULL_INFO, NotificationID, ConnectionMessage, noerr, get_run_info, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, print_proxy_caps
+from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC
 from xpra.os_util import gi_import
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
@@ -419,14 +420,13 @@ class UIXpraClient(ClientBaseClass):
     def send_cursors_enabled(self) -> None:
         assert self.client_supports_cursors, "cannot toggle cursors: the feature is disabled by the client"
         assert self.server_cursors, "cannot toggle cursors: the feature is disabled by the server"
-        packet_type = "set-cursors" if BACKWARDS_COMPATIBLE else "cursor-set"
-        self.send(packet_type, self.cursors_enabled)
+        self.send(CURSOR_SET, self.cursors_enabled)
 
     def send_force_ungrab(self, wid: int) -> None:
         self.send("force-ungrab", wid)
 
     def send_keyboard_sync_enabled_status(self, *_args) -> None:
-        self.send("set-keyboard-sync-enabled", self.keyboard_sync)
+        self.send(KEYBOARD_SYNC, self.keyboard_sync)
 
     ######################################################################
     # windows overrides

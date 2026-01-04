@@ -8,6 +8,7 @@ import os
 import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.server.source.stub import StubClientConnection
@@ -57,7 +58,8 @@ class ServerMixinTest(unittest.TestCase):
             self.add_packet_handler(packet_type, handler, main_thread)
 
     def add_legacy_alias(self, legacy_name: str, name: str) -> None:
-        self.legacy_alias[legacy_name] = name
+        if BACKWARDS_COMPATIBLE:
+            self.legacy_alias[legacy_name] = name
 
     def add_packet_handler(self, packet_type: str, handler=None, main_thread=True) -> None:
         self.packet_handlers[packet_type] = handler

@@ -308,6 +308,7 @@ class EncodingsConnection(StubClientConnection):
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
 
         self.window_icon_encodings = eopts.strtupleget("window-icon") or c.strtupleget("encodings.window-icon")
+        log("window_icon_encodings=%s", self.window_icon_encodings)
         self.rgb_formats = eopts.strtupleget("rgb_formats") or c.strtupleget("encodings.rgb_formats")
 
         self.set_encoding(eopts.strget("setting") or eopts.strget(""), None)

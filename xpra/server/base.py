@@ -561,7 +561,7 @@ class ServerBase(ServerBaseClass):
                     continue
                 k = str(k)
                 if k == "event":
-                    # event is used as a workaround in _process_map_window,
+                    # event is used as a workaround in _process_window_map,
                     # it isn't a real client property and should not be stored:
                     continue
                 if not k.startswith("encoding"):

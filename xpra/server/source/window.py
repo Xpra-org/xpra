@@ -9,13 +9,17 @@ from time import monotonic
 from typing import Any
 from collections.abc import Callable, Sequence
 
+from xpra.net.packet_type import (
+    WINDOW_RESTACK, WINDOW_RAISE, WINDOW_INITIATE_MOVERESIZE, WINDOW_DESTROY, WINDOW_RESIZED,
+    WINDOW_MOVE_RESIZE, WINDOW_METADATA,
+)
 from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED, force_size_constraint
+from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED, force_size_constraint, BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -264,12 +268,13 @@ class WindowsConnection(StubClientConnection):
         if not self.can_send_window(window):
             return
         log("initiate_moveresize sending to %s", self)
-        self.send("initiate-moveresize", wid, x_root, y_root, direction, button, source_indication)
+        self.send(WINDOW_INITIATE_MOVERESIZE, wid, x_root, y_root, direction, button, source_indication)
 
     def or_window_geometry(self, wid: int, window, x: int, y: int, w: int, h: int) -> None:
         if not self.can_send_window(window):
             return
-        self.send("configure-override-redirect", wid, x, y, w, h)
+        packet_type = "configure-override-redirect" if BACKWARDS_COMPATIBLE else WINDOW_MOVE_RESIZE
+        self.send(packet_type, wid, x, y, w, h)
 
     def window_metadata(self, wid: int, window, prop: str) -> None:
         if not self.can_send_window(window):
@@ -283,7 +288,7 @@ class WindowsConnection(StubClientConnection):
             else:
                 metalog("make_metadata(%#x, %s, %r)=%s", wid, window, prop, metadata)
             if metadata:
-                self.send("window-metadata", wid, metadata)
+                self.send(WINDOW_METADATA, wid, metadata)
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property
@@ -339,7 +344,7 @@ class WindowsConnection(StubClientConnection):
             ws.send_window_icon()
 
     def lost_window(self, wid: int, _window) -> None:
-        self.send("lost-window", wid)
+        self.send(WINDOW_DESTROY, wid)
 
     def move_resize_window(self, wid: int, window, x: int, y: int, ww: int, wh: int, resize_counter: int = 0) -> None:
         """
@@ -348,12 +353,12 @@ class WindowsConnection(StubClientConnection):
         """
         if not self.can_send_window(window):
             return
-        self.send("window-move-resize", wid, x, y, ww, wh, resize_counter)
+        self.send(WINDOW_MOVE_RESIZE, wid, x, y, ww, wh, resize_counter)
 
     def resize_window(self, wid: int, window, ww: int, wh: int, resize_counter: int = 0) -> None:
         if not self.can_send_window(window):
             return
-        self.send("window-resized", wid, ww, wh, resize_counter)
+        self.send(WINDOW_RESIZED, wid, ww, wh, resize_counter)
 
     def cancel_damage(self, wid: int) -> None:
         """
@@ -390,14 +395,14 @@ class WindowsConnection(StubClientConnection):
             # older clients can only handle "raise-window"
             if detail != 0:
                 return
-            self.send_async("raise-window", wid)
+            self.send_async(WINDOW_RAISE, wid)
             return
-        self.send_async("restack-window", wid, detail, sibling)
+        self.send_async(WINDOW_RESTACK, wid, detail, sibling)
 
     def raise_window(self, wid: int, window) -> None:
         if not self.can_send_window(window):
             return
-        self.send_async("raise-window", wid)
+        self.send_async(WINDOW_RAISE, wid)
 
     def remove_window(self, wid: int, window) -> None:
         """ The given window is gone, ensure we free all the related resources """

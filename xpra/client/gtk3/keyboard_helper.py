@@ -72,9 +72,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             if self.update() and self.layout:
                 log.info("keymap has been changed to '%s'", self.layout_str())
                 log.info(" sending updated mappings to the server")
-                if self.layout:
-                    self.send_layout()
-                self.send_keymap(False)
+                self.send_config()
 
         GLib.timeout_add(500, do_keys_changed)
 

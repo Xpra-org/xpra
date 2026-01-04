@@ -8,6 +8,11 @@ from io import BytesIO
 from tkinter import Toplevel, Label
 from PIL import Image, ImageTk
 
+from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import (
+    POINTER_BUTTON, POINTER_MOTION,
+    WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE,
+)
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
@@ -86,7 +91,7 @@ class ClientWindow(Toplevel):
         # (tracking where the focus is actually going to would add the same complexity as the Gtk client)
 
     def on_hide(self) -> None:
-        self.client.send("unmap-window", self.wid)
+        self.client.send(WINDOW_UNMAP, self.wid)
 
     def on_key_press(self, event) -> None:
         log(f"key press: {event!r}")
@@ -98,19 +103,25 @@ class ClientWindow(Toplevel):
 
     def on_key(self, pressed: bool, event) -> None:
         mods = modifiers(event.state)
-        keyval = 0
         keyname = event.keysym
         string = event.char
         keycode = event.keycode
-        group = 0
-        self.client.send("key-action", self.wid, keyname, pressed, mods, keyval, string, keycode, group)
+        if BACKWARDS_COMPATIBLE:
+            keyval = 0
+            group = 0
+            self.client.send("key-action", self.wid, keyname, pressed, mods, keyval, string, keycode, group)
+        else:
+            self.client.send("keyboard-event", self.wid, keyname, pressed, {
+                "string": string,
+                "keycode": keycode,
+            })
 
     def on_mouse_motion(self, event) -> None:
         log(f"mouse motion: {event!r}")
         device_id = -1
         seq = 0
         pos = (event.x, event.y)
-        self.client.send("pointer", device_id, seq, self.wid, pos, {})
+        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, {})
 
     def on_mouse_button_press(self, event) -> None:
         log(f"mouse button press: {event!r}")
@@ -124,7 +135,7 @@ class ClientWindow(Toplevel):
         seq = 0
         button = event.num
         pos = (event.x, event.y)
-        self.client.send("pointer-button", -1, seq, self.wid, button, pressed, pos, {})
+        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
 
     def on_map(self, event) -> None:
         log(f"map: {event!r}")
@@ -132,10 +143,10 @@ class ClientWindow(Toplevel):
         y = self.winfo_y()
         w = self.winfo_width()
         h = self.winfo_height()
-        self.client.send("map-window", self.wid, x, y, w, h, {}, {})
+        self.client.send(WINDOW_MAP, self.wid, x, y, w, h, {}, {})
 
     def on_unmap(self, _event) -> None:
-        self.client.send("close-window", self.wid)
+        self.client.send(WINDOW_CLOSE, self.wid)
 
     def on_configure(self, event) -> None:
         log(f"configure: {event}")
@@ -144,10 +155,10 @@ class ClientWindow(Toplevel):
         x, y, w, h = event.x, event.y, event.width, event.height
         state = ()
         skip_geometry = False
-        self.client.send("configure-window", self.wid, x, y, w, h, props, counter, state, skip_geometry)
+        self.client.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, counter, state, skip_geometry)
 
     def on_destroy(self, _event=None) -> None:
-        self.client.send("close-window", self.wid)
+        self.client.send(WINDOW_CLOSE, self.wid)
 
     def on_resize(self, _event) -> None:
         counter = 0
@@ -158,7 +169,7 @@ class ClientWindow(Toplevel):
         h = self.winfo_height()
         state = ()
         skip_geometry = False
-        self.client.send("configure-window", self.wid, x, y, w, h, props, counter, state, skip_geometry)
+        self.client.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, counter, state, skip_geometry)
 
     def draw(self, x: int, y: int, _w: int, _h: int, coding: str, data, _stride: int) -> None:
         if coding not in ("png", "jpg", "webp"):

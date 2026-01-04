@@ -10,6 +10,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.net.packet_type import PRINT_FILE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
@@ -677,7 +678,7 @@ class PrintClient(SendCommandConnectClient):
         # (this should run locally most of the time anyway)
         from xpra.net.compression import Compressed  # pylint: disable=import-outside-toplevel
         blob = Compressed("print", self.file_data)
-        self.send("print", self.filename, blob, *self.command)
+        self.send(PRINT_FILE, self.filename, blob, *self.command)
         log("print: sending %s as %s for printing", self.filename, blob)
         GLib.idle_add(self.send, "disconnect", ConnectionMessage.DONE.value, "detaching")
 

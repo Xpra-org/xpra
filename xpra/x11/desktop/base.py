@@ -11,6 +11,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.common import noop, parse_env_resolutions
 from xpra.net.common import Packet
+from xpra.net.packet_type import WINDOW_CREATE
 from xpra.server import features
 from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.server.base import ServerBase
@@ -168,7 +169,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         x, y, w, h = model.get_geometry()
         wid = self._window_to_id[model]
         wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
-        ss.new_window("new-window", wid, model, x, y, w, h, wprops)
+        ss.new_window(WINDOW_CREATE, wid, model, x, y, w, h, wprops)
         wid = self._window_to_id[model]
         ss.damage(wid, model, 0, 0, w, h)
 
@@ -197,7 +198,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         # we export the whole desktop as a window:
         return 0, 0
 
-    def _process_map_window(self, proto, packet: Packet) -> None:
+    def _process_window_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -217,7 +218,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
             self._set_client_properties(proto, wid, window, props)
         self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_unmap_window(self, proto, packet: Packet) -> None:
+    def _process_window_unmap(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         if not window:
@@ -233,7 +234,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         # TODO: handle inconification?
         # iconified = len(packet)>=3 and bool(packet[2])
 
-    def _process_configure_window(self, proto, packet: Packet) -> None:
+    def _process_window_configure(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -258,7 +259,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
             damage = bool(self._set_window_state(proto, wid, window, state))
         if not skip_geometry and not self.readonly:
             owx, owy, oww, owh = window.get_geometry()
-            geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
+            geomlog("_process_window_configure(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
             if oww != w or owh != h:
                 window.resize(w, h)
         if len(packet) >= 7:
@@ -299,7 +300,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         with xsync:
             super()._move_pointer(device_id, wid, pos, props)
 
-    def _process_close_window(self, proto, packet: Packet) -> None:
+    def _process_window_close(self, proto, packet: Packet) -> None:
         # disconnect?
         pass
 

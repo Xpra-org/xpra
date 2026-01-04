@@ -15,6 +15,7 @@ from pyglet import app, clock
 from xpra import __version__
 from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitValue
+from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_DRAW_ACK
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.common import Packet
 from xpra.log import Logger
@@ -187,7 +188,7 @@ class XpraPygletClient:
         if window:
             window.raise_()
 
-    def _process_draw(self, packet: Packet) -> None:
+    def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -207,7 +208,7 @@ class XpraPygletClient:
             message = f"Warning: window {wid:#x} not found"
             log.warn(message)
             decode_time = -1
-        self.send("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
+        self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
 
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -221,7 +222,7 @@ class XpraPygletClient:
 
         def recheck_focus(_elapsed) -> None:
             if self.focused == wid:
-                self.send("focus", wid, ())
+                self.send(WINDOW_FOCUS, wid, ())
         clock.schedule_once(recheck_focus, 0.01)
 
 

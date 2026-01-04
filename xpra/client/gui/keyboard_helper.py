@@ -11,10 +11,11 @@ from collections.abc import Callable, Sequence
 
 from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
+from xpra.net.packet_type import KEYBOARD_CONFIG
 from xpra.util.str_fn import std, csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.os_util import OSX
-from xpra.common import noop
+from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("keyboard")
@@ -105,13 +106,13 @@ class KeyboardHelper:
         self.variants: list[str] = []
         self.options = ""
         self.backend = ""
-        self.name = ""
+        self.backend_name = ""
         self.query = ""
         self.query_struct: dict[str, Any] = {}
         self.layout_groups = LAYOUT_GROUPS
         self.raw = False
 
-        self.hash = None
+        self.hash = ""
 
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
@@ -248,10 +249,16 @@ class KeyboardHelper:
 
     def send_key_action(self, wid: int, key_event: KeyEvent) -> None:
         log("send_key_action(%#x, %s)", wid, key_event)
-        packet = ["key-action", wid]
-        for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
-            packet.append(getattr(key_event, x))
         self.debug_key_event(wid, key_event)
+        if BACKWARDS_COMPATIBLE:
+            packet = ["key-action", wid]
+            for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
+                packet.append(getattr(key_event, x))
+        else:
+            attrs = {}
+            for x in ("modifiers", "keyval", "string", "keycode", "group"):
+                attrs[x] = getattr(key_event, x)
+            packet = ["keyboard-event", wid, key_event.keyname, key_event.pressed, attrs]
         self.send(*packet)
 
     def get_layout_spec(self) -> tuple[str, str, Sequence[str], str, Sequence[str], str]:
@@ -336,20 +343,30 @@ class KeyboardHelper:
             self.parse_shortcuts()
 
     def layout_str(self) -> str:
-        if self.backend and self.name:
-            return f"{self.backend} {self.name!r}"
+        if self.backend and self.backend_name:
+            return f"{self.backend} {self.backend_name!r}"
         return " / ".join(str(x) for x in (
             self.layout_option or self.layout, self.variant_option or self.variant) if bool(x))
+
+    def send_config(self) -> None:
+        if BACKWARDS_COMPATIBLE:
+            if self.layout:
+                self.send_layout()
+            if not self.backend:
+                self.send_keymap(not self.layout)
+            return
+        self.send(KEYBOARD_CONFIG, self.get_keymap_properties())
 
     def send_layout(self) -> None:
         log("send_layout() layout_option=%r, layout=%r, variant_option=%r, variant=%r, options=%r",
             self.layout_option, self.layout, self.variant_option, self.variant, self.options)
-        log(f"send_layout() backend={self.backend!r}, name={self.name!r}")
+        log(f"send_layout() backend={self.backend!r}, backend_name={self.backend_name!r}")
         self.send("layout-changed",
                   self.layout_option or self.layout or "",
                   self.variant_option or self.variant or "",
                   self.options or "",
-                  self.backend or "", self.name or "")
+                  self.backend or "",
+                  self.backend_name or "")
 
     def send_keymap(self, force=False) -> None:
         log("send_keymap(%s)", force)
@@ -383,7 +400,8 @@ class KeyboardHelper:
     def get_keymap_properties(self, skip=()) -> dict[str, Any]:
         props = {}
         for x in (
-                "backend", "layout", "layouts", "variant", "variants",
+                "backend", "backend_name",
+                "layout", "layouts", "variant", "variants", "options",
                 "raw", "layout_groups",
                 "sync",
                 "query_struct", "mod_meanings",
@@ -391,7 +409,12 @@ class KeyboardHelper:
         ):
             if x in skip:
                 continue
-            v = getattr(self, x)
+            v = None
+            if x in ("layout", "variant"):
+                # let the 'layout_option' and 'variant_option' override:
+                v = getattr(self, f"{x}_option", "")
+            if not v:
+                v = getattr(self, x)
             if v:
                 props[x] = v
         return props

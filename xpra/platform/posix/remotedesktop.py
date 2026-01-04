@@ -7,6 +7,7 @@
 from dbus.types import UInt32, Int32
 
 from xpra.os_util import gi_import
+from xpra.util.objects import typedict
 from xpra.dbus.helper import native_to_dbus
 from xpra.net.common import Packet
 from xpra.platform.posix.fd_portal import REMOTEDESKTOP_IFACE
@@ -69,13 +70,15 @@ class RemoteDesktop(PortalShadow):
             UInt32(pressed),
             dbus_interface=REMOTEDESKTOP_IFACE)
 
-    def _process_key_action(self, proto, packet: Packet) -> None:
+    def _process_keyboard_event(self, proto, packet: Packet) -> None:
         if self.readonly or not self.input_devices_count or not self.keymap:
             return
         keyname = packet.get_str(2)
         pressed = packet.get_bool(3)
-        keyval = packet.get_int(5)
-        keystr = packet.get_str(6)
+        attrs = typedict(packet.get_dict(4))
+
+        keyval = attrs.intget("keyval", 0)
+        keystr = attrs.strget("string", "")
         ss = self.get_server_source(proto)
         if ss is None:
             return

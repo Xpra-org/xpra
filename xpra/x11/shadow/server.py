@@ -36,7 +36,7 @@ class ShadowX11Server(GTKShadowServerBase):
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
         self.session_files.append("xauthority")
 
-    def set_keymap(self, server_source, force: bool = False) -> None:
+    def set_keymap(self, server_source, force=False) -> None:
         if self.readonly:
             return
         if self.modify_keymap:

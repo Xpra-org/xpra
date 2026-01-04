@@ -15,6 +15,7 @@ from time import monotonic
 from dataclasses import dataclass
 from collections.abc import Callable
 
+from xpra.net.packet_type import FILE_SEND_CHUNK, FILE_DATA_REQUEST, FILE_DATA_RESPONSE
 from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import POSIX, WIN32, gi_import
 from xpra.util.io import umask_context, osclose
@@ -24,6 +25,7 @@ from xpra.util.env import envint, envbool
 from xpra.util.parsing import str_to_bool, parse_with_unit
 from xpra.common import SizedBuffer, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
+from xpra.net.packet_type import FILE_REQUEST
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
 from xpra.log import Logger
@@ -365,7 +367,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.error(f" {filename!r} : {e}")
         self.send("ack-file-chunk", chunk_id, False, message, chunk)
 
-    def _process_send_file_chunk(self, packet: Packet) -> None:
+    def _process_file_send_chunk(self, packet: Packet) -> None:
         chunk_id = packet.get_str(1)
         chunk = packet.get_u32(2)
         file_data: SizedBuffer = packet[3]
@@ -375,7 +377,7 @@ class FileTransferHandler(FileTransferAttributes):
         #    filelog.warn("file_data=%s", hexstr(file_data))
         # filelog(f"file_data={len(file_data)} {type(file_data)}")
         filelog(f"file_data={len(file_data)} {type(file_data)}")
-        filelog("_process_send_file_chunk%s", (chunk_id, chunk, f"{len(file_data)} bytes", has_more))
+        filelog("_process_file_send_chunk%s", (chunk_id, chunk, f"{len(file_data)} bytes", has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
 
         def progress(position: int, error="") -> None:
@@ -490,7 +492,7 @@ class FileTransferHandler(FileTransferAttributes):
             openit = False
         return True, printit, openit
 
-    def _process_send_file(self, packet: Packet) -> None:
+    def _process_file_send(self, packet: Packet) -> None:
         # the remote end is sending us a file
         start = monotonic()
         basefilename = packet.get_str(1)
@@ -760,7 +762,7 @@ class FileTransferHandler(FileTransferAttributes):
         return True
 
     def send_request_file(self, filename: str, openit: bool = True) -> None:
-        self.send("request-file", filename, openit)
+        self.send(FILE_REQUEST, filename, openit)
         self.files_requested[filename] = openit
 
     def _process_open_url(self, packet: Packet) -> None:
@@ -847,10 +849,10 @@ class FileTransferHandler(FileTransferAttributes):
         delay = self.remote_file_ask_timeout * 1000
         self.pending_send_data_timers[send_id] = GLib.timeout_add(delay, self.send_data_ask_timeout, send_id)
         filelog(f"sending data request for {dtype} {url!r} with send-id {send_id!r}")
-        self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
+        self.send(FILE_DATA_REQUEST, dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
-    def _process_send_data_request(self, packet: Packet) -> None:
+    def _process_file_data_request(self, packet: Packet) -> None:
         dtype = packet.get_str(1)
         send_id = packet.get_str(2)
         url = packet.get_str(3)
@@ -861,15 +863,15 @@ class FileTransferHandler(FileTransferAttributes):
         if len(packet) >= 9:
             options = packet.get_dict(8)
         # filenames and url are always sent encoded as utf8:
-        self.do_process_send_data_request(dtype, send_id, url, filesize, printit, openit, typedict(options))
+        self.do_process_file_data_request(dtype, send_id, url, filesize, printit, openit, typedict(options))
 
-    def do_process_send_data_request(self, dtype: str, send_id: str, url: str, filesize: int,
+    def do_process_file_data_request(self, dtype: str, send_id: str, url: str, filesize: int,
                                      printit: bool, openit: bool, options: typedict) -> None:
-        filelog(f"do_process_send_data_request: {send_id=}, {url=}, {printit=}, {openit=}, {options=}")
+        filelog(f"do_process_file_data_request: {send_id=}, {url=}, {printit=}, {openit=}, {options=}")
 
         def cb_answer(accept: bool) -> None:
             filelog("accept%s=%s", (url, printit, openit), accept)
-            self.send("send-data-response", send_id, accept)
+            self.send(FILE_DATA_RESPONSE, send_id, accept)
 
         # could be a request we made:
         # (in which case we can just accept it without prompt)
@@ -918,7 +920,7 @@ class FileTransferHandler(FileTransferAttributes):
         v = self.accept_data(send_id, dtype, url, printit, openit)
         cb_answer(v[0])
 
-    def _process_send_data_response(self, packet: Packet) -> None:
+    def _process_file_data_response(self, packet: Packet) -> None:
         send_id = packet.get_str(1)
         accept = packet.get_i8(2)
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
@@ -1026,7 +1028,7 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state.timer = 0
             GLib.source_remove(timer)
 
-    def _process_ack_file_chunk(self, packet: Packet) -> None:
+    def _process_file_ack_chunk(self, packet: Packet) -> None:
         # the other end received our send-file or send-file-chunk,
         # send some more file data
         filelog("ack-file-chunk: %s", packet[1:])
@@ -1068,7 +1070,7 @@ class FileTransferHandler(FileTransferAttributes):
         if chunk_state.timer:
             GLib.source_remove(chunk_state.timer)
         chunk_state.timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, chunk)
-        self.send("send-file-chunk", chunk_id, chunk, cdata, bool(chunk_state.data))
+        self.send(FILE_SEND_CHUNK, chunk_id, chunk, cdata, bool(chunk_state.data))
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         raise NotImplementedError()

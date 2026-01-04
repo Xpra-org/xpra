@@ -10,7 +10,8 @@ from time import monotonic
 from threading import Lock
 from typing import Any
 
-from xpra.common import noop, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.common import noop, FULL_INFO
+from xpra.net.packet_type import LOGGING_CONTROL, LOGGING_EVENT
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.client.base.stub import StubClientMixin
@@ -89,7 +90,7 @@ class LoggingClient(StubClientMixin):
     def start_receiving_logging(self) -> None:
         self.add_packets("logging-event")
         self.add_legacy_alias("logging", "logging-event")
-        self.send("logging-control", "start")
+        self.send(LOGGING_CONTROL, "start")
 
     def _process_logging_event(self, packet: Packet) -> None:
         assert self.local_logging == noop, "cannot receive logging packets when forwarding logging!"
@@ -152,20 +153,19 @@ class LoggingClient(StubClientMixin):
                     data = self.compressed_wrapper("text", data, level=1)
                 except Exception:
                     pass
-            packet_type = "logging" if BACKWARDS_COMPATIBLE else "logging-event"
-            self.send(packet_type, level, data, dtime)
+            self.send(LOGGING_EVENT, level, data, dtime)
             exc_info = kwargs.get("exc_info")
             # noinspection PySimplifyBooleanCheck
             if exc_info is True:
                 exc_info = sys.exc_info()
             if exc_info and exc_info[0]:
                 for x in traceback.format_tb(exc_info[2]):
-                    self.send(packet_type, level, x, dtime)
+                    self.send(LOGGING_EVENT, level, x, dtime)
                 try:
                     etypeinfo = exc_info[0].__name__
                 except AttributeError:
                     etypeinfo = str(exc_info[0])
-                self.send(packet_type, level, f"{etypeinfo}: {exc_info[1]}", dtime)
+                self.send(LOGGING_EVENT, level, f"{etypeinfo}: {exc_info[1]}", dtime)
             if self.log_both:
                 ll(logger_log, level, msg, *args, **kwargs)
         except Exception as e:

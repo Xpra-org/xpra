@@ -111,7 +111,7 @@ class KeyboardConnection(StubClientConnection):
             log("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
             if force or not current_id or keymap_id != current_id:
                 kc.keys_pressed = keys_pressed
-                kc.set_keymap(translate_only)
+                kc.apply(translate_only)
                 kc.owner = self.uuid
             else:
                 log.info("keyboard mapping already configured (skipped)")

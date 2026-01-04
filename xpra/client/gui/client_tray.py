@@ -7,6 +7,7 @@ from time import time
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.net.packet_type import WINDOW_CONFIGURE
 from xpra.os_util import gi_import
 from xpra.common import PaintCallbacks
 from xpra.client.gui.widget_base import ClientWidgetBase
@@ -129,7 +130,7 @@ class ClientTray(ClientWidgetBase):
             sx, sy, sw, sh = self._client.crect(x, y, w, h)
             log("%s.reconfigure(%s) sending configure for geometry=%s : %s",
                 self, force_send_configure, geometry, (sx, sy, sw, sh, client_properties))
-            self._client.send("configure-window", self.wid, sx, sy, sw, sh, client_properties)
+            self._client.send(WINDOW_CONFIGURE, self.wid, sx, sy, sw, sh, client_properties)
         if self._size != (w, h):
             self.new_backing(w, h)
 

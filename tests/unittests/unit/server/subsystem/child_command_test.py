@@ -9,6 +9,7 @@ import time
 import unittest
 from contextlib import nullcontext
 
+from xpra.net.packet_type import COMMAND_START
 from xpra.os_util import POSIX
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.objects import AdHocStruct
@@ -70,7 +71,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert not os.path.exists(tmpfile)
         cmd = ("touch", tmpfile)
         with silence_info(command):
-            self.handle_packet(("start-command", "test", cmd, True))
+            self.handle_packet((COMMAND_START, "test", cmd, True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
         commands = info.get("command")
@@ -83,7 +84,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         os.unlink(tmpfile)
         # test signals:
         with silence_info(command):
-            self.handle_packet(("start-command", "sleep", "sleep 10", True))
+            self.handle_packet((COMMAND_START, "sleep", "sleep 10", True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
         commands = info.get("command")

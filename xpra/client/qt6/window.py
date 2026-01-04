@@ -8,6 +8,8 @@ from PyQt6.QtCore import Qt, QPoint, QEvent
 from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeyEvent
 from PyQt6.QtWidgets import QMainWindow, QLabel, QSizePolicy
 
+from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import POINTER_BUTTON, WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE, POINTER_MOTION
 from xpra.client.qt6.keys import key_names
 from xpra.log import Logger
 
@@ -52,7 +54,7 @@ class DrawingArea(QLabel):
 
     def mouseMoveEvent(self, event) -> None:
         pos = get_pointer_position(event)
-        self.send("pointer", -1, self.seq, self.wid, pos, {})
+        self.send(POINTER_MOTION, -1, self.seq, self.wid, pos, {})
         self.seq += 1
 
     def send_mouse_button_event(self, event, pressed=True) -> None:
@@ -68,7 +70,7 @@ class DrawingArea(QLabel):
         if button < 0:
             return
         pos = get_pointer_position(event)
-        self.send("pointer-button", -1, self.seq, self.wid, button, pressed, pos, props)
+        self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, pressed, pos, props)
         self.seq += 1
 
     def mousePressEvent(self, event) -> None:
@@ -87,13 +89,13 @@ class DrawingArea(QLabel):
         props = {}
         if delta.y() != 0:
             button = 4 if delta.y() > 0 else 5
-            self.send("pointer-button", -1, self.seq, self.wid, button, True, pos, props)
-            self.send("pointer-button", -1, self.seq, self.wid, button, False, pos, props)
+            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, True, pos, props)
+            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, False, pos, props)
             self.seq += 1
         if delta.x() != 0:
             button = 6 if delta.y() > 0 else 7
-            self.send("pointer-button", -1, self.seq, self.wid, button, True, pos, props)
-            self.send("pointer-button", -1, self.seq, self.wid, button, False, pos, props)
+            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, True, pos, props)
+            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, False, pos, props)
             self.seq += 1
 
 
@@ -135,7 +137,7 @@ class ClientWindow(QMainWindow):
             y = self.pos().y() + self.label.pos().y()
             w, h = self.get_canvas_size()
             if not self.metadata.get("override-redirect"):
-                self.send("map-window", self.wid, x, y, w, h, {}, {})
+                self.send(WINDOW_MAP, self.wid, x, y, w, h, {}, {})
         elif etype == QEvent.Type.Hide:
             log("hidden - iconified?")
         elif etype == QEvent.Type.Move:
@@ -145,7 +147,7 @@ class ClientWindow(QMainWindow):
             w, h = self.get_canvas_size()
             state = {}
             props = {}
-            self.send("configure-window", self.wid, x, y, w, h, props, 0, state, False)
+            self.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, 0, state, False)
         elif etype == QEvent.Type.WindowStateChange:
             new_state = self.windowState()
             old_state = event.oldState()
@@ -161,7 +163,7 @@ class ClientWindow(QMainWindow):
             log(f"state changes: {changes}")
             if changes:
                 props = {}
-                self.send("configure-window", self.wid, 0, 0, 0, 0, props, 0, changes, True)
+                self.send(WINDOW_CONFIGURE, self.wid, 0, 0, 0, 0, props, 0, changes, True)
         elif etype == QEvent.Type.Resize:
             size = event.size()
             x = self.pos().x() + self.label.pos().x()
@@ -170,7 +172,7 @@ class ClientWindow(QMainWindow):
             h = size.height()
             state = {}
             props = {}
-            self.send("configure-window", self.wid, x, y, w, h, props, 0, state, False)
+            self.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, 0, state, False)
             old_pixmap = self.canvas
             self.canvas = QPixmap(w, h)
             self.canvas.fill(Qt.GlobalColor.white)
@@ -189,7 +191,7 @@ class ClientWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         log(f"close: {event}")
-        self.send("close-window", self.wid)
+        self.send(WINDOW_CLOSE, self.wid)
         event.ignore()
 
     def send_key_event(self, event, pressed=True) -> None:
@@ -197,12 +199,20 @@ class ClientWindow(QMainWindow):
         name = key_names.get(keyval, event.text())
         keycode = event.nativeScanCode()
         string = event.text()
-        group = 0
         modifiers = get_modifiers(event)
         native_modifiers = event.nativeModifiers()
         vk = event.nativeVirtualKey()
         log(f"key: {name!r}, {keyval=}, {keycode=}, {modifiers=} {native_modifiers=}, {vk=}")
-        self.send("key-action", self.wid, name, pressed, modifiers, keyval, string, keycode, group)
+        if BACKWARDS_COMPATIBLE:
+            group = 0
+            self.send("key-action", self.wid, name, pressed, modifiers, keyval, string, keycode, group)
+        else:
+            self.send("keyboard-event", self.wid, name, pressed, {
+                "modifiers": modifiers,
+                "keyval": keyval,
+                "string": string,
+                "keycode": keycode,
+            })
 
     def draw(self, x, y, w, h, coding, data, stride) -> None:
         if coding in ("png", "jpg", "webp"):

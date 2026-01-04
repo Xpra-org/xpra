@@ -8,6 +8,7 @@
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
@@ -332,9 +333,9 @@ class PointerServer(StubServerMixin):
         log("%s%s", device.click, (button, pressed, props))
         device.click(button, pressed, props)
 
-    def _process_pointer(self, proto, packet: Packet) -> None:
+    def _process_pointer_motion(self, proto, packet: Packet) -> None:
         # v5 packet format
-        log("_process_pointer(%s, %s) readonly=%s, ui_driver=%s", proto, packet, self.readonly, self.ui_driver)
+        log("_process_pointer_motion(%s, %s) readonly=%s, ui_driver=%s", proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -390,7 +391,7 @@ class PointerServer(StubServerMixin):
         if self.process_mouse_common(proto, device_id, wid, pdata, props):
             self._update_modifiers(proto, wid, modifiers)
 
-    def _process_wheel_motion(self, proto, packet: Packet) -> None:
+    def _process_pointer_wheel(self, proto, packet: Packet) -> None:
         assert self.pointer_device.has_precise_wheel()
         ss = self.get_server_source(proto)
         if not ss:
@@ -415,12 +416,14 @@ class PointerServer(StubServerMixin):
             ss.record_scroll_event(wid)
 
     def init_packet_handlers(self) -> None:
+        if BACKWARDS_COMPATIBLE:
+            self.add_packets("pointer-position", main_thread=True)  # pre v5
+            self.add_legacy_alias("wheel-motion", "pointer-wheel")
+            self.add_legacy_alias("pointer", "pointer-motion")
+            self.add_packet_handler("button-action", self._process_button_action, True)  # pre v5
         self.add_packets(
-            # mouse:
-            "pointer-button", "pointer",
-            "pointer-position",  # pre v5
-            "wheel-motion",
+            "pointer-button",
+            "pointer-motion",
+            "pointer-wheel",
             main_thread=True
         )
-        self.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync_enabled_status, True)
-        self.add_packet_handler("button-action", self._process_button_action, True)  # pre v5

@@ -23,8 +23,11 @@ from collections.abc import Callable, Sequence
 
 from xpra.platform.gui import get_window_min_size, get_window_max_size
 from xpra.net.common import Packet
+from xpra.net.packet_type import (
+    POINTER_BUTTON, WINDOW_UNMAP, WINDOW_FOCUS, WINDOW_CLOSE, WINDOW_REFRESH, WINDOW_DRAW_ACK,
+)
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr
+from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr, BACKWARDS_COMPATIBLE
 from xpra.platform.paths import get_icon_filename, get_python_execfile_command
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.client.gui.window_border import WindowBorder
@@ -621,7 +624,7 @@ class WindowClient(StubClientMixin):
                 b = sb
             server_buttons.append(b)
         self._button_state[button] = pressed
-        if "pointer-button" in self.server_packet_types:
+        if "pointer-button" in self.server_packet_types or not BACKWARDS_COMPATIBLE:
             props = props or {}
             if modifiers is not None:
                 props["modifiers"] = modifiers
@@ -631,7 +634,7 @@ class WindowClient(StubClientMixin):
             if server_buttons != buttons:
                 props["raw-buttons"] = buttons
             seq = self.next_pointer_sequence(device_id)
-            packet = ["pointer-button", device_id, seq, wid, server_button, pressed, pointer, props]
+            packet = [POINTER_BUTTON, device_id, seq, wid, server_button, pressed, pointer, props]
         else:
             if server_button == -1:
                 return
@@ -900,6 +903,18 @@ class WindowClient(StubClientMixin):
         h = packet.get_u16(5)
         assert 0 <= w < 32768 and 0 <= h < 32768
         metadata = self.cook_metadata(True, packet[6])
+        # newer versions use metadata only:
+        override_redirect |= metadata.boolget("override-redirect", False)
+        if override_redirect and self.modal_windows:
+            # find any modal windows and remove the flag
+            # so that the OR window can get the focus
+            # (it will be re-enabled when the OR window disappears)
+            for wid, window in self._id_to_window.items():
+                if window.is_OR() or window.is_tray():
+                    continue
+                if window.get_modal():
+                    metalog("temporarily removing modal flag from %s", wid)
+                    window.set_modal(False)
         metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
         assert wid not in self._id_to_window, "we already have a window {}: {}".format(wid, self._id_to_window.get(wid))
         if w < 1 or h < 1:
@@ -1194,7 +1209,7 @@ class WindowClient(StubClientMixin):
             # explicitly tell the server we have unmapped it:
             # (so it will reset the video encoders, etc)
             if not window.is_OR():
-                self.send("unmap-window", wid)
+                self.send(WINDOW_UNMAP, wid)
             self._id_to_window.pop(wid, None)
             self._window_to_id.pop(window, None)
             # create the new window,
@@ -1227,23 +1242,14 @@ class WindowClient(StubClientMixin):
     def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
         raise NotImplementedError()
 
-    def _process_new_window(self, packet: Packet) -> None:
+    def _process_window_create(self, packet: Packet) -> None:
         return self._process_new_common(packet, False)
 
     def _process_new_override_redirect(self, packet: Packet) -> None:
-        if self.modal_windows:
-            # find any modal windows and remove the flag
-            # so that the OR window can get the focus
-            # (it will be re-enabled when the OR window disappears)
-            for wid, window in self._id_to_window.items():
-                if window.is_OR() or window.is_tray():
-                    continue
-                if window.get_modal():
-                    metalog("temporarily removing modal flag from %s", wid)
-                    window.set_modal(False)
+        assert BACKWARDS_COMPATIBLE
         return self._process_new_common(packet, True)
 
-    def _process_initiate_moveresize(self, packet: Packet) -> None:
+    def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         geomlog("%s", packet)
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
@@ -1315,31 +1321,18 @@ class WindowClient(StubClientMixin):
         # implemented in gtk subclass
         pass
 
-    def _process_restack_window(self, packet: Packet) -> None:
+    def _process_window_restack(self, packet: Packet) -> None:
         # implemented in gtk subclass
         pass
 
     def _process_configure_override_redirect(self, packet: Packet) -> None:
-        wid = packet.get_wid()
-        x = packet.get_i16(2)
-        y = packet.get_i16(3)
-        w = packet.get_u16(4)
-        h = packet.get_u16(5)
-        window = self._id_to_window.get(wid)
-        ax = self.sx(x)
-        ay = self.sy(y)
-        aw = max(1, self.sx(w))
-        ah = max(1, self.sy(h))
-        geomlog("_process_configure_override_redirect%s move resize window %s (id=%s) to %s",
-                packet[1:], window, wid, (ax, ay, aw, ah))
-        if window:
-            window.move_resize(ax, ay, aw, ah, -1)
+        self._process_window_move_resize(packet)
 
     # noinspection PyUnreachableCode
     def window_close_event(self, wid: int) -> None:
         log("window_close_event(%s) close window action=%s", wid, self.window_close_action)
         if self.window_close_action == "forward":
-            self.send("close-window", wid)
+            self.send(WINDOW_CLOSE, wid)
         elif self.window_close_action == "ignore":
             log("close event for window %#x ignored", wid)
         elif self.window_close_action == "disconnect":
@@ -1376,11 +1369,11 @@ class WindowClient(StubClientMixin):
                         return
                     log("there are %i windows, so forwarding %s", len(self._id_to_window), close)
             # default to forward:
-            self.send("close-window", wid)
+            self.send(WINDOW_CLOSE, wid)
         else:
             log.warn("unknown close-window action: %s", self.window_close_action)
 
-    def _process_lost_window(self, packet: Packet) -> None:
+    def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         if window:
@@ -1462,7 +1455,7 @@ class WindowClient(StubClientMixin):
     # focus:
     def send_focus(self, wid: int) -> None:
         focuslog("send_focus(%#x)", wid)
-        self.send("focus", wid, self.get_current_modifiers())
+        self.send(WINDOW_FOCUS, wid, self.get_current_modifiers())
 
     def has_focus(self, wid: int) -> bool:
         return bool(self._focused) and self._focused == wid
@@ -1580,7 +1573,7 @@ class WindowClient(StubClientMixin):
 
     def control_refresh(self, wid: int, suspend_resume, refresh, quality=100,
                         options=None, client_properties=None) -> None:
-        packet = ["buffer-refresh", wid, 0, quality]
+        packet = [WINDOW_REFRESH, wid, 0, quality]
         options = options or {}
         client_properties = client_properties or {}
         options["refresh-now"] = bool(refresh)
@@ -1602,7 +1595,7 @@ class WindowClient(StubClientMixin):
 
     def send_refresh(self, wid: int) -> None:
         packet = [
-            "buffer-refresh", wid, 0, 100,
+            WINDOW_REFRESH, wid, 0, 100,
             {
                 # explicit refresh (should be assumed True anyway),
                 # also force a reset of batch configs:
@@ -1619,7 +1612,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # painting windows:
-    def _process_draw(self, packet: Packet) -> None:
+    def _process_window_draw(self, packet: Packet) -> None:
         if PAINT_DELAY >= 0:
             GLib.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
         else:
@@ -1632,7 +1625,7 @@ class WindowClient(StubClientMixin):
                              decode_time: int, message="") -> None:
         packet = packet_sequence, wid, width, height, decode_time, message
         drawlog("sending ack: %s", packet)
-        self.send_now("damage-sequence", *packet)
+        self.send_now(WINDOW_DRAW_ACK, *packet)
 
     def _draw_thread_loop(self):
         while self.exit_code is None:
@@ -1778,15 +1771,27 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
+        if BACKWARDS_COMPATIBLE:
+            self.add_packets("raise-window", "new-override-redirect", main_thread=True)
+            self.add_legacy_alias("new-window", "window-create")
+            self.add_legacy_alias("restack-window", "window-restack")
+            self.add_legacy_alias("initiate-moveresize", "window-initiate-moveresize")
+            self.add_legacy_alias("lost-window", "window-destroy")
+            self.add_legacy_alias("configure-override-redirect", "window-move-resize")
+            self.add_legacy_alias("draw", "window-draw")
         self.add_packets(
-            "new-window", "new-override-redirect", "new-tray",
-            "raise-window", "restack-window",
-            "initiate-moveresize",
-            "window-move-resize", "window-resized", "window-metadata",
-            "configure-override-redirect",
-            "lost-window",
+            "window-create",
+            "window-restack",
+            "window-initiate-moveresize",
+            "window-move-resize",
+            "window-resized",
+            "window-metadata",
+            "window-destroy",
             "window-icon",
-            "draw", "eos",
+            "window-draw",
+            # still need to be prefixed:
+            "new-tray",
+            "eos",
             "bell",
             "pointer-position", "pointer-grab", "pointer-ungrab",
             main_thread=True)

@@ -17,7 +17,7 @@ from xpra.codecs.loader import get_codec, codec_versions, load_codec, unload_cod
 from xpra.codecs.video import getVideoHelper
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
 
 log = Logger("encoding")
 
@@ -321,9 +321,9 @@ class EncodingServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         self.add_packets(f"{EncodingServer.PREFIX}-set", f"{EncodingServer.PREFIX}-options")
-        # legacy:
-        self.add_packets(
-            "quality", "min-quality", "max-quality",
-            "speed", "min-speed", "max-speed",
-        )
-        self.add_legacy_alias("encodings", f"{EncodingServer.PREFIX}-set")
+        if BACKWARDS_COMPATIBLE:
+            self.add_packets(
+                "quality", "min-quality", "max-quality",
+                "speed", "min-speed", "max-speed",
+            )
+            self.add_legacy_alias("encodings", f"{EncodingServer.PREFIX}-set")

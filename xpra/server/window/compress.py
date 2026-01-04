@@ -20,6 +20,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
 from xpra.net.common import Packet
+from xpra.net.packet_type import WINDOW_DRAW
 from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND, \
     BACKWARDS_COMPATIBLE
 from xpra.server.window.windowicon import WindowIconSource
@@ -2833,7 +2834,7 @@ class WindowSource(WindowIconSource):
             ws = options.get("window-size")
             if ws:
                 client_options["window-size"] = ws
-        packet = Packet("draw", self.wid, x, y, outw, outh, coding, data,
+        packet = Packet(WINDOW_DRAW, self.wid, x, y, outw, outh, coding, data,
                         self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1

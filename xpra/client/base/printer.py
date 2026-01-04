@@ -5,6 +5,7 @@
 
 from typing import Any
 
+from xpra.net.packet_type import PRINT_DEVICES
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -37,10 +38,18 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
         FileTransferHandler.init_opts(self, opts)
 
     def init_authenticated_packet_handlers(self) -> None:
+        self.add_legacy_alias("send-file", "file-send")
+        self.add_legacy_alias("send-data-request", "file-data-request")
+        self.add_legacy_alias("send-data-response", "file-data-response")
+        self.add_legacy_alias("ack-file-chunk", "file-ack-chunk")
+        self.add_legacy_alias("send-file-chunk", "file-send-chunk")
         self.add_packets(
-            "open-url", "send-file",
-            "send-data-request", "send-data-response",
-            "ack-file-chunk", "send-file-chunk",
+            "open-url",
+            "file-send",
+            "file-data-request",
+            "file-data-response",
+            "file-ack-chunk",
+            "file-send-chunk",
         )
 
     def get_caps(self) -> dict[str, Any]:
@@ -175,7 +184,7 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
             printlog("send_printers_thread() printers=%s", exported_printers.keys())
             printlog("send_printers_thread() exported printers=%s", csv(str(x) for x in exported_printers))
             self.exported_printers = exported_printers
-            self.send("printers", self.exported_printers)
+            self.send(PRINT_DEVICES, self.exported_printers)
         except Exception as e:
             printlog("do_send_printers()", exc_info=True)
             printlog.error("Error sending the list of printers")

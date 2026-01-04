@@ -34,10 +34,16 @@ class FileMixin(StubClientMixin, FileTransferHandler):
         FileTransferHandler.init_opts(self, opts)
 
     def init_authenticated_packet_handlers(self) -> None:
+        self.add_legacy_alias("send-file", "file-send")
+        self.add_legacy_alias("send-data-request", "file-data-request")
+        self.add_legacy_alias("send-data-response", "file-data-response")
+        self.add_legacy_alias("send-file-chunk", "file-send-chunk")
+        self.add_legacy_alias("ack-file-chunk", "file-ack-chunk")
         self.add_packets(
-            "open-url", "send-file",
-            "send-data-request", "send-data-response",
-            "ack-file-chunk", "send-file-chunk",
+            "open-url",
+            "file-send",
+            "file-data-request", "file-data-response",
+            "file-ack-chunk", "file-send-chunk",
         )
 
     def get_caps(self) -> dict[str, Any]:

@@ -5,6 +5,7 @@
 # pylint: disable-msg=E1101
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
@@ -12,6 +13,7 @@ from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.server.source.window import WindowsConnection
 from xpra.net.common import Packet
+from xpra.net.packet_type import WINDOW_CREATE
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -228,7 +230,7 @@ class WindowServer(StubServerMixin):
         self._id_to_window[wid] = window
         self._counter += 1
 
-    def _do_send_new_window_packet(self, ptype, window, geometry) -> None:
+    def _do_send_new_window_packet(self, ptype: str, window, geometry: Sequence[int]) -> None:
         wid = self._window_to_id[window]
         for ss in tuple(self._server_sources.values()):
             if not isinstance(ss, WindowsConnection):
@@ -256,7 +258,7 @@ class WindowServer(StubServerMixin):
                                     y += dy
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
-    def _process_damage_sequence(self, proto, packet: Packet) -> None:
+    def _process_window_draw_ack(self, proto, packet: Packet) -> None:
         packet_sequence = packet.get_u64(1)
         wid = packet.get_wid(2)
         width = packet.get_u16(3)
@@ -282,6 +284,9 @@ class WindowServer(StubServerMixin):
                 damage(wid, window, x, y, width, height, options)
 
     def _process_buffer_refresh(self, proto, packet: Packet) -> None:
+        self._process_window_refresh(proto, packet)
+
+    def _process_window_refresh(self, proto, packet: Packet) -> None:
         """ can be used for requesting a refresh, or tuning batch config, or both """
         wid = packet.get_wid()
         qual = packet.get_u8(3)
@@ -360,17 +365,20 @@ class WindowServer(StubServerMixin):
         else:
             ss.unmap_window(wid, window)
 
-    def _process_map_window(self, proto, packet: Packet) -> None:
-        log.info("_process_map_window(%s, %s)", proto, packet)
+    def _process_window_map(self, proto, packet: Packet) -> None:
+        log.info("_process_window_map(%s, %s)", proto, packet)
 
-    def _process_unmap_window(self, proto, packet: Packet) -> None:
-        log.info("_process_unmap_window(%s, %s)", proto, packet)
+    def _process_window_unmap(self, proto, packet: Packet) -> None:
+        log.info("_process_window_unmaps, %s)", proto, packet)
 
     def _process_close_window(self, proto, packet: Packet) -> None:
         log.info("_process_close_window(%s, %s)", proto, packet)
 
     def _process_configure_window(self, proto, packet: Packet) -> None:
-        log.info("_process_configure_window(%s, %s)", proto, packet)
+        self._process_window_configure(proto, packet)
+
+    def _process_window_configure(self, proto, packet: Packet) -> None:
+        log.info("_process_window_configure(%s, %s)", proto, packet)
 
     def _process_window_action(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -406,30 +414,26 @@ class WindowServer(StubServerMixin):
                 elif not sharing:
                     # park it outside the visible area
                     window.move_resize(-200, -200, w, h)
-            elif window.is_OR():
-                # code more or less duplicated from _send_new_or_window_packet:
-                x, y, w, h = window.get_property("geometry")
-                wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
-                ss.new_window("new-override-redirect", wid, window, x, y, w, h, wprops)
-                ss.damage(wid, window, 0, 0, w, h)
             else:
-                # code more or less duplicated from send_new_window_packet:
-                if not sharing:
+                # code more or less duplicated from _send_new_window_packet:
+                if not sharing and not window.is_OR():
                     window.hide()
                 x, y, w, h = window.get_property("geometry")
                 wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
-                ss.new_window("new-window", wid, window, x, y, w, h, wprops)
+                packet_type = "new-override-redirect" if (window.is_OR() and BACKWARDS_COMPATIBLE) else WINDOW_CREATE
+                ss.new_window(packet_type, wid, window, x, y, w, h, wprops)
+                ss.damage(wid, window, 0, 0, w, h)
 
     ######################################################################
     # focus:
-    def _process_focus(self, proto, packet: Packet) -> None:
+    def _process_window_focus(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
         if not ss:
             return
         wid = packet.get_wid()
-        focuslog("process_focus: wid=%#x", wid)
+        focuslog("process_window_focus: wid=%#x", wid)
         modifiers = None
         if len(packet) >= 3:
             modifiers = packet.get_strs(2)
@@ -448,10 +452,21 @@ class WindowServer(StubServerMixin):
         return -1
 
     def init_packet_handlers(self) -> None:
+        if BACKWARDS_COMPATIBLE:
+            self.add_legacy_alias("map-window", "window-map")
+            self.add_legacy_alias("unmap-window", "window-unmap")
+            self.add_legacy_alias("close-window", "window-close")
+            self.add_legacy_alias("focus", "window-focus")
+            self.add_legacy_alias("damage-sequence", "window-draw-ack")
+            # some packet mangling needed:
+            self.add_packets("buffer-refresh", "configure-window", main_thread=True)
         self.add_packets(
-            "map-window", "unmap-window",
-            "configure-window", "close-window",
-            "focus",
-            "damage-sequence", "buffer-refresh",
+            "window-map",
+            "window-unmap",
+            "window-configure",
+            "window-close",
+            "window-focus",
+            "window-refresh",
             "window-action",
+            "window-draw-ack",
             main_thread=True)

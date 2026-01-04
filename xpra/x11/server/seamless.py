@@ -20,6 +20,7 @@ from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE, noop
 from xpra.net.common import Packet, PacketElement
+from xpra.net.packet_type import WINDOW_CREATE, WINDOW_METADATA
 from xpra.server import features, ServerExitMode
 from xpra.util.gobject import one_arg_signal, n_arg_signal, to_gsignals
 from xpra.x11.common import Unmanageable, get_wm_name, X11Event
@@ -475,7 +476,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         for ss in self.window_sources():
             ms = getattr(ss, "metadata_supported", ())
             if "x11-property" in ms:
-                ss.send("window-metadata", wid, metadata)
+                ss.send(WINDOW_METADATA, wid, metadata)
 
     def _add_new_window(self, window) -> None:
         wid = self._add_new_window_common(window)
@@ -589,7 +590,9 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 self._add_new_window_common(window)
                 window.call_setup()
                 window.managed_connect("notify::geometry", self._or_window_geometry_changed)
-                self._send_new_or_window_packet(window)
+                packet_type = "new-override-redirect" if BACKWARDS_COMPATIBLE else "new-window"
+                self._do_send_new_window_packet(packet_type, window, window.get_property("geometry"))
+                self.refresh_window(window)
         except Unmanageable as e:
             if window:
                 windowlog("window %s is not manageable: %s", window, e)
@@ -685,12 +688,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         return self._has_focus
 
     def _send_new_window_packet(self, window) -> None:
-        self._do_send_new_window_packet("new-window", window, window.get_property("geometry"))
-
-    def _send_new_or_window_packet(self, window) -> None:
-        geometry = window.get_property("geometry")
-        self._do_send_new_window_packet("new-override-redirect", window, geometry)
-        self.refresh_window(window)
+        self._do_send_new_window_packet(WINDOW_CREATE, window, window.get_property("geometry"))
 
     def _send_new_tray_window_packet(self, wid: int, window) -> None:
         ww, wh = window.get_dimensions()
@@ -831,7 +829,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         if update_geometry:
             win._update_client_geometry()
 
-    def _process_map_window(self, proto, packet: Packet) -> None:
+    def _process_window_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -866,7 +864,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_unmap_window(self, proto, packet: Packet) -> None:
+    def _process_window_unmap(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self._lookup_window(wid)
         if not window:
@@ -908,7 +906,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return geom
 
-    def _process_configure_window(self, proto, packet: Packet) -> None:
+    def _process_window_configure(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -921,7 +919,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
-        # some "configure-window" packets are only meant for metadata updates:
+        # some "window-configure" packets are only meant for metadata updates:
         skip_geometry = (len(packet) >= 10 and packet.get_bool(9)) or window.is_OR()
         if not skip_geometry:
             self._window_mapped_at(proto, wid, window, (x, y, w, h))
@@ -982,7 +980,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
                     resize_counter = 0
                     if len(packet) >= 8:
                         resize_counter = packet.get_u64(7)
-                    geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], cg)
+                    geomlog("_process_window_configure(%s) old window geometry: %s", packet[1:], cg)
                     geometry = self.client_clamp_window(proto, wid, window, x, y, w, h, resize_counter)
                     self.client_configure_window(window, geometry, resize_counter)
                     ax, ay, aw, ah = geometry
@@ -1066,7 +1064,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
                     window.raise_window()
         super()._move_pointer(device_id, wid, pos, props)
 
-    def _process_close_window(self, proto, packet: Packet) -> None:
+    def _process_window_close(self, proto, packet: Packet) -> None:
         if proto not in self._server_sources:
             return
         wid = packet.get_wid()

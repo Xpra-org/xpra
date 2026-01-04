@@ -61,7 +61,7 @@ class KeyboardClient(StubClientMixin):
                                                               opts.key_shortcut,
                                                               opts.keyboard_raw, **kwargs)
             if DELAY_KEYBOARD_DATA and not self.readonly:
-                self.after_handshake(self.keyboard_helper.send_keymap)
+                self.after_handshake(self.keyboard_helper.send_config)
         except ImportError as e:
             log("error instantiating %s", self.keyboard_helper_class, exc_info=True)
             log.warn(f"Warning: no keyboard support, {e}")

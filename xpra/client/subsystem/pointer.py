@@ -10,6 +10,7 @@ from time import monotonic
 from xpra.client.base.stub import StubClientMixin
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
+from xpra.net.packet_type import POINTER_MOTION
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
 from xpra.os_util import gi_import
@@ -112,7 +113,7 @@ class PointerClient(StubClientMixin):
         return seq
 
     def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
-        if "pointer" in self.server_packet_types:
+        if "pointer" in self.server_packet_types or not BACKWARDS_COMPATIBLE:
             # v5 packet type, most attributes are optional:
             attrs = props or {}
             if modifiers is not None:
@@ -120,7 +121,7 @@ class PointerClient(StubClientMixin):
             if buttons is not None:
                 attrs["buttons"] = buttons
             seq = self.next_pointer_sequence(device_id)
-            packet = Packet("pointer", device_id, seq, wid, pos, attrs)
+            packet = Packet(POINTER_MOTION, device_id, seq, wid, pos, attrs)
         else:
             # pre v5 packet format:
             packet = Packet("pointer-position", wid, pos, modifiers or (), buttons or ())

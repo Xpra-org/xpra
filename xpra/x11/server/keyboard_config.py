@@ -104,7 +104,10 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycode_mappings: dict[int, list[str]] = {}
         self.keyval_mappings = {}
 
-        self.compute_modifiers()
+        self.backend = ""
+        self.backend_engine = ""
+
+        self.compute_modifiers(True)
         self.compute_modifier_map()
 
     def __repr__(self):
@@ -170,6 +173,34 @@ class KeyboardConfig(KeyboardConfigBase):
         verboselog("full keyboard info: %s", info)
         return info
 
+    def apply(self, translate_only=False) -> None:
+        self.apply_backend()
+        self.set_keymap(translate_only)
+
+    def apply_backend(self) -> None:
+        if self.backend == "ibus" and self.backend_engine:
+            from xpra.keyboard.ibus import set_engine, get_engine_layout_spec
+            if set_engine(self.backend_engine):
+                ibuslog = Logger("ibus")
+                ibuslog(f"ibus set engine to {self.backend_engine!r}")
+                layout, variant, options = get_engine_layout_spec()
+                ibuslog(f"ibus layout: {layout} {variant=}, {options=}")
+
+    def parse(self, props: typedict) -> int:
+        return self.parse_layout(props) + self.parse_options(props) + self.parse_backend(props)
+
+    def parse_layout(self, props: typedict) -> int:
+        """ used by both process_hello and process_keymap """
+        keymap_dict = typedict(props.dictget("keymap") or {})
+        layout = keymap_dict.strget("layout", "us")
+        variant = keymap_dict.strget("variant")
+        options = keymap_dict.strget("options")
+        mods = int(layout != self.layout) + int(variant != self.variant) + int(options != self.options)
+        self.layout = layout
+        self.variant = variant
+        self.options = options
+        return mods
+
     def parse_options(self, props: typedict) -> int:
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
@@ -201,12 +232,13 @@ class KeyboardConfig(KeyboardConfigBase):
         log("parse_options(..) modified %s", Ellipsizer(modded))
         return len(modded)
 
-    def parse_layout(self, props: typedict) -> None:
-        """ used by both process_hello and process_keymap """
-        keymap_dict = typedict(props.dictget("keymap") or {})
-        self.layout = keymap_dict.strget("layout", "us")
-        self.variant = keymap_dict.strget("variant")
-        self.options = keymap_dict.strget("options")
+    def parse_backend(self, props: typedict) -> int:
+        backend = props.strget("backend")
+        backend_engine = props.strget("backend-engine")
+        mods = int(backend != self.backend) + int(backend_engine != self.backend_engine)
+        self.backend = backend
+        self.backend_engine = backend_engine
+        return mods
 
     def get_hash(self) -> str:
         """
@@ -233,7 +265,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 hashadd(k, self.query_struct.get(k))
         return "%s/%s/%s/%s" % (self.layout, self.variant, self.options, m.hexdigest())
 
-    def compute_modifiers(self) -> None:
+    def compute_modifiers(self, initial=False) -> None:
         log("compute_modifiers() raw=%s", self.raw)
         if self.raw:
             with xsync:
@@ -264,7 +296,8 @@ class KeyboardConfig(KeyboardConfigBase):
                 if MAP_MISSING_MODIFIERS:
                     map_missing_modifiers(self.keynames_for_mod)
             else:
-                log.info("client did not supply any modifier definitions, using defaults")
+                if not initial:
+                    log.info("client did not supply any modifier definitions, using defaults")
                 self.keynames_for_mod = get_modifiers_from_meanings(DEFAULT_MODIFIER_MEANINGS)
                 if MAP_MISSING_MODIFIERS:
                     map_missing_modifiers(self.keynames_for_mod)
@@ -511,6 +544,7 @@ class KeyboardConfig(KeyboardConfigBase):
             return -1, group
         if self.raw:
             return client_keycode, group
+        log("do_get_keycode has x11: %s, client_keycode=%s", bool(self.x11_keycodes), client_keycode)
         if self.x11_keycodes and client_keycode > 0:
             keycode = self.keycode_translation.get((client_keycode, keyname), 0) or client_keycode
             kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)

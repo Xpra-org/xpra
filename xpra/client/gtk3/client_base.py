@@ -880,7 +880,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             ]
             ms = list(DEFAULT_METADATA_SUPPORTED)
             # 4.4:
-            ms += ["parent", "relative-position"]
+            ms += ["parent", "relative-position", "override-redirect"]
         if POSIX:
             # this is only really supported on X11, but posix is easier to check for..
             # "strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess

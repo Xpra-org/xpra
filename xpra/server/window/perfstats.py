@@ -61,7 +61,7 @@ class WindowPerformanceStatistics:
         self.damage_out_latency: Deque[tuple[float, int, float, float]] = deque(maxlen=NRECS)
         # records when damage packets are sent,
         # so we can calculate the "client_latency" when the client sends
-        # the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
+        # the corresponding ack (WINDOW_DRAW_ACK packet - see "client_ack_damage")
         self.damage_ack_pending: dict[int, tuple[float, str, int, int, dict, float]] = {}
         # for each encoding, how many frames we sent and how many pixels in total
         self.encoding_totals: dict[str, list[int]] = {}

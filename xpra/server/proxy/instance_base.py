@@ -317,9 +317,9 @@ class ProxyInstance:
                 self.client_protocol.close()
             else:
                 self.stop(None, "disconnect from client", *reasons)
-        elif packet_type == "send-file" and packet[6]:
+        elif packet_type == "file-send" and packet[6]:
             packet = self.compressed_marker(packet, 6, "file-data")
-        elif packet_type == "send-file-chunk" and packet[3]:
+        elif packet_type == "file-send-chunk" and packet[3]:
             packet = self.compressed_marker(packet, 3, "file-chunk-data")
         self.queue_server_packet(packet)
 
@@ -473,10 +473,10 @@ class ProxyInstance:
         elif packet_type == "window-icon":
             if not isinstance(packet[5], str):
                 packet = self._packet_recompress(packet, 5, "icon")
-        elif packet_type == "send-file":
+        elif packet_type == "file-send":
             if packet[6]:
                 packet = self.compressed_marker(packet, 6, "file-data")
-        elif packet_type == "send-file-chunk":
+        elif packet_type == "file-send-chunk":
             if packet[3]:
                 packet = self.compressed_marker(packet, 3, "file-chunk-data")
         elif packet_type == "challenge":

@@ -11,6 +11,8 @@ from typing import Any
 from collections.abc import Callable, Sequence
 
 from cairo import RectangleInt, Region
+
+from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
@@ -684,7 +686,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def send_iconify(self) -> None:
         self.send_iconify_timer = 0
         if self._iconified:
-            self.send("unmap-window", self.wid, True, self._window_state)
+            self.send(WINDOW_UNMAP, self.wid, True, self._window_state)
             # we have sent the window-state already:
             self._window_state = {}
             self.cancel_window_state_timer()
@@ -1200,7 +1202,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # we may have cleared the backing, so we must re-create one:
             self._set_backing_size(w, h)
         self._been_mapped = True
-        packet = ["map-window", self.wid, sx, sy, sw, sh, props, state]
+        packet = [WINDOW_MAP, self.wid, sx, sy, sw, sh, props, state]
         self.send(*packet)
         self._pos = (x, y)
         self._size = (w, h)
@@ -1339,7 +1341,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         packet.append(self.get_mouse_position())
         packet.append(self._client.get_current_modifiers())
         geomlog("%s", packet)
-        self.send("configure-window", *packet)
+        self.send(WINDOW_CONFIGURE, *packet)
 
     def _set_backing_size(self, ww: int, wh: int) -> None:
         b = self._backing
@@ -1467,7 +1469,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         eventslog("do_unmap_event(%s)", event)
         self._unfocus()
         if not self._override_redirect:
-            self.send("unmap-window", self.wid, False)
+            self.send(WINDOW_UNMAP, self.wid, False)
 
     def do_delete_event(self, event) -> bool:
         # Gtk.Window.do_delete_event(self, event)

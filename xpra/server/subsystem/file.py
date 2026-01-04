@@ -50,42 +50,42 @@ class FileServer(StubServerMixin):
 
     ######################################################################
     # file transfers:
-    def _process_send_file(self, proto, packet: Packet) -> None:
+    def _process_file_send(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for send-file packet")
             return
-        ss._process_send_file(packet)
+        ss._process_file_send(packet)
 
-    def _process_ack_file_chunk(self, proto, packet: Packet) -> None:
+    def _process_file_ack_chunk(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for ack-file-chunk packet")
             return
-        ss._process_ack_file_chunk(packet)
+        ss._process_file_ack_chunk(packet)
 
-    def _process_send_file_chunk(self, proto, packet: Packet) -> None:
+    def _process_file_send_chunk(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for send-file-chunk packet")
             return
-        ss._process_send_file_chunk(packet)
+        ss._process_file_send_chunk(packet)
 
-    def _process_send_data_request(self, proto, packet: Packet) -> None:
+    def _process_file_data_request(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for send-file-request packet")
             return
-        ss._process_send_data_request(packet)
+        ss._process_file_data_request(packet)
 
-    def _process_send_data_response(self, proto, packet: Packet) -> None:
+    def _process_file_data_response(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for send-data-response packet")
             return
-        ss._process_send_data_response(packet)
+        ss._process_file_data_response(packet)
 
-    def _process_request_file(self, proto, packet: Packet) -> None:
+    def _process_file_request(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for send-data-response packet")
@@ -122,7 +122,15 @@ class FileServer(StubServerMixin):
     def init_packet_handlers(self) -> None:
         # noqa: E241
         if self.file_transfer.printing or self.file_transfer.file_transfer:
-            self.add_packets("send-file", "ack-file-chunk", "send-file-chunk",
-                             "send-data-request", "send-data-response")
+            self.add_legacy_alias("send-file", "file-send")
+            self.add_legacy_alias("ack-file-chunk", "file-ack-chunk")
+            self.add_legacy_alias("send-file-chunk", "file-send-chunk")
+            self.add_legacy_alias("send-data-request", "file-date-request")
+            self.add_legacy_alias("send-data-response", "file-date-response")
+
+            self.add_packets("file-send", "file-ack-chunk", "file-send-chunk",
+                             "file-data-request", "file-data-response")
+
         if self.file_transfer.file_transfer:
-            self.add_packets("request-file")
+            self.add_legacy_alias("request-file", "file-request")
+            self.add_packets("file-request")

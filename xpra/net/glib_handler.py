@@ -62,8 +62,11 @@ class GLibPacketHandler:
             self.packet_alias[legacy_name] = new_name
 
     def dispatch_packet(self, proto, packet: Packet, authenticated=False) -> None:
-        packet_type = packet.get_type()
-        packet_type = self.packet_alias.get(packet_type, packet_type)
+        ptype = packet.get_type()
+        packet_type = self.packet_alias.get(ptype, ptype)
+        if packet_type != ptype:
+            # re-write the packet with the new packet name:
+            packet = Packet(packet_type, *packet[1:])
         handler: Callable = noop
 
         def call_handler() -> None:

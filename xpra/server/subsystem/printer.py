@@ -242,4 +242,7 @@ class PrinterServer(StubServerMixin):
     def init_packet_handlers(self) -> None:
         # noqa: E241
         if self.file_transfer.printing:
-            self.add_packets("printers", "print")
+            self.add_legacy_alias("printers", "print-devices")
+            self.add_legacy_alias("print", "print-file")
+            self.add_packets("print-devices",
+                             "print")

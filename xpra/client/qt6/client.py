@@ -19,6 +19,8 @@ from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.net.common import Packet
 from xpra.net.rencodeplus.rencodeplus import dumps, loads
+
+from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_DRAW_ACK
 from xpra.net.protocol.header import pack_header, unpack_header, FLAGS_RENCODEPLUS
 
 from xpra.log import Logger
@@ -185,7 +187,7 @@ class Qt6Client:
         if window:
             window.raise_()
 
-    def _process_draw(self, packet: Packet) -> None:
+    def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -205,7 +207,7 @@ class Qt6Client:
             message = f"Warning: window {wid:#x} not found"
             log.warn(message)
             decode_time = -1
-        self.send("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
+        self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
 
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -219,14 +221,14 @@ class Qt6Client:
 
         def recheck_focus() -> None:
             if self.focused == wid:
-                self.send("focus", wid, ())
+                self.send(WINDOW_FOCUS, wid, ())
         QTimer.singleShot(10, recheck_focus)
 
     def state_changed(self, state) -> None:
         log(f"state changed: {state}")
         if state == Qt.ApplicationState.ApplicationInactive:
             self.focused = 0
-            self.send("focus", 0, ())
+            self.send(WINDOW_FOCUS, 0, ())
 
 
 class XpraQt6Client(Qt6Client):

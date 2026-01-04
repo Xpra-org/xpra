@@ -9,6 +9,7 @@ from collections.abc import Sequence
 
 from xpra.client.base.stub import StubClientMixin
 from xpra.common import noop, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import COMMAND_START
 from xpra.util.parsing import str_to_bool
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -90,4 +91,4 @@ class CommandClient(StubClientMixin):
     def send_start_command(self, name: str, command: list[str], ignore: bool, sharing: bool = True) -> None:
         log("send_start_command%s", (name, command, ignore, sharing))
         assert name is not None and command is not None and ignore is not None
-        self.send("start-command", name, command, ignore, sharing)
+        self.send(COMMAND_START, name, command, ignore, sharing)

@@ -371,7 +371,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 options[argp[0]] = argp[1]
         return self.do_control_file_command("print", client_uuids, filename, "printing", (True, True, options))
 
-    def do_control_file_command(self, command_type, client_uuids, filename, source_flag_name, send_file_args) -> str:
+    def do_control_file_command(self, command_type: str, client_uuids, filename: str, source_flag_name, send_file_args) -> str:
         # find the clients:
         sources = self._control_get_sources(client_uuids)
         if not sources:

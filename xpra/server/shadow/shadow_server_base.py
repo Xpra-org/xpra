@@ -16,6 +16,7 @@ from xpra.platform.paths import get_icon_dir
 from xpra.server import features
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
+from xpra.net.packet_type import WINDOW_CREATE
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
@@ -444,27 +445,20 @@ class ShadowServerBase(ServerBase):
             window = self._id_to_window[wid]
             w, h = window.get_dimensions()
             client_props = self.client_properties.get(wid, {}).get(ss.uuid, {})
-            ss.new_window("new-window", wid, window, 0, 0, w, h, client_props)
+            ss.new_window(WINDOW_CREATE, wid, window, 0, 0, w, h, client_props)
 
     def _add_new_window(self, window) -> None:
         self._add_new_window_common(window)
-        if window.get("override-redirect", False):
-            self._send_new_or_window_packet(window)
-        else:
-            self._send_new_window_packet(window)
+        self._send_new_window_packet(window)
 
     def _send_new_window_packet(self, window) -> None:
         geometry = window.get_geometry()
-        self._do_send_new_window_packet("new-window", window, geometry)
-
-    def _send_new_or_window_packet(self, window) -> None:
-        geometry = window.get_property("geometry")
-        self._do_send_new_window_packet("new-override-redirect", window, geometry)
+        self._do_send_new_window_packet(WINDOW_CREATE, window, geometry)
 
     def process_window_common(self, wid: int):
         return self._id_to_window.get(wid)
 
-    def _process_map_window(self, proto, packet: Packet) -> None:
+    def _process_window_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -480,7 +474,7 @@ class ShadowServerBase(ServerBase):
             self._set_client_properties(proto, wid, window, packet[6])
         self.start_refresh(wid)
 
-    def _process_unmap_window(self, proto, packet: Packet) -> None:
+    def _process_window_unmap(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.process_window_common(wid)
         if not window:
@@ -492,7 +486,7 @@ class ShadowServerBase(ServerBase):
         if len(self._server_sources) <= 1 and len(self._id_to_window) <= 1:
             self.stop_refresh(wid)
 
-    def _process_configure_window(self, proto, packet: Packet) -> None:
+    def _process_window_configure(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -507,7 +501,7 @@ class ShadowServerBase(ServerBase):
         if len(packet) >= 7:
             self._set_client_properties(proto, wid, window, packet[6])
 
-    def _process_close_window(self, proto, packet: Packet) -> None:
+    def _process_window_close(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.process_window_common(wid)
         if not window:

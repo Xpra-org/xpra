@@ -40,7 +40,12 @@ class CursorManager(StubServerMixin):
         if share_count > 0:
             self.cursor_size = 24
         else:
-            self.cursor_size = c.intget("cursor.size", 0)
+            caps = typedict(c.dictget("cursor"))
+            if caps:
+                default_cursor_size = caps.inttupleget("default", (0, 0))
+                self.cursor_size = max(0, default_cursor_size[0], default_cursor_size[1])
+                if not self.cursor_size and BACKWARDS_COMPATIBLE:
+                    self.cursor_size = c.intget("cursor.size", 0)
 
     def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
         if not send_ui:

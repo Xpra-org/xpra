@@ -13,6 +13,7 @@ from xpra.wayland.compositor import WaylandCompositor, add_event_listener
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
 from xpra.net.common import Packet
+from xpra.net.packet_type import WINDOW_CREATE
 from xpra.common import noop, MoveResize, SOURCE_INDICATION_NORMAL
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -134,7 +135,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         finally:
             self.compositor.flush()
 
-    def _process_map_window(self, proto, packet: Packet) -> None:
+    def _process_window_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         surface = self.get_surface(wid)
@@ -146,7 +147,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.flush()
         self.refresh_window(window)
 
-    def _process_configure_window(self, proto, packet: Packet) -> None:
+    def _process_window_configure(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         surface = self.get_surface(wid)
@@ -174,7 +175,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._internal_set_property("decorations", False)
         self.do_add_new_window_common(wid, window)
         if size != (0, 0):
-            self._do_send_new_window_packet("new-window", window, geom)
+            self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
     def _new_subsurface(self, *args):
         log.warn("new-subsurface: %s", args)
@@ -260,7 +261,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         geom = (old_geom[0], old_geom[1], w, h)
         window._updateprop("geometry", geom)
         if (old_geom[2] == old_geom[3] == 0) and size[0] and size[1]:
-            self._do_send_new_window_packet("new-window", window, geom)
+            self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
     def _destroy(self, wid: int) -> None:
         self._remove_wid(wid)

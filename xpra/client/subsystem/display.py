@@ -238,7 +238,7 @@ class DisplayClient(StubClientMixin):
             c = caps
             self.server_display = c.strget("display")
         else:
-            raise ValueError("missing display capabilities")
+            raise ValueError("missing display capabilities, got %r" % d)
         self.server_desktop_size = c.intpair("desktop_size")
         log("server desktop size=%s", self.server_desktop_size)
         self.server_max_desktop_size = c.intpair("max_desktop_size", (2 ** 15, 2 ** 15))

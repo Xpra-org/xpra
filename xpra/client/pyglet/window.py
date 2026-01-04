@@ -10,6 +10,11 @@ from pyglet.window import Window, event
 from pyglet.image import ImageData, SolidColorImagePattern
 from pyglet.sprite import Sprite
 
+from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import (
+    POINTER_MOTION, POINTER_BUTTON,
+    WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE, WINDOW_CLOSE,
+)
 from xpra.client.pyglet.keys import keynames
 from xpra.log import Logger
 
@@ -46,7 +51,7 @@ class ClientWindow(Window):
         self.set_visible(True)
 
     def on_close(self) -> None:
-        self.client.send("close-window", self.wid)
+        self.client.send(WINDOW_CLOSE, self.wid)
 
     def on_activate(self) -> None:
         self.client.update_focus(self.wid)
@@ -54,10 +59,10 @@ class ClientWindow(Window):
     def on_show(self) -> None:
         x, y = self.get_location()
         w, h = self.get_size()
-        self.client.send("map-window", self.wid, x, y, w, h, {}, {})
+        self.client.send(WINDOW_MAP, self.wid, x, y, w, h, {}, {})
 
     def on_hide(self) -> None:
-        self.client.send("unmap-window", self.wid)
+        self.client.send(WINDOW_UNMAP, self.wid)
 
     def on_key_press(self, keysym: int, modifiers: int) -> None:
         self.on_key_event(True, keysym, modifiers)
@@ -71,17 +76,22 @@ class ClientWindow(Window):
             log.info(f"unknown key {keysym}")
             return
         mods = get_modifiers(modifiers)
-        keyval = 0
-        string = ""
-        keycode = 0
-        group = 0
-        self.client.send("key-action", self.wid, keyname, pressed, mods, keyval, string, keycode, group)
+        if BACKWARDS_COMPATIBLE:
+            keyval = 0
+            string = ""
+            keycode = 0
+            group = 0
+            self.client.send("key-action", self.wid, keyname, pressed, mods, keyval, string, keycode, group)
+        else:
+            self.client.send("keyboard-event", self.wid, keyname, pressed, {
+                "modifiers": mods,
+            })
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         device_id = -1
         seq = 0
         pos = (x, y, dx, dy)
-        self.client.send("pointer", device_id, seq, self.wid, pos, {})
+        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, {})
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
         self.on_mouse_button_event(True, x, y, button, modifiers)
@@ -92,7 +102,7 @@ class ClientWindow(Window):
     def on_mouse_button_event(self, pressed: bool, x: int, y: int, button: int, modifiers: int) -> None:
         seq = 0
         pos = (x, y)
-        self.client.send("pointer-button", -1, seq, self.wid, button, pressed, pos, {})
+        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
         button = 4
@@ -108,7 +118,7 @@ class ClientWindow(Window):
         w, h = self.get_size()
         state = ()
         skip_geometry = False
-        self.client.send("configure-window", self.wid, x, y, w, h, props, counter, state, skip_geometry)
+        self.client.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, counter, state, skip_geometry)
 
     def on_resize(self, w: int, h: int) -> None:
         counter = 0
@@ -116,7 +126,7 @@ class ClientWindow(Window):
         x, y = self.get_location()
         state = ()
         skip_geometry = False
-        self.client.send("configure-window", self.wid, x, y, w, h, props, counter, state, skip_geometry)
+        self.client.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, counter, state, skip_geometry)
 
     def draw(self, x: int, y: int, w: int, h: int, coding: str, data, stride: int) -> None:
         if coding in ("png", "jpg", "webp"):

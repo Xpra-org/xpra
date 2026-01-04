@@ -8,6 +8,7 @@ import unittest
 from time import monotonic
 from collections.abc import Callable
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.log import Logger
@@ -75,7 +76,8 @@ class ClientMixinTest(unittest.TestCase):
             raise RuntimeError("invalid packet slice %s, expected %s" % (pslice, expected))
 
     def add_legacy_alias(self, legacy_name: str, name: str) -> None:
-        self.legacy_alias[legacy_name] = name
+        if BACKWARDS_COMPATIBLE:
+            self.legacy_alias[legacy_name] = name
 
     def add_packet_handler(self, packet_type: str, handler: Callable, main_thread=False):
         # log("add_packet_handler%s", (packet_type, handler, main_thread))

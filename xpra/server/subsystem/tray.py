@@ -42,6 +42,10 @@ def traymenuitem(title: str, icon_name="", tooltip="", cb: Callable = noop):  # 
 
 
 class TrayMenu(StubServerMixin):
+    """
+    This server module adds a system tray menu,
+    typically used with shadow servers to be able to exit the server.
+    """
 
     def __init__(self):
         StubServerMixin.__init__(self)

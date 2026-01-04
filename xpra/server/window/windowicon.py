@@ -18,6 +18,7 @@ except ImportError:
 from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.io import load_binary_file
 from xpra.net import compression
+from xpra.net.packet_type import WINDOW_ICON
 from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
@@ -309,7 +310,7 @@ class WindowIconSource:
             output.close()
             w, h = image.size
         wrapper = compression.Compressed("png", pixel_data)
-        packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
+        packet = (WINDOW_ICON, self.wid, w, h, wrapper.datatype, wrapper)
         log("queuing window icon update: %s", packet)
         self.queue_packet(packet, wait_for_more=True)
 

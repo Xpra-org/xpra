@@ -10,7 +10,7 @@ from collections.abc import Callable
 from time import monotonic
 from subprocess import Popen
 
-from xpra.common import noop
+from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.env import envbool
@@ -279,13 +279,12 @@ class X11KeyboardServer(KeyboardServer):
         log("get_keyboard_config(..)=%s", keyboard_config)
         return keyboard_config
 
-    def set_backend(self, backend: str, name: str) -> None:
-        if backend == "ibus" and name:
-            from xpra.keyboard.ibus import set_engine, get_engine_layout_spec
-            if set_engine(name):
-                ibuslog(f"ibus set engine to {name!r}")
-                layout, variant, options = get_engine_layout_spec()
-                ibuslog(f"ibus layout: {layout} {variant=}, {options=}")
+    def set_backend(self, ss, backend: str, name: str) -> None:
+        assert BACKWARDS_COMPATIBLE
+        if hasattr(ss, "backend"):
+            ss.backend = backend
+            ss.backend_engine = name
+            ss.apply_backend()
 
     def set_keyboard_layout_group(self, grp: int) -> None:
         kc = self.keyboard_config

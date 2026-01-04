@@ -157,6 +157,7 @@ class KeyboardServer(StubServerMixin):
         return info
 
     def _process_layout_changed(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         log(f"layout-changed: {packet}")
         if self.readonly:
             return
@@ -171,14 +172,15 @@ class KeyboardServer(StubServerMixin):
         if len(packet) >= 6:
             backend = packet.get_str(4)
             name = packet.get_str(5)
-        self.set_backend(backend, name)
+        self.set_backend(ss, backend, name)
         if ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
-    def set_backend(self, backend: str, name: str) -> None:
+    def set_backend(self, ss, backend: str, name: str) -> None:
         """ overriden in X11 keyboard module """
 
     def _process_keymap_changed(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         if self.readonly:
             return
         props = typedict(packet.get_dict(1))
@@ -191,23 +193,68 @@ class KeyboardServer(StubServerMixin):
         log("received new keymap from client: %s", Ellipsizer(packet))
         kc = getattr(ss, "keyboard_config", None)
         if kc and kc.enabled:
-            kc.parse_options(props)
+            if kc.parse_options(props) or force:
+                self.set_keymap(ss, force)
+
+            if "modifiers" in props:
+                modifiers = props.strtupleget("modifiers")
+                ss.make_keymask_match(modifiers)
+
+    def _process_keyboard_config(self, proto, packet: Packet) -> None:
+        if self.readonly:
+            return
+        props = typedict(packet.get_dict(1))
+        ss = self.get_server_source(proto)
+        if ss is None:
+            return
+        kc = getattr(ss, "keyboard_config", None)
+        if not kc or not kc.enabled:
+            return
+
+        force = props.boolget("force", False)
+        if kc.parse(props) or force:
             self.set_keymap(ss, force)
+
+        if "modifiers" in props:
             modifiers = props.strtupleget("modifiers")
             ss.make_keymask_match(modifiers)
 
     def _process_key_action(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
+        wid = packet.get_wid()
+        keyname = packet.get_str(2)
+        pressed = packet.get_bool(3)
+
+        # `get_keycode` may have to change modifiers to match the key, so we need a mutable list:
+        modifiers = list(packet.get_strs(4))
+        keyval = packet.get_u32(5)
+        keystr = packet.get_str(6)
+        keycode = packet.get_u32(7)
+        group = packet.get_u8(8)
+
+        attrs = {
+            "modifiers": modifiers,
+            "keyval": keyval,
+            "string": keystr,
+            "keycode": keycode,
+            "group": group,
+        }
+        ke_packet = Packet("keyboard-event", wid, keyname, pressed, attrs)
+        self._process_keyboard_event(proto, ke_packet)
+
+    def _process_keyboard_event(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
         wid = packet.get_wid()
         keyname = packet.get_str(2)
         pressed = packet.get_bool(3)
+        attrs = typedict(packet.get_dict(4))
         # `get_keycode` may have to change modifiers to match the key, so we need a mutable list:
-        modifiers = list(packet.get_strs(4))
-        keyval = packet.get_u32(5)
-        keystr = packet.get_str(6)
-        client_keycode = packet.get_u32(7)
-        group = packet.get_u8(8)
+        modifiers = list(attrs.strtupleget("modifiers", []))
+        keyval = attrs.intget("keyval", 0)
+        keystr = attrs.strget("string", "")
+        client_keycode = attrs.intget("keycode", 0)
+        group = attrs.intget("group", 0)
         ss = self.get_server_source(proto)
         if not hasattr(ss, "keyboard_config"):
             return
@@ -351,7 +398,7 @@ class KeyboardServer(StubServerMixin):
         self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, is_mod, self.key_repeat_interval)
         ss.emit("user-event", "key-repeat")
 
-    def _process_keyboard_sync_enabled_status(self, proto, packet: Packet) -> None:
+    def _process_keyboard_sync(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -394,14 +441,20 @@ class KeyboardServer(StubServerMixin):
         log("get_keyboard_config(%s) is not implemented", props)
         return None
 
-    def set_keymap(self, ss, force: bool = False) -> None:
-        log("set_keymap(%s, %s)", ss, force)
+    def set_keymap(self, server_source, force=False) -> None:
+        log("set_keymap(%s, %s)", server_source, force)
 
     def init_packet_handlers(self) -> None:
+        if BACKWARDS_COMPATIBLE:
+            self.add_packets(
+                # keyboard:
+                "key-action", "key-repeat", "layout-changed", "keymap-changed",
+                main_thread=True
+            )
+            self.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync, True)
+            self.add_packet_handler("keyboard-sync-enabled-status", self._process_keyboard_sync, True)
+
         self.add_packets(
-            # keyboard:
-            "key-action", "key-repeat", "layout-changed", "keymap-changed",
+            "keyboard-event", "keyboard-config", "keyboard-sync",
             main_thread=True
         )
-        # legacy:
-        self.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync_enabled_status, True)

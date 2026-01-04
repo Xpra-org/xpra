@@ -175,24 +175,17 @@ class DisplayManager(StubServerMixin):
                     "root_window_size": root_size,
                     "desktop_size": get_desktop_size_capability(source, *root_size),
                 }
+            max_size = self.get_max_screen_size()
+            if max_size:
+                caps["max_desktop_size"] = max_size
             name = get_display_name()
             if name:
                 caps["name"] = name
-        if not BACKWARDS_COMPATIBLE:
-            return {"display": caps}
-        caps["display"] = caps.get("name", "")
-        return caps
-
-    def get_server_features(self, source) -> dict[str, Any]:
-        features: dict[str, Any] = {}
-        if source and "display" in source.wants:
-            max_size = self.get_max_screen_size()
-            if max_size:
-                features["max_desktop_size"] = max_size
-            display = os.environ.get("DISPLAY", "")
-            if display:
-                features["display"] = display
-        return features
+        if BACKWARDS_COMPATIBLE:
+            # legacy: use top level attributes:
+            caps["display"] = caps.get("name", "")
+            return caps
+        return {"display": caps}
 
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
         max_size = self.get_max_screen_size()
