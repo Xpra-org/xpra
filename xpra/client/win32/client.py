@@ -242,6 +242,7 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
                 "scancode": scancode,
                 "vk_code": vk_code,
                 "extended": extended,
+                "backend": "win32",
             })
 
     # server event

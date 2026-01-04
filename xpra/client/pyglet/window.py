@@ -85,6 +85,7 @@ class ClientWindow(Window):
         else:
             self.client.send("keyboard-event", self.wid, keyname, pressed, {
                 "modifiers": mods,
+                "backend": "pyglet",
             })
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:

@@ -114,6 +114,7 @@ class ClientWindow(Toplevel):
             self.client.send("keyboard-event", self.wid, keyname, pressed, {
                 "string": string,
                 "keycode": keycode,
+                "backend": "tk",
             })
 
     def on_mouse_motion(self, event) -> None:

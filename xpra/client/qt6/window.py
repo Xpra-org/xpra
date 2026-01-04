@@ -212,6 +212,7 @@ class ClientWindow(QMainWindow):
                 "keyval": keyval,
                 "string": string,
                 "keycode": keycode,
+                "backend": "qt",
             })
 
     def draw(self, x, y, w, h, coding, data, stride) -> None:
