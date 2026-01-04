@@ -24,7 +24,7 @@ from xpra.util.str_fn import (
 )
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.thread import make_thread, start_thread
-from xpra.common import noop, SizedBuffer
+from xpra.common import noop, SizedBuffer, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
@@ -150,10 +150,12 @@ class SocketProtocol:
         self.max_packet_size = MAX_PACKET_SIZE
         self.abs_max_packet_size = 256 * 1024 * 1024
         self.large_packets = [
-            "hello", "window-metadata", "sound-data", "notify_show", "setting-change",
-            "shell-reply", "configure-display",
+            "hello", "window-metadata", "audio-data", "notification-show", "setting-change",
+            "shell-reply", "display-configure",
             "encodings",
         ]
+        if BACKWARDS_COMPATIBLE:
+            self.large_packets += ["sound-data", "notify_show", "configure-display"]
         self._log_stats = None  # None here means auto-detect
         if "XPRA_LOG_SOCKET_STATS" in os.environ:
             self._log_stats = envbool("XPRA_LOG_SOCKET_STATS")

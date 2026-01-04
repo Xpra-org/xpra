@@ -6,6 +6,7 @@
 from time import monotonic
 from typing import Any
 
+from xpra.net.packet_type import DISPLAY_CONFIGURE
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitCode
 from xpra.platform.features import REINIT_WINDOWS
@@ -304,7 +305,7 @@ class DisplayClient(StubClientMixin):
             icc = self.get_icc_info()
             dicc = self.get_display_icc_info()
             if icc or dicc:
-                self.send("configure-display", {
+                self.send(DISPLAY_CONFIGURE, {
                     "icc": {
                         "global": icc,
                         "display": dicc,
@@ -577,7 +578,7 @@ class DisplayClient(StubClientMixin):
             if rrate:
                 attrs["vrefresh"] = rrate
             log(f"configure-display: {attrs}")
-            self.send("configure-display", attrs)
+            self.send(DISPLAY_CONFIGURE, attrs)
         self._last_screen_settings = screen_settings
         # update the max packet size (may have gone up):
         self.set_max_packet_size()

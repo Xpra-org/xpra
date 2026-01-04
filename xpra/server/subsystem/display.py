@@ -388,7 +388,7 @@ class DisplayManager(StubServerMixin):
     def set_screen_size(self, width: int, height: int):
         """ subclasses should override this method if they support resizing """
 
-    def _process_configure_display(self, proto, packet: Packet) -> None:
+    def _process_display_configure(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if ss is None:
             return
@@ -491,7 +491,7 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # screenshots:
-    def _process_screenshot(self, proto, _packet: Packet) -> None:
+    def _process_display_request_screenshot(self, proto, _packet: Packet) -> None:
         packet = self.make_screenshot_packet()
         ss = self.get_server_source(proto)
         if packet and ss:
@@ -518,4 +518,6 @@ class DisplayManager(StubServerMixin):
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("desktop_size", "configure-display", "screenshot", main_thread=True)
+        self.add_legacy_alias("configure-display", "display-configure")
+        self.add_legacy_alias("screenshot", "display-request-screenshot")
+        self.add_packets("desktop_size", "display-configure", "display-request-screenshot", main_thread=True)

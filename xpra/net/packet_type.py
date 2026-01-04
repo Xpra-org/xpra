@@ -55,3 +55,7 @@ CURSOR_SET = "set-cursors" if BACKWARDS_COMPATIBLE else "cursor-set"
 
 COMMAND_SIGNAL = "command-signal"
 COMMAND_START = "start-command" if BACKWARDS_COMPATIBLE else "command-start"
+
+DISPLAY_CONFIGURE = "configure-display" if BACKWARDS_COMPATIBLE else "display-configure"
+DISPLAY_REQUEST_SCREENSHOT = "screenshot" if BACKWARDS_COMPATIBLE else "display-request-screenshot"
+DISPLAY_SCREENSHOT = "screenshot" if BACKWARDS_COMPATIBLE else "display-screenshot"

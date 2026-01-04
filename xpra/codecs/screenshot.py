@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from xpra.net.compression import Compressed
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
+from xpra.net.packet_type import DISPLAY_SCREENSHOT
 
 log = Logger("encoding")
 
@@ -56,6 +57,6 @@ def make_screenshot_packet_from_regions(regions: Sequence[tuple[int, int, int, I
     data = buf.getvalue()
     buf.close()
     compressed = Compressed("png", data)
-    packet = ("screenshot", width, height, "png", width * 4, compressed)
+    packet = (DISPLAY_SCREENSHOT, width, height, "png", width * 4, compressed)
     log("screenshot: %sx%s %s", width, height, compressed)
     return packet

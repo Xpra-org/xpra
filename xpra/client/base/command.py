@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.net.packet_type import PRINT_FILE
+from xpra.net.packet_type import PRINT_FILE, DISPLAY_REQUEST_SCREENSHOT
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
@@ -168,12 +168,12 @@ class ScreenshotXpraClient(HelloRequestClient):
         }
 
     def do_command(self, caps: typedict) -> None:
-        self.send("screenshot")
+        self.send(DISPLAY_REQUEST_SCREENSHOT)
 
     def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the screenshot")
 
-    def _process_screenshot(self, packet: Packet) -> None:
+    def _process_display_screenshot(self, packet: Packet) -> None:
         w = packet.get_u16(1)
         h = packet.get_u16(2)
         encoding = packet.get_str(3)
@@ -195,7 +195,8 @@ class ScreenshotXpraClient(HelloRequestClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("screenshot")
+        self.add_legacy_alias("screenshot", "display-screenshot")
+        self.add_packets("display-screenshot")
 
 
 class InfoXpraClient(CommandConnectClient):

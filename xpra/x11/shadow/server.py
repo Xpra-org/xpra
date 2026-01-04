@@ -6,6 +6,7 @@
 
 from typing import Any
 
+from xpra.net.packet_type import DISPLAY_SCREENSHOT
 from xpra.server.base import ServerBase
 from xpra.net.compression import Compressed
 from xpra.common import NotificationID
@@ -134,4 +135,4 @@ class ShadowX11Server(GTKShadowServerBase):
         w, h, encoding, rowstride, data = capture.take_screenshot()
         assert encoding == "png"  # use fixed encoding for now
         # pylint: disable=import-outside-toplevel
-        return "screenshot", w, h, encoding, rowstride, Compressed(encoding, data)
+        return DISPLAY_SCREENSHOT, w, h, encoding, rowstride, Compressed(encoding, data)

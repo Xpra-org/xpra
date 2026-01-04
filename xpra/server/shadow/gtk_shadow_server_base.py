@@ -6,6 +6,7 @@
 from typing import Any
 from collections.abc import Callable
 
+from xpra.net.packet_type import DISPLAY_SCREENSHOT
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.util.gobject import to_gsignals
@@ -325,7 +326,7 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         rwm = self._id_to_window.values()[0]
         w, h, encoding, rowstride, data = rwm.take_screenshot()
         assert encoding == "png"  # use fixed encoding for now
-        return "screenshot", w, h, encoding, rowstride, Compressed(encoding, data)
+        return DISPLAY_SCREENSHOT, w, h, encoding, rowstride, Compressed(encoding, data)
 
 
 GObject.type_register(GTKShadowServerBase)
