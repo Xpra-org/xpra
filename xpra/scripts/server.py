@@ -1379,6 +1379,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                 assert starting_monitor or upgrading_monitor
                 app = make_monitor_server()
     except ImportError as e:
+        log("failed to make server class", exc_info=True)
         log.error("Error: the server cannot be started,")
         log.error(" some critical component is missing:")
         log.estr(e)
