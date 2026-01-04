@@ -1725,6 +1725,10 @@ if WIN32:
     else:
         remove_packages("cv2")
 
+    if codecs_ENABLED:
+        external_includes.append("decimal")
+        external_includes.append("_pydecimal")
+
     external_includes.append("cairo")
     external_includes.append("certifi")
 
