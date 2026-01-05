@@ -378,7 +378,7 @@ class WindowServer(StubServerMixin):
         log.info("_process_close_window(%s, %s)", proto, packet)
 
     def _process_configure_window(self, proto, packet: Packet) -> None:
-        self._process_window_configure(proto, packet)
+        log.info("_process_configure_window(%s, %s)", proto, packet)
 
     def _process_window_configure(self, proto, packet: Packet) -> None:
         log.info("_process_window_configure(%s, %s)", proto, packet)

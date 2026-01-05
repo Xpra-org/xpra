@@ -151,26 +151,21 @@ class ClientWindow(Toplevel):
 
     def on_configure(self, event) -> None:
         log(f"configure: {event}")
-        counter = 0
-        props = {}
-        x, y, w, h = event.x, event.y, event.width, event.height
-        state = ()
-        skip_geometry = False
-        self.client.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, counter, state, skip_geometry)
+        self.client.send(WINDOW_CONFIGURE, self.wid, {
+            "geometry": (event.x, event.y, event.width, event.height),
+        })
 
     def on_destroy(self, _event=None) -> None:
         self.client.send(WINDOW_CLOSE, self.wid)
 
     def on_resize(self, _event) -> None:
-        counter = 0
-        props = {}
         x = self.winfo_x()
         y = self.winfo_y()
         w = self.winfo_width()
         h = self.winfo_height()
-        state = ()
-        skip_geometry = False
-        self.client.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, counter, state, skip_geometry)
+        self.client.send(WINDOW_CONFIGURE, self.wid, {
+            "geometry": (x, y, w, h),
+        })
 
     def draw(self, x: int, y: int, _w: int, _h: int, coding: str, data, _stride: int) -> None:
         if coding not in ("png", "jpg", "webp"):

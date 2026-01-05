@@ -1333,15 +1333,36 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._window_state = {}
         self.cancel_window_state_timer()
         sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
-        packet: Sequence[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
-        pwid = self.wid
-        if self.is_OR():
-            pwid = -1 if BACKWARDS_COMPATIBLE else 0
-        packet.append(pwid)
-        packet.append(self.get_mouse_position())
-        packet.append(self._client.get_current_modifiers())
-        geomlog("%s", packet)
-        self.send(WINDOW_CONFIGURE, *packet)
+
+        if BACKWARDS_COMPATIBLE:
+            packet: Sequence[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state,
+                                               skip_geometry]
+            pwid = self.wid
+            if self.is_OR():
+                pwid = -1 if BACKWARDS_COMPATIBLE else 0
+            packet.append(pwid)
+            packet.append(self.get_mouse_position())
+            packet.append(self._client.get_current_modifiers())
+            self.send("configure-window", *packet)
+            geomlog("%s", packet)
+        else:
+            config: dict[str, PacketElement] = {
+                "pointer": {
+                    "wid": self.wid if not self.is_OR() else 0,
+                    "position": self.get_mouse_position(),
+                    "modifiers": self._client.get_current_modifiers(),
+                    # "device-id": -1,
+                }
+            }
+            if props:
+                config["properties"] = props
+            if state:
+                config["state"] = state
+            if not skip_geometry:
+                config["geometry"] = (sx, sy, sw, sh)
+                config["resize-counter"] = self._resize_counter
+            self.send(WINDOW_CONFIGURE, self.wid, config)
+            geomlog("sending configure for %i: %s", self.wid, config)
 
     def _set_backing_size(self, ww: int, wh: int) -> None:
         b = self._backing

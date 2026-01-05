@@ -23,7 +23,7 @@ WINDOW_DRAW: Final[str] = "draw" if BACKWARDS_COMPATIBLE else "window-draw"
 # client to server:
 WINDOW_MAP: Final[str] = "map-window" if BACKWARDS_COMPATIBLE else "window-map"
 WINDOW_UNMAP: Final[str] = "unmap-window" if BACKWARDS_COMPATIBLE else "window-unmap"
-WINDOW_CONFIGURE: Final[str] = "configure-window" if BACKWARDS_COMPATIBLE else "window-configure"
+WINDOW_CONFIGURE: Final[str] = "window-configure"
 WINDOW_CLOSE: Final[str] = "close-window" if BACKWARDS_COMPATIBLE else "window-close"
 WINDOW_FOCUS: Final[str] = "focus" if BACKWARDS_COMPATIBLE else "window-focus"
 WINDOW_ACTION: Final[str] = "window-action"

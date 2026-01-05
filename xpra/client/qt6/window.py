@@ -145,9 +145,9 @@ class ClientWindow(QMainWindow):
             x += self.label.pos().x()
             y += self.label.pos().y()
             w, h = self.get_canvas_size()
-            state = {}
-            props = {}
-            self.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, 0, state, False)
+            self.send(WINDOW_CONFIGURE, self.wid, {
+                "geometry": (x, y, w, h),
+            })
         elif etype == QEvent.Type.WindowStateChange:
             new_state = self.windowState()
             old_state = event.oldState()
@@ -162,17 +162,18 @@ class ClientWindow(QMainWindow):
                     changes[name] = bool(new_state & mask)
             log(f"state changes: {changes}")
             if changes:
-                props = {}
-                self.send(WINDOW_CONFIGURE, self.wid, 0, 0, 0, 0, props, 0, changes, True)
+                self.send(WINDOW_CONFIGURE, self.wid, {
+                    "state": changes,
+                })
         elif etype == QEvent.Type.Resize:
             size = event.size()
             x = self.pos().x() + self.label.pos().x()
             y = self.pos().y() + self.label.pos().y()
             w = size.width()
             h = size.height()
-            state = {}
-            props = {}
-            self.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, 0, state, False)
+            self.send(WINDOW_CONFIGURE, self.wid, {
+                "geometry": (x, y, w, h),
+            })
             old_pixmap = self.canvas
             self.canvas = QPixmap(w, h)
             self.canvas.fill(Qt.GlobalColor.white)

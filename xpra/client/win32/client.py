@@ -163,7 +163,13 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         self.send(WINDOW_UNMAP, window.wid)
 
     def window_maximized_event(self, window) -> None:
-        self.send_configure(window, True)
+        if not window.state_updates:
+            return
+        self.send(WINDOW_CONFIGURE, window.wid, {
+            "state": window.state_updates,
+        })
+        # we have consumed it, so we can reset it now:
+        window.state_updates = {}
 
     def window_moved_event(self, window) -> None:
         log("window_moved_event(%s)", window)
@@ -173,21 +179,15 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         log("window_resized_event(%s)", window)
         self.send_configure(window)
 
-    def send_configure(self, window, skip_geometry=False) -> None:
-        props = {}
-        resize_counter = 0
-        state = window.state_updates
+    def send_configure(self, window) -> None:
+        geometry = (window.x, window.y, window.width, window.height)
+        log("send_configure: geometry=%s", geometry)
+        self.send(WINDOW_CONFIGURE, window.wid, {
+            "state": window.state_updates,
+            "geometry": geometry,
+        })
+        # we have consumed it, so we can reset it now:
         window.state_updates = {}
-        skip_geometry = False
-        packet = [window.wid, window.x, window.y, window.width, window.height, props, resize_counter, state, skip_geometry]
-        # pwid = window.wid
-        # if False: # self.is_OR():
-        #    pwid = -1 if BACKWARDS_COMPATIBLE else 0
-        # packet.append(pwid)
-        # packet.append(self.get_mouse_position())
-        # packet.append(self._client.get_current_modifiers())
-        log("send_configure: geometry=%s", (window.x, window.y, window.width, window.height))
-        self.send(WINDOW_CONFIGURE, *packet)
 
     def _pointer_data(self, window, x: int, y: int) -> tuple[int, int, int, int]:
         absx = window.x + x

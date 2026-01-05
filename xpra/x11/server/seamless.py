@@ -906,12 +906,46 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return geom
 
-    def _process_window_configure(self, proto, packet: Packet) -> None:
+    def _process_configure_window(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         wid = packet.get_wid()
+        window = self._lookup_window(wid)
+        if not window:
+            geomlog("cannot configure window %#x: not found, already removed?", wid)
+            return
+        config = {}
         x = packet.get_i16(2)
         y = packet.get_i16(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
+        skip_geometry = (len(packet) >= 10 and packet.get_bool(9)) or window.is_OR()
+        if not skip_geometry:
+            config["geometry"] = (x, y, w, h)
+        if len(packet) >= 8:
+            config["resize-counter"] = packet.get_u64(7)
+        if len(packet) >= 7:
+            cprops = packet.get_dict(6)
+            if cprops:
+                config["properties"] = cprops
+        if len(packet) >= 9:
+            config["state"] = packet.get_dict(8)
+        if len(packet) >= 13:
+            pwid = packet.get_wid(10)
+            position = packet.get_ints(11)
+            modifiers = packet.get_strs(12)
+            config["pointer"] = {
+                "wid": pwid,
+                "position": position,
+                "modifiers": modifiers,
+            }
+        self.do_process_window_configure(proto, wid, typedict(config))
+
+    def _process_window_configure(self, proto, packet: Packet) -> None:
+        wid = packet.get_wid()
+        config = typedict(packet.get_dict(2))
+        self.do_process_window_configure(proto, wid, config)
+
+    def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         window = self._lookup_window(wid)
         if not window:
             geomlog("cannot configure window %#x: not found, already removed?", wid)
@@ -919,93 +953,75 @@ class SeamlessServer(GObject.GObject, ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
-        # some "window-configure" packets are only meant for metadata updates:
-        skip_geometry = (len(packet) >= 10 and packet.get_bool(9)) or window.is_OR()
-        if not skip_geometry:
-            self._window_mapped_at(proto, wid, window, (x, y, w, h))
-        if len(packet) >= 7:
-            cprops = packet.get_dict(6)
-            if cprops:
-                metadatalog("window client properties updates: %s", cprops)
-                self._set_client_properties(proto, wid, window, cprops)
-        if not self.ui_driver:
+
+        if not self.ui_driver and config.boolget("drive", True):
             self.set_ui_driver(ss)
         is_ui_driver = self.ui_driver == ss.uuid
-        shown = True
-        if window.is_OR() or window.is_tray() or skip_geometry or self.readonly:
-            size_changed = False
-        else:
-            shown = window.get_property("shown")
-            cg = window.get_property("client-geometry")
-            if not cg:
-                size_changed = True
-            else:
-                oww, owh = cg[:2]
-                size_changed = oww != w or owh != h
-        if is_ui_driver or size_changed or not shown:
-            damage = False
-            if is_ui_driver and len(packet) >= 13 and features.pointer and not self.readonly:
-                pwid = packet.get_wid(10)
-                pointer = packet.get_ints(11)
-                modifiers = packet.get_strs(12)
-                if pwid == wid and window.is_OR():
-                    # some clients may send the OR window wid
-                    # this causes focus issues (see #1999)
-                    pwid = -1 if BACKWARDS_COMPATIBLE else 0
-                device_id = -1
-                pointerlog("configure pointer data: %s", (pwid, pointer, modifiers))
-                if self.process_mouse_common(proto, device_id, pwid, pointer):
-                    # only update modifiers if the window is in focus:
-                    if self._has_focus == wid:
-                        self._update_modifiers(proto, wid, modifiers)
-            if window.is_tray():
-                if not skip_geometry and not self.readonly:
-                    traylog(f"systray {window} configured to: %s", (x, y, w, h))
-                    with xlog:
-                        window.move_resize(x, y, w, h)
-                    damage = True
-            else:
-                if window.is_OR() and not skip_geometry:
-                    log.warn("Warning: ignoring invalid configure geometry packet")
-                    log.warn(f" for OR window {wid:#x}")
-                    return
-                self.last_client_configure_event = monotonic()
-                if is_ui_driver and len(packet) >= 9:
-                    state = packet.get_dict(8)
-                    changes = self._set_window_state(proto, wid, window, state)
-                    if changes:
-                        damage = True
-                if not skip_geometry:
-                    cg = window.get_property("client-geometry")
-                    resize_counter = 0
-                    if len(packet) >= 8:
-                        resize_counter = packet.get_u64(7)
-                    geomlog("_process_window_configure(%s) old window geometry: %s", packet[1:], cg)
-                    geometry = self.client_clamp_window(proto, wid, window, x, y, w, h, resize_counter)
-                    self.client_configure_window(window, geometry, resize_counter)
-                    ax, ay, aw, ah = geometry
-                    if cg:
-                        owx, owy, oww, owh = cg
-                        resized = oww != aw or owh != ah
-                        if owx != ax or owy != ay:
-                            damage = True
-                    else:
-                        resized = True
-                    if resized and SHARING_SYNC_SIZE:
-                        # try to ensure this won't trigger a resizing loop:
-                        counter = max(0, resize_counter - 1)
-                        for s in self.window_sources():
-                            if s != ss:
-                                s.resize_window(wid, window, aw, ah, resize_counter=counter)
-                    damage |= resized
-            if not shown and not skip_geometry:
-                window.show()
-                damage = True
-            self.repaint_root_overlay()
-        else:
-            damage = True
-        if damage:
+
+        properties = config.dictget("properties")
+        if properties:
+            metadatalog("window client properties updates: %s", properties)
+            self._set_client_properties(proto, wid, window, properties)
+
+        geometry = config.inttupleget("geometry")
+        if geometry:
+            geomlog("window %i at %s for %s", wid, geometry, proto)
+            self._window_mapped_at(proto, wid, window, geometry)
+
+        if "pointer" in config and is_ui_driver and features.pointer and not self.readonly:
+            pointer_data = typedict(config.dictget("pointer"))
+            pointerlog("configure pointer data: %s", pointer_data)
+            pwid = pointer_data.intget("wid", 0)
+            position = pointer_data.inttupleget("position")
+            device_id = pointer_data.intget("device-id")
+            if pwid == wid and window.is_OR():
+                # some clients may send the OR window wid
+                # this causes focus issues (see #1999)
+                pwid = 0
+            if self.process_mouse_common(proto, device_id, pwid, position):
+                # only update modifiers if specified and if the window is in focus:
+                if self._has_focus == pwid and "modifiers" in pointer_data:
+                    modifiers = pointer_data.strtupleget("modifiers")
+                    self._update_modifiers(proto, pwid, modifiers)
+
+        if window.is_tray():
+            # only the current ui driver can configure the tray location:
+            if geometry and is_ui_driver and not self.readonly:
+                traylog(f"systray {window} configured to: %s", geometry)
+                with xlog:
+                    window.move_resize(*geometry)
             self.schedule_configure_damage(wid)
+            return
+
+        if "state" in config and is_ui_driver:
+            state = config.dictget("state")
+            self._set_window_state(proto, wid, window, state)
+
+        if geometry and not window.is_OR() and not self.readonly:
+            # client_configure_window() will show() the window,
+            # but we want to make sure we send a screen update:
+            damage = not window.get_property("shown")
+
+            x, y, w, h = geometry
+            ocg = window.get_property("client-geometry") or ()
+            resize_counter = config.intget("resize-counter", 0)
+            geomlog("new geometry: %s", geometry)
+            geometry = self.client_clamp_window(proto, wid, window, x, y, w, h, resize_counter)
+            self.client_configure_window(window, geometry, resize_counter)
+            ncg = window.get_property("client-geometry") or ()
+            if ocg != ncg:
+                self.last_client_configure_event = monotonic()
+                self.repaint_root_overlay()
+                if ocg[2:4] != ncg[2:4] and SHARING_SYNC_SIZE:
+                    # try to ensure this won't trigger a resizing loop:
+                    counter = max(0, resize_counter - 1)
+                    nw, nh = ncg[2:4]
+                    for s in self.window_sources():
+                        if s != ss:
+                            s.resize_window(wid, window, nw, nh, resize_counter=counter)
+                damage = True
+            if damage:
+                self.schedule_configure_damage(wid)
 
     def schedule_configure_damage(self, wid: int, delay=CONFIGURE_DAMAGE_RATE) -> None:
         # rate-limit the damage events

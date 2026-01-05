@@ -114,20 +114,16 @@ class ClientWindow(Window):
             self.send_button(-1, self.wid, button, state, pointer, modifiers, buttons, {})
 
     def on_move(self, x: int, y: int) -> None:
-        counter = 0
-        props = {}
         w, h = self.get_size()
-        state = ()
-        skip_geometry = False
-        self.client.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, counter, state, skip_geometry)
+        self.client.send(WINDOW_CONFIGURE, self.wid, {
+            "geometry": (x, y, w, h)
+        })
 
     def on_resize(self, w: int, h: int) -> None:
-        counter = 0
-        props = {}
         x, y = self.get_location()
-        state = ()
-        skip_geometry = False
-        self.client.send(WINDOW_CONFIGURE, self.wid, x, y, w, h, props, counter, state, skip_geometry)
+        self.client.send(WINDOW_CONFIGURE, self.wid, {
+            "geometry": (x, y, w, h)
+        })
 
     def draw(self, x: int, y: int, w: int, h: int, coding: str, data, stride: int) -> None:
         if coding in ("png", "jpg", "webp"):
