@@ -590,7 +590,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 self._add_new_window_common(window)
                 window.call_setup()
                 window.managed_connect("notify::geometry", self._or_window_geometry_changed)
-                packet_type = "new-override-redirect" if BACKWARDS_COMPATIBLE else "new-window"
+                packet_type = "new-override-redirect" if BACKWARDS_COMPATIBLE else "window-create"
                 self._do_send_new_window_packet(packet_type, window, window.get_property("geometry"))
                 self.refresh_window(window)
         except Unmanageable as e:

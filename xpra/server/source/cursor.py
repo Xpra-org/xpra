@@ -72,7 +72,19 @@ class CursorsConnection(StubClientConnection):
         log(f"parse_client_caps(..) cursors={self.send_cursors}, cursor encodings={self.cursor_encodings}")
 
     def get_caps(self) -> dict[str, Any]:
-        return {}
+        cd = self.get_cursor_data_cb()
+        if not cd:
+            return {}
+        sizes = cd[1]
+        log("cursor sizes: %s", sizes)
+        return {
+            "cursor": {
+                "size": {
+                    "default": sizes[0],
+                    "max": sizes[1],
+                }
+            }
+        }
 
     ######################################################################
     # info:
@@ -110,55 +122,61 @@ class CursorsConnection(StubClientConnection):
             self.cursor_timer = 0
             GLib.source_remove(ct)
 
-    def do_send_cursor(self, delay, cursor_data, cursor_sizes, encoding_prefix="") -> None:
+    def do_send_cursor(self, delay, cursor_data, cursor_sizes) -> None:
         # x11 server core calls this method directly, so check availability again:
         if not self.send_cursors:
             return
-        # copy to a new list we can modify (ie: compress):
-        cursor_data = list(cursor_data)
         # skip first two fields (if present) as those are coordinates:
         if self.last_cursor_sent and self.last_cursor_sent[2:9] == cursor_data[2:9]:
             log("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
             return
         self.last_cursor_sent = tuple(cursor_data[:9])
-        w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
-        # compress pixels if needed:
-        encoding = "raw"
-        if pixels is not None:
-            bin_pixels = memoryview_to_bytes(pixels)
-            cpixels: bytes | Compressed = bin_pixels
-            try:
-                from PIL import Image
-            except ImportError:
-                Image = None
-            if "png" in self.cursor_encodings and Image:
-                log(f"do_send_cursor() got {len(cpixels)} bytes of pixel data for {w}x{h} cursor named {name!r}")
-                img = Image.frombytes("RGBA", (w, h), bin_pixels, "raw", "BGRA", w * 4, 1)
-                buf = BytesIO()
-                img.save(buf, "PNG")
-                pngdata = buf.getvalue()
-                buf.close()
-                cpixels = Compressed("png cursor", pngdata)
-                encoding = "png"
-                if SAVE_CURSORS:
-                    filename = f"raw-cursor-{serial:x}.png"
-                    with open(filename, "wb") as f:
-                        f.write(pngdata)
-                    log("cursor saved to %s", filename)
-            elif len(cpixels) >= 256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
-                cpixels = self.compressed_wrapper("cursor", pixels)
-                log("do_send_cursor(..) pixels=%s ", cpixels)
-                encoding = "raw"
-            else:
-                log("no supported cursor encodings")
-                return
-            cursor_data[7] = cpixels
+        w, h, xhot, yhot, serial, pixels, name = cursor_data[2:9]
+        log(f"do_send_cursor() got {len(pixels)} bytes of pixel data for {w}x{h} cursor named {name!r}")
+        encoding, cpixels = self.compress_cursor_pixels(pixels, w, h, serial)
         log("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
             w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
-        args = [encoding_prefix + encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
-        self.send_more("cursor", *args)
+        if BACKWARDS_COMPATIBLE:
+            cursor_data = list(cursor_data)
+            cursor_data[7] = cpixels
+            args = [encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
+            self.send_more("cursor", *args)
+        else:
+            self.send_more("cursor-data", encoding, w, h, xhot, yhot, serial, cpixels, name)
 
     def send_empty_cursor(self) -> None:
         log("send_empty_cursor(..)")
         self.last_cursor_sent = ()
-        self.send_more("cursor", "")
+        if BACKWARDS_COMPATIBLE:
+            self.send_more("cursor", "")
+        else:
+            self.send_more("cursor-default")
+
+    def compress_cursor_pixels(self, pixels, w: int, h: int, serial: int):
+        if not pixels:
+            return "raw", b""
+        bin_pixels = memoryview_to_bytes(pixels)
+        cpixels: bytes | Compressed = bin_pixels
+        try:
+            from PIL import Image
+        except ImportError:
+            Image = None
+        if "png" in self.cursor_encodings and Image:
+            img = Image.frombytes("RGBA", (w, h), bin_pixels, "raw", "BGRA", w * 4, 1)
+            buf = BytesIO()
+            img.save(buf, "PNG")
+            pngdata = buf.getvalue()
+            buf.close()
+            cpixels = Compressed("png cursor", pngdata)
+            if SAVE_CURSORS:
+                filename = f"raw-cursor-{serial:x}.png"
+                with open(filename, "wb") as f:
+                    f.write(pngdata)
+                log("cursor saved to %s", filename)
+            return "png", cpixels
+        if len(cpixels) >= 256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
+            cpixels = self.compressed_wrapper("cursor", pixels)
+            log("do_send_cursor(..) pixels=%s ", cpixels)
+            return "raw", cpixels
+        log("no supported cursor encodings")
+        return "", b""

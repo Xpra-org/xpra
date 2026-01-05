@@ -279,5 +279,10 @@ def get_default_cursor_size() -> tuple[int, int]:
             cursor = X11CursorBindings()
             size = cursor.get_default_cursor_size()
         except ImportError:
+            size = 48
+            from xpra.util.env import first_time
+            if first_time("x11-cursor"):
+                log.warn("Warning: missing X11 cursor bindings")
+                log.warn(" using default cursor size %i", size)
             log("get_default_cursor_size() no x11 cursor bindings")
     return size, size

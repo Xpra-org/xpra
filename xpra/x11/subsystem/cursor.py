@@ -9,7 +9,7 @@ from collections.abc import Sequence, Callable
 from xpra.server.subsystem.cursor import CursorManager
 from xpra.util.str_fn import Ellipsizer
 from xpra.x11.dispatch import add_event_receiver
-from xpra.x11.common import X11Event
+from xpra.x11.common import X11Event, get_default_cursor_size
 from xpra.x11.error import xlog
 from xpra.common import noop
 from xpra.log import Logger
@@ -74,16 +74,7 @@ class XCursorServer(CursorManager):
         if skip_default and is_default:
             log("get_cursor_data(): default cursor - clearing it")
             cursor_image = None
-        try:
-            from xpra.x11.bindings.cursor import X11CursorBindings
-            size = X11CursorBindings().get_default_cursor_size()
-        except ImportError as e:
-            size = 32
-            from xpra.util.env import first_time
-            if first_time("x11-cursor"):
-                log.warn("Warning: missing X11 cursor bindings")
-                log.warn(" %s", e)
-                log.warn(" using default cursor size %i", size)
+        size = get_default_cursor_size()
         return cursor_image, (size, (32767, 32767))
 
     def do_x11_cursor_event(self, event: X11Event) -> None:

@@ -919,7 +919,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         for w, cursor_data in tuple(self._cursors.items()):
             self.set_windows_cursor([w], cursor_data)
 
-    def set_windows_cursor(self, windows, cursor_data) -> None:
+    def set_windows_cursor(self, windows, cursor_data: Sequence) -> None:
         cursorlog(f"set_windows_cursor({windows}, args[{len(cursor_data)}])")
         cursor = None
         if cursor_data:
@@ -952,11 +952,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                   len(cursor_data) >= 10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         pixbuf = None
         if len(cursor_data) >= 10 and cursor_types and USE_LOCAL_CURSORS:
-            cursor_name = bytestostr(cursor_data[9])
+            cursor_name = cursor_data[9]
             pixbuf = get_local_cursor(cursor_name)
         # create cursor from the pixel data:
         encoding, _, _, w, h, xhot, yhot, serial, pixels = cursor_data[0:9]
-        encoding = bytestostr(encoding)
         if encoding != "raw":
             cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
             return None
@@ -979,10 +978,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         y = max(0, min(yhot, h - 1))
         csize = display.get_default_cursor_size()
         cmaxw, cmaxh = display.get_maximal_cursor_size()
-        if len(cursor_data) >= 12:
-            ssize = cursor_data[10]
-            smax = cursor_data[11]
-            cursorlog("server cursor sizes: default=%s, max=%s", ssize, smax)
         cursorlog("new %s cursor at %s,%s with serial=%#x, dimensions: %sx%s, len(pixels)=%s",
                   encoding, xhot, yhot, serial, w, h, len(pixels))
         cursorlog("default cursor size is %s, maximum=%s", csize, (cmaxw, cmaxh))

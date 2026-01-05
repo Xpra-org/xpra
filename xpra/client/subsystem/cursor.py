@@ -22,6 +22,22 @@ log = Logger("cursor")
 SAVE_CURSORS: bool = envbool("XPRA_SAVE_CURSORS", False)
 
 
+def decompress_cursor_data(encoding: str, cpixels, serial: int) -> bytes:
+    if encoding == "raw":
+        return cpixels
+    if encoding == "png":
+        if SAVE_CURSORS:
+            with open(f"raw-cursor-{serial:x}.png", "wb") as f:
+                f.write(cpixels)
+        from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
+        img = open_only(cpixels, ("png",))
+        raw = img.tobytes("raw", "BGRA")
+        log("used PIL to convert png cursor to raw")
+        return raw
+    log.warn(f"Warning: invalid cursor encoding: {encoding}")
+    return b""
+
+
 class CursorClient(StubClientMixin):
     """
     Add cursor handling
@@ -76,6 +92,7 @@ class CursorClient(StubClientMixin):
         return True
 
     def _process_cursor(self, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         if not self.cursors_enabled:
             return
         if len(packet) == 2:
@@ -85,38 +102,53 @@ class CursorClient(StubClientMixin):
         else:
             if len(packet) < 9:
                 raise ValueError(f"invalid cursor packet: only {len(packet)} items")
-            # trim packet-type:
             new_cursor = list(packet[1:])
+            if len(new_cursor) >= 12:
+                ssize = new_cursor[10]
+                smax = new_cursor[11]
+                log("server cursor sizes: default=%s, max=%s", ssize, smax)
+            # trim packet-type:
             encoding = str(new_cursor[0])
             setdefault = encoding.startswith("default:")
             if setdefault:
                 encoding = encoding.split(":")[1]
-            new_cursor[0] = encoding
-            if encoding == "png":
-                pixels = new_cursor[8]
-                if SAVE_CURSORS:
-                    serial = new_cursor[7]
-                    with open(f"raw-cursor-{serial:x}.png", "wb") as f:
-                        f.write(pixels)
-                from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
-                img = open_only(pixels, ("png",))
-                new_cursor[8] = img.tobytes("raw", "BGRA")
-                log("used PIL to convert png cursor to raw")
-                new_cursor[0] = "raw"
-            elif encoding != "raw":
-                log.warn(f"Warning: invalid cursor encoding: {encoding}")
-                return
+            serial = int(new_cursor[5])
+            pixels = decompress_cursor_data(encoding, new_cursor[8], serial)
+            new_cursor[8] = pixels
+            new_cursor[0] = "raw"
         if setdefault:
             log("setting default cursor=%s", Ellipsizer(new_cursor))
             self.default_cursor_data = new_cursor
         else:
             self.set_windows_cursor(self._id_to_window.values(), new_cursor)
 
+    def _process_cursor_data(self, packet: Packet) -> None:
+        if not self.cursors_enabled:
+            return
+        encoding = packet.get_str(1)
+        w = packet.get_u16(2)
+        h = packet.get_u16(3)
+        xhot = packet.get_u16(4)
+        yhot = packet.get_u16(5)
+        serial = packet.get_u64(6)
+        cpixels = packet.get_bytes(7)
+        name = packet.get_str(8)
+        pixels = decompress_cursor_data(encoding, cpixels, serial)
+        cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, pixels, name)
+        self.set_windows_cursor(self._id_to_window.values(), cursor_data)
+
+    def _process_cursor_default(self, packet: Packet) -> None:
+        if not self.cursors_enabled:
+            return
+        self.reset_cursor()
+
     def reset_cursor(self) -> None:
-        self.set_windows_cursor(self._id_to_window.values(), [])
+        self.set_windows_cursor(self._id_to_window.values(), ())
 
     def set_windows_cursor(self, client_windows, new_cursor) -> None:
         raise NotImplementedError()
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("cursor", main_thread=True)
+        if BACKWARDS_COMPATIBLE:
+            self.add_packets("cursor", main_thread=True)
+        self.add_packets("cursor-data", "cursor-default", main_thread=True)
