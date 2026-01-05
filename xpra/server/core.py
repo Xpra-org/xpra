@@ -497,7 +497,7 @@ class ServerCore(ServerBaseClass):
         self.sockets += local_sockets
 
         # all unix domain sockets:
-        ud_paths = [sock.address for sock in local_sockets if sock.socktype == "socket"]
+        ud_paths = [sock.address for sock in local_sockets if sock.socktype in ("socket", "named-pipe")]
         if ud_paths:
             os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
             if opts.forward_xdg_open:
