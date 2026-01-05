@@ -240,7 +240,7 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
                 "keyval": scancode,
                 "keycode": vk_code,
                 "scancode": scancode,
-                "vk_code": vk_code,
+                "vk-code": vk_code,
                 "extended": extended,
                 "backend": "win32",
             })

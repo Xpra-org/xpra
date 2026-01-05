@@ -12,11 +12,10 @@ from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT
 
 from xpra.util.env import envbool
-from xpra.util.system import is_VirtualBox
+from xpra.util.objects import typedict
 from xpra.common import XPRA_APP_ID
 from xpra.scripts.config import InitException
 from xpra.server.shadow.shadow_server_base import try_setup_capture
-from xpra.gtk.capture import GTKImageCapture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
@@ -24,8 +23,8 @@ from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size, get
 from xpra.platform.win32.pointer import get_position, move_pointer
 from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.platform.win32.events import get_win32_event_listener
-from xpra.platform.win32.shadow_cursor import get_cursor_data
-from xpra.platform.win32.gdi_screen_capture import GDICapture
+from xpra.platform.win32.shadow.common import get_monitors
+from xpra.platform.win32.shadow.cursor import get_cursor_data
 from xpra.log import Logger
 
 # user32:
@@ -36,7 +35,6 @@ from xpra.platform.win32.common import (
     GetWindowThreadProcessId,
     GetSystemMetrics,
     SetPhysicalCursorPos, GetCursorInfo, CURSORINFO,
-    EnumDisplayMonitors, GetMonitorInfo,
 )
 
 log = Logger("shadow", "win32")
@@ -53,6 +51,7 @@ GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
 
 def check_gstreamer_d3d11() -> bool:
+    from xpra.util.system import is_VirtualBox
     return not is_VirtualBox()
 
 
@@ -119,14 +118,6 @@ SHADOW_OPTIONS = {
 }
 
 
-def get_monitors() -> list[dict[str, Any]]:
-    monitors = []
-    for m in EnumDisplayMonitors():
-        mi = GetMonitorInfo(m)
-        monitors.append(mi)
-    return monitors
-
-
 def setup_nvfbc_capture(w: int, h: int, pixel_depth=32):
     if not NVFBC:
         return None
@@ -169,11 +160,13 @@ def setup_gstreamer_capture(w: int, h: int, pixel_depth=32):
 
 # noinspection PyUnusedLocal
 def setup_gdi_capture(w: int, h: int, pixel_depth=32):
+    from xpra.platform.win32.gdi_screen_capture import GDICapture
     return GDICapture()
 
 
 # noinspection PyUnusedLocal
 def setup_gtk_capture(w: int, h: int, pixel_depth=32):
+    from xpra.gtk.capture import GTKImageCapture
     return GTKImageCapture(None)
 
 
@@ -183,133 +176,6 @@ CAPTURE_BACKENDS: dict[str, Callable] = {
     "gdi": setup_gdi_capture,
     "gtk": setup_gtk_capture,
 }
-
-
-def get_shape_rectangles(logit=False) -> list:
-    # get the list of windows
-    log_fn = log.debug
-    if logit or envbool("XPRA_SHAPE_DEBUG", False):
-        log_fn = shapelog.debug
-    taskbar = FindWindowA("Shell_TrayWnd", None)
-    log_fn("taskbar window=%#x", taskbar)
-    ourpid = os.getpid()
-    log_fn("our pid=%i", ourpid)
-    rectangles = []
-
-    # noinspection PyUnusedLocal
-    def enum_windows_cb(hwnd: int, lparam: int) -> bool:
-        if not IsWindowVisible(hwnd):
-            log_fn("skipped invisible window %#x", hwnd)
-            return True
-        pid = c_ulong()
-        thread_id = GetWindowThreadProcessId(hwnd, byref(pid))
-        if pid == ourpid:
-            log_fn("skipped our own window %#x", hwnd)
-            return True
-        # skipping IsWindowEnabled check
-        length = GetWindowTextLengthW(hwnd)
-        buf = create_unicode_buffer(length + 1)
-        if GetWindowTextW(hwnd, buf, length + 1) > 0:
-            window_title = buf.value
-        else:
-            window_title = ''
-        log_fn("get_shape_rectangles() found window '%s' with pid=%i and thread id=%i", window_title, pid, thread_id)
-        rect = RECT()
-        if GetWindowRect(hwnd, byref(rect)) == 0:  # NOSONAR
-            log_fn("GetWindowRect failure")
-            return True
-        left, top, right, bottom = int(rect.left), int(rect.top), int(rect.right), int(rect.bottom)
-        if right < 0 or bottom < 0:
-            log_fn("skipped offscreen window at %ix%i", right, bottom)
-            return True
-        if hwnd == taskbar:
-            log_fn("skipped taskbar")
-            return True
-        # dirty way:
-        if window_title == 'Program Manager':
-            return True
-        # this should be the proper way using GetTitleBarInfo (but does not seem to work)
-        # import ctypes
-        # from ctypes.windll.user32 import GetTitleBarInfo
-        # from ctypes.wintypes import (DWORD, RECT)
-        # class TITLEBARINFO(ctypes.Structure):
-        #    pass
-        # TITLEBARINFO._fields_ = [
-        #    ('cbSize', DWORD),
-        #    ('rcTitleBar', RECT),
-        #    ('rgstate', DWORD * 6),
-        # ]
-        # ti = TITLEBARINFO()
-        # ti.cbSize = sizeof(ti)
-        # GetTitleBarInfo(hwnd, byref(ti))
-        # if ti.rgstate[0] & win32con.STATE_SYSTEM_INVISIBLE:
-        #    log("skipped system invisible window")
-        #    return True
-        w = right - left
-        h = bottom - top
-        log_fn("shape(%s - %#x)=%s", window_title, hwnd, (left, top, w, h))
-        if w <= 0 and h <= 0:
-            log_fn("skipped invalid window size: %ix%i", w, h)
-            return True
-        if left == -32000 and top == -32000:
-            # there must be a better way of skipping those - I haven't found it
-            log_fn("skipped special window")
-            return True
-        # now clip rectangle:
-        if left < 0:
-            left = 0
-            w = right
-        if top < 0:
-            top = 0
-            h = bottom
-        rectangles.append((left, top, w, h))
-        return True
-
-    EnumWindows(EnumWindowsProc(enum_windows_cb), 0)
-    log_fn("get_shape_rectangles()=%s", rectangles)
-    return sorted(rectangles)
-
-
-class SeamlessCaptureWindowModel(CaptureWindowModel):
-
-    def __init__(self, capture, title, geometry):
-        super().__init__(capture, title, geometry)
-        log("SeamlessCaptureWindowModel%s SEAMLESS=%s", (capture, title, geometry), SEAMLESS)
-        self.property_names.append("shape")
-        self.dynamic_property_names.append("shape")
-        self.rectangles = get_shape_rectangles(logit=True)
-
-    def refresh_shape(self) -> None:
-        rectangles = get_shape_rectangles()
-        if rectangles == self.rectangles:
-            return  # unchanged
-        self.rectangles = rectangles
-        shapelog("refresh_shape() sending notify for updated rectangles: %s", rectangles)
-        self.notify("shape")
-
-    def get_property(self, prop: str):
-        if prop == "shape":
-            shape = {"Bounding.rectangles": self.rectangles}
-            # provide clip rectangle? (based on workspace area?)
-            return shape
-        return super().get_property(prop)
-
-
-class Win32ShadowModel(CaptureWindowModel):
-    __slots__ = ("hwnd", "iconic")
-
-    def __init__(self, capture=None, title="", geometry=None):
-        super().__init__(capture, title, geometry)
-        self.hwnd = 0
-        self.iconic = geometry[2] == -32000 and geometry[3] == -32000
-        self.property_names.append("hwnd")
-        self.dynamic_property_names.append("size-constraints")
-
-    def get_id(self) -> int:
-        return self.hwnd
-
-    def __repr__(self):
-        return "Win32ShadowModel(%s : %24s : %s)" % (self.capture, self.geometry, self.hwnd)
 
 
 class ShadowServer(GTKShadowServerBase):
@@ -363,10 +229,12 @@ class ShadowServer(GTKShadowServerBase):
 
     def get_root_window_model_class(self) -> type:
         if SEAMLESS:
+            from xpra.platform.win32.shadow.model import SeamlessCaptureWindowModel
             return SeamlessCaptureWindowModel
         return CaptureWindowModel
 
     def makeDynamicWindowModels(self):
+        from xpra.platform.win32.shadow.model import Win32ShadowModel
         assert self.window_matches
         ourpid = os.getpid()
         taskbar = FindWindowA("Shell_TrayWnd", None)
@@ -515,6 +383,13 @@ class ShadowServer(GTKShadowServerBase):
 
     def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()
+
+    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, attrs: typedict) -> None:
+        # try to match using the vk_code for native clients
+        vk_code = attrs.intget("vk-code", 0)
+        if vk_code:
+            pass  # todo!
+        super().do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
 
     def do_process_button_action(self, proto, device_id, wid: int, button: int, pressed: bool, pointer, props) -> None:
         if "modifiers" in props:

@@ -2864,6 +2864,7 @@ tace(sd_listen_ENABLED, "xpra.platform.posix.sd_listen", "libsystemd")
 tace(proc_ENABLED and proc_use_procps, "xpra.platform.posix.proc_procps", "libprocps",
      extra_compile_args="-Wno-error")
 tace(proc_ENABLED and proc_use_libproc, "xpra.platform.posix.proc_libproc", "libproc2", language="c++")
+toggle_packages(WIN32 and shadow_ENABLED, "xpra.platform.win32.shadow")
 
 # codecs:
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")

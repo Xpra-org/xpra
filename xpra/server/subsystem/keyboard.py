@@ -238,16 +238,18 @@ class KeyboardServer(StubServerMixin):
             "keycode": keycode,
             "group": group,
         }
-        ke_packet = Packet("keyboard-event", wid, keyname, pressed, attrs)
-        self._process_keyboard_event(proto, ke_packet)
+        self.do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
 
     def _process_keyboard_event(self, proto, packet: Packet) -> None:
-        if self.readonly:
-            return
         wid = packet.get_wid()
         keyname = packet.get_str(2)
         pressed = packet.get_bool(3)
         attrs = typedict(packet.get_dict(4))
+        self.do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
+
+    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, attrs: typedict) -> None:
+        if self.readonly:
+            return
         # `get_keycode` may have to change modifiers to match the key, so we need a mutable list:
         modifiers = list(attrs.strtupleget("modifiers", []))
         keyval = attrs.intget("keyval", 0)
@@ -261,10 +263,10 @@ class KeyboardServer(StubServerMixin):
             return
         self.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
-        log("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)
+        log("do_process_keyboard_event%s server keycode=%s, group=%i",
+            (proto, wid, keyname, pressed, attrs), keycode, group)
         if group >= 0 and keycode >= 0:
             self.set_keyboard_layout_group(group)
-        # currently unused: (group, is_modifier) = packet[8:10]
         self._focus(ss, wid, None)
         ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
         # negative keycodes are used for key events without a real keypress/unpress
@@ -274,7 +276,7 @@ class KeyboardServer(StubServerMixin):
                 is_mod = ss.is_modifier(keyname, keycode)
                 self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers, is_mod, ss.keyboard_config.sync)
             except Exception as e:
-                log("process_key_action%s", (proto, packet), exc_info=True)
+                log("process_key_action%s", (proto, wid, keyname, pressed, attrs), exc_info=True)
                 log.error("Error: failed to %s key", ["unpress", "press"][pressed])
                 log.estr(e)
                 log.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
