@@ -942,7 +942,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             if not cg:
                 size_changed = True
             else:
-                oww, owh = cg[:2]
+                oww, owh = cg[2:4]
                 size_changed = oww != w or owh != h
         if is_ui_driver or size_changed or not shown:
             damage = False
