@@ -3,8 +3,12 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     cython 3.2.3
     AMF headers include path
     can't use loose match without `difflib`
-    MS Windows client errors on control-c
-    MS Windows packaging fix for python-pillow
+  * MS Windows
+    client errors on control-c
+    packaging fix for python-pillow
+    directsound device queries
+    warnings when `named-pipe`s are the only local sockets available
+    shadow server info errors
   * Major:
     virtual monitor geometry synchronization
     broken Gtk Wayland clipboard
@@ -29,7 +33,14 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     handle missing gtk widget component more gracefully
     cleanup errors if setup failed
     wrong location for handler registration
+    window size changed mis-detection
+    missing packet handlers
   * Cosmetic:
+    splash screen warnings
+    misplaced packet handler registration
+    remove unused cython functions
+    remove duplicated methods
+    remove Gtk keymap warning
     confusing message
     more useful message
     show the source of the error
@@ -40,7 +51,7 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     overwritten cursor attributes
     always log full failure details at debug level
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 04 Jan 2026 19:53:21 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 06 Jan 2026 23:22:36 +0700
 
 xpra (6.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

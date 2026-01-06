@@ -1,12 +1,16 @@
 # Changelog
 
-## [6.4.1] 2026-01-04
+## [6.4.1] 2026-01-06
 * Platforms, build and packaging:
-  * [cython 3.2.3](https://github.com/Xpra-org/xpra/commit/24259e0b223d35fdc293ee49d23d2dd863b2ff98)
+  * [cython 3.2.4](https://github.com/Xpra-org/xpra/commit/26b56e80a2f739a858467d476d7c0598c488fe26)
   * [AMF headers include path](https://github.com/Xpra-org/xpra/commit/0019e6483ec1f2422548d057a1983b3e4f10f362)
   * [can't use loose match without `difflib`](https://github.com/Xpra-org/xpra/commit/43e726dc0a008e67cc53ebd274710834c94e72ab)
-  * [MS Windows client errors on control-c](https://github.com/Xpra-org/xpra/commit/183259716df3b0ffa13fb6c0fffcc957734c60a3)
-  * [MS Windows packaging fix for python-pillow](https://github.com/Xpra-org/xpra/commit/d951521b77f41f10d7eab65b7b01723179547a17)
+* MS Windows issues:
+  * [client errors on control-c](https://github.com/Xpra-org/xpra/commit/183259716df3b0ffa13fb6c0fffcc957734c60a3)
+  * [packaging fix for python-pillow](https://github.com/Xpra-org/xpra/commit/d951521b77f41f10d7eab65b7b01723179547a17)
+  * [directsound device queries](https://github.com/Xpra-org/xpra/commit/199768bd38b74e3ace572beff6c99796a093e234)
+  * [warnings when `named-pipe`s are the only local sockets available](https://github.com/Xpra-org/xpra/commit/3e5e385ce0a95b4999aec5ae43135ef5aaf66730)
+  * [shadow server info errors](https://github.com/Xpra-org/xpra/commit/18c6173818a63cc5c11ba9cc3c1e21a0f26b4d9d)
 * Major:
   * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/390af2f04be8ce871c0dbe4a5a04290e496f34b2)
   * [broken Gtk Wayland clipboard](https://github.com/Xpra-org/xpra/commit/6fd2cd83ad2f69159287f6549032b30f3feb4696)
@@ -31,7 +35,14 @@
   * [handle missing gtk widget component more gracefully](https://github.com/Xpra-org/xpra/commit/78039aedc0637b5e4095548935890ee9e33e042a)
   * [cleanup errors if setup failed](https://github.com/Xpra-org/xpra/commit/017f5617402138862d5322068e26d75280a269d0)
   * [wrong location for handler registration](https://github.com/Xpra-org/xpra/commit/913b2c48b7c32768f488d51abaea935eb76266f0)
+  * [window size changed mis-detection](https://github.com/Xpra-org/xpra/commit/da764b78a93acf48798328156636b70d49878f11)
+  * [missing packet handlers](https://github.com/Xpra-org/xpra/commit/e8af2fcbc5c70b4bb32a82f63bd61698116b1086)
 * Cosmetic:
+  * [splash screen warnings](https://github.com/Xpra-org/xpra/commit/cf5d4b5e7028f077b01b05709b80e5e0ef46e7d6)
+  * [misplaced packet handler registration](https://github.com/Xpra-org/xpra/commit/eb46e79ff0cae2e9c57e612a4b4c66d8b7576a8c)
+  * [remove unused cython functions](https://github.com/Xpra-org/xpra/commit/85c0c6307f4c6884b5932b2ef03de4ea26aa2847)
+  * [remove duplicated methods](https://github.com/Xpra-org/xpra/commit/d46caf63192bdc4b84500da58a382e1f3d231ddc)
+  * [remove Gtk keymap warning](https://github.com/Xpra-org/xpra/commit/419a5098e0d598194a379b6f6464e82869fdc275)
   * [confusing message](https://github.com/Xpra-org/xpra/commit/eb8340b68b849a5a19bdbc10bebdef5bc0960f35)
   * [more useful message](https://github.com/Xpra-org/xpra/commit/e8580af46ce3c0f3f980f494b1778e1c77e48ae9)
   * [show the source of the error](https://github.com/Xpra-org/xpra/commit/5fac46f4cc71c989c73b9cf3cb4ef97d911f27c5)

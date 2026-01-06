@@ -1084,13 +1084,17 @@ fi
 
 
 %changelog
-* Sun Jan 04 2026 Antoine Martin <antoine@xpra.org> 6.4.1-10
+* Tue Jan 06 2026 Antoine Martin <antoine@xpra.org> 6.4.1-10
 - Platforms, build and packaging:
-   cython 3.2.3
+   cython 3.2.4
    AMF headers include path
    can't use loose match without `difflib`
-   MS Windows client errors on control-c
-   MS Windows packaging fix for python-pillow
+- MS Windows:
+   client errors on control-c
+   packaging fix for python-pillow
+   directsound device queries
+   warnings when `named-pipe`s are the only local sockets available
+   shadow server info errors
 - Major:
    virtual monitor geometry synchronization
    broken Gtk Wayland clipboard
@@ -1115,7 +1119,14 @@ fi
    handle missing gtk widget component more gracefully
    cleanup errors if setup failed
    wrong location for handler registration
+   window size changed mis-detection
+   missing packet handlers
 - Cosmetic:
+   splash screen warnings
+   misplaced packet handler registration
+   remove unused cython functions
+   remove duplicated methods
+   remove Gtk keymap warning
    confusing message
    more useful message
    show the source of the error
