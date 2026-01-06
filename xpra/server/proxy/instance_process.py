@@ -306,7 +306,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
             return
         if packet_type == "hello":
             caps = typedict(packet.get_dict(1))
-            if caps.boolget("challenge"):
+            if BACKWARDS_COMPATIBLE and caps.boolget("challenge"):
                 self.send_disconnect(proto, ConnectionMessage.AUTHENTICATION_ERROR,
                                      "this socket does not use authentication")
                 return

@@ -8,6 +8,7 @@ from collections.abc import Sequence, Iterable
 
 from xpra.common import ConnectionMessage
 from xpra.net.common import Packet, SOCKET_TYPES
+from xpra.net.packet_type import CHALLENGE
 from xpra.net.digest import get_salt, choose_digest
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubServerMixin
@@ -116,7 +117,7 @@ class AuthenticatedServer(StubServerMixin):
 
     def send_challenge(self, proto: SocketProtocol, salt: bytes, auth_caps: dict, digest: str, salt_digest: str,
                        prompt: str = "password") -> None:
-        proto.send_now(Packet("challenge", salt, auth_caps, digest, salt_digest, prompt))
+        proto.send_now(Packet(CHALLENGE, salt, auth_caps, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
     def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage, authenticator=None) -> None:

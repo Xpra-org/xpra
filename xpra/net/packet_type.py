@@ -52,6 +52,8 @@ FILE_DATA_RESPONSE: Final[str] = "file-data-response"
 FILE_REQUEST: Final[str] = "file-request"
 
 CURSOR_SET: Final[str] = "set-cursors" if BACKWARDS_COMPATIBLE else "cursor-set"
+CURSOR_DATA: Final[str] = "cursor-data"
+CURSOR_DEFAULT: Final[str] = "cursor-default"
 
 COMMAND_SIGNAL: Final[str] = "command-signal"
 COMMAND_START: Final[str] = "start-command" if BACKWARDS_COMPATIBLE else "command-start"
@@ -62,3 +64,5 @@ DISPLAY_SCREENSHOT: Final[str] = "screenshot" if BACKWARDS_COMPATIBLE else "disp
 
 INFO_REQUEST: Final[str] = "info-request"
 INFO_RESPONSE: Final[str] = "info-response"
+
+CHALLENGE: Final[str] = "challenge"

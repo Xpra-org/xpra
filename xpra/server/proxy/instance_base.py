@@ -13,12 +13,12 @@ from collections.abc import Callable, Iterable
 from xpra.audio.common import AUDIO_DATA_PACKET
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
-from xpra.net.packet_type import INFO_RESPONSE
+from xpra.net.packet_type import INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
 from xpra.util.parsing import str_to_bool, parse_number
-from xpra.common import FULL_INFO, ConnectionMessage
+from xpra.common import FULL_INFO, ConnectionMessage, BACKWARDS_COMPATIBLE
 from xpra.os_util import get_hex_uuid, gi_import
 from xpra.exit_codes import ExitValue
 from xpra.util.objects import typedict
@@ -145,7 +145,7 @@ class ProxyInstance:
 
     def run(self) -> ExitValue:
         # server connection tweaks:
-        self.server_protocol.large_packets += ["input-devices", "draw", "window-icon",
+        self.server_protocol.large_packets += ["input-devices", "draw", WINDOW_ICON,
                                                "keymap-changed", "server-settings"]
         if self.caps.boolget("file-transfer"):
             self.server_protocol.large_packets += ["send-file", "send-file-chunk"]
@@ -292,7 +292,7 @@ class ProxyInstance:
             return
         self.client_has_more = proto.receive_pending
         if packet_type == "hello":
-            if not self.client_challenge_packet:
+            if BACKWARDS_COMPATIBLE and not self.client_challenge_packet:
                 log.warn("Warning: invalid hello packet from client")
                 log.warn(" received after initial authentication (dropped)")
                 return
@@ -318,9 +318,9 @@ class ProxyInstance:
                 self.client_protocol.close()
             else:
                 self.stop(None, "disconnect from client", *reasons)
-        elif packet_type == "file-send" and packet[6]:
+        elif packet_type == FILE_SEND and packet[6]:
             packet = self.compressed_marker(packet, 6, "file-data")
-        elif packet_type == "file-send-chunk" and packet[3]:
+        elif packet_type == FILE_SEND_CHUNK and packet[3]:
             packet = self.compressed_marker(packet, 3, "file-chunk-data")
         self.queue_server_packet(packet)
 
@@ -465,22 +465,24 @@ class ProxyInstance:
                 packet = self.compressed_marker(packet, 2, AUDIO_DATA_PACKET)
         # we do want to reformat cursor packets...
         # as they will have been uncompressed by the network layer already:
-        elif packet_type == "cursor":
+        elif packet_type == "cursor" and BACKWARDS_COMPATIBLE:
             # packet = ["cursor", "png", x, y, width, height, xhot, yhot, serial, pixels, name]
             # or:
             # packet = ["cursor", ""]
             if len(packet) >= 8:
                 packet = self._packet_recompress(packet, 9, "cursor")
-        elif packet_type == "window-icon":
+        elif packet_type == CURSOR_DATA:
+            packet = self._packet_recompress(packet, 7, "cursor")
+        elif packet_type == WINDOW_ICON:
             if not isinstance(packet[5], str):
                 packet = self._packet_recompress(packet, 5, "icon")
-        elif packet_type == "file-send":
+        elif packet_type == FILE_SEND:
             if packet[6]:
                 packet = self.compressed_marker(packet, 6, "file-data")
-        elif packet_type == "file-send-chunk":
+        elif packet_type == FILE_SEND_CHUNK:
             if packet[3]:
                 packet = self.compressed_marker(packet, 3, "file-chunk-data")
-        elif packet_type == "challenge":
+        elif packet_type == CHALLENGE:
             self.handle_server_challenge(packet)
             return
         self.queue_client_packet(packet)

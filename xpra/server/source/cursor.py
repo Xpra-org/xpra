@@ -9,6 +9,7 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import CURSOR_DATA, CURSOR_DEFAULT
 from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection
 from xpra.net.compression import Compressed
@@ -142,7 +143,7 @@ class CursorsConnection(StubClientConnection):
             args = [encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
             self.send_more("cursor", *args)
         else:
-            self.send_more("cursor-data", encoding, w, h, xhot, yhot, serial, cpixels, name)
+            self.send_more(CURSOR_DATA, encoding, w, h, xhot, yhot, serial, cpixels, name)
 
     def send_empty_cursor(self) -> None:
         log("send_empty_cursor(..)")
@@ -150,7 +151,7 @@ class CursorsConnection(StubClientConnection):
         if BACKWARDS_COMPATIBLE:
             self.send_more("cursor", "")
         else:
-            self.send_more("cursor-default")
+            self.send_more(CURSOR_DEFAULT)
 
     def compress_cursor_pixels(self, pixels, w: int, h: int, serial: int):
         if not pixels:
