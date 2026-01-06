@@ -97,34 +97,6 @@ cdef extern from "X11/Xutil.h":
     pass
 
 
-cdef extern from "X11/extensions/XShm.h":
-    unsigned int ShmCompletion
-    ctypedef struct ShmSeg:
-        pass
-    ctypedef struct XShmSegmentInfo:
-        ShmSeg shmseg   # resource id
-        int shmid       # kernel id
-        char *shmaddr   # address in client
-        Bool readOnly   # how the server should attach it
-
-    Bool XShmQueryExtension(Display *display)
-    Bool XShmQueryVersion(Display *display, int *major, int *minor, Bool *pixmaps)
-
-    Bool XShmAttach(Display *display, XShmSegmentInfo *shminfo)
-    Bool XShmDetach(Display *display, XShmSegmentInfo *shminfo)
-
-    XImage *XShmCreateImage(Display *display, Visual *visual,
-                            unsigned int depth, int fmt, char *data,
-                            XShmSegmentInfo *shminfo,
-                            unsigned int width, unsigned int height)
-
-    Bool XShmGetImage(Display *display, Drawable d, XImage *image,
-                      int x, int y,
-                      unsigned long plane_mask)
-
-    int XShmGetEventBase(Display *display)
-
-
 SBFirst: Dict[int, str] = {
     MSBFirst : "MSBFirst",
     LSBFirst : "LSBFirst"
