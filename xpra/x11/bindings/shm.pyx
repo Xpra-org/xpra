@@ -62,10 +62,6 @@ cdef extern from "X11/Xlib.h":
     void XDestroyImage(XImage *ximage)
 
 
-cdef extern from "X11/Xutil.h":
-    pass
-
-
 cdef extern from "X11/extensions/XShm.h":
     unsigned int ShmCompletion
     ctypedef struct ShmSeg:

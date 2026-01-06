@@ -93,10 +93,6 @@ cdef extern from "X11/Xlib.h":
                         unsigned int *border_width_return, unsigned int *depth_return)
 
 
-cdef extern from "X11/Xutil.h":
-    pass
-
-
 SBFirst: Dict[int, str] = {
     MSBFirst : "MSBFirst",
     LSBFirst : "LSBFirst"
