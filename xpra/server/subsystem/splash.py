@@ -5,6 +5,7 @@
 
 from subprocess import Popen
 
+from xpra.common import noop, SPLASH_EXIT_DELAY
 from xpra.log import Logger
 from xpra.os_util import gi_import
 from xpra.server.subsystem.stub import StubServerMixin
@@ -26,7 +27,12 @@ class SplashServer(StubServerMixin):
         self.splash_process: Popen | None = None
 
     def setup(self) -> None:
-        GLib.timeout_add(0, self.stop_splash_process)
+        def running() -> bool:
+            progress = getattr(self.splash_process, "progress", noop)
+            progress(100, "running")
+            GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 + 100, self.stop_splash_process)
+            return False
+        GLib.idle_add(running)
 
     def cleanup(self) -> None:
         self.stop_splash_process()
