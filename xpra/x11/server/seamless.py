@@ -428,9 +428,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         # from now on, new windows will trigger this callback:
         self._wm.connect("new-window", self._new_window_signaled)
 
-    def get_window(self, wid: int):
-        return self._id_to_window.get(wid)
-
     def parse_hello_ui_window_settings(self, ss, _caps) -> None:
         # FIXME: with multiple users, don't set any frame size?
         frame = None

@@ -143,6 +143,9 @@ class WindowServer(StubServerMixin):
     def reset_window_filters(self) -> None:
         self.window_filters = []
 
+    def get_window(self, wid: int):
+        return self._id_to_window.get(wid)
+
     def get_windows_info(self, window_ids=()) -> dict[int, dict[str, Any]]:
         copy = self._id_to_window.copy()
         info = {
