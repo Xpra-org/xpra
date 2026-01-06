@@ -536,7 +536,7 @@ class ShadowServer(GTKShadowServerBase):
         return capabilities
 
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
-        info = super().get_info(proto, **kwargs)
+        info = super().get_threaded_info(proto, **kwargs)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {
             "pixel-depth": self.pixel_depth,
