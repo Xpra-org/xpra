@@ -704,11 +704,8 @@ def get_win32_device(device_name_match=None, want_monitor_device=True, remote=No
             log("DirectSoundCaptureEnumerate found %i devices", len(devices))
         names = []
         if devices:
-            for guid, name in devices:
-                if guid:
-                    log("* %-32s %s", name, guid)
-                else:
-                    log("* %s", name)
+            for index, guid, name in devices:
+                log("* %i %-32s %s", index, name, guid)
                 names.append(name)
             device_name = None
             if device_name_match:
@@ -739,10 +736,11 @@ def get_win32_device(device_name_match=None, want_monitor_device=True, remote=No
     return {}
 
 
-def get_wasapi_defaults(*args):
-    defaults = get_win32_device(*args)
-    defaults["low-latency"] = True
-    return defaults
+def get_wasapi_defaults(*_args):
+    # defaults = get_win32_device(*args)
+    return {
+        "low-latency": True,
+    }
 
 
 # a list of functions to call to get the plugin options
