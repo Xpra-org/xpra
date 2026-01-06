@@ -64,7 +64,7 @@ class NotificationClient(StubClientMixin):
                 n.cleanup()
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.server_notifications = "notifications" in c
+        self.server_notifications = ("notifications" if BACKWARDS_COMPATIBLE else "notification") in c
         self.notifications_enabled = self.client_supports_notifications
         return True
 

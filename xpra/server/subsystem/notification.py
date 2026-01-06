@@ -8,6 +8,7 @@ import os.path
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.str_fn import Ellipsizer
 from xpra.net.common import Packet
@@ -24,7 +25,7 @@ class NotificationForwarder(StubServerMixin):
     """
     Mixin for servers that forward notifications.
     """
-    PREFIX = "notification"
+    PREFIX = "notifications" if BACKWARDS_COMPATIBLE else "notification"
 
     def __init__(self):
         StubServerMixin.__init__(self)
@@ -46,11 +47,11 @@ class NotificationForwarder(StubServerMixin):
     def get_info(self, _source=None) -> dict[str, Any]:
         if not self.notifications_forwarder:
             return {}
-        return {"notifications": self.notifications_forwarder.get_info()}
+        return {NotificationForwarder.PREFIX: self.notifications_forwarder.get_info()}
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {
-            "notifications": {
+            NotificationForwarder.PREFIX: {
                 "enabled": self.notifications,
             },
         }
