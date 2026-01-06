@@ -244,12 +244,13 @@ class KeyboardServer(StubServerMixin):
         wid = packet.get_wid()
         keyname = packet.get_str(2)
         pressed = packet.get_bool(3)
-        attrs = typedict(packet.get_dict(4))
+        attrs = packet.get_dict(4)
         self.do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
 
-    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, attrs: typedict) -> None:
+    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, kattrs: dict) -> None:
         if self.readonly:
             return
+        attrs = typedict(kattrs)
         # `get_keycode` may have to change modifiers to match the key, so we need a mutable list:
         modifiers = list(attrs.strtupleget("modifiers", []))
         keyval = attrs.intget("keyval", 0)

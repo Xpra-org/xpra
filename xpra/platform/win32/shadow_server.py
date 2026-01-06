@@ -384,9 +384,9 @@ class ShadowServer(GTKShadowServerBase):
     def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()
 
-    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, attrs: typedict) -> None:
+    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, attrs: dict) -> None:
         # try to match using the vk_code for native clients
-        vk_code = attrs.intget("vk-code", 0)
+        vk_code = typedict(attrs).intget("vk-code", 0)
         if vk_code:
             pass  # todo!
         super().do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
