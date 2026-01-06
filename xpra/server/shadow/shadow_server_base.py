@@ -457,16 +457,13 @@ class ShadowServerBase(ServerBase):
         geometry = window.get_geometry()
         self._do_send_new_window_packet(WINDOW_CREATE, window, geometry)
 
-    def process_window_common(self, wid: int):
-        return self._id_to_window.get(wid)
-
     def _process_window_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
         w = packet.get_i16(4)
         h = packet.get_i16(5)
-        window = self.process_window_common(wid)
+        window = self.get_window(wid)
         if not window:
             # already gone
             return
@@ -478,7 +475,7 @@ class ShadowServerBase(ServerBase):
 
     def _process_window_unmap(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self.process_window_common(wid)
+        window = self.get_window(wid)
         if not window:
             # already gone
             return
@@ -489,7 +486,7 @@ class ShadowServerBase(ServerBase):
             self.stop_refresh(wid)
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
-        window = self.process_window_common(wid)
+        window = self.get_window(wid)
         if not window:
             # already gone
             return
@@ -505,7 +502,7 @@ class ShadowServerBase(ServerBase):
 
     def _process_window_close(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self.process_window_common(wid)
+        window = self.get_window(wid)
         if not window:
             # already gone
             return

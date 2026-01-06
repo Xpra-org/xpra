@@ -218,7 +218,7 @@ class XpraMonitorServer(DesktopServerBase):
         mods = 0
         for i, monitor in monitors.items():
             wid = i + 1
-            model = self._id_to_window.get(wid)
+            model = self.get_window(wid)
             if not model:
                 # found a new monitor!
                 screenlog("found a new monitor: %s", monitor)
@@ -308,7 +308,7 @@ class XpraMonitorServer(DesktopServerBase):
         return monitor_defs
 
     def remove_monitor(self, wid: int) -> None:
-        model = self._id_to_window.get(wid)
+        model = self.get_window(wid)
         screenlog("removing monitor for wid %i : %s", wid, model)
         if not model:
             raise ValueError(f"monitor {wid:#x} not found")

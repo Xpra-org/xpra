@@ -168,7 +168,7 @@ class PointerServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return pointer
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if ss and window:
             ws = ss.get_window_source(wid)
             if ws:
@@ -271,7 +271,7 @@ class PointerServer(StubServerMixin):
         from xpra.server.subsystem.window import WindowServer
         if len(pos) >= 4 and isinstance(self, WindowServer):
             # relative coordinates
-            model = self._id_to_window.get(wid)
+            model = self.get_window(wid)
             if model:
                 rx, ry = pos[2:4]
                 geom = model.get_geometry()

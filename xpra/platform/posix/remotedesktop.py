@@ -36,7 +36,7 @@ class RemoteDesktop(PortalShadow):
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
         if self.readonly or not self.input_devices_count:
             return False
-        win = self._id_to_window.get(wid)
+        win = self.get_window(wid)
         if not win:
             pointerlog.error(f"Error: window {wid:#x} not found")
             return False

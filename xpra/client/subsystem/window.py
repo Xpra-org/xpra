@@ -667,6 +667,9 @@ class WindowClient(StubClientMixin):
         # subclasses can apply tweaks here:
         return typedict(metadata)
 
+    def get_window(self, wid: int):
+        return self._id_to_window.get(wid)
+
     ######################################################################
     # system tray
     def _process_new_tray(self, packet: Packet) -> None:
@@ -681,7 +684,7 @@ class WindowClient(StubClientMixin):
         if len(packet) >= 5:
             metadata = typedict(packet.get_dict(4))
         traylog("tray %#x metadata=%s", wid, metadata)
-        assert wid not in self._id_to_window, "we already have a window %#x: %s" % (wid, self._id_to_window.get(wid))
+        assert wid not in self._id_to_window, "we already have a window %#x: %s" % (wid, self.get_window(wid))
         app_id = wid
         tray = self.setup_system_tray(self, app_id, wid, w, h, metadata)
         traylog("process_new_tray(%s) tray=%s", packet, tray)
@@ -708,7 +711,7 @@ class WindowClient(StubClientMixin):
         # this is a tray forwarded for a remote application
 
         def tray_click(button, pressed, event_time=0):
-            tray = self._id_to_window.get(wid)
+            tray = self.get_window(wid)
             traylog("tray_click(%s, %s, %s) tray=%s", button, pressed, event_time, tray)
             if tray:
                 x, y = self.get_mouse_position()
@@ -719,7 +722,7 @@ class WindowClient(StubClientMixin):
                 tray.reconfigure()
 
         def tray_mouseover(x, y):
-            tray = self._id_to_window.get(wid)
+            tray = self.get_window(wid)
             traylog("tray_mouseover(%s, %s) tray=%s", x, y, tray)
             if tray:
                 modifiers = self.get_current_modifiers()
@@ -729,7 +732,7 @@ class WindowClient(StubClientMixin):
         def do_tray_geometry(*args):
             # tell the "ClientTray" where it now lives
             # which should also update the location on the server if it has changed
-            tray = self._id_to_window.get(wid)
+            tray = self.get_window(wid)
             if tray_widget:
                 geom = tray_widget.get_geometry()
             else:
@@ -916,7 +919,7 @@ class WindowClient(StubClientMixin):
                     metalog("temporarily removing modal flag from %s", wid)
                     window.set_modal(False)
         metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
-        assert wid not in self._id_to_window, "we already have a window {}: {}".format(wid, self._id_to_window.get(wid))
+        assert wid not in self._id_to_window, "we already have a window {}: {}".format(wid, self.get_window(wid))
         if w < 1 or h < 1:
             log.error("Error: window %#x dimensions %ix%i are invalid", wid, w, h)
             w, h = 1, 1
@@ -1147,7 +1150,7 @@ class WindowClient(StubClientMixin):
         # make sure the window icons are the ones we want:
         iconlog("reinit_window_icons()")
         for wid in tuple(self._id_to_window.keys()):
-            window = self._id_to_window.get(wid)
+            window = self.get_window(wid)
             if window:
                 reset_icon = getattr(window, "reset_icon", None)
                 if reset_icon:
@@ -1156,7 +1159,7 @@ class WindowClient(StubClientMixin):
     def reinit_windows(self, new_size_fn=None) -> None:
         # now replace all the windows with new ones:
         for wid in tuple(self._id_to_window.keys()):
-            window = self._id_to_window.get(wid)
+            window = self.get_window(wid)
             if window:
                 self.reinit_window(wid, window, new_size_fn)
         self.send_refresh_all()
@@ -1252,7 +1255,7 @@ class WindowClient(StubClientMixin):
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         geomlog("%s", packet)
         wid = packet.get_wid()
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if window:
             x_root = packet.get_i16(2)
             y_root = packet.get_i16(3)
@@ -1265,7 +1268,7 @@ class WindowClient(StubClientMixin):
         wid = packet.get_wid()
         metadata = packet.get_dict(2)
         metalog("metadata update for window %i: %s", wid, metadata)
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if window:
             metadata = self.cook_metadata(False, metadata)
             window.update_metadata(metadata)
@@ -1277,7 +1280,7 @@ class WindowClient(StubClientMixin):
         coding = packet.get_str(4)
         data = packet.get_bytes(5)
         img = self._window_icon_image(wid, w, h, coding, data)
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s",
                 wid, w, h, coding, len(data), img, window)
         if window and img:
@@ -1297,7 +1300,7 @@ class WindowClient(StubClientMixin):
         resize_counter = -1
         if len(packet) > 6:
             resize_counter = int(packet[6])
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s",
                 packet[1:], window, wid, (ax, ay, aw, ah))
         if window:
@@ -1312,7 +1315,7 @@ class WindowClient(StubClientMixin):
         resize_counter = -1
         if len(packet) > 4:
             resize_counter = int(packet[4])
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         geomlog("_process_window_resized%s resizing window %s (wid=%#x) to %s", packet[1:], window, wid, (aw, ah))
         if window:
             window.resize(aw, ah, resize_counter)
@@ -1343,7 +1346,7 @@ class WindowClient(StubClientMixin):
         elif self.window_close_action == "auto":
             # forward unless this looks like a desktop,
             # this allows us to behave more like VNC:
-            window = self._id_to_window.get(wid)
+            window = self.get_window(wid)
             log("window_close_event(%#x) window=%s", wid, window)
             if self.server_is_desktop:
                 log.info("window-close event on desktop or shadow window, disconnecting")
@@ -1375,7 +1378,7 @@ class WindowClient(StubClientMixin):
 
     def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if window:
             if window.is_OR() and self.modal_windows:
                 self.may_reenable_modal_windows(window)
@@ -1448,7 +1451,7 @@ class WindowClient(StubClientMixin):
         bell_class = packet.get_u32(6)
         bell_id = packet.get_u32(7)
         bell_name = packet.get_str(8)
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     ######################################################################
@@ -1524,14 +1527,14 @@ class WindowClient(StubClientMixin):
 
     def _process_pointer_grab(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         grablog("grabbing %#x: %s", wid, window)
         if window:
             self.window_grab(wid, window)
 
     def _process_pointer_ungrab(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         grablog("ungrabbing %#x: %s", wid, window)
         self.window_ungrab()
 
@@ -1642,7 +1645,7 @@ class WindowClient(StubClientMixin):
     def _do_draw(self, packet: Packet) -> None:
         """ this runs from the draw thread above """
         wid = packet.get_wid()
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if packet[0] == "eos":
             if window:
                 window.eos()

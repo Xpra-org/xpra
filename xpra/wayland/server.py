@@ -75,7 +75,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return None  # TODO: WaylandClipboard
 
     def get_surface(self, wid: int) -> int:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             return 0
         return window._gproperties.get("surface", 0)
@@ -138,7 +138,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def _process_window_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         surface = self.get_surface(wid)
         if not (window and surface):
             return
@@ -149,7 +149,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.refresh_window(window)
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         surface = self.get_surface(wid)
         if not (window and surface):
             return
@@ -182,7 +182,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         log.warn("new-subsurface: %s", args)
 
     def _metadata(self, wid: int, prop: str, value) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             log.warn("Warning: cannot set metadata %s=%r", prop, value)
             log.warn(" window %i not found!", wid)
@@ -191,7 +191,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._internal_set_property(prop, value)
 
     def _surface_image(self, wid: int, image: ImageWrapper) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             log.warn("Warning: cannot update window %i: not found!", wid)
             return
@@ -203,7 +203,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         # we can't free the previous image, which may still be referenced by the window compression thread
 
     def _map(self, wid: int, title: str, app_id: str, size: tuple[int, int]) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             log.warn("Warning: cannot map window %i: not found!", wid)
             return
@@ -212,7 +212,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.update_size(window, size)
 
     def _unmap(self, wid: int) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             return
         window.set_property("iconic", True)
@@ -221,7 +221,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self._toggle_state(wid, "iconic")
 
     def _maximize(self, wid: int) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             return
         window._updateprop("iconic", False)
@@ -231,7 +231,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self._toggle_state(wid, "fullscreen")
 
     def _toggle_state(self, wid, name: str) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             log.warn("Warning: cannot toggle %r state, window %i not found", name, wid)
             return
@@ -242,7 +242,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
                 size: tuple[int, int],
                 rects: Sequence[tuple[int, int, int, int]],
                 subsurfaces: list[tuple[int, int, int]]) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             return
         self.update_size(window, size)
@@ -268,7 +268,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self._remove_wid(wid)
 
     def _move(self, wid: int, serial: int) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             log.warn("Warning: cannot move window %i: not found!", wid)
             return

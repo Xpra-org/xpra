@@ -262,7 +262,7 @@ class EncodingServer(StubServerMixin):
                 if wid not in self._id_to_window:
                     continue
                 wids.append(wid)
-                wid_windows[wid] = self._id_to_window.get(wid)
+                wid_windows[wid] = self.get_window(wid)
         else:
             # apply to all windows:
             wids = None

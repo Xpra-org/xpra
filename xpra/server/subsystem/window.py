@@ -301,7 +301,7 @@ class WindowServer(StubServerMixin):
         elif wid == 0:
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:
-            wid_windows = {wid: self._id_to_window.get(wid)}
+            wid_windows = {wid: self.get_window(wid)}
         else:
             # may have been destroyed since the request was made
             log("invalid window specified for refresh: %#x", wid)
@@ -380,7 +380,7 @@ class WindowServer(StubServerMixin):
     def _process_configure_window(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
         wid = packet.get_wid()
-        window = self._lookup_window(wid)
+        window = self.get_window(wid)
         if not window:
             geomlog("cannot configure window %#x: not found, already removed?", wid)
             return
@@ -422,7 +422,7 @@ class WindowServer(StubServerMixin):
     def _process_window_action(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         action = packet.get_str(2)
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             log.warn("Warning: invalid window %#x", wid)
             return

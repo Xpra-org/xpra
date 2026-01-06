@@ -205,7 +205,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         y = packet.get_i16(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             windowlog("cannot map window %s: already removed!", wid)
             return
@@ -221,7 +221,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
 
     def _process_window_unmap(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             log("cannot map window %s: already removed!", wid)
             return
@@ -236,7 +236,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         # iconified = len(packet)>=3 and bool(packet[2])
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             geomlog("cannot configure window %s: already removed!", wid)
             return
@@ -277,7 +277,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
 
     def _adjust_pointer(self, proto, device_id: int, wid: int, pointer):
         pointerlog("_adjust_pointer%s", (proto, device_id, wid, pointer))
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         # soft dependency on cursor subsystem:
         suspend_cursor = getattr(self, "suspend_cursor", noop)
         if not window:
@@ -297,7 +297,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         if wid >= 0:
-            window = self._id_to_window.get(wid)
+            window = self.get_window(wid)
             if not window:
                 pointerlog("_move_pointer(%s, %s) invalid window id", wid, pos)
                 return
@@ -331,7 +331,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         regions = []
         offset_x, offset_y = 0, 0
         for wid in reversed(sorted(self._id_to_window.keys())):
-            window = self._id_to_window.get(wid)
+            window = self.get_window(wid)
             log("screenshot: window(%s)=%s", wid, window)
             if window is None:
                 continue

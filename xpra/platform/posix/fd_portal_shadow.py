@@ -288,7 +288,7 @@ class PortalShadow(GTKShadowServerBase):
 
     def capture_new_image(self, capture, coding: str, data, client_info: dict) -> None:
         wid = capture.node_id
-        model = self._id_to_window.get(wid)
+        model = self.get_window(wid)
         log(f"capture_new_image({capture}, {coding}, {type(data)}, {client_info}) model({wid:#x})={model}")
         if not model:
             log.error(f"Error: cannot find window model for node {wid:#x}")
@@ -316,7 +316,7 @@ class PortalShadow(GTKShadowServerBase):
         log(f"capture_error({capture}, {message}) wid={wid:#x}")
         log.error("Error capturing screen:")
         log.estr(message)
-        model = self._id_to_window.get(wid)
+        model = self.get_window(wid)
         if model:
             self._remove_window(model)
         for ss in tuple(self._server_sources.values()):

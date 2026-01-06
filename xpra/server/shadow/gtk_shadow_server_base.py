@@ -276,7 +276,7 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
             self.refresh_window(window)
 
     def _adjust_pointer(self, proto, device_id, wid: int, opointer) -> list[int] | None:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         # soft dependency on cursor subsystem:
         suspend_cursor = getattr(self, "suspend_cursor", noop)
         if wid > 0 and not window:

@@ -173,7 +173,7 @@ class ServerBaseControlCommands(StubServerMixin):
             return "map request denied by readonly mode"
         if not isinstance(wid, int):
             raise ValueError(f"argument should have been an int, but found {type(wid)}")
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         assert window, f"window {wid:#x} not found"
         if window.is_tray():
             return f"cannot map tray window {wid:#x}"
@@ -194,7 +194,7 @@ class ServerBaseControlCommands(StubServerMixin):
             return "unmap request denied by readonly mode"
         if not isinstance(wid, int):
             raise ValueError(f"argument should have been an int, but found {type(wid)}")
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         assert window, f"window {wid:#x} not found"
         if window.is_tray():
             return f"cannot unmap tray window {wid:#x}"
@@ -532,7 +532,7 @@ class ServerBaseControlCommands(StubServerMixin):
         for csource in tuple(self._server_sources.values()):
             for wid in wids:
                 ws = csource.window_sources.get(wid)
-                window = self._id_to_window.get(wid)
+                window = self.get_window(wid)
                 if window and ws:
                     wss.append(ws)
         return wss
@@ -785,7 +785,7 @@ class ServerBaseControlCommands(StubServerMixin):
         return csv(msg)
 
     def control_command_workspace(self, wid: int, workspace: int) -> str:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             raise ControlError(f"window {wid:#x} does not exist")
         if "workspace" not in window.get_property_names():
@@ -796,21 +796,21 @@ class ServerBaseControlCommands(StubServerMixin):
         return f"window {wid:#x} moved to workspace {workspace}"
 
     def control_command_close(self, wid: int) -> str:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             raise ControlError(f"window {wid:#x} does not exist")
         window.request_close()
         return f"requested window {window} closed"
 
     def control_command_delete(self, wid: int) -> str:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             raise ControlError(f"window {wid:#x} does not exist")
         window.send_delete()
         return f"requested window {window} deleted"
 
     def control_command_move(self, wid: int, x: int, y: int) -> str:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             raise ControlError(f"window {wid:#x} does not exist")
         ww, wh = window.get_dimensions()
@@ -823,7 +823,7 @@ class ServerBaseControlCommands(StubServerMixin):
         return f"window {wid:#x} moved to {x},{y} for {count} clients"
 
     def control_command_resize(self, wid: int, w: int, h: int) -> str:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             raise ControlError(f"window {wid:#x} does not exist")
         count = 0
@@ -835,7 +835,7 @@ class ServerBaseControlCommands(StubServerMixin):
         return f"window {wid:#x} resized to {w}x{h} for {count} clients"
 
     def control_command_moveresize(self, wid: int, x: int, y: int, w: int, h: int) -> str:
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             raise ControlError(f"window {wid:#x} does not exist")
         count = 0

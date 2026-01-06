@@ -428,9 +428,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         # from now on, new windows will trigger this callback:
         self._wm.connect("new-window", self._new_window_signaled)
 
-    def _lookup_window(self, wid):
-        if not isinstance(wid, int):
-            raise RuntimeError(f"window id value {wid!r} is a {type(wid)} and not a number")
+    def get_window(self, wid: int):
         return self._id_to_window.get(wid)
 
     def parse_hello_ui_window_settings(self, ss, _caps) -> None:
@@ -662,7 +660,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             # wid==0 means root window
             reset_focus()
             return
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         if not window:
             # not found! (go back to root)
             reset_focus()
@@ -835,7 +833,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         y = packet.get_i16(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
-        window = self._lookup_window(wid)
+        window = self.get_window(wid)
         if not window:
             windowlog("cannot map window %#x: not found, already removed?", wid)
             return
@@ -866,7 +864,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
     def _process_window_unmap(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self._lookup_window(wid)
+        window = self.get_window(wid)
         if not window:
             log("cannot unmap window %#x: not found, already removed?", wid)
             return
@@ -907,7 +905,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         return geom
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
-        window = self._lookup_window(wid)
+        window = self.get_window(wid)
         if not window:
             geomlog("cannot configure window %#x: not found, already removed?", wid)
             return
@@ -992,7 +990,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
         def damage() -> None:
             self.configure_damage_timers.pop(wid, None)
-            window = self._lookup_window(wid)
+            window = self.get_window(wid)
             if window and window.is_managed():
                 self.refresh_window(window)
 
@@ -1031,7 +1029,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         """ override so we can raise the window under the cursor
             (gtk raise does not change window stacking, just focus) """
         if wid > 0 and (self.last_raised != wid or ALWAYS_RAISE_WINDOW):
-            window = self._lookup_window(wid)
+            window = self.get_window(wid)
             if not window:
                 pointerlog("_move_pointer(%s, %s) invalid window id", wid, pos)
             else:
@@ -1045,7 +1043,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         if proto not in self._server_sources:
             return
         wid = packet.get_wid()
-        window = self._lookup_window(wid)
+        window = self.get_window(wid)
         windowlog("client closed window %s - %s", wid, window)
         if window:
             window.request_close()
@@ -1061,7 +1059,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         if sig not in WINDOW_SIGNALS:
             log.warn(f"Warning: window signal {sig!r} not handled")
             return
-        w = self._lookup_window(wid)
+        w = self.get_window(wid)
         if not w:
             log.warn(f"Warning: window {wid:#x} not found")
             return
@@ -1160,7 +1158,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         regions = []
         OR_regions = []
         for wid in reversed(sorted(self._id_to_window.keys())):
-            window = self._id_to_window.get(wid)
+            window = self.get_window(wid)
             log("screenshot: window(%s)=%s", wid, window)
             if window is None:
                 continue

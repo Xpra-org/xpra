@@ -1089,7 +1089,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def _process_raise_window(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         focuslog(f"going to raise window {wid:#x} - {window}")
         if window:
             if window.has_toplevel_focus():
@@ -1102,7 +1102,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         detail = packet.get_i8(2)
         other_wid = packet.get_wid(3)
         above = int(detail == 0)
-        window = self._id_to_window.get(wid)
+        window = self.get_window(wid)
         other_window = self._id_to_window.get(other_wid)
         focuslog("restack window %s - %s %s %s",
                  wid, window, ["above", "below"][above], other_window)
