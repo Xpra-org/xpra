@@ -91,3 +91,11 @@ def install_signal_handlers(sstr: str, signal_handler: Callable[[int], None]) ->
 
     GLib = gi_import("GLib")
     GLib.idle_add(do_install_signal_handlers)
+
+
+def uninstall_signal_handlers(signals=(signal.SIGINT, signal.SIGTERM)) -> None:
+    for sig in signals:
+        try:
+            signal.signal(sig, signal.SIG_DFL)
+        except ValueError:
+            pass
