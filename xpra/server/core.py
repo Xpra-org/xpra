@@ -593,7 +593,6 @@ class ServerCore(ServerBaseClass):
         return True
 
     def init_packet_handlers(self) -> None:
-        netlog("initializing packet handlers")
         self._default_packet_handlers = {
             "hello": self._process_hello,
             "disconnect": self._process_disconnect,
@@ -602,6 +601,9 @@ class ServerCore(ServerBaseClass):
             GIBBERISH: self._process_gibberish,
             INVALID: self._process_invalid,
         }
+        netlog("initializing packet handlers for %s", SERVER_BASES)
+        for c in SERVER_BASES:
+            c.init_packet_handlers(self)
 
     def cleanup_all_protocols(self, reason: str | ConnectionMessage = "", force=False) -> None:
         protocols = self.get_all_protocols()
