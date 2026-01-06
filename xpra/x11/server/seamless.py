@@ -906,45 +906,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return geom
 
-    def _process_configure_window(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        wid = packet.get_wid()
-        window = self._lookup_window(wid)
-        if not window:
-            geomlog("cannot configure window %#x: not found, already removed?", wid)
-            return
-        config = {}
-        x = packet.get_i16(2)
-        y = packet.get_i16(3)
-        w = packet.get_u16(4)
-        h = packet.get_u16(5)
-        skip_geometry = (len(packet) >= 10 and packet.get_bool(9)) or window.is_OR()
-        if not skip_geometry:
-            config["geometry"] = (x, y, w, h)
-        if len(packet) >= 8:
-            config["resize-counter"] = packet.get_u64(7)
-        if len(packet) >= 7:
-            cprops = packet.get_dict(6)
-            if cprops:
-                config["properties"] = cprops
-        if len(packet) >= 9:
-            config["state"] = packet.get_dict(8)
-        if len(packet) >= 13:
-            pwid = packet.get_wid(10)
-            position = packet.get_ints(11)
-            modifiers = packet.get_strs(12)
-            config["pointer"] = {
-                "wid": pwid,
-                "position": position,
-                "modifiers": modifiers,
-            }
-        self.do_process_window_configure(proto, wid, typedict(config))
-
-    def _process_window_configure(self, proto, packet: Packet) -> None:
-        wid = packet.get_wid()
-        config = typedict(packet.get_dict(2))
-        self.do_process_window_configure(proto, wid, config)
-
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         window = self._lookup_window(wid)
         if not window:

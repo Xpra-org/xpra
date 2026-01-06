@@ -8,6 +8,7 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
+from xpra.util.objects import typedict
 from xpra.server.window import batch_config
 from xpra.server.base import ServerBase
 from xpra.scripts.config import InitExit
@@ -487,20 +488,20 @@ class ShadowServerBase(ServerBase):
         if len(self._server_sources) <= 1 and len(self._id_to_window) <= 1:
             self.stop_refresh(wid)
 
-    def _process_window_configure(self, proto, packet: Packet) -> None:
-        wid = packet.get_wid()
-        x = packet.get_i16(2)
-        y = packet.get_i16(3)
-        w = packet.get_i16(4)
-        h = packet.get_i16(5)
+    def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         window = self.process_window_common(wid)
         if not window:
             # already gone
             return
-        self._window_mapped_at(proto, wid, window, (x, y, w, h))
-        self.refresh_window_area(window, 0, 0, w, h)
-        if len(packet) >= 7:
-            self._set_client_properties(proto, wid, window, packet[6])
+        geometry = config.inttupleget("geometry")
+        if geometry:
+            self._window_mapped_at(proto, wid, window, geometry)
+            w, h = geometry[2:4]
+            self.refresh_window_area(window, 0, 0, w, h)
+
+        properties = config.dictget("properties")
+        if properties:
+            self._set_client_properties(proto, wid, window, properties)
 
     def _process_window_close(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()

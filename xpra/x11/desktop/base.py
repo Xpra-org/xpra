@@ -9,6 +9,7 @@ from typing import Any, Sequence
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
+from xpra.util.objects import typedict
 from xpra.common import noop, parse_env_resolutions
 from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_CREATE
@@ -234,41 +235,44 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         # TODO: handle inconification?
         # iconified = len(packet)>=3 and bool(packet[2])
 
-    def _process_window_configure(self, proto, packet: Packet) -> None:
-        wid = packet.get_wid()
-        x = packet.get_i16(2)
-        y = packet.get_i16(3)
-        w = packet.get_u16(4)
-        h = packet.get_u16(5)
-        if len(packet) >= 13 and features.pointer and not self.readonly:
-            pwid = packet.get_wid(10)
-            pointer = packet.get_ints(11)
-            modifiers = packet.get_strs(12)
-            device_id = -1
-            if self.process_mouse_common(proto, device_id, pwid, pointer):
-                self._update_modifiers(proto, wid, modifiers)
-        # some "configure-window" packets are only meant for metadata updates:
-        skip_geometry = len(packet) >= 10 and packet.get_bool(9)
+    def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         window = self._id_to_window.get(wid)
         if not window:
-            geomlog("cannot map window %s: already removed!", wid)
+            geomlog("cannot configure window %s: already removed!", wid)
             return
-        damage = False
-        if len(packet) >= 9:
-            state = packet.get_dict(8)
-            damage = bool(self._set_window_state(proto, wid, window, state))
-        if not skip_geometry and not self.readonly:
-            owx, owy, oww, owh = window.get_geometry()
-            geomlog("_process_window_configure(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-            if oww != w or owh != h:
-                window.resize(w, h)
-        if len(packet) >= 7:
-            cprops = packet.get_dict(6)
-            if cprops:
-                metadatalog("window client properties updates: %s", cprops)
-                self._set_client_properties(proto, wid, window, cprops)
-        self._window_mapped_at(proto, wid, window, (x, y, w, h))
-        if damage:
+
+        if "pointer" in config and features.pointer and not self.readonly:
+            pointer_data = typedict(config.dictget("pointer"))
+            pointerlog("configure pointer data: %s", pointer_data)
+            pwid = pointer_data.intget("wid", 0)
+            position = pointer_data.inttupleget("position")
+            device_id = pointer_data.intget("device-id")
+            if self.process_mouse_common(proto, device_id, pwid, position):
+                if "modifiers" in pointer_data:
+                    modifiers = pointer_data.strtupleget("modifiers")
+                    self._update_modifiers(proto, pwid, modifiers)
+
+        if "state" in config:
+            state = config.dictget("state")
+            self._set_window_state(proto, wid, window, state)
+
+        geometry = config.inttupleget("geometry")
+        if geometry:
+            self._window_mapped_at(proto, wid, window, geometry)
+            if not self.readonly:
+                w, h = geometry[2:4]
+                owx, owy, oww, owh = window.get_geometry()
+                geomlog("do_process_window_configure size was: %s, now %s", (oww, owh), (w, h))
+                if oww != w or owh != h:
+                    window.resize(w, h)
+
+        properties = config.dictget("properties")
+        if properties:
+            metadatalog("window client properties updates: %s", properties)
+            self._set_client_properties(proto, wid, window, properties)
+
+        if "state" in config:
+            w, h = window.get_geometry()[2:4]
             self.refresh_window_area(window, 0, 0, w, h)
 
     def _adjust_pointer(self, proto, device_id: int, wid: int, pointer):

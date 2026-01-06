@@ -9,6 +9,7 @@ from collections.abc import Sequence
 
 from xpra.codecs.image import ImageWrapper
 from xpra.util.gobject import to_gsignals
+from xpra.util.objects import typedict
 from xpra.wayland.compositor import WaylandCompositor, add_event_listener
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
@@ -147,17 +148,17 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.flush()
         self.refresh_window(window)
 
-    def _process_window_configure(self, proto, packet: Packet) -> None:
-        wid = packet.get_wid()
+    def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         window = self._id_to_window.get(wid)
         surface = self.get_surface(wid)
         if not (window and surface):
             return
-        w = packet.get_u16(4)
-        h = packet.get_u16(5)
-        self.compositor.resize(surface, w, h)
-        self.compositor.flush()
-        self.refresh_window(window)
+        geometry = config.inttupleget("geometry")
+        if geometry:
+            w, h = geometry[2:4]
+            self.compositor.resize(surface, w, h)
+            self.compositor.flush()
+            self.refresh_window(window)
 
     def _new_surface(self, surface: int, wid: int, title: str, app_id: str, size: tuple[int, int]) -> None:
         geom = (0, 0, size[0], size[1])
