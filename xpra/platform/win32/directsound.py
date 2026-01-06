@@ -3,8 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import WinDLL, WINFUNCTYPE, oledll, c_int, c_char, byref, cast
-from ctypes.wintypes import BOOL, LPVOID, LPCWSTR, LPCVOID, LPOLESTR
+import uuid
+from ctypes import WinDLL, WINFUNCTYPE, POINTER, oledll, c_int
+from ctypes.wintypes import BOOL, BYTE, LPVOID, LPCWSTR, LPCVOID, LPOLESTR
 
 dsound = WinDLL("dsound", use_last_error=True)
 DirectSoundEnumerateW = dsound.DirectSoundEnumerateW
@@ -15,7 +16,7 @@ GetDeviceID = dsound.GetDeviceID
 # DEFINE_GUID(DSDEVID_DefaultVoicePlayback,0xDEF00002,0x9C6D,0x47Ed,0xAA,0xF1,0x4D,0xDA,0x8F,0x2B,0x5C,0x03);
 # DEFINE_GUID(DSDEVID_DefaultVoiceCapture, 0xDEF00003,0x9C6D,0x47ED,0xAA,0xF1,0x4D,0xDA,0x8F,0x2B,0x5C,0x03);
 
-LPDSENUMCALLBACK = WINFUNCTYPE(BOOL, LPVOID, LPCWSTR, LPCWSTR, LPCVOID)
+LPDSENUMCALLBACK = WINFUNCTYPE(BOOL, POINTER(BYTE * 16), LPCWSTR, LPCWSTR, LPCVOID)
 StringFromGUID2 = oledll.ole32.StringFromGUID2
 StringFromGUID2.restype = c_int
 StringFromGUID2.argtypes = [LPVOID, LPOLESTR, c_int]
@@ -24,17 +25,11 @@ StringFromGUID2.argtypes = [LPVOID, LPOLESTR, c_int]
 def _enum_devices(fn) -> list:
     devices = []
 
-    def cb_enum(lpGUID, lpszDesc, _lpszDrvName, _):
-        dev = ""
-        if lpGUID is not None:
-            # noinspection PyTypeChecker
-            buftype = c_char * 256
-            # noinspection PyCallingNonCallable
-            buf = buftype()
-            pbuf = byref(buf)
-            if StringFromGUID2(lpGUID, cast(pbuf, LPOLESTR), 256):
-                dev = buf.value
-        devices.append((dev, lpszDesc))
+    def cb_enum(lp_guid, desc, _module, _context):
+        if lp_guid:
+            guid_bytes = bytes(lp_guid.contents)
+            device_guid = str(uuid.UUID(bytes_le=guid_bytes))
+            devices.append((device_guid, str(desc)))
         return True
 
     fn(LPDSENUMCALLBACK(cb_enum), None)
