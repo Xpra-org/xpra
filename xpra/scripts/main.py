@@ -903,6 +903,9 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "network-info":
         from xpra.net import net_util
         return net_util.main()
+    if mode == "crypto-info":
+        from xpra.net import crypto
+        return crypto.main()
     if mode == "monitor-info":
         return run_monitor_info(options, args)
     if mode == "set-monitor":
