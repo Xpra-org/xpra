@@ -842,7 +842,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = UIXpraClient.make_hello(self)
-        capabilities["named_cursors"] = len(cursor_types) > 0
         capabilities["encoding.transparency"] = self.has_transparency()
         if FULL_INFO > 1:
             capabilities.setdefault("versions", {}).update(get_gtk_version_info())
