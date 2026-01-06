@@ -1846,8 +1846,9 @@ def make_progress_process(title="Xpra") -> Popen | None:
     # always close stdin when terminating the splash screen process:
     progress_process.saved_terminate = progress_process.terminate
 
-    def terminate(*_args) -> None:
+    def terminate(*args) -> None:
         stdin = progress_process.stdin
+        log("terminate%s stdin=%s", args, stdin)
         if stdin:
             progress_process.stdin = None
             noerr(stdin.close)
