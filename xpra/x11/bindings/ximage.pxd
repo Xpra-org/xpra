@@ -62,8 +62,8 @@ cdef class XImageWrapper:
 
     cdef void set_image(self, XImage* image)
 
-    cdef void* get_pixels_ptr(self)
+    cdef void* get_pixels_ptr(self) noexcept
 
-    cdef void free_image(self)
+    cdef void free_image(self) noexcept
 
-    cdef void free_pixels(self)
+    cdef void free_pixels(self) noexcept

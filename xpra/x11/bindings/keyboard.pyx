@@ -205,6 +205,25 @@ cdef inline bytes b(value: str):
     return value.encode("latin1")
 
 
+cdef KeySym _parse_keysym(symbol) noexcept:
+    s = b(symbol)
+    if s in [b"NoSymbol", b"VoidSymbol"]:
+        return NoSymbol
+    cdef KeySym keysym = XStringToKeysym(s)
+    if keysym == NoSymbol:
+        if s.startswith(b"U+"):
+            s = b"0x"+s[2:]
+        if s.lower().startswith(b"0x"):
+            return int(s, 16)
+        if len(s)>0:
+            try:
+                return int(s)
+            except ValueError:
+                pass
+        return NoSymbol
+    return keysym
+
+
 # xmodmap's "keycode" action done implemented in python
 # some of the methods aren't very pythonic
 # that's intentional so as to keep as close as possible
@@ -526,26 +545,8 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         # log("setting new work keymap: %#x", <unsigned long> new_keymap)
         self.work_keymap = new_keymap
 
-    cdef KeySym _parse_keysym(self, symbol) noexcept:
-        s = b(symbol)
-        if s in [b"NoSymbol", b"VoidSymbol"]:
-            return NoSymbol
-        cdef KeySym keysym = XStringToKeysym(s)
-        if keysym == NoSymbol:
-            if s.startswith(b"U+"):
-                s = b"0x"+s[2:]
-            if s.lower().startswith(b"0x"):
-                return int(s, 16)
-            if len(s)>0:
-                try:
-                    return int(s)
-                except ValueError:
-                    pass
-            return NoSymbol
-        return keysym
-
     def parse_keysym(self, symbol) -> int:
-        return int(self._parse_keysym(symbol))
+        return int(_parse_keysym(symbol))
 
     def keysym_str(self, keysym_val) -> str:
         cdef KeySym keysym = int(keysym_val)
@@ -561,7 +562,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         keysymlist = []
         cdef KeySym keysym
         for x in symbols:
-            keysym = self._parse_keysym(x)
+            keysym = _parse_keysym(x)
             if keysym!=NoSymbol:
                 keysymlist.append(keysym)
         return keysymlist
@@ -625,7 +626,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                         elif isinstance(ks, int):
                             keysym = ks
                         else:
-                            keysym = self._parse_keysym(ks)
+                            keysym = _parse_keysym(ks)
                         if keysym!=NoSymbol:
                             keysyms.append(keysym)
                         else:
@@ -723,7 +724,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
     def get_keycodes(self, keyname: str) -> List[int]:
         codes = []
-        cdef KeySym keysym = self._parse_keysym(keyname)
+        cdef KeySym keysym = _parse_keysym(keyname)
         if not keysym:
             return codes
         return self.KeysymToKeycodes(keysym)

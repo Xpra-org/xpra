@@ -271,7 +271,7 @@ cdef class XImageWrapper:
         image.set_target_y(self.target_y+y)
         return image
 
-    cdef void* get_pixels_ptr(self):
+    cdef void* get_pixels_ptr(self) noexcept:
         if self.pixels!=NULL:
             return self.pixels
         cdef XImage *image = self.image
@@ -354,7 +354,7 @@ cdef class XImageWrapper:
         self.free_image()
         self.free_pixels()
 
-    cdef void free_image(self):
+    cdef void free_image(self) noexcept:
         ximagedebug("%s.free_image() image=%#x", self, <uintptr_t> self.image)
         if self.image!=NULL:
             call_context_check("XImageWrapper.free_image")
@@ -363,7 +363,7 @@ cdef class XImageWrapper:
             global ximage_counter
             ximage_counter -= 1
 
-    cdef void free_pixels(self):
+    cdef void free_pixels(self) noexcept:
         ximagedebug("%s.free_pixels() pixels=%#x", self, <uintptr_t> self.pixels)
         if self.pixels!=NULL:
             if not self.sub:
@@ -502,7 +502,7 @@ cdef XImageWrapper get_image(Display * display, Drawable drawable, unsigned int 
     if ximage==NULL:
         log("get_image(..) failed to get XImage for X11 drawable %#x", drawable)
         return None
-    xi = XImageWrapper(x, y, width, height)
+    cdef XImageWrapper xi = XImageWrapper(x, y, width, height)
     xi.set_image(ximage)
     global ximage_counter
     ximagedebug("%s ximage counter: %i", xi, ximage_counter)
@@ -515,11 +515,11 @@ cdef class XImageBindingsInstance(X11CoreBindingsInstance):
         self.context_check("get_ximage")
         return get_image(self.display, drawable, x, y, width, height)
 
-    def get_xwindow_pixmap_wrapper(self, xwindow):
+    def get_xwindow_pixmap_wrapper(self, Window xwindow):
         log("get_xwindow_pixmap_wrapper(%#x)", xwindow)
         return self.wrap_drawable(xwindow)
 
-    def wrap_drawable(self, drawable):
+    def wrap_drawable(self, Drawable drawable):
         self.context_check("wrap_drawable")
         cdef Window root_window
         cdef int x, y

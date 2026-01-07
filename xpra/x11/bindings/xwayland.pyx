@@ -72,7 +72,7 @@ def isxwayland(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
         XCloseDisplay(d)
 
 
-cdef Atom intern_atom(Display *display, name: str):
+cdef Atom intern_atom(Display *display, name: str) noexcept:
     b = name.encode()
     return XInternAtom(display, b, True)
 

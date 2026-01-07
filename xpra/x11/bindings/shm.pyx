@@ -297,7 +297,7 @@ cdef class XShmImageWrapper(XImageWrapper):
     def __repr__(self):
         return "XShmImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
 
-    cdef void *get_pixels_ptr(self):
+    cdef void *get_pixels_ptr(self) noexcept:
         if self.pixels!=NULL:
             xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x (pixels) %s", <uintptr_t> self.pixels, self)
             return self.pixels
@@ -328,7 +328,7 @@ cdef class XShmImageWrapper(XImageWrapper):
             cb()
         xshmdebug("XShmImageWrapper.free() done for %s, callback fired=%s", self, bool(cb))
 
-    cdef void set_free_callback(self, object callback):
+    cdef void set_free_callback(self, object callback) noexcept:
         self.free_callback = callback
 
 
