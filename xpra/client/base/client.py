@@ -20,7 +20,8 @@ from xpra.common import (
     ConnectionMessage, disconnect_is_an_error, noerr, NotificationID, noop,
 )
 from xpra.net import compression
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, PacketHandlerType
+from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.util.version import get_version_info, vparts, XPRA_VERSION
@@ -54,7 +55,7 @@ LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 log("Client base classes: %s", CLIENT_BASES)
 
 
-class XpraClientBase(ClientBaseClass):
+class XpraClientBase(PacketDispatcher, ClientBaseClass):
     """
     Base class for Xpra clients.
     Provides the glue code for:
@@ -64,6 +65,7 @@ class XpraClientBase(ClientBaseClass):
 
     def __init__(self):
         self.defaults_init()
+        PacketDispatcher.__init__(self)
         for bc in CLIENT_BASES:
             bc.__init__(self)
         self.init_packet_handlers()
@@ -208,6 +210,7 @@ class XpraClientBase(ClientBaseClass):
 
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {"pid": os.getpid()}
+        info.update(PacketDispatcher.get_info(self))
         for bc in CLIENT_BASES:
             info.update(bc.get_info(self))
         return info
@@ -623,6 +626,19 @@ class XpraClientBase(ClientBaseClass):
     def init_authenticated_packet_handlers(self) -> None:
         for bc in CLIENT_BASES:
             bc.init_authenticated_packet_handlers(self)
+
+    @staticmethod
+    def call_packet_handler(main: bool, handler: PacketHandlerType, _proto, packet: Packet) -> None:
+        """
+        The client packet handlers don't need the `proto` argument,
+        so `call_packet_handler` is overriden here so we can drop it.
+        """
+        def call() -> None:
+            handler(packet)
+        if main:
+            GLib.idle_add(call)
+        else:
+            call()
 
     def process_packet(self, proto, packet) -> None:
         self.dispatch_packet(proto, packet, True)
