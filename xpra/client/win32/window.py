@@ -136,7 +136,7 @@ class ClientWindow(GObject.GObject):
         "mouse-move": n_arg_signal(4),
         "mouse-click": n_arg_signal(6),
         "wheel": n_arg_signal(5),
-        "key": n_arg_signal(5),
+        "key": n_arg_signal(6),
         "closed": no_arg_signal,
     }
 

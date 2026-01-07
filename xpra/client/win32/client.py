@@ -218,7 +218,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         self.wheel_delta = self.send_wheel_delta(device_id, window.wid, button, abs(wheel_delta), pointer=pos, props=props)
 
     def window_key_event(self, window, keyname: str, pressed: bool, vk_code: int, string: str, scancode: int, extended: bool) -> None:
-        keylog("window_key_event(%s, %r, %s, %i, %r, %i)", window, keyname, pressed, vk_code, string, scancode, extended)
+        keylog("window_key_event(%s, %r, %s, %i, %r, %i, %s)", window, keyname, pressed, vk_code, string, scancode, extended)
         mods = get_modifiers()
         if BACKWARDS_COMPATIBLE:
             keyval = scancode
