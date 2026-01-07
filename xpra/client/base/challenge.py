@@ -21,12 +21,9 @@ from xpra.util.thread import start_thread
 from xpra.util.str_fn import std, obsc, hexstr
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("auth")
-
-GLib = gi_import("GLib")
 
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
 ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
@@ -172,7 +169,7 @@ class ChallengeClient(StubClientMixin):
                 # (ie: pinentry was cancelled by the user)
                 log(f"{handler.handle}({packet}) raised {e!r}")
                 log.info(f"exiting: {e}")
-                GLib.idle_add(self.disconnect_and_quit, e.status, str(e))
+                self.disconnect_and_quit(e.status, str(e))
                 return
             except Exception as e:
                 log(f"{handler.handle}({packet})", exc_info=True)
@@ -180,7 +177,7 @@ class ChallengeClient(StubClientMixin):
                 log.estr(e)
                 continue
         log.warn("Warning: failed to connect, authentication required")
-        GLib.idle_add(self.disconnect_and_quit, ExitCode.PASSWORD_REQUIRED, "authentication required")
+        self.disconnect_and_quit(ExitCode.PASSWORD_REQUIRED, "authentication required")
 
     def pop_challenge_handler(self, digest: str = ""):
         # find the challenge handler most suitable for this digest type,
@@ -324,8 +321,7 @@ class ChallengeClient(StubClientMixin):
         if self._protocol.TYPE == "rfb":
             self._protocol.send_challenge_reply(challenge_response)
             return
-        # call send_hello from the UI thread:
-        GLib.idle_add(self.send_hello, challenge_response, client_salt)
+        self.send_hello(challenge_response, client_salt)
 
     def init_packet_handlers(self) -> None:
         self.add_packets("challenge", main_thread=True)
