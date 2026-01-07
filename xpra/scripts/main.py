@@ -20,7 +20,6 @@ from importlib import import_module
 from importlib.util import find_spec
 from collections.abc import Sequence
 
-from shutil import which
 from subprocess import Popen, PIPE, TimeoutExpired, run
 import signal
 import shlex
@@ -496,9 +495,9 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
         # inject it into the command line if we have to:
         argv = list(cmdline)
         if argv[0].find("python") < 0:
-            major, minor = sys.version_info.major, sys.version_info.minor
-            python = which("python%i.%i" % (major, minor)) or which("python%i" % major) or which("python") or "python"
-            argv.insert(0, python)
+            from xpra.platform.paths import get_python_execfile_command
+            for arg in reversed(get_python_execfile_command()):
+                argv.insert(0, arg)
         return systemd_run_wrap(mode, argv, options.systemd_run_args, user=getuid() != 0)
     configure_env(options.env)
     configure_logging(options, mode)
