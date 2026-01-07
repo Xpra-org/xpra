@@ -8,7 +8,7 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.server.proxy.instance_base import ProxyInstance
-from xpra.server.proxy.glib_scheduler import GLibScheduler
+from xpra.util.glib_scheduler import GLibScheduler
 from xpra.log import Logger
 
 log = Logger("proxy")

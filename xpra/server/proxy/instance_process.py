@@ -14,7 +14,7 @@ from multiprocessing import Process
 
 from xpra.net.packet_type import INFO_RESPONSE
 from xpra.server.proxy.instance_base import ProxyInstance
-from xpra.server.proxy.queue_scheduler import QueueScheduler
+from xpra.util.queue_scheduler import QueueScheduler
 from xpra.util.daemon import setuidgid
 from xpra.server.subsystem.control import ControlHandler
 from xpra.server import features
