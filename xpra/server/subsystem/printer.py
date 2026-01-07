@@ -245,4 +245,4 @@ class PrinterServer(StubServerMixin):
             self.add_legacy_alias("printers", "print-devices")
             self.add_legacy_alias("print", "print-file")
             self.add_packets("print-devices",
-                             "print")
+                             "print-file")
