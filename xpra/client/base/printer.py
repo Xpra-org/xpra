@@ -61,17 +61,16 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
         FileTransferHandler.cleanup(self)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.parse_printing_capabilities(c)
         self.parse_printer_caps(c)
+        self.parse_printing_capabilities(c)
         self.dump_remote_printing_caps()
         return True
 
     def parse_printing_capabilities(self, caps: typedict) -> None:
         printlog("parse_printing_capabilities() client printing support=%s", self.printing)
         if self.printing:
-            server_printing = caps.boolget("printing")
-            printlog("parse_printing_capabilities() server printing support=%s", server_printing)
-            if server_printing:
+            printlog("parse_printing_capabilities() server printing support=%s", self.remote_printing)
+            if self.remote_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
                                                            ("printer-info", "device-uri"))
                 GLib.timeout_add(INIT_PRINTING_DELAY * 1000, self.init_printing)
