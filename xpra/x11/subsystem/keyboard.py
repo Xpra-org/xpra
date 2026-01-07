@@ -106,8 +106,9 @@ def may_start_ibus(env: dict[str, str]):
         command = shlex.split(IBUS_DAEMON_COMMAND)
         ibuslog(f"starting ibus: {IBUS_DAEMON_COMMAND!r}")
         if daemonizer:
-            ibuslog(" using daemonizer: %r", daemonizer)
-            command = [daemonizer, pidfile, "--"] + command
+            from xpra.platform.paths import get_python_exec_command
+            command = get_python_exec_command() + [daemonizer, pidfile, "--"] + command
+            ibuslog(" using daemonizer: %r", command)
         proc = Popen(command, env=env)
         ibuslog("ibus-daemon proc=%s", proc)
         start = monotonic()
