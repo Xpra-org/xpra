@@ -47,6 +47,7 @@ class KeyboardClient(StubClientMixin):
         send_keyboard = noop
         if not self.readonly:
             def do_send_keyboard(*parts):
+                log("do_send_keyboard%s", parts)
                 self.after_handshake(self.send, *parts)
 
             send_keyboard = do_send_keyboard
