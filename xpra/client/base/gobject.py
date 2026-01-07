@@ -7,6 +7,7 @@
 from xpra.os_util import gi_import
 from xpra.client.base.client import EXTRA_TIMEOUT
 from xpra.exit_codes import ExitValue, ExitCode
+from xpra.util.glib_scheduler import GLibScheduler
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -15,7 +16,7 @@ GObject = gi_import("GObject")
 GLib = gi_import("GLib")
 
 
-class GObjectClientAdapter(GObject.GObject):
+class GObjectClientAdapter(GObject.GObject, GLibScheduler):
     """
         Utility mixin for GObject clients
         adds the main loop.

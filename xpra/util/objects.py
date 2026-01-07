@@ -3,26 +3,26 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any
+from typing import Any, Protocol
 from collections.abc import Callable
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 from xpra.util.str_fn import strtobytes, bytestostr
 from xpra.util.io import get_util_logger
 
 
-class Scheduler(ABC):
+class Scheduler(Protocol):
     @abstractmethod
     def idle_add(self, fn: Callable, *args, **kwargs) -> int:
-        pass
+        ...
 
     @abstractmethod
     def timeout_add(self, timeout: int, fn: Callable, *args, **kwargs) -> int:
-        pass
+        ...
 
     @abstractmethod
     def source_remove(self, tid: int) -> None:
-        pass
+        ...
 
 
 class AtomicInteger:

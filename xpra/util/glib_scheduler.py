@@ -5,19 +5,21 @@
 
 from collections.abc import Callable
 
-from xpra.util.objects import Scheduler
 from xpra.os_util import gi_import
 
 GLib = gi_import("GLib")
 
 
-class GLibScheduler(Scheduler):
+class GLibScheduler:
 
-    def idle_add(self, fn: Callable, *args, **kwargs) -> int:
+    @staticmethod
+    def idle_add(fn: Callable, *args, **kwargs) -> int:
         return GLib.idle_add(fn, *args, **kwargs)
 
-    def timeout_add(self, timeout: int, fn: Callable, *args, **kwargs) -> int:
+    @staticmethod
+    def timeout_add(timeout: int, fn: Callable, *args, **kwargs) -> int:
         return GLib.timeout_add(timeout, fn, *args, **kwargs)
 
-    def source_remove(self, tid: int) -> None:
+    @staticmethod
+    def source_remove(tid: int) -> None:
         GLib.source_remove(tid)

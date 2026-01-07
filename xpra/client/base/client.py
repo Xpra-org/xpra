@@ -13,6 +13,7 @@ import string
 from time import monotonic
 from typing import Any, NoReturn
 from types import FrameType
+from collections.abc import Callable
 
 from xpra.scripts.config import InitExit
 from xpra.common import (
@@ -28,7 +29,7 @@ from xpra.util.version import get_version_info, vparts, XPRA_VERSION
 from xpra.net.digest import get_salt
 from xpra.platform.info import get_name, get_username
 from xpra.client.base.factory import get_client_base_classes
-from xpra.os_util import get_machine_id, get_user_uuid, gi_import, BITS
+from xpra.os_util import get_machine_id, get_user_uuid, BITS
 from xpra.util.child_reaper import get_child_reaper, reaper_cleanup
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals
 from xpra.util.io import stderr_print
@@ -40,8 +41,6 @@ from xpra.util.str_fn import (
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 CLIENT_BASES = get_client_base_classes()
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
@@ -72,6 +71,15 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self._init_done = False
         self.exit_code: ExitValue | None = None
         self.start_time = int(monotonic())
+
+    def idle_add(self, fn: Callable, *args, **kwargs) -> int:
+        ...
+
+    def timeout_add(self, timeout: int, fn: Callable, *args, **kwargs) -> int:
+        ...
+
+    def source_remove(self, tid: int) -> None:
+        ...
 
     def defaults_init(self) -> None:
         # skip warning when running the client
@@ -145,7 +153,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         noerr(log.info, "exiting")
         self.signal_cleanup()
         reason = "exit on signal %s" % SIGNAMES.get(signum, signum)
-        GLib.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, reason)
+        self.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, reason)
 
     def handle_os_signal(self, signum: int | signal.Signals, _frame: FrameType | None = None) -> None:
         if self.exit_code is None:
@@ -159,7 +167,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     def install_signal_handlers(self) -> None:
         signal.signal(signal.SIGINT, self.handle_os_signal)
         signal.signal(signal.SIGTERM, self.handle_os_signal)
-        register_SIGUSR_signals(GLib.idle_add)
+        register_SIGUSR_signals(self.idle_add)
 
     # noinspection PyUnreachableCode
     def signal_disconnect_and_quit(self, exit_code: ExitValue, reason: str) -> None:
@@ -167,9 +175,9 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         if not self.exit_on_signal:
             # if we get another signal, we'll try to exit without idle_add...
             self.exit_on_signal = True
-            GLib.idle_add(self.disconnect_and_quit, exit_code, reason)
-            GLib.idle_add(self.quit, exit_code)
-            GLib.idle_add(self.exit)
+            self.idle_add(self.disconnect_and_quit, exit_code, reason)
+            self.idle_add(self.quit, exit_code)
+            self.idle_add(self.exit)
             return
         # warning: this will run cleanup code from the signal handler
         self.disconnect_and_quit(exit_code, reason)
@@ -196,11 +204,11 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
 
         def protocol_closed() -> None:
             log("disconnect_and_quit: protocol_closed()")
-            GLib.idle_add(self.quit, exit_code)
+            self.idle_add(self.quit, exit_code)
 
         if p:
             p.send_disconnect([str(reason)], done_callback=protocol_closed)
-        GLib.timeout_add(1000, self.quit, exit_code)
+        self.timeout_add(1000, self.quit, exit_code)
 
     def exit(self) -> NoReturn:
         log("XpraClientBase.exit() calling %s", sys.exit)
@@ -238,20 +246,20 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
                 get_child_reaper().add_process(proc, name, command, ignore=True, forget=False)
         netlog("setup_connection(%s) protocol=%s", conn, protocol)
         self.setup_connection(conn)
-        GLib.idle_add(self.send_hello)
+        self.idle_add(self.send_hello)
         return protocol
 
     def cancel_verify_connected_timer(self):
         vct = self.verify_connected_timer
         if vct:
             self.verify_connected_timer = 0
-            GLib.source_remove(vct)
+            self.source_remove(vct)
 
     def schedule_verify_connected(self):
         conn = getattr(self._protocol, "_conn", None)
         if not conn:
             return
-        self.verify_connected_timer = GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
+        self.verify_connected_timer = self.timeout_add(round(conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
 
     def setup_connection(self, conn) -> None:
         for bc in CLIENT_BASES:
@@ -627,8 +635,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         for bc in CLIENT_BASES:
             bc.init_authenticated_packet_handlers(self)
 
-    @staticmethod
-    def call_packet_handler(main: bool, handler: PacketHandlerType, _proto, packet: Packet) -> None:
+    def call_packet_handler(self, main: bool, handler: PacketHandlerType, _proto, packet: Packet) -> None:
         """
         The client packet handlers don't need the `proto` argument,
         so `call_packet_handler` is overriden here so we can drop it.
@@ -636,7 +643,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         def call() -> None:
             handler(packet)
         if main:
-            GLib.idle_add(call)
+            self.idle_add(call)
         else:
             call()
 
