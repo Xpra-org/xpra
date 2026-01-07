@@ -13,6 +13,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.util.objects import typedict
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.common import ConnectionMessage
@@ -148,7 +149,7 @@ SERVER_BASES = get_proxy_server_base_classes()
 ProxyServerBaseClass = type("ProxyServerBaseClass", SERVER_BASES, {})
 
 
-class ProxyServer(ProxyServerBaseClass):
+class ProxyServer(ProxyServerBaseClass, SignalEmitter):
     """
         This is the proxy server you can launch with "xpra proxy",
         once authenticated, it will dispatch the connection
@@ -158,6 +159,7 @@ class ProxyServer(ProxyServerBaseClass):
 
     def __init__(self):
         log("ProxyServer.__init__()")
+        SignalEmitter.__init__(self)
         for bc in SERVER_BASES:
             bc.__init__(self)
         self.hello_request_handlers["stop"] = self._handle_hello_request_stop
