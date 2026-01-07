@@ -4,20 +4,17 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable
 
 from xpra.util.objects import typedict
-from xpra.os_util import gi_import
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.server.proxy.instance_base import ProxyInstance
+from xpra.server.proxy.glib_scheduler import GLibScheduler
 from xpra.log import Logger
 
 log = Logger("proxy")
 
-GLib = gi_import("GLib")
 
-
-class ProxyInstanceThread(ProxyInstance):
+class ProxyInstanceThread(ProxyInstance, GLibScheduler):
 
     def __init__(self, session_options: dict[str, str], pings: int,
                  client_proto, server_conn,
@@ -30,15 +27,6 @@ class ProxyInstanceThread(ProxyInstance):
 
     def __repr__(self):
         return "threaded proxy instance"
-
-    def idle_add(self, fn: Callable, *args, **kwargs) -> int:
-        return GLib.idle_add(fn, *args, **kwargs)
-
-    def timeout_add(self, timeout, fn: Callable, *args, **kwargs) -> int:
-        return GLib.timeout_add(timeout, fn, *args, **kwargs)
-
-    def source_remove(self, tid: int) -> None:
-        GLib.source_remove(tid)
 
     def run(self) -> None:
         log("ProxyInstanceThread.run()")
