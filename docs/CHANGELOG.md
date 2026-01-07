@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.4.1] 2026-01-06
+## [6.4.1] 2026-01-07
 * Platforms, build and packaging:
   * [cython 3.2.4](https://github.com/Xpra-org/xpra/commit/26b56e80a2f739a858467d476d7c0598c488fe26)
   * [AMF headers include path](https://github.com/Xpra-org/xpra/commit/0019e6483ec1f2422548d057a1983b3e4f10f362)
@@ -18,6 +18,8 @@
   * [auto-reconnect from seamless ssh start](https://github.com/Xpra-org/xpra/commit/f3b01cceae2820b248afd345e307ccfda02ae0bf)
   * [handle paramiko failure to compare agent keys more gracefully](https://github.com/Xpra-org/xpra/commit/1efcf6a6548fbc24475024019f2e3810e21ca819)
   * [Wayland client crash loading X11 bindings](https://github.com/Xpra-org/xpra/commit/de170654769a7ae3590fda83d04d2dbfd6bfe229)
+  * [ibus deamonizer fails with non-default interpreter](https://github.com/Xpra-org/xpra/commit/e13b1594d83d04293cd98889cf00014d62cbce46) + [fixup](https://github.com/Xpra-org/xpra/commit/7ba7e1721db86b4f01591a5c4c8cb7bdcdb935fb)
+  * [proxy server startup is incomplete](https://github.com/Xpra-org/xpra/commit/7335bc082d62cf4fa967bb1f34f51900f14af9bd)
 * Keyboard:
   * [secondary connections cannot use keyboard when sharing](https://github.com/Xpra-org/xpra/commit/ae984a1392baaf015282f924cf08ec426d2df6f8)
   * [default keyboard configuration should have default modifier mappings](https://github.com/Xpra-org/xpra/commit/7da9c0c741e4147baacfb2f71c74bc774b2bdd5a)
@@ -37,6 +39,7 @@
   * [wrong location for handler registration](https://github.com/Xpra-org/xpra/commit/913b2c48b7c32768f488d51abaea935eb76266f0)
   * [window size changed mis-detection](https://github.com/Xpra-org/xpra/commit/da764b78a93acf48798328156636b70d49878f11)
   * [missing packet handlers](https://github.com/Xpra-org/xpra/commit/e8af2fcbc5c70b4bb32a82f63bd61698116b1086)
+  * [make locating the interpreter more resilient](https://github.com/Xpra-org/xpra/commit/764b766aeb3b0d18abd8789b79b15ebca611392f) + [fixup](https://github.com/Xpra-org/xpra/commit/85d381f25da1230fdf0d44a640272861fb938986)
 * Cosmetic:
   * [splash screen warnings](https://github.com/Xpra-org/xpra/commit/cf5d4b5e7028f077b01b05709b80e5e0ef46e7d6)
   * [misplaced packet handler registration](https://github.com/Xpra-org/xpra/commit/eb46e79ff0cae2e9c57e612a4b4c66d8b7576a8c)
@@ -52,6 +55,7 @@
   * [broken links in documentation](https://github.com/Xpra-org/xpra/commit/574fa4dbef48d71a96e508623900b2da97dd1515)
   * [overwritten cursor attributes](https://github.com/Xpra-org/xpra/commit/3d8a8633d3b48c411d36bb5efe5c33fe1f7459d1)
   * [always log full failure details at debug level](https://github.com/Xpra-org/xpra/commit/f0c1761ec32eed72f943dbaf15e89fcf05ba2654)
+  * [printing debug logging is incorrect](https://github.com/Xpra-org/xpra/commit/84578e8ef78f87939f4ba1b0a1eebcb7804ebfde)
 
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:

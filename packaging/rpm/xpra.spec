@@ -1084,7 +1084,7 @@ fi
 
 
 %changelog
-* Tue Jan 06 2026 Antoine Martin <antoine@xpra.org> 6.4.1-10
+* Wed Jan 07 2026 Antoine Martin <antoine@xpra.org> 6.4.1-10
 - Platforms, build and packaging:
    cython 3.2.4
    AMF headers include path
@@ -1102,6 +1102,8 @@ fi
    auto-reconnect from seamless ssh start
    handle paramiko failure to compare agent keys more gracefully
    Wayland client crash loading X11 bindings
+   ibus deamonizer fails with non-default interpreter
+   proxy server startup is incomplete
 - Keyboard:
    secondary connections cannot use keyboard when sharing
    default keyboard configuration should have default modifier mappings
@@ -1121,6 +1123,7 @@ fi
    wrong location for handler registration
    window size changed mis-detection
    missing packet handlers
+   make locating the interpreter more resilient
 - Cosmetic:
    splash screen warnings
    misplaced packet handler registration
@@ -1136,6 +1139,7 @@ fi
    boken links in documentation
    overwritten cursor attributes
    always log full failure details at debug level
+   printing debug logging is incorrect
 
 * Sun Sep 14 2025 Antoine Martin <antoine@xpra.org> 6.4-10
 - Platforms, build and packaging:

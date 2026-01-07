@@ -16,6 +16,8 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     auto-reconnect from seamless ssh start
     handle paramiko failure to compare agent keys more gracefully
     Wayland client crash loading X11 bindings
+    ibus deamonizer fails with non-default interpreter
+    proxy server startup is incomplete
   * Keyboard:
     secondary connections cannot use keyboard when sharing
     default keyboard configuration should have default modifier mappings
@@ -35,6 +37,7 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     wrong location for handler registration
     window size changed mis-detection
     missing packet handlers
+    make locating the interpreter more resilient
   * Cosmetic:
     splash screen warnings
     misplaced packet handler registration
@@ -50,8 +53,9 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     boken links in documentation
     overwritten cursor attributes
     always log full failure details at debug level
+    printing debug logging is incorrect
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 06 Jan 2026 23:22:36 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 07 Jan 2026 23:00:04 +0700
 
 xpra (6.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
