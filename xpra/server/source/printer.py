@@ -63,7 +63,7 @@ class PrinterConnection(FileTransferHandler, StubClientConnection):
     def get_info(self) -> dict[str, Any]:
         return {
             "printer": {
-                "printers": self.printers,
+                "devices": self.printers,
                 "file-transfers": FileTransferHandler.get_info(self),
             },
         }
