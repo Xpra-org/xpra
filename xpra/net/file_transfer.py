@@ -282,17 +282,16 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_file_ask_timeout = fc.intget("ask-timeout")
         self.remote_file_size_limit = fc.intget("max-file-size") or fc.intget("size-limit")
         self.remote_file_chunks = max(0, fc.intget("chunks"))
-        self.dump_remote_caps()
+        self.dump_remote_file_caps()
 
     def parse_printer_caps(self, c: typedict) -> None:
         fc = typedict(c.dictget("file" if BACKWARDS_COMPATIBLE else "printer") or {})
         self.remote_printing = fc.boolget("printing")
         self.remote_printing_ask = fc.boolget("printing-ask")
 
-    def dump_remote_caps(self) -> None:
+    def dump_remote_file_caps(self) -> None:
         filelog("file transfer remote caps:")
         filelog(" file-transfer=%-5s   (ask=%s)", self.remote_file_transfer, self.remote_file_transfer_ask)
-        filelog(" printing=%-5s        (ask=%s)", self.remote_printing, self.remote_printing_ask)
         filelog(" open-files=%-5s      (ask=%s)", self.remote_open_files, self.remote_open_files_ask)
         filelog(" open-url=%-5s        (ask=%s)", self.remote_open_url, self.remote_open_url_ask)
         filelog(" file-size-limit=%s", self.remote_file_size_limit)
