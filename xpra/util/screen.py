@@ -38,6 +38,7 @@ def prettify_plug_name(s, default="") -> str:
 def do_log_screen_sizes(root_w, root_h, sizes):
     from xpra.log import Logger
     log = Logger("screen")
+    log("do_log_screen_sizes(%i, %i, %s)", root_w, root_h, sizes)
     # old format, used by some clients (android):
     if not isinstance(sizes, (tuple, list)):
         return
@@ -62,6 +63,9 @@ def do_log_screen_sizes(root_w, root_h, sizes):
         return
     s = sizes[0]
     if len(s) < 10:
+        if len(s) == 2 and s == (root_w, root_h):
+            # already shown
+            return
         log.info(" %s", s)
         return
     # more detailed output:

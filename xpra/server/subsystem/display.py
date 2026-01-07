@@ -236,7 +236,7 @@ class DisplayManager(StubServerMixin):
         if desktop_size:
             try:
                 dw, dh = desktop_size
-                log.info(" client root window size is %sx%s", dw, dh)
+                log.info(" client total display size is %sx%s", dw, dh)
                 if ss.screen_sizes:
                     log_screen_sizes(dw, dh, ss.screen_sizes)
             except Exception:
