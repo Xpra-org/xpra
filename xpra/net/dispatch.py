@@ -7,16 +7,13 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noop, BACKWARDS_COMPATIBLE
-from xpra.os_util import gi_import
 from xpra.net.common import may_log_packet, Packet, PacketHandlerType
 from xpra.log import Logger
 
 log = Logger("network")
 
-GLib = gi_import("GLib")
 
-
-class GLibPacketHandler:
+class PacketDispatcher:
 
     def __init__(self):
         self._authenticated_packet_handlers: dict[str, Callable] = {}
@@ -69,40 +66,40 @@ class GLibPacketHandler:
             packet = Packet(packet_type, *packet[1:])
         handler: Callable = noop
 
-        def call_handler() -> None:
+        def call_handler(main: bool) -> None:
             may_log_packet(False, packet_type, packet)
             try:
-                self.call_packet_handler(handler, proto, packet)
+                self.call_packet_handler(main, handler, proto, packet)
             except (AssertionError, TypeError, ValueError, RuntimeError):
                 log.error(f"Error processing {packet_type!r}", exc_info=True)
 
         try:
-
             if authenticated:
                 handler = self._authenticated_ui_packet_handlers.get(packet_type)
                 if handler:
                     log("process ui packet %s", packet_type)
-                    GLib.idle_add(call_handler)
+                    call_handler(True)
                     return
                 handler = self._authenticated_packet_handlers.get(packet_type)
                 if handler:
                     log("process non-ui packet %s", packet_type)
-                    call_handler()
+                    call_handler(False)
                     return
             handler = self._default_packet_handlers.get(packet_type)
             if handler:
                 log("process default packet %s", packet_type)
-                call_handler()
+                call_handler(False)
                 return
 
-            GLib.idle_add(self.handle_invalid_packet, proto, packet)
+            self.call_packet_handler(True, self.handle_invalid_packet, proto, packet)
         except (RuntimeError, AssertionError):
             log.error(f"Error processing a {packet_type!r} packet")
             log.error(f" received from {proto}:")
             log.error(f" using {handler}", exc_info=True)
 
     @staticmethod
-    def call_packet_handler(handler: PacketHandlerType, proto, packet: Packet) -> None:
+    def call_packet_handler(main: bool, handler: PacketHandlerType, proto, packet: Packet) -> None:
+        # subclasses should handle the `main` flag and call the handler from the main thread when set
         handler(proto, packet)
 
     @staticmethod

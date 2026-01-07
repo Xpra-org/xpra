@@ -6,7 +6,8 @@
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
-from xpra.net.glib_handler import GLibPacketHandler
+from xpra.net.dispatch import PacketDispatcher
+from xpra.net.common import Packet, PacketHandlerType
 from xpra.util.glib import register_os_signals, register_SIGUSR_signals
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -16,11 +17,11 @@ GLib = gi_import("GLib")
 log = Logger("server", "glib")
 
 
-class GLibServer(StubServerMixin, GLibPacketHandler):
+class GLibServer(StubServerMixin, PacketDispatcher):
 
     def __init__(self):
         StubServerMixin.__init__(self)
-        GLibPacketHandler.__init__(self)
+        PacketDispatcher.__init__(self)
         self.main_loop = GLib.MainLoop()
 
     def __repr__(self):
@@ -44,3 +45,11 @@ class GLibServer(StubServerMixin, GLibPacketHandler):
         # from now on, we can't rely on the main loop:
         from xpra.util.system import register_SIGUSR_signals
         register_SIGUSR_signals()
+
+    def call_packet_handler(self, main: bool, handler: PacketHandlerType, proto, packet: Packet) -> None:
+        def call() -> None:
+            handler(proto, packet)
+        if main:
+            GLib.idle_add(call)
+        else:
+            call()
