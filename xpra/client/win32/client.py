@@ -5,7 +5,6 @@
 
 import signal
 import win32con
-from typing import Any
 from ctypes import byref
 from ctypes.wintypes import POINT
 from collections.abc import Sequence
@@ -15,7 +14,7 @@ from xpra.exit_codes import ExitValue
 from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal
-from xpra.client.base.gobject import GObjectXpraClient
+from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
 from xpra.log import Logger
@@ -51,7 +50,7 @@ def get_modifiers() -> list[str]:
     return modifiers
 
 
-class XpraWin32Client(GObjectXpraClient, UIXpraClient):
+class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     __gsignals__ = {}
     # add signals from super classes (all no-arg signals)
@@ -59,7 +58,7 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         __gsignals__[signal_name] = no_arg_signal
 
     def __init__(self):
-        GObjectXpraClient.__init__(self)
+        GObjectClientAdapter.__init__(self)
         UIXpraClient.__init__(self)
         self.win32_message_source = 0
         self.wheel_delta = 0
@@ -70,19 +69,18 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
 
     def run(self) -> ExitValue:
         UIXpraClient.run(self)
-        return GObjectXpraClient.run(self)
+        return GObjectClientAdapter.run(self)
 
     def run_loop(self) -> None:
         from xpra.client.win32.glib import inject_windows_message_source
         inject_windows_message_source(self.glib_mainloop)
-        super().run_loop()
+        GObjectClientAdapter.run_loop()
 
     def cleanup(self) -> None:
         wms = self.win32_message_source
         if wms:
             self.win32_message_source = 0
             GLib.source_remove(wms)
-        GObjectXpraClient.cleanup(self)
         UIXpraClient.cleanup(self)
 
     def client_toolkit(self) -> str:
@@ -107,13 +105,7 @@ class XpraWin32Client(GObjectXpraClient, UIXpraClient):
         pass
 
     def init(self, opts) -> None:
-        GObjectXpraClient.init(self, opts)
         UIXpraClient.init(self, opts)
-
-    def make_hello(self) -> dict[str, Any]:
-        capabilities = GObjectXpraClient.make_hello(self)
-        capabilities |= UIXpraClient.make_hello(self)
-        return capabilities
 
     @staticmethod
     def get_client_window_classes(_geom, _metadata, _override_redirect) -> Sequence[type]:

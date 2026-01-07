@@ -4,12 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
-from typing import Any
-
-from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
-from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
+from xpra.client.base.client import EXTRA_TIMEOUT
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.log import Logger
 
@@ -19,45 +15,30 @@ GObject = gi_import("GObject")
 GLib = gi_import("GLib")
 
 
-class GObjectXpraClient(GObject.GObject, XpraClientBase):
+class GObjectClientAdapter(GObject.GObject):
     """
-        Utility superclass for GObject clients
+        Utility mixin for GObject clients
+        adds the main loop.
     """
     COMMAND_TIMEOUT = EXTRA_TIMEOUT
 
     def __init__(self):
+        self.exit_code = None
         self.glib_mainloop = None
-        GObject.GObject.__init__(self)
-        XpraClientBase.__init__(self)
         self.client_type = "pygobject"
-
-    def init(self, opts) -> None:
-        XpraClientBase.init(self, opts)
+        GObject.GObject.__init__(self)
 
     def install_signal_handlers(self) -> None:
         from xpra.util.glib import install_signal_handlers
         install_signal_handlers("%s Client" % self.client_type, self.handle_app_signal)
 
-    def make_protocol(self, conn):
-        protocol = super().make_protocol(conn)
-        protocol._log_stats = False
-        GLib.idle_add(self.send_hello)
-        return protocol
-
     def run(self) -> ExitValue:
-        XpraClientBase.run(self)
         self.glib_mainloop = GLib.MainLoop()
         self.run_loop()
         return self.exit_code or ExitCode.OK
 
     def run_loop(self) -> None:
         self.glib_mainloop.run()
-
-    def make_hello(self) -> dict[str, Any]:
-        capabilities = XpraClientBase.make_hello(self)
-        if BACKWARDS_COMPATIBLE:
-            capabilities["keyboard"] = False
-        return capabilities
 
     def quit(self, exit_code: ExitValue = ExitCode.OK) -> None:
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
@@ -72,8 +53,3 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
     def exit_loop(self) -> None:
         self.glib_mainloop.quit()
         self.cleanup()
-
-    def exit(self) -> None:
-        self.show_progress(100, "terminating")
-        log(f"exit() calling {sys.exit}")
-        sys.exit(int(self.exit_code or ExitCode.OK))

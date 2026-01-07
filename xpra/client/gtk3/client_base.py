@@ -39,7 +39,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.gobject import no_arg_signal
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
-from xpra.client.base.gobject import GObjectXpraClient
+from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
 from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
@@ -136,7 +136,7 @@ def get_group_ref(metadata: dict) -> str:
 
 
 # noinspection PyMethodMayBeStatic
-class GTKXpraClient(GObjectXpraClient, UIXpraClient):
+class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     __gsignals__ = {}
     # add signals from super classes (all no-arg signals)
     for signal_name in UIXpraClient.__signals__:
@@ -146,7 +146,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     GLClientWindowClass: type | None = None
 
     def __init__(self):
-        GObjectXpraClient.__init__(self)
+        GObjectClientAdapter.__init__(self)
         UIXpraClient.__init__(self)
         self.client_type = "Python/GTK3"
         self.pinentry_proc = None
@@ -177,10 +177,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.connect("scaling-changed", self.reset_windows_cursors)
         except TypeError:
             log("no 'scaling-changed' signal")
-
-    def init(self, opts) -> None:
-        GObjectXpraClient.init(self, opts)
-        UIXpraClient.init(self, opts)
 
     def setup_frame_request_windows(self) -> None:
         # query the window manager to get the frame size:
@@ -228,7 +224,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if HAS_X11_BINDINGS:
                 self.setup_frame_request_windows()
         UIXpraClient.run(self)
-        return GObjectXpraClient.run(self)
+        return GObjectClientAdapter.run(self)
 
     def cleanup(self) -> None:
         log("GTKXpraClient.cleanup()")

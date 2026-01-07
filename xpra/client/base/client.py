@@ -16,7 +16,7 @@ from types import FrameType
 
 from xpra.scripts.config import InitExit
 from xpra.common import (
-    FULL_INFO, LOG_HELLO,
+    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
     ConnectionMessage, disconnect_is_an_error, noerr, NotificationID, noop,
 )
 from xpra.net import compression
@@ -60,19 +60,13 @@ class XpraClientBase(ClientBaseClass):
     Provides the glue code for:
     * sending packets via Protocol
     * handling packets received via _process_packet
-    For an actual implementation, look at:
-    * GObjectXpraClient
-    * xpra.client.bindings.client
-    """
+   """
 
     def __init__(self):
-        # this may be called more than once,
-        # skip doing internal init again:
-        if not hasattr(self, "exit_code"):
-            self.defaults_init()
-            for bc in CLIENT_BASES:
-                bc.__init__(self)
-            self.init_packet_handlers()
+        self.defaults_init()
+        for bc in CLIENT_BASES:
+            bc.__init__(self)
+        self.init_packet_handlers()
         self._init_done = False
         self.exit_code: ExitValue | None = None
         self.start_time = int(monotonic())
@@ -206,9 +200,11 @@ class XpraClientBase(ClientBaseClass):
             p.send_disconnect([str(reason)], done_callback=protocol_closed)
         GLib.timeout_add(1000, self.quit, exit_code)
 
-    def exit(self) -> None:
+    def exit(self) -> NoReturn:
         log("XpraClientBase.exit() calling %s", sys.exit)
-        sys.exit()
+        self.show_progress(100, "terminating")
+        log(f"exit() calling {sys.exit}")
+        sys.exit(int(self.exit_code or ExitCode.OK))
 
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {"pid": os.getpid()}
@@ -239,6 +235,7 @@ class XpraClientBase(ClientBaseClass):
                 get_child_reaper().add_process(proc, name, command, ignore=True, forget=False)
         netlog("setup_connection(%s) protocol=%s", conn, protocol)
         self.setup_connection(conn)
+        GLib.idle_add(self.send_hello)
         return protocol
 
     def cancel_verify_connected_timer(self):
@@ -338,6 +335,8 @@ class XpraClientBase(ClientBaseClass):
         return get_version_info(FULL_INFO)
 
     def make_hello(self) -> dict[str, Any]:
+        if BACKWARDS_COMPATIBLE:
+            return {"keyboard": False}
         return {}
 
     def compressed_wrapper(self, datatype, data, level=5, **kwargs) -> compression.Compressed:

@@ -19,8 +19,8 @@ from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
 from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit
-from xpra.client.base.client import EXTRA_TIMEOUT
-from xpra.client.base.gobject import GObjectXpraClient
+from xpra.client.base.gobject import GObjectClientAdapter
+from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger
 
@@ -33,14 +33,15 @@ def errwrite(msg: str) -> None:
     stderr_print(msg)
 
 
-class CommandConnectClient(GObjectXpraClient):
+class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
     """
         Utility superclass for clients that only send one command
         via the hello packet.
     """
 
     def __init__(self, opts):
-        super().__init__()
+        GObjectClientAdapter.__init__(self)
+        XpraClientBase.__init__(self)
         super().init(opts)
         self.display_desc = {}
         # not used by command line clients,
@@ -60,6 +61,7 @@ class CommandConnectClient(GObjectXpraClient):
 
     def make_protocol(self, conn):
         protocol = super().make_protocol(conn)
+        protocol._log_stats = False
         if conn.timeout > 0:
             self.command_timeout = GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
         return protocol
