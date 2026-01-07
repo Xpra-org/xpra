@@ -385,7 +385,7 @@ def get_python_exec_command() -> list[str]:
 
 
 def do_get_python_exec_command() -> list[str]:
-    return get_python_exec_command() + ["-c"]
+    return get_python_execfile_command() + ["-c"]
 
 
 def get_python_execfile_command() -> list[str]:
