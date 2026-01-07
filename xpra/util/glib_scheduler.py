@@ -16,7 +16,7 @@ class GLibScheduler(Scheduler):
     def idle_add(self, fn: Callable, *args, **kwargs) -> int:
         return GLib.idle_add(fn, *args, **kwargs)
 
-    def timeout_add(self, timeout, fn: Callable, *args, **kwargs) -> int:
+    def timeout_add(self, timeout: int, fn: Callable, *args, **kwargs) -> int:
         return GLib.timeout_add(timeout, fn, *args, **kwargs)
 
     def source_remove(self, tid: int) -> None:

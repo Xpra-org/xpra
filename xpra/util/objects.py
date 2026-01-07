@@ -17,7 +17,7 @@ class Scheduler(ABC):
         pass
 
     @abstractmethod
-    def timeout_add(self, timeout, fn: Callable, *args, **kwargs) -> int:
+    def timeout_add(self, timeout: int, fn: Callable, *args, **kwargs) -> int:
         pass
 
     @abstractmethod
