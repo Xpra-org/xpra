@@ -67,6 +67,12 @@ def get_headers(host: str, port: int) -> dict[bytes, bytes]:
             log("get_headers %s", mod_name, exc_info=True)
             log.error(f"Error: cannot get headers from module {mod_name!r}")
             log.estr(e)
+    extra = os.environ.get("XPRA_WEBSOCKET_EXTRA_HEADERS", "")
+    if extra:
+        for header in extra.split(","):
+            if header.find("=") > 0:
+                k, v = header.encode("utf8").split(b"=", 1)
+                headers[k] = v
     return headers
 
 
