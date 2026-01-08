@@ -54,6 +54,7 @@ class Authenticator(SysAuthenticator):
             raise ValueError("connection object is missing")
         log(f"exec connection info: {connection}")
         self.connection_str = str(connection)
+        self.http_headers = getattr(connection, "options", {}).get("http-headers", {})
         super().__init__(**kwargs)
 
     def requires_challenge(self) -> bool:
@@ -81,6 +82,10 @@ class Authenticator(SysAuthenticator):
             "prompt": std(self.prompt),
             "display": self.display,
         }
+        if self.http_headers:
+            import json
+            import base64
+            subs["http_headers"] = base64.b64encode(json.dumps(self.http_headers).encode("utf8"))
         if self.require_challenge:
             subs["password"] = bytestostr(self.unxor_response(caps))
         cmd = tuple(shellsub(v, subs) for v in self.command)
