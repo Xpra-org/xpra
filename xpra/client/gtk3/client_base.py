@@ -947,7 +947,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                   len(cursor_data) >= 10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         pixbuf = None
         if len(cursor_data) >= 10 and cursor_types and USE_LOCAL_CURSORS:
-            cursor_name = cursor_data[9]
+            cursor_name = bytestostr(cursor_data[9])
             pixbuf = get_local_cursor(cursor_name)
         # create cursor from the pixel data:
         encoding, _, _, w, h, xhot, yhot, serial, pixels = cursor_data[0:9]
