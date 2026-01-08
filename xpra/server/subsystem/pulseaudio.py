@@ -259,7 +259,7 @@ class PulseaudioServer(StubServerMixin):
         # (fails to list any of the environment variables we use here)
         home_dir = os.environ.get("HOME", "")
         home_rw = is_writable(home_dir, getuid(), getgid())
-        log(f"rw({home_dir})={home_rw}")
+        log(f"rw({home_dir!r})={home_rw}")
         if not home_rw:
             server_dir = self.pulseaudio_server_dir
             if "PULSE_CONFIG_PATH" not in os.environ:

@@ -151,6 +151,7 @@ class AudioConnection(StubClientConnection):
             "send": self.supports_speaker and len(self.speaker_codecs) > 0,
             "receive": self.supports_microphone and len(self.microphone_codecs) > 0,
         })
+        log("get_caps() audio=%s", audio_props)
         return {"audio": audio_props}
 
     def audio_loop_check(self, mode: str = "speaker") -> bool:

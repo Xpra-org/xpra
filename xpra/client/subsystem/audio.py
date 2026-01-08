@@ -241,6 +241,7 @@ class AudioClient(StubClientMixin):
         self.server_av_sync = c.boolget("av-sync.enabled")
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         audio = typedict(c.dictget("audio") or {})
+        log("parse_server_capabilities(..) audio=%s", audio)
         self.server_pulseaudio_id = audio.strget("pulseaudio.id")
         self.server_pulseaudio_server = audio.strget("pulseaudio.server")
         self.server_audio_decoders = audio.strtupleget("decoders")
