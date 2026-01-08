@@ -3124,6 +3124,7 @@ if cythonize_more_ENABLED:
         ax("xpra.scripts")
     if WIN32 and service_ENABLED:
         ace("xpra.platform.win32.service")
+        ace("xpra.platform.win32.shadow")
     if server_ENABLED or client_ENABLED:
         ax("xpra.auth")
     if server_ENABLED:
