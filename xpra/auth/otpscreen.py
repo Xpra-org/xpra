@@ -77,7 +77,7 @@ class Authenticator(SysAuthenticator):
     def cleanup(self):
         self.stop_otp_dialog()
 
-    def stop_otp_dialog(self) -> bool:
+    def stop_otp_dialog(self) -> None:
         proc = self.otp_dialog
         log("stop_otp_dialog() otp_dialog=%s", proc)
         if proc and proc.poll() is None:
