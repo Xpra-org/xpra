@@ -85,7 +85,7 @@ class Authenticator(SysAuthenticator):
         if self.http_headers:
             import json
             import base64
-            subs["http_headers"] = base64.b64encode(json.dumps(self.http_headers).encode("utf8"))
+            subs["http_headers"] = base64.b64encode(json.dumps(self.http_headers).encode("utf8")).decode("latin1")
         if self.require_challenge:
             subs["password"] = bytestostr(self.unxor_response(caps))
         cmd = tuple(shellsub(v, subs) for v in self.command)
