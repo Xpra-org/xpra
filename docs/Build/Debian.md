@@ -162,6 +162,11 @@ apt-get install devscripts build-essential lintian debhelper pandoc
 
 Build DEBs
 ```shell
+./setup.py package
+```
+
+Or manually:
+```shell
 git clone https://github.com/Xpra-org/xpra
 cd xpra
 debuild -us -uc -b
