@@ -406,15 +406,6 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             p.close()
         log("cleanup done")
 
-    def run(self) -> ExitValue:
-        self.start_protocol()
-        return 0
-
-    def start_protocol(self) -> None:
-        # protocol may be None in "listen" mode
-        if self._protocol:
-            self._protocol.start()
-
     def quit(self, exit_code: ExitValue = 0) -> None:
         raise NotImplementedError()
 

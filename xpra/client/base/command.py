@@ -66,6 +66,15 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
             self.command_timeout = GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
         return protocol
 
+    def run(self) -> ExitValue:
+        def start_protocol() -> None:
+            # protocol may be None in "listen" mode
+            protocol = self._protocol
+            if protocol:
+                protocol.start()
+        self.idle_add(start_protocol)
+        return super().run()
+
     def timeout(self, *_args) -> None:
         log.warn("timeout!")  # pragma: no cover
 
