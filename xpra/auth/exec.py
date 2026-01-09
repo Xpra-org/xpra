@@ -132,7 +132,7 @@ class Authenticator(SysAuthenticator):
         if proc:
             try:
                 proc.terminate()
-            except Exception:
+            except OSError:
                 log(f"error trying to terminate exec auth process {proc}", exc_info=True)
 
     def __repr__(self):
