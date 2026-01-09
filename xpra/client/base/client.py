@@ -68,7 +68,6 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         for bc in CLIENT_BASES:
             bc.__init__(self)
         self.init_packet_handlers()
-        self._init_done = False
         self.exit_code: ExitValue | None = None
         self.start_time = int(monotonic())
 
@@ -115,11 +114,6 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.have_more = noop
 
     def init(self, opts) -> None:
-        if self._init_done:
-            # the gtk client classes can inherit this method
-            # from multiple parents, skip initializing twice
-            return
-        self._init_done = True
         for bc in CLIENT_BASES:
             bc.init(self, opts)
         self.compression_level = opts.compression_level
