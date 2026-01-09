@@ -71,12 +71,7 @@ class Authenticator(SysAuthenticatorBase):
             log.warn(" %s", e)
             return False
         try:
-            MECHANISM = {
-                "SIMPLE": SIMPLE,
-                "SASL": SASL,
-                "NTLM": NTLM,
-            }
-            authentication: SIMPLE | SASL | NTLM = MECHANISM[self.authentication]
+            assert self.authentication in (SIMPLE, SASL, NTLM)
             tls = None
             if self.tls:
                 tls = Tls(validate=self.tls_validate, version=self.tls_version, ca_certs_file=self.cacert)
@@ -84,7 +79,7 @@ class Authenticator(SysAuthenticatorBase):
             server = Server(self.host, port=self.port, tls=tls, use_ssl=self.tls, get_info=ALL)
             log("ldap3 Server(%s)=%s", (self.host, self.port, self.tls), server)
             conn = Connection(server, user=self.username, password=password,
-                              authentication=authentication, receive_timeout=10)
+                              authentication=self.authentication, receive_timeout=10)
             log("ldap3 Connection(%s, %s, %s)=%s", server, self.username, self.authentication, conn)
             if self.tls:
                 conn.start_tls()
