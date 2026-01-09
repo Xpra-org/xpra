@@ -816,7 +816,16 @@ fi
 
 
 %changelog
-* Tue Dec 23 2025 Antoine Martin <antoine@xpra.org> 5.1.5-10
+* Fri Jan 09 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
+- Platforms, build and packaging:
+   Ubuntu Noble and earlier fails to install
+- MS Windows:
+   client errors on control-c
+   packaging fix for python-pillow
+   warnings when `named-pipe`s are the only local sockets available
+   directsound device queries
+- Major:
+   virtual monitor geometry synchronization
 - Keyboard:
    don't send empty modifier strings
    default keyboard configuration should have default modifier mappings

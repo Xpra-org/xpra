@@ -1,15 +1,28 @@
 # Changelog
 
-## [5.1.5] 2025-12-23
+## [5.1.5] 2026-01-09
+* Platforms, build and packaging:
+    * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
+* MS Windows:
+    * [client errors on control-c](https://github.com/Xpra-org/xpra/commit/c0d8374cc2edf60b3b3963a7bdfcef6cc2cd45ac)
+    * [packaging fix for python-pillow](https://github.com/Xpra-org/xpra/commit/1ac190a1dd5c733e336eef7d4dbcc3afef5710f0)
+    * [warnings when `named-pipe`s are the only local sockets available](https://github.com/Xpra-org/xpra/commit/a0ffd57f4e34c7a405e04edd345284bb799c8339)
+    * [directsound device queries](https://github.com/Xpra-org/xpra/commit/045a23e94e58bd93612ac1333bf29b9243ad44db)
 * Major:
     * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/18344cff9a1aab0d2f323aa7f1b557f80314f50a)
 * Keyboard:
     * [don't send empty modifier strings](https://github.com/Xpra-org/xpra/commit/d7e9e48c28ea9aa91b1b210cd08c8e11c2f3dec9)
     * [default keyboard configuration should have default modifier mappings](https://github.com/Xpra-org/xpra/commit/4d605f1a5f58c03aed0230e17b70ca0f73f03b59)
     * [help clients figure out modifier mappings](https://github.com/Xpra-org/xpra/commit/eef78cba394471ff1fccac708304cf4843ad55f0)
+    * [client keyboard 'options' attribute was not forwarded](https://github.com/Xpra-org/xpra/commit/639cf8c4c445c0b389b66e316ca65f64afacdf93)
+    * [honour layout and variant overrides](https://github.com/Xpra-org/xpra/commit/7978abb0fd1dc4900dfb07875c14289064143308)
 * Minor:
     * [spurious UI thread events on client startup](https://github.com/Xpra-org/xpra/commit/316a5762aae49ba256f7516a19919fb727bd9f7a)
     * [expose `desktop` flag for desktop windows](https://github.com/Xpra-org/xpra/commit/84744d437e25d2bc942136d63048907d31ced4ed)
+    * [window size changed mis-detection](https://github.com/Xpra-org/xpra/commit/64aa726f0505188249c4dec7239d9f9fb94fb690)
+* Cosmetic:
+    * [more useful message](https://github.com/Xpra-org/xpra/commit/0f2626a0750d9fa587e280f1efacfedf32f09c2e)
+    * [log exception if that's all we have](https://github.com/Xpra-org/xpra/commit/0cbecd74f93b381de9dafa008a43283541603c83)
 
 ## [5.1.4] 2025-12-04
 * Platforms, build and packaging:
