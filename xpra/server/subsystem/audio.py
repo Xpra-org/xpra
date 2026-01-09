@@ -7,7 +7,7 @@
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.common import noop
+from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import first_time
@@ -125,6 +125,7 @@ class AudioServer(StubServerMixin):
         log(" audio properties=%s", self.audio_properties)
 
     def _process_sound_control(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._process_audio_control(proto, packet)
 
     def _process_audio_control(self, proto, packet: Packet) -> None:
@@ -140,6 +141,7 @@ class AudioServer(StubServerMixin):
         audio_control(*packet[1:])
 
     def _process_sound_data(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._process_audio_data(proto, packet)
 
     def _process_audio_data(self, proto, packet: Packet) -> None:
