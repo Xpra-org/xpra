@@ -12,6 +12,7 @@ from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_er
 from xpra.client.gui.window.backing import fire_paint_callbacks
 from xpra.client.win32.gdi_backing import GDIBacking
 from xpra.os_util import gi_import
+from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.util.objects import typedict
 from xpra.platform.win32.common import (
@@ -327,7 +328,7 @@ class ClientWindow(GObject.GObject):
                 win32con.WM_NCRBUTTONDOWN, win32con.WM_NCRBUTTONDBLCLK, win32con.WM_NCRBUTTONUP,
                 WM_NCXBUTTONDOWN, WM_NCXBUTTONDBLCLK, WM_NCXBUTTONUP,
             ):
-                pass
+                log("non-client area event: %s", WNDPROC_EVENT_NAMES.get(msg, msg))
             if msg in (win32con.WM_MOUSEWHEEL, WM_MOUSEHWHEEL):
                 vertical = msg == win32con.WM_MOUSEWHEEL
                 vkeys = get_vk_mask(wparam & 0xffff)
@@ -435,8 +436,9 @@ class ClientWindow(GObject.GObject):
             else:
                 ShowWindow(self.hwnd, win32con.SW_RESTORE)
         if "decorations" in metadata:
+            # todo: decorated = metadata.boolget("decorations", True)
             pass
-            # decorated = metadata.boolget("decorations", True)
+
         if "above" in metadata:
             change = win32con.HWND_TOPMOST if metadata.boolget("above") else win32con.HWND_NOTOPMOST
             SetWindowPos(self.hwnd, change, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
@@ -446,6 +448,8 @@ class ClientWindow(GObject.GObject):
                 # todo: this is not sticky!
                 # re-add it on WM_WINDOWPOSCHANGING
                 SetWindowPos(self.hwnd, win32con.HWND_BOTTOM, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+            else:
+                log("todo: need to remove 'below'")
 
         if "shaded" in metadata:
             # need to be implemented manually
@@ -456,13 +460,15 @@ class ClientWindow(GObject.GObject):
             pass
 
         if "skip-taskbar" in metadata:
+            # todo
             pass
 
         if "skip-pager" in metadata:
+            # todo
             pass
 
     def set_alert_state(self, alert_state: bool) -> None:
-        pass
+        log("set_alert_state(%s) not implemented in this backend", alert_state)
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
@@ -497,8 +503,8 @@ class ClientWindow(GObject.GObject):
         flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
         # flags |= win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
         log.warn("move_resize%s system geometry=%s, flags=%#x", (x, y, w, h, resize_counter), (wx, wy, ww, wh), flags)
-        if False:
-            SetWindowPos(self.hwnd, 0, wx, wy, ww, wh, flags)
+        # if False:
+        #    SetWindowPos(self.hwnd, 0, wx, wy, ww, wh, flags)
         # this should already trigger WM_MOVE and update the position
         # so we don't need to do it here, it may even be incorrect to do so
 

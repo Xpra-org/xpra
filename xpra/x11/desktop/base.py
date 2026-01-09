@@ -261,7 +261,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
             self._window_mapped_at(proto, wid, window, geometry)
             if not self.readonly:
                 w, h = geometry[2:4]
-                owx, owy, oww, owh = window.get_geometry()
+                oww, owh = window.get_geometry()[2:4]
                 geomlog("do_process_window_configure size was: %s, now %s", (oww, owh), (w, h))
                 if oww != w or owh != h:
                     window.resize(w, h)

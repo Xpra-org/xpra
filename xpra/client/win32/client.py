@@ -102,7 +102,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         return pos.x, pos.y
 
     def set_windows_cursor(self, windows, cursor_data):
-        pass
+        log("set_windows_cursor(%s, %s) not implemented in this backend", windows, cursor_data)
 
     def init(self, opts) -> None:
         UIXpraClient.init(self, opts)
