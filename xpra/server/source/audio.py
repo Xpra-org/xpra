@@ -62,6 +62,7 @@ class AudioConnection(StubClientConnection):
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         audio = caps.get(AudioConnection.PREFIX)
+        log("is_needed(..) audio=%s", audio)
         if isinstance(audio, dict):
             audio = typedict(audio)
             return audio.boolget("send") or audio.boolget("receive")
@@ -91,6 +92,7 @@ class AudioConnection(StubClientConnection):
         self.supports_microphone = server.supports_microphone
         self.speaker_codecs = server.speaker_codecs
         self.microphone_codecs = server.microphone_codecs
+        log("init_from(%s) audio_properties=%s", server, self.audio_properties)
 
     def init_state(self) -> None:
         self.wants_audio = True
@@ -140,6 +142,7 @@ class AudioConnection(StubClientConnection):
             self.audio_decoders, self.audio_encoders, self.audio_receive, self.audio_send)
 
     def get_caps(self) -> dict[str, Any]:
+        log("get_caps() wants_audio=%s, audio-properties=%s", self.wants_audio, self.audio_properties)
         if not self.wants_audio or not self.audio_properties:
             return {}
         audio_props = dict(self.audio_properties)
