@@ -17,7 +17,7 @@ from queue import Queue, SimpleQueue, Empty, Full
 from typing import Any
 from collections.abc import Callable, Iterable, Sequence, Mapping
 
-from xpra.util.objects import typedict
+from xpra.util.objects import typedict, Scheduler
 from xpra.util.str_fn import (
     csv, hexstr, nicestr,
     Ellipsizer, repr_ellipsized, strtobytes, memoryview_to_bytes,
@@ -106,7 +106,7 @@ class SocketProtocol:
     def __init__(self, conn,
                  process_packet_cb: Callable[[Any, Packet], None],
                  get_packet_cb: Callable[[], tuple[Packet, bool, bool]] = no_packet,
-                 scheduler=None):
+                 scheduler: Scheduler=None):
         """
             You must call this constructor and source_has_more() from the main thread.
         """
@@ -118,10 +118,8 @@ class SocketProtocol:
             if not callable(getattr(conn, fn)):
                 raise ValueError(f"{fn!r} is not callable")
         if scheduler is None:
-            log(f"using {scheduler=}")
-            from xpra.os_util import gi_import
-            GLib = gi_import("GLib")
-            scheduler = GLib
+            from xpra.util.glib_scheduler import GLibScheduler
+            scheduler = GLibScheduler()
         self.idle_add = scheduler.idle_add
         self.timeout_add = scheduler.timeout_add
         # self.source_remove = scheduler.source_remove
