@@ -127,6 +127,7 @@ tests/unittests/test-file*
 /xpra/client/gtk3/window/*.c
 /xpra/client/gui/window/*.c
 /xpra/clipboard/*.c
+/xpra/cairo/*.c
 /xpra/codecs/nvidia/*/*.c
 /xpra/codecs/nvidia/*/*.cpp
 /xpra/codecs/*/*.cpp
