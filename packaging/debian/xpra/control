@@ -294,7 +294,6 @@ Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${codecs:Depends}
         ,${python3:Depends}
-        ,libyuv0
 #jammy:              ,libopenh264-6
 #noble:              ,libopenh264-7
 #oracular:              ,libopenh264-7
