@@ -6,10 +6,7 @@
 
 import signal
 import threading
-from typing import Any
-from collections.abc import Callable
 
-from xpra.common import noop
 from xpra.exit_codes import ExitValue
 from xpra.net.bytestreams import untilConcludes
 from xpra.util.str_fn import repr_ellipsized, hexstr
@@ -39,15 +36,13 @@ class XpraProxy:
     def __repr__(self):
         return f"XpraProxy({self._name}: {self._client_conn} - {self._server_conn})"
 
-    def __init__(self, name, client_conn, server_conn, quit_cb: Callable | None = None):
+    def __init__(self, name, client_conn, server_conn):
         self._name = name
         self._client_conn = client_conn
         self._server_conn = server_conn
-        self._quit_cb: Callable[[Any], None] = quit_cb or self.do_quit
-        self._closed = False
         self._to_client = threading.Thread(target=self._to_client_loop, daemon=True)
         self._to_server = threading.Thread(target=self._to_server_loop, daemon=True)
-        self.exit_code = 0
+        self.exit_code: ExitValue | None = None
         signal.signal(signal.SIGINT, self.signal_quit)
         signal.signal(signal.SIGTERM, self.signal_quit)
         if POSIX:
@@ -64,30 +59,29 @@ class XpraProxy:
         self._to_client.join()
         self._to_server.join()
         log("XpraProxy.run() %s: all the threads have ended, calling quit() to close the connections", self._name)
-        self.quit()
+        self.quit(0)
         return self.exit_code
 
     def _to_client_loop(self) -> None:
         self._copy_loop(f"<-server {self._name}", self._server_conn, self._client_conn)
-        self._closed = True
 
     def _to_server_loop(self) -> None:
         self._copy_loop(f"->server {self._name}", self._client_conn, self._server_conn)
-        self._closed = True
 
     def _copy_loop(self, log_name: str, from_conn, to_conn) -> None:
         # log("XpraProxy._copy_loop(%s, %s, %s)", log_name, from_conn, to_conn)
         try:
-            while not self._closed:
+            while self.exit_code is None:
                 log("%s: waiting for data", log_name)
                 buf = untilConcludes(self.is_active, noretry, from_conn.read, PROXY_BUFFER_SIZE)
                 if not buf:
                     log("%s: connection lost", log_name)
+                    self.quit(0)
                     return
                 if SHOW_DATA:
                     log("%s: %s bytes: %s", log_name, len(buf), repr_ellipsized(buf))
                     log("%s:           %s", log_name, repr_ellipsized(hexstr(buf)))
-                while buf and not self._closed:
+                while buf and self.exit_code is None:
                     log("%s: writing %s bytes", log_name, len(buf))
                     written = untilConcludes(self.is_active, noretry, to_conn.write, buf)
                     buf = buf[written:]
@@ -95,19 +89,17 @@ class XpraProxy:
             log("%s copy loop ended", log_name)
         except OSError:
             log("%s", log_name, exc_info=True)
-        finally:
-            self.quit()
 
     def is_active(self) -> bool:
-        return not self._closed
+        return self.exit_code is None
 
     def signal_quit(self, signum, _frame=None) -> None:
-        self.exit_code = 128 + signum
-        self.quit()
+        self.quit(128 + signum)
 
-    def quit(self, *args) -> None:
-        log("XpraProxy.quit(%s) %s: closing connections", args, self._name)
-        self._closed = True
+    def quit(self, exit_code: ExitValue) -> None:
+        log("XpraProxy.quit(%s) %s: closing connections", exit_code, self._name)
+        if self.exit_code is None:
+            self.exit_code = exit_code
         try:
             self._client_conn.close()
         except OSError:
@@ -116,9 +108,5 @@ class XpraProxy:
             self._server_conn.close()
         except OSError:
             pass
-        quit_cb: Callable[[Any], None] = self._quit_cb
-        self._quit_cb = noop
-        quit_cb(self)
-
-    def do_quit(self, _proxy) -> None:
+        log("quit exit-code=%s", self.exit_code)
         force_quit(self.exit_code)
