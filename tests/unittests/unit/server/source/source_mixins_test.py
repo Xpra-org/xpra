@@ -7,6 +7,7 @@
 import sys
 import unittest
 from io import BytesIO
+from threading import Event
 from time import monotonic
 
 from unit.test_util import LoggerSilencer, silence_error, silence_info
@@ -17,8 +18,10 @@ from xpra.util.io import get_util_logger
 
 
 class SourceMixinsTest(unittest.TestCase):
-
+    event = Event()
+    event.set()
     AUDIO_SERVER_PROPS = {
+        "audio_initialized": event,
         "audio_properties": {},
         "audio_source_plugin": None,
         "supports_microphone": True,
