@@ -249,7 +249,6 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # connection setup:
     def setup_connection(self, conn) -> None:
-        super().setup_connection(conn)
         for c in CLIENT_BASES:
             if c != XpraClientBase:
                 c.setup_connection(self, conn)
