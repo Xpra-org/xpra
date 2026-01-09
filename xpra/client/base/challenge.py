@@ -52,7 +52,7 @@ class ChallengeClient(StubClientMixin):
         self.challenge_handlers = []
 
     def init(self, opts) -> None:
-        self.username = opts.username
+        self.username = opts.username or os.environ.get("XPRA_USERNAME", "")
         self.password = opts.password
         self.password_file = opts.password_file
         self.challenge_handlers_option = opts.challenge_handlers
