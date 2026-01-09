@@ -81,6 +81,10 @@ class AudioConnection(StubClientConnection):
         self.connect("resume", self.resume_audio_source)
 
     def init_from(self, _protocol, server) -> None:
+        event = server.audio_initialized
+        log("audio init may wait for %s", event)
+        if not event.wait(5):
+            log.warn("Warning: timeout waiting for audio initialization")
         self.audio_properties = typedict(server.audio_properties)
         self.audio_source_plugin = server.audio_source_plugin
         self.supports_speaker = server.supports_speaker

@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from threading import Event
 from collections.abc import Callable, Sequence
 
 from xpra.common import noop, BACKWARDS_COMPATIBLE
@@ -30,6 +31,7 @@ class AudioServer(StubServerMixin):
 
     def __init__(self):
         StubServerMixin.__init__(self)
+        self.audio_initialized = Event()
         self.audio_source_plugin = ""
         self.supports_speaker = False
         self.supports_microphone = False
@@ -110,6 +112,8 @@ class AudioServer(StubServerMixin):
             self.supports_speaker = False
         if not self.microphone_codecs:
             self.supports_microphone = False
+        self.audio_initialized.set()
+
         # query_pulseaudio_properties may access X11,
         # so call it from the main thread:
         query_pulseaudio = getattr(self, "query_pulseaudio_properties", noop)
