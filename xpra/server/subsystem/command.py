@@ -40,7 +40,7 @@ def do_send_menu_data(ss, menu) -> None:
         return
     if not getattr(ss, "send_setting_change", False):
         return
-    log("do_send_menu_data(%s, %s) %s", ss, Ellipsizer(menu))
+    log("do_send_menu_data(%s, %s)", ss, Ellipsizer(menu))
     if getattr(ss, "menu", False):
         # v6.4 and later:
         attr = "menu"
