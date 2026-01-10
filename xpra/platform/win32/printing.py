@@ -94,7 +94,6 @@ def init_winspool_listener() -> None:
 
 
 def on_devmodechange(wParam, lParam) -> None:
-    global printers_modified_callback
     log("on_devmodechange(%s, %s) printers_modified_callback=%s", wParam, lParam, printers_modified_callback)
     # from ctypes import c_wchar_p
     # name = c_wchar_p(lParam)
@@ -168,7 +167,6 @@ def get_info() -> dict[str, Any]:
 
 
 def get_printers() -> dict[str, dict[str, Any]]:
-    global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL
     printers = {}
     for penum in PRINTER_ENUMS:
         try:
@@ -181,12 +179,12 @@ def get_printers() -> dict[str, dict[str, Any]]:
             for p in EnumPrinters(enum_val, None, PRINTER_LEVEL):
                 flags, desc, name, comment = p
                 if name in SKIPPED_PRINTERS:
-                    log("skipped printer: %#x, %s, %s, %s", flags, desc, name, comment)
+                    log("skipped printer: %#x, %r, %r, %r", flags, desc, name, comment)
                     continue
                 if name in printers:
-                    log("skipped duplicate printer: %#x, %s, %s, %s", flags, desc, name, comment)
+                    log("skipped duplicate printer: %#x, %r, %r, %r", flags, desc, name, comment)
                     continue
-                log("found printer: %#x, %s, %s, %s", flags, desc, name, comment)
+                log("found printer: %#x, %r, %r, %r", flags, desc, name, comment)
                 # strip duplicated and empty strings from the description:
                 desc_els = []
                 for x in desc.split(","):
@@ -212,7 +210,7 @@ def get_printers() -> dict[str, dict[str, Any]]:
 
 def print_files(printer: str, filenames: Iterable[str], title: str, options: dict) -> int:
     log("win32.print_files%s", (printer, filenames, title, options))
-    global JOB_ID, PROCESSES
+    global JOB_ID
     processes = []
     for filename in filenames:
         cwd = get_app_dir()
@@ -232,7 +230,6 @@ def print_files(printer: str, filenames: Iterable[str], title: str, options: dic
 
 
 def printing_finished(jobid: int) -> bool:
-    global PROCESSES
     processes = PROCESSES.get(jobid)
     if not processes:
         log.warn("win32.printing_finished(%s) job not found!", jobid)
