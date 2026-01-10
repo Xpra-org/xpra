@@ -238,10 +238,7 @@ class PrinterServer(StubServerMixin):
         auth_class: Sequence[AuthDef] = self.auth_classes.get("socket", ())
         # optional dependency on `self.password_file` from AuthServer:
         password_file: Sequence[str] = getattr(self, "password_file", ())
-        # optional dependency on `self.encryption[_keyfile]` from EncryptionServer:
-        encryption = getattr(self, "encryption", "")
-        encryption_keyfile = getattr(self, "encryption_keyfile", "")
-        ss.set_printers(printers, password_file, auth_class, encryption, encryption_keyfile)
+        ss.set_printers(printers, password_file, auth_class)
 
     def init_packet_handlers(self) -> None:
         # noqa: E241

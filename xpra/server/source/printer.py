@@ -82,10 +82,8 @@ class PrinterConnection(FileTransferHandler, StubClientConnection):
 
     ######################################################################
     # printing:
-    def set_printers(self, printers: dict, password_file: Sequence[str], auth_defs: Sequence[AuthDef],
-                     encryption: str, encryption_keyfile: str) -> None:
-        log("set_printers%s for %s",
-            (printers, password_file, auth_defs, encryption, encryption_keyfile), self)
+    def set_printers(self, printers: dict, password_file: Sequence[str], auth_defs: Sequence[AuthDef]) -> None:
+        log("set_printers%s for %s", (printers, password_file, auth_defs), self)
         if self.machine_id == get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
             log("local client with identical machine id,")
@@ -122,13 +120,6 @@ class PrinterConnection(FileTransferHandler, StubClientConnection):
         auth_password_file = find_auth_password_file(auth_defs) if auth_defs else ""
         if auth_password_file or password_file:
             attributes["password-file"] = makeabs(auth_password_file or password_file[0])
-        if encryption:
-            if not encryption_keyfile:
-                log.error("Error: no encryption keyfile found for printing")
-                log.error(f" but encryption is set to {encryption!r}")
-            else:
-                attributes["encryption"] = encryption
-                attributes["encryption-keyfile"] = makeabs(encryption_keyfile)
         # if we can, tell it exactly where to connect:
         if self.unix_socket_paths:
             # prefer sockets in public paths:
