@@ -7,6 +7,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import get_machine_id
@@ -45,7 +46,9 @@ class PrinterConnection(FileTransferHandler, StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("printing")
+        if BACKWARDS_COMPATIBLE and caps.boolget("printing"):
+            return True
+        return bool(caps.dictget("printer"))
 
     def init_state(self) -> None:
         self.printers: dict[str, dict] = {}
