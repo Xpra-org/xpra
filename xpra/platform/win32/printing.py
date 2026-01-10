@@ -7,8 +7,9 @@ import os
 import sys
 import subprocess
 from typing import Any
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
+from xpra.common import noop
 from xpra.platform.win32 import constants as win32con
 from xpra.util.objects import reverse_dict
 from xpra.util.str_fn import csv, bytestostr
@@ -74,10 +75,10 @@ log("PRINTER_ENUMS=%s", PRINTER_ENUMS)
 JOB_ID = 0
 PROCESSES = {}
 
-printers_modified_callback: Callable | None = None
+printers_modified_callback = noop
 
 
-def init_printing(callback=None):
+def init_printing(callback=noop):
     global printers_modified_callback
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
@@ -98,7 +99,7 @@ def on_devmodechange(wParam, lParam) -> None:
     # from ctypes import c_wchar_p
     # name = c_wchar_p(lParam)
     # log("device changed: %s", name)
-    if lParam > 0 and printers_modified_callback:
+    if lParam > 0:
         printers_modified_callback()
 
 
