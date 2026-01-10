@@ -142,7 +142,7 @@ class PrinterServer(StubServerMixin):
         self.file_transfer.printing = printing
         log("init_printing() printing=%s", printing)
 
-    def _process_print(self, _proto, packet: Packet) -> None:
+    def _process_print_file(self, _proto, packet: Packet) -> None:
         # ie: from the xpraforwarder we call this command:
         # command = ["xpra", "print", "socket:/path/tosocket",
         #           filename, mimetype, source, title, printer, no_copies, print_options]
@@ -225,7 +225,7 @@ class PrinterServer(StubServerMixin):
         unit_str, v = to_std_unit(len(file_data), unit=1024)
         log_fn("'%s' (%i%sB) sent to %i clients for printing", title or filename, v, unit_str, sent)
 
-    def _process_printers(self, proto, packet: Packet) -> None:
+    def _process_print_devices(self, proto, packet: Packet) -> None:
         if not self.file_transfer.printing or WIN32:
             log.error("Error: received printer definitions data")
             log.error(" but this server does not support printer forwarding")
