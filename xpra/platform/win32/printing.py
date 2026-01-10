@@ -237,5 +237,7 @@ def printing_finished(jobid: int) -> bool:
     log("win32.printing_finished(%s) processes: %s", jobid, [x.print_filename for x in processes])
     pending = [proc.print_filename for proc in processes if proc.poll() is None]
     log("win32.printing_finished(%s) still pending: %s", jobid, pending)
-    # return finished when all the processes have terminated
-    return len(pending) == 0
+    if not pending:
+        PROCESSES.pop(jobid)
+        return True
+    return False
