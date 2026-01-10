@@ -28,6 +28,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.file:
         from xpra.server.subsystem.file import FileServer
         classes.append(FileServer)
+    if features.printer:
+        from xpra.server.subsystem.printer import PrinterServer
+        classes.append(PrinterServer)
     if features.mmap:
         from xpra.server.subsystem.mmap import MMAP_Server
         classes.append(MMAP_Server)

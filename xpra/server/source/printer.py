@@ -45,7 +45,7 @@ class PrinterConnection(FileTransferHandler, StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("printing")
+        return caps.boolget("printing") or bool(caps.dictget("printer"))
 
     def init_state(self) -> None:
         self.printers: dict[str, dict] = {}

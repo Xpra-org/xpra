@@ -66,7 +66,8 @@ class PrinterServer(StubServerMixin):
 
     def setup(self) -> None:
         # verify we have a local socket for printing:
-        unixsockets = [info for socktype, _, info, _ in self._socket_info if socktype == "socket"]
+        sockets = getattr(self, "sockets", ())
+        unixsockets = [sock.address for sock in sockets if sock.socktype == "socket"]
         log("local unix domain sockets we can use for printing: %s", unixsockets)
         if not unixsockets and self.file_transfer.printing:
             if not WIN32:
@@ -237,7 +238,10 @@ class PrinterServer(StubServerMixin):
         auth_class: Sequence[AuthDef] = self.auth_classes.get("socket", ())
         # optional dependency on `self.password_file` from AuthServer:
         password_file: Sequence[str] = getattr(self, "password_file", ())
-        ss.set_printers(printers, password_file, auth_class, self.encryption, self.encryption_keyfile)
+        # optional dependency on `self.encryption[_keyfile]` from EncryptionServer:
+        encryption = getattr(self, "encryption", "")
+        encryption_keyfile = getattr(self, "encryption_keyfile", "")
+        ss.set_printers(printers, password_file, auth_class, encryption, encryption_keyfile)
 
     def init_packet_handlers(self) -> None:
         # noqa: E241
