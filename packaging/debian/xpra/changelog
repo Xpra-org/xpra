@@ -10,6 +10,7 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     warnings when `named-pipe`s are the only local sockets available
     shadow server info errors
   * Major:
+    printer cannot be enabled
     virtual monitor geometry synchronization
     broken Gtk Wayland clipboard
     `exit-ssh` option was getting lost
@@ -18,6 +19,7 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     Wayland client crash loading X11 bindings
     ibus deamonizer fails with non-default interpreter
     proxy server startup is incomplete
+    missing audio on remote ssh start
   * Keyboard:
     secondary connections cannot use keyboard when sharing
     default keyboard configuration should have default modifier mappings
@@ -38,6 +40,8 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     window size changed mis-detection
     missing packet handlers
     make locating the interpreter more resilient
+    `exec` auth can use http headers
+    client can specify username using environment variable
   * Cosmetic:
     splash screen warnings
     misplaced packet handler registration
@@ -54,8 +58,10 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     overwritten cursor attributes
     always log full failure details at debug level
     printing debug logging is incorrect
+    debug logging record misformed
+    invalid type hint
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 07 Jan 2026 23:00:04 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun  11 Jan 2026 15:44:42 +0700
 
 xpra (6.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

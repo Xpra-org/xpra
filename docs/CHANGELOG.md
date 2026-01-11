@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.4.1] 2026-01-07
+## [6.4.1] 2026-01-11
 * Platforms, build and packaging:
   * [cython 3.2.4](https://github.com/Xpra-org/xpra/commit/26b56e80a2f739a858467d476d7c0598c488fe26)
   * [AMF headers include path](https://github.com/Xpra-org/xpra/commit/0019e6483ec1f2422548d057a1983b3e4f10f362)
@@ -12,6 +12,7 @@
   * [warnings when `named-pipe`s are the only local sockets available](https://github.com/Xpra-org/xpra/commit/3e5e385ce0a95b4999aec5ae43135ef5aaf66730)
   * [shadow server info errors](https://github.com/Xpra-org/xpra/commit/18c6173818a63cc5c11ba9cc3c1e21a0f26b4d9d)
 * Major:
+  * [printer cannot be enabled](https://github.com/Xpra-org/xpra/commit/31e11e1dfd865fb08f6bc6efbd6f1362b4e9ccbe)
   * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/390af2f04be8ce871c0dbe4a5a04290e496f34b2)
   * [broken Gtk Wayland clipboard](https://github.com/Xpra-org/xpra/commit/6fd2cd83ad2f69159287f6549032b30f3feb4696)
   * [`exit-ssh` option was getting lost](https://github.com/Xpra-org/xpra/commit/8c7c57cecf4227c085c19403bcc92a36abb2e3ba)
@@ -20,6 +21,7 @@
   * [Wayland client crash loading X11 bindings](https://github.com/Xpra-org/xpra/commit/de170654769a7ae3590fda83d04d2dbfd6bfe229)
   * [ibus deamonizer fails with non-default interpreter](https://github.com/Xpra-org/xpra/commit/e13b1594d83d04293cd98889cf00014d62cbce46) + [fixup](https://github.com/Xpra-org/xpra/commit/7ba7e1721db86b4f01591a5c4c8cb7bdcdb935fb)
   * [proxy server startup is incomplete](https://github.com/Xpra-org/xpra/commit/7335bc082d62cf4fa967bb1f34f51900f14af9bd)
+  * [missing audio on remote ssh start](https://github.com/Xpra-org/xpra/commit/73a101ceb2a4a291ce2bf55b8d2835cf2cf4bb93) + [update unit tests](https://github.com/Xpra-org/xpra/commit/fe1bc586087cd647bddd31c04772db38dc4fd359)
 * Keyboard:
   * [secondary connections cannot use keyboard when sharing](https://github.com/Xpra-org/xpra/commit/ae984a1392baaf015282f924cf08ec426d2df6f8)
   * [default keyboard configuration should have default modifier mappings](https://github.com/Xpra-org/xpra/commit/7da9c0c741e4147baacfb2f71c74bc774b2bdd5a)
@@ -40,6 +42,8 @@
   * [window size changed mis-detection](https://github.com/Xpra-org/xpra/commit/da764b78a93acf48798328156636b70d49878f11)
   * [missing packet handlers](https://github.com/Xpra-org/xpra/commit/e8af2fcbc5c70b4bb32a82f63bd61698116b1086)
   * [make locating the interpreter more resilient](https://github.com/Xpra-org/xpra/commit/764b766aeb3b0d18abd8789b79b15ebca611392f) + [fixup](https://github.com/Xpra-org/xpra/commit/85d381f25da1230fdf0d44a640272861fb938986)
+  * [`exec` auth can use http headers](https://github.com/Xpra-org/xpra/commit/95126a8cbf94e1f8ac244757af3d32f6474dc9f6) + [fixup](https://github.com/Xpra-org/xpra/commit/86430e509025afc55312785499863d7171603ae1)
+  * [client can specify username using environment variable](https://github.com/Xpra-org/xpra/commit/7dce16159f807ab0536475ae9e142283caa143c1)
 * Cosmetic:
   * [splash screen warnings](https://github.com/Xpra-org/xpra/commit/cf5d4b5e7028f077b01b05709b80e5e0ef46e7d6)
   * [misplaced packet handler registration](https://github.com/Xpra-org/xpra/commit/eb46e79ff0cae2e9c57e612a4b4c66d8b7576a8c)
@@ -56,6 +60,8 @@
   * [overwritten cursor attributes](https://github.com/Xpra-org/xpra/commit/3d8a8633d3b48c411d36bb5efe5c33fe1f7459d1)
   * [always log full failure details at debug level](https://github.com/Xpra-org/xpra/commit/f0c1761ec32eed72f943dbaf15e89fcf05ba2654)
   * [printing debug logging is incorrect](https://github.com/Xpra-org/xpra/commit/84578e8ef78f87939f4ba1b0a1eebcb7804ebfde)
+  * [debug logging record misformed](https://github.com/Xpra-org/xpra/commit/b9dbaeff7e5751a327554a3e8517ea0dfb983a84)
+  * [invalid type hint](https://github.com/Xpra-org/xpra/commit/468dc6a2595bdb8435d29462f5228f780a85f160)
 
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:

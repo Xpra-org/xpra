@@ -1084,7 +1084,7 @@ fi
 
 
 %changelog
-* Wed Jan 07 2026 Antoine Martin <antoine@xpra.org> 6.4.1-10
+* Sun Jan 11 2026 Antoine Martin <antoine@xpra.org> 6.4.1-10
 - Platforms, build and packaging:
    cython 3.2.4
    AMF headers include path
@@ -1096,6 +1096,7 @@ fi
    warnings when `named-pipe`s are the only local sockets available
    shadow server info errors
 - Major:
+   printer cannot be enabled
    virtual monitor geometry synchronization
    broken Gtk Wayland clipboard
    `exit-ssh` option was getting lost
@@ -1104,6 +1105,7 @@ fi
    Wayland client crash loading X11 bindings
    ibus deamonizer fails with non-default interpreter
    proxy server startup is incomplete
+   missing audio on remote ssh start
 - Keyboard:
    secondary connections cannot use keyboard when sharing
    default keyboard configuration should have default modifier mappings
@@ -1124,6 +1126,8 @@ fi
    window size changed mis-detection
    missing packet handlers
    make locating the interpreter more resilient
+   `exec` auth can use http headers
+   client can specify username using environment variable
 - Cosmetic:
    splash screen warnings
    misplaced packet handler registration
@@ -1140,6 +1144,8 @@ fi
    overwritten cursor attributes
    always log full failure details at debug level
    printing debug logging is incorrect
+   debug logging record misformed
+   invalid type hint
 
 * Sun Sep 14 2025 Antoine Martin <antoine@xpra.org> 6.4-10
 - Platforms, build and packaging:
