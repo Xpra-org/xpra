@@ -2010,7 +2010,7 @@ if WIN32:
             add_exe(script, icon, base_name)
 
         def add_gui_exe(script, icon, base_name) -> None:
-            add_exe(script, icon, base_name, base="Win32GUI")
+            add_exe(script, icon, base_name, base="gui")
 
         def add_service_exe(script, icon, base_name) -> None:
             add_exe(script, icon, base_name, base="Win32Service")
