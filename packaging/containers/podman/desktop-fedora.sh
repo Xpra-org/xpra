@@ -25,7 +25,7 @@ TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video}"
 TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
 TIMEZONE="${TIMEZONE:-Europe/London}"
-DESKTOP="${DESKTOP:-winbar}"
+DESKTOP="${DESKTOP:-lxde}"
 # LANG="${LANG:-C}"
 
 run () {
@@ -80,14 +80,7 @@ else
   install $APPS
 
   # install desktop environment last,
-  # so we can find the applications installed when creating the cache (winbar does)
-  if [ "${DESKTOP}" == "winbar" ] || [ "${DESKTOP}" == "all" ]; then
-    install winbar
-    # configure winbar:
-    buildah run $CONTAINER setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
-    buildah copy $CONTAINER "../fs/winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
-    buildah run $CONTAINER winbar --create-cache
-  elif [ "${DESKTOP}" == "xfce" ] || [ "${DESKTOP}" == "all" ]; then
+  if [ "${DESKTOP}" == "xfce" ] || [ "${DESKTOP}" == "all" ]; then
     install @xfce-desktop-environment
   elif [ "${DESKTOP}" == "lxde" ] || [ "${DESKTOP}" == "all" ]; then
     install @lxde-desktop
@@ -115,12 +108,10 @@ else
   run usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
   run sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
   run chown -R "${TARGET_UID}:${TARGET_GID}" "/home/${TARGET_USER}"
-  run sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env mkdir -p .config/winbar Documents Downloads Music Pictures Videos Network"
+  run sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env mkdir -p Documents Downloads Music Pictures Videos Network"
 fi
 
-if [ "${DESKTOP}" == "winbar" ] || [ "${DESKTOP}" == "all" ]; then
-  DE_COMMAND="winbar"
-elif [ "${DESKTOP}" == "xfce" ]; then
+if [ "${DESKTOP}" == "xfce" ]; then
   DE_COMMAND="xfce4-session"
 elif [ "${DESKTOP}" == "lxde" ]; then
   DE_COMMAND="lxsession"

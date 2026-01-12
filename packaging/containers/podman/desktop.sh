@@ -27,7 +27,7 @@ TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video}"
 TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
 TIMEZONE="${TIMEZONE:-Europe/London}"
-DESKTOP="${DESKTOP:-winbar}"
+DESKTOP="${DESKTOP:-lxde}"
 # LANG="${LANG:-C}"
 
 run () {
@@ -92,14 +92,7 @@ else
   install $APPS
 
   # install desktop environment last,
-  # so we can find the applications installed when creating the cache (winbar does)
-  if [ "${DESKTOP}" == "winbar" ] || [ "${DESKTOP}" == "all" ]; then
-    install winbar
-    # configure winbar:
-    run setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
-    copy "../fs/winbar/settings.conf" "../fs/winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
-    run winbar --create-cache
-  fi
+  # so we can find the applications installed when creating the cache
   if [ "${DESKTOP}" == "xfce4" ] || [ "${DESKTOP}" == "all" ]; then
     install xfce4
   fi
@@ -139,7 +132,7 @@ else
   run usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
   run sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
   run chown -R "${TARGET_UID}:${TARGET_GID}" "/home/${TARGET_USER}"
-  run sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env mkdir -p .config/winbar Documents Downloads Music Pictures Videos Network"
+  run sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env mkdir -p Documents Downloads Music Pictures Videos Network"
 fi
 
 
@@ -160,9 +153,7 @@ fi
 # known issues:
 # * xfce4-panel keeps moving!
 
-if [ "${DESKTOP}" == "winbar" ] || [ "${DESKTOP}" == "all" ]; then
-  DE_COMMAND="winbar"
-elif [ "${DESKTOP}" == "xfce4" ]; then
+if [ "${DESKTOP}" == "xfce4" ]; then
   echo "${DESKTOP} known issue: panel keeps moving"
 elif [ "${DESKTOP}" == "deepin" ]; then
   DE_COMMAND="deepin-menu"    # no session manager in Ubuntu?

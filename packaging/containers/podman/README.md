@@ -63,7 +63,7 @@ AUDIO=0 CODECS=0 ./xvfb.sh
 
 ## [desktop](./desktop.sh)
 
-This container runs a lightweight desktop environment based on [`winbar`](https://github.com/jmanc3/winbar).  \
+This container runs a lightweight desktop environment based on `LXDE`.  \
 The default image configuration is based on [Ubuntu Plucky](https://releases.ubuntu.com/plucky/),
 but other Debian and Ubuntu releases can also be used.
 
