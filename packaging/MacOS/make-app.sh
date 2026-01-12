@@ -178,7 +178,7 @@ echo
 echo "*******************************************************************************"
 echo "modifying Info.plist files with:"
 echo " VERSION=\"${VERSION}\" REVISION=\"${REVISION}${REV_MOD}\""
-echo " BUILDNO=\"${BUILDNO}\" ARCH=\"{$ARCH}\""
+echo " BUILDNO=\"${BUILDNO}\" ARCH=\"${$ARCH}\""
 for plist in "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist"; do
   echo "modifying $plist"
   git checkout $plist
