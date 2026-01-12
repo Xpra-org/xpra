@@ -25,6 +25,9 @@ DEFAULT_START_ENV = (
     "MWWM=allwm",
     "#force GTK3 applications to use X11 so we can intercept them:",
     "GDK_BACKEND=x11",
+    "#tell GTK4 applications to use the software Gsk renderer to avoid freezes and crashes:",
+    "#(if using a real GPU, you may want to switch to `vulkan` or `opengl` instead)",
+    "GSK_RENDERER=cairo",
     "#force Qt applications to use X11 so we can intercept them:",
     "QT_QPA_PLATFORM=xcb",
     "#disable Qt scaling:"
