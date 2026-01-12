@@ -250,8 +250,7 @@ class UIXpraClient(ClientBaseClass):
     # connection setup:
     def setup_connection(self, conn) -> None:
         for c in CLIENT_BASES:
-            if c != XpraClientBase:
-                c.setup_connection(self, conn)
+            c.setup_connection(self, conn)
 
     def server_connection_established(self, caps: typedict) -> bool:
         if not XpraClientBase.server_connection_established(self, caps):
