@@ -28,6 +28,9 @@ DEFAULT_START_ENV = (
     "#tell GTK4 applications to use the software Gsk renderer to avoid freezes and crashes:",
     "#(if using a real GPU, you may want to switch to `vulkan` or `opengl` instead)",
     "GSK_RENDERER=cairo",
+    "#GTK seems to default to using AT-SPI and atk-bridge, which triggers warnings:",
+    "#(see issue #2318)",
+    "GTK_A11Y=none",
     "#force Qt applications to use X11 so we can intercept them:",
     "QT_QPA_PLATFORM=xcb",
     "#disable Qt scaling:"
