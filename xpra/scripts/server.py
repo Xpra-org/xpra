@@ -729,8 +729,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         opts.forward_xdg_open = mode == "seamless"
 
     if not proxying and not shadowing and POSIX and not OSX:
-        if opts.backend.lower() not in ("auto", "gtk", "x11", "wayland"):
-            raise InitExit(ExitCode.UNSUPPORTED, f"{mode!r} requires the 'x11' backend, not {opts.backend!r}")
+        SERVER_BACKENDS = ("auto", "gtk", "x11", "wayland")
+        if opts.backend.lower() not in SERVER_BACKENDS:
+            raise InitExit(ExitCode.UNSUPPORTED, f"{mode!r} does not support the {opts.backend!r} backend, only %s", csv(SERVER_BACKENDS))
         if opts.backend.lower() in ("auto", "gtk"):
             os.environ["GDK_BACKEND"] = "x11"
 
