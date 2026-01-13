@@ -1,8 +1,10 @@
 # Changelog
 
-## [5.1.5] 2026-01-09
+## [5.1.5] 2026-01-13
 * Platforms, build and packaging:
     * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
+    * [Python compatibility regression](https://github.com/Xpra-org/xpra/commit/1282fa77ee948c459e69538095a96d08310e18d7)
+    * [log $ARCH in MacOS builds](https://github.com/Xpra-org/xpra/commit/125520531b748580cd5b8e6507ae72f6564a52a9)
 * MS Windows:
     * [client errors on control-c](https://github.com/Xpra-org/xpra/commit/c0d8374cc2edf60b3b3963a7bdfcef6cc2cd45ac)
     * [packaging fix for python-pillow](https://github.com/Xpra-org/xpra/commit/1ac190a1dd5c733e336eef7d4dbcc3afef5710f0)

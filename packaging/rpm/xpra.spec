@@ -816,9 +816,11 @@ fi
 
 
 %changelog
-* Fri Jan 09 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
+* Tue Jan 13 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install
+   Python compatibility regression
+   log $ARCH in MacOS builds
 - MS Windows:
    client errors on control-c
    packaging fix for python-pillow
@@ -830,11 +832,12 @@ fi
    don't send empty modifier strings
    default keyboard configuration should have default modifier mappings
    help clients figure out modifier mappings
-- Major:
-   virtual monitor geometry synchronization
 - Minor:
    spurious UI thread events on client startup
    expose `desktop` flag for desktop windows
+- Cosmetic:
+   more useful message
+   log exception if that's all we have
 
 * Thu Dec 04 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
 - Platforms, build and packaging:

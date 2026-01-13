@@ -1,6 +1,8 @@
 xpra (5.1.5-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     Ubuntu Noble and earlier fails to install
+    Python compatibility regression
+    log $ARCH in MacOS builds
   * MS Windows:
     client errors on control-c
     packaging fix for python-pillow
@@ -12,13 +14,14 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     don't send empty modifier strings
     default keyboard configuration should have default modifier mappings
     help clients figure out modifier mappings
-  * Major:
-    virtual monitor geometry synchronization
   * Minor:
     spurious UI thread events on client startup
     expose `desktop` flag for desktop windows
+  * Cosmetic:
+    more useful message
+    log exception if that's all we have
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 09 Jan 2026 21:31:44 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 13 Jan 2026 15:41:53 +0700
 
 xpra (5.1.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
