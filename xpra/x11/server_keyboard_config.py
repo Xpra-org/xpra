@@ -49,7 +49,7 @@ ALL_X11_MODIFIERS : Dict[str,int] = {
                     "mod5"      : 7
                     }
 
-def get_levels(mode: bool, shift: bool, group: bool) -> list[int]:
+def get_levels(mode: bool, shift: bool, group: bool):
     levels: list[int] = []
 
     # try both boolean options, current one first:
