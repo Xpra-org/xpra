@@ -762,7 +762,8 @@ class AuthenticationManager:
         for keyfile_path in self.keyfiles:
             key = load_private_key(keyfile_path)
             if not key:
-                log.error(f"Error: cannot load private key {keyfile_path!r}")
+                if os.path.exists(keyfile_path):
+                    log.error(f"Error: cannot load private key {keyfile_path!r}")
                 continue
             log(f"auth_publickey using {keyfile_path!r}: {keymd5(key)}")
             try:

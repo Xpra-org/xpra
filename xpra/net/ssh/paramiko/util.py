@@ -60,10 +60,11 @@ def get_key_fingerprints(keyfiles: Sequence[str]) -> list[str]:
             if fingerprint:
                 allowed_key_fingerprints.append(fingerprint)
         except (ValueError, OSError) as e:
-            log(f"failed to load agent key fingerprint from {keyfile!r}: {e}")
-            failed[keyfile] = str(e)
+            if os.path.exists(keyfile):
+                log(f"failed to load agent key fingerprint from {keyfile!r}: {e}")
+                failed[keyfile] = str(e)
     if failed:
-        log.info("unable to load key fingerprints for %s", csv(failed.keys()))
+        log.info("unable to load key fingerprints for %s", csv(repr(keyfile) for keyfile in failed.keys()))
     return allowed_key_fingerprints
 
 
