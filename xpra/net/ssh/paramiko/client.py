@@ -30,7 +30,7 @@ from xpra.log import Logger
 
 log = Logger("network", "ssh")
 
-from paramiko.ssh_exception import SSHException, ProxyCommandFailure  # noqa: E402
+from paramiko.ssh_exception import SSHException, BadAuthenticationType, ProxyCommandFailure  # noqa: E402
 from paramiko.transport import Transport  # noqa: E402
 from paramiko import SSHConfig  # noqa: E402
 
@@ -45,6 +45,7 @@ NONE_AUTH = envbool("XPRA_SSH_NONE_AUTH", True)
 PASSWORD_AUTH = envbool("XPRA_SSH_PASSWORD_AUTH", True)
 AGENT_AUTH = envbool("XPRA_SSH_AGENT_AUTH", True)
 KEY_AUTH = envbool("XPRA_SSH_KEY_AUTH", True)
+FILTER_AUTH = envbool("XPRA_SSH_FILTER_AUTH", True)
 PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 SSH_AGENT = envbool("XPRA_SSH_AGENT", False)
 BANNER = envbool("XPRA_SSH_BANNER", True)
@@ -64,7 +65,7 @@ PARAMIKO_SESSION_LOST = "No existing session"
 
 WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
 
-AUTH_MODES: Sequence[str] = os.environ.get("XPRA_PARAMIKO_AUTH_MODES", "none,agent,key,password").split(",")
+AUTH_MODES: Sequence[str] = os.environ.get("XPRA_PARAMIKO_AUTH_MODES", "none,agent,publickey,password").split(",")
 
 if BANNER:
     from paramiko import auth_handler
@@ -370,10 +371,10 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             pw_errors = []
             for errs in e.errors.values():
                 pw_errors += errs
-            if ("key" in auth_modes or "agent" in auth_modes) and PARAMIKO_SESSION_LOST in pw_errors:
+            if ("publickey" in auth_modes or "agent" in auth_modes) and PARAMIKO_SESSION_LOST in pw_errors:
                 # try connecting again but without 'key' and 'agent' authentication:
                 # see https://github.com/Xpra-org/xpra/issues/3223
-                for m in ("key", "agent"):
+                for m in ("publickey", "agent"):
                     try:
                         auth_modes.remove(m)
                     except KeyError:
@@ -429,7 +430,7 @@ def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[st
         auth.append("agent")
     # Some people do two-factor using KEY_AUTH to kick things off, so this happens first
     if configbool("keyauthentication", KEY_AUTH):
-        auth.append("key")
+        auth.append("publickey")
     if not identitiesonly and not password and configbool("passwordauthentication", PASSWORD_AUTH):
         auth.append("password")
     return auth
@@ -619,7 +620,8 @@ def save_host_key(host_keys, host_keys_filename: str) -> None:
 class AuthenticationManager:
     def __init__(self, transport, host: str, port: int, username: str, password: str,
                  host_config, keyfiles: Sequence[str], paramiko_config: dict, auth_modes=AUTH_MODES):
-        log("AuthenticationManager%s", (transport, host, username, "..", host_config, keyfiles, paramiko_config))
+        log("AuthenticationManager%s",
+            (transport, host, username, "..", host_config, keyfiles, paramiko_config, auth_modes))
         self.transport = transport
         self.host = host
         self.port = port
@@ -628,7 +630,8 @@ class AuthenticationManager:
         self.host_config = host_config
         self.keyfiles = keyfiles
         self.paramiko_config = paramiko_config
-        self.auth_modes = auth_modes
+        self.auth_modes = tuple(auth_modes)
+        self.valid_auth_modes = list(auth_modes)
         self.auth_errors: dict[str, list[str]] = {}
 
     def configvalue(self, key: str) -> Any:
@@ -675,18 +678,17 @@ class AuthenticationManager:
             for x in banner.splitlines():
                 log.info(f" {x}")
 
-        log(f"starting authentication, authentication methods: {self.auth_modes}")
-        auth = list(self.auth_modes)
+        log(f"starting authentication, authentication methods: {self.valid_auth_modes}")
         # per the RFC we probably should do none first always and read off the supported
         # methods, however, the current code seems to work fine with OpenSSH
-        while not self.transport.is_authenticated() and auth:
-            a = auth.pop(0)
+        while not self.transport.is_authenticated() and self.valid_auth_modes:
+            a = self.valid_auth_modes.pop(0)
             log("auth=%s", a)
             if a == "none":
                 self.auth_none()
             elif a == "agent":
                 self.auth_agent()
-            elif a == "key":
+            elif a == "publickey":
                 self.auth_publickey()
             elif a == "password":
                 self.auth_password()
@@ -703,13 +705,38 @@ class AuthenticationManager:
             log(f"authentication errors: {self.auth_errors}")
             raise SSHAuthenticationError(self.host, self.auth_errors)
 
+    def _check_allowed_types(self, failed_mode: str, exception) -> bool:
+        if isinstance(exception, BadAuthenticationType):
+            allowed_types = getattr(exception, "allowed_types", [])
+            log("allowed types=%s", csv(allowed_types))
+            if allowed_types and FILTER_AUTH:
+                def is_allowed(mode: str) -> bool:
+                    if mode in allowed_types:
+                        return True
+                    if mode == "agent":
+                        return any(am.startswith("gssapi-") for am in allowed_types)
+                    return False
+                allowed = list(filter(is_allowed, self.valid_auth_modes))
+                log("filtered allowed types=%s from %s", allowed, self.valid_auth_modes)
+                if allowed != self.valid_auth_modes:
+                    log.info("server supports authentication modes: %s", csv(allowed))
+                    self.valid_auth_modes = allowed
+            if failed_mode not in self.valid_auth_modes:
+                # no need to record it
+                return False
+            err = "allowed types: %s" % csv(allowed_types)
+        else:
+            log("%r authentication failed", failed_mode, exc_info=True)
+            err = str(exception)
+        self.auth_errors.setdefault(failed_mode, []).append(err)
+        return True
+
     def auth_none(self) -> None:
         log("trying none authentication")
         try:
             self.transport.auth_none(self.username)
         except SSHException as e:
-            self.auth_errors.setdefault("none", []).append(str(e))
-            log("auth_none()", exc_info=True)
+            self._check_allowed_types("none", e)
 
     def auth_agent(self) -> None:
         from paramiko.agent import Agent
@@ -730,7 +757,7 @@ class AuthenticationManager:
                     log.warn("Warning: failed to compare agent keys")
                     agent_keys.append(agent_key)
         if not agent_keys:
-            log.info("no ssh agent keys")
+            log.info("no ssh agent keys found")
             return
         tried = 0
         for agent_key in agent_keys:
@@ -748,12 +775,12 @@ class AuthenticationManager:
                 log.warn(f" {type(e)}: {e}")
                 log.warn(f" using key {type(agent_key)}: {agent_key}")
             except SSHException as e:
-                self.auth_errors.setdefault("agent", []).append(str(e))
-                log.info("SSH agent key '%s' rejected for user '%s'", keymd5(agent_key), self.username)
-                log("%s%s", self.transport.auth_publickey, (self.username, agent_key), exc_info=True)
-                if str(e) == PARAMIKO_SESSION_LOST:
-                    # no point in trying more keys
-                    break
+                if self._check_allowed_types("agent", e):
+                    log.info("SSH agent key '%s' rejected for user '%s'", keymd5(agent_key), self.username)
+                    log("%s%s", self.transport.auth_publickey, (self.username, agent_key), exc_info=True)
+                    if str(e) == PARAMIKO_SESSION_LOST:
+                        # no point in trying more keys
+                        break
         if not self.transport.is_authenticated():
             log.info("agent authentication failed, tried %i keys", tried)
 
@@ -771,13 +798,13 @@ class AuthenticationManager:
                 if self.transport.is_authenticated():
                     return
             except SSHException as e:
-                self.auth_errors.setdefault("key", []).append(str(e))
-                log(f"key {keyfile_path!r} rejected", exc_info=True)
-                log.info(f"SSH authentication using key {keyfile_path!r} failed:")
-                log.info(f" {e}")
-                if str(e) == PARAMIKO_SESSION_LOST:
-                    # no point in trying more keys
-                    return
+                if self._check_allowed_types("publickey", e):
+                    log(f"key {keyfile_path!r} rejected", exc_info=True)
+                    log.info(f"SSH authentication using key {keyfile_path!r} failed:")
+                    log.info(f" {e}")
+                    if str(e) == PARAMIKO_SESSION_LOST:
+                        # no point in trying more keys
+                        return
 
     def auth_password(self) -> None:
         self.auth_interactive()
@@ -796,15 +823,14 @@ class AuthenticationManager:
 
     def do_auth_password(self, password: str) -> None:
         log("trying password authentication")
+        emsgs = []
         try:
             self.transport.auth_password(self.username, password)
         except SSHException as authe:
-            estr = getattr(authe, "message", str(authe))
-            self.auth_errors.setdefault("password", []).append(estr)
-            log("do_auth_password(..)", exc_info=True)
-            emsgs = estr.split(";")
-        else:
-            emsgs = []
+            if self._check_allowed_types("password", authe):
+                estr = getattr(authe, "message", str(authe))
+                log("do_auth_password(..)", exc_info=True)
+                emsgs = estr.split(";")
         if not self.transport.is_authenticated():
             log.info("SSH password authentication failed:")
             for emsg in emsgs:
@@ -818,12 +844,12 @@ class AuthenticationManager:
             iauthhandler = IAuthHandler(self.password)
             self.transport.auth_interactive(self.username, iauthhandler.handle_request, "")
         except SSHException as authe:
-            estr = getattr(authe, "message", str(authe))
-            self.auth_errors.setdefault("interactive", []).append(estr)
-            log("auth_interactive(..)", exc_info=True)
-            log.info("SSH password authentication failed:")
-            for emsg in getattr(authe, "message", estr).split(";"):
-                log.info(f" {emsg}")
+            if self._check_allowed_types("interactive", authe):
+                estr = getattr(authe, "message", str(authe))
+                log("auth_interactive(..)", exc_info=True)
+                log.info("SSH password authentication failed:")
+                for emsg in getattr(authe, "message", estr).split(";"):
+                    log.info(f" {emsg}")
 
 
 class SSHAuthenticationError(InitExit):
