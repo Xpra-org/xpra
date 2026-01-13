@@ -589,7 +589,7 @@ class Logger:
         self.log(logging.ERROR, msg, *args, **kwargs)
 
     def estr(self, e, **kwargs) -> None:
-        einfo = str(e) or type(e)
+        einfo = str(e).strip() or type(e)
         self.error(f" {einfo}", **kwargs)
 
     def handle(self, record) -> None:
