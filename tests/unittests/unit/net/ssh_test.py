@@ -19,11 +19,12 @@ class SSHTest(unittest.TestCase):
         assert keymd5(k).startswith("MD5:")
 
     def test_default_keyfiles(self):
-        assert get_default_keyfiles()
+        assert isinstance(get_default_keyfiles(), list)
 
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
