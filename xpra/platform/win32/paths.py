@@ -135,8 +135,8 @@ def do_get_ssh_conf_dirs() -> List[str]:
         dirs.append(d)
     dirs += do_get_default_conf_dirs()+[
         openssh_dir,        #ie: C:\Windows\system32\OpenSSH
-        "~/.ssh",
         "~/ssh",
+        "~/.ssh",
         ]
     return dirs
 
