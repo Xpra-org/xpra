@@ -26,7 +26,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         # used for delaying the sending of keymap changes
         # (as we may be getting dozens of such events at a time)
         self._keymap_changing = False
-        self._keymap_change_handler_id = None
+        self._keymap_change_handler_id = 0
         self._keymap = get_default_keymap()
         self.update()
         if self._keymap:
@@ -93,7 +93,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         if self._keymap_change_handler_id:
             try:
                 self._keymap.disconnect(self._keymap_change_handler_id)
-                self._keymap_change_handler_id = None
+                self._keymap_change_handler_id = 0
             except Exception as e:
                 log.warn("failed to disconnect keymap change handler: %s", e)
 
