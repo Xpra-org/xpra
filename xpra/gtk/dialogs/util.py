@@ -26,10 +26,9 @@ def do_run_dialog(dialog: Gtk.Dialog) -> int:
 
 
 def dialog_run(run_fn: Callable) -> str | int:
-    log("dialog_run(%s) is_main_thread=%s, main_level=%i", run_fn, is_main_thread(), Gtk.main_level())
-    if is_main_thread() or Gtk.main_level() == 0:
+    log("dialog_run(%s) is_main_thread=%s, main_depth=%i", run_fn, is_main_thread(), GLib.main_depth())
+    if is_main_thread():
         return run_fn()
-    log("dialog_run(%s) main_depth=%s", run_fn, GLib.main_depth())
     # do a little dance if we're not running in the main thread:
     # block this thread and wait for the main thread to run the dialog
     from threading import Event
