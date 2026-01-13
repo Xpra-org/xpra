@@ -9,10 +9,16 @@ from xpra.util.env import osexpand, envbool
 
 
 LOG_EOF = envbool("XPRA_SSH_LOG_EOF", True)
+KEY_FORMATS = os.environ.get("XPRA_SSH_KEY_FORMATS", "ed25519,ecdsa,rsa,dsa").split(",")
 
 
 def get_default_keyfiles() -> list[str]:
     dkf = os.environ.get("XPRA_SSH_DEFAULT_KEYFILES", None)
     if dkf is not None:
         return [x for x in dkf.split(os.pathsep) if x]
-    return [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_ed25519", "id_ecdsa", "id_rsa", "id_dsa")]
+    from xpra.platform.paths import get_ssh_conf_dirs
+    for conf_dir in get_ssh_conf_dirs():
+        keydir = osexpand(conf_dir)
+        if os.path.exists(keydir) and os.path.isdir(keydir):
+            return [os.path.join(keydir, f"id_{fmt}") for fmt in KEY_FORMATS]
+    return []
