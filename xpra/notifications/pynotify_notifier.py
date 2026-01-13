@@ -8,6 +8,7 @@ import sys
 from typing import Dict, Any
 import notify2                 #@UnresolvedImport
 
+from xpra.common import noop
 from xpra.notifications.notifier_base import NotifierBase
 
 
@@ -15,14 +16,17 @@ class PyNotify_Notifier(NotifierBase):
 
     CACHE : Dict[int,Any] = {}
 
+    def __init__(self, closed_cb=noop, action_cb=noop):
+        super().__init__(closed_cb, action_cb)
+        if not notify2.is_initted():
+            notify2.init("Xpra", "glib")
+
     def show_notify(self, dbus_id, tray, nid:int,
                     app_name:str, replaces_nid:int, app_icon,
                     summary:str, body:str, actions, hints, timeout:int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
-        if not notify2.is_initted():
-            notify2.init(app_name or "Xpra", "glib")
         n = notify2.Notification(summary, body, icon_string)
         PyNotify_Notifier.CACHE[nid] = n
         n.set_urgency(notify2.URGENCY_LOW)
