@@ -16,9 +16,9 @@ def get_default_keyfiles() -> list[str]:
     dkf = os.environ.get("XPRA_SSH_DEFAULT_KEYFILES", None)
     if dkf is not None:
         return [x for x in dkf.split(os.pathsep) if x]
-    from xpra.platform.paths import get_ssh_conf_dirs
-    for conf_dir in get_ssh_conf_dirs():
-        keydir = osexpand(conf_dir)
+    from xpra.platform.paths import get_ssh_key_dirs
+    for ssh_key_dir in get_ssh_key_dirs():
+        keydir = osexpand(ssh_key_dir)
         if os.path.exists(keydir) and os.path.isdir(keydir):
             return [os.path.join(keydir, f"id_{fmt}") for fmt in KEY_FORMATS]
     return []

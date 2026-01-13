@@ -165,6 +165,10 @@ def do_get_ssh_known_hosts_files() -> list[str]:
     return ["~/ssh/known_hosts", "~/.ssh/known_hosts"]
 
 
+def do_get_ssh_key_dirs() -> list[str]:
+    return ["~/ssh", "~/.ssh"]
+
+
 def do_get_state_dir() -> str:
     return "%LOCALAPPDATA%\\Xpra\\state"
 
