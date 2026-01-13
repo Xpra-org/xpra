@@ -94,6 +94,14 @@ def do_get_ssh_conf_dirs() -> list[str]:
     return ["/etc/ssh", "/usr/local/etc/ssh", "~/.ssh", "~/ssh"]
 
 
+def get_ssh_key_dirs() -> list[str]:
+    return envaslist_or_delegate("XPRA_SSH_KEY_DIRS", do_get_ssh_key_dirs)
+
+
+def do_get_ssh_key_dirs() -> list[str]:
+    return ["~/.ssh", "~/ssh"]
+
+
 def get_ssh_known_hosts_files() -> list[str]:
     return envaslist_or_delegate("XPRA_SSH_KNOWN_HOSTS", do_get_ssh_known_hosts_files)
 
@@ -419,6 +427,7 @@ platform_import(globals(), "paths", False,
                 "do_get_ssl_cert_dirs",
                 "do_get_ssl_hosts_config_dirs",
                 "do_get_ssh_conf_dirs",
+                "do_get_ssh_key_dirs",
                 "do_get_ssh_known_hosts_files",
                 "do_get_user_conf_dirs",
                 "do_get_state_dir",
