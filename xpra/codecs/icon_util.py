@@ -69,7 +69,7 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
             log(f"Image.open({filename}) {e}", exc_info=True)
         except Exception as e:
             log(f"Image.open({filename})", exc_info=True)
-            log.error(f"Error loading {filename!r}:")
+            log.error(f"Error loading icon from {filename!r}:")
             log.estr(e)
         finally:
             if img:
