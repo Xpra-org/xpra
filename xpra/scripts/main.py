@@ -1444,6 +1444,7 @@ def win32_reconnect(script_file: str, cmdline: list[str]) -> ExitCode:
 def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
     log = Logger("network")
     backend = opts.backend or "gtk"
+    log("connect_to_server(%s, %s, ..) backend=%s", app, display_desc, backend)
 
     def direct_call(fn: Callable, *args) -> None:
         fn(*args)
