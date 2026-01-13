@@ -65,6 +65,7 @@ ENCODE_QUEUE_MIN_GAP = envint("XPRA_ENCODE_QUEUE_MIN_GAP", 5)
 
 VIDEO_TIMEOUT = envint("XPRA_VIDEO_TIMEOUT", 10)
 VIDEO_NODETECT_TIMEOUT = envint("XPRA_VIDEO_NODETECT_TIMEOUT", 10*60)
+TRACK_REGION = envbool("XPRA_VIDEO_TRACK_REGION", True)
 
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   # ie: "YUV444P"
 if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and get_subsampling(FORCE_CSC_MODE) not in PIXEL_SUBSAMPLING:
@@ -957,7 +958,7 @@ class WindowVideoSource(WindowSource):
                     actual_vr = vr
 
             # still no luck?
-            if actual_vr is None:
+            if actual_vr is None and TRACK_REGION:
                 # try to find one that has the same dimensions:
                 same_d = tuple(r for r in regions if r.width == vr.width and r.height == vr.height)
                 if len(same_d) == 1:
