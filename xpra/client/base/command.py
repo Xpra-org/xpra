@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.net.packet_type import PRINT_FILE, DISPLAY_REQUEST_SCREENSHOT, INFO_REQUEST, INFO_RESPONSE
+from xpra.net.packet_type import PRINT_FILE, DISPLAY_REQUEST_SCREENSHOT, INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
@@ -149,7 +149,7 @@ class HelloRequestClient(SendCommandConnectClient):
     def do_command(self, caps: typedict) -> None:
         self.quit(ExitCode.OK)
 
-    def _process_disconnect(self, packet: Packet) -> None:
+    def _process_connection_close(self, packet: Packet) -> None:
         # overridden method, so we can avoid printing a warning,
         # we haven't received the hello back from the server
         # but that's fine for a request client
@@ -692,7 +692,7 @@ class PrintClient(SendCommandConnectClient):
         blob = Compressed("print", self.file_data)
         self.send(PRINT_FILE, self.filename, blob, *self.command)
         log("print: sending %s as %s for printing", self.filename, blob)
-        GLib.idle_add(self.send, "disconnect", ConnectionMessage.DONE.value, "detaching")
+        GLib.idle_add(self.send, CONNECTION_CLOSE, ConnectionMessage.DONE.value, "detaching")
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = super().make_hello()
@@ -751,7 +751,7 @@ class DetachXpraClient(HelloRequestClient):
         }
 
     def do_command(self, caps: typedict) -> None:
-        GLib.idle_add(self.send, "disconnect", ConnectionMessage.DONE.value, "detaching")
+        GLib.idle_add(self.send, CONNECTION_CLOSE, ConnectionMessage.DONE.value, "detaching")
         # not exiting the client here,
         # the server should disconnect us with the response
 
@@ -759,7 +759,7 @@ class DetachXpraClient(HelloRequestClient):
 class WaitForDisconnectXpraClient(DetachXpraClient):
     """ we just want the connection to close """
 
-    def _process_disconnect(self, _packet: Packet) -> None:
+    def _process_connection_close(self, _packet: Packet) -> None:
         self.quit(ExitCode.OK)
 
 

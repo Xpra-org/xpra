@@ -14,7 +14,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.common import noop, SizedBuffer
 from xpra.net.protocol import socket_handler, check
-from xpra.net.protocol.constants import CONNECTION_LOST
+from xpra.net.packet_type import CONNECTION_LOST
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
 from xpra.net.common import Packet

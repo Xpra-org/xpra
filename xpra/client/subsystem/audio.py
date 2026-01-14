@@ -11,7 +11,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
 from xpra.net.common import Packet
 from xpra.net.compression import Compressed
-from xpra.net.protocol.constants import CONNECTION_LOST
+from xpra.net.packet_type import CONNECTION_LOST
 from xpra.common import FULL_INFO, noop, SizedBuffer
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, OSX, POSIX
 from xpra.util.objects import typedict

@@ -107,7 +107,7 @@ class RemoteServerAdapter(baseclass):
     PACKET_TYPES = [
         "hello", "encodings", "startup-complete",
         "setting-change",
-        "connection-lost", "disconnect",
+        "connection-lost", "connection-close",
     ]
     MODE = "invalid"
 
@@ -258,7 +258,7 @@ class RemoteServerAdapter(baseclass):
         version = caps.get("version")
         log.info("connected to encoder server version %s", version)
 
-    def _process_disconnect(self, _packet: Packet) -> None:
+    def _process_connection_close(self, _packet: Packet) -> None:
         log("disconnected from server %s", self.protocol)
         self.server_connection_cleanup()
 

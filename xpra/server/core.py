@@ -17,7 +17,7 @@ from types import FrameType
 from typing import Any, NoReturn
 from collections.abc import Callable, Sequence, Iterable
 
-from xpra.net.packet_type import INFO_RESPONSE
+from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_CLOSE, CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.util.version import XPRA_VERSION, version_str, version_compat_check
 from xpra.scripts.server import deadly_signal
 from xpra.exit_codes import ExitValue, ExitCode
@@ -42,7 +42,6 @@ from xpra.net.bytestreams import (
 from xpra.net.net_util import get_network_caps, import_netifaces, get_all_ips
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.digest import get_salt, gendigest
 from xpra.platform import set_name, threaded_server_init
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
@@ -595,12 +594,13 @@ class ServerCore(ServerBaseClass):
     def init_packet_handlers(self) -> None:
         self._default_packet_handlers = {
             "hello": self._process_hello,
-            "disconnect": self._process_disconnect,
+            "connection-close": self._process_connection_close,
             "ssl-upgrade": self._process_ssl_upgrade,
             CONNECTION_LOST: self._process_connection_lost,
             GIBBERISH: self._process_gibberish,
             INVALID: self._process_invalid,
         }
+        self.add_legacy_alias("disconnect", "connection-close")
         netlog("initializing packet handlers for %s", SERVER_BASES)
         for c in SERVER_BASES:
             c.init_packet_handlers(self)
@@ -680,7 +680,7 @@ class ServerCore(ServerBaseClass):
         if packet_type == "xpra":
             # try xpra packet format:
             from xpra.net.packet_encoding import pack_one_packet
-            packet_data = pack_one_packet(("disconnect", "invalid protocol for this port"))
+            packet_data = pack_one_packet((CONNECTION_CLOSE, "invalid protocol for this port"))
         elif packet_type == "http":
             # HTTP 400 error:
             packet_data = HTTP_UNSUPORTED
@@ -1310,7 +1310,7 @@ class ServerCore(ServerBaseClass):
     def cleanup_protocol(self, protocol: SocketProtocol) -> None:
         """ some subclasses perform extra cleanup here """
 
-    def _process_disconnect(self, proto: SocketProtocol, packet: Packet) -> None:
+    def _process_connection_close(self, proto: SocketProtocol, packet: Packet) -> None:
         info = packet.get_str(1)
         if len(packet) > 2:
             info += " (%s)" % csv(str(x) for x in packet[2:])

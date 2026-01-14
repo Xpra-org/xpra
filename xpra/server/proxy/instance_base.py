@@ -13,8 +13,10 @@ from collections.abc import Callable, Iterable
 from xpra.audio.common import AUDIO_DATA_PACKET
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
-from xpra.net.packet_type import INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA
-from xpra.net.protocol.constants import CONNECTION_LOST
+from xpra.net.packet_type import (
+    INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
+    CONNECTION_LOST,
+)
 from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
 from xpra.util.parsing import str_to_bool, parse_number

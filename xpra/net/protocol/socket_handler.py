@@ -17,6 +17,7 @@ from queue import Queue, SimpleQueue, Empty, Full
 from typing import Any
 from collections.abc import Callable, Iterable, Sequence, Mapping
 
+from xpra.net.packet_type import CONNECTION_CLOSE, CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.util.objects import typedict, Scheduler
 from xpra.util.str_fn import (
     csv, hexstr, nicestr,
@@ -31,7 +32,6 @@ from xpra.net.protocol.header import (
     unpack_header, pack_header, find_xpra_header,
     FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE,
 )
-from xpra.net.protocol.constants import CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet,
     MAX_PACKET_SIZE,
@@ -456,7 +456,7 @@ class SocketProtocol:
             self.timeout_add(SEND_INVALID_PACKET * 1000, self.raw_write, SEND_INVALID_PACKET_DATA)
 
     def send_disconnect(self, reasons, done_callback=noop) -> None:
-        packet = ["disconnect"] + [nicestr(x) for x in reasons]
+        packet = [CONNECTION_CLOSE] + [nicestr(x) for x in reasons]
         eventlog("send_disconnect(%r, %r)", reasons, done_callback)
         self.flush_then_close(self.encode, packet, done_callback=done_callback)
 

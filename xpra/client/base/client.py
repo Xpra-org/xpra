@@ -24,7 +24,7 @@ from xpra.net import compression
 from xpra.net.common import Packet, PacketElement, PacketHandlerType
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
-from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
+from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.util.version import get_version_info, vparts, XPRA_VERSION
 from xpra.net.digest import get_salt
 from xpra.platform.info import get_name, get_username
@@ -417,7 +417,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         assert self.server_client_shutdown
         self.send("shutdown-server")
 
-    def _process_disconnect(self, packet: Packet) -> None:
+    def _process_connection_close(self, packet: Packet) -> None:
         # ie: ("disconnect", "version error", "incompatible version")
         netlog("%s", packet)
         info = tuple(str(x) for x in packet[1:])
@@ -612,7 +612,8 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     # packets:
     def init_packet_handlers(self) -> None:
         self.add_packets("hello")
-        self.add_packets("disconnect", CONNECTION_LOST, GIBBERISH, INVALID, main_thread=True)
+        self.add_packets("connection-close", CONNECTION_LOST, GIBBERISH, INVALID, main_thread=True)
+        self.add_legacy_alias("disconnect", "connection-close")
         for bc in CLIENT_BASES:
             bc.init_packet_handlers(self)
 

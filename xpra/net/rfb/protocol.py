@@ -16,7 +16,7 @@ from xpra.util.env import envint
 from xpra.util.thread import make_thread, start_thread
 from xpra.util.stats import std_unit
 from xpra.net.protocol.socket_handler import force_flush_queue, exit_queue
-from xpra.net.protocol.constants import INVALID, CONNECTION_LOST
+from xpra.net.packet_type import INVALID, CONNECTION_LOST
 from xpra.net.common import Packet, ConnectionClosedException  # @UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
 from xpra.net.rfb.const import RFBClientMessage, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT

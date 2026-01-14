@@ -66,3 +66,8 @@ INFO_REQUEST: Final[str] = "info-request"
 INFO_RESPONSE: Final[str] = "info-response"
 
 CHALLENGE: Final[str] = "challenge"
+
+CONNECTION_CLOSE: Final[str] = "disconnect" if BACKWARDS_COMPATIBLE else "connection-close"
+CONNECTION_LOST: Final[str] = "connection-lost"
+GIBBERISH: Final[str] = "gibberish"
+INVALID: Final[str] = "invalid"

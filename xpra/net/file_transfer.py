@@ -15,7 +15,7 @@ from time import monotonic
 from dataclasses import dataclass
 from collections.abc import Callable
 
-from xpra.net.packet_type import FILE_SEND_CHUNK, FILE_DATA_REQUEST, FILE_DATA_RESPONSE
+from xpra.net.packet_type import FILE_SEND_CHUNK, FILE_DATA_REQUEST, FILE_DATA_RESPONSE, FILE_REQUEST
 from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import POSIX, WIN32, gi_import
 from xpra.util.io import umask_context, osclose
@@ -25,7 +25,6 @@ from xpra.util.env import envint, envbool
 from xpra.util.parsing import str_to_bool, parse_with_unit
 from xpra.common import SizedBuffer, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
-from xpra.net.packet_type import FILE_REQUEST
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
 from xpra.log import Logger

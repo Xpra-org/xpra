@@ -17,7 +17,7 @@ from xpra.util.env import envint, envbool, get_exec_env
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException, Packet, PacketElement
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
+from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH
 from xpra.common import noop
 from xpra.os_util import gi_import, WIN32
 from xpra.util.io import setbinarymode

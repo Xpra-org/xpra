@@ -23,7 +23,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.common import is_request_allowed, Packet
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
+from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base.stub import StubClientMixin
 from xpra.scripts.config import InitException, InitExit

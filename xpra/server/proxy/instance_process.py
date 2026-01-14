@@ -12,7 +12,7 @@ from typing import Any
 from queue import SimpleQueue
 from multiprocessing import Process
 
-from xpra.net.packet_type import INFO_RESPONSE
+from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST
 from xpra.server.proxy.instance_base import ProxyInstance
 from xpra.util.queue_scheduler import QueueScheduler
 from xpra.util.daemon import setuidgid
@@ -20,7 +20,6 @@ from xpra.server.subsystem.control import ControlHandler
 from xpra.server import features
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol.factory import get_client_protocol_class, get_server_protocol_class
-from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE, create_unix_domain_socket, handle_socket_error
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
