@@ -26,7 +26,7 @@ from xpra.server import features
 from xpra.server.auth import AuthenticatedServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
-    MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
+    MAX_PACKET_SIZE, SSL_UPGRADE,
     is_request_allowed, Packet, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
 )
 from xpra.net.digest import get_caps as get_digest_caps
@@ -56,7 +56,7 @@ from xpra.util.background_worker import add_work_item, quit_worker
 from xpra.util.thread import start_thread
 from xpra.common import (
     LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS,
-    noop, ConnectionMessage, noerr, init_memcheck, subsystem_name,
+    noop, ConnectionMessage, noerr, init_memcheck, subsystem_name, BACKWARDS_COMPATIBLE,
 )
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
@@ -1535,7 +1535,14 @@ class ServerCore(ServerBaseClass):
             if server_log:
                 capabilities["server-log"] = server_log
         if source and "packet-types" in source.wants:
-            capabilities["packet-types"] = PACKET_TYPES
+            packet_types = []
+            if BACKWARDS_COMPATIBLE:
+                packet_types += list(self.packet_alias.keys())
+                packet_types += list(self.packet_alias.values())
+            packet_types += list(self._authenticated_ui_packet_handlers)
+            packet_types += list(self._authenticated_packet_handlers)
+            packet_types += list(self._default_packet_handlers)
+            capabilities["packet-types"] = packet_types
         if self.session_name:
             capabilities["session_name"] = self.session_name
         return capabilities

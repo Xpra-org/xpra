@@ -719,7 +719,7 @@ class AuthenticationManager:
                 allowed = list(filter(is_allowed, self.valid_auth_modes))
                 log("filtered allowed types=%s from %s", allowed, self.valid_auth_modes)
                 if allowed != self.valid_auth_modes:
-                    log.info("server supports authentication modes: %s", csv(allowed))
+                    log.info("remote ssh server supports authentication modes: %s", csv(allowed) or "none")
                     self.valid_auth_modes = allowed
             if failed_mode not in self.valid_auth_modes:
                 # no need to record it

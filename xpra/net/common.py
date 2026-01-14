@@ -239,50 +239,6 @@ URL_MODES: dict[str, str] = {
     "rfb": "vnc",
 }
 
-PACKET_TYPES: list[str] = [
-    # generic:
-    "hello",
-    "challenge",
-    "ssl-upgrade",
-    "info", "info-response",
-    # server state:
-    "server-event", "startup-complete",
-    "setting-change", "control",
-    # network layer:
-    "disconnect", "connection-lost", "gibberish", "invalid",
-    # pings:
-    "ping", "ping_echo",
-    # file transfers:
-    "open-url", "send-file", "send-data-request", "send-data-response", "ack-file-chunk", "send-file-chunk",
-    # audio:
-    "sound-data", "new-stream", "state-changed", "new-buffer", "cleanup", "add_data", "stop",
-    # display:
-    "show-desktop",
-    # windows and trays:
-    "new-window", "new-override-redirect", "new-tray",
-    "raise-window", "initiate-moveresize", "window-move-resize", "window-resized", "window-metadata",
-    "configure-override-redirect", "lost-window", "window-icon",
-    "draw",
-    "encodings",
-    "eos", "cursor", "bell",
-    # pointer motion and events:
-    "pointer-position", "pointer",
-    "button-action", "pointer-button",
-    "pointer-grab", "pointer-ungrab",
-    "input-devices",
-    # keyboard:
-    "set-keyboard-sync-enabled",
-    "key-action",
-    "layout-changed", "keymap-changed",
-    # webcam:
-    "webcam-stop", "webcam-ack",
-    # clipboard:
-    "set-clipboard-enabled", "clipboard-token", "clipboard-request",
-    "clipboard-contents", "clipboard-contents-none", "clipboard-pending-requests", "clipboard-enable-selections",
-    # notifications:
-    "notify_show", "notify_close",
-]
-
 
 def get_log_packets(exclude=False) -> Sequence[str]:
     lp = os.environ.get("XPRA_LOG_PACKETS", "")

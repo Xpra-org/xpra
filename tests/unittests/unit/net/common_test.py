@@ -64,7 +64,7 @@ class TestLogPackets(unittest.TestCase):
         with OSEnvContext():
             os.environ.pop("XPRA_LOG_PACKETS", None)
             self.setup_log_intercept()
-            for pt in common.PACKET_TYPES:
+            for pt in ("info", "ping", "window-create", "audio-data"):
                 mlp(True, pt, (1, 2))
                 mlp(False, pt, (1, 2))
                 self.lm(0)
