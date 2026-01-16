@@ -510,7 +510,7 @@ class DisplayClient(StubClientMixin):
         self.update_screen_size()
         log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s",
             MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
-        if MONITOR_CHANGE_REINIT and REINIT_WINDOWS:
+        if (MONITOR_CHANGE_REINIT and REINIT_WINDOWS) or MONITOR_CHANGE_REINIT > 1:
             log.info("screen size change: will reinit the windows")
             self.reinit_windows()
             self.reinit_window_icons()
