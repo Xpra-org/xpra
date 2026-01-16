@@ -51,7 +51,7 @@ from xpra.os_util import (
 )
 from xpra.util.system import register_SIGUSR_signals
 from xpra.util.io import load_binary_file, find_libexec_command
-from xpra.util.background_worker import add_work_item, quit_worker
+from xpra.util.background_worker import quit_worker
 from xpra.util.thread import start_thread
 from xpra.common import (
     LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS,
@@ -305,7 +305,6 @@ class ServerCore(ServerBaseClass):
         log("threaded_init() servercore start")
         # platform specific init:
         threaded_server_init()
-        add_work_item(self.print_run_info)
         self.threaded_setup()
         self.emit("init-thread-ended")
 
@@ -332,6 +331,7 @@ class ServerCore(ServerBaseClass):
         return [subsystem_name(c) for c in SERVER_BASES]
 
     def run(self) -> ExitValue:
+        self.print_run_info()
         self.install_signal_handlers(self.signal_quit)
         GLib.idle_add(self.server_is_ready)
         self.do_run()
