@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import time
 from time import monotonic
 from typing import Any
@@ -11,8 +10,8 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
+from xpra.util.system import getloadavg
 from xpra.common import ConnectionMessage, FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.os_util import POSIX
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
@@ -94,9 +93,7 @@ class PingConnection(StubClientConnection):
         cl = -1
         if PING_DETAILS:
             # send back the load average:
-            if POSIX:
-                fl1, fl2, fl3 = os.getloadavg()
-                l1, l2, l3 = int(fl1 * 1000), int(fl2 * 1000), int(fl3 * 1000)
+            l1, l2, l3 = getloadavg()
             # and the last client ping latency we measured (if any):
             stats = getattr(self, "statistics", None)
             if stats and stats.client_ping_latency:

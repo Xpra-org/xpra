@@ -4,20 +4,20 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-import os
 from time import monotonic
 from collections import deque
 from typing import Any
 from collections.abc import Sequence, Iterable
 
-from xpra.os_util import POSIX, gi_import
+from xpra.os_util import gi_import
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.common import BACKWARDS_COMPATIBLE, FULL_INFO
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 from xpra.util.objects import typedict
+from xpra.util.system import getloadavg
 
 GLib = gi_import("GLib")
 
@@ -28,6 +28,7 @@ PING_TIMEOUT: int = envint("XPRA_PING_TIMEOUT", 60)
 MIN_PING_TIMEOUT: int = envint("XPRA_MIN_PING_TIMEOUT", 2)
 MAX_PING_TIMEOUT: int = envint("XPRA_MAX_PING_TIMEOUT", 10)
 SWALLOW_PINGS: bool = envbool("XPRA_SWALLOW_PINGS", False)
+PING_DETAILS = envbool("XPRA_PING_DETAILS", FULL_INFO > 0)
 
 
 class PingClient(StubClientMixin):
@@ -190,16 +191,12 @@ class PingClient(StubClientMixin):
 
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
-        l1, l2, l3 = 0, 0, 0
         sid = ""
         if len(packet) >= 4:
             sid = packet.get_str(3)
-        if POSIX:
-            try:
-                (fl1, fl2, fl3) = os.getloadavg()
-                l1, l2, l3 = int(fl1 * 1000), int(fl2 * 1000), int(fl3 * 1000)
-            except (OSError, AttributeError):
-                pass
+        l1, l2, l3 = 0, 0, 0
+        if PING_DETAILS:
+            l1, l2, l3 = getloadavg()
         try:
             sl = self.server_ping_latency[-1][1]
         except IndexError:

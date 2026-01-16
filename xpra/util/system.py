@@ -311,6 +311,18 @@ def get_env_info() -> dict[str, str]:
     return filtered_env
 
 
+def getloadavg() -> tuple[int, int, int]:
+    if POSIX:
+        return tuple(int(v) for v in os.getloadavg())
+    if WIN32:
+        try:
+            import psutil
+            return tuple(int(v) for v in psutil.getloadavg())
+        except ImportError:
+            pass
+    return 0, 0, 0
+
+
 def get_sysconfig_info() -> dict[str, Any]:
     import sysconfig
     sysinfo: dict[str, Any] = {}
