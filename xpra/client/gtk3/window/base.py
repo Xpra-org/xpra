@@ -1244,7 +1244,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         elif model:
             plug_name = model
         else:
-            plug_name = "%i" % mid
+            plug_name = ""
         plug_name += " %ix%i" % (geom.width, geom.height)
         if geom.x or geom.y:
             plug_name += " at %i,%i" % (geom.x, geom.y)
