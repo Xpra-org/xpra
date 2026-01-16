@@ -6,8 +6,25 @@
 import os
 
 
+def get_total_physical_memory() -> int:
+    try:
+        import wmi
+    except ImportError:
+        return 0
+    try:
+        c = wmi.WMI()
+        mem_bytes = 0
+        for system in c.Win32_ComputerSystem():
+            mem_bytes += int(system.TotalPhysicalMemory)
+        return mem_bytes
+    except OSError:
+        return 0
+
+
 def get_sys_info() -> dict:
-    return {}
+    return {
+        "total-physical-memory": get_total_physical_memory(),
+    }
 
 
 def get_name() -> str:

@@ -55,7 +55,7 @@ from xpra.util.background_worker import add_work_item, quit_worker
 from xpra.util.thread import start_thread
 from xpra.common import (
     LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS,
-    noop, ConnectionMessage, noerr, init_memcheck, subsystem_name, BACKWARDS_COMPATIBLE,
+    noop, ConnectionMessage, noerr, subsystem_name, BACKWARDS_COMPATIBLE,
 )
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
@@ -305,7 +305,6 @@ class ServerCore(ServerBaseClass):
         log("threaded_init() servercore start")
         # platform specific init:
         threaded_server_init()
-        init_memcheck()
         add_work_item(self.print_run_info)
         self.threaded_setup()
         self.emit("init-thread-ended")

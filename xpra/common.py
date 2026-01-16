@@ -14,8 +14,7 @@ from typing import Final, Protocol, TypeAlias, Any
 from collections.abc import Callable, Sized, MutableSequence, Iterable, Sequence
 
 from xpra.util.env import envint, envbool
-from xpra.os_util import POSIX
-
+from xpra.os_util import WIN32
 
 try:
     # Python 3.11 and later:
@@ -450,6 +449,9 @@ def get_run_info(subcommand="server") -> Sequence[str]:
     if arch:
         vinfo += f" {arch}"
     run_info.append(f" {sys.implementation.name} {vinfo}")
+    mem_bytes = init_memcheck()
+    if mem_bytes:
+        run_info.append(" with %.1fGB of system memory" % (mem_bytes / (1024.0 ** 3)))
     return run_info
 
 
@@ -497,18 +499,16 @@ LOW_MEM_LIMIT = 1024 * 1024 * 1024
 
 def init_memcheck(low_ram=LOW_MEM_LIMIT) -> int:
     # verify we have enough memory:
-    if not POSIX:
-        return 0
     from xpra.log import Logger
     log = Logger("util")
     try:
         mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")  # e.g. 4015976448
-
+        if not mem_bytes and WIN32:
+            from xpra.platform.win32.info import get_total_physical_memory
+            mem_bytes = get_total_physical_memory()
         if mem_bytes <= low_ram:
             log.warn("Warning: only %iMB total system memory available", mem_bytes // (1024 ** 2))
             log.warn(" this may not be enough to run a server")
-        else:
-            log.info("%.1fGB of system memory", mem_bytes / (1024.0 ** 3))
         return mem_bytes
     except OSError:
         log("init_memcheck", exc_info=True)
