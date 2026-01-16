@@ -502,11 +502,13 @@ def init_memcheck(low_ram=LOW_MEM_LIMIT) -> int:
     from xpra.log import Logger
     log = Logger("util")
     try:
-        mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")  # e.g. 4015976448
+        mem_bytes = 0
+        if hasattr(os, "sysconf"):
+            mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
         if not mem_bytes and WIN32:
             from xpra.platform.win32.info import get_total_physical_memory
             mem_bytes = get_total_physical_memory()
-        if mem_bytes <= low_ram:
+        if mem_bytes and mem_bytes <= low_ram:
             log.warn("Warning: only %iMB total system memory available", mem_bytes // (1024 ** 2))
             log.warn(" this may not be enough to run a server")
         return mem_bytes
