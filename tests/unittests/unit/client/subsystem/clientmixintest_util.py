@@ -115,6 +115,7 @@ class ClientMixinTest(unittest.TestCase):
         x.add_packets = self.add_packets
         x.add_packet_handler = self.add_packet_handler
         x.init(opts)
+        x.load()
         conn = AdHocStruct()
         conn.filename = "/fake/path/to/nowhere"
         x.setup_connection(conn)
