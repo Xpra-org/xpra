@@ -28,6 +28,11 @@ class StubClientMixin:
         creating windows and widgets if needed.
         """
 
+    def load(self) -> None:
+        """
+        Slower initialization that may load external components
+        """
+
     def run(self) -> ExitValue:
         """
         run the main loop.

@@ -32,14 +32,18 @@ class TrayClient(StubClientMixin):
         self.tray_icon = None
         # state:
         self.tray = None
+        self.delay_tray = False
         self.menu_helper = None
 
     def init(self, opts) -> None:
         if not opts.tray:
             return
+        self.delay_tray = opts.delay_tray
         self.tray_icon = opts.tray_icon
+
+    def load(self):
         self.get_menu_helper()
-        if opts.delay_tray:
+        if self.delay_tray:
             self.connect("first-ui-received", self.setup_xpra_tray)
         else:
             if WIN32 or OSX:
@@ -71,8 +75,9 @@ class TrayClient(StubClientMixin):
             GLib.timeout_add(1000, reset_icon)
 
     def startup_complete(self) -> None:
-        if self.tray:
-            self.tray.ready()
+        tray = self.tray
+        if tray:
+            tray.ready()
 
     def cleanup(self) -> None:
         t = self.tray
@@ -81,7 +86,8 @@ class TrayClient(StubClientMixin):
             with log.trap_error("Error during tray cleanup"):
                 t.cleanup()
 
-    def get_tray_classes(self) -> list[type]:
+    @staticmethod
+    def get_tray_classes() -> list[type]:
         # subclasses may add their toolkit specific variants, if any
         # by overriding this method
         # use the native ones first:

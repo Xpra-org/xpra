@@ -115,6 +115,11 @@ class UIXpraClient(ClientBaseClass):
             log(f"init: {c}")
             c.init_ui(self, opts)
 
+    def load(self):
+        for c in CLIENT_BASES:
+            log(f"load: {c}")
+            c.load(self)
+
     def run(self) -> ExitValue:
         if FORCE_ALERT:
             self.schedule_timer_redraw()

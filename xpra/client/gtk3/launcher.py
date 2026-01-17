@@ -848,6 +848,7 @@ class ApplicationWindow:
         self.client.init(self.config)
         self.client.show_progress(40, "loading user interface")
         self.client.init_ui(self.config)
+        self.client.load()
         self.client.username = display_desc.get("username")
 
         def handshake_complete(*_args) -> None:

@@ -115,6 +115,10 @@ class Encodings(StubClientMixin):
         self.min_quality = opts.min_quality
         self.speed = opts.speed
         self.min_speed = opts.min_speed
+        vh = getVideoHelper()
+        vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules)
+
+    def load(self):
         load_codec("dec_pillow")
         ae = self.allowed_encodings
         if "png" in ae:
@@ -131,7 +135,6 @@ class Encodings(StubClientMixin):
         if "avif" in ae:
             load_codec("dec_avif")
         vh = getVideoHelper()
-        vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules)
         vh.init()
 
     def cleanup(self) -> None:

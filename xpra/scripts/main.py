@@ -1725,6 +1725,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
             app.after_handshake(handshake_complete)
         app.show_progress(40, "loading user interface")
         app.init_ui(opts)
+        app.load()
         if request_mode:
             sns = get_start_new_session_dict(opts, request_mode, extra_args)
             extra_args = [f"socket:{opts.system_proxy_socket}"]
@@ -2557,6 +2558,7 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
             app.init(opts)
             app.show_progress(40, "loading user interface")
             app.init_ui(opts)
+            app.load()
             app.hello_extra = hello_extra
 
             def handshake_complete(*_args) -> None:

@@ -50,7 +50,7 @@ AUDIO_CONTROL_PACKET = "sound-control" if BACKWARDS_COMPATIBLE else "audio-contr
 
 
 # used for parsing codec names specified on the command line:
-def audio_option_or_all(name: str, options, all_values: Iterable[str]) -> Sequence[str]:
+def audio_option_or_all(name: str, options: Sequence[str], all_values: Iterable[str]) -> Sequence[str]:
     log("audio_option_or_all%s", (name, options, all_values))
     if not options:
         v = list(all_values)  # not specified on command line: use default

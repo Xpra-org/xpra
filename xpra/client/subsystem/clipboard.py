@@ -96,6 +96,22 @@ class ClipboardClient(StubClientMixin):
         self.remote_clipboard = opts.remote_clipboard
         self.local_clipboard = opts.local_clipboard
 
+    def load(self) -> None:
+        log("load()")
+        try:
+            from xpra import clipboard
+            self.client_supports_clipboard = clipboard is not None
+        except ImportError:
+            log.warn("Warning: clipboard module is missing")
+            self.client_supports_clipboard = False
+            return
+        if self.client_supports_clipboard:
+            ch = self.make_clipboard_helper()
+            if not ch:
+                log.warn("Warning: no clipboard support")
+            self.clipboard_helper = ch
+            self.clipboard_enabled = ch is not None
+
     def cleanup(self) -> None:
         ch = self.clipboard_helper
         log("ClipboardClient.cleanup() clipboard_helper=%s", ch)
@@ -147,12 +163,7 @@ class ClipboardClient(StubClientMixin):
         return {ClipboardClient.PREFIX: caps}
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        try:
-            from xpra import clipboard
-            assert clipboard
-        except ImportError:
-            log.warn("Warning: clipboard module is missing")
-            self.clipboard_enabled = False
+        if not self.client_supports_clipboard:
             return True
         self.server_clipboard = c.boolget("clipboard")
         self.server_clipboard_direction = c.strget("clipboard-direction", "both")
@@ -174,7 +185,7 @@ class ClipboardClient(StubClientMixin):
             self.server_clipboard, self.server_clipboard_selections, self.server_clipboard_direction)
         log("client clipboard: supported=%s, selections=%s, direction=%s",
             self.client_supports_clipboard, CLIPBOARDS, self.client_clipboard_direction)
-        self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
+        self.clipboard_enabled = bool(self.clipboard_helper) and self.client_supports_clipboard and self.server_clipboard
         self.server_clipboard_greedy = c.boolget("clipboard.greedy")
         self.server_clipboard_want_targets = c.boolget("clipboard.want_targets")
         self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())

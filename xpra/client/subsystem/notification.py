@@ -43,17 +43,23 @@ class NotificationClient(StubClientMixin):
         self.may_notify = self.do_notify
 
     def init(self, opts) -> None:
-        if opts.notifications:
-            try:
-                from xpra import notification
-                assert notification
-            except ImportError:
-                log.warn("Warning: notification module not found")
-            else:
-                self.client_supports_notifications = True
-                self.notifier = self.make_notifier()
-                log("using notifier=%s", self.notifier)
-                self.client_supports_notifications = self.notifier is not None
+        self.notifications_enabled = opts.notifications
+
+    def load(self):
+        if not self.notifications_enabled:
+            return
+        try:
+            from xpra import notification
+            assert notification
+        except ImportError:
+            log.warn("Warning: notification module not found")
+            self.notifications_enabled = False
+            return
+        self.client_supports_notifications = True
+        self.notifier = self.make_notifier()
+        log("using notifier=%s", self.notifier)
+        self.notifications_enabled = self.notifier is not None
+        self.client_supports_notifications = self.notifier is not None
 
     def cleanup(self) -> None:
         n = self.notifier

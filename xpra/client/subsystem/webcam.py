@@ -65,20 +65,23 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
         self.server_webcam = False
         self.server_virtual_video_devices = 0
-        if self.webcam_forwarding:
-            with OSEnvContext(LANG="C", LC_ALL="C"):
-                try:
-                    import cv2
-                    from PIL import Image
-                    assert cv2 and Image
-                except ImportError as e:
-                    log("init webcam failure", exc_info=True)
-                    if WIN32:
-                        log.info("opencv not found:")
-                        log.info(" %s", e)
-                        log.info(" webcam forwarding is not available")
-                    self.webcam_forwarding = False
         log("webcam forwarding: %s", self.webcam_forwarding)
+
+    def load(self):
+        if not self.webcam_forwarding:
+            return
+        with OSEnvContext(LANG="C", LC_ALL="C"):
+            try:
+                import cv2
+                from PIL import Image
+                assert cv2 and Image
+            except ImportError as e:
+                log("init webcam failure", exc_info=True)
+                if WIN32:
+                    log.info("opencv not found:")
+                    log.info(" %s", e)
+                    log.info(" webcam forwarding is not available")
+                self.webcam_forwarding = False
 
     def get_caps(self) -> dict[str, Any]:
         if not self.webcam_forwarding:

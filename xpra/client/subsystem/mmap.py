@@ -82,12 +82,18 @@ class MmapClient(StubClientMixin):
     PREFIX = "mmap"
 
     def __init__(self):
+        self.mmap_option = "no"
+        self.mmap_group = "auto"
         self.mmap_read_area: MmapArea | None = None
         self.mmap_write_area: MmapArea | None = None
         self.mmap_supported = True
 
     def init(self, opts) -> None:
-        mopt = opts.mmap.lower()
+        self.mmap_option = opts.mmap
+        self.mmap_group = opts.mmap_group
+
+    def load(self):
+        mopt = self.mmap_option.lower()
         log("mmap.init(..) mmap=%r", mopt)
         if mopt in FALSE_OPTIONS:
             self.mmap_supported = False
@@ -106,12 +112,12 @@ class MmapClient(StubClientMixin):
             filenames = ("", "")
         else:
             # assume file path(s) have been specified:
-            filenames = opts.mmap.split(os.path.pathsep)
+            filenames = self.mmap.split(os.path.pathsep)
             if len(filenames) >= 3:
                 raise RuntimeError("too many mmap filenames specified: %r" % csv(filenames))
             read = True
             write = len(filenames) == 2
-        group = opts.mmap_group
+        group = self.mmap_group
         root_w, root_h = self.get_root_size()
         # at least 256MB, or 8 fullscreen RGBX frames:
         size = max(512 * 1024 * 1024, root_w * root_h * 4 * 8)
@@ -122,7 +128,7 @@ class MmapClient(StubClientMixin):
         if write:
             self.mmap_write_area = MmapArea("write", group, filenames[1], size)
         log("init(..) group=%s, mmap=%s, read-area=%s, write-area=%s",
-            group, opts.mmap, self.mmap_read_area, self.mmap_write_area)
+            group, self.mmap_option, self.mmap_read_area, self.mmap_write_area)
 
     def cleanup(self) -> None:
         self.clean_areas()
