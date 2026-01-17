@@ -247,6 +247,59 @@ def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
     return border
 
 
+def load_overlay_image(icon_filename: str):
+    if ICON_OVERLAY < 0:
+        return None
+    if icon_filename and not os.path.isabs(icon_filename):
+        icon_filename = get_icon_filename(icon_filename)
+    if not icon_filename or not os.path.exists(icon_filename):
+        icon_filename = get_icon_filename("xpra")
+    traylog("window icon overlay: %s", icon_filename)
+    if not icon_filename:
+        return None
+    # pylint: disable=import-outside-toplevel
+    # make sure Pillow's PNG image loader doesn't spam the output with debug messages:
+    import logging
+    logging.getLogger("PIL.PngImagePlugin").setLevel(logging.INFO)
+    try:
+        from PIL import Image
+    except ImportError:
+        log.info("window icon overlay requires python-pillow")
+        return None
+    with log.trap_error(f"Error: failed to load overlay icon {icon_filename!r}"):
+        return Image.open(icon_filename)
+
+
+def parse_mousewheel(mousewheel: str) -> tuple[bool, dict]:
+    mw = (mousewheel or "").lower().replace("-", "").split(",")
+    wheel_smooth = True
+    if "coarse" in mw:
+        mw.remove("coarse")
+        wheel_smooth = False
+    if any(x in FALSE_OPTIONS for x in mw):
+        return wheel_smooth, {}
+    UP = 4
+    LEFT = 6
+    Z1 = 8
+    invertall = len(mw) == 1 and mw[0] in ("invert", "invertall")
+    wheel_map = {}
+    for i in range(20):
+        btn = 4 + i * 2
+        invert = any((
+            invertall,
+            btn == UP and "inverty" in mw,
+            btn == LEFT and "invertx" in mw,
+            btn == Z1 and "invertz" in mw,
+        ))
+        if not invert:
+            wheel_map[btn] = btn
+            wheel_map[btn + 1] = btn + 1
+        else:
+            wheel_map[btn + 1] = btn
+            wheel_map[btn] = btn + 1
+    return wheel_smooth, wheel_map
+
+
 class WindowClient(StubClientMixin):
     """
     Utility superclass for clients that handle windows:
@@ -346,50 +399,11 @@ class WindowClient(StubClientMixin):
             self.border = parse_border(self.border_str)
 
         # mouse wheel:
-        mw = (opts.mousewheel or "").lower().replace("-", "").split(",")
-        if "coarse" in mw:
-            mw.remove("coarse")
-            self.wheel_smooth = False
-        if not any(x in FALSE_OPTIONS for x in mw):
-            UP = 4
-            LEFT = 6
-            Z1 = 8
-            invertall = len(mw) == 1 and mw[0] in ("invert", "invertall")
-            for i in range(20):
-                btn = 4 + i * 2
-                invert = any((
-                    invertall,
-                    btn == UP and "inverty" in mw,
-                    btn == LEFT and "invertx" in mw,
-                    btn == Z1 and "invertz" in mw,
-                ))
-                if not invert:
-                    self.wheel_map[btn] = btn
-                    self.wheel_map[btn + 1] = btn + 1
-                else:
-                    self.wheel_map[btn + 1] = btn
-                    self.wheel_map[btn] = btn + 1
-        pointerlog("wheel_map(%s)=%s, wheel_smooth=%s", mw, self.wheel_map, self.wheel_smooth)
+        self.wheel_smooth, wheel_map = parse_mousewheel(opts.mousewheel)
+        self.wheel_map.update(wheel_map)
+        pointerlog("wheel_map(%s)=%s, wheel_smooth=%s", opts.mousewheel, self.wheel_map, self.wheel_smooth)
 
-        if 0 < ICON_OVERLAY <= 100:
-            icon_filename = opts.tray_icon
-            if icon_filename and not os.path.isabs(icon_filename):
-                icon_filename = get_icon_filename(icon_filename)
-            if not icon_filename or not os.path.exists(icon_filename):
-                icon_filename = get_icon_filename("xpra")
-            traylog("window icon overlay: %s", icon_filename)
-            if icon_filename:
-                # pylint: disable=import-outside-toplevel
-                # make sure Pillow's PNG image loader doesn't spam the output with debug messages:
-                import logging
-                logging.getLogger("PIL.PngImagePlugin").setLevel(logging.INFO)
-                try:
-                    from PIL import Image
-                except ImportError:
-                    log.info("window icon overlay requires python-pillow")
-                else:
-                    with log.trap_error(f"Error: failed to load overlay icon {icon_filename!r}"):
-                        self.overlay_image = Image.open(icon_filename)
+        self.overlay_image = load_overlay_image(opts.tray_icon)
         traylog("overlay_image=%s", self.overlay_image)
 
     def init_ui(self, opts) -> None:

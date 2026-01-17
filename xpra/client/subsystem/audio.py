@@ -30,7 +30,7 @@ DELTA_THRESHOLD = envint("XPRA_AV_SYNC_DELTA_THRESHOLD", 40)
 DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 
 
-def init_audio_tagging(tray_icon) -> None:
+def init_audio_tagging(icon: str) -> None:
     if not POSIX:
         return
     try:
@@ -41,8 +41,8 @@ def init_audio_tagging(tray_icon) -> None:
         return
     try:
         from xpra.audio.pulseaudio.util import set_icon_path
-        tray_icon_filename = get_icon_filename(tray_icon or "xpra")
-        set_icon_path(tray_icon_filename)
+        icon_filename = get_icon_filename(icon or "xpra")
+        set_icon_path(icon_filename)
     except ImportError as e:
         if not OSX:
             log.warn("Warning: failed to set pulseaudio tagging icon:")
@@ -57,6 +57,22 @@ def get_matching_codecs(local_codecs, server_codecs) -> Sequence[str]:
 
 def nooptions(*_args) -> Sequence[str]:
     return ()
+
+
+def get_pa_info() -> dict:
+    if OSX or not POSIX:
+        return {}
+    try:
+        from xpra.audio.pulseaudio.util import get_info as get_pa_info
+        pa_info = get_pa_info()
+        log("pulseaudio info=%s", pa_info)
+        return pa_info
+    except ImportError as e:
+        log.warn("Warning: no pulseaudio information available")
+        log.warn(" %s", e)
+    except Exception:
+        log.error("Error: failed to add pulseaudio info", exc_info=True)
+    return {}
 
 
 class AudioClient(StubClientMixin):
@@ -105,11 +121,19 @@ class AudioClient(StubClientMixin):
         # ie: "on", "off", "on:Some Device", "off:Some Device"
         mic = [x.strip() for x in opts.microphone.split(":", 1)]
         self.microphone_allowed = audio_option(mic[0]) in ("on", "off")
+        self.speaker_enabled = self.speaker_allowed and audio_option(opts.speaker) == "on"
+        self.microphone_enabled = self.microphone_allowed and audio_option(mic[0]) == "on"
         self.microphone_device = ""
         if self.microphone_allowed and len(mic) == 2:
             self.microphone_device = mic[1]
         self.audio_source_plugin = opts.audio_source
+        # these are not validated yet:
+        self.speaker_codecs = opts.speaker_codec
+        self.microphone_codecs = opts.microphone_codec
+        # audio tagging:
+        init_audio_tagging(opts.tray_icon)
 
+    def load(self):
         audio_option_fn: Callable = nooptions
         if self.speaker_allowed or self.microphone_allowed:
             def noaudio(title: str, message: str) -> None:
@@ -146,36 +170,20 @@ class AudioClient(StubClientMixin):
                 return
         encoders = self.audio_properties.strtupleget("encoders")
         decoders = self.audio_properties.strtupleget("decoders")
-        self.speaker_codecs = audio_option_fn("speaker-codec", opts.speaker_codec, decoders)
-        self.microphone_codecs = audio_option_fn("microphone-codec", opts.microphone_codec, encoders)
+        # validate the options against the list of codecs available:
+        self.speaker_codecs = audio_option_fn("speaker-codec", self.speaker_codecs, decoders)
+        self.microphone_codecs = audio_option_fn("microphone-codec", self.microphone_codecs, encoders)
         if not self.speaker_codecs:
             self.speaker_allowed = False
         if not self.microphone_codecs:
             self.microphone_allowed = False
-        self.speaker_enabled = self.speaker_allowed and audio_option(opts.speaker) == "on"
-        self.microphone_enabled = self.microphone_allowed and audio_option(mic[0]) == "on"
+        self.speaker_enabled &= self.speaker_allowed
+        self.microphone_enabled &= self.microphone_allowed
         log("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
         log("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s",
             decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
         log("av-sync=%s", self.av_sync)
-        self.audio_properties.update(self.get_pa_info())
-        # audio tagging:
-        init_audio_tagging(opts.tray_icon)
-
-    def get_pa_info(self) -> dict:
-        if OSX or not POSIX:
-            return {}
-        try:
-            from xpra.audio.pulseaudio.util import get_info as get_pa_info
-            pa_info = get_pa_info()
-            log("pulseaudio info=%s", pa_info)
-            return pa_info
-        except ImportError as e:
-            log.warn("Warning: no pulseaudio information available")
-            log.warn(" %s", e)
-        except Exception:
-            log.error("Error: failed to add pulseaudio info", exc_info=True)
-        return {}
+        self.audio_properties.update(get_pa_info())
 
     def cleanup(self) -> None:
         self.stop_all_audio()

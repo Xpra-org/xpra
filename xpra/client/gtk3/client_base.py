@@ -135,6 +135,22 @@ def get_group_ref(metadata: dict) -> str:
     return ""
 
 
+def _add_statusicon_tray(tray_classes: list[type]) -> list[type]:
+    if not is_Wayland():
+        try:
+            from xpra.gtk.statusicon_tray import GTKStatusIconTray
+            # unlikely to work with gnome:
+            PREFER_STATUSICON = envbool("XPRA_PREFER_STATUSICON", False)
+            if PREFER_STATUSICON:
+                tray_classes.insert(0, GTKStatusIconTray)
+            else:
+                tray_classes.append(GTKStatusIconTray)
+        except Exception as e:
+            log.warn("Warning: failed to load StatusIcon tray")
+            log.warn(" %s", e)
+    return tray_classes
+
+
 # noinspection PyMethodMayBeStatic
 class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     __gsignals__ = {}
@@ -781,28 +797,13 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         framelog(f"get_window_frame_sizes()={wfs}")
         return wfs
 
-    def _add_statusicon_tray(self, tray_classes: list[type]) -> list[type]:
-        if not is_Wayland():
-            try:
-                from xpra.gtk.statusicon_tray import GTKStatusIconTray
-                # unlikely to work with gnome:
-                PREFER_STATUSICON = envbool("XPRA_PREFER_STATUSICON", False)
-                if PREFER_STATUSICON:
-                    tray_classes.insert(0, GTKStatusIconTray)
-                else:
-                    tray_classes.append(GTKStatusIconTray)
-            except Exception as e:
-                log.warn("Warning: failed to load StatusIcon tray")
-                log.warn(" %s", e)
-        return tray_classes
-
     def get_tray_classes(self) -> list[type]:
         from xpra.client.subsystem.tray import TrayClient
-        return self._add_statusicon_tray(TrayClient.get_tray_classes(self))
+        return _add_statusicon_tray(TrayClient.get_tray_classes())
 
     def get_system_tray_classes(self) -> list[type]:
         from xpra.client.subsystem.window import WindowClient
-        return self._add_statusicon_tray(WindowClient.get_system_tray_classes(self))
+        return _add_statusicon_tray(WindowClient.get_system_tray_classes(self))
 
     def supports_system_tray(self) -> bool:
         #  always True: we can always use Gtk.StatusIcon as fallback
