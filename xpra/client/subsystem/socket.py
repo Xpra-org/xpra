@@ -49,7 +49,7 @@ class NetworkListener(StubClientMixin):
     PREFIX = "listener"
 
     def __init__(self):
-        self.sockets: list[NetworkListener] = []
+        self.sockets: list[SocketListener] = []
         self._potential_protocols = []
         self._close_timers: dict[Any, int] = {}
 
