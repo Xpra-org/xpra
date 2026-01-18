@@ -112,7 +112,7 @@ class MmapClient(StubClientMixin):
             filenames = ("", "")
         else:
             # assume file path(s) have been specified:
-            filenames = self.mmap.split(os.path.pathsep)
+            filenames = self.mmap_option.split(os.path.pathsep)
             if len(filenames) >= 3:
                 raise RuntimeError("too many mmap filenames specified: %r" % csv(filenames))
             read = True
