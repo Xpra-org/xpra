@@ -730,7 +730,7 @@ apply to all connections of the same type. ie: \fItcp-auth\fP for
 \fIbind-tcp\fP.
 Although this is still supported as a fallback, the recommended
 way is to specify authentication options using bind properties.
-ie: \fIbind-tcp=0.0.0.0:14500,auth=file:filename=password.txt\fP.
+ie: \fIbind-tcp=0.0.0.0:14500,auth=file,filename=password.txt\fP.
 The properties can also define extra socket configuration options.
 
 \fB\-\-bind\fP=\fIBIND_LOCATION[,PROPERTIES]\fP
@@ -812,16 +812,16 @@ always fails authentication, useful for testing
 .IP \fBenv\fP
 matches against the environment variable specified by the \fIname\fP option
 (which defaults to \fBXPRA_PASSWORD\fP).
-ie: \fB\-\-auth=env:name=SOME_OTHER_ENV_VAR_NAME\fP.
+ie: \fB\-\-auth=env,name=SOME_OTHER_ENV_VAR_NAME\fP.
 .IP \fBpassword\fP
 matches against the password specified using the \fIvalue\fP option.
-ie: \fB\-\-auth=password:value=YOURPASSWORD\fP.
+ie: \fB\-\-auth=password,value=YOURPASSWORD\fP.
 Note: this command line option may be exposed to other processes
 on the same system.
 .IP \fBfile\fP
 checks the password against the password data found in the file
 specified using the \fBfilename\fP option.
-ie: \fB\-\-auth=file:filename=./password.txt\fP.
+ie: \fB\-\-auth=file,filename=./password.txt\fP.
 
 The contents of this file will be treated as binary data,
 there are no restrictions on character encodings or file size.
@@ -882,7 +882,7 @@ the usernames / group names.
 This module is different from the others in that it will not require
 the client to supply a username or password, as those are ignored.
 Environment variables and pseudo-environment variables may also be used
-as values, eg: \fB\-\-auth=peercred:uid=\\$UID:fred,gid=xpra\fP.
+as values, eg: \fB\-\-auth=peercred,uid=\\$UID:fred,gid=xpra\fP.
 
 .IP \fBpam\fP
 validates the username and password using the PAM system
