@@ -967,4 +967,7 @@ class WindowBackingBase:
                        _options: typedict, callbacks: PaintCallbacks) -> None:
         msg = f"invalid encoding: {coding!r}"
         log.error("Error: %s", msg)
+        log.error(" rgb formats: %s", self.get_rgb_formats())
+        log.error(" csc options: %s", CSC_OPTIONS)
+        log.error(" video decoders: %s", VIDEO_DECODERS)
         fire_paint_callbacks(callbacks, False, msg)
