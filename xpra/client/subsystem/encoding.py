@@ -117,6 +117,7 @@ class Encodings(StubClientMixin):
         self.min_speed = opts.min_speed
         vh = getVideoHelper()
         vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules)
+        vh.init()
 
     def load(self):
         load_codec("dec_pillow")
@@ -134,8 +135,6 @@ class Encodings(StubClientMixin):
             load_codec("dec_webp")
         if "avif" in ae:
             load_codec("dec_avif")
-        vh = getVideoHelper()
-        vh.init()
 
     def cleanup(self) -> None:
         with log.trap_error("Error during video helper cleanup"):
