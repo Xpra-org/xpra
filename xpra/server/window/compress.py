@@ -286,9 +286,12 @@ class WindowSource(WindowIconSource):
         self.iconic: bool = False
         self.window_signal_handlers = []
         # watch for changes to properties that are used to derive the content-type:
-        self.content_type: str = window.get("content-type", "")
+        self.content_types: str = window.get("content-types", ()) or window.get("content-type", "").split(",")
         if "content-type" in window.get_dynamic_property_names():
             sid = window.connect("notify::content-type", self.content_type_changed)
+            self.window_signal_handlers.append(sid)
+        if "content-types" in window.get_dynamic_property_names():
+            sid = window.connect("notify::content-types", self.content_type_changed)
             self.window_signal_handlers.append(sid)
         if "iconic" in window.get_dynamic_property_names():
             self.iconic = window.get_property("iconic")
@@ -360,7 +363,7 @@ class WindowSource(WindowIconSource):
         if self.has_alpha and BROWSER_ALPHA_FIX and not self.is_OR:
             # remove alpha from 'NORMAL' browser windows
             # of a size greater than 200x200:
-            if self.content_type.find("browser") >= 0 and "NORMAL" in self.window_type and ww >= 200 and wh >= 200:
+            if "browser" in self.content_types and "NORMAL" in self.window_type and ww >= 200 and wh >= 200:
                 self.has_alpha = False
 
         # will be overridden by update_quality() and update_speed() called from update_encoding_selection()
@@ -606,7 +609,7 @@ class WindowSource(WindowIconSource):
             "full-frames-only"      : self.full_frames_only,
             "supports-transparency" : self.supports_transparency,
             "property"              : self.get_property_info(),
-            "content-type"          : self.content_type or "",
+            "content-types"          : self.content_types,
             "batch"                 : self.batch_config.get_info(),
             "soft-timeout"          : {
                 "expired"        : self.soft_expired,
@@ -763,8 +766,8 @@ class WindowSource(WindowIconSource):
         return True
 
     def content_type_changed(self, window, *args) -> bool:
-        self.content_type = window.get("content-type", "")
-        log("content_type_changed(%s, %s) content-type=%s", window, args, self.content_type)
+        self.content_types = window.get("content-types", ()) or window.get("content-type", "").split(",")
+        log("content_type_changed(%s, %s) content-types=%s", window, args, self.content_types)
         self.reconfigure(True)
         return True
 
@@ -988,7 +991,7 @@ class WindowSource(WindowIconSource):
             self.max_small_regions = 10
             self.max_bytes_percent = 25
             self.small_packet_cost = 4096
-        elif self.content_type == "desktop":
+        elif "desktop" in self.content_types:
             # in desktop mode, many areas will be updating
             # so favour large screen updates
             self.max_small_regions = 20
@@ -1512,13 +1515,13 @@ class WindowSource(WindowIconSource):
             min_delay = max(min_delay, 1000*1000*1000//bwl)
         max_delay = int(1000*cf)
         raw_delay = int(sizef * qf * sf * cf)
-        if self.content_type.find("text") >= 0:
+        if "text" in self.content_types:
             raw_delay = raw_delay*2//3
-        elif self.content_type == "video":
+        elif "video" in self.content_types:
             raw_delay = raw_delay*3//2
         delay = max(min_delay, min(max_delay, raw_delay))
-        refreshlog("update_refresh_attributes() wid=%#x, sizef=%.2f, content-type=%s, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i",
-                   self.wid, sizef, self.content_type, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
+        refreshlog("update_refresh_attributes() wid=%#x, sizef=%.2f, content-types=%s, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i",
+                   self.wid, sizef, self.content_types, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
         self.do_set_auto_refresh_delay(min_delay, delay)
         rs = AUTO_REFRESH_SPEED
         rq = AUTO_REFRESH_QUALITY
@@ -2057,7 +2060,7 @@ class WindowSource(WindowIconSource):
             if self._fixed_quality > 0:
                 quality = self._fixed_quality
             else:
-                text_hint = self.content_type.find("text") >= 0
+                text_hint = "text" in self.content_types
                 quality = TEXT_QUALITY if text_hint else self._current_quality
                 if packets_backlog is None:
                     packets_backlog = self.get_packets_backlog()
@@ -2084,8 +2087,8 @@ class WindowSource(WindowIconSource):
             eoptions["grayscale"] = True
         if not self.supports_transparency:
             eoptions["alpha"] = False
-        if self.content_type:
-            eoptions["content-type"] = self.content_type
+        if self.content_types:
+            eoptions["content-types"] = self.content_types
         return eoptions
 
     def must_encode_full_frame(self, _encoding: str) -> bool:

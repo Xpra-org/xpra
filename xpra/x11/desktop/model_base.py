@@ -84,7 +84,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         "client-machine", "window-type",
         "desktop", "size-constraints", "class-instance",
         "focused", "title", "depth", "icons",
-        "content-type",
+        "content-type", "content-types",
         "set-initial-position",
     ]
     if BACKWARDS_COMPATIBLE:
@@ -195,6 +195,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             return "xpra-desktop", "Xpra-Desktop"
         if prop == "content-type":
             return "desktop"
+        if prop == "content-types":
+            return ("desktop", )
         if prop == "set-initial-position":
             return False
         return GObject.GObject.get_property(self, prop)

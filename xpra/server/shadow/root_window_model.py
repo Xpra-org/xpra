@@ -60,7 +60,7 @@ class CaptureWindowModel:
             "depth",
         ]
         self.dynamic_property_names: list[str] = []
-        self.internal_property_names: list[str] = ["content-type"]
+        self.internal_property_names: list[str] = ["content-type", "content-types"]
         self.signal_listeners: dict[str, list[tuple]] = {}
 
     def __repr__(self):
@@ -173,6 +173,8 @@ class CaptureWindowModel:
             return get_os_icons()
         if prop == "content-type":
             return "desktop"
+        if prop == "content-types":
+            return ("desktop", )
         raise AttributeError(f"invalid property {prop!r}")
 
     def get(self, name: str, default_value=None):

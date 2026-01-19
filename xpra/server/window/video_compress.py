@@ -475,7 +475,7 @@ class WindowVideoSource(WindowSource):
                  self.common_video_encodings, self._csc_encoder, self._video_encoder)
         if encoding in ("stream", "auto", "grayscale"):
             vh = self.video_helper
-            if encoding in ("auto", "stream") and self.content_type in STREAM_CONTENT_TYPES and vh:
+            if encoding in ("auto", "stream") and (set(self.content_types) & set(STREAM_CONTENT_TYPES)) and vh:
                 accel = vh.get_gpu_encodings()
                 common_accel = preforder(set(self.common_video_encodings) & set(accel.keys()))
                 videolog(f"gpu {accel=} - {common_accel=}")
@@ -493,7 +493,7 @@ class WindowVideoSource(WindowSource):
                         self.stream_mode = "gstreamer"
                     if first_time(f"gpu-stream-{self.wid:#x}"):
                         videolog.info(f"found GPU accelerated encoders for: {csv(common_accel)}")
-                        videolog.info(f"switching to {encoding!r} encoding for {self.content_type!r} window {self.wid:#x}")
+                        videolog.info(f"switching to {encoding!r} encoding for {self.content_types!r} window {self.wid:#x}")
                         if self.stream_mode == "gstreamer":
                             videolog.info("using 'gstreamer' stream mode")
         super().update_encoding_selection(encoding, exclude, init)
@@ -562,7 +562,7 @@ class WindowVideoSource(WindowSource):
             return nonvideo(info="no common video encodings or scrolling")
         if self.is_tray:
             return nonvideo(100, "system tray")
-        text_hint = self.content_type.find("text") >= 0
+        text_hint = "text" in self.content_types
         if text_hint and not TEXT_USE_VIDEO:
             return nonvideo(100, info="text content-type")
 
@@ -575,7 +575,7 @@ class WindowVideoSource(WindowSource):
         if self.encoding == "stream":
             return current_encoding
 
-        video_hint = int(self.content_type.find("video") >= 0)
+        video_hint = "video" in self.content_types
         if self.pixel_format:
             # if we have a hardware video encoder, use video more:
             self.update_pipeline_scores()
@@ -888,7 +888,7 @@ class WindowVideoSource(WindowSource):
         events_count = self.statistics.damage_events_count - vs.set_at
         min_video_events = MIN_VIDEO_EVENTS
         min_video_fps = MIN_VIDEO_FPS
-        if self.content_type.find("video") >= 0:
+        if "video" in self.content_types:
             min_video_events //= 2
             min_video_fps //= 2
         if events_count < min_video_events:
@@ -1127,14 +1127,14 @@ class WindowVideoSource(WindowSource):
             return 0
         if FORCE_AV_DELAY >= 0:
             return FORCE_AV_DELAY
-        content_type = options.get("content-type", self.content_type)
+        content_types = options.get("content-types", self.content_types)
         if AV_SYNC_DEFAULT:
             # default to on, unless we're quite sure it should not be used:
-            if any(content_type.find(x) >= 0 for x in ("text", "picture")):
+            if set(content_types) & {"text", "picture"}:
                 return 0
         else:
             # default to off unless content-type says otherwise:
-            if content_type.find("audio") < 0:
+            if "audio" in content_types:
                 return 0
         l = len(self.encode_queue)
         if l >= self.encode_queue_max_size:
@@ -1257,7 +1257,7 @@ class WindowVideoSource(WindowSource):
             STRICT_MODE,
             not self.non_video_encodings,
             not self.common_video_encodings,
-            self.content_type.find("text") >= 0 and not TEXT_USE_VIDEO,
+            ("text" in self.content_types) and not TEXT_USE_VIDEO,
             self._mmap,
         )):
             # cannot use video subregions
@@ -1345,8 +1345,8 @@ class WindowVideoSource(WindowSource):
         if self.is_cancelled():
             scorelog("cannot score: cancelled state")
             return
-        if self.content_type.find("text") >= 0 and self.non_video_encodings and not TEXT_USE_VIDEO:
-            scorelog("no pipelines for content-type %r", self.content_type)
+        if "text" in self.content_types and self.non_video_encodings and not TEXT_USE_VIDEO:
+            scorelog("no pipelines for content-types %r", self.content_types)
             return
         if not self.pixel_format:
             scorelog("cannot score: no pixel format!")
@@ -1483,7 +1483,7 @@ class WindowVideoSource(WindowSource):
         min_q = self._fixed_min_quality
         target_s = int(self._current_speed)
         min_s = self._fixed_min_speed
-        text_hint = self.content_type.find("text") >= 0
+        text_hint = "text" in self.content_types
         if text_hint:
             vmw = vmh = 16384
         else:
@@ -1692,12 +1692,12 @@ class WindowVideoSource(WindowSource):
         if self.statistics.damage_events_count <= 50:
             # not enough data yet:
             return mrs(info="waiting for more events, using minimum")
-        if self.content_type.find("text") >= 0 and TEXT_QUALITY > 90:
+        if "text" in self.content_types and TEXT_QUALITY > 90:
             return mrs(info="not downscaling text")
 
         # use heuristics to choose the best scaling ratio:
         mvsub = self.matches_video_subregion(width, height)
-        video = self.content_type.find("video") >= 0 or (bool(mvsub) and self.subregion_is_video())
+        video = "video" in self.content_types or (bool(mvsub) and self.subregion_is_video())
         ffps = self.get_video_fps(width, height)
         q = self._current_quality
         s = self._current_speed
@@ -1719,7 +1719,7 @@ class WindowVideoSource(WindowSource):
                 if self.is_shadow:
                     # shadow servers look ugly when scaled:
                     target *= 16
-                elif self.content_type.find("text") >= 0:
+                elif "text" in self.content_types:
                     # try to avoid scaling:
                     target *= 4
                 elif not video:
@@ -2098,15 +2098,15 @@ class WindowVideoSource(WindowSource):
             # only allow bandwidth to drive video encoders
             # when we don't have strict quality or speed requirements:
             opts["bandwidth-limit"] = self.bandwidth_limit
-        if self.content_type:
-            content_type = self.content_type
+        if self.content_types:
+            content_types = self.content_types
         elif not recentscroll and self.matches_video_subregion(width, height) and self.subregion_is_video():
-            content_type = "video"
+            content_types = ("video", )
         else:
-            content_type = None
-        if content_type:
-            opts["content-type"] = content_type
-            if content_type == "video":
+            content_types = ()
+        if content_types:
+            opts["content-types"] = content_types
+            if "video" in content_types:
                 if B_FRAMES and (encoding in self.supports_video_b_frames):
                     opts["b-frames"] = True
         return opts
@@ -2138,9 +2138,9 @@ class WindowVideoSource(WindowSource):
             sd.free()
 
     def may_use_scrolling(self, image: ImageWrapper, options: typedict) -> bool:
-        scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_type=%s, non-video=%s",
+        scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_types=%s, non-video=%s",
                   image, options, self.supports_scrolling, image.has_pixels(),
-                  self.content_type, self.non_video_encodings)
+                  self.content_types, self.non_video_encodings)
         if self._mmap and self.encoding != "scroll":
             scrolllog("no scrolling: using mmap")
             return False
@@ -2154,7 +2154,7 @@ class WindowVideoSource(WindowSource):
         # since that means we're likely to be able to compress on the GPU too with NVENC:
         if not image.has_pixels():
             return False
-        if self.content_type.find("video") >= 0 or not self.non_video_encodings:
+        if "video" in self.content_types or not self.non_video_encodings:
             scrolllog("no scrolling: content is video")
             return False
         w = image.get_width()
@@ -2315,7 +2315,7 @@ class WindowVideoSource(WindowSource):
         del scrolls
         # send the rest as rectangles:
         if non_scroll:
-            if self.content_type.find("text") >= 0:
+            if "text" in self.content_types:
                 quality = 100
                 options["quality"] = quality
             # boost quality a bit, because lossless saves refreshing,

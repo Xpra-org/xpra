@@ -32,6 +32,7 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "locale": "",
     "command": "",
     "content-type": "",
+    "content-types": (),
     "pid": 0,
     "ppid": 0,
     "wm-pid": 0,

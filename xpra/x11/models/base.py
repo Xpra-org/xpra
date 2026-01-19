@@ -121,6 +121,11 @@ class BaseWindowModel(CoreX11WindowModel):
             "What type of content is shown in this window", "",
             GObject.ParamFlags.READABLE,
         ),
+        "content-types": (
+            GObject.TYPE_PYOBJECT,
+            "What type of content is shown in this window as a list of strings", "",
+            GObject.ParamFlags.READABLE,
+        ),
         # from _XPRA_QUALITY
         "quality": (
             GObject.TYPE_INT,
@@ -232,13 +237,13 @@ class BaseWindowModel(CoreX11WindowModel):
     _property_names = CoreX11WindowModel._property_names + [
         "transient-for", "fullscreen-monitors", "bypass-compositor",
         "group-leader", "window-type", "workspace", "strut", "opacity",
-        "content-type",
+        "content-type", "content-types",
         # virtual attributes:
         "fullscreen", "focused", "maximized", "above", "below", "shaded",
         "skip-taskbar", "skip-pager", "sticky",
     ]
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
-        "attention-requested", "content-type",
+        "attention-requested", "content-type", "content-types",
         "window-type", "workspace", "opacity",
         "fullscreen", "focused", "maximized", "above", "below", "shaded",
         "skip-taskbar", "skip-pager", "sticky",
@@ -460,14 +465,18 @@ class BaseWindowModel(CoreX11WindowModel):
             # the menu loader also has a lock.
             add_work_item(self.guess_content_type)
         metalog("_update_content_type() %s", content_type)
-        self._updateprop("content-type", content_type)
+        self._set_content_type(content_type)
 
     def guess_content_type(self) -> None:
         content_type = guess_content_type(self)
         if not content_type and self.is_tray():
             content_type = "picture"
         metalog(f"guess_content_type() {content_type=}")
+        self._set_content_type(content_type)
+
+    def _set_content_type(self, content_type: str) -> None:
         self._updateprop("content-type", content_type)
+        self._updateprop("content-types", tuple(x for x in content_type.split(",") if x))
 
     def _handle_xpra_quality_change(self) -> None:
         quality: int = self.prop_get("_XPRA_QUALITY", "u32", True) or -1
