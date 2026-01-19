@@ -401,7 +401,7 @@ class VideoHelper:
             for colorspace, decoder_specs in sorted(encoding_specs.items()):
                 for decoder_spec in decoder_specs:
                     for output_colorspace in decoder_spec.output_colorspaces:
-                        log("found decoder %12s for %5s with %7s mode, outputs '%s'",
+                        log("found decoder %12s for %5s with %10s mode, outputs %s",
                             decoder_spec.codec_type, encoding, colorspace, output_colorspace)
                         if output_colorspace in client_supported_csc_modes:
                             encoding_colorspaces = full_csc_modes.setdefault(encoding, [])
