@@ -1435,6 +1435,10 @@ class WindowSource(WindowIconSource):
             self._current_quality = capr(quality)
             self._encoding_quality_info = {"fixed": True}
             return cq != self._current_quality
+        if "lossless" in self.content_types:
+            self._current_quality = 100
+            self._encoding_quality_info = {"lossless": True}
+            return cq != self._current_quality
         if self.encoding in LOSSLESS_ENCODINGS:
             # the user has selected an encoding which does not use quality
             # so skip the calculations!

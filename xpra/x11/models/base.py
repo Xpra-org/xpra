@@ -465,18 +465,18 @@ class BaseWindowModel(CoreX11WindowModel):
             # the menu loader also has a lock.
             add_work_item(self.guess_content_type)
         metalog("_update_content_type() %s", content_type)
-        self._set_content_type(content_type)
+        self._set_content_types(content_type)
 
     def guess_content_type(self) -> None:
-        content_type = guess_content_type(self)
-        if not content_type and self.is_tray():
-            content_type = "picture"
-        metalog(f"guess_content_type() {content_type=}")
-        self._set_content_type(content_type)
+        content_types = guess_content_type(self)
+        if not content_types and self.is_tray():
+            content_types = ("picture", )
+        metalog(f"guess_content_type() {content_types=}")
+        self._set_content_types(content_types)
 
-    def _set_content_type(self, content_type: str) -> None:
-        self._updateprop("content-type", content_type)
-        self._updateprop("content-types", tuple(x for x in content_type.split(",") if x))
+    def _set_content_types(self, content_types: Sequence[str]) -> None:
+        self._updateprop("content-type", "+".join(content_types) if content_types else "")
+        self._updateprop("content-types", content_types)
 
     def _handle_xpra_quality_change(self) -> None:
         quality: int = self.prop_get("_XPRA_QUALITY", "u32", True) or -1

@@ -330,10 +330,6 @@ HINT_NAME_TO_CONSTANT: Dict[str, int] = {}
 for k,v in IMAGE_HINT.items():
     HINT_NAME_TO_CONSTANT[v] = k
 
-CONTENT_TYPE_HINT: Dict[str, int] = {
-    "picture"   : WEBP_HINT_PICTURE,
-}
-
 cdef WebPImageHint DEFAULT_IMAGE_HINT = HINT_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_IMAGE_HINT", "default").lower(), WEBP_HINT_DEFAULT)
 cdef WebPPreset DEFAULT_PRESET = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET", "default").lower(), WEBP_PRESET_DEFAULT)
 cdef WebPPreset PRESET_SMALL = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET_SMALL", "icon").lower(), WEBP_PRESET_ICON)
@@ -437,7 +433,7 @@ cdef class Encoder:
     cdef int quality
     cdef int speed
     cdef unsigned char alpha
-    cdef object content_type
+    cdef object content_types
     cdef long frames
     cdef WebPConfig config
     cdef WebPPreset preset
@@ -456,7 +452,7 @@ cdef class Encoder:
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
         self.alpha = src_format.find("A")>=0
-        self.content_type = options.get("content-type", "")
+        self.content_types = options.get("content-types", "")
         self.configure_encoder()
 
     cdef void configure_encoder(self):
@@ -464,10 +460,10 @@ cdef class Encoder:
         if not ret:
             raise RuntimeError("failed to initialize webp config")
         config_init(&self.config)
-        self.preset = get_preset(self.width, self.height, self.content_type)
+        self.preset = get_preset(self.width, self.height, self.content_types)
         configure_preset(&self.config, self.preset, self.quality)
         configure_encoder(&self.config, self.quality, self.speed, self.alpha)
-        configure_image_hint(&self.config, self.content_type)
+        configure_image_hint(&self.config, self.content_types)
         validate_config(&self.config)
 
     def is_ready(self) -> bool:
@@ -575,12 +571,15 @@ cdef class Encoder:
         return cdata, client_options
 
 
-cdef inline WebPPreset get_preset(unsigned int width, unsigned int height, content_type: str):
-    cdef WebPPreset preset = DEFAULT_PRESET
+cdef inline WebPPreset get_preset(unsigned int width, unsigned int height, content_types: Sequence[str]):
+    cdef WebPPreset default_preset = DEFAULT_PRESET
     #only use icon for small squarish rectangles
     if width*height<=2304 and abs(width-height)<=16:
-        preset = PRESET_SMALL
-    return CONTENT_TYPE_PRESET.get(content_type, preset)
+        default_preset = PRESET_SMALL
+    for content_type, preset in CONTENT_TYPE_PRESET.items():
+        if content_type in content_types:
+            return preset
+    return default_preset
 
 
 cdef inline void config_init(WebPConfig *config):
@@ -631,8 +630,8 @@ cdef void configure_preset(WebPConfig *config, WebPPreset preset, int quality):
     log("webp config: preset=%-8s", PRESETS.get(preset, preset))
 
 
-cdef void configure_image_hint(WebPConfig *config, content_type: str):
-    cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
+cdef void configure_image_hint(WebPConfig *config, content_types: Sequence[str]):
+    cdef WebPImageHint image_hint = WEBP_HINT_PICTURE if "picture" in content_types else DEFAULT_IMAGE_HINT
     config.image_hint = image_hint
     log("webp config: image hint=%s", IMAGE_HINT.get(image_hint, image_hint))
 
@@ -668,11 +667,11 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> Tuple:
     cdef WebPConfig config
     config_init(&config)
 
-    content_type = options.strget("content-type", "")
-    cdef WebPPreset preset = get_preset(width, height, content_type)
+    content_types = options.strget("content-types", ())
+    cdef WebPPreset preset = get_preset(width, height, content_types)
     configure_preset(&config, preset, quality)
     configure_encoder(&config, quality, speed, alpha)
-    configure_image_hint(&config, content_type)
+    configure_image_hint(&config, content_types)
     validate_config(&config)
 
     pixels = image.get_pixels()

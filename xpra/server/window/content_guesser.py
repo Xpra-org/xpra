@@ -165,7 +165,7 @@ def guess_content_type_from_defs(window) -> str:
             for regex, match_data in defs.items():
                 if regex.search(str(value)):
                     regex_str, content_type = match_data
-                    log("guess_content_type(%s) found match: property=%s, regex=%s, content-type=%s",
+                    log("guess_content_type_from_defs(%s) found match: property=%s, regex=%s, content-type=%s",
                         window, prop_name, regex_str, content_type)
                     return content_type
     return ""
@@ -304,7 +304,14 @@ def guess_content_from_parent_pid(ppid: int) -> str:
     return pt.get(executable, "")
 
 
-def guess_content_type(window) -> str:
+def guess_content_type(window) -> Sequence[str]:
+    guess_str = do_guess_content_type(window)
+    if not guess_str:
+        return ()
+    return tuple(guess_str.replace("+", ",").split(","))
+
+
+def do_guess_content_type(window) -> str:
     if not GUESS_CONTENT:
         return DEFAULT_CONTENT_TYPE
     return guess_content_type_from_defs(window) or \

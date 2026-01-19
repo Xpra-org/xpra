@@ -531,6 +531,9 @@ class WindowVideoSource(WindowSource):
         if self.encoding == "stream":
             log("using stream encoding")
             return self.get_best_encoding_video
+        if "lossless" in self.content_types:
+            log("using default for lossless window content type %s", self.content_types)
+            return super().get_best_encoding_impl_default()
         if self.window_type.intersection(LOSSLESS_WINDOW_TYPES):
             log("using default for lossless window type %s", self.window_type)
             return super().get_best_encoding_impl_default()
