@@ -498,7 +498,7 @@ cdef class Encoder:
             "height"        : self.height,
             "alpha"         : bool(self.alpha),
             "pixel-format"  : self.src_format,
-            "content-type"  : self.content_type,
+            "content-type"  : self.content_types,
         }
         return info
 
@@ -522,8 +522,8 @@ cdef class Encoder:
             self.Bpp = len(pixel_format)
             self.alpha = pixel_format.find("A")>=0
             reconfigure = True
-        if options.get("content-type", "") != self.content_type:
-            self.content_type = options.get("content-type", "")
+        if options.get("content-types", ()) != self.content_types:
+            self.content_types = options.get("content-types", ())
             reconfigure = True
         if reconfigure:
             log("webp reconfigure")
