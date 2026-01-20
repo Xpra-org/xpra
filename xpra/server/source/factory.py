@@ -117,7 +117,7 @@ def get_client_connection_class(caps: typedict):
 
             for c in CC_BASES:
                 c.init_state(self)
-            self.run()
+            self.enable_connection()
 
         def close(self) -> None:
             log("%s.close()", self)

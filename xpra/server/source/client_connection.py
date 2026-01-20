@@ -91,7 +91,7 @@ class ClientConnection(StubClientConnection):
         self.connect("suspend", suspend)
         self.connect("resume", resume)
 
-    def run(self) -> None:
+    def enable_connection(self) -> None:
         # ready for processing:
         self.protocol.set_packet_source(self.next_packet)
 
