@@ -17,6 +17,7 @@ from xpra.util.parsing import TRUE_OPTIONS
 from xpra.util.child_reaper import get_child_reaper
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.features import EXECUTABLE_EXTENSION
+from xpra.util.system import stop_proc
 
 GLib = gi_import("GLib")
 
@@ -129,11 +130,7 @@ class Authenticator(SysAuthenticator):
         log(f"exec auth.command_timedout() proc={proc}")
         self.timeout_event = True
         self.timer = 0
-        if proc:
-            try:
-                proc.terminate()
-            except OSError:
-                log(f"error trying to terminate exec auth process {proc}", exc_info=True)
+        stop_proc(proc, "exec authentication command")
 
     def __repr__(self):
         return "exec"

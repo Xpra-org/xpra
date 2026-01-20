@@ -18,7 +18,7 @@ from xpra.util.io import pollwait, is_writable, which
 from xpra.util.env import envbool, osexpand
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import csv
-from xpra.util.system import is_X11
+from xpra.util.system import is_X11, stop_proc
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import enabled_or_auto
 from xpra.scripts.session import clean_session_files, session_file_path, pidexists
@@ -417,7 +417,7 @@ class PulseaudioServer(StubServerMixin):
             # but we can't kill the process because Ubuntu starts a new one
             if r != 0 and self.is_child_alive(proc):
                 # fallback to using SIGINT:
-                proc.terminate()
+                stop_proc(proc, "pulseaudio")
         except Exception as e:
             log("exit_pulseaudio() error stopping %s", proc, exc_info=True)
             # only log the full stacktrace if the process failed to terminate:

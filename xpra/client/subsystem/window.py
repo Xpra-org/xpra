@@ -35,7 +35,7 @@ from xpra.util.io import find_libexec_command
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import std, strtobytes, memoryview_to_bytes
 from xpra.os_util import OSX, POSIX, gi_import
-from xpra.util.system import is_Ubuntu, is_Wayland
+from xpra.util.system import is_Ubuntu, is_Wayland, stop_proc
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool, first_time
@@ -129,10 +129,7 @@ def kill_signalwatcher(proc) -> None:
         execlog.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
     if proc.poll() is not None:
         return
-    try:
-        proc.terminate()
-    except OSError:
-        execlog.warn("Warning: failed to terminate the signal watcher", exc_info=True)
+    stop_proc(proc, "signalwatcher")
     try:
         proc.wait(0.01)
     except TimeoutExpired:

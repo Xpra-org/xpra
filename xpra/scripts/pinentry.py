@@ -14,7 +14,7 @@ from xpra.common import noerr
 from xpra.util.env import envbool
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.io import use_gui_prompt, which
-from xpra.util.system import is_gnome, is_kde
+from xpra.util.system import is_gnome, is_kde, stop_proc
 from xpra.util.str_fn import bytestostr
 from xpra.scripts.config import InitExit
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
@@ -105,8 +105,7 @@ def do_run_pinentry(proc, get_input: Callable, process_output: Callable) -> int:
         except OSError:
             log("error running pinentry", exc_info=True)
             break
-    if proc.poll() is None:
-        proc.terminate()
+    stop_proc(proc, "pinentry")
     noerr(proc.stdin.close)
     noerr(proc.stdout.close)
     noerr(proc.stderr.close)
@@ -165,7 +164,7 @@ def run_pinentry_getpin(pinentry_cmd: str, title: str, description: str) -> str:
     try:
         pinentry_getpin(proc, title, description, rec, err)
     finally:
-        noerr(proc.terminate)
+        stop_proc(proc, "pinentry")
     if not values:
         return ""
     return values[0]

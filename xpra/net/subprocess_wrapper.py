@@ -21,7 +21,7 @@ from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH
 from xpra.common import noop
 from xpra.os_util import gi_import, WIN32
 from xpra.util.io import setbinarymode
-from xpra.util.system import SIGNAMES
+from xpra.util.system import SIGNAMES, stop_proc
 from xpra.util.child_reaper import get_child_reaper
 from xpra.log import Logger
 
@@ -383,16 +383,8 @@ class SubprocessCaller(SignalEmitter):
 
     def stop_process(self) -> None:
         log("%s.stop_process() sending stop request to %s", self, self.description)
-        proc = self.process
-        if not proc:
-            return
+        stop_proc(self.process, self.description)
         self.process = None
-        if proc.poll() is None:
-            try:
-                proc.terminate()
-            except Exception as e:
-                log("stop_process() proc=%s", proc, exc_info=True)
-                log.warn("Warning: failed to stop the wrapped subprocess %s: %s", proc, e)
 
     def stop_protocol(self) -> None:
         p = self.protocol

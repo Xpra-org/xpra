@@ -24,6 +24,7 @@ from xpra.util.parsing import parse_simple_dict
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
+from xpra.util.system import stop_proc
 
 log = Logger("printing")
 
@@ -143,12 +144,7 @@ def get_lpinfo_drv(make_and_model: str) -> str:
             return
         log.warn("Warning: lpinfo command is taking too long,")
         log.warn(" is the cups server running?")
-        try:
-            proc.terminate()
-        except Exception as e:
-            log("%s.terminate()", proc, exc_info=True)
-            log.error("Error: failed to terminate lpinfo command")
-            log.estr(e)
+        stop_proc(proc, "lpinfo")
 
     start_thread(watch_lpinfo, "lpinfo watcher", daemon=True)
     out, err = proc.communicate()

@@ -9,6 +9,7 @@ from time import monotonic
 from subprocess import Popen
 from collections.abc import Sequence, Callable
 
+from xpra.util.system import stop_proc
 from xpra.auth.common import get_exec_env
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.paths import get_nodock_command
@@ -78,10 +79,9 @@ class Authenticator(SysAuthenticator):
         self.stop_otp_dialog()
 
     def stop_otp_dialog(self) -> None:
-        proc = self.otp_dialog
-        log("stop_otp_dialog() otp_dialog=%s", proc)
-        if proc and proc.poll() is None:
-            proc.terminate()
+        log("stop_otp_dialog() otp_dialog=%s", self.otp_dialog)
+        stop_proc(self.otp_dialog, "otp dialog")
+        self.otp_dialog = None
 
     def __repr__(self):
         return "otpscreen"

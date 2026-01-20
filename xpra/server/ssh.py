@@ -20,6 +20,7 @@ from xpra.net.bytestreams import pretty_socket
 from xpra.util.str_fn import csv, decode_str
 from xpra.util.env import envint, osexpand, first_time
 from xpra.os_util import getuid, WIN32, POSIX
+from xpra.util.system import stop_proc
 from xpra.util.thread import start_thread
 from xpra.util.parsing import str_to_bool
 from xpra.common import SSH_AGENT_DISPATCH, SizedBuffer, BACKWARDS_COMPATIBLE
@@ -148,8 +149,7 @@ def proxy_start(channel, subcommand: str, args: list[str]) -> None:
         log("proxy_ended(%s)", args)
 
     def close() -> None:
-        if proc.poll() is None:
-            proc.terminate()
+        stop_proc(proc, f"ssh proxy start command {subcommand!r}")
 
     get_child_reaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
 

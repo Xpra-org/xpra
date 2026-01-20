@@ -21,6 +21,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envint, restore_script_env, source_env
 from xpra.net.common import Packet
+from xpra.util.system import stop_proc
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.scripts.parsing import parse_env, get_subcommands
@@ -441,11 +442,7 @@ class ChildCommandServer(StubServerMixin):
             if self.is_child_alive(proc):
                 wait_for.append(procinfo)
                 log(f"child command {name!r} is still alive, calling terminate on {proc}")
-                try:
-                    proc.terminate()
-                except Exception as e:
-                    log(f"failed to terminate {proc}: {e}")
-                    del e
+                stop_proc(proc, "child %s" % name)
         if not wait_for:
             return
         log(f"waiting for child commands to exit: {wait_for}")

@@ -15,6 +15,7 @@ from xpra.server.source.stub import StubClientConnection
 from xpra.common import FULL_INFO, NotificationID, SizedBuffer
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import
 from xpra.util.objects import typedict
+from xpra.util.system import stop_proc
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time, envfloat
 from xpra.log import Logger
@@ -41,18 +42,6 @@ class FakeSink:
     @staticmethod
     def cleanup(*args) -> None:
         log("FakeSink.cleanup%s ignored", args)
-
-
-def stop_proc(proc: Popen) -> None:
-    r = proc.poll()
-    log("stop_proc(%s) exit code=%s", proc, r)
-    if r is not None:
-        # already ended
-        return
-    try:
-        proc.terminate()
-    except OSError:
-        log("failed to stop subprocess %s", proc)
 
 
 class AudioConnection(StubClientConnection):
@@ -124,7 +113,7 @@ class AudioConnection(StubClientConnection):
             timer = self.new_stream_timers.pop(proc, 0)
             if timer:
                 GLib.source_remove(timer)
-            stop_proc(proc)
+            stop_proc(proc, "new-stream notification")
 
     def parse_client_caps(self, c: typedict) -> None:
         audio = typedict(c.dictget(AudioConnection.PREFIX) or {})
@@ -137,8 +126,9 @@ class AudioConnection(StubClientConnection):
             self.audio_encoders = audio.strtupleget("encoders", ())
             self.audio_receive = audio.boolget("receive")
             self.audio_send = audio.boolget("send")
-        log("pulseaudio id=%s, cookie-hash=%s, server=%s, audio decoders=%s, audio encoders=%s, receive=%s, send=%s",
-            self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server,
+        log("pulseaudio id=%s, cookie-hash=%s, server=%s",
+            self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server)
+        log("audio decoders=%s, encoders=%s, receive=%s, send=%s",
             self.audio_decoders, self.audio_encoders, self.audio_receive, self.audio_send)
 
     def get_caps(self) -> dict[str, Any]:
@@ -329,7 +319,7 @@ class AudioConnection(StubClientConnection):
 
             def stop_new_stream_notification() -> None:
                 if self.new_stream_timers.pop(proc, None):
-                    stop_proc(proc)
+                    stop_proc(proc, "new-stream notification")
 
             timer = GLib.timeout_add(NEW_STREAM_SOUND_STOP * 1000, stop_new_stream_notification)
             self.new_stream_timers[proc] = timer

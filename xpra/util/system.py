@@ -32,6 +32,21 @@ def set_proc_title(title: str) -> None:
         get_util_logger().debug("setproctitle is not installed: %s", e)
 
 
+def stop_proc(proc: Popen, what="subprocess") -> None:
+    if not proc:
+        return
+    r = proc.poll()
+    log = get_util_logger()
+    log("stop_proc(%s, %s) exit code=%s", proc, what, r)
+    if r is not None:
+        # already ended
+        return
+    try:
+        proc.terminate()
+    except OSError:
+        log("failed to stop %s %s", what, proc, exc_info=True)
+
+
 def no_idle(fn, *args, **kwargs) -> None:
     fn(*args, **kwargs)
 

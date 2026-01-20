@@ -12,6 +12,7 @@ from multiprocessing import Queue as MQueue, freeze_support
 from typing import Any
 from collections.abc import Callable
 
+from xpra.util.system import stop_proc
 from xpra.util.objects import typedict
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
@@ -474,8 +475,7 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
 
         def stop_server_subprocess() -> None:
             log("stop_server_subprocess() proc=%s", proc)
-            if proc and proc.poll() is None:
-                proc.terminate()
+            stop_proc(proc, "server-subprocess")
 
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
 

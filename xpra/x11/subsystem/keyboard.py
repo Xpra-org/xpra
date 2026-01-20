@@ -17,6 +17,7 @@ from xpra.util.env import envbool
 from xpra.util.io import find_libexec_command, which
 from xpra.util.objects import typedict
 from xpra.server.subsystem.keyboard import KeyboardServer
+from xpra.util.system import stop_proc
 from xpra.x11.error import xsync, xswallow, xlog
 from xpra.log import Logger
 
@@ -134,7 +135,7 @@ def may_start_ibus(env: dict[str, str]):
             if elapsed < 5:
                 return True
             ibuslog.warn("Warning: the daemonizer has failed to exit")
-            proc.terminate()
+            stop_proc(proc, "daemonizer")
             return False
 
         if daemonizer:

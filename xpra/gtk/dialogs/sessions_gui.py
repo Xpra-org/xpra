@@ -24,6 +24,7 @@ from xpra.gtk.dialogs.util import hb_button
 from xpra.net.common import DEFAULT_PORTS
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.objects import typedict
+from xpra.util.system import stop_proc
 from xpra.os_util import gi_import, WIN32, getuid, getgid
 from xpra.util.env import IgnoreWarningsContext
 from xpra.log import Logger
@@ -447,7 +448,7 @@ class SessionsGUI(Gtk.Window):
             def disconnect_client(btn) -> None:
                 log("disconnect_client(%s) proc=%s", btn, proc)
                 self.clients_disconnecting.add(key)
-                proc.terminate()
+                stop_proc(proc, "client")
                 self.populate()
 
             btn = imagebutton("Disconnect", icon, clicked_callback=disconnect_client)

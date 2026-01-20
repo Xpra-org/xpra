@@ -45,7 +45,7 @@ from xpra.os_util import (
     WIN32, OSX, POSIX
 )
 from xpra.util.io import load_binary_file, is_socket, wait_for_socket, stderr_print, use_tty, info, warn, error
-from xpra.util.system import is_Wayland, SIGNAMES, set_proc_title, is_systemd_pid1
+from xpra.util.system import is_Wayland, SIGNAMES, set_proc_title, is_systemd_pid1, stop_proc
 from xpra.scripts.parsing import (
     get_usage,
     parse_display_name, parse_env,
@@ -444,11 +444,12 @@ def use_systemd_run(s) -> bool:
     except TimeoutExpired:  # pragma: no cover
         r = None
     if r is None:
-        noerr(proc.terminate)
-        try:
-            proc.communicate(timeout=1)
-        except TimeoutExpired:  # pragma: no cover
-            r = None
+        stop_proc(proc, "systemd-run")
+        if proc.poll() is None:
+            try:
+                proc.communicate(timeout=1)
+            except TimeoutExpired:  # pragma: no cover
+                r = None
     return r == 0
 
 
@@ -3098,7 +3099,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name) -> 
             raise RuntimeError(f"shadow subprocess command returned {proc.returncode}")
         time.sleep(0.10)
         elapsed = monotonic() - start
-    proc.terminate()
+    stop_proc(proc, "shadow server")
     raise RuntimeError(f"timeout: failed to identify the new shadow server {display_name!r}")
 
 
