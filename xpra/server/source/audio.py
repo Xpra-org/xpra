@@ -142,7 +142,6 @@ class AudioConnection(StubClientConnection):
                 "muxers", "demuxers",
             )}
         audio_props.update({
-            "codec-full-names": True,
             "encoders": self.speaker_codecs,
             "decoders": self.microphone_codecs,
             "send": self.supports_speaker and len(self.speaker_codecs) > 0,
