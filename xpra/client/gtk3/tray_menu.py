@@ -919,19 +919,14 @@ class GTKTrayMenu(GTKMenuHelper):
         def is_speaker_on(*_args) -> bool:
             return self.client.speaker_enabled
 
-        def speaker_state(*_args) -> None:
+        def check_available() -> str:
             if not self.client.speaker_allowed:
-                set_sensitive(speaker, False)
-                speaker.set_tooltip_text("Speaker forwarding has been disabled")
-                return
+                return "Speaker forwarding has been disabled"
             if not self.client.server_audio_send:
-                set_sensitive(speaker, False)
-                speaker.set_tooltip_text("Server does not support speaker forwarding")
-                return
-            set_sensitive(speaker, True)
-            speaker.set_submenu(self.make_audiosubmenu(is_speaker_on, self.spk_on, self.spk_off, "speaker-changed"))
+                return "Server does not support speaker forwarding"
+            return ""
 
-        self.after_handshake(speaker_state)
+        self.add_audiosubmenu(speaker, check_available, is_speaker_on, self.spk_on, self.spk_off, "speaker-changed")
         return speaker
 
     def mic_on(self, *args) -> None:
@@ -949,20 +944,16 @@ class GTKTrayMenu(GTKMenuHelper):
         def is_microphone_on(*_args) -> bool:
             return self.client.microphone_enabled
 
-        def microphone_state(*_args) -> None:
+        def check_available() -> str:
             if not self.client.microphone_allowed:
-                set_sensitive(microphone, False)
-                microphone.set_tooltip_text("Microphone forwarding has been disabled")
-                return
+                return "Microphone forwarding has been disabled"
             if not self.client.server_audio_receive:
-                set_sensitive(microphone, False)
-                microphone.set_tooltip_text("Server does not support microphone forwarding")
-                return
-            set_sensitive(microphone, True)
-            microphone.set_submenu(self.make_audiosubmenu(is_microphone_on,
-                                                          self.mic_on, self.mic_off, "microphone-changed"))
+                return "Server does not support microphone forwarding"
+            return ""
 
-        self.after_handshake(microphone_state)
+        self.add_audiosubmenu(microphone, check_available, is_microphone_on,
+                              self.mic_on, self.mic_off, "microphone-changed")
+
         return microphone
 
     @staticmethod
@@ -975,11 +966,12 @@ class GTKTrayMenu(GTKMenuHelper):
         if item.get_active():
             cb()
 
-    def make_audiosubmenu(self, is_on_cb: Callable, on_cb: Callable, off_cb, client_signal: str) -> Gtk.Menu:
+    def add_audiosubmenu(self, menuitem, check_available: Callable[[], str], is_on_cb: Callable[[], bool],
+                         on_cb: Callable, off_cb: Callable, client_signal: str) -> Gtk.Menu:
         menu = Gtk.Menu()
         menu.ignore_events = False
 
-        def onoffitem(label, active, cb) -> Gtk.CheckMenuItem:
+        def onoffitem(label: str, active: bool, cb: Callable) -> Gtk.CheckMenuItem:
             c = Gtk.CheckMenuItem(label=label)
             c.set_draw_as_radio(True)
             c.set_active(active)
@@ -995,8 +987,16 @@ class GTKTrayMenu(GTKMenuHelper):
 
         def update_audiosubmenu_state(*args) -> None:
             menu.ignore_events = True
+            err = check_available()
+            set_sensitive(menuitem, not bool(err))
+            menuitem.set_tooltip_text(err)
+            if err:
+                menuitem.set_submenu(None)
+            else:
+                menuitem.set_submenu(menu)
+
             is_on = is_on_cb()
-            log("update_audiosubmenu_state%s is_on=%s", args, is_on)
+            log("update_audiosubmenu_state%s is_on=%s, err=%r", args, is_on, err)
             if is_on:
                 if not on.get_active():
                     on.set_active(True)
@@ -1008,6 +1008,7 @@ class GTKTrayMenu(GTKMenuHelper):
             menu.ignore_events = False
 
         self.client.connect(client_signal, update_audiosubmenu_state)
+        self.client.connect("audio-initialized", update_audiosubmenu_state)
         self.after_handshake(update_audiosubmenu_state)
         menu.show_all()
         return menu
@@ -1064,6 +1065,7 @@ class GTKTrayMenu(GTKMenuHelper):
             set_sensitive(sync, True)
 
         self.after_handshake(set_avsyncmenu)
+        self.client.connect("audio-initialized", set_avsyncmenu)
         sync.show_all()
         return sync
 

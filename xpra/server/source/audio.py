@@ -6,13 +6,14 @@
 import os
 from subprocess import Popen
 from shutil import which
+from time import monotonic, sleep
 from typing import Any
 from collections.abc import Sequence
 
 from xpra.audio.common import AUDIO_DATA_PACKET
 from xpra.net.compression import Compressed
 from xpra.server.source.stub import StubClientConnection
-from xpra.common import FULL_INFO, NotificationID, SizedBuffer
+from xpra.common import FULL_INFO, NotificationID, SizedBuffer, BACKWARDS_COMPATIBLE
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import
 from xpra.util.objects import typedict
 from xpra.util.system import stop_proc
@@ -54,7 +55,7 @@ class AudioConnection(StubClientConnection):
         log("is_needed(..) audio=%s", audio)
         if isinstance(audio, dict):
             audio = typedict(audio)
-            return audio.boolget("send") or audio.boolget("receive")
+            return audio.boolget("send") or audio.boolget("receive") or audio.boolget("async")
         return False
 
     def __init__(self):
@@ -70,19 +71,6 @@ class AudioConnection(StubClientConnection):
         self.connect("suspend", self.suspend_audio_source)
         self.connect("resume", self.resume_audio_source)
 
-    def init_from(self, _protocol, server) -> None:
-        event = server.audio_initialized
-        log("audio init may wait for %s", event)
-        if not event.wait(5):
-            log.warn("Warning: timeout waiting for audio initialization")
-        self.audio_properties = typedict(server.audio_properties)
-        self.audio_source_plugin = server.audio_source_plugin
-        self.supports_speaker = server.supports_speaker
-        self.supports_microphone = server.supports_microphone
-        self.speaker_codecs = server.speaker_codecs
-        self.microphone_codecs = server.microphone_codecs
-        log("init_from(%s) audio_properties=%s", server, self.audio_properties)
-
     def init_state(self) -> None:
         self.wants_audio = True
         self.audio_source_sequence = 0
@@ -97,6 +85,34 @@ class AudioConnection(StubClientConnection):
         self.audio_send = False
         self.audio_fade_timer = 0
         self.new_stream_timers: dict[Popen, int] = {}
+        self.wants_audio_capabilities = False            # flag indicating that the client wants 'audio-capabilities'
+
+    def init_from(self, _protocol, server) -> None:
+        # server may not have initialized the audio subsystem yet:
+        if BACKWARDS_COMPATIBLE:
+            # synchronous initialization: wait for audio
+            until = monotonic() + 5
+            while not server.audio_properties and monotonic() < until:
+                log("audio init waiting for audio properties")
+                sleep(0.01)
+            if not server.audio_properties:
+                log.warn("Warning: timeout waiting for audio initialization")
+        self.init_audio_from(server)
+        server.connect("audio-initialized", self.server_audio_initialized)
+
+    def init_audio_from(self, server) -> None:
+        self.audio_properties = server.audio_properties
+        self.audio_source_plugin = server.audio_source_plugin
+        self.supports_speaker = server.supports_speaker
+        self.supports_microphone = server.supports_microphone
+        self.speaker_codecs = server.speaker_codecs
+        self.microphone_codecs = server.microphone_codecs
+        log("init_audio_from(%s) audio_properties=%s", server, self.audio_properties)
+
+    def server_audio_initialized(self, server):
+        self.init_audio_from(server)
+        if self.wants_audio_capabilities:
+            self.send_audio_capabilities()
 
     def cleanup(self) -> None:
         log("%s.cleanup()", self)
@@ -115,17 +131,40 @@ class AudioConnection(StubClientConnection):
                 GLib.source_remove(timer)
             stop_proc(proc, "new-stream notification")
 
+    def client_audio_capabilities(self, capabilities: dict) -> None:
+        """
+        the client is sending us its audio capabilities,
+        this handler runs in the main thread,
+        so it should not be racy when checking for `audio_properties`,
+        since it is populated from a signal.
+        """
+        log("client_audio_capabilities: %s", capabilities)
+        self.wants_audio = True
+        self.parse_audio_caps(typedict(capabilities))
+        if self.audio_properties:
+            self.send_audio_capabilities()          # send now!
+        else:
+            self.wants_audio_capabilities = True    # send when we get it
+
+    def send_audio_capabilities(self) -> None:
+        caps = self.get_audio_caps()
+        log("send_audio_capabilities: %s", caps)
+        self.send_async("audio-capabilities", caps)
+
     def parse_client_caps(self, c: typedict) -> None:
+        """ if available in the hello packet, parse audio capabilities straight away """
         audio = typedict(c.dictget(AudioConnection.PREFIX) or {})
         self.wants_audio = "audio" in c.strtupleget("wants") or audio.boolget("send") or audio.boolget("receive")
-        if audio:
-            self.pulseaudio_id = audio.strget("pulseaudio.id")
-            self.pulseaudio_cookie_hash = audio.strget("pulseaudio.cookie-hash")
-            self.pulseaudio_server = audio.strget("pulseaudio.server")
-            self.audio_decoders = audio.strtupleget("decoders", ())
-            self.audio_encoders = audio.strtupleget("encoders", ())
-            self.audio_receive = audio.boolget("receive")
-            self.audio_send = audio.boolget("send")
+        self.parse_audio_caps(audio)
+
+    def parse_audio_caps(self, audio: typedict) -> None:
+        self.pulseaudio_id = audio.strget("pulseaudio.id")
+        self.pulseaudio_cookie_hash = audio.strget("pulseaudio.cookie-hash")
+        self.pulseaudio_server = audio.strget("pulseaudio.server")
+        self.audio_decoders = audio.strtupleget("decoders", ())
+        self.audio_encoders = audio.strtupleget("encoders", ())
+        self.audio_receive = audio.boolget("receive")
+        self.audio_send = audio.boolget("send")
         log("pulseaudio id=%s, cookie-hash=%s, server=%s",
             self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server)
         log("audio decoders=%s, encoders=%s, receive=%s, send=%s",
@@ -133,22 +172,31 @@ class AudioConnection(StubClientConnection):
 
     def get_caps(self) -> dict[str, Any]:
         log("get_caps() wants_audio=%s, audio-properties=%s", self.wants_audio, self.audio_properties)
-        if not self.wants_audio or not self.audio_properties:
+        if not self.wants_audio:
             return {}
-        audio_props = dict(self.audio_properties)
+        if not BACKWARDS_COMPATIBLE:
+            # tell the client to send us a packet when it is ready:
+            return {AudioConnection.PREFIX: {"async": True}}
+        return {AudioConnection.PREFIX: self.get_audio_caps()}
+
+    def get_audio_caps(self) -> dict[str, Any]:
+        log("get_audio_caps()")
+        if not self.wants_audio:
+            return {}
+        audio_caps = dict(self.audio_properties)
         if FULL_INFO < 2:
             # only expose these specific keys:
-            audio_props = {k: v for k, v in audio_props.items() if k in (
+            audio_caps = {k: v for k, v in audio_caps.items() if k in (
                 "muxers", "demuxers",
             )}
-        audio_props.update({
+        audio_caps.update({
             "encoders": self.speaker_codecs,
             "decoders": self.microphone_codecs,
             "send": self.supports_speaker and len(self.speaker_codecs) > 0,
             "receive": self.supports_microphone and len(self.microphone_codecs) > 0,
         })
-        log("get_caps() audio=%s", audio_props)
-        return {"audio": audio_props}
+        log("get_audio_caps()=%s", audio_caps)
+        return audio_caps
 
     def audio_loop_check(self, mode: str = "speaker") -> bool:
         log("audio_loop_check(%s)", mode)

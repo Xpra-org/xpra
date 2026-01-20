@@ -465,18 +465,19 @@ class PulseaudioServer(StubServerMixin):
                     except OSError:
                         log.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
 
-    def query_pulseaudio_properties(self) -> None:
+    def query_pulseaudio_properties(self) -> dict:
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.audio.pulseaudio.util import set_icon_path, get_info as get_pa_info
             pa_info = get_pa_info()
             log("pulseaudio info=%s", pa_info)
-            self.audio_properties.update(pa_info)
             set_icon_path(get_icon_filename("xpra.png"))
+            return pa_info
         except ImportError as e:
             if POSIX and not OSX:
                 log.warn("Warning: failed to set pulseaudio tagging icon:")
                 log.warn(" %s", e)
+        return {}
 
     def get_pulseaudio_info(self) -> dict[str, Any]:
         info: dict[str, str | Sequence[str] | int] = {

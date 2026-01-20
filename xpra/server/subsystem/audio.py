@@ -4,14 +4,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import sleep
 from typing import Any
-from threading import Event
 from collections.abc import Callable, Sequence
 
 from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
-from xpra.util.env import first_time
+from xpra.util.env import first_time, envint
 from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import audio_option
@@ -22,16 +22,18 @@ GLib = gi_import("GLib")
 
 log = Logger("audio")
 
+QUERY_SLEEP = envint("XPRA_AUDIO_QUERY_SLEEP", 0)
+
 
 class AudioServer(StubServerMixin):
     """
     Mixin for servers that handle audio forwarding.
     """
     PREFIX = "audio"
+    __signals__ = {"audio-initialized": 0}
 
     def __init__(self):
         StubServerMixin.__init__(self)
-        self.audio_initialized = Event()
         self.audio_source_plugin = ""
         self.supports_speaker = False
         self.supports_microphone = False
@@ -70,6 +72,9 @@ class AudioServer(StubServerMixin):
                 "": self.av_sync,
                 "enabled": self.av_sync,
             },
+            "audio": {
+                "async": True,
+            }
         }
         log("get_server_features(%s)=%s", source, d)
         return d
@@ -79,22 +84,25 @@ class AudioServer(StubServerMixin):
             return ()
 
         def noaudio() -> None:
-            self.audio_initialized.set()
+            self.audio_properties["initialized"] = True
+            self.emit("audio-initialized")
             self.supports_speaker = self.supports_microphone = False
             self.speaker_allowed = self.microphone_allowed = False
 
         parse_codecs: Callable = audio_missing
+        audio_properties = typedict()
         if self.supports_speaker or self.supports_microphone:
             try:
                 from xpra.audio.common import audio_option_or_all
                 parse_codecs = audio_option_or_all
                 from xpra.audio.wrapper import query_audio
-                self.audio_properties = query_audio()
-                if not self.audio_properties:
+                sleep(QUERY_SLEEP)
+                audio_properties = query_audio()
+                if not audio_properties:
                     log.info("Audio subsystem query failed, is GStreamer installed?")
                     noaudio()
                     return
-                gstv = self.audio_properties.strtupleget("gst.version")
+                gstv = audio_properties.strtupleget("gst.version")
                 if gstv:
                     log.info("GStreamer version %s", ".".join(gstv[:3]))
                 else:
@@ -105,22 +113,26 @@ class AudioServer(StubServerMixin):
                 log.estr(e)
                 noaudio()
                 return
-        encoders = self.audio_properties.strtupleget("encoders")
-        decoders = self.audio_properties.strtupleget("decoders")
+        encoders = audio_properties.strtupleget("encoders")
+        decoders = audio_properties.strtupleget("decoders")
         self.speaker_codecs = parse_codecs("speaker-codec", self.speaker_codecs, encoders)
         self.microphone_codecs = parse_codecs("microphone-codec", self.microphone_codecs, decoders)
         if not self.speaker_codecs:
             self.supports_speaker = False
         if not self.microphone_codecs:
             self.supports_microphone = False
-        self.audio_initialized.set()
+        # some calls must happen from the main thread:
+        GLib.idle_add(self.init_ui_audio_options, audio_properties)
 
-        # query_pulseaudio_properties may access X11,
-        # so call it from the main thread:
+    def init_ui_audio_options(self, audio_properties: typedict):
+        # query_pulseaudio_properties may access X11
         query_pulseaudio = getattr(self, "query_pulseaudio_properties", noop)
-        if bool(self.audio_properties) and query_pulseaudio != noop:
-            GLib.idle_add(query_pulseaudio)
-        GLib.idle_add(self.log_audio_properties)
+        if bool(audio_properties) and query_pulseaudio != noop:
+            audio_properties |= query_pulseaudio()
+        audio_properties["initialized"] = True
+        self.audio_properties = audio_properties
+        self.log_audio_properties()
+        self.emit("audio-initialized")
 
     def log_audio_properties(self) -> None:
         from xpra.util.str_fn import csv
@@ -154,9 +166,15 @@ class AudioServer(StubServerMixin):
         if ss:
             ss.audio_data(*packet[1:])
 
+    def _process_audio_capabilities(self, proto, packet: Packet) -> None:
+        ss = self.get_server_source(proto)
+        if ss:
+            ss.client_audio_capabilities(packet.get_dict(1))
+
     def init_packet_handlers(self) -> None:
         if self.supports_speaker or self.supports_microphone:
             self.add_packets(f"{AudioServer.PREFIX}-control", main_thread=True)
             self.add_packets(f"{AudioServer.PREFIX}-data")
+            self.add_packets(f"{AudioServer.PREFIX}-capabilities", main_thread=True)
             self.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")
             self.add_legacy_alias("sound-data", f"{AudioServer.PREFIX}-data")
