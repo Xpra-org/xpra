@@ -79,6 +79,7 @@ class AudioServer(StubServerMixin):
             return ()
 
         def noaudio() -> None:
+            self.audio_initialized.set()
             self.supports_speaker = self.supports_microphone = False
             self.speaker_allowed = self.microphone_allowed = False
 
