@@ -86,7 +86,7 @@ def get_needed_based_classes(caps: typedict) -> tuple[type, ...]:
     mixins = get_enabled_mixins()
     for c in mixins:
         r = c.is_needed(caps)
-        log("get_client_connection_class(..) %s enabled=%s", c.__name__.split(".")[-1], r)
+        log("get_needed_based_classes(..) %s enabled=%s", c.__name__.split(".")[-1], r)
         if r:
             classes.append(c)
     return tuple(classes)
