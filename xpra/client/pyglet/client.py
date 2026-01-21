@@ -68,9 +68,6 @@ class XpraPygletClient:
         self.protocol = None
         self.have_more = noop
 
-    def show_progress(self, pct: int, msg) -> None:
-        log(f"show_progress({pct}, {msg})")
-
     def run(self) -> int:
         app.run()
         return 0

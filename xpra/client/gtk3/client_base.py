@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
 
-from xpra.common import noop, MIN_VREFRESH, MAX_VREFRESH, BACKWARDS_COMPATIBLE
+from xpra.common import noop, may_show_progress, MIN_VREFRESH, MAX_VREFRESH, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
@@ -278,7 +278,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     def do_process_challenge_prompt(self, prompt="password"):
         self.stop_progress_process(f"showing {prompt} prompt")
         authlog = Logger("auth")
-        self.show_progress(100, "authentication")
+        may_show_progress(self, 100, "authentication")
         PINENTRY = os.environ.get("XPRA_PINENTRY", "")
         from xpra.scripts.pinentry import get_pinentry_command
         pinentry_cmd = get_pinentry_command(PINENTRY)

@@ -124,11 +124,6 @@ class StubClientMixin(superclass):
     def add_packet_handlers(self, defs: dict[str, ClientPacketHandlerType], main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
 
-    def show_progress(self, pct, text="") -> None:
-        """
-        The GTK client may use the splash screen here
-        """
-
     def suspend(self) -> None:
         """
         The client is going to suspend, take appropriate measures for this subsystem

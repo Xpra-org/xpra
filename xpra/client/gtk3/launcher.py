@@ -39,7 +39,7 @@ from xpra.scripts.main import (
     configure_network, configure_env, configure_logging,
 )
 from xpra.net.connect import connect_to
-from xpra.common import noop
+from xpra.common import noop, may_show_progress
 from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args, get_ssl_options
 from xpra.exit_codes import RETRY_EXIT_CODES, ExitCode, ExitValue, exit_str
 from xpra.platform.info import get_username
@@ -844,15 +844,15 @@ class ApplicationWindow:
     def start_client(self, display_desc: dict) -> None:
         bypass_no_gtk()
         self.client = make_client(self.config)
-        self.client.show_progress(30, "client configuration")
+        may_show_progress(self.client, 30, "client configuration")
         self.client.init(self.config)
-        self.client.show_progress(40, "loading user interface")
+        may_show_progress(self.client, 40, "loading user interface")
         self.client.init_ui(self.config)
         self.client.load()
         self.client.username = display_desc.get("username")
 
         def handshake_complete(*_args) -> None:
-            self.client.show_progress(100, "Session connected")
+            may_show_progress(self.client, 100, "Session connected")
 
         self.client.after_handshake(handshake_complete)
         self.set_info_text("Connecting...")
@@ -870,7 +870,7 @@ class ApplicationWindow:
         self.current_error = None
         self.set_info_text("Connecting.")
         self.set_sensitive(False)
-        self.client.show_progress(60, "connecting")
+        may_show_progress(self.client, 60, "connecting")
         try:
             log("calling %s%s", connect_to,
                 (display_desc, repr_ellipsized(str(self.config)), self.set_info_text, self.ssh_failed))

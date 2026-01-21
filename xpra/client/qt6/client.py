@@ -237,9 +237,6 @@ class XpraQt6Client(Qt6Client):
     as these exist in the GTK3 client class.
     """
 
-    def show_progress(self, pct: int, msg) -> None:
-        log(f"show_progress({pct}, {msg})")
-
     def init(self, opts) -> None:
         """ we don't handle any options yet! """
 

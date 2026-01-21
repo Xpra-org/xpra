@@ -18,7 +18,7 @@ from collections.abc import Callable, Sequence
 from xpra.scripts.config import InitExit
 from xpra.common import (
     FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
-    ConnectionMessage, disconnect_is_an_error, noerr, NotificationID, noop,
+    ConnectionMessage, disconnect_is_an_error, noerr, NotificationID, noop, may_show_progress,
 )
 from xpra.net import compression
 from xpra.net.common import Packet, PacketElement, PacketHandlerType
@@ -131,7 +131,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         if body:
             for x in body.splitlines():
                 notifylog.info(" %s", x)
-        self.show_progress(100, f"notification: {summary}")
+        may_show_progress(self, 100, f"notification: {summary}")
 
     @staticmethod
     def force_quit(exit_code: ExitValue = ExitCode.FAILURE) -> NoReturn:
@@ -210,7 +210,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
 
     def exit(self) -> NoReturn:
         log("XpraClientBase.exit() calling %s", sys.exit)
-        self.show_progress(100, "terminating")
+        may_show_progress(self, 100, "terminating")
         log(f"exit() calling {sys.exit}")
         sys.exit(int(self.exit_code or ExitCode.OK))
 

@@ -565,3 +565,8 @@ def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
 
 def subsystem_name(c: type) -> str:
     return c.__name__.replace("Server", "").rstrip("_").lower()
+
+
+def may_show_progress(obj, pct: int, text="") -> None:
+    show_progress = getattr(obj, "show_progress", noop)
+    show_progress(pct, text)
