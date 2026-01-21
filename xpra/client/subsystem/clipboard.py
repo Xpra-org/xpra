@@ -198,6 +198,8 @@ class ClipboardClient(StubClientMixin):
         return True
 
     def start_clipboard_sync(self) -> None:
+        if self.clipboard_helper:
+            return
         log("start_clipboard_sync()")
         ch = self.make_clipboard_helper()
         if not ch:
