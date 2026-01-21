@@ -83,8 +83,8 @@ class WebcamForwarder(StubClientMixin):
                     log.info(" %s", e)
                     log.info(" webcam forwarding is not available")
                 self.webcam_forwarding = False
-        self.connect("suspend", self.suspend_audio)
-        self.connect("resume", self.resume_audio)
+        self.connect("suspend", self.suspend_webcam)
+        self.connect("resume", self.resume_webcam)
 
     def get_caps(self) -> dict[str, Any]:
         if not self.webcam_forwarding:
