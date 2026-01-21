@@ -530,7 +530,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self._on_handshake = None
         for cb, args in oh:
             with log.trap_error("Error processing handshake callback %s", cb):
-                cb(*args)
+                self.idle_add(cb, *args)
 
     def after_handshake(self, cb: Callable, *args) -> None:
         log("after_handshake(%s, %s) on_handshake=%s", cb, args, Ellipsizer(self._on_handshake))
