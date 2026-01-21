@@ -19,6 +19,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, OSEnvContext
 from xpra.common import NotificationID
 from xpra.client.base.stub import StubClientMixin
+from xpra.util.thread import start_thread
 
 GLib = gi_import("GLib")
 
@@ -104,7 +105,7 @@ class WebcamForwarder(StubClientMixin):
             self.server_webcam, self.server_virtual_video_devices, csv(self.server_webcam_encodings))
         if self.webcam_forwarding and self.server_webcam and self.server_virtual_video_devices > 0:
             if self.webcam_option == "on" or self.webcam_option.find("/dev/video") >= 0:
-                self.start_sending_webcam()
+                self.connect("handshake-complete", self.start_sending_webcam)
         return True
 
     def suspend(self) -> None:
@@ -123,9 +124,11 @@ class WebcamForwarder(StubClientMixin):
     ######################################################################
     def start_sending_webcam(self) -> None:
         with self.webcam_lock:
-            self.do_start_sending_webcam(self.webcam_option)
+            if not self.webcam_send_timer:
+                start_thread(self.do_start_sending_webcam, "start-sending-webcam",
+                             daemon=True, args=(self.webcam_option, ))
 
-    def do_start_sending_webcam(self, device_str) -> None:
+    def do_start_sending_webcam(self, device_str: str) -> None:
         self.show_progress(100, "forwarding webcam")
         assert self.server_webcam
         device = 0
