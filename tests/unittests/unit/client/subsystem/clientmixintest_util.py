@@ -106,7 +106,9 @@ class ClientMixinTest(unittest.TestCase):
         x.readonly = False
         x.server_packet_types = ()
         x.quit = self.fake_quit
-        x.after_handshake = noop
+        x.connect = noop
+        if not hasattr(x, "after_handshake"):
+            x.after_handshake = noop
         fake_protocol = AdHocStruct()
         fake_protocol.get_info = lambda: {}
         fake_protocol.set_compression_level = lambda _x: None

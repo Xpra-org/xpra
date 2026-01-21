@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from collections.abc import Callable
 
 from xpra.util.objects import AdHocStruct
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
@@ -20,15 +21,20 @@ class ClipboardClientTest(ClientMixinTest):
 		opts.clipboard_direction = "both"
 		opts.local_clipboard = "CLIPBOARD"
 		opts.remote_clipboard = "CLIPBOARD"
+
+		def after_handshake(_cls, fn: Callable):
+			self.glib.timeout_add(1000, fn)
+		ClipboardClient.after_handshake = after_handshake
 		self._test_mixin_class(ClipboardClient, opts, {
-			"clipboard" : True,
-			"clipboard.enable-selections" : True,
-			"clipboard.contents-slice-fix" : True,
-			})
+			"clipboard": True,
+			"clipboard.enable-selections": True,
+			"clipboard.contents-slice-fix": True,
+		})
 		self.glib.timeout_add(5000, self.stop)
 		self.main_loop.run()
 		assert len(self.packets)>=1
 		assert self.packets[0][0]=="clipboard-enable-selections"
+
 
 def main():
 	with DisplayContext():
