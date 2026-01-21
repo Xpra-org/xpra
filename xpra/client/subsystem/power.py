@@ -18,7 +18,7 @@ class PowerEventClient(StubClientMixin):
     """
     Adds power events callbacks
     """
-    __signals__: list[str] = ["suspend", "resume"]
+    __signals__: list[str] = ["suspend", "resume", "pause", "unpause"]
 
     def __init__(self):
         self.ui_watcher = None
@@ -60,23 +60,17 @@ class PowerEventClient(StubClientMixin):
 
     def ui_pause(self):
         self.ui_thread_tick()
-        self.pause()
+        self.emit("pause")
 
     def ui_unpause(self):
         self.ui_thread_tick()
-        self.unpause()
+        self.emit("unpause")
 
     def ui_message(self, message: str) -> None:
         if self.suspended:
             log(message)
         else:
             log.info(message)
-
-    def pause(self) -> None:
-        log(f"{self} pause")
-
-    def unpause(self) -> None:
-        log(f"{self} unpause")
 
     def suspend(self) -> None:
         log.info(f"{self} suspending")
@@ -91,6 +85,7 @@ class PowerEventClient(StubClientMixin):
     def resume(self) -> None:
         self.emit("resume")
         elapsed = max(0.0, time() - self.suspended) if self.suspended else 0.0
+        self.suspended = 0.0
         if BACKWARDS_COMPATIBLE:
             self.send("resume", True, tuple(self._id_to_window.keys()))
         else:

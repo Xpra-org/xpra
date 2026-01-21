@@ -123,13 +123,3 @@ class StubClientMixin(superclass):
 
     def add_packet_handlers(self, defs: dict[str, ClientPacketHandlerType], main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
-
-    def pause(self) -> None:
-        """
-        Updates should be temporarily reduced
-        """
-
-    def unpause(self) -> None:
-        """
-        Updates can proceed at the normal rate
-        """
