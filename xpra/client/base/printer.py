@@ -73,13 +73,16 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
             if self.remote_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
                                                            ("printer-info", "device-uri"))
-                GLib.timeout_add(INIT_PRINTING_DELAY * 1000, self.init_printing)
+                self.after_handshake(self.init_printing)
 
     def dump_remote_printing_caps(self) -> None:
         filelog("printing remote caps:")
         filelog(" printing=%-5s        (ask=%s)", self.remote_printing, self.remote_printing_ask)
 
     def init_printing(self) -> None:
+        GLib.timeout_add(INIT_PRINTING_DELAY * 1000, self.do_init_printing)
+
+    def do_init_printing(self) -> None:
         try:
             from xpra.platform.printing import init_printing  # pylint: disable=import-outside-toplevel
             printlog("init_printing=%s", init_printing)
@@ -90,7 +93,7 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
             self.printing = False
         else:
             self.send_printers()
-        printlog("init_printing() enabled=%s", self.printing)
+        printlog("do_init_printing() enabled=%s", self.printing)
 
     def cleanup_printing(self) -> None:
         printlog("cleanup_printing() printing=%s", self.printing)

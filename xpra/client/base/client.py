@@ -496,9 +496,9 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             netlog("processing hello from server: %s", Ellipsizer(caps))
             if not self.server_connection_established(caps):
                 self.warn_and_quit(ExitCode.FAILURE, "failed to establish connection")
-            else:
-                self.cancel_verify_connected_timer()
-                self.connection_established = True
+                return
+            self.cancel_verify_connected_timer()
+            self.connection_accepted(caps)
         except Exception as e:
             netlog.error("Error processing hello packet from server", exc_info=True)
             netlog("hello data: %s", packet)
@@ -516,6 +516,25 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         netlog("server_connection_established(..) adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True
+
+    def connection_accepted(self, caps: typedict) -> None:
+        self.connection_established = True
+        self.handshake_complete()
+
+    def handshake_complete(self) -> None:
+        oh = self._on_handshake
+        self._on_handshake = None
+        for cb, args in oh:
+            with log.trap_error("Error processing handshake callback %s", cb):
+                cb(*args)
+
+    def after_handshake(self, cb: Callable, *args) -> None:
+        log("after_handshake(%s, %s) on_handshake=%s", cb, args, Ellipsizer(self._on_handshake))
+        if self._on_handshake is None:
+            # handshake has already occurred, just call it:
+            self.idle_add(cb, *args)
+        else:
+            self._on_handshake.append((cb, args))
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         netlog("parse_server_capabilities(..)")

@@ -324,4 +324,4 @@ class ChallengeClient(StubClientMixin):
         self.send_hello(challenge_response, client_salt)
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("challenge", main_thread=True)
+        self.add_packets("challenge")

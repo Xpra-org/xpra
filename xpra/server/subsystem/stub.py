@@ -15,7 +15,7 @@ from xpra.os_util import WIN32
 
 # when running the unit tests,
 # we inject the signal emitter into the signal hierarchy,
-# whereas regular server classes inherit the GObject methods:
+# whereas regular server classes inherit the signal methods from GLibScheduler
 if envbool("XPRA_UNIT_TEST"):
     from xpra.util.signal_emitter import SignalEmitter
     superclass = SignalEmitter

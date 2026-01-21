@@ -257,13 +257,6 @@ class UIXpraClient(ClientBaseClass):
         for c in CLIENT_BASES:
             c.setup_connection(self, conn)
 
-    def server_connection_established(self, caps: typedict) -> bool:
-        if not XpraClientBase.server_connection_established(self, caps):
-            return False
-        # process the rest from the UI thread:
-        GLib.idle_add(self.process_ui_capabilities, caps)
-        return True
-
     def parse_server_capabilities(self, c: typedict) -> bool:
         for cb in CLIENT_BASES:
             log("%s.parse_server_capabilities(..)", cb)
@@ -288,11 +281,16 @@ class UIXpraClient(ClientBaseClass):
         print_proxy_caps(c)
         return True
 
+    def connection_accepted(self, caps: typedict) -> None:
+        """ overriden here so we can call `process_ui_capabilities` and `handshake_complete` from the main thread """
+        self.connection_established = True
+        GLib.idle_add(self.process_ui_capabilities, caps)
+        GLib.idle_add(self.handshake_complete)
+
     def process_ui_capabilities(self, caps: typedict) -> None:
         for c in CLIENT_BASES:
             if c != XpraClientBase:
                 c.process_ui_capabilities(self, caps)
-        self.handshake_complete()
 
     def _process_startup_complete(self, packet: Packet) -> None:
         log("all the existing windows and system trays have been received")
@@ -300,6 +298,9 @@ class UIXpraClient(ClientBaseClass):
         gui_ready()
         for c in CLIENT_BASES:
             c.startup_complete(self)
+
+    def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
+        self.idle_add(super().send_hello, challenge_response, client_salt)
 
     def _process_new_window(self, packet: Packet):
         window = super()._process_new_window(packet)
@@ -312,21 +313,6 @@ class UIXpraClient(ClientBaseClass):
             window.fullscreen_on_monitor(screen, monitor)
             log("fullscreen_on_monitor: %i", monitor)
         return window
-
-    def handshake_complete(self) -> None:
-        oh = self._on_handshake
-        self._on_handshake = None
-        for cb, args in oh:
-            with log.trap_error("Error processing handshake callback %s", cb):
-                cb(*args)
-
-    def after_handshake(self, cb: Callable, *args) -> None:
-        log("after_handshake(%s, %s) on_handshake=%s", cb, args, Ellipsizer(self._on_handshake))
-        if self._on_handshake is None:
-            # handshake has already occurred, just call it:
-            GLib.idle_add(cb, *args)
-        else:
-            self._on_handshake.append((cb, args))
 
     ######################################################################
     # server messages:
