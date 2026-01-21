@@ -54,3 +54,10 @@ class GObjectClientAdapter(GObject.GObject, GLibScheduler):
     def exit_loop(self) -> None:
         self.glib_mainloop.quit()
         self.cleanup()
+
+    def connect(self, name: str, *args, **kwargs) -> None:
+        try:
+            return super().connect(name, *args, **kwargs)
+        except TypeError:
+            log(f"ignoring missing signal {name!r}")
+            return 0
