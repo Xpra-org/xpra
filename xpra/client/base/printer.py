@@ -37,6 +37,9 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
     def init(self, opts) -> None:
         FileTransferHandler.init_opts(self, opts)
 
+    def load(self):
+        self.after_handshake(self.init_printing)
+
     def init_authenticated_packet_handlers(self) -> None:
         self.add_legacy_alias("send-file", "file-send")
         self.add_legacy_alias("send-data-request", "file-data-request")
@@ -73,7 +76,6 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
             if self.remote_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
                                                            ("printer-info", "device-uri"))
-                self.after_handshake(self.init_printing)
 
     def dump_remote_printing_caps(self) -> None:
         filelog("printing remote caps:")

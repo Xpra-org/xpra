@@ -88,6 +88,9 @@ class DisplayClient(StubClientMixin):
         if self.can_scale:
             self.parse_scaling(opts.desktop_scaling)
 
+    def load(self):
+        self.after_handshake(self.adjust_display)
+
     def parse_scaling(self, desktop_scaling: str) -> None:
         root_w, root_h = self.get_root_size()
         self.initial_scaling = parse_scaling(desktop_scaling, root_w, root_h, MIN_SCALING, MAX_SCALING)
@@ -257,7 +260,6 @@ class DisplayClient(StubClientMixin):
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")
         self.server_is_monitor = c.boolget("monitor")
         self.print_desktop_size(c)
-        self.after_handshake(self.adjust_display)
         return True
 
     def print_desktop_size(self, c: typedict) -> None:
