@@ -61,7 +61,7 @@ class StubClientMixin(superclass):
         Free up any resources.
         """
 
-    def send(self, *_args) -> None:
+    def send(self, packet_type: str, *parts: PacketElement) -> None:
         """
         Send a packet to the server, dummy implementation.
         """

@@ -55,7 +55,7 @@ class GObjectClientAdapter(GObject.GObject, GLibScheduler):
         self.glib_mainloop.quit()
         self.cleanup()
 
-    def connect(self, name: str, *args, **kwargs) -> None:
+    def connect(self, name: str, *args, **kwargs) -> int:
         try:
             return super().connect(name, *args, **kwargs)
         except TypeError:
