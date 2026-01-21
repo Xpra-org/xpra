@@ -308,7 +308,6 @@ class AudioClient(StubClientMixin):
 
     def auto_start(self) -> None:
         if self.server_audio_send and self.speaker_enabled:
-            self.show_progress(90, "starting speaker forwarding")
             self.start_receiving_audio()
         if self.server_audio_receive and self.microphone_enabled:
             # call via idle_add because we may query X11 properties
