@@ -272,7 +272,7 @@ class AudioClient(StubClientMixin):
             "delay": delay,
         }
 
-    def process_ui_capabilities(self, c: typedict) -> None:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_av_sync = c.boolget("av-sync.enabled")
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         audio = typedict(c.dictget("audio") or {})
@@ -286,6 +286,7 @@ class AudioClient(StubClientMixin):
             self.parse_audio_capabilities(audio)
             self.auto_start()
             self.emit("audio-initialized")
+        return True
 
     def send_audio_capabilities(self) -> None:
         caps = self.get_audio_capabilities()
