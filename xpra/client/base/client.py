@@ -13,7 +13,7 @@ import string
 from time import monotonic
 from typing import Any, NoReturn
 from types import FrameType
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.scripts.config import InitExit
 from xpra.common import (
@@ -96,6 +96,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.exit_code: ExitValue | None = None
         self.exit_on_signal = False
         self.display_desc = {}
+        self._on_handshake: Sequence[tuple[Callable, Sequence[Any]]] | None = []
         # connection attributes:
         self.hello_extra = {}
         self.has_password = False

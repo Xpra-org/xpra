@@ -89,7 +89,6 @@ class UIXpraClient(ClientBaseClass):
         self.client_lock: bool = False
 
         # state:
-        self._on_handshake: Sequence[tuple[Callable, Sequence[Any]]] | None = []
         self._on_server_setting_changed: dict[str, Sequence[Callable[[str, Any], None]]] = {}
 
     def init(self, opts) -> None:
