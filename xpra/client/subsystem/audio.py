@@ -139,6 +139,8 @@ class AudioClient(StubClientMixin):
         init_audio_tagging(opts.tray_icon)
 
     def load(self):
+        self.connect("suspend", self.suspend_audio)
+        self.connect("resume", self.resume_audio)
         pa_props = get_pa_info()
         if BACKWARDS_COMPATIBLE:
             self.audio_properties = self.query_audio()
@@ -158,18 +160,18 @@ class AudioClient(StubClientMixin):
         audio_option_fn: Callable = nooptions
         audio_properties = typedict()
         if self.speaker_allowed or self.microphone_allowed:
-            def noaudio(title: str, message: str) -> None:
+            def noaudio(title: str, message: str) -> typedict:
                 self.may_notify_audio(title, message)
                 self.speaker_allowed = False
                 self.microphone_allowed = False
+                return audio_properties
             try:
                 from xpra.audio import common
                 assert common
             except ImportError:
-                noaudio("No Audio",
-                        "`xpra-audio` subsystem is not installed\n"
-                        " speaker and microphone forwarding are disabled")
-                return
+                return noaudio("No Audio",
+                               "`xpra-audio` subsystem is not installed\n"
+                               " speaker and microphone forwarding are disabled")
             try:
                 from xpra.audio.common import audio_option_or_all
                 audio_option_fn = audio_option_or_all
@@ -177,9 +179,8 @@ class AudioClient(StubClientMixin):
                 sleep(QUERY_SLEEP)
                 audio_properties = query_audio()
                 if not audio_properties:
-                    noaudio("No Audio",
-                            "Audio subsystem query failed, is GStreamer installed?")
-                    return
+                    return noaudio("No Audio",
+                                   "Audio subsystem query failed, is GStreamer installed?")
                 gstv = audio_properties.strtupleget("gst.version")
                 if gstv:
                     log.info("GStreamer version %s", ".".join(gstv[:3]))
@@ -187,10 +188,8 @@ class AudioClient(StubClientMixin):
                     log.info("GStreamer loaded")
             except Exception as e:
                 log("failed to query audio", exc_info=True)
-                noaudio("No Audio",
-                        "Error querying the audio subsystem:\n"
-                        f"{e}")
-                return
+                return noaudio("No Audio",
+                               f"Error querying the audio subsystem:\n{e}")
         encoders = audio_properties.strtupleget("encoders")
         decoders = audio_properties.strtupleget("decoders")
         # validate the options against the list of codecs available:
@@ -314,14 +313,14 @@ class AudioClient(StubClientMixin):
             # to find the pulseaudio server:
             GLib.idle_add(self.start_sending_audio)
 
-    def suspend(self) -> None:
+    def suspend_audio(self) -> None:
         self.audio_resume_restart = bool(self.audio_sink)
         if self.audio_sink:
             self.stop_receiving_audio()
         if self.audio_source:
             self.stop_sending_audio()
 
-    def resume(self) -> None:
+    def resume_audio(self) -> None:
         ars = self.audio_resume_restart
         if ars:
             self.audio_resume_restart = False

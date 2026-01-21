@@ -53,6 +53,10 @@ class PingClient(StubClientMixin):
         self.pings = opts.pings
 
     def cleanup(self) -> None:
+        self.cancel_timers()
+
+    def cancel_timers(self, *args) -> None:
+        log("cancel_timers%s", args)
         self.cancel_ping_timer()
         self.cancel_ping_echo_timers()
         self.cancel_ping_echo_timeout_timer()
@@ -79,18 +83,13 @@ class PingClient(StubClientMixin):
     def server_ok(self) -> bool:
         return self._server_ok
 
-    def suspend(self) -> None:
-        self.cancel_ping_timer()
-        self.cancel_ping_echo_timers()
-
-    def resume(self) -> None:
-        self.start_sending_pings()
-
     def parse_server_capabilities(self, c: typedict) -> bool:
         if self.pings:
             self.pings = c.boolget("ping", BACKWARDS_COMPATIBLE)
             if self.pings:
                 self.connect("startup-complete", self.start_sending_pings)
+                self.connect("suspend", self.cancel_timers)
+                self.connect("resume", self.start_sending_pings)
         return True
 
     def start_sending_pings(self, *args) -> None:

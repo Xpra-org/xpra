@@ -10,7 +10,6 @@
 import os
 import errno
 import signal
-import datetime
 import math
 import sys
 from collections import deque, namedtuple
@@ -405,6 +404,10 @@ class WindowClient(StubClientMixin):
 
     def init_ui(self, opts) -> None:
         self.init_opengl(opts.opengl)
+
+    def load(self) -> None:
+        self.connect("suspend", self.suspend_windows)
+        self.connect("resume", self.resume_windows)
 
     def setup_connection(self, conn) -> None:
         display_name = getattr(self, "display_desc", {}).get("display_name", "")
@@ -1553,24 +1556,14 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # window refresh:
-    def suspend(self) -> None:
-        log.info("system is suspending")
-        self._suspended_at = time()
+    def suspend_windows(self, *args) -> None:
+        log("suspend_windows%s", args)
         self.refresh_slowly()
 
-    def resume(self) -> None:
-        elapsed = 0.0
-        if self._suspended_at > 0:
-            elapsed = max(0.0, time() - self._suspended_at)
-            self._suspended_at = 0
+    def resume_windows(self, *args) -> None:
+        log("resume_windows%s", args)
         # this will reset the refresh rate too:
         self.send_refresh_all()
-        if elapsed < 1:
-            # not really suspended
-            # happens on macos when switching workspace!
-            return
-        delta = datetime.timedelta(seconds=int(elapsed))
-        log.info("system resumed, was suspended for %s", str(delta).lstrip("0:"))
         if self.opengl_enabled and OPENGL_REINIT_WINDOWS:
             # with opengl, the buffers sometimes contain garbage after resuming,
             # this should create new backing buffers:

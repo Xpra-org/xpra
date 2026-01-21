@@ -4,7 +4,11 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+from time import time
+from datetime import timedelta
+
 from xpra.client.base.stub import StubClientMixin
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("event")
@@ -14,9 +18,11 @@ class PowerEventClient(StubClientMixin):
     """
     Adds power events callbacks
     """
+    __signals__: list[str] = ["suspend", "resume"]
 
     def __init__(self):
         self.ui_watcher = None
+        self.suspended = 0.0
 
     def run(self) -> None:
         try:
@@ -74,8 +80,24 @@ class PowerEventClient(StubClientMixin):
 
     def suspend(self) -> None:
         log.info(f"{self} suspending")
-        self.suspended = True
+        self.suspended = time()
+        self.emit("suspend")
+        if BACKWARDS_COMPATIBLE:
+            # ("ui" and "window-ids" arguments are optional since v6.3)
+            self.send("suspend", True, tuple(self._id_to_window.keys()))
+        else:
+            self.send("suspend")
 
     def resume(self) -> None:
-        log.info(f"{self} resuming")
-        self.suspended = False
+        self.emit("resume")
+        elapsed = max(0.0, time() - self.suspended) if self.suspended else 0.0
+        if BACKWARDS_COMPATIBLE:
+            self.send("resume", True, tuple(self._id_to_window.keys()))
+        else:
+            self.send("resume")
+        if elapsed < 1:
+            # not really suspended
+            # happens on macos when switching workspace!
+            return
+        delta = timedelta(seconds=int(elapsed))
+        log.info(f"{self} resuming, was suspended for %s", str(delta).lstrip("0:"))

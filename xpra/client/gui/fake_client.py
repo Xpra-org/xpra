@@ -57,12 +57,6 @@ class FakeClient(AdHocStruct):
     def signal_disconnect_and_quit(self, *_args):
         log.info("signal_disconnect_and_quit")
 
-    def suspend(self) -> None:
-        log.info("suspend event")
-
-    def resume(self) -> None:
-        log.info("resume event")
-
     def send(self, *args):
         log("send%s", args)
 
