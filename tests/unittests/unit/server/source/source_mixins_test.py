@@ -15,6 +15,7 @@ from unit.test_util import LoggerSilencer, silence_error, silence_info
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.os_util import POSIX, OSX
 from xpra.util.io import get_util_logger
+from xpra.util.signal_emitter import SignalEmitter
 
 
 class SourceMixinsTest(unittest.TestCase):
@@ -43,7 +44,7 @@ class SourceMixinsTest(unittest.TestCase):
             mixin_class = type(f"Mixin-{mixin_classes}", mixin_classes, {})
         # test the instance:
         # fake server object:
-        server = AdHocStruct()
+        server = SignalEmitter()
         server.session_name = "foo"
         server.unix_socket_paths = ["/some/path"]
         server.bandwidth_limit = 0
