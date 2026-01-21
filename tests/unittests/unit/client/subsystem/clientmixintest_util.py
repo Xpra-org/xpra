@@ -124,7 +124,6 @@ class ClientMixinTest(unittest.TestCase):
         x.init_authenticated_packet_handlers()
         caps = self.make_caps(caps)
         x.parse_server_capabilities(caps)
-        x.process_ui_capabilities(caps)
         assert x.get_caps() is not None
         assert x.get_info() is not None
         return x

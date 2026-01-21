@@ -193,22 +193,23 @@ class ClipboardClient(StubClientMixin):
             self.server_clipboard_greedy, self.server_clipboard_want_targets, self.server_clipboard_selections)
         log("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
         self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
+        if self.clipboard_enabled:
+            self.after_handshake(self.start_clipboard_sync)
         return True
 
-    def process_ui_capabilities(self, caps: typedict) -> None:
-        log("process_ui_capabilities() clipboard_enabled=%s", self.clipboard_enabled)
+    def start_clipboard_sync(self) -> None:
+        log("start_clipboard_sync()")
+        ch = self.make_clipboard_helper()
+        if not ch:
+            log.warn("Warning: no clipboard support")
+        self.clipboard_helper = ch
+        self.clipboard_enabled = ch is not None
+        log("clipboard helper=%s", ch)
         if self.clipboard_enabled:
-            ch = self.make_clipboard_helper()
-            if not ch:
-                log.warn("Warning: no clipboard support")
-            self.clipboard_helper = ch
-            self.clipboard_enabled = ch is not None
-            log("clipboard helper=%s", ch)
-            if self.clipboard_enabled:
-                # tell the server about which selections we really want to sync with
-                # (could have been translated, or limited if the client only has one, etc.)
-                self.send_clipboard_selections(ch.get_remote_selections())
-                ch.send_all_tokens()
+            # tell the server about which selections we really want to sync with
+            # (could have been translated, or limited if the client only has one, etc.)
+            self.send_clipboard_selections(ch.get_remote_selections())
+            ch.send_all_tokens()
         # ui may want to know this is now set:
         self.emit("clipboard-toggled")
 

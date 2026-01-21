@@ -92,15 +92,12 @@ class KeyboardClient(StubClientMixin):
             log.warn("Warning: keyboard module is missing")
             self.keyboard_enabled = False
             return True
-        return True
-
-    def process_ui_capabilities(self, caps: typedict) -> None:
-        log("process_ui_capabilities()")
         if self.keyboard_helper:
-            modifier_keycodes = caps.dictget("modifier_keycodes", {})
+            modifier_keycodes = c.dictget("modifier_keycodes", {})
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
-        self.key_repeat_delay, self.key_repeat_interval = caps.intpair("key_repeat", (-1, -1))
+        self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1, -1))
+        return True
 
     def get_keyboard_caps(self) -> dict[str, Any]:
         caps = {}

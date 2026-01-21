@@ -282,15 +282,9 @@ class UIXpraClient(ClientBaseClass):
         return True
 
     def connection_accepted(self, caps: typedict) -> None:
-        """ overriden here so we can call `process_ui_capabilities` and `handshake_complete` from the main thread """
+        """ overriden here so we can call `handshake_complete` from the main thread """
         self.connection_established = True
-        GLib.idle_add(self.process_ui_capabilities, caps)
         GLib.idle_add(self.handshake_complete)
-
-    def process_ui_capabilities(self, caps: typedict) -> None:
-        for c in CLIENT_BASES:
-            if c != XpraClientBase:
-                c.process_ui_capabilities(self, caps)
 
     def _process_startup_complete(self, packet: Packet) -> None:
         log("all the existing windows and system trays have been received")

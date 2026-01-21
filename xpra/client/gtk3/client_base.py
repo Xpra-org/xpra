@@ -234,6 +234,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
         from xpra.client.base import features
+        if features.display:
+            Gdk.Screen.get_default().connect("size-changed", self.screen_size_changed)
         if features.window:
             # call this once early:
             ignorewarnings(self.get_mouse_position)
@@ -1036,15 +1038,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             log.error(" using size %ix%i with hotspot at %ix%i", w, h, x, y)
             c = None
         return c
-
-    def process_ui_capabilities(self, caps: typedict) -> None:
-        UIXpraClient.process_ui_capabilities(self, caps)
-        # this requires the "DisplayClient" mixin:
-        if not hasattr(self, "screen_size_changed"):
-            return
-        # always one screen per display:
-        screen = Gdk.Screen.get_default()
-        screen.connect("size-changed", self.screen_size_changed)
 
     def window_grab(self, wid: int, window) -> None:
         event_mask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK

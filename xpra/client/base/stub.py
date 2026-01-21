@@ -91,12 +91,6 @@ class StubClientMixin:
         """
         return True
 
-    def process_ui_capabilities(self, caps: typedict) -> None:
-        """
-        Parse server attributes specified in the hello capabilities.
-        This runs in the UI thread.
-        """
-
     def startup_complete(self) -> None:
         """
         The client and server have exchanged hello packets,
