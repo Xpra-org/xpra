@@ -58,26 +58,26 @@ class TrayClient(StubClientMixin):
         log("setup_xpra_tray%s", args)
         tray = self.create_xpra_tray(self.tray_icon or "xpra")
         self.tray = tray
-        if tray:
-            tray.show()
-            icon_timestamp = tray.icon_timestamp
+        if not tray:
+            return
+        tray.show()
+        icon_timestamp = tray.icon_timestamp
 
-            def reset_icon() -> None:
-                if not self.tray:
-                    return
-                # re-set the icon after a short delay,
-                # seems to help with buggy tray geometries,
-                # but don't do it if we have already changed the icon
-                # (ie: the dynamic window icon code may have set a new one)
-                if icon_timestamp == tray.icon_timestamp:
-                    tray.set_icon()
+        def reset_icon() -> None:
+            if not self.tray:
+                return
+            # re-set the icon after a short delay,
+            # seems to help with buggy tray geometries,
+            # but don't do it if we have already changed the icon
+            # (ie: the dynamic window icon code may have set a new one)
+            if icon_timestamp == tray.icon_timestamp:
+                tray.set_icon()
 
-            GLib.timeout_add(1000, reset_icon)
+        GLib.timeout_add(1000, reset_icon)
 
-    def startup_complete(self) -> None:
-        tray = self.tray
-        if tray:
+        def tray_ready(*_args) -> None:
             tray.ready()
+        self.connect("startup-complete", tray_ready)
 
     def cleanup(self) -> None:
         t = self.tray

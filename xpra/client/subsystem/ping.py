@@ -76,9 +76,6 @@ class PingClient(StubClientMixin):
             })
         return caps
 
-    def startup_complete(self) -> None:
-        self.start_sending_pings()
-
     def server_ok(self) -> bool:
         return self._server_ok
 
@@ -92,10 +89,12 @@ class PingClient(StubClientMixin):
     def parse_server_capabilities(self, c: typedict) -> bool:
         if self.pings:
             self.pings = c.boolget("ping", BACKWARDS_COMPATIBLE)
+            if self.pings:
+                self.connect("startup-complete", self.start_sending_pings)
         return True
 
-    def start_sending_pings(self) -> None:
-        log("start_sending_pings() pings=%s, ping_timer=%s", self.pings, self.ping_timer)
+    def start_sending_pings(self, *args) -> None:
+        log("start_sending_pings%s pings=%s, ping_timer=%s", args, self.pings, self.ping_timer)
         if self.pings > 0 and not self.ping_timer:
             self.send_ping()
             self.ping_timer = GLib.timeout_add(1000 * self.pings, self.send_ping)

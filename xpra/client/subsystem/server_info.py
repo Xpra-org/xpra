@@ -29,8 +29,9 @@ class ServerInfoClient(StubClientMixin):
         self.server_last_info: dict = {}
         self.info_request_pending: bool = False
 
-    def startup_complete(self) -> None:
-        self.send_info_request()
+        def request_initial_info(*_args) -> None:
+            self.send_info_request()
+        self.connect("startup-complete", request_initial_info)
 
     def _process_info_response(self, packet: Packet) -> None:
         self.info_request_pending = False

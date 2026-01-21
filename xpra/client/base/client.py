@@ -60,7 +60,10 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     Provides the glue code for:
     * sending packets via Protocol
     * handling packets received via _process_packet
-   """
+    """
+    __signals__ = ["startup-complete"]
+    # for c in CLIENT_BASES:
+    #    __signals__ += getattr(c, "__signals__", [])
 
     def __init__(self):
         self.defaults_init()
@@ -568,8 +571,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         # can be received if we connect with "xpra stop" or other command line client
         # as the server is starting up
         self.completed_startup = packet
-        for bc in CLIENT_BASES:
-            bc.startup_complete(self)
+        self.emit("startup-complete")
 
     def _process_gibberish(self, packet: Packet) -> None:
         log("process_gibberish(%s)", Ellipsizer(packet))

@@ -6,13 +6,23 @@
 import sys
 from typing import Any, NoReturn
 
+from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.compression import Compressed
 from xpra.net.common import ClientPacketHandlerType, PacketElement
 
+# when running the unit tests,
+# we inject the signal emitter into the signal hierarchy,
+# whereas regular client classes inherit the signal methods from GObjectClientAdapter
+if envbool("XPRA_UNIT_TEST"):
+    from xpra.util.signal_emitter import SignalEmitter
+    superclass = SignalEmitter
+else:
+    superclass = object
 
-class StubClientMixin:
+
+class StubClientMixin(superclass):
     __signals__: list[str] = []
 
     def init(self, opts) -> None:
@@ -62,11 +72,6 @@ class StubClientMixin:
         this takes precedence over packets sent via send().
         """
 
-    def emit(self, *_args, **_kwargs) -> None:
-        """
-        Emit a signal, dummy implementation overridden by gobject.
-        """
-
     def setup_connection(self, _conn) -> None:
         """
         Prepare to run using this connection to the server.
@@ -90,12 +95,6 @@ class StubClientMixin:
         This runs in a non-UI thread.
         """
         return True
-
-    def startup_complete(self) -> None:
-        """
-        The client and server have exchanged hello packets,
-        and now the server has announced "startup-complete".
-        """
 
     # noinspection PyMethodMayBeStatic
     def compressed_wrapper(self, datatype, data, level=5, **_kwargs) -> Compressed:

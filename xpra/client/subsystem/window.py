@@ -521,9 +521,11 @@ class WindowClient(StubClientMixin):
                 log.warn("Warning: pointer polling is unlikely to work under Wayland")
                 log.warn(" and may cause problems")
             self.poll_pointer_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
+        self.connect("startup-complete", self.log_windows_info)
         return True
 
-    def startup_complete(self) -> None:
+    def log_windows_info(self, *args) -> None:
+        log("log_windows_info%s", args)
         msg = "running"
         try:
             windows = tuple(self._id_to_window.values())

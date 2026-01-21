@@ -48,8 +48,7 @@ class UIXpraClient(ClientBaseClass):
     # these are all "no-arg" signals
     __signals__ = ["first-ui-received", ]
     for c in CLIENT_BASES:
-        if c != XpraClientBase:
-            __signals__ += c.__signals__
+        __signals__ += c.__signals__
 
     # noinspection PyMissingConstructor
     def __init__(self):  # pylint: disable=super-init-not-called
@@ -290,8 +289,6 @@ class UIXpraClient(ClientBaseClass):
         log("all the existing windows and system trays have been received")
         super()._process_startup_complete(packet)
         gui_ready()
-        for c in CLIENT_BASES:
-            c.startup_complete(self)
 
     def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
         self.idle_add(super().send_hello, challenge_response, client_salt)
