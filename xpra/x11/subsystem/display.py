@@ -17,7 +17,7 @@ from xpra.util.system import is_X11
 from xpra.scripts.config import FALSE_OPTIONS, InitExit
 from xpra.net.common import Packet
 from xpra.common import (
-    get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions,
+    get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions, may_notify_client,
     MAX_WINDOW_SIZE, NotificationID, BACKWARDS_COMPATIBLE,
 )
 from xpra.x11.xroot_props import root_set, root_get, root_del
@@ -569,7 +569,7 @@ class X11DisplayManager(DisplayManager):
         if len(sources) == 1:
             ss = sources[0]
             if first_time("DPI-warning-%s" % ss.uuid):
-                sources[0].may_notify(NotificationID.DPI, "DPI Issue", body, icon_name="font")
+                may_notify_client(ss, NotificationID.DPI, "DPI Issue", body, icon_name="font")
 
     def set_dpi(self, xdpi: int, ydpi: int) -> None:
         """ overridden in the seamless server """

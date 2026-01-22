@@ -13,7 +13,7 @@ from typing import Any
 from xpra.exit_codes import ExitCode
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.common import NotificationID, ConnectionMessage
+from xpra.common import NotificationID, ConnectionMessage, may_notify_client
 from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture, capture_and_encode
 from xpra.gstreamer.common import get_element_str
@@ -320,7 +320,7 @@ class PortalShadow(GTKShadowServerBase):
         if model:
             self._remove_window(model)
         for ss in tuple(self._server_sources.values()):
-            ss.may_notify(NotificationID.FAILURE, "Session Capture Failed", str(message))
+            may_notify_client(ss, NotificationID.FAILURE, "Session Capture Failed", str(message))
 
     def capture_state_changed(self, capture, state) -> None:
         wid = capture.node_id

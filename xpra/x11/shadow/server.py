@@ -9,7 +9,7 @@ from typing import Any
 from xpra.net.packet_type import DISPLAY_SCREENSHOT
 from xpra.server.base import ServerBase
 from xpra.net.compression import Compressed
-from xpra.common import NotificationID
+from xpra.common import NotificationID, may_notify_client
 from xpra.os_util import gi_import
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -80,11 +80,11 @@ class ShadowX11Server(GTKShadowServerBase):
         super().client_startup_complete(ss)
         log("is_Wayland()=%s", is_Wayland())
         if is_Wayland():
-            ss.may_notify(NotificationID.SHADOWWAYLAND,
-                          "Wayland Shadow Server",
-                          "This shadow session seems to be running under wayland,\n"
-                          "the screen scraping will probably come up empty",
-                          icon_name="unticked")
+            may_notify_client(ss, NotificationID.SHADOWWAYLAND,
+                              "Wayland Shadow Server",
+                              "This shadow session seems to be running under wayland,\n"
+                              "the screen scraping will probably come up empty",
+                              icon_name="unticked")
 
     def do_get_cursor_data(self) -> tuple[Any, Any]:
         return super().get_cursor_data()
@@ -114,9 +114,9 @@ class ShadowX11Server(GTKShadowServerBase):
                 title = "Shadow Capture Failure"
             log("verify_capture: title=%r, body=%r", title, body)
             if title and body:
-                ss.may_notify(nid, title, body, icon_name="server")
+                may_notify_client(ss, nid, title, body, icon_name="server")
         except Exception as e:
-            ss.may_notify(nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
+            may_notify_client(ss, nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
