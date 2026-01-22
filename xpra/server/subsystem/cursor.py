@@ -40,7 +40,7 @@ class CursorManager(StubServerMixin):
         if share_count > 0:
             self.cursor_size = 24
         else:
-            caps = typedict(c.dictget("cursor"))
+            caps = typedict(c.dictget("cursor") or {})
             if caps:
                 default_cursor_size = caps.inttupleget("default", (0, 0))
                 self.cursor_size = max(0, default_cursor_size[0], default_cursor_size[1])
