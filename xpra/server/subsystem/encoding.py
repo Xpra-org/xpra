@@ -125,14 +125,6 @@ class EncodingServer(StubServerMixin):
         getVideoHelper().cleanup()
         unload_codecs()
 
-    def get_server_features(self, source=None) -> dict[str, Any]:
-        wants = getattr(source, "wants", [])
-        if "features" in wants:
-            return {
-
-            }
-        return {}
-
     def get_info(self, _proto) -> dict[str, Any]:
         info = {
             "encodings": self.get_encoding_info(),
