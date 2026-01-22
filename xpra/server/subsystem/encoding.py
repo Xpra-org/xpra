@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from xpra.util.env import envint
 from xpra.os_util import OSX
 from xpra.net.common import Packet
+from xpra.util.thread import start_thread
 from xpra.util.version import vtrim
 from xpra.util.parsing import parse_bool_or_int
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENCODINGS
@@ -94,6 +95,7 @@ class EncodingServer(StubServerMixin):
             load_codec("enc_avif")
         self.connect("init-thread-ended", self.reinit_encodings)
         self.init_encodings()
+        start_thread(self.threaded_encoding_setup, "threaded-encoding-setup", daemon=True)
 
     def reinit_encodings(self, *args) -> None:
         self.init_encodings()
@@ -109,7 +111,7 @@ class EncodingServer(StubServerMixin):
                 ss.reinit_encodings(self)
                 ss.reinit_encoders()
 
-    def threaded_setup(self) -> None:
+    def threaded_encoding_setup(self) -> None:
         if INIT_DELAY > 0:
             from time import sleep
             sleep(INIT_DELAY)

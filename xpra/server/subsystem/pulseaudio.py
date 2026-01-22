@@ -137,6 +137,21 @@ def get_xpra_pulse_script() -> str:
     return ""
 
 
+def query_pulseaudio_properties() -> dict:
+    try:
+        from xpra.platform.paths import get_icon_filename
+        from xpra.audio.pulseaudio.util import set_icon_path, get_info as get_pa_info
+        pa_info = get_pa_info()
+        log("pulseaudio info=%s", pa_info)
+        set_icon_path(get_icon_filename("xpra.png"))
+        return pa_info
+    except ImportError as e:
+        if POSIX and not OSX:
+            log.warn("Warning: failed to set pulseaudio tagging icon:")
+            log.warn(" %s", e)
+    return {}
+
+
 class PulseaudioServer(StubServerMixin):
     """
     Handles starting and configuring pulseaudio
@@ -169,12 +184,9 @@ class PulseaudioServer(StubServerMixin):
         else:
             self.pulseaudio_configure_commands = tuple(x.strip() for x in opts.pulseaudio_configure_commands if x.strip())
 
-    def threaded_setup(self) -> None:
-        # the setup code will mostly be waiting for subprocesses to run,
-        # so do it in a separate thread
-        # and just wait for the results where needed:
+    def setup(self) -> None:
+        # initialize pulseaudio in a separate thread
         start_thread(self.init_pulseaudio, "init-pulseaudio", True)
-        # we spawn another thread here to avoid blocking threaded init
 
     def late_cleanup(self, stop=True) -> None:
         if stop:
@@ -464,20 +476,6 @@ class PulseaudioServer(StubServerMixin):
                                 log.error(f" - {f!r}")
                     except OSError:
                         log.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
-
-    def query_pulseaudio_properties(self) -> dict:
-        try:
-            from xpra.platform.paths import get_icon_filename
-            from xpra.audio.pulseaudio.util import set_icon_path, get_info as get_pa_info
-            pa_info = get_pa_info()
-            log("pulseaudio info=%s", pa_info)
-            set_icon_path(get_icon_filename("xpra.png"))
-            return pa_info
-        except ImportError as e:
-            if POSIX and not OSX:
-                log.warn("Warning: failed to set pulseaudio tagging icon:")
-                log.warn(" %s", e)
-        return {}
 
     def get_pulseaudio_info(self) -> dict[str, Any]:
         info: dict[str, str | Sequence[str] | int] = {

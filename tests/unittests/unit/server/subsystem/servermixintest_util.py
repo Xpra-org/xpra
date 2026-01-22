@@ -47,11 +47,6 @@ class ServerMixinTest(unittest.TestCase):
     def stop(self) -> None:
         self.glib.timeout_add(1000, self.main_loop.quit)
 
-    def wait_for_threaded_init(self):
-        # we don't do threading yet,
-        # so no need to wait
-        pass
-
     def add_packets(self, *packet_types: str, main_thread=False) -> None:
         for packet_type in packet_types:
             handler = getattr(self.mixin, "_process_" + packet_type.replace("-", "_"))
@@ -102,7 +97,6 @@ class ServerMixinTest(unittest.TestCase):
         x.auth_classes = {}
         x.init_sockets(self.create_test_sockets())
         x.setup()
-        x.threaded_setup()
         x.init_packet_handlers()
         caps = typedict(caps or {})
         send_ui = True

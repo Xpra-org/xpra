@@ -8,7 +8,6 @@ import unittest
 
 from xpra.os_util import getuid, getgid
 from xpra.util.objects import typedict, AdHocStruct
-from xpra.util.thread import start_thread
 from xpra.server.subsystem.stub import StubServerMixin
 
 
@@ -23,8 +22,6 @@ class EncodingMixinTest(unittest.TestCase):
         x.init_state()
         x.init_sockets([])
         x.setup()
-        t = start_thread(x.threaded_setup, "threaded setup")
-        t.join()
         x.init_packet_handlers()
         x.get_server_source(None)
 

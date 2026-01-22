@@ -114,20 +114,12 @@ class ServerBase(ServerBaseClass):
             end = monotonic()
             log("%3ims in %s.setup", 1000 * (end - start), c)
 
-    def threaded_setup(self) -> None:
-        log("threaded_init() serverbase start")
-        for c in SERVER_BASES:
-            with log.trap_error("Error during threaded setup of %s", c):
-                c.threaded_setup(self)
-        log("threaded_init() serverbase end")
-
     def server_is_ready(self) -> None:
         super().server_is_ready()
         self.server_event("ready")
 
     def do_cleanup(self) -> None:
         self.server_event("exit")
-        self.wait_for_threaded_init()
         log("do_cleanup() calling on %s", SERVER_BASES)
         for c in reversed(SERVER_BASES):
             if c != ServerCore:
@@ -439,10 +431,6 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # info:
-    def send_hello_info(self, proto, **kwargs) -> None:
-        self.wait_for_threaded_init()
-        super().send_hello_info(proto, **kwargs)
-
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
         """ info that must be collected from the UI thread
             (ie: things that query the display)

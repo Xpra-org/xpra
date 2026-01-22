@@ -26,7 +26,7 @@ class IdleTimeoutServer(StubServerMixin):
     def init(self, opts) -> None:
         self.server_idle_timeout = opts.server_idle_timeout
 
-    def threaded_setup(self) -> None:
+    def setup(self) -> None:
         self.schedule_server_timeout()
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:

@@ -70,11 +70,6 @@ class StubServerMixin(superclass):
         After initialization, prepare to run.
         """
 
-    def threaded_setup(self) -> None:
-        """
-        Prepare to run, this method runs in parallel to start faster.
-        """
-
     def init_sockets(self, _sockets) -> None:
         """
         Prepare to handle connections from the given sockets.

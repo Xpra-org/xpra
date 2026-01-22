@@ -202,7 +202,10 @@ class ChildCommandServer(StubServerMixin):
             self.menu_provider = get_menu_provider()
             self.menu_provider.on_reload.append(self.send_updated_menu)
 
-    def threaded_setup(self) -> None:
+    def setup(self) -> None:
+        start_thread(self.threaded_command_setup, "threaded-command-setup", daemon=True)
+
+    def threaded_command_setup(self) -> None:
         self.exec_start_commands()
 
         def set_reaper_callback() -> None:

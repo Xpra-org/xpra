@@ -9,6 +9,7 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
 from xpra.util.env import OSEnvContext
+from xpra.util.thread import start_thread
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.common import FULL_INFO
@@ -117,8 +118,10 @@ class OpenGLInfo(StubServerMixin):
     def init(self, opts) -> None:
         self.opengl = opts.opengl
 
-    def threaded_setup(self) -> None:
-        self.opengl_props = self.query_opengl()
+    def setup(self) -> None:
+        def query() -> None:
+            self.opengl_props = self.query_opengl()
+        start_thread(query, "query-opengl", daemon=True)
 
     def query_opengl(self) -> dict[str, Any]:
         props: dict[str, Any] = {}

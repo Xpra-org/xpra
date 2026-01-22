@@ -57,7 +57,7 @@ class AudioServer(StubServerMixin):
         self.av_sync = opts.av_sync
         log("AudioServer.init(..) av-sync=%s", self.av_sync)
 
-    def threaded_setup(self) -> None:
+    def setup(self) -> None:
         # this is slow, use a separate thread:
         start_thread(self.init_audio_options, "audio-setup", True)
 

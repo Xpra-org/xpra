@@ -197,8 +197,6 @@ class ServerCore(ServerBaseClass):
         self.compression_level = 1
         self.exit_with_client = False
 
-        self.init_thread = None
-
         self._default_packet_handlers: dict[str, Callable] = {}
 
     def init(self, opts) -> None:
@@ -242,8 +240,6 @@ class ServerCore(ServerBaseClass):
         self.start_listen_sockets()
         self.init_control_commands()
         self.init_packet_handlers()
-        # for things that can take longer:
-        self.init_thread = start_thread(target=self.threaded_init, name="server-init-thread")
 
     def init_control_commands(self) -> None:
         self.add_default_control_commands(features.control)
@@ -305,27 +301,7 @@ class ServerCore(ServerBaseClass):
         log("threaded_init() servercore start")
         # platform specific init:
         threaded_server_init()
-        self.threaded_setup()
         self.emit("init-thread-ended")
-
-    def threaded_setup(self) -> None:
-        log("threaded_setup() servercore start")
-        for c in SERVER_BASES:
-            with log.trap_error("Error during threaded setup of %s", c):
-                c.threaded_setup(self)
-        log("threaded_setup() servercore end")
-
-    def wait_for_threaded_init(self) -> None:
-        if not self.init_thread:
-            # looks like we didn't make it as far as calling setup()
-            log("wait_for_threaded_init() no init thread")
-            return
-        log("wait_for_threaded_init() %s.is_alive()=%s", self.init_thread, self.init_thread.is_alive())
-        if self.init_thread.is_alive():
-            log("waiting for initialization thread to complete")
-            self.init_thread.join(INIT_THREAD_TIMEOUT)
-            if self.init_thread.is_alive():
-                log.warn("Warning: initialization thread is still active")
 
     def get_subsystems(self) -> list[str]:
         return [subsystem_name(c) for c in SERVER_BASES]

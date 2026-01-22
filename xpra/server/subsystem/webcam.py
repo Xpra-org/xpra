@@ -66,7 +66,7 @@ class WebcamServer(StubServerMixin):
         # duplicated
         self.readonly = False
 
-    def threaded_setup(self) -> None:
+    def setup(self) -> None:
         self.init_webcam()
 
     def get_server_features(self, _source) -> dict[str, Any]:

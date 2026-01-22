@@ -7,6 +7,7 @@ import os
 from typing import Any
 
 from xpra.server.subsystem.stub import StubServerMixin
+from xpra.util.thread import start_thread
 
 
 class DRMInfo(StubServerMixin):
@@ -17,7 +18,10 @@ class DRMInfo(StubServerMixin):
         self.display = os.environ.get("DISPLAY", "")
         self.drm_info = {}
 
-    def threaded_setup(self) -> None:
+    def setup(self) -> None:
+        start_thread(self.query_drm, "query-drm", daemon=True)
+
+    def query_drm(self) -> None:
         try:
             from xpra.codecs.drm.drm import query  # pylint: disable=import-outside-toplevel
         except ImportError as e:

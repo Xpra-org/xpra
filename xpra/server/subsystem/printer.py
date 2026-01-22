@@ -19,6 +19,7 @@ from xpra.net.common import Packet
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
+from xpra.util.thread import start_thread
 
 log = Logger("printing")
 
@@ -61,9 +62,6 @@ class PrinterServer(StubServerMixin):
         self.postscript_printer = opts.postscript_printer
         self.pdf_printer = opts.pdf_printer
 
-    def threaded_setup(self) -> None:
-        self.init_printing()
-
     def setup(self) -> None:
         # verify we have a local socket for printing:
         sockets = getattr(self, "sockets", ())
@@ -75,6 +73,7 @@ class PrinterServer(StubServerMixin):
                 log.warn(" disabling printer forwarding")
             log("printer forwarding disabled")
             self.file_transfer.printing = False
+        start_thread(self.init_printing, "init-printing", daemon=True)
 
     def get_server_features(self, _source) -> dict[str, Any]:
         f = self.file_transfer.get_printer_features()

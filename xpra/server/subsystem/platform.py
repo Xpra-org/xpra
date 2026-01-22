@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.server.subsystem.stub import StubServerMixin
+from xpra.util.thread import start_thread
 from xpra.util.version import get_platform_info
 
 
@@ -15,8 +16,8 @@ class PlatformServer(StubServerMixin):
     """
     PREFIX = "platform"
 
-    def threaded_setup(self) -> None:
-        get_platform_info()
+    def setup(self) -> None:
+        start_thread(get_platform_info, "get-platform-info", daemon=True)
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
