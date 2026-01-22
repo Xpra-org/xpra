@@ -17,6 +17,31 @@ from xpra.log import Logger
 log = Logger("webcam")
 
 
+def init_virtual_video_devices() -> int:
+    log("init_virtual_video_devices")
+    if not POSIX or OSX:
+        return 0
+    # pylint: disable=import-outside-toplevel
+    try:
+        from xpra.codecs.v4l2.virtual import VirtualWebcam
+        assert VirtualWebcam
+    except ImportError:
+        log("failed to import the virtual video module", exc_info=True)
+        log.info("webcam forwarding requires the v4l2 virtual video module")
+        return 0
+    try:
+        from xpra.platform.posix.webcam import get_virtual_video_devices, check_virtual_dir
+    except ImportError as e:
+        log.warn("Warning: cannot load webcam components")
+        log.warn(" %s", e)
+        log.warn(" webcam forwarding disabled")
+        return 0
+    check_virtual_dir()
+    devices = get_virtual_video_devices()
+    log.info("found %i virtual video devices for webcam forwarding", len(devices))
+    return len(devices)
+
+
 class WebcamServer(StubServerMixin):
     """
     Mixin for servers that handle webcam forwarding,
@@ -87,33 +112,9 @@ class WebcamServer(StubServerMixin):
         if self.webcam_device:
             self.webcam_virtual_video_devices = 1
         else:
-            self.webcam_virtual_video_devices = self.init_virtual_video_devices()
+            self.webcam_virtual_video_devices = init_virtual_video_devices()
             if self.webcam_virtual_video_devices == 0:
                 self.webcam_enabled = False
-
-    def init_virtual_video_devices(self) -> int:
-        log("init_virtual_video_devices")
-        if not POSIX or OSX:
-            return 0
-        # pylint: disable=import-outside-toplevel
-        try:
-            from xpra.codecs.v4l2.virtual import VirtualWebcam
-            assert VirtualWebcam
-        except ImportError:
-            log("failed to import the virtual video module", exc_info=True)
-            log.info("webcam forwarding requires the v4l2 virtual video module")
-            return 0
-        try:
-            from xpra.platform.posix.webcam import get_virtual_video_devices, check_virtual_dir
-        except ImportError as e:
-            log.warn("Warning: cannot load webcam components")
-            log.warn(" %s", e)
-            log.warn(" webcam forwarding disabled")
-            return 0
-        check_virtual_dir()
-        devices = get_virtual_video_devices()
-        log.info("found %i virtual video devices for webcam forwarding", len(devices))
-        return len(devices)
 
     def _process_webcam_start(self, proto, packet: Packet) -> None:
         if self.readonly:
