@@ -1,7 +1,13 @@
 # Changelog
 
 ## [6.5] 2025-11-19
-* TODO
+* Platforms, build and packaging:
+  * [use `wasapi2` on MS Windows](https://github.com/Xpra-org/xpra/issues/4735)
+  * [support for Linux Mint in install scripts](https://github.com/Xpra-org/xpra/issues/4727)
+* Features:
+  * [asynchronous initialization](https://github.com/Xpra-org/xpra/issues/4557)
+  * [more specific content types](https://github.com/Xpra-org/xpra/issues/4765)
+  * [http error pages overrides](https://github.com/Xpra-org/xpra/issues/4732)
 
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:
