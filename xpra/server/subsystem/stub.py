@@ -47,6 +47,11 @@ class StubServerMixin(superclass):
         Initialize state attributes.
         """
 
+    def setup(self) -> None:
+        """
+        After initialization, prepare to run.
+        """
+
     def cleanup(self) -> None:
         """
         Free up any resources.
@@ -57,11 +62,6 @@ class StubServerMixin(superclass):
         Free up any resources, after main cleanup.
         `stop` is set to True when we are meant to stop all subprocesses we are responsible for.
         (ie: `Xvfb` and such)
-        """
-
-    def setup(self) -> None:
-        """
-        After initialization, prepare to run.
         """
 
     def get_caps(self, _source) -> dict[str, Any]:
