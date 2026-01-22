@@ -61,6 +61,7 @@ class KeyboardServer(StubServerMixin):
 
         self.watch_keymap_changes()
         self.keyboard_config = self.get_keyboard_config({"keymap": self.keymap_options})
+        self.connect("last-client-exited", self.clear_keys_pressed)
 
     def make_keyboard_device(self):
         from xpra.platform.keyboard import get_keyboard_device
@@ -85,9 +86,6 @@ class KeyboardServer(StubServerMixin):
         if kct:
             self.keymap_changing_timer = 0
             GLib.source_remove(kct)
-
-    def last_client_exited(self) -> None:
-        self.clear_keys_pressed()
 
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         info = self.get_keyboard_info()
@@ -384,8 +382,8 @@ class KeyboardServer(StubServerMixin):
                 if hasattr(ss, "keys_changed"):
                     ss.keys_changed()
 
-    def clear_keys_pressed(self) -> None:
-        log("clear_keys_pressed()")
+    def clear_keys_pressed(self, *args) -> None:
+        log("clear_keys_pressed%s", args)
         if self.readonly:
             return
         # make sure the timer doesn't fire and interfere:

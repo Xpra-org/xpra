@@ -48,6 +48,13 @@ class ClipboardServer(StubServerMixin):
 
     def setup(self) -> None:
         self.init_clipboard()
+        self.connect("last-client-exited", self.reset_clipboard)
+
+    def reset_clipboard(self, *args) -> None:
+        ch = self._clipboard_helper
+        log("reset_clipboard%s helper=%s", args, ch)
+        if ch:
+            ch.client_reset()
 
     def cleanup(self) -> None:
         ch = self._clipboard_helper
@@ -187,11 +194,6 @@ class ClipboardServer(StubServerMixin):
             ch.send_tokens(ss.clipboard_selections)
         else:
             ch.enable_selections()
-
-    def last_client_exited(self) -> None:
-        ch = self._clipboard_helper
-        if ch:
-            ch.client_reset()
 
     def set_session_driver(self, source) -> None:
         self.set_clipboard_source(source)

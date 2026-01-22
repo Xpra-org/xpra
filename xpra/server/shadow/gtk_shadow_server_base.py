@@ -74,11 +74,14 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
             from xpra.gtk.widget import checkitem
             tray_menu.append(checkitem("Read-only", cb=readonly_toggled, active=self.readonly))
 
-    def last_client_exited(self) -> None:
-        log("last_client_exited() mapped=%s", self.mapped)
+    def setup(self) -> None:
+        super().setup()
+        self.connect("last-client-exited", self.stop_all_refresh)
+
+    def stop_all_refresh(self, *args) -> None:
+        log("stop_all_refresh%s mapped=%s", args, self.mapped)
         for wid in tuple(self.mapped):
             self.stop_refresh(wid)
-        super().last_client_exited()
 
     def make_hello(self, source) -> dict[str, Any]:
         caps = super().make_hello(source)

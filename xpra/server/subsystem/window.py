@@ -64,6 +64,7 @@ class WindowServer(StubServerMixin):
         self.update_size_constraints(minw, minh, maxw, maxh)
         # when the main loop runs, load the windows:
         GLib.idle_add(self.load_existing_windows)
+        self.connect("last-client-exited", self.reset_focus)
 
     def cleanup(self) -> None:
         for window in tuple(self._window_to_id.keys()):
@@ -74,9 +75,6 @@ class WindowServer(StubServerMixin):
 
     def load_existing_windows(self) -> None:
         """ this method is overriden by most types of servers """
-
-    def last_client_exited(self) -> None:
-        self._focus(None, 0, [])
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {}
@@ -468,6 +466,10 @@ class WindowServer(StubServerMixin):
 
     ######################################################################
     # focus:
+    def reset_focus(self, *args) -> None:
+        log("reset_focus%s", args)
+        self._focus(None, 0, [])
+
     def _process_window_focus(self, proto, packet: Packet) -> None:
         if self.readonly:
             return

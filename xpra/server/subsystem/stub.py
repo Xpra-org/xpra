@@ -47,12 +47,6 @@ class StubServerMixin(superclass):
         Initialize state attributes.
         """
 
-    def last_client_exited(self) -> None:
-        """
-        Called when the last client has exited,
-        so we can reset things to their original state.
-        """
-
     def cleanup(self) -> None:
         """
         Free up any resources.

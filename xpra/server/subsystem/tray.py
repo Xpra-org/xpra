@@ -62,6 +62,13 @@ class TrayMenu(StubServerMixin):
     def setup(self) -> None:
         if self.tray:
             self.setup_tray()
+            self.connect("last-client-exited", self.tray_not_connected)
+
+    def tray_not_connected(self, *args) -> None:
+        log("tray_not_connected%s", args)
+        # revert to default icon:
+        if not self.tray_icon:
+            self.set_tray_icon("server-notconnected")
 
     def cleanup(self) -> None:
         self.cleanup_tray()
@@ -69,11 +76,6 @@ class TrayMenu(StubServerMixin):
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         if not self.tray_icon:
             self.set_tray_icon("server-connected")
-
-    def last_client_exited(self) -> None:
-        # revert to default icon:
-        if not self.tray_icon:
-            self.set_tray_icon("server-notconnected")
 
     def cleanup_tray(self) -> None:
         tw = self.tray_widget

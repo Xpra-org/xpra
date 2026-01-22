@@ -204,6 +204,11 @@ class ChildCommandServer(StubServerMixin):
 
     def setup(self) -> None:
         start_thread(self.threaded_command_setup, "threaded-command-setup", daemon=True)
+        self.connect("last-client-exited", self.exec_on_last_client_exit)
+
+    def exec_on_last_client_exit(self, *args) -> None:
+        log("exec_on_last_client_exit%s", args)
+        self._exec_commands(self.start_on_last_client_exit, self.start_child_on_last_client_exit)
 
     def threaded_command_setup(self) -> None:
         self.exec_start_commands()
@@ -312,9 +317,6 @@ class ChildCommandServer(StubServerMixin):
             info[i] = procinfo.get_info()
         cinfo: dict[str, Any] = {ChildCommandServer.PREFIX: info}
         return cinfo
-
-    def last_client_exited(self) -> None:
-        self._exec_commands(self.start_on_last_client_exit, self.start_child_on_last_client_exit)
 
     def get_child_env(self) -> dict[str, str]:
         # subclasses may add more

@@ -30,7 +30,7 @@ netlog = Logger("network")
 authlog = Logger("auth")
 
 SERVER_BASES = get_server_base_classes()
-SIGNALS: dict[str, tuple] = {}
+SIGNALS: dict[str, int] = {}
 for base_class in SERVER_BASES:
     SIGNALS.update(getattr(base_class, "__signals__", {}))
 ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
@@ -49,6 +49,9 @@ class ServerBase(ServerBaseClass):
     See X11ServerBase and other platform specific subclasses.
     """
     __signals__ = SIGNALS
+    __signals__.update({
+        "last-client-exited": 0,
+    })
 
     def __init__(self):
         for c in SERVER_BASES:
@@ -638,12 +641,7 @@ class ServerBase(ServerBaseClass):
     def last_client_exited(self) -> None:
         # must run from the UI thread (modifies focus and keys)
         netlog("last_client_exited() exit_with_client=%s", self.exit_with_client)
-        for c in SERVER_BASES:
-            if c != ServerCore:
-                try:
-                    c.last_client_exited(self)
-                except Exception:
-                    log("last_client_exited calling %s", c.last_client_exited, exc_info=True)
+        self.emit("last-client-exited")
         if self.exit_with_client and not self._closing:
             netlog.info("Last client has disconnected, terminating")
             self.clean_quit(False)

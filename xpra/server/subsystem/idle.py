@@ -28,12 +28,10 @@ class IdleTimeoutServer(StubServerMixin):
 
     def setup(self) -> None:
         self.schedule_server_timeout()
+        self.connect("last-client-exited", self.schedule_server_timeout)
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         self.cancel_server_timeout()
-
-    def last_client_exited(self) -> None:
-        self.schedule_server_timeout()
 
     def cancel_server_timeout(self) -> None:
         log("cancel_server_timeout() timer=%s", self.server_idle_timer)
@@ -43,8 +41,8 @@ class IdleTimeoutServer(StubServerMixin):
             GLib.source_remove(self.server_idle_timer)
             self.server_idle_timer = 0
 
-    def schedule_server_timeout(self) -> None:
-        log("schedule_server_timeout() server_idle_timeout=%s", self.server_idle_timeout)
+    def schedule_server_timeout(self, *args) -> None:
+        log("schedule_server_timeout%s server_idle_timeout=%s", args, self.server_idle_timeout)
         self.cancel_server_timeout()
         self.server_idle_timer = GLib.timeout_add(self.server_idle_timeout * 1000, self.server_idle_timedout)
 
