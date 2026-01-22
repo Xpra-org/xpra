@@ -109,7 +109,6 @@ class XpraPygletClient:
             "keyboard": True,
             "pointer": {"double_click": {}},
             "encodings": ("png", "jpg", "webp"),    # "rgb32", "rgb24"
-            "network-state": False,  # tell older server that we don't have "ping"
             "display": {"refresh-rate": 50},
         }
         if BACKWARDS_COMPATIBLE:
