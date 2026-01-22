@@ -519,18 +519,12 @@ class ServerBase(ServerBaseClass):
         log("unauthenticated protocols:")
         for i, p in enumerate(self._potential_protocols):
             log(f"{i:3} : {p}={p.get_info()}")
-        # find the server source to report on:
-        n = len(server_sources)
-        if n == 1:
-            ss = server_sources[0]
-            up("client", ss.get_info())
-        elif n > 1:
-            cinfo = {}
-            for i, ss in enumerate(server_sources):
-                sinfo = ss.get_info()
-                sinfo["ui-driver"] = self.ui_driver == ss.uuid
-                cinfo[i] = sinfo
-            up("client", cinfo)
+        cinfo = {}
+        for i, ss in enumerate(server_sources):
+            sinfo = ss.get_info()
+            sinfo["ui-driver"] = self.ui_driver == ss.uuid
+            cinfo[i] = sinfo
+        up("client", cinfo)
         log("ServerBase.get_source_info took %ims", (monotonic() - start) * 1000)
         return info
 
