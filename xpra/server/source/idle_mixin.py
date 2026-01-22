@@ -10,7 +10,7 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.common import NotificationID, ConnectionMessage, BACKWARDS_COMPATIBLE
+from xpra.common import NotificationID, ConnectionMessage, BACKWARDS_COMPATIBLE, may_notify_client
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
@@ -121,9 +121,9 @@ class IdleConnection(StubClientConnection):
         summary += " is about to timeout"
         body = "Unless this session sees some activity,\n" + \
                "it will be terminated soon."
-        self.may_notify(nid, summary, body,
-                        actions, {}, expire_timeout=10 * 1000,
-                        icon_name="timer", user_callback=self.idle_notification_action)
+        may_notify_client(self, nid, summary, body,
+                          actions, {}, expire_timeout=10 * 1000,
+                          icon_name="timer", user_callback=self.idle_notification_action)
         self.go_idle()
 
     def idle_notification_action(self, nid: int, action_id) -> None:

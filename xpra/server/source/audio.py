@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from xpra.audio.common import AUDIO_DATA_PACKET
 from xpra.net.compression import Compressed
 from xpra.server.source.stub import StubClientConnection
-from xpra.common import FULL_INFO, NotificationID, SizedBuffer, BACKWARDS_COMPATIBLE
+from xpra.common import FULL_INFO, NotificationID, SizedBuffer, BACKWARDS_COMPATIBLE, may_notify_client
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import
 from xpra.util.objects import typedict
 from xpra.util.system import stop_proc
@@ -240,7 +240,7 @@ class AudioConnection(StubClientConnection):
         msgs = loop_warning_messages(mode)
         summary = msgs[0]
         body = "\n".join(msgs[1:])
-        self.may_notify(NotificationID.AUDIO, summary, body, icon_name=mode)
+        may_notify_client(self, NotificationID.AUDIO, summary, body, icon_name=mode)
         log.warn("Warning: %s", summary)
         for x in msgs[1:]:
             log.warn(" %s", x)

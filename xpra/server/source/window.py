@@ -19,7 +19,10 @@ from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED, force_size_constraint, BACKWARDS_COMPATIBLE
+from xpra.common import (
+    NotificationID, DEFAULT_METADATA_SUPPORTED, BACKWARDS_COMPATIBLE,
+    may_notify_client, force_size_constraint,
+)
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -561,8 +564,8 @@ class WindowsConnection(StubClientConnection):
                 #    actions += ["lower-quality", "Lower quality"]
                 actions += ["ignore", "Ignore"]
                 hints = {}
-                self.may_notify(nid, summary, body, actions, hints,
-                                icon_name="connect", user_callback=self.congestion_notification_callback)
+                may_notify_client(self, nid, summary, body, actions, hints,
+                                  icon_name="connect", user_callback=self.congestion_notification_callback)
 
     def congestion_notification_callback(self, nid: int, action_id: str) -> None:
         bandwidthlog("congestion_notification_callback(%i, %s)", nid, action_id)

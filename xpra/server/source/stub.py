@@ -63,13 +63,6 @@ class StubClientConnection(SignalEmitter):
         """
         return {}
 
-    def may_notify(self, *args, **kwargs) -> None:
-        """
-        The actual source implementation will handle these notification requests
-        by forwarding them to the client.
-        This dummy implementation makes it easier to test without a network connection.
-        """
-
     def queue_encode(self, item: None | tuple[bool, Callable, tuple]) -> None:
         """
         Used by the window source to send data to be processed in the encode thread

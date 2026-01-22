@@ -570,3 +570,8 @@ def subsystem_name(c: type) -> str:
 def may_show_progress(obj, pct: int, text="") -> None:
     show_progress = getattr(obj, "show_progress", noop)
     show_progress(pct, text)
+
+
+def may_notify_client(obj, *args, **kwargs) -> None:
+    notify_client = getattr(obj, "notify_client", noop)
+    notify_client(*args, **kwargs)

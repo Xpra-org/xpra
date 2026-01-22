@@ -52,9 +52,9 @@ class NotificationConnection(StubClientConnection):
     ######################################################################
     # notifications:
     # Utility functions for subsystem (makes notifications optional)
-    def may_notify(self, nid: int | NotificationID = 0, summary: str = "", body: str = "",
-                   actions=(), hints: dict | None = None, expire_timeout=10 * 1000,
-                   icon_name: str = "", user_callback: Callable | None = None) -> None:
+    def notify_client(self, nid: int | NotificationID = 0, summary: str = "", body: str = "",
+                      actions=(), hints: dict | None = None, expire_timeout=10 * 1000,
+                      icon_name: str = "", user_callback: Callable | None = None) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notification.common import parse_image_path

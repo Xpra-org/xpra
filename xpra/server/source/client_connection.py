@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 from typing import Any, TypeAlias
 from collections.abc import Callable, Sequence
 from time import sleep, monotonic
@@ -122,17 +121,6 @@ class ClientConnection(StubClientConnection):
         self.close_event.set()
         self.protocol = None
         self.statistics.reset(0)
-
-    def may_notify(self, *args, **kwargs) -> None:
-        # fugly workaround,
-        # MRO is depth first and would hit the default implementation
-        # instead of the mixin unless we force it:
-        notification_mixin = sys.modules.get("xpra.server.source.notification")
-        if not notification_mixin:
-            return
-        NotificationConnection = notification_mixin.NotificationConnection
-        if isinstance(self, NotificationConnection):
-            NotificationConnection.may_notify(self, *args, **kwargs)
 
     def compressed_wrapper(self, datatype, data, **kwargs) -> Compressed | LevelCompressed:
         # set compression flags based on self.lz4:

@@ -12,7 +12,7 @@ from typing import Any
 from xpra.util.stats import std_unit
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
-from xpra.common import NotificationID
+from xpra.common import NotificationID, may_notify_client
 from xpra.net.common import Packet
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubServerMixin
@@ -99,9 +99,8 @@ class FileServer(StubServerMixin):
         if not os.path.exists(filename):
             log.warn("Warning: the file requested does not exist:")
             log.warn(f" {filename!r}")
-            ss.may_notify(NotificationID.FILETRANSFER,
-                          "File not found", "The file requested does not exist:\n%s" % filename,
-                          icon_name="file")
+            may_notify_client(ss, NotificationID.FILETRANSFER,
+                              "File not found", "The file requested does not exist:\n%s" % filename, icon_name="file")
             return
         try:
             stat = os.stat(filename)
@@ -111,10 +110,10 @@ class FileServer(StubServerMixin):
         else:
             file_size = stat.st_size
             if file_size > self.file_transfer.file_size_limit or file_size > ss.file_size_limit:
-                ss.may_notify(NotificationID.FILETRANSFER,
-                              "File too large",
-                              "The file requested is too large to send:\n%s\nis %s" % (argf, std_unit(file_size)),
-                              icon_name="file")
+                may_notify_client(ss, NotificationID.FILETRANSFER,
+                                  "File too large",
+                                  "The file requested is too large to send:\n%s\nis %s" % (argf, std_unit(file_size)),
+                                  icon_name="file")
                 return
         data = load_binary_file(filename)
         ss.send_file(filename, "", data, len(data), openit=openit, options={"request-file": (argf, openit)})
