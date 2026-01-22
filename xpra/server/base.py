@@ -596,10 +596,6 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # client connections:
-    def init_sockets(self, sockets) -> None:
-        for c in SERVER_BASES:
-            c.init_sockets(self, sockets)
-
     def cleanup_protocol(self, protocol):
         netlog("cleanup_protocol(%s)", protocol)
         # this ensures that from now on we ignore any incoming packets coming

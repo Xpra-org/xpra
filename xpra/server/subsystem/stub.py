@@ -70,11 +70,6 @@ class StubServerMixin(superclass):
         After initialization, prepare to run.
         """
 
-    def init_sockets(self, _sockets) -> None:
-        """
-        Prepare to handle connections from the given sockets.
-        """
-
     def get_caps(self, _source) -> dict[str, Any]:
         """
         Capabilities provided by this mixin.
