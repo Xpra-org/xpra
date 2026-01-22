@@ -27,7 +27,7 @@ import traceback
 from typing import Any, NoReturn, Final
 from collections.abc import Callable, Iterable
 
-from xpra.common import SocketState, noerr, noop, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE
+from xpra.common import SocketState, noerr, noop, may_show_progress, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import (
@@ -1641,7 +1641,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         app = get_client_gui_app(error_cb, opts, request_mode, extra_args, mode)
     try:
         if mode != "listen":
-            app.show_progress(60, "connecting to server")
+            may_show_progress(app, 60, "connecting to server")
         if mode != "attach" and not extra_args:
             # try to guess the server intended:
             server_socket = os.environ.get("XPRA_SERVER_SOCKET", "")
@@ -1671,12 +1671,12 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
             connect_to_server(app, display_desc, opts)
     except ValueError as e:
         einfo = str(e) or type(e)
-        app.show_progress(100, f"error: {einfo}")
+        may_show_progress(app, 100, f"error: {einfo}")
         app.cleanup()
         raise InitExit(ExitCode.FAILURE, f"invalid value: {einfo}")
     except Exception as e:
         einfo = str(e) or type(e)
-        app.show_progress(100, f"error: {einfo}")
+        may_show_progress(app, 100, f"error: {einfo}")
         app.cleanup()
         raise
     return app
@@ -1691,7 +1691,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
         # exceptions at this point are still initialization exceptions
         msg = (e.args[0] if e.args else str(e)) or str(type(e))
         raise InitException(msg) from None
-    app.show_progress(30, "client configuration")
+    may_show_progress(app, 30, "client configuration")
     try:
         app.init(opts)
         if opts.encoding == "auto":
@@ -1711,7 +1711,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
                                    (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
 
         def handshake_complete(*_args) -> None:
-            app.show_progress(100, "connection established")
+            may_show_progress(app, 100, "connection established")
             log = get_logger()
             try:
                 p = app._protocol
@@ -1724,7 +1724,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
 
         if hasattr(app, "after_handshake"):
             app.after_handshake(handshake_complete)
-        app.show_progress(40, "loading user interface")
+        may_show_progress(app, 40, "loading user interface")
         app.init_ui(opts)
         app.load()
         if request_mode:
@@ -1744,7 +1744,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
             enable_listen_mode(app, error_cb, opts)
 
     except Exception as e:
-        app.show_progress(100, f"failure: {e}")
+        may_show_progress(app, 100, f"failure: {e}")
         may_notify = getattr(app, "may_notify", None)
         if callable(may_notify):
             from xpra.common import NotificationID
@@ -1762,7 +1762,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
 
 
 def enable_listen_mode(app, error_cb: Callable, opts):
-    app.show_progress(80, "listening for incoming connections")
+    may_show_progress(app, 80, "listening for incoming connections")
     from xpra.net.socket_util import (
         setup_local_sockets, peek_connection,
         create_sockets, add_listen_socket, accept_connection,
@@ -1821,7 +1821,7 @@ def enable_listen_mode(app, error_cb: Callable, opts):
         add_listen_socket(listener, None, new_connection)
     # listen mode is special,
     # don't fall through to connect_to_server!
-    app.show_progress(90, "ready")
+    may_show_progress(app, 90, "ready")
 
 
 def make_progress_process(title="Xpra") -> Popen | None:
@@ -2227,7 +2227,7 @@ def make_client(opts):
         app.progress_process = progress_process
 
         if opts.opengl in ("probe", "nowarn"):
-            app.show_progress(20, "validating OpenGL configuration")
+            may_show_progress(app, 20, "validating OpenGL configuration")
             probe, probe_info = run_opengl_probe()
             glinfo = typedict(probe_info)
             safe = glinfo.boolget("safe", False)
@@ -2250,10 +2250,10 @@ def make_client(opts):
                     else:
                         renderer = renderer.split(";", 1)[0]
                     r += f" ({renderer})"
-            app.show_progress(20, f"validating OpenGL: {r}")
+            may_show_progress(app, 20, f"validating OpenGL: {r}")
             message = glinfo.strget("message")
             if message:
-                app.show_progress(21, f" {message}")
+                may_show_progress(app, 21, f" {message}")
 
     except Exception:
         if progress_process:
@@ -2555,24 +2555,24 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
             opts.reconnect = False
         else:
             app = make_client(opts)
-            app.show_progress(30, "client configuration")
+            may_show_progress(app, 30, "client configuration")
             app.init(opts)
-            app.show_progress(40, "loading user interface")
+            may_show_progress(app, 40, "loading user interface")
             app.init_ui(opts)
             app.load()
             app.hello_extra = hello_extra
 
             def handshake_complete(*_args) -> None:
-                app.show_progress(100, "connection established")
+                may_show_progress(app, 100, "connection established")
 
             app.after_handshake(handshake_complete)
-        app.show_progress(60, "starting server")
+        may_show_progress(app, 60, "starting server")
 
         while True:
             try:
                 conn = connect_or_fail(params, opts)
                 app.make_protocol(conn)
-                app.show_progress(80, "connecting to server")
+                may_show_progress(app, 80, "connecting to server")
                 break
             except InitExit as e:
                 from xpra.net.ssl.socket import ssl_retry
@@ -2584,7 +2584,7 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
                 raise
     except Exception as e:
         if app:
-            app.show_progress(100, f"failure: {e}")
+            may_show_progress(app, 100, f"failure: {e}")
         raise
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
