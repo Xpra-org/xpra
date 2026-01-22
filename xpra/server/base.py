@@ -51,6 +51,7 @@ class ServerBase(ServerBaseClass):
     __signals__ = SIGNALS
     __signals__.update({
         "last-client-exited": 0,
+        "client-exited": 1,
         "new-ui-driver": 1,
     })
 
@@ -622,9 +623,7 @@ class ServerBase(ServerBaseClass):
         if FULL_INFO > 0:
             ptype = getattr(source, "client_type", "") or "xpra"
         self.server_event("connection-lost", source.uuid)
-        for bc in SERVER_BASES:
-            with log.trap_error("Error removing client %s from %s", source, bc):
-                bc.remove_client(self, source)
+        self.emit("client-exited", source)
 
         remaining_sources = tuple(self._server_sources.values())
         if self.ui_driver == source.uuid:

@@ -205,6 +205,7 @@ class ChildCommandServer(StubServerMixin):
     def setup(self) -> None:
         start_thread(self.threaded_command_setup, "threaded-command-setup", daemon=True)
         self.connect("last-client-exited", self.exec_on_last_client_exit)
+        self.connect("client-exited", self.remove_client)
 
     def exec_on_last_client_exit(self, *args) -> None:
         log("exec_on_last_client_exit%s", args)
@@ -264,7 +265,8 @@ class ChildCommandServer(StubServerMixin):
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         self.exec_on_connect_commands(ss)
 
-    def remove_client(self, ss) -> None:
+    def remove_client(self, server, ss) -> None:
+        log("remove_client(%s, %s)", server, ss)
         self.exec_on_disconnect_commands(ss)
 
     def send_initial_data(self, ss, caps: typedict, send_ui: bool, share_count: int) -> None:
