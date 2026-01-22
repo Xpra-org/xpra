@@ -83,9 +83,10 @@ class Qt6Client:
             "session-id": uuid.uuid4().hex,
             "windows": True,
             "keyboard": True,
-            "pointer": True,
+            "pointer": {"double_click": {}},
             "encodings": ("rgb32", "rgb24", "png", "jpg", "webp"),
             "network-state": False,  # tell older server that we don't have "ping"
+            "display": {"refresh-rate": 50},
         }
         if BACKWARDS_COMPATIBLE:
             hello["mouse"] = True
@@ -144,6 +145,9 @@ class Qt6Client:
         self.hello = packet.get_dict(1)
         netlog.info("got hello from %s server" % self.hello.get("version", ""))
 
+    def _process_connection_close(self, packet: Packet):
+        self.quit(0)
+
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         netlog.info(f"ignoring setting-change for {setting!r}")
@@ -153,6 +157,9 @@ class Qt6Client:
 
     def _process_encodings(self, packet: Packet) -> None:
         log(f"server encodings: {packet.get_strs(1)}")
+
+    def _process_window_create(self, packet: Packet):
+        self.new_window(packet)
 
     def _process_new_window(self, packet: Packet) -> None:
         self.new_window(packet)
@@ -165,11 +172,11 @@ class Qt6Client:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
-        w = packet.get_i16(4)
-        h = packet.get_i16(5)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
         metadata = packet.get_dict(6)
         if is_or:
-            metadata["override-redirect"] = is_or
+            metadata["override-redirect"] = True
         window = ClientWindow(self, wid, x, y, w, h, metadata)
         self.windows[wid] = window
         window.show()
@@ -181,7 +188,7 @@ class Qt6Client:
             window.close()
             del self.windows[wid]
 
-    def _process_raise_window(self, packet: Packet) -> None:
+    def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.windows.get(wid)
         if window:
@@ -242,6 +249,9 @@ class XpraQt6Client(Qt6Client):
 
     def init_ui(self, opts) -> None:
         """ we don't handle any options yet! """
+
+    def load(self):
+        pass
 
     def cleanup(self) -> None:
         """ client classes must define this method """

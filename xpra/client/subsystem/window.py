@@ -913,7 +913,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # regular windows:
-    def _process_new_common(self, packet: Packet, override_redirect):
+    def _process_new_common(self, packet: Packet, override_redirect: bool):
         self._ui_event()
         wid = packet.get_wid()
         x = packet.get_i16(2)

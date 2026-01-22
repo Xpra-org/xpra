@@ -81,6 +81,9 @@ class XpraPygletClient:
     def init_ui(self, opts) -> None:
         """ we don't handle any options yet! """
 
+    def load(self):
+        pass
+
     def cleanup(self) -> None:
         """ client classes must define this method """
 
@@ -104,9 +107,10 @@ class XpraPygletClient:
             "session-id": uuid.uuid4().hex,
             "windows": True,
             "keyboard": True,
-            "pointer": True,
+            "pointer": {"double_click": {}},
             "encodings": ("png", "jpg", "webp"),    # "rgb32", "rgb24"
             "network-state": False,  # tell older server that we don't have "ping"
+            "display": {"refresh-rate": 50},
         }
         if BACKWARDS_COMPATIBLE:
             hello["mouse"] = True
@@ -142,6 +146,9 @@ class XpraPygletClient:
         self.hello = packet.get_dict(1)
         netlog.info("got hello from %s server" % self.hello.get("version", ""))
 
+    def _process_connection_close(self, packet: Packet):
+        self.quit(0)
+
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         netlog.info(f"ignoring setting-change for {setting!r}")
@@ -151,6 +158,9 @@ class XpraPygletClient:
 
     def _process_encodings(self, packet: Packet) -> None:
         log(f"server encodings: {packet.get_strs(1)}")
+
+    def _process_window_create(self, packet: Packet):
+        self.new_window(packet)
 
     def _process_new_window(self, packet: Packet) -> None:
         self.new_window(packet)
