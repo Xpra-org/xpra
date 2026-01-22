@@ -40,5 +40,5 @@ class SignalEmitter:
         GLib = gi_import("GLib")
         for cb, args in callbacks:
             with log.trap_error(f"Error processing callback {cb} for {signal_name} packet"):
-                all_args = list(args) + list(extra_args)
-                GLib.idle_add(cb, self, *all_args)
+                all_args = [self] + list(args) + list(extra_args)
+                GLib.idle_add(cb, *all_args)
