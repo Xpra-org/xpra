@@ -78,12 +78,6 @@ class StubServerMixin(superclass):
         """
         return {}
 
-    def set_session_driver(self, _source) -> None:
-        """
-        When the user in control of the session changes,
-        this method will be called.
-        """
-
     def get_info(self, _proto) -> dict[str, Any]:
         """
         Runtime information on this mixin, includes state and settings.

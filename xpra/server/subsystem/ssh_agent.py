@@ -60,7 +60,11 @@ class SshAgent(StubServerMixin):
                 log(f"updating SSH_AUTH_SOCK from {cur!r} to {ssh_auth_sock!r}")
                 os.environ[SSH_AUTH_SOCK] = ssh_auth_sock
 
-    def set_session_driver(self, source) -> None:
+    def setup(self) -> None:
+        self.connect("new-ui-driver", self.set_agent)
+
+    def set_agent(self, server, source) -> None:
+        log("set_agent(%s, %s) ssh-agent=%s", server, source, self.ssh_agent)
         if not self.ssh_agent:
             return
         ssh_auth_sock = getattr(source, "ssh_auth_sock", "")

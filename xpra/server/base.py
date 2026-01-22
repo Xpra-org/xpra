@@ -51,6 +51,7 @@ class ServerBase(ServerBaseClass):
     __signals__ = SIGNALS
     __signals__.update({
         "last-client-exited": 0,
+        "new-ui-driver": 1,
     })
 
     def __init__(self):
@@ -654,9 +655,7 @@ class ServerBase(ServerBaseClass):
             self.ui_driver = None
         else:
             self.ui_driver = source.uuid
-        for c in SERVER_BASES:
-            if c != ServerCore:
-                c.set_session_driver(self, source)
+        self.emit("new-ui-driver", source)
 
     def get_all_protocols(self) -> list:
         return list(self._potential_protocols) + list(self._server_sources.keys())
