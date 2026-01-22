@@ -87,7 +87,6 @@ class ServerMixinTest(unittest.TestCase):
         x = self.mixin = mclass()
         x._socket_info = ()
         x._server_sources = {}   # pylint: disable=protected-access
-        x.wait_for_threaded_init = self.wait_for_threaded_init
         x.add_packets = self.add_packets
         x.add_legacy_alias = self.add_legacy_alias
         x.add_packet_handler = self.add_packet_handler
