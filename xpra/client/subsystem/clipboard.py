@@ -159,8 +159,20 @@ class ClipboardClient(StubClientMixin):
     def parse_server_capabilities(self, c: typedict) -> bool:
         if not self.client_supports_clipboard:
             return True
-        self.server_clipboard = c.boolget("clipboard")
-        self.server_clipboard_direction = c.strget("clipboard-direction", "both")
+        caps = c.dictget("clipboard") or {}
+        self.parse_clipboard_capabilities(typedict(caps))
+        if not self.clipboard_helper:
+            ch = self.make_clipboard_helper()
+            if not ch:
+                log.warn("Warning: no clipboard support")
+            self.clipboard_helper = ch
+            self.clipboard_enabled = ch is not None
+            self.after_handshake(self.start_clipboard_sync)
+        return True
+
+    def parse_clipboard_capabilities(self, caps: typedict) -> None:
+        self.server_clipboard = bool(caps)
+        self.server_clipboard_direction = caps.strget("direction", "both")
         if self.server_clipboard_direction not in ("both", self.client_clipboard_direction):
             if self.client_clipboard_direction == "disabled":
                 log("client clipboard is disabled")
@@ -174,28 +186,19 @@ class ClipboardClient(StubClientMixin):
                 log.warn("Warning: incompatible clipboard direction settings")
                 log.warn(" server setting: %s, client setting: %s",
                          self.server_clipboard_direction, self.client_clipboard_direction)
-        self.server_clipboard_selections = c.strtupleget("clipboard.selections", ALL_CLIPBOARDS)
+        self.server_clipboard_selections = caps.strtupleget("selections", ALL_CLIPBOARDS)
         log("server clipboard: supported=%s, selections=%s, direction=%s",
             self.server_clipboard, self.server_clipboard_selections, self.server_clipboard_direction)
         log("client clipboard: supported=%s, selections=%s, direction=%s",
             self.client_supports_clipboard, CLIPBOARDS, self.client_clipboard_direction)
         self.clipboard_enabled = bool(self.clipboard_helper) and self.client_supports_clipboard and self.server_clipboard
-        self.server_clipboard_greedy = c.boolget("clipboard.greedy")
-        self.server_clipboard_want_targets = c.boolget("clipboard.want_targets")
-        self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
+        self.server_clipboard_greedy = caps.boolget("greedy")
+        self.server_clipboard_want_targets = caps.boolget("want_targets")
+        self.server_clipboard_preferred_targets = caps.strtupleget("preferred-targets", ())
         log("server clipboard: greedy=%s, want_targets=%s, selections=%s",
             self.server_clipboard_greedy, self.server_clipboard_want_targets, self.server_clipboard_selections)
         log("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
-        self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
-
-        if not self.clipboard_helper:
-            ch = self.make_clipboard_helper()
-            if not ch:
-                log.warn("Warning: no clipboard support")
-            self.clipboard_helper = ch
-            self.clipboard_enabled = ch is not None
-            self.after_handshake(self.start_clipboard_sync)
-        return True
+        self.server_clipboard_preferred_targets = caps.strtupleget("preferred-targets", ())
 
     def start_clipboard_sync(self) -> None:
         ch = self.clipboard_helper
