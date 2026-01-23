@@ -13,7 +13,7 @@ from xpra.scripts.parsing import audio_option
 from xpra.net.common import Packet
 from xpra.net.compression import Compressed
 from xpra.net.packet_type import CONNECTION_LOST
-from xpra.common import FULL_INFO, noop, SizedBuffer, BACKWARDS_COMPATIBLE
+from xpra.common import FULL_INFO, noop, SizedBuffer, NotificationID, BACKWARDS_COMPATIBLE, may_notify_client
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
@@ -330,8 +330,7 @@ class AudioClient(StubClientMixin):
     # audio:
 
     def may_notify_audio(self, summary: str, body: str) -> None:
-        # overridden in UI client subclass
-        pass
+        may_notify_client(self, NotificationID.AUDIO, summary, body, icon_name="audio")
 
     def audio_loop_check(self, mode="speaker") -> bool:
         from xpra.audio.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning_messages

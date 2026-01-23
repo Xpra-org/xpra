@@ -572,6 +572,18 @@ def may_show_progress(obj, pct: int, text="") -> None:
     show_progress(pct, text)
 
 
-def may_notify_client(obj, *args, **kwargs) -> None:
-    notify_client = getattr(obj, "notify_client", noop)
-    notify_client(*args, **kwargs)
+def may_notify_client(obj, nid : NotificationID | int, summary, body, *args, **kwargs) -> None:
+    notify_client = getattr(obj, "notify_client", notify_to_log)
+    notify_client(nid, summary, body, *args, **kwargs)
+    # hide splash progress:
+    may_show_progress(obj, 100, f"notification: {summary}")
+
+
+def notify_to_log(obj, nid : NotificationID | int, summary, body, *args, **kwargs) -> None:
+    from xpra.log import Logger
+    notifylog = Logger("notify")
+    notifylog("may_notify_client(%s, %s, %s, %s, %s)", nid, summary, body, args, kwargs)
+    notifylog.info("%s", summary)
+    if body:
+        for x in body.splitlines():
+            notifylog.info(" %s", x)

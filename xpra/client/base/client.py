@@ -18,7 +18,7 @@ from collections.abc import Callable, Sequence
 from xpra.scripts.config import InitExit
 from xpra.common import (
     FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
-    ConnectionMessage, disconnect_is_an_error, noerr, NotificationID, noop, may_show_progress,
+    ConnectionMessage, disconnect_is_an_error, noerr, noop, may_show_progress,
 )
 from xpra.net import compression
 from xpra.net.common import Packet, PacketElement, PacketHandlerType
@@ -123,15 +123,6 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.compression_level = opts.compression_level
         self.display = opts.display
         self.install_signal_handlers()
-
-    def may_notify(self, nid: int | NotificationID, summary: str, body: str, *args, **kwargs) -> None:
-        notifylog = Logger("notify")
-        notifylog("may_notify(%s, %s, %s, %s, %s)", nid, summary, body, args, kwargs)
-        notifylog.info("%s", summary)
-        if body:
-            for x in body.splitlines():
-                notifylog.info(" %s", x)
-        may_show_progress(self, 100, f"notification: {summary}")
 
     @staticmethod
     def force_quit(exit_code: ExitValue = ExitCode.FAILURE) -> NoReturn:

@@ -264,8 +264,7 @@ class BaseGUIWindow(Gtk.Window):
         self.reset_cursors()
         log(f"command_ended({proc})")
         if proc.returncode:
-            self.may_notify(NotificationID.FAILURE,
-                            "Subcommand Failed",
+            self.may_notify(NotificationID.FAILURE, "Subcommand Failed",
                             "The subprocess terminated abnormally\n\rand returned %s" % exit_str(proc.returncode)
                             )
 

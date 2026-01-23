@@ -39,8 +39,6 @@ class NotificationClient(StubClientMixin):
         self.notifier = None
         self.tray = None
         self.notification_callbacks: dict[int, Callable] = {}
-        # override the default handler in client base:
-        self.may_notify = self.do_notify
 
     def init(self, opts) -> None:
         self.notifications_enabled = opts.notifications
@@ -114,9 +112,9 @@ class NotificationClient(StubClientMixin):
             return ()
         return get_backends()
 
-    def do_notify(self, nid: int | NotificationID, summary: str, body: str, actions: Sequence[str] = (),
-                  hints: dict | None = None, expire_timeout=10 * 1000, icon_name: str = "", callback=noop) -> None:
-        log("do_notify%s client_supports_notifications=%s, notifier=%s",
+    def notify_client(self, nid: int | NotificationID, summary: str, body: str, actions: Sequence[str] = (),
+                      hints: dict | None = None, expire_timeout=10 * 1000, icon_name: str = "", callback=noop) -> None:
+        log("notify_client%s client_supports_notifications=%s, notifier=%s",
             (nid, summary, body, actions, hints, expire_timeout, icon_name),
             self.client_supports_notifications, self.notifier)
         if callback:

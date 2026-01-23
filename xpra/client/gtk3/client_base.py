@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
 
-from xpra.common import noop, may_show_progress, MIN_VREFRESH, MAX_VREFRESH, BACKWARDS_COMPATIBLE
+from xpra.common import noop, may_show_progress, MIN_VREFRESH, MAX_VREFRESH, BACKWARDS_COMPATIBLE, may_notify_client
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
@@ -1139,8 +1139,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 log.info(body)
                 return
             actions = (OK, "OK", DISABLE, "Don't show this warning again")
-            self.may_notify(NotificationID.OPENGL, summary, body, actions,
-                            icon_name="opengl", callback=notify_callback)
+            may_notify_client(self, NotificationID.OPENGL, summary, body, actions,
+                              icon_name="opengl", callback=notify_callback)
 
         # wait for the main loop to run:
         GLib.timeout_add(2 * 1000, delayed_notify)

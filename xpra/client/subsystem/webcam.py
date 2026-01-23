@@ -17,7 +17,7 @@ from xpra.os_util import WIN32, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, OSEnvContext
-from xpra.common import NotificationID
+from xpra.common import NotificationID, may_notify_client
 from xpra.client.base.stub import StubClientMixin
 from xpra.util.thread import start_thread
 
@@ -328,7 +328,8 @@ class WebcamForwarder(StubClientMixin):
             summary = "Webcam forwarding has failed"
             body = "The system encountered the following error:\n" + \
                    ("%s\n" % e)
-            self.may_notify(NotificationID.WEBCAM, summary, body, expire_timeout=10 * 1000, icon_name="webcam")
+            may_notify_client(self, NotificationID.WEBCAM,
+                              summary, body, expire_timeout=10 * 1000, icon_name="webcam")
             return False
         finally:
             self.webcam_lock.release()

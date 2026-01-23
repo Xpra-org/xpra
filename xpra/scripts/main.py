@@ -27,7 +27,8 @@ import traceback
 from typing import Any, NoReturn, Final
 from collections.abc import Callable, Iterable
 
-from xpra.common import SocketState, noerr, noop, may_show_progress, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE
+from xpra.common import SocketState, noerr, noop, may_show_progress, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE, \
+    may_notify_client
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import (
@@ -1745,17 +1746,15 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
 
     except Exception as e:
         may_show_progress(app, 100, f"failure: {e}")
-        may_notify = getattr(app, "may_notify", None)
-        if callable(may_notify):
-            from xpra.common import NotificationID
-            body = str(e)
-            if body.startswith("failed to connect to"):
-                lines = body.split("\n")
-                summary = "Xpra client %s" % lines[0]
-                body = "\n".join(lines[1:])
-            else:
-                summary = "Xpra client failed to connect"
-            may_notify(NotificationID.FAILURE, summary, body, icon_name="disconnected")  # pylint: disable=not-callable
+        from xpra.common import NotificationID
+        body = str(e)
+        if body.startswith("failed to connect to"):
+            lines = body.split("\n")
+            summary = "Xpra client %s" % lines[0]
+            body = "\n".join(lines[1:])
+        else:
+            summary = "Xpra client failed to connect"
+        may_notify_client(app, NotificationID.FAILURE, summary, body, icon_name="disconnected")  # pylint: disable=not-callable
         app.cleanup()
         raise
     return app

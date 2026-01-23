@@ -85,7 +85,6 @@ class SourceMixinsTest(unittest.TestCase):
             assert not c.is_closed(m)
         m.emit("user-event", "test")
         for c in mixin_classes:
-            c.may_notify(m)
             c.queue_encode(m, ("item",))
             c.send_more(m, "packet-type", 0)
             c.send_async(m, "packet-type", 0)

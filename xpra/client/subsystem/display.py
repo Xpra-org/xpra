@@ -19,7 +19,7 @@ from xpra.scripts.main import check_display
 from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.common import (
     noop, adjust_monitor_refresh_rate, get_refresh_rate_for_value,
-    FULL_INFO, SYNC_ICC, NotificationID, skipkeys, BACKWARDS_COMPATIBLE,
+    FULL_INFO, SYNC_ICC, NotificationID, skipkeys, BACKWARDS_COMPATIBLE, may_notify_client,
 )
 from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
@@ -431,7 +431,7 @@ class DisplayClient(StubClientMixin):
             "server desktop size is %ix%i" % (max_w, max_h),
             "using scaling factor %s x %s" % (xstr, ystr),
         ]
-        self.may_notify(NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
+        may_notify_client(self, NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
         scalinglog.warn("Warning: %s", summary)
         for m in messages:
             scalinglog.warn(" %s", m)
@@ -669,7 +669,7 @@ class DisplayClient(StubClientMixin):
                 "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
                 " would overflow the server's screen: %i x %i" % (maxw, maxh),
             ]
-            self.may_notify(NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
+            may_notify_client(self, NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
             scalinglog.warn("Warning: %s", summary)
             for m in messages:
                 scalinglog.warn(" %s", m)

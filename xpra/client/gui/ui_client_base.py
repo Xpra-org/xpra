@@ -13,7 +13,8 @@ from xpra.client.gui.factory import get_client_base_classes
 from xpra.client.base.client import XpraClientBase
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
-from xpra.common import FULL_INFO, NotificationID, ConnectionMessage, noerr, get_run_info, BACKWARDS_COMPATIBLE
+from xpra.common import FULL_INFO, NotificationID, ConnectionMessage, noerr, get_run_info, BACKWARDS_COMPATIBLE, \
+    may_notify_client
 from xpra.net.common import Packet, print_proxy_caps
 from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC
 from xpra.os_util import gi_import
@@ -196,7 +197,7 @@ class UIXpraClient(ClientBaseClass):
                 else:
                     title = "Connection failed during startup: %s" % reason
                     self.exit_code = ExitCode.CONNECTION_FAILED
-            self.may_notify(NotificationID.DISCONNECT, title, body, icon_name="disconnected")
+            may_notify_client(self, NotificationID.DISCONNECT, title, body, icon_name="disconnected")
             # show text notification then quit:
             delay = NOTIFICATION_EXIT_DELAY * int(features.notification)
             GLib.timeout_add(delay * 1000, XpraClientBase.server_disconnect_warning, self, title, *info)
@@ -204,8 +205,8 @@ class UIXpraClient(ClientBaseClass):
 
     def server_disconnect(self, reason: str, *info) -> None:
         body = "\n".join(info)
-        self.may_notify(NotificationID.DISCONNECT,
-                        f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
+        may_notify_client(self, NotificationID.DISCONNECT,
+                          f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
         delay = NOTIFICATION_EXIT_DELAY * int(features.notification)
         if self.exit_code is None:
             self.exit_code = self.server_disconnect_exit_code(reason, *info)
@@ -355,9 +356,6 @@ class UIXpraClient(ClientBaseClass):
     def set_server_session_name(self, name: str):
         self.server_session_name = name
         log.info("session name updated from server: %s", self.server_session_name)
-
-    def may_notify_audio(self, summary: str, body: str) -> None:
-        self.may_notify(NotificationID.AUDIO, summary, body, icon_name="audio")
 
     ######################################################################
     # features:
