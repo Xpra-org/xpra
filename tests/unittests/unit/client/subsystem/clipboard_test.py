@@ -27,9 +27,9 @@ class ClipboardClientTest(ClientMixinTest):
 			self.glib.timeout_add(1000, fn, *args)
 		ClipboardClient.after_handshake = after_handshake
 		self._test_mixin_class(ClipboardClient, opts, {
-			"clipboard": True,
-			"clipboard.enable-selections": True,
-			"clipboard.contents-slice-fix": True,
+			"clipboard": {
+				"enable-selections": True,
+			},
 		})
 		self.glib.timeout_add(5000, self.stop)
 		self.main_loop.run()
