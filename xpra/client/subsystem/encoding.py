@@ -20,6 +20,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
+from xpra.util.thread import start_thread
 
 log = Logger("client", "encoding")
 
@@ -94,6 +95,8 @@ class Encodings(StubClientMixin):
         self.min_speed = -1
         self.video_scaling = None
         self.video_max_size = VIDEO_MAX_SIZE
+        self.csc_modules: Sequence[str] = ()
+        self.video_decoders: Sequence[str] = ()
 
         self.server_encodings: Sequence[str] = ()
         self.server_core_encodings: Sequence[str] = ()
@@ -115,12 +118,20 @@ class Encodings(StubClientMixin):
         self.min_quality = opts.min_quality
         self.speed = opts.speed
         self.min_speed = opts.min_speed
-        vh = getVideoHelper()
-        vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules)
-        vh.init()
+        self.csc_modules = opts.csc_modules
+        self.video_decoders = opts.video_decoders
 
-    def load(self):
+    def load(self) -> None:
         load_codec("dec_pillow")
+        if BACKWARDS_COMPATIBLE:
+            self.load_all_codecs()
+
+    def run(self) -> None:
+        if not BACKWARDS_COMPATIBLE:
+            start_thread(self.load_all_codecs, "load-all-codecs", daemon=True)
+
+    def load_all_codecs(self) -> None:
+        log.warn("load_all_codecs()", backtrace=True)
         ae = self.allowed_encodings
         if "png" in ae:
             # try to load the fast png decoder:
@@ -135,6 +146,10 @@ class Encodings(StubClientMixin):
             load_codec("dec_webp")
         if "avif" in ae:
             load_codec("dec_avif")
+        vh = getVideoHelper()
+        vh.set_modules(video_decoders=self.video_decoders, csc_modules=self.csc_modules)
+        vh.init()
+        self.after_handshake(self.send_encoding_config)
 
     def cleanup(self) -> None:
         with log.trap_error("Error during video helper cleanup"):
@@ -168,22 +183,25 @@ class Encodings(StubClientMixin):
             "server-encodings": self.server_core_encodings,
         }
 
+    def send_encoding_config(self) -> None:
+        caps = self.get_encodings_caps()
+        log("send_encoding_config() caps=%s", caps)
+        self.send("encoding-config", caps)
+
     def get_caps(self) -> dict[str, Any]:
-        enc_caps = {
-            "": self.get_encodings(),
-            "all": self.get_encodings(),
-            "core": self.get_core_encodings(),
-            "window-icon": self.get_window_icon_encodings(),
-            "packet": True,
-        }
-        if BACKWARDS_COMPATIBLE:
-            enc_caps["cursor"] = self.get_cursor_encodings()
-        caps = {
-            "encodings": enc_caps,
-            "batch": get_batch_caps(),
+        if not BACKWARDS_COMPATIBLE:
+            return {"encoding": self.get_encodings_caps()}
+        return {
             "encoding": self.get_encodings_caps(),
+            "cursor.encodings": self.get_cursor_encodings(),
+            "batch": get_batch_caps(),
+            "encodings": {
+                "": self.get_encodings(),
+                "all": self.get_encodings(),
+                "core": self.get_core_encodings(),
+                "packet": True,
+            }
         }
-        return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self._parse_server_capabilities(c)
@@ -212,6 +230,9 @@ class Encodings(StubClientMixin):
         if B_FRAMES:
             video_b_frames.append("h264")  # only tested with dec_avcodec2
         caps: dict[str, Any] = {
+            "options": self.get_encodings(),
+            "core": self.get_core_encodings(),
+            "window-icon": self.get_window_icon_encodings(),
             "video_b_frames": video_b_frames,
             "video_max_size": self.video_max_size,
             "max-soft-expired": MAX_SOFT_EXPIRED,

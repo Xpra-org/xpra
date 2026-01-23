@@ -255,7 +255,7 @@ class EncodingsConnection(StubClientConnection):
         batch_caps = c.get("batch", {})
         enc_caps = c.dictget("encoding")
         if isinstance(enc_caps, dict):
-            batch_caps = enc_caps.get("batch", {})
+            batch_caps = enc_caps.get("batch", batch_caps)
 
         def batch_value(prop: str, default: int, minv=-1, maxv=-1) -> int:
             assert default is not None
@@ -291,14 +291,17 @@ class EncodingsConnection(StubClientConnection):
         if not send_ui:
             log("windows/pixels forwarding is disabled for this client")
             return
-        self.parse_encoding_caps(c)
-
-    def parse_encoding_caps(self, c: typedict) -> None:
         evalue = c.get("encoding")
         if isinstance(evalue, dict):
             eopts = typedict(evalue)
         else:
             eopts = typedict()
+        self.parse_encoding_caps(c, eopts)
+
+    def parse_encoding_caps(self, c: typedict, eopts: typedict) -> None:
+        if not BACKWARDS_COMPATIBLE:
+            # should not be used, so blank it:
+            c = typedict()
         self.encoding_options.update(eopts)
         self.encodings = eopts.strtupleget("options") or c.strtupleget("encodings")
         self.core_encodings = eopts.strtupleget("core") or c.strtupleget("encodings.core", self.encodings)
@@ -376,7 +379,7 @@ class EncodingsConnection(StubClientConnection):
             has_codec("nvenc") and {"h264", "h265", "av1"} & common_encodings,
             has_codec("enc_nvjpeg") and "jpeg" in common_encodings,
         ))
-        if want_cuda_device:
+        if want_cuda_device and not self.cuda_device_context:
             self.allocate_cuda_device_context()
 
     def allocate_cuda_device_context(self):

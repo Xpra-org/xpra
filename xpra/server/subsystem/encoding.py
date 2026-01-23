@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from xpra.util.env import envint
 from xpra.os_util import OSX
 from xpra.net.common import Packet
+from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
 from xpra.util.version import vtrim
 from xpra.util.parsing import parse_bool_or_int
@@ -40,6 +41,14 @@ ENCODING_OPTIONS = (
     "quality", "min-quality", "max-quality",
     "speed", "min-speed", "max-speed",
 )
+
+
+def is_windows_source(ss) -> bool:
+    try:
+        from xpra.server.source.window import WindowsConnection
+    except ImportError:
+        return False
+    return isinstance(ss, WindowsConnection)
 
 
 class EncodingServer(StubServerMixin):
@@ -102,12 +111,8 @@ class EncodingServer(StubServerMixin):
         # any window mapped before the threaded init completed
         # may need to re-initialize its list of encodings:
         log("reinit_encodings()", args)
-        try:
-            from xpra.server.source.window import WindowsConnection
-        except ImportError:
-            return
         for ss in self._server_sources.values():
-            if isinstance(ss, WindowsConnection):
+            if is_windows_source(ss):
                 ss.reinit_encodings(self)
                 ss.reinit_encoders()
 
@@ -242,6 +247,17 @@ class EncodingServer(StubServerMixin):
             log.warn("ignored invalid default encoding option: %s", self.encoding)
             self.default_encoding = self.encoding
 
+    def _process_encoding_config(self, proto, packet) -> None:
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
+        config = typedict(packet.get_dict(1))
+        log.warn("new encoding config for %s: %s", ss, config)
+        ss.parse_encoding_caps(typedict(), config)
+        if is_windows_source(ss):
+            ss.reinit_encodings(self)
+            ss.reinit_encoders()
+
     def _process_encoding_set(self, proto, packet: Packet) -> None:
         encoding = packet.get_str(1)
         ss = self.get_server_source(proto)
@@ -314,7 +330,9 @@ class EncodingServer(StubServerMixin):
         self.call_idle_refresh_all_windows(proto)
 
     def init_packet_handlers(self) -> None:
-        self.add_packets(f"{EncodingServer.PREFIX}-set", f"{EncodingServer.PREFIX}-options")
+        self.add_packets(f"{EncodingServer.PREFIX}-set",
+                         f"{EncodingServer.PREFIX}-options",
+                         f"{EncodingServer.PREFIX}-config")
         if BACKWARDS_COMPATIBLE:
             self.add_packets(
                 "quality", "min-quality", "max-quality",
