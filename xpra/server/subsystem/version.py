@@ -37,7 +37,7 @@ class VersionServer(StubServerMixin):
         }
 
     def _handle_hello_request_version(self, proto, caps: typedict) -> bool:
-        self.send_version_info(proto, caps.boolget("full-version-request", not BACKWARDS_COMPATIBLE))
+        self.send_version_info(proto, (not BACKWARDS_COMPATIBLE) or caps.boolget("full-version-request", True))
         return True
 
     def send_version_info(self, proto: SocketProtocol, full: bool = False) -> None:
