@@ -13,8 +13,10 @@ from xpra.client.gui.factory import get_client_base_classes
 from xpra.client.base.client import XpraClientBase
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
-from xpra.common import FULL_INFO, NotificationID, ConnectionMessage, noerr, get_run_info, BACKWARDS_COMPATIBLE, \
-    may_notify_client
+from xpra.common import (
+    FULL_INFO, BACKWARDS_COMPATIBLE, NotificationID, ConnectionMessage,
+    noerr, get_run_info, may_notify_client,
+)
 from xpra.net.common import Packet, print_proxy_caps
 from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC
 from xpra.os_util import gi_import
@@ -28,8 +30,6 @@ from xpra.log import Logger
 
 CLIENT_BASES = get_client_base_classes()
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
-
-GLib = gi_import("GLib")
 
 log = Logger("client")
 log("UIXpraClient base classes: %s", CLIENT_BASES)
@@ -200,7 +200,7 @@ class UIXpraClient(ClientBaseClass):
             may_notify_client(self, NotificationID.DISCONNECT, title, body, icon_name="disconnected")
             # show text notification then quit:
             delay = NOTIFICATION_EXIT_DELAY * int(features.notification)
-            GLib.timeout_add(delay * 1000, XpraClientBase.server_disconnect_warning, self, title, *info)
+            self.timeout_add(delay * 1000, XpraClientBase.server_disconnect_warning, self, title, *info)
         self.cleanup()
 
     def server_disconnect(self, reason: str, *info) -> None:
@@ -210,7 +210,7 @@ class UIXpraClient(ClientBaseClass):
         delay = NOTIFICATION_EXIT_DELAY * int(features.notification)
         if self.exit_code is None:
             self.exit_code = self.server_disconnect_exit_code(reason, *info)
-        GLib.timeout_add(delay * 1000, XpraClientBase.server_disconnect, self, reason, *info)
+        self.timeout_add(delay * 1000, XpraClientBase.server_disconnect, self, reason, *info)
         self.cleanup()
 
     ######################################################################
@@ -265,7 +265,7 @@ class UIXpraClient(ClientBaseClass):
     def connection_accepted(self, caps: typedict) -> None:
         """ overriden here so we can call `handshake_complete` from the main thread """
         self.connection_established = True
-        GLib.idle_add(self.handshake_complete)
+        self.idle_add(self.handshake_complete)
 
     def _process_startup_complete(self, packet: Packet) -> None:
         log("all the existing windows and system trays have been received")
@@ -430,8 +430,8 @@ class UIXpraClient(ClientBaseClass):
             self.redraw_windows()
             return not ok  # repaint again until ok
 
-        GLib.idle_add(self.redraw_windows)
-        GLib.timeout_add(100, timer_redraw)
+        self.idle_add(self.redraw_windows)
+        self.timeout_add(100, timer_redraw)
 
     def redraw_windows(self) -> None:
         # redraws all the windows without requesting a refresh from the server:

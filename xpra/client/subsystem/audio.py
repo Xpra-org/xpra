@@ -14,7 +14,7 @@ from xpra.net.common import Packet
 from xpra.net.compression import Compressed
 from xpra.net.packet_type import CONNECTION_LOST
 from xpra.common import FULL_INFO, noop, SizedBuffer, NotificationID, BACKWARDS_COMPATIBLE, may_notify_client
-from xpra.os_util import get_machine_id, get_user_uuid, gi_import, OSX, POSIX
+from xpra.os_util import get_machine_id, get_user_uuid, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint
@@ -24,8 +24,6 @@ from xpra.util.thread import start_thread
 
 avsynclog = Logger("av-sync")
 log = Logger("client", "audio")
-
-GLib = gi_import("GLib")
 
 QUERY_SLEEP = envint("XPRA_AUDIO_QUERY_SLEEP", 0)
 
@@ -311,7 +309,7 @@ class AudioClient(StubClientMixin):
         if self.server_audio_receive and self.microphone_enabled:
             # call via idle_add because we may query X11 properties
             # to find the pulseaudio server:
-            GLib.idle_add(self.start_sending_audio)
+            self.idle_add(self.start_sending_audio)
 
     def suspend_audio(self) -> None:
         self.audio_resume_restart = bool(self.audio_sink)

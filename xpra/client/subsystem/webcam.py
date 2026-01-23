@@ -13,15 +13,13 @@ from xpra.log import Logger
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.net import compression
 from xpra.net.common import Packet
-from xpra.os_util import WIN32, gi_import
+from xpra.os_util import WIN32
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, OSEnvContext
 from xpra.common import NotificationID, may_notify_client
 from xpra.client.base.stub import StubClientMixin
 from xpra.util.thread import start_thread
-
-GLib = gi_import("GLib")
 
 log = Logger("webcam")
 
@@ -121,7 +119,7 @@ class WebcamForwarder(StubClientMixin):
             self.start_sending_webcam()
 
     def webcam_state_changed(self) -> None:
-        GLib.idle_add(self.emit, "webcam-changed")
+        self.idle_add(self.emit, "webcam-changed")
 
     ######################################################################
     def start_sending_webcam(self) -> None:
@@ -191,7 +189,7 @@ class WebcamForwarder(StubClientMixin):
                 delay = 1000 // WEBCAM_TARGET_FPS
                 log("webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
                 self.cancel_webcam_send_timer()
-                self.webcam_send_timer = GLib.timeout_add(delay, self.may_send_webcam_frame)
+                self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
         except Exception as e:
             log.warn("webcam test capture failed: %s", e)
 
@@ -199,13 +197,13 @@ class WebcamForwarder(StubClientMixin):
         wst = self.webcam_send_timer
         if wst:
             self.webcam_send_timer = 0
-            GLib.source_remove(wst)
+            self.source_remove(wst)
 
     def cancel_webcam_check_ack_timer(self) -> None:
         wact = self.webcam_ack_check_timer
         if wact:
             self.webcam_ack_check_timer = 0
-            GLib.source_remove(wact)
+            self.source_remove(wact)
 
     def webcam_check_acks(self, ack=0) -> None:
         self.webcam_ack_check_timer = 0
@@ -319,7 +317,7 @@ class WebcamForwarder(StubClientMixin):
             self.send("webcam-frame", self.webcam_device_no, frame_no, encoding,
                       w, h, img_data, options)
             self.cancel_webcam_check_ack_timer()
-            self.webcam_ack_check_timer = GLib.timeout_add(10 * 1000, self.webcam_check_acks)
+            self.webcam_ack_check_timer = self.timeout_add(10 * 1000, self.webcam_check_acks)
             return True
         except Exception as e:
             log.error("webcam frame %i failed", self.webcam_frame_no, exc_info=True)
@@ -352,7 +350,7 @@ class WebcamForwarder(StubClientMixin):
                     self.cancel_webcam_send_timer()
                     delay = 1000 // WEBCAM_TARGET_FPS
                     log("new webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
-                    self.webcam_send_timer = GLib.timeout_add(delay, self.may_send_webcam_frame)
+                    self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(*WebcamForwarder.PACKET_TYPES)

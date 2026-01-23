@@ -13,7 +13,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envfloat
 from xpra.common import ConnectionMessage, FULL_INFO
-from xpra.os_util import get_machine_id, gi_import, getuid, getgid, POSIX, OSX
+from xpra.os_util import get_machine_id, getuid, getgid, POSIX, OSX
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import (
     create_sockets, add_listen_socket, accept_connection, setup_local_sockets,
@@ -28,8 +28,6 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base.stub import StubClientMixin
 from xpra.scripts.config import InitException, InitExit
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("network")
 
@@ -87,7 +85,7 @@ class NetworkListener(StubClientMixin):
         ct = dict(self._close_timers)
         self._close_timers = {}
         for proto, tid in ct.items():
-            GLib.source_remove(tid)
+            self.source_remove(tid)
             proto.close()
         sockets = self.sockets
         close_sockets(sockets)
@@ -96,7 +94,7 @@ class NetworkListener(StubClientMixin):
     def start_listen_sockets(self) -> None:
         for listener in self.sockets:
             log("start_listen_sockets() will add %s socket %s (%s)", listener.socktype, listener.socket, listener.address)
-            GLib.idle_add(self.add_listen_socket, listener)
+            self.idle_add(self.add_listen_socket, listener)
 
     def add_listen_socket(self, sock: SocketListener) -> None:
         log("add_listen_socket address=%s", sock.address)
@@ -182,7 +180,7 @@ class NetworkListener(StubClientMixin):
             log.info("packet '%s' is not handled by this client", packet_type)
             proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
         # make sure the connection is closed:
-        tid = GLib.timeout_add(REQUEST_TIMEOUT * 1000, close)
+        tid = self.timeout_add(REQUEST_TIMEOUT * 1000, close)
         self._close_timers[proto] = tid
 
     def handle_hello_request(self, proto, request: str, caps: typedict) -> bool:
@@ -208,7 +206,7 @@ class NetworkListener(StubClientMixin):
                 hello_reply(info)
 
             # run in UI thread:
-            GLib.idle_add(send_info)
+            self.idle_add(send_info)
             return True
         if request == "id":
             hello_reply(self.get_id_info())
@@ -228,7 +226,7 @@ class NetworkListener(StubClientMixin):
                 hello_reply({"error": "%s not found" % request})
             else:
                 log.info(f"calling {fn}")
-                GLib.idle_add(fn)
+                self.idle_add(fn)
                 hello_reply({})
             return True
         if request == "connect_test":
@@ -246,7 +244,7 @@ class NetworkListener(StubClientMixin):
                     response = str(e)
                 hello_reply({"command_response": (int(code), response)})
 
-            GLib.idle_add(process_control)
+            self.idle_add(process_control)
             return True
         return False
 

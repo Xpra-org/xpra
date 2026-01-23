@@ -7,7 +7,6 @@ from time import monotonic
 from typing import Any
 
 from xpra.net.packet_type import DISPLAY_CONFIGURE
-from xpra.os_util import gi_import
 from xpra.exit_codes import ExitCode
 from xpra.platform.features import REINIT_WINDOWS
 from xpra.platform.gui import (
@@ -30,8 +29,6 @@ from xpra.util.screen import log_screen_sizes
 from xpra.util.env import envint
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("screen")
 workspacelog = Logger("client", "workspace")
@@ -101,7 +98,7 @@ class DisplayClient(StubClientMixin):
         ssct = self.screen_size_change_timer
         if ssct:
             self.screen_size_change_timer = 0
-            GLib.source_remove(ssct)
+            self.source_remove(ssct)
 
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         raise NotImplementedError()
@@ -511,7 +508,7 @@ class DisplayClient(StubClientMixin):
         # (better chance that the suspend-resume cycle will have completed)
         if self._suspended_at > 0 and self._suspended_at - monotonic() < 5 * 1000:
             delay = 5 * 1000
-        self.screen_size_change_timer = GLib.timeout_add(delay, self.do_process_screen_size_change)
+        self.screen_size_change_timer = self.timeout_add(delay, self.do_process_screen_size_change)
 
     def do_process_screen_size_change(self) -> None:
         self.screen_size_change_timer = 0

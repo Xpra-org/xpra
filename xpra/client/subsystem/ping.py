@@ -9,7 +9,6 @@ from collections import deque
 from typing import Any
 from collections.abc import Sequence, Iterable
 
-from xpra.os_util import gi_import
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
@@ -18,8 +17,6 @@ from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 from xpra.util.objects import typedict
 from xpra.util.system import getloadavg
-
-GLib = gi_import("GLib")
 
 log = Logger("network", "ping")
 
@@ -96,19 +93,19 @@ class PingClient(StubClientMixin):
         log("start_sending_pings%s pings=%s, ping_timer=%s", args, self.pings, self.ping_timer)
         if self.pings > 0 and not self.ping_timer:
             self.send_ping()
-            self.ping_timer = GLib.timeout_add(1000 * self.pings, self.send_ping)
+            self.ping_timer = self.timeout_add(1000 * self.pings, self.send_ping)
 
     def cancel_ping_timer(self) -> None:
         pt = self.ping_timer
         if pt:
             self.ping_timer = 0
-            GLib.source_remove(pt)
+            self.source_remove(pt)
 
     def cancel_ping_echo_timers(self) -> None:
         pet: Iterable[int] = tuple(self.ping_echo_timers.values())
         self.ping_echo_timers = {}
         for t in pet:
-            GLib.source_remove(t)
+            self.source_remove(t)
 
     def check_server_echo(self, ping_sent_time) -> bool:
         self.ping_echo_timers.pop(ping_sent_time, None)
@@ -122,7 +119,7 @@ class PingClient(StubClientMixin):
             self._server_ok = self._server_ok and fakeit
         if not self._server_ok:
             if not self.ping_echo_timeout_timer:
-                self.ping_echo_timeout_timer = GLib.timeout_add(PING_TIMEOUT * 1000,
+                self.ping_echo_timeout_timer = self.timeout_add(PING_TIMEOUT * 1000,
                                                                 self.check_echo_timeout, ping_sent_time)
         else:
             self.cancel_ping_echo_timeout_timer()
@@ -136,7 +133,7 @@ class PingClient(StubClientMixin):
         pett = self.ping_echo_timeout_timer
         if pett:
             self.ping_echo_timeout_timer = 0
-            GLib.source_remove(pett)
+            self.source_remove(pett)
 
     def server_connection_state_change(self) -> None:
         log("server_connection_state_change() ok=%s", self._server_ok)
@@ -167,7 +164,7 @@ class PingClient(StubClientMixin):
             wait = max(1000 * MIN_PING_TIMEOUT, min(1000 * MAX_PING_TIMEOUT, round(1000 + avg * 2000)))
             log("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",
                 now_ms, round(1000 * avg), wait)
-        t = GLib.timeout_add(wait, self.check_server_echo, now_ms)
+        t = self.timeout_add(wait, self.check_server_echo, now_ms)
         log(f"send_ping() time={now_ms}, timer={t}")
         self.ping_echo_timers[now_ms] = t
         return True

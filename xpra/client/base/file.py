@@ -5,14 +5,11 @@
 
 from typing import Any
 
-from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 printlog = Logger("printing")
 filelog = Logger("file")

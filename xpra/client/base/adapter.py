@@ -11,7 +11,6 @@ from threading import Event
 
 from xpra import __version__
 from xpra.common import FULL_INFO
-from xpra.os_util import gi_import
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.io import is_socket, load_binary_file
 from xpra.util.env import envint, osexpand
@@ -24,9 +23,6 @@ from xpra.net.common import PacketElement, Packet
 from xpra.log import Logger
 
 log = Logger("client")
-
-GLib = gi_import("GLib")
-
 
 SERVER_TIMEOUT = envint("XPRA_REMOTE_SERVER_TIMEOUT", 5)
 SERVER_SOCKET_TIMEOUT = envint("XPRA_REMOTE_SERVER_SOCKET_TIMEOUT", 1)
@@ -137,14 +133,14 @@ class RemoteServerAdapter(baseclass):
         ct = self.connect_timer
         if ct:
             self.connect_timer = 0
-            GLib.source_remove(ct)
+            self.source_remove(ct)
 
     def schedule_connect(self, delay: int) -> None:
         connected = self.is_connected()
         log(f"schedule_connect({delay}) {connected=}, timer={self.connect_timer}, connecting={self.connecting}")
         if connected or self.connect_timer or self.connecting:
             return
-        self.connect_timer = GLib.timeout_add(delay, self.scheduled_connect, delay)
+        self.connect_timer = self.timeout_add(delay, self.scheduled_connect, delay)
 
     def scheduled_connect(self, delay: int) -> bool:
         self.connect_timer = 0
@@ -210,7 +206,7 @@ class RemoteServerAdapter(baseclass):
         protocol.large_packets += ["encodings", "context-compress", "context-data"]
         # self.add_packet_handler("setting-change", noop)
         # if conn.timeout > 0:
-        #    GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
+        #    self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
         return protocol
 
     def is_connected(self) -> bool:

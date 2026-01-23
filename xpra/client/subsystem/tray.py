@@ -5,14 +5,12 @@
 #  pylint: disable-msg=E1101
 
 from xpra.platform.systray import get_backends
-from xpra.os_util import gi_import, WIN32, OSX
+from xpra.os_util import WIN32, OSX
 from xpra.util.objects import make_instance
 from xpra.util.env import envint, envbool
 from xpra.common import XPRA_APP_ID, ConnectionMessage
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("tray")
 
@@ -48,7 +46,7 @@ class TrayClient(StubClientMixin):
         else:
             if WIN32 or OSX:
                 # show shortly after the main loop starts running:
-                GLib.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
+                self.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
             else:
                 # wait for handshake:
                 # see appindicator bug #3956
@@ -73,7 +71,7 @@ class TrayClient(StubClientMixin):
             if icon_timestamp == tray.icon_timestamp:
                 tray.set_icon()
 
-        GLib.timeout_add(1000, reset_icon)
+        self.timeout_add(1000, reset_icon)
 
         def tray_ready(*_args) -> None:
             tray.ready()
@@ -124,9 +122,9 @@ class TrayClient(StubClientMixin):
         def xpra_tray_click(button, pressed, time=0):
             log("xpra_tray_click(%s, %s, %s)", button, pressed, time)
             if button == 1 and pressed:
-                GLib.idle_add(self.menu_helper.activate, button, time)
+                self.idle_add(self.menu_helper.activate, button, time)
             elif button in (2, 3) and not pressed:
-                GLib.idle_add(self.menu_helper.popup, button, time)
+                self.idle_add(self.menu_helper.popup, button, time)
 
         def xpra_tray_mouseover(*args):
             log("xpra_tray_mouseover%s", args)

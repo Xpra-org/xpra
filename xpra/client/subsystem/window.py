@@ -419,8 +419,8 @@ class WindowClient(StubClientMixin):
         # we decode pixel data in this thread
         self._draw_thread = start_thread(self._draw_thread_loop, "draw")
         if FAKE_SUSPEND_RESUME:
-            GLib.timeout_add(FAKE_SUSPEND_RESUME * 1000, self.suspend)
-            GLib.timeout_add(FAKE_SUSPEND_RESUME * 1000 * 2, self.resume)
+            self.timeout_add(FAKE_SUSPEND_RESUME * 1000, self.suspend)
+            self.timeout_add(FAKE_SUSPEND_RESUME * 1000 * 2, self.resume)
         return ExitCode.OK
 
     def cleanup(self) -> None:
@@ -523,7 +523,7 @@ class WindowClient(StubClientMixin):
             if is_Wayland():
                 log.warn("Warning: pointer polling is unlikely to work under Wayland")
                 log.warn(" and may cause problems")
-            self.poll_pointer_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
+            self.poll_pointer_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
         self.connect("startup-complete", self.log_windows_info)
         return True
 
@@ -763,7 +763,7 @@ class WindowClient(StubClientMixin):
             if tray_widget:
                 do_tray_geometry(*args)
             else:
-                GLib.idle_add(do_tray_geometry, *args)
+                self.idle_add(do_tray_geometry, *args)
 
         def tray_exit(*args):
             traylog("tray_exit(%s)", args)
@@ -1030,7 +1030,7 @@ class WindowClient(StubClientMixin):
             return None
         self.register_window(wid, window)
         if SHOW_DELAY >= 0:
-            GLib.timeout_add(SHOW_DELAY, self.show_window, wid, window, metadata, override_redirect)
+            self.timeout_add(SHOW_DELAY, self.show_window, wid, window, metadata, override_redirect)
         else:
             self.show_window(wid, window, metadata, override_redirect)
         return window
@@ -1109,6 +1109,7 @@ class WindowClient(StubClientMixin):
 
     def signal_watcher_event(self, fd, cb_condition, proc, pid: int, wid: int) -> bool:
         execlog("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid))
+        GLib = gi_import("GLib")
         if cb_condition in (GLib.IOCondition.HUP, GLib.IOCondition.ERR):
             kill_signalwatcher(proc)
             proc.stdout_io_watch = None
@@ -1503,7 +1504,7 @@ class WindowClient(StubClientMixin):
             if focused and not self.lost_focus_timer:
                 # send the lost-focus via a timer and re-check it
                 # (this allows a new window to gain focus without having to do a reset_focus)
-                self.lost_focus_timer = GLib.timeout_add(20, self.send_lost_focus)
+                self.lost_focus_timer = self.timeout_add(20, self.send_lost_focus)
                 self._focused = None
         return focused != self._focused
 
@@ -1518,13 +1519,13 @@ class WindowClient(StubClientMixin):
         lft = self.lost_focus_timer
         if lft:
             self.lost_focus_timer = 0
-            GLib.source_remove(lft)
+            self.source_remove(lft)
 
     def cancel_poll_pointer_timer(self) -> None:
         ppt = self.poll_pointer_timer
         if ppt:
             self.poll_pointer_timer = 0
-            GLib.source_remove(ppt)
+            self.source_remove(ppt)
 
     ######################################################################
     # grabs:
@@ -1623,7 +1624,7 @@ class WindowClient(StubClientMixin):
     # painting windows:
     def _process_window_draw(self, packet: Packet) -> None:
         if PAINT_DELAY >= 0:
-            GLib.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
+            self.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
         else:
             self._draw_queue.put(packet)
 
@@ -1681,7 +1682,7 @@ class WindowClient(StubClientMixin):
                         # will get a chance to run first (preserving the order)
                 self.send_damage_sequence(wid, packet_sequence, width, height, WINDOW_NOT_FOUND, "window not found")
 
-            GLib.idle_add(draw_cleanup)
+            self.idle_add(draw_cleanup)
             return
         # rename old encoding aliases early:
         options = typedict()
@@ -1716,7 +1717,7 @@ class WindowClient(StubClientMixin):
                          coding, self._draw_counter, packet_sequence)
             if PAINT_FAULT_TELL:
                 msg = f"fault injection for {coding} draw packet {self._draw_counter}, sequence no={packet_sequence}"
-                GLib.idle_add(record_decode_time, False, msg)
+                self.idle_add(record_decode_time, False, msg)
             return
         # we could expose this to the csc step? (not sure how this could be used)
         # if self.xscale!=1 or self.yscale!=1:
@@ -1726,7 +1727,7 @@ class WindowClient(StubClientMixin):
         except Exception as e:
             drawlog.error("Error drawing on window %#x", wid)
             drawlog.error(f" using encoding {coding} with {options=}", exc_info=True)
-            GLib.idle_add(record_decode_time, False, str(e))
+            self.idle_add(record_decode_time, False, str(e))
             raise
 
     ######################################################################

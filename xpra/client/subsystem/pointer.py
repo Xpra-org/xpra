@@ -13,12 +13,9 @@ from xpra.net.common import Packet, PacketElement
 from xpra.net.packet_type import POINTER_MOTION
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
-from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("pointer")
-
-GLib = gi_import("GLib")
 
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
@@ -136,7 +133,7 @@ class PointerClient(StubClientMixin):
         delay = self._mouse_position_delay - elapsed
         log("send_mouse_position(%s) elapsed=%i, delay left=%i", packet, elapsed, delay)
         if delay > 0:
-            self._mouse_position_timer = GLib.timeout_add(delay, self.do_send_mouse_position)
+            self._mouse_position_timer = self.timeout_add(delay, self.do_send_mouse_position)
         else:
             self.do_send_mouse_position()
 
@@ -151,7 +148,7 @@ class PointerClient(StubClientMixin):
         mpt = self._mouse_position_timer
         if mpt:
             self._mouse_position_timer = 0
-            GLib.source_remove(mpt)
+            self.source_remove(mpt)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_pointer = c.boolget("pointer", True)

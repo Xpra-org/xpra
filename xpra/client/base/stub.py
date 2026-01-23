@@ -17,7 +17,8 @@ from xpra.net.common import ClientPacketHandlerType, PacketElement
 # whereas regular client classes inherit the signal methods from GObjectClientAdapter
 if envbool("XPRA_UNIT_TEST"):
     from xpra.util.signal_emitter import SignalEmitter
-    superclass = SignalEmitter
+    from xpra.util.glib_scheduler import GLibScheduler
+    superclass = type("StubSignalScheduler", (SignalEmitter, GLibScheduler), {})
 else:
     superclass = object
 
