@@ -94,7 +94,7 @@ class ServerMixinTest(unittest.TestCase):
         x.init_state()
         x.init(opts)
         x.auth_classes = {}
-        x.init_sockets(self.create_test_sockets())
+        x.sockets = self.create_test_sockets()
         x.setup()
         x.init_packet_handlers()
         caps = typedict(caps or {})
