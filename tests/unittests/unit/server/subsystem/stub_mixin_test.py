@@ -20,7 +20,6 @@ class EncodingMixinTest(unittest.TestCase):
         x = StubServerMixin()
         x.init(opts)
         x.init_state()
-        x.init_sockets([])
         x.setup()
         x.init_packet_handlers()
         x.get_server_source(None)
