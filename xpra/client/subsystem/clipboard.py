@@ -9,6 +9,7 @@ from typing import Any
 from importlib import import_module
 from collections.abc import Sequence
 
+from xpra.os_util import gi_import
 from xpra.common import ALL_CLIPBOARDS, BACKWARDS_COMPATIBLE
 from xpra.client.base.stub import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
@@ -20,6 +21,8 @@ from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("clipboard")
+
+GLib = gi_import("GLib")
 
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS", "")
 
@@ -161,14 +164,19 @@ class ClipboardClient(StubClientMixin):
             return True
         caps = c.dictget("clipboard") or {}
         self.parse_clipboard_capabilities(typedict(caps))
-        if not self.clipboard_helper:
-            ch = self.make_clipboard_helper()
-            if not ch:
-                log.warn("Warning: no clipboard support")
-            self.clipboard_helper = ch
-            self.clipboard_enabled = ch is not None
-            self.after_handshake(self.start_clipboard_sync)
+        if self.server_clipboard and not self.clipboard_helper:
+            GLib.idle_add(self.init_keyboard_helper)
         return True
+
+    def init_keyboard_helper(self) -> None:
+        if self.clipboard_helper:
+            return
+        ch = self.make_clipboard_helper()
+        if not ch:
+            log.warn("Warning: no clipboard support")
+        self.clipboard_helper = ch
+        self.clipboard_enabled = ch is not None
+        self.after_handshake(self.start_clipboard_sync)
 
     def parse_clipboard_capabilities(self, caps: typedict) -> None:
         self.server_clipboard = bool(caps)
