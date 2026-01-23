@@ -57,14 +57,15 @@ def get_gl_client_window_module(opengl="on") -> tuple[dict[str, Any], Any]:
     log(f"get_gl_client_window_module({opengl}) module names={module_names}")
     parts = opengl.lower().split(":")
     force_enable = parts[0] == "force"
+    nocheck = parts[0] == "nocheck"
     for module_name in module_names:
-        props, window_module = test_window_module(module_name, force_enable)
+        props, window_module = test_window_module(module_name, force_enable, nocheck)
         if window_module:
             return props, window_module
     return {}, None
 
 
-def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict, Any]:
+def test_window_module(module_name="glarea", force_enable=False, nocheck=False) -> tuple[dict, Any]:
     from importlib import import_module
     try:
         mod = import_module(f"xpra.client.gtk3.opengl.{module_name}_window")
@@ -77,6 +78,8 @@ def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict, 
             "success": False,
             "message": str(e),
         }, None
+    if nocheck:
+        return {"nocheck": True}, mod
     opengl_props = mod.check_support(force_enable)
     log(f"{mod}.check_support({force_enable})={opengl_props}")
     if opengl_props:

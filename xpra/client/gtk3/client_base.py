@@ -1247,11 +1247,14 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 self.client_supports_opengl = False
                 self.opengl_props["info"] = "disabled: no module found"
                 return
+            if self.opengl_props.get("nocheck"):
+                opengllog.info("OpenGL enabled, checks skipped")
+                return
             opengllog("init_opengl: found props %s", self.opengl_props)
             self.GLClientWindowClass = gl_client_window_module.GLClientWindow
             self.client_supports_opengl = True
             # only enable opengl by default if force-enabled or if safe to do so:
-            enabled_by_option = enable_option in (list(TRUE_OPTIONS) + ["auto"])
+            enabled_by_option = enable_option in (list(TRUE_OPTIONS) + ["auto", "nocheck"])
             self.opengl_enabled = self.opengl_force or enabled_by_option or self.opengl_props.get("safe", False)
             self.gl_texture_size_limit = self.opengl_props.get("texture-size-limit", 16 * 1024)
             dims = self.gl_texture_size_limit, self.gl_texture_size_limit
