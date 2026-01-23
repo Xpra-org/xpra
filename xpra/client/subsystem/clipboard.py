@@ -105,13 +105,6 @@ class ClipboardClient(StubClientMixin):
             log.warn("Warning: clipboard module is missing")
             self.client_supports_clipboard = False
             return
-        if self.client_supports_clipboard:
-            ch = self.make_clipboard_helper()
-            if not ch:
-                log.warn("Warning: no clipboard support")
-            self.clipboard_helper = ch
-            self.clipboard_enabled = ch is not None
-            self.after_handshake(self.start_clipboard_sync)
 
     def cleanup(self) -> None:
         ch = self.clipboard_helper
@@ -194,6 +187,14 @@ class ClipboardClient(StubClientMixin):
             self.server_clipboard_greedy, self.server_clipboard_want_targets, self.server_clipboard_selections)
         log("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
         self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
+
+        if not self.clipboard_helper:
+            ch = self.make_clipboard_helper()
+            if not ch:
+                log.warn("Warning: no clipboard support")
+            self.clipboard_helper = ch
+            self.clipboard_enabled = ch is not None
+            self.after_handshake(self.start_clipboard_sync)
         return True
 
     def start_clipboard_sync(self) -> None:
