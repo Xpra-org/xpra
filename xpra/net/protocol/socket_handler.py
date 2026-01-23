@@ -10,7 +10,7 @@
 
 import os
 from enum import Enum, IntEnum
-from time import monotonic
+from time import monotonic, sleep
 from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue, SimpleQueue, Empty, Full
@@ -869,8 +869,11 @@ class SocketProtocol:
         # log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
         # add to the read queue (or whatever takes its place - see steal_connection)
         if not buf:
+            if self._closed:
+                return False
             if self.eof_pending:
-                eventlog("read thread: eof already pending, ignoring")
+                eventlog("read thread: %i eof already pending, ignoring", self.eof_pending)
+                sleep(0.001)
             else:
                 socktype = getattr(self._conn, "socktype", "unknown")
                 is_ssl_socktype = socktype in ("ssl", "wss", "quic")
@@ -887,9 +890,8 @@ class SocketProtocol:
         self.eof_pending = False
         if not self._closed and self.input_raw_packetcount <= raw_count:
             eventlog("check_eof: eof detected")
-            # give time to the parse thread to call close itself,
-            # so it has time to parse and process the last packet received
-            self.timeout_add(1000, self.close)
+            self._process_read(b"")
+            self.timeout_add(100, self.close)
             return False
         return False
 
