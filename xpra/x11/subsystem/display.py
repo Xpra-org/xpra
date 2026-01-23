@@ -135,7 +135,8 @@ class X11DisplayManager(DisplayManager):
             # ie: "off:1080p"
             onoff, sizes = opts.resize_display.split(":", 1)
         try:
-            self.initial_resolutions = parse_resolutions(sizes, opts.refresh_rate) or self.get_default_initial_res()
+            res = parse_resolutions(sizes, opts.refresh_rate)
+            self.initial_resolutions = res if res is not None else self.get_default_initial_res()
         except ValueError:
             self.initial_resolutions = self.get_default_initial_res()
         log("initial_resolutions(%s, %s)=%s", sizes, opts.refresh_rate, self.initial_resolutions)

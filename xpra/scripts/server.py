@@ -1221,7 +1221,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                 # "off:1080p" -> "1080p"
                 # "4k" -> "4k"
                 sizes = opts.resize_display.split(":", 1)[-1]
-                vfb_geom = parse_resolutions(sizes, opts.refresh_rate)[0]
+                resolutions = parse_resolutions(sizes, opts.refresh_rate)
+                if resolutions:
+                    vfb_geom = resolutions[0]
             fps = 0
             if opts.refresh_rate:
                 fps = get_refresh_rate_for_value(opts.refresh_rate, 60)
