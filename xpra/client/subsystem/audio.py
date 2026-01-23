@@ -147,6 +147,7 @@ class AudioClient(StubClientMixin):
 
         def do_load() -> None:
             # set `self.audio_properties` last when loading is complete:
+            sleep(1)
             audio_properties = self.query_audio()
             audio_properties.update(pa_props)
             self.audio_properties = audio_properties

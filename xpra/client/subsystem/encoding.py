@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import sleep
 from typing import Any
 from collections.abc import Sequence
 
@@ -131,7 +132,8 @@ class Encodings(StubClientMixin):
             start_thread(self.load_all_codecs, "load-all-codecs", daemon=True)
 
     def load_all_codecs(self) -> None:
-        log.warn("load_all_codecs()", backtrace=True)
+        log("load_all_codecs()")
+        sleep(1)
         ae = self.allowed_encodings
         if "png" in ae:
             # try to load the fast png decoder:
