@@ -34,9 +34,6 @@ class EncodingMixinTest(unittest.TestCase):
         x.add_new_client(None, caps, True, 1)
         x.send_initial_data(None, caps, True, 1)
 
-        x.last_client_exited()
-        x.set_session_driver(None)
-
         x.cleanup_protocol(None)
         x.cleanup()
 
