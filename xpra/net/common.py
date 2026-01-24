@@ -39,11 +39,14 @@ DEFAULT_PORT: Final[int] = 14500
 DEFAULT_PORTS: dict[str, int] = {
     "ws": 80,
     "wss": 443,
-    "ssl": DEFAULT_PORT,  # could also default to 443?
+    "ssl": 443,
     "ssh": 22,
     "tcp": DEFAULT_PORT,
+    "rfb": 5900,
     "vnc": 5900,
-    "quic": 14500,
+    "rdp": 3389,
+    "quic": DEFAULT_PORT,
+    "vsock": DEFAULT_PORT,
 }
 
 HttpResponse: TypeAlias = tuple[int, dict, bytes]

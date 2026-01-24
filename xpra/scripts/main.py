@@ -1725,8 +1725,9 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
 
         if hasattr(app, "after_handshake"):
             app.after_handshake(handshake_complete)
-        may_show_progress(app, 40, "loading user interface")
+        may_show_progress(app, 40, "initializing user interface")
         app.init_ui(opts)
+        may_show_progress(app, 50, "loading user interface")
         app.load()
         if request_mode:
             sns = get_start_new_session_dict(opts, request_mode, extra_args)
@@ -1764,11 +1765,12 @@ def enable_listen_mode(app, error_cb: Callable, opts):
     may_show_progress(app, 80, "listening for incoming connections")
     from xpra.net.socket_util import (
         setup_local_sockets, peek_connection,
-        create_sockets, add_listen_socket, accept_connection,
+        parse_bind_options, create_sockets, add_listen_socket, accept_connection,
+        SocketListener, close_sockets,
     )
     from xpra.log import Logger
-    from xpra.net.socket_util import SocketListener, close_sockets
-    sockets: list[SocketListener] = create_sockets(opts, error_cb, sd_listen=False, ssh_upgrades=False)
+    bind_options = parse_bind_options(opts)
+    sockets: list[SocketListener] = create_sockets(bind_options)
     # we don't have a display,
     # so we can't automatically create sockets:
     if "auto" in opts.bind:

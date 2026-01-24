@@ -1060,9 +1060,11 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             opts.bind_rdp = []
 
     progress(30, "creating network sockets")
-    from xpra.net.socket_util import create_sockets
+    from xpra.net.socket_util import parse_bind_options, create_sockets, check_ssh_upgrades
+    opts.ssh_upgrade = check_ssh_upgrades(opts.ssh_upgrade)
     retry = 10 * int(mode.startswith("upgrade"))
-    sockets = create_sockets(opts, error_cb, retry=retry, sd_listen=POSIX and not OSX, ssh_upgrades=opts.ssh_upgrade)
+    bind_options = parse_bind_options(opts)
+    sockets = create_sockets(bind_options, retry=retry, sd_listen=POSIX and not OSX)
 
     from xpra.log import Logger
     log = Logger("server")

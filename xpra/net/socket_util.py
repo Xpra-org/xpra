@@ -7,7 +7,7 @@ import os.path
 import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
-from typing import Any, Iterable
+from typing import Any, Iterable, Final
 from importlib.util import find_spec
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from xpra.common import GROUP, SocketState, noerr, SizedBuffer, noop
 from xpra.scripts.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
-from xpra.net.common import DEFAULT_PORT, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
+from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SocketConnection, SOCKET_TIMEOUT
 from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, gi_import, WIN32, OSX, POSIX
 from xpra.util.io import path_permission_info, umask_context, is_writable
@@ -403,53 +403,57 @@ def guess_packet_type(buf: SizedBuffer) -> str:
     return ""
 
 
-def create_sockets(opts, error_cb: Callable, retry: int = 0,
-                   sd_listen=POSIX and not OSX, ssh_upgrades=True) -> list[SocketListener]:
-    bind_tcp = parse_bind_ip(opts.bind_tcp)
-    bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
-    bind_ssh = parse_bind_ip(opts.bind_ssh, 22)
-    bind_ws = parse_bind_ip(opts.bind_ws, 80)
-    bind_wss = parse_bind_ip(opts.bind_wss, 443)
-    bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
-    bind_rdp = parse_bind_ip(opts.bind_rdp, 3389)
-    bind_quic = parse_bind_ip(opts.bind_quic, 14500)
-    bind_vsock = parse_bind_vsock(opts.bind_vsock)
+def check_ssh_upgrades(warn=True) -> bool:
+    try:
+        with SilenceWarningsContext(DeprecationWarning):
+            if find_spec("paramiko"):
+                return True
+            err = "`paramiko` module not found"
+    except Exception as e:
+        err = str(e)
+    from xpra.log import Logger
+    log = Logger("ssh")
+    log("check_ssh_upgrades: %r", err)
+    if warn:
+        log.warn("Error: cannot enable SSH socket upgrades")
+        log.warn(" %r", err)
+    return False
 
+
+BIND_OPTION_TYPES: Final[Sequence[str]] = ("tcp", "ssl", "ws", "wss", "ssh", "quic", "rfb", "rdp", "vsock")
+
+
+def parse_bind_options(opts) -> dict[str, Any]:
+    """
+    extract bind options into a dictionary,
+    ie: `bind_tcp=0.0.0.0:10000` -> {"tcp": ("0.0.0.0", 10000)}
+    """
     min_port = int(opts.min_port)
+    bind_options: dict[str, Any] = {}
+    for mode in BIND_OPTION_TYPES:
+        value = getattr(opts, "bind_%s" % mode, "")
+        if value:
+            default_port = DEFAULT_PORTS.get(mode, 0)
+            if mode == "vsock":
+                value = parse_bind_vsock(opts.bind_vsock)
+            else:
+                value = parse_bind_ip(value, default_port, min_port)
+            if value:
+                bind_options[mode] = value
+    return bind_options
+
+
+def create_sockets(bind_options: dict[str, str], retry: int = 0, sd_listen=False) -> list[SocketListener]:
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
-    if ssh_upgrades:
-        err = ""
-        try:
-            with SilenceWarningsContext(DeprecationWarning):
-                if not find_spec("paramiko"):
-                    err = "`paramiko` module not found"
-        except Exception as e:
-            err = str(e)
-        if err:
-            from xpra.log import Logger
-            sshlog = Logger("ssh")
-            sshlog("import paramiko", exc_info=True)
-            sshlog.warn("Error: cannot enable SSH socket upgrades")
-            sshlog.warn(" %s", err)
-            opts.ssh_upgrade = False
     log = get_network_logger()
-    # prepare tcp socket definitions:
+    # prepare tcp socket definitions, resolve hosts:
     tcp_defs: list[tuple[str, str, int, dict, str]] = []
-    for socktype, defs in {
-        "tcp": bind_tcp,
-        "ssl": bind_ssl,
-        "ssh": bind_ssh,
-        "ws": bind_ws,
-        "wss": bind_wss,
-        "rfb": bind_rfb,
-        "rdp": bind_rdp,
-    }.items():
+    for socktype in ("tcp", "ssl", "ssh", "ws", "wss", "rfb", "rdp"):
+        defs = bind_options.get(socktype, {})
         log("setting up %s sockets: %s", socktype, csv(defs.items()))
         for (host, iport), options in defs.items():
-            if iport != 0 and iport < min_port:
-                error_cb(f"invalid {socktype} port number {iport} (minimum value is {min_port})")
             for h in hosts(host):
                 tcp_defs.append((socktype, h, iport, options, ""))
 
@@ -477,10 +481,12 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0,
             log.error(" %s", exception)
             raise InitException(f"failed to create {socktype} socket: {exception}")
 
+    bind_vsock = bind_options.get("vsock", {})
     log("setting up vsock sockets: %s", csv(bind_vsock.items()))
     for (cid, iport), options in bind_vsock.items():
         sockets.append(setup_vsock_socket(cid, iport, options))
 
+    bind_quic = bind_options.get("quic", {})
     log("setting up quic sockets: %s", csv(bind_quic.items()))
     for (host, iport), options in bind_quic.items():
         sockets.append(setup_quic_socket(host, iport, options))
@@ -599,7 +605,7 @@ def setup_udp_socket(host: str, iport: int, socktype: str, options: dict[str, An
     return SocketListener(socktype, udp_socket, (host, iport), options, cleanup_udp_socket, noop)
 
 
-def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[tuple[str, int], dict[str, Any]]:
+def parse_bind_ip(bind_ip: list[str], default_port=DEFAULT_PORT, min_port=0) -> dict[tuple[str, int], dict[str, Any]]:
     ip_sockets: dict[tuple[str, int], dict] = {}
     if bind_ip:
         for spec in bind_ip:
@@ -617,7 +623,8 @@ def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[
             else:
                 try:
                     iport = int(port)
-                    assert 0 <= iport < 2 ** 16
+                    if iport < min_port or iport >= 2 ** 16:
+                        raise ValueError(f"invalid port {iport}")
                 except (TypeError, ValueError):
                     raise InitException(f"invalid port number: {port}") from None
             options = {}

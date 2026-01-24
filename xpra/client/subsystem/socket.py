@@ -17,7 +17,7 @@ from xpra.os_util import get_machine_id, getuid, getgid, POSIX, OSX
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import (
     create_sockets, add_listen_socket, accept_connection, setup_local_sockets,
-    close_sockets, SocketListener,
+    close_sockets, SocketListener, parse_bind_options,
 )
 from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_caps as get_digest_caps
@@ -26,7 +26,7 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base.stub import StubClientMixin
-from xpra.scripts.config import InitException, InitExit
+from xpra.scripts.config import InitExit
 from xpra.log import Logger
 
 log = Logger("network")
@@ -50,25 +50,34 @@ class NetworkListener(StubClientMixin):
         self.sockets: list[SocketListener] = []
         self._potential_protocols = []
         self._close_timers: dict[Any, int] = {}
+        self.bind_options = {}
+        self.local_bind = ()
+        self.client_socket_dirs = ()
+        self.mmap_group = ""
+        self.socket_permissions = ""
 
     def init(self, opts) -> None:
-        def err(msg):
-            raise InitException(msg)
+        self.bind_options = parse_bind_options(opts)
+        self.local_bind = opts.bind
+        self.client_socket_dirs = opts.client_socket_dirs
+        self.mmap_group = opts.mmap_group
+        self.socket_permissions = opts.socket_permissions
 
-        self.sockets = create_sockets(opts, err, sd_listen=False, ssh_upgrades=False)
-        log(f"setup_local_sockets bind={opts.bind}, client_socket_dirs={opts.client_socket_dirs}")
+    def load(self) -> None:
+        self.sockets = create_sockets(self.bind_options)
+        log(f"setup_local_sockets bind={self.local_bind}, client_socket_dirs={self.client_socket_dirs}")
         try:
             # don't use abstract sockets for clients:
             # (as these may collide with display numbers)
-            bind = ["noabstract"] if csv(opts.bind) == "auto" else opts.bind
+            bind = ["noabstract"] if csv(self.local_bind) == "auto" else self.local_bind
             local_sockets = setup_local_sockets(bind,
-                                                "", opts.client_socket_dirs, "",
+                                                "", self.client_socket_dirs, "",
                                                 str(os.getpid()), True,
-                                                opts.mmap_group, opts.socket_permissions,
+                                                self.mmap_group, self.socket_permissions,
                                                 uid=getuid(), gid=getgid())
         except (OSError, InitExit, ImportError, ValueError) as e:
             log("setup_local_sockets bind=%s, client_socket_dirs=%s",
-                opts.bind, opts.client_socket_dirs, exc_info=True)
+                self.local_bind, self.client_socket_dirs, exc_info=True)
             log.warn("Warning: failed to create the client sockets:")
             log.warn(" '%s'", e)
         else:
