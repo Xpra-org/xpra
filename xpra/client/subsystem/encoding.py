@@ -123,7 +123,6 @@ class Encodings(StubClientMixin):
         self.video_decoders = opts.video_decoders
 
     def load(self) -> None:
-        load_codec("dec_pillow")
         if BACKWARDS_COMPATIBLE:
             self.load_all_codecs()
 
@@ -134,6 +133,7 @@ class Encodings(StubClientMixin):
     def load_all_codecs(self) -> None:
         log("load_all_codecs()")
         sleep(1)
+        load_codec("dec_pillow")
         ae = self.allowed_encodings
         if "png" in ae:
             # try to load the fast png decoder:
