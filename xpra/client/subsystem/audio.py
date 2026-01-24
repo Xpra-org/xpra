@@ -148,10 +148,15 @@ class AudioClient(StubClientMixin):
             # set `self.audio_properties` last when loading is complete:
             sleep(1.5)
             audio_properties = self.query_audio()
-            audio_properties.update(get_pa_info())
-            self.audio_properties = audio_properties
-            if self.wants_audio_capabilities:
-                self.send_audio_capabilities()
+            # get_pa_info() must be called from the main thread
+            # because it may access the $DISPLAY
+
+            def add_ui_info() -> None:
+                audio_properties.update(get_pa_info())
+                self.audio_properties = audio_properties
+                if self.wants_audio_capabilities:
+                    self.send_audio_capabilities()
+            self.idle_add(add_ui_info)
         start_thread(do_load, "audio-query-thread", daemon=True)
 
     def query_audio(self) -> typedict:
