@@ -6,8 +6,10 @@
 
 import os
 import sys
+from time import sleep
 from typing import Any
 
+from xpra.util.thread import start_thread
 from xpra.util.version import version_str, XPRA_NUMERIC_VERSION
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -63,28 +65,8 @@ class NetworkListener(StubClientMixin):
         self.mmap_group = opts.mmap_group
         self.socket_permissions = opts.socket_permissions
 
-    def load(self) -> None:
-        self.sockets = create_sockets(self.bind_options)
-        log(f"setup_local_sockets bind={self.local_bind}, client_socket_dirs={self.client_socket_dirs}")
-        try:
-            # don't use abstract sockets for clients:
-            # (as these may collide with display numbers)
-            bind = ["noabstract"] if csv(self.local_bind) == "auto" else self.local_bind
-            local_sockets = setup_local_sockets(bind,
-                                                "", self.client_socket_dirs, "",
-                                                str(os.getpid()), True,
-                                                self.mmap_group, self.socket_permissions,
-                                                uid=getuid(), gid=getgid())
-        except (OSError, InitExit, ImportError, ValueError) as e:
-            log("setup_local_sockets bind=%s, client_socket_dirs=%s",
-                self.local_bind, self.client_socket_dirs, exc_info=True)
-            log.warn("Warning: failed to create the client sockets:")
-            log.warn(" '%s'", e)
-        else:
-            self.sockets += local_sockets
-
     def run(self) -> ExitValue:
-        self.start_listen_sockets()
+        start_thread(self.setup_sockets, "setup-sockets", daemon=True)
         return 0
 
     def cleanup(self) -> None:
@@ -99,6 +81,31 @@ class NetworkListener(StubClientMixin):
         sockets = self.sockets
         close_sockets(sockets)
         self.sockets = []
+
+    def setup_sockets(self) -> None:
+        sleep(2)
+        self.create_sockets()
+        self.start_listen_sockets()
+
+    def create_sockets(self) -> None:
+        self.sockets = create_sockets(self.bind_options)
+        log(f"setup_sockets() bind={self.local_bind}, client_socket_dirs={self.client_socket_dirs}")
+        try:
+            # don't use abstract sockets for clients:
+            # (as these may collide with display numbers)
+            bind = ["noabstract"] if csv(self.local_bind) == "auto" else self.local_bind
+            local_sockets = setup_local_sockets(bind,
+                                                "", self.client_socket_dirs, "",
+                                                str(os.getpid()), True,
+                                                self.mmap_group, self.socket_permissions,
+                                                uid=getuid(), gid=getgid())
+        except (OSError, InitExit, ImportError, ValueError) as e:
+            log("setup_sockets() bind=%s, client_socket_dirs=%s",
+                self.local_bind, self.client_socket_dirs, exc_info=True)
+            log.warn("Warning: failed to create the client sockets:")
+            log.warn(" '%s'", e)
+        else:
+            self.sockets += local_sockets
 
     def start_listen_sockets(self) -> None:
         for listener in self.sockets:
