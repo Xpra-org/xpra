@@ -12,12 +12,15 @@ from importlib.util import find_spec
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from xpra.common import GROUP, SocketState, noerr, SizedBuffer, noop
+from xpra.common import SocketState, noerr, SizedBuffer, noop
 from xpra.scripts.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SocketConnection, SOCKET_TIMEOUT
-from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, gi_import, WIN32, OSX, POSIX
+from xpra.os_util import (
+    getuid, get_username_for_uid, get_groups, get_group_id, gi_import, get_xpra_group,
+    WIN32, OSX, POSIX,
+)
 from xpra.util.io import path_permission_info, umask_context, is_writable
 from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS
@@ -37,7 +40,6 @@ WIN32_LOCAL_SOCKETS = envbool("XPRA_WIN32_LOCAL_SOCKETS", True)
 ABSTRACT_SOCKET_AUTH = os.environ.get("XPRA_ABSTRACT_SOCKET_AUTH", "peercred")
 
 SOCKET_DIR_MODE = num = int(os.environ.get("XPRA_SOCKET_DIR_MODE", "775"), 8)
-SOCKET_DIR_GROUP = os.environ.get("XPRA_SOCKET_DIR_GROUP", GROUP)
 
 network_logger = None
 
@@ -139,13 +141,14 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
     uid = getuid()
     username = get_username_for_uid(uid)
     groups = get_groups(username)
-    if uid == 0 or GROUP in groups:
-        group_id = get_group_id(GROUP)
+    xpra_group = get_xpra_group()
+    if uid == 0 or xpra_group in groups:
+        group_id = get_group_id(xpra_group)
         if group_id >= 0:
             try:
                 os.lchown(sockpath, -1, group_id)
             except Exception as e:
-                log.warn("Warning: failed to set '%s' group ownership", GROUP)
+                log.warn("Warning: failed to set '%s' group ownership", xpra_group)
                 log.warn(" on socket '%s':", sockpath)
                 log.warn(" %s", e)
             # don't know why this doesn't work:
@@ -916,6 +919,7 @@ def show_sockets(created: list[SocketListener]) -> None:
 
 
 def mksockdir(dotxpra, sockpath: str):
+    SOCKET_DIR_GROUP = os.environ.get("XPRA_SOCKET_DIR_GROUP", get_xpra_group())
     d: str = os.path.dirname(sockpath)
     log = get_network_logger()
     try:

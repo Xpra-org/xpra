@@ -8,7 +8,6 @@
 import os
 import sys
 import binascii
-from time import sleep
 from enum import Enum, IntEnum
 from typing import Final, Protocol, TypeAlias, Any
 from collections.abc import Callable, Sized, MutableSequence, Iterable, Sequence
@@ -276,13 +275,9 @@ CLOBBER_USE_DISPLAY: int = 0x2
 MAX_WINDOW_SIZE: int = 2**15-2**13
 
 
-GROUP: str = os.environ.get("XPRA_GROUP", "xpra")
-
 FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO >= 0
 LOG_HELLO: bool = envbool("XPRA_LOG_HELLO", False)
-
-SSH_AGENT_DISPATCH: bool = envbool("XPRA_SSH_AGENT_DISPATCH", os.name == "posix")
 
 MIN_COMPRESS_SIZE: int = envint("XPRA_MIN_DECOMPRESSED_SIZE", -1)
 MAX_DECOMPRESSED_SIZE: int = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
@@ -449,58 +444,18 @@ def get_run_info(subcommand="server") -> Sequence[str]:
     if arch:
         vinfo += f" {arch}"
     run_info.append(f" {sys.implementation.name} {vinfo}")
-    mem_bytes = init_memcheck()
+    mem_bytes = get_mem_size()
     if mem_bytes:
-        run_info.append(" with %.1fGB of system memory" % (mem_bytes / (1024.0 ** 3)))
+        LOW_MEM_LIMIT = 1024 * 1024 * 1024
+        if mem_bytes and mem_bytes <= LOW_MEM_LIMIT:
+            log.warn("Warning: only %iMB total system memory available", mem_bytes // (1024 ** 2))
+            log.warn(" this may not be sufficient")
+        else:
+            run_info.append(" with %.1fGB of system memory" % (mem_bytes / (1024.0 ** 3)))
     return run_info
 
 
-CPUINFO = envbool("XPRA_CPUINFO", False)
-DETECT_MEMLEAKS = envint("XPRA_DETECT_MEMLEAKS", 0)
-DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
-
-
-def init_leak_detection(exit_condition: Callable[[], bool] = noop):
-    print_memleaks = None
-    if DETECT_MEMLEAKS:
-        from xpra.util.pysystem import detect_leaks
-        print_memleaks = detect_leaks()
-        if bool(print_memleaks):
-            def leak_thread() -> None:
-                while not exit_condition():
-                    print_memleaks()
-                    sleep(DETECT_MEMLEAKS)
-
-            from xpra.util.thread import start_thread  # pylint: disable=import-outside-toplevel
-            start_thread(leak_thread, "leak thread", daemon=True)
-
-    if DETECT_FDLEAKS:
-        from xpra.log import Logger
-        log = Logger("util")
-        from xpra.util.io import livefds
-        saved_fds = [livefds(), ]
-
-        def print_fds() -> bool:
-            fds = livefds()
-            newfds = fds - saved_fds[0]
-            saved_fds[0] = fds
-            log.info("print_fds() new fds=%s (total=%s)", newfds, len(fds))
-            return True
-
-        from xpra.os_util import gi_import
-        GLib = gi_import("GLib")
-        GLib.timeout_add(10, print_fds)
-
-    return print_memleaks
-
-
-LOW_MEM_LIMIT = 1024 * 1024 * 1024
-
-
-def init_memcheck(low_ram=LOW_MEM_LIMIT) -> int:
-    # verify we have enough memory:
-    from xpra.log import Logger
-    log = Logger("util")
+def get_mem_size() -> int:
     try:
         mem_bytes = 0
         if hasattr(os, "sysconf"):
@@ -508,11 +463,10 @@ def init_memcheck(low_ram=LOW_MEM_LIMIT) -> int:
         if not mem_bytes and WIN32:
             from xpra.platform.win32.info import get_total_physical_memory
             mem_bytes = get_total_physical_memory()
-        if mem_bytes and mem_bytes <= low_ram:
-            log.warn("Warning: only %iMB total system memory available", mem_bytes // (1024 ** 2))
-            log.warn(" this may not be enough to run a server")
         return mem_bytes
     except OSError:
+        from xpra.log import Logger
+        log = Logger("util")
         log("init_memcheck", exc_info=True)
     return 0
 

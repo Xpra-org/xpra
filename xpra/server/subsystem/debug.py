@@ -9,7 +9,7 @@ from typing import Any
 
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.os_util import POSIX
-from xpra.common import init_leak_detection, CPUINFO
+from xpra.util.debug import CPUINFO, init_leak_detection
 from xpra.util.objects import typedict
 from xpra.log import Logger
 

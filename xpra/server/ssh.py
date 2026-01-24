@@ -18,12 +18,12 @@ import paramiko
 
 from xpra.net.bytestreams import pretty_socket
 from xpra.util.str_fn import csv, decode_str
-from xpra.util.env import envint, osexpand, first_time
+from xpra.util.env import envint, osexpand, first_time, envbool
 from xpra.os_util import getuid, WIN32, POSIX
 from xpra.util.system import stop_proc
 from xpra.util.thread import start_thread
 from xpra.util.parsing import str_to_bool
-from xpra.common import SSH_AGENT_DISPATCH, SizedBuffer, BACKWARDS_COMPATIBLE
+from xpra.common import SizedBuffer, BACKWARDS_COMPATIBLE
 from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command, get_app_dir
 from xpra.log import Logger
 
@@ -34,6 +34,7 @@ SERVER_WAIT = envint("XPRA_SSH_SERVER_WAIT", 20)
 AUTHORIZED_KEYS = "~/.ssh/authorized_keys"
 AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES",
                                         "md5,sha1,sha224,sha256,sha384,sha512").split(",")
+SSH_AGENT_DISPATCH: bool = envbool("XPRA_SSH_AGENT_DISPATCH", os.name == "posix")
 
 
 def get_keyclass(keytype: str):

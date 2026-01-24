@@ -3,8 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.common import DETECT_MEMLEAKS, DETECT_FDLEAKS, CPUINFO
-
+from xpra.util.debug import CPUINFO, DETECT_MEMLEAKS, DETECT_FDLEAKS
 
 debug = DETECT_MEMLEAKS or DETECT_FDLEAKS or CPUINFO
 watcher = True

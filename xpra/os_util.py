@@ -137,14 +137,18 @@ def get_group_id(group: str) -> int:
         return -1
 
 
+def get_xpra_group() -> str:
+    return os.environ.get("XPRA_GROUP", "xpra")
+
+
 def find_group(uid: int) -> int:
     # try harder to use a valid group,
     # since we're going to chown files:
     username = get_username_for_uid(uid)
     groups = get_groups(username)
-    from xpra.common import GROUP
-    if GROUP in groups:
-        return get_group_id(GROUP)
+    xpra_group = get_xpra_group()
+    if xpra_group in groups:
+        return get_group_id(xpra_group)
     try:
         import pwd
         pw = pwd.getpwuid(uid)
