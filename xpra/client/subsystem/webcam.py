@@ -66,21 +66,7 @@ class WebcamForwarder(StubClientMixin):
         self.server_virtual_video_devices = 0
         log("webcam forwarding: %s", self.webcam_forwarding)
 
-    def load(self):
-        if not self.webcam_forwarding:
-            return
-        with OSEnvContext(LANG="C", LC_ALL="C"):
-            try:
-                import cv2
-                from PIL import Image
-                assert cv2 and Image
-            except ImportError as e:
-                log("init webcam failure", exc_info=True)
-                if WIN32:
-                    log.info("opencv not found:")
-                    log.info(" %s", e)
-                    log.info(" webcam forwarding is not available")
-                self.webcam_forwarding = False
+    def load(self) -> None:
         self.connect("suspend", self.suspend_webcam)
         self.connect("resume", self.resume_webcam)
 
@@ -123,7 +109,22 @@ class WebcamForwarder(StubClientMixin):
 
     ######################################################################
     def start_sending_webcam(self) -> None:
+        if not self.webcam_forwarding:
+            return
         with self.webcam_lock:
+            with OSEnvContext(LANG="C", LC_ALL="C"):
+                try:
+                    import cv2
+                    from PIL import Image
+                    assert cv2 and Image
+                except ImportError as e:
+                    log("init webcam failure", exc_info=True)
+                    if WIN32:
+                        log.info("opencv not found:")
+                        log.info(" %s", e)
+                        log.info(" webcam forwarding is not available")
+                    self.webcam_forwarding = False
+                    return
             if not self.webcam_send_timer:
                 start_thread(self.do_start_sending_webcam, "start-sending-webcam",
                              daemon=True, args=(self.webcam_option, ))
