@@ -252,7 +252,7 @@ class EncodingServer(StubServerMixin):
         if not ss:
             return
         config = typedict(packet.get_dict(1))
-        log.warn("new encoding config for %s: %s", ss, config)
+        log("new encoding config for %s: %s", ss, config)
         ss.parse_encoding_caps(typedict(), config)
         if is_windows_source(ss):
             ss.reinit_encodings(self)
