@@ -139,17 +139,16 @@ class AudioClient(StubClientMixin):
     def load(self):
         self.connect("suspend", self.suspend_audio)
         self.connect("resume", self.resume_audio)
-        pa_props = get_pa_info()
         if BACKWARDS_COMPATIBLE:
             self.audio_properties = self.query_audio()
-            self.audio_properties.update(pa_props)
+            self.audio_properties.update(get_pa_info())
             return
 
         def do_load() -> None:
             # set `self.audio_properties` last when loading is complete:
-            sleep(1)
+            sleep(1.5)
             audio_properties = self.query_audio()
-            audio_properties.update(pa_props)
+            audio_properties.update(get_pa_info())
             self.audio_properties = audio_properties
             if self.wants_audio_capabilities:
                 self.send_audio_capabilities()
