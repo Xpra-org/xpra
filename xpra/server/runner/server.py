@@ -2,12 +2,12 @@
 # Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-from xpra.util.signal_emitter import SignalEmitter
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.common import ConnectionMessage
 from xpra.net.common import Packet
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.server.runner.factory import get_server_base_class
 from xpra.log import Logger
 
