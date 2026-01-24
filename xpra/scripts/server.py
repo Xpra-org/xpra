@@ -51,7 +51,8 @@ from xpra.os_util import (
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr, csv
 from xpra.util.io import is_writable, stderr_print
-from xpra.util.env import unsetenv, envbool, envint, osexpand, get_saved_env, get_saved_env_var, source_env
+from xpra.util.env import unsetenv, envbool, envint, osexpand, get_saved_env, get_saved_env_var, source_env, \
+    OSEnvContext
 from xpra.util.child_reaper import get_child_reaper
 from xpra.platform.dotxpra import DotXpra
 
@@ -411,8 +412,11 @@ def make_encoder_server():
 
 
 def make_runner_server():
-    from xpra.server.runner.server import RunnerServer
-    return RunnerServer()
+    with OSEnvContext():
+        # unit test env var would inject SignalEmitter class twice:
+        os.environ.pop("XPRA_UNIT_TEST", None)
+        from xpra.server.runner.server import RunnerServer
+        return RunnerServer()
 
 
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> bool:
