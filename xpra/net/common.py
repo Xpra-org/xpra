@@ -43,7 +43,7 @@ DEFAULT_PORTS: dict[str, int] = {
     "ssh": 22,
     "tcp": DEFAULT_PORT,
     "vnc": 5900,
-    "quic": 20000,
+    "quic": 14500,
 }
 
 HttpResponse: TypeAlias = tuple[int, dict, bytes]
