@@ -1,0 +1,16 @@
+fake-cuda
+gstreamer1-plugin-timestamp
+libyuv
+openh264
+
+python3-cython
+python3-pycuda
+python3-pynvml
+python3-pyu2f
+python3-uinput
+python3-cairo
+python3-wheel
+python3-pylsqpack
+python3-aioquic
+python3-pyopengl
+xpra
