@@ -28,6 +28,7 @@ Source0:		https://files.pythonhosted.org/packages/source/p/pyu2f/pyu2f-%{version
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Requires:       %{python3}
 BuildRequires:  %{python3}-devel
+BuildRequires:  %{python3}-setuptools
 
 %description
 pyu2f provides functionality for interacting with a U2F device over USB.
