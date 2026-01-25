@@ -62,8 +62,6 @@ CLOSED_EXCEPTIONS = ()
 
 def can_retry(e) -> bool | str:
     if isinstance(e, socket.timeout):
-        import traceback
-        traceback.print_stack()
         return "socket.timeout"
     if isinstance(e, BlockingIOError):
         return True
