@@ -25,7 +25,6 @@ from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS, st
     print_number
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
-from xpra.net.common import verify_hyperv_available, BACKWARDS_COMPATIBLE
 from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, SOCKET_TYPES, IP_SOCKTYPES, URL_MODES
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
@@ -254,6 +253,8 @@ def normalize_display_name(display_name: str) -> str:
 
     # fixup the legacy format "tcp:host:port"
     pos = display_name.find(":")
+    # duplicated to avoid import:
+    BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
     if BACKWARDS_COMPATIBLE:
         legacy_ssh = re.search(r"^ssh:(\w([\w-]{0,61}\w)?):(\d{1,5})$", display_name)
         if legacy_ssh:
@@ -437,6 +438,7 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
         add_query()
         vmid = parse_hyperv_vmid(parsed.hostname)
         service = parse_hyperv_serviceid(parsed.port)
+        from xpra.net.common import verify_hyperv_available
         verify_hyperv_available()
         desc.update(
             {

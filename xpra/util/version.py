@@ -16,7 +16,6 @@ from xpra.util.env import envbool
 from xpra.os_util import BITS, POSIX, WIN32, OSX
 from xpra.util.io import get_util_logger
 from xpra.util.system import get_linux_distribution, platform_release, platform_name
-from xpra.net.common import FULL_INFO
 
 XPRA_VERSION: Final[str] = xpra.__version__
 XPRA_NUMERIC_VERSION: tuple[int] = xpra.__version_info__
@@ -247,22 +246,24 @@ def parse_version(v) -> tuple[Any]:
     return tuple(v or ())
 
 
-def vtrim(v, parts=FULL_INFO + 1):
+def vtrim(v):
+    from xpra.net.common import FULL_INFO
+    parts = FULL_INFO + 1
     if isinstance(v, (list, tuple)):
         return v[:parts]
     return v
 
 
-def dict_version_trim(d, parts=FULL_INFO + 1) -> dict:
+def dict_version_trim(d) -> dict:
     """
     trims version numbers from info dictionaries
     """
 
     def vfilt(k, v):
         if k.endswith("version") and isinstance(v, (list, tuple)):
-            v = vtrim(v, parts)
+            v = vtrim(v)
         elif isinstance(v, dict):
-            return k, dict_version_trim(v, parts)
+            return k, dict_version_trim(v)
         return k, v
 
     return dict(vfilt(k, v) for k, v in d.items())

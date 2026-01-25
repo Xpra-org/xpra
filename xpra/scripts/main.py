@@ -28,7 +28,6 @@ from typing import Any, NoReturn, Final
 from collections.abc import Callable, Iterable
 
 from xpra.common import noerr, noop, may_show_progress, may_notify_client
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import (
@@ -933,7 +932,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         from xpra.gtk.dialogs import toolbox
         return toolbox.main(args)
     if mode == "initenv":
-        assert BACKWARDS_COMPATIBLE
+        # legacy subcommand should be removed in v7
         if not POSIX:
             raise InitExit(ExitCode.UNSUPPORTED, "initenv is not supported on this OS")
         from xpra.server.runner_script import write_runner_shell_scripts
@@ -2089,6 +2088,7 @@ def set_client_features(opts) -> None:
     features.ssh = b(opts.ssh)
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
+    from xpra.net.common import BACKWARDS_COMPATIBLE
     features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
     features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
     features.ssh_agent = envbool("XPRA_SSH_AGENT", True)
