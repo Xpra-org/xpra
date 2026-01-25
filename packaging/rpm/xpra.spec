@@ -77,7 +77,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.4.1
+Version:			6.4.2
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1084,6 +1084,28 @@ fi
 
 
 %changelog
+* Sun Jan 25 2026 Antoine Martin <antoine@xpra.org> 6.4.2-10
+- Platforms, build and packaging:
+   `cx_Freeze` update broke the packaging script
+- SSH:
+   prefer non-dot ssh paths on MS Windows
+   try harder to locate key files using key directories + fix tests
+   only log missing fingerprints if the keyfile exists
+- Major:
+   handle `notify2` backend failures gracefully
+   honour the `XPRA_USERNAME` environment variable in all code paths
+   `resize-display=yes:none` was not honoured
+- Minor:
+   use software Gsk renderer by default
+   make it possible to disable region tracking
+   honour the `XPRA_MONITOR_CHANGE_REINIT` environment variable
+   `XPRA_MIN_DPI` would actually clamp the DPI to that value
+- Cosmetic:
+   invalid syntax used in man page
+   better backwards compatibility for exposing version data
+   make socket eof detection less spammy
+   `XPRA_MIN_COMPRESS_SIZE` environment variable did not match its intent
+
 * Sun Jan 11 2026 Antoine Martin <antoine@xpra.org> 6.4.1-10
 - Platforms, build and packaging:
    cython 3.2.4
