@@ -25,7 +25,7 @@ PERFORMANCE_ORDER: Sequence[str] = ("none", "lz4", "brotli")
 # require compression (disallow 'none'):
 PERFORMANCE_COMPRESSION: Sequence[str] = ("lz4", "brotli")
 
-MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", -1)
+MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 MAX_DECOMPRESSED_SIZE: int = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
 
 

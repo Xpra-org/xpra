@@ -40,7 +40,7 @@ from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net.compression import (
-    decompress,
+    decompress, MIN_COMPRESS_SIZE,
     InvalidCompressionException, Compressed, LevelCompressed, Compressible, LargeStructure,
 )
 from xpra.net import packet_encoding
@@ -62,7 +62,6 @@ LOG_RAW_PACKET_SIZE = envbool("XPRA_LOG_RAW_PACKET_SIZE", False)
 # inline compressed data in packet if smaller than:
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
 FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
-MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 SEND_INVALID_PACKET = envint("XPRA_SEND_INVALID_PACKET", 0)
 SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_DATA", b"ZZinvalid-packetZZ"))
 ALIAS_INFO = envbool("XPRA_ALIAS_INFO", False)
