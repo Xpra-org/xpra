@@ -345,7 +345,7 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1) -> list[tuple[int, in
     if not display:
         return []
     MIN_DPI = envint("XPRA_MIN_DPI", 10)
-    MAX_DPI = envint("XPRA_MIN_DPI", 500)
+    MAX_DPI = envint("XPRA_MAX_DPI", 500)
 
     def dpi(size_pixels: int, size_mm: int) -> int:
         if size_mm == 0:

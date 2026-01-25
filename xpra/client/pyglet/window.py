@@ -10,7 +10,7 @@ from pyglet.window import Window, event
 from pyglet.image import ImageData, SolidColorImagePattern
 from pyglet.sprite import Sprite
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import (
     POINTER_MOTION, POINTER_BUTTON,
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE, WINDOW_CLOSE,

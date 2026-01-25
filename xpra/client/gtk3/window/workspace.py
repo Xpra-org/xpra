@@ -12,7 +12,8 @@ from xpra.util.system import is_Wayland, is_X11
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
-from xpra.common import WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, noop
+from xpra.common import noop
+from xpra.constants import WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.gtk.util import get_default_root_window
 from xpra.log import Logger
 

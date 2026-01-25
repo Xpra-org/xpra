@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from xpra.util.env import envint
 from xpra.os_util import OSX
-from xpra.net.common import Packet
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
 from xpra.util.version import vtrim
@@ -19,7 +19,6 @@ from xpra.codecs.loader import get_codec, codec_versions, load_codec, unload_cod
 from xpra.codecs.video import getVideoHelper
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
-from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
 
 log = Logger("encoding")
 

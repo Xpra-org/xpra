@@ -8,7 +8,8 @@ from xpra.platform.systray import get_backends
 from xpra.os_util import WIN32, OSX
 from xpra.util.objects import make_instance
 from xpra.util.env import envint, envbool
-from xpra.common import XPRA_APP_ID, ConnectionMessage
+from xpra.net.constants import ConnectionMessage
+from xpra.constants import XPRA_APP_ID
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 

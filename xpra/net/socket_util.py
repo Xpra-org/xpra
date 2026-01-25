@@ -12,10 +12,10 @@ from importlib.util import find_spec
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from xpra.common import SocketState, noerr, SizedBuffer, noop
+from xpra.common import noerr, SizedBuffer, noop
 from xpra.scripts.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
-from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
+from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, ABSTRACT_SOCKET_PREFIX, AUTO_ABSTRACT_SOCKET, SocketState
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SocketConnection, SOCKET_TIMEOUT
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id, gi_import, get_xpra_group,

@@ -9,11 +9,11 @@ from typing import Any
 from importlib import import_module
 from collections.abc import Sequence
 
-from xpra.common import ALL_CLIPBOARDS, BACKWARDS_COMPATIBLE
+from xpra.clipboard.common import ALL_CLIPBOARDS
 from xpra.client.base.stub import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
 from xpra.platform.clipboard import get_backend_module
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.net import compression
 from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.objects import typedict

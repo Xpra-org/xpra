@@ -6,7 +6,7 @@
 import os
 from typing import Any, NoReturn
 
-from xpra.common import FULL_INFO
+from xpra.net.common import FULL_INFO
 from xpra.util.io import filedata_nocrlf
 from xpra.util.str_fn import strtobytes, csv, repr_ellipsized
 from xpra.util.objects import typedict

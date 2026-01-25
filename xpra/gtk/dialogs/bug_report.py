@@ -10,7 +10,7 @@ import time
 from typing import Any
 from collections.abc import Callable
 
-from xpra.common import ScreenshotData, noop
+from xpra.common import noop
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.info import get_display_info
@@ -21,9 +21,9 @@ from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
 from xpra.util.str_fn import nonl, repr_ellipsized, hexstr
-from xpra.util.objects import typedict
+from xpra.util.objects import typedict, ScreenshotData
 from xpra.util.env import envint
-from xpra.common import FULL_INFO
+from xpra.net.common import FULL_INFO
 from xpra.log import Logger
 
 log = Logger("util")

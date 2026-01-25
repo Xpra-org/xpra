@@ -18,10 +18,11 @@ from xpra.scripts.config import InitExit
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
-from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE, noop
-from xpra.net.common import Packet, PacketElement
+from xpra.common import noop
+from xpra.constants import MAX_WINDOW_SIZE, WORKSPACE_NAMES
+from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_CREATE, WINDOW_METADATA
-from xpra.server import features, ServerExitMode
+from xpra.server import features, ServerExitMode, CLOBBER_UPGRADE
 from xpra.util.gobject import one_arg_signal, n_arg_signal, to_gsignals
 from xpra.x11.common import Unmanageable, get_wm_name, X11Event
 from xpra.x11.bindings.core import constants, get_root_xid

@@ -8,7 +8,7 @@ from typing import Any, Final
 
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
-from xpra.common import MAX_WINDOW_SIZE
+from xpra.constants import MAX_WINDOW_SIZE
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xsync, xswallow, xlog
 from xpra.x11.common import Unmanageable, FRAME_EXTENTS, X11Event

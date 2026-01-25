@@ -20,9 +20,10 @@ from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.common import (
-    NotificationID, DEFAULT_METADATA_SUPPORTED, BACKWARDS_COMPATIBLE,
     may_notify_client, force_size_constraint,
 )
+from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

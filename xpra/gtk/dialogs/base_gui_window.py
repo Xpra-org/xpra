@@ -16,7 +16,8 @@ from xpra.gtk.dialogs.util import hb_button, nearest_icon_size
 from xpra.os_util import gi_import, WIN32
 from xpra.util.env import IgnoreWarningsContext
 from xpra.exit_codes import exit_str
-from xpra.common import NotificationID, noop
+from xpra.common import noop
+from xpra.constants import NotificationID
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 

@@ -8,7 +8,8 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.client.base.stub import StubClientMixin
-from xpra.common import noop, BACKWARDS_COMPATIBLE
+from xpra.common import noop
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import COMMAND_START
 from xpra.util.parsing import str_to_bool
 from xpra.util.objects import typedict

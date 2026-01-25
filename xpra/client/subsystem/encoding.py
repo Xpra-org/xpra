@@ -13,8 +13,9 @@ from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
 from xpra.util.parsing import parse_bool_or_int
-from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, noop, BACKWARDS_COMPATIBLE
-from xpra.net.common import Packet
+from xpra.common import noop
+from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net import compression
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv

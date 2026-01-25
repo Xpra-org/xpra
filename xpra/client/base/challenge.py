@@ -13,7 +13,8 @@ from xpra.platform.info import get_username
 from xpra.scripts.config import InitExit
 from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
 from xpra.net.common import Packet
-from xpra.common import ConnectionMessage, noop, may_show_progress
+from xpra.common import noop, may_show_progress
+from xpra.net.constants import ConnectionMessage
 from xpra.util.io import use_gui_prompt
 from xpra.util.env import envbool
 from xpra.util.parsing import parse_simple_dict

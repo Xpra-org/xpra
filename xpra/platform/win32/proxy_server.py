@@ -10,7 +10,7 @@ from collections.abc import Sequence
 
 from xpra.server.proxy.server import ProxyServer as _ProxyServer, get_proxy_env
 from xpra.platform.paths import get_app_dir
-from xpra.common import SocketState
+from xpra.net.constants import SocketState
 from xpra.util.env import envbool
 from xpra.util.io import pollwait, which
 from xpra.log import Logger

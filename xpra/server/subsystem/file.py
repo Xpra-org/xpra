@@ -12,7 +12,8 @@ from typing import Any
 from xpra.util.stats import std_unit
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
-from xpra.common import NotificationID, may_notify_client
+from xpra.common import may_notify_client
+from xpra.constants import NotificationID
 from xpra.net.common import Packet
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubServerMixin

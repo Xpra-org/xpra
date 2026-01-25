@@ -12,8 +12,8 @@ from xpra.os_util import gi_import
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.objects import typedict
 from xpra.keyboard.common import DELAY_KEYBOARD_DATA
-from xpra.common import noerr, BACKWARDS_COMPATIBLE
-from xpra.net.common import Packet
+from xpra.common import noerr
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 

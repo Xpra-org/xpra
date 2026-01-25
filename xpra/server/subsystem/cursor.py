@@ -5,8 +5,7 @@
 
 from typing import Any
 
-from xpra.common import BACKWARDS_COMPATIBLE
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin

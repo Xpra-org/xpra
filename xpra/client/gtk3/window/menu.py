@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from xpra.os_util import gi_import
 from xpra.client.gtk3.menu_helper import GTKMenuHelper
 from xpra.gtk.widget import checkitem
-from xpra.common import RESOLUTION_ALIASES
+from xpra.constants import RESOLUTION_ALIASES
 from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 

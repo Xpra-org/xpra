@@ -10,7 +10,8 @@ from collections.abc import Callable
 from time import monotonic
 from subprocess import Popen
 
-from xpra.common import noop, BACKWARDS_COMPATIBLE
+from xpra.common import noop
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.env import envbool

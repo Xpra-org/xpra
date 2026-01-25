@@ -5,7 +5,7 @@
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
-from xpra.common import ConnectionMessage
+from xpra.net.constants import ConnectionMessage
 from xpra.net.common import Packet
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.server.runner.factory import get_server_base_class

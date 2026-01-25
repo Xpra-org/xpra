@@ -12,7 +12,10 @@ from xpra.util.objects import typedict, reverse_dict
 from xpra.util.str_fn import Ellipsizer, csv
 from xpra.util.env import envbool, ignorewarnings
 from xpra.os_util import gi_import, OSX, WIN32
-from xpra.common import BACKWARDS_COMPATIBLE, RESOLUTION_ALIASES, ConnectionMessage, uniq
+from xpra.common import uniq
+from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.net.constants import ConnectionMessage
+from xpra.constants import RESOLUTION_ALIASES
 from xpra.client.gtk3.menu_helper import (
     GTKMenuHelper,
     BANDWIDTH_MENU_OPTIONS,

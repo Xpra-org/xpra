@@ -3,12 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeAlias
 from collections.abc import Callable
 from abc import abstractmethod
 
-from xpra.util.str_fn import strtobytes, bytestostr
+from xpra.util.str_fn import strtobytes, bytestostr, repr_ellipsized
 from xpra.util.io import get_util_logger
+
+ScreenshotData: TypeAlias = tuple[int, int, str, int, bytes]
 
 
 class Scheduler(Protocol):
@@ -318,9 +320,15 @@ def merge_dicts(a: dict[str, Any], b: dict[str, Any], path: list[str] | None = N
     """ merges b into a """
     if path is None:
         path = []
+    from xpra.util.env import envbool
+    warn = envbool("XPRA_DICTMERGE_WARNINGS", False)
     for key in b:
         if key in a:
             if isinstance(a[key], dict) and isinstance(b[key], dict):
+                if warn:
+                    get_util_logger().warn(f"Warning: merging dictionaries at path {path!r}", backtrace=True)
+                    get_util_logger().warn(" a=%s", repr_ellipsized(a))
+                    get_util_logger().warn(" b=%s", repr_ellipsized(b))
                 merge_dicts(a[key], b[key], path + [str(key)])
             elif a[key] == b[key]:
                 pass  # same leaf value

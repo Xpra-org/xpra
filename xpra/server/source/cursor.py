@@ -8,7 +8,7 @@ from io import BytesIO
 from typing import Any
 from collections.abc import Sequence, Callable
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import CURSOR_DATA, CURSOR_DEFAULT
 from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection

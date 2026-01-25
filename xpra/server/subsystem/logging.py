@@ -12,10 +12,10 @@ from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
-from xpra.common import noop, BACKWARDS_COMPATIBLE
+from xpra.common import noop
 from xpra.net.packet_type import LOGGING_EVENT
 from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger, set_global_logging_handler, get_info as get_log_info

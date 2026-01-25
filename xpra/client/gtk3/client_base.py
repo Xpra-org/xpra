@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
 
-from xpra.common import noop, may_show_progress, MIN_VREFRESH, MAX_VREFRESH, BACKWARDS_COMPATIBLE, may_notify_client
+from xpra.common import noop, may_show_progress, may_notify_client
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
@@ -23,11 +23,13 @@ from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland
 from xpra.util.io import load_binary_file
-from xpra.net.common import Packet
-from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, NotificationID, DEFAULT_METADATA_SUPPORTED, noerr
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.common import noerr
+from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
+from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.util.stats import std_unit
 from xpra.scripts.config import InitExit
-from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, MIN_VREFRESH, MAX_VREFRESH
 from xpra.gtk.cursors import cursor_types, get_default_cursor
 from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow

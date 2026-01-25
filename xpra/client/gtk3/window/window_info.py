@@ -7,7 +7,8 @@ from xpra.os_util import gi_import
 from xpra.util.objects import AtomicInteger
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import IgnoreWarningsContext
-from xpra.common import gravity_str, WORKSPACE_UNSET
+from xpra.common import gravity_str
+from xpra.constants import WORKSPACE_UNSET
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf

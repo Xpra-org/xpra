@@ -5,13 +5,15 @@
 
 from typing import Any
 
-from xpra.common import SYNC_ICC
+from xpra.util.env import envbool
 from xpra.util.str_fn import hexstr
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("screen")
+
+SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", True)
 
 
 class ICCServer(StubServerMixin):

@@ -8,8 +8,7 @@ import os
 import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.common import BACKWARDS_COMPATIBLE
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.server.source.stub import StubClientConnection
 

@@ -9,7 +9,8 @@ from typing import TypeAlias
 
 from xpra.util.env import osexpand, envint
 from xpra.log import Logger
-from xpra.common import NotificationID, noop
+from xpra.common import noop
+from xpra.constants import NotificationID
 
 log = Logger("notify")
 

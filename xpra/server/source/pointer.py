@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server.source.stub import StubClientConnection
 from xpra.util.objects import typedict
 from xpra.log import Logger

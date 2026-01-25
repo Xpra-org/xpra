@@ -12,7 +12,7 @@ from xpra.util.env import OSEnvContext
 from xpra.util.thread import start_thread
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.common import FULL_INFO
+from xpra.net.common import FULL_INFO
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 

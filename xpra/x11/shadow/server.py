@@ -9,7 +9,8 @@ from typing import Any
 from xpra.net.packet_type import DISPLAY_SCREENSHOT
 from xpra.server.base import ServerBase
 from xpra.net.compression import Compressed
-from xpra.common import NotificationID, may_notify_client
+from xpra.common import may_notify_client
+from xpra.constants import NotificationID
 from xpra.os_util import gi_import
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase

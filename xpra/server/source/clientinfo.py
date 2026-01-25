@@ -8,7 +8,7 @@ from collections.abc import Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std
-from xpra.common import FULL_INFO
+from xpra.net.common import FULL_INFO
 from xpra.util.version import vparts
 from xpra.server.source.stub import StubClientConnection
 from xpra.util.system import platform_name

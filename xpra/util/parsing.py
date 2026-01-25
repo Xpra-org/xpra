@@ -9,7 +9,8 @@ import binascii
 from typing import Any
 from collections.abc import Sequence, Callable
 
-from xpra.util.env import envfloat
+from xpra.constants import RESOLUTION_ALIASES
+from xpra.util.env import envfloat, envint
 from xpra.log import Logger
 
 
@@ -25,6 +26,7 @@ SCALING_OPTIONS = [float(x) for x in
                                   "0.25,0.5,0.666,1,1.25,1.5,2.0,3.0,4.0,5.0").split(",")
                    if MAX_SCALING >= float(x) >= MIN_SCALING]
 SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000")) / 1000
+DEFAULT_REFRESH_RATE = envint("XPRA_DEFAULT_REFRESH_RATE", 50*1000)
 
 
 def r4cmp(v, rounding=1000.0):  # ignore small differences in floats for scale values
@@ -362,3 +364,154 @@ def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> int | No
         return int(f)
     except Exception as e:
         raise ValueError(f"invalid value for {numtype} {v!r}: {e}") from None
+
+
+def parse_resolution(res_str, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple[int, int, int] | None:
+    if not res_str:
+        return None
+    s = res_str.upper()       # ie: 4K60
+    res_part = s
+    hz = get_refresh_rate_for_value(str(default_refresh_rate), DEFAULT_REFRESH_RATE)//1000
+    for sep in ("@", "K", "P"):
+        pos = s.find(sep)
+        if 0 < pos < len(s)-1:
+            res_part, hz = s.split(sep, 1)
+            if sep != "@":
+                res_part += sep
+            break
+    if res_part in RESOLUTION_ALIASES:
+        w, h = RESOLUTION_ALIASES[res_part]
+    else:
+        try:
+            parts = tuple(int(x) for x in res_part.replace(",", "x").split("X", 1))
+        except ValueError:
+            raise ValueError(f"failed to parse resolution {res_str!r}") from None
+        if len(parts) != 2:
+            raise ValueError(f"invalid resolution string {res_str!r}")
+        w = parts[0]
+        h = parts[1]
+    return w, h, int(hz)
+
+
+def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple | None:
+    from xpra.util.parsing import FALSE_OPTIONS
+    if not s or s.lower() in FALSE_OPTIONS:
+        return None
+    if s.lower() in ("none", "default"):
+        return ()
+    return tuple(parse_resolution(v, default_refresh_rate) for v in s.split(","))
+
+
+def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
+                          single_envkey="XPRA_DEFAULT_VFB_RESOLUTION",
+                          default_res="8192x4096",
+                          default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
+    s = os.environ.get(envkey)
+    if s:
+        return parse_resolutions(s, default_refresh_rate)
+    return (parse_resolution(os.environ.get(single_envkey, default_res), default_refresh_rate), )
+
+
+def get_refresh_rate_for_value(refresh_rate: str, invalue: int, multiplier=1) -> int:
+    if refresh_rate.lower() in ("none", "auto"):
+        # just leave it unchanged:
+        return invalue
+
+    def i(value, default: int) -> int:
+        try:
+            return int(value)
+        except ValueError:
+            return default
+
+    # refresh rate can be a value (ie: 40), or a range (10-50)
+    parts = refresh_rate.split("-", 1)
+    if len(parts) > 1:
+        minvr = i(parts[0], MIN_VREFRESH) * multiplier
+        maxvr = i(parts[1], MAX_VREFRESH) * multiplier
+        if minvr > maxvr:
+            raise ValueError("the minimum refresh rate cannot be greater than the maximum")
+        return min(maxvr, max(minvr, invalue))
+
+    minvr = MIN_VREFRESH * multiplier
+    maxvr = MAX_VREFRESH * multiplier
+    if refresh_rate.endswith("%") > 0:
+        mult = int(refresh_rate[:-1])  # ie: "80%" -> 80
+        value = round(invalue * mult / 100)
+        return min(maxvr, max(minvr, value))
+
+    try:
+        value = int(refresh_rate) * multiplier
+        return min(maxvr, max(minvr, value))
+    except ValueError:
+        pass
+    # fallback to client supplied value:
+    return invalue
+
+
+def adjust_monitor_refresh_rate(refresh_rate: str, mdef: dict[int, dict]) -> dict[int, dict]:
+    adjusted: dict[int, dict] = {}
+    for i, monitor in mdef.items():
+        # make a copy, don't modify in place!
+        # (as this may be called multiple times on the same input dict)
+        mprops = dict(monitor)
+        if refresh_rate != "auto":
+            value = int(monitor.get("refresh-rate", DEFAULT_REFRESH_RATE))
+            value = get_refresh_rate_for_value(refresh_rate, value, 1000)
+            if value:
+                mprops["refresh-rate"] = value
+        adjusted[i] = mprops
+    return adjusted
+
+
+def get_default_video_max_size() -> tuple[int, int]:
+    svalues = os.environ.get("XPRA_VIDEO_MAX_SIZE", "").replace("x", ",").split(",")
+    if len(svalues) == 2:
+        try:
+            return int(svalues[0]), int(svalues[0])
+        except (TypeError, ValueError):
+            pass
+    return 4096, 4096
+
+
+def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
+    from xpra.util.objects import typedict
+    validated: dict[int, dict[str, Any]] = {}
+    for i, mon_def in monitors.items():
+        vdef = validated.setdefault(int(i), {})
+        td = typedict(mon_def)
+        aconv: dict[str, Callable] = {
+            "geometry": td.inttupleget,
+            "primary": td.boolget,
+            "refresh-rate": td.intget,
+            "scale-factor": td.intget,
+            "width-mm": td.intget,
+            "height-mm": td.intget,
+            "manufacturer": td.strget,
+            "model": td.strget,
+            "subpixel-layout": td.strget,
+            "workarea": td.inttupleget,
+            "name": td.strget,
+        }
+        for attr, conv in aconv.items():
+            v = conv(attr)
+            if v is not None:
+                vdef[attr] = v
+        # generate a name if we don't have one:
+        name = vdef.get("name")
+        if not name:
+            manufacturer = vdef.get("manufacturer")
+            model = vdef.get("model")
+            if manufacturer and model:
+                # ie: 'manufacturer': 'DEL', 'model': 'DELL P2715Q'
+                if model.startswith(manufacturer):
+                    name = model
+                else:
+                    name = f"{manufacturer} {model}"
+            else:
+                name = manufacturer or model or f"{i}"
+            vdef["name"] = name
+    return validated
+
+
+MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 5)
+MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 144)

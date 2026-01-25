@@ -7,7 +7,7 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import Ellipsizer
 from xpra.server.source.stub import StubClientConnection
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS

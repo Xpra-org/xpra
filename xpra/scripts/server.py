@@ -21,7 +21,8 @@ from xpra.scripts.session import (
     load_session_file, save_session_file
 )
 from xpra.util.io import info, warn, wait_for_socket, which
-from xpra.util.parsing import parse_str_dict, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, str_to_bool, parse_bool_or
+from xpra.util.parsing import parse_str_dict, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, str_to_bool, parse_bool_or, \
+    parse_resolutions, get_refresh_rate_for_value
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.main import (
     no_gtk, nox,
@@ -38,10 +39,11 @@ from xpra.scripts.config import (
     xvfb_command,
 )
 from xpra.common import (
-    CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, BACKWARDS_COMPATIBLE,
-    ConnectionMessage, SocketState, noerr, noop,
-    get_refresh_rate_for_value, parse_resolutions,
+    noerr, noop,
 )
+from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
+from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import (
     POSIX, WIN32, OSX,

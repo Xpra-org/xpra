@@ -13,15 +13,15 @@ from xpra.client.gui.factory import get_client_base_classes
 from xpra.client.base.client import XpraClientBase
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
-from xpra.common import (
-    FULL_INFO, BACKWARDS_COMPATIBLE, NotificationID, ConnectionMessage,
-    noerr, get_run_info, may_notify_client,
-)
-from xpra.net.common import Packet, print_proxy_caps
+from xpra.common import noerr, may_notify_client
+from xpra.net.constants import ConnectionMessage
+from xpra.constants import NotificationID
+from xpra.net.common import Packet, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC
 from xpra.os_util import gi_import
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
+from xpra.util.system import get_run_info
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode, ExitValue

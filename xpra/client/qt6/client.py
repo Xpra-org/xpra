@@ -15,9 +15,8 @@ from PyQt6.QtNetwork import QTcpSocket
 from PyQt6.QtWidgets import QApplication
 
 from xpra import __version__
-from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.rencodeplus.rencodeplus import dumps, loads
 
 from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_DRAW_ACK

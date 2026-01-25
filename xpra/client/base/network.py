@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from xpra.common import FULL_INFO
+from xpra.net.common import FULL_INFO
 from xpra.net.net_util import get_network_caps, get_info
 from xpra.client.base.stub import StubClientMixin
 

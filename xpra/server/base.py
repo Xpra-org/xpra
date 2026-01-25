@@ -11,8 +11,9 @@ from typing import Any
 
 from xpra.server.core import ServerCore
 from xpra.util.background_worker import add_work_item
-from xpra.common import FULL_INFO, noop, subsystem_name, ConnectionMessage, BACKWARDS_COMPATIBLE
-from xpra.net.common import Packet, PacketElement
+from xpra.common import noop, subsystem_name
+from xpra.net.constants import ConnectionMessage
+from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.os_util import WIN32, gi_import
 from xpra.platform.dotxpra import DotXpra
 from xpra.util.objects import typedict, merge_dicts

@@ -10,7 +10,10 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.common import NotificationID, ConnectionMessage, BACKWARDS_COMPATIBLE, may_notify_client
+from xpra.common import may_notify_client
+from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.net.constants import ConnectionMessage
+from xpra.constants import NotificationID
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 

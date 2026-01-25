@@ -16,7 +16,7 @@ from xpra.util.env import envbool
 from xpra.os_util import BITS, POSIX, WIN32, OSX
 from xpra.util.io import get_util_logger
 from xpra.util.system import get_linux_distribution, platform_release, platform_name
-from xpra.common import FULL_INFO
+from xpra.net.common import FULL_INFO
 
 XPRA_VERSION: Final[str] = xpra.__version__
 XPRA_NUMERIC_VERSION: tuple[int] = xpra.__version_info__

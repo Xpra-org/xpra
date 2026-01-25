@@ -27,8 +27,8 @@ import traceback
 from typing import Any, NoReturn, Final
 from collections.abc import Callable, Iterable
 
-from xpra.common import SocketState, noerr, noop, may_show_progress, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE, \
-    may_notify_client
+from xpra.common import noerr, noop, may_show_progress, may_notify_client
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import (
@@ -37,7 +37,7 @@ from xpra.util.str_fn import (
 )
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
 from xpra.util.parsing import parse_scaling, TRUE_OPTIONS, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OFF_OPTIONS, str_to_bool, \
-    parse_bool_or
+    parse_bool_or, get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data
 from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
@@ -65,7 +65,7 @@ from xpra.scripts.config import (
     make_defaults_struct, has_audio_support, name_to_field,
     xvfb_command,
 )
-from xpra.net.common import SOCKET_TYPES
+from xpra.net.constants import SOCKET_TYPES, SocketState
 from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format
 
 assert callable(error), "used by modules importing this function from here"
@@ -1747,7 +1747,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
 
     except Exception as e:
         may_show_progress(app, 100, f"failure: {e}")
-        from xpra.common import NotificationID
+        from xpra.constants import NotificationID
         body = str(e)
         if body.startswith("failed to connect to"):
             lines = body.split("\n")
@@ -1872,7 +1872,6 @@ def make_progress_process(title="Xpra") -> Popen | None:
             stdin.flush()
         if pct == 100:
             # it should exit on its own, but just in case:
-            from xpra.common import SPLASH_EXIT_DELAY
             glib = gi_import("GLib")
             glib.timeout_add(SPLASH_EXIT_DELAY * 1000 + 500, terminate)
 
@@ -2012,7 +2011,6 @@ def run_monitor_info(options, args: list[str]) -> int:
         verify_gdk_display(display)
     import json
     from xpra.gtk.info import get_monitors_info
-    from xpra.common import adjust_monitor_refresh_rate
     monitors = get_monitors_info()
     data = adjust_monitor_refresh_rate(options.refresh_rate, monitors)
     minfo = json.dumps(data, indent="\t")
@@ -2035,7 +2033,6 @@ def run_set_monitor(options, args: list[str]) -> int:
         mdata = jsondata
     import json
     monitors = json.loads(mdata)
-    from xpra.common import validated_monitor_data
     mdef = validated_monitor_data(monitors)
     if not mdef:
         raise InitExit(ExitCode.FAILURE, "invalid monitor data")
@@ -4917,3 +4914,4 @@ if __name__ == "__main__":  # pragma: no cover
     if not code:
         code = 0
     sys.exit(code)
+SPLASH_EXIT_DELAY: int = envint("XPRA_SPLASH_EXIT_DELAY", 4)

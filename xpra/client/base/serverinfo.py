@@ -13,7 +13,8 @@ from xpra.util.str_fn import bytestostr, std
 from xpra.util.objects import typedict
 from xpra.util.system import platform_name
 from xpra.net.packet_encoding import VALID_ENCODERS
-from xpra.common import FULL_INFO, skipkeys
+from xpra.common import skipkeys
+from xpra.net.common import FULL_INFO
 from xpra.client.base.stub import StubClientMixin
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger

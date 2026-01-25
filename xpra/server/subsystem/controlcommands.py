@@ -12,7 +12,8 @@ from time import monotonic
 from xpra.util.parsing import parse_scaling_value, from0to100, TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.common import ConnectionMessage, noop
+from xpra.common import noop
+from xpra.net.constants import ConnectionMessage
 from xpra.util.io import load_binary_file
 from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit

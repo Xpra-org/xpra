@@ -9,14 +9,13 @@ from typing import Any
 from collections.abc import Sequence
 from importlib import import_module
 
-from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.platform.features import (
     CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS,
     CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY,
 )
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger

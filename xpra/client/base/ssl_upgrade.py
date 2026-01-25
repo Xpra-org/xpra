@@ -4,7 +4,8 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.base.stub import StubClientMixin
-from xpra.net.common import Packet, SSL_UPGRADE
+from xpra.net.common import Packet
+from xpra.net.constants import SSL_UPGRADE
 from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode

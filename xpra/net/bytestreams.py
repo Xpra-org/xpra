@@ -11,10 +11,10 @@ import socket
 from typing import Any
 from collections.abc import Callable
 
-from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES, get_peercred_info
+from xpra.net.common import ConnectionClosedException, get_peercred_info, FULL_INFO
+from xpra.net.constants import IP_SOCKTYPES, TCP_SOCKTYPES
 from xpra.util.str_fn import csv
 from xpra.util.env import hasenv, envint, envbool, SilenceWarningsContext
-from xpra.common import FULL_INFO
 from xpra.util.thread import start_thread
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
@@ -62,6 +62,8 @@ CLOSED_EXCEPTIONS = ()
 
 def can_retry(e) -> bool | str:
     if isinstance(e, socket.timeout):
+        import traceback
+        traceback.print_stack()
         return "socket.timeout"
     if isinstance(e, BlockingIOError):
         return True

@@ -423,7 +423,7 @@ def get_info() -> dict[str, Any]:
         "format": LOG_FORMAT,
         "debug-modules": DEBUG_MODULES,
     }
-    from xpra.common import FULL_INFO
+    from xpra.net.common import FULL_INFO
     if FULL_INFO > 1:
         info["filters"] = STRUCT_KNOWN_FILTERS
     return info

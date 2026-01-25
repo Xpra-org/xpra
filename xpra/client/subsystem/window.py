@@ -21,12 +21,13 @@ from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 from collections.abc import Callable, Sequence
 
 from xpra.platform.gui import get_window_min_size, get_window_max_size
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import (
     POINTER_BUTTON, WINDOW_UNMAP, WINDOW_FOCUS, WINDOW_CLOSE, WINDOW_REFRESH, WINDOW_DRAW_ACK,
 )
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr, BACKWARDS_COMPATIBLE
+from xpra.common import noerr
+from xpra.constants import WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.platform.paths import get_icon_filename, get_python_execfile_command
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.client.gui.window_border import WindowBorder

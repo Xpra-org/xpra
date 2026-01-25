@@ -25,7 +25,7 @@ from xpra.util.str_fn import (
 )
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.thread import make_thread, start_thread
-from xpra.common import noop, SizedBuffer, BACKWARDS_COMPATIBLE
+from xpra.common import noop, SizedBuffer
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
@@ -34,9 +34,9 @@ from xpra.net.protocol.header import (
 )
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet,
-    MAX_PACKET_SIZE,
-    Packet, NetPacketType, PacketElement,
+    Packet, NetPacketType, PacketElement, BACKWARDS_COMPATIBLE,
 )
+from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net.compression import (

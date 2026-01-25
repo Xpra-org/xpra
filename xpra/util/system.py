@@ -8,7 +8,7 @@ import os
 import re
 import sys
 import signal
-from typing import Any
+from typing import Any, Sequence
 from subprocess import Popen, PIPE
 
 from xpra.os_util import POSIX, LINUX, OSX, WIN32
@@ -453,3 +453,65 @@ def can_use_fakescreenfps() -> bool:
         return get_distribution_version_id() == "10"
     # not sure:
     return False
+
+
+def get_run_info(subcommand="server") -> Sequence[str]:
+    from xpra.os_util import POSIX
+    from xpra.util.version import full_version_str, get_platform_info
+    from xpra.util.system import platform_name
+    from xpra.log import Logger
+    log = Logger("util")
+    run_info = [f"xpra {subcommand} version {full_version_str()}"]
+    try:
+        pinfo = get_platform_info()
+        osinfo = " on " + platform_name(sys.platform,
+                                        pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
+    except OSError:
+        pinfo = {}
+        log("platform name error:", exc_info=True)
+        osinfo = ""
+    if POSIX:
+        uid = os.getuid()
+        gid = os.getgid()
+        try:
+            import pwd
+            import grp
+
+            user = pwd.getpwuid(uid)[0]
+            group = grp.getgrgid(gid)[0]
+            run_info.append(f" {uid=} ({user}), {gid=} ({group})")
+        except (TypeError, KeyError):
+            log("failed to get user and group information", exc_info=True)
+            run_info.append(f" {uid=}, {gid=}")
+    run_info.append(" running with pid %s%s" % (os.getpid(), osinfo))
+    from xpra.net.common import FULL_INFO
+    vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO + 1])
+    arch = pinfo.get("machine", "")
+    if arch:
+        vinfo += f" {arch}"
+    run_info.append(f" {sys.implementation.name} {vinfo}")
+    mem_bytes = get_mem_size()
+    if mem_bytes:
+        LOW_MEM_LIMIT = 1024 * 1024 * 1024
+        if mem_bytes and mem_bytes <= LOW_MEM_LIMIT:
+            log.warn("Warning: only %iMB total system memory available", mem_bytes // (1024 ** 2))
+            log.warn(" this may not be sufficient")
+        else:
+            run_info.append(" with %.1fGB of system memory" % (mem_bytes / (1024.0 ** 3)))
+    return run_info
+
+
+def get_mem_size() -> int:
+    try:
+        mem_bytes = 0
+        if hasattr(os, "sysconf"):
+            mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+        if not mem_bytes and WIN32:
+            from xpra.platform.win32.info import get_total_physical_memory
+            mem_bytes = get_total_physical_memory()
+        return mem_bytes
+    except OSError:
+        from xpra.log import Logger
+        log = Logger("util")
+        log("init_memcheck", exc_info=True)
+    return 0

@@ -23,7 +23,7 @@ from xpra.net.protocol.factory import get_client_protocol_class, get_server_prot
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE, create_unix_domain_socket, handle_socket_error
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
-from xpra.net.common import Packet
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, get_machine_id
 from xpra.util.env import osexpand
 from xpra.exit_codes import ExitValue, ExitCode
@@ -34,7 +34,8 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
 from xpra.util.version import full_version_str
-from xpra.common import ConnectionMessage, SocketState, noerr, noop, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.common import noerr, noop
+from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.platform.dotxpra import DotXpra
 from xpra.log import Logger
 

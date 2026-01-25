@@ -15,7 +15,8 @@ from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
 from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_CREATE
-from xpra.common import noop, MoveResize, SOURCE_INDICATION_NORMAL
+from xpra.common import noop
+from xpra.constants import MoveResize, SOURCE_INDICATION_NORMAL
 from xpra.os_util import gi_import
 from xpra.log import Logger
 

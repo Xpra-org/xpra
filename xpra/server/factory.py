@@ -5,7 +5,7 @@
 
 
 from xpra.os_util import POSIX
-from xpra.common import FULL_INFO
+from xpra.net.common import FULL_INFO
 
 
 def get_server_base_classes() -> tuple[type, ...]:

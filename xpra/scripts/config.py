@@ -11,7 +11,7 @@ import shlex
 from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
-from xpra.common import noop, Self, BACKWARDS_COMPATIBLE
+from xpra.common import noop, Self
 from xpra.util.parsing import (
     TRUE_OPTIONS, FALSE_OPTIONS,
     str_to_bool, parse_bool_or, parse_bool_or_number, parse_number,
@@ -819,10 +819,6 @@ OPTION_TYPES: dict[str, Any] = {
     "env"               : list,
 }
 
-# options removed in v6,
-# don't show warnings when running with older config files:
-OLD_OPTIONS: Sequence[str] = ("fake-xinerama", "dbus-proxy", "proxy-video-encoders") if BACKWARDS_COMPATIBLE else ()
-
 
 # in the options list, available in session files,
 # but not on the command line:
@@ -1294,6 +1290,11 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
         Each option is strongly typed and invalid value are discarded.
         We get the required datatype from OPTION_TYPES
     """
+    # options removed in v6,
+    # don't show warnings when running with older config files:
+    from xpra.net.common import BACKWARDS_COMPATIBLE
+    OLD_OPTIONS: Sequence[str] = ("fake-xinerama", "dbus-proxy", "proxy-video-encoders") if BACKWARDS_COMPATIBLE else ()
+
     validations = OPTIONS_VALIDATION.copy()
     validations.update(extras_validation)
     option_types = OPTION_TYPES.copy()

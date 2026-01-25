@@ -24,7 +24,8 @@ from xpra.client.base.command import InfoTimerClient
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_nodock_command
 from xpra.util.stats import std_unit
-from xpra.common import gravity_str, SocketState, noerr
+from xpra.common import gravity_str, noerr
+from xpra.net.constants import SocketState
 from xpra.log import Logger
 
 log = Logger("gobject", "client")

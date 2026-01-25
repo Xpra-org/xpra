@@ -7,7 +7,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.server.source.stub import StubClientConnection
 from xpra.net.mmap.io import init_server_mmap

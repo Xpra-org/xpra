@@ -10,7 +10,7 @@ from math import ceil, floor
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.common import MAX_WINDOW_SIZE
+from xpra.constants import MAX_WINDOW_SIZE
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.x11.prop import prop_set

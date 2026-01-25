@@ -10,7 +10,7 @@ import socket
 import errno
 from collections.abc import Iterator, Sequence
 
-from xpra.common import SocketState
+from xpra.net.constants import SocketState
 from xpra.util.env import osexpand
 from xpra.util.io import is_socket, umask_context, get_util_logger
 from xpra.os_util import POSIX

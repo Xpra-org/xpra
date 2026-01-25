@@ -15,11 +15,13 @@ from xpra.x11.error import xlog, xsync, xswallow, XError
 from xpra.exit_codes import ExitCode
 from xpra.util.system import is_X11
 from xpra.scripts.config import FALSE_OPTIONS, InitExit
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.common import (
-    get_refresh_rate_for_value, parse_env_resolutions, parse_resolutions, may_notify_client,
-    MAX_WINDOW_SIZE, NotificationID, BACKWARDS_COMPATIBLE,
+    may_notify_client,
 )
+from xpra.constants import MAX_WINDOW_SIZE, NotificationID
+from xpra.util.parsing import parse_resolutions, parse_env_resolutions, get_refresh_rate_for_value, \
+    adjust_monitor_refresh_rate
 from xpra.x11.xroot_props import root_set, root_get, root_del
 from xpra.server.subsystem.display import DisplayManager
 from xpra.log import Logger
@@ -558,7 +560,6 @@ class X11DisplayManager(DisplayManager):
         if not mdef:
             return {}
         log(f"monitor definition from client {ss}: {mdef}")
-        from xpra.common import adjust_monitor_refresh_rate
         mdef = adjust_monitor_refresh_rate(self.refresh_rate, mdef)
         log("refresh-rate adjusted using %s: %s", self.refresh_rate, mdef)
         with xlog:

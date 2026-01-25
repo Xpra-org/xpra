@@ -15,18 +15,20 @@ from xpra.platform.gui import (
     get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name,
 )
 from xpra.scripts.main import check_display
-from xpra.net.common import MAX_PACKET_SIZE, Packet
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.common import (
-    noop, adjust_monitor_refresh_rate, get_refresh_rate_for_value,
-    FULL_INFO, SYNC_ICC, NotificationID, skipkeys, BACKWARDS_COMPATIBLE, may_notify_client,
+    noop, skipkeys, may_notify_client,
 )
+from xpra.constants import NotificationID
 from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
-    MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME, FALSE_OPTIONS,
+    MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME, FALSE_OPTIONS, get_refresh_rate_for_value,
+    adjust_monitor_refresh_rate,
 )
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.env import envint
+from xpra.util.env import envint, envbool
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
@@ -35,6 +37,7 @@ workspacelog = Logger("client", "workspace")
 scalinglog = Logger("scaling")
 
 MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
+SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", True)
 
 
 class DisplayClient(StubClientMixin):
@@ -278,6 +281,7 @@ class DisplayClient(StubClientMixin):
         self.send_icc_data()
 
     def verify_display_size(self):
+        log("verify_display_size()")
         skip_vfb_size_check = False  # if we decide not to use scaling, skip warnings
         if not fequ(self.xscale, 1.0) or not fequ(self.yscale, 1.0):
             # scaling is used, make sure that we need it and that the server can support it
@@ -374,8 +378,8 @@ class DisplayClient(StubClientMixin):
             self.may_adjust_scaling()
 
     def may_adjust_scaling(self) -> None:
-        log("may_adjust_scaling() server_is_desktop=%s, desktop_fullscreen=%s",
-            self.server_is_desktop, self.desktop_fullscreen)
+        scalinglog("may_adjust_scaling() server_is_desktop=%s, desktop_fullscreen=%s",
+                   self.server_is_desktop, self.desktop_fullscreen)
         if self.server_is_desktop and not self.desktop_fullscreen:
             # don't try to make it fit
             return

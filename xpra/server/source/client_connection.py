@@ -14,10 +14,10 @@ from queue import SimpleQueue
 
 from xpra.net.packet_type import INFO_RESPONSE
 from xpra.util.thread import start_thread
-from xpra.common import FULL_INFO, noop, BACKWARDS_COMPATIBLE
+from xpra.common import noop
 from xpra.util.objects import AtomicInteger, typedict, notypedict
 from xpra.util.env import envbool
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.compression import compressed_wrapper, Compressed, LevelCompressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.stub import StubClientConnection

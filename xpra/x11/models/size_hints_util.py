@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from xpra.common import MAX_WINDOW_SIZE
+from xpra.constants import MAX_WINDOW_SIZE
 from xpra.log import Logger
 
 log = Logger("x11", "window")

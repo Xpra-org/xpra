@@ -12,7 +12,8 @@ from xpra.common import noop, noerr
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger
 from xpra.net.bytestreams import SOCKET_TIMEOUT, SocketConnection, VSOCK_TIMEOUT
-from xpra.net.common import verify_hyperv_available, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX, DEFAULT_PORTS
+from xpra.net.common import verify_hyperv_available
+from xpra.net.constants import DEFAULT_PORTS, ABSTRACT_SOCKET_PREFIX, AUTO_ABSTRACT_SOCKET
 from xpra.os_util import WIN32
 from xpra.scripts.config import InitException, InitExit
 from xpra.util.parsing import TRUE_OPTIONS

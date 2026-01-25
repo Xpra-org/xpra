@@ -6,7 +6,7 @@
 from time import monotonic
 
 from xpra.os_util import gi_import
-from xpra.common import ScreenshotData
+from xpra.util.objects import ScreenshotData
 from xpra.codecs.image import ImageWrapper
 from xpra.gtk.pixbuf import pixbuf_save_to_memory
 from xpra.log import Logger

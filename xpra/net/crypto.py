@@ -11,7 +11,7 @@ from struct import pack
 from typing import Any
 from collections.abc import Iterable, Sequence
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv, print_nested_dict, strtobytes, hexstr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import parse_version

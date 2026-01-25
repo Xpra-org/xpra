@@ -13,8 +13,6 @@ import tempfile
 
 from collections.abc import Sequence
 
-from xpra.common import BACKWARDS_COMPATIBLE
-
 
 def do_get_desktop_background_paths() -> Sequence[str]:
     return [
@@ -47,7 +45,7 @@ def do_get_install_prefix() -> str:
 
 def do_get_resources_dir() -> str:
     # is there a better/cleaner way?
-    from xpra.common import DEFAULT_XDG_DATA_DIRS
+    from xpra.constants import DEFAULT_XDG_DATA_DIRS
     from xpra.platform.paths import get_install_prefix
     options = [
         get_install_prefix(),
@@ -117,7 +115,7 @@ def do_get_system_conf_dirs() -> list[str]:
 
 
 def do_get_system_menu_dirs() -> list[str]:
-    from xpra.common import DEFAULT_XDG_DATA_DIRS
+    from xpra.constants import DEFAULT_XDG_DATA_DIRS
     data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":")
     menu_dirs = []
     for data_dir in data_dirs:
@@ -174,7 +172,9 @@ def _get_xpra_runtime_dir() -> str:
 
 def do_get_socket_dirs() -> list[str]:
     SOCKET_DIRS = []
-    if BACKWARDS_COMPATIBLE:
+    from xpra.util.env import envbool
+    LEGACY_SOCKET_DIRS = envbool("XPRA_LEGACY_SOCKET_DIRS", True)
+    if LEGACY_SOCKET_DIRS:
         runtime_dir = _get_xpra_runtime_dir()
         if runtime_dir:
             # private, per user: XDG_RUNTIME_DIR/xpra
@@ -185,7 +185,7 @@ def do_get_socket_dirs() -> list[str]:
         SOCKET_DIRS.append("/run/xpra")
     elif os.path.exists("/var/run"):
         SOCKET_DIRS.append("/var/run/xpra")
-    if BACKWARDS_COMPATIBLE:
+    if LEGACY_SOCKET_DIRS:
         # Debian and Ubuntu often don't create a reliable XDG_RUNTIME_DIR
         # other distros may not create one when using "su"
         SOCKET_DIRS.append("~/.xpra")

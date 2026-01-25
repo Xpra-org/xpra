@@ -7,7 +7,8 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.util.objects import typedict
-from xpra.common import NotificationID, BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.constants import NotificationID
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 

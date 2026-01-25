@@ -396,7 +396,7 @@ class XpraMonitorServer(DesktopServerBase):
         elif action == "add":
             resolution = packet[2]
             if isinstance(resolution, str):
-                from xpra.common import parse_resolution
+                from xpra.util.parsing import parse_resolution
                 resolution = parse_resolution(resolution, self.refresh_rate)
             if not isinstance(resolution, (tuple, list)):
                 raise ValueError(f"invalid resolution: {resolution!r} ({type(resolution)}")

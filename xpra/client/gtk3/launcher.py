@@ -30,7 +30,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.env import IgnoreWarningsContext
-from xpra.net.common import DEFAULT_PORT
+from xpra.net.constants import DEFAULT_PORT
 from xpra.util.thread import start_thread
 from xpra.gtk.dialogs.about import about
 from xpra.gtk.dialogs.util import hb_button

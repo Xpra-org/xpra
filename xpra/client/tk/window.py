@@ -8,7 +8,7 @@ from io import BytesIO
 from tkinter import Toplevel, Label
 from PIL import Image, ImageTk
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import (
     POINTER_BUTTON, POINTER_MOTION,
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE,

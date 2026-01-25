@@ -17,11 +17,11 @@ from xpra.util.version import (
     XPRA_VERSION, version_str, get_version_info,
     get_build_info, get_host_info, parse_version,
 )
-from xpra.net.common import is_request_allowed, Packet
+from xpra.net.common import is_request_allowed, Packet, FULL_INFO
 from xpra.net.net_util import get_info as get_net_info
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.common import FULL_INFO, ConnectionMessage
+from xpra.net.constants import ConnectionMessage
 from xpra.util.parsing import str_to_bool
 from xpra.os_util import get_machine_id, POSIX, gi_import
 from xpra.util.child_reaper import get_child_reaper

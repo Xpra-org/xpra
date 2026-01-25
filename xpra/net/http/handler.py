@@ -13,8 +13,7 @@ from http.server import BaseHTTPRequestHandler
 from typing import Any
 from collections.abc import Iterable, Callable
 
-from xpra.common import FULL_INFO
-from xpra.net.common import HttpResponse
+from xpra.net.common import HttpResponse, FULL_INFO
 from xpra.net.http.common import EXTENSION_TO_MIMETYPE
 from xpra.util.io import load_binary_file
 from xpra.util.objects import AdHocStruct

@@ -8,8 +8,8 @@ import unittest
 from time import monotonic
 from collections.abc import Callable
 
-from xpra.common import BACKWARDS_COMPATIBLE, noop
-from xpra.net.common import Packet
+from xpra.common import noop
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.log import Logger
 from xpra.os_util import gi_import

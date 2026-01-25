@@ -7,7 +7,8 @@ import os.path
 import struct
 from typing import Any
 
-from xpra.common import noop, PaintCallbacks
+from xpra.common import noop
+from xpra.client.gui.window.backing import PaintCallbacks
 from xpra.os_util import gi_import, WIN32
 from xpra.codecs.loader import load_codec
 from xpra.util.objects import typedict

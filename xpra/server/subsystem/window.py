@@ -7,12 +7,11 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.server.source.window import WindowsConnection
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_CREATE
 from xpra.log import Logger
 

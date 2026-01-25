@@ -7,10 +7,9 @@ import os
 import sys
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, FULL_INFO
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.common import FULL_INFO
 from xpra.os_util import get_machine_id, gi_import, get_user_uuid
 from xpra.util.version import XPRA_NUMERIC_VERSION
 from xpra.util.objects import typedict

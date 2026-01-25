@@ -11,7 +11,8 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.system import getloadavg
-from xpra.common import ConnectionMessage, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.constants import ConnectionMessage
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 

@@ -5,7 +5,8 @@
 # pylint: disable-msg=E1101
 
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.common import NotificationID, may_notify_client
+from xpra.common import may_notify_client
+from xpra.constants import NotificationID
 from xpra.net.common import Packet
 from xpra.util.env import envbool
 from xpra.log import Logger

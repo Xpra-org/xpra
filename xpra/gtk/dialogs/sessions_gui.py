@@ -8,7 +8,6 @@ import sys
 import socket
 import subprocess
 
-from xpra.common import SocketState
 from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
@@ -21,7 +20,7 @@ from xpra.gtk.widget import scaled_image, imagebutton, label, modify_fg, color_p
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.glib import register_os_signals
 from xpra.gtk.dialogs.util import hb_button
-from xpra.net.common import DEFAULT_PORTS
+from xpra.net.constants import DEFAULT_PORTS, SocketState
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.objects import typedict
 from xpra.util.system import stop_proc

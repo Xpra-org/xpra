@@ -6,8 +6,8 @@
 from typing import Any
 from collections.abc import Callable
 
-from xpra.common import noop, BACKWARDS_COMPATIBLE
-from xpra.net.common import may_log_packet, Packet, PacketHandlerType
+from xpra.common import noop
+from xpra.net.common import may_log_packet, Packet, PacketHandlerType, BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("network")

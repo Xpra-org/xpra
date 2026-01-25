@@ -5,7 +5,7 @@
 
 import re
 import struct
-from typing import TypeAlias, Callable, Any, Final, Iterable
+from typing import TypeAlias, Callable, Any, Final, Iterable, Sequence
 
 from xpra.util.env import envint
 
@@ -16,6 +16,8 @@ assert sizeof_short == 2, "struct.calcsize('=H')=%s" % sizeof_short
 
 # CARD32 can actually be 64-bits...
 CARD32_SIZE: Final[int] = sizeof_long * 8
+
+ALL_CLIPBOARDS: Final[Sequence[str]] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
 
 
 def get_format_size(dformat: int) -> int:

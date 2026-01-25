@@ -8,11 +8,10 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 

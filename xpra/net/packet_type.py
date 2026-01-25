@@ -6,7 +6,7 @@
 
 from typing import Final
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 
 # server to client:
 WINDOW_CREATE: Final[str] = "new-window" if BACKWARDS_COMPATIBLE else "window-create"

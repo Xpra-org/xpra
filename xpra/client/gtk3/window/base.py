@@ -22,10 +22,10 @@ from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.common import (
-    MoveResize, force_size_constraint, noop,
-    MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, BACKWARDS_COMPATIBLE,
+    force_size_constraint, noop,
 )
-from xpra.net.common import PacketElement
+from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
+from xpra.net.common import PacketElement, BACKWARDS_COMPATIBLE
 from xpra.client.gui.window_base import ClientWindowBase
 from xpra.client.gtk3.window.common import (
     use_x11_bindings, is_awt, is_popup, mask_buttons,

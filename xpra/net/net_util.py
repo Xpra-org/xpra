@@ -17,7 +17,7 @@ from xpra.os_util import POSIX
 from xpra.util.str_fn import print_nested_dict, csv, bytestostr
 from xpra.util.version import parse_version
 from xpra.net.bytestreams import get_socket_config
-from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.log import Logger, enable_color, consume_verbose_argv
 
 log = Logger("network", "util")
@@ -291,7 +291,6 @@ net_sys_config: dict[str, Any] = {}
 
 
 def get_net_sys_config() -> dict[str, Any]:
-    global net_sys_config
     if net_sys_config or not os.path.exists("/proc"):
         return net_sys_config
 

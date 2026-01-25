@@ -8,7 +8,7 @@ from time import time
 from datetime import timedelta
 
 from xpra.client.base.stub import StubClientMixin
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("event")

@@ -6,7 +6,7 @@
 import os
 import sys
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import OSX, POSIX
 from xpra.util.env import osexpand
 from xpra.util.io import umask_context

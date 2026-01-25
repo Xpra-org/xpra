@@ -8,12 +8,13 @@ import os
 from time import monotonic
 from threading import Lock
 from collections import deque
-from typing import Any
+from typing import Any, TypeAlias, MutableSequence
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.net import compression
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
+from xpra.util.parsing import get_default_video_max_size
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
@@ -21,7 +22,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
 from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.codecs.protocols import VideoDecoder, ColorspaceConverter
-from xpra.common import Gravity, PaintCallbacks
+from xpra.constants import Gravity
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -38,6 +39,11 @@ ALERT_MODE = os.environ.get("XPRA_ALERT_MODE", "shade,small-spinner").split(",")
 ALERT_ICON = os.environ.get("XPRA_ALERT_ICON", "alert")
 # prefer csc scaling to cairo's own scaling:
 PREFER_CSC_SCALING = envbool("XPRA_PREFER_CSC_SCALING", True)
+VIDEO_MAX_SIZE = get_default_video_max_size()
+
+PaintCallback: TypeAlias = Callable[[int | bool, str], None]
+PaintCallbacks: TypeAlias = MutableSequence[PaintCallback]
+
 
 _PIL_font = None
 

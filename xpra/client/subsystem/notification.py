@@ -7,10 +7,11 @@
 from typing import Any
 from collections.abc import Sequence, Callable
 
-from xpra.common import NotificationID, noop, BACKWARDS_COMPATIBLE
+from xpra.common import noop
+from xpra.constants import NotificationID
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.notification import get_backends
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool

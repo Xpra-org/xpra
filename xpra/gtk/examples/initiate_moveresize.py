@@ -5,7 +5,7 @@
 
 from xpra.os_util import gi_import
 from xpra.util.env import IgnoreWarningsContext
-from xpra.common import MoveResize, MOVERESIZE_DIRECTION_STRING
+from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform import program_context

@@ -14,7 +14,7 @@ from xpra.util.version import version_str, XPRA_NUMERIC_VERSION
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envfloat
-from xpra.common import ConnectionMessage, FULL_INFO
+from xpra.net.constants import ConnectionMessage
 from xpra.os_util import get_machine_id, getuid, getgid, POSIX, OSX
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import (
@@ -23,7 +23,7 @@ from xpra.net.socket_util import (
 )
 from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_caps as get_digest_caps
-from xpra.net.common import is_request_allowed, Packet
+from xpra.net.common import is_request_allowed, Packet, FULL_INFO
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import ExitCode, ExitValue

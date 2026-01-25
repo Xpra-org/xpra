@@ -15,12 +15,12 @@ from collections.abc import Callable, Sequence
 
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.util.child_reaper import get_child_reaper, ProcInfo
-from xpra.common import noop, BACKWARDS_COMPATIBLE, FULL_INFO
+from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envint, restore_script_env, source_env
-from xpra.net.common import Packet
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.system import stop_proc
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode

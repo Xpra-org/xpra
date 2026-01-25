@@ -6,15 +6,19 @@
 from typing import Any
 from collections.abc import Iterable, Sequence
 
-from xpra.util.env import first_time
+from xpra.util.env import first_time, envint
 from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
 from xpra.util.screen import get_screen_info
-from xpra.common import MIN_DPI, MAX_DPI, BACKWARDS_COMPATIBLE, validated_monitor_data
+from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.util.parsing import validated_monitor_data
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("display")
+
+MIN_DPI: int = envint("XPRA_MIN_DPI", 10)
+MAX_DPI: int = envint("XPRA_MAX_DPI", 500)
 
 
 class DisplayConnection(StubClientConnection):

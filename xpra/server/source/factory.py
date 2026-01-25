@@ -10,7 +10,7 @@ from collections.abc import Sequence, Callable
 from xpra.server import features
 from xpra.util.str_fn import print_nested_dict
 from xpra.util.objects import typedict, merge_dicts
-from xpra.common import LOG_HELLO
+from xpra.net.common import LOG_HELLO
 from xpra.log import Logger
 
 log = Logger("server")

@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt, QPoint, QEvent
 from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeyEvent
 from PyQt6.QtWidgets import QMainWindow, QLabel, QSizePolicy
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import POINTER_BUTTON, WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE, POINTER_MOTION
 from xpra.client.qt6.keys import key_names
 from xpra.log import Logger

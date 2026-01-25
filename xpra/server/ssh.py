@@ -23,7 +23,8 @@ from xpra.os_util import getuid, WIN32, POSIX
 from xpra.util.system import stop_proc
 from xpra.util.thread import start_thread
 from xpra.util.parsing import str_to_bool
-from xpra.common import SizedBuffer, BACKWARDS_COMPATIBLE
+from xpra.common import SizedBuffer
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command, get_app_dir
 from xpra.log import Logger
 

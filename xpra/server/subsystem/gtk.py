@@ -12,7 +12,8 @@ from xpra.os_util import gi_import
 from xpra.util.system import is_X11
 from xpra.util.version import dict_version_trim
 from xpra.util.screen import prettify_plug_name
-from xpra.common import FULL_INFO, noop
+from xpra.common import noop
+from xpra.net.common import FULL_INFO
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.gtk.info import get_screen_sizes
 from xpra.server import features

@@ -10,10 +10,11 @@ from collections.abc import Callable, Sequence, Iterable
 from xpra.audio.common import AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
-from xpra.net.common import Packet
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.compression import Compressed
 from xpra.net.packet_type import CONNECTION_LOST
-from xpra.common import FULL_INFO, noop, SizedBuffer, NotificationID, BACKWARDS_COMPATIBLE, may_notify_client
+from xpra.common import noop, SizedBuffer, may_notify_client
+from xpra.constants import NotificationID
 from xpra.os_util import get_machine_id, get_user_uuid, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr

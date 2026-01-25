@@ -13,12 +13,12 @@ from collections.abc import Callable
 from tkinter import Tk
 
 from xpra import __version__
-from xpra.common import noop, BACKWARDS_COMPATIBLE
+from xpra.common import noop
 from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_DRAW_ACK
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.protocol.factory import get_client_protocol_class
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("client")

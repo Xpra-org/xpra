@@ -13,7 +13,9 @@ from typing import Any
 from xpra.exit_codes import ExitCode
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.common import NotificationID, ConnectionMessage, may_notify_client
+from xpra.common import may_notify_client
+from xpra.net.constants import ConnectionMessage
+from xpra.constants import NotificationID
 from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture, capture_and_encode
 from xpra.gstreamer.common import get_element_str

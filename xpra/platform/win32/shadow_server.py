@@ -13,7 +13,7 @@ from ctypes.wintypes import RECT
 
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
-from xpra.common import XPRA_APP_ID
+from xpra.constants import XPRA_APP_ID
 from xpra.scripts.config import InitException
 from xpra.server.shadow.shadow_server_base import try_setup_capture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase

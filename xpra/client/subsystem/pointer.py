@@ -8,8 +8,7 @@ from typing import Any
 from time import monotonic
 
 from xpra.client.base.stub import StubClientMixin
-from xpra.common import BACKWARDS_COMPATIBLE
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import POINTER_MOTION
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint

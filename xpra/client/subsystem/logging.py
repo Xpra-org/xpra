@@ -10,12 +10,12 @@ from time import monotonic
 from threading import Lock
 from typing import Any
 
-from xpra.common import noop, FULL_INFO
+from xpra.common import noop
 from xpra.net.packet_type import LOGGING_CONTROL, LOGGING_EVENT
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.client.base.stub import StubClientMixin
-from xpra.net.common import Packet, LOG_PACKET_TYPE
+from xpra.net.common import Packet, LOG_PACKET_TYPE, FULL_INFO
 from xpra.log import Logger, set_global_logging_handler, get_info
 
 log = Logger("client")

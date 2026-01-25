@@ -16,12 +16,14 @@ from xpra.platform.gui import get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import features
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_CREATE
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
-from xpra.common import NotificationID, ConnectionMessage, BACKWARDS_COMPATIBLE
+from xpra.util.parsing import DEFAULT_REFRESH_RATE
+from xpra.net.constants import ConnectionMessage
+from xpra.constants import NotificationID
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -66,7 +68,7 @@ def try_setup_capture(backends: dict[str, Callable], backend: str, *args):
 class ShadowServerBase(ServerBase):
     SIGNALS = ServerBase.__signals__
     # 20 fps unless the client specifies more:
-    DEFAULT_REFRESH_RATE: int = 20
+    DEFAULT_REFRESH_RATE = DEFAULT_REFRESH_RATE
 
     def __init__(self, capture=None):
         # noinspection PyArgumentList

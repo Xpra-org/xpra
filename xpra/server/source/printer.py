@@ -7,7 +7,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import get_machine_id

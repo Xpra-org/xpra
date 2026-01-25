@@ -16,8 +16,7 @@ from xpra.platform.win32.common import (
     BITMAPV5HEADER, CreateDIBSection,
     BitBlt,
 )
-from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks
-from xpra.common import PaintCallbacks
+from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks, PaintCallbacks
 from xpra.util.objects import typedict
 from xpra.log import Logger
 

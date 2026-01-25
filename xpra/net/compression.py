@@ -9,9 +9,9 @@ from typing import Any
 from collections.abc import Callable, Sequence, Sized
 from dataclasses import dataclass
 
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.util.str_fn import memoryview_to_bytes
-from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE, SizedBuffer
+from xpra.common import SizedBuffer
 
 # all the compressors we know about:
 ALL_COMPRESSORS: Sequence[str] = ("lz4", "zlib", "lzo", "brotli", "none")
@@ -272,3 +272,5 @@ def main() -> int:  # pragma: no cover
 
 if __name__ == "__main__":  # pragma: no cover
     main()
+MIN_COMPRESS_SIZE: int = envint("XPRA_MIN_DECOMPRESSED_SIZE", -1)
+MAX_DECOMPRESSED_SIZE: int = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)

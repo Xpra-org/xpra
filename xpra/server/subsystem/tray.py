@@ -9,7 +9,8 @@ from collections.abc import Callable
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.util.env import SilenceWarningsContext
-from xpra.common import XPRA_APP_ID, noop
+from xpra.common import noop
+from xpra.constants import XPRA_APP_ID
 from xpra.os_util import POSIX, OSX, gi_import
 from xpra.log import Logger
 

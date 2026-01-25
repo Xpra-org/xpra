@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from xpra.util.env import osexpand
 from xpra.util.io import get_util_logger
-from xpra.common import SocketState
+from xpra.net.constants import SocketState
 
 DISPLAY_PREFIX = ""
 

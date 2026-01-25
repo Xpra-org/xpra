@@ -8,10 +8,9 @@ import os.path
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.str_fn import Ellipsizer
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.thread import start_thread
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -87,7 +86,7 @@ class NotificationForwarder(StubServerMixin):
             return
         try:
             # pylint: disable=import-outside-toplevel
-            from xpra.common import NotificationID
+            from xpra.constants import NotificationID
             from xpra.notification.common import parse_image_path
             from xpra.platform.paths import get_icon_filename
             icon = parse_image_path(get_icon_filename("user"))

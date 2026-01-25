@@ -21,7 +21,7 @@ from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, add_event_type
 
-from xpra.common import DEFAULT_REFRESH_RATE
+from xpra.util.parsing import DEFAULT_REFRESH_RATE
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.str_fn import csv, decode_str
 from xpra.util.screen import prettify_plug_name

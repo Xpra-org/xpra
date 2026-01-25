@@ -8,7 +8,7 @@ from collections import deque
 from typing import Deque
 from collections.abc import Callable, Sequence
 
-from xpra.common import SocketState
+from xpra.net.constants import SocketState
 from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_socket_dirs

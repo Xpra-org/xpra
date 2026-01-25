@@ -12,3 +12,7 @@ class ServerExitMode(IntEnum):
     NORMAL = 0
     UPGRADE = 1
     EXIT = 2
+
+
+CLOBBER_UPGRADE: int = 0x1
+CLOBBER_USE_DISPLAY: int = 0x2

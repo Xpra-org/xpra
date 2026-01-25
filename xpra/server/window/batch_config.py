@@ -11,7 +11,8 @@ from typing import Any, Deque
 from collections.abc import Sequence
 
 from collections import deque
-from xpra.common import Self, MIN_VREFRESH, MAX_VREFRESH
+from xpra.common import Self
+from xpra.util.parsing import MIN_VREFRESH, MAX_VREFRESH
 from xpra.util.stats import get_list_stats
 from xpra.log import Logger
 

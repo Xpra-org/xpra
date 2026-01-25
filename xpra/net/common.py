@@ -8,12 +8,13 @@ import sys
 import socket
 import struct
 import threading
-from typing import Any, Union, TypeAlias, Final
+from typing import Any, Union, TypeAlias
 from collections.abc import Callable, Sequence
 
 from xpra.exit_codes import ExitCode
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop, SizedBuffer
+from xpra.net.constants import ConnectionMessage
 from xpra.os_util import LINUX, WIN32, OSX
 from xpra.scripts.config import InitExit
 from xpra.util.parsing import str_to_bool
@@ -22,6 +23,11 @@ from xpra.util.str_fn import std
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
+
+LOG_HELLO: bool = envbool("XPRA_LOG_HELLO", False)
+BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
+FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
+assert FULL_INFO >= 0
 
 logger = None
 
@@ -34,21 +40,6 @@ def get_logger():
     return logger
 
 
-DEFAULT_PORT: Final[int] = 14500
-
-DEFAULT_PORTS: dict[str, int] = {
-    "ws": 80,
-    "wss": 443,
-    "ssl": 443,
-    "ssh": 22,
-    "tcp": DEFAULT_PORT,
-    "rfb": 5900,
-    "vnc": 5900,
-    "rdp": 3389,
-    "quic": DEFAULT_PORT,
-    "vsock": DEFAULT_PORT,
-}
-
 HttpResponse: TypeAlias = tuple[int, dict, bytes]
 
 PacketElementTypes: tuple[type, ...] = (
@@ -59,12 +50,6 @@ PacketElement: TypeAlias = Union[
     tuple, list, dict, int, bool, str, bytes, memoryview,
     Compressible, Compressed, LargeStructure,
 ]
-
-try:
-    # Python 3.12 and later:
-    from collections.abc import Buffer
-except ImportError:
-    Buffer = object
 
 
 class Packet(Sequence):
@@ -206,43 +191,6 @@ class ConnectionClosedException(Exception):
     pass
 
 
-MAX_PACKET_SIZE: int = envint("XPRA_MAX_PACKET_SIZE", 16 * 1024 * 1024)
-SSL_UPGRADE: bool = envbool("XPRA_SSL_UPGRADE", False)
-
-AUTO_ABSTRACT_SOCKET = envbool("XPRA_AUTO_ABSTRACT_SOCKET", LINUX)
-ABSTRACT_SOCKET_PREFIX: Final[str] = "xpra/"
-
-SOCKET_TYPES: Sequence[str] = (
-    "tcp", "ws", "wss", "ssl", "ssh", "rfb",
-    "vsock", "hyperv", "socket",
-    "named-pipe",
-    "quic",
-)
-
-IP_SOCKTYPES: Sequence[str] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
-TCP_SOCKTYPES: Sequence[str] = ("tcp", "ssl", "ws", "wss", "ssh")
-
-URL_MODES: dict[str, str] = {
-    "xpra": "tcp",
-    "xpras": "ssl",
-    "xpra+tcp": "tcp",
-    "xpratcp": "tcp",
-    "xpra+tls": "ssl",
-    "xpratls": "ssl",
-    "xpra+ssl": "ssl",
-    "xprassl": "ssl",
-    "xpra+ssh": "ssh",
-    "xprassh": "ssh",
-    "xpra+ws": "ws",
-    "xpraws": "ws",
-    "xpra+wss": "wss",
-    "xprawss": "wss",
-    "xpra+hyperv": "hyperv",
-    "xprahyperv": "hyperv",
-    "rfb": "vnc",
-}
-
-
 def get_log_packets(exclude=False) -> Sequence[str]:
     lp = os.environ.get("XPRA_LOG_PACKETS", "")
     if not lp:
@@ -371,20 +319,6 @@ def has_websocket_handler() -> bool:
     return False
 
 
-HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
-
-<head>
-<title>Server Error</title>
-</head>
-<body>
-<h1>Server Error</h1>
-<p>Error code 400.
-<p>Message: this port does not support HTTP requests.
-<p>Error code explanation: 400 = Bad request syntax or unsupported method.
-</body>
-"""
-
-
 def verify_hyperv_available() -> None:
     try:
         import socket
@@ -407,6 +341,7 @@ def open_html_url(html: str = "open", mode: str = "tcp", bind: str = "127.0.0.1"
         host = "localhost"
     elif host == "::":
         host = "::1"
+    from xpra.net.constants import DEFAULT_PORTS
     port = result.port or DEFAULT_PORTS.get(mode)
     ssl = mode in ("wss", "ssl")
     url = "https" if ssl else "http"
@@ -479,3 +414,10 @@ def print_proxy_caps(caps: typedict) -> None:
     if proxy_hostname:
         msg += " on '%s'" % std(proxy_hostname)
     get_logger().info(msg)
+
+
+# convenience method
+def disconnect_is_an_error(reason) -> bool:
+    from xpra.util.str_fn import nicestr
+    rstr = nicestr(reason)
+    return rstr.find("error") >= 0 or (rstr.find("timeout") >= 0 and rstr != ConnectionMessage.IDLE_TIMEOUT.value)

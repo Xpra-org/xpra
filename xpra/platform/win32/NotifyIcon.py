@@ -19,7 +19,8 @@ from collections.abc import Callable, Sequence
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envbool
-from xpra.common import noop, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
+from xpra.common import noop
+from xpra.constants import XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.icon_util import image_to_ICONINFO
 from xpra.platform.win32.common import (

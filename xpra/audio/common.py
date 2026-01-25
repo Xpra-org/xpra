@@ -7,7 +7,7 @@
 from typing import Iterable
 from collections.abc import Sequence
 
-from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.log import Logger
 

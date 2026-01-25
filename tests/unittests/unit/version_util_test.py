@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.os_util import POSIX
-from xpra.common import FULL_INFO
+from xpra.net.common import FULL_INFO
 from xpra.util.version import version_compat_check, get_host_info, get_version_info, get_platform_info
 
 
@@ -36,6 +36,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

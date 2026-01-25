@@ -17,7 +17,7 @@ from xpra.util.objects import typedict
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
-from xpra.common import ConnectionMessage
+from xpra.net.constants import ConnectionMessage
 from xpra.os_util import (
     get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, get_group_id, gi_import,
     WIN32, POSIX, OSX,

@@ -8,11 +8,11 @@ from time import sleep
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.common import noop, BACKWARDS_COMPATIBLE
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import first_time, envint
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import audio_option
 from xpra.server.subsystem.stub import StubServerMixin

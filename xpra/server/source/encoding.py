@@ -11,7 +11,7 @@ from time import sleep, monotonic
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.window import batch_config
 from xpra.server.core import ClientException

@@ -6,8 +6,8 @@
 from typing import Any
 from collections.abc import Sequence, Iterable
 
-from xpra.common import ConnectionMessage
-from xpra.net.common import Packet, SOCKET_TYPES
+from xpra.net.common import Packet
+from xpra.net.constants import SOCKET_TYPES, ConnectionMessage
 from xpra.net.packet_type import CHALLENGE
 from xpra.net.digest import get_salt, choose_digest
 from xpra.net.protocol.socket_handler import SocketProtocol

@@ -5,7 +5,8 @@
 
 from subprocess import Popen
 
-from xpra.common import noop, SPLASH_EXIT_DELAY
+from xpra.common import noop
+from xpra.scripts.main import SPLASH_EXIT_DELAY
 from xpra.log import Logger
 from xpra.os_util import gi_import
 from xpra.server.subsystem.stub import StubServerMixin

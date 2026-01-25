@@ -8,7 +8,8 @@ import os
 from typing import Any
 
 from xpra.util.io import get_util_logger
-from xpra.common import WORKSPACE_UNSET, BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.constants import WORKSPACE_UNSET
 
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 

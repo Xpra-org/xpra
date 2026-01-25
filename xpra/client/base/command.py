@@ -14,10 +14,10 @@ from xpra.net.packet_type import PRINT_FILE, DISPLAY_REQUEST_SCREENSHOT, INFO_RE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
-from xpra.common import ConnectionMessage, disconnect_is_an_error, BACKWARDS_COMPATIBLE
+from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, disconnect_is_an_error, BACKWARDS_COMPATIBLE
 from xpra.util.stats import std_unit
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT

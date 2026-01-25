@@ -19,14 +19,14 @@ from typing import Any, NoReturn
 from collections.abc import Callable, Sequence
 from importlib.util import find_spec
 
-from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.version import full_version_str
 from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool, parse_bool_or, parse_number, \
     print_number
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
-from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS, IP_SOCKTYPES, verify_hyperv_available
+from xpra.net.common import verify_hyperv_available, BACKWARDS_COMPATIBLE
+from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, SOCKET_TYPES, IP_SOCKTYPES, URL_MODES
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
 from xpra.scripts.config import (
@@ -238,7 +238,6 @@ def normalize_display_name(display_name: str) -> str:
     if POSIX and display_name.startswith("/"):
         return "socket://" + display_name
     # URL mode aliases (ie: "xpra+tcp://host:port")
-    from xpra.net.common import URL_MODES
     for alias, prefix in URL_MODES.items():
         falias = f"{alias}:"
         parts = display_name.split(falias, 1)
@@ -321,7 +320,6 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
 
     # add our URL schemes once:
     # (should we remove them afterwards?)
-    from xpra.net.common import SOCKET_TYPES
 
     def addschemes(array: Sequence[str]) -> None:
         for x in SOCKET_TYPES:
@@ -904,7 +902,7 @@ def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, lis
     # special handling for URL mode:
     # xpra attach xpra://[mode:]host:port/path?param1=value1&param2=value2
     if len(args) == 2 and args[0] == "attach":
-        from xpra.net.common import URL_MODES
+        from xpra.net.constants import URL_MODES
         # ie: "xpra+tcp" -> "tcp"
         for prefix, mode in URL_MODES.items():
             url = args[1]

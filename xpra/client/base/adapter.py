@@ -10,7 +10,6 @@ from typing import Any
 from threading import Event
 
 from xpra import __version__
-from xpra.common import FULL_INFO
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.io import is_socket, load_binary_file
 from xpra.util.env import envint, osexpand
@@ -19,7 +18,7 @@ from xpra.util.thread import start_thread
 from xpra.net.connect import connect_to
 from xpra.scripts.parsing import parse_display_name
 from xpra.scripts.config import InitExit, make_defaults_struct
-from xpra.net.common import PacketElement, Packet
+from xpra.net.common import PacketElement, Packet, FULL_INFO
 from xpra.log import Logger
 
 log = Logger("client")

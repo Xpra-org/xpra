@@ -17,10 +17,10 @@ from xpra.net.packet_type import (
     INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
     CONNECTION_LOST,
 )
-from xpra.net.common import MAX_PACKET_SIZE, Packet
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.constants import MAX_PACKET_SIZE, ConnectionMessage
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
 from xpra.util.parsing import str_to_bool, parse_number
-from xpra.common import FULL_INFO, ConnectionMessage, BACKWARDS_COMPATIBLE
 from xpra.os_util import get_hex_uuid, gi_import
 from xpra.exit_codes import ExitValue
 from xpra.util.objects import typedict

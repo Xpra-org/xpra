@@ -9,8 +9,7 @@
 from typing import Any
 from importlib.util import find_spec
 
-from xpra.common import BACKWARDS_COMPATIBLE
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool

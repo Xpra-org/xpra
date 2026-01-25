@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES
 from xpra.net.mmap.io import read_mmap_token, write_mmap_token, mmap_read, mmap_write, mmap_free_size
-from xpra.common import PaintCallback
+from xpra.client.gui.window.backing import PaintCallback
 from xpra.os_util import get_int_uuid
 from xpra.util.objects import typedict
 from xpra.util.stats import std_unit

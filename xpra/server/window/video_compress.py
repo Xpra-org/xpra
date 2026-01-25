@@ -27,15 +27,15 @@ from xpra.server.window.compress import (
     DOWNSCALE_THRESHOLD, DOWNSCALE, TEXT_QUALITY,
     LOG_ENCODERS,
 )
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder, CSCSpec
 from xpra.codecs.protocols import VideoEncoder
 from xpra.codecs.loader import has_codec
-from xpra.common import roundup, MIN_VREFRESH, MAX_VREFRESH, BACKWARDS_COMPATIBLE
-from xpra.util.parsing import parse_scaling_value
+from xpra.common import roundup
+from xpra.util.parsing import parse_scaling_value, MIN_VREFRESH, MAX_VREFRESH
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.util.env import envint, envbool, first_time

@@ -15,7 +15,8 @@ from xpra.net.packet_type import KEYBOARD_CONFIG
 from xpra.util.str_fn import std, csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.os_util import OSX
-from xpra.common import noop, BACKWARDS_COMPATIBLE
+from xpra.common import noop
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("keyboard")

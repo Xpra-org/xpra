@@ -11,7 +11,8 @@ from typing import Any
 
 from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, validate_size, get_mmap_dir, xpra_group, get_socket_group
 from xpra.util.parsing import FALSE_OPTIONS
-from xpra.common import roundup, noop, PaintCallback
+from xpra.common import roundup, noop
+from xpra.client.gui.window.backing import PaintCallback
 from xpra.os_util import WIN32, POSIX, get_hex_uuid, get_group_id
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool

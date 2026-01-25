@@ -17,7 +17,8 @@ from xpra.os_util import WIN32
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, OSEnvContext
-from xpra.common import NotificationID, may_notify_client
+from xpra.common import may_notify_client
+from xpra.constants import NotificationID
 from xpra.client.base.stub import StubClientMixin
 from xpra.util.thread import start_thread
 

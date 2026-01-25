@@ -12,8 +12,9 @@ from xpra.util.rectangle import rectangle
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.env import SilenceWarningsContext
-from xpra.net.common import Packet
-from xpra.common import get_refresh_rate_for_value, noop, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.common import noop
+from xpra.util.parsing import get_refresh_rate_for_value, DEFAULT_REFRESH_RATE
 from xpra.platform.gui import get_display_name, get_display_size
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -60,7 +61,7 @@ class DisplayManager(StubServerMixin):
     """
     Mixin for servers that handle displays.
     """
-    DEFAULT_REFRESH_RATE = 0
+    DEFAULT_REFRESH_RATE = DEFAULT_REFRESH_RATE
     PREFIX = "display"
 
     __signals__ = {

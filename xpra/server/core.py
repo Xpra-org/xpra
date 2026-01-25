@@ -26,9 +26,8 @@ from xpra.server import features
 from xpra.server.auth import AuthenticatedServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
-    MAX_PACKET_SIZE, SSL_UPGRADE,
-    is_request_allowed, Packet, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
-)
+    is_request_allowed, Packet, has_websocket_handler, HttpResponse, FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE, )
+from xpra.net.constants import MAX_PACKET_SIZE, SSL_UPGRADE, HTTP_UNSUPORTED, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -49,14 +48,12 @@ from xpra.os_util import (
     force_quit, POSIX,
     get_username_for_uid, get_hex_uuid, getuid, gi_import,
 )
-from xpra.util.system import register_SIGUSR_signals
+from xpra.util.system import register_SIGUSR_signals, get_run_info
 from xpra.util.io import load_binary_file, find_libexec_command
 from xpra.util.background_worker import quit_worker
 from xpra.util.thread import start_thread
-from xpra.common import (
-    LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS,
-    noop, ConnectionMessage, noerr, subsystem_name, BACKWARDS_COMPATIBLE,
-)
+from xpra.common import noop, noerr, subsystem_name
+from xpra.constants import DEFAULT_XDG_DATA_DIRS
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, nicestr, strtobytes, hexstr
@@ -442,7 +439,6 @@ class ServerCore(ServerBaseClass):
             self._html = True
 
     def print_run_info(self) -> None:
-        from xpra.common import get_run_info
         for run_info in get_run_info(f"{self.session_type} server"):
             log.info(run_info)
 

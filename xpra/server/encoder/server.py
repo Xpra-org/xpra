@@ -10,7 +10,8 @@ from typing import Any
 from time import monotonic
 from collections.abc import Sequence
 
-from xpra.common import noop, ConnectionMessage
+from xpra.common import noop
+from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv

@@ -10,7 +10,8 @@ from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
-from xpra.common import noop, parse_env_resolutions
+from xpra.common import noop
+from xpra.util.parsing import parse_env_resolutions
 from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_CREATE
 from xpra.server import features

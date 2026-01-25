@@ -23,8 +23,8 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.util.parsing import str_to_bool, parse_with_unit
-from xpra.common import SizedBuffer, BACKWARDS_COMPATIBLE
-from xpra.net.common import Packet, PacketElement
+from xpra.common import SizedBuffer
+from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
 from xpra.log import Logger

@@ -6,9 +6,9 @@
 from typing import Any
 
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.common import FULL_INFO, ConnectionMessage, BACKWARDS_COMPATIBLE
+from xpra.net.constants import ConnectionMessage
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.common import Packet
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.version import XPRA_VERSION, vparts
