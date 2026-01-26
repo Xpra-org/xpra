@@ -91,7 +91,7 @@ class PacketDispatcher:
                 call_handler(False)
                 return
 
-            self.call_packet_handler(True, self.handle_invalid_packet, proto, packet)
+            self.handle_invalid_packet(proto, packet)
         except (RuntimeError, AssertionError):
             log.error(f"Error processing a {packet_type!r} packet")
             log.error(f" received from {proto}:")
