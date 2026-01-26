@@ -78,7 +78,7 @@ MAX_DECOMPRESSED_SIZE : int = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024
 
 
 MIN_DPI : int = envint("XPRA_MIN_DPI", 10)
-MAX_DPI : int = envint("XPRA_MIN_DPI", 500)
+MAX_DPI : int = envint("XPRA_MAX_DPI", 500)
 
 SYNC_ICC : bool = envbool("XPRA_SYNC_ICC", True)
 
