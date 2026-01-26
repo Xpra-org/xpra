@@ -818,14 +818,13 @@ class ServerCore(ServerBaseClass):
                 return
             packet_type = guess_packet_type(peek_data)
 
-        # get the new socket object as we may have wrapped it with ssl:
         pre_read = []
         if socktype == "socket" and not peek_data:
             # try to read from this socket,
             # so short-lived probes don't go through the whole protocol instantiation
             pre = socket_fast_read(conn)
             if not pre:
-                netlog("%s connection already closed", socktype)
+                netlog("closing %s connection: no data", socktype)
                 force_close_connection(conn)
                 return
             pre_read.append(pre)
@@ -835,6 +834,7 @@ class ServerCore(ServerBaseClass):
             conn_err("packet type is not xpra")
             return
 
+        # get the new socket object as we may have wrapped it with ssl:
         sock = getattr(conn, "_socket", sock)
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, address)
