@@ -29,6 +29,8 @@ def log_gap(N=10) -> None:
 
 
 def estr(r) -> str:
+    if r is None:
+        return "None"
     return exit_str(r)
 
 
