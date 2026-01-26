@@ -2,7 +2,7 @@
 
 This feature refers to the ability of using an existing display server (an existing desktop session, usually connected to a real physical display) and use xpra to access it remotely.
 
-It is supported on all platforms including MS Windows and Mac OS X, but not on Wayland.\
+It is supported on all platforms including MS Windows and Mac OS X.\
 It is not optimized on all platforms and may cause high CPU load on both the server and the client in some cases.
 
 On most platforms, the display being shadowed must be active: not locked or turned off.
