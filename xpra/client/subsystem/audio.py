@@ -569,7 +569,8 @@ class AudioClient(StubClientMixin):
         self.send(AUDIO_DATA_PACKET, *packet_data)
 
     def send_audio_sync(self, v: int) -> None:
-        self.send(AUDIO_CONTROL_PACKET, "sync", v)
+        if self.server_av_sync:
+            self.send(AUDIO_CONTROL_PACKET, "sync", v)
 
     ######################################################################
     # packet handlers
