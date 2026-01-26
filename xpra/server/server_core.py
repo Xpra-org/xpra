@@ -1955,7 +1955,7 @@ class ServerCore:
 
         log("process_hello: capabilities=%s", capabilities)
         if c.strget("request")=="version" or c.boolget("version_request"):
-            self.send_version_info(proto, c.boolget("full-version-request"))
+            self.send_version_info(proto, c.boolget("full-version-request", True))
             return
         #verify version:
         remote_version = c.strget("version")
