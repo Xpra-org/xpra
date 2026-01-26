@@ -25,8 +25,10 @@ class AVSyncConnection(StubClientConnection):
         if not isinstance(audio, dict):
             return False
         audio = typedict(audio)
-        if not (audio.boolget("send") or audio.boolget("receive")):
-            return False
+        if not audio.boolget("async", False):
+            # not using async init, so we should be able to tell if audio is disabled:
+            if not (audio.boolget("send") or audio.boolget("receive")):
+                return False
         return caps.boolget("av-sync") and caps.boolget("windows")
 
     def __init__(self):
