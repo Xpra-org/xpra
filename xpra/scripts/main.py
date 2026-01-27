@@ -1554,6 +1554,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
     def basic():
         from xpra.client.base import features
         features.file = features.printer = features.control = features.debug = False
+        return features
 
     request_mode = mode.replace("request-", "") if mode.startswith("request-") else ""
     run_args = []
@@ -1610,7 +1611,8 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         extra_args, run_args = split_display_arg(extra_args)
         app = RunClient(opts, run_args)
     elif mode == "print":
-        basic()
+        features = basic()
+        features.file = features.printer = True
         from xpra.client.base.command import PrintClient
         if len(extra_args) <= 1:
             error_cb("not enough arguments for 'print' mode")
