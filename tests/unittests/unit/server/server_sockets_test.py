@@ -95,7 +95,7 @@ class ServerSocketsTest(ServerTestUtil):
             raise Exception(f"server failed to start with args={args}, returned {estr(r)}")
         return server_proc
 
-    def _test_connect(self, server_args=(), client_args=(), password="", uri_prefix=DISPLAY_PREFIX, exit_code=0):
+    def _test_connect(self, server_args=(), client_args=(), password=b"", uri_prefix=DISPLAY_PREFIX, exit_code=0):
         display_no = self.find_free_display_no()
         display = f":{display_no}"
         log(f"starting test server on {display}")
@@ -108,6 +108,7 @@ class ServerSocketsTest(ServerTestUtil):
         while True:
             args = ["version", uri] + list(client_args or ())
             env = self.get_run_env()
+            env["XPRA_UNIT_TEST"] = "0"
             env["XPRA_CONNECT_TIMEOUT"] = str(timeout)
             client = self.run_xpra(args, env=env)
             r = pollwait(client, timeout)
@@ -132,7 +133,7 @@ class ServerSocketsTest(ServerTestUtil):
             f = self._temp_file(password)
             args += [f"--password-file={f.name}"]
             args += [f"--challenge-handlers=file:filename={f.name}"]
-        client = self.run_xpra(args)
+        client = self.run_xpra(args, env=env)
         r = pollwait(client, wait)
         if f:
             f.close()
@@ -189,17 +190,18 @@ class ServerSocketsTest(ServerTestUtil):
             raise RuntimeError("SSL test skipped, cannot run " + " ".join(openssl_command))
         return certfile
 
-    def verify_connect(self, uri, exit_code=ExitCode.OK, *client_args):
+    def verify_connect(self, uri: str, exit_code: ExitValue = ExitCode.OK, *client_args):
         cmd = ["info", uri] + list(client_args)
         env = self.get_run_env()
         env["XPRA_CONNECT_TIMEOUT"] = str(CONNECT_WAIT)
+        env["XPRA_UNIT_TEST"] = "0"
         env["SSL_RETRY"] = "0"
         client = self.run_xpra(cmd, env=env)
         r = pollwait(client, CONNECT_WAIT)
         if client.poll() is None:
             client.terminate()
         r = client.poll()
-        self.verify_exitcode(expected=exit_code, actual=r)
+        self.verify_exitcode(client=f"info {uri!r} client", expected=exit_code, actual=r)
 
     def verify_exitcode(self, client="info client", expected: ExitValue = ExitCode.OK,
                         actual: ExitValue | None = ExitCode.OK):
@@ -267,14 +269,15 @@ class ServerSocketsTest(ServerTestUtil):
                 log("starting test ssl server on %s", display)
                 server = self.start_server(display, *server_args)
 
+                openssl_cmd = self.which("openssl")
                 # test it with openssl client:
                 for mode, verify_port in proto_ports.items():
                     openssl_verify_command = (
-                        "openssl", "s_client", "-connect",
+                        openssl_cmd, "s_client", "-connect",
                         "127.0.0.1:%i" % verify_port, "-CAfile", genssl.certfile,
                     )
-                    devnull = os.open(os.devnull, os.O_WRONLY)
-                    openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=True)
+                    devnull = os.open(os.devnull, os.O_RDONLY)
+                    openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=False)
                     r = pollwait(openssl, 10)
                     if r != 0:
                         raise RuntimeError(f"openssl certificate returned {r} for {mode} port {verify_port}")
