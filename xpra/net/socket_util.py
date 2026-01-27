@@ -283,15 +283,29 @@ def peek_connection(conn, timeout: int = PEEK_TIMEOUT_MS, size: int = PEEK_SIZE)
     return peek_data
 
 
-def socket_fast_read(conn) -> bytes:
+def socket_fast_read(conn, timeout=1) -> bytes:
+    def noretry(_err) -> bool:
+        return False
+    can_retry = conn.can_retry
+    conn.can_retry = noretry
+    start = monotonic()
     try:
-        conn._socket.settimeout(0.001)
-        data = conn.read(1)
-        return data or b""
+        while monotonic() - start < timeout:
+            try:
+                conn._socket.settimeout(0.01)
+                data = conn.read(1)
+                return data or b""
+            except TimeoutError:
+                log = get_network_logger()
+                log("socket_fast_read(%s) timeout", conn)
+                continue
     except OSError:
         log = get_network_logger()
         log.error("Error reading from %s", conn, exc_info=True)
         return b""
+    finally:
+        conn.can_retry = can_retry
+    return b""
 
 
 POSIX_TCP_INFO = (
