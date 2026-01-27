@@ -15,6 +15,7 @@ from xpra.util.stats import to_std_unit
 from xpra.os_util import WIN32, POSIX
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.auth.auth_helper import AuthDef
+from xpra.util.objects import typedict
 from xpra.net.common import Packet
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubServerMixin
@@ -51,6 +52,7 @@ class PrinterServer(StubServerMixin):
         # self.file_transfer is already initialized by FileServer,
         # so this is redundant except for subsystem unit tests:
         self.file_transfer = FileTransferAttributes()
+        self.hello_request_handlers["print"] = self._handle_hello_request_print
 
     def init(self, opts) -> None:
         self.file_transfer.init_opts(opts, can_ask=False)
@@ -142,6 +144,13 @@ class PrinterServer(StubServerMixin):
         # update file transfer attributes since printing nay have been disabled here
         self.file_transfer.printing = printing
         log("init_printing() printing=%s", printing)
+
+    def _handle_hello_request_print(self, proto, caps: typedict) -> bool:
+        print_packet = caps.tupleget("print")
+        if not print_packet:
+            raise RuntimeError("print data is missing!")
+        self._process_print(proto, Packet(*print_packet))
+        return True
 
     def _process_print(self, _proto, packet: Packet) -> None:
         # ie: from the xpraforwarder we call this command:

@@ -669,6 +669,7 @@ class PrintClient(SendCommandConnectClient):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")
 
     def do_command(self, caps: typedict) -> None:
+        assert BACKWARDS_COMPATIBLE
         printing = caps.boolget("printing")
         if not printing:
             self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support printing")
@@ -685,6 +686,7 @@ class PrintClient(SendCommandConnectClient):
         capabilities = super().make_hello()
         capabilities.setdefault("wants", []).append("features")
         capabilities["request"] = "print"
+        capabilities["print"] = ["print", self.filename, self.file_data] + list(self.command)
         return capabilities
 
 
