@@ -304,7 +304,7 @@ def set_server_features(opts, mode: str) -> None:
         features.display = features.window or features.keyboard or features.pointer
         features.cursor = features.display and opts.cursors
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb") and mode in ("desktop", "shadow")
-        features.ssh = b(opts.ssh) and impcheck("net.ssh")
+        features.ssh = b(opts.ssh) and impcheck("net.ssh", "server.ssh") and bool(find_spec("paramiko"))
         features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
         features.power = envbool("XPRA_POWER_EVENTS", True)
