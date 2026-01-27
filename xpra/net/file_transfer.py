@@ -824,7 +824,7 @@ class FileTransferHandler(FileTransferAttributes):
         data = data[:filesize]  # gio may null terminate it
         logger("send_file%s action=%s, ask=%s",
                (filename, mimetype, type(data), f"{filesize} bytes", printit, openit, options), action, ask)
-        self.dump_remote_caps()
+        self.dump_remote_file_caps()
         if not self.check_file_size(action, filename, filesize):
             return False
         if ask:
