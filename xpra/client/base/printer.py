@@ -5,6 +5,7 @@
 
 from typing import Any
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -60,7 +61,9 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
     def parse_printing_capabilities(self, caps: typedict) -> None:
         printlog("parse_printing_capabilities() client printing support=%s", self.printing)
         if self.printing:
-            server_printing = caps.boolget("printing")
+            server_printing = caps.boolget("printer")
+            if BACKWARDS_COMPATIBLE:
+                server_printing |= caps.boolget("printer.attributes")
             printlog("parse_printing_capabilities() server printing support=%s", server_printing)
             if server_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
