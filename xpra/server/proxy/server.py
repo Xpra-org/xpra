@@ -19,12 +19,12 @@ from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import (
-    get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, get_group_id, gi_import,
+    get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, get_group_id, get_xpra_group, gi_import,
     WIN32, POSIX, OSX,
 )
 from xpra.util.io import umask_context
 from xpra.net.common import Packet, is_request_allowed
-from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
+from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.server import features
 from xpra.server.core import ServerCore
 from xpra.net.control.common import ArgsControlCommand, ControlError
@@ -81,7 +81,8 @@ def get_socktype(proto) -> str:
 def create_system_dir(sps: str) -> None:
     if not POSIX or OSX or not sps:
         return
-    xpra_group_id = get_group_id(SOCKET_DIR_GROUP)
+    socket_dir_group = os.environ.get("XPRA_SOCKET_DIR_GROUP", get_xpra_group())
+    xpra_group_id = get_group_id(socket_dir_group)
     if sps.startswith("/run/xpra") or sps.startswith("/var/run/xpra"):
         # create the directory and verify its permissions
         # which should have been set correctly by tmpfiles.d,
@@ -101,11 +102,11 @@ def create_system_dir(sps: str) -> None:
                     import grp
                     group = grp.getgrgid(stat.st_gid)[0]
                     log.warn("Warning: invalid group on '%s': %s", d, group)
-                    log.warn(" changing to '%s'", SOCKET_DIR_GROUP)
+                    log.warn(" changing to '%s'", socket_dir_group)
                     os.lchown(d, stat.st_uid, xpra_group_id)
             else:
                 log.info("creating '%s' with permissions %s and group '%s'",
-                         d, oct(SOCKET_DIR_MODE), SOCKET_DIR_GROUP)
+                         d, oct(SOCKET_DIR_MODE), socket_dir_group)
                 with umask_context(0):
                     os.mkdir(d, SOCKET_DIR_MODE)
                 stat = os.stat(d)
