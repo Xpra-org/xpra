@@ -1084,17 +1084,22 @@ fi
 
 
 %changelog
-* Sun Jan 25 2026 Antoine Martin <antoine@xpra.org> 6.4.2-10
+* Tue Jan 27 2026 Antoine Martin <antoine@xpra.org> 6.4.2-10
 - Platforms, build and packaging:
    `cx_Freeze` update broke the packaging script
+   `pyu2f` missing build dependency
+   partial support for some RHEL clones
+   `xpra-html5` client should be a hard dependency of the main metapackage
 - SSH:
    prefer non-dot ssh paths on MS Windows
    try harder to locate key files using key directories + fix tests
    only log missing fingerprints if the keyfile exists
 - Major:
+   incomplete printer forwarding compatibility check
    handle `notify2` backend failures gracefully
    honour the `XPRA_USERNAME` environment variable in all code paths
    `resize-display=yes:none` was not honoured
+   initial "fast" socket read could spin until the connection failed
 - Minor:
    use software Gsk renderer by default
    make it possible to disable region tracking
@@ -1105,6 +1110,8 @@ fi
    better backwards compatibility for exposing version data
    make socket eof detection less spammy
    `XPRA_MIN_COMPRESS_SIZE` environment variable did not match its intent
+   warning when the server doesn't support av-sync
+   misleading comments and debug logging
 
 * Sun Jan 11 2026 Antoine Martin <antoine@xpra.org> 6.4.1-10
 - Platforms, build and packaging:

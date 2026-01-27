@@ -1,16 +1,21 @@
 # Changelog
 
-## [6.4.2] 2026-01-25
+## [6.4.2] 2026-01-27
 * Platforms, build and packaging:
   * [`cx_Freeze` update broke the packaging script](https://github.com/Xpra-org/xpra/commit/d30da8f2e1fdc7dc52ad76b283f8a9a3593e8daf)
+  * [`pyu2f` missing build dependency](https://github.com/Xpra-org/xpra/commit/f2c77f527749744eea2af6be8b30d785af9b12f2)
+  * [partial support for some RHEL clones](https://github.com/Xpra-org/xpra/commit/0b2ff282e8f8519ecf8833e83dc65dbe64b96891)
+  * [`xpra-html5` client should be a hard dependency of the main metapackage](https://github.com/Xpra-org/xpra/commit/3cef32d755b92b16b0eae9b8263b35b36f0a694f)
 * SSH:
   * [prefer non-dot ssh paths on MS Windows](https://github.com/Xpra-org/xpra/commit/a026008ec5f2aeb321f5307667f9dce9ef417e52)
   * [try harder to locate key files](https://github.com/Xpra-org/xpra/commit/d7755cfb1f0b883405844b7cbf5362ef8570a270) [using key directories](https://github.com/Xpra-org/xpra/commit/b52c25e9fc2d21b598f8fae3df0849265d9be2f7) + [fix tests](https://github.com/Xpra-org/xpra/commit/92ae8ff45c95e9a869c373b51ecb249020d48b0b)
   * [only log missing fingerprints if the keyfile exists](https://github.com/Xpra-org/xpra/commit/36f8db8a28612b927d1b205dad839fa582ab1882)
 * Major:
+  * [incomplete printer forwarding compatibility check](https://github.com/Xpra-org/xpra/commit/63f683c2cbf8a35810d3f39963bc43bb9f4b2466)
   * [handle `notify2` backend failures gracefully](https://github.com/Xpra-org/xpra/commit/ef6599a8ec0df8340e8e8ccaab2f19c609b97922)
   * [honour the `XPRA_USERNAME` environment variable in all code paths](https://github.com/Xpra-org/xpra/commit/27747c090bb7df5bbc1161f44903d8e4fcf11d3c)
   * [`resize-display=yes:none` was not honoured](https://github.com/Xpra-org/xpra/commit/4abe64afab5fbf8ec733b5de6bd27c9c78668d06)
+  * [initial "fast" socket read could spin until the connection failed](https://github.com/Xpra-org/xpra/commit/3596431faefbddc4d9b275230b2fb9280cdc02c7)
 * Minor:
   * [use software Gsk renderer by default](https://github.com/Xpra-org/xpra/commit/12f99151c18df2767f0df9120bb6d67db4fc05f9)
   * [make it possible to disable region tracking](https://github.com/Xpra-org/xpra/commit/e9998f8d6f734f265e21589df30f84f30d888832)
@@ -21,6 +26,8 @@
   * [better backwards compatibility for exposing version data](https://github.com/Xpra-org/xpra/commit/0f00667b56c729db59acd1e7cb812c7187b7563b)
   * [make socket eof detection less spammy](https://github.com/Xpra-org/xpra/commit/841eec018cbce397dc3387fd3798977d0b5ad961)
   * [`XPRA_MIN_COMPRESS_SIZE` environment variable did not match its intent](https://github.com/Xpra-org/xpra/commit/dd00f482834ca12418e4d4e16c4835a040474b6d)
+  * [warning when the server doesn't support av-sync](https://github.com/Xpra-org/xpra/commit/e20523aeffc2a5db688c86a3fde38ef3439d307e)
+  * [misleading comments and debug logging](https://github.com/Xpra-org/xpra/commit/2ad69ab376c99b880ecc21c90edda8e2c3dfe4c7)
 
 ## [6.4.1] 2026-01-11
 * Platforms, build and packaging:
