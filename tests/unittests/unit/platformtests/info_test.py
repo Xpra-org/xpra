@@ -14,7 +14,7 @@ class PlatformInfoTest(unittest.TestCase):
 
     def test_all_info(self):
         if POSIX:
-            from xpra import common
+            from xpra.net import common
             saved = common.FULL_INFO
             try:
                 common.FULL_INFO = 2
