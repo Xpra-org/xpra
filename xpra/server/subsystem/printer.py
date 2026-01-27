@@ -131,7 +131,7 @@ class PrinterServer(StubServerMixin):
                 try:
                     # this should be the name of the auth module:
                     auth_name = auth_class[0]
-                except Exception:
+                except (TypeError, IndexError):
                     auth_name = str(auth_class)
                 if auth_name not in ("allow", "file", "hosts", "none", "peercred"):
                     fail.append(auth_name)
