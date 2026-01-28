@@ -77,7 +77,7 @@ def array_set(xid: int, key: str, etype: str, value) -> None:
     raw_prop_set(xid, key, dtype, dformat, data)
 
 
-def array_get(xid: int, key: str, etype: str, ignore_errors: bool = False, raise_xerrors: bool = False) -> None:
+def array_get(xid: int, key: str, etype: str, ignore_errors: bool = False, raise_xerrors: bool = False) -> object:
     # ie: 0x4000, "_NET_WM_PID", "u32"
     type_atom = PROP_TYPES[etype][1]  # ie: "CARDINAL"
     buffer_size = PROP_SIZES.get(etype, 65536)
