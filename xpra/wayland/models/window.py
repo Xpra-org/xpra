@@ -202,5 +202,5 @@ class Window(WindowModelStub):
     def set_active(self) -> None:
         """ this is not available under Wayland? """
 
-    def request_close(self) -> bool:
+    def request_close(self) -> None:
         log.warn("Warning: close-request not implemented yet for Wayland")

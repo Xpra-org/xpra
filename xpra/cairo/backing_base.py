@@ -88,6 +88,12 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     context.paint_with_alpha(alpha)
 
 
+def cairo_draw_backing(context, backing) -> None:
+    context.set_operator(Operator.SOURCE)
+    context.set_source_surface(backing, 0, 0)
+    context.paint()
+
+
 class CairoBackingBase(WindowBackingBase):
     HAS_ALPHA = envbool("XPRA_ALPHA", True)
     alert_image = ()
@@ -303,7 +309,7 @@ class CairoBackingBase(WindowBackingBase):
         self.paint_backing_offset_border(context, w, h)
         if not self.clip_to_backing(context, w, h):
             return
-        self.cairo_draw_backing(context, backing)
+        cairo_draw_backing(context, backing)
         self.cairo_draw_pointer(context)
         self.cairo_draw_alert(context)
 
@@ -342,11 +348,6 @@ class CairoBackingBase(WindowBackingBase):
         if x != 0 or y != 0:
             context.translate(x, y)
         return True
-
-    def cairo_draw_backing(self, context, backing) -> None:
-        context.set_operator(Operator.SOURCE)
-        context.set_source_surface(backing, 0, 0)
-        context.paint()
 
     def cairo_draw_pointer(self, context):
         if self.pointer_overlay and self.cursor_data:

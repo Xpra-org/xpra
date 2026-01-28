@@ -196,7 +196,8 @@ class DesktopServerBase(GObject.GObject, ServerBase):
             changes.append("focused")
         return changes
 
-    def get_window_position(self, _window) -> tuple[int, int]:
+    @staticmethod
+    def get_window_position(_window) -> tuple[int, int]:
         # we export the whole desktop as a window:
         return 0, 0
 
