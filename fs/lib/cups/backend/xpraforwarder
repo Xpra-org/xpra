@@ -141,7 +141,7 @@ def cups_backend_exit_status(r: int) -> int:
     CUPS_BACKEND_AUTH_REQUIRED = 2
     CUPS_BACKEND_HOLD = 3
     CUPS_BACKEND_STOP = 4
-    # CUPS_BACKEND_CANCEL = 5
+    CUPS_BACKEND_CANCEL = 5
     CUPS_BACKEND_RETRY = 6
     # CUPS_BACKEND_RETRY_CURRENT = 7
     from xpra.exit_codes import ExitCode
@@ -158,6 +158,7 @@ def cups_backend_exit_status(r: int) -> int:
         int(ExitCode.INTERNAL_ERROR): CUPS_BACKEND_STOP,
         int(ExitCode.COMPONENT_MISSING): CUPS_BACKEND_STOP,
         int(ExitCode.IO_ERROR): CUPS_BACKEND_RETRY,
+        int(ExitCode.FILE_TOO_BIG): CUPS_BACKEND_CANCEL,
     }.get(r, CUPS_BACKEND_FAILED)
 
 
