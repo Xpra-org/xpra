@@ -11,12 +11,14 @@ import hashlib
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.exit_codes import ExitCode
 from xpra.util.stats import to_std_unit
 from xpra.os_util import WIN32, POSIX
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.auth.auth_helper import AuthDef
 from xpra.util.objects import typedict
 from xpra.net.common import Packet
+from xpra.net.constants import ConnectionMessage
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -149,10 +151,24 @@ class PrinterServer(StubServerMixin):
         print_packet = caps.tupleget("print")
         if not print_packet:
             raise RuntimeError("print data is missing!")
-        self._process_print(proto, Packet(*print_packet))
+        code, message = self.do_print_file(Packet(*print_packet))
+        # minimal hello:
+        from xpra.net.packet_encoding import get_packet_encoding_caps
+        hello = get_packet_encoding_caps()
+        hello[PrinterServer.PREFIX] ={
+            "code": int(code),
+            "info": message,
+        }
+        proto.send_now(Packet("hello", hello))
+        self.send_disconnect(proto, ConnectionMessage.DONE)
         return True
 
-    def _process_print(self, _proto, packet: Packet) -> None:
+    def _process_print_file(self, _proto, packet: Packet) -> None:
+        code, message = self.do_print_file(packet)
+        if code != ExitCode.OK:
+            log.warn(message)
+
+    def do_print_file(self, packet: Packet) -> tuple[ExitCode, str]:
         # ie: from the xpraforwarder we call this command:
         # command = ["xpra", "print", "socket:/path/tosocket",
         #           filename, mimetype, source, title, printer, no_copies, print_options]
@@ -161,7 +177,7 @@ class PrinterServer(StubServerMixin):
         if len(packet) < 3:
             log.error("Error: invalid print packet, only %i arguments", len(packet))
             log.error(" %s", [repr_ellipsized(x) for x in packet])
-            return
+            return ExitCode.PACKET_FAILURE, "invalid print packet format"
         filename = packet.get_str(1)
         file_data = packet.get_bytes(2)
         mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
@@ -181,7 +197,7 @@ class PrinterServer(StubServerMixin):
         if len(mimetype) >= 128:
             log.error("Error: invalid mimetype in print packet:")
             log.error(" %s", repr_ellipsized(mimetype))
-            return
+            return ExitCode.UNSUPPORTED, "invalid mimetype"
         if not isinstance(print_options, dict):
             s = str(print_options)
             print_options = {}
@@ -230,10 +246,10 @@ class PrinterServer(StubServerMixin):
             log("'%s' sent to %s for printing on '%s'", title or filename, ss, printer)
             if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
                 sent += 1
-        # warn if not sent:
-        log_fn = log.warn if sent == 0 else log.info
         unit_str, v = to_std_unit(len(file_data), unit=1024)
-        log_fn("'%s' (%i%sB) sent to %i clients for printing", title or filename, v, unit_str, sent)
+        message = "'%s' (%i%sB) sent to %i clients for printing" % (title or filename, v, unit_str, sent)
+        log(message)
+        return ExitCode.OK if sent > 0 else ExitCode.REMOTE_ERROR, message
 
     def _process_printers(self, proto, packet: Packet) -> None:
         if not self.file_transfer.printing or WIN32:
