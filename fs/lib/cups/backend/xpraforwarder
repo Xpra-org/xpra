@@ -129,10 +129,36 @@ def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_ke
     r = exec_command(command, env=env)
     if r==0:
         write_back("INFO: forwarding")
-    else:
-        from xpra.exit_codes import exit_str
-        write_back(f"ERROR: contacting the xpra server: {exit_str(r)!r}")
-    return r
+        return 0
+    from xpra.exit_codes import exit_str
+    write_back(f"ERROR: contacting the xpra server: {exit_str(r)!r}")
+    return cups_backend_exit_status(r)
+
+
+def cups_backend_exit_status(r: int) -> int:
+    CUPS_BACKEND_OK = 0
+    CUPS_BACKEND_FAILED = 1
+    CUPS_BACKEND_AUTH_REQUIRED = 2
+    CUPS_BACKEND_HOLD = 3
+    CUPS_BACKEND_STOP = 4
+    # CUPS_BACKEND_CANCEL = 5
+    CUPS_BACKEND_RETRY = 6
+    # CUPS_BACKEND_RETRY_CURRENT = 7
+    from xpra.exit_codes import ExitCode
+    return {
+        int(ExitCode.OK): CUPS_BACKEND_OK,
+        int(ExitCode.TIMEOUT): CUPS_BACKEND_HOLD,
+        int(ExitCode.AUTHENTICATION_FAILED): CUPS_BACKEND_AUTH_REQUIRED,
+        int(ExitCode.PASSWORD_REQUIRED): CUPS_BACKEND_AUTH_REQUIRED,
+        int(ExitCode.PASSWORD_FILE_ERROR): CUPS_BACKEND_AUTH_REQUIRED,
+        int(ExitCode.ENCRYPTION): CUPS_BACKEND_AUTH_REQUIRED,
+        int(ExitCode.PACKET_FAILURE): CUPS_BACKEND_STOP,
+        int(ExitCode.INCOMPATIBLE_VERSION): CUPS_BACKEND_STOP,
+        int(ExitCode.UNSUPPORTED): CUPS_BACKEND_STOP,
+        int(ExitCode.INTERNAL_ERROR): CUPS_BACKEND_STOP,
+        int(ExitCode.COMPONENT_MISSING): CUPS_BACKEND_STOP,
+        int(ExitCode.IO_ERROR): CUPS_BACKEND_RETRY,
+    }.get(r, CUPS_BACKEND_FAILED)
 
 
 def do_main():
