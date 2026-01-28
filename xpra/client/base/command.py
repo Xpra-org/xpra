@@ -652,6 +652,8 @@ class PrintClient(SendCommandConnectClient):
         # print command arguments:
         # filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
         self.command = command[1:]
+        from xpra.util.parsing import parse_with_unit
+        self.file_size_limit = parse_with_unit("file-size-limit", opts.file_size_limit, "B", min_value=0) or 0
 
         if self.filename == "-":
             # replace with filename proposed
@@ -660,6 +662,8 @@ class PrintClient(SendCommandConnectClient):
             with open(sys.stdin.fileno(), mode="rb", closefd=False) as stdin_binary:
                 self.file_data = stdin_binary.read()
             log("read %i bytes from stdin", len(self.file_data))
+            if not self.validate_file_size(len(self.file_data)):
+                return
         else:
             if not self.validate_file_size(os.path.getsize(self.filename)):
                 return
