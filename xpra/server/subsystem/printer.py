@@ -148,10 +148,14 @@ class PrinterServer(StubServerMixin):
         print_packet = caps.tupleget("print")
         if not print_packet:
             raise RuntimeError("print data is missing!")
-        self._process_print_file(proto, Packet(*print_packet))
+        message = self.do_print_file(Packet(*print_packet))
+        self.send_disconnect(proto, message)
         return True
 
     def _process_print_file(self, _proto, packet: Packet) -> None:
+        self.do_print_file(packet)
+
+    def do_print_file(self, packet: Packet) -> str:
         # ie: from the xpraforwarder we call this command:
         # command = ["xpra", "print", "socket:/path/tosocket",
         #           filename, mimetype, source, title, printer, no_copies, print_options]
@@ -160,7 +164,7 @@ class PrinterServer(StubServerMixin):
         if len(packet) < 3:
             log.error("Error: invalid print packet, only %i arguments", len(packet))
             log.error(" %s", [repr_ellipsized(x) for x in packet])
-            return
+            return "invalid print packet format"
         filename = packet.get_str(1)
         file_data = packet.get_bytes(2)
         mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
@@ -180,7 +184,7 @@ class PrinterServer(StubServerMixin):
         if len(mimetype) >= 128:
             log.error("Error: invalid mimetype in print packet:")
             log.error(" %s", repr_ellipsized(mimetype))
-            return
+            return "invalid mimetype"
         if not isinstance(print_options, dict):
             s = str(print_options)
             print_options = {}
@@ -232,7 +236,9 @@ class PrinterServer(StubServerMixin):
         # warn if not sent:
         log_fn = log.warn if sent == 0 else log.info
         unit_str, v = to_std_unit(len(file_data), unit=1024)
-        log_fn("'%s' (%i%sB) sent to %i clients for printing", title or filename, v, unit_str, sent)
+        message = "'%s' (%i%sB) sent to %i clients for printing" % (title or filename, v, unit_str, sent)
+        log_fn(message)
+        return message
 
     def _process_print_devices(self, proto, packet: Packet) -> None:
         if not self.file_transfer.printing or WIN32:
