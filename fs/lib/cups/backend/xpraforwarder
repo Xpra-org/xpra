@@ -157,7 +157,7 @@ def do_main(args: list[str]):
         filename = args[6]
     else:
         filename = "-"
-    info("version %s, username: %s, title: %s, filename: %s, job_id: %s" % (__version__, username, title, filename, job_id))
+    info("version %s, username: %r, title: %r, filename: %r, job_id: %s" % (__version__, username, title, filename, job_id))
     try:
         info("uid=%s, gid=%s" % (os.getresuid(), os.getresgid()))
     except AttributeError:
@@ -165,7 +165,7 @@ def do_main(args: list[str]):
         pass
 
     dev_uri = os.environ['DEVICE_URI']
-    info("DEVICE_URI=%s" % dev_uri)
+    info("DEVICE_URI=%r" % dev_uri)
     parsed_url = urlparse(dev_uri)
     attributes = parse_qs(parsed_url.query)
     info("parsed attributes=%s" % attributes)
