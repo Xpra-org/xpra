@@ -1084,18 +1084,27 @@ fi
 
 
 %changelog
-* Tue Jan 27 2026 Antoine Martin <antoine@xpra.org> 6.4.2-10
+* Wed Jan 28 2026 Antoine Martin <antoine@xpra.org> 6.4.2-10
 - Platforms, build and packaging:
    `cx_Freeze` update broke the packaging script
    `pyu2f` missing build dependency
    partial support for some RHEL clones
    `xpra-html5` client should be a hard dependency of the main metapackage
+   builds `--without-clipboard` would fail
 - SSH:
    prefer non-dot ssh paths on MS Windows
    try harder to locate key files using key directories + fix tests
    only log missing fingerprints if the keyfile exists
-- Major:
+- Printing:
+   incorrect cups backend exit codes could cause DoS
    incomplete printer forwarding compatibility check
+   newer servers expect a print handler for hello requests
+   expose detailed diagnostics to the print client
+   ndefined diagnostic method aborts printing
+   use more widely compatible socket syntax
+   don't catch all exceptions types
+   print client needed `file` and `printer` modules
+- Major:
    handle `notify2` backend failures gracefully
    honour the `XPRA_USERNAME` environment variable in all code paths
    `resize-display=yes:none` was not honoured

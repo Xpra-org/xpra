@@ -8,8 +8,16 @@ xpra (6.4.2-1) UNRELEASED; urgency=low
     prefer non-dot ssh paths on MS Windows
     try harder to locate key files using key directories + fix tests
     only log missing fingerprints if the keyfile exists
-  * Major:
+  * Printing:
+    incorrect cups backend exit codes could cause DoS
     incomplete printer forwarding compatibility check
+    newer servers expect a print handler for hello requests
+    expose detailed diagnostics to the print client
+    ndefined diagnostic method aborts printing
+    use more widely compatible socket syntax
+    don't catch all exceptions types
+    print client needed `file` and `printer` modules
+  * Major:
     handle `notify2` backend failures gracefully
     honour the `XPRA_USERNAME` environment variable in all code paths
     `resize-display=yes:none` was not honoured
@@ -27,7 +35,7 @@ xpra (6.4.2-1) UNRELEASED; urgency=low
     warning when the server doesn't support av-sync
     misleading comments and debug logging
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 27 Jan 2026 18:53:16 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 28 Jan 2026 22:28:24 +0700
 
 xpra (6.4.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

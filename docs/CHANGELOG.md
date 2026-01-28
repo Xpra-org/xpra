@@ -1,17 +1,26 @@
 # Changelog
 
-## [6.4.2] 2026-01-27
+## [6.4.2] 2026-01-28
 * Platforms, build and packaging:
   * [`cx_Freeze` update broke the packaging script](https://github.com/Xpra-org/xpra/commit/d30da8f2e1fdc7dc52ad76b283f8a9a3593e8daf)
   * [`pyu2f` missing build dependency](https://github.com/Xpra-org/xpra/commit/f2c77f527749744eea2af6be8b30d785af9b12f2)
   * [partial support for some RHEL clones](https://github.com/Xpra-org/xpra/commit/0b2ff282e8f8519ecf8833e83dc65dbe64b96891)
   * [`xpra-html5` client should be a hard dependency of the main metapackage](https://github.com/Xpra-org/xpra/commit/3cef32d755b92b16b0eae9b8263b35b36f0a694f)
+  * [builds `--without-clipboard` would fail](https://github.com/Xpra-org/xpra/commit/4a688fe58033df21538ccab2198ca8ffca854f20)
 * SSH:
   * [prefer non-dot ssh paths on MS Windows](https://github.com/Xpra-org/xpra/commit/a026008ec5f2aeb321f5307667f9dce9ef417e52)
   * [try harder to locate key files](https://github.com/Xpra-org/xpra/commit/d7755cfb1f0b883405844b7cbf5362ef8570a270) [using key directories](https://github.com/Xpra-org/xpra/commit/b52c25e9fc2d21b598f8fae3df0849265d9be2f7) + [fix tests](https://github.com/Xpra-org/xpra/commit/92ae8ff45c95e9a869c373b51ecb249020d48b0b)
   * [only log missing fingerprints if the keyfile exists](https://github.com/Xpra-org/xpra/commit/36f8db8a28612b927d1b205dad839fa582ab1882)
-* Major:
+* Printing:
+  * [incorrect cups backend exit codes could cause DoS](https://github.com/Xpra-org/xpra/commit/071db9ba5b58390b248a7dc0ee09f4fecca84f67)
   * [incomplete printer forwarding compatibility check](https://github.com/Xpra-org/xpra/commit/63f683c2cbf8a35810d3f39963bc43bb9f4b2466)
+  * [newer servers expect a print handler for hello requests](https://github.com/Xpra-org/xpra/commit/21240840b1fe1b5621dfc4a4983eab9d174e48b5)
+  * [expose detailed diagnostics to the print client](https://github.com/Xpra-org/xpra/commit/94c37f05da892efda3a4701371f4091659a599e0)
+  * [undefined diagnostic method aborts printing](https://github.com/Xpra-org/xpra/commit/b66b53dedbfc658f683de7ffd5a800ea7e7b23fd)
+  * [use more widely compatible socket syntax](https://github.com/Xpra-org/xpra/commit/f57e549f736d638a713864b95262516b9be8d55c)
+  * [don't catch all exceptions types](https://github.com/Xpra-org/xpra/commit/0158eb2425f2177474dcc9e4326b9ce596e850ba)
+  * [print client needed `file` and `printer` modules](https://github.com/Xpra-org/xpra/commit/65343968835029676ebbca0760c21ee7327e035d) [unecessarily](https://github.com/Xpra-org/xpra/commit/5472b70a649e0dae1caf8dc2ca54b96f1694ca90)
+* Major:
   * [handle `notify2` backend failures gracefully](https://github.com/Xpra-org/xpra/commit/ef6599a8ec0df8340e8e8ccaab2f19c609b97922)
   * [honour the `XPRA_USERNAME` environment variable in all code paths](https://github.com/Xpra-org/xpra/commit/27747c090bb7df5bbc1161f44903d8e4fcf11d3c)
   * [`resize-display=yes:none` was not honoured](https://github.com/Xpra-org/xpra/commit/4abe64afab5fbf8ec733b5de6bd27c9c78668d06)
