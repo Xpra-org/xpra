@@ -685,7 +685,18 @@ class PrintClient(SendCommandConnectClient):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")
 
     def do_command(self, caps: typedict) -> None:
+        printer = typedict(caps.dictget("printer", {}))
+        if printer or not BACKWARDS_COMPATIBLE:
+            info = printer.strget("info", "unknown")
+            code = printer.intget("code", ExitCode.FAILURE)
+            if code != 0:
+                self.warn_and_quit(code, f"print request failed: {info!r}")
+                return
+            log.info("print request has been handled: %s", info)
+            self.quit(ExitCode.OK)
+            return
         assert BACKWARDS_COMPATIBLE
+        # backwards compatible mode, send a separate print packet:
         printing = caps.boolget("printing")
         if not printing:
             self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support printing")
