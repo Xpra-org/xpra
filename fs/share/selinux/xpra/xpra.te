@@ -1,4 +1,4 @@
-policy_module(xpra_socketactivation, 2.1)
+policy_module(xpra, 2.1)
 
 require {
 	class dbus { acquire_svc send_msg };

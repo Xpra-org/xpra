@@ -5,7 +5,7 @@ Then run make:
 make
 
 To load the policy:
-semodule -i xpra_socketactivation.pp
+semodule -i xpra.pp
 
 Assign the port:
 semanage port -a -t xpra_port_t -p tcp 14500
@@ -13,5 +13,5 @@ semanage port -a -t xpra_port_t -p tcp 14500
 
 To remove the policy:
 semanage port -d -p tcp 14500
-semodule -r xpra_socketactivation
+semodule -r xpra
 

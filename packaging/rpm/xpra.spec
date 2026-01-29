@@ -70,7 +70,7 @@ autoprov: no
 %{!?run_tests: %define run_tests 0}
 %{!?with_selinux: %define with_selinux 1}
 %global selinux_variants mls targeted
-%define selinux_modules cups_xpra xpra_socketactivation
+%define selinux_modules cups_xpra xpra
 
 %ifarch aarch64 riscv5
 %{!?nthreads: %global nthreads 1}
