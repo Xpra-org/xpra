@@ -1084,7 +1084,7 @@ fi
 
 
 %changelog
-* Wed Jan 28 2026 Antoine Martin <antoine@xpra.org> 6.4.2-10
+* Thu Jan 29 2026 Antoine Martin <antoine@xpra.org> 6.4.2-10
 - Platforms, build and packaging:
    `cx_Freeze` update broke the packaging script
    `pyu2f` missing build dependency
@@ -1104,6 +1104,7 @@ fi
    use more widely compatible socket syntax
    don't catch all exceptions types
    print client needed `file` and `printer` modules
+   SELinux warnings
 - Major:
    handle `notify2` backend failures gracefully
    honour the `XPRA_USERNAME` environment variable in all code paths

@@ -17,6 +17,7 @@ xpra (6.4.2-1) UNRELEASED; urgency=low
     use more widely compatible socket syntax
     don't catch all exceptions types
     print client needed `file` and `printer` modules
+    SELinux warnings
   * Major:
     handle `notify2` backend failures gracefully
     honour the `XPRA_USERNAME` environment variable in all code paths
@@ -35,7 +36,7 @@ xpra (6.4.2-1) UNRELEASED; urgency=low
     warning when the server doesn't support av-sync
     misleading comments and debug logging
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 28 Jan 2026 22:28:24 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 29 Jan 2026 16:27:13 +0700
 
 xpra (6.4.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
