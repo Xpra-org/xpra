@@ -13,6 +13,7 @@ require {
 	type xserver_exec_t;
 }
 
+type cert_t;
 type cups_xpra_t;
 type cups_xpra_exec_t;
 
