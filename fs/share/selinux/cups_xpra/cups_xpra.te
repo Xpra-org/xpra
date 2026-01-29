@@ -48,3 +48,7 @@ allow cups_xpra_t user_tmp_t:sock_file write;
 #to generate the default xpra config object,
 #we may need to getattr the Xorg binary:
 allow cups_xpra_t xserver_exec_t:file getattr;
+
+# we don't need any ssl certs in the cups backend:
+dontaudit cups_xpra_t cert_t:dir { getattr open read search };
+dontaudit cups_xpra_t cert_t:file { getattr open read };
