@@ -61,7 +61,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return self.compositor.get_keyboard_device()
 
     @staticmethod
-    def get_keyboard_config(props=None):
+    def get_keyboard_config(_props=None):
         # p = typedict(props or {})
         from xpra.wayland.keyboard_config import KeyboardConfig
         keyboard_config = KeyboardConfig()
@@ -137,7 +137,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         finally:
             self.compositor.flush()
 
-    def _process_window_map(self, proto, packet: Packet) -> None:
+    def _process_window_map(self, _proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         surface = self.get_surface(wid)
@@ -149,7 +149,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.flush()
         self.refresh_window(window)
 
-    def do_process_window_configure(self, proto, wid, config: typedict) -> None:
+    def do_process_window_configure(self, _proto, wid, config: typedict) -> None:
         window = self.get_window(wid)
         surface = self.get_surface(wid)
         if not (window and surface):
@@ -243,6 +243,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
                 size: tuple[int, int],
                 rects: Sequence[tuple[int, int, int, int]],
                 subsurfaces: list[tuple[int, int, int]]) -> None:
+        log(f"commit wid {wid} {mapped=}, {size=}, {rects=}, {subsurfaces=}")
         window = self.get_window(wid)
         if not window:
             return
@@ -269,6 +270,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self._remove_wid(wid)
 
     def _move(self, wid: int, serial: int) -> None:
+        log(f"move wid {wid}, serial={serial:#x}")
         window = self.get_window(wid)
         if not window:
             log.warn("Warning: cannot move window %i: not found!", wid)
@@ -292,7 +294,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         source.initiate_moveresize(wid, window, x_root, y_root, direction, button, source_indication)
 
     def _resize(self, wid: int, serial: int, moveresize: int) -> None:
-        log.info(f"resize wid {wid:#x} moveresize={moveresize}")
+        log.info(f"resize wid {wid:#x}, serial={serial:#x}, moveresize={moveresize}")
 
     def _new_output(self, name: str, props: dict):
         log("new output %r=%r", name, props)
