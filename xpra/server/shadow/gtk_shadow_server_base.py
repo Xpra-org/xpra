@@ -46,7 +46,7 @@ def parse_geometry(s) -> list[int]:
         raise
 
 
-def parse_geometries(s) -> list[list[int]]:
+def parse_geometries(s: str) -> list[list[int]]:
     g = []
     for geometry_str in s.split("/"):
         if geometry_str:
@@ -185,9 +185,8 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         display = manager.get_default_display()
         from xpra.util.screen import prettify_plug_name
         display_name = prettify_plug_name(display.get_name())
-        monitors = self.get_shadow_monitors()
         match_str = None
-        geometries = None
+        geometries = ()
         if "=" in self.display_options:
             # parse the display options as a dictionary:
             from xpra.util.parsing import parse_simple_dict
@@ -198,7 +197,7 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
                 return self.makeDynamicWindowModels()
             match_str = opt_dict.get("plug")
             self.multi_window = str_to_bool(opt_dict.get("multi-window", self.multi_window))
-            geometries_str = opt_dict.get("geometry")
+            geometries_str = opt_dict.get("geometry", "")
             if geometries_str:
                 geometries = parse_geometries(geometries_str)
         else:
@@ -218,6 +217,7 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
             return models
         found = []
         screenlog("capture inputs matching %r", match_str or "all")
+        monitors = self.get_shadow_monitors()
         for i, monitor in enumerate(monitors):
             plug_name, x, y, width, height, scale_factor = monitor
             title = display_name
