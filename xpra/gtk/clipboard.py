@@ -163,7 +163,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 data = filter_data(dtype=target, dformat=8, data=data)
                 got_contents(target, 8, data)
                 return
-        log.warn("Warning: can't find request target atom {target}")
+        log.warn(f"Warning: can't find request target atom {target}")
         got_contents(target, 0, b"")
 
 

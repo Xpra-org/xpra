@@ -43,7 +43,7 @@ class SshAgent(StubServerMixin):
         self.ssh_agent = SSH_AGENT_DISPATCH and opts.ssh.lower() not in FALSE_OPTIONS
         session_dir = os.environ.get("XPRA_SESSION_DIR", "")
         if not session_dir:
-            log.warn("Warning: unable to configure {SSH_AUTH_SOCK} without a valid session directory")
+            log.warn(f"Warning: unable to configure {SSH_AUTH_SOCK} without a valid session directory")
             return
         if self.ssh_agent:
             self.session_files.append("ssh/agent")

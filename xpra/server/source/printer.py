@@ -183,5 +183,5 @@ class PrinterConnection(FileTransferHandler, StubClientConnection):
                 log.info(f"removed remote printer {printer!r}")
             except Exception as e:
                 log("remove_printer(%s)", printer, exc_info=True)
-                log.error("Error: failed to remove printer {printer!r}:")
+                log.error(f"Error: failed to remove printer {printer!r}:")
                 log.estr(e)

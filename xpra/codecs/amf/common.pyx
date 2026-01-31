@@ -57,7 +57,7 @@ cdef object load_library():
         try:
             return CDLL(option)
         except (OSError, ImportError) as e:
-            log("CDLL({option!r})", exc_info=True)
+            log(f"CDLL({option!r})", exc_info=True)
     raise ImportError(f"AMF library {libname!r} not found")
 
 
