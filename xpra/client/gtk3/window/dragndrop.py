@@ -9,7 +9,7 @@ from collections.abc import Callable
 
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
-from xpra.os_util import gi_import, WIN32, POSIX
+from xpra.os_util import gi_import, WIN32
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.log import Logger
@@ -24,8 +24,11 @@ log = Logger("window", "events", "dragndrop")
 def xid(w) -> int:
     # TODO: use a generic window handle function
     # this only used for debugging for now
-    if w and POSIX:
-        return w.get_xid()
+    if w:
+        try:
+            return w.get_xid()
+        except AttributeError:
+            pass
     return 0
 
 
