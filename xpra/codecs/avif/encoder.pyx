@@ -88,7 +88,7 @@ INPUT_PIXEL_FORMATS: Dict[str, int] = {
 
 cdef inline void check(avifResult r, message: str):
     if r != AVIF_RESULT_OK:
-        err = avifResultToString(r) or AVIF_RESULT.get(r, r)
+        err = avifResultToString(r).decode("latin1") or AVIF_RESULT.get(r, r)
         raise RuntimeError("%s : %s" % (message, err))
 
 
