@@ -211,14 +211,15 @@ class WindowServer(StubServerMixin):
         return wid
 
     def _add_new_window_common(self, window) -> int:
-        if "xid" in window.get_property_names():
-            wid = window.get_property("xid")
-            if not wid:
-                raise RuntimeError(f"failed to get window id for new window {window!r}")
-        else:
-            wid = self._max_window_id
-            self._max_window_id = max(self._max_window_id, wid + 1)
+        wid = self.allocate_wid(window)
+        if not wid:
+            raise RuntimeError(f"failed to get window id for new window {window!r}")
         self.do_add_new_window_common(wid, window)
+        return wid
+
+    def allocate_wid(self, _window) -> int:
+        wid = self._max_window_id
+        self._max_window_id = max(self._max_window_id, wid + 1)
         return wid
 
     def do_add_new_window_common(self, wid: int, window) -> None:

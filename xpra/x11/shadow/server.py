@@ -64,14 +64,6 @@ class ShadowX11Server(GTKShadowServerBase):
     def get_root_window_model_class(self) -> type:
         return X11ShadowModel
 
-    def _add_new_window_common(self, window) -> int:
-        # don't use the `xid` as window id in shadow mode
-        # as the same root window may span multiple monitors
-        wid = self._max_window_id
-        self._max_window_id = max(self._max_window_id, wid + 1)
-        self.do_add_new_window_common(wid, window)
-        return wid
-
     def makeDynamicWindowModels(self):
         assert self.window_matches
         rwmc = self.get_root_window_model_class()
