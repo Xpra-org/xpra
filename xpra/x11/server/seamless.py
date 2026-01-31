@@ -477,6 +477,11 @@ class SeamlessServer(GObject.GObject, ServerBase):
             if "x11-property" in ms:
                 ss.send("window-metadata", wid, metadata)
 
+    def allocate_wid(self, window) -> int:
+        if "xid" in window.get_property_names():
+            return window.get_property("xid")
+        return super().allocate_wid(window)
+
     def _add_new_window(self, window) -> None:
         wid = self._add_new_window_common(window)
         geometry = window.get_property("geometry")
