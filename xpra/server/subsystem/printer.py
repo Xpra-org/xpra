@@ -163,7 +163,7 @@ class PrinterServer(StubServerMixin):
         self.send_disconnect(proto, ConnectionMessage.DONE)
         return True
 
-    def _process_print_file(self, _proto, packet: Packet) -> None:
+    def _process_print(self, _proto, packet: Packet) -> None:
         code, message = self.do_print_file(packet)
         if code != ExitCode.OK:
             log.warn(message)
