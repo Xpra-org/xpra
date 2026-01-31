@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t   #pylint: disable=syntax-error
 
 DEF AVIF_PLANE_COUNT_YUV = 3
@@ -429,7 +430,7 @@ cdef extern from "avif/avif.h":
         AVIF_RESULT_INVALID_ARGUMENT
         AVIF_RESULT_NOT_IMPLEMENTED
 
-AVIF_RESULT = {
+AVIF_RESULT: Dict[int, str] = {
     AVIF_RESULT_OK                              : "OK",
     AVIF_RESULT_UNKNOWN_ERROR                   : "UNKNOWN ERROR",
     AVIF_RESULT_INVALID_FTYP                    : "INVALID_FTYP",
