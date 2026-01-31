@@ -77,7 +77,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.4.2
+Version:			6.4.3
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1084,6 +1084,15 @@ fi
 
 
 %changelog
+* Sat Jan 31 2026 Antoine Martin <antoine@xpra.org> 6.4.3-10
+- Major:
+   Drag-N-Drop errors on Wayland
+   X11 `shadow` mode only showing one monitor + more comprehensive fix
+   printing backport fixup
+   SELinux policy compilation error
+- Cosmetic:
+   substitutions missing from log messages]
+
 * Thu Jan 29 2026 Antoine Martin <antoine@xpra.org> 6.4.2-10
 - Platforms, build and packaging:
    `cx_Freeze` update broke the packaging script
