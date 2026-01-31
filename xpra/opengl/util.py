@@ -7,6 +7,13 @@
 import os
 import time
 
+from enum import Enum
+try:
+    # Python 3.11 and later:
+    from enum import StrEnum
+except ImportError:     # pragma: no cover
+    StrEnum = Enum      # type: ignore
+
 from OpenGL import GL
 
 from xpra.common import StrEnum
