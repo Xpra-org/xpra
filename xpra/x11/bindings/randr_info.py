@@ -14,7 +14,7 @@ def main() -> None:
     init_display_source()
     randr = RandRBindings()
     # print(randr.is_dummy16())
-    print_nested_dict(randr.get_all_screen_properties())
+    print_nested_dict(randr.get_all_screen_properties(), hex_keys=("EDID", ))
 
 
 if __name__ == "__main__":
