@@ -18,7 +18,7 @@ from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.auth.auth_helper import AuthDef
 from xpra.util.objects import typedict
 from xpra.net.common import Packet
-from xpra.net.constants import ConnectionMessage
+from xpra.common import ConnectionMessage
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
