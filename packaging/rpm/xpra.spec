@@ -1085,10 +1085,12 @@ fi
 
 %changelog
 * Sat Jan 31 2026 Antoine Martin <antoine@xpra.org> 6.4.3-10
+* Platforms, build and packaging:
+   pynvml 13.590.48
 - Major:
    Drag-N-Drop errors on Wayland
    X11 `shadow` mode only showing one monitor + more comprehensive fix
-   printing backport fixup
+   printing backport fixups: invalid module, missing packet handler
    SELinux policy compilation error
 - Cosmetic:
    substitutions missing from log messages]

@@ -1,10 +1,12 @@
 # Changelog
 
 ## [6.4.3] 2026-01-31
+* Platforms, build and packaging:
+  * [pynvml 13.590.48](https://github.com/Xpra-org/xpra/commit/f257a96446664ea665bb151b7ba0710276127750)
 * Major:
   * [Drag-N-Drop errors on Wayland](https://github.com/Xpra-org/xpra/commit/984d38bc23ffa0d26d5a7a4a25ec5d9d05d9b9de)
   * [X11 `shadow` mode only showing one monitor](https://github.com/Xpra-org/xpra/commit/7e900c869b0073ee06426cff99ad39b4d21d4c17) + [more comprehensive fix](https://github.com/Xpra-org/xpra/commit/c51e0f37fb41736302d657c5193902ed4b40ef2f)
-  * [printing backport fixup](https://github.com/Xpra-org/xpra/commit/71aa53a33f97c75c3ab27255e8cd74dbf59e2b1f)
+  * printing backport fixups: [invalid module](https://github.com/Xpra-org/xpra/commit/71aa53a33f97c75c3ab27255e8cd74dbf59e2b1f) [missing packet handler](https://github.com/Xpra-org/xpra/commit/196ce489a49ae76887634c75311b133e0af0abe9)
   * [SELinux policy compilation error](https://github.com/Xpra-org/xpra/commit/12fcb52bda6ef93f2933dd25459a1e25df67c35c)
 * Cosmetic:
   * [substitutions missing from log messages](https://github.com/Xpra-org/xpra/commit/cbd453d90b38786d4eb9950eb120c5f60624f895)
