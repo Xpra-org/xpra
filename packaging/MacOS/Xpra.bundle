@@ -83,6 +83,9 @@
 		${prefix}/lib/libvpx.*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/libavif.*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libwebp*dylib
 	</binary>
 	<binary>
