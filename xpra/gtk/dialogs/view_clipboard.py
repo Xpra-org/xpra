@@ -161,7 +161,7 @@ class ClipboardInstance:
 
     def do_set_string(self, *_args) -> None:
         text = self.ellipsis(self.value_entry.get_text())
-        self.clipboard.set_text(text, len(text))
+        self.clipboard.set_text(text, -1)
 
     def owner_changed(self, _cb, event) -> None:
         owner = self.clipboard.get_owner()

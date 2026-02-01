@@ -92,7 +92,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                             pass
                 log("setting text data %s / %s of size %i: %s", dtype, dformat, len(text), Ellipsizer(text))
                 self._owner_change_embargo = monotonic()
-                self.clipboard.set_text(text, len(text))
+                self.clipboard.set_text(text, -1)
                 return
             # we should handle more datatypes here..
 
