@@ -16,7 +16,6 @@ except ImportError:     # pragma: no cover
 
 from OpenGL import GL
 
-from xpra.common import StrEnum
 from xpra.util.env import envbool
 from xpra.util.str_fn import strtobytes
 from xpra.buffers.membuf import get_membuf  # @UnresolvedImport pylint: disable=import-outside-toplevel
