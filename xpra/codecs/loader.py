@@ -42,7 +42,7 @@ log(f"codec loader settings: {SELFTEST=}, {FULL_SELFTEST=}, {CODEC_FAIL_IMPORT=}
 
 SKIP_LIST: Sequence[str] = ()
 if OSX:
-    SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg")
+    SKIP_LIST = ("nvenc", "nvdec", "nvjpeg")
 
 
 def autoprefix(prefix: str, name: str) -> str:
