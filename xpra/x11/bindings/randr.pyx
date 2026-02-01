@@ -345,6 +345,8 @@ cdef dict get_mode_info(XRRModeInfo *mi, with_sync: bool):
             "v-total"       : mi.vTotal,
             "mode-flags"    : tuple(name for v,name in MODE_FLAGS_STR.items() if mi.modeFlags & v),
         }
+    if mi.hTotal and mi.vTotal:
+        info["refresh-rate"] = mi.dotClock / (mi.hTotal * mi.vTotal)
     return info
 
 
@@ -355,8 +357,8 @@ cdef dict get_output_info(Display *display, XRRScreenResources *rsc, RROutput ou
     info = {
         "id"                : output,
         "connection"        : CONNECTION_STR.get(oi.connection, "%i" % oi.connection),
-        }
-    if oi.connection!=RR_Disconnected:
+    }
+    if oi.connection != RR_Disconnected:
         info |= {
             "width-mm"          : oi.mm_width,
             "height-mm"         : oi.mm_height,
