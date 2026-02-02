@@ -33,7 +33,7 @@ log("codec loader settings: SELFTEST=%s, FULL_SELFTEST=%s, CODEC_FAIL_IMPORT=%s,
 
 SKIP_LIST : Tuple[str,...] = ()
 if OSX:
-    SKIP_LIST = ("nvenc", "nvdec", "nvjpeg")
+    SKIP_LIST = ("enc_gstreamer", "dec_gstreamer", "nvenc", "nvdec", "nvjpeg")
 def filt(*values) -> Tuple[str,...]:
     return tuple(x for x in values if all(x.find(s)<0 for s in SKIP_LIST))
 
