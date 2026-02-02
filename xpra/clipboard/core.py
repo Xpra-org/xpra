@@ -11,13 +11,12 @@ from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
 from xpra.net.compression import Compressible
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.os_util import POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
-from xpra.util.env import envint
-from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS, CLIPBOARD_GREEDY
-from xpra.clipboard.common import get_format_size, sizeof_long, sizeof_short, compile_filters
+from xpra.util.env import envint, envbool
+from xpra.clipboard.common import get_format_size, sizeof_long, sizeof_short, compile_filters, get_local_selections
 from xpra.clipboard.targets import _filter_targets, must_discard, DISCARD_EXTRA_TARGETS, DISCARD_TARGETS
 from xpra.log import Logger, is_debug_enabled
 
@@ -28,15 +27,11 @@ MAX_CLIPBOARD_PACKET_SIZE: Final[int] = 16 * 1024 * 1024
 MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
+DEFAULT_PREFERRED_TARGETS = "UTF8_STRING,TEXT,STRING,text/plain"
+if POSIX:
+    DEFAULT_PREFERRED_TARGETS += "image/png"
+PREFERRED_TARGETS = tuple(os.environ.get("XPRA_CLIPBOARD_PREFERRED_TARGETS", DEFAULT_PREFERRED_TARGETS).split(","))
 
-def _get_clipboards() -> Sequence[str]:
-    clipboards_env = os.environ.get("XPRA_CLIPBOARDS")
-    if clipboards_env is None:
-        return PLATFORM_CLIPBOARDS
-    return tuple(x.upper().strip() for x in clipboards_env.split(","))
-
-
-CLIPBOARDS = _get_clipboards()
 TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
 
 # targets we never wish to handle:
@@ -66,8 +61,29 @@ class ClipboardProtocolHelperCore:
         self.init_translation(kwargs)
         self._want_targets: bool = False
         self.init_packet_handlers()
-        self.init_proxies(d.strtupleget("clipboards.local", CLIPBOARDS))
-        self.remote_clipboards = d.strtupleget("clipboards.remote", CLIPBOARDS)
+        selections = get_local_selections()
+        self.init_proxies(d.strtupleget("clipboards.local", selections))
+        self.remote_clipboards = d.strtupleget("clipboards.remote", selections)
+        self.local_want_targets = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
+        self.local_greedy = envbool("XPRA_CLIPBOARD_GREEDY")
+        self.local_preferred_targets = PREFERRED_TARGETS
+        self.local_selections = selections
+
+    def get_caps(self) -> dict[str, Any]:
+        caps: dict[str, Any] = {
+            "preferred-targets": self.local_preferred_targets,
+            "selections": self.local_selections,
+        }
+        # some implementations must set the targets when claiming the clipboard:
+        if self.local_want_targets:
+            caps["want_targets"] = True
+        # some implementation must set a value to claim the clipboard (ie: win32 and osx)
+        if self.local_greedy:
+            caps["greedy"] = True
+        if BACKWARDS_COMPATIBLE:
+            caps["enabled"] = True
+            caps[""] = True
+        return caps
 
     def init_proxies(self, selections: Iterable[str]) -> None:
         self._clipboard_proxies: dict[str, Any] = {}
@@ -135,7 +151,14 @@ class ClipboardProtocolHelperCore:
             "pending": tuple(self._clipboard_outstanding_requests.keys()),
             "can-send": self.can_send,
             "can-receive": self.can_receive,
-            "want_targets": self._want_targets,
+            "remote": {
+                "want_targets": self._want_targets,
+                "remote-clipboards": self.remote_clipboards,
+            },
+            "local": {
+                "want-targets": self.local_want_targets,
+                "greedy": self.local_greedy,
+            },
         }
         for clipboard, proxy in self._clipboard_proxies.items():
             info[clipboard] = proxy.get_info()
@@ -229,7 +252,7 @@ class ClipboardProtocolHelperCore:
                     if wire_data:
                         packet += [target, dtype, dformat, wire_encoding, wire_data]
                         claim = proxy._can_send
-                        packet += [claim, CLIPBOARD_GREEDY]
+                        packet += [claim, self.local_greedy]
         log("send_clipboard_token_handler %s to %s", proxy._selection, remote)
         self.send(*packet)
 
@@ -241,7 +264,7 @@ class ClipboardProtocolHelperCore:
             # this can happen if the server has fewer clipboards than the client,
             # ie: with win32 shadow servers
             log_fn: Callable = log.debug
-            if name in CLIPBOARDS:
+            if name in self.local_selections:
                 log_fn = log.warn
             log_fn("ignoring token for clipboard '%s' (no proxy)", name)
             return

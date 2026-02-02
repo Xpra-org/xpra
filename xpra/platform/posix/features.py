@@ -6,8 +6,6 @@
 
 from collections.abc import Sequence
 
-from xpra.util.system import is_Wayland
-
 AUTOSTART = True
 
 DEFAULT_ENV = (
@@ -45,13 +43,6 @@ DEFAULT_START_ENV = (
 )
 
 DEFAULT_SSH_CMD = "ssh"
-
-CLIPBOARDS: Sequence[str] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
-CLIPBOARD_GREEDY = False
-if is_Wayland():
-    CLIPBOARDS = ("CLIPBOARD", "PRIMARY")
-    CLIPBOARD_GREEDY = True
-CLIPBOARD_PREFERRED_TARGETS: Sequence[str] = ("UTF8_STRING", "TEXT", "STRING", "text/plain", "image/png")
 
 OPEN_COMMAND = ("/usr/bin/xdg-open",)
 

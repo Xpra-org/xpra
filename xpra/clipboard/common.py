@@ -3,11 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import re
 import struct
 from typing import TypeAlias, Callable, Any, Final, Iterable, Sequence
 
+from xpra.os_util import WIN32, OSX
 from xpra.util.env import envint
+from xpra.util.system import is_Wayland
 
 sizeof_long: Final[int] = struct.calcsize(b'@L')
 sizeof_short: Final[int] = struct.calcsize(b'=H')
@@ -18,6 +21,16 @@ assert sizeof_short == 2, "struct.calcsize('=H')=%s" % sizeof_short
 CARD32_SIZE: Final[int] = sizeof_long * 8
 
 ALL_CLIPBOARDS: Final[Sequence[str]] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
+
+
+def get_local_selections() -> Sequence[str]:
+    if "XPRA_CLIPBOARDS" in os.environ:
+        return tuple(x for x in os.environ.get("XPRA_CLIPBOARDS", "").split(",") if x)
+    if WIN32 or OSX:
+        return "CLIPBOARD",
+    if is_Wayland():
+        return "CLIPBOARD", "PRIMARY"
+    return "CLIPBOARD", "PRIMARY", "SECONDARY"
 
 
 def get_format_size(dformat: int) -> int:

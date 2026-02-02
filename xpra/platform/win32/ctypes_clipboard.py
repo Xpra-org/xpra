@@ -724,6 +724,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
     def __init__(self, send_packet_cb, progress_cb=noop, **kwargs):
         self.init_window()
         super().__init__(send_packet_cb, progress_cb, **kwargs)
+        self.local_greedy = True
 
     def init_window(self) -> None:
         log("Win32Clipboard.init_window() creating clipboard window class and instance")

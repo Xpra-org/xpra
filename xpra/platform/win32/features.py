@@ -10,9 +10,6 @@ from collections.abc import Sequence
 CAN_DAEMONIZE = False
 REINIT_WINDOWS = True
 
-CLIPBOARDS = ("CLIPBOARD",)
-CLIPBOARD_GREEDY = True
-
 SOURCE: Sequence[str] = ()
 
 EXECUTABLE_EXTENSION = "exe"

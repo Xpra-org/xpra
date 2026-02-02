@@ -9,9 +9,9 @@ from typing import Any, Deque
 from collections import deque
 from collections.abc import Sequence
 
+from xpra.clipboard.common import get_local_selections, ALL_CLIPBOARDS
 from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection
-from xpra.platform.features import CLIPBOARDS
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envint
@@ -42,7 +42,7 @@ class ClipboardConnection(StubClientConnection):
         self.clipboard_stats: Deque[float] = deque(maxlen=MAX_CLIPBOARD_LIMIT * MAX_CLIPBOARD_LIMIT_DURATION)
         self.clipboard_greedy = False
         self.clipboard_want_targets = False
-        self.clipboard_selections = CLIPBOARDS
+        self.clipboard_selections = get_local_selections()
         self.clipboard_preferred_targets: Sequence[str] = ()
 
     def cleanup(self) -> None:
@@ -56,7 +56,7 @@ class ClipboardConnection(StubClientConnection):
             self.clipboard_notifications = ccaps.boolget("notifications")
             self.clipboard_greedy = ccaps.boolget("greedy")
             self.clipboard_want_targets = ccaps.boolget("want_targets")
-            self.clipboard_selections = ccaps.strtupleget("selections", CLIPBOARDS)
+            self.clipboard_selections = ccaps.strtupleget("selections", ALL_CLIPBOARDS)
             self.clipboard_preferred_targets = ccaps.strtupleget("preferred-targets", ())
         log("client clipboard: enabled=%s, notifications=%s",
             self.clipboard_enabled, self.clipboard_notifications)

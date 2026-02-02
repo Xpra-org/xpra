@@ -9,10 +9,7 @@ from typing import Any
 from collections.abc import Sequence
 from importlib import import_module
 
-from xpra.platform.features import (
-    CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS,
-    CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY,
-)
+from xpra.clipboard.common import get_local_selections
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
@@ -44,6 +41,8 @@ class ClipboardServer(StubServerMixin):
         self.clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS
         self.clipboard_direction = opts.clipboard_direction
         self.clipboard_filter_file = opts.clipboard_filter_file
+        log("init(..) clipboard=%s, direction=%r, filter-file=%r",
+            self.clipboard, self.clipboard_direction, self.clipboard_filter_file)
 
     def setup(self) -> None:
         self.init_clipboard()
@@ -85,21 +84,18 @@ class ClipboardServer(StubServerMixin):
         return {ClipboardServer.PREFIX: ci}
 
     def get_server_features(self, server_source=None) -> dict[str, Any]:
-        clipboard = self._clipboard_helper is not None
+        ch = self._clipboard_helper
+        clipboard = ch is not None
         log("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s",
-            self._clipboard_helper, self._clipboard_client, server_source, clipboard)
+            ch, self._clipboard_client, server_source, clipboard)
         if not clipboard:
             return {}
         ccaps: dict[str, Any] = {
             "notifications": True,
             "selections": self._clipboards,
-            "preferred-targets": CLIPBOARD_PREFERRED_TARGETS,
             "direction": self.clipboard_direction,
         }
-        if CLIPBOARD_WANT_TARGETS:
-            ccaps["want_targets"] = True
-        if CLIPBOARD_GREEDY:
-            ccaps["greedy"] = True
+        ccaps.update(ch.get_caps())
         log("clipboard server caps=%s", ccaps)
         return {ClipboardServer.PREFIX: ccaps}
 
@@ -137,7 +133,7 @@ class ClipboardServer(StubServerMixin):
         }
         self._clipboard_helper = clipboard_class(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
         self._clipboard_helper.init_proxies_claim()
-        self._clipboards = CLIPBOARDS
+        self._clipboards = get_local_selections()
         self.clipboard = True
 
     @staticmethod

@@ -8,7 +8,6 @@
 import os
 from collections.abc import Sequence
 
-from xpra.util.env import envbool
 from xpra.platform import platform_import
 
 # defaults which may be overridden by platform_import:
@@ -21,11 +20,6 @@ INPUT_DEVICES: Sequence[str] = ("auto",)
 SOURCE: Sequence[str] = ()
 
 SYSTEM_PROXY_SOCKET: str = os.environ.get("XPRA_SYSTEM_PROXY_SOCKET", "/run/xpra/system")
-
-CLIPBOARDS: Sequence[str] = ()
-CLIPBOARD_WANT_TARGETS: bool = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
-CLIPBOARD_GREEDY: bool = envbool("XPRA_CLIPBOARD_GREEDY")
-CLIPBOARD_PREFERRED_TARGETS: Sequence[str] = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
 EXECUTABLE_EXTENSION: str = ""
 
@@ -68,9 +62,6 @@ _features_list_: Sequence[str] = (
     "DEFAULT_SSH_COMMAND",
     "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",
     "CLIPBOARDS",
-    "CLIPBOARD_WANT_TARGETS",
-    "CLIPBOARD_GREEDY",
-    "CLIPBOARD_PREFERRED_TARGETS",
     "EXECUTABLE_EXTENSION",
     "INPUT_DEVICES",
     "SYSTEM_PROXY_SOCKET",

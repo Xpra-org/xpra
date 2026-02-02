@@ -14,7 +14,7 @@ from xpra.util.str_fn import csv
 from xpra.gtk.widget import label
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.platform.features import CLIPBOARDS
+from xpra.clipboard.common import get_local_selections
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -194,7 +194,7 @@ class ClipboardStateInfoWindow:
         self.events = label("", font="monospace 9")
 
         # how many clipboards to show:
-        self.clipboards = CLIPBOARDS
+        self.clipboards = get_local_selections()
 
         grid = Gtk.Grid()
         for i, text in enumerate(("Selection", "Value", "Clear", "Targets", "Actions")):
