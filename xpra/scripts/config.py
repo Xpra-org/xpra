@@ -1016,9 +1016,10 @@ def get_defaults() -> dict[str, Any]:
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
+    from xpra.net.constants import SYSTEM_PROXY_SOCKET
     from xpra.platform.features import (
         OPEN_COMMAND,
-        SOURCE, DEFAULT_ENV, DEFAULT_START_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
+        SOURCE, DEFAULT_ENV, DEFAULT_START_ENV,
     )
     from xpra.platform.paths import (
         get_download_dir, get_remote_run_xpra_scripts,
@@ -1054,6 +1055,10 @@ def get_defaults() -> dict[str, Any]:
     xdummy = detect_xdummy_command(conf_dir, bin_dir, warn_fn=noop)
 
     ssl_protocol = "TLS"
+
+    # we access the GUI when running as a MacOS server (tray, etc.)
+    # and so we cannot daemonize
+    CAN_DAEMONIZE = not (WIN32 or OSX)
 
     GLOBAL_DEFAULTS = {
         "encoding"          : "auto",

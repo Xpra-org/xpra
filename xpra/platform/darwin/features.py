@@ -3,12 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-REINIT_WINDOWS = True
-
-# we access the GUI when running as a server (tray, etc.)
-# and so we cannot daemonize
-CAN_DAEMONIZE = False
-
 OPEN_COMMAND = ("open",)
 
 # DEFAULT_SSH_COMMAND = "ssh"

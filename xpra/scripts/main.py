@@ -2417,7 +2417,7 @@ def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> ExitV
         # this will use the client "start-new-session" feature,
         # to start a new session and connect to it at the same time:
         if not args:
-            from xpra.platform.features import SYSTEM_PROXY_SOCKET
+            from xpra.net.constants import SYSTEM_PROXY_SOCKET
             args = [SYSTEM_PROXY_SOCKET]
         app = get_client_app(cmdline, error_cb, options, args, "request-%s" % mode)
         r = do_run_client(app)

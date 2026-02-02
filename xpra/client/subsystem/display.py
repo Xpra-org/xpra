@@ -8,7 +8,6 @@ from typing import Any
 
 from xpra.net.packet_type import DISPLAY_CONFIGURE
 from xpra.exit_codes import ExitCode
-from xpra.platform.features import REINIT_WINDOWS
 from xpra.platform.gui import (
     get_vrefresh,
     get_antialias_info, get_icc_info, get_display_icc_info, show_desktop,
@@ -21,6 +20,7 @@ from xpra.common import (
     noop, skipkeys, may_notify_client,
 )
 from xpra.constants import NotificationID
+from xpra.os_util import WIN32, OSX
 from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME, FALSE_OPTIONS, get_refresh_rate_for_value,
@@ -28,7 +28,7 @@ from xpra.util.parsing import (
 )
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.env import envint, envbool
+from xpra.util.env import envbool
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
@@ -36,7 +36,7 @@ log = Logger("screen")
 workspacelog = Logger("client", "workspace")
 scalinglog = Logger("scaling")
 
-MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
+MONITOR_CHANGE_REINIT = envbool("XPRA_MONITOR_CHANGE_REINIT", WIN32 or OSX)
 SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", True)
 
 
@@ -517,9 +517,8 @@ class DisplayClient(StubClientMixin):
     def do_process_screen_size_change(self) -> None:
         self.screen_size_change_timer = 0
         self.update_screen_size()
-        log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s",
-            MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
-        if (MONITOR_CHANGE_REINIT and REINIT_WINDOWS) or MONITOR_CHANGE_REINIT > 1:
+        log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s", MONITOR_CHANGE_REINIT)
+        if MONITOR_CHANGE_REINIT:
             log.info("screen size change: will reinit the windows")
             self.reinit_windows()
             self.reinit_window_icons()

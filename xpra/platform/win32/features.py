@@ -6,10 +6,6 @@
 
 from collections.abc import Sequence
 
-# Platform-specific settings for Win32.
-CAN_DAEMONIZE = False
-REINIT_WINDOWS = True
-
 SOURCE: Sequence[str] = ()
 
 EXECUTABLE_EXTENSION = "exe"
@@ -20,9 +16,6 @@ PRINT_COMMAND = ""
 DEFAULT_SSH_COMMAND = "plink.exe -ssh -agent"
 
 OPEN_COMMAND = ["start", "''"]
-
-# not implemented:
-SYSTEM_PROXY_SOCKET = "xpra-proxy"
 
 SOCKET_OPTIONS = (
     # not supported on win32:

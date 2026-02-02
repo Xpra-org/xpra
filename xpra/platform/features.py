@@ -5,21 +5,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from collections.abc import Sequence
 
 from xpra.platform import platform_import
 
 # defaults which may be overridden by platform_import:
-CAN_DAEMONIZE: bool = True
-REINIT_WINDOWS: bool = False
 AUTOSTART: bool = False
 
 INPUT_DEVICES: Sequence[str] = ("auto",)
 
 SOURCE: Sequence[str] = ()
-
-SYSTEM_PROXY_SOCKET: str = os.environ.get("XPRA_SYSTEM_PROXY_SOCKET", "/run/xpra/system")
 
 EXECUTABLE_EXTENSION: str = ""
 
@@ -53,8 +48,6 @@ TCP_OPTIONS: Sequence[str] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
 
 _features_list_: Sequence[str] = (
     "AUTOSTART",
-    "CAN_DAEMONIZE",
-    "REINIT_WINDOWS",
     "COMMAND_SIGNALS",
     "SOURCE",
     "DEFAULT_ENV",
@@ -63,7 +56,6 @@ _features_list_: Sequence[str] = (
     "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",
     "EXECUTABLE_EXTENSION",
     "INPUT_DEVICES",
-    "SYSTEM_PROXY_SOCKET",
     "OPEN_COMMAND",
     "SOCKET_OPTIONS",
     "IP_OPTIONS",
