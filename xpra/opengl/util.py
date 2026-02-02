@@ -41,8 +41,10 @@ if envbool("XPRA_OPENGL_ZEROCOPY_UPLOAD", True):
         import OpenGL_accelerate  # @UnresolvedImport
         assert OpenGL_accelerate
     except ImportError:
-        log.warn("Warning: OpenGL-accelerate is missing")
-        log.warn(" zerocopy upload will not be available")
+        log("import OpenGL_accelerate", exc_info=True)
+        if envbool("XPRA_OPENGL_ZEROCOPY_UPLOAD_WARNING", True):
+            log.warn("Warning: OpenGL-accelerate is missing")
+            log.warn(" zerocopy upload will not be available")
     else:
         from OpenGL import version
         zerocopy_upload = version.__version__ == OpenGL_accelerate.__version__
