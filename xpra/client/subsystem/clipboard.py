@@ -162,10 +162,10 @@ class ClipboardClient(StubClientMixin):
         caps = c.dictget("clipboard") or {}
         self.parse_clipboard_capabilities(typedict(caps))
         if self.server_clipboard and not self.clipboard_helper:
-            self.idle_add(self.init_keyboard_helper)
+            self.idle_add(self.init_clipboard_helper)
         return True
 
-    def init_keyboard_helper(self) -> None:
+    def init_clipboard_helper(self) -> None:
         if self.clipboard_helper:
             return
         ch = self.make_clipboard_helper()
