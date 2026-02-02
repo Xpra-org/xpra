@@ -77,7 +77,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.4.3
+Version:			6.4.4
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1084,6 +1084,8 @@ fi
 
 
 %changelog
+* Mon Feb 02 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
+- TODO
 * Sat Jan 31 2026 Antoine Martin <antoine@xpra.org> 6.4.3-10
 * Platforms, build and packaging:
    pynvml 13.590.48
