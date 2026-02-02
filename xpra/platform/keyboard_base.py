@@ -65,7 +65,7 @@ class KeyboardBase:
                     keycodes.append(keycode)
 
     def set_modifier_mappings(self, mappings) -> None:
-        log("set_modifier_mappings({mappings})")
+        log(f"set_modifier_mappings({mappings})")
         self.modifier_mappings = mappings
         self.modifier_keys = {}
         self.modifier_names = {}

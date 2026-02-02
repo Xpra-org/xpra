@@ -29,7 +29,7 @@ class SQLAuthenticator(SysAuthenticator):
         cursor = self.db_cursor(self.password_query, (self.username,))
         data = cursor.fetchall()
         if not data:
-            log.info("username {self.username!r} was not found in SQL authentication database")
+            log.info(f"username {self.username!r} was not found in SQL authentication database")
             return ()
         return tuple(str(x[0]) for x in data)
 

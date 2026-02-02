@@ -1053,7 +1053,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             cryptolog(f"found keyfile or keydata attribute, enabling {encryption!r} encryption")
         if not encryption and os.environ.get("XPRA_ENCRYPTION_KEY"):
             encryption = f"AES-{DEFAULT_MODE}"
-            cryptolog("found encryption key environment variable, enabling {encryption!r} encryption")
+            cryptolog(f"found encryption key environment variable, enabling {encryption!r} encryption")
         return encryption
 
     def get_encryption_key(self) -> bytes:

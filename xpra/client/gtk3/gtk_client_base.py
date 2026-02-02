@@ -632,7 +632,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.close_file_upload_dialog()
             return
         filename = dialog.get_filename()
-        filelog("file_upload_dialog_response: filename={filename!r}")
+        filelog(f"file_upload_dialog_response: filename={filename!r}")
         try:
             filesize = os.stat(filename).st_size
         except OSError:
