@@ -782,6 +782,8 @@ class SocketProtocol:
 
     def check_eof(self, raw_count=0) -> bool:
         self.eof_pending = False
+        if self._closed:
+            return False
         if self.input_raw_packetcount <= raw_count:
             eventlog("check_eof: eof detected")
             self._process_read(b"")
