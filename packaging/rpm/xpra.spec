@@ -816,28 +816,52 @@ fi
 
 
 %changelog
-* Tue Jan 13 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
+* Mon Feb 02 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install
    Python compatibility regression
    log $ARCH in MacOS builds
+   prefer non-dot ssh paths on MS Windows
+   pyu2f missing build dependency
+   partial support for some RHEL 10 clones
+   pynvml 13.590.48
+   enable avif on MacOS but not GStreamer video
 - MS Windows:
    client errors on control-c
    packaging fix for python-pillow
-   warnings when `named-pipe`s are the only local sockets available
+   warnings when named-pipes are the only local sockets available
    directsound device queries
 - Major:
    virtual monitor geometry synchronization
+   handle notify2 backend failures gracefully
+   initial "fast" socket read could spin until the connection failed
+   DND errors under Wayland
+- Printing:
+   incorrect cups backend exit codes could cause DoS, ie: FILE_TOO_BIG
+   use more widely compatible socket syntax
+   SELinux warnings + fixup
 - Keyboard:
    don't send empty modifier strings
    default keyboard configuration should have default modifier mappings
    help clients figure out modifier mappings
+   client keyboard 'options' attribute was not forwarded
+   honour layout and variant overrides
 - Minor:
+   honour the XPRA_MONITOR_CHANGE_REINIT environment variable
    spurious UI thread events on client startup
-   expose `desktop` flag for desktop windows
+   expose desktop flag for desktop windows
+   window size changed mis-detection
+   better backwards compatibility for exposing version data
+   XPRA_MIN_DPI would actually clamp the DPI to that value
 - Cosmetic:
+   make socket eof detection less spammy
+   invalid syntax used in man page
    more useful message
    log exception if that's all we have
+   XPRA_MIN_COMPRESS_SIZE environment variable did not match its intent
+   avoid warning when the server doesn't support av-sync
+   substitutions missing from log messages
+   EDID data scrambled the message
 
 * Thu Dec 04 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
 - Platforms, build and packaging:

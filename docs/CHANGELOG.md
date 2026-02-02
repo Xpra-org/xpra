@@ -1,10 +1,15 @@
 # Changelog
 
-## [5.1.5] 2026-01-13
+## [5.1.5] 2026-02-02
 * Platforms, build and packaging:
     * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
     * [Python compatibility regression](https://github.com/Xpra-org/xpra/commit/1282fa77ee948c459e69538095a96d08310e18d7)
-    * [log $ARCH in MacOS builds](https://github.com/Xpra-org/xpra/commit/125520531b748580cd5b8e6507ae72f6564a52a9)
+    * [log `$ARCH` in MacOS builds](https://github.com/Xpra-org/xpra/commit/125520531b748580cd5b8e6507ae72f6564a52a9)
+    * [prefer non-dot ssh paths on MS Windows](https://github.com/Xpra-org/xpra/commit/92a70ad0c562ac7092513b86b086437c9ef5e572)
+    * [`pyu2f` missing build dependency](https://github.com/Xpra-org/xpra/commit/86e68e3ae450449032899b2513bf8e2c0d71251e)
+    * [partial support for some RHEL 10 clones](https://github.com/Xpra-org/xpra/commit/21a305e28ed70ad0ba3e107502c4220ad14a4293)
+    * [`pynvml` 13.590.48](https://github.com/Xpra-org/xpra/commit/2c2e1f5d5183094d82f8c0238582326ccc736e42)
+    * [enable `avif` on MacOS](https://github.com/Xpra-org/xpra/commit/4f057fa9bdf28e22f57d318f0e145b238205b780) [but not GStreamer video](https://github.com/Xpra-org/xpra/commit/e539bf12dfaf0d77a706876df1bbfea0262d0a1a)
 * MS Windows:
     * [client errors on control-c](https://github.com/Xpra-org/xpra/commit/c0d8374cc2edf60b3b3963a7bdfcef6cc2cd45ac)
     * [packaging fix for python-pillow](https://github.com/Xpra-org/xpra/commit/1ac190a1dd5c733e336eef7d4dbcc3afef5710f0)
@@ -12,6 +17,13 @@
     * [directsound device queries](https://github.com/Xpra-org/xpra/commit/045a23e94e58bd93612ac1333bf29b9243ad44db)
 * Major:
     * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/18344cff9a1aab0d2f323aa7f1b557f80314f50a)
+    * [handle notify2 backend failures gracefully](https://github.com/Xpra-org/xpra/commit/715f4c5bb6189697c0fd207e8140d5c59944204b)
+    * [initial "fast" socket read could spin until the connection failed](https://github.com/Xpra-org/xpra/commit/332fb57b108865ff672b5277d66fefb3b1e23c88)
+    * [DND errors under Wayland](https://github.com/Xpra-org/xpra/commit/50f2c82d2881df0bb1b478a28aa1ab186b7843e7)
+* Printing:
+    * [incorrect cups backend exit codes could cause DoS](https://github.com/Xpra-org/xpra/commit/6127a6d704ab71b6043a4a3a3b7a173e51626c16), [ie: `FILE_TOO_BIG`](https://github.com/Xpra-org/xpra/commit/194f2cb38f3d4d62c2664ef3b90297575f7a5c79)
+    * [use more widely compatible socket syntax](https://github.com/Xpra-org/xpra/commit/01a91109d6a69aae2f741a9ff92b68986d2674f8)
+    * [`SELinux` warnings](https://github.com/Xpra-org/xpra/commit/1edf362de4a3dd46d1bae04b1dc2ec3a499f7280) [+ fixup](https://github.com/Xpra-org/xpra/commit/d37855f7211b8b467073e34bbf268049974b0b07)
 * Keyboard:
     * [don't send empty modifier strings](https://github.com/Xpra-org/xpra/commit/d7e9e48c28ea9aa91b1b210cd08c8e11c2f3dec9)
     * [default keyboard configuration should have default modifier mappings](https://github.com/Xpra-org/xpra/commit/4d605f1a5f58c03aed0230e17b70ca0f73f03b59)
@@ -19,12 +31,21 @@
     * [client keyboard 'options' attribute was not forwarded](https://github.com/Xpra-org/xpra/commit/639cf8c4c445c0b389b66e316ca65f64afacdf93)
     * [honour layout and variant overrides](https://github.com/Xpra-org/xpra/commit/7978abb0fd1dc4900dfb07875c14289064143308)
 * Minor:
+    * [honour the `XPRA_MONITOR_CHANGE_REINIT` environment variable](https://github.com/Xpra-org/xpra/commit/1b81940da7c6529a70a988ba67c27060c1b9740d)
     * [spurious UI thread events on client startup](https://github.com/Xpra-org/xpra/commit/316a5762aae49ba256f7516a19919fb727bd9f7a)
     * [expose `desktop` flag for desktop windows](https://github.com/Xpra-org/xpra/commit/84744d437e25d2bc942136d63048907d31ced4ed)
     * [window size changed mis-detection](https://github.com/Xpra-org/xpra/commit/64aa726f0505188249c4dec7239d9f9fb94fb690)
+    * [better backwards compatibility for exposing version data](https://github.com/Xpra-org/xpra/commit/abd64fc2f9ff01990b7ad10ea3753b30c6cdbea4)
+    * [`XPRA_MIN_DPI` would actually clamp the DPI to that value](https://github.com/Xpra-org/xpra/commit/152a9a430110ba3a0b4a6ca69949ed1104a761d8)
 * Cosmetic:
+    * [make socket eof detection less spammy](https://github.com/Xpra-org/xpra/commit/a7a00921edc54294b37c49622d3f63f548555091)
+    * [invalid syntax used in man page](https://github.com/Xpra-org/xpra/commit/2291f9bb214d245b56340e8e20b61f2ca6d27787)
     * [more useful message](https://github.com/Xpra-org/xpra/commit/0f2626a0750d9fa587e280f1efacfedf32f09c2e)
     * [log exception if that's all we have](https://github.com/Xpra-org/xpra/commit/0cbecd74f93b381de9dafa008a43283541603c83)
+    * [`XPRA_MIN_COMPRESS_SIZE` environment variable did not match its intent](https://github.com/Xpra-org/xpra/commit/cbe84efc866b85b5fffb9ded9f4c81a4eb3451e8)
+    * [avoid warning when the server doesn't support av-sync](https://github.com/Xpra-org/xpra/commit/7988c852268e996bb5d89253bb311fa891c764fe)
+    * [substitutions missing from log messages](https://github.com/Xpra-org/xpra/commit/c1415a412777af8104579b2f90cbc6517dd9a860)
+    * [EDID data scrambled the message](https://github.com/Xpra-org/xpra/commit/ace76ebc5e1e3e66cf64831ee7200d44652aa723)
 
 ## [5.1.4] 2025-12-04
 * Platforms, build and packaging:
