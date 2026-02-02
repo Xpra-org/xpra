@@ -271,7 +271,7 @@ webp_encoder_ENABLED    = webp_ENABLED
 webp_decoder_ENABLED    = webp_ENABLED
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
-avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
+avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
 vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
