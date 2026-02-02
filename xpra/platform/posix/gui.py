@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.system import is_Wayland, is_X11
 from xpra.util.str_fn import bytestostr
-from xpra.util.env import envbool, get_saved_env
+from xpra.util.env import envbool, get_saved_env, SilenceWarningsContext
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -247,7 +247,8 @@ def get_display_size() -> tuple[int, int]:
     screen = Gdk.Screen.get_default()
     if not screen:
         raise RuntimeError("unable to access the screen via Gdk")
-    return screen.get_width(), screen.get_height()
+    with SilenceWarningsContext():
+        return screen.get_width(), screen.get_height()
 
 
 def get_vrefresh() -> int:
