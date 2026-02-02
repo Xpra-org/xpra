@@ -255,13 +255,15 @@ class KeyboardConfig(KeyboardConfigBase):
                 # non-Unix-like OS provides just keycodes for now:
                 self.keynames_for_mod = get_modifiers_from_keycodes(self.keycodes, MAP_MISSING_MODIFIERS)
                 if MAP_MISSING_MODIFIERS:
-                    map_missing_modifiers(self.keynames_for_mod)
+                    with xlog:
+                        map_missing_modifiers(self.keynames_for_mod)
             else:
                 if not initial:
                     log.info("client did not supply any modifier definitions, using defaults")
                 self.keynames_for_mod = get_modifiers_from_meanings(DEFAULT_MODIFIER_MEANINGS)
                 if MAP_MISSING_MODIFIERS:
-                    map_missing_modifiers(self.keynames_for_mod)
+                    with xlog:
+                        map_missing_modifiers(self.keynames_for_mod)
         log("compute_modifiers() keynames_for_mod=%s", self.keynames_for_mod)
         log("compute_modifiers() keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
         log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
