@@ -404,8 +404,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         def xid(w):
             #TODO: use a generic window handle function
             #this only used for debugging for now
-            if w and POSIX:
-                return w.get_xid()
+            if w:
+                try:
+                    return w.get_xid()
+                except AttributeError:
+                    pass
             return 0
         dest_window = xid(context.get_dest_window())
         source_window = xid(context.get_source_window())
