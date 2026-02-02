@@ -25,6 +25,7 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
         from subprocess import Popen, PIPE
         # we want the output so we can parse it:
         env["XPRA_REDIRECT_OUTPUT"] = "0"
+        env["XPRA_OPENGL_ZEROCOPY_UPLOAD_WARNING"] = "0"
         log(f"query_opengl() using {cmd=}, {env=}")
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
         out, err = proc.communicate()

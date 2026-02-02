@@ -41,7 +41,7 @@ if envbool("XPRA_OPENGL_ZEROCOPY_UPLOAD", True):
         from OpenGL import version
 
         zerocopy_upload = version.__version__ == OpenGL_accelerate.__version__
-    if not zerocopy_upload:
+    if not zerocopy_upload and envbool("XPRA_OPENGL_ZEROCOPY_UPLOAD_WARNING", True):
         log.warn("Warning: zerocopy upload is not available")
 
 
