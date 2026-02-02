@@ -79,7 +79,8 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
         filelog(" printing=%-5s        (ask=%s)", self.remote_printing, self.remote_printing_ask)
 
     def init_printing(self) -> None:
-        self.timeout_add(INIT_PRINTING_DELAY * 1000, self.do_init_printing)
+        if self.printing and self.remote_printing:
+            self.timeout_add(INIT_PRINTING_DELAY * 1000, self.do_init_printing)
 
     def do_init_printing(self) -> None:
         try:
