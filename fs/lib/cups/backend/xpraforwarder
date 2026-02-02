@@ -98,7 +98,7 @@ def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_ke
                 display, filename, mimetype, source, title, printer, no_copies, print_options):
     if socket_path:
         #use direct connection to a given socket path:
-        command = ["xpra", "print", "socket:%s" % socket_path]
+        command = ["xpra", "print", "socket://%s" % socket_path]
     else:
         #use the display and hope we can find its corresponding socket:
         command = ["xpra", "print", display]
