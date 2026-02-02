@@ -1,7 +1,14 @@
 # Changelog
 
 ## [6.4.4] 2026-02-02
-* TODO
+* Platforms, build and packaging:
+  * [enable `avif` support on MacOS](https://github.com/Xpra-org/xpra/commit/8bd2f2e8ed8d9e82d6e05fd5950e595991df2e34)
+  * [hide `AMF` and `GStreamer` codec warnings on MacOS](https://github.com/Xpra-org/xpra/commit/4cd46ee35af4adc38180deafc9962fd86a313adf)
+* Minor:
+  * [server shows missing X11 context warnings with some clients](https://github.com/Xpra-org/xpra/commit/f906982af956213bbd2e4ce87aca9bb6e70e2634)
+* Cosmetic:
+  * [skip `OpenGL` zerocopy warning on the server side](https://github.com/Xpra-org/xpra/commit/283f392c6a4d64ab60b2252d844aea8135a7d2dc)
+  * [avoid errors when `netdev_query` is missing](https://github.com/Xpra-org/xpra/commit/b6d70b9b1499c335f9e770dc4183e8d4c7197f9a)
 
 ## [6.4.3] 2026-01-31
 * Platforms, build and packaging:
