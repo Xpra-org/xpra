@@ -1037,6 +1037,12 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         XRRDeleteMonitor(self.display, window, name_atom)
         self.XSync()
 
+    # method backported from newer versions to keep set_crtc_config identical:
+    def get_atom_name(self, Atom atom) -> str:
+        self.context_check("XGetAtomName")
+        bin_name = self.XGetAtomName(atom)
+        return bin_name.decode("latin1")
+
     def set_crtc_config(self, monitor_defs):
         self.context_check("set_crtc_config")
         log(f"set_crtc_config({monitor_defs})")
