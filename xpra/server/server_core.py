@@ -28,7 +28,7 @@ from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PacketType
 from xpra.net.socket_util import (
-    mdns_publish, peek_connection,
+    mdns_publish, peek_connection, socket_fast_read,
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
     ssl_wrap_socket,
@@ -1319,20 +1319,14 @@ class ServerCore:
         sock = getattr(conn, "_socket", sock)
         pre_read = None
         if socktype=="socket" and not peek_data:
-            #try to read from this socket,
-            #so short-lived probes don't go through the whole protocol instantiation
-            try:
-                sock.settimeout(0.001)
-                data = conn.read(1)
-                if not data:
-                    netlog("%s connection already closed", socktype)
-                    noerr(conn.close)
-                    return
-                pre_read = [data, ]
-                netlog("pre_read data=%r", data)
-            except Exception:
-                netlog.error("Error reading from %s", conn, exc_info=True)
+            # try to read from this socket,
+            # so short-lived probes don't go through the whole protocol instantiation
+            pre = socket_fast_read(conn)
+            if not pre:
+                netlog("closing %s connection: no data", socktype)
+                force_close_connection(conn)
                 return
+            pre_read = [pre]
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
         proto = self.make_protocol(socktype, conn, socket_options, pre_read=pre_read)
