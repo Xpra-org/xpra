@@ -23,7 +23,6 @@ class ClipboardClientTest(ClientMixinTest):
 		opts.remote_clipboard = "CLIPBOARD"
 
 		def after_handshake(cls, fn: Callable, *args):
-			print("after_handshake(%s, %s)", cls, fn)
 			self.glib.timeout_add(1000, fn, *args)
 		ClipboardClient.after_handshake = after_handshake
 		self._test_mixin_class(ClipboardClient, opts, {

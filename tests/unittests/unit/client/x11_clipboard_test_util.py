@@ -10,7 +10,6 @@ from unit.client.x11_client_test_util import X11ClientTestUtil
 from xpra.util.env import envbool
 from xpra.os_util import get_hex_uuid
 from xpra.util.io import pollwait, which
-from xpra.platform.features import CLIPBOARDS
 from xpra.log import Logger
 
 log = Logger("clipboard")
@@ -88,5 +87,6 @@ class X11ClipboardTestUtil(X11ClientTestUtil):
 		server.terminate()
 
 	def do_test_copy(self, direction="both"):
-		for selection in CLIPBOARDS:
+		from xpra.clipboard.common import get_local_selections
+		for selection in get_local_selections():
 			self.do_test_copy_selection(selection, direction)
