@@ -8,8 +8,8 @@ import sys
 import os
 import errno
 import socket
-from typing import Any
-from collections.abc import Callable
+from typing import Any, Final
+from collections.abc import Callable, Sequence
 
 from xpra.net.common import ConnectionClosedException, get_peercred_info, FULL_INFO
 from xpra.net.constants import IP_SOCKTYPES, TCP_SOCKTYPES
@@ -17,7 +17,6 @@ from xpra.util.str_fn import csv
 from xpra.util.env import hasenv, envint, envbool, SilenceWarningsContext
 from xpra.util.thread import start_thread
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
-from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
 from xpra.log import Logger
 
 log = Logger("network", "protocol")
@@ -58,6 +57,30 @@ for x in dir(socket):
 del x
 
 CLOSED_EXCEPTIONS = ()
+
+
+IP_OPTIONS: Final[Sequence[str]] = (
+    # "IP_MULTICAST_IF", "IP_MULTICAST_LOOP", "IP_MULTICAST_TTL",
+    "IP_DONTFRAG", "IP_OPTIONS", "IP_RECVLCLIFADDR",
+    "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
+)
+
+TCP_OPTIONS: Final[Sequence[str]] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
+
+SOCKET_OPTIONS: Final[Sequence[str]] = (
+    # not supported on win32:
+    # "SO_BROADCAST", "SO_RCVLOWAT",
+    "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
+    "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
+    "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
+    "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
+) if WIN32 else (
+    "SO_BROADCAST", "SO_RCVLOWAT",
+    "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
+    "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
+    "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
+    "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
+)
 
 
 def can_retry(e) -> bool | str:

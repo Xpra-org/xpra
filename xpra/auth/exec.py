@@ -12,11 +12,10 @@ from xpra.auth.common import get_exec_env
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, alnum, bytestostr
 from xpra.util.env import envint, shellsub, first_time
-from xpra.os_util import OSX, gi_import
+from xpra.os_util import OSX, gi_import, WIN32
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.util.child_reaper import get_child_reaper
 from xpra.auth.sys_auth_base import SysAuthenticator, log
-from xpra.platform.features import EXECUTABLE_EXTENSION
 from xpra.util.system import stop_proc
 
 GLib = gi_import("GLib")
@@ -26,7 +25,7 @@ TIMEOUT = envint("XPRA_EXEC_AUTH_TIMEOUT", 600)
 
 def get_default_auth_dialog() -> str:
     from xpra.util.io import find_libexec_command
-    cmd = "auth_dialog" if not EXECUTABLE_EXTENSION else f"auth_dialog.{EXECUTABLE_EXTENSION}"
+    cmd = "auth_dialog.exe" if WIN32 else "auth_dialog"
     auth_dialog = find_libexec_command(cmd)
     if not auth_dialog:
         from xpra.platform.paths import get_app_dir  # pylint: disable=import-outside-toplevel

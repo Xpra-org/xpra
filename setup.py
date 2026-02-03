@@ -1618,23 +1618,23 @@ def build_xpra_conf(install_dir: str) -> None:
     # generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)
     xdummy_command = detect_xdummy_setup(install_dir)
-    from xpra.platform.features import DEFAULT_START_ENV, DEFAULT_ENV, SOURCE
 
     def bstr(b) -> str:
         if b is None:
             return "auto"
         return "yes" if int(b) else "no"
-    default_start_env = "\n".join(f"start-env = {x}" for x in DEFAULT_START_ENV)
-    default_env = "\n".join(f"env = {x}" for x in DEFAULT_ENV)
+    SOURCE = ("/etc/profile",) if POSIX else ()
     source = "\n".join(f"source = {x}" for x in SOURCE)
     conf_dir = get_conf_dir(install_dir)
     print(f"get_conf_dir({install_dir})={conf_dir}")
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
         wrap_cmd_str, unexpand,
-        get_default_key_shortcuts, get_default_systemd_run,
+        get_default_key_shortcuts, get_default_systemd_run, get_default_env, get_default_start_env,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
     )
+    default_env = "\n".join(f"env = {x}" for x in get_default_env())
+    default_start_env = "\n".join(f"start-env = {x}" for x in get_default_start_env())
     # remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = [unexpand(x) for x in get_socket_dirs()]
     if POSIX and getuid()>0:
@@ -2175,7 +2175,6 @@ if WIN32:
             if client_ENABLED:
                 add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
                 add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")
-                add_console_exe("xpra/platform/features.py",        "features.ico",     "Feature_info")
             if client_ENABLED:
                 add_console_exe("xpra/platform/gui.py",             "browse.ico",       "NativeGUI_info")
                 add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")

@@ -13,6 +13,7 @@ import tempfile
 from typing import Any
 from collections.abc import Callable
 
+from xpra.os_util import WIN32
 from xpra.platform import platform_import
 
 
@@ -222,9 +223,8 @@ def do_get_sshpass_command() -> str:
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
     SSHPASS = "sshpass"
-    from xpra.platform.features import EXECUTABLE_EXTENSION  # pylint: disable=import-outside-toplevel
-    if EXECUTABLE_EXTENSION:
-        SSHPASS = f"sshpass.{EXECUTABLE_EXTENSION}"
+    if WIN32:
+        SSHPASS = "sshpass.exe"
     paths = os.environ["PATH"].split(os.pathsep)
     for path in paths:
         path = path.strip('"')

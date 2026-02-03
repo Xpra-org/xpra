@@ -49,6 +49,11 @@ PA_ENV_WHITELIST = (
     "PULSE_SOURCE", "PULSE_SINK", "PULSE_SERVER",
 )
 
+DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS: Sequence[tuple[str, str, str]] = (
+    ("pactl", "set-default-sink", "Xpra-Speaker"),
+    ("pactl", "set-default-source", "Xpra-Mic-Source"),
+)
+
 
 def pulseaudio_warning() -> None:
     from xpra.platform.info import get_username
@@ -177,7 +182,6 @@ class PulseaudioServer(StubServerMixin):
         self.pulseaudio_command = opts.pulseaudio_command
         pcc = csv(opts.pulseaudio_configure_commands)
         if pcc == "auto":
-            from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
             self.pulseaudio_configure_commands = DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
         elif pcc == "none":
             self.pulseaudio_configure_commands = ()

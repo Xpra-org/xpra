@@ -2860,8 +2860,7 @@ def run_autostart(script_file, args) -> ExitValue:
     arg = args[0].lower()
     if arg not in ("enable", "disable", "status"):
         return err(f"invalid argument {arg!r}")
-    from xpra.platform.features import AUTOSTART
-    if not AUTOSTART:
+    if not POSIX or OSX:
         print("autostart is not supported on this platform")
         return 1
     from xpra.platform.autostart import set_autostart, get_status

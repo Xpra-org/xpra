@@ -1012,15 +1012,53 @@ GLOBAL_DEFAULTS: dict[str, Any] | None = None
 # (the xpra.conf file shipped is generally better tuned than this - especially for 'xvfb')
 
 
+def get_default_env() -> Sequence[str]:
+    if WIN32 or OSX:
+        return ()
+    return (
+        "#silence some AT-SPI and atk-bridge warnings:",
+        "NO_AT_BRIDGE=1",
+    )
+
+
+def get_default_start_env() -> Sequence[str]:
+    if WIN32 or OSX:
+        return ()
+    return (
+        "#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:",
+        "UBUNTU_MENUPROXY=",
+        "QT_X11_NO_NATIVE_MENUBAR=1",
+        "#fix for MainSoft's MainWin buggy window management:",
+        "MWNOCAPTURE=true",
+        "MWNO_RIT=true",
+        "MWWM=allwm",
+        "#force GTK3 applications to use X11 so we can intercept them:",
+        "GDK_BACKEND=x11",
+        "#tell GTK4 applications to use the software Gsk renderer to avoid freezes and crashes:",
+        "#(if using a real GPU, you may want to switch to `vulkan` or `opengl` instead)",
+        "GSK_RENDERER=cairo",
+        "#GTK seems to default to using AT-SPI and atk-bridge, which triggers warnings:",
+        "#(see issue #2318)",
+        "GTK_A11Y=none",
+        "#force Qt applications to use X11 so we can intercept them:",
+        "QT_QPA_PLATFORM=xcb",
+        "#disable Qt scaling:"
+        "QT_AUTO_SCREEN_SET_FACTOR=0",
+        "QT_SCALE_FACTOR=1",
+        "#overlay scrollbars complicate things:"
+        "GTK_OVERLAY_SCROLLING=0",
+        "#some versions of GTK3 honour this option, sadly not all:",
+        "GTK_CSD=0",
+        "#use this to make SDL video windows minimize on focus loss:",
+        "#SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS=1",
+    )
+
+
 def get_defaults() -> dict[str, Any]:
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
     from xpra.net.constants import SYSTEM_PROXY_SOCKET
-    from xpra.platform.features import (
-        OPEN_COMMAND,
-        SOURCE, DEFAULT_ENV, DEFAULT_START_ENV,
-    )
     from xpra.platform.paths import (
         get_download_dir, get_remote_run_xpra_scripts,
         get_sessions_dir, get_socket_dirs, get_client_socket_dirs,
@@ -1059,6 +1097,13 @@ def get_defaults() -> dict[str, Any]:
     # we access the GUI when running as a MacOS server (tray, etc.)
     # and so we cannot daemonize
     CAN_DAEMONIZE = not (WIN32 or OSX)
+    SOURCE = ("/etc/profile",) if POSIX else ()
+    if OSX:
+        OPEN_COMMAND = ("open",)
+    elif WIN32:
+        OPEN_COMMAND = ["start", "''"]
+    else:
+        OPEN_COMMAND = ("/usr/bin/xdg-open", )
 
     # noinspection PyPep8
     GLOBAL_DEFAULTS = {
@@ -1272,8 +1317,8 @@ def get_defaults() -> dict[str, Any]:
         "start-child-on-disconnect"    : [],
         "start-on-last-client-exit" : [],
         "start-child-on-last-client-exit"   : [],
-        "start-env"         : list(DEFAULT_ENV),
-        "env"               : list(DEFAULT_START_ENV),
+        "start-env"         : get_default_env(),
+        "env"               : get_default_start_env(),
     }
     return GLOBAL_DEFAULTS
 
