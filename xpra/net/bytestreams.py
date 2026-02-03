@@ -461,14 +461,18 @@ class SocketConnection(Connection):
                 opts["IP"] = get_socket_options(s, socket.SOL_IP, IP_OPTIONS)
             if self.socktype_wrapped in TCP_SOCKTYPES:
                 opts["TCP"] = get_socket_options(s, socket.IPPROTO_TCP, TCP_OPTIONS)
-                from xpra.platform.netdev_query import get_tcp_info
                 try:
-                    opts["TCP_INFO"] = get_tcp_info(s)
-                except (OSError, ValueError) as e:
-                    log(f"get_tcp_info({s})", exc_info=True)
-                    if self.is_active() and not self.error_is_closed(e):
-                        log.warn("Warning: failed to get tcp information")
-                        log.warn(f" from {self.socktype} socket {self}")
+                    from xpra.platform.netdev_query import get_tcp_info
+                except ImportError as e:
+                    log("do_get_socket_info() no netdev_query: %s", e)
+                else:
+                    try:
+                        opts["TCP_INFO"] = get_tcp_info(s)
+                    except (OSError, ValueError) as e:
+                        log(f"get_tcp_info({s})", exc_info=True)
+                        if self.is_active() and not self.error_is_closed(e):
+                            log.warn("Warning: failed to get tcp information")
+                            log.warn(f" from {self.socktype} socket {self}")
             #ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
             # IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_NEXTHOP, IPV6_PATHMTU,
             # IPV6_PKTINFO, IPV6_PREFER_TEMPADDR, IPV6_RECVDSTOPTS, IPV6_RECVHOPLIMIT, IPV6_RECVHOPOPTS,
