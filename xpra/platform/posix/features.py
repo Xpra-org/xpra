@@ -49,5 +49,3 @@ OPEN_COMMAND = ("/usr/bin/xdg-open",)
 INPUT_DEVICES: Sequence[str] = ("auto", "xi", "uinput")
 
 SOURCE: Sequence[str] = ("/etc/profile", )
-
-COMMAND_SIGNALS: Sequence[str] = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")

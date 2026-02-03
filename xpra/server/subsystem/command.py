@@ -13,7 +13,6 @@ from subprocess import Popen
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.platform.features import COMMAND_SIGNALS
 from xpra.util.child_reaper import get_child_reaper, ProcInfo
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
@@ -34,6 +33,48 @@ GLib = gi_import("GLib")
 log = Logger("exec")
 
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000) / 1000.0
+
+COMMAND_SIGNALS = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")
+
+
+def os_kill_by_name(pid: int, signame: str):
+    sigval = getattr(signal, signame, 0)
+    if not sigval:
+        log.error(f"Error: signal {signame!r} not found!")
+        return
+    try:
+        os.kill(pid, sigval)
+    except Exception as e:
+        log.error(f"Error sending signal {signame!r} to pid {pid}")
+        log.estr(e)
+
+
+send_signame = os_kill_by_name
+
+if WIN32:
+    COMMAND_SIGNALS = ("SIGINT", "SIGTERM", "SIGKILL")
+    SIGNAL_ALIASES = {
+        "SIGINT": "CTRL_C_EVENT",
+        "SIGTERM": "CTRL_BREAK_EVENT",
+    }
+
+    def terminate_process(pid: int) -> None:
+        from xpra.platform.win32.constants import PROCESS_TERMINATE
+        from xpra.platform.win32.common import OpenProcess, TerminateProcess, CloseHandle
+        handle = OpenProcess(PROCESS_TERMINATE, False, pid)
+        if not handle:
+            log.error(f"Error: Could not open process {pid} to terminate")
+            return
+        if not TerminateProcess(handle, 1):
+            log.error(f"Error: could not terminate process {pid}")
+        CloseHandle(handle)
+
+    def win32_send_signal(pid: int, signame: str) -> None:
+        if signame == "SIGKILL":
+            terminate_process(pid)
+        else:
+            win32_signal_name = SIGNAL_ALIASES.get(signame, signame)
+            os_kill_by_name(pid, win32_signal_name)
 
 
 def do_send_menu_data(ss, menu) -> None:
@@ -523,6 +564,9 @@ class ChildCommandServer(StubServerMixin):
 
     def _process_command_signal(self, _proto, packet: Packet) -> None:
         pid = packet.get_u32(1)
+        if pid <= 1:
+            log.error(f"Error: invalid pid {pid}")
+            return
         signame = packet.get_str(2)
         if signame not in COMMAND_SIGNALS:
             log.warn("Warning: invalid signal received: '%s'", signame)
@@ -534,16 +578,9 @@ class ChildCommandServer(StubServerMixin):
         if procinfo.returncode is not None:
             log.warn("Warning: command for pid %i has already terminated", pid)
             return
-        sigval = getattr(signal, signame, None)
-        if not sigval:
-            log.error(f"Error: signal {signame!r} not found!")
-            return
-        if pid <= 1:
-            log.error(f"Error: invalid pid {pid}")
-            return
         log.info(f"sending signal {signame!r} to pid {pid}")
         try:
-            os.kill(pid, sigval)
+            send_signame(pid, signame)
         except Exception as e:
             log.error(f"Error sending signal {signame!r} to pid {pid}")
             log.estr(e)

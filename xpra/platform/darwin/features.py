@@ -4,7 +4,3 @@
 # later version. See the file COPYING for details.
 
 OPEN_COMMAND = ("open",)
-
-# DEFAULT_SSH_COMMAND = "ssh"
-
-COMMAND_SIGNALS = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")

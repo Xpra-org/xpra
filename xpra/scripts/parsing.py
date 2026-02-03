@@ -581,8 +581,8 @@ def get_ssl_options(desc, opts, cmdline) -> dict[str, Any]:
 def parse_ssh_option(ssh_setting: str) -> list[str]:
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0] == "auto":
+        fallback_ssh_command = "plink.exe -ssh -agent" if WIN32 else "ssh -x"
         # try paramiko:
-        from xpra.platform.features import DEFAULT_SSH_COMMAND
         from xpra.log import is_debug_enabled, Logger
         try:
             import paramiko
@@ -595,8 +595,8 @@ def parse_ssh_option(ssh_setting: str) -> list[str]:
             log(f"parse_ssh_option({ssh_setting})", exc_info=True)
             if is_debug_enabled("ssh") or isinstance(e, AttributeError):
                 log.info(f"{e}")
-                log.info(f"paramiko not found, using {DEFAULT_SSH_COMMAND}")
-        ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
+                log.info(f"paramiko not found, using {fallback_ssh_command}")
+        ssh_cmd = shlex.split(fallback_ssh_command)
     return ssh_cmd
 
 

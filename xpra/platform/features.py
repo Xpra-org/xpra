@@ -20,13 +20,9 @@ EXECUTABLE_EXTENSION: str = ""
 
 OPEN_COMMAND: Sequence[str] = ()
 
-COMMAND_SIGNALS: Sequence[str] = ()
-
 DEFAULT_START_ENV: Sequence[str] = ()
 DEFAULT_ENV: Sequence[str] = ()
 
-# DEFAULT_SSH_COMMAND = "paramiko"
-DEFAULT_SSH_COMMAND: str = "ssh -x"
 DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS: Sequence[tuple[str, str, str]] = (
     ("pactl", "set-default-sink", "Xpra-Speaker"),
     ("pactl", "set-default-source", "Xpra-Mic-Source"),
@@ -48,11 +44,9 @@ TCP_OPTIONS: Sequence[str] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
 
 _features_list_: Sequence[str] = (
     "AUTOSTART",
-    "COMMAND_SIGNALS",
     "SOURCE",
     "DEFAULT_ENV",
     "DEFAULT_START_ENV",
-    "DEFAULT_SSH_COMMAND",
     "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",
     "EXECUTABLE_EXTENSION",
     "INPUT_DEVICES",
