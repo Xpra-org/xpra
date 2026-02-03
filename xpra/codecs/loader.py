@@ -232,6 +232,7 @@ def add_codec_version(name: str, top_module, version: str = "get_version()", alt
 platformname = sys.platform.rstrip("0123456789")
 
 
+# noinspection PyPep8
 CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     # encoders:
     "enc_rgb"       : ("RGB encoder",       "argb",         "encoder", "encode"),
@@ -390,6 +391,7 @@ def get_rgb_compression_options() -> list[str]:
 
 
 def get_encoding_name(encoding: str) -> str:
+    # noinspection PyPep8
     ENCODINGS_TO_NAME : dict[str, str] = {
         "auto"    : "automatic",
         "stream"  : "video stream",
@@ -419,6 +421,7 @@ def get_encoding_help(encoding: str) -> str:
     compressors_str = ""
     if compressors:
         compressors_str = ", may be compressed using "+(" or ".join(compressors))+" "
+    # noinspection PyPep8
     return {
         "auto"    : "automatic mode (recommended)",
         "stream"  : "video stream",

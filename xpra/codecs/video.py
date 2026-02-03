@@ -21,6 +21,7 @@ log = Logger("codec", "video")
 
 # the codec loader uses the names...
 # but we need the module name to be able to probe without loading the codec:
+# noinspection PyPep8
 CODEC_TO_MODULE: dict[str, str] = {
     "enc_amf"       : "amf.encoder",
     "enc_vpx"       : "vpx.encoder",

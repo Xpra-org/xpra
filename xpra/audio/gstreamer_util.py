@@ -35,9 +35,9 @@ log = Logger("audio", "gstreamer")
 XPRA_PULSE_SOURCE_DEVICE_NAME = "XPRA_PULSE_SOURCE_DEVICE_NAME"
 XPRA_PULSE_SINK_DEVICE_NAME = "XPRA_PULSE_SINK_DEVICE_NAME"
 
-GST_QUEUE_NO_LEAK             = 0
-GST_QUEUE_LEAK_UPSTREAM       = 1
-GST_QUEUE_LEAK_DOWNSTREAM     = 2
+GST_QUEUE_NO_LEAK = 0
+GST_QUEUE_LEAK_UPSTREAM = 1
+GST_QUEUE_LEAK_DOWNSTREAM = 2
 GST_QUEUE_LEAK_DEFAULT = GST_QUEUE_LEAK_DOWNSTREAM
 MS_TO_NS = 1000000
 
@@ -63,6 +63,7 @@ def force_enabled(codec_name):
     return envbool("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), False)
 
 
+# noinspection PyPep8
 NAME_TO_SRC_PLUGIN: dict[str, str] = {
     "auto"          : "autoaudiosrc",
     "alsa"          : "alsasrc",
@@ -82,10 +83,11 @@ SRC_HAS_DEVICE_NAME = [
     "wasapisrc",  "wasapi2src",
 ]
 PLUGIN_TO_DESCRIPTION: dict[str, str] = {
-    "pulsesrc"      : "Pulseaudio",
-    "jacksrc"       : "JACK Audio Connection Kit",
+    "pulsesrc": "Pulseaudio",
+    "jacksrc": "JACK Audio Connection Kit",
 }
 
+# noinspection PyPep8
 NAME_TO_INFO_PLUGIN: dict[str, str] = {
     "auto"          : "Automatic audio source selection",
     "alsa"          : "Advanced Linux Sound Architecture",
@@ -103,6 +105,7 @@ NAME_TO_INFO_PLUGIN: dict[str, str] = {
 # format: encoder, container-formatter, decoder, container-parser, stream-compressor
 # we keep multiple options here for the same encoding
 # and will populate the ones that are actually available into the "CODECS" dict
+# noinspection PyPep8
 CODEC_OPTIONS: Sequence[tuple[str, str, str, str, str, str]] = (
     (VORBIS_MKA , "vorbisenc",      "matroskamux",  "vorbisdec",                    "matroskademux",    ""),
     (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",                    "matroskademux",    ""),
@@ -124,6 +127,7 @@ CODEC_OPTIONS: Sequence[tuple[str, str, str, str, str, str]] = (
     (AAC_MPEG4  , "voaacenc",       "mp4mux",       "faad",                         "qtdemux",          ""),
 )
 
+# noinspection PyPep8
 MUX_OPTIONS: Sequence[tuple[str, str, str]] = (
     (OGG,    "oggmux",   "oggdemux"),
     (MKA,    "webmmux",  "matroskademux"),
@@ -156,7 +160,7 @@ del emux
 OGG_DELAY = 20*MS_TO_NS
 ENCODER_DEFAULT_OPTIONS_COMMON: dict[str, dict[str, Any]] = {
     "lamemp3enc": {
-        "encoding-engine-quality" : 0,
+        "encoding-engine-quality": 0,
     },   # "fast"
     "wavpackenc": {
         "mode": 1,          # "fast" (0 aka "very fast" is not supported)
@@ -175,12 +179,13 @@ ENCODER_DEFAULT_OPTIONS_COMMON: dict[str, dict[str, Any]] = {
 ENCODER_DEFAULT_OPTIONS: dict[str, dict[str, Any]] = {
     "opusenc": {
         # only available with 1.6 onwards?
-        "bitrate-type"   : 1,      # vbr
-        "complexity"     : 0
+        "bitrate-type": 1,      # vbr
+        "complexity": 0
     },
 }
 
 # we may want to review this if/when we implement UDP transport:
+# noinspection PyPep8
 MUXER_DEFAULT_OPTIONS: dict[str, dict[str, Any]] = {
     "oggmux": {
         "max-delay"          : OGG_DELAY,

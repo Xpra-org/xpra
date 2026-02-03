@@ -1060,6 +1060,7 @@ def get_defaults() -> dict[str, Any]:
     # and so we cannot daemonize
     CAN_DAEMONIZE = not (WIN32 or OSX)
 
+    # noinspection PyPep8
     GLOBAL_DEFAULTS = {
         "encoding"          : "auto",
         "title"             : "@title@ on @hostinfo@",

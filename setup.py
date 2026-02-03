@@ -1662,6 +1662,7 @@ def build_xpra_conf(install_dir: str) -> None:
     # no python-avahi on RH / CentOS, need dbus module on *nix:
     is_RH = is_RPM() and not (is_openSUSE() or is_Fedora())
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH and dbus_ENABLED))
+    # noinspection PyPep8
     SUBS = {
         'xvfb_command'          : wrap_cmd_str(xvfb_command),
         'xdummy_command'        : wrap_cmd_str(xdummy_command).replace("\n", "\n#"),
@@ -2065,6 +2066,7 @@ if WIN32:
         # ensure that cx_freeze won't automatically grab other versions that may lay on our path:
         os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
         bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL"]
+        # noinspection PyPep8
         cx_freeze_options = {
             "includes"          : external_includes,
             "packages"          : packages,
@@ -2147,6 +2149,7 @@ if WIN32:
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
             do_add_DLLs("", "pdfium")
         # extra tools:
+        # noinspection PyPep8
         if win32_tools_ENABLED:
             add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
             add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
@@ -2598,6 +2601,7 @@ else:
             from xpra.src_info import REVISION
         except ImportError:
             REVISION = "unknown"
+        # noinspection PyPep8
         Plist = {
             "CFBundleDocumentTypes" : {
                 "CFBundleTypeExtensions"    : ["Xpra"],
@@ -2611,6 +2615,7 @@ else:
         # Note: despite our best efforts, `py2app` will not copy all the modules we need
         # so the make-app.sh script still has to hack around this problem.
         add_modules(*external_includes)
+        # noinspection PyPep8
         py2app_options = {
             'iconfile'          : './fs/share/icons/xpra.icns',
             'plist'             : Plist,
@@ -2669,6 +2674,7 @@ if scripts_ENABLED:
 
 toggle_packages(WIN32 and service_ENABLED, "xpra/platform/win32/service")
 
+# noinspection PyPep8
 if data_ENABLED:
     if not is_openSUSE():
         add_data_files(share_xpra,                  ["README.md", "COPYING"])
