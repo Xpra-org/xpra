@@ -34,15 +34,15 @@ def has_nvidia_hardware() -> bool:
 def _has_nvidia_hardware() -> bool | None:
     if "XPRA_NVIDIA_HARDWARE" in os.environ:
         return envbool("XPRA_NVIDIA_HARDWARE")
-    # first, check for the kernel module file, this should be very quick:
-    try:
-        if os.path.exists(NVIDIA_PROC_FILE):
-            log(f"has_nvidia_hardware() found kernel module proc file {NVIDIA_PROC_FILE!r}")
-            return True
-    except OSError:
-        log(f"failed to query {NVIDIA_PROC_FILE!r}", exc_info=True)
     # pylint: disable=import-outside-toplevel
     if POSIX:
+        # first, check for the kernel module file, this should be very quick:
+        try:
+            if os.path.exists(NVIDIA_PROC_FILE):
+                log(f"has_nvidia_hardware() found kernel module proc file {NVIDIA_PROC_FILE!r}")
+                return True
+        except OSError:
+            log(f"failed to query {NVIDIA_PROC_FILE!r}", exc_info=True)
         # the drm module should also be quick:
         try:
             from xpra.codecs.drm import drm
