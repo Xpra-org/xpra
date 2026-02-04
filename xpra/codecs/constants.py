@@ -13,7 +13,6 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint
 
 # noinspection PyPep8
-
 COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
 COMPRESS_RATIO      : str = " with ratio %5.1f%%  (%5iKB to %5iKB)"
 COMPRESS_FMT_SUFFIX : str = ", sequence %5i, client_options=%-50s, options=%s"
@@ -89,6 +88,7 @@ def get_plane_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
     }.get(pixel_format, list(pixel_format))[index]) * bytespp
 
 
+# noinspection PyPep8
 PIXEL_SUBSAMPLING : dict[str, Sequence[tuple[int, int]]] = {
     # NV12 is actually subsampled horizontally too - just like YUV420P
     # (but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):
@@ -176,6 +176,7 @@ class EncodingNotSupported(RuntimeError):
     pass
 
 
+# noinspection PyPep8
 @dataclass(kw_only=True)
 class CodecSpec:
 
