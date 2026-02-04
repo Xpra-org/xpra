@@ -63,7 +63,7 @@ def _has_nvidia_hardware() -> bool | None:
     except ImportError as e:
         log(f"has_nvidia_hardware() cannot use pynvml module: {e}")
     else:
-        count = None
+        count = -1
         try:
             if nvmlInit():
                 count = nvmlDeviceGetCount()
@@ -75,7 +75,7 @@ def _has_nvidia_hardware() -> bool | None:
         except Exception as e:
             log(f"has_nvidia_hardware() pynvml: {e}")
         finally:
-            if count is not None:
+            if count >= 0:
                 nvmlShutdown()
     # try nvidia-smi for docker contexts
     import subprocess
