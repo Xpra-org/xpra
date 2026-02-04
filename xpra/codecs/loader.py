@@ -27,7 +27,8 @@ NOWARN = [
     "nvenc", "nvdec", "enc_nvjpeg",
     "dec_nvjpeg", "nvfbc", "dec_openh264",
     "enc_gstreamer", "dec_gstreamer",
-    "csc_cython", "dec_avif", "enc_avif",
+    "csc_cython", "csc_torch",
+    "dec_avif", "enc_avif",
     "enc_amf",
 ]
 
@@ -57,7 +58,7 @@ def gfilt(generator) -> tuple[str, ...]:
     return filt(*generator)
 
 
-CSC_CODECS: Sequence[str] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
+CSC_CODECS: Sequence[str] = gfilt(f"csc_{x}" for x in ("cython", "libyuv", "torch"))
 ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif",
 ))
@@ -250,9 +251,10 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),
     "enc_amf"       : ("amf encoder",       "amf",          "encoder", "Encoder"),
     "enc_remote"    : ("remote encoder",    "remote",       "encoder", "Encoder"),
-    # csc:
+    # csc and filters:
     "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "converter", "Converter"),
     "csc_cython"    : ("cython colorspace conversion", "csc_cython", "converter", "Converter"),
+    "csc_torch"     : ("pytorch filter",    "torch",        "filter", "Filter"),
     # decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
     "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),

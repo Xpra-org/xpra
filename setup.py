@@ -319,6 +319,7 @@ v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and
 evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.10", "evdi")
 drm_ENABLED             = DEFAULT and (LINUX or FREEBSD) and pkg_config_version("2.4", "libdrm")
 csc_cython_ENABLED      = DEFAULT
+pytorch_ENABLED         = False
 nvidia_ENABLED          = DEFAULT and not OSX and BITS==64 and not RISCV
 nvjpeg_encoder_ENABLED  = nvidia_ENABLED and pkg_config_exists("nvjpeg")
 nvjpeg_decoder_ENABLED  = nvidia_ENABLED and pkg_config_exists("nvjpeg")
@@ -372,7 +373,7 @@ CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "pillow",
     "avif", "argb",
     "v4l2", "evdi", "drm",
-    "csc_cython", "csc_libyuv",
+    "csc_cython", "csc_libyuv", "pytorch",
     "gstreamer", "gstreamer_audio", "gstreamer_video",
 ]
 # some switches can control multiple switches:
@@ -380,11 +381,11 @@ SWITCH_ALIAS = {
     "codecs": ["codecs"] + CODEC_SWITCHES,
     "encoders": ENCODER_SWITCHES,
     "decoders": DECODER_SWITCHES,
-    "argb" : ("argb_encoder", ),
+    "argb": ("argb_encoder", ),
     "pillow": ("pillow_encoder", "pillow_decoder"),
-    "vpx" : ("vpx_encoder", "vpx_decoder"),
+    "vpx": ("vpx_encoder", "vpx_decoder"),
     "amf": ("amf_encoder", ),
-    "webp" : ("webp_encoder", "webp_decoder"),
+    "webp": ("webp_encoder", "webp_decoder"),
     "avif": ("avif_encoder", "avif_decoder"),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
     "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels"),
@@ -519,7 +520,7 @@ def convert_doc(fsrc: str, fdst: str, fmt="html", force=False) -> None:
     if not force and not should_rebuild(fsrc, fdst):
         return
     print(f"  {bsrc:<30} -> {bdst}")
-    pandoc = os.environ.get("PANDOC", "") or shutil.which("pandoc")
+    pandoc = os.environ.get("PANDOC", "") or shutil.which("pandoc") or ""
     if WIN32 and not pandoc:
         pandoc = "/c/Program Files/Pandoc/pandoc.exe"
     if not os.path.exists(pandoc):
@@ -2968,6 +2969,7 @@ toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
 tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.converter", "libyuv", language="c++")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.converter", optimize=3)
+toggle_packages(pytorch_ENABLED, "xpra.codecs.torch")
 toggle_packages(vpx_encoder_ENABLED or vpx_decoder_ENABLED, "xpra.codecs.vpx")
 tace(vpx_encoder_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_decoder_ENABLED, "xpra.codecs.vpx.decoder", "vpx")

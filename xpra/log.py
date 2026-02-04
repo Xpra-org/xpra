@@ -292,6 +292,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "cuda"          : "CUDA device access",
         "cython"        : "Cython CSC module",
         "libyuv"        : "libyuv CSC module",
+        "torch"         : "Pytorch module",
         "decoder"       : "All decoders",
         "encoder"       : "All encoders",
         "argb"          : "ARGB encoder",
