@@ -9,7 +9,7 @@ from collections.abc import Callable
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
-log = Logger("util")
+log = Logger("util", "events")
 
 
 class SignalEmitter:
