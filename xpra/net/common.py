@@ -19,7 +19,7 @@ from xpra.os_util import LINUX, WIN32, OSX
 from xpra.scripts.config import InitExit
 from xpra.util.parsing import str_to_bool
 from xpra.util.system import platform_name
-from xpra.util.str_fn import std
+from xpra.util.str_fn import std, csv
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
@@ -421,3 +421,25 @@ def disconnect_is_an_error(reason) -> bool:
     from xpra.util.str_fn import nicestr
     rstr = nicestr(reason)
     return rstr.find("error") >= 0 or (rstr.find("timeout") >= 0 and rstr != ConnectionMessage.IDLE_TIMEOUT.value)
+
+
+def pretty_socket(s) -> str:
+    try:
+        if isinstance(s, bytes):
+            if len(s) >= 2 and s[0] == 0:
+                return "@" + s[1:].decode("latin1")
+            return s.decode("latin1")
+        if isinstance(s, str):
+            if s and s[0] == "\0":
+                return "@" + s[1:]
+            return s
+        if len(s) == 2:
+            if str(s[0]).find(":") >= 0:
+                # IPv6
+                return "[%s]:%s" % (s[0], s[1])
+            return "%s:%s" % (s[0], s[1])
+        if len(s) == 4:
+            return csv(str(x) for x in s)
+    except (ValueError, TypeError):
+        pass
+    return str(s)

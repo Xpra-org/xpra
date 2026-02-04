@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from xpra.net.common import FULL_INFO
+from xpra.net.common import FULL_INFO, pretty_socket
 from xpra.net.net_util import get_network_caps, get_info
 from xpra.client.base.stub import StubClientMixin
 
@@ -39,6 +39,5 @@ class NetworkClient(StubClientMixin):
         conn = getattr(p, "_conn", None)
         if not conn:
             return ""
-        from xpra.net.bytestreams import pretty_socket
         cinfo = conn.get_info()
         return pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]

@@ -15,7 +15,7 @@ from aioquic.h3.events import (
 )
 from aioquic.quic.packet import QuicErrorCode
 
-from xpra.net.bytestreams import pretty_socket
+from xpra.net.common import pretty_socket
 from xpra.net.quic.connection import XpraQuicConnection, HttpConnection
 from xpra.net.quic.common import SERVER_NAME, http_date
 from xpra.log import Logger

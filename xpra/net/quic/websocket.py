@@ -11,7 +11,7 @@ from aioquic.h3.events import HeadersReceived, H3Event
 from aioquic.h3.exceptions import NoAvailablePushIDError
 from aioquic.quic.packet import QuicErrorCode
 
-from xpra.net.bytestreams import pretty_socket
+from xpra.net.common import pretty_socket
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
 from xpra.net.websockets.header import close_packet

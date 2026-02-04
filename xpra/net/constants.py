@@ -117,3 +117,25 @@ class ConnectionMessage(StrEnum):
     SESSION_BUSY            = "session busy"
     # client telling the server:
     CLIENT_EXIT             = "client exit"
+
+
+IP_OPTIONS: Final[Sequence[str]] = (
+    # "IP_MULTICAST_IF", "IP_MULTICAST_LOOP", "IP_MULTICAST_TTL",
+    "IP_DONTFRAG", "IP_OPTIONS", "IP_RECVLCLIFADDR",
+    "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
+)
+TCP_OPTIONS: Final[Sequence[str]] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
+SOCKET_OPTIONS: Final[Sequence[str]] = (
+    # not supported on win32:
+    # "SO_BROADCAST", "SO_RCVLOWAT",
+    "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
+    "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
+    "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
+    "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
+) if WIN32 else (
+    "SO_BROADCAST", "SO_RCVLOWAT",
+    "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
+    "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
+    "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
+    "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
+)

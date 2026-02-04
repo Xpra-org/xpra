@@ -23,7 +23,7 @@ from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland
 from xpra.util.io import load_binary_file
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE, pretty_socket
 from xpra.common import noerr
 from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
 from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
@@ -325,7 +325,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         if p:
             conn = getattr(p, "_conn", None)
             if conn:
-                from xpra.net.bytestreams import pretty_socket
                 cinfo = conn.get_info()
                 endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
                 q += f"\n at {endpoint}"

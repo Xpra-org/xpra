@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler
 from typing import Any
 from collections.abc import Iterable, Callable
 
-from xpra.net.common import HttpResponse, FULL_INFO
+from xpra.net.common import HttpResponse, FULL_INFO, pretty_socket
 from xpra.net.http.common import EXTENSION_TO_MIMETYPE
 from xpra.util.io import load_binary_file
 from xpra.util.objects import AdHocStruct
@@ -307,7 +307,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(msg.encode("latin1"))
             authlog.warn(f"http authentication failed: {msg}")
             try:
-                from xpra.net.bytestreams import pretty_socket
                 peername = self.request.getpeername()
                 authlog.warn(" from %s", pretty_socket(peername))
             except (AttributeError, OSError):

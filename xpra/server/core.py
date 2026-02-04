@@ -26,7 +26,8 @@ from xpra.server import features
 from xpra.server.auth import AuthenticatedServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
-    is_request_allowed, Packet, has_websocket_handler, HttpResponse, FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE, )
+    is_request_allowed, Packet, has_websocket_handler, HttpResponse, FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
+    pretty_socket, )
 from xpra.net.constants import MAX_PACKET_SIZE, SSL_UPGRADE, HTTP_UNSUPORTED, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
@@ -36,7 +37,7 @@ from xpra.net.socket_util import (
 )
 from xpra.net.bytestreams import (
     Connection, SSLSocketConnection, SocketConnection,
-    log_new_connection, pretty_socket, SOCKET_TIMEOUT
+    log_new_connection, SOCKET_TIMEOUT
 )
 from xpra.net.net_util import get_network_caps, import_netifaces, get_all_ips
 from xpra.net.protocol.factory import get_server_protocol_class

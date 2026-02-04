@@ -12,7 +12,7 @@ from xpra.client.base.stub import StubClientMixin
 from xpra.platform.info import get_username
 from xpra.scripts.config import InitExit
 from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
-from xpra.net.common import Packet
+from xpra.net.common import Packet, pretty_socket
 from xpra.common import noop, may_show_progress
 from xpra.net.constants import ConnectionMessage
 from xpra.util.io import use_gui_prompt
@@ -257,7 +257,6 @@ class ChallengeClient(StubClientMixin):
     def get_challenge_prompt(self, prompt="password") -> str:
         text = f"Please enter the {prompt}"
         try:
-            from xpra.net.bytestreams import pretty_socket  # pylint: disable=import-outside-toplevel
             conn = self._protocol._conn
             text += f",\n connecting to {conn.socktype} server {pretty_socket(conn.remote)}"
         except (AttributeError, TypeError):

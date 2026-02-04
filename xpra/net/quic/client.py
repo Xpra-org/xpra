@@ -29,7 +29,7 @@ from aioquic.asyncio.protocol import QuicConnectionProtocol
 from xpra.os_util import POSIX
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
-from xpra.net.bytestreams import pretty_socket
+from xpra.net.common import pretty_socket
 from xpra.net.socket_util import create_udp_socket
 from xpra.net.ssl.parsing import parse_ssl_verify_mode
 from xpra.net.asyncio.thread import get_threaded_loop

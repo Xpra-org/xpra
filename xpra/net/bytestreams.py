@@ -8,11 +8,11 @@ import sys
 import os
 import errno
 import socket
-from typing import Any, Final
-from collections.abc import Callable, Sequence
+from typing import Any
+from collections.abc import Callable
 
-from xpra.net.common import ConnectionClosedException, get_peercred_info, FULL_INFO
-from xpra.net.constants import IP_SOCKTYPES, TCP_SOCKTYPES
+from xpra.net.common import ConnectionClosedException, get_peercred_info, FULL_INFO, pretty_socket
+from xpra.net.constants import IP_SOCKTYPES, TCP_SOCKTYPES, IP_OPTIONS, TCP_OPTIONS, SOCKET_OPTIONS
 from xpra.util.str_fn import csv
 from xpra.util.env import hasenv, envint, envbool, SilenceWarningsContext
 from xpra.util.thread import start_thread
@@ -59,30 +59,6 @@ del x
 CLOSED_EXCEPTIONS = ()
 
 
-IP_OPTIONS: Final[Sequence[str]] = (
-    # "IP_MULTICAST_IF", "IP_MULTICAST_LOOP", "IP_MULTICAST_TTL",
-    "IP_DONTFRAG", "IP_OPTIONS", "IP_RECVLCLIFADDR",
-    "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
-)
-
-TCP_OPTIONS: Final[Sequence[str]] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
-
-SOCKET_OPTIONS: Final[Sequence[str]] = (
-    # not supported on win32:
-    # "SO_BROADCAST", "SO_RCVLOWAT",
-    "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
-    "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
-    "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
-    "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
-) if WIN32 else (
-    "SO_BROADCAST", "SO_RCVLOWAT",
-    "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
-    "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
-    "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
-    "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
-)
-
-
 def can_retry(e) -> bool | str:
     if isinstance(e, socket.timeout):
         return "socket.timeout"
@@ -122,28 +98,6 @@ def until_concludes(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[An
 
 
 untilConcludes = direct_socket_io if DIRECT_SOCKET_IO else until_concludes
-
-
-def pretty_socket(s) -> str:
-    try:
-        if isinstance(s, bytes):
-            if len(s) >= 2 and s[0] == 0:
-                return "@" + s[1:].decode("latin1")
-            return s.decode("latin1")
-        if isinstance(s, str):
-            if s and s[0] == "\0":
-                return "@" + s[1:]
-            return s
-        if len(s) == 2:
-            if str(s[0]).find(":") >= 0:
-                # IPv6
-                return "[%s]:%s" % (s[0], s[1])
-            return "%s:%s" % (s[0], s[1])
-        if len(s) == 4:
-            return csv(str(x) for x in s)
-    except (ValueError, TypeError):
-        pass
-    return str(s)
 
 
 class Connection:
