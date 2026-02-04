@@ -19,7 +19,6 @@ from xpra.log import Logger, consume_verbose_argv
 log = Logger("encoder", "util")
 
 NVIDIA_PROC_FILE = "/proc/driver/nvidia/version"
-NVIDIA_HARDWARE = envbool("XPRA_NVIDIA_HARDWARE", False)
 
 nvidia_hardware = 0
 
@@ -33,8 +32,8 @@ def has_nvidia_hardware() -> bool:
 
 
 def _has_nvidia_hardware() -> bool | None:
-    if NVIDIA_HARDWARE:
-        return True
+    if "XPRA_NVIDIA_HARDWARE" in os.environ:
+        return envbool("XPRA_NVIDIA_HARDWARE")
     # first, check for the kernel module file, this should be very quick:
     try:
         if os.path.exists(NVIDIA_PROC_FILE):
