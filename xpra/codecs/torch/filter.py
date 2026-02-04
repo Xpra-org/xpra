@@ -127,8 +127,9 @@ class Filter:
 
 def selftest(full=False):
     from xpra.codecs.checks import testcsc
-    from xpra.codecs.csc_cython import converter
-    testcsc(converter, full)
+    from xpra.codecs.torch import filter
+    filter.Converter = filter.Filter
+    testcsc(filter, full)
 
 
 if __name__ == "__main__":
