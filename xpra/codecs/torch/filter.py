@@ -46,12 +46,13 @@ MAX_HEIGHT = 16384
 
 
 class Filter:
-    __slots__ = ("closed", "width", "height", "transform")
+    __slots__ = ("closed", "width", "height", "device", "transform")
 
     def __init__(self):
         self.closed = False
         self.width = 0
         self.height = 0
+        self.device = ""
         self.transform = None
 
     def init_context(self, src_width: int, src_height: int, src_format: str,
@@ -62,6 +63,7 @@ class Filter:
         assert src_format == "BGRX" and dst_format == "BGRX", "this module only handles BGRX"
         self.width = src_width
         self.height = src_height
+        self.device = "cuda"
         self.transform = transforms.RandomInvert(p=0.5)
 
     def clean(self) -> None:
