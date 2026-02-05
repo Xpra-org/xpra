@@ -30,7 +30,7 @@ LIB_DIR = f"{DIST}/lib"
 ARCH = os.environ.get("MSYSTEM_CARCH", "")
 
 DEBUG = os.environ.get("XPRA_DEBUG", "0") != "0"
-PYTHON = os.environ.get("PYTHON", "python%i.%i" % sys.version_info[:2])
+PYTHON = os.environ.get("PYTHON", "python%i.%i" % (sys.version_info[0], sys.version_info[1]))
 MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
 MSYSTEM_CARCH = os.environ.get("MSYSTEM_CARCH", "x86_64")
 PACKAGE_PREFIX = os.environ.get("MINGW_PACKAGE_PREFIX", f"mingw-w64-{MSYSTEM_CARCH}") + "-"
@@ -53,7 +53,7 @@ SBOM_JSON = "sbom.json"
 
 LOG_DIR = "packaging/MSWindows/"
 
-NPROCS = int(os.environ.get("NPROCS", os.cpu_count()))
+NPROCS = int(os.environ.get("NPROCS", str(os.cpu_count())))
 
 BUILD_CUDA_KERNEL = "packaging\\MSWindows\\BUILD_CUDA_KERNEL.BAT"
 
@@ -392,7 +392,7 @@ def build_service() -> None:
 
 
 VersionInfo = namedtuple("VersionInfo", ("string", "value", "revision", "full_string", "arch_info", "extra", "padded"))
-version_info = VersionInfo("invalid", (0, 0), 0, "invalid", "arch", "extra", (0, 0, 0, 0))
+version_info = VersionInfo("invalid", (0, 0), 0, "invalid", "arch", "extra", "0.0.0.0")
 
 
 def set_version_info(light: bool) -> None:
@@ -409,6 +409,7 @@ def load_version_info(light: bool) -> None:
 
     def load_module(src: str):
         spec = spec_from_file_location("xpra", src)
+        assert spec is not None
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
@@ -427,8 +428,8 @@ def load_version_info(light: bool) -> None:
     arch_info = "-" + MSYSTEM_CARCH
 
     # for msi and verpatch:
-    padded = (list(xpra.__version_info__) + [0, 0, 0])[:3] + [revision]
-    padded = ".".join(str(x) for x in padded)
+    padded_vi = (list(xpra.__version_info__) + [0, 0, 0])[:3] + [revision]
+    padded = ".".join(str(x) for x in padded_vi)
 
     print(f"    Xpra{extra} {full_string}")
     print(f"    using {NPROCS} cpus")
@@ -718,7 +719,7 @@ def fixup_zeroconf() -> None:
     if not zc:
         print("Warning: zeroconf not found for Python %s" % sys.version)
         return
-    zeroconf_dir = os.path.dirname(zc.origin)
+    zeroconf_dir = os.path.dirname(zc.origin or "")
     debug(f"adding zeroconf from {zeroconf_dir!r} to {lib_zeroconf!r}")
     copytree(zeroconf_dir, lib_zeroconf)
 
@@ -896,7 +897,7 @@ def bundle_openssh() -> None:
         if not exe:
             raise RuntimeError(f"{exe_name!r} not found!")
         copyfile(exe, f"{DIST}/{exe_name}.exe")
-    bin_dir = os.path.dirname(which("ssh"))
+    bin_dir = os.path.dirname(which("ssh") or "")
     debug(f"looking for msys DLLs in {bin_dir!r}")
     msys_dlls = tuple(
         f"{bin_dir}/msys-{dllname}*" for dllname in (
