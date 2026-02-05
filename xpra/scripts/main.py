@@ -2141,6 +2141,13 @@ def enforce_client_features() -> None:
 
 
 def may_block_numpy() -> None:
+    """
+    Loading the `numpy` module uses a lot of memory due to the huge number of shared libraries it depends on,
+    the only modules that really use numpy for anything useful are our nvidia GPU codecs,
+    so we check to see if such hardware is present and if not then we can block numpy.
+    This will prevent other modules from importing numpy, as if it wasn't installed.
+    ie: `OpenGL_accelerate` has a numpy format handler, but we don't use it!
+    """
     if envbool("XPRA_MAY_BLOCK_NUMPY", True) and "numpy" not in sys.modules:
         reason = ""
         try:
