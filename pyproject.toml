@@ -13,9 +13,6 @@ authors = [
 maintainers = [
     {name = "Antoine Martin", email = "antoine@xpra.org"},
 ]
-license = {text = "GPL-2.0-or-later"}
-license-files = ["COPYING"]
-
 description = "multi-platform screen and application forwarding system"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -37,6 +34,11 @@ classifiers = [
 ]
 dependencies = [
 ]
+
+
+[project.license]
+name = "GPL-2.0-or-later"
+file = "COPYING"
 
 
 [project.urls]
