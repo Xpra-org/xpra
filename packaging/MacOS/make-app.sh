@@ -315,6 +315,7 @@ echo "Xpra_NoDock: same app contents but without a dock icon"
 for app in Xpra_NoDock.app; do
 	SUB_APP="${APP_DIR}/Contents/${app}"
 	rsync -rplvtog ${app} ${APP_DIR}/Contents/
+	ln -sf ../../Frameworks ${SUB_APP}/Contents/Frameworks
 	ln -sf ../../Resources ${SUB_APP}/Contents/Resources
 	ln -sf ../../MacOS ${SUB_APP}/Contents/MacOS
 	ln -sf ../../Helpers ${SUB_APP}/Contents/Helpers
