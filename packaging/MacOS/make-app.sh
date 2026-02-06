@@ -385,7 +385,8 @@ find $LIBDIR/python/xpra/ -name "*.html" -exec rm {} \;
 
 #gst bits expect to find dylibs in Frameworks!?
 pushd ${CONTENTS_DIR}
-ln -sf Resources/lib Frameworks
+mv Resources/lib Frameworks
+ln -sf ../Frameworks Resources/lib
 pushd Resources/lib
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	echo "removing extra gstreamer dylib deps:"
