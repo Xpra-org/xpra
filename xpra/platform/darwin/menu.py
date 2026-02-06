@@ -325,9 +325,9 @@ class OSXMenuHelper(GTKTrayMenu):
         all_items = [x for x in clipboard.get_submenu().get_children() if x.get_label() in labels]
         selected_items = [x for x in all_items if x == item] + [x for x in all_items if x.get_label() == label]
         if not selected_items:
-            log.error("Error: cannot find any clipboard menu options to match '%s'", label)
+            log.error("Error: cannot find any clipboard menu options to match %r", label)
             log.error(" all menu items: %s", csv(x.get_label() for x in all_items))
-            log.error(" selected: %s", csv(x.get_label() for x in selected_items))
+            log.error(" selected: %s", csv(x.get_label() for x in selected_items) or "none")
             return ""
         self._clipboard_change_pending = True
         sel = selected_items[0]
