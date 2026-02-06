@@ -257,7 +257,7 @@ class OSXMenuHelper(GTKTrayMenu):
 
             # set_sensitive(bool) does not work on OSX,
             # so we only add the menu item if it does something
-            def add_ah(*_args):
+            def add_ah(*_args) -> None:
                 if self.client.server_start_new_commands:
                     add(server_menu, self.make_runcommandmenuitem())
                 if SHOW_SERVER_COMMANDS and self.client.server_commands_info:
@@ -272,13 +272,13 @@ class OSXMenuHelper(GTKTrayMenu):
         menus.append((SEPARATOR + "-EXTRAS", None))
         return menus
 
-    def _clipboard_direction_changed(self, item, label: str):
+    def _clipboard_direction_changed(self, item, label: str) -> None:
         clipboardlog("_clipboard_direction_changed(%s, %s) clipboard_change_pending=%s",
                      item, label, self._clipboard_change_pending)
         label = self.select_clipboard_menu_option(item, label, CLIPBOARD_DIRECTION_LABELS)
         self.do_clipboard_direction_changed(label or "")
 
-    def _remote_clipboard_changed(self, item, label: str):
+    def _remote_clipboard_changed(self, item, label: str) -> None:
         clipboardlog("_remote_clipboard_changed(%s, %s) clipboard_change_pending=%s",
                      item, label, self._clipboard_change_pending)
         # ensure this is the only clipboard label selected:
@@ -289,7 +289,7 @@ class OSXMenuHelper(GTKTrayMenu):
         clipboardlog("will select clipboard menu item with label=%s, for remote_clipboard=%s", label, remote_clipboard)
         GLib.timeout_add(0, self._do_clipboard_change, remote_clipboard)
 
-    def _do_clipboard_change(self, remote_clipboard: str):
+    def _do_clipboard_change(self, remote_clipboard: str) -> None:
         # why do we look it up again when we could just pass it in
         # to make_clipboard_submenuitem as an extra argument?
         # because gtk-osx would fall over itself, making a complete mess of the menus in the process
@@ -309,7 +309,7 @@ class OSXMenuHelper(GTKTrayMenu):
         clipboard_item.connect("toggled", clipboard_option_changed)
         return clipboard_item
 
-    def select_clipboard_menu_option(self, item=None, label: str = "", labels=()):
+    def select_clipboard_menu_option(self, item=None, label: str = "", labels=()) -> str:
         # ensure that only the matching menu item is selected,
         # (can be specified as a menuitem object, or using its label)
         # all the other menu items whose labels are specified will be made inactive
@@ -317,18 +317,18 @@ class OSXMenuHelper(GTKTrayMenu):
         clipboardlog("select_clipboard_menu_option(%s, %s, %s) clipboard_change_pending=%s",
                      item, label, labels, self._clipboard_change_pending)
         if self._clipboard_change_pending:
-            return None
+            return ""
         clipboard = self.get_menu("Clipboard")
         if not clipboard:
             log.error("Error: cannot locate Clipboard menu object!")
-            return None
+            return ""
         all_items = [x for x in clipboard.get_submenu().get_children() if x.get_label() in labels]
         selected_items = [x for x in all_items if x == item] + [x for x in all_items if x.get_label() == label]
         if not selected_items:
             log.error("Error: cannot find any clipboard menu options to match '%s'", label)
             log.error(" all menu items: %s", csv(x.get_label() for x in all_items))
             log.error(" selected: %s", csv(x.get_label() for x in selected_items))
-            return None
+            return ""
         self._clipboard_change_pending = True
         sel = selected_items[0]
         if not label:
@@ -361,10 +361,10 @@ class OSXMenuHelper(GTKTrayMenu):
     # these methods are called by the superclass,
     # but we don't have a quality or speed menu,
     # so override and ignore
-    def set_qualitymenu(self, *args):
+    def set_qualitymenu(self, *args) -> None:
         pass  # no quality menu on MacOS
 
-    def set_speedmenu(self, *args):
+    def set_speedmenu(self, *args) -> None:
         pass  # no speed menu on MacOS
 
     def _get_keyboard(self):
@@ -432,7 +432,7 @@ class OSXMenuHelper(GTKTrayMenu):
         self.after_handshake(set_numlock_menuitem)
         return self.numlock_menuitem
 
-    def update_numlock(self, on):
+    def update_numlock(self, on) -> None:
         if self.numlock_menuitem:
             self.numlock_menuitem.set_active(on)
 
