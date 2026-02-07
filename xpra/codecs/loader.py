@@ -18,6 +18,7 @@ from xpra.os_util import OSX, WIN32
 from xpra.util.version import parse_version
 from xpra.codecs.constants import HELP_ORDER
 from xpra.log import Logger, enable_color, LOG_FORMAT, NOPREFIX_FORMAT
+
 log = Logger("codec", "loader")
 
 
@@ -254,7 +255,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     # csc and filters:
     "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "converter", "Converter"),
     "csc_cython"    : ("cython colorspace conversion", "csc_cython", "converter", "Converter"),
-    "csc_torch"     : ("pytorch filter",    "torch",        "filter", "Filter"),
+    "csc_torch"     : ("pytorch filter",    "pytorch",      "filter", "Filter"),
     # decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
     "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),
