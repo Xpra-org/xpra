@@ -41,12 +41,55 @@ def get_specs() -> Sequence[CSCSpec]:
     )
 
 
+def parse_function_call(s: str) -> tuple[str, dict]:
+    """
+    Parse a function call string into function name and arguments dictionary.
+
+    Args:
+        s: String like "RandomInvert(p=0.5, q=2)"
+
+    Returns:
+        tuple: (function_name, args_dict)
+        e.g., ("RandomInvert", {'p': 0.5, 'q': 2})
+    """
+    import ast
+    # Extract function name (everything before first '(')
+    try:
+        open_paren = s.index('(')
+    except ValueError:
+        return s, {}
+    func_name = s[:open_paren].strip()
+
+    # Extract arguments string (between '(' and last ')')
+    args_str = s[open_paren + 1:s.rindex(')')].strip()
+
+    # Parse arguments into dictionary
+    args_dict = {}
+    if args_str:
+        # Split by comma and parse each key=value pair
+        for part in args_str.split(','):
+            part = part.strip()
+            if '=' in part:
+                key, value = part.split('=', 1)
+                key = key.strip()
+                value = value.strip()
+
+                # Use ast.literal_eval to safely convert string to Python type
+                try:
+                    args_dict[key] = ast.literal_eval(value)
+                except (ValueError, SyntaxError):
+                    # If parsing fails, keep as string
+                    args_dict[key] = value
+
+    return func_name, args_dict
+
+
 MAX_WIDTH = 16384
 MAX_HEIGHT = 16384
 
 
 class Filter:
-    __slots__ = ("closed", "width", "height", "device", "transform")
+    __slots__ = ("closed", "width", "height", "device", "transform", "kwargs")
 
     def __init__(self):
         self.closed = False
@@ -54,6 +97,7 @@ class Filter:
         self.height = 0
         self.device = ""
         self.transform = None
+        self.kwargs = {}
 
     def init_context(self, src_width: int, src_height: int, src_format: str,
                      dst_width: int, dst_height: int, dst_format: str, options: typedict) -> None:
@@ -64,7 +108,19 @@ class Filter:
         self.width = src_width
         self.height = src_height
         self.device = "cuda"
-        self.transform = transforms.RandomInvert(p=0.5)
+        transform_str = options.strget("transform", "RandomInvert(p=0.5)")
+        if transform_str.startswith("functional."):
+            functional = transforms.functional
+            transform_str = transform_str[len("functional."):]
+            function_name, kwargs = parse_function_call(transform_str)
+            self.transform = getattr(functional, function_name)
+            self.kwargs = kwargs
+        else:
+            function_name, kwargs = parse_function_call(transform_str)
+            function = getattr(transforms, function_name)
+            self.transform = function(**kwargs)
+            self.kwargs = {}
+        log("init_context options=%s, using %r=%s with kwargs=%s", transform_str, self.transform, self.kwargs)
 
     def clean(self) -> None:
         self.closed = True
@@ -115,7 +171,7 @@ class Filter:
         # Convert to CHW format for torchvision (C, H, W)
         bgr_chw = bgr.permute(2, 0, 1)  # (3, H, W)
         # Apply transform - RandomInvert works with uint8
-        bgr_transformed = self.transform(bgr_chw)
+        bgr_transformed = self.transform(bgr_chw, **self.kwargs)
         # Convert back to HWC format
         bgr_hwc = bgr_transformed.permute(1, 2, 0)  # (H, W, 3)
         # Recombine with X channel
