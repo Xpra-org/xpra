@@ -18,6 +18,8 @@
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 
 %global debug_package %{nil}
+%define _lto_cflags %{nil}
+%global __requires_exclude ^lib(cudart|cublas|cublasLt|cufft|cufile|cupti|curand|cusolver|cusparse|nvrtc)\\.so\\..*
 
 Name:           %{python3}-torch-cuda
 Version:        2.10.0
@@ -72,39 +74,73 @@ echo "v2.21.5-1" > .ci/docker/ci_commit_pins/nccl-cu12.txt
 
 %build
 CUDA=/opt/cuda
-PYTHON_BIN=/usr/bin/%{python3}
-export NVCC_FLAGS="-fPIE"
-export LDFLAGS="%{build_ldflags} -pie"
-# Disable NCCL to avoid missing .ci files from release tarball
+export CUDA_HOME=${CUDA}
+export CUDACXX=${CUDA}/bin/nvcc
+# export TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
+export TORCH_CUDA_ARCH_LIST="8.0"
 export USE_NCCL=0
-PY_VERSION=$(%{python3} -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-cmake . -B build \
-    -DPYTHON_EXECUTABLE:FILEPATH=${PYTHON_BIN} \
-    -DPython_EXECUTABLE:FILEPATH=${PYTHON_BIN} \
-    -DPython3_EXECUTABLE:FILEPATH=${PYTHON_BIN} \
-    -DPython3_FIND_STRATEGY=LOCATION \
-    -DPython3_FIND_UNVERSIONED_NAMES=FIRST \
-    -DBUILD_PYTHON=ON \
-    -DBUILD_SHARED_LIBS=ON \
-    -DCMAKE_INSTALL_PREFIX=%{_prefix} \
-    -DCMAKE_CUDA_FLAGS="-fPIE" \
-    -DCMAKE_CUDA_ARCHITECTURES=all-major \
-    -DCMAKE_CUDA_COMPILER=${CUDA}/bin/nvcc \
-    -DUSE_NCCL=OFF -DUSE_NUMA=OFF -DUSE_XCCL=OFF -DUSE_MPI=OFF -DUSE_ROCM=off
-cmake --build build %{?_smp_mflags} --target install
+export USE_ROCM=0
+export BUILD_TEST=0
+export USE_DISTRIBUTED=0
+export PYTHON=/usr/bin/%{python3}
+export CMAKE_CUDA_COMPILER=${CUDA}/bin/nvcc
+export Python3_FIND_UNVERSIONED_NAMES=FIRST
+export TORCH_NVCC_FLAGS="-Xcompiler -fPIC"
+export NVCC_FLAGS="-fPIE"
+export MAX_JOBS=1  # Very conservative, but should avoid OOM
+export CMAKE_BUILD_PARALLEL_LEVEL=2  # For CMake builds
+export USE_MKLDNN=0
+export CMAKE_BUILD_TYPE=Release
+export DEBUG=0
+export CMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+
+unset CFLAGS
+unset CXXFLAGS
+unset CPPFLAGS
+unset LDFLAGS
+unset RPM_OPT_FLAGS
+unset RPM_LD_FLAGS
+
+# Strip out GCC-specific -specs flags that clang doesn't understand
+export CFLAGS="$(echo "%{optflags}" | sed -e 's/-specs=[^ ]*//g' -e 's/-Wno-complain-wrong-lang//g')"
+export CXXFLAGS="$(echo "%{optflags}" | sed -e 's/-specs=[^ ]*//g' -e 's/-Wno-complain-wrong-lang//g')"
+export LDFLAGS=$(echo "%{build_ldflags}" | sed 's/-specs=[^ ]*//g')
+
+# Set minimal safe flags
+export CFLAGS="-O2"
+export CXXFLAGS="-O2"
+export LDFLAGS="-Wl,--strip-debug"
+
+export MAX_JOBS=4
+%{python3} setup.py build
 
 %install
+export USE_NCCL=0
+export BUILD_TEST=0
+export USE_DISTRIBUTED=0
+export QA_RPATHS=$[ 0x0001|0x0002 ]
 CUDA=/opt/cuda
-cd build
-cmake --install . --prefix %{buildroot}%{_prefix}
+# this should be the same as the py3_install macro:
+%{python3} -m pip install \
+    --no-deps \
+    --no-build-isolation \
+    --ignore-installed \
+    --no-user \
+    --root=%{buildroot} \
+    --prefix=%{_prefix} \
+    .
 
 %clean
 rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
-%{python3_sitearch}/torch*
+%{_bindir}/torchrun
+%{python3_sitearch}/torch-%{version}*.dist-info
+%{python3_sitearch}/torch
+%{python3_sitearch}/torchgen
+%{python3_sitearch}/functorch
 
 %changelog
-* Fri Feb 06 2026 Antoine Martin <antoine@xpra.org> - 2.10.0-1
-- initial packaging
+* Sun Feb 08 2026 Antoine Martin <antoine@xpra.org> - 2.10.0-1
+- initial packaging for xpra with CUDA support builtin
