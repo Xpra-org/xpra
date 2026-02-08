@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import torch
-import torchvision.transforms.v2 as transforms
 import numpy as np
 from typing import Any, Sequence
 
@@ -88,6 +86,40 @@ MAX_WIDTH = 16384
 MAX_HEIGHT = 16384
 
 
+pytorch_version = ()
+cuda_devices = {}
+filter_inited = False
+
+
+def torch_init() -> None:
+    global filter_inited, pytorch_version
+    if filter_inited:
+        return
+    filter_inited = True
+    log.info("pytorch initialization (this may take a few seconds)")
+    import torch
+    pytorch_version = tuple(torch.__version__.split("."))
+    log.info(f"pytorch {torch.__version__} initialized")
+    if hasattr(torch, "cuda") and torch.cuda.is_available() and not torch.cuda.is_initialized():
+        log("initializing cuda")
+        torch.cuda.init()
+        n = torch.cuda.device_count()
+        log.info(" with %i devices:", n)
+        for i in range(torch.cuda.device_count()):
+            props = torch.cuda.get_device_properties(i)
+            cuda_devices[i] = {
+                "name": props.name,
+                "compute": (props.major, props.minor),
+                "memory": props.total_memory,
+                "uuid": props.uuid,
+                "pci-bus-id": props.pci_bus_id,
+                "pci-device-id": props.pci_device_id,
+                "pci-domain-id": props.pci_domain_id,
+                "multi-processors:": props.multi_processor_count,
+            }
+            log.info("  + %s %.1fGB memory", props.name, props.total_memory // 1024 // 1024 // 1024)
+
+
 class Filter:
     __slots__ = ("closed", "width", "height", "device", "transform", "kwargs")
 
@@ -105,10 +137,12 @@ class Filter:
         assert 0 < src_width <= MAX_WIDTH, f"invalid width {src_width}"
         assert 0 < src_height <= MAX_HEIGHT, f"invalid height {src_height}"
         assert src_format == "BGRX" and dst_format == "BGRX", "this module only handles BGRX"
+        torch_init()
         self.width = src_width
         self.height = src_height
         self.device = "cuda"
         transform_str = options.strget("transform", "RandomInvert(p=0.5)")
+        import torchvision.transforms.v2 as transforms
         if transform_str.startswith("functional."):
             functional = transforms.functional
             transform_str = transform_str[len("functional."):]
@@ -160,11 +194,11 @@ class Filter:
     def convert_image(self, image: ImageWrapper) -> ImageWrapper:
         assert self.width == image.get_width()
         assert self.height == image.get_height()
+        import torch
         bgrx = image.get_pixels()
         bgrx_array = np.frombuffer(bgrx, dtype=np.uint8)
         bgrx_array = bgrx_array.reshape(self.height, self.width, 4)
-        # Upload to GPU - convert to tensor (H, W, 4)
-        pixels_gpu = torch.from_numpy(bgrx_array).to(self.device)
+        pixels_gpu = torch.tensor(bgrx_array, device=self.device, dtype=torch.uint8)
         # Separate BGR and X channels
         bgr = pixels_gpu[:, :, :3]          # (H, W, 3)
         x_channel = pixels_gpu[:, :, 3:4]   # (H, W, 1)
@@ -185,7 +219,7 @@ class Filter:
 
 def selftest(full=False):
     from xpra.codecs.checks import testcsc
-    from xpra.codecs.torch import filter
+    from xpra.codecs.pytorch import filter
     filter.Converter = filter.Filter
     testcsc(filter, full)
 

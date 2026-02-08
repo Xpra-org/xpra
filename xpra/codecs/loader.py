@@ -28,7 +28,8 @@ NOWARN = [
     "nvenc", "nvdec", "enc_nvjpeg",
     "dec_nvjpeg", "nvfbc", "dec_openh264",
     "enc_gstreamer", "dec_gstreamer",
-    "csc_cython", "csc_torch",
+    "csc_cython",
+    "filter_torch",
     "dec_avif", "enc_avif",
     "enc_amf",
 ]
@@ -44,7 +45,7 @@ log(f"codec loader settings: {SELFTEST=}, {FULL_SELFTEST=}, {CODEC_FAIL_IMPORT=}
 
 SKIP_LIST: Sequence[str] = ()
 if OSX:
-    SKIP_LIST = ("enc_amf", "dec_amf", "enc_gstreamer", "dec_gstreamer", "nvenc", "nvdec", "nvjpeg")
+    SKIP_LIST = ("enc_amf", "dec_amf", "enc_gstreamer", "dec_gstreamer", "nvenc", "nvdec", "nvjpeg", "filter_torch")
 
 
 def autoprefix(prefix: str, name: str) -> str:
@@ -59,7 +60,8 @@ def gfilt(generator) -> tuple[str, ...]:
     return filt(*generator)
 
 
-CSC_CODECS: Sequence[str] = gfilt(f"csc_{x}" for x in ("cython", "libyuv", "torch"))
+FILTERS: Sequence[str] = gfilt(f"filter_{x}" for x in ("torch", ))
+CSC_CODECS: Sequence[str] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
 ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif",
 ))
@@ -75,7 +77,7 @@ DECODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("dec", x) for x in (
 SOURCES: Sequence[str] = filt("v4l2", "evdi", "drm", "nvfbc")
 
 ALL_CODECS: Sequence[str] = filt(*set(
-    CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS + SOURCES)
+    FILTERS + CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS + SOURCES)
 )
 
 
@@ -252,10 +254,11 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),
     "enc_amf"       : ("amf encoder",       "amf",          "encoder", "Encoder"),
     "enc_remote"    : ("remote encoder",    "remote",       "encoder", "Encoder"),
-    # csc and filters:
+    # csc:
     "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "converter", "Converter"),
     "csc_cython"    : ("cython colorspace conversion", "csc_cython", "converter", "Converter"),
-    "csc_torch"     : ("pytorch filter",    "pytorch",      "filter", "Filter"),
+    # filters:
+    "filter_torch"  : ("pytorch filter",    "pytorch",      "filter", "Filter"),
     # decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
     "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),
@@ -308,7 +311,7 @@ def load_codec(name: str, options: dict | None = None):
     return get_codec(name)
 
 
-def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=False) -> Sequence[str]:
+def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=False, filters=True) -> Sequence[str]:
     log("loading codecs")
     loaded: list[str] = []
 
@@ -335,6 +338,8 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=Fals
             load(*DECODER_VIDEO_CODECS)
     if sources:
         load(*SOURCES)
+    if filters:
+        load(*FILTERS)
     log("done loading codecs: %s", loaded)
     return tuple(loaded)
 
