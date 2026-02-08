@@ -30,6 +30,7 @@ NOWARN = [
     "enc_gstreamer", "dec_gstreamer",
     "csc_cython",
     "filter_torch",
+    "filter_pillow",
     "dec_avif", "enc_avif",
     "enc_amf",
 ]
@@ -45,7 +46,12 @@ log(f"codec loader settings: {SELFTEST=}, {FULL_SELFTEST=}, {CODEC_FAIL_IMPORT=}
 
 SKIP_LIST: Sequence[str] = ()
 if OSX:
-    SKIP_LIST = ("enc_amf", "dec_amf", "enc_gstreamer", "dec_gstreamer", "nvenc", "nvdec", "nvjpeg", "filter_torch")
+    SKIP_LIST = (
+        "enc_amf", "dec_amf",
+        "enc_gstreamer", "dec_gstreamer",
+        "nvenc", "nvdec", "nvjpeg",
+        "filter_torch", "filter_pillow",
+    )
 
 
 def autoprefix(prefix: str, name: str) -> str:
@@ -60,7 +66,7 @@ def gfilt(generator) -> tuple[str, ...]:
     return filt(*generator)
 
 
-FILTERS: Sequence[str] = gfilt(f"filter_{x}" for x in ("torch", ))
+FILTERS: Sequence[str] = gfilt(f"filter_{x}" for x in ("torch", "pillow"))
 CSC_CODECS: Sequence[str] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
 ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif",
@@ -259,6 +265,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "csc_cython"    : ("cython colorspace conversion", "csc_cython", "converter", "Converter"),
     # filters:
     "filter_torch"  : ("pytorch filter",    "pytorch",      "filter", "Filter"),
+    "filter_pillow" : ("pillow filter",     "pillow" ,      "filter", "Filter"),
     # decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
     "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),

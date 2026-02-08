@@ -222,3 +222,46 @@ def memoryview_to_bytes(v) -> bytes:
     if isinstance(v, bytearray):
         return bytes(v)
     return strtobytes(v)
+
+
+def parse_function_call(s: str) -> tuple[str, dict]:
+    """
+    Parse a function call string into function name and arguments dictionary.
+
+    Args:
+        s: String like "RandomInvert(p=0.5, q=2)"
+
+    Returns:
+        tuple: (function_name, args_dict)
+        e.g., ("RandomInvert", {'p': 0.5, 'q': 2})
+    """
+    import ast
+    # Extract function name (everything before first '(')
+    try:
+        open_paren = s.index('(')
+    except ValueError:
+        return s, {}
+    func_name = s[:open_paren].strip()
+
+    # Extract arguments string (between '(' and last ')')
+    args_str = s[open_paren + 1:s.rindex(')')].strip()
+
+    # Parse arguments into dictionary
+    args_dict = {}
+    if args_str:
+        # Split by comma and parse each key=value pair
+        for part in args_str.split(','):
+            part = part.strip()
+            if '=' in part:
+                key, value = part.split('=', 1)
+                key = key.strip()
+                value = value.strip()
+
+                # Use ast.literal_eval to safely convert string to Python type
+                try:
+                    args_dict[key] = ast.literal_eval(value)
+                except (ValueError, SyntaxError):
+                    # If parsing fails, keep as string
+                    args_dict[key] = value
+
+    return func_name, args_dict
