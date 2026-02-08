@@ -521,6 +521,8 @@ def do_main_load(args) -> Sequence[str]:
     # not really a codec, but gets used by codecs, so include version info:
     with numpy_import_context("codec loader"):
         add_codec_version("numpy", "numpy")
+    if "torch" in sys.modules:
+        add_codec_version("torch", "torch")
     return ALL_CODECS
 
 

@@ -23,9 +23,14 @@ def get_version() -> tuple[int, int]:
 
 
 def get_info() -> dict[str, Any]:
-    return {
+    info: dict[str, Any] = {
         "version": get_version(),
     }
+    if pytorch_version:
+        info["pytorch"] = pytorch_version
+    if cuda_devices:
+        info["cuda-devices"] = cuda_devices
+    return info
 
 
 def get_specs() -> Sequence[CSCSpec]:

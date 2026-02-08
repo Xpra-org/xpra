@@ -210,6 +210,7 @@ def pver(v, numsep: str = ".", strsep: str = ", ") -> str:
                         return bytestostr(x)
 
                 return strsep.join(s(x) for x in v)
+        return numsep.join(bytestostr(x) for x in v)
     return bytestostr(v)
 
 
