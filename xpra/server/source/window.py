@@ -344,8 +344,7 @@ class WindowsConnection(StubClientConnection):
             return
         # we may need to make a new source at this point:
         ws = self.make_window_source(wid, window)
-        if ws:
-            ws.send_window_icon()
+        ws.send_window_icon()
 
     def lost_window(self, wid: int, _window) -> None:
         self.send(WINDOW_DESTROY, wid)
@@ -447,44 +446,45 @@ class WindowsConnection(StubClientConnection):
 
     def make_window_source(self, wid: int, window):
         ws = self.window_sources.get(wid)
-        if ws is None:
-            batch_config = self.make_batch_config(wid, window)
-            ww, wh = window.get_dimensions()
-            mmap_write_area = getattr(self, "mmap_write_area", None)
-            if mmap_write_area and mmap_write_area.enabled:
-                bandwidth_limit = 0
-            else:
-                mmap_write_area = None
-                bandwidth_limit = getattr(self, "bandwidth_limit", 0)
-            av_sync = getattr(self, "av_sync", False)
-            av_sync_delay = getattr(self, "av_sync_delay", 0)
-            conn = getattr(self.protocol, "_conn", None)
-            socktype = getattr(conn, "socktype_wrapped", "")
-            jitter = getattr(conn, "jitter", 0)
-            datagram = 1350 if socktype == "quic" else 0
-            log(f"datagram({socktype=})={datagram}")
-            # pylint: disable=import-outside-toplevel
-            from xpra.server.window.video_compress import WindowVideoSource
-            ws = WindowVideoSource(
-                ww, wh,
-                self.record_congestion_event, self.encode_queue_size,
-                self.call_in_encode_thread, self.queue_packet,
-                self.statistics,
-                wid, window, batch_config, self.auto_refresh_delay,
-                av_sync, av_sync_delay,
-                self.video_helper,
-                self.cuda_device_context,
-                self.server_core_encodings, self.server_encodings,
-                self.encoding, self.encodings, self.core_encodings,
-                self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
-                self.rgb_formats,
-                self.default_encoding_options,
-                mmap_write_area, bandwidth_limit, jitter, datagram)
-            ws.init_encoders()
-            self.window_sources[wid] = ws
-            if len(self.window_sources) > 1:
-                # re-distribute bandwidth:
-                self.may_update_bandwidth_limits()
+        if ws:
+            return ws
+        batch_config = self.make_batch_config(wid, window)
+        ww, wh = window.get_dimensions()
+        mmap_write_area = getattr(self, "mmap_write_area", None)
+        if mmap_write_area and mmap_write_area.enabled:
+            bandwidth_limit = 0
+        else:
+            mmap_write_area = None
+            bandwidth_limit = getattr(self, "bandwidth_limit", 0)
+        av_sync = getattr(self, "av_sync", False)
+        av_sync_delay = getattr(self, "av_sync_delay", 0)
+        conn = getattr(self.protocol, "_conn", None)
+        socktype = getattr(conn, "socktype_wrapped", "")
+        jitter = getattr(conn, "jitter", 0)
+        datagram = 1350 if socktype == "quic" else 0
+        log(f"datagram({socktype=})={datagram}")
+        # pylint: disable=import-outside-toplevel
+        from xpra.server.window.video_compress import WindowVideoSource
+        ws = WindowVideoSource(
+            ww, wh,
+            self.record_congestion_event, self.encode_queue_size,
+            self.call_in_encode_thread, self.queue_packet,
+            self.statistics,
+            wid, window, batch_config, self.auto_refresh_delay,
+            av_sync, av_sync_delay,
+            self.video_helper,
+            self.cuda_device_context,
+            self.server_core_encodings, self.server_encodings,
+            self.encoding, self.encodings, self.core_encodings,
+            self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
+            self.rgb_formats,
+            self.default_encoding_options,
+            mmap_write_area, bandwidth_limit, jitter, datagram)
+        ws.init_encoders()
+        self.window_sources[wid] = ws
+        if len(self.window_sources) > 1:
+            # re-distribute bandwidth:
+            self.may_update_bandwidth_limits()
         return ws
 
     def damage(self, wid: int, window, x: int, y: int, w: int, h: int, options=None) -> None:
