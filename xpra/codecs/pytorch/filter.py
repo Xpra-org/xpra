@@ -3,12 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import numpy as np
 from typing import Any, Sequence
 
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import CSCSpec
+from xpra.util.str_fn import parse_function_call
 from xpra.log import Logger
 
 log = Logger("csc", "torch")
@@ -42,49 +42,6 @@ def get_specs() -> Sequence[CSCSpec]:
             max_w=16*1024, max_h=16*1024,
         ),
     )
-
-
-def parse_function_call(s: str) -> tuple[str, dict]:
-    """
-    Parse a function call string into function name and arguments dictionary.
-
-    Args:
-        s: String like "RandomInvert(p=0.5, q=2)"
-
-    Returns:
-        tuple: (function_name, args_dict)
-        e.g., ("RandomInvert", {'p': 0.5, 'q': 2})
-    """
-    import ast
-    # Extract function name (everything before first '(')
-    try:
-        open_paren = s.index('(')
-    except ValueError:
-        return s, {}
-    func_name = s[:open_paren].strip()
-
-    # Extract arguments string (between '(' and last ')')
-    args_str = s[open_paren + 1:s.rindex(')')].strip()
-
-    # Parse arguments into dictionary
-    args_dict = {}
-    if args_str:
-        # Split by comma and parse each key=value pair
-        for part in args_str.split(','):
-            part = part.strip()
-            if '=' in part:
-                key, value = part.split('=', 1)
-                key = key.strip()
-                value = value.strip()
-
-                # Use ast.literal_eval to safely convert string to Python type
-                try:
-                    args_dict[key] = ast.literal_eval(value)
-                except (ValueError, SyntaxError):
-                    # If parsing fails, keep as string
-                    args_dict[key] = value
-
-    return func_name, args_dict
 
 
 MAX_WIDTH = 16384
@@ -159,7 +116,7 @@ class Filter:
             function = getattr(transforms, function_name)
             self.transform = function(**kwargs)
             self.kwargs = {}
-        log("init_context options=%s, using %r=%s with kwargs=%s", transform_str, self.transform, self.kwargs)
+        log("init_context options=%s, using %r=%s with kwargs=%s", options, transform_str, self.transform, self.kwargs)
 
     def clean(self) -> None:
         self.closed = True
@@ -200,6 +157,7 @@ class Filter:
         assert self.width == image.get_width()
         assert self.height == image.get_height()
         import torch
+        import numpy as np
         bgrx = image.get_pixels()
         bgrx_array = np.frombuffer(bgrx, dtype=np.uint8)
         bgrx_array = bgrx_array.reshape(self.height, self.width, 4)
