@@ -83,7 +83,7 @@ export CUDACXX=${CUDA}/bin/nvcc
 export CC=gcc
 export CXX=g++
 
-export TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
+export TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0;12.0"
 export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 export USE_NCCL=0
 export USE_ROCM=0
