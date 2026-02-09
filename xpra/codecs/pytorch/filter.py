@@ -42,6 +42,25 @@ def get_specs() -> Sequence[CSCSpec]:
     )
 
 
+def get_default_filters() -> Sequence[str]:
+    return (
+        #"RandomInvert(p=0.5)",
+        #"Grayscale",
+        "ColorJitter(brightness=.5, hue=.3)",
+        "GaussianNoise(mean=0.0, sigma=0.1, clip=True)",
+        #"GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.))",
+        "functional.vflip",
+        "functional.hflip",
+        #"functional.gaussian_blur",
+        "functional.invert",
+        "functional.posterize(bits=4)",
+        "functional.solarize(threshold=0.5)",
+        #adjust_sharpness
+        "functional.autocontrast",
+        "functional.equalize",
+    )
+
+
 MAX_WIDTH = 16384
 MAX_HEIGHT = 16384
 
@@ -155,13 +174,15 @@ class Filter:
         return "torch"
 
     def convert_image(self, image: ImageWrapper) -> ImageWrapper:
-        assert self.width == image.get_width()
-        assert self.height == image.get_height()
+        width = image.get_width()
+        height = image.get_height()
+        assert width <= self.width, "expected image width smaller than %i got %i" % (self.width, width)
+        assert height <= self.height, "expected image height smaller than %i got %i" % (self.height, height)
         import torch
         import numpy as np
         bgrx = image.get_pixels()
         bgrx_array = np.frombuffer(bgrx, dtype=np.uint8)
-        bgrx_array = bgrx_array.reshape(self.height, self.width, 4)
+        bgrx_array = bgrx_array.reshape(height, width, 4)
         pixels_gpu = torch.tensor(bgrx_array, device=self.device, dtype=torch.uint8)
         # Separate BGR and X channels
         bgr = pixels_gpu[:, :, :3]          # (H, W, 3)

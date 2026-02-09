@@ -19,23 +19,7 @@ def main(files):
     torch = load_codec("csc_torch")
     assert torch, "csc_torch is required"
 
-    transforms = (
-        #"RandomInvert(p=0.5)",
-        #"Grayscale",
-        "ColorJitter(brightness=.5, hue=.3)",
-        "GaussianNoise(mean=0.0, sigma=0.1, clip=True)",
-        #"GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.))",
-        "functional.vflip",
-        "functional.hflip",
-        #"functional.gaussian_blur",
-        "functional.invert",
-        "functional.posterize(bits=4)",
-        "functional.solarize(threshold=0.5)",
-        #adjust_sharpness
-        "functional.autocontrast",
-        "functional.equalize",
-    )
-
+    transforms = torch.get_default_filters()
     for index, f in enumerate(files):
         img = Image.open(f)
         if img.mode != "RGBA":

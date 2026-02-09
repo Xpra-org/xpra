@@ -19,21 +19,7 @@ def main(files):
     pillow_filter = load_codec("filter_pillow")
     assert pillow_filter, "filter_pillow is required"
 
-    transforms = (
-        "BLUR",
-        "CONTOUR",
-        "DETAIL",
-        "EDGE_ENHANCE",
-        "EDGE_ENHANCE_MORE",
-        "EMBOSS",
-        "FIND_EDGES",
-        "SHARPEN",
-        "SMOOTH",
-        "SMOOTH_MORE",
-        "BoxBlur(radius=10)",
-        "GaussianBlur(radius=10)",
-    )
-
+    transforms = pillow_filter.get_default_filters()
     for index, f in enumerate(files):
         img = Image.open(f)
         if img.mode != "RGBA":

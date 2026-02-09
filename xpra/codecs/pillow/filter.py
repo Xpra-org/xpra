@@ -41,6 +41,23 @@ def get_specs() -> Sequence[CSCSpec]:
     )
 
 
+def get_default_filters() -> Sequence[str]:
+    return (
+        "BLUR",
+        "CONTOUR",
+        "DETAIL",
+        "EDGE_ENHANCE",
+        "EDGE_ENHANCE_MORE",
+        "EMBOSS",
+        "FIND_EDGES",
+        "SHARPEN",
+        "SMOOTH",
+        "SMOOTH_MORE",
+        "BoxBlur(radius=10)",
+        "GaussianBlur(radius=10)",
+    )
+
+
 MAX_WIDTH = 16384
 MAX_HEIGHT = 16384
 
@@ -107,10 +124,12 @@ class Filter:
         return "pillow"
 
     def convert_image(self, image: ImageWrapper) -> ImageWrapper:
-        assert self.width == image.get_width()
-        assert self.height == image.get_height()
+        width = image.get_width()
+        height = image.get_height()
+        assert width <= self.width, "expected image width smaller than %i got %i" % (self.width, width)
+        assert height <= self.height, "expected image height smaller than %i got %i" % (self.height, height)
         bgrx = image.get_pixels()
-        img = Image.frombuffer("RGBA", (self.width, self.height), bgrx, "raw", "BGRA", image.get_rowstride())
+        img = Image.frombuffer("RGBA", (width, height), bgrx, "raw", "BGRA", image.get_rowstride())
         modified = img.filter(self.filter)
         bgrx = modified.tobytes("raw", "BGRA", 0, 1)
         image.set_pixels(bgrx)
