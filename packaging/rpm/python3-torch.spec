@@ -50,6 +50,7 @@ BuildRequires:  %{python3}-jinja2
 BuildRequires:  %{python3}-fsspec
 BuildRequires:  %{python3}-mpmath
 BuildRequires:  %{python3}-markupsafe
+BuildRequires:  %{python3}-yaml
 BuildRequires:  cuda
 
 %description
