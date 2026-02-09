@@ -36,6 +36,7 @@ Provides:       %{python3}-torch
 BuildRequires:	coreutils
 BuildRequires:  make
 BuildRequires:  cmake
+BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-pip
@@ -76,8 +77,14 @@ echo "v2.21.5-1" > .ci/docker/ci_commit_pins/nccl-cu12.txt
 CUDA=/opt/cuda
 export CUDA_HOME=${CUDA}
 export CUDACXX=${CUDA}/bin/nvcc
+
+# Force GCC instead of clang
+export CC=gcc
+export CXX=g++
+
 # export TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
 export TORCH_CUDA_ARCH_LIST="8.0"
+export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 export USE_NCCL=0
 export USE_ROCM=0
 export BUILD_TEST=0
@@ -87,8 +94,6 @@ export CMAKE_CUDA_COMPILER=${CUDA}/bin/nvcc
 export Python3_FIND_UNVERSIONED_NAMES=FIRST
 export TORCH_NVCC_FLAGS="-Xcompiler -fPIC"
 export NVCC_FLAGS="-fPIE"
-export MAX_JOBS=1  # Very conservative, but should avoid OOM
-export CMAKE_BUILD_PARALLEL_LEVEL=2  # For CMake builds
 export USE_MKLDNN=0
 export CMAKE_BUILD_TYPE=Release
 export DEBUG=0
@@ -106,13 +111,17 @@ export CFLAGS="$(echo "%{optflags}" | sed -e 's/-specs=[^ ]*//g' -e 's/-Wno-comp
 export CXXFLAGS="$(echo "%{optflags}" | sed -e 's/-specs=[^ ]*//g' -e 's/-Wno-complain-wrong-lang//g')"
 export LDFLAGS=$(echo "%{build_ldflags}" | sed 's/-specs=[^ ]*//g')
 
+export GLIBCXX_USE_CXX11_ABI=1
+export _GLIBCXX_USE_CXX11_ABI=1
+
 # Set minimal safe flags
 export CFLAGS="-O2"
 export CXXFLAGS="-O2"
 export LDFLAGS="-Wl,--strip-debug"
 
 export MAX_JOBS=4
-%{python3} setup.py build
+export CMAKE_BUILD_PARALLEL_LEVEL=4  # For CMake builds
+%{python3} -m pip wheel --no-deps --no-build-isolation -v -w dist .
 
 %install
 export USE_NCCL=0
@@ -123,12 +132,11 @@ CUDA=/opt/cuda
 # this should be the same as the py3_install macro:
 %{python3} -m pip install \
     --no-deps \
-    --no-build-isolation \
     --ignore-installed \
     --no-user \
     --root=%{buildroot} \
     --prefix=%{_prefix} \
-    .
+    dist/torch-*.whl
 
 %clean
 rm -rf %{buildroot}
