@@ -292,7 +292,7 @@ if [ "${DO_X11}" == "1" ]; then
 		cp "/opt/X11/bin/${cmd}" "${RSCDIR}/bin/"
 	done
 	for lib in "libGL" "libICE" "libOSMesa" "libX11" "libXRes" "libXau" "libXaw" "libXcomposite" "libXcursor" "libXdamage" "libXext" "libXfixes" "libXfont" "libXpm" "libXpresent" "libXrandr" "libXrender" "libXt" "libXtst" "libxkbfile" "libxshmfence"; do
-		cp "/opt/X11/lib/${lib}.*" "${RSCDIR}/lib/"
+		cp "/opt/X11/lib/${lib}".* "${RSCDIR}/lib/"
 	done
 	cp -r "/opt/X11/lib/dri" "${RSCDIR}/lib/"
 fi
