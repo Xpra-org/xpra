@@ -14,3 +14,5 @@ python3-pylsqpack
 python3-aioquic
 python3-pyopengl
 xpra
+python3-torch
+python3-torch-vision
