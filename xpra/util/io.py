@@ -271,8 +271,8 @@ def find_libexec_command(cmd: str) -> str:
     if cmd and os.path.isabs(cmd):
         return cmd
     if cmd:
-        from xpra.platform.paths import get_resources_dir
-        for prefix in ("/usr", get_resources_dir()):
+        from xpra.platform.paths import get_resources_dir, get_app_dir
+        for prefix in ("/usr", get_resources_dir(), os.path.join(get_app_dir(), "Helpers")):
             pcmd = prefix + "/libexec/xpra/" + cmd
             if os.path.exists(pcmd):
                 return pcmd

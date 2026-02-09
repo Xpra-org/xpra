@@ -2353,10 +2353,12 @@ else:
 
     if is_openSUSE():
         # basically need $(basename $(rpm -E '%{_libexecdir}'))
-        libexec_dir = "__LIBEXECDIR__"
+        libexec_xpra_dir = "__LIBEXECDIR__/xpra/"
+    elif OSX:
+        libexec_xpra_dir = "bin/"
     else:
-        libexec_dir = "libexec"
-    add_data_files(libexec_dir+"/xpra/", [f"fs/libexec/xpra/{x}" for x in libexec_scripts])
+        libexec_xpra_dir = "libexec/xpra/"
+    add_data_files(libexec_xpra_dir, [f"fs/libexec/xpra/{x}" for x in libexec_scripts])
     if data_ENABLED:
         man_path = "share/man"
         icons_dir = "icons"
