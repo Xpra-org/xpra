@@ -19,6 +19,7 @@ from xpra.log import Logger
 log = Logger("window", "events")
 # CONTENT_TYPES = set(os.environ.get("XPRA_IMAGEFILTER_CONTENT_TYPES", "text").split(","))
 CONTENT_TYPES = set(ct for ct in os.environ.get("XPRA_IMAGEFILTER_CONTENT_TYPES", "").split(",") if ct)
+WINDOW_TYPES = set(ct for ct in os.environ.get("XPRA_IMAGEFILTER_WINDOW_TYPES", "").split(",") if ct)
 MODULES = os.environ.get("XPRA_IMAGEFILTER_MODULES", "torch,pillow").split(",")
 
 
@@ -48,7 +49,7 @@ class ImageFilterConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        ifilt = envbool("XPRA_WINDOW_IMAGE_FILTER", bool(CONTENT_TYPES))
+        ifilt = envbool("XPRA_WINDOW_IMAGE_FILTER", bool(CONTENT_TYPES) or bool(WINDOW_TYPES))
         return caps.boolget("imagefilter", ifilt)
 
     def __init__(self):
@@ -82,13 +83,18 @@ class ImageFilterConnection(StubClientConnection):
         if ws.image_depth not in (24, 32):
             return
         log("CONTENT_TYPES=%s, window: %s", csv(CONTENT_TYPES), csv(ws.content_types))
-        if "*" in CONTENT_TYPES or CONTENT_TYPES & set(ws.content_types):
-            options = typedict({})
-            width, height = ws.window_dimensions
-            ifilt = self.filter_module.Filter()
-            ifilt.init_context(width, height, "BGRX", width, height, "BGRX", options)
-            ws.image_filter = ImageFilter(ws.wid, ifilt)
-            log("imagefilter for window %i %ix%i: %s", ws.wid, width, height, ws.image_filter)
+        if "*" not in CONTENT_TYPES and not (CONTENT_TYPES & set(ws.content_types)):
+            return
+        window_types = ws.window.get("window-type")
+        log("WINDOW_TYPES=%s, window: %s", csv(WINDOW_TYPES), csv(window_types))
+        if "*" not in WINDOW_TYPES and not (WINDOW_TYPES & set(window_types)):
+            return
+        options = typedict({})
+        width, height = ws.window_dimensions
+        ifilt = self.filter_module.Filter()
+        ifilt.init_context(width, height, "BGRX", width, height, "BGRX", options)
+        ws.image_filter = ImageFilter(ws.wid, ifilt)
+        log("imagefilter for window %i %ix%i: %s", ws.wid, width, height, ws.image_filter)
 
     def resize_imagefilter(self, ss, ws: WindowSource) -> None:
         log.warn("imagefilter: resize!")
