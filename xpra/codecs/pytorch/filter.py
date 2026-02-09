@@ -22,15 +22,13 @@ def get_version() -> tuple[int, int]:
     return 6, 5
 
 
+torch_info: dict[str, Any] = {
+    "version": get_version(),
+}
+
+
 def get_info() -> dict[str, Any]:
-    info: dict[str, Any] = {
-        "version": get_version(),
-    }
-    if pytorch_version:
-        info["pytorch"] = pytorch_version
-    if cuda_devices:
-        info["cuda-devices"] = cuda_devices
-    return info
+    return torch_info
 
 
 def get_specs() -> Sequence[CSCSpec]:
@@ -48,28 +46,29 @@ MAX_WIDTH = 16384
 MAX_HEIGHT = 16384
 
 
-pytorch_version = ()
-cuda_devices = {}
 filter_inited = False
 
 
 def torch_init() -> None:
-    global filter_inited, pytorch_version
+    global filter_inited
     if filter_inited:
         return
     filter_inited = True
     log.info("pytorch initialization (this may take a few seconds)")
     import torch
-    pytorch_version = tuple(torch.__version__.split("."))
+    torch_info["pytorch"] = tuple(torch.__version__.split("."))
     log.info(f"pytorch {torch.__version__} initialized")
     if hasattr(torch, "cuda") and torch.cuda.is_available() and not torch.cuda.is_initialized():
         log("initializing cuda")
         torch.cuda.init()
+        cuda_info = torch_info.setdefault("cuda", {})
+        cuda_info["arch-list"] = torch.cuda.get_arch_list()
         n = torch.cuda.device_count()
         log.info(" with %i devices:", n)
+        devices = {}
         for i in range(torch.cuda.device_count()):
             props = torch.cuda.get_device_properties(i)
-            cuda_devices[i] = {
+            devices[i] = {
                 "name": props.name,
                 "compute": (props.major, props.minor),
                 "memory": props.total_memory,
@@ -80,6 +79,8 @@ def torch_init() -> None:
                 "multi-processors:": props.multi_processor_count,
             }
             log.info("  + %s %.1fGB memory", props.name, props.total_memory // 1024 // 1024 // 1024)
+        if devices:
+            cuda_info["devices"] = devices
 
 
 class Filter:
