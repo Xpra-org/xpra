@@ -2,3 +2,4 @@ usr/lib/python3*/*/xpra/codecs/avif
 usr/lib/python3*/*/xpra/codecs/ffmpeg
 usr/lib/python3*/*/xpra/codecs/x26?
 usr/lib/python3*/*/xpra/codecs/gstreamer
+usr/lib/python3*/*/xpra/codecs/pytorch

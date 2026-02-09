@@ -364,6 +364,7 @@ Recommends:
         ,gstreamer1.0-vaapi
         ,gstreamer1.0-pipewire
         ,python3-gst-1.0
+Suggests: python3-torchvision
 Description: Extra picture and video codecs
  for the xpra server and client.
 

@@ -303,6 +303,8 @@ Recommends:			gstreamer1-plugins-ugly
 Recommends:			gstreamer1-plugins-bad-free-extras
 #pipewire:
 Recommends:			pipewire-gstreamer
+#pytorch filter:
+Suggests:			%{python3}-torch-vision
 %description -n %{package_prefix}-codecs-extras
 This package contains extra picture and video codecs used by xpra clients and servers.
 These codecs may have patent or licensing issues.
@@ -838,6 +840,7 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{amf_codecs}
 %{python3_sitearch}/xpra/codecs/amf
 %endif
+%{python3_sitearch}/xpra/codecs/pytorch
 
 %if 0%{amf_codecs}
 %files -n %{package_prefix}-codecs-amd
