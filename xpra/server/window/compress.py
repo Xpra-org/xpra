@@ -225,6 +225,7 @@ class WindowSource(WindowIconSource):
         self.queue_packet = queue_packet                # callback to add a network packet to the outgoing queue
         self.wid: int = wid
         self.window = window                            # only to be used from the UI thread!
+        self.image_filter = None
         self.global_statistics: GlobalPerformanceStatistics = statistics             # shared/global statistics from ClientConnection
         self.statistics: WindowPerformanceStatistics = WindowPerformanceStatistics()
         self.av_sync: bool = av_sync                   # flag: enabled or not?
@@ -2123,6 +2124,9 @@ class WindowSource(WindowIconSource):
         image = self.window.get_image(x, y, w, h)
         if image is None:
             return nodata("no pixel data for window %s, wid=%#x", self.window, self.wid)
+        image_filter = self.image_filter
+        if image_filter:
+            image = image_filter.process_image(image)
         # image may have been clipped to the new window size during resize:
         w = image.get_width()
         h = image.get_height()

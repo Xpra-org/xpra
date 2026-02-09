@@ -537,6 +537,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             # refresh to ensure the client gets the new window contents:
             # TODO: to save bandwidth, we should compare the dimensions and skip the refresh
             # if the window is smaller than before, or at least only send the new edges rather than the whole window
+            ss.emit("resize-window-source")
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, xid: int) -> None:

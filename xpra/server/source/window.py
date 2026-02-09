@@ -413,6 +413,7 @@ class WindowsConnection(StubClientConnection):
             return
         ws = self.window_sources.pop(wid, None)
         if ws:
+            self.emit("remove-window-source", ws)
             ws.cleanup()
         self.calculate_window_pixels.pop(wid, None)
 
@@ -480,11 +481,12 @@ class WindowsConnection(StubClientConnection):
             self.rgb_formats,
             self.default_encoding_options,
             mmap_write_area, bandwidth_limit, jitter, datagram)
-        ws.init_encoders()
         self.window_sources[wid] = ws
         if len(self.window_sources) > 1:
             # re-distribute bandwidth:
             self.may_update_bandwidth_limits()
+        ws.init_encoders()
+        self.emit("new-window-source", ws)
         return ws
 
     def damage(self, wid: int, window, x: int, y: int, w: int, h: int, options=None) -> None:
