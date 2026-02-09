@@ -123,7 +123,7 @@ class Filter:
         self.width = src_width
         self.height = src_height
         self.device = "cuda"
-        transform_str = options.strget("transform", "RandomInvert(p=0.5)")
+        transform_str = options.strget("transform", "functional.invert")
         import torchvision.transforms.v2 as transforms
         if transform_str.startswith("functional."):
             functional = transforms.functional
