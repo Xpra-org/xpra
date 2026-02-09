@@ -18,6 +18,7 @@
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 
 %global debug_package %{nil}
+%global __requires_exclude ^(libnvjpeg|libnvidia-|libcudart).*\\.so.*$
 
 Name:           %{python3}-torch-vision
 Version:        0.25.0
