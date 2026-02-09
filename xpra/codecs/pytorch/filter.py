@@ -91,7 +91,7 @@ def torch_init() -> None:
                 "name": props.name,
                 "compute": (props.major, props.minor),
                 "memory": props.total_memory,
-                "uuid": props.uuid,
+                "uuid": str(props.uuid),
                 "pci-bus-id": props.pci_bus_id,
                 "pci-device-id": props.pci_device_id,
                 "pci-domain-id": props.pci_domain_id,
