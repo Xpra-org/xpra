@@ -20,14 +20,14 @@
 %define pycairo_version                1.16.0
 %define python3_version                3.8
 
-Name:           pygobject3
-Version:        3.50.2
+Name:           python3-gobject
+Version:        3.55.3
 Release:        1%{?dist}
 Summary:        Python bindings for GObject Introspection
 
 License:        LGPL-2.1-or-later
 URL:            https://wiki.gnome.org/Projects/PyGObject
-Source0:        https://download.gnome.org/sources/pygobject/3.50/pygobject-%{version}.tar.gz
+Source0:        https://download.gnome.org/sources/pygobject/3.55/pygobject-%{version}.tar.gz
 
 BuildRequires:  pkgconfig(cairo-gobject)
 BuildRequires:  pkgconfig(glib-2.0) >= %{glib2_version}
@@ -72,7 +72,7 @@ This package contains files required to embed PyGObject
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ece6b860aab77cb649fdfc6e88d8a83765e7a62f7ffd39a628d6e2a0d397a7ff" ]; then
+if [ "${sha256}" != "14f52750312bd689dde3a75e968849e3e16c4a0803f1c7734dffb00a1c847af9" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -98,14 +98,12 @@ fi
 %pycached %{python3_sitearch}/gi/*.py
 %{python3_sitearch}/gi/_gi.*.so
 %{python3_sitearch}/PyGObject-*.dist-info/
-%{python3_sitearch}/pygtkcompat/
 
 %files -n %{py3rpmname}-gobject-devel
 %dir %{_includedir}/pygobject-3.0/
-%{_includedir}/pygobject-3.0/pygobject.h
+%{_includedir}/pygobject-3.0/pygobject*.h
 %{_libdir}/pkgconfig/pygobject-3.0.pc
 
 %changelog
 * Sat Sep 16 2023 Antoine Martin <antoine@xpra.org> - 3.44.1-2
 - Fedora variant
-

@@ -1,14 +1,16 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
-Name:           %{python3}-pylsqpack
+Name:           %{py3rpmname}-pylsqpack
 Version:        0.3.23
 Release:        1%{?dist}
 Summary:        pylsqpack is a wrapper around the ls-qpack library
@@ -18,11 +20,11 @@ URL:            https://github.com/aiortc/pylsqpack
 Source0:        https://files.pythonhosted.org/packages/source/p/pylsqpack/pylsqpack-%{version}.tar.gz
 Patch0:         pylsqpack-licensenonsense.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
-BuildRequires:  %{python3}-wheel
+BuildRequires:  %{py3rpmname}-devel
+BuildRequires:  %{py3rpmname}-setuptools
+BuildRequires:  %{py3rpmname}-wheel
 BuildRequires:  gcc
-Requires:       %{python3}
+Requires:       %{py3rpmname}
 
 %description
 It provides Python Decoder and Encoder objects

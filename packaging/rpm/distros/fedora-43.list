@@ -22,8 +22,8 @@ python3-setuptools
 python3-cython
 python3-numpy
 python3-pycuda
-python3-pillow
 python3-pynvml
+python3-pillow
 python3-pyu2f
 python3-uinput
 python3-wheel
@@ -35,5 +35,3 @@ python3-pyopengl
 python3-cairo
 pygobject3
 xpra
-python3-torch
-python3-torch-vision

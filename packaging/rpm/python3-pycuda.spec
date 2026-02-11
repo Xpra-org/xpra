@@ -10,9 +10,11 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %define systemboost 1
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %define systemboost 0
 %undefine __pythondist_requires
 %undefine __python_requires
@@ -26,7 +28,7 @@
 %define STUBS_DIR targets/sbsa-linux/lib/stubs/
 %endif
 
-Name:           %{python3}-pycuda
+Name:           %{py3rpmname}-pycuda
 Version:        2026.1
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
@@ -35,14 +37,14 @@ License:        MIT
 Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/source/p/pycuda/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Provides:       %{python3}-pycuda
+Provides:       %{py3rpmname}-pycuda
 
 BuildRequires:	coreutils
 BuildRequires:  make
 BuildRequires:  gcc-c++
-BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
-BuildRequires:  %{python3}-numpy
+BuildRequires:  %{py3rpmname}-devel
+BuildRequires:  %{py3rpmname}-setuptools
+BuildRequires:  %{py3rpmname}-numpy
 BuildRequires:  boost-python3-devel
 BuildRequires:  libglvnd-devel
 BuildRequires:  cuda
@@ -51,11 +53,11 @@ BuildRequires:  cuda
 PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 
 
-Requires:       %{python3}
-Requires:       %{python3}-decorator
-Requires:       %{python3}-numpy
-Requires:       %{python3}-pytools
-Requires:       %{python3}-six
+Requires:       %{py3rpmname}
+Requires:       %{py3rpmname}-decorator
+Requires:       %{py3rpmname}-numpy
+Requires:       %{py3rpmname}-pytools
+Requires:       %{py3rpmname}-six
 
 Suggests:       nvidia-driver-cuda-libs
 

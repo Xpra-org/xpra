@@ -1,8 +1,10 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
@@ -13,7 +15,7 @@
 %global debug_package %{nil}
 
 Summary: D-Bus Python3 Bindings
-Name:    %{python3}-dbus
+Name:    %{py3rpmname}-dbus
 Version: 1.3.2
 Release: 2%{?dist}
 
@@ -21,12 +23,12 @@ License: MIT
 URL:     http://www.freedesktop.org/wiki/Software/DBusBindings/
 Source0: https://files.pythonhosted.org/packages/source/d/dbus-python/dbus-python-%{version}.tar.gz
 
-Requires:      %{python3}
+Requires:      %{py3rpmname}
 BuildRequires: dbus-devel
 BuildRequires: dbus-glib-devel
-BuildRequires: %{python3}-devel
-BuildRequires: %{python3}-setuptools
-BuildRequires: %{python3}-wheel
+BuildRequires: %{py3rpmname}-devel
+BuildRequires: %{py3rpmname}-setuptools
+BuildRequires: %{py3rpmname}-wheel
 BuildRequires: autoconf-archive
 BuildRequires: automake
 BuildRequires: libtool

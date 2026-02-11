@@ -4,8 +4,10 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
@@ -17,7 +19,7 @@
 #this spec file is for both Fedora and CentOS
 %global srcname PyOpenGL
 
-Name:           %{python3}-pyopengl
+Name:           %{py3rpmname}-pyopengl
 Version:        3.1.10
 Release:        1%{?dist}
 Summary:        Python 3 bindings for OpenGL
@@ -29,16 +31,16 @@ Patch0:         pyopengl-py3.13-nonumpy.patch
 Patch1:         pyopengl-long-is-int.patch
 
 BuildRequires:	coreutils
-BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
-BuildRequires:  %{python3}-cython
+BuildRequires:  %{py3rpmname}-devel
+BuildRequires:  %{py3rpmname}-setuptools
+BuildRequires:  %{py3rpmname}-cython
 BuildRequires:  gcc
-Requires:       %{python3}
+Requires:       %{py3rpmname}
 Requires:       freeglut
-Obsoletes:      %{python3}-PyOpenGL < 3.1.5
-Obsoletes:      %{python3}-PyOpenGL-accelerate < 3.1.5
-Provides:       %{python3}-PyOpenGL = %{version}-%{release}
-Provides:       %{python3}-PyOpenGL-accelerate = %{version}-%{release}
+Obsoletes:      %{py3rpmname}-PyOpenGL < 3.1.5
+Obsoletes:      %{py3rpmname}-PyOpenGL-accelerate < 3.1.5
+Provides:       %{py3rpmname}-PyOpenGL = %{version}-%{release}
+Provides:       %{py3rpmname}-PyOpenGL-accelerate = %{version}-%{release}
 
 %description
 PyOpenGL is the cross platform Python binding to OpenGL and related APIs. It
@@ -50,13 +52,13 @@ PyOpenGL is inter-operable with a large number of external GUI libraries
 for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
 
 
-%package -n     %{python3}-pyopengl-tk
+%package -n     %{py3rpmname}-pyopengl-tk
 Summary:        %{srcname} Python 3.x Tk widget
 BuildArch:      noarch
-Requires:       %{python3}-pyopengl = %{version}-%{release}
-Requires:       %{python3}-tkinter
+Requires:       %{py3rpmname}-pyopengl = %{version}-%{release}
+Requires:       %{py3rpmname}-tkinter
 
-%description -n %{python3}-pyopengl-tk
+%description -n %{py3rpmname}-pyopengl-tk
 %{srcname} Togl (Tk OpenGL widget) 1.6 support for Python 3.x.
 
 %prep
@@ -113,7 +115,7 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 %{python3_sitearch}/PyOpenGL_accelerate*.egg-info
 
 
-%files -n %{python3}-pyopengl-tk
+%files -n %{py3rpmname}-pyopengl-tk
 %{python3_sitelib}/OpenGL/Tk
 
 

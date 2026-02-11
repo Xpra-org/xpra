@@ -1,16 +1,18 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %filter_provides_in %{python3_sitearch}/.*\.so$
 %filter_setup
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
-Name:           %{python3}-uinput
+Name:           %{py3rpmname}-uinput
 Version:        1.0.1
 Release:        1%{?dist}
 Summary:        Pythonic API to the Linux uinput kernel module
@@ -18,9 +20,9 @@ License:        GPLv3
 URL:            http://pypi.python.org/pypi/python-uinput/
 Source0:        https://pypi.python.org/packages/source/p/python-uinput/python-uinput-%{version}.tar.gz
 
-Requires:       %{python3}
+Requires:       %{py3rpmname}
 BuildRequires:  gcc
-BuildRequires:  %{python3}-devel
+BuildRequires:  %{py3rpmname}-devel
 BuildRequires:  kernel-headers
 BuildRequires:  libudev-devel
 

@@ -6,8 +6,10 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
@@ -17,7 +19,7 @@
 #this is a pure python package so debug is meaningless here:
 %define debug_package %{nil}
 
-Name:           %{python3}-pyu2f
+Name:           %{py3rpmname}-pyu2f
 Version:        0.1.5
 Release:        3
 URL:            https://github.com/google/pyu2f
@@ -26,9 +28,9 @@ License:        BSD
 Group:          Development/Libraries/Python
 Source0:		https://files.pythonhosted.org/packages/source/p/pyu2f/pyu2f-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Requires:       %{python3}
-BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
+Requires:       %{py3rpmname}
+BuildRequires:  %{py3rpmname}-devel
+BuildRequires:  %{py3rpmname}-setuptools
 
 %description
 pyu2f provides functionality for interacting with a U2F device over USB.

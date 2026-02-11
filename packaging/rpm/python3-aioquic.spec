@@ -5,12 +5,14 @@ Autoreq: 0
 
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %endif
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 
-Name:           %{python3}-aioquic
+Name:           %{py3rpmname}-aioquic
 Version:        1.3.0
 Release:        1%{?dist}
 Summary:        aioquic is a library for the QUIC network protocol in Python
@@ -21,17 +23,17 @@ Source0:        https://files.pythonhosted.org/packages/source/a/aioquic/aioquic
 Patch0:         aioquic-pycrypto-tls-utc.patch
 Patch1:         aioquic-licensenonsense.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
-BuildRequires:  %{python3}-wheel
+BuildRequires:  %{py3rpmname}-devel
+BuildRequires:  %{py3rpmname}-setuptools
+BuildRequires:  %{py3rpmname}-wheel
 BuildRequires:  openssl-devel
 BuildRequires:  gcc
-Requires:       %{python3}
-Requires:       %{python3}-cryptography
-Requires:       %{python3}-certifi
-Requires:       %{python3}-pyOpenSSL
-Requires:       %{python3}-pylsqpack
-Recommends:     %{python3}-uvloop
+Requires:       %{py3rpmname}
+Requires:       %{py3rpmname}-cryptography
+Requires:       %{py3rpmname}-certifi
+Requires:       %{py3rpmname}-pyOpenSSL
+Requires:       %{py3rpmname}-pylsqpack
+Recommends:     %{py3rpmname}-uvloop
 
 %description
 It features a minimal TLS 1.3 implementation, a QUIC stack and an HTTP/3 stack.

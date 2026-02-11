@@ -6,8 +6,10 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
@@ -17,7 +19,7 @@
 #this is a pure python package so debug is meaningless here:
 %define debug_package %{nil}
 
-Name:           %{python3}-pynvml
+Name:           %{py3rpmname}-pynvml
 Version:        13.590.48
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
@@ -26,9 +28,9 @@ License:        BSD
 Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/source/n/nvidia_ml_py/nvidia_ml_py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Requires:       %{python3}
-BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
+Requires:       %{py3rpmname}
+BuildRequires:  %{py3rpmname}-devel
+BuildRequires:  %{py3rpmname}-setuptools
 
 %description
 Python Bindings for the NVIDIA Management Library

@@ -1,15 +1,17 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))")
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 %endif
 
-Name:           %{python3}-pytools
+Name:           %{py3rpmname}-pytools
 Version:        2024.1.11
 Release:        1%{?dist}
 Summary:        A collection of tools for python
@@ -20,10 +22,10 @@ Source0:        https://files.pythonhosted.org/packages/source/p/pytools/pytools
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		%{python3}-pytools = %{version}-%{release}
 BuildArch:      noarch
-Requires:       %{python3}
-BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
-BuildRequires:  %{python3}-pip
+Requires:       %{py3rpmname}
+BuildRequires:  %{py3rpmname}-devel
+BuildRequires:  %{py3rpmname}-setuptools
+BuildRequires:  %{py3rpmname}-pip
 BuildRequires:  pyproject-rpm-macros
 
 %description
