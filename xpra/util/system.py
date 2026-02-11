@@ -363,6 +363,16 @@ def get_sysconfig_info() -> dict[str, Any]:
     return sysinfo
 
 
+def is_free_threaded() -> bool:
+    import sysconfig
+    if sysconfig.get_config_var("Py_GIL_DISABLED") == 1:
+        return True
+    # For runtime check in Python 3.13+
+    if hasattr(sys, "_is_gil_enabled"):
+        return not sys._is_gil_enabled()
+    return False
+
+
 def platform_release(release: str) -> str:
     log = get_util_logger()
     if WIN32:

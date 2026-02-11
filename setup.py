@@ -37,7 +37,7 @@ except ImportError as e:
 
 import xpra
 from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
-from xpra.util.system import is_distribution_variant, get_linux_distribution, is_DEB, is_RPM, is_Arch
+from xpra.util.system import is_distribution_variant, get_linux_distribution, is_DEB, is_RPM, is_Arch, is_free_threaded
 from xpra.util.io import load_binary_file, get_status_output
 
 if BITS != 64:
@@ -204,14 +204,6 @@ if os.environ.get("INCLUDE_DIRS", None) is None and not WIN32:
 
 print("INCLUDE_DIRS=%s" % (INCLUDE_DIRS, ))
 
-def is_free_threaded() -> bool:
-    import sysconfig
-    if sysconfig.get_config_var("Py_GIL_DISABLED") == 1:
-        return True
-    # For runtime check in Python 3.13+
-    if hasattr(sys, "_is_gil_enabled"):
-        return not sys._is_gil_enabled()
-    return False
 
 shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT

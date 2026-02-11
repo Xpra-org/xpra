@@ -15,6 +15,7 @@ from collections.abc import Callable
 
 from xpra.os_util import WIN32
 from xpra.platform import platform_import
+from xpra.util.system import is_free_threaded
 
 
 def valid_dir(path) -> bool:
@@ -406,7 +407,8 @@ def get_python_execfile_command() -> list[str]:
 def do_get_python_execfile_command() -> list[str]:
     major, minor = sys.version_info.major, sys.version_info.minor
     from shutil import which
-    return [which("python%i.%i" % (major, minor)) or which("python%i" % major) or which("python") or "python"]
+    suffix = "t" if is_free_threaded() else ""
+    return [which("python%i.%i%s" % (major, minor, suffix)) or which("python%i" % major) or which("python") or "python"]
 
 
 platform_import(globals(), "paths", True,
