@@ -2,18 +2,16 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
-%define python3_interpreter python3
-%define python3_devel python3-devel
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
-%define python3_interpreter %(echo %{python3} | sed 's/t$//g')
-%define python3_devel %{python3_interpreter}-devel
 %endif
 
-Name:           %{python3}-%{srcname}
+Name:           %{py3rpmname}-%{srcname}
 Version:        68.2.2
 Release:        1%{?dist}
 Summary:        The blessed package to manage your versions by scm tags
@@ -21,8 +19,8 @@ License:        MIT
 URL:            http://pypi.python.org/pypi/%{srcname}
 Source0:        https://files.pythonhosted.org/packages/source/s/%{srcname}/%{srcname}-%{version}.tar.gz
 BuildArch:      noarch
-BuildRequires:  %{python3_devel}
-Requires:       %{python3_interpreter}
+BuildRequires:  %{py3rpmname}-devel
+Requires:       %{py3rpmname}
 
 %description
 Setuptools_scm handles managing your python package versions in scm metadata.

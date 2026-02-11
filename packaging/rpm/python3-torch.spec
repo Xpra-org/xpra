@@ -84,7 +84,6 @@ export CC=gcc
 export CXX=g++
 
 export TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0;12.0"
-export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 export USE_NCCL=0
 export USE_ROCM=0
 export BUILD_TEST=0
@@ -93,6 +92,11 @@ export PYTHON=/usr/bin/%{python3}
 export CMAKE_CUDA_COMPILER=${CUDA}/bin/nvcc
 export Python3_FIND_UNVERSIONED_NAMES=FIRST
 export TORCH_NVCC_FLAGS="-Xcompiler -fPIC"
+%if 0%{?fedora} >= 43
+export CMAKE_CUDA_FLAGS="-Xcompiler -Wno-incompatible-exception-spec --diag-suppress 1407"
+export CUDAFLAGS="-Xcompiler -Wno-incompatible-exception-spec --diag-suppress 1407"
+export TORCH_NVCC_FLAGS="-Xcompiler -fPIC --diag-suppress 1407"
+%endif
 export NVCC_FLAGS="-fPIE"
 export USE_MKLDNN=0
 export CMAKE_BUILD_TYPE=Release
@@ -106,17 +110,15 @@ unset LDFLAGS
 unset RPM_OPT_FLAGS
 unset RPM_LD_FLAGS
 
-# Strip out GCC-specific -specs flags that clang doesn't understand
-export CFLAGS="$(echo "%{optflags}" | sed -e 's/-specs=[^ ]*//g' -e 's/-Wno-complain-wrong-lang//g')"
-export CXXFLAGS="$(echo "%{optflags}" | sed -e 's/-specs=[^ ]*//g' -e 's/-Wno-complain-wrong-lang//g')"
-export LDFLAGS=$(echo "%{build_ldflags}" | sed 's/-specs=[^ ]*//g')
-
 export GLIBCXX_USE_CXX11_ABI=1
 export _GLIBCXX_USE_CXX11_ABI=1
 
 # Set minimal safe flags
 export CFLAGS="-O2"
 export CXXFLAGS="-O2"
+%if 0%{?fedora} >= 43
+export CXXFLAGS="-O2 -Wno-incompatible-exception-spec"
+%endif
 export LDFLAGS="-Wl,--strip-debug"
 
 export MAX_JOBS=4

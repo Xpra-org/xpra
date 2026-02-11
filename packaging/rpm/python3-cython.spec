@@ -7,9 +7,11 @@ autoprov: no
 %endif
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %define bin_prefix %{nil}
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %define bin_prefix %{python3}-
 %undefine __pythondist_requires
 %undefine __python_requires
@@ -17,7 +19,7 @@ autoprov: no
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
-Name:		%{python3}-cython
+Name:		%{py3rpmname}-cython
 Version:	3.2.4
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
@@ -26,14 +28,14 @@ License:	Python
 URL:		http://www.cython.org
 Source0:    https://github.com/cython/cython/releases/download/%{version}/cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Requires:   %{python3}
-Provides:   %{python3}-Cython = %{version}-%{release}
-Obsoletes:  %{python3}-Cython < %{version}-%{release}
-Conflicts:  %{python3}-Cython < %{version}-%{release}
+Requires:   %{py3rpmname}
+Provides:   %{py3rpmname}-Cython = %{version}-%{release}
+Obsoletes:  %{py3rpmname}-Cython < %{version}-%{release}
+Conflicts:  %{py3rpmname}-Cython < %{version}-%{release}
 
 BuildRequires:	coreutils
-BuildRequires:	%{python3}-devel
-BuildRequires:	%{python3}-setuptools
+BuildRequires:	%{py3rpmname}-devel
+BuildRequires:	%{py3rpmname}-setuptools
 BuildRequires:	gcc
 
 %description
@@ -50,11 +52,11 @@ fi
 
 %build
 NPROCS=${NPROCS:-`nproc`}
-CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build -j ${NPROCS}
+CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build -j ${NPROCS} --cython-compile-all
 
 %install
 rm -rf %{buildroot}
-%{python3} setup.py install -O1 --skip-build --root %{buildroot}
+%{python3} setup.py install -O1 --skip-build --root %{buildroot} --cython-compile-all
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 %if "%{bin_prefix}" != ""
 mv %{buildroot}%{_bindir}/cygdb %{buildroot}%{_bindir}/%{bin_prefix}cygdb

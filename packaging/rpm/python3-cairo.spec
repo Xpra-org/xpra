@@ -2,9 +2,11 @@
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %define package_prefix %{nil}
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
 %define __python3 /usr/bin/%{python3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %define package_prefix %{python3}-
 %undefine __pythondist_requires
 %undefine __python_requires
@@ -22,17 +24,17 @@ Source0: https://github.com/pygobject/pycairo/releases/download/v%{version}/pyca
 
 BuildRequires: gcc
 BuildRequires: pkgconfig(cairo)
-BuildRequires: %{python3}-devel
-BuildRequires: %{python3}-setuptools
+BuildRequires: %{py3rpmname}-devel
+BuildRequires: %{py3rpmname}-setuptools
 
 %description
 Python bindings for the cairo library.
 
-%package -n %{python3}-cairo
+%package -n %{py3rpmname}-cairo
 Summary: Python 3 bindings for the cairo library
-Requires: %{python3}
+Requires: %{py3rpmname}
 
-%description -n %{python3}-cairo
+%description -n %{py3rpmname}-cairo
 Python 3 bindings for the cairo library.
 
 %package -n python3-cairo-devel
@@ -58,7 +60,7 @@ fi
 %install
 %py3_install
 
-%files -n %{python3}-cairo
+%files -n %{py3rpmname}-cairo
 %license COPYING*
 %doc README.rst
 %{python3_sitearch}/cairo/

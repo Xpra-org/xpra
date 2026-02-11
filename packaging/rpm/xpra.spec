@@ -27,11 +27,13 @@ autoprov: no
 #but on Fedora, we only use the main package for the default python3
 %global python3 python3
 %global package_prefix xpra
+%global py3rpmname python3
 
 %if "%{getenv:PYTHON3}" != ""
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %if 0%{?fedora}
-%global package_prefix %{python3}-xpra
+%global package_prefix %{py3rpmname}-xpra
 %endif
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
@@ -120,9 +122,9 @@ BuildRequires:		gcc
 BuildRequires:		clang
 %endif
 BuildRequires:		gcc-c++
-BuildRequires:		%{python3}-cython
+BuildRequires:		%{py3rpmname}-cython
 BuildRequires:		pkgconfig
-BuildRequires:		%{python3}-setuptools
+BuildRequires:		%{py3rpmname}-setuptools
 BuildRequires:		coreutils
 Recommends:			xpra-html5 >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -186,24 +188,24 @@ Obsoletes:			xpra-common-server < 6
 BuildRequires:		pandoc
 %endif
 BuildRequires:		which
-Requires:			%{python3}
-Requires:			%{python3}-gobject
+Requires:			%{py3rpmname}
+Requires:			%{py3rpmname}-gobject
 Recommends:         xpra-filesystem >= 5
 Recommends:         lsb_release
-Recommends:			%{python3}-pillow
-Recommends:			%{python3}-cryptography
-Recommends:			%{python3}-netifaces
-Recommends:			%{python3}-dbus
-Recommends:			%{python3}-dns
-Recommends:			%{python3}-paramiko
-Suggests:			%{python3}-pyyaml
-Suggests:			%{python3}-kerberos
-Suggests:			%{python3}-gssapi
-Suggests:			%{python3}-ldap
-Suggests:			%{python3}-ldap3
-Suggests:           %{python3}-cpuinfo
-Recommends:			%{python3}-aioquic
-Recommends:			%{python3}-zeroconf
+Recommends:			%{py3rpmname}-pillow
+Recommends:			%{py3rpmname}-cryptography
+Recommends:			%{py3rpmname}-netifaces
+Recommends:			%{py3rpmname}-dbus
+Recommends:			%{py3rpmname}-dns
+Recommends:			%{py3rpmname}-paramiko
+Suggests:			%{py3rpmname}-pyyaml
+Suggests:			%{py3rpmname}-kerberos
+Suggests:			%{py3rpmname}-gssapi
+Suggests:			%{py3rpmname}-ldap
+Suggests:			%{py3rpmname}-ldap3
+Suggests:           %{py3rpmname}-cpuinfo
+Recommends:			%{py3rpmname}-aioquic
+Recommends:			%{py3rpmname}-zeroconf
 BuildRequires:		pkgconfig(liblz4)
 Requires:			lz4-libs
 BuildRequires:		xxhash-devel
@@ -215,14 +217,14 @@ Recommends:			brotli
 BuildRequires:		pkgconfig(libqrencode)
 %endif
 Recommends:			qrencode
-BuildRequires:		%{python3}-gobject
+BuildRequires:		%{py3rpmname}-gobject
 BuildRequires:		pkgconfig(pygobject-3.0)
 BuildRequires:		pkgconfig(py3cairo)
 BuildRequires:		pkgconfig(gtk+-3.0)
 BuildRequires:		pkgconfig(gobject-introspection-1.0)
 %if 0%{?run_tests}
-BuildRequires:		%{python3}-cryptography
-BuildRequires:		%{python3}-numpy
+BuildRequires:		%{py3rpmname}-cryptography
+BuildRequires:		%{py3rpmname}-numpy
 %endif
 # for now, this is only used by the `xpra wait-for-wayland` subcommand:
 BuildRequires:      wayland-devel
@@ -242,7 +244,7 @@ Suggests:			%{package_prefix}-codecs-extra
 Suggests:			%{package_prefix}-codecs-amd
 Suggests:			%{package_prefix}-codecs-nvidia
 Requires:			%{package_prefix}-common = %{version}-%{release}
-Requires:			%{python3}-pillow
+Requires:			%{py3rpmname}-pillow
 # remote codec uses client code to connect to are remote encoder server:
 Suggests:			%{package_prefix}-client
 BuildRequires:		pkgconfig(libdrm)
@@ -304,7 +306,7 @@ Recommends:			gstreamer1-plugins-bad-free-extras
 #pipewire:
 Recommends:			pipewire-gstreamer
 #pytorch filter:
-Suggests:			%{python3}-torch-vision
+Suggests:			%{py3rpmname}-torch-vision
 %description -n %{package_prefix}-codecs-extras
 This package contains extra picture and video codecs used by xpra clients and servers.
 These codecs may have patent or licensing issues.
@@ -328,8 +330,8 @@ Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
 Provides:           %{package_prefix}-codecs-nvidia
 BuildRequires:		cuda
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
-Requires:			%{python3}-pycuda
-Recommends:			%{python3}-pynvml
+Requires:			%{py3rpmname}-pycuda
+Recommends:			%{py3rpmname}-pynvml
 %description -n %{package_prefix}-codecs-nvidia
 This package contains the picture and video codecs that rely on NVidia GPUs and CUDA,
 this is used by both xpra clients and servers.
@@ -337,7 +339,7 @@ this is used by both xpra clients and servers.
 
 
 %package -n %{package_prefix}-audio
-Summary:			%{python3} build of xpra audio support
+Summary:			%{py3rpmname} build of xpra audio support
 Provides:           %{package_prefix}-audio
 Conflicts:			python3-xpra-audio < 6
 Obsoletes:			python3-xpra-audio < 6
@@ -354,7 +356,7 @@ This package contains audio support for xpra.
 
 
 %package -n %{package_prefix}-audio-server
-Summary:			%{python3} build of xpra audio server support
+Summary:			%{py3rpmname} build of xpra audio server support
 Provides:           %{package_prefix}-audio-server
 Requires:			%{package_prefix}-audio = %{version}-%{release}
 Requires:			pulseaudio
@@ -382,8 +384,8 @@ BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):   shared-mime-info
 Requires(postun):	desktop-file-utils
-Recommends:			%{python3}-cups
-Recommends:		    %{python3}-pysocks
+Recommends:			%{py3rpmname}-cups
+Recommends:		    %{py3rpmname}-pysocks
 Recommends:         NetworkManager-libnm
 Recommends:         libnotify
 Suggests:			sshpass
@@ -396,7 +398,7 @@ Summary:			GTK3 xpra client
 Provides:           %{package_prefix}-client-gtk3
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			gtk3
-Requires:           %{python3}-cairo
+Requires:           %{py3rpmname}-cairo
 Requires(post):     coreutils
 Requires(postun):   gtk-update-icon-cache
 Requires(posttrans): gtk-update-icon-cache
@@ -405,9 +407,9 @@ Recommends:			%{package_prefix}-x11 = %{version}-%{release}
 Recommends:			pinentry
 Recommends:			libayatana-appindicator-gtk3
 Recommends:			%{package_prefix}-audio
-Recommends:			%{python3}-pyopengl
-Recommends:			%{python3}-pyu2f
-Recommends:         %{python3}-psutil
+Recommends:			%{py3rpmname}-pyopengl
+Recommends:			%{py3rpmname}-pyu2f
+Recommends:         %{py3rpmname}-psutil
 Recommends:         ibus-libs
 Suggests:			sshpass
 Suggests:           %{package_prefix}-client-gnome
@@ -425,7 +427,7 @@ This package contains the GTK3 xpra client.
 Summary:			Experimental xpra Qt6 client
 Provides:           %{package_prefix}-client-qt6
 Requires:			%{package_prefix}-client = %{version}-%{release}
-Requires:			%{python3}-pyqt6
+Requires:			%{py3rpmname}-pyqt6
 %description -n %{package_prefix}-client-qt6
 This package contains an experimental client using the Qt6 toolkit.
 %endif
@@ -435,7 +437,7 @@ This package contains an experimental client using the Qt6 toolkit.
 Summary:			Experimental xpra pyglet client
 Provides:           %{package_prefix}-client-pyglet
 Requires:			%{package_prefix}-client = %{version}-%{release}
-Requires:			%{python3}-pyglet
+Requires:			%{py3rpmname}-pyglet
 %description -n %{package_prefix}-client-pyglet
 This package contains an experimental client using the pyglet toolkit.
 %endif
@@ -445,8 +447,8 @@ This package contains an experimental client using the pyglet toolkit.
 Summary:			Experimental xpra tk client
 Provides:           %{package_prefix}-client-tk
 Requires:			%{package_prefix}-client = %{version}-%{release}
-Requires:			%{python3}-tkinter
-Requires:			%{python3}-pillow-tk
+Requires:			%{py3rpmname}-tkinter
+Requires:			%{py3rpmname}-pillow-tk
 %description -n %{package_prefix}-client-tk
 This package contains an experimental client using the tkinter toolkit.
 
@@ -517,7 +519,7 @@ Requires:			xorg-x11-drv-dummy
 Requires:			xorg-x11-xauth
 Recommends:			xterm
 Recommends:			mesa-dri-drivers
-Recommends:         %{python3}-lxml
+Recommends:         %{py3rpmname}-lxml
 Recommends:         ibus-libs
 %description -n %{package_prefix}-x11
 This package contains the x11 bindings
@@ -538,13 +540,13 @@ Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-amd = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
-Recommends:			%{python3}-cups
+Recommends:			%{py3rpmname}-cups
 Recommends:			dbus-x11
-Recommends:			%{python3}-setproctitle
+Recommends:			%{py3rpmname}-setproctitle
 Recommends:			librsvg2
 Recommends:			ibus
-Recommends:			%{python3}-pyxdg
-Recommends:         %{python3}-watchdog
+Recommends:			%{py3rpmname}-pyxdg
+Recommends:         %{py3rpmname}-watchdog
 Recommends:			xdg-menu
 Suggests:			gtk3
 Suggests:			gtk3-immodule-xim
@@ -553,9 +555,9 @@ Suggests:			gtk3-immodule-xim
 Recommends:			libjxl-utils
 %endif
 Suggests:			tcp_wrappers-libs
-Suggests:			%{python3}-ldap3
-Suggests:			%{python3}-ldap
-Suggests:			%{python3}-oauthlib
+Suggests:			%{py3rpmname}-ldap3
+Suggests:			%{py3rpmname}-ldap
+Suggests:			%{py3rpmname}-oauthlib
 %if 0%{?fedora}%{?el10}
 BuildRequires:		pkgconfig(libproc2)
 %else
@@ -593,7 +595,7 @@ BuildRequires:		dbus-tools
 BuildRequires:		tigervnc
 BuildRequires:		xorg-x11-server-Xvfb
 BuildRequires:		xorg-x11-drv-dummy
-BuildRequires:		%{python3}-pyxdg
+BuildRequires:		%{py3rpmname}-pyxdg
 %endif
 Requires(post):		/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles

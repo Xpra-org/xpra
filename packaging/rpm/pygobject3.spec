@@ -5,10 +5,13 @@
 
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%global py3rpmname python3
 %define package_prefix %{nil}
 %else
 %global python3 %{getenv:PYTHON3}
-%define package_prefix %{python3}-
+%global py3rpmname python3
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
+%define package_prefix %{py3rpmname}-
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
@@ -35,8 +38,8 @@ BuildRequires:  pkgconfig(gobject-introspection-1.0) >= %{gobject_introspection_
 BuildRequires:  pkgconfig(libffi)
 BuildRequires:  pkgconfig(py3cairo) >= %{pycairo_version}
 BuildRequires:  meson
-BuildRequires:  %{python3}-devel >= %{python3_version}
-BuildRequires:  %{python3}-setuptools
+BuildRequires:  %{py3rpmname}-devel >= %{python3_version}
+BuildRequires:  %{py3rpmname}-setuptools
 
 %if 0%{?fedora}
 # https://docs.fedoraproject.org/en-US/packaging-guidelines/Python_Appendix/#_byte_compilation_reproducibility
@@ -48,34 +51,34 @@ BuildRequires:  /usr/bin/marshalparser
 The %{name} package provides a convenient wrapper for the GObject library
 for use in Python programs.
 
-%package     -n %{python3}-gobject
-Summary:        %{python3} bindings for GObject Introspection
-Requires:       %{python3}-gobject-base%{?_isa} = %{version}-%{release}
+%package     -n %{py3rpmname}-gobject
+Summary:        %{py3rpmname} bindings for GObject Introspection
+Requires:       %{py3rpmname}-gobject-base%{?_isa} = %{version}-%{release}
 # The cairo override module depends on this
-Requires:       %{python3}-cairo%{?_isa} >= %{pycairo_version}
+Requires:       %{py3rpmname}-cairo%{?_isa} >= %{pycairo_version}
 
-%description -n %{python3}-gobject
+%description -n %{py3rpmname}-gobject
 The %{python3}-gobject package provides a convenient wrapper for the GObject
 library and and other libraries that are compatible with GObject Introspection,
 for use in Python 3 programs.
 
-%package     -n %{python3}-gobject-base
+%package     -n %{py3rpmname}-gobject-base
 Summary:        Python 3 bindings for GObject Introspection base package
 Requires:       gobject-introspection%{?_isa} >= %{gobject_introspection_version}
-Requires:       %{python3}-gobject-base-noarch = %{version}-%{release}
-Requires:       %{python3}
+Requires:       %{py3rpmname}-gobject-base-noarch = %{version}-%{release}
+Requires:       %{py3rpmname}
 
-%description -n %{python3}-gobject-base
+%description -n %{py3rpmname}-gobject-base
 This package provides the non-cairo specific bits of the GObject Introspection
 library that are architecture specific.
 
-%package     -n %{python3}-gobject-base-noarch
+%package     -n %{py3rpmname}-gobject-base-noarch
 Summary:        Python 3 bindings for GObject Introspection base (not architecture dependent)
 BuildArch:      noarch
-Requires:       %{python3}-gobject-base = %{version}-%{release}
-Requires:       %{python3}
+Requires:       %{py3rpmname}-gobject-base = %{version}-%{release}
+Requires:       %{py3rpmname}
 
-%description -n %{python3}-gobject-base-noarch
+%description -n %{py3rpmname}-gobject-base-noarch
 This package provides the non-cairo specific bits of the GObject Introspection
 library that are not architecture specific.
 
@@ -99,21 +102,21 @@ fi
 %autosetup -n pygobject-%{version} -p1
 
 %build
-%meson -Dpython=%{python3}
+%meson -Dpython=%{python3} -Dtests=false
 %meson_build
 
 %install
 %meson_install
 
 
-%files -n %{python3}-gobject
+%files -n %{py3rpmname}-gobject
 %{python3_sitearch}/gi/_gi_cairo*.so
 
-%files -n %{python3}-gobject-base
+%files -n %{py3rpmname}-gobject-base
 %{python3_sitearch}/gi
 %{python3_sitearch}/PyGObject-*.egg-info
 
-%files -n %{python3}-gobject-base-noarch
+%files -n %{py3rpmname}-gobject-base-noarch
 %license COPYING
 %doc NEWS
 %dir %{python3_sitelib}/gi/
