@@ -204,6 +204,15 @@ if os.environ.get("INCLUDE_DIRS", None) is None and not WIN32:
 
 print("INCLUDE_DIRS=%s" % (INCLUDE_DIRS, ))
 
+def is_free_threaded() -> bool:
+    import sysconfig
+    if sysconfig.get_config_var("Py_GIL_DISABLED") == 1:
+        return True
+    # For runtime check in Python 3.13+
+    if hasattr(sys, "_is_gil_enabled"):
+        return not sys._is_gil_enabled()
+    return False
+
 shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
 rfb_ENABLED = DEFAULT
@@ -222,6 +231,7 @@ win32_client_ENABLED = DEFAULT and WIN32
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
 cython_shared_ENABLED = True
+cython_freethreading_ENABLED = is_free_threaded()
 cythonize_more_ENABLED = False
 cython_tracing_ENABLED = False
 modules_ENABLED = DEFAULT
@@ -410,7 +420,7 @@ for sw in CODEC_SWITCHES:
         SWITCHES.append(sw)
 
 SWITCHES += [
-    "cython_tracing", "cythonize_more", "cython_shared",
+    "cython_tracing", "cythonize_more", "cython_shared", "cython_freethreading",
     "modules", "data",
     "brotli", "cityhash", "qrencode",
     "vsock", "netdev", "proc", "mdns", "lz4", "mmap",
@@ -1188,12 +1198,21 @@ def do_add_cython_ext(*args, **kwargs) -> None:
         return
     if not cython_ENABLED:
         raise ValueError(f"cannot build {args}: cython compilation is disabled")
+    define_macros = []
     if cython_tracing_ENABLED:
-        kwargs["define_macros"] = [
+        define_macros += [
             ('CYTHON_TRACE', 1),
             ('CYTHON_TRACE_NOGIL', 1),
         ]
         kwargs.setdefault("extra_compile_args", []).append("-Wno-error")
+    if cython_freethreading_ENABLED:
+        from Cython.Compiler import Options
+        Options.get_directive_defaults()['freethreading_compatible'] = True
+        define_macros.append(('Py_GIL_DISABLED', '1'))
+        kwargs.setdefault("cython_directives", {})["freethreading_compatible"] = True
+    if define_macros:
+        macros = kwargs.setdefault("define_macros", [])
+        macros += define_macros
     # pylint: disable=import-outside-toplevel
     from Cython.Distutils import build_ext, Extension
     ext_modules.append(Extension(*args, **kwargs))
@@ -1714,6 +1733,7 @@ def clean() -> None:
     ]
     # ensure we remove the files we generate:
     CLEAN_FILES = [
+        CYSHARED,
         "xpra/build_info.py",
         "xpra/codecs/v4l2/constants.pxi",
         # special case for the generated xpra conf files in build (see # 891):
@@ -2707,7 +2727,11 @@ if cython_ENABLED:
         from xpra.util.io import which
         major, minor = sys.version_info[:2]
         cython_exe = which(f"python{major}.{minor}-cython") or which("cython") or "/usr/local/bin/cython"
-        subprocess.run([cython_exe, "--generate-shared", CYSHARED])
+        cs_cmd = [cython_exe, "--generate-shared", CYSHARED]
+        if cython_freethreading_ENABLED:
+            cs_cmd += ["-X", "freethreading_compatible=True"]
+        subprocess.run(cs_cmd)
+        print("generating shared cython runtime: ", " ".join(cs_cmd))
         if os.path.exists(CYSHARED):
             cythonize_kwargs["shared_utility_qualified_name"] = CYSHARED_EXT
             add_cython_ext(CYSHARED_EXT, sources=[CYSHARED])
