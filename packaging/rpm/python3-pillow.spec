@@ -4,18 +4,18 @@
 
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
-%define package_prefix python3-
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
-%define package_prefix %{python3}-
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
 
-Name:           %{package_prefix}%{srcname}
-Version:        12.0.0
+Name:           %{py3rpmname}-%{srcname}
+Version:        12.1.1
 Release:        1%{?dist}
 Summary:        Python image processing library
 
@@ -32,9 +32,9 @@ BuildRequires:  libimagequant-devel
 BuildRequires:  libjpeg-devel
 BuildRequires:  libwebp-devel
 BuildRequires:  zlib-devel
-BuildRequires:  %{package_prefix}pybind11
-BuildRequires:  %{package_prefix}devel
-BuildRequires:  %{package_prefix}setuptools
+BuildRequires:  %{py3rpmname}-pybind11
+BuildRequires:  %{py3rpmname}-devel
+BuildRequires:  %{py3rpmname}-setuptools
 
 
 %global __provides_exclude_from ^%{python3_sitearch}/PIL/.*\\.so$
@@ -48,7 +48,7 @@ internal representation, and powerful image processing capabilities.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "87d4f8125c9988bfbed67af47dd7a953e2fc7b0cc1e7800ec6d2080d490bb353" ]; then
+if [ "${sha256}" != "9ad8fa5937ab05218e2b6a4cff30295ad35afd2f83ac592e68c0d871bb0fdbc4" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -60,7 +60,7 @@ CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
 %install
 %{python3} setup.py install -O1 --skip-build --root %{buildroot}
 
-%files -n %{package_prefix}%{srcname}
+%files -n %{py3rpmname}-%{srcname}
 %doc README.md CHANGES.rst
 %license docs/COPYING
 %{python3_sitearch}/PIL/
