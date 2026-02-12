@@ -126,6 +126,10 @@ BuildRequires:		%{py3rpmname}-cython
 BuildRequires:		pkgconfig
 BuildRequires:		%{py3rpmname}-setuptools
 BuildRequires:		coreutils
+%if "%{python3}"=="python3"
+# this avoids some build warnings when available (so only for "python3"):
+BuildRequires:      python3-packaging
+%endif
 Recommends:			xpra-html5 >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
