@@ -11,6 +11,7 @@ MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && 
 export PYTHON="${PYTHON:-${JHBUILD_PREFIX}/bin/python3}"
 PYTHON_MAJOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])')
 PYTHON_MINOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])')
+SITELIB="${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/"
 
 echo "Building Xpra for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}"
 
@@ -63,12 +64,9 @@ LIBDIR="${RSCDIR}/lib"
 
 echo "*******************************************************************************"
 echo "Deleting existing xpra modules and temporary directories"
-PYTHON_PREFIX=$(python3-config --prefix)
-PYTHON_PACKAGES=$(ls -d ${PYTHON_PREFIX}/lib/python3*/site-packages | sort | tail -n 1)
-rm -fr "${PYTHON_PACKAGES}/xpra"*
+rm -fr "${SITELIB}/xpra"*
 rm -fr image/* dist
 ln -sf ../../dist ./dist
-rm -fr "$PYTHON_PACKAGES/xpra"
 
 echo
 echo "*******************************************************************************"
@@ -284,12 +282,11 @@ cp ./*.icns ${RSCDIR}/
 echo
 echo "*******************************************************************************"
 echo "include all xpra modules found: "
-find $PYTHON_PACKAGES/xpra/* -type d -maxdepth 0 -exec basename {} \;
-rsync -rpl $PYTHON_PACKAGES/xpra/* $LIBDIR/python/xpra/
+rsync -rpl "${SITELIB}/xpra/"* "${LIBDIR}/python/xpra/"
 echo "removing files that should not be installed in the first place (..)"
 for x in "*.html" "*.c" "*.cpp" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
 	echo "removing $x:"
-	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm "{}" \; | sed "s+$LIBDIR/python/xpra/++g" | xargs -L 1 echo "* "
+	find "${LIBDIR}/python/xpra/" -name "$x" -print -exec rm "{}" \; | sed "s+${LIBDIR}/python/xpra/++g" | xargs -L 1 echo "* "
 done
 #should be redundant:
 if [ "${CLIENT_ONLY}" == "1" ]; then
@@ -340,34 +337,34 @@ echo " * macos notifications API look for Info.plist in the wrong place"
 cp ${CONTENTS_DIR}/Info.plist ${RSCDIR}/bin/
 #no idea why I have to do this by hand
 echo " * add all OpenGL"
-rsync -rpl $PYTHON_PACKAGES/OpenGL* $LIBDIR/python/
+rsync -rpl "${SITELIB}/OpenGL"* "${LIBDIR}/python/"
 if [ "$STRIP_OPENGL" == "1" ]; then
 	#then remove what we know we don't need:
-	pushd $LIBDIR/python/OpenGL
+	pushd "${LIBDIR}/python/OpenGL"
 	for x in GLE Tk EGL GLES3 GLUT WGL GLX GLES1 GLES2; do
 		rm -fr ./$x
 		rm -fr ./raw/$x
 	done
 	popd
 fi
-pushd $LIBDIR/python
+pushd "${LIBDIR}/python"
 echo " * zipping OpenGL"
 zip --move -q -r site-packages.zip OpenGL
 popd
 echo " * add gobject-introspection (py2app refuses to do it)"
-rsync -rpl $PYTHON_PACKAGES/gi $LIBDIR/python/
-mkdir $LIBDIR/girepository-1.0
+rsync -rpl "${SITELIB}/gi" "${LIBDIR}/python/"
+mkdir "${LIBDIR}/girepository-1.0"
 GI_MODULES="Gst GObject GLib GModule Gtk Gdk GtkosxApplication HarfBuzz GL Gio Pango freetype2 cairo Atk"
 for t in ${GI_MODULES}; do
-	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
+	rsync -rpl "${JHBUILD_PREFIX}/lib/girepository-1.0/$t"*typelib "${LIBDIR}/girepository-1.0/"
 done
 echo " * add Adwaita theme"
 #gtk-mac-bundler doesn't do it properly, so do it ourselves:
-rsync -rpl ${JHBUILD_PREFIX}/share/icons/Adwaita ${RSCDIR}/share/icons/
+rsync -rpl "${JHBUILD_PREFIX}/share/icons/Adwaita" "${RSCDIR}/share/icons/"
 echo " * move GTK css"
-mv ${RSCDIR}/share/xpra/css ${RSCDIR}/
+mv "${RSCDIR}/share/xpra/css" "${RSCDIR}/"
 #unused py2app scripts:
-rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh
+rm "${RSCDIR}/__boot__.py" "${RSCDIR}/__error__.sh"
 echo " * fixup pixbuf loader"
 #executable_path is now automatically inserted?
 sed -i '' -e "s+@executable_path/++g" "${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
