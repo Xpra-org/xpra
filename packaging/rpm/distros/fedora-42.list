@@ -20,16 +20,22 @@ python3-torch-vision
 PYTHON3=python3.14t
 python3-setuptools
 python3-cython
-python3-pytools
-python3-pycuda
+# disabled because it needs pip:
+#python3-pytools
+# disabled because it needs pytools:
+#python3-pycuda
 python3-pynvml
-python3-pillow
+# disabled because it needs pybind11:
+#python3-pillow
 python3-pyu2f
 python3-uinput
-python3-dbus
+python3-wheel
+# disabled due to compilation error:
+#python3-dbus
 python3-pyxdg
-python3-pylsqpack
-python3-aioquic
+# these are not compatible with freethreading:
+#python3-pylsqpack
+#python3-aioquic
 python3-pyopengl
 python3-cairo
 python3-gobject

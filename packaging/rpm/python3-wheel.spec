@@ -5,8 +5,10 @@ echo this must be built for the not default python3
 exit
 %endif
 %global python3 python3
+%global py3rpmname python3
 %else
 %global python3 %{getenv:PYTHON3}
+%global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
@@ -14,21 +16,21 @@ exit
 %define python3_version %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[0]}.{vi[1]}")' 2> /dev/null)
 
 %global pypi_name wheel
-Name:           %{python3}-%{pypi_name}
+Name:           %{py3rpmname}-%{pypi_name}
 Release:        2%{?dist}
 Version:        0.45.1
 Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
 Provides:       bundled(python3dist(packaging)) = 20.9
-Requires:       %{python3}
-BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
+Requires:       %{py3rpmname}
+BuildRequires:  %{py3rpmname}-devel
+BuildRequires:  %{py3rpmname}-setuptools
 License:        MIT and (ASL 2.0 or BSD)
 URL:            https://github.com/pypa/wheel
 BuildArch:      noarch
 
 
-%description -n %{python3}-%{pypi_name}
+%description -n %{py3rpmname}-%{pypi_name}
 Wheel is the reference implementation of the Python wheel packaging standard,
 as defined in PEP 427.
 
@@ -73,7 +75,7 @@ echo "main()" >> %{buildroot}%{_bindir}/%{pypi_name}
 mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{python3_version}
 %endif
 
-%files -n %{python3}-%{pypi_name}
+%files -n %{py3rpmname}-%{pypi_name}
 %license LICENSE.txt
 %doc README.rst
 %{_bindir}/%{pypi_name}*

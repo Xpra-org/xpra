@@ -39,8 +39,8 @@ Python 3 bindings for the cairo library.
 
 %package -n python3-cairo-devel
 Summary: Libraries and headers for py3cairo
-Requires: %{python3}-cairo%{?_isa} = %{version}-%{release}
-Requires: %{python3}-devel
+Requires: %{py3rpmname}-cairo%{?_isa} = %{version}-%{release}
+Requires: %{py3rpmname}-devel
 
 %description -n python3-cairo-devel
 This package contains files required to build wrappers for cairo add-on
@@ -55,10 +55,10 @@ fi
 %autosetup -p1
 
 %build
-%py3_build
+%{python3} setup.py build
 
 %install
-%py3_install
+%{python3} setup.py install --skip-build --root %{buildroot}
 
 %files -n %{py3rpmname}-cairo
 %license COPYING*
