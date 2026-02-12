@@ -102,17 +102,18 @@ log_error "clean" "${CLEAN_LOG}"
 
 
 echo "*******************************************************************************"
+echo "Building Xpra for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION} using $NPROC logical CPUs"
 NPROC=$(sysctl -n hw.logicalcpu)
 cd "${XPRA_SRC_DIR}" || exit 1
-VERSION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
-REVISION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
-REV_MOD=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
-echo "Building Xpra ${VERSION}-${REVISION}${REV_MOD} for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION} using $NPROC logical CPUs"
 echo "- regenerate source and build info"
 rm -f "xpra/src_info.py" "xpra/build_info.py"
 BUILD_INFO_LOG="${MACOS_SCRIPT_DIR}/build_info.log"
 "${PYTHON}" "./fs/bin/add_build_info.py" "src" "build" >& "${BUILD_INFO_LOG}"
 log_error "add_build_info" "${BUILD_INFO_LOG}"
+VERSION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
+REVISION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
+REV_MOD=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
+echo "- version ${VERSION}-${REVISION}${REV_MOD}"
 
 echo -n "- adding metadata to plist files:"
 cd "${MACOS_SCRIPT_DIR}" || exit 1
