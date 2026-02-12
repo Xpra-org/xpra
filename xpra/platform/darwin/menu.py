@@ -223,7 +223,12 @@ class OSXMenuHelper(GTKTrayMenu):
             for label in CLIPBOARD_DIRECTION_LABELS:
                 add(clipboard_menu, self.make_clipboard_submenuitem(label, self._clipboard_direction_changed))
             clipboard_menu.show_all()
-            self.after_handshake(self.set_clipboard_menu, clipboard_menu)
+
+            def set_clipboard_menu(*args) -> None:
+                log("set_clipboard_menu%s", args)
+                self.set_clipboard_menu(clipboard_menu)
+            self.client.connect("clipboard-toggled", set_clipboard_menu)
+            self.after_handshake(set_clipboard_menu)
         if features.audio and SHOW_SOUND_MENU:
             audio_menu = Gtk.Menu()
             if self.client.speaker_allowed and self.client.speaker_codecs:
@@ -325,9 +330,10 @@ class OSXMenuHelper(GTKTrayMenu):
         all_items = [x for x in clipboard.get_submenu().get_children() if x.get_label() in labels]
         selected_items = [x for x in all_items if x == item] + [x for x in all_items if x.get_label() == label]
         if not selected_items:
-            log.error("Error: cannot find any clipboard menu options to match %r", label)
-            log.error(" all menu items: %s", csv(x.get_label() for x in all_items))
-            log.error(" selected: %s", csv(x.get_label() for x in selected_items) or "none")
+            if label:
+                log.error("Error: cannot find any clipboard menu options to match %r", label)
+                log.error(" all menu items: %s", csv(x.get_label() for x in all_items))
+                log.error(" selected: %s", csv(x.get_label() for x in selected_items) or "none")
             return ""
         self._clipboard_change_pending = True
         sel = selected_items[0]
