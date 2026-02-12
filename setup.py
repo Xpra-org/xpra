@@ -2794,8 +2794,7 @@ toggle_packages(server_ENABLED and x11_ENABLED,
 if gtk_x11_ENABLED:
     add_packages("xpra.x11.bindings")
     ace("xpra.x11.gtk.display_source", "gdk-3.0,gtk+-3.0")
-    ace("xpra.x11.gtk.bindings", "gdk-3.0,gtk+-3.0,glib-2.0,pygobject-3.0")
-    ace("xpra/x11/gtk/gdk_x11_macros.c", "gdk-3.0")
+    ace("xpra.x11.gtk.bindings,xpra/x11/gtk/gdk_x11_macros.c", "gdk-3.0,glib-2.0,pygobject-3.0")
 
 toggle_packages(cairo_ENABLED, "xpra.cairo")
 tace(cairo_ENABLED, "xpra.cairo.image", "py3cairo",
