@@ -9,7 +9,7 @@
 
 import datetime
 from shutil import which
-from subprocess import Popen, PIPE, STDOUT, getstatusoutput, run
+from subprocess import Popen, PIPE, STDOUT, run
 from typing import Any
 from collections.abc import Sequence
 import socket
@@ -84,7 +84,7 @@ def get_status_output(*args, **kwargs) -> tuple[int, bytes, bytes]:
         p = Popen(*args, **kwargs)
     except Exception as e:
         print("error running %s,%s: %s" % (args, kwargs, e))
-        return -1, "", ""
+        return -1, b"", b""
     stdout, stderr = p.communicate()
     return p.returncode, stdout, stderr
 
@@ -198,6 +198,17 @@ def get_platform_name() -> str:
     return sys.platform
 
 
+def jhbuild(*args: str) -> str:
+    gtk_osx_build = os.path.expanduser("~/gtk-osx-build")
+    cwd = gtk_osx_build if os.path.exists(gtk_osx_build) else os.getcwd()
+    full_cmd = ["jhbuild"] + list(args)
+    returncode, out, _ = get_status_output(full_cmd, cwd=cwd)
+    if returncode != 0:
+        print("%s failed and returned %s" % (" ".join(full_cmd), returncode))
+        return ""
+    return out.decode()
+
+
 def get_build_props() -> dict[str, Any]:
     props = {}
     source_epoch = os.environ.get("SOURCE_DATE_EPOCH", "")
@@ -254,16 +265,15 @@ def get_libs() -> dict[str, Any]:
                 pkg_name, version = parts
                 libs[pkg_name] = version
     elif sys.platform == "darwin":
-        returncode, out, _ = get_status_output(["jhbuild", "list", "-a", "-r"])
-        if returncode == 0:
-            for line in out.decode().splitlines():
-                parts = line.split(" ")
-                if len(parts) != 2:
-                    continue
-                pkg_name, version = parts
-                if pkg_name == "Modules":
-                    continue
-                libs[pkg_name] = version.lstrip("(").rstrip(")")
+        out = jhbuild("list", "-a", "-r")
+        for line in out.splitlines():
+            parts = line.split(" ")
+            if len(parts) != 2:
+                continue
+            pkg_name, version = parts
+            if pkg_name == "Modules":
+                continue
+            libs[pkg_name] = version.lstrip("(").rstrip(")")
     else:
         for pkg in (
             "libc",
@@ -324,11 +334,7 @@ def record_build_info() -> None:
 
 
 def get_jhbuild_package_list() -> list[str]:
-    cmd = "jhbuild list"
-    r, output = getstatusoutput(cmd)
-    if r:
-        print(f"`jhbuild list` failed and returned {r}")
-        return []
+    output = jhbuild("list")
     packages = []
     for line in output.split("\n"):
         if line.find(" ") >= 0:
@@ -338,11 +344,7 @@ def get_jhbuild_package_list() -> list[str]:
 
 
 def get_jhbuild_package_info(name: str) -> dict[str, str]:
-    cmd = f"jhbuild info {name}"
-    r, output = getstatusoutput(cmd)
-    if r:
-        print(f"`jhbuild info {name}` failed and returned {r}")
-        return {}
+    output = jhbuild("info", name)
     props: dict[str, str] = {}
     for line in output.split("\n"):
         parts = line.split(":", 1)
