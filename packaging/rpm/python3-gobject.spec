@@ -64,7 +64,6 @@ library.
 
 %package     -n python3-gobject-devel
 Summary:        Development files for embedding PyGObject introspection support
-# Requires:       %{py3rpmname}-gobject%{?_isa} = %{version}-%{release}
 Requires:       gobject-introspection-devel%{?_isa}
 
 %description -n python3-gobject-devel
