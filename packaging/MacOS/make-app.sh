@@ -6,9 +6,11 @@ if [ -z "${JHBUILD_PREFIX}" ]; then
 	exit 1
 fi
 
+MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 export PYTHON="${PYTHON:-${JHBUILD_PREFIX}/bin/python3}"
-PYTHON_MAJOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])'`
-PYTHON_MINOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])'`
+PYTHON_MAJOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])')
+PYTHON_MINOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])')
 
 echo "Building Xpra for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}"
 
@@ -18,7 +20,7 @@ GSTREAMER_VIDEO="${GSTREAMER_VIDEO:=0}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
-ARCH="${ARCH:=`arch`}"
+ARCH="${ARCH:=$(arch)}"
 if [ "${ARCH}" == "i386" ]; then
 	ARCH="x86_64"
 fi
@@ -61,8 +63,8 @@ LIBDIR="${RSCDIR}/lib"
 
 echo "*******************************************************************************"
 echo "Deleting existing xpra modules and temporary directories"
-PYTHON_PREFIX=`python3-config --prefix`
-PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python3*/site-packages | sort | tail -n 1`
+PYTHON_PREFIX=$(python3-config --prefix)
+PYTHON_PACKAGES=$(ls -d ${PYTHON_PREFIX}/lib/python3*/site-packages | sort | tail -n 1)
 rm -fr "${PYTHON_PACKAGES}/xpra"*
 rm -fr image/* dist
 ln -sf ../../dist ./dist
@@ -77,9 +79,9 @@ rm -f xpra/src_info.py xpra/build_info.py
 ${PYTHON} "./fs/bin/add_build_info.py" "src" "build"
 rm -fr build/* dist/*
 ${PYTHON} ./setup.py clean
-NPROC=`sysctl -n hw.logicalcpu`
+NPROC=$(sysctl -n hw.logicalcpu)
 echo "found $NPROC logical CPUs"
-BUILD_EXT_LOG=`pwd`/build_ext.log
+BUILD_EXT_LOG="${MACOS_SCRIPT_DIR}/build_ext.log"
 echo "./setup.py build_ext ${BUILD_ARGS}" -j $NPROC
 echo " (see ${BUILD_EXT_LOG} for details - this may take a minute or two)"
 ${PYTHON} ./setup.py build_ext ${BUILD_ARGS} -j $NPROC >& ${BUILD_EXT_LOG}
@@ -90,7 +92,7 @@ if [ "$?" != "0" ]; then
 	tail -n 20 ${BUILD_EXT_LOG}
 	exit 1
 fi
-INSTALL_LOG=`pwd`/install.log
+INSTALL_LOG="${MACOS_SCRIPT_DIR}/install.log"
 echo "./setup.py install ${BUILD_ARGS}"
 echo " (see ${INSTALL_LOG} for details)"
 ${PYTHON} ./setup.py install ${BUILD_ARGS} >& ${INSTALL_LOG}
@@ -103,9 +105,9 @@ if [ "$?" != "0" ]; then
 fi
 #get the version and build info from the python build records:
 export PYTHONPATH="."
-VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-REVISION=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
-REV_MOD=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
+VERSION=$(${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
+REVISION=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
+REV_MOD=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
 echo "OK"
 
 if [ "${DO_TESTS}" == "1" ]; then
@@ -115,7 +117,7 @@ if [ "${DO_TESTS}" == "1" ]; then
 	#make sure the unit tests can run "python3 xpra ...":
 	rm -f ./xpra >& /dev/null
 	ln -sf ../fs/bin/xpra .
-	UNITTEST_LOG=`pwd`/unittest.log
+	UNITTEST_LOG="${MACOS_SCRIPT_DIR}/unittest.log"
 	echo "running unit tests (see ${UNITTEST_LOG} - this may take a minute or two)"
 	TMPDIR=./tmpdir XPRA_COMMAND="$PYTHON ./xpra" XPRA_NODOCK_COMMAND="$PYTHON ./xpra" XPRA_SOUND_COMMAND="$PYTHON ./xpra" PYTHONPATH=. ./unit/run.py >& ${UNITTEST_LOG}
 	if [ "$?" != "0" ]; then
@@ -134,7 +136,7 @@ fi
 echo
 echo "*******************************************************************************"
 echo "py2app step:"
-PY2APP_LOG=`pwd`/py2app.log
+PY2APP_LOG="${MACOS_SCRIPT_DIR}/py2app.log"
 echo "XPRA_GI_BLOCK=\"*\" ${PYTHON} ./setup.py py2app ${BUILD_ARGS}"
 echo " (see ${PY2APP_LOG} for details - this may take a minute or two)"
 XPRA_GI_BLOCK="*" ${PYTHON} ./setup.py py2app ${BUILD_ARGS} >& ${PY2APP_LOG}
@@ -148,10 +150,10 @@ echo "py2app forgets AVFoundation, do it by hand:"
 rsync -rplogt ${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/AVFoundation ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
 echo "fixup pkg_resources.py2_warn, gi, cffi: force include the whole packages"
 for m in pkg_resources gi cffi; do
-	mpath=`python3 -c "import os;import $m;print(os.path.dirname($m.__file__))"`
+	mpath=$(python3 -c "import os;import $m;print(os.path.dirname($m.__file__))")
 	cp -r $mpath ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
 done
-mpath=`python3 -c "import _cffi_backend;print(_cffi_backend.__file__)"`
+mpath=$(python3 -c "import _cffi_backend;print(_cffi_backend.__file__)")
 cp $mpath ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/lib-dynload/
 
 echo "OK"
@@ -183,6 +185,7 @@ echo "**************************************************************************
 echo "modifying Info.plist files with:"
 echo " VERSION=\"${VERSION}\" REVISION=\"${REVISION}${REV_MOD}\""
 echo " BUILDNO=\"${BUILDNO}\" ARCH=\"${ARCH}\""
+cd "${MACOS_SCRIPT_DIR}" || exit 1
 for plist in "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist"; do
 	echo "modifying $plist"
 	git checkout $plist
@@ -198,7 +201,7 @@ done
 
 echo
 echo "*******************************************************************************"
-echo "calling 'gtk-mac-bundler Xpra.bundle' in `pwd`"
+echo "calling 'gtk-mac-bundler Xpra.bundle' in $(pwd)"
 if [ ! -e "JHBUILD_PREFIX}/lib/charset.alias" ]; then
 	#gtk-mac-bundler chokes if this file is missing
 	touch "${JHBUILD_PREFIX}/lib/charset.alias"
@@ -371,8 +374,8 @@ if [ "$STRIP_SOURCE" == "1" ]; then
 	echo "removing py if we have the pyc:"
 	#only remove ".py" source if we have a binary ".pyc" for it:
 	for x in `find $LIBDIR -name "*.py" -type f`; do
-		d="`dirname $x`"
-		f="`basename $x`"
+		d="$(dirname $x)"
+		f="$(basename $x)"
 		if [ -r "$d/${f}c" ]; then
 			#echo "* $x"
 			rm "${x}"
