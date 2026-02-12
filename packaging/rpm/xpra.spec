@@ -218,6 +218,7 @@ BuildRequires:		pkgconfig(libqrencode)
 %endif
 Recommends:			qrencode
 BuildRequires:		%{py3rpmname}-gobject
+BuildRequires:		python3-gobject-devel
 BuildRequires:		pkgconfig(pygobject-3.0)
 BuildRequires:		pkgconfig(py3cairo)
 BuildRequires:		pkgconfig(gtk+-3.0)
