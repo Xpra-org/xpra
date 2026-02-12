@@ -216,7 +216,7 @@ if [ ! -e "JHBUILD_PREFIX}/share/icons/hicolor/index.theme" ]; then
 	#gtk-mac-bundler chokes if this file is missing
 	touch "${JHBUILD_PREFIX}/share/icons/hicolor/index.theme"
 fi
-gtk-mac-bundler Xpra.bundle
+gtk-mac-bundler Xpra.bundle 2>&1 | grep -v "/opt/X11/lib/libX11.6.dylib"
 if [ "$?" != "0" ]; then
 	echo "ERROR: gtk-mac-bundler failed"
 	exit 1
