@@ -2718,7 +2718,8 @@ if cython_ENABLED:
         # re-generate shared utility
         from xpra.util.io import which
         major, minor = sys.version_info[:2]
-        cython_exe = which(f"python{major}.{minor}-cython") or which("cython") or "/usr/local/bin/cython"
+        suffix = "t" if is_free_threaded() else ""
+        cython_exe = which(f"python{major}.{minor}{suffix}-cython") or which("cython") or "/usr/local/bin/cython"
         cs_cmd = [cython_exe, "--generate-shared", CYSHARED]
         if cython_freethreading_ENABLED:
             cs_cmd += ["-X", "freethreading_compatible=True"]
