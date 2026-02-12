@@ -348,7 +348,7 @@ class OSXMenuHelper(GTKTrayMenu):
             rc_setting = "CLIPBOARD"
             if len(ch._local_to_remote) == 1:
                 rc_setting = tuple(ch._local_to_remote.values())[0]
-            label = CLIPBOARD_NAME_TO_LABEL.get(rc_setting)
+            label = CLIPBOARD_NAME_TO_LABEL.get(rc_setting, "")
             clipboardlog(f"set_clipboard_menu(%s) setting={rc_setting!r}, {label=}", clipboard_menu)
             self.select_clipboard_menu_option(None, label, CLIPBOARD_LABELS)
         except RuntimeError:
