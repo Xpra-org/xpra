@@ -61,25 +61,25 @@ def is_X11_Display(display=None) -> bool:
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "gtk-3.0/gdk/gdk.h":
+cdef extern from "gdk/gdk.h":
     ctypedef struct GdkWindow:
         pass
     void gdk_display_flush(GdkDisplay *display)
     void gdk_x11_display_error_trap_push(GdkDisplay *display)
     int gdk_x11_display_error_trap_pop(GdkDisplay *display)
 
-cdef extern from "gtk-3.0/gdk/gdkx.h":
+cdef extern from "gdk/gdkx.h":
     pass
 
-cdef extern from "gtk-3.0/gdk/gdkproperty.h":
+cdef extern from "gdk/gdkproperty.h":
     ctypedef int gint
     ctypedef gint gboolean
 
-cdef extern from "glib-2.0/glib-object.h":
+cdef extern from "glib-object.h":
     ctypedef struct cGObject "GObject":
         pass
 
-cdef extern from "pygobject-3.0/pygobject.h":
+cdef extern from "pygobject.h":
     cGObject *pygobject_get(object box)
     object pygobject_new(cGObject * contents)
 
@@ -95,7 +95,7 @@ cdef extern from "pygobject-3.0/pygobject.h":
 ######
 
 # gdk_region_get_rectangles (pygtk bug #517099)
-cdef extern from "gtk-3.0/gdk/gdktypes.h":
+cdef extern from "gdk/gdktypes.h":
     ctypedef struct cGdkVisual "GdkVisual":
         pass
     Visual * GDK_VISUAL_XVISUAL(cGdkVisual   *visual)
@@ -154,7 +154,7 @@ cdef Display * get_xdisplay() except? NULL:
 #   -- Receive interesting signals on 'obj'.
 
 
-cdef extern from "gtk-3.0/gdk/gdkevents.h":
+cdef extern from "gdk/gdkevents.h":
     ctypedef enum GdkFilterReturn:
         GDK_FILTER_CONTINUE   # If we ignore the event
         GDK_FILTER_TRANSLATE  # If we converted the event to a GdkEvent

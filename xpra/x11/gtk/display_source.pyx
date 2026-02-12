@@ -13,21 +13,20 @@ from xpra.x11.bindings.xlib cimport Display
 from xpra.x11.bindings.display_source cimport set_display   # pylint: disable=syntax-error
 from xpra.x11.bindings.display_source import set_display_name  # @UnresolvedImport
 
-
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "gtk-3.0/gdk/gdk.h":
+cdef extern from "gdk/gdk.h":
     pass
 
-cdef extern from "gtk-3.0/gdk/gdktypes.h":
+cdef extern from "gdk/gdktypes.h":
     ctypedef struct GdkDisplay:
         pass
 
-cdef extern from "gtk-3.0/gdk/gdkdisplay.h":
+cdef extern from "gdk/gdkdisplay.h":
     GdkDisplay *gdk_display_get_default()
 
-cdef extern from "gtk-3.0/gdk/gdkx.h":
+cdef extern from "gdk/gdkx.h":
     Display *gdk_x11_display_get_xdisplay(GdkDisplay *display)
     const char *gdk_display_get_name(GdkDisplay *display)
 
