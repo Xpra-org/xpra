@@ -136,12 +136,12 @@ class ClipboardClient(StubClientMixin):
         return {"clipboard": info}
 
     def get_caps(self) -> dict[str, Any]:
-        if not self.client_supports_clipboard:
+        ch = self.clipboard_helper
+        if not self.client_supports_clipboard or not ch:
             return {}
         caps: dict[str, Any] = {
             "notifications": True,
         }
-        ch = self.clipboard_helper
         caps.update(ch.get_caps())
         log("clipboard.get_caps()=%s", caps)
         return {ClipboardClient.PREFIX: caps}
@@ -245,6 +245,7 @@ class ClipboardClient(StubClientMixin):
                 del e
             except RuntimeError:
                 log.error("Error: cannot instantiate %s", helperclass, exc_info=True)
+        self.client_supports_clipboard = False
         return None
 
     def _process_clipboard_packet(self, packet: Packet) -> None:
