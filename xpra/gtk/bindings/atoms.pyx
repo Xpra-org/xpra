@@ -17,11 +17,11 @@ cdef extern from "Python.h":
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
 
-cdef extern from "gtk-3.0/gdk/gdk.h":
+cdef extern from "gdk/gdk.h":
     ctypedef void* GdkAtom
     GdkAtom GDK_NONE
 
-cdef extern from "gtk-3.0/gdk/gdkproperty.h":
+cdef extern from "gdk/gdkproperty.h":
     ctypedef char gchar
     ctypedef int gint
     ctypedef gint gboolean

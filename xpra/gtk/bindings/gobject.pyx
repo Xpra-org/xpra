@@ -13,7 +13,7 @@ log = Logger("bindings", "gtk")
 GObject = gi_import("GObject")
 log(f"GObject={GObject}")
 
-cdef extern from "glib-2.0/glib-object.h":
+cdef extern from "glib-object.h":
     ctypedef struct cGObject "GObject":
         pass
 
