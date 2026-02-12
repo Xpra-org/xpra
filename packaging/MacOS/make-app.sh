@@ -7,13 +7,12 @@ if [ -z "${JHBUILD_PREFIX}" ]; then
 fi
 
 MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+XPRA_SRC_DIR=$(dirname "$(dirname "${MACOS_SCRIPT_DIR}")")
 
 export PYTHON="${PYTHON:-${JHBUILD_PREFIX}/bin/python3}"
 PYTHON_MAJOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])')
 PYTHON_MINOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])')
 SITELIB="${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/"
-
-echo "Building Xpra for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}"
 
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
@@ -55,146 +54,71 @@ if [ "$?" != "0" ]; then
 	echo "pandoc not found, not building HTML documentation"
 	BUILD_ARGS="${BUILD_ARGS} --without-docs"
 fi
-CONTENTS_DIR="${APP_DIR}/Contents"
-MACOS_DIR="${CONTENTS_DIR}/MacOS"
-RSCDIR="${CONTENTS_DIR}/Resources"
-HELPERS_DIR="${CONTENTS_DIR}/Helpers"
-LIBDIR="${RSCDIR}/lib"
 
+
+function log_error() {
+  if [ "$?" != "0" ]; then
+    echo "ERROR: $1 failed"
+    echo " see $2 for details:"
+    echo
+    tail -n 20 "$2"
+    exit 1
+  fi
+}
 
 echo "*******************************************************************************"
-echo "Deleting existing xpra modules and temporary directories"
-rm -fr "${SITELIB}/xpra"*
-rm -fr image/* dist
-ln -sf ../../dist ./dist
-
-echo
-echo "*******************************************************************************"
-echo "Building and installing locally"
-pushd ../../ || exit 1
-
-rm -f xpra/src_info.py xpra/build_info.py
-${PYTHON} "./fs/bin/add_build_info.py" "src" "build"
-rm -fr build/* dist/*
-CLEAN_LOG="${MACOS_SCRIPT_DIR}/clean.log"
-PYTHONWARNINGS="ignore::SetuptoolsDeprecationWarning" ${PYTHON} ./setup.py clean >& "${CLEAN_LOG}"
-if [ "$?" != "0" ]; then
-	echo "ERROR: clean failed"
-	echo
-	tail -n 20 "${CLEAN_LOG}"
-	exit 1
-fi
-${PYTHON} ./setup.py clean
-NPROC=$(sysctl -n hw.logicalcpu)
-echo "found $NPROC logical CPUs"
-BUILD_EXT_LOG="${MACOS_SCRIPT_DIR}/build_ext.log"
-echo "./setup.py build_ext ${BUILD_ARGS}" -j $NPROC
-echo " (see ${BUILD_EXT_LOG} for details - this may take a minute or two)"
-${PYTHON} ./setup.py build_ext ${BUILD_ARGS} -j $NPROC >& ${BUILD_EXT_LOG}
-if [ "$?" != "0" ]; then
-	popd || exit 1
-	echo "ERROR: build_ext failed"
-	echo
-	tail -n 20 ${BUILD_EXT_LOG}
-	exit 1
-fi
-INSTALL_LOG="${MACOS_SCRIPT_DIR}/install.log"
-echo "./setup.py install ${BUILD_ARGS}"
-echo " (see ${INSTALL_LOG} for details)"
-${PYTHON} ./setup.py install ${BUILD_ARGS} >& ${INSTALL_LOG}
-if [ "$?" != "0" ]; then
-	popd || exit 1
-	echo "ERROR: install failed"
-	echo
-	tail -n 20 ${INSTALL_LOG}
-	exit 1
-fi
-#get the version and build info from the python build records:
-export PYTHONPATH="."
-VERSION=$(${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
-REVISION=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
-REV_MOD=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
-echo "OK"
-
-if [ "${DO_TESTS}" == "1" ]; then
-	pushd ./unittests  || exit 1
-	rm -fr ./tmpdir
-	mkdir ./tmpdir
-	#make sure the unit tests can run "python3 xpra ...":
-	rm -f ./xpra >& /dev/null
-	ln -sf ../fs/bin/xpra .
-	UNITTEST_LOG="${MACOS_SCRIPT_DIR}/unittest.log"
-	echo "running unit tests (see ${UNITTEST_LOG} - this may take a minute or two)"
-	TMPDIR=./tmpdir XPRA_COMMAND="$PYTHON ./xpra" XPRA_NODOCK_COMMAND="$PYTHON ./xpra" XPRA_SOUND_COMMAND="$PYTHON ./xpra" PYTHONPATH=. ./unit/run.py >& ${UNITTEST_LOG}
-	if [ "$?" != "0" ]; then
-		rm -fr ./tmpdir
-		popd || exit 1
-		echo "ERROR: unit tests failed, see ${UNITTEST_LOG}:"
-		tail -n 20 ${UNITTEST_LOG}
-		exit 1
-	else
-		rm -fr ./tmpdir
-		echo "OK"
-	fi
-	popd || exit 1
-fi
-
-echo
-echo "*******************************************************************************"
-echo "py2app step:"
-PY2APP_LOG="${MACOS_SCRIPT_DIR}/py2app.log"
-echo "XPRA_GI_BLOCK=\"*\" ${PYTHON} ./setup.py py2app ${BUILD_ARGS}"
-echo " (see ${PY2APP_LOG} for details - this may take a minute or two)"
-PYTHONWARNINGS="ignore::SetuptoolsDeprecationWarning" XPRA_GI_BLOCK="*" ${PYTHON} ./setup.py py2app ${BUILD_ARGS} >& ${PY2APP_LOG}
-if [ "$?" != "0" ]; then
-	echo "ERROR: py2app failed"
-	echo
-	tail -n 20 ${PY2APP_LOG}
-	exit 1
-fi
-echo "py2app forgets AVFoundation, do it by hand:"
-rsync -rplogt ${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/AVFoundation ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
-echo "fixup pkg_resources.py2_warn, gi, cffi: force include the whole packages"
-for m in pkg_resources gi cffi; do
-	mpath=$(PYTHONWARNINGS="ignore::UserWarning" python3 -c "import os;import $m;print(os.path.dirname($m.__file__))")
-	cp -r $mpath ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
-done
-mpath=$(PYTHONWARNINGS="ignore::UserWarning" python3 -c "import _cffi_backend;print(_cffi_backend.__file__)")
-cp $mpath ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/lib-dynload/
-
-echo "OK"
-popd || exit 1
-echo "py2app forgets uvloop._noop"
-UVLOOPDIR="./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/uvloop/"
-mkdir ${UVLOOPDIR}
-cp ${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/uvloop/_noop.py ${UVLOOPDIR}/
-
-if [ "${GSTREAMER_VIDEO}" == "0" ]; then
-	echo "removing gstreamer video codec explicitly"
-	rm -fr "./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/xpra/codecs/gstreamer"
-fi
-
-echo
-echo "*******************************************************************************"
-echo "Fixing permissions on libpython dylib"
-if [ ! -z "${JHBUILD_PREFIX}" ]; then
-	chmod 755 "${JHBUILD_PREFIX}/lib/"libpython*.dylib
-fi
-#avoid error if there is no /etc/pango:
-#(which seems to be the case with newer builds)
+echo "Cleaning"
+echo "- jhbuild files and directories"
+# Fixing JHBUILD environment if needed
+chmod 755 "${JHBUILD_PREFIX}/lib/libpython"*.dylib
 if [ ! -d "${JHBUILD_PREFIX}/etc/pango" ]; then
-	mkdir "${JHBUILD_PREFIX}/etc/pango"
+  #avoid error if there is no /etc/pango:
+  #(which seems to be the case with newer builds)
+  mkdir "${JHBUILD_PREFIX}/etc/pango"
+fi
+if [ ! -e "${JHBUILD_PREFIX}/lib/charset.alias" ]; then
+  #gtk-mac-bundler chokes if this file is missing
+  touch "${JHBUILD_PREFIX}/lib/charset.alias"
+fi
+HICOLOR_INDEX="${JHBUILD_PREFIX}/share/icons/hicolor/index.theme"
+if [ ! -e "${HICOLOR_INDEX}" ]; then
+  #gtk-mac-bundler chokes if this file is missing
+  touch "${HICOLOR_INDEX}"
 fi
 
-echo
+echo "- current xpra installation"
+rm -fr "${SITELIB}/xpra"*
+rm -fr "${MACOS_SCRIPT_DIR}/image/"* "${MACOS_SCRIPT_DIR}/dist"
+ln -sf "../../dist" "${MACOS_SCRIPT_DIR}/dist"
+
+echo "- build and dist directories"
+rm -fr "${XPRA_SRC_DIR}/build/" "${XPRA_SRC_DIR}}/dist"
+
+echo "- clean subcommand"
+cd "${XPRA_SRC_DIR}" || exit 1
+CLEAN_LOG="${MACOS_SCRIPT_DIR}/clean.log"
+"${PYTHON}" ./setup.py clean >& "${CLEAN_LOG}"
+log_error "clean" "${CLEAN_LOG}"
+
+
 echo "*******************************************************************************"
-echo "modifying Info.plist files with:"
-echo " VERSION=\"${VERSION}\" REVISION=\"${REVISION}${REV_MOD}\""
-echo " BUILDNO=\"${BUILDNO}\" ARCH=\"${ARCH}\""
+NPROC=$(sysctl -n hw.logicalcpu)
+cd "${XPRA_SRC_DIR}" || exit 1
+VERSION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
+REVISION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
+REV_MOD=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
+echo "Building Xpra ${VERSION}-${REVISION}${REV_MOD} for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION} using $NPROC logical CPUs"
+echo "- regenerate source and build info"
+rm -f "xpra/src_info.py" "xpra/build_info.py"
+BUILD_INFO_LOG="${MACOS_SCRIPT_DIR}/build_info.log"
+"${PYTHON}" "./fs/bin/add_build_info.py" "src" "build" >& "${BUILD_INFO_LOG}"
+log_error "add_build_info" "${BUILD_INFO_LOG}"
+
+echo -n "- adding metadata to plist files:"
 cd "${MACOS_SCRIPT_DIR}" || exit 1
 for plist in "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist"; do
-	echo "modifying $plist"
-	git checkout $plist
+	echo -n " $plist"
+	git checkout $plist >& /dev/null
 	sed -i '' -e "s+%VERSION%+$VERSION+g" $plist
 	sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" $plist
 	sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" $plist
@@ -204,47 +128,105 @@ for plist in "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist"; do
 		sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" $plist
 	fi
 done
-
 echo
+
+cd "${XPRA_SRC_DIR}" || exit 1
+BUILD_EXT_LOG="${MACOS_SCRIPT_DIR}/build_ext.log"
+echo "- build extensions"
+echo "./setup.py build_ext ${BUILD_ARGS}" -j $NPROC > "${BUILD_EXT_LOG}"
+"${PYTHON}" ./setup.py build_ext ${BUILD_ARGS} -j $NPROC >> "${BUILD_EXT_LOG}" 2>&1
+log_error "build_ext" "${BUILD_EXT_LOG}"
+
+INSTALL_LOG="${MACOS_SCRIPT_DIR}/install.log"
+echo "- install locally"
+echo "./setup.py install ${BUILD_ARGS}" > "${INSTALL_LOG}"
+"${PYTHON}" ./setup.py install ${BUILD_ARGS} >> "${INSTALL_LOG}" 2>&1
+log_error "install" "${INSTALL_LOG}"
+
+if [ "${DO_TESTS}" == "1" ]; then
+	cd "${XPRA_SRC_DIR}/unittests" || exit 1
+	rm -fr ./tmpdir && mkdir ./tmpdir || exit 1
+	#make sure the unit tests can run "python3 xpra ...":
+	rm -f ./xpra >& /dev/null
+	ln -sf ../fs/bin/xpra .
+	UNITTEST_LOG="${MACOS_SCRIPT_DIR}/unittest.log"
+	echo "- run unit tests (see ${UNITTEST_LOG} - this may take a while)"
+	TMPDIR=./tmpdir XPRA_COMMAND="$PYTHON ./xpra" XPRA_NODOCK_COMMAND="$PYTHON ./xpra" XPRA_SOUND_COMMAND="$PYTHON ./xpra" PYTHONPATH=. ./unit/run.py >& "${UNITTEST_LOG}"
+	log_error unittests "${UNITTEST_LOG}"
+  rm -fr ./tmpdir
+  echo "OK"
+fi
+
+
 echo "*******************************************************************************"
-echo "calling 'gtk-mac-bundler Xpra.bundle' in $(pwd)"
-if [ ! -e "JHBUILD_PREFIX}/lib/charset.alias" ]; then
-	#gtk-mac-bundler chokes if this file is missing
-	touch "${JHBUILD_PREFIX}/lib/charset.alias"
-fi
-if [ ! -e "JHBUILD_PREFIX}/share/icons/hicolor/index.theme" ]; then
-	#gtk-mac-bundler chokes if this file is missing
-	touch "${JHBUILD_PREFIX}/share/icons/hicolor/index.theme"
-fi
-gtk-mac-bundler Xpra.bundle 2>&1 | grep -v "/opt/X11/lib/libX11.6.dylib"
-if [ "$?" != "0" ]; then
-	echo "ERROR: gtk-mac-bundler failed"
-	exit 1
+cd "${XPRA_SRC_DIR}" || exit 1
+echo "Creating app bundle"
+PY2APP_LOG="${MACOS_SCRIPT_DIR}/py2app.log"
+echo "- py2app"
+echo "XPRA_GI_BLOCK=\"*\" ${PYTHON} ./setup.py py2app ${BUILD_ARGS}" > "${PY2APP_LOG}"
+XPRA_GI_BLOCK="*" "${PYTHON}" ./setup.py py2app ${BUILD_ARGS} >> "${PY2APP_LOG}" 2>&1
+log_error "py2app" "${PY2APP_LOG}"
+
+echo "- adding AVFoundation"
+rsync -rplogt "${SITELIB}/AVFoundation" ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
+echo "- pkg_resources.py2_warn, gi, cffi"
+for m in pkg_resources gi cffi; do
+	mpath=$(PYTHONWARNINGS="ignore::UserWarning" python3 -c "import os;import $m;print(os.path.dirname($m.__file__))")
+	cp -r "${mpath}" ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
+done
+mpath=$(PYTHONWARNINGS="ignore::UserWarning" python3 -c "import _cffi_backend;print(_cffi_backend.__file__)")
+cp "${mpath}" ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/lib-dynload/
+
+echo "- uvloop"
+UVLOOPDIR="./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/uvloop/"
+mkdir "${UVLOOPDIR}"
+cp "${SITELIB}/uvloop/_noop.py" "${UVLOOPDIR}/"
+
+if [ "${GSTREAMER_VIDEO}" == "0" ]; then
+	echo "- remove gstreamer video codec"
+	rm -fr "./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/xpra/codecs/gstreamer"
 fi
 
-echo
+
+echo "*******************************************************************************"
+echo "Creating the application bundle"
+cd "${MACOS_SCRIPT_DIR}" || exit 1
+BUNDLER_LOG="${MACOS_SCRIPT_DIR}/gtk-mac-bundler.log"
+gtk-mac-bundler Xpra.bundle >& "${BUNDLER_LOG}"
+log_error "gtk-mac-bundler" "${BUNDLER_LOG}"
+
+# from here on, these directories should exist:
+CONTENTS_DIR="${APP_DIR}/Contents"
+MACOS_DIR="${CONTENTS_DIR}/MacOS"
+RSCDIR="${CONTENTS_DIR}/Resources"
+HELPERS_DIR="${CONTENTS_DIR}/Helpers"
+LIBDIR="${RSCDIR}/lib"
+
+
 echo "*******************************************************************************"
 echo "make python softlink without version number"
-pushd ${LIBDIR} || exit 1
-ln -sf python3.${PYTHON_MINOR_VERSION} python
-cd python
+pushd "${MACOS_SCRIPT_DIR}/${LIBDIR}" || exit 1
+ln -sf "python3.${PYTHON_MINOR_VERSION}" python
+cd python || exit 1
 echo "unzip site-packages"
 if [ -e "site-packages.zip" ]; then
 	unzip -nq site-packages.zip
 	rm site-packages.zip
 fi
-if [ -e "../python3${PYTHON_MINOR_VERSION}.zip" ]; then
-	unzip -nq ../python3${PYTHON_MINOR_VERSION}.zip
-	rm ../python3${PYTHON_MINOR_VERSION}.zip
+PYZIP="../python3${PYTHON_MINOR_VERSION}.zip"
+if [ -e "${PYZIP}" ]; then
+	unzip -nq "${PYZIP}"
+	rm "${PYZIP}"
 fi
 popd || exit 1
 
-echo
+
 echo "*******************************************************************************"
 echo "Add xpra/server/python scripts"
+cd "${MACOS_SCRIPT_DIR}" || exit 1
 rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
 #we dont need the wrappers that may have been installed by distutils:
-rm -f ${MACOS_DIR}/*bin
+rm -f "${MACOS_DIR}/*bin"
 
 #ensure that every wrapper has a "python" executable to match:
 #(see PythonExecWrapper for why we need this "exec -a" workaround)
@@ -257,11 +239,6 @@ for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
 		cp "$RSCDIR/bin/python" "$target"
 	fi
 done
-#fix for:
-# dyld: Library not loaded: @executable_path/../Resources/lib/libgstreamer-1.0.0.dylib
-pushd "${RSCDIR}/libexec"  || exit 1
-ln -sf ../../Resources ./Resources
-popd || exit 1
 #fix for:
 # /Applications/Xpra.app/Contents/Resources/bin/../Resources/lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.so
 pushd "${RSCDIR}" || exit 1
@@ -279,7 +256,7 @@ fi
 # Add the icon:
 cp ./*.icns ${RSCDIR}/
 
-echo
+
 echo "*******************************************************************************"
 echo "include all xpra modules found: "
 rsync -rpl "${SITELIB}/xpra/"* "${LIBDIR}/python/xpra/"
@@ -322,11 +299,11 @@ echo "**************************************************************************
 echo "Xpra_NoDock: same app contents but without a dock icon"
 SUB_APP_NAME="Xpra_NoDock.app"
 SUB_APP="${APP_DIR}/Contents/${SUB_APP_NAME}"
-rsync -rpltog "${SUB_APP_NAME}" ${APP_DIR}/Contents/
-ln -sf ../../Frameworks ${SUB_APP}/Contents/Frameworks
-ln -sf ../../Resources ${SUB_APP}/Contents/Resources
-ln -sf ../../MacOS ${SUB_APP}/Contents/MacOS
-ln -sf ../../Helpers ${SUB_APP}/Contents/Helpers
+rsync -rpltog "${SUB_APP_NAME}" "${APP_DIR}/Contents/"
+ln -sf ../../Frameworks "${SUB_APP}/Contents/Frameworks"
+ln -sf ../../Resources "${SUB_APP}/Contents/Resources"
+ln -sf ../../MacOS "${SUB_APP}/Contents/MacOS"
+ln -sf ../../Helpers "${SUB_APP}/Contents/Helpers"
 
 
 echo
@@ -370,8 +347,8 @@ sed -i '' -e "s+@executable_path/++g" "${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0/loade
 
 echo " * docs"
 if [ -d "${JHBUILD_PREFIX}/share/doc/xpra" ]; then
-	mkdir -p ${RSCDIR}/share/doc/xpra
-	rsync -rplogt ${JHBUILD_PREFIX}/share/doc/xpra/* ${RSCDIR}/share/doc/xpra/
+	mkdir -p "${RSCDIR}/share/doc/xpra"
+	rsync -rplogt "${JHBUILD_PREFIX}/share/doc/xpra/"* "${RSCDIR}/share/doc/xpra/"
 fi
 
 if [ "$STRIP_SOURCE" == "1" ]; then
@@ -418,10 +395,10 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	fi
 	for x in $PLUGINS; do
 		echo "* keeping "$x
-		mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
+		mv "${GST_PLUGIN_DIR}/libgst${x}"* "${KEEP}/"
 	done
-	rm -fr ${GST_PLUGIN_DIR}
-	mv ${KEEP} ${GST_PLUGIN_DIR}
+	rm -fr "${GST_PLUGIN_DIR}"
+	mv ${KEEP} "${GST_PLUGIN_DIR}"
 fi
 echo -n "GStreamer plugins shipped: "
 ls ${GST_PLUGIN_DIR} | xargs
@@ -434,18 +411,7 @@ echo "Add the manual in HTML format (since we cannot install the man page proper
 groff -mandoc -Thtml < ../../fs/share/man/man1/xpra.1 > ${RSCDIR}/share/manual.html
 groff -mandoc -Thtml < ../../fs/share/man/man1/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
 
-echo
-echo "*******************************************************************************"
-echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
-sed -i '' -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
-sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
-sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	sed -i '' -e "s+Xpra+Xpra-Client+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
-	sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
-fi
 
-echo
 echo "*******************************************************************************"
 echo "Clean unnecessary files"
 pwd
@@ -510,9 +476,7 @@ echo
 echo "*******************************************************************************"
 echo "copying application image to Desktop"
 rsync --delete -rplogt "${APP_DIR}" ~/Desktop/
-echo "Done"
-echo "*******************************************************************************"
 echo
 
 # restore files we modified:
-git checkout "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist"
+git checkout "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist" >& /dev/null
