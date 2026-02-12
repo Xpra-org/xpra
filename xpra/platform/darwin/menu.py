@@ -345,7 +345,7 @@ class OSXMenuHelper(GTKTrayMenu):
         # and select it
         try:
             ch = self.client.clipboard_helper
-            rc_setting = "Clipboard"
+            rc_setting = "CLIPBOARD"
             if len(ch._local_to_remote) == 1:
                 rc_setting = tuple(ch._local_to_remote.values())[0]
             label = CLIPBOARD_NAME_TO_LABEL.get(rc_setting)
