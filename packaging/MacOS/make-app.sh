@@ -145,7 +145,7 @@ echo "py2app step:"
 PY2APP_LOG="${MACOS_SCRIPT_DIR}/py2app.log"
 echo "XPRA_GI_BLOCK=\"*\" ${PYTHON} ./setup.py py2app ${BUILD_ARGS}"
 echo " (see ${PY2APP_LOG} for details - this may take a minute or two)"
-XPRA_GI_BLOCK="*" ${PYTHON} ./setup.py py2app ${BUILD_ARGS} >& ${PY2APP_LOG}
+PYTHONWARNINGS="ignore::SetuptoolsDeprecationWarning" XPRA_GI_BLOCK="*" ${PYTHON} ./setup.py py2app ${BUILD_ARGS} >& ${PY2APP_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: py2app failed"
 	echo
