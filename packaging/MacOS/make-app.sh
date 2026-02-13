@@ -24,6 +24,7 @@ ARCH="${ARCH:=$(arch)}"
 if [ "${ARCH}" == "i386" ]; then
 	ARCH="x86_64"
 fi
+NPROC=$(sysctl -n hw.logicalcpu)
 
 DO_TESTS="${DO_TESTS:-0}"
 DO_X11="0"
@@ -103,7 +104,6 @@ log_error "clean" "${CLEAN_LOG}"
 
 echo "*******************************************************************************"
 echo "Building Xpra for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION} using $NPROC logical CPUs"
-NPROC=$(sysctl -n hw.logicalcpu)
 cd "${XPRA_SRC_DIR}" || exit 1
 echo "- regenerate source and build info"
 rm -f "xpra/src_info.py" "xpra/build_info.py"
@@ -196,6 +196,9 @@ BUNDLER_LOG="${MACOS_SCRIPT_DIR}/gtk-mac-bundler.log"
 gtk-mac-bundler Xpra.bundle >& "${BUNDLER_LOG}"
 log_error "gtk-mac-bundler" "${BUNDLER_LOG}"
 
+# restore files we modified:
+git checkout "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist" >& /dev/null
+
 # from here on, these directories should exist:
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
@@ -261,17 +264,6 @@ cp ./*.icns ${RSCDIR}/
 echo "*******************************************************************************"
 echo "include all xpra modules found: "
 rsync -rpl "${SITELIB}/xpra/"* "${LIBDIR}/python/xpra/"
-echo "removing files that should not be installed in the first place (..)"
-for x in "*.html" "*.c" "*.cpp" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
-	echo "removing $x:"
-	find "${LIBDIR}/python/xpra/" -name "$x" -print -exec rm "{}" \; | sed "s+${LIBDIR}/python/xpra/++g" | xargs -L 1 echo "* "
-done
-#should be redundant:
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	for x in "server" "x11"; do
-		rm -fr "$LIBDIR/python/xpra/$x"
-	done
-fi
 
 if [ "${DO_X11}" == "1" ]; then
 	for cmd in "Xvfb" "glxgears" "glxinfo" "oclock" "setxkbmap" "uxterm" "xauth" "xcalc" "xclock" "xdpyinfo" "xev" "xeyes" "xhost" "xkill" "xload" "xlsclients" "xmodmap" "xprop" "xrandr" "xrdb" "xset" "xterm" "xwininfo"; do
@@ -355,7 +347,7 @@ fi
 if [ "$STRIP_SOURCE" == "1" ]; then
 	echo "removing py if we have the pyc:"
 	#only remove ".py" source if we have a binary ".pyc" for it:
-	for x in `find $LIBDIR -name "*.py" -type f`; do
+	for x in "${LIBDIR}"/**/*.py; do
 		d="$(dirname $x)"
 		f="$(basename $x)"
 		if [ -r "$d/${f}c" ]; then
@@ -364,9 +356,6 @@ if [ "$STRIP_SOURCE" == "1" ]; then
 		fi
 	done
 fi
-#always strip the cython html reports:
-echo "removing html cython report"
-find $LIBDIR/python/xpra/ -name "*.html" -exec rm {} \;
 
 
 #gst bits expect to find dylibs in Frameworks!?
@@ -381,12 +370,11 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 		rm libgst${x}*
 	done
 fi
-echo "removing extra gstreamer plugins:"
-echo " * GStreamer"
+echo "- removing extra gstreamer plugins"
 GST_PLUGIN_DIR="./gstreamer-1.0"
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	KEEP="./gstreamer-1.0.keep"
-	mkdir ${KEEP}
+	mkdir ${KEEP} || exit 1
 	PLUGINS="app audio coreelements cutter removesilence faac faad flac oss osxaudio speex volume vorbis wav lame opus ogg gdp isomp4 matroska"
 	#video sink for testing:
 	PLUGINS="${PLUGINS} autodetect osxvideo"
@@ -406,78 +394,79 @@ ls ${GST_PLUGIN_DIR} | xargs
 popd || exit 1	#${CONTENTS_DIR}
 popd || exit 1	#"Resources/lib"
 
-echo
-echo "*******************************************************************************"
-echo "Add the manual in HTML format (since we cannot install the man page properly..)"
+echo "- add the manual in HTML format"
 groff -mandoc -Thtml < ../../fs/share/man/man1/xpra.1 > ${RSCDIR}/share/manual.html
 groff -mandoc -Thtml < ../../fs/share/man/man1/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
 
 
 echo "*******************************************************************************"
-echo "Clean unnecessary files"
-pwd
-ls image
-#better do this last ("rsync -C" may omit some files we actually need)
-find ./image -name ".svn" | xargs rm -fr
+echo "Cleanup"
+cd "${MACOS_SCRIPT_DIR}" || exit 1
+echo "- static libaries"
 #not sure why these get bundled at all in the first place!
 find ./image -name "*.la" -exec rm -f {} \;
-
-echo "*******************************************************************************"
-echo "Remove extra Pillow plugins"
+echo "- pillow plugins"
 pushd "${LIBDIR}/python/PIL" || exit 1
 RMP=""
 KMP=""
-for file_name in `ls *Image*`; do
-	plugin_name=`echo $file_name | sed 's+\.py.*++g'`
-		echo "$file_name" | egrep "Bmp|Ico|Image.py|ImageChops|ImageCms|ImageChops|ImageColor|ImageDraw|ImageFile|ImageFilter|ImageFont|ImageGrab|ImageMode|ImageOps|ImagePalette|ImagePath|ImageSequence|ImageStat|ImageTransform|Jpeg|Tiff|Png|Ppm|Xpm|WebP" >& /dev/null
-	if [ "$?" == "0" ]; then
+PILLOW_KEEP="Bmp|Ico|Image|ImageChops|ImageCms|ImageChops|ImageColor|ImageDraw|ImageFile|ImageFilter|ImageFont|ImageGrab|ImageMode|ImageOps|ImagePalette|ImagePath|ImageSequence|ImageStat|ImageTransform|Jpeg|Tiff|Png|Ppm|Xpm|WebP"
+for file_name in *Image*; do
+	plugin_name="${file_name%.py}"
+  if [[ "${plugin_name}" =~ $PILLOW_KEEP ]]; then
 		KMP="${KMP} $plugin_name"
 	else
 		RMP="${RMP} $plugin_name"
-		rm $file_name
+		rm "${file_name}"
 	fi
 done
-echo " removed: ${RMP}"
-echo " kept: ${KMP}"
+echo "  removed: ${RMP}"
+echo "  kept: ${KMP}"
 popd || exit 1
 
-echo
-echo "*******************************************************************************"
-echo "De-duplicate dylibs"
+echo "- unwanted files in python modules"
+for x in "*.html" "*.c" "*.cpp" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
+	find "${LIBDIR}/python/xpra/" -name "$x" -print -exec rm "{}" \; | sed "s+${LIBDIR}/python/xpra/++g" | xargs -L 1 echo "  "
+done
+
+#should be redundant:
+if [ "${CLIENT_ONLY}" == "1" ]; then
+  echo "- server components"
+	for x in "server" "x11"; do
+		rm -fr "$LIBDIR/python/xpra/$x"
+	done
+fi
+
+echo "- de-duplicate dylibs"
 pushd "${LIBDIR}" || exit 1
-for x in `ls *dylib | grep -v libgst | sed 's+[0-9\.]*\.dylib++g' | sed 's+-$++g' | sort -u`; do
-	COUNT=`ls *dylib | grep $x | wc -l`
+for x in $(ls *dylib | grep -v libgst | sed 's+[0-9\.]*\.dylib++g' | sed 's+-$++g' | sort -u); do
+	COUNT=$(ls *dylib | grep $x | wc -l)
 	if [ "${COUNT}" -gt "1" ]; then
-		FIRST=`ls $x* | sort -n | head -n 1`
-		for f in `ls $x* | grep -v $FIRST`; do
-			cmp -s $f $FIRST
-			if [ "$?" == "0" ]; then
-				echo "(re)symlinking $f to $FIRST"
-				rm $f
-				ln -sf $FIRST $f
+		FIRST=$(ls $x* | sort -n | head -n 1)
+		for f in ${x}*; do
+		  if [ "${f}" == "{FIRST}" ]; then
+		    continue
+		  fi
+			if cmp -s "$f" "$FIRST"; then
+				echo "  $f -> $FIRST"
+				rm "$f"
+				ln -sf "$FIRST" "$f"
 			fi
 		done
 	fi
 done
-#gstreamer dylibs are easier
-#all of them look like this: libgstXYZ-1.0.0.dylib / libgstXYZ-1.0.dylib
-for x in `ls libgst*-1.0.0.dylib`; do
-	SHORT="`echo $x | sed 's/1.0.0/1.0/g'`"
-	cmp -s "$x" "$SHORT"
-	if [ "$?" == "0" ]; then
-		echo "(re)symlinking $SHORT to $x"
-		rm $SHORT
-		ln -sf $x $SHORT
+# gstreamer dylibs are easier
+# all of them look like this: libgstXYZ-1.0.0.dylib / libgstXYZ-1.0.dylib
+for x in ls libgst*-1.0.0.dylib; do
+	SHORT="${x//1.0.0/1.0/}"
+	if cmp -s "$x" "$SHORT"; then
+		echo "  $SHORT -> $x"
+		rm "$SHORT"
+		ln -sf "$x" "$SHORT"
 	fi
 done
-popd
+popd || exit 1
 
 
-echo
 echo "*******************************************************************************"
-echo "copying application image to Desktop"
+echo "Copying Xpra.app to ~/Desktop"
 rsync --delete -rplogt "${APP_DIR}" ~/Desktop/
-echo
-
-# restore files we modified:
-git checkout "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist" >& /dev/null
