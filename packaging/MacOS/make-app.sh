@@ -101,7 +101,7 @@ ln -sf "../../dist" "${MACOS_SCRIPT_DIR}/dist"
 echo "- build and dist directories"
 rm -fr "${XPRA_SRC_DIR}/build/" "${XPRA_SRC_DIR}}/dist"
 
-echo "- Desktop/Xpra.app"
+echo "- ~/Desktop/Xpra.app"
 rm -fr "${HOME}/Desktop/Xpra.app"
 
 echo "- clean subcommand"
@@ -218,7 +218,7 @@ PYDIR="${FRAMEWORKS_DIR}/python"
 ln -sf "python3.${PYTHON_MINOR_VERSION}" "${PYDIR}"
 
 echo "- include all xpra modules"
-rsync -rplv "${SITELIB}/xpra" "${PYDIR}/"
+rsync -rplt "${SITELIB}/xpra" "${PYDIR}/"
 echo "- remove other platforms"
 for platform in "win32" "posix"; do
   rm -fr "${PYDIR}/xpra/platform/${platform}"
@@ -236,7 +236,7 @@ fi
 
 for module in "AVFoundation" "pkg_resources" "gi" "cffi" "OpenGL"; do
   echo "- ${module}"
-	rsync -rplogt "${SITELIB}/${module}" "${PYDIR}/"
+	rsync -rplt "${SITELIB}/${module}" "${PYDIR}/"
 done
 if [ "$STRIP_OPENGL" == "1" ]; then
   echo "  remove unused OpenGL modules"
@@ -313,7 +313,7 @@ echo "- icon"
 cp "${MACOS_SCRIPT_DIR}/"*.icns "${RSCDIR}/"
 #the build / install step should have placed them here:
 echo "- config files"
-rsync -rplogt "${XPRA_SRC_DIR}/build/etc/xpra" "${RSCDIR}/etc/"
+rsync -rplt "${XPRA_SRC_DIR}/build/etc/xpra" "${RSCDIR}/etc/"
 if [ "${CLIENT_ONLY}" == "0" ]; then
 	#add the launch agent file
 	mkdir "${RSCDIR}/LaunchAgents"
@@ -322,7 +322,7 @@ fi
 
 echo "- Xpra_NoDock app bundle"
 SUB_APP_NAME="Xpra_NoDock.app"
-rsync -rpltog "${MACOS_SCRIPT_DIR}/${SUB_APP_NAME}" "${APP_DIR}/Contents/"
+rsync -rplt "${MACOS_SCRIPT_DIR}/${SUB_APP_NAME}" "${APP_DIR}/Contents/"
 SUB_APP="${APP_DIR}/Contents/${SUB_APP_NAME}"
 ln -sf ../../Frameworks "${SUB_APP}/Contents/Frameworks"
 ln -sf ../../Resources "${SUB_APP}/Contents/Resources"
@@ -353,7 +353,7 @@ rsync -rpl "${JHBUILD_PREFIX}/share/icons/Adwaita" "${RSCDIR}/share/icons/"
 echo "- docs"
 if [ -d "${JHBUILD_PREFIX}/share/doc/xpra" ]; then
 	mkdir -p "${RSCDIR}/share/doc/xpra"
-	rsync -rplogt "${JHBUILD_PREFIX}/share/doc/xpra/"* "${RSCDIR}/share/doc/xpra/"
+	rsync -rplt "${JHBUILD_PREFIX}/share/doc/xpra/"* "${RSCDIR}/share/doc/xpra/"
 fi
 
 echo "- add the manual in HTML format"
@@ -463,4 +463,4 @@ done
 
 echo "*******************************************************************************"
 echo "Copying Xpra.app to ~/Desktop"
-rsync --delete -rplogt "${APP_DIR}" ~/Desktop/
+rsync --delete -rplt "${APP_DIR}" ~/Desktop/
