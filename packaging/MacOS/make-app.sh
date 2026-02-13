@@ -310,6 +310,8 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	rm -f "${RSCDIR}/bin/Shadow"
 fi
 
+echo "- remove executable bit from python scripts"
+find "${MACOS_SCRIPT_DIR}" -type f -perm +111 -name "*.py" -exec chmod -x {} \;
 
 echo "*******************************************************************************"
 echo "Add components"
@@ -398,6 +400,45 @@ for dylib in *dylib; do
   done
 done
 
+echo "- fixing dylibs id / rpath"
+for dir in "." "gstreamer-1.0" "cairo"; do
+  cd "${FRAMEWORKS_DIR}/${dir}" || exit 1
+  echo "  ${dir}"
+
+  # fix "id":
+  idpath="@executable_path/../Frameworks"
+  if [ "${dir}" != "." ]; then
+    idpath="@executable_path/../Frameworks/${dir}"
+  fi
+  for dylib in *.dylib; do
+    if [[ -L "${dylib}" ]]; then
+      continue
+    fi
+    codesign --remove-signature "${dylib}"
+    install_name_tool -id "${idpath}/${dylib}" "${dylib}"
+  done
+
+  # fix rpath:
+  old_prefix="@executable_path/../Resources/lib/"
+  new_prefix="@executable_path/../Frameworks/"
+  for dylib in *.dylib; do
+    if [[ -L "${dylib}" ]]; then
+      continue
+    fi
+    # Process each line from otool -L output
+    otool -L "$dylib" | tail -n +2 | while IFS= read -r line; do
+      # Extract the library path (first field)
+      lib_path=$(echo "$line" | awk '{print $1}')
+
+      # Check if it contains the old prefix
+      if [[ $lib_path == *"$old_prefix"* ]]; then
+        # Replace the prefix
+        new_path="${lib_path/$old_prefix/$new_prefix}"
+        install_name_tool -change "$lib_path" "$new_path" "$dylib"
+      fi
+    done
+  done
+done
 popd > /dev/null || exit 1
 
 echo "*******************************************************************************"
