@@ -1,5 +1,7 @@
 #!/bin/bash
 
+MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd "${MACOS_SCRIPT_DIR}" || exit 1
 
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
 APP_NAME="Xpra"
@@ -16,33 +18,33 @@ if [ ! -d "${APP_DIR}" ]; then
 fi
 
 #get the version and build info from the python build records:
-export PYTHONPATH="${APP_DIR}/Contents/Resources/lib/python/"
+export PYTHONPATH="${APP_DIR}/Contents/Frameworks/python/"
 PYTHON="${PYTHON:=python}"
-VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-REVISION=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
-REV_MOD=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
-BUILD_INFO="${BUILD_INFO}-`uname -m`"
+VERSION=$(${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
+REVISION=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
+REV_MOD=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
+BUILD_INFO="${BUILD_INFO}-$(uname -m)"
 
 PKG_FILENAME="$APP_NAME$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.pkg"
-rm -f ./image/$PKG_FILENAME >& /dev/null
-echo "Making $PKG_FILENAME"
+rm -f "./image/${PKG_FILENAME}" >& /dev/null
+echo "Making ${PKG_FILENAME}"
 
 #create directory structure:
-rm -fr ./image/flat ./image/root
-mkdir -p ./image/flat/base.pkg ./image/flat/Resources/en.lproj
-mkdir -p ./image/root/Applications
-rsync -rplogt ${APP_DIR} ./image/root/Applications/
+rm -fr "./image/flat" "./image/root"
+mkdir -p "./image/flat/base.pkg" "./image/flat/Resources/en.lproj"
+mkdir -p "./image/root/Applications"
+rsync -rplogt "${APP_DIR}" "./image/root/Applications/"
 
 #add launchd agent:
-mkdir -p ./image/root/Library/LaunchAgents/
-cp ./org.xpra.Agent.plist ./image/root/Library/LaunchAgents/
+mkdir -p "./image/root/Library/LaunchAgents/"
+cp "./org.xpra.Agent.plist" "./image/root/Library/LaunchAgents/"
 
-pushd ./image/root >& /dev/null
-find . | cpio -o --format odc --owner 0:80 | gzip -c > ../flat/base.pkg/Payload
+pushd "./image/root" >& /dev/null
+find . | cpio -o --format odc --owner 0:80 | gzip -c > "../flat/base.pkg/Payload"
 popd >& /dev/null
 
-FILECOUNT=`find ./image/root | wc -l`
-DISKUSAGE=`du -sk ./image/root`
+FILECOUNT=$(find ./image/root | wc -l)
+DISKUSAGE=$(du -sk ./image/root)
 
 #add the postinstall fix script (cups backend and shortcuts)
 mkdir ./image/scripts
@@ -90,29 +92,29 @@ cat > ./image/flat/Distribution << EOF
 EOF
 
 #add license and background files to image:
-cp background.png GPL.rtf ./image/flat/Resources/en.lproj/
+cp "background.png" "GPL.rtf" "./image/flat/Resources/en.lproj/"
 
-pushd ./image/flat >& /dev/null
-xar --compression none -cf "../$PKG_FILENAME" *
+pushd "./image/flat" >& /dev/null
+xar --compression none -cf "../${PKG_FILENAME}" *
 popd >& /dev/null
 
 #clean temporary build directories
-rm -fr ./image/flat ./image/root ./image/scripts
+rm -fr "./image/flat" "./image/root" "./image/scripts"
 
 if [ ! -z "${CODESIGN_KEYNAME}" ]; then
 		echo "Signing with key '${CODESIGN_KEYNAME}'"
-		productsign --sign "${CODESIGN_KEYNAME}" ./image/$PKG_FILENAME ./image/$PKG_FILENAME.signed
+		productsign --sign "${CODESIGN_KEYNAME}" "./image/${PKG_FILENAME}" "./image/${PKG_FILENAME}.signed"
 		if [ "$?" == "0" ]; then
 			ls -la ./image/*pkg*
-			mv ./image/$PKG_FILENAME.signed ./image/$PKG_FILENAME
+			mv "./image/${PKG_FILENAME}.signed" "./image/${PKG_FILENAME}"
 		fi
 else
 		echo "PKG Signing skipped (no keyname)"
 fi
 
 #show resulting file and copy it to the desktop
-du -sm ./image/$PKG_FILENAME
-cp ./image/$PKG_FILENAME ~/Desktop/
+du -sm "./image/$PKG_FILENAME"
+cp "./image/$PKG_FILENAME" "${HOME}/Desktop/"
 
 echo "Done PKG"
 echo "*******************************************************************************"

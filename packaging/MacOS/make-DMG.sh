@@ -1,10 +1,13 @@
-#!/bin/sh
+#!/bin/bash
+
+MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd "${MACOS_SCRIPT_DIR}" || exit 1
 
 PYTHON="python3"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
-APP_DIR="./image/Xpra.app"
+APP_DIR="image/Xpra.app"
 if [ "${CLIENT_ONLY}" == "1" ]; then
-	APP_DIR="./image/Xpra-Client.app"
+	APP_DIR="image/Xpra-Client.app"
 fi
 
 echo
@@ -17,11 +20,11 @@ if [ ! -d "${APP_DIR}" ]; then
 fi
 
 #get the version and build info from the python build records:
-export PYTHONPATH="${APP_DIR}/Contents/Resources/lib/python/"
-VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-REVISION=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
-REV_MOD=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
-BUILD_INFO="${BUILD_INFO}-`uname -m`"
+export PYTHONPATH="${APP_DIR}/Contents/Frameworks/python/"
+VERSION=$(${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
+REVISION=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
+REV_MOD=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
+BUILD_INFO="${BUILD_INFO}-$(uname -m)"
 
 DMG_NAME="Xpra$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.dmg"
 if [ "${CLIENT_ONLY}" == "1" ]; then
@@ -33,29 +36,29 @@ rm -fr image/Blank.*
 rm -fr image/*dmg
 
 echo "Mounting blank DMG"
-mkdir -p image/Blank
-cp Blank.dmg.bz2 image/
-bunzip2 image/Blank.dmg.bz2
-hdiutil mount image/Blank.dmg -mountpoint ./image/Blank
+mkdir -p "image/Blank"
+cp "Blank.dmg.bz2" "image/"
+bunzip2 "image/Blank.dmg.bz2"
+hdiutil mount "image/Blank.dmg" -mountpoint "./image/Blank"
 
 echo "Copying app into the DMG"
-rsync -rpltgo ${APP_DIR} ./image/Blank/
-chmod -Rf go-w image/Blank/*
-hdiutil detach image/Blank
+rsync -rpltgo "${APP_DIR}" "./image/Blank/"
+chmod -Rf go-w "image/Blank/"*
+hdiutil detach "image/Blank"
 
 echo "Creating compressed DMG"
-hdiutil convert image/Blank.dmg -format UDBZ -o image/$DMG_NAME
+hdiutil convert "image/Blank.dmg" -format UDBZ -o "image/${DMG_NAME}"
 
 if [ ! -z "${CODESIGN_KEYNAME}" ]; then
 		echo "Signing with key '${CODESIGN_KEYNAME}'"
-        codesign --deep --force --verify --verbose --sign "${CODESIGN_KEYNAME}" image/$DMG_NAME
+        codesign --deep --force --verify --verbose --sign "${CODESIGN_KEYNAME}" "image/${DMG_NAME}"
 else
 		echo "DMG Signing skipped (no keyname)"
 fi
 
 echo "Copying $DMG_NAME to the desktop"
-cp image/$DMG_NAME ~/Desktop/
-echo "Size of disk image: `du -sh image/$DMG_NAME`"
+cp "image/${DMG_NAME}" "${HOME}/Desktop/"
+echo "Size of disk image: $(du -sh "image/$DMG_NAME")"
 
 echo "Done DMG"
 echo "*******************************************************************************"
