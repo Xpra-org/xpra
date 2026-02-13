@@ -15,6 +15,7 @@ PYTHON_MAJOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.versio
 PYTHON_MINOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])')
 SITELIB="${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/"
 
+CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=-}"
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
 GSTREAMER_VIDEO="${GSTREAMER_VIDEO:=0}"
@@ -456,7 +457,7 @@ for dir in "Frameworks" "Frameworks/gstreamer-1.0" "Frameworks/cairo"; do
     if [[ -L "${dylib}" ]]; then
       continue
     fi
-    codesign -s - "${dylib}"
+    codesign -s "${CODESIGN_KEYNAME}" "${dylib}"
   done
 done
 if [ "${DO_X11}" == "1" ]; then
@@ -465,13 +466,13 @@ if [ "${DO_X11}" == "1" ]; then
   for bin in *; do
     codesign --remove-signature "${bin}"
     change_prefix "${bin}" "/opt/X11/lib/" "@executable_path/../Frameworks/X11/lib/"
-    codesign -s - "${bin}"
+    codesign -s "${CODESIGN_KEYNAME}" "${bin}"
   done
   cd "${FRAMEWORKS_DIR}/X11/lib" || exit 1
   for dylib in *.dylib; do
     codesign --remove-signature "${dylib}"
     change_prefix "${dylib}" "/opt/X11/lib/" "@executable_path/../Frameworks/X11/lib/"
-    codesign -s - "${dylib}"
+    codesign -s "${CODESIGN_KEYNAME}" "${dylib}"
   done
 fi
 echo "- python shared objects"
@@ -482,7 +483,7 @@ find "${PYDIR}/" -name "*.so" -print0 | while IFS='' read -r -d $'\0' file; do
     codesign --remove-signature "${file}"
     change_prefix "${file}" "${old_rpath}" "${new_rpath}"
     change_prefix "${file}" "${JHBUILD_PREFIX}/lib" "${new_rpath}"
-    codesign -s - "${file}"
+    codesign -s "${CODESIGN_KEYNAME}" "${file}"
 done
 echo "- bcrypt"
 install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/lib-dynload/bcrypt/_bcrypt.so" "${PYDIR}/lib-dynload/bcrypt/_bcrypt.so"
