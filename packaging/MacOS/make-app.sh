@@ -118,6 +118,10 @@ CLEAN_LOG="${LOG_DIR}/clean.log"
 "${PYTHON}" ./setup.py clean >& "${CLEAN_LOG}"
 log_error "clean" "${CLEAN_LOG}"
 
+echo "- restore Info.plist files"
+cd "${MACOS_SCRIPT_DIR}" || exit 1
+git checkout "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist" >& /dev/null
+
 
 echo "*******************************************************************************"
 echo "Building Xpra for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION} using $NPROC logical CPUs"
