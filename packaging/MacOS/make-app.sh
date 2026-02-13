@@ -31,14 +31,14 @@ DO_TESTS="${DO_TESTS:-0}"
 DO_X11="0"
 
 BUILDNO="${BUILDNO:="0"}"
-APP_DIR="./image/Xpra.app"
+APP_DIR="${MACOS_SCRIPT_DIR}/image/Xpra.app"
 if [ "${GSTREAMER_VIDEO}" == "1" ]; then
 	BUILD_ARGS="${BUILD_ARGS} --with-gstreamer_video"
 else
 	BUILD_ARGS="${BUILD_ARGS} --without-gstreamer_video"
 fi
 if [ "${CLIENT_ONLY}" == "1" ]; then
-	APP_DIR="./image/Xpra-Client.app"
+	APP_DIR="${MACOS_SCRIPT_DIR}/image/Xpra-Client.app"
 	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy"
 	DO_TESTS="0"
 else
@@ -67,6 +67,7 @@ function log_error() {
     exit 1
   fi
 }
+
 
 echo "*******************************************************************************"
 echo "Cleaning"
@@ -100,6 +101,9 @@ ln -sf "../../dist" "${MACOS_SCRIPT_DIR}/dist"
 echo "- build and dist directories"
 rm -fr "${XPRA_SRC_DIR}/build/" "${XPRA_SRC_DIR}}/dist"
 
+echo "- Desktop/Xpra.app"
+rm -fr "${HOME}/Desktop/Xpra.app"
+
 echo "- clean subcommand"
 cd "${XPRA_SRC_DIR}" || exit 1
 CLEAN_LOG="${LOG_DIR}/clean.log"
@@ -120,18 +124,18 @@ REVISION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;s
 REV_MOD=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
 echo "- version ${VERSION}-${REVISION}${REV_MOD}"
 
-echo -n "- adding metadata to plist files:"
-cd "${MACOS_SCRIPT_DIR}" || exit 1
-for plist in "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist"; do
-	echo -n " $plist"
-	git checkout $plist >& /dev/null
-	sed -i '' -e "s+%VERSION%+$VERSION+g" $plist
-	sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" $plist
-	sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" $plist
-	sed -i '' -e "s+%ARCH%+$ARCH+g" $plist
+echo -n "- updating metadata:"
+for info_plist in "Info.plist" "Xpra_NoDock.app/Contents/Info.plist"; do
+	echo -n " $info_plist"
+	plist="${MACOS_SCRIPT_DIR}/${info_plist}"
+	git checkout "${plist}" >& /dev/null
+	sed -i '' -e "s+%VERSION%+$VERSION+g" "${plist}"
+	sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${plist}"
+	sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${plist}"
+	sed -i '' -e "s+%ARCH%+$ARCH+g" "${plist}"
 	if [ "${CLIENT_ONLY}" == "1" ]; then
-		sed -i '' -e "s+Xpra+Xpra-Client+g" $plist
-		sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" $plist
+		sed -i '' -e "s+Xpra+Xpra-Client+g" "${plist}"
+		sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" "${plist}"
 	fi
 done
 echo
@@ -173,29 +177,7 @@ echo "XPRA_GI_BLOCK=\"*\" ${PYTHON} ./setup.py py2app ${BUILD_ARGS}" > "${PY2APP
 XPRA_GI_BLOCK="*" "${PYTHON}" ./setup.py py2app ${BUILD_ARGS} >> "${PY2APP_LOG}" 2>&1
 log_error "py2app" "${PY2APP_LOG}"
 
-echo "- adding AVFoundation"
-rsync -rplogt "${SITELIB}/AVFoundation" ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
-echo "- pkg_resources.py2_warn, gi, cffi"
-for m in pkg_resources gi cffi; do
-	mpath=$(PYTHONWARNINGS="ignore::UserWarning" python3 -c "import os;import $m;print(os.path.dirname($m.__file__))")
-	cp -r "${mpath}" ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
-done
-mpath=$(PYTHONWARNINGS="ignore::UserWarning" python3 -c "import _cffi_backend;print(_cffi_backend.__file__)")
-cp "${mpath}" ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/lib-dynload/
-
-echo "- uvloop"
-UVLOOPDIR="./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/uvloop/"
-mkdir "${UVLOOPDIR}"
-cp "${SITELIB}/uvloop/_noop.py" "${UVLOOPDIR}/"
-
-if [ "${GSTREAMER_VIDEO}" == "0" ]; then
-	echo "- remove gstreamer video codec"
-	rm -fr "./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/xpra/codecs/gstreamer"
-fi
-
-
-echo "*******************************************************************************"
-echo "Creating the application bundle"
+echo "- gtk-mac-bundler"
 cd "${MACOS_SCRIPT_DIR}" || exit 1
 BUNDLER_LOG="${LOG_DIR}/gtk-mac-bundler.log"
 gtk-mac-bundler Xpra.bundle >& "${BUNDLER_LOG}"
@@ -207,35 +189,102 @@ git checkout "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist" >& /dev/null
 # from here on, these directories should exist:
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
+FRAMEWORKS_DIR="${CONTENTS_DIR}/Frameworks"
 RSCDIR="${CONTENTS_DIR}/Resources"
 HELPERS_DIR="${CONTENTS_DIR}/Helpers"
 LIBDIR="${RSCDIR}/lib"
 
+echo "- Resources/lib and Resources/bin to Frameworks"
+mv "${RSCDIR}/lib" ${FRAMEWORKS_DIR}
+ln -sf "../Frameworks" "${RSCDIR}/lib"
+ln -sf "../Frameworks" "${RSCDIR}/bin"
+
+#fix for:
+# /Applications/Xpra.app/Contents/Resources/bin/../Resources/lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.so
+ln -sf "../Resources" "${RSCDIR}"
+
 
 echo "*******************************************************************************"
-echo "make python softlink without version number"
-pushd "${MACOS_SCRIPT_DIR}/${LIBDIR}" || exit 1
-ln -sf "python3.${PYTHON_MINOR_VERSION}" python
-cd python || exit 1
-echo "unzip site-packages"
-if [ -e "site-packages.zip" ]; then
-	unzip -nq site-packages.zip
-	rm site-packages.zip
-fi
-PYZIP="../python3${PYTHON_MINOR_VERSION}.zip"
+echo "Python"
+PYZIP="${FRAMEWORKS_DIR}/python3${PYTHON_MINOR_VERSION}.zip"
 if [ -e "${PYZIP}" ]; then
+  echo "- unzip ${PYZIP}"
+  cd "${FRAMEWORKS_DIR}/python3.${PYTHON_MINOR_VERSION}" || exit 1
 	unzip -nq "${PYZIP}"
 	rm "${PYZIP}"
 fi
-popd || exit 1
+echo "- symlink"
+PYDIR="${FRAMEWORKS_DIR}/python"
+ln -sf "python3.${PYTHON_MINOR_VERSION}" "${PYDIR}"
 
+echo "- include all xpra modules"
+rsync -rplv "${SITELIB}/xpra" "${PYDIR}/"
+echo "- remove other platforms"
+for platform in "win32" "posix"; do
+  rm -fr "${PYDIR}/xpra/platform/${platform}"
+done
+if [ "${CLIENT_ONLY}" == "1" ]; then
+  echo "- remove server components"
+	for x in "server" "x11"; do
+		rm -fr "${PYDIR}/xpra/$x"
+	done
+fi
+if [ "${GSTREAMER_VIDEO}" == "0" ]; then
+	echo "- remove gstreamer video codec"
+	rm -fr "${PYDIR}/xpra/codecs/gstreamer"
+fi
 
-echo "*******************************************************************************"
-echo "Add xpra/server/python scripts"
-cd "${MACOS_SCRIPT_DIR}" || exit 1
-rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
+for module in "AVFoundation" "pkg_resources" "gi" "cffi" "OpenGL"; do
+  echo "- ${module}"
+	rsync -rplogt "${SITELIB}/${module}" "${PYDIR}/"
+done
+if [ "$STRIP_OPENGL" == "1" ]; then
+  echo "  remove unused OpenGL modules"
+	#then remove what we know we don't need:
+	for x in GLE Tk EGL GLES3 GLUT WGL GLX GLES1 GLES2; do
+		rm -fr "${PYDIR}/OpenGL/${x}"
+		rm -fr "${PYDIR}/OpenGL/raw/${x}"
+	done
+fi
+echo "  zipping up OpenGL"
+pushd "${PYDIR}" > /dev/null || exit 1
+zip --move -q -r site-packages.zip OpenGL
+popd > /dev/null || exit 1
+
+echo "- pillow plugins"
+RMP=""
+KMP=""
+PILLOW_KEEP="Bmp|Ico|ImageChops|ImageCms|ImageChops|ImageColor|ImageDraw|ImageFile|ImageFilter|ImageFont|ImageGrab|ImageMode|ImageOps|ImagePalette|ImagePath|ImageSequence|ImageStat|ImageTransform|Jpeg|Tiff|Png|Ppm|Xpm|WebP"
+pushd "${PYDIR}/PIL" > /dev/null || exit 1
+for file_name in *Image*; do
+	plugin_name="${file_name%.pyc}"
+  if [ "${plugin_name}" = "Image" ]; then
+		KMP="${KMP} $plugin_name"
+  elif [[ "${plugin_name}" =~ $PILLOW_KEEP ]]; then
+		KMP="${KMP} $plugin_name"
+	else
+		RMP="${RMP} $plugin_name"
+		rm "${file_name}"
+	fi
+done
+popd > /dev/null || exit 1
+echo "  removed: ${RMP}"
+echo "  kept: ${KMP}"
+
+echo "- cffi backend"
+mpath=$(PYTHONWARNINGS="ignore::UserWarning" python3 -c "import _cffi_backend;print(_cffi_backend.__file__)")
+echo "- lib-dynload to Frameworks/"
+mkdir "${FRAMEWORKS_DIR}/lib-dynload"
+ln -sf "${FRAMEWORKS_DIR}/lib-dynload" "${PYDIR}/lib-dynload"
+cp "${mpath}" "${PYDIR}/lib-dynload/"
+echo "- uvloop"
+cp "${SITELIB}/uvloop/_noop.py" "${PYDIR}/uvloop/"
+
+echo "- add xpra/server/python helper scripts"
+rsync -plt "${MACOS_SCRIPT_DIR}/Helpers/"* "${HELPERS_DIR}/"
 #we dont need the wrappers that may have been installed by distutils:
 rm -f "${MACOS_DIR}/*bin"
+
 
 #ensure that every wrapper has a "python" executable to match:
 #(see PythonExecWrapper for why we need this "exec -a" workaround)
@@ -248,109 +297,94 @@ for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
 		cp "$RSCDIR/bin/python" "$target"
 	fi
 done
-#fix for:
-# /Applications/Xpra.app/Contents/Resources/bin/../Resources/lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.so
-pushd "${RSCDIR}" || exit 1
-ln -sf ../Resources ./Resources
-popd || exit 1
-
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
 # and overwrite the "Xpra" script generated by py2app with our custom one:
-cp ./Helpers/Launcher ./Helpers/Xpra ${MACOS_DIR}
-rm -f ${MACOS_DIR}/Xpra-bin >& /dev/null
+cp "${MACOS_SCRIPT_DIR}/Helpers/Launcher" "${MACOS_SCRIPT_DIR}/Helpers/Xpra" "${MACOS_DIR}/"
+rm -f "${MACOS_DIR}/Xpra-bin" >& /dev/null
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	rm -f "${HELPERS_DIR}/Shadow"
 	rm -f "${RSCDIR}/bin/Shadow"
 fi
-# Add the icon:
-cp ./*.icns ${RSCDIR}/
 
 
 echo "*******************************************************************************"
-echo "include all xpra modules found: "
-rsync -rpl "${SITELIB}/xpra/"* "${LIBDIR}/python/xpra/"
-
-if [ "${DO_X11}" == "1" ]; then
-	for cmd in "Xvfb" "glxgears" "glxinfo" "oclock" "setxkbmap" "uxterm" "xauth" "xcalc" "xclock" "xdpyinfo" "xev" "xeyes" "xhost" "xkill" "xload" "xlsclients" "xmodmap" "xprop" "xrandr" "xrdb" "xset" "xterm" "xwininfo"; do
-		cp "/opt/X11/bin/${cmd}" "${RSCDIR}/bin/"
-	done
-	for lib in "libGL" "libICE" "libOSMesa" "libX11" "libXRes" "libXau" "libXaw" "libXcomposite" "libXcursor" "libXdamage" "libXext" "libXfixes" "libXfont" "libXpm" "libXpresent" "libXrandr" "libXrender" "libXt" "libXtst" "libxkbfile" "libxshmfence"; do
-		cp "/opt/X11/lib/${lib}".* "${RSCDIR}/lib/"
-	done
-	cp -r "/opt/X11/lib/dri" "${RSCDIR}/lib/"
-fi
-
-echo
-echo "*******************************************************************************"
-echo "Ship default config files"
+echo "Add components"
+echo "- icon"
+cp "${MACOS_SCRIPT_DIR}/"*.icns "${RSCDIR}/"
 #the build / install step should have placed them here:
-rsync -rplogtv ../../build/etc/xpra ${RSCDIR}/etc/
+echo "- config files"
+rsync -rplogt "${XPRA_SRC_DIR}/build/etc/xpra" "${RSCDIR}/etc/"
 if [ "${CLIENT_ONLY}" == "0" ]; then
 	#add the launch agent file
-	mkdir ${RSCDIR}/LaunchAgents
-	cp ./org.xpra.Agent.plist ${RSCDIR}/LaunchAgents/
+	mkdir "${RSCDIR}/LaunchAgents"
+	cp "${MACOS_SCRIPT_DIR}/org.xpra.Agent.plist" "${RSCDIR}/LaunchAgents/"
 fi
 
-
-echo
-echo "*******************************************************************************"
-echo "Xpra_NoDock: same app contents but without a dock icon"
+echo "- Xpra_NoDock app bundle"
 SUB_APP_NAME="Xpra_NoDock.app"
+rsync -rpltog "${MACOS_SCRIPT_DIR}/${SUB_APP_NAME}" "${APP_DIR}/Contents/"
 SUB_APP="${APP_DIR}/Contents/${SUB_APP_NAME}"
-rsync -rpltog "${SUB_APP_NAME}" "${APP_DIR}/Contents/"
 ln -sf ../../Frameworks "${SUB_APP}/Contents/Frameworks"
 ln -sf ../../Resources "${SUB_APP}/Contents/Resources"
 ln -sf ../../MacOS "${SUB_APP}/Contents/MacOS"
 ln -sf ../../Helpers "${SUB_APP}/Contents/Helpers"
 
-
-echo
-echo "*******************************************************************************"
-echo "Hacks"
-echo " * macos notifications API look for Info.plist in the wrong place"
-cp ${CONTENTS_DIR}/Info.plist ${RSCDIR}/bin/
-#no idea why I have to do this by hand
-echo " * add all OpenGL"
-rsync -rpl "${SITELIB}/OpenGL"* "${LIBDIR}/python/"
-if [ "$STRIP_OPENGL" == "1" ]; then
-	#then remove what we know we don't need:
-	pushd "${LIBDIR}/python/OpenGL" || exit 1
-	for x in GLE Tk EGL GLES3 GLUT WGL GLX GLES1 GLES2; do
-		rm -fr ./$x
-		rm -fr ./raw/$x
+if [ "${DO_X11}" == "1" ]; then
+  echo "- X11 libraries and binaries"
+	for cmd in "Xvfb" "glxgears" "glxinfo" "oclock" "setxkbmap" "uxterm" "xauth" "xcalc" "xclock" "xdpyinfo" "xev" "xeyes" "xhost" "xkill" "xload" "xlsclients" "xmodmap" "xprop" "xrandr" "xrdb" "xset" "xterm" "xwininfo"; do
+		cp "/opt/X11/bin/${cmd}" "${FRAMEWORKS_DIR}/"
 	done
-	popd || exit 1
+	for lib in "libGL" "libICE" "libOSMesa" "libX11" "libXRes" "libXau" "libXaw" "libXcomposite" "libXcursor" "libXdamage" "libXext" "libXfixes" "libXfont" "libXpm" "libXpresent" "libXrandr" "libXrender" "libXt" "libXtst" "libxkbfile" "libxshmfence"; do
+		cp "/opt/X11/lib/${lib}".* "${FRAMEWORKS_DIR}/"
+	done
+	cp -r "/opt/X11/lib/dri" "${FRAMEWORKS_DIR}/"
 fi
-pushd "${LIBDIR}/python" || exit 1
-echo " * zipping OpenGL"
-zip --move -q -r site-packages.zip OpenGL
-popd || exit 1
-echo " * add gobject-introspection (py2app refuses to do it)"
-rsync -rpl "${SITELIB}/gi" "${LIBDIR}/python/"
-mkdir "${LIBDIR}/girepository-1.0"
+
+echo "- gobject-introspection"
+mkdir "${FRAMEWORKS_DIR}/girepository-1.0"
 GI_MODULES="Gst GObject GLib GModule Gtk Gdk GtkosxApplication HarfBuzz GL Gio Pango freetype2 cairo Atk"
 for t in ${GI_MODULES}; do
-	rsync -rpl "${JHBUILD_PREFIX}/lib/girepository-1.0/$t"*typelib "${LIBDIR}/girepository-1.0/"
+	rsync -rpl "${JHBUILD_PREFIX}/lib/girepository-1.0/$t"*typelib "${FRAMEWORKS_DIR}/girepository-1.0/"
 done
-echo " * add Adwaita theme"
+echo "- Adwaita theme"
 #gtk-mac-bundler doesn't do it properly, so do it ourselves:
 rsync -rpl "${JHBUILD_PREFIX}/share/icons/Adwaita" "${RSCDIR}/share/icons/"
-echo " * move GTK css"
-mv "${RSCDIR}/share/xpra/css" "${RSCDIR}/"
-#unused py2app scripts:
-rm "${RSCDIR}/__boot__.py" "${RSCDIR}/__error__.sh"
-echo " * fixup pixbuf loader"
-#executable_path is now automatically inserted?
-sed -i '' -e "s+@executable_path/++g" "${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
 
-echo " * docs"
+echo "- docs"
 if [ -d "${JHBUILD_PREFIX}/share/doc/xpra" ]; then
 	mkdir -p "${RSCDIR}/share/doc/xpra"
 	rsync -rplogt "${JHBUILD_PREFIX}/share/doc/xpra/"* "${RSCDIR}/share/doc/xpra/"
 fi
 
+echo "- add the manual in HTML format"
+groff -mandoc -Thtml < "${XPRA_SRC_DIR}/fs/share/man/man1/xpra.1" > "${RSCDIR}/share/manual.html"
+groff -mandoc -Thtml < "${XPRA_SRC_DIR}/fs/share/man/man1/xpra_launcher.1" > "${RSCDIR}/share/launcher-manual.html"
+
+echo "*******************************************************************************"
+echo "Hacks"
+echo "- macos notifications API duplicate Info.plist"
+cp "${CONTENTS_DIR}/Info.plist" "${RSCDIR}/bin/"
+
+echo "- move GTK css"
+mv "${RSCDIR}/share/xpra/css" "${RSCDIR}/"
+echo "- fixup pixbuf loader"
+#executable_path is now automatically inserted?
+sed -i '' -e "s+@executable_path/++g" "${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
+
+
+echo "*******************************************************************************"
+echo "Cleanup"
+echo "- static libaries"
+#not sure why these get bundled at all in the first place!
+find "${CONTENTS_DIR}" -name "*.la" -exec rm -f {} \;
+
+echo "- unwanted files in python modules"
+for x in "*.html" "*.c" "*.cpp" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
+	find "${LIBDIR}/python/xpra/" -name "$x" -exec rm "{}" \;
+done
+
 if [ "$STRIP_SOURCE" == "1" ]; then
-	echo "removing py if we have the pyc:"
+	echo "- prefer .pyc to .py"
 	#only remove ".py" source if we have a binary ".pyc" for it:
 	for x in "${LIBDIR}"/**/*.py; do
 		d="$(dirname $x)"
@@ -362,25 +396,24 @@ if [ "$STRIP_SOURCE" == "1" ]; then
 	done
 fi
 
+echo "- unused py2app scripts"
+rm "${RSCDIR}/__boot__.py" "${RSCDIR}/__error__.sh"
 
-#gst bits expect to find dylibs in Frameworks!?
-pushd "${CONTENTS_DIR}" || exit 1
-mv Resources/lib Frameworks
-ln -sf ../Frameworks Resources/lib
-pushd "Resources/lib" || exit 1
+RMP=""
+KMP=""
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
-	echo "removing extra gstreamer dylib deps:"
+	echo "- extra gstreamer dylib deps"
 	for x in check photography; do
-		echo "* removing "$x
-		rm libgst${x}*
+		RMP="${RMP} $x"
+		rm "${FRAMEWORKS_DIR}/libgst${x}"*
 	done
 fi
-echo "- removing extra gstreamer plugins"
-GST_PLUGIN_DIR="./gstreamer-1.0"
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
-	KEEP="./gstreamer-1.0.keep"
-	mkdir ${KEEP} || exit 1
-	PLUGINS="app audio coreelements cutter removesilence faac faad flac oss osxaudio speex volume vorbis wav lame opus ogg gdp isomp4 matroska"
+  echo "- extra gstreamer plugins"
+  GST_PLUGIN_DIR="${FRAMEWORKS_DIR}/gstreamer-1.0"
+	KEEP="${FRAMEWORKS_DIR}/gstreamer-1.0.keep"
+	mkdir "${KEEP}" || exit 1
+	PLUGINS="app audio coreelements cutter removesilence faac flac oss osxaudio speex volume vorbis wav opus ogg gdp isomp4 matroska"
 	#video sink for testing:
 	PLUGINS="${PLUGINS} autodetect osxvideo"
 	if [ "${GSTREAMER_VIDEO}" == "1" ]; then
@@ -388,71 +421,28 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 		PLUGINS="${PLUGINS} vpx x264 aom openh264 videoconvert videorate videoscale libav"
 	fi
 	for x in $PLUGINS; do
-		echo "* keeping "$x
+		KMP="${KMP} $x"
 		mv "${GST_PLUGIN_DIR}/libgst${x}"* "${KEEP}/"
 	done
 	rm -fr "${GST_PLUGIN_DIR}"
-	mv ${KEEP} "${GST_PLUGIN_DIR}"
+	mv "${KEEP}" "${GST_PLUGIN_DIR}"
 fi
-echo -n "GStreamer plugins shipped: "
-ls ${GST_PLUGIN_DIR} | xargs
-popd || exit 1	#${CONTENTS_DIR}
-popd || exit 1	#"Resources/lib"
-
-echo "- add the manual in HTML format"
-groff -mandoc -Thtml < ../../fs/share/man/man1/xpra.1 > ${RSCDIR}/share/manual.html
-groff -mandoc -Thtml < ../../fs/share/man/man1/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
-
-
-echo "*******************************************************************************"
-echo "Cleanup"
-cd "${MACOS_SCRIPT_DIR}" || exit 1
-echo "- static libaries"
-#not sure why these get bundled at all in the first place!
-find ./image -name "*.la" -exec rm -f {} \;
-echo "- pillow plugins"
-pushd "${LIBDIR}/python/PIL" || exit 1
-RMP=""
-KMP=""
-PILLOW_KEEP="Bmp|Ico|Image|ImageChops|ImageCms|ImageChops|ImageColor|ImageDraw|ImageFile|ImageFilter|ImageFont|ImageGrab|ImageMode|ImageOps|ImagePalette|ImagePath|ImageSequence|ImageStat|ImageTransform|Jpeg|Tiff|Png|Ppm|Xpm|WebP"
-for file_name in *Image*; do
-	plugin_name="${file_name%.py}"
-  if [[ "${plugin_name}" =~ $PILLOW_KEEP ]]; then
-		KMP="${KMP} $plugin_name"
-	else
-		RMP="${RMP} $plugin_name"
-		rm "${file_name}"
-	fi
-done
-echo "  removed: ${RMP}"
-echo "  kept: ${KMP}"
-popd || exit 1
-
-echo "- unwanted files in python modules"
-for x in "*.html" "*.c" "*.cpp" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
-	find "${LIBDIR}/python/xpra/" -name "$x" -print -exec rm "{}" \; | sed "s+${LIBDIR}/python/xpra/++g" | xargs -L 1 echo "  "
-done
-
-#should be redundant:
-if [ "${CLIENT_ONLY}" == "1" ]; then
-  echo "- server components"
-	for x in "server" "x11"; do
-		rm -fr "$LIBDIR/python/xpra/$x"
-	done
-fi
+echo "  removed:${RMP}"
+echo "  kept:${KMP}"
 
 echo "- de-duplicate dylibs"
-pushd "${LIBDIR}" || exit 1
+pushd "${FRAMEWORKS_DIR}" > /dev/null || exit 1
 for x in $(ls *dylib | grep -v libgst | sed 's+[0-9\.]*\.dylib++g' | sed 's+-$++g' | sort -u); do
 	COUNT=$(ls *dylib | grep $x | wc -l)
 	if [ "${COUNT}" -gt "1" ]; then
 		FIRST=$(ls $x* | sort -n | head -n 1)
 		for f in ${x}*; do
-		  if [ "${f}" == "{FIRST}" ]; then
+		  # echo "f=${f} - FIRST=${FIRST}"
+		  if [ "${f}" == "${FIRST}" ]; then
 		    continue
 		  fi
 			if cmp -s "$f" "$FIRST"; then
-				echo "  $f -> $FIRST"
+				# echo "  $f -> $FIRST"
 				rm "$f"
 				ln -sf "$FIRST" "$f"
 			fi
@@ -464,12 +454,11 @@ done
 for x in ls libgst*-1.0.0.dylib; do
 	SHORT="${x//1.0.0/1.0/}"
 	if cmp -s "$x" "$SHORT"; then
-		echo "  $SHORT -> $x"
+		# echo "  $SHORT -> $x"
 		rm "$SHORT"
 		ln -sf "$x" "$SHORT"
 	fi
 done
-popd || exit 1
 
 
 echo "*******************************************************************************"
