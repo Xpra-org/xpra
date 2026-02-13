@@ -317,7 +317,7 @@ def record_build_info() -> None:
             "libs": get_libs(),
             "python_libs": get_python_libs(),
         })
-    if sys.platform == "darwin":
+    if sys.platform == "darwin" and os.environ.get("XPRA_SBOM", "1") == "1":
         sbom = {}
         packages = {}
         SKIPPED = ("xar", "cpio", "bomutils", )
