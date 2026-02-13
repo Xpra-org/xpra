@@ -379,6 +379,26 @@ echo "- move caches to share/"
 mv "${FRAMEWORKS_DIR}/gtk-3.0" "${RSCDIR}/share/"
 mv "${FRAMEWORKS_DIR}/gdk-pixbuf-2.0" "${RSCDIR}/share/"
 
+echo "- de-duplicate dylibs"
+pushd "${FRAMEWORKS_DIR}" > /dev/null || exit 1
+for dylib in *dylib; do
+  if [[ -L "${dylib}" ]]; then
+    continue
+  fi
+  # remove extension
+  noext="${dylib%.dylib}"
+  # shorten it:
+  while [[ "$noext" =~ \.[0-9]+ ]]; do
+    shorter="${noext%.*}"
+    if [ -e "${shorter}.dylib" ]; then
+        rm "${shorter}.dylib"
+        ln -sf "${dylib}" "${shorter}.dylib"
+    fi
+    noext="${shorter}"
+  done
+done
+
+popd > /dev/null || exit 1
 
 echo "*******************************************************************************"
 echo "Cleanup"
@@ -437,37 +457,6 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 fi
 echo "  removed:${RMP}"
 echo "  kept:${KMP}"
-
-echo "- de-duplicate dylibs"
-pushd "${FRAMEWORKS_DIR}" > /dev/null || exit 1
-for x in $(ls *dylib | grep -v libgst | sed 's+[0-9\.]*\.dylib++g' | sed 's+-$++g' | sort -u); do
-	COUNT=$(ls *dylib | grep $x | wc -l)
-	if [ "${COUNT}" -gt "1" ]; then
-		FIRST=$(ls $x* | sort -n | head -n 1)
-		for f in ${x}*; do
-		  # echo "f=${f} - FIRST=${FIRST}"
-		  if [ "${f}" == "${FIRST}" ]; then
-		    continue
-		  fi
-			if cmp -s "$f" "$FIRST"; then
-				# echo "  $f -> $FIRST"
-				rm "$f"
-				ln -sf "$FIRST" "$f"
-			fi
-		done
-	fi
-done
-# gstreamer dylibs are easier
-# all of them look like this: libgstXYZ-1.0.0.dylib / libgstXYZ-1.0.dylib
-for x in ls libgst*-1.0.0.dylib; do
-	SHORT="${x//1.0.0/1.0/}"
-	if cmp -s "$x" "$SHORT"; then
-		# echo "  $SHORT -> $x"
-		rm "$SHORT"
-		ln -sf "$x" "$SHORT"
-	fi
-done
-
 
 echo "*******************************************************************************"
 echo "Copying Xpra.app to ~/Desktop"
