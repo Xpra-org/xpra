@@ -28,7 +28,13 @@ fi
 NPROC=$(sysctl -n hw.logicalcpu)
 
 DO_TESTS="${DO_TESTS:-0}"
-DO_X11="0"
+if [ -z "${DO_X11}" ]; then
+  # detect:
+  DO_X11="0"
+	if [ -d "/opt/X11" ]; then
+		DO_X11="1"
+	fi
+fi
 
 BUILDNO="${BUILDNO:="0"}"
 APP_DIR="${MACOS_SCRIPT_DIR}/image/Xpra.app"
@@ -41,16 +47,17 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	APP_DIR="${MACOS_SCRIPT_DIR}/image/Xpra-Client.app"
 	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy"
 	DO_TESTS="0"
+	DO_X11="0"
 else
 	if [ ! -e "${JHBUILD_PREFIX}/share/xpra/www/" ]; then
 		echo "the xpra html5 client must be installed in ${JHBUILD_PREFIX}/share/xpra/www/"
 		exit 1
 	fi
-	if [ -d "/opt/X11" ]; then
-		BUILD_ARGS="${BUILD_ARGS} --with-x11 --pkg-config-path=/opt/X11/lib/pkgconfig --pkg-config-path=/opt/X11/share/pkgconfig"
-		DO_X11="1"
-	fi
 fi
+if [ "${DO_X11}" == "1" ]; then
+  BUILD_ARGS="${BUILD_ARGS} --with-x11 --pkg-config-path=/opt/X11/lib/pkgconfig --pkg-config-path=/opt/X11/share/pkgconfig"
+fi
+
 pandoc -v >& /dev/null
 if [ "$?" != "0" ]; then
 	echo "pandoc not found, not building HTML documentation"
