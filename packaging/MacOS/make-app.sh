@@ -273,9 +273,6 @@ echo "  kept: ${KMP}"
 
 echo "- cffi backend"
 mpath=$(PYTHONWARNINGS="ignore::UserWarning" python3 -c "import _cffi_backend;print(_cffi_backend.__file__)")
-echo "- lib-dynload to Frameworks/"
-mkdir "${FRAMEWORKS_DIR}/lib-dynload"
-ln -sf "${FRAMEWORKS_DIR}/lib-dynload" "${PYDIR}/lib-dynload"
 cp "${mpath}" "${PYDIR}/lib-dynload/"
 echo "- uvloop"
 cp "${SITELIB}/uvloop/_noop.py" "${PYDIR}/uvloop/"
