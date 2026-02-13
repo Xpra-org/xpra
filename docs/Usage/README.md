@@ -115,6 +115,6 @@ The local printers should be virtualized on the server.
 * [Security](Security.md) - hardening, options and using xpra for better security
 * [Proxy Server](Proxy-Server.md) - using a proxy server as a single entry point
   * [Apache Proxy Server](Apache-Proxy.md) - using apache
-  * [Nginx Proxy Server](Apache-Proxy.md) - using nginx
+  * [Nginx Proxy Server](Nginx-Proxy.md) - using nginx
 * [WSL](WSL.md) - Windows Subsystem for Linux
 * [Xdummy](Xdummy.md) - the alternative virtual framebuffer
