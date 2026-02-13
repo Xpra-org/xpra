@@ -203,9 +203,10 @@ HELPERS_DIR="${CONTENTS_DIR}/Helpers"
 LIBDIR="${RSCDIR}/lib"
 
 echo "- Resources/lib and Resources/bin to Frameworks"
-mv "${RSCDIR}/lib" ${FRAMEWORKS_DIR}
+mv "${RSCDIR}/lib" "${FRAMEWORKS_DIR}"
 ln -sf "../Frameworks" "${RSCDIR}/lib"
-ln -sf "../Frameworks" "${RSCDIR}/bin"
+mv "${RSCDIR}/bin" "${FRAMEWORKS_DIR}"
+ln -sf "../Frameworks/bin" "${RSCDIR}/bin"
 
 #fix for:
 # /Applications/Xpra.app/Contents/Resources/bin/../Resources/lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.so
