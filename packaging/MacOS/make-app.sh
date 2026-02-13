@@ -8,6 +8,7 @@ fi
 
 MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 XPRA_SRC_DIR=$(dirname "$(dirname "${MACOS_SCRIPT_DIR}")")
+LOG_DIR="${MACOS_SCRIPT_DIR}/logs"
 
 export PYTHON="${PYTHON:-${JHBUILD_PREFIX}/bin/python3}"
 PYTHON_MAJOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])')
@@ -69,6 +70,10 @@ function log_error() {
 
 echo "*******************************************************************************"
 echo "Cleaning"
+echo "- log directory"
+rm "${LOG_DIR}/"*.log
+rmdir "${LOG_DIR}" 2> /dev/null
+mkdir "${LOG_DIR}" || exit 1
 echo "- jhbuild files and directories"
 # Fixing JHBUILD environment if needed
 chmod 755 "${JHBUILD_PREFIX}/lib/libpython"*.dylib
@@ -97,7 +102,7 @@ rm -fr "${XPRA_SRC_DIR}/build/" "${XPRA_SRC_DIR}}/dist"
 
 echo "- clean subcommand"
 cd "${XPRA_SRC_DIR}" || exit 1
-CLEAN_LOG="${MACOS_SCRIPT_DIR}/clean.log"
+CLEAN_LOG="${LOG_DIR}/clean.log"
 "${PYTHON}" ./setup.py clean >& "${CLEAN_LOG}"
 log_error "clean" "${CLEAN_LOG}"
 
@@ -107,7 +112,7 @@ echo "Building Xpra for Python ${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION} u
 cd "${XPRA_SRC_DIR}" || exit 1
 echo "- regenerate source and build info"
 rm -f "xpra/src_info.py" "xpra/build_info.py"
-BUILD_INFO_LOG="${MACOS_SCRIPT_DIR}/build_info.log"
+BUILD_INFO_LOG="${LOG_DIR}/build_info.log"
 "${PYTHON}" "./fs/bin/add_build_info.py" "src" "build" >& "${BUILD_INFO_LOG}"
 log_error "add_build_info" "${BUILD_INFO_LOG}"
 VERSION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
@@ -132,13 +137,13 @@ done
 echo
 
 cd "${XPRA_SRC_DIR}" || exit 1
-BUILD_EXT_LOG="${MACOS_SCRIPT_DIR}/build_ext.log"
+BUILD_EXT_LOG="${LOG_DIR}/build_ext.log"
 echo "- build extensions"
 echo "./setup.py build_ext ${BUILD_ARGS}" -j $NPROC > "${BUILD_EXT_LOG}"
 "${PYTHON}" ./setup.py build_ext ${BUILD_ARGS} -j $NPROC >> "${BUILD_EXT_LOG}" 2>&1
 log_error "build_ext" "${BUILD_EXT_LOG}"
 
-INSTALL_LOG="${MACOS_SCRIPT_DIR}/install.log"
+INSTALL_LOG="${LOG_DIR}/install.log"
 echo "- install locally"
 echo "./setup.py install ${BUILD_ARGS}" > "${INSTALL_LOG}"
 "${PYTHON}" ./setup.py install ${BUILD_ARGS} >> "${INSTALL_LOG}" 2>&1
@@ -150,7 +155,7 @@ if [ "${DO_TESTS}" == "1" ]; then
 	#make sure the unit tests can run "python3 xpra ...":
 	rm -f ./xpra >& /dev/null
 	ln -sf ../fs/bin/xpra .
-	UNITTEST_LOG="${MACOS_SCRIPT_DIR}/unittest.log"
+	UNITTEST_LOG="${LOG_DIR}/unittest.log"
 	echo "- run unit tests (see ${UNITTEST_LOG} - this may take a while)"
 	TMPDIR=./tmpdir XPRA_COMMAND="$PYTHON ./xpra" XPRA_NODOCK_COMMAND="$PYTHON ./xpra" XPRA_SOUND_COMMAND="$PYTHON ./xpra" PYTHONPATH=. ./unit/run.py >& "${UNITTEST_LOG}"
 	log_error unittests "${UNITTEST_LOG}"
@@ -162,7 +167,7 @@ fi
 echo "*******************************************************************************"
 cd "${XPRA_SRC_DIR}" || exit 1
 echo "Creating app bundle"
-PY2APP_LOG="${MACOS_SCRIPT_DIR}/py2app.log"
+PY2APP_LOG="${LOG_DIR}/py2app.log"
 echo "- py2app"
 echo "XPRA_GI_BLOCK=\"*\" ${PYTHON} ./setup.py py2app ${BUILD_ARGS}" > "${PY2APP_LOG}"
 XPRA_GI_BLOCK="*" "${PYTHON}" ./setup.py py2app ${BUILD_ARGS} >> "${PY2APP_LOG}" 2>&1
@@ -192,7 +197,7 @@ fi
 echo "*******************************************************************************"
 echo "Creating the application bundle"
 cd "${MACOS_SCRIPT_DIR}" || exit 1
-BUNDLER_LOG="${MACOS_SCRIPT_DIR}/gtk-mac-bundler.log"
+BUNDLER_LOG="${LOG_DIR}/gtk-mac-bundler.log"
 gtk-mac-bundler Xpra.bundle >& "${BUNDLER_LOG}"
 log_error "gtk-mac-bundler" "${BUNDLER_LOG}"
 
