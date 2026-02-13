@@ -31,6 +31,7 @@ while [ "`basename "$tmp"`" != "Contents" ]; do
 done
 bundle_contents="$tmp"
 bundle_res="$bundle_contents"/Resources
+bundle_frameworks="$bundle_contents"/Frameworks
 bundle_lib="$bundle_res"/lib
 bundle_bin="$bundle_res"/bin
 bundle_share="$bundle_res"/share
@@ -52,7 +53,7 @@ export PANGO_RC_FILE="$bundle_etc/pango/pangorc"
 export PANGO_LIBDIR="$bundle_lib"
 export PANGO_SYSCONFDIR="$bundle_etc"
 export GSETTINGS_SCHEMA_DIR="$bundle_share/glib-2.0/schemas/"
-export GTK_THEME=Adwaita
+export GTK_THEME="Adwaita"
 
 export GST_BUNDLE_CONTENTS="$bundle_contents"
 
@@ -69,13 +70,17 @@ export _PYTHONHOME="$PYTHONHOME"
 export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules
 export _PYTHONPATH="$PYTHONPATH"
-PYTHONPATH="$bundle_lib:$PYTHONPATH"
-PYTHONPATH="$bundle_lib/python/lib-dynload/:$PYTHONPATH"
-PYTHONPATH="$bundle_lib/python/site-packages.zip:$PYTHONPATH"
-PYTHONPATH="$bundle_lib/python/:$PYTHONPATH"
+PYTHONPATH="$bundle_frameworks:$PYTHONPATH"
+PYTHONPATH="$bundle_frameworks/python/lib-dynload/:$PYTHONPATH"
+PYTHONPATH="$bundle_frameworks/python/site-packages.zip:$PYTHONPATH"
+PYTHONPATH="$bundle_frameworks/python/:$PYTHONPATH"
 export PYTHONPATH
 # add our binaries to the PATH:
 export PATH="$PATH:$bundle_bin"
+if [ -d "${bundle_frameworks}/X11" ]; then
+  export PATH="$PATH:${bundle_frameworks}/X11/bin"
+  export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:${bundle_frameworks}/X11/lib"
+fi
 
 #override potential user settings to prevent crashes:
 unset PYTHONOPTIMIZE

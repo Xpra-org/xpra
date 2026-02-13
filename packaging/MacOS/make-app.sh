@@ -337,13 +337,17 @@ ln -sf ../../Helpers "${SUB_APP}/Contents/Helpers"
 
 if [ "${DO_X11}" == "1" ]; then
   echo "- X11 libraries and binaries"
+  mkdir "${FRAMEWORKS_DIR}/X11"
+  mkdir "${FRAMEWORKS_DIR}/X11/bin"
 	for cmd in "Xvfb" "glxgears" "glxinfo" "oclock" "setxkbmap" "uxterm" "xauth" "xcalc" "xclock" "xdpyinfo" "xev" "xeyes" "xhost" "xkill" "xload" "xlsclients" "xmodmap" "xprop" "xrandr" "xrdb" "xset" "xterm" "xwininfo"; do
-		cp "/opt/X11/bin/${cmd}" "${FRAMEWORKS_DIR}/"
+		cp "/opt/X11/bin/${cmd}" "${FRAMEWORKS_DIR}/X11/bin"
 	done
+  mkdir "${FRAMEWORKS_DIR}/X11/lib"
 	for lib in "libGL" "libICE" "libOSMesa" "libX11" "libXRes" "libXau" "libXaw" "libXcomposite" "libXcursor" "libXdamage" "libXext" "libXfixes" "libXfont" "libXpm" "libXpresent" "libXrandr" "libXrender" "libXt" "libXtst" "libxkbfile" "libxshmfence"; do
-		cp "/opt/X11/lib/${lib}".* "${FRAMEWORKS_DIR}/"
+		cp "/opt/X11/lib/${lib}".* "${FRAMEWORKS_DIR}/X11/lib/"
 	done
-	cp -r "/opt/X11/lib/dri" "${FRAMEWORKS_DIR}/"
+  mkdir "${FRAMEWORKS_DIR}/X11/lib/dri"
+	cp "/opt/X11/lib/dri/"* "${FRAMEWORKS_DIR}/X11/lib/dri/"
 fi
 
 echo "- gobject-introspection"
@@ -400,45 +404,88 @@ for dylib in *dylib; do
   done
 done
 
-echo "- fixing dylibs id / rpath"
-for dir in "." "gstreamer-1.0" "cairo"; do
-  cd "${FRAMEWORKS_DIR}/${dir}" || exit 1
+
+function change_prefix() {
+  filename="$1"
+  old_prefix="$2"
+  new_prefix="$3"
+
+  # Process each line from otool -L output
+  otool -L "$filename" | tail -n +2 | while IFS= read -r line; do
+    # Extract the library path (first field)
+    lib_path=$(echo "$line" | awk '{print $1}')
+
+    # Check if it contains the old prefix
+    if [[ $lib_path == *"$old_prefix"* ]]; then
+      # Replace the prefix
+      new_path="${lib_path/$old_prefix/$new_prefix}"
+      install_name_tool -change "$lib_path" "$new_path" "$filename"
+    fi
+  done
+}
+
+old_rpath="@executable_path/../Resources/lib/"
+new_rpath="@executable_path/../Frameworks/"
+echo "- fixing executable id / rpath"
+for dir in "Frameworks" "Frameworks/gstreamer-1.0" "Frameworks/cairo"; do
+  cd "${CONTENTS_DIR}/${dir}" || exit 1
   echo "  ${dir}"
 
+  for dylib in *.dylib; do
+    codesign --remove-signature "${dylib}"
+  done
+
   # fix "id":
-  idpath="@executable_path/../Frameworks"
-  if [ "${dir}" != "." ]; then
-    idpath="@executable_path/../Frameworks/${dir}"
-  fi
+  idpath="@executable_path/../${dir}"
   for dylib in *.dylib; do
     if [[ -L "${dylib}" ]]; then
       continue
     fi
-    codesign --remove-signature "${dylib}"
     install_name_tool -id "${idpath}/${dylib}" "${dylib}"
   done
 
   # fix rpath:
-  old_prefix="@executable_path/../Resources/lib/"
-  new_prefix="@executable_path/../Frameworks/"
   for dylib in *.dylib; do
     if [[ -L "${dylib}" ]]; then
       continue
     fi
-    # Process each line from otool -L output
-    otool -L "$dylib" | tail -n +2 | while IFS= read -r line; do
-      # Extract the library path (first field)
-      lib_path=$(echo "$line" | awk '{print $1}')
+    change_prefix "${dylib}" "${old_rpath}" "${new_rpath}"
+  done
 
-      # Check if it contains the old prefix
-      if [[ $lib_path == *"$old_prefix"* ]]; then
-        # Replace the prefix
-        new_path="${lib_path/$old_prefix/$new_prefix}"
-        install_name_tool -change "$lib_path" "$new_path" "$dylib"
-      fi
-    done
+  for dylib in *.dylib; do
+    if [[ -L "${dylib}" ]]; then
+      continue
+    fi
+    codesign -s - "${dylib}"
   done
 done
+if [ "${DO_X11}" == "1" ]; then
+  echo "  X11"
+  cd "${FRAMEWORKS_DIR}/X11/bin" || exit 1
+  for bin in *; do
+    codesign --remove-signature "${bin}"
+    change_prefix "${bin}" "/opt/X11/lib/" "@executable_path/../Frameworks/X11/lib/"
+    codesign -s - "${bin}"
+  done
+  cd "${FRAMEWORKS_DIR}/X11/lib" || exit 1
+  for dylib in *.dylib; do
+    codesign --remove-signature "${dylib}"
+    change_prefix "${dylib}" "/opt/X11/lib/" "@executable_path/../Frameworks/X11/lib/"
+    codesign -s - "${dylib}"
+  done
+fi
+echo "- python shared objects"
+export -f change_prefix
+export -f old_rpath
+export -f new_rpath
+find "${PYDIR}/" -name "*.so" -print0 | while IFS='' read -r -d $'\0' file; do
+    codesign --remove-signature "${file}"
+    change_prefix "${file}" "${old_rpath}" "${new_rpath}"
+    change_prefix "${file}" "${JHBUILD_PREFIX}/lib" "${new_rpath}"
+    codesign -s - "${file}"
+done
+echo "- bcrypt"
+install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/lib-dynload/bcrypt/_bcrypt.so" "${PYDIR}/lib-dynload/bcrypt/_bcrypt.so"
 popd > /dev/null || exit 1
 
 echo "*******************************************************************************"
