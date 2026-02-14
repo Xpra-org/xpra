@@ -51,7 +51,7 @@ hdiutil convert "image/Blank.dmg" -format UDBZ -o "image/${DMG_NAME}"
 
 if [ ! -z "${CODESIGN_KEYNAME}" ]; then
 		echo "Signing with key '${CODESIGN_KEYNAME}'"
-        codesign --deep --force --verify --verbose --sign "${CODESIGN_KEYNAME}" "image/${DMG_NAME}"
+		codesign --deep --force --verify --verbose --sign "${CODESIGN_KEYNAME}" "image/${DMG_NAME}"
 else
 		echo "DMG Signing skipped (no keyname)"
 fi
