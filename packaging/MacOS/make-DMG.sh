@@ -5,11 +5,11 @@ cd "${MACOS_SCRIPT_DIR}" || exit 1
 
 PYTHON="python3"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
-APP_NAME="Xpra.app"
+APP_NAME="Xpra"
 if [ "${CLIENT_ONLY}" == "1" ]; then
-	APP_NAME="Xpra-Client.app"
+	APP_NAME="Xpra-Client"
 fi
-APP_DIR="image/${APP_NAME}"
+APP_DIR="image/${APP_NAME}.app"
 
 echo
 echo
@@ -40,7 +40,7 @@ bunzip2 "image/Blank.dmg.bz2"
 hdiutil mount "image/Blank.dmg" -mountpoint "./image/Blank"
 
 echo "Copying app into the DMG"
-ditto "${APP_DIR}" "./image/Blank/${APP_NAME}"
+ditto "${APP_DIR}" "./image/Blank/${APP_NAME}.app"
 chmod -Rf go-w "image/Blank/"*
 hdiutil detach "image/Blank"
 

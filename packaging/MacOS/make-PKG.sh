@@ -33,7 +33,7 @@ echo "Making ${PKG_FILENAME}"
 rm -fr "./image/flat" "./image/root"
 mkdir -p "./image/flat/base.pkg" "./image/flat/Resources/en.lproj"
 mkdir -p "./image/root/Applications"
-ditto "${APP_DIR}" "./image/root/Applications/${APP_NAME}"
+ditto "${APP_DIR}" "./image/root/Applications/${APP_NAME}.app"
 
 #add launchd agent:
 mkdir -p "./image/root/Library/LaunchAgents/"
