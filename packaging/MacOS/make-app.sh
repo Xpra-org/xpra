@@ -574,4 +574,4 @@ codesign --force --options runtime --sign "${CODESIGN_KEYNAME}" "${APP_DIR}"
 
 echo "*******************************************************************************"
 echo "Copying Xpra.app to ~/Desktop"
-rsync --delete -rplt "${APP_DIR}" ~/Desktop/
+ditto "${APP_DIR}" "${HOME}/Desktop/Xpra.app"
