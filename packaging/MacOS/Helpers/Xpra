@@ -3,7 +3,9 @@
 #call the "Python" wrapper:
 exe_name=$(basename $0)
 full_path=$(cd "$(dirname "$0")"; pwd -P)
-PYTHON="$full_path/PythonExecWrapper"
+#go via ../Helpers/ so this 'Xpra' script can be placed in Contents/MacOS/
+contents_dir=$(dirname "$full_path")
+PYTHON="$contents_dir/Helpers/PythonExecWrapper"
 
 #parse arguments into a string:
 args=""

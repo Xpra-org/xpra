@@ -26,9 +26,6 @@
 	<data dest="${bundle}/Contents/MacOS/">
 		${project}/Helpers/Xpra
 	</data>
-	<data dest="${bundle}/Contents/MacOS/">
-		${project}/Helpers/PythonExecWrapper
-	</data>
 
 	<binary>
 		${prefix}/lib/gdk-pixbuf-2.0/2.10.0/loaders/*.so
