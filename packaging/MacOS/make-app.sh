@@ -569,7 +569,7 @@ echo "  kept:${KMP}"
 
 echo "*******************************************************************************"
 echo "Signing Xpra.app"
-codesign --force --options runtime --sign "${CODESIGN_KEYNAME}" ./image/Xpra.app
+codesign --force --options runtime --sign "${CODESIGN_KEYNAME}" "${APP_DIR}"
 
 
 echo "*******************************************************************************"
