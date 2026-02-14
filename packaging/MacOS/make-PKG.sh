@@ -39,20 +39,20 @@ rsync -rplogt "${APP_DIR}" "./image/root/Applications/"
 mkdir -p "./image/root/Library/LaunchAgents/"
 cp "./org.xpra.Agent.plist" "./image/root/Library/LaunchAgents/"
 
-pushd "./image/root" >& /dev/null
+pushd "./image/root" > /dev/null || exit 1
 find . | cpio -o --format odc --owner 0:80 | gzip -c > "../flat/base.pkg/Payload"
-popd >& /dev/null
+popd > /dev/null || exit 1
 
-FILECOUNT=$(find ./image/root | wc -l)
-DISKUSAGE=$(du -sk ./image/root)
+FILECOUNT=$(find "./image/root" | wc -l)
+DISKUSAGE=$(du -sk "./image/root")
 
 #add the postinstall fix script (cups backend and shortcuts)
 mkdir ./image/scripts
 cp postinstall ./image/scripts/
 chmod +x ./image/scripts/postinstall
-pushd ./image/scripts >& /dev/null
+pushd ./image/scripts > /dev/null || exit 1
 find . | cpio -o --format odc --owner 0:80 | gzip -c > ../flat/base.pkg/Scripts
-popd >& /dev/null
+popd > /dev/null || exit 1
 
 mkbom -u 0 -g 80 ./image/root ./image/flat/base.pkg/Bom
 
@@ -94,9 +94,9 @@ EOF
 #add license and background files to image:
 cp "background.png" "GPL.rtf" "./image/flat/Resources/en.lproj/"
 
-pushd "./image/flat" >& /dev/null
+pushd "./image/flat" > /dev/null || exit 1
 xar --compression none -cf "../${PKG_FILENAME}" *
-popd >& /dev/null
+popd > /dev/null || exit 1
 
 #clean temporary build directories
 rm -fr "./image/flat" "./image/root" "./image/scripts"
