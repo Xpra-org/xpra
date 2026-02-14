@@ -393,10 +393,6 @@ echo "- fixup pixbuf loader"
 #executable_path is now automatically inserted?
 sed -i '' -e "s+@executable_path/++g" "${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
 
-echo "- move caches to share/"
-mv "${FRAMEWORKS_DIR}/gtk-3.0" "${RSCDIR}/share/"
-mv "${FRAMEWORKS_DIR}/gdk-pixbuf-2.0" "${RSCDIR}/share/"
-
 echo "- de-duplicate dylibs"
 pushd "${FRAMEWORKS_DIR}" > /dev/null || exit 1
 for dylib in *dylib; do
