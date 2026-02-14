@@ -497,7 +497,9 @@ find "${PYDIR}/" -name "*.so" -print0 | while IFS='' read -r -d $'\0' file; do
     codesign -s "${CODESIGN_KEYNAME}" "${file}"
 done
 echo "- bcrypt"
-install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/lib-dynload/bcrypt/_bcrypt.so" "${PYDIR}/lib-dynload/bcrypt/_bcrypt.so"
+BCRYPT_SO="lib-dynload/bcrypt/_bcrypt.so"
+codesign --remove-signature "${PYDIR}/${BCRYPT_SO}"
+install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/${BCRYPT_SO}" "${PYDIR}/${BCRYPT_SO}"
 popd > /dev/null || exit 1
 echo "- signature"
 echo "  MacOS"
