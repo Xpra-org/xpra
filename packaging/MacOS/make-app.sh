@@ -439,13 +439,6 @@ for dir in "Frameworks" "Frameworks/cairo"; do
     fi
     change_prefix "${dylib}" "${old_rpath}" "${new_rpath}"
   done
-
-  for dylib in *.dylib; do
-    if [[ -L "${dylib}" ]]; then
-      continue
-    fi
-    codesign -s "${CODESIGN_KEYNAME}" "${dylib}"
-  done
 done
 if [ "${DO_X11}" == "1" ]; then
   echo "  X11"
@@ -453,20 +446,17 @@ if [ "${DO_X11}" == "1" ]; then
   for bin in *; do
     codesign --remove-signature "${bin}"
     change_prefix "${bin}" "/opt/X11/lib/" "@executable_path/../Frameworks/X11/lib/"
-    codesign -s "${CODESIGN_KEYNAME}" "${bin}"
   done
   cd "${FRAMEWORKS_DIR}/X11/lib" || exit 1
   for dylib in *.dylib; do
     codesign --remove-signature "${dylib}"
     change_prefix "${dylib}" "/opt/X11/lib/" "@executable_path/../Frameworks/X11/lib/"
-    codesign -s "${CODESIGN_KEYNAME}" "${dylib}"
   done
 fi
 echo "- python interpreter"
 for bin in "${FRAMEWORKS_DIR}/bin/"*; do
   codesign --remove-signature "${bin}"
   change_prefix "${bin}" "${old_rpath}" "@executable_path/../"
-  codesign -s "${CODESIGN_KEYNAME}" "${bin}"
 done
 echo "- python shared objects"
 export -f change_prefix
@@ -476,13 +466,11 @@ find "${PYDIR}/" -name "*.so" -print0 | while IFS='' read -r -d $'\0' file; do
     codesign --remove-signature "${file}"
     change_prefix "${file}" "${old_rpath}" "${new_rpath}"
     change_prefix "${file}" "${JHBUILD_PREFIX}/lib" "${new_rpath}"
-    codesign -s "${CODESIGN_KEYNAME}" "${file}"
 done
 echo "- bcrypt"
 BCRYPT_SO="lib-dynload/bcrypt/_bcrypt.so"
 codesign --remove-signature "${PYDIR}/${BCRYPT_SO}"
 install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/${BCRYPT_SO}" "${PYDIR}/${BCRYPT_SO}"
-codesign -s "${CODESIGN_KEYNAME}" "${PYDIR}/${BCRYPT_SO}"
 popd > /dev/null || exit 1
 echo "- zlib"
 mv "${RSCDIR}/zlib"*.so "${FRAMEWORKS_DIR}/lib-dynload/"
@@ -561,6 +549,14 @@ ln -sf "../../Helpers" "${SUB_APP}/Contents/Helpers"
 
 echo "*******************************************************************************"
 echo "Signing"
+echo "  dylibs"
+find "${CONTENTS_DIR}/" -type f -name "*.dylib" -exec codesign -s "${CODESIGN_KEYNAME}" {} \;
+echo "  so"
+find "${CONTENTS_DIR}/" -type f -name "*.so" -exec codesign --remove-signature {} \;
+find "${CONTENTS_DIR}/" -type f -name "*.so" -exec codesign -s "${CODESIGN_KEYNAME}" {} \;
+if [ -d "${FRAMEWORKS_DIR}/X11/bin" ]; then
+    codesign -s "${CODESIGN_KEYNAME}" "${FRAMEWORKS_DIR}/X11/bin/"*
+fi
 echo "  Frameworks/bin"
 codesign --remove-signature "${CONTENTS_DIR}/Frameworks/bin/"*
 codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Frameworks/bin/"*

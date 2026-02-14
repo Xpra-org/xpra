@@ -33,7 +33,7 @@ echo "Making ${PKG_FILENAME}"
 rm -fr "./image/flat" "./image/root"
 mkdir -p "./image/flat/base.pkg" "./image/flat/Resources/en.lproj"
 mkdir -p "./image/root/Applications"
-rsync -rplogt "${APP_DIR}" "./image/root/Applications/"
+ditto "${APP_DIR}" "./image/root/Applications/${APP_NAME}"
 
 #add launchd agent:
 mkdir -p "./image/root/Library/LaunchAgents/"
@@ -114,7 +114,7 @@ fi
 
 #show resulting file and copy it to the desktop
 du -sm "./image/$PKG_FILENAME"
-cp "./image/$PKG_FILENAME" "${HOME}/Desktop/"
+ditto "./image/$PKG_FILENAME" "${HOME}/Desktop/"
 
 echo "Done PKG"
 echo "*******************************************************************************"

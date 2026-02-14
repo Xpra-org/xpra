@@ -5,10 +5,11 @@ cd "${MACOS_SCRIPT_DIR}" || exit 1
 
 PYTHON="python3"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
-APP_DIR="image/Xpra.app"
+APP_NAME="Xpra.app"
 if [ "${CLIENT_ONLY}" == "1" ]; then
-	APP_DIR="image/Xpra-Client.app"
+	APP_NAME="Xpra-Client.app"
 fi
+APP_DIR="image/${APP_NAME}"
 
 echo
 echo
@@ -25,11 +26,8 @@ VERSION=$(${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write
 REVISION=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
 REV_MOD=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
 BUILD_INFO="${BUILD_INFO}-$(uname -m)"
+DMG_NAME="${APP_NAME}${BUILD_INFO}-${VERSION}-r${REVISION}${REV_MOD}.dmg"
 
-DMG_NAME="Xpra$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.dmg"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	DMG_NAME="Xpra-Client$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.dmg"
-fi
 echo "Creating $DMG_NAME"
 
 rm -fr image/Blank.*
@@ -42,7 +40,7 @@ bunzip2 "image/Blank.dmg.bz2"
 hdiutil mount "image/Blank.dmg" -mountpoint "./image/Blank"
 
 echo "Copying app into the DMG"
-rsync -rpltgo "${APP_DIR}" "./image/Blank/"
+ditto "${APP_DIR}" "./image/Blank/${APP_NAME}"
 chmod -Rf go-w "image/Blank/"*
 hdiutil detach "image/Blank"
 
@@ -57,7 +55,7 @@ else
 fi
 
 echo "Copying $DMG_NAME to the desktop"
-cp "image/${DMG_NAME}" "${HOME}/Desktop/"
+ditto "image/${DMG_NAME}" "${HOME}/Desktop/"
 echo "Size of disk image: $(du -sh "image/$DMG_NAME")"
 
 echo "Done DMG"
