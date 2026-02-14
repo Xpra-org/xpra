@@ -208,9 +208,12 @@ LIBDIR="${RSCDIR}/lib"
 
 echo "- Resources/lib and Resources/bin to Frameworks"
 mv "${RSCDIR}/lib" "${FRAMEWORKS_DIR}"
-ln -sf "../Frameworks" "${RSCDIR}/lib"
-mv "${RSCDIR}/bin" "${FRAMEWORKS_DIR}"
-ln -sf "../Frameworks/bin" "${RSCDIR}/bin"
+mv "${RSCDIR}/bin/*" "${FRAMEWORKS_DIR}/"
+ln -sf "../Frameworks" "${RSCDIR}/bin"
+mkdir "${RSCDIR}/lib"
+mv "${FRAMEWORKS_DIR}/gstreamer-1.0" "${RSCDIR}/lib/"
+mv "${FRAMEWORKS_DIR}/gi-repository-1.0" "${RSCDIR}/lib/"
+mv "${FRAMEWORKS_DIR}/python"* "${RSCDIR}/lib/"
 
 #fix for:
 # /Applications/Xpra.app/Contents/Resources/bin/../Resources/lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.so
@@ -219,16 +222,19 @@ ln -sf "../Resources" "${RSCDIR}"
 
 echo "*******************************************************************************"
 echo "Python"
-PYZIP="${FRAMEWORKS_DIR}/python3${PYTHON_MINOR_VERSION}.zip"
+PYZIP="${RSCDIR}/lib/python3${PYTHON_MINOR_VERSION}.zip"
 if [ -e "${PYZIP}" ]; then
   echo "- unzip ${PYZIP}"
-  cd "${FRAMEWORKS_DIR}/python3.${PYTHON_MINOR_VERSION}" || exit 1
+  cd "${RSCDIR}/lib/python3.${PYTHON_MINOR_VERSION}" || exit 1
 	unzip -nq "${PYZIP}"
 	rm "${PYZIP}"
 fi
 echo "- symlink"
-PYDIR="${FRAMEWORKS_DIR}/python"
+PYDIR="${RSCDIR}/lib/python"
 ln -sf "python3.${PYTHON_MINOR_VERSION}" "${PYDIR}"
+echo "- keep lib-dynload in Frameworks"
+mv "${PYDIR}/lib-dynload" "${FRAMEWORKS_DIR}/"
+ln -sf "../../../Frameworks/lib-dynload" "${PYDIR}/lib-dynload"
 
 echo "- include all xpra modules"
 rsync -rplt "${SITELIB}/xpra" "${PYDIR}/"
@@ -432,8 +438,8 @@ function change_prefix() {
 
 old_rpath="@executable_path/../Resources/lib/"
 new_rpath="@executable_path/../Frameworks/"
-echo "- fixing executable id / rpath"
-for dir in "Frameworks" "Frameworks/gstreamer-1.0" "Frameworks/cairo"; do
+echo "- fixing executable id / rpath / signature"
+for dir in "Frameworks" "Frameworks/cairo"; do
   cd "${CONTENTS_DIR}/${dir}" || exit 1
   echo "  ${dir}"
 
@@ -493,6 +499,14 @@ done
 echo "- bcrypt"
 install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/lib-dynload/bcrypt/_bcrypt.so" "${PYDIR}/lib-dynload/bcrypt/_bcrypt.so"
 popd > /dev/null || exit 1
+echo "- signature"
+echo "  MacOS"
+codesign -s "$CODESIGN_KEYNAME" "${CONTENTS_DIR}/MacOS/"*
+echo "  Helpers"
+codesign -s "$CODESIGN_KEYNAME" "${CONTENTS_DIR}/Helpers/"*
+echo "  Xpra_NoDock"
+codesign --force --options runtime -s "$CODESIGN_KEYNAME" "${CONTENTS_DIR}/Xpra_NoDock.app"
+
 
 echo "*******************************************************************************"
 echo "Cleanup"
@@ -532,8 +546,8 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 fi
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
   echo "- extra gstreamer plugins"
-  GST_PLUGIN_DIR="${FRAMEWORKS_DIR}/gstreamer-1.0"
-	KEEP="${FRAMEWORKS_DIR}/gstreamer-1.0.keep"
+  GST_PLUGIN_DIR="${RSCDIR}/gstreamer-1.0"
+	KEEP="${RSCDIR}/gstreamer-1.0.keep"
 	mkdir "${KEEP}" || exit 1
 	PLUGINS="app audio coreelements cutter removesilence faac flac oss osxaudio speex volume vorbis wav opus ogg gdp isomp4 matroska"
 	#video sink for testing:
