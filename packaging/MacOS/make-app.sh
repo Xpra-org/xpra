@@ -169,8 +169,8 @@ if [ "${DO_TESTS}" == "1" ]; then
 	cd "${XPRA_SRC_DIR}/unittests" || exit 1
 	rm -fr ./tmpdir && mkdir ./tmpdir || exit 1
 	#make sure the unit tests can run "python3 xpra ...":
-	rm -f ./xpra >& /dev/null
-	ln -sf ../fs/bin/xpra .
+	rm -f "./xpra" >& /dev/null
+	ln -sf "../fs/bin/xpra" .
 	UNITTEST_LOG="${LOG_DIR}/unittest.log"
 	echo "- run unit tests (see ${UNITTEST_LOG} - this may take a while)"
 	TMPDIR=./tmpdir XPRA_COMMAND="$PYTHON ./xpra" XPRA_NODOCK_COMMAND="$PYTHON ./xpra" XPRA_SOUND_COMMAND="$PYTHON ./xpra" PYTHONPATH=. ./unit/run.py >& "${UNITTEST_LOG}"
@@ -208,11 +208,10 @@ LIBDIR="${RSCDIR}/lib"
 
 echo "- Resources/lib and Resources/bin to Frameworks"
 mv "${RSCDIR}/lib" "${FRAMEWORKS_DIR}"
-mv "${RSCDIR}/bin/*" "${FRAMEWORKS_DIR}/"
 ln -sf "../Frameworks" "${RSCDIR}/bin"
 mkdir "${RSCDIR}/lib"
 mv "${FRAMEWORKS_DIR}/gstreamer-1.0" "${RSCDIR}/lib/"
-mv "${FRAMEWORKS_DIR}/gi-repository-1.0" "${RSCDIR}/lib/"
+mv "${FRAMEWORKS_DIR}/girepository-1.0" "${RSCDIR}/lib/"
 mv "${FRAMEWORKS_DIR}/python"* "${RSCDIR}/lib/"
 
 #fix for:
@@ -306,11 +305,11 @@ rm -f "${MACOS_DIR}/*bin"
 #(see PythonExecWrapper for why we need this "exec -a" workaround)
 for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
 	#replace underscore with space in actual binary filename:
-	target="$RSCDIR/bin/`echo $x | sed 's+_+ +g'`"
+	target="${FRAMEWORKS_DIR}/bin/`echo $x | sed 's+_+ +g'`"
 	if [ ! -e "$target" ]; then
 		#symlinks don't work for us here (osx uses the referent as program name)
 		#and hardlinks could cause problems, so we duplicate the file:
-		cp "$RSCDIR/bin/python" "$target"
+		cp "${FRAMEWORKS_DIR}/bin/python" "$target"
 	fi
 done
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
@@ -484,8 +483,8 @@ if [ "${DO_X11}" == "1" ]; then
 fi
 echo "- python shared objects"
 export -f change_prefix
-export -f old_rpath
-export -f new_rpath
+export old_rpath
+export new_rpath
 find "${PYDIR}/" -name "*.so" -print0 | while IFS='' read -r -d $'\0' file; do
     codesign --remove-signature "${file}"
     change_prefix "${file}" "${old_rpath}" "${new_rpath}"
@@ -498,12 +497,12 @@ codesign --remove-signature "${PYDIR}/${BCRYPT_SO}"
 install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/${BCRYPT_SO}" "${PYDIR}/${BCRYPT_SO}"
 popd > /dev/null || exit 1
 echo "- signature"
+echo "  Frameworks/bin"
+codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Frameworks/bin/"*
 echo "  MacOS"
 codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/MacOS/"*
 echo "  Helpers"
 codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Helpers/"*
-echo "  Xpra_NoDock"
-codesign --force --options runtime -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Xpra_NoDock.app"
 
 
 echo "*******************************************************************************"
@@ -566,7 +565,10 @@ echo "  kept:${KMP}"
 
 
 echo "*******************************************************************************"
-echo "Signing Xpra.app"
+echo "Signing"
+echo "  Xpra_NoDock.app"
+codesign --force --options runtime -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Xpra_NoDock.app"
+echo "  Xpra.app"
 codesign --force --options runtime --sign "${CODESIGN_KEYNAME}" "${APP_DIR}"
 
 
