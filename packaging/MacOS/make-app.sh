@@ -215,7 +215,7 @@ echo "**************************************************************************
 echo "Python"
 PYZIP="${RSCDIR}/lib/python3${PYTHON_MINOR_VERSION}.zip"
 if [ -e "${PYZIP}" ]; then
-  echo "- unzip ${PYZIP}"
+  echo "- unzip $(basename ${PYZIP})"
   cd "${RSCDIR}/lib/python3.${PYTHON_MINOR_VERSION}" || exit 1
 	unzip -nq "${PYZIP}"
 	rm "${PYZIP}"
@@ -492,10 +492,13 @@ echo "- signature"
 echo "  Frameworks/bin"
 codesign --remove-signature "${CONTENTS_DIR}/Frameworks/bin/"*
 codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Frameworks/bin/"*
-echo "  MacOS"
-codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/MacOS/"*
 echo "  Helpers"
-codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Helpers/"*
+find "${CONTENTS_DIR}/Helpers/" -type f -exec codesign -s "${CODESIGN_KEYNAME}" {} \;
+echo "  MacOS"
+for bin in "PythonExecWrapper" "Launcher" "Xpra"; do
+  codesign --remove-signature "${CONTENTS_DIR}/MacOS/${bin}"
+  codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/MacOS/${bin}"
+done
 
 
 echo "*******************************************************************************"
