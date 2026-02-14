@@ -363,10 +363,10 @@ if [ "${DO_X11}" == "1" ]; then
 fi
 
 echo "- gobject-introspection"
-mkdir "${FRAMEWORKS_DIR}/girepository-1.0"
+mkdir "${RSCDIR}/lib/girepository-1.0"
 GI_MODULES="Gst GObject GLib GModule Gtk Gdk GtkosxApplication HarfBuzz GL Gio Pango freetype2 cairo Atk"
 for t in ${GI_MODULES}; do
-	rsync -rpl "${JHBUILD_PREFIX}/lib/girepository-1.0/$t"*typelib "${FRAMEWORKS_DIR}/girepository-1.0/"
+	rsync -rpl "${JHBUILD_PREFIX}/lib/girepository-1.0/$t"*typelib "${RSCDIR}/lib/girepository-1.0/"
 done
 echo "- Adwaita theme"
 #gtk-mac-bundler doesn't do it properly, so do it ourselves:
@@ -501,11 +501,11 @@ install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VER
 popd > /dev/null || exit 1
 echo "- signature"
 echo "  MacOS"
-codesign -s "$CODESIGN_KEYNAME" "${CONTENTS_DIR}/MacOS/"*
+codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/MacOS/"*
 echo "  Helpers"
-codesign -s "$CODESIGN_KEYNAME" "${CONTENTS_DIR}/Helpers/"*
+codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Helpers/"*
 echo "  Xpra_NoDock"
-codesign --force --options runtime -s "$CODESIGN_KEYNAME" "${CONTENTS_DIR}/Xpra_NoDock.app"
+codesign --force --options runtime -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Xpra_NoDock.app"
 
 
 echo "*******************************************************************************"
@@ -546,8 +546,8 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 fi
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
   echo "- extra gstreamer plugins"
-  GST_PLUGIN_DIR="${RSCDIR}/gstreamer-1.0"
-	KEEP="${RSCDIR}/gstreamer-1.0.keep"
+  GST_PLUGIN_DIR="${RSCDIR}/lib/gstreamer-1.0"
+	KEEP="${RSCDIR}/lib/gstreamer-1.0.keep"
 	mkdir "${KEEP}" || exit 1
 	PLUGINS="app audio coreelements cutter removesilence faac flac oss osxaudio speex volume vorbis wav opus ogg gdp isomp4 matroska"
 	#video sink for testing:
@@ -565,6 +565,12 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 fi
 echo "  removed:${RMP}"
 echo "  kept:${KMP}"
+
+
+echo "*******************************************************************************"
+echo "Signing Xpra.app"
+codesign --force --options runtime --sign "${CODESIGN_KEYNAME}" ./image/Xpra.app
+
 
 echo "*******************************************************************************"
 echo "Copying Xpra.app to ~/Desktop"
