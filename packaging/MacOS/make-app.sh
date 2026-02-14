@@ -206,18 +206,10 @@ RSCDIR="${CONTENTS_DIR}/Resources"
 HELPERS_DIR="${CONTENTS_DIR}/Helpers"
 LIBDIR="${RSCDIR}/lib"
 
-echo "- Resources/lib and Resources/bin to Frameworks"
-mv "${RSCDIR}/lib" "${FRAMEWORKS_DIR}"
-ln -sf "../Frameworks" "${RSCDIR}/bin"
-mkdir "${RSCDIR}/lib"
-mv "${FRAMEWORKS_DIR}/gstreamer-1.0" "${RSCDIR}/lib/"
-mv "${FRAMEWORKS_DIR}/girepository-1.0" "${RSCDIR}/lib/"
-mv "${FRAMEWORKS_DIR}/python"* "${RSCDIR}/lib/"
-
-#fix for:
-# /Applications/Xpra.app/Contents/Resources/bin/../Resources/lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.so
-ln -sf "../Resources" "${RSCDIR}"
-
+echo "- dylibs and bin/ to Frameworks/"
+mv "${RSCDIR}/lib/"*dylib "${FRAMEWORKS_DIR}/"
+mv "${RSCDIR}/lib/cairo" "${FRAMEWORKS_DIR}/"
+mv "${RSCDIR}/bin/"* "${FRAMEWORKS_DIR}/bin/"
 
 echo "*******************************************************************************"
 echo "Python"
@@ -336,15 +328,6 @@ if [ "${CLIENT_ONLY}" == "0" ]; then
 	mkdir "${RSCDIR}/LaunchAgents"
 	cp "${MACOS_SCRIPT_DIR}/org.xpra.Agent.plist" "${RSCDIR}/LaunchAgents/"
 fi
-
-echo "- Xpra_NoDock app bundle"
-SUB_APP_NAME="Xpra_NoDock.app"
-rsync -rplt "${MACOS_SCRIPT_DIR}/${SUB_APP_NAME}" "${APP_DIR}/Contents/"
-SUB_APP="${APP_DIR}/Contents/${SUB_APP_NAME}"
-ln -sf ../../Frameworks "${SUB_APP}/Contents/Frameworks"
-ln -sf ../../Resources "${SUB_APP}/Contents/Resources"
-ln -sf ../../MacOS "${SUB_APP}/Contents/MacOS"
-ln -sf ../../Helpers "${SUB_APP}/Contents/Helpers"
 
 if [ "${DO_X11}" == "1" ]; then
   echo "- X11 libraries and binaries"
@@ -481,6 +464,12 @@ if [ "${DO_X11}" == "1" ]; then
     codesign -s "${CODESIGN_KEYNAME}" "${dylib}"
   done
 fi
+echo "- python interpreter"
+for bin in "${FRAMEWORKS_DIR}/bin/"*; do
+  codesign --remove-signature "${bin}"
+  change_prefix "${bin}" "${old_rpath}" "@executable_path/../"
+  codesign -s "${CODESIGN_KEYNAME}" "${bin}"
+done
 echo "- python shared objects"
 export -f change_prefix
 export old_rpath
@@ -495,9 +484,13 @@ echo "- bcrypt"
 BCRYPT_SO="lib-dynload/bcrypt/_bcrypt.so"
 codesign --remove-signature "${PYDIR}/${BCRYPT_SO}"
 install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/${BCRYPT_SO}" "${PYDIR}/${BCRYPT_SO}"
+codesign -s "${CODESIGN_KEYNAME}" "${PYDIR}/${BCRYPT_SO}"
 popd > /dev/null || exit 1
+echo "- zlib"
+mv "${RSCDIR}/zlib"*.so "${FRAMEWORKS_DIR}/lib-dynload/"
 echo "- signature"
 echo "  Frameworks/bin"
+codesign --remove-signature "${CONTENTS_DIR}/Frameworks/bin/"*
 codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Frameworks/bin/"*
 echo "  MacOS"
 codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/MacOS/"*
@@ -510,6 +503,8 @@ echo "Cleanup"
 echo "- static libaries"
 #not sure why these get bundled at all in the first place!
 find "${CONTENTS_DIR}" -name "*.la" -exec rm -f {} \;
+echo "- header files"
+rm -fr "${RSCDIR}/include"
 
 echo "- unwanted files in python modules"
 for x in "*.html" "*.c" "*.cpp" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
@@ -563,6 +558,16 @@ fi
 echo "  removed:${RMP}"
 echo "  kept:${KMP}"
 
+
+echo "*******************************************************************************"
+echo "Adding Xpra_NoDock app bundle"
+SUB_APP_NAME="Xpra_NoDock.app"
+rsync -rplt "${MACOS_SCRIPT_DIR}/${SUB_APP_NAME}" "${APP_DIR}/Contents/"
+SUB_APP="${APP_DIR}/Contents/${SUB_APP_NAME}"
+ln -sf "../../Frameworks" "${SUB_APP}/Contents/Frameworks"
+ln -sf "../../Resources" "${SUB_APP}/Contents/Resources"
+ln -sf "../../MacOS" "${SUB_APP}/Contents/MacOS"
+ln -sf "../../Helpers" "${SUB_APP}/Contents/Helpers"
 
 echo "*******************************************************************************"
 echo "Signing"
