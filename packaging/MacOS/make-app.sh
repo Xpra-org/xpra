@@ -481,6 +481,8 @@ echo "- static libaries"
 find "${CONTENTS_DIR}" -name "*.la" -exec rm -f {} \;
 echo "- header files"
 rm -fr "${RSCDIR}/include"
+echo "- unused scripts"
+rm "${RSCDIR}/main.py" "${RSCDIR}/site.pyc"
 
 echo "- unwanted files in python modules"
 for x in "*.html" "*.c" "*.cpp" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
