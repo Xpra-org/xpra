@@ -86,6 +86,9 @@ fi
 #override potential user settings to prevent crashes:
 unset PYTHONOPTIMIZE
 
+# Prevent .pyc creation that would create problems with notarized app bundles:
+export PYTHONDONTWRITEBYTECODE=1
+
 #Record variables we changed so they can be reverted before SSH is run
 export _PYTHON_WRAPPER_VARS="DYLD_LIBRARY_PATH PYTHON PYTHONHOME PYTHONPATH"
 

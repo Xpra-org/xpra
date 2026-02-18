@@ -17,7 +17,8 @@ SITELIB="${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/"
 
 CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=-}"
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
-STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
+STRIP_GSTREAMER="${STRIP_GSTREAMER:=$STRIP_DEFAULT}"
+STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_GSTREAMER}"
 GSTREAMER_VIDEO="${GSTREAMER_VIDEO:=0}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
@@ -364,11 +365,9 @@ groff -mandoc -Thtml < "${XPRA_SRC_DIR}/fs/share/man/man1/xpra_launcher.1" > "${
 
 echo "*******************************************************************************"
 echo "Hacks"
-echo "- macos notifications API duplicate Info.plist"
-cp "${CONTENTS_DIR}/Info.plist" "${RSCDIR}/bin/"
 
 echo "- move GTK css"
-mv "${RSCDIR}/share/xpra/css" "${RSCDIR}/"
+ln -sf "share/xpra/css" "${RSCDIR}/css"
 echo "- fixup pixbuf loader"
 #executable_path is now automatically inserted?
 sed -i '' -e "s+@executable_path/++g" "${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
@@ -413,7 +412,7 @@ function change_prefix() {
 }
 
 old_rpath="@executable_path/../Resources/lib/"
-new_rpath="@executable_path/../Frameworks/"
+new_rpath="@executable_path/../../Frameworks/"
 echo "- fixing executable id / rpath / signature"
 for dir in "Frameworks" "Frameworks/cairo"; do
   cd "${CONTENTS_DIR}/${dir}" || exit 1
@@ -424,12 +423,11 @@ for dir in "Frameworks" "Frameworks/cairo"; do
   done
 
   # fix "id":
-  idpath="@executable_path/../${dir}"
   for dylib in *.dylib; do
     if [[ -L "${dylib}" ]]; then
       continue
     fi
-    install_name_tool -id "${idpath}/${dylib}" "${dylib}"
+    install_name_tool -id "@loader_path/${dylib}" "${dylib}"
   done
 
   # fix rpath:
@@ -437,7 +435,7 @@ for dir in "Frameworks" "Frameworks/cairo"; do
     if [[ -L "${dylib}" ]]; then
       continue
     fi
-    change_prefix "${dylib}" "${old_rpath}" "${new_rpath}"
+    change_prefix "${dylib}" "${old_rpath}" "@loader_path/"
   done
 done
 if [ "${DO_X11}" == "1" ]; then
@@ -445,12 +443,12 @@ if [ "${DO_X11}" == "1" ]; then
   cd "${FRAMEWORKS_DIR}/X11/bin" || exit 1
   for bin in *; do
     codesign --remove-signature "${bin}"
-    change_prefix "${bin}" "/opt/X11/lib/" "@executable_path/../Frameworks/X11/lib/"
+    change_prefix "${bin}" "/opt/X11/lib/" "@executable_path/../lib/"
   done
   cd "${FRAMEWORKS_DIR}/X11/lib" || exit 1
   for dylib in *.dylib; do
     codesign --remove-signature "${dylib}"
-    change_prefix "${dylib}" "/opt/X11/lib/" "@executable_path/../Frameworks/X11/lib/"
+    change_prefix "${dylib}" "/opt/X11/lib/" "@loader_path/"
   done
 fi
 echo "- python interpreter"
@@ -505,33 +503,49 @@ fi
 echo "- unused py2app scripts"
 rm "${RSCDIR}/__boot__.py" "${RSCDIR}/__error__.sh"
 
-RMP=""
-KMP=""
-if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
+if [ "$STRIP_GSTREAMER" == "1" ]; then
 	echo "- extra gstreamer dylib deps"
-	for x in check photography; do
-		RMP="${RMP} $x"
-		rm "${FRAMEWORKS_DIR}/libgst${x}"*
+	GST_DYLIBS="app audio base codecparsers codecs gl net pbutils reamer riff tag"
+	# not sure: allocators mse play player rtp rtsp sctp sdp webrtc
+	if [ "${GSTREAMER_VIDEO}" == "1" ]; then
+    GST_DYLIBS="${GST_DYLIBS} mpegts stmse video"
+	fi
+	echo "  keeping: ${GST_DYLIBS}"
+	KEEP="${FRAMEWORKS_DIR}/gst.temp"
+	mkdir "${KEEP}" || exit 1
+	for x in ${GST_DYLIBS}; do
+		mv "${FRAMEWORKS_DIR}/libgst${x}"* "${KEEP}/"
 	done
+	rm -fr "${FRAMEWORKS_DIR}/libgst"*
+	mv "${KEEP}/"* "${FRAMEWORKS_DIR}/"
+	rm -fr "${KEEP}"
 fi
+KMP=""
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
   echo "- extra gstreamer plugins"
   GST_PLUGIN_DIR="${RSCDIR}/lib/gstreamer-1.0"
 	KEEP="${RSCDIR}/lib/gstreamer-1.0.keep"
 	mkdir "${KEEP}" || exit 1
-	PLUGINS="app audio coreelements cutter removesilence faac flac oss osxaudio speex volume vorbis wav opus ogg gdp isomp4 matroska"
-	#video sink for testing:
-	PLUGINS="${PLUGINS} autodetect osxvideo"
+	PLUGINS="app applemedia audioconvert audiolatency audioparsers audiorate audioresample audiotestsrc coreelements cutter faac flac gdp isomp4 matroska ogg opus opusparse oss4 osxaudio removesilence speex volume vorbis wavenc wavparse"
 	if [ "${GSTREAMER_VIDEO}" == "1" ]; then
-		#video support:
+    # video sink for testing:
+    PLUGINS="${PLUGINS} autodetect osxvideo"
+		# video support:
 		PLUGINS="${PLUGINS} vpx x264 aom openh264 videoconvert videorate videoscale libav"
 	fi
 	for x in $PLUGINS; do
 		KMP="${KMP} $x"
-		mv "${GST_PLUGIN_DIR}/libgst${x}"* "${KEEP}/"
+		mv "${GST_PLUGIN_DIR}/libgst${x}.dylib" "${KEEP}/"
 	done
+	RMP="$(ls "${GST_PLUGIN_DIR}" | xargs | sed 's/libgst//g' | sed 's/.dylib//g')"
 	rm -fr "${GST_PLUGIN_DIR}"
 	mv "${KEEP}" "${GST_PLUGIN_DIR}"
+	for x in $PLUGINS; do
+	  filename="libgst${x}.dylib"
+	  dylib="${GST_PLUGIN_DIR}/${filename}"
+    install_name_tool -id "@loader_path/${filename}" "${dylib}"
+    change_prefix "${dylib}" "${old_rpath}" "@loader_path/../../../Frameworks/"
+	done
 fi
 echo "  removed:${RMP}"
 echo "  kept:${KMP}"
@@ -551,6 +565,8 @@ echo "**************************************************************************
 echo "Signing"
 echo "  dylibs"
 find "${CONTENTS_DIR}/" -type f -name "*.dylib" -exec codesign -s "${CODESIGN_KEYNAME}" {} \;
+echo "  pyc"
+find "${CONTENTS_DIR}/" -type f -name "*.pyc" -exec codesign -s "${CODESIGN_KEYNAME}" {} \;
 echo "  so"
 find "${CONTENTS_DIR}/" -type f -name "*.so" -exec codesign --remove-signature {} \;
 find "${CONTENTS_DIR}/" -type f -name "*.so" -exec codesign -s "${CODESIGN_KEYNAME}" {} \;

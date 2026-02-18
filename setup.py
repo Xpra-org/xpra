@@ -2576,6 +2576,8 @@ else:
         # to support GStreamer 1.x we need this:
         modules += ["importlib", "mimetypes"]
         remove_packages("numpy")
+        if audio_ENABLED:
+            external_includes.append("typing_extensions")
     else:
         add_packages("xpra.platform.posix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
