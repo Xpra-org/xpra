@@ -63,13 +63,13 @@ MAX_HEIGHT = 16384
 
 
 class Filter:
-    __slots__ = ("closed", "width", "height", "filter")
+    __slots__ = ("closed", "width", "height", "transform")
 
     def __init__(self):
         self.closed = False
         self.width = 0
         self.height = 0
-        self.filter = None
+        self.transform = None
 
     def init_context(self, src_width: int, src_height: int, src_format: str,
                      dst_width: int, dst_height: int, dst_format: str, options: typedict) -> None:
@@ -81,12 +81,12 @@ class Filter:
         self.height = src_height
         transform_str = options.strget("transform", "BLUR")
         if transform_str.isupper():  # ie: "BLUR"
-            self.filter = getattr(ImageFilter, transform_str)
+            self.transform = getattr(ImageFilter, transform_str)
         else:
             function_name, kwargs = parse_function_call(transform_str)
             filter_class = getattr(ImageFilter, function_name)
-            self.filter = filter_class(**kwargs)
-        log("init_context options=%s, using %r=%s", options, transform_str, self.filter)
+            self.transform = filter_class(**kwargs)
+        log("init_context options=%s, using %r=%s", options, transform_str, self.transform)
 
     def clean(self) -> None:
         self.closed = True
@@ -130,7 +130,7 @@ class Filter:
         assert height <= self.height, "expected image height smaller than %i got %i" % (self.height, height)
         bgrx = image.get_pixels()
         img = Image.frombuffer("RGBA", (width, height), bgrx, "raw", "BGRA", image.get_rowstride())
-        modified = img.filter(self.filter)
+        modified = img.filter(self.transform)
         bgrx = modified.tobytes("raw", "BGRA", 0, 1)
         image.set_pixels(bgrx)
         return image
