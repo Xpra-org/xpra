@@ -1202,9 +1202,8 @@ def do_add_cython_ext(*args, **kwargs) -> None:
         Options.get_directive_defaults()['freethreading_compatible'] = True
         define_macros.append(('Py_GIL_DISABLED', '1'))
         kwargs.setdefault("cython_directives", {})["freethreading_compatible"] = True
-    if define_macros:
-        macros = kwargs.setdefault("define_macros", [])
-        macros += define_macros
+    for macro in define_macros:
+        kwargs.setdefault("define_macros", []).append(macro)
     # pylint: disable=import-outside-toplevel
     from Cython.Distutils import build_ext, Extension
     ext_modules.append(Extension(*args, **kwargs))
