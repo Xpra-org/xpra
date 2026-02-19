@@ -32,7 +32,10 @@ echo "  pyc"
 find "${CONTENTS_DIR}/" -type f -name "*.pyc" -exec bash -c 'sign "$0"' {} \;
 
 if [ -d "${X11_DIR}/bin" ]; then
+    echo "  X11"
     sign_runtime "${X11_DIR}/bin/"*
+    sign_runtime "${X11_DIR}/lib/"*.dylib
+    sign_runtime "${X11_DIR}/lib/dri/"*
 fi
 echo "  Frameworks/bin"
 sign_runtime "${CONTENTS_DIR}/Frameworks/bin/"*
