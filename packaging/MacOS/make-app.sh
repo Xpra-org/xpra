@@ -208,7 +208,7 @@ LIBDIR="${RSCDIR}/lib"
 
 echo "- dylibs and bin/ to Frameworks/"
 mv "${RSCDIR}/lib/"*dylib "${FRAMEWORKS_DIR}/"
-mv "${RSCDIR}/lib/cairo" "${FRAMEWORKS_DIR}/"
+rm -fr "${RSCDIR}/lib/cairo"
 mv "${RSCDIR}/bin/"* "${FRAMEWORKS_DIR}/bin/"
 
 echo "*******************************************************************************"
@@ -335,7 +335,9 @@ mkdir "${RSCDIR}/lib/girepository-1.0"
 GI_MODULES="Gst GObject GLib GModule Gtk Gdk GtkosxApplication HarfBuzz GL Gio Pango freetype2 cairo Atk"
 for t in ${GI_MODULES}; do
 	rsync -rpl "${JHBUILD_PREFIX}/lib/girepository-1.0/$t"*typelib "${RSCDIR}/lib/girepository-1.0/"
+
 done
+
 echo "- Adwaita theme"
 #gtk-mac-bundler doesn't do it properly, so do it ourselves:
 rsync -rpl "${JHBUILD_PREFIX}/share/icons/Adwaita" "${RSCDIR}/share/icons/"
@@ -404,30 +406,26 @@ install_name_tool -add_rpath "@executable_path/.." "${FRAMEWORKS_DIR}/bin/Python
 old_rpath="@executable_path/../Resources/lib/"
 new_rpath="@executable_path/../"
 echo "- fixing executable id / rpath"
-for dir in "Frameworks" "Frameworks/cairo"; do
-  cd "${CONTENTS_DIR}/${dir}" || exit 1
-  echo "  ${dir}"
-
-  for dylib in *.dylib; do
-    codesign --remove-signature "${dylib}"
-  done
-
-  # fix "id":
-  for dylib in *.dylib; do
-    if [[ -L "${dylib}" ]]; then
-      continue
-    fi
-    install_name_tool -id "@loader_path/${dylib}" "${dylib}"
-  done
-
-  # fix rpath:
-  for dylib in *.dylib; do
-    if [[ -L "${dylib}" ]]; then
-      continue
-    fi
-    change_prefix "${dylib}" "${old_rpath}" "@loader_path/"
-  done
+echo "  Frameworks"
+cd "${FRAMEWORKS_DIR}" || exit 1
+for dylib in *.dylib; do
+  codesign --remove-signature "${dylib}"
 done
+# fix "id":
+for dylib in *.dylib; do
+  if [[ -L "${dylib}" ]]; then
+    continue
+  fi
+  install_name_tool -id "@loader_path/${dylib}" "${dylib}"
+done
+# fix rpath:
+for dylib in *.dylib; do
+  if [[ -L "${dylib}" ]]; then
+    continue
+  fi
+  change_prefix "${dylib}" "${old_rpath}" "@loader_path/"
+done
+
 if [ "${DO_X11}" == "1" ]; then
   echo "  X11"
   cd "${FRAMEWORKS_DIR}/X11/bin" || exit 1
