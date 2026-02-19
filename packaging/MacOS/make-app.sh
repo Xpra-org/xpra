@@ -402,7 +402,7 @@ function change_prefix() {
 install_name_tool -add_rpath "@executable_path/.." "${FRAMEWORKS_DIR}/bin/Python"
 
 old_rpath="@executable_path/../Resources/lib/"
-new_rpath="@executable_path/../../Frameworks/"
+new_rpath="@executable_path/../"
 echo "- fixing executable id / rpath"
 for dir in "Frameworks" "Frameworks/cairo"; do
   cd "${CONTENTS_DIR}/${dir}" || exit 1
@@ -446,27 +446,26 @@ for bin in "${FRAMEWORKS_DIR}/bin/"*; do
   codesign --remove-signature "${bin}"
   change_prefix "${bin}" "${old_rpath}" "@executable_path/../"
 done
-echo "- python shared objects"
+echo "- bcrypt"
+BCRYPT_SO="lib-dynload/bcrypt/_bcrypt.so"
+codesign --remove-signature "${PYDIR}/${BCRYPT_SO}"
+install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/${BCRYPT_SO}" "${PYDIR}/${BCRYPT_SO}"
+echo "- zlib"
+mv "${RSCDIR}/zlib"*.so "${FRAMEWORKS_DIR}/lib-dynload/"
+echo "- rpath for python shared objects"
 find "${PYDIR}/" "${FRAMEWORKS_DIR}/lib-dynload/" -name "*.so" -print0 | while IFS='' read -r -d $'\0' file; do
     codesign --remove-signature "${file}"
+    change_prefix "${file}" "${old_rpath}" "${new_rpath}"
+    change_prefix "${file}" "${JHBUILD_PREFIX}/lib" "${new_rpath}"
     # Get all dylib dependencies
     otool -L "${file}" | grep -E "@executable_path.*\.dylib" | awk '{print $1}' | while read dep; do
       # Extract just the library name
       libname=$(basename "$dep")
       # Change to @rpath
       install_name_tool -change "$dep" "@rpath/$libname" "${file}"
-      echo "${file}: ${libname} instead of ${dep}"
     done
-    change_prefix "${file}" "${old_rpath}" "${new_rpath}"
-    change_prefix "${file}" "${JHBUILD_PREFIX}/lib" "${new_rpath}"
 done
-echo "- bcrypt"
-BCRYPT_SO="lib-dynload/bcrypt/_bcrypt.so"
-codesign --remove-signature "${PYDIR}/${BCRYPT_SO}"
-install_name_tool -id "@executable_path/../Frameworks/python3.${PYTHON_MINOR_VERSION}/${BCRYPT_SO}" "${PYDIR}/${BCRYPT_SO}"
 popd > /dev/null || exit 1
-echo "- zlib"
-mv "${RSCDIR}/zlib"*.so "${FRAMEWORKS_DIR}/lib-dynload/"
 
 
 echo "*******************************************************************************"
