@@ -115,15 +115,4 @@ if test "$LANG" == "C"; then
 	fi
 fi
 
-if test -f "$bundle_lib/charset.alias"; then
-    export CHARSETALIASDIR="$bundle_lib"
-fi
-
-# Extra arguments can be added in environment.sh.
-EXTRA_ARGS=
-if test -f "$bundle_res/environment.sh"; then
-  source "$bundle_res/environment.sh"
-fi
-
-#'exec -a "$APPNAME" was used here before - see note above'
 exec "$PYTHON" "$@"
