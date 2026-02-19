@@ -562,30 +562,3 @@ ln -sf "../../Frameworks" "${SUB_APP}/Contents/Frameworks"
 ln -sf "../../Resources" "${SUB_APP}/Contents/Resources"
 ln -sf "../../MacOS" "${SUB_APP}/Contents/MacOS"
 ln -sf "../../Helpers" "${SUB_APP}/Contents/Helpers"
-
-echo "*******************************************************************************"
-echo "Signing"
-echo "  dylibs"
-find "${CONTENTS_DIR}/" -type f -name "*.dylib" -exec codesign -s "${CODESIGN_KEYNAME}" {} \;
-echo "  pyc"
-find "${CONTENTS_DIR}/" -type f -name "*.pyc" -exec codesign -s "${CODESIGN_KEYNAME}" {} \;
-echo "  so"
-find "${CONTENTS_DIR}/" -type f -name "*.so" -exec codesign --remove-signature {} \;
-find "${CONTENTS_DIR}/" -type f -name "*.so" -exec codesign -s "${CODESIGN_KEYNAME}" {} \;
-if [ -d "${FRAMEWORKS_DIR}/X11/bin" ]; then
-    codesign -s "${CODESIGN_KEYNAME}" "${FRAMEWORKS_DIR}/X11/bin/"*
-fi
-echo "  Frameworks/bin"
-codesign --remove-signature "${CONTENTS_DIR}/Frameworks/bin/"*
-codesign -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Frameworks/bin/"*
-echo "  Helpers"
-find "${CONTENTS_DIR}/Helpers/" -type f -exec codesign -s "${CODESIGN_KEYNAME}" {} \;
-echo "  Xpra_NoDock.app"
-codesign --force --options runtime -s "${CODESIGN_KEYNAME}" "${CONTENTS_DIR}/Xpra_NoDock.app"
-echo "  Xpra.app"
-codesign --force --options runtime --sign "${CODESIGN_KEYNAME}" "${APP_DIR}"
-
-
-echo "*******************************************************************************"
-echo "Copying Xpra.app to ~/Desktop"
-ditto "${APP_DIR}" "${HOME}/Desktop/Xpra.app"

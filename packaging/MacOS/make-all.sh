@@ -7,4 +7,4 @@ fi
 MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "${MACOS_SCRIPT_DIR}" || exit 1
 
-./make-app.sh && ./make-DMG.sh && ./make-PKG.sh
+./make-app.sh && ./sign-app.sh && ./make-DMG.sh && ./make-PKG.sh
