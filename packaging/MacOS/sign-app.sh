@@ -5,12 +5,33 @@ APP_DIR="${MACOS_SCRIPT_DIR}/image/Xpra.app"
 CONTENTS_DIR="${APP_DIR}/Contents"
 X11_DIR="${CONTENTS_DIR}/Frameworks/X11"
 
+get_team_id() {
+  local keyname="$1"
+  # Ad-hoc always has no Team ID
+  if [[ "$keyname" == "-" ]]; then
+    return
+  fi
+  # Query the certificate
+  security find-identity -v -p codesigning | grep "$keyname" | head -1 | grep -o '([A-Z0-9]\{10\})' | tr -d '()'
+}
+
 export CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=-}"
+TEAM_ID=$(get_team_id "$CODESIGN_KEYNAME")
+if [ -z "$TEAM_ID" ]; then
+  ENTITLEMENTS_FILE="${MACOS_SCRIPT_DIR}/entitlements.plist"
+else
+  ENTITLEMENTS_FILE=""
+fi
+export ENTITLEMENTS_FILE
 
 # for libraries and executables:
 function sign_runtime() {
   codesign --remove-signature "$@"
-  codesign --sign "${CODESIGN_KEYNAME}" --options runtime --timestamp "$@"
+  if [ -z "${ENTITLEMENTS_FILE}" ]; then
+    codesign --sign "${CODESIGN_KEYNAME}" --options runtime --timestamp "$@"
+  else
+    codesign --sign "${CODESIGN_KEYNAME}" --options runtime --timestamp --entitlements "${ENTITLEMENTS_FILE}" "$@"
+  fi
 }
 
 # for plain python modules:
