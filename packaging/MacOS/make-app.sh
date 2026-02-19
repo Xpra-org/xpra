@@ -15,7 +15,6 @@ PYTHON_MAJOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.versio
 PYTHON_MINOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])')
 SITELIB="${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/"
 
-CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=-}"
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER="${STRIP_GSTREAMER:=$STRIP_DEFAULT}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_GSTREAMER}"
@@ -399,9 +398,12 @@ function change_prefix() {
   done
 }
 
+# Add rpath to Python interpreter
+install_name_tool -add_rpath "@executable_path/.." "${FRAMEWORKS_DIR}/bin/Python"
+
 old_rpath="@executable_path/../Resources/lib/"
 new_rpath="@executable_path/../../Frameworks/"
-echo "- fixing executable id / rpath / signature"
+echo "- fixing executable id / rpath"
 for dir in "Frameworks" "Frameworks/cairo"; do
   cd "${CONTENTS_DIR}/${dir}" || exit 1
   echo "  ${dir}"
@@ -445,11 +447,16 @@ for bin in "${FRAMEWORKS_DIR}/bin/"*; do
   change_prefix "${bin}" "${old_rpath}" "@executable_path/../"
 done
 echo "- python shared objects"
-export -f change_prefix
-export old_rpath
-export new_rpath
-find "${PYDIR}/" -name "*.so" -print0 | while IFS='' read -r -d $'\0' file; do
+find "${PYDIR}/" "${FRAMEWORKS_DIR}/lib-dynload/" -name "*.so" -print0 | while IFS='' read -r -d $'\0' file; do
     codesign --remove-signature "${file}"
+    # Get all dylib dependencies
+    otool -L "${file}" | grep -E "@executable_path.*\.dylib" | awk '{print $1}' | while read dep; do
+      # Extract just the library name
+      libname=$(basename "$dep")
+      # Change to @rpath
+      install_name_tool -change "$dep" "@rpath/$libname" "${file}"
+      echo "${file}: ${libname} instead of ${dep}"
+    done
     change_prefix "${file}" "${old_rpath}" "${new_rpath}"
     change_prefix "${file}" "${JHBUILD_PREFIX}/lib" "${new_rpath}"
 done
