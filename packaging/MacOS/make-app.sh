@@ -332,11 +332,17 @@ fi
 
 echo "- gobject-introspection"
 mkdir "${RSCDIR}/lib/girepository-1.0"
-GI_MODULES="Gst GObject GLib GModule Gtk Gdk GtkosxApplication HarfBuzz GL Gio Pango freetype2 cairo Atk"
-for t in ${GI_MODULES}; do
-	rsync -rpl "${JHBUILD_PREFIX}/lib/girepository-1.0/$t"*typelib "${RSCDIR}/lib/girepository-1.0/"
-
+TYPELIB_DIR="${RSCDIR}/lib/girepository-1.0"
+GIR_SOURCE_DIR="$JHBUILD_PREFIX/share/gir-1.0"
+TEMP_GIR_DIR="${MACOS_SCRIPT_DIR}/xpra-gir-fixed-$$"
+mkdir "$TEMP_GIR_DIR"
+for name in Gst-1.0 GObject-2.0 GLib-2.0 GModule-2.0 Gtk-3.0 Gdk-3.0 GdkPixbuf-2.0 GtkosxApplication-1.0 HarfBuzz-0.0 GL-1.0 Gio-2.0 Pango-1.0 freetype2-2.0 cairo-1.0 Atk-1.0; do
+  gir_source="$GIR_SOURCE_DIR/$name.gir"
+  gir_fixed="$TEMP_GIR_DIR/$name.gir"
+  sed -E 's|/[^,]*/([^/,]+\.dylib)|\1|g' "$gir_source" > "$gir_fixed"
+  g-ir-compiler --includedir="$TEMP_GIR_DIR" --output="${TYPELIB_DIR}/${name}.typelib" "${gir_fixed}"
 done
+rm -fr "$TEMP_GIR_DIR"
 
 echo "- Adwaita theme"
 #gtk-mac-bundler doesn't do it properly, so do it ourselves:
