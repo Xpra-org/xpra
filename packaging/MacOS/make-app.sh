@@ -337,7 +337,7 @@ if [ "${DO_X11}" == "1" ]; then
 	done
   mkdir "${FRAMEWORKS_DIR}/X11/lib"
 	for lib in "libGL" "libICE" "libOSMesa" "libX11" "libXRes" "libXau" "libXaw" "libXcomposite" "libXcursor" "libXdamage" "libXext" "libXfixes" "libXfont" "libXpm" "libXpresent" "libXrandr" "libXrender" "libXt" "libXtst" "libxkbfile" "libxshmfence"; do
-		cp "/opt/X11/lib/${lib}".* "${FRAMEWORKS_DIR}/X11/lib/"
+		rsync -rplt "/opt/X11/lib/${lib}".* "${FRAMEWORKS_DIR}/X11/lib/"
 	done
   mkdir "${FRAMEWORKS_DIR}/X11/lib/dri"
 	cp "/opt/X11/lib/dri/"* "${FRAMEWORKS_DIR}/X11/lib/dri/"
