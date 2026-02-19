@@ -58,15 +58,8 @@ export GTK_THEME="Adwaita"
 
 export GST_BUNDLE_CONTENTS="$bundle_contents"
 
-#Set $PYTHON to point inside the bundle
-#This is not the real "python" but a copy of it named "$APPNAME"
-#with underscores replaced by spaces
-#which is created by the build scripts because
-#some versions of Mac OSX (10.6 onwards?) do not seem to honour
-#the name we want to supply with "exec -a"
-#This is hacked together in make-app.sh
 export _PYTHON="$PYTHON"
-export PYTHON="$bundle_frameworks/bin/$APPNAME"
+export PYTHON="$bundle_frameworks/bin/Python"
 export _PYTHONHOME="$PYTHONHOME"
 export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules

@@ -300,18 +300,6 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	rm -f "${HELPERS_DIR}/Shadow"
 fi
 
-#ensure that every wrapper has a "python" executable to match:
-#(see PythonExecWrapper for why we need this "exec -a" workaround)
-for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
-	#replace underscore with space in actual binary filename:
-	target="${FRAMEWORKS_DIR}/bin/`echo $x | sed 's+_+ +g'`"
-	if [ ! -e "$target" ]; then
-		#symlinks don't work for us here (osx uses the referent as program name)
-		#and hardlinks could cause problems, so we duplicate the file:
-		cp "${FRAMEWORKS_DIR}/bin/python" "$target"
-	fi
-done
-
 echo "- remove executable bit from python scripts"
 find "${MACOS_SCRIPT_DIR}" -type f -perm +111 -name "*.py" -exec chmod -x {} \;
 
