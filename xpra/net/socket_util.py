@@ -426,7 +426,7 @@ def check_ssh_upgrades(warn=True) -> bool:
         with SilenceWarningsContext(DeprecationWarning):
             if find_spec("paramiko"):
                 return True
-            err = "`paramiko` module not found"
+            err = "paramiko module not found"
     except Exception as e:
         err = str(e)
     from xpra.log import Logger
