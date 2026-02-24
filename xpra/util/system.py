@@ -499,6 +499,8 @@ def get_run_info(subcommand="server") -> Sequence[str]:
     arch = pinfo.get("machine", "")
     if arch:
         vinfo += f" {arch}"
+    if is_free_threaded():
+        vinfo += " free-threaded"
     run_info.append(f" {sys.implementation.name} {vinfo}")
     mem_bytes = get_mem_size()
     if mem_bytes:
