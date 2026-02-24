@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import sleep
 from typing import Any
 
 from xpra.server.source.stub import StubClientConnection
@@ -11,7 +12,7 @@ from xpra.server.window.compress import WindowSource
 from xpra.codecs.loader import load_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.util.str_fn import csv
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
@@ -21,6 +22,7 @@ log = Logger("window", "events")
 CONTENT_TYPES = set(ct for ct in os.environ.get("XPRA_IMAGEFILTER_CONTENT_TYPES", "").split(",") if ct)
 WINDOW_TYPES = set(ct for ct in os.environ.get("XPRA_IMAGEFILTER_WINDOW_TYPES", "").split(",") if ct)
 MODULES = os.environ.get("XPRA_IMAGEFILTER_MODULES", "torch,pillow").split(",")
+DELAY = envint("XPRA_IMAGE_FILTER_DELAY", 0)
 
 
 class ImageFilter:
@@ -29,6 +31,8 @@ class ImageFilter:
         self.filter = filter
 
     def process_image(self, image: ImageWrapper) -> ImageWrapper:
+        if DELAY > 0:
+            sleep(DELAY / 1000)
         return self.filter.convert_image(image)
 
     def clean(self) -> None:
@@ -60,7 +64,7 @@ class ImageFilterConnection(StubClientConnection):
             if self.filter_module:
                 break
         if not self.filter_module:
-            log.warn("Warning: no imagefilter modules found")
+            log.warn("Warning: no imagefilter modules found, tried: %s", csv(MODULES))
 
     def init_state(self) -> None:
         if not self.filter_module:
