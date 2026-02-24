@@ -74,7 +74,7 @@ def may_notify_client(obj, nid : NotificationID | int, summary, body, *args, **k
     may_show_progress(obj, 100, f"notification: {summary}")
 
 
-def notify_to_log(obj, nid : NotificationID | int, summary, body, *args, **kwargs) -> None:
+def notify_to_log(nid : NotificationID | int, summary, body, *args, **kwargs) -> None:
     from xpra.log import Logger
     notifylog = Logger("notify")
     notifylog("may_notify_client(%s, %s, %s, %s, %s)", nid, summary, body, args, kwargs)
