@@ -64,8 +64,5 @@ jhbuild build
 ```shell
 git clone https://github.com/Xpra-org/xpra
 cd xpra/packaging/MacOS/
-sh ./make-app.sh
-sh ./make-DMG.sh
-sh ./make-PKG.sh
+sh ./make-all.sh
 ```
-Signing the resulting `.app`, `DMG` and `PKG` images requires setting up certificates.
