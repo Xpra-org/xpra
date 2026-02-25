@@ -22,7 +22,6 @@ _gtkosx_warning_ = False
 
 def do_get_resources_dir() -> str:
     rsc = None
-    RESOURCES = "/Resources/"
     # FUGLY warning: importing gtkosx_application causes the dock to appear,
     # and in some cases we don't want that.. so use the env var XPRA_SKIP_UI as workaround for such cases:
     if not envbool("XPRA_SKIP_UI", False):
@@ -42,15 +41,16 @@ def do_get_resources_dir() -> str:
     if rsc is None:
         # try using the path to this file to find the resource path:
         rsc = __file__
-    i = rsc.rfind(RESOURCES)
+    CONTENTS = "/Contents/"
+    i = rsc.rfind(CONTENTS)
     if i <= 0:
         # last fallback: try the default app dir
         from xpra.platform.paths import default_get_app_dir
         rsc = default_get_app_dir()
         debug("get_resources_dir() default_get_app_dir()=%s", rsc)
-    i = rsc.rfind(RESOURCES)
+    i = rsc.rfind(CONTENTS)
     if i > 0:
-        rsc = rsc[:i + len(RESOURCES)]
+        rsc = rsc[:i + len(CONTENTS)] + "Resources/"
     debug("get_resources_dir()=%s", rsc)
     return rsc
 
