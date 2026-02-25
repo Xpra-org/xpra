@@ -314,6 +314,9 @@ class PointerWindow(GtkStubWindow):
     def _button_action(self, button: int, event, depressed: bool, props=None) -> None:
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
+        if not self._client.middle_click and button == 2:
+            log("_button_action: middle click suppressed (middle-click=no)")
+            return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
         log("_button_action(%s, %s, %s) wid=%#x / focus=%s / window wid=%#x",
