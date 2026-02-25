@@ -269,11 +269,6 @@ Requires:           libaom
 BuildRequires:		pkgconfig(openh264)
 Requires:			openh264
 %endif
-%if 0%{?fedora}
-BuildRequires:		pkgconfig(spng)
-BuildRequires:		zlib-devel
-Requires:			libspng
-%endif
 #not available yet:
 #BuildRequires:		libevdi-devel
 #Requires:			libevdi
@@ -831,9 +826,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/remote
 %ifnarch %{riscv}
 %{python3_sitearch}/xpra/codecs/openh264
-%endif
-%if 0%{?fedora}
-%{python3_sitearch}/xpra/codecs/spng
 %endif
 
 %files -n %{package_prefix}-codecs-extras

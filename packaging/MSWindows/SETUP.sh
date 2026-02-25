@@ -14,7 +14,7 @@ PACMAN=${PACMAN:-"pacman --noconfirm --needed -S"}
 #most packages get installed here: (python, gtk, etc):
 $PACMAN ${XPKG}python ${XPKG}libnotify ${XPKG}gtk3
 #media libraries (more than we actually need):
-$PACMAN ${XPKG}libspng ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
+$PACMAN ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
 $PACMAN ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium
 #pinentry is not available for aarch64 yet:

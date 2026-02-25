@@ -15,8 +15,8 @@ from xpra.codecs.image import ImageWrapper
 from xpra.codecs.loader import load_codec
 
 N = 10
-CODECS = ("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_avif")
-#CODECS = ("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
+CODECS = ("enc_rgb", "enc_pillow", "enc_webp", "enc_jpeg", "enc_avif")
+#CODECS = ("enc_rgb", "enc_pillow", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
 
 options = {
     #"quality" : 10,

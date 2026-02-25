@@ -136,9 +136,6 @@ class Encodings(StubClientMixin):
         sleep(1)
         load_codec("dec_pillow")
         ae = self.allowed_encodings
-        if "png" in ae:
-            # try to load the fast png decoder:
-            load_codec("dec_spng")
         if "jpeg" in ae:
             # try to load the fast jpeg decoders:
             load_codec("dec_jpeg")

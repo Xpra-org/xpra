@@ -189,7 +189,6 @@ class WindowBackingBase:
             self._PIL_encodings = self.pil_decoder.get_encodings()
         self.jpeg_decoder = get_codec("dec_jpeg")
         self.webp_decoder = get_codec("dec_webp")
-        self.spng_decoder = get_codec("dec_spng")
         self.avif_decoder = get_codec("dec_avif")
         self.nvjpeg_decoder = get_codec("dec_nvjpeg")
         self.nvdec_decoder = get_codec("nvdec")
@@ -564,13 +563,6 @@ class WindowBackingBase:
         # can be called from any thread
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
         self.ui_paint_rgb(coding, rgb_format, img_data,
-                          x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
-
-    def paint_spng(self, img_data, x: int, y: int, width: int, height: int,
-                   options: typedict, callbacks: PaintCallbacks) -> None:
-        rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data, options)
-        rowstride = iwidth * len(rgb_format)
-        self.ui_paint_rgb("png", rgb_format, rgba,
                           x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def paint_webp(self, img_data, x: int, y: int, width: int, height: int,
@@ -953,8 +945,6 @@ class WindowBackingBase:
                 self.paint_avif(img_data, x, y, width, height, options, callbacks)
             elif coding == "webp":
                 self.paint_webp(img_data, x, y, width, height, options, callbacks)
-            elif self.spng_decoder and coding == "png":
-                self.paint_spng(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
                 self.paint_pillow(coding, img_data, x, y, width, height, options, callbacks)
             elif coding == "scroll":

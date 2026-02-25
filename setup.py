@@ -295,10 +295,6 @@ pillow_encoder_ENABLED  = pillow_ENABLED
 pillow_decoder_ENABLED  = pillow_ENABLED
 argb_ENABLED            = DEFAULT
 argb_encoder_ENABLED    = argb_ENABLED
-# some platforms have "spng.pc", others use "libspng.pc"..
-spng_pc = "libspng" if pkg_config_exists("libspng") else "spng"
-spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", spng_pc)
-spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", spng_pc)
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 webp_encoder_ENABLED    = webp_ENABLED
 webp_decoder_ENABLED    = webp_ENABLED
@@ -357,7 +353,7 @@ ENCODER_SWITCHES = [
     "enc_x264", "openh264_encoder", "nvenc", "nvjpeg_encoder",
     "vpx_encoder", "webp_encoder", "pillow_encoder",
     "amf_encoder",
-    "spng_encoder", "jpeg_encoder", "avif_encoder",
+    "jpeg_encoder", "avif_encoder",
     "argb_encoder",
     "remote_encoder",
 ]
@@ -365,7 +361,7 @@ DECODER_SWITCHES = [
     "openh264_decoder",
     "nvdec", "nvjpeg_decoder",
     "vpx_decoder", "webp_decoder", "pillow_decoder",
-    "spng_decoder", "jpeg_decoder", "avif_decoder",
+    "jpeg_decoder", "avif_decoder",
 ]
 CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "cuda_kernels", "cuda_rebuild",
@@ -738,7 +734,6 @@ def install_dev_env_command() -> list[str]:
             "jpeg_decoder|jpeg_encoder": ("pkgconfig(libturbojpeg)", ),
             "csc_libyuv": ("pkgconfig(libyuv)", ),
             "openh264": ("pkgconfig(openh264)", ),
-            "spng_decoder|spng_encoder": ("pkgconfig(spng)", ),
             "evdi": ("libevdi-devel", ),
             "enc_x264": ("pkgconfig(x264)", ),
             "avif": ("pkgconfig(libavif)", ),
@@ -777,7 +772,6 @@ def install_dev_env_command() -> list[str]:
             "openh264": ("libopenh264-dev", ),
             "webp": ("libwebp-dev", ),
             "jpeg_decoder|jpeg_encoder": ("libturbojpeg-dev", ),
-            "spng_decoder|spng_encoder": ("libspng-dev", ),
             "gtk3": ("libgtk-3-dev", "python-gi-dev"),
             "cairo": ("python3-cairo-dev", ),
             "sd_listen": ("python-gi-dev", ),
@@ -812,7 +806,6 @@ def install_dev_env_command() -> list[str]:
             "jpeg_decoder|jpeg_encoder": ("libjpeg-turbo", ),
             "csc_libyuv": ("libyuv", ),
             "openh264": ("openh264", ),
-            "spng_decoder|spng_encoder": ("libspng", ),
             "evdi": ("evdi", ),
             "enc_x264": ("x264", ),
             "avif": ("libavif", ),
@@ -2972,9 +2965,6 @@ toggle_packages(pillow_decoder_ENABLED, "xpra.codecs.pillow.decoder")
 toggle_packages(webp_encoder_ENABLED or webp_decoder_ENABLED, "xpra.codecs.webp")
 tace(webp_encoder_ENABLED, "xpra.codecs.webp.encoder", "libwebp")
 tace(webp_decoder_ENABLED, "xpra.codecs.webp.decoder", "libwebp")
-toggle_packages(spng_decoder_ENABLED or spng_encoder_ENABLED, "xpra.codecs.spng")
-tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", spng_pc)
-tace(spng_encoder_ENABLED, "xpra.codecs.spng.encoder", spng_pc)
 toggle_packages(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg")
 tace(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.common", f"{cuda},nvjpeg")
 tace(nvjpeg_encoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.encoder", f"{cuda},nvjpeg")

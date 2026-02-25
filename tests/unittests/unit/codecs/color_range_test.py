@@ -113,7 +113,7 @@ class TestColorRange(unittest.TestCase):
                 for color, pixel in TEST_COLORS.items():
                     image = make_test_image(self.rgb_format, self.width, self.height, pixel)
                     # the encoder may modify the pixels value,
-                    # (the spng encoder does)
+                    # (the spng encoder used to)
                     self.pixels = image.get_pixels()
                     for quality in (100, 90, 50, 10):
                         tolerance = get_tolerance(enc_name, encoding, quality)

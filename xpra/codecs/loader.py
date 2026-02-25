@@ -69,13 +69,13 @@ def gfilt(generator) -> tuple[str, ...]:
 FILTERS: Sequence[str] = gfilt(f"filter_{x}" for x in ("torch", "pillow"))
 CSC_CODECS: Sequence[str] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
 ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
-    "rgb", "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif",
+    "rgb", "pillow", "webp", "jpeg", "nvjpeg", "avif",
 ))
 ENCODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("enc", x) for x in (
     "vpx", "x264", "openh264", "nvenc", "gstreamer", "amf", "remote",
 ))
 DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
-    "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
+    "pillow", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
 ))
 DECODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("dec", x) for x in (
     "vpx", "openh264", "nvdec", "aom",
@@ -247,7 +247,6 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     # encoders:
     "enc_rgb"       : ("RGB encoder",       "argb",         "encoder", "encode"),
     "enc_pillow"    : ("Pillow encoder",    "pillow",       "encoder", "encode"),
-    "enc_spng"      : ("png encoder",       "spng",         "encoder", "encode"),
     "enc_webp"      : ("webp encoder",      "webp",         "encoder", "encode"),
     "enc_jpeg"      : ("JPEG encoder",      "jpeg",         "encoder", "encode"),
     "enc_avif"      : ("avif encoder",      "avif",         "encoder", "encode"),
@@ -268,7 +267,6 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "filter_pillow" : ("pillow filter",     "pillow" ,      "filter", "Filter"),
     # decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
-    "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),
     "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress_to_rgb,decompress_to_yuv"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb,decompress_to_yuv"),
     "dec_avif"      : ("avif decoder",      "avif",         "decoder", "decompress"),
