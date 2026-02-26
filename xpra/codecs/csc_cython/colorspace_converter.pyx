@@ -98,7 +98,7 @@ def get_version() -> Tuple[int,int]:
 
 def get_info() -> Dict[str,Any]:
     info = {
-            "version"   : (4, 1),
+            "version"   : get_version(),
             }
     return info
 
