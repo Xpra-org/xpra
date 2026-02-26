@@ -16,7 +16,13 @@ done
 
 
 DEBUG="$(cat ${HOME}/.xpra/debug 2> /dev/null)"
-if [ -z "${DEBUG}" ]; then
+if [ -n "${DEBUG}" ]; then
+  XPRA_LOG_TO_FILE="1"
+  # add debug arguments:
+  args="$args,\"--debug=${DEBUG}\""
+fi
+
+if [ "${XPRA_LOG_TO_FILE}" != "1" ]; then
   # no debug, just exec it:
   exec "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));"
 else
@@ -32,8 +38,6 @@ else
   echo "args=${args}" >> ${LOG_FILE}
   echo >> ${LOG_FILE}
 
-  # add debug arguments:
-  args="$args,\"--debug=${DEBUG}\""
   # make sure the main script does not do it again:
   export XPRA_DEBUG_DOTFILE=""
   export XPRA_LOG_FORMAT="%(asctime)s %(message)s"
