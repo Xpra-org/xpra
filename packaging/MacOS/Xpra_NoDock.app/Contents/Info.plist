@@ -36,6 +36,7 @@
 	<string>12.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>LSBackgroundOnly</key><true/>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
