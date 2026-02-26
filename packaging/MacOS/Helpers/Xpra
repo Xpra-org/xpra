@@ -36,7 +36,7 @@ else
   date >> "${XPRA_LOG_FILENAME}"
   echo >> "${XPRA_LOG_FILENAME}"
   echo "env:" >> "${XPRA_LOG_FILENAME}"
-  env >> "${XPRA_LOG_FILENAME}"${LOG_FILE}
+  env >> "${XPRA_LOG_FILENAME}"
   echo >> "${XPRA_LOG_FILENAME}"
   echo >> "${XPRA_LOG_FILENAME}"
   echo "args=${args}" >> "${XPRA_LOG_FILENAME}"
