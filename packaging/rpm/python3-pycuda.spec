@@ -23,7 +23,7 @@ Name:           python3-pycuda
 Version:        2022.1
 %define systemboost 0
 %else
-Version:        2025.1.1
+Version:        2026.1
 %define systemboost 1
 %endif
 Release:        1
@@ -61,7 +61,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 %if 0%{?el8}
 if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f313a3" ]; then
 %else
-if [ "${sha256}" != "bab0678d43f469c865f5fe6024f481c781ec51fefe6686acd66c672bfabea34f" ]; then
+if [ "${sha256}" != "759516160628ba06f32ce7e563e3f5b9214691dc9528a03ea99ea1073f4e14ba" ]; then
 %endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
@@ -107,6 +107,9 @@ rm -rf %{buildroot}
 
 %changelog
 %if !0%{?el8}
+* Fri Jan 16 2026 Antoine Martin <antoine@xpra.org> - 2026.1-1
+- new upstream release
+
 * Mon Jun 09 2025 Antoine Martin <antoine@xpra.org> - 2025.1.1-1
 - new upstream release
 
