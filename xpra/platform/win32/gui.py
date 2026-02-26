@@ -98,6 +98,7 @@ POLL_LAYOUT = envint("XPRA_WIN32_POLL_LAYOUT", 10)
 MATCH_WINDOW_COLOR = envbool("MATCH_WINDOW_COLOR", False)
 
 FORWARD_WINDOWS_KEY = envbool("XPRA_FORWARD_WINDOWS_KEY", True)
+NATIVE_TITLE_BAR_THEME = envbool("XPRA_WIN32_NATIVE_TITLE_BAR_THEME", True)
 WHEEL = envbool("XPRA_WHEEL", True)
 WHEEL_DELTA = envint("XPRA_WIN32_WHEEL_DELTA", 120)
 assert WHEEL_DELTA > 0
@@ -198,6 +199,29 @@ def get_window_handle(window) -> int:
     hwnd = gdk_win32_window_get_handle(gpointer)
     # log("get_window_handle(%s) gpointer=%#x, hwnd=%#x", gpointer, hwnd)
     return hwnd
+
+
+# https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
+DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+
+
+def _windows_uses_dark_theme() -> bool:
+    try:
+        from winreg import OpenKey, HKEY_CURRENT_USER, QueryValueEx
+        sub_key = r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+        with OpenKey(HKEY_CURRENT_USER, sub_key) as key:
+            return QueryValueEx(key, "AppsUseLightTheme")[0] == 0
+    except OSError:
+        log("_windows_uses_dark_theme()", exc_info=True)
+        return False
+
+
+def _apply_title_bar_theme(hwnd: int) -> None:
+    if not NATIVE_TITLE_BAR_THEME:
+        return
+    value = DWORD(int(_windows_uses_dark_theme()))
+    r = dwmapi.DwmSetWindowAttribute(HWND(hwnd), DWORD(DWMWA_USE_IMMERSIVE_DARK_MODE), byref(value), sizeof(value))
+    log("DwmSetWindowAttribute: DWMWA_USE_IMMERSIVE_DARK_MODE(%#x, %s)=%s", hwnd, bool(value.value), r)
 
 
 def get_desktop_names() -> Sequence[str]:
@@ -498,6 +522,11 @@ def add_window_hooks(window) -> None:
         log.warn("Warning: cannot add window hooks without a window handle!")
         return
     log("add_window_hooks(%s) gdk window=%s, hwnd=%#x", window, gdk_window, handle)
+
+    try:
+        _apply_title_bar_theme(handle)
+    except Exception:
+        log("_apply_title_bar_theme(%#x)", handle, exc_info=True)
 
     if GROUP_LEADER:
         # MSWindows 7 onwards can use AppUserModel to emulate the group leader stuff:
