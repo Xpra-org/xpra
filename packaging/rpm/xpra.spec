@@ -826,16 +826,18 @@ fi
    partial support for some RHEL 10 clones
    pynvml 13.590.48
    enable avif on MacOS but not GStreamer video
+   `pycuda` 2026.1
 - MS Windows:
    client errors on control-c
    packaging fix for python-pillow
    warnings when named-pipes are the only local sockets available
    directsound device queries
 - Major:
-   virtual monitor geometry synchronization
+   virtual monitor geometry synchronization + fixup
    handle notify2 backend failures gracefully
    initial "fast" socket read could spin until the connection failed
    DND errors under Wayland
+   X11 calls missing trap context
 - Printing:
    incorrect cups backend exit codes could cause DoS, ie: FILE_TOO_BIG
    use more widely compatible socket syntax
@@ -853,6 +855,11 @@ fi
    window size changed mis-detection
    better backwards compatibility for exposing version data
    XPRA_MIN_DPI would actually clamp the DPI to that value
+   bail out early when connection is already closed
+   clipboard tray menu entry is not pre-selected
+   `netdev_query` module is optional
+   bump version of the notification spec we claim to support
+   slots interfere with pygobject and should not be used
 - Cosmetic:
    make socket eof detection less spammy
    invalid syntax used in man page
@@ -862,6 +869,7 @@ fi
    avoid warning when the server doesn't support av-sync
    substitutions missing from log messages
    EDID data scrambled the message
+   remove duplicate version data
 
 * Thu Dec 04 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
 - Platforms, build and packaging:

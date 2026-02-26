@@ -10,16 +10,18 @@
     * [partial support for some RHEL 10 clones](https://github.com/Xpra-org/xpra/commit/21a305e28ed70ad0ba3e107502c4220ad14a4293)
     * [`pynvml` 13.590.48](https://github.com/Xpra-org/xpra/commit/2c2e1f5d5183094d82f8c0238582326ccc736e42)
     * [enable `avif` on MacOS](https://github.com/Xpra-org/xpra/commit/4f057fa9bdf28e22f57d318f0e145b238205b780) [but not GStreamer video](https://github.com/Xpra-org/xpra/commit/e539bf12dfaf0d77a706876df1bbfea0262d0a1a)
+    * [`pycuda` 2026.1](https://github.com/Xpra-org/xpra/commit/61e3f248cfa59e342776585d1aec9e500e7b0d1f)
 * MS Windows:
     * [client errors on control-c](https://github.com/Xpra-org/xpra/commit/c0d8374cc2edf60b3b3963a7bdfcef6cc2cd45ac)
     * [packaging fix for python-pillow](https://github.com/Xpra-org/xpra/commit/1ac190a1dd5c733e336eef7d4dbcc3afef5710f0)
     * [warnings when `named-pipe`s are the only local sockets available](https://github.com/Xpra-org/xpra/commit/a0ffd57f4e34c7a405e04edd345284bb799c8339)
     * [directsound device queries](https://github.com/Xpra-org/xpra/commit/045a23e94e58bd93612ac1333bf29b9243ad44db)
 * Major:
-    * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/18344cff9a1aab0d2f323aa7f1b557f80314f50a)
+    * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/18344cff9a1aab0d2f323aa7f1b557f80314f50a) + [fixup](https://github.com/Xpra-org/xpra/commit/bc8b7d1493790ee307e33961c50d41d80efb278a)
     * [handle notify2 backend failures gracefully](https://github.com/Xpra-org/xpra/commit/715f4c5bb6189697c0fd207e8140d5c59944204b)
     * [initial "fast" socket read could spin until the connection failed](https://github.com/Xpra-org/xpra/commit/332fb57b108865ff672b5277d66fefb3b1e23c88)
     * [DND errors under Wayland](https://github.com/Xpra-org/xpra/commit/50f2c82d2881df0bb1b478a28aa1ab186b7843e7)
+    * [X11 calls missing trap context](https://github.com/Xpra-org/xpra/commit/3e5d16ae9d851c6753b1258e66db290c74d4a12a)
 * Printing:
     * [incorrect cups backend exit codes could cause DoS](https://github.com/Xpra-org/xpra/commit/6127a6d704ab71b6043a4a3a3b7a173e51626c16), [ie: `FILE_TOO_BIG`](https://github.com/Xpra-org/xpra/commit/194f2cb38f3d4d62c2664ef3b90297575f7a5c79)
     * [use more widely compatible socket syntax](https://github.com/Xpra-org/xpra/commit/01a91109d6a69aae2f741a9ff92b68986d2674f8)
@@ -37,6 +39,11 @@
     * [window size changed mis-detection](https://github.com/Xpra-org/xpra/commit/64aa726f0505188249c4dec7239d9f9fb94fb690)
     * [better backwards compatibility for exposing version data](https://github.com/Xpra-org/xpra/commit/abd64fc2f9ff01990b7ad10ea3753b30c6cdbea4)
     * [`XPRA_MIN_DPI` would actually clamp the DPI to that value](https://github.com/Xpra-org/xpra/commit/152a9a430110ba3a0b4a6ca69949ed1104a761d8)
+    * [bail out early when connection is already closed](https://github.com/Xpra-org/xpra/commit/9de2be7505bdbc87aa948fe7179805688718bf10)
+    * [clipboard tray menu entry is not pre-selected](https://github.com/Xpra-org/xpra/commit/9359397253c20c0b85a3addc2cf6379024d16149)
+    * [`netdev_query` module is optional](https://github.com/Xpra-org/xpra/commit/951a91dab1e193db4ea5579f863b674b3c146cda)
+    * [bump version of the notification spec we claim to support](https://github.com/Xpra-org/xpra/commit/20ec1ed240c000486269239acf29d0c0024b77fe)
+    * [slots interfere with pygobject and should not be used](https://github.com/Xpra-org/xpra/commit/2fcceabdefa6a04d6e8ecf6659bcce683c3328ef)
 * Cosmetic:
     * [make socket eof detection less spammy](https://github.com/Xpra-org/xpra/commit/a7a00921edc54294b37c49622d3f63f548555091)
     * [invalid syntax used in man page](https://github.com/Xpra-org/xpra/commit/2291f9bb214d245b56340e8e20b61f2ca6d27787)
@@ -46,6 +53,7 @@
     * [avoid warning when the server doesn't support av-sync](https://github.com/Xpra-org/xpra/commit/7988c852268e996bb5d89253bb311fa891c764fe)
     * [substitutions missing from log messages](https://github.com/Xpra-org/xpra/commit/c1415a412777af8104579b2f90cbc6517dd9a860)
     * [EDID data scrambled the message](https://github.com/Xpra-org/xpra/commit/ace76ebc5e1e3e66cf64831ee7200d44652aa723)
+    * [remove duplicate version data](https://github.com/Xpra-org/xpra/commit/ed884e42347fb02fc5319984671b044490904cdb)
 
 ## [5.1.4] 2025-12-04
 * Platforms, build and packaging:
