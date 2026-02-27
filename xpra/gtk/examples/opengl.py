@@ -3,7 +3,7 @@
 # Copyright (C) 2013 Antoine Martin <antoine@xpra.org>
 
 
-def main(argv=()):
+def main(argv: list[str]) -> int:
     from xpra.log import Logger, consume_verbose_argv
     from xpra.platform import program_context
     with program_context("opengl", "OpenGL"):
@@ -36,6 +36,4 @@ def main(argv=()):
 
 if __name__ == "__main__":
     import sys
-
-    r = main(sys.argv)
-    sys.exit(r)
+    sys.exit(main(sys.argv))

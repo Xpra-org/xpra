@@ -15,6 +15,7 @@ from xpra.gtk.widget import label
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.clipboard.common import get_local_selections
+from xpra.log import consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -243,11 +244,12 @@ class ClipboardStateInfoWindow:
         self.window.present()
 
 
-def main() -> None:
+def main(argv: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.log import enable_color
     from xpra.platform.gui import init, set_default_icon
     with program_context("Clipboard-Test", "Clipboard Test Tool"):
+        consume_verbose_argv(argv, "clipboard")
         enable_color()
 
         set_default_icon("clipboard.png")
@@ -259,8 +261,8 @@ def main() -> None:
         w = ClipboardStateInfoWindow()
         GLib.idle_add(w.show_with_focus)
         Gtk.main()
+        return 0
 
 
 if __name__ == "__main__":
-    main()
-    sys.exit(0)
+    sys.exit(main(sys.argv))

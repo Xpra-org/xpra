@@ -54,7 +54,7 @@ class SQLDatabaseUtil(DatabaseUtilBase):
         return Authenticator
 
 
-def main(argv) -> int:
+def main(argv: list[str]) -> int:
     return run_dbutil(SQLDatabaseUtil, "databaseURI", argv)
 
 

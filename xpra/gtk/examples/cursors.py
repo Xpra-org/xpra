@@ -9,6 +9,7 @@ from xpra.platform.gui import force_focus
 from xpra.gtk.cursors import cursor_types
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.log import consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -18,8 +19,9 @@ width = 400
 height = 200
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     with program_context("cursors", "Cursors"):
+        consume_verbose_argv(argv, "all")
         window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         window.set_title("Cursors")
         window.set_size_request(width, height)
@@ -60,4 +62,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))

@@ -148,7 +148,7 @@ class DatabaseUtilBase:
         raise NotImplementedError()
 
 
-def run_dbutil(database_util_class=DatabaseUtilBase, conn_str="databaseURI", argv=()) -> int:
+def run_dbutil(database_util_class=DatabaseUtilBase, conn_str="databaseURI", argv: Sequence[str]=()) -> int:
     def usage(msg="invalid number of arguments"):
         print(msg)
         print("usage:")

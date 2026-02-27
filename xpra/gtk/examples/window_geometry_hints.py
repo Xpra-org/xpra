@@ -10,6 +10,7 @@ from xpra.os_util import gi_import
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.log import consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -169,9 +170,10 @@ class OptionWindow(Gtk.Window):
         w.show_all()
 
 
-def main() -> None:
+def main(argv: list[str]) -> int:
     from xpra.platform import program_context
     with program_context("window-geometry-hints", "Window Geometry Hints"):
+        consume_verbose_argv(argv, "all")
         w = OptionWindow(sys.argv[1:])
         add_close_accel(w, Gtk.main_quit)
         from xpra.gtk.util import quit_on_signals
@@ -188,5 +190,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
-    sys.exit(0)
+    sys.exit(main(sys.argv))

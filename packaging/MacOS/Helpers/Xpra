@@ -9,11 +9,6 @@ PYTHON="$contents_dir/Helpers/PythonExecWrapper"
 
 #parse arguments into a string:
 args=""
-while (($#)); do
-    args="$args,\"$1\""
-    shift
-done
-
 
 DEBUG="$(cat ${HOME}/.xpra/debug 2> /dev/null)"
 if [ -n "${DEBUG}" ]; then
@@ -29,7 +24,7 @@ fi
 
 if [ "${XPRA_LOG_TO_FILE}" != "1" ]; then
   # no debug, just exec it:
-  exec "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));"
+  exec "$PYTHON" "$exe_name" "xpra.scripts.main" "$@" "${args}"
 else
   # run as a subprocess and log the output:
   echo "xpra debug output" > "${XPRA_LOG_FILENAME}"
@@ -47,9 +42,9 @@ else
   export XPRA_LOG_FORMAT="%(asctime)s %(message)s"
 
   echo >> "${XPRA_LOG_FILENAME}"
-  echo "bash -x $PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> "${XPRA_LOG_FILENAME}"
+  echo "bash -x $PYTHON" "$exe_name" "xpra.scripts.main" "$@" "${args}" >> "${XPRA_LOG_FILENAME}"
   echo >> "${XPRA_LOG_FILENAME}"
 
-  bash -x "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main(sys.argv[0], [\"xpra\"${args}]));" >> "${XPRA_LOG_FILENAME}"
+  bash -x "$PYTHON" "$exe_name" "xpra.scripts.main" "$@" "${args}" >> "${XPRA_LOG_FILENAME}"
   echo "xpra subprocess terminated with exit code $?" >> "${XPRA_LOG_FILENAME}"
 fi

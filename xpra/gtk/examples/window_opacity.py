@@ -8,6 +8,7 @@ from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.log import consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -38,8 +39,9 @@ def make_window() -> Gtk.Window:
     return win
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     with program_context("window-opacity", "Window Opacity"):
+        consume_verbose_argv(argv, "all")
         w = make_window()
 
         def show_with_focus() -> None:
@@ -56,4 +58,5 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    main()
+    import sys
+    sys.exit(main(sys.argv))

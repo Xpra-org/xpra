@@ -3,11 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
+
 from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.log import consume_verbose_argv
 
 from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE  # pylint: disable=no-name-in-module
 
@@ -94,9 +97,10 @@ class AnimatedColorWindow(Gtk.Window):
         paint_block(w / 2, h / 2, w / 2, h / 2, 1, 1, 1)
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     from xpra.platform.gui import init, set_default_icon
     with program_context("colors", "Colors"):
+        consume_verbose_argv(argv, "all")
         set_default_icon("encoding.png")
         init()
 
@@ -110,4 +114,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main(sys.argv))

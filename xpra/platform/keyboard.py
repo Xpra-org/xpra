@@ -5,6 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
+
 from xpra.platform import platform_import
 
 # default:
@@ -20,8 +22,7 @@ platform_import(globals(), "keyboard", True,
                 "get_keyboard_device")
 
 
-def main() -> int:
-    import sys
+def main(argv: list[str]) -> int:
     from xpra.util.system import is_X11
     from xpra.util.str_fn import print_nested_dict
     from xpra.util.str_fn import csv
@@ -30,7 +31,7 @@ def main() -> int:
     with program_context("Keyboard-Tool", "Keyboard Tool"):
         # use the logger for the platform module we import from
         enable_color()
-        verbose = consume_verbose_argv(sys.argv, "keyboard")
+        verbose = consume_verbose_argv(argv, "keyboard")
 
         # naughty, but how else can I hook this up?
         if is_X11():
@@ -74,4 +75,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main(sys.argv))

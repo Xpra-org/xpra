@@ -10,6 +10,7 @@ from xpra.gtk.util import GRAB_STATUS_STRING, quit_on_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.log import consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -114,8 +115,9 @@ def make_grab_window() -> Gtk.Window:
     return window
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     with program_context("grabs", "Grabs"):
+        consume_verbose_argv(argv, "all")
         w = make_grab_window()
 
         def show_with_focus() -> None:
@@ -131,4 +133,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))

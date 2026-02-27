@@ -12,7 +12,7 @@ from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_c
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr
 from xpra.os_util import gi_import
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -106,13 +106,14 @@ def do_main(opts: XpraConfig) -> ExitValue:
         return gui.exit_code
 
 
-def main() -> ExitValue:
+def main(argv: list[str]) -> ExitValue:
     # pylint: disable=import-outside-toplevel
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
+    consume_verbose_argv(argv, "mdns")
     return do_main(opts)
 
 
 if __name__ == "__main__":
-    r = main()
+    r = main(sys.argv)
     sys.exit(r)

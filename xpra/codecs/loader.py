@@ -470,7 +470,7 @@ def encoding_help(encoding: str) -> str:
     return encoding.ljust(12) + ehelp
 
 
-def main(args) -> int:
+def main(args: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Loader", "Encoding Info"):
@@ -583,4 +583,4 @@ def print_codecs(list_codecs: Sequence[str]) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    sys.exit(main(sys.argv))

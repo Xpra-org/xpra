@@ -8,6 +8,7 @@ from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.os_util import gi_import
+from xpra.log import consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -37,9 +38,10 @@ class BellWindow(Gtk.Window):
         system_bell(self.get_window().get_xid(), 0, 100, 2000, 1000, 0, 0, "test")
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     from xpra.gtk.util import quit_on_signals, init_display_source
     with program_context("bell", "Bell"):
+        consume_verbose_argv(argv, "all")
         init_display_source()
         w = BellWindow()
         add_close_accel(w, Gtk.main_quit)
@@ -50,4 +52,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))

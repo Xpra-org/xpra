@@ -101,7 +101,7 @@ platform_import(globals(), "printing", False,
                 "DEFAULT_MIMETYPES")
 
 
-def main(argv) -> int:
+def main(argv: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     consume_verbose_argv(argv, "printing")
     from xpra.util.str_fn import nonl

@@ -1163,7 +1163,7 @@ def exception_dialog(title: str) -> None:
     Gtk.main()
 
 
-def main(argv) -> int:
+def main(argv: list[str]) -> int:
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Xpra-Launcher", "Xpra Connection Launcher"):

@@ -749,7 +749,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "launcher":
         check_gtk_client()
         from xpra.client.gtk3.launcher import main as launcher_main
-        return launcher_main(["xpra"] + args)
+        return launcher_main(["launcher.py"] + args)
     if mode == "gui":
         try:
             check_gtk_client()
@@ -776,7 +776,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "bug-report":
         check_gtk_client()
         from xpra.gtk.dialogs import bug_report
-        return bug_report.main(["xpra"] + args)
+        return bug_report.main(["bug_report.py"] + args)
     if mode == "session-info":
         return run_session_info(error_cb, options, args, cmdline)
     if mode in ("docs", "documentation"):
@@ -884,7 +884,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "webcam":
         check_gtk("webcam")
         from xpra.gtk.dialogs import show_webcam
-        return show_webcam.main()
+        return show_webcam.main(["show_webcam.py"] + args)
     if mode == "keyboard":
         from xpra.platform import keyboard
         return keyboard.main()
@@ -953,7 +953,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "dbus-session-list":
         return run_dbus_session_list()
     if mode == "u2f":
-        return run_u2f()
+        return run_u2f(args)
     if mode == "otp":
         return run_otp(args)
     if mode == "configure":
@@ -2853,7 +2853,7 @@ def run_example(args) -> ExitValue:
         module = import_module(modpath)
     except ImportError as e:
         raise InitException(f"failed to import example {classname}: {e}") from None
-    return module.main()
+    return module.main(args)
 
 
 def run_autostart(script_file, args) -> ExitValue:
@@ -4621,9 +4621,9 @@ def run_auth(_options, args) -> ExitValue:
     return main_fn(argv)
 
 
-def run_u2f() -> ExitValue:
+def run_u2f(args: list[str]) -> ExitValue:
     from xpra.gtk.dialogs.u2f_tool import main
-    return main()
+    return main(["u2f_tool.py"] + args)
 
 
 def run_otp(args: list[str]) -> ExitValue:

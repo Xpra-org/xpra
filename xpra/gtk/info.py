@@ -453,7 +453,7 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1) -> list[tuple[int, in
     return [screen0]
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.util.str_fn import pver
     from xpra.util.str_fn import print_nested_dict
@@ -468,7 +468,7 @@ def main() -> int:
         from xpra.platform.gui import init as gui_init, ready
         gui_init()
         ready()
-        if consume_verbose_argv(sys.argv, "gtk"):
+        if consume_verbose_argv(argv, "gtk"):
             global SHOW_ALL_VISUALS
             SHOW_ALL_VISUALS = True
         print("GTK Version:")
@@ -480,4 +480,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))

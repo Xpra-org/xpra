@@ -2,7 +2,7 @@
 # Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+from xpra.log import consume_verbose_argv
 from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
@@ -68,8 +68,9 @@ def make_window() -> Gtk.Window:
     return window
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     with program_context("window-transient", "Window Transient"):
+        consume_verbose_argv(argv, "all")
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
         quit_on_signals("transient window test")
@@ -86,5 +87,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     import sys
-    r = main()
-    sys.exit(r)
+    sys.exit(main(sys.argv))

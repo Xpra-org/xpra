@@ -6,13 +6,14 @@
 from xpra.platform import program_context
 from xpra.gtk.widget import choose_file
 from xpra.os_util import gi_import
+from xpra.log import consume_verbose_argv
 
 Gtk = gi_import("Gtk")
-GLib = gi_import("GLib")
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     with program_context("file-chooser", "File Chooser"):
+        consume_verbose_argv(argv, "all")
         file_filter = Gtk.FileFilter()
         file_filter.set_name("Xpra")
         file_filter.add_pattern("*.xpra")
@@ -24,4 +25,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))

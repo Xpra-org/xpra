@@ -512,7 +512,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     return props
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
@@ -520,10 +520,10 @@ def main() -> int:
     with program_context("OpenGL-Check"):
         gui_init()
         enable_color()
-        consume_verbose_argv(sys.argv, "opengl")
+        consume_verbose_argv(argv, "opengl")
         from xpra.gtk.util import init_display_source
         init_display_source()
-        force_enable = "-f" in sys.argv or "--force" in sys.argv
+        force_enable = "-f" in argv or "--force" in argv
         from xpra.platform.gl_context import GLContext
         if not GLContext:
             log.warn("No OpenGL context implementation found")
@@ -560,4 +560,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))

@@ -393,14 +393,14 @@ platform_import(globals(), "gui", False,
                 )
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     from xpra.platform import program_context
     from xpra.util.str_fn import print_nested_dict
     from xpra.util.system import is_X11
     from xpra.log import enable_color, consume_verbose_argv
     with program_context("GUI-Properties"):
         enable_color()
-        consume_verbose_argv(sys.argv, "all")
+        consume_verbose_argv(argv, "all")
         init()
 
         # naughty, but how else can I hook this up?
@@ -413,4 +413,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))

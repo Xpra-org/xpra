@@ -521,12 +521,12 @@ def pver(v) -> str:
     return str(v)
 
 
-def main() -> int:  # pragma: no cover
+def main(argv: list[str]) -> int:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Network-Info", "Network Info"):
         enable_color()
-        consume_verbose_argv(sys.argv, "network")
+        consume_verbose_argv(argv, "network")
         print("Network interfaces found:")
         netifaces = import_netifaces()
         for iface in get_interfaces():
@@ -598,4 +598,4 @@ def main() -> int:  # pragma: no cover
 
 
 if __name__ == "__main__":  # pragma: no cover
-    main()
+    sys.exit(main(sys.argv))

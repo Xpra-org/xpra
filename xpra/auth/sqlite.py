@@ -86,7 +86,7 @@ class SqliteDatabaseUtil(DatabaseUtilBase):
         return Authenticator
 
 
-def main(argv) -> int:
+def main(argv: list[str]) -> int:
     return run_dbutil(SqliteDatabaseUtil, "filename", argv)
 
 

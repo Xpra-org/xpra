@@ -4,6 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+from datetime import datetime
+from collections import deque
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
@@ -13,11 +16,7 @@ from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-
-import os
-from datetime import datetime
-from collections import deque
-
+from xpra.log import consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -117,8 +116,9 @@ def make_window() -> Gtk.Window:
     return window
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     with program_context("window-focus", "Window Focus"):
+        consume_verbose_argv(argv, "all")
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
         from xpra.gtk.util import quit_on_signals
@@ -135,4 +135,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))

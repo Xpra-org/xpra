@@ -4,6 +4,7 @@
 
 import sys
 
+from xpra.log import consume_verbose_argv
 from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
@@ -86,16 +87,17 @@ class TestForm:
             self.event_label.set_text("Unexpected event: %s" % event)
 
 
-def main() -> None:
+def main(argv: list[str]) -> int:
     from xpra.gtk.util import quit_on_signals
     with program_context("clicks", "Clicks"):
+        consume_verbose_argv(argv, "all")
         w = TestForm()
         add_close_accel(w.window, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)
         quit_on_signals("clicks test window")
         Gtk.main()
+        return 0
 
 
 if __name__ == "__main__":
-    main()
-    sys.exit(0)
+    sys.exit(main(sys.argv))

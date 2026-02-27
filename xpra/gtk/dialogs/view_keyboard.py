@@ -13,7 +13,7 @@ from xpra.platform.gui import force_focus
 from xpra.gtk.widget import label
 from xpra.gtk.keymap import get_default_keymap
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.log import enable_color, Logger
+from xpra.log import enable_color, Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -162,11 +162,12 @@ class KeyboardStateInfoWindow:
         self.window.present()
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform.gui import init, set_default_icon
     from xpra.gtk.util import init_display_source
     with program_context("Keyboard-Test", "Keyboard Test Tool"):
+        consume_verbose_argv(argv, "keyboard")
         enable_color()
 
         set_default_icon("keyboard.png")
@@ -183,5 +184,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
-    sys.exit(0)
+    sys.exit(main(sys.argv))

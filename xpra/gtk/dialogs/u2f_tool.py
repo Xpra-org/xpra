@@ -13,7 +13,7 @@ from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file, use_gui_prompt
 from xpra.util.str_fn import hexstr
 from xpra.platform.paths import get_user_conf_dirs
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("auth", "util")
 
@@ -25,9 +25,10 @@ def printmsgs(*msgs: str) -> None:
         print(x)
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     from xpra.platform import program_context
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
+        consume_verbose_argv(argv, "u2f")
         if use_gui_prompt():
             Gtk = gi_import("Gtk")
             GLib = gi_import("GLib")
@@ -121,4 +122,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))

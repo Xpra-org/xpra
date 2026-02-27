@@ -4,13 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.log import consume_verbose_argv
 from xpra.util.version import get_version_info, get_platform_info, get_host_info
 from xpra.util.str_fn import print_nested_dict
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     from xpra.platform import program_context
     with program_context("Version-Info", "Version Info"):
+        consume_verbose_argv(argv, "all")
         print("Build:")
         print_nested_dict(get_version_info())
         print("")
@@ -32,4 +34,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":  # pragma: no cover
-    main()
+    import sys
+    sys.exit(main(sys.argv))

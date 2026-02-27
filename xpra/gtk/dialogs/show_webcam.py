@@ -8,12 +8,12 @@
 import sys
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     from xpra.platform import program_context, command_error
     from xpra.platform.gui import init, set_default_icon
     with program_context("Webcam", "Webcam"):
         from xpra.log import Logger, consume_verbose_argv
-        consume_verbose_argv(sys.argv, "webcam")
+        consume_verbose_argv(argv, "webcam")
         log = Logger("webcam")
         set_default_icon("webcam.png")
         init()
@@ -26,11 +26,11 @@ def main() -> int:
             return 1
         log("cv2=%s", cv2)
         device = 0
-        if len(sys.argv) == 2:
+        if len(argv) == 2:
             try:
-                device = int(sys.argv[1])
+                device = int(argv[1])
             except ValueError:
-                command_error("Warning: failed to parse value as a device number: '%s'" % sys.argv[1])
+                command_error("Warning: failed to parse value as a device number: '%s'" % argv[1])
         log("opening %s with device=%s", cv2.VideoCapture, device)  # @UndefinedVariable
         try:
             cap = cv2.VideoCapture(device)  # @UndefinedVariable
@@ -52,5 +52,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    v = main()
-    sys.exit(v)
+    sys.exit(main(sys.argv))

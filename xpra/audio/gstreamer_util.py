@@ -838,12 +838,12 @@ def loop_warning_messages(mode="speaker") -> list[str]:
     ]
 
 
-def main() -> None:
+def main(argv: list[str]) -> int:
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("GStreamer-Info", "GStreamer Information"):
         enable_color()
-        consume_verbose_argv(sys.argv, "gstreamer")
+        consume_verbose_argv(argv, "gstreamer")
         import_gst()
         v = get_gst_version()
         if not v:
@@ -870,7 +870,8 @@ def main() -> None:
         print("source plugins:     " + csv([x for x in get_source_plugins() if x in apn]))
         print("sink plugins:       " + csv([x for x in get_sink_plugins() if x in apn]))
         print("default sink:       " + str(get_default_sink_plugin()))
+        return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main(sys.argv))

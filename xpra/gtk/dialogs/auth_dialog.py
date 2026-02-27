@@ -107,23 +107,23 @@ class AuthDialog(Gtk.Window):
         self.do_quit()
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.util.io import stderr_print
     from xpra.platform import program_context
     with program_context("Session Access"):
         from xpra.platform.gui import init as gui_init
         gui_init()
-        if len(sys.argv) < 2:
-            stderr_print(f"usage: {sys.argv[0]} 'message' [timeout-in-seconds]")
+        if len(argv) < 2:
+            stderr_print(f"usage: {argv[0]} 'message' [timeout-in-seconds]")
             return 4
-        info = sys.argv[1]
-        if len(sys.argv) >= 3:
+        info = argv[1]
+        if len(argv) >= 3:
             try:
-                timeout = int(sys.argv[2])
+                timeout = int(argv[2])
             except ValueError:
                 stderr_print("invalid timeout value")
-                stderr_print(f"usage: {sys.argv[0]} 'message' [timeout-in-seconds]")
+                stderr_print(f"usage: {argv[0]} 'message' [timeout-in-seconds]")
                 return 4
         else:
             timeout = 600
@@ -133,5 +133,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    r = main()
+    r = main(sys.argv)
     sys.exit(r)

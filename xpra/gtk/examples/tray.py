@@ -11,7 +11,7 @@ from xpra.platform.systray import get_backends, get_menu_helper_class
 from xpra.platform.paths import get_icon_filename
 from xpra.gtk.widget import scaled_image
 from xpra.common import noop
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -185,8 +185,9 @@ class FakeApplication:
         Gtk.main_quit()
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     with program_context("tray", "Tray"):
+        consume_verbose_argv(argv, "all")
         from xpra.util.system import is_X11
         if is_X11():
             from xpra.gtk.util import init_display_source
@@ -199,4 +200,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))

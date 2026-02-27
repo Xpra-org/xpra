@@ -2,7 +2,7 @@
 # Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+from xpra.log import consume_verbose_argv
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
@@ -143,15 +143,18 @@ class FontWindow(Gtk.Window):
             cr.stroke()
 
 
-def main() -> None:
+def main(argv: list[str]) -> int:
     with program_context("font-rendering", "Font Rendering"):
+        consume_verbose_argv(argv, "all")
         from xpra.gtk.util import quit_on_signals
         quit_on_signals("font test window")
         w = FontWindow()
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)
         Gtk.main()
+        return 0
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))
