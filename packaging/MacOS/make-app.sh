@@ -303,7 +303,7 @@ for helper in "${HELPERS_DIR}/"*; do
   filename=$(basename "${helper}")
   name=${filename//_/ }
   if [ "${name}" != "Xpra" ]; then
-    ln -sf "./launcher" "${FRAMEWORKS_DIR}/bin/${name}"
+    ln -sf "./Xpra" "${FRAMEWORKS_DIR}/bin/${name}"
   fi
 done
 
