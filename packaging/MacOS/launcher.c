@@ -16,13 +16,18 @@ int main(int argc, char *argv[]) {
     int sysargc = 1 + (argc - 3);
 
     wchar_t **sysargv = PyMem_RawMalloc(sizeof(wchar_t *) * sysargc);
-    if (!sysargv) { fprintf(stderr, "out of memory\n"); return 1; }
+    if (!sysargv) {
+        fprintf(stderr, "out of memory\n");
+        return 1;
+    }
     sysargv[0] = Py_DecodeLocale(exe_name, NULL);
-    for (int i = 0; i < argc - 3; i++)
+    for (int i = 0; i < argc - 3; i++) {
         sysargv[1 + i] = Py_DecodeLocale(argv[3 + i], NULL);
+    }
 
     PyConfig config;
     PyConfig_InitPythonConfig(&config);
+    config.parse_argv = 0;          // don't consume argv[0] as a script name
     PyConfig_SetString(&config, &config.program_name, sysargv[0]);
     PyConfig_SetArgv(&config, sysargc, sysargv);
     Py_InitializeFromConfig(&config);
