@@ -7,11 +7,14 @@
 # which is used on OSX as the default application name
 # as shown in the global menu.
 
-APPNAME=$(echo "$1" | sed 's+_+ +g')
+BINNAME="$1"
+APPNAME=$(echo "${BINNAME}" | sed 's+_+ +g')
 if [ -z "$APPNAME" ]; then
 	echo "usage $0 APPNAME [args ..]"
 	exit 1
 fi
+shift
+MODULE="$1"
 shift
 
 
@@ -108,4 +111,5 @@ if test "$LANG" == "C"; then
 	fi
 fi
 
-exec "$PYTHON" "${APPNAME}" "$@"
+
+exec "$PYTHON" "-c" "import sys;sys.argv[0]='${full_path}/${BINNAME}';from ${MODULE} import main;sys.exit(main(sys.argv))" "$@"

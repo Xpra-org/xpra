@@ -59,7 +59,10 @@ if [ -d "${X11_DIR}/bin" ]; then
     sign_runtime "${X11_DIR}/lib/dri/"*
 fi
 echo "  Frameworks/bin"
-sign_runtime "${CONTENTS_DIR}/Frameworks/bin/"*
+# only sign the actual binaries / unique scripts, not the symlinks:
+for bin in Python daemonizer gst-inspect-1.0 gst-launch-1.0 gst-plugin-scanner sshpass xpra_signal_listener; do
+  sign_runtime "${CONTENTS_DIR}/Frameworks/bin/${bin}"
+done
 echo "  Helpers"
 sign_runtime "${CONTENTS_DIR}/Helpers/"*
 echo "  MacOS/Xpra"
