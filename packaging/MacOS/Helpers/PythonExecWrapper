@@ -108,4 +108,4 @@ if test "$LANG" == "C"; then
 	fi
 fi
 
-exec "$PYTHON" "$@"
+exec "$PYTHON" "${APPNAME}" "$@"
