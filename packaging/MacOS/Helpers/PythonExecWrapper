@@ -7,7 +7,7 @@
 # which is used on OSX as the default application name
 # as shown in the global menu.
 
-APPNAME=`echo "$1" | sed 's+_+ +g'`
+APPNAME=$(echo "$1" | sed 's+_+ +g')
 if [ -z "$APPNAME" ]; then
 	echo "usage $0 APPNAME [args ..]"
 	exit 1
@@ -59,7 +59,7 @@ export GTK_THEME="Adwaita"
 export GST_BUNDLE_CONTENTS="$bundle_contents"
 
 export _PYTHON="$PYTHON"
-export PYTHON="$bundle_frameworks/bin/launcher"
+export PYTHON="$bundle_frameworks/bin/$APPNAME"
 export _PYTHONHOME="$PYTHONHOME"
 export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules

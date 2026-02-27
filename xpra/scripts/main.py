@@ -171,10 +171,8 @@ def do_main(script_file: str, cmdline: list[str]) -> ExitValue:
         fixup_defaults(defaults)
         options, args = do_parse_cmdline(cmdline, defaults)
         # `set_proc_title` is set here so that we can override the cmdline later
-        # (don't ask me why this works)
-        if OSX:
-            set_proc_title("Xpra")
-        else:
+        # (don't ask me why this works - on OSX, it breaks the dock)
+        if not OSX:
             set_proc_title(" ".join(cmdline))
         if not args:
             raise InitExit(-1, "xpra: need a mode")
