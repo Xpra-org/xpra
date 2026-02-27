@@ -68,6 +68,7 @@ if [ "${ID}" == "fedora" ]; then
 fi
 if [ "${ID}" == "rhel" ]; then
   sudo dnf config-manager --set-enabled crb
+  sudo dnf config-manager --set-enabled epel-release
   sudo dnf config-manager --set-enabled powertools
   dnfinstall AlmaLinux
   exit 0
