@@ -76,6 +76,7 @@ OPENGL_PROBE_TIMEOUT: int = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
 SYSTEMD_RUN: bool = envbool("XPRA_SYSTEMD_RUN", True)
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 LIST_REPROBE_TIMEOUT: int = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
+SPLASH_EXIT_DELAY: int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 
 
 # pylint: disable=import-outside-toplevel
@@ -4921,4 +4922,3 @@ if __name__ == "__main__":  # pragma: no cover
     if not code:
         code = 0
     sys.exit(code)
-SPLASH_EXIT_DELAY: int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
