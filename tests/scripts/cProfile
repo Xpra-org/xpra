@@ -4,10 +4,14 @@ import sys
 import xpra.scripts.main
 
 import cProfile
-def main():
-	xpra.scripts.main.main(__file__, sys.argv)
+
+
+def main() -> int:
+    return xpra.scripts.main.do_main(__file__, sys.argv)
+
 
 cProfile.run("main()", "profile.stats")
+
 
 import pstats
 p = pstats.Stats("profile.stats")

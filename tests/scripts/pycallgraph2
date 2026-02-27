@@ -736,7 +736,7 @@ import xpra.scripts.main
 
 try:
     xpra.scripts.main.clean_std_pipes = noop
-    x = xpra.scripts.main.main(__file__, sys.argv)
+    x = xpra.scripts.main.do_main(__file__, sys.argv)
     print("xpra main returned %s" % x)
 except Exception as e:
     print(f"xpra main raised an exception: {e}")

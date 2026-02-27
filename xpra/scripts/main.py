@@ -138,7 +138,11 @@ def inject_debug_logging(cmdline: list[str]) -> None:
     cmdline.append(f"--debug={csv(debug_categories)}")
 
 
-def main(script_file: str, cmdline: list[str]) -> ExitValue:
+def main(cmdline: list[str]) -> int:
+    return int(do_main(cmdline[0], cmdline))
+
+
+def do_main(script_file: str, cmdline: list[str]) -> ExitValue:
     set_main_thread()
     save_env()
     ml = envint("XPRA_MEM_USAGE_LOGGER")
@@ -4918,7 +4922,7 @@ def run_setting(setunset: bool, args) -> ExitValue:
 
 
 if __name__ == "__main__":  # pragma: no cover
-    code = main("xpra.exe", sys.argv)
+    code = do_main("xpra.exe", sys.argv)
     if not code:
         code = 0
     sys.exit(code)

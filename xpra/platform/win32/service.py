@@ -68,7 +68,7 @@ def run_mode(name: str, args: list[str]) -> int:
     set_default_name(name)
     init()
     from xpra.scripts.main import main as xpra_main
-    return int(xpra_main(args[0], args))
+    return xpra_main(args)
 
 
 if __name__ == "__main__":

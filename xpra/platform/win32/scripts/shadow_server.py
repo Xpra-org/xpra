@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
 
 
 def get_commonappdata_dir() -> str:
@@ -25,7 +24,7 @@ def get_commonappdata_dir() -> str:
         return ""
 
 
-def main() -> None:
+def main(argv: list[str]) -> int:
     from multiprocessing import freeze_support
     freeze_support()
 
@@ -38,16 +37,15 @@ def main() -> None:
     init()
 
     from xpra.scripts.main import main as xpra_main
-    args = sys.argv[:1] + [
-        "shadow",
-    ] + sys.argv[1:]
+    args = [argv[0], "shadow"] + argv[1:]
     commonappdata = get_commonappdata_dir()
     if commonappdata:
         ssl_cert = os.path.join(commonappdata, "Xpra", "ssl-cert.pem")
         if os.path.exists(ssl_cert):
             args.append("--ssl-cert=%s" % ssl_cert)
-    sys.exit(xpra_main(sys.argv[0], args))
+    return xpra_main(args)
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))

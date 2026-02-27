@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         fprintf(stderr, "usage: %s exe_name module.path [args...]\n", argv[0]);
@@ -14,17 +13,14 @@ int main(int argc, char *argv[]) {
 
     const char *exe_name   = argv[1];
     const char *module_str = argv[2];
-    // sys.argv = [exe_name, argv[3], ...]
     int sysargc = 1 + (argc - 3);
 
-    // Build sys.argv as wchar_t**
     wchar_t **sysargv = PyMem_RawMalloc(sizeof(wchar_t *) * sysargc);
     if (!sysargv) { fprintf(stderr, "out of memory\n"); return 1; }
     sysargv[0] = Py_DecodeLocale(exe_name, NULL);
     for (int i = 0; i < argc - 3; i++)
         sysargv[1 + i] = Py_DecodeLocale(argv[3 + i], NULL);
 
-    // Use PyConfig (3.8+) instead of deprecated Py_SetProgramName
     PyConfig config;
     PyConfig_InitPythonConfig(&config);
     PyConfig_SetString(&config, &config.program_name, sysargv[0]);
@@ -46,13 +42,13 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
 
-    PyObject *result = PyObject_CallObject(func, NULL);
+    PyObject *sysargv_list = PySys_GetObject("argv");  // borrowed ref
+    PyObject *result = PyObject_CallFunction(func, "O", sysargv_list);
     Py_DECREF(func);
     Py_DECREF(module);
 
     if (result == NULL) {
         if (PyErr_ExceptionMatches(PyExc_SystemExit)) {
-            // PyErr_Fetch is the 3.11 way; PyErr_GetRaisedException is 3.12+
             PyObject *exc_type, *exc_value, *exc_tb;
             PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
             PyErr_NormalizeException(&exc_type, &exc_value, &exc_tb);
@@ -60,7 +56,7 @@ int main(int argc, char *argv[]) {
             if (code && PyLong_Check(code))
                 ret = (int)PyLong_AsLong(code);
             else
-                ret = 0;  // sys.exit() with no arg = success
+                ret = 0;
             Py_XDECREF(code);
             Py_XDECREF(exc_type);
             Py_XDECREF(exc_value);
