@@ -747,11 +747,11 @@ cdef class Encoder:
         info = get_info()
         info |= {
             "profile"       : self.profile,
-            "preset"        : get_preset_names()[self.preset],
+            "preset"        : s(get_preset_names()[self.preset]),
             "fast-decode"   : bool(self.fast_decode),
             "max-delayed"   : self.max_delayed,
             "b-frames"      : self.b_frames,
-            "tune"          : self.tune or "",
+            "tune"          : s(self.tune or ""),
             "frames"        : int(self.frames),
             "width"         : self.width,
             "height"        : self.height,
