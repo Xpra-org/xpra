@@ -476,7 +476,7 @@ class BaseWindowModel(CoreX11WindowModel):
 
     def _set_content_types(self, content_types: Sequence[str]) -> None:
         self._updateprop("content-type", "+".join(content_types) if content_types else "")
-        self._updateprop("content-types", content_types)
+        self._updateprop("content-types", tuple(content_types))
 
     def _handle_xpra_quality_change(self) -> None:
         quality: int = self.prop_get("_XPRA_QUALITY", "u32", True) or -1
