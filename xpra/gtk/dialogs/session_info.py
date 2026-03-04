@@ -1100,6 +1100,7 @@ class SessionInfo(Gtk.Window):
 
         self.encoder_info_box = Gtk.VBox(spacing=4)
         self.encoder_info_box.add(title_box("Window Encoders"))
+        self.encoder_labels = {}
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=0.0)
         al.set_margin_start(10)
         al.set_margin_end(10)
@@ -1178,17 +1179,23 @@ class SessionInfo(Gtk.Window):
             if server_last_info:
                 window_encoder_stats = self.get_window_encoder_stats()
                 # log("window_encoder_stats=%s", window_encoder_stats)
-                if window_encoder_stats:
-                    for x in self.encoder_info_box.get_children()[1:]:
-                        self.encoder_info_box.remove(x)
-                    for wid, props in window_encoder_stats.items():
-                        title = props.get("title", "")
-                        encoder = bytestostr(props.get("", "?"))
-                        display = "%s - %s (%s)" % (wid, title, encoder) if title else "%s (%s)" % (wid, encoder)
+                for wid in list(self.encoder_labels):
+                    if wid not in window_encoder_stats:
+                        self.encoder_info_box.remove(self.encoder_labels.pop(wid))
+                for wid, props in window_encoder_stats.items():
+                    title = props.get("title", "")
+                    encoder = bytestostr(props.get("", "?"))
+                    display = "%s - %s (%s)" % (wid, title, encoder) if title else "%s (%s)" % (wid, encoder)
+                    info = " ".join("%s=%s" % (k, v) for k, v in props.items() if k not in ("", "title"))
+                    if wid in self.encoder_labels:
+                        lbl = self.encoder_labels[wid]
+                        lbl.set_text(display)
+                        lbl.set_tooltip_text(info)
+                    else:
                         lbl = slabel(display)
+                        lbl.set_tooltip_text(info)
                         lbl.show()
-                        info = ("%s=%s" % (k, v) for k, v in props.items() if k not in ("", "title"))
-                        lbl.set_tooltip_text(" ".join(info))
+                        self.encoder_labels[wid] = lbl
                         self.encoder_info_box.add(lbl)
         return True
 
