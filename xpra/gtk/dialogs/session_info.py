@@ -1098,6 +1098,7 @@ class SessionInfo(Gtk.Window):
                      self.windows_managed_label, self.transient_managed_label,
                      self.trays_managed_label, self.opengl_label)
 
+        # grid 3:
         self.encoder_info_box = Gtk.VBox(spacing=4)
         self.encoder_info_box.add(title_box("Window Encoders"))
         self.encoder_labels = {}
