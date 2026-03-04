@@ -44,8 +44,10 @@ class PointerClient(StubClientMixin):
         self._mouse_position_timer = 0
         self._button_transform: dict[tuple[str, int], int] = {}
         self.server_pointer = True
+        self.middle_click = True
 
     def init_ui(self, opts) -> None:
+        self.middle_click = getattr(opts, "middle_click", True)
         pointer_opt = opts.pointer.replace("-", "").lower()
         pointer = pointer_opt.split(":", 1)[0]
         modifier = "shift" if pointer_opt.find(":") < 0 else pointer_opt.split(":", 1)[1]
