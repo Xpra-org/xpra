@@ -526,6 +526,14 @@ class ServerBase(ServerBaseClass):
             sinfo["ui-driver"] = self.ui_driver == ss.uuid
             cinfo[i] = sinfo
         up("client", cinfo)
+        # expose window encoder info at the top level so the session info dialog can display it:
+        window_info: dict = {}
+        for sinfo in cinfo.values():
+            w = sinfo.get("window")
+            if isinstance(w, dict):
+                window_info.update(w)
+        if window_info:
+            info["window"] = window_info
         log("ServerBase.get_source_info took %ims", (monotonic() - start) * 1000)
         return info
 
