@@ -85,13 +85,13 @@ def get_default_pulseaudio_command(pulseaudio_server_socket="$XPRA_PULSE_SERVER"
 
     load("module-null-sink",
          {
-             "sink_name": "Xpra-Speaker",
-             "sink_properties": description("Xpra-Speaker"),
+             "sink_name": "Xpra-Microphone",
+             "sink_properties": description("Xpra-Microphone"),
          })
     load("module-null-sink",
          {
-             "sink_name": "Xpra-Microphone",
-             "sink_properties": description("Xpra-Microphone"),
+             "sink_name": "Xpra-Speaker",
+             "sink_properties": description("Xpra-Speaker"),
          })
     load("module-remap-source",
          {
@@ -304,7 +304,9 @@ class PulseaudioServer(StubServerMixin):
         Returns the environment variables that should be passed to child processes.
         """
         env = super().get_child_env()
-        env.update(self.get_pulse_env())
+        # PULSE_SINK and PULSE_SOURCE are intentionally NOT set here: they would
+        # override routing for user applications. The audio pipeline uses
+        # XPRA_PULSE_SINK_DEVICE_NAME / XPRA_PULSE_SOURCE_DEVICE_NAME instead.
         return env
 
     def do_init_pulseaudio(self) -> None:
