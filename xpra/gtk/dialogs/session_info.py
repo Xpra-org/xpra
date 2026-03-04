@@ -1194,10 +1194,14 @@ class SessionInfo(Gtk.Window):
 
     def get_window_encoder_stats(self) -> dict:
         window_encoder_stats = {}
-        # new-style server with namespace (easier):
+        # Derive merged window info from client[i]["window"] (no top-level "window" key)
         server_last_info = self.last_info()
-        window_dict = server_last_info.get("window")
-        if window_dict and isinstance(window_dict, dict):
+        window_dict = {}
+        for client_info in server_last_info.get("client", {}).values():
+            w = client_info.get("window") if isinstance(client_info, dict) else None
+            if isinstance(w, dict):
+                window_dict.update(w)
+        if window_dict:
             id_to_window = getattr(self.client, "_id_to_window", {})
             for k, v in window_dict.items():
                 with log.trap_error("Error: cannot lookup window dict"):
