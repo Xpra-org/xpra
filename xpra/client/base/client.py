@@ -10,7 +10,7 @@ import uuid
 import signal
 import socket
 import string
-from time import monotonic
+from time import time
 from typing import Any, NoReturn
 from types import FrameType
 
@@ -75,7 +75,7 @@ class XpraClientBase(ClientBaseClass):
             self.init_packet_handlers()
         self._init_done = False
         self.exit_code: ExitValue | None = None
-        self.start_time = int(monotonic())
+        self.start_time = int(time())
 
     def defaults_init(self) -> None:
         # skip warning when running the client
