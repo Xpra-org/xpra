@@ -890,10 +890,10 @@ class SessionInfo(Gtk.Window):
             self.label_row("Server Platform", cattr("_remote_platform"))
         self.server_load_label = self.label_row("Server Load")
         self.server_load_label.set_tooltip_text("Average over 1, 5 and 15 minutes")
-        self.session_started_label = self.label_row("Session Started")
+        self.session_started_label = self.label_row("Session Duration")
         if not self.show_client:
             return
-        self.session_connected_label = self.label_row("Session Connected")
+        self.session_connected_label = self.label_row("Connection Duration")
         self.input_packets_label = self.label_row("Packets Received")
         self.input_bytes_label = self.label_row("Bytes Received")
         self.output_packets_label = self.label_row("Packets Sent")
