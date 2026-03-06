@@ -10,7 +10,7 @@ import uuid
 import signal
 import socket
 import string
-from time import monotonic
+from time import time
 from typing import Any, NoReturn
 from types import FrameType
 from collections.abc import Callable, Sequence
@@ -73,7 +73,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             bc.__init__(self)
         self.init_packet_handlers()
         self.exit_code: ExitValue | None = None
-        self.start_time = int(monotonic())
+        self.start_time = int(time())
 
     def idle_add(self, fn: Callable, *args, **kwargs) -> int:
         ...
