@@ -1359,6 +1359,12 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Mouse wheel forwarding, can be used to disable the device ('no') or invert some axes "
                           "('invert-all', 'invert-x', invert-y', 'invert-z')."
                           " Default: %s." % defaults.mousewheel)
+    legacy_bool_parse("middle-click")
+    group.add_option("--middle-click", action="store", metavar="yes|no",
+                     dest="middle_click", default=defaults.middle_click,
+                     help="Forward middle mouse button (button 2) events. "
+                          "Disable to suppress spurious middle-click events from devices such as TrackPoint on Windows. "
+                          "Default: %s." % enabled_str(defaults.middle_click))
     group.add_option("--pointer", action="store",
                      dest="pointer", default=defaults.pointer,
                      help="How to hande pointer events: on|off|emulate3buttons."
