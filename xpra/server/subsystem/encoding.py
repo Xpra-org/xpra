@@ -95,7 +95,6 @@ class EncodingServer(StubServerMixin):
             load_codec("enc_jpeg")
         if "avif" in ae:
             load_codec("enc_avif")
-        self.connect("init-thread-ended", self.reinit_encodings)
         self.init_encodings()
 
     def reinit_encodings(self, *args) -> None:
