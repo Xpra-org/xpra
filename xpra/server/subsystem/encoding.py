@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.util.env import envint
-from xpra.os_util import OSX
+from xpra.os_util import OSX, gi_import
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
@@ -20,6 +20,7 @@ from xpra.codecs.video import getVideoHelper
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
 log = Logger("encoding")
 
 INIT_DELAY = envint("XPRA_ENCODER_INIT_DELAY", 0)
@@ -71,6 +72,7 @@ class EncodingServer(StubServerMixin):
         self.default_encoding: str = ""
         self.scaling_control = None
         self.video = True
+        self.threaded_encoding_done = False
 
     def init(self, opts) -> None:
         self.encoding = opts.encoding
@@ -104,6 +106,7 @@ class EncodingServer(StubServerMixin):
 
     def reinit_encodings(self, *args) -> None:
         self.init_encodings()
+        self.threaded_encoding_done = True
         # any window mapped before the threaded init completed
         # may need to re-initialize its list of encodings:
         log("reinit_encodings()", args)
@@ -111,6 +114,15 @@ class EncodingServer(StubServerMixin):
             if is_windows_source(ss):
                 ss.reinit_encodings(self)
                 ss.reinit_encoders()
+            if hasattr(ss, "threaded_init_complete"):
+                ss.threaded_init_complete(self)
+
+    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+        # If the background encoding setup finished before this client connected,
+        # reinit_encodings() already ran with no sources and this client missed
+        # threaded_init_complete(). Send the full encoding capabilities now.
+        if getattr(self, "threaded_encoding_done", False) and hasattr(ss, "threaded_init_complete"):
+            ss.threaded_init_complete(self)
 
     def threaded_encoding_setup(self) -> None:
         if INIT_DELAY > 0:
@@ -122,7 +134,8 @@ class EncodingServer(StubServerMixin):
         if self.video:
             # load video codecs:
             getVideoHelper().init()
-        self.init_encodings()
+        # dispatch to the main thread: updates encodings and notifies connected clients
+        GLib.idle_add(self.reinit_encodings)
 
     def cleanup(self) -> None:
         getVideoHelper().cleanup()

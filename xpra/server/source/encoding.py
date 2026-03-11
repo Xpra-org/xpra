@@ -92,6 +92,15 @@ class EncodingsConnection(StubClientConnection):
     def reinit_encodings(self, server) -> None:
         self.server_core_encodings = server.core_encodings
         self.server_encodings = server.encodings
+        # If this client connected before nvenc finished loading, CUDA context allocation
+        # was skipped in parse_encoding_caps. Allocate it now if still missing.
+        if not self.cuda_device_context and not getattr(self, "mmap_enabled", False) and self.wants_cuda_device():
+            self.allocate_cuda_device_context()
+        # Propagate cuda context to any window sources created before it was available.
+        if self.cuda_device_context:
+            for ws in self.all_window_sources():
+                if not ws.cuda_device_context:
+                    ws.cuda_device_context = self.cuda_device_context
 
     def cleanup(self) -> None:
         self.cancel_recalculate_timer()
@@ -367,20 +376,26 @@ class EncodingsConnection(StubClientConnection):
         if ms > 0 and (s <= 0 or s > ms):
             self.default_encoding_options["min-speed"] = ms
         log("default encoding options: %s", self.default_encoding_options)
+        if ms > 0:
+            self.set_min_speed(ms)
+        if mq > 0:
+            self.set_min_quality(mq)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
 
         # are we going to need a cuda context?
         if getattr(self, "mmap_enabled", False):
             # not with mmap!
             return
-        common_encodings = set(x for x in self.encodings if x in self.server_encodings)
+        if not self.cuda_device_context and self.wants_cuda_device():
+            self.allocate_cuda_device_context()
+
+    def wants_cuda_device(self) -> bool:
         from xpra.codecs.loader import has_codec
-        want_cuda_device = any((
+        common_encodings = set(x for x in self.encodings if x in self.server_encodings)
+        return any((
             has_codec("nvenc") and {"h264", "h265", "av1"} & common_encodings,
             has_codec("enc_nvjpeg") and "jpeg" in common_encodings,
         ))
-        if want_cuda_device and not self.cuda_device_context:
-            self.allocate_cuda_device_context()
 
     def allocate_cuda_device_context(self):
         cudalog = Logger("cuda")
