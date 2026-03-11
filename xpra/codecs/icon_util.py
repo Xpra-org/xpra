@@ -60,12 +60,13 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
         try:
             from PIL import Image  # pylint: disable=import-outside-toplevel
             img = Image.open(filename)
+            img.load()
             buf = BytesIO()
             img.save(buf, "PNG")
             pngicondata = buf.getvalue()
             buf.close()
             return pngicondata, "png"
-        except (ValueError, ImportError) as e:
+        except (ValueError, ImportError, KeyError) as e:
             log(f"Image.open({filename}) {e}", exc_info=True)
         except Exception as e:
             log(f"Image.open({filename})", exc_info=True)
