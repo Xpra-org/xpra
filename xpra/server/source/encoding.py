@@ -376,10 +376,8 @@ class EncodingsConnection(StubClientConnection):
         if ms > 0 and (s <= 0 or s > ms):
             self.default_encoding_options["min-speed"] = ms
         log("default encoding options: %s", self.default_encoding_options)
-        if ms > 0:
-            self.set_min_speed(ms)
-        if mq > 0:
-            self.set_min_quality(mq)
+        self.set_min_speed(ms)
+        self.set_min_quality(mq)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
 
         # are we going to need a cuda context?
