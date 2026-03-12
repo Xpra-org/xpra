@@ -215,6 +215,7 @@ class ClientWindowBase(ClientWidgetBase):
         w, h = self._size
         self._backing = self.make_new_backing(backing_class, w, h, bw, bh)
         self._backing.border = self.border
+        self._backing.content_type = self.content_type
         # soft dependency on `PointerWindow`:
         self._backing.default_cursor_data = getattr(self, "default_cursor_data", ())
         self._backing.gravity = self.window_gravity
@@ -495,6 +496,8 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "content-type" in metadata:
             self.content_type = metadata.strget("content-type")
+            if self._backing:
+                self._backing.content_type = self.content_type
 
         if "actions" in metadata:
             self._actions = metadata.strtupleget("actions")
