@@ -1,0 +1,32 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Martell Malone <martellmalone@gmail.com>
+
+_realname=pdfium
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-bin"
+pkgver=147.0.7725.0
+pkgrel=1
+pkgdesc="an open-source library for PDF manipulation and rendering (mingw-w64)"
+arch=('any')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
+url='https://github.com/bblanchon/pdfium-binaries'
+license=("custom")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-ninja")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+source=(https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F6721/${_realname}-win-x64.tgz)
+sha256sums=('f170ea7d64e7f94c5d82daafd8148365653475af8989686a4a1fdd60f97a43e3')
+
+source_aarch64=(https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F6721/${_realname}-win-arm64.tgz)
+sha256sums_aarch64=('dd2f7b20eec74345b4af1e2da7c75ef5c6bf511f05b3f6e3fd65a4e9246910bb')
+
+package() {
+  install -D -m755 "${srcdir}/bin/pdfium.dll" "${pkgdir}${MINGW_PREFIX}"/bin/pdfium.dll
+  install -d -m755 "${pkgdir}${MINGW_PREFIX}"/include/ "${pkgdir}${MINGW_PREFIX}"/include/cpp
+  install -D -m644 "${srcdir}/include/"fpdf*.h "${pkgdir}${MINGW_PREFIX}"/include/
+  install -D -m644 "${srcdir}/include/cpp/"*.h "${pkgdir}${MINGW_PREFIX}"/include/cpp/
+  install -d -m755 "${pkgdir}${MINGW_PREFIX}"/lib/
+  install -D -m644 "${srcdir}/lib/pdfium.dll.lib" "${pkgdir}${MINGW_PREFIX}"/lib/
+  install -D -m644 "${srcdir}/LICENSE" "${pkgdir}${MINGW_PREFIX}"/share/licenses/${_realname}/LICENSE
+}
