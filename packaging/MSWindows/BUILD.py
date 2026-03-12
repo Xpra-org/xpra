@@ -122,6 +122,10 @@ def debug(message: str) -> None:
         print("    "+message)
 
 
+def warn(msg: str) -> None:
+    print(f"Warning: {msg}")
+
+
 def csv(values: Iterable) -> str:
     return ", ".join(str(x) for x in values)
 
@@ -287,6 +291,11 @@ def log_command(cmd: str | list[str], log_filename: str, **kwargs) -> None:
     if ret != 0:
         show_tail(log_filename)
         raise RuntimeError(f"{cmd!r} failed and returned {ret}, see {log_filename!r}")
+    # surface warnings even on success:
+    with open(log_filename, "r") as f:
+        for line in f:
+            if line.startswith(("Warning:", "Error:")):
+                print(line.rstrip())
 
 
 def find_delete(path: str, name: str, mindepth=0) -> None:
@@ -305,7 +314,7 @@ def find_delete(path: str, name: str, mindepth=0) -> None:
 
 def rmrf(path: str) -> None:
     if not os.path.exists(path):
-        print(f"Warning: {path!r} does not exist")
+        warn(f"{path!r} does not exist")
         return
     rmtree(path)
 
@@ -606,7 +615,7 @@ def delete_dist_files(*exps: str) -> None:
     for exp in exps:
         matches = glob(f"{DIST}/{exp}")
         if not matches:
-            print(f"Warning: glob {exp!r} did not match any files!")
+            warn(f"glob {exp!r} did not match any files!")
             continue
         for path in matches:
             if os.path.isdir(path):
@@ -717,7 +726,7 @@ def fixup_zeroconf() -> None:
     # since I have no idea why cx_Freeze struggles with it:
     zc = find_spec("zeroconf")
     if not zc:
-        print("Warning: zeroconf not found for Python %s" % sys.version)
+        warn(f"zeroconf not found for Python {sys.version}")
         return
     zeroconf_dir = os.path.dirname(zc.origin or "")
     debug(f"adding zeroconf from {zeroconf_dir!r} to {lib_zeroconf!r}")
@@ -881,7 +890,7 @@ def bundle_dlls(*expr: str) -> None:
     for exp in expr:
         matches = glob(f"{exp}.dll")
         if not matches:
-            print(f"Warning: no dll matching {exp!r}")
+            warn(f"no dll matching {exp!r}")
             continue
         for match in matches:
             name = os.path.basename(match)
@@ -1108,7 +1117,7 @@ def rec_sbom() -> None:
                     version = rec["version"]
                     debug(f" * {filename!r}: {package!r}, {version!r}")
                     return rec
-        print(f"Warning: unknown source for filename {filename!r}, tried {prefixes}")
+        warn(f"unknown source for filename {filename!r}, tried {prefixes}")
         return {}
 
     def rec_py_lib(path: str) -> None:
@@ -1166,7 +1175,7 @@ def rec_sbom() -> None:
                 debug(f" * {path!r}: {package!r}, {version!r}")
                 sbom[path] = rec
             else:
-                print(f"Warning: no package data found for {path!r}")
+                warn(f"no package data found for {path!r}")
 
     # python modules:
     debug("adding python modules")
