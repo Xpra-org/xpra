@@ -9,7 +9,10 @@ from math import pi, sin
 from time import monotonic
 from typing import Any
 from collections.abc import Callable
-from cairo import Context, ImageSurface, Format, Operator, OPERATOR_OVER, LINE_CAP_ROUND
+from cairo import (
+    Context, ImageSurface, Format, Operator, OPERATOR_OVER, LINE_CAP_ROUND,
+    FILTER_NEAREST, FILTER_GOOD, FILTER_BEST,
+)
 
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks, ALERT_MODE, PaintCallbacks
@@ -88,9 +91,28 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     context.paint_with_alpha(alpha)
 
 
-def cairo_draw_backing(context, backing) -> None:
+def get_scaling_filter(content_type: str, sx: float, sy: float):
+    override = os.environ.get("XPRA_SCALING_FILTER", "").lower()
+    if override == "nearest":
+        return FILTER_NEAREST
+    if override == "bilinear":
+        return FILTER_GOOD
+    if "text" in content_type:
+        # use nearest-neighbor for text windows at integer upscale >= 2x
+        if (round(sx) >= 2 and round(sy) >= 2
+                and abs(sx - round(sx)) <= 0.1
+                and abs(sy - round(sy)) <= 0.1):
+            return FILTER_NEAREST
+        # use Catmull-Rom (bicubic) for text at non-integer scales
+        return FILTER_BEST
+    return FILTER_GOOD
+
+
+def cairo_draw_backing(context, backing, scaling_filter=None) -> None:
     context.set_operator(Operator.SOURCE)
     context.set_source_surface(backing, 0, 0)
+    if scaling_filter is not None:
+        context.get_source().set_filter(scaling_filter)
     context.paint()
 
 
@@ -103,6 +125,7 @@ class CairoBackingBase(WindowBackingBase):
         self.size = 0, 0
         self.render_size = 0, 0
         self.fps_image = None
+        self.content_type = ""
 
     def init(self, ww: int, wh: int, bw: int, bh: int) -> None:
         mod = self.size != (bw, bh) or self.render_size != (ww, wh)
@@ -309,7 +332,13 @@ class CairoBackingBase(WindowBackingBase):
         self.paint_backing_offset_border(context, w, h)
         if not self.clip_to_backing(context, w, h):
             return
-        cairo_draw_backing(context, backing)
+        # select scaling filter based on content type and desktop-scaling factor
+        scaling_filter = None
+        bw, bh = self.size
+        ww, wh = self.render_size
+        if bw and bh and (ww != bw or wh != bh):
+            scaling_filter = get_scaling_filter(self.content_type, ww / bw, wh / bh)
+        cairo_draw_backing(context, backing, scaling_filter)
         self.cairo_draw_pointer(context)
         self.cairo_draw_alert(context)
 
