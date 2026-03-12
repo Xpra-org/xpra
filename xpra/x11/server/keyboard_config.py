@@ -545,6 +545,28 @@ class KeyboardConfig(KeyboardConfigBase):
             return -1, group
         if self.raw:
             return client_keycode, group
+
+        # HTML5/Web clients: convert keyname to X11 keysym, then look up keycode
+        if not self.x11_keycodes and keyname:
+            try:
+                with xsync:
+                    # First try to parse keyname to get the correct X11 keysym
+                    x11_keysym = X11Keyboard.parse_keysym(keyname)
+                    if x11_keysym == 0:
+                        # If keyname parsing fails, try using keyval directly
+                        x11_keysym = keyval
+                    keysym_mappings = X11Keyboard.get_keysym_mappings()
+                    keycodes = keysym_mappings.get(x11_keysym, ())
+                if keycodes:
+                    x11_keycode = keycodes[0]  # Use first keycode
+                    log.info("[KEY_DEBUG] Keysym lookup: keyname=%s, x11_keysym=%s -> keycode=%s",
+                             keyname, x11_keysym, x11_keycode)
+                    return x11_keycode, group
+                log.info("[KEY_DEBUG] No keycode found for keyname=%s, x11_keysym=%s",
+                         keyname, x11_keysym)
+            except Exception as e:
+                log.info("[KEY_DEBUG] Keysym lookup failed: %s", e)
+
         log("do_get_keycode has x11: %s, client_keycode=%s", bool(self.x11_keycodes), client_keycode)
         if self.x11_keycodes and client_keycode > 0:
             keycode = self.keycode_translation.get((client_keycode, keyname), 0) or client_keycode
