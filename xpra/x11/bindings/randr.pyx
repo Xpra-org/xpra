@@ -1160,10 +1160,16 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         if m.get("primary", False):
                             primary = i
                         x, y, width, height = m["geometry"]
-                        vrefresh = m.get("refresh-rate", 0) or DEFAULT_REFRESH_RATE
-                        hz = round(vrefresh/1000)
+                        vrefresh = m.get("refresh-rate", 0)
+                        if vrefresh <= 0:
+                            vrefresh = DEFAULT_REFRESH_RATE
+                        if vrefresh < 1000:
+                            hz = vrefresh
+                        else:
+                            hz = round(vrefresh/1000)
                         mode_name = f"{width}x{height}@{hz}"
-                        match_mode = self.calculate_mode(mode_name, width, height, vrefresh)
+                        log("calculating mode %r", mode_name)
+                        match_mode = self.calculate_mode(mode_name, width, height, hz)
                         assert match_mode, "no mode to match"
                         #find an existing mode matching this resolution + vrefresh:
                         for j in range(output_info.nmode):
