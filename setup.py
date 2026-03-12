@@ -40,8 +40,17 @@ from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBS
 from xpra.util.system import is_distribution_variant, get_linux_distribution, is_DEB, is_RPM, is_Arch, is_free_threaded
 from xpra.util.io import load_binary_file, get_status_output
 
+
+def warn(msg: str) -> None:
+    print(f"Warning: {msg}")
+
+
+def error(msg: str) -> None:
+    print(f"Error: {msg}")
+
+
 if BITS != 64:
-    print(f"Warning: {BITS}-bit architecture, only 64-bits are officially supported")
+    warn(f"{BITS}-bit architecture, only 64-bits are officially supported")
     for _ in range(5):
         sleep(1)
         print(".")
@@ -132,7 +141,7 @@ def check_pkgconfig() -> None:
     v = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = v[0] == 0 and v[1]
     if not has_pkg_config:
-        print("WARNING: pkg-config not found!")
+        warn("pkg-config not found!")
 
 
 check_pkgconfig()
@@ -992,19 +1001,18 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
 
     def check_sane_defaults() -> None:
         if x11_ENABLED and WIN32:
-            print("Warning: enabling x11 on MS Windows is unlikely to work!")
+            warn("enabling x11 on MS Windows is unlikely to work!")
         if gtk_x11_ENABLED and not x11_ENABLED:
-            print("Error: you must enable x11 to support gtk_x11!")
+            error("you must enable x11 to support gtk_x11!")
             sys.exit(1)
         if client_ENABLED and not gtk3_ENABLED:
-            print("Warning: client is enabled but none of the client toolkits are!?")
+            warn("client is enabled but none of the client toolkits are!?")
         if DEFAULT and (not client_ENABLED and not server_ENABLED):
-            print("Warning: you probably want to build at least the client or server!")
+            warn("you probably want to build at least the client or server!")
         if DEFAULT and not pillow_ENABLED:
-            print("Warning: including Python Pillow is VERY STRONGLY recommended")
+            warn("including Python Pillow is VERY STRONGLY recommended")
         if DEFAULT and (not enc_x264_ENABLED and not vpx_ENABLED):
-            print("Warning: no x264 and no vpx support!")
-            print(" you should enable at least one of these two video encodings")
+            warn("no x264 and no vpx support! you should enable at least one of these two video encodings")
 
     check_sane_defaults()
 
@@ -1020,7 +1028,7 @@ def check_cython3() -> None:
         print(f"found Cython version {cython.__version__}")
         version = tuple(int(vpart) for vpart in cython.__version__.split('.')[:2])
     except (ValueError, ImportError):
-        print("WARNING: unable to detect Cython version")
+        warn("unable to detect Cython version")
     else:
         global cython_shared_ENABLED
         if version < (3, ):
@@ -1586,7 +1594,7 @@ def convert_templates(install_dir: str, subs: dict[str, str], subdirs: Sequence[
             print(f"cannot create target dir {target_dir!r}: {e}")
     template_files = os.listdir(dirname)
     if not template_files:
-        print(f"Warning: no files found in {dirname!r}")
+        warn(f"no files found in {dirname!r}")
     for f in sorted(template_files):
         if f.endswith("osx.conf.in") and not OSX:
             continue
@@ -1595,7 +1603,7 @@ def convert_templates(install_dir: str, subs: dict[str, str], subdirs: Sequence[
             convert_templates(install_dir, subs, list(subdirs) + [f])
             continue
         if not (f.endswith(".in") or f.endswith(".conf") or f.endswith(".txt") or f.endswith(".keys")):
-            print(f"Warning: skipped {f!r}")
+            warn(f"skipped {f!r}")
             continue
         with open(filename, "r", encoding="latin1") as f_in:
             template = f_in.read()
@@ -1608,6 +1616,8 @@ def convert_templates(install_dir: str, subs: dict[str, str], subdirs: Sequence[
                 try:
                     config_data = template % subs
                 except ValueError:
+                    # not using error() — the raise below causes a non-zero exit,
+                    # which log_command() already surfaces via show_tail()
                     print(f"error applying substitutions from {filename!r} to {target_file!r}:")
                     print(f"{config_data!r}")
                     print(f"{subs!r}")
@@ -1743,7 +1753,7 @@ def clean() -> None:
                 if fpath not in CLEAN_FILES:
                     CLEAN_FILES.append(fpath)
                 continue
-            print(f"warning unexpected file in source tree: {fpath} with ext={ext}")
+            warn(f"unexpected file in source tree: {fpath} with ext={ext}")
     for x in CLEAN_FILES:
         filename = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
         if os.path.exists(filename):
@@ -1848,7 +1858,7 @@ if WIN32:
                         if os.path.exists(filename):
                             add_data_files(base, [filename])
                         else:
-                            print(f"Warning: missing {filename!r}")
+                            warn(f"missing {filename!r}")
             else:
                 assert isinstance(defs, dict)
                 for d, sub in defs.items():
@@ -1875,8 +1885,7 @@ if WIN32:
             try:
                 do_add_DLLs("lib", *dll_names)
             except Exception as e:
-                print(f"Error: failed to add DLLs: {dll_names}")
-                print(f" {e}")
+                error(f"failed to add DLLs: {dll_names}: {e}")
                 sys.exit(1)
 
         def do_add_DLLs(prefix="lib", *dll_names: str) -> None:
@@ -1919,9 +1928,8 @@ if WIN32:
                         dll_files.append(dll_path)
                         dll_names.remove(dll_name)
             if dll_names:
-                print("some DLLs could not be found:")
-                for x in dll_names:
-                    print(f" - {prefix}{x}*.dll")
+                missing = ", ".join(f"{prefix}{x}*.dll" for x in dll_names)
+                warn(f"some DLLs could not be found: {missing}")
             add_data_files("", dll_files)
 
         # list of DLLs we want to include, without the "lib" prefix, or the version and extension
@@ -2306,8 +2314,7 @@ if WIN32:
         try:
             import OpenGL_accelerate        #@UnresolvedImport
         except ImportError as e:
-            print("Warning: missing OpenGL_accelerate module")
-            print(f" {e}")
+            warn(f"missing OpenGL_accelerate module: {e}")
         else:
             glmodules["OpenGL_accelerate"] = OpenGL_accelerate
         for module_name, module in glmodules.items():
