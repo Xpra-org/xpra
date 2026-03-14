@@ -86,6 +86,7 @@ def parse_command_line(argv: list[str]):
     add("sign", help="sign the EXE and MSI installers")
     add("tests", help="run the unit tests", default=False)
     add("zip-modules", help="zip up python modules")
+    add("printing", help="bundle pdfium for remote printing")
     add("cuda", help="build CUDA kernels for nvidia codecs")
     add("service", help="build the system service", default=ARCH != "aarch64")
     add("docs", help="generate the documentation", default=ARCH != "aarch64")
@@ -157,6 +158,8 @@ def get_build_args(args) -> list[str]:
         xpra_args.append("--with-Os")
     else:
         xpra_args.append("--with-qt6_client")
+    if not args.printing:
+        xpra_args.append("--without-printing")
     if not args.cuda:
         xpra_args.append("--without-nvidia")
     if args.x11:
