@@ -606,6 +606,7 @@ class cuda_device_context:
 
 # cache kernel fatbin files:
 KERNELS: dict[str, bytes] = {}
+lock = RLock()
 
 
 def get_CUDA_function(function_name: str):
@@ -614,19 +615,20 @@ def get_CUDA_function(function_name: str):
         and kernel key.
     """
     data = KERNELS.get(function_name)
-    if data is None:
-        cubin_file = os.path.join(get_resources_dir(), "cuda", f"{function_name}.fatbin")
-        log(f"get_CUDA_function({function_name}) cubin file={cubin_file!r}")
-        if not os.path.exists(cubin_file):
-            log.error(f"Error: failed to load CUDA bin file {cubin_file!r}")
-            log.error(" this file does not exist")
-            return None
-        data = load_binary_file(cubin_file)
-        if not data:
-            log.error(f"Error: failed to load CUDA bin file {cubin_file!r}")
-            return None
-        log(f" loaded {len(data)} bytes")
-        KERNELS[function_name] = data
+    if not data:
+        with lock:
+            cubin_file = os.path.join(get_resources_dir(), "cuda", f"{function_name}.fatbin")
+            log(f"get_CUDA_function({function_name}) cubin file={cubin_file!r}")
+            if not os.path.exists(cubin_file):
+                log.error(f"Error: failed to load CUDA bin file {cubin_file!r}")
+                log.error(" this file does not exist")
+                return None
+            data = load_binary_file(cubin_file)
+            if not data:
+                log.error(f"Error: failed to load CUDA bin file {cubin_file!r}")
+                return None
+            log(f" loaded {len(data)} bytes")
+            KERNELS[function_name] = data
     # now load from cubin:
     start = monotonic()
     try:
