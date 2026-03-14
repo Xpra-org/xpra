@@ -63,8 +63,23 @@ makepkg -sCLf
 pacman --noconfirm -U ./mingw-*-pdfium-bin-*.pkg.tar.*
 popd
 
-echo "to package the EXE, install innosetup":
-echo "https://jrsoftware.org/isdl.php"
+# InnoSetup:
+INNO_VERSION="6.7.1"
+INNO_TAG="is-$(echo "${INNO_VERSION}" | tr '.' '_')"
+INSTALLER="innosetup-${INNO_VERSION}.exe"
+DOWNLOAD_URL="https://github.com/jrsoftware/issrc/releases/download/${INNO_TAG}/${INSTALLER}"
+INSTALL_DIR="C:\\Program Files (x86)\\Inno Setup 6"
+if [[ ! -f "$INSTALLER" ]]; then
+    echo "Downloading Inno Setup ${INNO_VERSION}..."
+    curl -fL -o "$INSTALLER" "$DOWNLOAD_URL"
+fi
+echo "Installing Inno Setup ${INNO_VERSION}..."
+./"$INSTALLER" \
+    //VERYSILENT \
+    //NORESTART \
+    //SUPPRESSMSGBOXES \
+    //DIR="${INSTALL_DIR}"
+
 echo "to generate the MSI, install MSIWrapper:"
 echo "https://www.exemsi.com/"
 echo
