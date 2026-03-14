@@ -57,17 +57,18 @@ mv lib/win/verpatch.exe "$MINGW_PREFIX/bin/"
 rmdir lib/win && rmdir lib
 rm "verpatch.nupkg"
 
+pushd mingw-w64-pdfium-bin
+rm ./mingw-*-pdfium-bin-*.pkg.tar.*
+makepkg -sCLf
+pacman --noconfirm -U ./mingw-*-pdfium-bin-*.pkg.tar.*
+popd
+
 echo "to package the EXE, install innosetup":
 echo "https://jrsoftware.org/isdl.php"
 echo "to generate the MSI, install MSIWrapper:"
 echo "https://www.exemsi.com/"
 echo "to generate the SBOM, install Python 3.12.x for MS Windows"
 echo "then install cyclonedx-py using pip"
-echo
-echo "for printing support, install libpdfium"
-echo "by downloading the plain x64 pdfium binary from"
-echo "https://github.com/bblanchon/pdfium-binaries"
-echo "and place the 'pdfium.dll' in '$MSYSTEM_PREFIX/bin'"
 echo
 echo "for generating the documentation, install pandoc"
 echo "https://github.com/jgm/pandoc/releases/latest"
