@@ -425,7 +425,7 @@ def get_info() -> Dict[str,Any]:
         "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
         "generation": generation.get(),
         "formats"   : tuple(COLORSPACES.keys()),
-        }
+    }
 
 
 def get_encodings() -> Sequence[str]:
@@ -464,10 +464,10 @@ def get_specs() -> Sequence[VideoSpec]:
 
 # maps a log level to one of our logger functions:
 LOGGERS: Dict[int,Callable] = {
-       X264_LOG_ERROR   : log.error,
-       X264_LOG_WARNING : log.warn,
-       X264_LOG_INFO    : log.info,
-       X264_LOG_DEBUG   : log.debug,
+   X264_LOG_ERROR   : log.error,
+   X264_LOG_WARNING : log.warn,
+   X264_LOG_INFO    : log.info,
+   X264_LOG_DEBUG   : log.debug,
 }
 
 # maps a log level string to the actual constant:
