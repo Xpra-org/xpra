@@ -1131,16 +1131,16 @@ class SessionInfo(Gtk.Window):
             pps = []
             decoding_latency = []
             if self.client.pixel_counter:
-                min_time = None
-                max_time = None
+                min_time = 0.0
+                max_time = 0.0
                 regions_per_second = {}
                 pixels_per_second = {}
                 for start_time, end_time, size in self.client.pixel_counter:
                     decoding_latency.append(int(1000.0 * (end_time - start_time)))
                     region_sizes.append(size)
-                    if min_time is None or min_time > end_time:
+                    if min_time == 0.0 or min_time > end_time:
                         min_time = end_time
-                    if max_time is None or max_time < end_time:
+                    if max_time == 0.0 or max_time < end_time:
                         max_time = end_time
                     time_in_seconds = int(end_time)
                     regions = regions_per_second.get(time_in_seconds, 0)
