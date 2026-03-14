@@ -1,3 +1,46 @@
+    sudo apt install libxxhash-dev python3-cairo-dev python-gi-dev libgirepository-2.0-dev xvfb
+    #if xvfb depend conflict, first: sudo dpkg -i --force-depends xvfb_21.1.21-1_amd64.deb
+    #then cp /usr/bin/Xvfb ./ ; sudo apt remove xvfb; sudo install Xvfb /usr/bin/
+    #pipx install xpra
+    #pipx inject xpra python3-gi python3-gi-cairo pygobject   #如果先安装了xpra 后安装python3-gi 则需要再往pipx虚拟环境注入一下
+    #xpra --versiion    #6.4
+
+    git clone https://github.com/Xpra-org/xpra
+    cd xpra
+    python3 ./setup.py install
+    xpra --version    #6.5
+
+    git clone https://github.com/Xpra-org/xpra-html5
+    cd xpra-html5
+    sudo ./setup.py install
+
+    #分成多个端口方便在waveterm里使用不同url(http://127.0.0.1:9011):
+    xpra start :10 --html=on --bind-tcp=0.0.0.0:9010 --xvfb="Xvfb" --start=firefox
+    xpra start :11 --html=on --bind-tcp=0.0.0.0:9011 --xvfb="Xvfb" --start=google-chrome-stable
+    #但实际上不需要, 比如启动一个firefox进程在一个display端口:10,并且开两个firefox window, 则在waveterm两个tab内都连接9010 可以分别focus 不同的firefox window并记住:
+    http://192.168.0.2:9010
+    #第一个网页连接上以后, 第二个网页再连接需要在 Advanced options里需要选上 Steal session from existing client
+    #另外  Clipboard sharing, preferred format 需要选UTF8, 不能选 text/plain, 否则从网页复制汉字会变成\u62150 这种形式
+    
+    #先启动xterm, 再在xterm里启动别的gui程序
+    xpra start :12 --html=on --bind-tcp=0.0.0.0:9012 --xvfb="Xvfb" --start=xterm
+
+    #启动lite会报错退出, 因为它太快input focus而xserver还没启动好, 加sleep才行, 或者用xterm包起来:
+    xpra start :13 --html=on --bind-tcp=0.0.0.0:9013 --xvfb="Xvfb" --start="sh -c 'sleep 2; lite >a.log 2>&1'"
+    xpra start :14 --html=on --bind-tcp=0.0.0.0:9014 --xvfb="Xvfb" --start="xterm -e lite"
+
+    #列出所有sessions:
+    xpra list-sessions
+
+    #停止session:
+    xpra stop :12
+
+    #运行远端的firefox:
+    xpra seamless ssh://USER@HOST/ --start=firefox
+
+    #运行同一内网 远端机器的firefox(远端机器需已启动xpra在0.0.0.0:8080/:10)并在近端展示:
+    xpra attach tcp://192.168.0.2:9010/:10 --start=firefox
+
 1. [About](#about)
 2. [Installation](#installation)
 3. [Usage](#usage)

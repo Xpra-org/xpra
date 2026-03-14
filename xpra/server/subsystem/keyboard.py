@@ -268,6 +268,14 @@ class KeyboardServer(StubServerMixin):
             self.set_keyboard_layout_group(group)
         self._focus(ss, wid, None)
         ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
+        # Fix for browser-intercepted shortcuts: synthesize missing key press events
+        if not pressed and keycode > 0:
+            if keycode not in self.keys_pressed:
+                # First ensure modifiers are active on the server
+                ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
+                # Then recursively call with pressed=True
+                self.do_process_keyboard_event(proto, wid, keyname, True, kattrs)
+
         # negative keycodes are used for key events without a real keypress/unpress
         # for example, used by win32 to send Caps_Lock/Num_Lock changes
         if keycode >= 0:
