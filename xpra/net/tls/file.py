@@ -8,7 +8,7 @@ import sys
 from typing import Any
 
 from xpra.exit_codes import ExitCode
-from xpra.net.ssl.common import KEY_FILENAME, CERT_FILENAME, SSL_CERT_FILENAME, SSL_ATTRIBUTES, get_ssl_logger
+from xpra.net.tls.common import KEY_FILENAME, CERT_FILENAME, SSL_CERT_FILENAME, SSL_ATTRIBUTES, get_ssl_logger
 from xpra.os_util import is_admin, OSX, WIN32, POSIX
 from xpra.scripts.config import InitExit
 from xpra.util.parsing import TRUE_OPTIONS

@@ -3030,7 +3030,7 @@ toggle_packages(mmap_ENABLED, "xpra.net.mmap")
 toggle_packages(quic_ENABLED, "xpra.net.asyncio")
 toggle_packages(quic_ENABLED, "xpra.net.quic")
 toggle_packages(ssh_ENABLED, "xpra.net.ssh", "xpra.net.ssh.paramiko")
-toggle_packages(ssl_ENABLED, "xpra.net.ssl")
+toggle_packages(ssl_ENABLED, "xpra.net.tls")
 toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 toggle_packages(qrencode_ENABLED, "xpra.net.qrcode")
@@ -3132,7 +3132,7 @@ if cythonize_more_ENABLED:
         ax("xpra.net.ssh")
         ax("xpra.net.ssh.paramiko")
     if ssl_ENABLED:
-        ax("xpra.net.ssl")
+        ax("xpra.net.tls")
     if websockets_ENABLED:
         ax("xpra.net.websockets.headers")
         ax("xpra.net.websockets")

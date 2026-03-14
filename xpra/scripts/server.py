@@ -348,7 +348,7 @@ def enforce_server_features() -> None:
         "file": "xpra.server.subsystem.file,xpra.server.source.file",
         "printer": "xpra.server.subsystem.printer,xpra.server.source.printer",
         "mmap": "xpra.net.mmap,xpra.server.subsystem.mmap,xpra.server.source.mmap",
-        "ssl": "ssl,xpra.net.ssl_util",
+        "ssl": "ssl,xpra.net.tls",
         "ssh": "paramiko,xpra.net.ssh,xpra.server.subsystem.ssh_agent",
         "keyboard": "xpra.server.subsystem.keyboard,xpra.server.source.keyboard",
         "pointer": "xpra.server.subsystem.pointer,xpra.server.source.pointer",

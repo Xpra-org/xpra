@@ -213,9 +213,9 @@ async def do_listen(sock, xpra_server, cert: str, key: str | None, retry: bool):
 
 
 def listen_quic(sock, xpra_server, socket_options: dict) -> None:
-    from xpra.net.ssl.file import find_ssl_cert
-    from xpra.net.ssl.common import SSL_CERT_FILENAME
-    from xpra.net.ssl.common import KEY_FILENAME
+    from xpra.net.tls.file import find_ssl_cert
+    from xpra.net.tls.common import SSL_CERT_FILENAME
+    from xpra.net.tls.common import KEY_FILENAME
     log(f"listen_quic({sock}, {xpra_server}, {socket_options})")
     ssl_socket_options = xpra_server.get_ssl_socket_options(socket_options)
     cert = ssl_socket_options.get("cert", "") or find_ssl_cert(SSL_CERT_FILENAME)

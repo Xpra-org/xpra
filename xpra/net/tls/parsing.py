@@ -5,7 +5,7 @@
 
 
 from xpra.util.str_fn import csv
-from xpra.net.ssl.common import get_ssl_logger
+from xpra.net.tls.common import get_ssl_logger
 from xpra.scripts.config import InitException
 
 

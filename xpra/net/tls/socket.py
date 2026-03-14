@@ -7,16 +7,16 @@ import os.path
 from typing import Any
 
 from xpra.exit_codes import ExitCode
-from xpra.net.ssl.common import (
+from xpra.net.tls.common import (
     get_ssl_logger,
     SSL_VERIFY_WRONG_HOST, SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_IP_MISMATCH,
     SSL_VERIFY_HOSTNAME_MISMATCH, SSL_VERIFY_CODES, SSLVerifyFailure, CERT_FILENAME, SSL_CERT_FILENAME,
 )
-from xpra.net.ssl.file import (
+from xpra.net.tls.file import (
     find_ssl_cert, load_ssl_options,
     save_ssl_options, find_ssl_config_file, save_ssl_config_file,
 )
-from xpra.net.ssl.parsing import (
+from xpra.net.tls.parsing import (
     parse_ssl_options_mask, parse_ssl_verify_mask, parse_ssl_protocol, parse_ssl_verify_mode,
 )
 from xpra.scripts.config import InitExit, InitException
