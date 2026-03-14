@@ -5,10 +5,11 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-import threading
 from io import BytesIO
 from time import monotonic
 from typing import Any
+
+from xpra.util.thread import check_main_thread
 
 try:
     from PIL import Image
@@ -177,7 +178,7 @@ class WindowIconSource:
 
     def send_window_icon(self) -> None:
         # some of this code could be moved to the work queue half, meh
-        assert self.ui_thread == threading.current_thread()
+        check_main_thread()
         if self.suspended or not self.has_png:
             return
         # this runs in the UI thread
