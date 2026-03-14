@@ -51,9 +51,13 @@ done
 # to keep these libraries updated, you may need:
 # SETUPTOOLS_USE_DISTUTILS=stdlib pip install --upgrade $PACKAGE
 
-echo "to package the EXE, install verpatch:"
-echo "https://github.com/pavel-a/ddverpatch/releases"
-echo "and innosetup":
+curl -sL "https://api.nuget.org/v3-flatcontainer/verpatch/1.0.14/verpatch.1.0.14.nupkg" -o "verpatch.nupkg"
+python -c "import zipfile; zipfile.ZipFile('verpatch.nupkg').extract('lib/win/verpatch.exe', '.')"
+mv lib/win/verpatch.exe "$MINGW_PREFIX/bin/"
+rmdir lib/win && rmdir lib
+rm "verpatch.nupkg"
+
+echo "to package the EXE, install innosetup":
 echo "https://jrsoftware.org/isdl.php"
 echo "to generate the MSI, install MSIWrapper:"
 echo "https://www.exemsi.com/"
