@@ -67,8 +67,6 @@ echo "to package the EXE, install innosetup":
 echo "https://jrsoftware.org/isdl.php"
 echo "to generate the MSI, install MSIWrapper:"
 echo "https://www.exemsi.com/"
-echo "to generate the SBOM, install Python 3.12.x for MS Windows"
-echo "then install cyclonedx-py using pip"
 echo
 echo "for generating the documentation, install pandoc"
 echo "https://github.com/jgm/pandoc/releases/latest"
