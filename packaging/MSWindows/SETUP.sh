@@ -80,11 +80,23 @@ echo "Installing Inno Setup ${INNO_VERSION}..."
     //SUPPRESSMSGBOXES \
     //DIR="${INSTALL_DIR}"
 
+# pandoc:
+PANDOC_VERSION="3.9"
+BASE_URL="https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}"
+ARCHIVE="pandoc-${PANDOC_VERSION}-windows-x86_64.zip"
+DOWNLOAD_URL="${BASE_URL}/${ARCHIVE}"
+if [[ ! -f "$ARCHIVE" ]]; then
+    echo "Downloading Pandoc ${PANDOC_VERSION}..."
+    curl -fL -o "$ARCHIVE" "$DOWNLOAD_URL"
+fi
+echo "Installing Pandoc ${PANDOC_VERSION} to ${INSTALL_DIR}..."
+$PACMAN ${XPKG}unzip
+unzip -o "$ARCHIVE" "pandoc-${PANDOC_VERSION}/pandoc.exe" -d pandoc_tmp
+mv "pandoc_tmp/pandoc-${PANDOC_VERSION}/pandoc.exe" "${MINGW_PREFIX}/bin/"
+rm -rf pandoc_tmp
+
 echo "to generate the MSI, install MSIWrapper:"
 echo "https://www.exemsi.com/"
-echo
-echo "for generating the documentation, install pandoc"
-echo "https://github.com/jgm/pandoc/releases/latest"
 echo
 echo "to support NVIDIA hardware accelerated encoders NVENC, NVJPEG"
 echo "and NVFBC screen capture:"
