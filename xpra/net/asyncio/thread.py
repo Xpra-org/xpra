@@ -6,6 +6,7 @@
 import time
 import asyncio
 from typing import Any
+from threading import Lock
 from collections.abc import Awaitable, Callable
 
 from queue import SimpleQueue
@@ -155,10 +156,14 @@ class ThreadedAsyncioLoop:
 
 
 singleton: ThreadedAsyncioLoop | None = None
+lock = Lock()
 
 
 def get_threaded_loop() -> ThreadedAsyncioLoop:
     global singleton
-    if not singleton:
-        singleton = ThreadedAsyncioLoop()
-    return singleton
+    with lock:
+        if not singleton:
+            singleton = ThreadedAsyncioLoop()
+    loop = singleton
+    assert loop is not None  # redundant at runtime, but satisfies the type checker
+    return loop

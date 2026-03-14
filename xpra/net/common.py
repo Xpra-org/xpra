@@ -33,6 +33,8 @@ logger = None
 
 
 def get_logger():
+    # no locking needed,
+    # creating an extra logger is not a problem
     global logger
     if logger is None:
         from xpra.log import Logger
@@ -282,6 +284,8 @@ def is_request_allowed(proto, request="info", default=True) -> bool:
 
 
 def init() -> None:
+    # no locking needed here,
+    # this can be executed more than once in parallel without causing problems
     global LOG_PACKETS, NOLOG_PACKETS, LOG_PACKET_TYPE, PACKET_LOG_MAX_SIZE
     LOG_PACKETS = get_log_packets()
     NOLOG_PACKETS = get_log_packets(True)

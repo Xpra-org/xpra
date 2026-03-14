@@ -9,6 +9,7 @@ from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import consume_verbose_argv
+from xpra.util.thread import check_main_thread
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -28,6 +29,7 @@ def make_window() -> Gtk.Window:
     btn = Gtk.Button(label="Change Opacity")
 
     def change_opacity(*_args) -> None:
+        check_main_thread()
         global opacity
         opacity = (opacity + 5) % 100
         btn.set_label(f"Change Opacity: {opacity}%")

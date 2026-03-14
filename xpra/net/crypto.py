@@ -9,6 +9,7 @@ import sys
 import secrets
 from struct import pack
 from typing import Any
+from threading import Lock
 from collections.abc import Iterable, Sequence
 
 from xpra.net.common import BACKWARDS_COMPATIBLE
@@ -69,9 +70,15 @@ CIPHERS: Sequence[str] = ()
 MODES: Sequence[str] = ()
 KEY_HASHES: Sequence[str] = ()
 KEY_STRETCHING: Sequence[str] = ()
+lock = Lock()
 
 
 def crypto_backend_init():
+    with lock:
+        return do_crypto_backend_init()
+
+
+def do_crypto_backend_init():
     global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
     if cryptography:
         log("cryptography %s found in %s", cryptography.__version__, cryptography)

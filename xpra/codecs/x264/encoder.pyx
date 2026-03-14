@@ -34,7 +34,7 @@ SUPPORT_24BPP = envbool("XPRA_X264_SUPPORT_24BPP")
 SUPPORT_30BPP = envbool("XPRA_X264_SUPPORT_30BPP", True)
 TUNE = os.environ.get("XPRA_X264_TUNE")
 LOG_NALS = envbool("XPRA_X264_LOG_NALS")
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+SAVE_TO_FILE: Final[str] = os.environ.get("XPRA_SAVE_TO_FILE", "")
 BLANK_VIDEO = envbool("XPRA_X264_BLANK_VIDEO")
 
 
@@ -375,32 +375,45 @@ I422_PROFILES = [PROFILE_HIGH422, PROFILE_HIGH444]
 I444_PROFILES = [PROFILE_HIGH444]
 RGB_PROFILES = [PROFILE_HIGH444]
 
-COLORSPACE_FORMATS : Dict[str,tuple] = {
-    "YUV420P"   : (X264_CSP_I420,    PROFILE_HIGH,          I420_PROFILES),
-    "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,       I422_PROFILES),
-    "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444,       I444_PROFILES),
-    "BGRX"      : (X264_CSP_BGRA,    PROFILE_HIGH444,       RGB_PROFILES),
-}
-if SUPPORT_24BPP:
-    COLORSPACE_FORMATS |= {
-        "BGR"       : (X264_CSP_BGR,     PROFILE_HIGH444,    RGB_PROFILES),
-        "RGB"       : (X264_CSP_RGB,     PROFILE_HIGH444,    RGB_PROFILES),
-    }
 
-COLORSPACES : Dict[str,str] = {
-    "YUV420P"   : "YUV420P",
-    "YUV422P"   : "YUV422P",
-    "YUV444P"   : "YUV444P",
-    "BGRX"      : "BGRX",
-}
-if SUPPORT_30BPP:
-    COLORSPACE_FORMATS["BGR48"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444,    RGB_PROFILES)
-    COLORSPACES["BGR48"] = "GBRP10"
-if SUPPORT_24BPP:
-    COLORSPACES |= {
-        "BGR"       : "BGR",
-        "RGB"       : "RGB",
+def init_colorspace_formats() -> Dict[str, tuple]:
+    colorspace_formats: Dict[str,tuple] = {
+        "YUV420P"   : (X264_CSP_I420,    PROFILE_HIGH,          I420_PROFILES),
+        "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,       I422_PROFILES),
+        "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444,       I444_PROFILES),
+        "BGRX"      : (X264_CSP_BGRA,    PROFILE_HIGH444,       RGB_PROFILES),
     }
+    if SUPPORT_24BPP:
+        colorspace_formats |= {
+            "BGR"       : (X264_CSP_BGR,     PROFILE_HIGH444,    RGB_PROFILES),
+            "RGB"       : (X264_CSP_RGB,     PROFILE_HIGH444,    RGB_PROFILES),
+        }
+    if SUPPORT_30BPP:
+        colorspace_formats["BGR48"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444,    RGB_PROFILES)
+    return colorspace_formats
+
+
+COLORSPACE_FORMATS: Final[Dict[str, tuple]] = init_colorspace_formats()
+
+
+def init_colorspaces() -> Dict[str, str]:
+    colorspaces: Dict[str,str] = {
+        "YUV420P"   : "YUV420P",
+        "YUV422P"   : "YUV422P",
+        "YUV444P"   : "YUV444P",
+        "BGRX"      : "BGRX",
+    }
+    if SUPPORT_30BPP:
+        colorspaces["BGR48"] = "GBRP10"
+    if SUPPORT_24BPP:
+        colorspaces |= {
+            "BGR"       : "BGR",
+            "RGB"       : "RGB",
+        }
+    return colorspaces
+
+
+COLORSPACES: Final[Dict[str, str]] = init_colorspaces()
 
 
 cdef inline bytes b(value: str):
@@ -419,6 +432,7 @@ generation = AtomicInteger()
 
 
 def get_info() -> Dict[str,Any]:
+    # we're only reading from the globals, so we don't need locking:
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
         "version"   : get_version(),
@@ -1108,7 +1122,7 @@ def selftest(full=False) -> None:
     from xpra.codecs.x264 import encoder
     temp = SAVE_TO_FILE
     try:
-        SAVE_TO_FILE = None
+        SAVE_TO_FILE = ""
         assert testencoder(encoder, full, typedict())
         #this is expensive, so don't run it unless "full" is set:
         if full:

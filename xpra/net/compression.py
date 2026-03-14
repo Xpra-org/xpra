@@ -91,21 +91,25 @@ def init_none() -> Compression:
     return Compression("none", "0", nocompress, nodecompress)
 
 
+INIT_FUNCTIONS: dict[str, Callable[[], Compression]] = {
+    "lz4": init_lz4,
+    "brotli": init_brotli,
+    "none": init_none,
+}
+
+
 def init_compressors(*names: str) -> None:
     for x in names:
         assert x not in ("compressors", "all"), "attempted to recurse!"
         if not envbool("XPRA_" + x.upper(), True):
             continue
-        attr = globals().get(f"init_{x}", None)
-        if attr is None:
+        if x not in ("lz4", "brotli", "none"):
             from xpra.log import Logger
             logger = Logger("network", "protocol")
             logger.warn(f"Warning: invalid compressor {x} specified")
             continue
+        fn = INIT_FUNCTIONS[x]
         try:
-            if not callable(attr):
-                raise ValueError(f"{attr!r} for {x} is not callable")
-            fn: Callable = attr
             c = fn()
             assert c
             COMPRESSION[x] = c

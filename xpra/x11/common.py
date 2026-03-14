@@ -206,7 +206,7 @@ def send_client_message(xid, message_type: str, *values) -> None:
     X11Window.sendClientMessage(root_xid, xid, False, event_mask, message_type, *values)
 
 
-device_bell: bool | None = None
+device_bell: Callable | bool | None = None
 
 
 def system_bell(xid: int, device: int, percent: int, _pitch, _duration: int, bell_class, bell_id, bell_name: str) -> bool:

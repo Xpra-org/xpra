@@ -10,6 +10,7 @@ import os
 import socket
 import sys
 from typing import Any
+from threading import RLock
 from collections.abc import Callable, Sequence
 from importlib import import_module
 
@@ -24,20 +25,22 @@ log = Logger("network", "util")
 
 netifaces_version: Sequence[Any] = ()
 _netifaces = None
+lock = RLock()
 
 
 def import_netifaces() -> object:
     global _netifaces, netifaces_version
     if _netifaces is None:
-        try:
-            import netifaces  # pylint: disable=import-outside-toplevel
-            log("netifaces loaded successfully")
-            _netifaces = netifaces
-            netifaces_version = parse_version(netifaces.version)  # @UndefinedVariable
-        except ImportError:
-            _netifaces = False
-            log.warn("Warning: the python netifaces package is missing")
-            log.warn(" some networking functionality will be unavailable")
+        with lock:
+            try:
+                import netifaces  # pylint: disable=import-outside-toplevel
+                log("netifaces loaded successfully")
+                _netifaces = netifaces
+                netifaces_version = parse_version(netifaces.version)  # @UndefinedVariable
+            except ImportError:
+                _netifaces = False
+                log.warn("Warning: the python netifaces package is missing")
+                log.warn(" some networking functionality will be unavailable")
     return _netifaces
 
 
@@ -122,7 +125,8 @@ def get_bind_IPs() -> Sequence[str]:
     if not bind_IPs:
         netifaces = import_netifaces()
         if netifaces:
-            bind_IPs = do_get_bind_IPs()
+            with lock:
+                bind_IPs = do_get_bind_IPs()
         else:
             bind_IPs = ["127.0.0.1"]
     return bind_IPs

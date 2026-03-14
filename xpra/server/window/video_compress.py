@@ -13,6 +13,7 @@ from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.os_util import gi_import
+from xpra.util.thread import check_main_thread
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.constants import (
     TransientCodecException, get_subsampling,
@@ -746,7 +747,7 @@ class WindowVideoSource(WindowSource):
 
     def gstreamer_continue_damage(self) -> None:
         # ensures that more damage events will be emitted
-        self.ui_thread_check()
+        check_main_thread()
         self.window.acknowledge_changes()
 
     def update_window_dimensions(self, ww: int, wh: int) -> None:

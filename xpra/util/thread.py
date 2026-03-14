@@ -15,8 +15,12 @@ This is used by the `pycallgraph` test wrapper.
 """
 
 import threading
-from threading import Thread
+from threading import Thread, current_thread, main_thread
 from collections.abc import Callable
+
+from xpra.util.env import envbool
+
+UI_THREAD_CHECK = envbool("XPRA_UI_THREAD_CHECK", True)
 
 
 def make_thread(target: Callable, name: str, daemon: bool = False, args=()) -> Thread:
@@ -31,13 +35,11 @@ def start_thread(target: Callable, name: str, daemon: bool = False, args=()) -> 
     return t
 
 
-main_thread = threading.current_thread()
-
-
-def set_main_thread(thread=threading.current_thread()):
-    global main_thread
-    main_thread = thread
-
-
 def is_main_thread() -> bool:
-    return threading.current_thread() == main_thread
+    return current_thread() is main_thread()
+
+
+def check_main_thread() -> None:
+    if UI_THREAD_CHECK and not is_main_thread():
+        ct = threading.current_thread()
+        raise RuntimeError(f"called from {ct.name!r} instead of main thread")

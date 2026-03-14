@@ -15,6 +15,7 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger, consume_verbose_argv
+from xpra.util.thread import check_main_thread
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -147,6 +148,7 @@ _instance = None
 
 
 def get_update_status_window() -> UpdateStatusWindow:
+    check_main_thread()
     global _instance
     if _instance is None:
         _instance = UpdateStatusWindow()

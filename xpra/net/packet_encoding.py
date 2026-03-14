@@ -86,6 +86,13 @@ def init_none() -> PacketEncoder:
     return PacketEncoder("none", FLAGS_NOHEADER, "0", none_encode, none_decode)
 
 
+INIT_FUNCTIONS: dict[str, Callable[[], PacketEncoder]] = {
+    "rencodeplus": init_rencodeplus,
+    "yaml": init_yaml,
+    "none": init_none,
+}
+
+
 def init_encoders(*names: str) -> None:
     for x in names:
         if x not in TRY_ENCODERS:
@@ -94,7 +101,7 @@ def init_encoders(*names: str) -> None:
             continue
         if not envbool("XPRA_" + x.upper(), True):
             continue
-        fn = globals().get(f"init_{x}")
+        fn = INIT_FUNCTIONS[x]
         try:
             assert callable(fn)
             e = fn()

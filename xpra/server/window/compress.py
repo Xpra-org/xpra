@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import threading
 from math import sqrt, ceil
 from collections import deque
 from dataclasses import dataclass
@@ -19,6 +18,7 @@ from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
+from xpra.util.thread import check_main_thread
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_DRAW
 from xpra.constants import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
@@ -52,8 +52,6 @@ avsynclog = Logger("av-sync")
 statslog = Logger("stats")
 bandwidthlog = Logger("bandwidth")
 
-
-UI_THREAD_CHECK = envbool("XPRA_UI_THREAD_CHECK", True)
 
 TRUE_LOSSLESS = envbool("XPRA_TRUE_LOSSLESS", False)
 LOG_ENCODERS = envbool("XPRA_LOG_ENCODERS", False)
@@ -217,7 +215,6 @@ class WindowSource(WindowIconSource):
         self.init_vars()
 
         self.start_time = monotonic()
-        self.ui_thread = threading.current_thread()
 
         self.record_congestion_event = record_congestion_event  # callback for send latency problems
         self.queue_size = queue_size                    # callback to get the size of the damage queue
@@ -393,13 +390,6 @@ class WindowSource(WindowIconSource):
 
     def __repr__(self) -> str:
         return f"WindowSource({self.wid:#x} : {self.window_dimensions})"
-
-    def ui_thread_check(self) -> None:
-        if not UI_THREAD_CHECK:
-            return
-        ct = threading.current_thread()
-        if ct != self.ui_thread:
-            raise RuntimeError(f"called from {ct.name!r} instead of UI thread {self.ui_thread}")
 
     def insert_encoder(self, encoder_name: str, encoding: str, encode_fn: Callable) -> None:
         log(f"insert_encoder({encoder_name}, {encoding}, {encode_fn})")
@@ -718,7 +708,7 @@ class WindowSource(WindowIconSource):
         self.suspended = True
 
     def resume(self) -> None:
-        self.ui_thread_check()
+        check_main_thread()
         self.cancel_damage()
         self.statistics.reset()
         self.suspended = False
@@ -727,7 +717,7 @@ class WindowSource(WindowIconSource):
             self.send_window_icon()
 
     def refresh(self, options=None) -> None:
-        self.ui_thread_check()
+        check_main_thread()
         w, h = self.window_dimensions
         self.damage(0, 0, w, h, options)
 
@@ -1567,7 +1557,7 @@ class WindowSource(WindowIconSource):
             force the current options to override the old ones,
             otherwise they are only merged.
         """
-        self.ui_thread_check()
+        check_main_thread()
         if self.suspended:
             return
         if w == 0 or h == 0:
@@ -1938,7 +1928,7 @@ class WindowSource(WindowIconSource):
         """
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
-        self.ui_thread_check()
+        check_main_thread()
         if not self.window.is_managed():
             return
         self.window.acknowledge_changes()
@@ -2100,7 +2090,7 @@ class WindowSource(WindowIconSource):
         return self.full_frames_only
 
     def get_damage_image(self, x: int, y: int, w: int, h: int) -> ImageWrapper | None:
-        self.ui_thread_check()
+        check_main_thread()
 
         def nodata(msg, *args) -> ImageWrapper | None:
             log("get_damage_image: "+msg, *args)

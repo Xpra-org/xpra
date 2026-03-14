@@ -10,6 +10,7 @@ from xpra.os_util import OSX, gi_import
 from xpra.util.system import is_X11
 from xpra.util.env import envbool, first_time, IgnoreWarningsContext
 from xpra.log import Logger
+from xpra.util.thread import check_main_thread
 
 Gdk = gi_import("Gdk")
 
@@ -81,6 +82,7 @@ def init_display_source(warn=True) -> None:
     On X11, we want to be able to access the bindings,
     so we need to get the X11 display from GDK.
     """
+    check_main_thread()
     global dsinit
     dsinit = True
     x11 = is_X11()

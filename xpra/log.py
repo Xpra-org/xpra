@@ -158,7 +158,10 @@ def standard_logging(log, level: int, msg: str, *args, **kwargs) -> None:
 
 # this allows us to capture all logging and redirect it:
 # the default 'standard_logging' uses the logger,
-# but the client may inject its own handler here
+# but the client may inject its own handler here.
+# there is no locking around this global,
+# because we don't really care about the exact timing when switching handlers,
+# only that it happens.
 global_logging_handler: Callable = standard_logging
 
 

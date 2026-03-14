@@ -9,6 +9,7 @@ import os.path
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
+from xpra.util.thread import check_main_thread
 from xpra.platform.paths import get_resources_dir
 from xpra.log import Logger
 
@@ -23,6 +24,7 @@ _done = False
 
 
 def inject_css_overrides() -> None:
+    check_main_thread()
     global _done
     if _done or not CSS_OVERRIDES:
         return

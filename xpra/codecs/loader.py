@@ -8,6 +8,7 @@ import sys
 import os.path
 from types import ModuleType
 from typing import Any
+from threading import Lock
 from importlib import import_module
 from collections.abc import Sequence, Iterable
 
@@ -20,6 +21,8 @@ from xpra.codecs.constants import HELP_ORDER
 from xpra.log import Logger, enable_color, LOG_FORMAT, NOPREFIX_FORMAT
 
 log = Logger("codec", "loader")
+
+lock = Lock()
 
 
 # these codecs may well not load because we
@@ -298,21 +301,22 @@ if OSX or WIN32:
 def load_codec(name: str, options: dict | None = None):
     log("load_codec(%s, %s)", name, options)
     name = name.replace("-", "_")
-    if not has_codec(name):
-        try:
-            description, top_module, class_module, attrs_names = CODEC_OPTIONS[name]
-            attrs = attrs_names.split(",")
-        except KeyError:
-            log("load_codec(%s)", name, exc_info=True)
-            log.error("Error: invalid codec name '%s'", name)
-            return None
-        xpra_top_module = f"xpra.codecs.{top_module}"
-        xpra_class_module = f"{xpra_top_module}.{class_module}"
-        if codec_import_check(name, description, xpra_top_module, xpra_class_module, attrs, options or {}):
-            version_name = name
-            if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
-                version_name = name[4:]
-            add_codec_version(version_name, xpra_class_module)
+    with lock:
+        if not has_codec(name):
+            try:
+                description, top_module, class_module, attrs_names = CODEC_OPTIONS[name]
+                attrs = attrs_names.split(",")
+            except KeyError:
+                log("load_codec(%s)", name, exc_info=True)
+                log.error("Error: invalid codec name '%s'", name)
+                return None
+            xpra_top_module = f"xpra.codecs.{top_module}"
+            xpra_class_module = f"{xpra_top_module}.{class_module}"
+            if codec_import_check(name, description, xpra_top_module, xpra_class_module, attrs, options or {}):
+                version_name = name
+                if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
+                    version_name = name[4:]
+                add_codec_version(version_name, xpra_class_module)
     return get_codec(name)
 
 

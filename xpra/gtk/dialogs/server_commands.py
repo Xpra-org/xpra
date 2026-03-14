@@ -18,6 +18,7 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.log import Logger, enable_debug_for
+from xpra.util.thread import check_main_thread
 
 log = Logger("util")
 
@@ -222,6 +223,7 @@ _instance: ServerCommandsWindow | None = None
 
 
 def get_server_commands_window(client) -> ServerCommandsWindow:
+    check_main_thread()
     global _instance
     if _instance is None:
         _instance = ServerCommandsWindow(client)

@@ -10,10 +10,11 @@ GTK_VERSION_INFO: dict[str, tuple] = {}
 
 
 def get_gtk_version_info() -> dict[str, Any]:
+    from xpra.util.thread import check_main_thread
+    check_main_thread()
     from xpra.util.version import parse_version
 
     # update props given:
-    global GTK_VERSION_INFO
     if GTK_VERSION_INFO:
         return GTK_VERSION_INFO.copy()
 

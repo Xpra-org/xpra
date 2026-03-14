@@ -11,6 +11,7 @@ from time import monotonic
 from collections.abc import Callable
 
 from xpra.util.env import envint
+from xpra.common import noop
 from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.glib import register_os_signals
 from xpra.util.child_reaper import get_child_reaper
@@ -23,6 +24,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.gui import set_window_progress
 from xpra.platform.paths import get_download_dir
 from xpra.log import Logger
+from xpra.util.thread import check_main_thread
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -37,7 +39,8 @@ REMOVE_ENTRY_DELAY = envint("XPRA_FILE_REMOVE_ENTRY_DELAY", 5)
 _instance = None
 
 
-def getOpenRequestsWindow(show_file_upload_cb=None, cancel_download=None):
+def get_open_requests_window(show_file_upload_cb=noop, cancel_download=noop):
+    check_main_thread()
     global _instance
     if _instance is None:
         _instance = OpenRequestsWindow(show_file_upload_cb, cancel_download)
@@ -46,7 +49,7 @@ def getOpenRequestsWindow(show_file_upload_cb=None, cancel_download=None):
 
 class OpenRequestsWindow:
 
-    def __init__(self, show_file_upload_cb=None, cancel_download=None):
+    def __init__(self, show_file_upload_cb=noop, cancel_download=noop):
         self.show_file_upload_cb = show_file_upload_cb
         self.cancel_download = cancel_download
         self.populate_timer = 0
@@ -79,7 +82,7 @@ class OpenRequestsWindow:
             b = self.btn(text, callback, icon_name)
             hbox.pack_start(b)
 
-        if self.show_file_upload_cb:
+        if self.show_file_upload_cb != noop:
             btn("Upload", self.show_file_upload_cb, "upload.png")
         btn("Close", self.close, "quit.png")
         downloads = get_download_dir()

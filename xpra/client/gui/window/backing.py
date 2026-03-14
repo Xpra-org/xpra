@@ -17,6 +17,7 @@ from xpra.util.objects import typedict
 from xpra.util.parsing import get_default_video_max_size
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
+from xpra.util.thread import check_main_thread
 from xpra.codecs.loader import get_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
@@ -49,6 +50,9 @@ _PIL_font = None
 
 
 def load_pillow_font():
+    # we don't need a lock for this global: load_pillow_font() is only called from rgba_text(),
+    # which is only ever called from update_fps() and this runs in the UI thread:
+    check_main_thread()
     global _PIL_font
     if _PIL_font:
         return _PIL_font
@@ -75,6 +79,10 @@ _loaded_video = False
 
 
 def load_video() -> None:
+    # no locking needed:
+    # this only runs when a backing is being instantiated,
+    # and this can only happen in the UI thread
+    check_main_thread()
     global _loaded_video
     if _loaded_video:
         return

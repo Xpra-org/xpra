@@ -472,7 +472,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def do_ask_data_request(self, cb_answer, send_id, dtype: str, url: str, filesize: int,
                             printit: bool, openit: bool) -> None:
-        from xpra.gtk.dialogs.open_requests import getOpenRequestsWindow
+        from xpra.gtk.dialogs.open_requests import get_open_requests_window
         timeout = self.remote_file_ask_timeout
 
         def rec_answer(accept, newopenit: bool=openit) -> None:
@@ -482,14 +482,14 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 self.data_send_requests[send_id] = (dtype, url, printit, newopenit)
             cb_answer(accept)
 
-        dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
+        dialog = get_open_requests_window(self.show_file_upload, self.cancel_download)
         dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
         dialog.show()
         self.sub_dialogs["ask-data"] = dialog
 
     def show_ask_data_dialog(self, *_args) -> None:
-        from xpra.gtk.dialogs.open_requests import getOpenRequestsWindow
-        dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
+        from xpra.gtk.dialogs.open_requests import get_open_requests_window
+        dialog = get_open_requests_window(self.show_file_upload, self.cancel_download)
         dialog.show()
         self.sub_dialogs["ask-data"] = dialog
 

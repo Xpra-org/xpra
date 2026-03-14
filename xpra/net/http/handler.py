@@ -11,6 +11,7 @@ import socket
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
 from typing import Any
+from threading import Lock
 from collections.abc import Iterable, Callable
 
 from xpra.net.common import HttpResponse, FULL_INFO, pretty_socket
@@ -33,9 +34,15 @@ AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD", "")
 
 http_headers_cache: dict[str, str] = {}
 http_headers_time: dict[str, float] = {}
+lock = Lock()
 
 
 def may_reload_headers(http_headers_dirs: Iterable[str]) -> dict[str, str]:
+    with lock:
+        return locked_reload_headers(http_headers_dirs)
+
+
+def locked_reload_headers(http_headers_dirs: Iterable[str]) -> dict[str, str]:
     mtimes: dict[str, float] = {}
     global http_headers_cache
     if http_headers_cache:

@@ -37,7 +37,6 @@ from xpra.util.str_fn import (
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
 from xpra.util.parsing import parse_scaling, TRUE_OPTIONS, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OFF_OPTIONS, str_to_bool, \
     parse_bool_or, get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data
-from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
     getuid, getgid, get_username_for_uid, force_quit, is_admin,
@@ -143,7 +142,6 @@ def main(cmdline: list[str]) -> int:
 
 
 def do_main(script_file: str, cmdline: list[str]) -> ExitValue:
-    set_main_thread()
     save_env()
     ml = envint("XPRA_MEM_USAGE_LOGGER")
     if ml > 0:

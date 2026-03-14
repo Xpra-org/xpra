@@ -18,6 +18,7 @@ from xpra.exit_codes import ExitValue
 from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.log import Logger, enable_debug_for
+from xpra.util.thread import check_main_thread
 
 Gtk = gi_import("Gtk")
 
@@ -196,6 +197,7 @@ _instance: StartNewCommand | None = None
 
 
 def get_start_new_command_gui(run_callback: Callable = noop, can_share=False, menu=None) -> StartNewCommand:
+    check_main_thread()
     global _instance
     if _instance is None:
         _instance = StartNewCommand(run_callback, can_share, menu)

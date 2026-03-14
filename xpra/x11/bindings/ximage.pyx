@@ -6,6 +6,7 @@
 
 from time import monotonic
 from typing import Tuple, Dict
+from threading import Lock
 
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
@@ -28,6 +29,8 @@ import_check("image")
 
 log = Logger("x11", "bindings", "ximage")
 ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
+
+ximage_counter_lock = Lock()
 
 
 cdef extern from "Python.h":
@@ -151,7 +154,8 @@ cdef class XImageWrapper:
         assert not self.sub
         assert image!=NULL
         global ximage_counter
-        ximage_counter += 1
+        with ximage_counter_lock:
+            ximage_counter += 1
         self.thread_safe = 0
         self.image = image
         self.rowstride = image.bytes_per_line
@@ -361,7 +365,8 @@ cdef class XImageWrapper:
             XDestroyImage(self.image)
             self.image = NULL
             global ximage_counter
-            ximage_counter -= 1
+            with ximage_counter_lock:
+                ximage_counter -= 1
 
     cdef void free_pixels(self) noexcept:
         ximagedebug("%s.free_pixels() pixels=%#x", self, <uintptr_t> self.pixels)

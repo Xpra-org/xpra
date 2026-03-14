@@ -13,6 +13,7 @@ MDNS_WARNING = False
 
 
 def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
+    # global is a boolean and does not need locking:
     global MDNS_WARNING
     if MDNS_WARNING:
         return ()
