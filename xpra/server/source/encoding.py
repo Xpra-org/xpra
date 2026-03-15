@@ -94,7 +94,7 @@ class EncodingsConnection(StubClientConnection):
         self.server_encodings = server.encodings
         # If this client connected before nvenc finished loading, CUDA context allocation
         # was skipped in parse_encoding_caps. Allocate it now if still missing.
-        if not self.cuda_device_context and not getattr(self, "mmap_enabled", False) and self.wants_cuda_device():
+        if not self.cuda_device_context and self.wants_cuda_device():
             self.allocate_cuda_device_context()
         # Propagate cuda context to any window sources created before it was available.
         if self.cuda_device_context:
@@ -379,15 +379,13 @@ class EncodingsConnection(StubClientConnection):
         self.set_min_speed(ms)
         self.set_min_quality(mq)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
-
         # are we going to need a cuda context?
-        if getattr(self, "mmap_enabled", False):
-            # not with mmap!
-            return
         if not self.cuda_device_context and self.wants_cuda_device():
             self.allocate_cuda_device_context()
 
     def wants_cuda_device(self) -> bool:
+        if getattr(self, "mmap_enabled", False):
+            return False
         from xpra.codecs.loader import has_codec
         common_encodings = set(x for x in self.encodings if x in self.server_encodings)
         return any((
