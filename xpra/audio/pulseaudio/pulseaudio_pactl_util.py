@@ -165,10 +165,11 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
     device_class : Optional[str] = None
     monitor_of_sink : Optional[str] = None
     device_description : Optional[str] = None
+    in_source_section: bool = False
     devices : dict[str,str] = {}
     for line in bytestostr(pactl_list_output).splitlines():
         if not line.startswith(" ") and not line.startswith("\t"):        #clear vars when we encounter a new section
-            if are_properties_acceptable(name, device_class, monitor_of_sink):
+            if in_source_section and are_properties_acceptable(name, device_class, monitor_of_sink):
                 assert type(name) is str
                 if not device_description:
                     device_description = name
@@ -177,6 +178,7 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
             device_class = None
             monitor_of_sink = None
             device_description = None
+            in_source_section = line.startswith("Source #")
         line = line.strip()
         if line.startswith("Name: "):
             name = line[len("Name: "):]
