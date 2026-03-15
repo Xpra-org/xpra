@@ -7,8 +7,10 @@
 
 from typing import Dict, Any, Tuple
 
+from gi.repository import GLib
+
 from xpra.scripts.config import parse_bool_or_int, csvstrl
-from xpra.util import envint
+from xpra.util import envint, typedict
 from xpra.os_util import bytestostr, OSX
 from xpra.net.common import PacketType
 from xpra.version_util import vtrim
@@ -43,6 +45,7 @@ class EncodingServer(StubServerMixin):
         self.scaling_control = None
         self.video_encoders : Tuple[str,...] = ()
         self.csc_modules : Tuple[str,...] = ()
+        self.threaded_encoding_done = False
 
     def init(self, opts) -> None:
         self.encoding = opts.encoding
@@ -77,6 +80,7 @@ class EncodingServer(StubServerMixin):
 
     def reinit_encodings(self) -> None:
         self.init_encodings()
+        self.threaded_encoding_done = True
         #any window mapped before the threaded init completed
         #may need to re-initialize its list of encodings:
         log("reinit_encodings()")
@@ -87,6 +91,15 @@ class EncodingServer(StubServerMixin):
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
                 ss.reinit_encodings(self)
+            if hasattr(ss, "threaded_init_complete"):
+                ss.threaded_init_complete(self)
+
+    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+        # If the background encoding setup finished before this client connected,
+        # reinit_encodings() already ran with no sources and this client missed
+        # threaded_init_complete(). Send the full encoding capabilities now.
+        if getattr(self, "threaded_encoding_done", False) and hasattr(ss, "threaded_init_complete"):
+            ss.threaded_init_complete(self)
 
     def threaded_setup(self) -> None:
         if INIT_DELAY>0:
@@ -98,7 +111,8 @@ class EncodingServer(StubServerMixin):
         #load video codecs:
         getVideoHelper().set_modules(video_encoders=self.video_encoders, csc_modules=self.csc_modules)
         getVideoHelper().init()
-        self.init_encodings()
+        # dispatch to the main thread: updates encodings and notifies connected clients
+        GLib.idle_add(self.reinit_encodings)
 
     def cleanup(self) -> None:
         getVideoHelper().cleanup()
