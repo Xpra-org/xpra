@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.5] 2026-02-02
+## [5.1.5] 2026-03-15
 * Platforms, build and packaging:
     * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
     * [Python compatibility regression](https://github.com/Xpra-org/xpra/commit/1282fa77ee948c459e69538095a96d08310e18d7)
@@ -22,6 +22,8 @@
     * [initial "fast" socket read could spin until the connection failed](https://github.com/Xpra-org/xpra/commit/332fb57b108865ff672b5277d66fefb3b1e23c88)
     * [DND errors under Wayland](https://github.com/Xpra-org/xpra/commit/50f2c82d2881df0bb1b478a28aa1ab186b7843e7)
     * [X11 calls missing trap context](https://github.com/Xpra-org/xpra/commit/3e5d16ae9d851c6753b1258e66db290c74d4a12a)
+    * [missing CUDA context when clients connect early](https://github.com/Xpra-org/xpra/commit/c350adc106af923478ca97f53fa93058f022a286)
+    * [missing encodings](https://github.com/Xpra-org/xpra/commit/8710475d7d08c9d2436b5acd60a59026efa5e525)
 * Printing:
     * [incorrect cups backend exit codes could cause DoS](https://github.com/Xpra-org/xpra/commit/6127a6d704ab71b6043a4a3a3b7a173e51626c16), [ie: `FILE_TOO_BIG`](https://github.com/Xpra-org/xpra/commit/194f2cb38f3d4d62c2664ef3b90297575f7a5c79)
     * [use more widely compatible socket syntax](https://github.com/Xpra-org/xpra/commit/01a91109d6a69aae2f741a9ff92b68986d2674f8)
@@ -44,6 +46,7 @@
     * [`netdev_query` module is optional](https://github.com/Xpra-org/xpra/commit/951a91dab1e193db4ea5579f863b674b3c146cda)
     * [bump version of the notification spec we claim to support](https://github.com/Xpra-org/xpra/commit/20ec1ed240c000486269239acf29d0c0024b77fe)
     * [slots interfere with pygobject and should not be used](https://github.com/Xpra-org/xpra/commit/2fcceabdefa6a04d6e8ecf6659bcce683c3328ef)
+    * [pulseaudio setup race condition](https://github.com/Xpra-org/xpra/commit/41219f1d50869535bbdfbff5b62d6bd21f0045b2)
 * Cosmetic:
     * [make socket eof detection less spammy](https://github.com/Xpra-org/xpra/commit/a7a00921edc54294b37c49622d3f63f548555091)
     * [invalid syntax used in man page](https://github.com/Xpra-org/xpra/commit/2291f9bb214d245b56340e8e20b61f2ca6d27787)
@@ -54,6 +57,8 @@
     * [substitutions missing from log messages](https://github.com/Xpra-org/xpra/commit/c1415a412777af8104579b2f90cbc6517dd9a860)
     * [EDID data scrambled the message](https://github.com/Xpra-org/xpra/commit/ace76ebc5e1e3e66cf64831ee7200d44652aa723)
     * [remove duplicate version data](https://github.com/Xpra-org/xpra/commit/ed884e42347fb02fc5319984671b044490904cdb)
+    * [avoid `KeyError` parsing some broken icon files](https://github.com/Xpra-org/xpra/commit/273d1ac232d822375328d6d34835014c9b8fa691)
+    * [more meaningful labels on session info dialog](https://github.com/Xpra-org/xpra/commit/67eee64b41a59bf49cf140533a18959e78558ac7)
 
 ## [5.1.4] 2025-12-04
 * Platforms, build and packaging:

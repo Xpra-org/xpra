@@ -24,6 +24,8 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     incorrect cups backend exit codes could cause DoS, ie: FILE_TOO_BIG
     use more widely compatible socket syntax
     SELinux warnings + fixup
+    missing CUDA context when clients connect early
+    missing encodings
   * Keyboard:
     don't send empty modifier strings
     default keyboard configuration should have default modifier mappings
@@ -42,6 +44,7 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     `netdev_query` module is optional
     bump version of the notification spec we claim to support
     slots interfere with pygobject and should not be used
+    pulseaudio setup race condition
   * Cosmetic:
     make socket eof detection less spammy
     invalid syntax used in man page
@@ -52,8 +55,10 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     substitutions missing from log messages
     EDID data scrambled the message
     remove duplicate version data
+    avoid `KeyError` parsing some broken icon files
+    more meaningful labels on session info dialog
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 02 Feb 2026 12:56:04 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 15 Mar 2026 15:30:58 +0700
 
 xpra (5.1.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
