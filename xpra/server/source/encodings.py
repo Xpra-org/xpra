@@ -83,6 +83,46 @@ class EncodingsMixin(StubSourceMixin):
     def reinit_encodings(self, server) -> None:
         self.server_core_encodings  = server.core_encodings
         self.server_encodings       = server.encodings
+        # If this client connected before nvenc finished loading, CUDA context allocation
+        # was skipped in parse_encoding_caps. Allocate it now if still missing.
+        if not self.cuda_device_context and self.wants_cuda_device():
+            self.allocate_cuda_device_context()
+        # Propagate cuda context to any window sources created before it was available.
+        if self.cuda_device_context:
+            for ws in self.all_window_sources():
+                if not ws.cuda_device_context:
+                    ws.cuda_device_context = self.cuda_device_context
+
+    def wants_cuda_device(self) -> bool:
+        if getattr(self, "mmap_enabled", False):
+            return False
+        from xpra.codecs.loader import has_codec
+        common_encodings = set(x for x in self.encodings if x in self.server_encodings)
+        return any((
+            has_codec("nvenc") and {"h264", "h265", "av1"} & common_encodings,
+            has_codec("enc_nvjpeg") and "jpeg" in common_encodings,
+        ))
+
+    def allocate_cuda_device_context(self):
+        cudalog = Logger("cuda")
+        cudalog(f"allocate_cuda_device_context() cuda_device_context={self.cuda_device_context}")
+        if not self.cuda_device_context:
+            try:
+                # pylint: disable=import-outside-toplevel
+                from xpra.codecs.nvidia.cuda.context import get_device_context
+            except ImportError as e:
+                cudalog(f"unable to import cuda context: {e}")
+                return None
+            try:
+                self.cuda_device_context = get_device_context(self.encoding_options)
+                cudalog("cuda_device_context=%s", self.cuda_device_context)
+            except Exception as e:
+                cudalog("failed to get a cuda device context using encoding options %s",
+                        self.encoding_options, exc_info=True)
+                cudalog.error("Error: failed to allocate a CUDA context:")
+                cudalog.estr(e)
+                cudalog.error(" NVJPEG and NVENC will not be available")
+        return self.cuda_device_context
 
     def cleanup(self) -> None:
         self.cancel_recalculate_timer()
@@ -356,30 +396,9 @@ class EncodingsMixin(StubSourceMixin):
             self.default_encoding_options["min-speed"] = ms
         log("default encoding options: %s", self.default_encoding_options)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
-
-        #are we going to need a cuda context?
-        if getattr(self, "mmap_enabled", False):
-            #not with mmap!
-            return
-        common_encodings = tuple(x for x in self.encodings if x in self.server_encodings)
-        from xpra.codecs.loader import has_codec
-        if (has_codec("nvenc") and ("h264" in self.core_encodings or "h265" in self.core_encodings)) \
-        or ("jpeg" in common_encodings and has_codec("enc_nvjpeg")):
-            cudalog = Logger("cuda")
-            try:
-                from xpra.codecs.nvidia.cuda_context import get_device_context  # pylint: disable=import-outside-toplevel
-            except ImportError as e:
-                cudalog("unable to import cuda context: %s", e)
-                return None
-            try:
-                self.cuda_device_context = get_device_context(self.encoding_options)
-                cudalog("cuda_device_context=%s", self.cuda_device_context)
-            except Exception as e:
-                cudalog("failed to get a cuda device context using encoding options %s",
-                    self.encoding_options, exc_info=True)
-                cudalog.error("Error: failed to allocate a CUDA context:")
-                cudalog.estr(e)
-                cudalog.error(" NVJPEG and NVENC will not be available")
+        # are we going to need a cuda context?
+        if not self.cuda_device_context and self.wants_cuda_device():
+            self.allocate_cuda_device_context()
 
     def print_encoding_info(self) -> None:
         log("print_encoding_info() core-encodings=%s, server-core-encodings=%s",
