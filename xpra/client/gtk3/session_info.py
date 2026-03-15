@@ -349,10 +349,10 @@ class SessionInfo(Gtk.Window):
         self.server_load_label = slabel()
         tb.new_row("Server Load", self.server_load_label, label_tooltip="Average over 1, 5 and 15 minutes")
         self.session_started_label = slabel()
-        tb.new_row("Session Started", self.session_started_label)
+        tb.new_row("Session Duration", self.session_started_label)
         self.session_connected_label = slabel()
         if show_client:
-            tb.new_row("Session Connected", self.session_connected_label)
+            tb.new_row("Connection Duration", self.session_connected_label)
             self.input_packets_label = slabel()
             tb.new_row("Packets Received", self.input_packets_label)
             self.input_bytes_label = slabel()
