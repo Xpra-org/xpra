@@ -130,9 +130,12 @@ class Filter:
         assert height <= self.height, "expected image height smaller than %i got %i" % (self.height, height)
         bgrx = image.get_pixels()
         img = Image.frombuffer("RGBA", (width, height), bgrx, "raw", "BGRA", image.get_rowstride())
+        if image.get_pixel_format() == "BGRX":
+            img.putalpha(255)
         modified = img.filter(self.transform)
         bgrx = modified.tobytes("raw", "BGRA", 0, 1)
         image.set_pixels(bgrx)
+        image.set_rowstride(width * 4)
         return image
 
 
