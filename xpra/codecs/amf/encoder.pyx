@@ -78,7 +78,7 @@ from xpra.codecs.amf.common cimport (
 log = Logger("encoder", "amf")
 
 DX11 = envbool("XPRA_AMF_DX11", WIN32)
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 
 
 AMF_ENCODINGS : Dict[str, str] = {
@@ -718,7 +718,7 @@ def selftest(full=False) -> None:
     from xpra.codecs.amf import encoder
     temp = SAVE_TO_FILE
     try:
-        SAVE_TO_FILE = None
+        SAVE_TO_FILE = ""
         CODECS = testencoder(encoder, full, typedict())
         log("AMF specs()=%s", get_specs())
     finally:

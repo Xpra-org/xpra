@@ -34,7 +34,7 @@ SUPPORT_24BPP = envbool("XPRA_X264_SUPPORT_24BPP")
 SUPPORT_30BPP = envbool("XPRA_X264_SUPPORT_30BPP", True)
 TUNE = os.environ.get("XPRA_X264_TUNE")
 LOG_NALS = envbool("XPRA_X264_LOG_NALS")
-SAVE_TO_FILE: Final[str] = os.environ.get("XPRA_SAVE_TO_FILE", "")
+SAVE_TO_FILE: str = os.environ.get("XPRA_SAVE_TO_FILE", "")
 BLANK_VIDEO = envbool("XPRA_X264_BLANK_VIDEO")
 
 
@@ -607,7 +607,7 @@ cdef class Encoder:
         self.init_encoder(options)
         gen = generation.increase()
         self.file = None
-        if SAVE_TO_FILE is not None:
+        if SAVE_TO_FILE:
             filename = SAVE_TO_FILE+"x264-"+str(gen)+".%s" % encoding
             self.file = open(filename, "wb")
             log.info(f"saving {encoding} stream to {filename!r}")

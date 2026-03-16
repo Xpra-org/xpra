@@ -5,13 +5,13 @@
 
 #cython: wraparound=False
 
+import os
 import select
 import binascii
 from time import monotonic
 from typing import Tuple, List
 from collections.abc import Sequence
 
-from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr, strtobytes, memoryview_to_bytes
 
 from xpra.log import Logger
@@ -26,7 +26,7 @@ DEF DRM_MODE_DPMS_STANDBY = 1
 DEF DRM_MODE_DPMS_SUSPEND = 2
 DEF DRM_MODE_DPMS_OFF = 3
 
-SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 
 #https://github.com/linuxhw/EDID/tree/master/
 #EDIDv2_1280x720:

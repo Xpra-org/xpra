@@ -37,7 +37,8 @@ sys.modules[codec_key] = None
 
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
-assert (not SAVE_TO_FILE) or SAVE_TO_FILE in ("jpeg", "png", "webp")
+SAVE_TO_FILE_FORMAT = os.environ.get("XPRA_SAVE_TO_FILE_FORMAT", "png")
+assert (not SAVE_TO_FILE) and SAVE_TO_FILE_FORMAT in ("jpeg", "png", "webp")
 
 COMPRESS_FMT = (
     "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i               using %9s" + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
@@ -172,7 +173,7 @@ class EncoderServer(ServerBase):
             if SAVE_TO_FILE:
                 from xpra.codecs.debug import save_imagewrapper
                 now = int(monotonic()*1000)
-                filename = f"{now}.{SAVE_TO_FILE}"
+                filename = f"{now}.{SAVE_TO_FILE_FORMAT}"
                 save_imagewrapper(image, filename)
                 log.info(f"saved {image}, pixels={len(rgb_data)} {type(rgb_data)} to {filename!r}")
             from xpra.codecs.pillow.encoder import encode, get_encodings

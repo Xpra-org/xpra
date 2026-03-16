@@ -24,7 +24,7 @@ from libc.string cimport memset
 from libc.stdint cimport uint8_t, uintptr_t
 
 
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 
 DEF MAX_SPATIAL_LAYER_NUM = 4
 DEF MAX_LAYER_NUM_OF_FRAME = 128
@@ -438,7 +438,7 @@ cdef class Encoder:
         self.frames = 0
         self.init_encoder(options)
         gen = generation.increase()
-        if SAVE_TO_FILE is not None:
+        if SAVE_TO_FILE:
             filename = SAVE_TO_FILE+"openh264-"+str(gen)+f".{encoding}"
             self.file = open(filename, "wb")
             log.info(f"saving {encoding} stream to {filename!r}")
@@ -629,7 +629,7 @@ def selftest(full=False) -> None:
     from xpra.codecs.openh264 import encoder
     temp = SAVE_TO_FILE
     try:
-        SAVE_TO_FILE = None
+        SAVE_TO_FILE = ""
         assert testencoder(encoder, full, typedict())
     finally:
         SAVE_TO_FILE = temp

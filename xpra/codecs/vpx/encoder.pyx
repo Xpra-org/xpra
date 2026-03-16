@@ -35,7 +35,7 @@ from libc.stdlib cimport free, malloc
 from libc.string cimport memset
 
 
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 
 cdef int default_nthreads = max(1, int(math.sqrt(os.cpu_count()+1)))
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", default_nthreads)
@@ -423,7 +423,7 @@ cdef class Encoder:
         self.do_set_encoding_speed(self.speed)
         self.do_set_encoding_quality(self.quality)
         self.generation = generation.increase()
-        if SAVE_TO_FILE is not None:
+        if SAVE_TO_FILE:
             filename = SAVE_TO_FILE+f"vpx-{self.generation}.{encoding}"
             self.file = open(filename, "wb")
             log.info(f"saving {encoding} stream to {filename!r}")

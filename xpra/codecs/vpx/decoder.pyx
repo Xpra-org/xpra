@@ -37,7 +37,7 @@ from xpra.codecs.vpx.vpx cimport (
 from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 
-SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 
 VPX_COLOR_SPACES : Dict[int,str] = {
     VPX_CS_UNKNOWN  : "unknown",
@@ -217,7 +217,7 @@ cdef class Decoder:
                               flags, VPX_DECODER_ABI_VERSION)!=VPX_CODEC_OK:
             raise RuntimeError("failed to instantiate %s decoder with ABI version %s: %s" % (encoding, VPX_DECODER_ABI_VERSION, self.codec_error_str()))
         if SAVE_TO_FILE:
-            filename = f"./{monotonic()}.{self.encoding}"
+            filename = f"./{SAVE_TO_FILE}-{monotonic()}.{self.encoding}"
             self.file = open(filename, "wb")
             log.info("saving %s stream to %s", self.encoding, filename)
         log("vpx_codec_dec_init_ver for %s succeeded with ABI version %s", encoding, VPX_DECODER_ABI_VERSION)

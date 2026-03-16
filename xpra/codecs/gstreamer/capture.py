@@ -3,12 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from typing import Any
 from queue import Queue, Empty, Full
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.util.env import envbool
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.gstreamer.common import (
     import_gst, GST_FLOW_OK, get_element_str,
@@ -34,7 +34,7 @@ GObject = gi_import("GObject")
 
 log(f"capture: {get_type()} {get_version()}")
 
-SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 
 generation = AtomicInteger()
 
