@@ -70,7 +70,6 @@ class ImageFilterConnection(StubClientConnection):
         if not self.filter_module:
             return
         self.connect("new-window-source", self.initialize_imagefilter)
-        self.connect("resize-window-source", self.resize_imagefilter)
         self.connect("remove-window-source", self.clean_imagefilter)
 
     def get_caps(self) -> dict[str, Any]:
@@ -99,6 +98,11 @@ class ImageFilterConnection(StubClientConnection):
         ifilt.init_context(width, height, "BGRX", width, height, "BGRX", options)
         ws.image_filter = ImageFilter(ws.wid, ifilt)
         log("imagefilter for window %#x %ix%i: %s", ws.wid, width, height, ws.image_filter)
+
+        def resized() -> None:
+            self.clean_imagefilter(ss, ws)
+            self.initialize_imagefilter(ss, ws)
+        ws.window_dimensions_updated = resized
 
     def resize_imagefilter(self, ss, ws: WindowSource) -> None:
         log.warn("imagefilter: resize!")

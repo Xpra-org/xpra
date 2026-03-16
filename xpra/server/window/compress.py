@@ -14,6 +14,7 @@ from contextlib import nullcontext
 from typing import ContextManager, Any
 from collections.abc import Callable, Iterable, Sequence
 
+from xpra.common import noop
 from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
@@ -271,6 +272,8 @@ class WindowSource(WindowIconSource):
         self.has_alpha: bool = HAS_ALPHA and window.has_alpha()
         self.has_shape = False
         self.window_dimensions = ww, wh
+        # ugly callback for window filters:
+        self.window_dimensions_updated = noop
         # where the window is mapped on the client:
         self.mapped_at = None
         self.fullscreen: bool = not self.is_tray and window.get("fullscreen")
@@ -1699,6 +1702,7 @@ class WindowSource(WindowIconSource):
         log("window dimensions changed from %s to %s", self.window_dimensions, (ww, wh))
         self.window_dimensions = ww, wh
         self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
+        self.window_dimensions_updated()
 
     def get_packets_backlog(self) -> int:
         s = self.statistics
