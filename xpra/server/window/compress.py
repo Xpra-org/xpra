@@ -1592,12 +1592,12 @@ class WindowSource(WindowIconSource):
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
         elif DAMAGE_PADDING:
-            ox = x
-            oy = y
+            x2 = x + w + DAMAGE_PADDING
+            y2 = y + h + DAMAGE_PADDING
             x = max(0, x - DAMAGE_PADDING)
             y = max(0, y - DAMAGE_PADDING)
-            w = min(ww - x, w + DAMAGE_PADDING + ox - x)
-            h = min(wh - y, h + DAMAGE_PADDING + oy - y)
+            w = min(ww - x, x2 - x)
+            h = min(wh - y, y2 - y)
         self.do_damage(ww, wh, x, y, w, h, options)
         self.statistics.last_damage_event_time = now
 
