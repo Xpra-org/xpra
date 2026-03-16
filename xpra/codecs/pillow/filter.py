@@ -13,7 +13,7 @@ from xpra.codecs.constants import CSCSpec
 from xpra.util.str_fn import parse_function_call
 from xpra.log import Logger
 
-log = Logger("csc", "pillow")
+log = Logger("filter", "pillow")
 
 
 def get_type() -> str:

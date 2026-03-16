@@ -17,7 +17,7 @@ from xpra.util.objects import typedict
 from xpra.log import Logger
 
 
-log = Logger("window", "events")
+log = Logger("window", "events", "filter")
 # CONTENT_TYPES = set(os.environ.get("XPRA_IMAGEFILTER_CONTENT_TYPES", "text").split(","))
 CONTENT_TYPES = set(ct for ct in os.environ.get("XPRA_IMAGEFILTER_CONTENT_TYPES", "").split(",") if ct)
 WINDOW_TYPES = set(ct for ct in os.environ.get("XPRA_IMAGEFILTER_WINDOW_TYPES", "").split(",") if ct)
@@ -98,9 +98,9 @@ class ImageFilterConnection(StubClientConnection):
         ifilt = self.filter_module.Filter()
         ifilt.init_context(width, height, "BGRX", width, height, "BGRX", options)
         ws.image_filter = ImageFilter(ws.wid, ifilt)
-        log("imagefilter for window %i %ix%i: %s", ws.wid, width, height, ws.image_filter)
+        log("imagefilter for window %#x %ix%i: %s", ws.wid, width, height, ws.image_filter)
 
-    def resize_imagefilter(self, ss, ws: WindowSource = None) -> None:
+    def resize_imagefilter(self, ss, ws: WindowSource) -> None:
         log.warn("imagefilter: resize!")
         self.clean_imagefilter(ss, ws)
         self.initialize_imagefilter(ss, ws)

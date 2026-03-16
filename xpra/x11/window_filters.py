@@ -10,7 +10,7 @@ from xpra.x11.prop import prop_get, get_python_type
 from xpra.x11.bindings.window import X11WindowBindings
 
 window_bindings = X11WindowBindings()
-log = Logger("x11", "filters")
+log = Logger("x11", "filter")
 
 
 def get_x11_window_value(prop, window):

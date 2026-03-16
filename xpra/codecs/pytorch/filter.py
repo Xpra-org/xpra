@@ -11,7 +11,7 @@ from xpra.codecs.constants import CSCSpec
 from xpra.util.str_fn import parse_function_call
 from xpra.log import Logger
 
-log = Logger("csc", "torch")
+log = Logger("filter", "torch")
 
 
 def get_type() -> str:

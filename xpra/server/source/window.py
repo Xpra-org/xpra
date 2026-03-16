@@ -33,7 +33,7 @@ focuslog = Logger("focus")
 metalog = Logger("metadata")
 bandwidthlog = Logger("bandwidth")
 eventslog = Logger("events")
-filterslog = Logger("filters")
+filterslog = Logger("filter")
 
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 CONGESTION_REPEAT_DELAY = envint("XPRA_CONGESTION_REPEAT_DELAY", 60)

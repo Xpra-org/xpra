@@ -223,7 +223,7 @@ def consume_verbose_argv(argv: list[str], *categories: str) -> bool:
 ALIASES: dict[str, str] = {
     "glib": "gtk",
     "event": "events",
-    "filter": "filters",
+    "filters": "filter",
     "mouse": "pointer",
     "statistics": "stats",
     "print": "printing",
@@ -273,7 +273,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "frame"         : "Window frame",
         "grab"          : "Window grabs (both keyboard and mouse)",
         "dragndrop"     : "Window drag-n-drop events",
-        "filters"       : "Window filters",
+        "filter"        : "Window filters",
         "bell"          : "Bell events",
     },
     "Encoding": {
