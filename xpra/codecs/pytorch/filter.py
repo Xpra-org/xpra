@@ -180,9 +180,11 @@ class Filter:
         assert height <= self.height, "expected image height smaller than %i got %i" % (self.height, height)
         import torch
         import numpy as np
+        rowstride = image.get_rowstride()
         bgrx = image.get_pixels()
         bgrx_array = np.frombuffer(bgrx, dtype=np.uint8)
-        bgrx_array = bgrx_array.reshape(height, width, 4)
+        bgrx_array = bgrx_array.reshape(height, rowstride)
+        bgrx_array = bgrx_array[:, :width * 4].reshape(height, width, 4)
         pixels_gpu = torch.tensor(bgrx_array, device=self.device, dtype=torch.uint8)
         # Separate BGR and X channels
         bgr = pixels_gpu[:, :, :3]          # (H, W, 3)
@@ -199,6 +201,7 @@ class Filter:
         result_cpu = result_gpu.cpu().numpy()
         bgrx = result_cpu.tobytes()
         image.set_pixels(bgrx)
+        image.set_rowstride(width * 4)
         return image
 
 
