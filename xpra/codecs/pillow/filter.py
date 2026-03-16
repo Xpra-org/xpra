@@ -6,6 +6,7 @@
 from typing import Any, Sequence
 from PIL import Image, ImageFilter
 
+from xpra.codecs.debug import SAVE_TO_FILE, may_save_image
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import CSCSpec
@@ -132,6 +133,13 @@ class Filter:
         img = Image.frombuffer("RGBA", (width, height), bgrx, "raw", "BGRA", image.get_rowstride())
         if image.get_pixel_format() == "BGRX":
             img.putalpha(255)
+        if SAVE_TO_FILE:
+            from io import BytesIO
+            buf = BytesIO()
+            img.save(buf, format="png")
+            png_data = buf.getvalue()
+            buf.close()
+            may_save_image("png", png_data)
         modified = img.filter(self.transform)
         bgrx = modified.tobytes("raw", "BGRA", 0, 1)
         image.set_pixels(bgrx)

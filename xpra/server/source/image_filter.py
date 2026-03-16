@@ -100,7 +100,7 @@ class ImageFilterConnection(StubClientConnection):
         ws.image_filter = ImageFilter(ws.wid, ifilt)
         log("imagefilter for window %i %ix%i: %s", ws.wid, width, height, ws.image_filter)
 
-    def resize_imagefilter(self, ss, ws: WindowSource) -> None:
+    def resize_imagefilter(self, ss, ws: WindowSource = None) -> None:
         log.warn("imagefilter: resize!")
         self.clean_imagefilter(ss, ws)
         self.initialize_imagefilter(ss, ws)
