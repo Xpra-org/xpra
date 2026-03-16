@@ -3027,7 +3027,7 @@ tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlide
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(mmap_ENABLED, "xpra.net.mmap")
-toggle_packages(quic_ENABLED, "xpra.net.asyncio")
+toggle_packages(quic_ENABLED, "xpra.net.aio")
 toggle_packages(quic_ENABLED, "xpra.net.quic")
 toggle_packages(ssh_ENABLED, "xpra.net.ssh", "xpra.net.ssh.paramiko")
 toggle_packages(ssl_ENABLED, "xpra.net.tls")
