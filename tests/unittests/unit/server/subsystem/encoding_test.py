@@ -55,15 +55,9 @@ class EncodingMixinTest(ServerMixinTest):
 
     def test_reinit_encodings_sends_caps(self):
         """reinit_encodings() should push full encoding capabilities to connected clients."""
-        import xpra.server.subsystem.encoding as enc_mod
         packets = self._setup_encoding()
         self.source.reinit_encoders = lambda: None
-        orig = enc_mod.is_windows_source
-        enc_mod.is_windows_source = lambda _ss: True
-        try:
-            self.mixin.reinit_encodings()
-        finally:
-            enc_mod.is_windows_source = orig
+        self.mixin.reinit_encodings()
         expected = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
         self.assertIn(expected, packets,
                       f"reinit_encodings should send {expected!r} to update client encoding capabilities")
