@@ -77,6 +77,7 @@ ACK_JITTER = envint("XPRA_ACK_JITTER", 100)
 ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 250)
 SLOW_SEND_THRESHOLD = envint("XPRA_SLOW_SEND_THRESHOLD", 20*1000*1000)
 FRAME_OVERHEAD = envint("XPRA_FRAME_OVERHEAD", 1)
+DAMAGE_PADDING = envint("XPRA_DAMAGE_PADDING", 0)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 BROWSER_ALPHA_FIX = envbool("XPRA_BROWSER_ALPHA_FIX", True)
@@ -1590,6 +1591,11 @@ class WindowSource(WindowIconSource):
             return
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
+        elif DAMAGE_PADDING:
+            x = max(0, x - DAMAGE_PADDING)
+            y = max(0, y - DAMAGE_PADDING)
+            w = min(ww - x, w + DAMAGE_PADDING)
+            h = min(wh - y, h + DAMAGE_PADDING)
         self.do_damage(ww, wh, x, y, w, h, options)
         self.statistics.last_damage_event_time = now
 
