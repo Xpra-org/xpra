@@ -53,7 +53,7 @@ def get_levels(mode: bool, shift: bool, group: bool):
     levels: list[int] = []
 
     # try both boolean options, current one first:
-    def pair(bval: bool) -> tuple[int, int]:
+    def pair(bval: bool):
         return int(bval), int(not bval)
 
     # try to preserve the mode (harder to toggle):
