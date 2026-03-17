@@ -16,6 +16,12 @@ get_team_id() {
 }
 
 export CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=-}"
+# verify that it is unlocked:
+if ! security show-keychain-info "$KEYCHAIN" 2>/dev/null; then
+    echo "Keychain is locked, cannot sign!"
+    exit 1
+fi
+
 TEAM_ID=$(get_team_id "$CODESIGN_KEYNAME")
 if [ -z "$TEAM_ID" ]; then
   ENTITLEMENTS_FILE="${MACOS_SCRIPT_DIR}/entitlements.plist"
