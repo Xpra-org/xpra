@@ -42,7 +42,7 @@ class TrayBase:
         self.icon_timestamp = 0.0
 
     def __repr__(self):
-        return f"Tray({self.app_id}:{self.tooltip})"
+        return f"Tray({self.app_id}:{self.tooltip!r})"
 
     def cleanup(self) -> None:
         if self.tray_widget:
