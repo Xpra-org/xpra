@@ -184,6 +184,11 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.gl_max_viewport_dims = 0, 0
         self.gl_texture_size_limit = 0
         self._cursors = weakref.WeakKeyDictionary()
+        # Global cursor cache: GL windows created after a cursor update (or whose
+        # backing is recreated) use this on enter-notify to recover the current
+        # cursor. Per-window cursor_data is set by set_cursor_data(); this cache
+        # covers windows that were absent when the last cursor packet arrived.
+        self._last_cursor_data: tuple = ()
         # frame request hidden window:
         self.frame_request_window = None
         # group leader bits:
@@ -930,6 +935,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             if cursor is None:
                 # use default:
                 cursor = get_default_cursor()
+        self._last_cursor_data = cursor_data
         for w in windows:
             w.set_cursor_data(cursor_data)
             # the cursor should only apply to the window contents (aka "drawingarea"),
@@ -939,7 +945,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             # trays don't have a gdk window
             if gdkwin:
                 self._cursors[w] = cursor_data
-                gdkwin.set_cursor(cursor)
+                update_fn = getattr(w, "_update_cursor_subclass", None)
+                if update_fn is None or not update_fn(cursor):
+                    gdkwin.set_cursor(cursor)
 
     def make_cursor(self, cursor_data: Sequence) -> Gdk.Cursor | None:
         # if present, try cursor ny name:
