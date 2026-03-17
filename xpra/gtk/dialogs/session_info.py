@@ -1201,19 +1201,11 @@ class SessionInfo(Gtk.Window):
 
     def get_window_encoder_stats(self) -> dict:
         window_encoder_stats = {}
-        # Derive merged window info from client info.
-        # With a single client, info["client"] is the flat source info dict;
-        # with multiple clients it is {0: source0_info, 1: source1_info, ...}.
+        # info["client"] is always {int: source_info} (one entry per connected client)
         server_last_info = self.last_info()
         window_dict = {}
         client_info = server_last_info.get("client", {})
-        if "window" in client_info:
-            # single client: client_info IS the source info
-            sources = [client_info]
-        else:
-            # multiple clients: client_info is indexed by integer
-            sources = [v for v in client_info.values() if isinstance(v, dict)]
-        for source in sources:
+        for source in (v for v in client_info.values() if isinstance(v, dict)):
             w = source.get("window")
             if isinstance(w, dict):
                 window_dict.update(w)
