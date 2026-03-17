@@ -1324,7 +1324,7 @@ class ServerCore:
             pre = socket_fast_read(conn)
             if not pre:
                 netlog("closing %s connection: no data", socktype)
-                force_close_connection(conn)
+                self.force_close_connection(conn)
                 return
             pre_read = [pre]
         sock.settimeout(self._socket_timeout)
