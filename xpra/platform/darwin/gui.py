@@ -55,27 +55,62 @@ except Exception:
     log("GetDblTime not found", exc_info=True)
 
 
+dummy_window = None
+
+
 def do_init() -> None:
-    osxapp = get_OSXApplication()
-    log("do_init() osxapp=%s", osxapp)
-    if not osxapp:
-        return  # not much else we can do here
+    # use a dummy window so the menu bar doesn't spew out warnings:
     from xpra.platform.paths import get_icon
     from xpra.platform.gui import get_default_icon
     filename = get_default_icon()
     icon = get_icon(filename)
     log("do_init() icon=%s", icon)
-    if icon:
-        osxapp.set_dock_icon_pixbuf(icon)
+
+    osxapp = get_OSXApplication()
+    log("do_init() osxapp=%s", osxapp)
+    if not osxapp:
+        return  # not much else we can do here
+    window = get_dummy_window(icon)
+
     from xpra.platform.darwin.menu import getOSXMenuHelper
     mh = getOSXMenuHelper(None)
     log("do_init() menu helper=%s", mh)
-    osxapp.set_dock_menu(mh.build_dock_menu())
+
+    # dock:
+    if icon:
+        osxapp.set_dock_icon_pixbuf(icon)
+    menu = mh.build_dock_menu()
+    osxapp.set_dock_menu(menu)
+
+    from xpra.os_util import gi_import
+    Gtk = gi_import("Gtk")
     import warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*invalid cast from 'GtkMenuBar'")
         with CaptureStdErr():
-            osxapp.set_menu_bar(mh.rebuild())
+            menu = mh.rebuild()
+            # ensure that the menu bar has a top-level parent to avoid Gtk warnings:
+            box = Gtk.Box()
+            window.add(box)
+            box.pack_start(menu, False, False, 0)
+            box.show()
+            osxapp.set_menu_bar(menu)
+
+
+def get_dummy_window(icon):
+    global dummy_window
+    if not dummy_window:
+        from xpra.os_util import gi_import
+        Gtk = gi_import("Gtk")
+        dummy_window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+        dummy_window.set_skip_taskbar_hint(True)
+        dummy_window.set_skip_pager_hint(True)
+        dummy_window.move(-9999, -9999)
+        dummy_window.set_default_size(1, 1)
+        dummy_window.realize()
+        if icon:
+            dummy_window.set_icon(icon)
+    return dummy_window
 
 
 def do_ready() -> None:
