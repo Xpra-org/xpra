@@ -14,6 +14,7 @@ export PYTHON="${PYTHON:-${JHBUILD_PREFIX}/bin/python3}"
 PYTHON_MAJOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])')
 PYTHON_MINOR_VERSION=$($PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])')
 SITELIB="${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/"
+GIR_SOURCE_DIR="${JHBUILD_PREFIX}/share/gir-1.0"
 
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER="${STRIP_GSTREAMER:=$STRIP_DEFAULT}"
@@ -95,6 +96,13 @@ if [ ! -e "${JHBUILD_PREFIX}/lib/charset.alias" ]; then
   #gtk-mac-bundler chokes if this file is missing
   touch "${JHBUILD_PREFIX}/lib/charset.alias"
 fi
+GIOUNIX_GIR="${GIR_SOURCE_DIR}/GioUnix-2.0.gir"
+GIOUNIX_TYPELIB="${JHBUILD_PREFIX}/lib/girepository-1.0/GioUnix-2.0.typelib"
+if strings "${GIOUNIX_TYPELIB}" | grep -q "${JHBUILD_PREFIX}"; then
+    echo "  patching GioUnix-2.0.typelib"
+    g-ir-compiler "--shared-library=libgio-2.0.0.dylib" "${GIOUNIX_GIR}" -o "${GIOUNIX_TYPELIB}"
+fi
+
 HICOLOR_INDEX="${JHBUILD_PREFIX}/share/icons/hicolor/index.theme"
 if [ ! -e "${HICOLOR_INDEX}" ]; then
   #gtk-mac-bundler chokes if this file is missing
@@ -342,7 +350,6 @@ fi
 echo "- gobject-introspection"
 mkdir "${RSCDIR}/lib/girepository-1.0"
 TYPELIB_DIR="${RSCDIR}/lib/girepository-1.0"
-GIR_SOURCE_DIR="$JHBUILD_PREFIX/share/gir-1.0"
 TEMP_GIR_DIR="${MACOS_SCRIPT_DIR}/xpra-gir-fixed-$$"
 mkdir "$TEMP_GIR_DIR"
 for name in Gst-1.0 GObject-2.0 GLib-2.0 GModule-2.0 GioUnix-2.0 Gtk-3.0 Gdk-3.0 GdkPixbuf-2.0 GtkosxApplication-1.0 HarfBuzz-0.0 GL-1.0 Gio-2.0 Pango-1.0 freetype2-2.0 cairo-1.0 Atk-1.0; do
