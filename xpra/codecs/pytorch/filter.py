@@ -182,6 +182,7 @@ class Filter:
         import numpy as np
         rowstride = image.get_rowstride()
         bgrx = image.get_pixels()
+        log("convert_image(%s) stride=%i, pixels=%i", image, rowstride, len(bgrx))
         bgrx_array = np.frombuffer(bgrx, dtype=np.uint8)
         bgrx_array = bgrx_array.reshape(height, rowstride)
         bgrx_array = bgrx_array[:, :width * 4].reshape(height, width, 4)
