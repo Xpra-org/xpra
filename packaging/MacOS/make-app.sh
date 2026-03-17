@@ -345,7 +345,7 @@ TYPELIB_DIR="${RSCDIR}/lib/girepository-1.0"
 GIR_SOURCE_DIR="$JHBUILD_PREFIX/share/gir-1.0"
 TEMP_GIR_DIR="${MACOS_SCRIPT_DIR}/xpra-gir-fixed-$$"
 mkdir "$TEMP_GIR_DIR"
-for name in Gst-1.0 GObject-2.0 GLib-2.0 GModule-2.0 Gtk-3.0 Gdk-3.0 GdkPixbuf-2.0 GtkosxApplication-1.0 HarfBuzz-0.0 GL-1.0 Gio-2.0 Pango-1.0 freetype2-2.0 cairo-1.0 Atk-1.0; do
+for name in Gst-1.0 GObject-2.0 GLib-2.0 GModule-2.0 GioUnix-2.0 Gtk-3.0 Gdk-3.0 GdkPixbuf-2.0 GtkosxApplication-1.0 HarfBuzz-0.0 GL-1.0 Gio-2.0 Pango-1.0 freetype2-2.0 cairo-1.0 Atk-1.0; do
   gir_source="$GIR_SOURCE_DIR/$name.gir"
   gir_fixed="$TEMP_GIR_DIR/$name.gir"
   sed -E 's|/[^,]*/([^/,]+\.dylib)|\1|g' "$gir_source" > "$gir_fixed"
