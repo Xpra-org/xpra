@@ -64,7 +64,7 @@ class Handler(AuthenticationHandler):
         if not key_handle_str:
             # try to load the key handle from the user conf dir(s):
             from xpra.platform.paths import get_user_conf_dirs  # pylint: disable=import-outside-toplevel
-            info = self.protocol.get_info(False)
+            info = self.protocol.get_info()
             key_handle_filenames = []
             for hostinfo in ("-%s" % info.get("host", ""), ""):
                 for d in get_user_conf_dirs():
