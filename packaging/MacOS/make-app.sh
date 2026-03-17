@@ -203,6 +203,13 @@ if [ ! -e "JHBUILD_PREFIX}/lib/charset.alias" ]; then
 	#gtk-mac-bundler chokes if this file is missing
 	touch "${JHBUILD_PREFIX}/lib/charset.alias"
 fi
+GIR_SOURCE_DIR="${JHBUILD_PREFIX}/share/gir-1.0"
+GIOUNIX_GIR="${GIR_SOURCE_DIR}/GioUnix-2.0.gir"
+GIOUNIX_TYPELIB="${JHBUILD_PREFIX}/lib/girepository-1.0/GioUnix-2.0.typelib"
+if strings "${GIOUNIX_TYPELIB}" | grep -q "${JHBUILD_PREFIX}"; then
+    echo "  patching GioUnix-2.0.typelib"
+    g-ir-compiler "--shared-library=libgio-2.0.0.dylib" "${GIOUNIX_GIR}" -o "${GIOUNIX_TYPELIB}"
+fi
 if [ ! -e "JHBUILD_PREFIX}/share/icons/hicolor/index.theme" ]; then
 	#gtk-mac-bundler chokes if this file is missing
 	touch "${JHBUILD_PREFIX}/share/icons/hicolor/index.theme"
