@@ -1033,7 +1033,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def DeleteMonitor(self, name: str):
         log(f"DeleteMonitor(%r)", name)
         cdef Window window = XDefaultRootWindow(self.display)
-        cdef Atom name_atom = self.str_to_atom(name)
+        cdef Atom name_atom = self.xatom(name)
         XRRDeleteMonitor(self.display, window, name_atom)
         self.XSync()
 
@@ -1259,7 +1259,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     log(f"matching monitor index {mi} to {i}: {m}, using name={name!r}")
                     x, y, width, height = m["geometry"]
                     memset(&monitor, 0, sizeof(XRRMonitorInfo))
-                    monitor.name = self.str_to_atom(name)
+                    monitor.name = self.xatom(name)
                     monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = False    # ignore client property: m.get("automatic", True)
                     monitor.x = x
@@ -1301,7 +1301,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             log("all names=%s", all_names)
             log("delete=%s", delete)
             for name in delete:
-                atom = self.str_to_atom(name)
+                atom = self.xatom(name)
                 XRRDeleteMonitor(self.display, window, atom)
             log("status=%s", self.get_all_screen_properties())
             self.XSync()
