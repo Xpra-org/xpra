@@ -108,14 +108,13 @@ def do_init() -> None:
     import warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*invalid cast from 'GtkMenuBar'")
-        with CaptureStdErr():
-            menu = mh.rebuild()
-            # ensure that the menu bar has a top-level parent to avoid Gtk warnings:
-            box = Gtk.Box()
-            window.add(box)
-            box.pack_start(menu, False, False, 0)
-            box.show()
-            osxapp.set_menu_bar(menu)
+        menu = mh.rebuild()
+        # ensure that the menu bar has a top-level parent to avoid Gtk warnings:
+        box = Gtk.Box()
+        window.add(box)
+        box.pack_start(menu, False, False, 0)
+        box.show()
+        osxapp.set_menu_bar(menu)
 
 
 def get_dummy_window(icon):
