@@ -17,6 +17,10 @@ get_team_id() {
 
 export CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=-}"
 # verify that it is unlocked:
+if [ -z "${KEYCHAIN}" ]; then
+  KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
+  echo "using default login keychain ${KEYCHAIN}"
+fi
 if ! security show-keychain-info "$KEYCHAIN" 2>/dev/null; then
     echo "Keychain is locked, cannot sign!"
     exit 1
