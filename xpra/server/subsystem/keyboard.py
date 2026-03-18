@@ -188,7 +188,7 @@ class KeyboardServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        log("received new keymap from client: %s", Ellipsizer(packet))
+        log("received new keymap from client: %s", Ellipsizer(packet, limit=200))
         kc = getattr(ss, "keyboard_config", None)
         if not kc or not kc.enabled:
             return
