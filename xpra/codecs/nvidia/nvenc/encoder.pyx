@@ -532,7 +532,7 @@ cdef class Encoder:
 
         if SAVE_TO_FILE:
             gen = context_gen_counter.get()
-            filename = SAVE_TO_FILE+"nvenc-"+str(gen)+f".{encoding}"
+            filename = SAVE_TO_FILE+"-nvenc-"+str(gen)+f".{encoding}"
             self.file = open(filename, "wb")
             log.info(f"saving {encoding} stream to {filename!r}")
 
