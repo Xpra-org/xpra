@@ -16,7 +16,6 @@ from AppKit import NSScreen, NSBeep, NSApp
 from xpra.os_util import gi_import
 from xpra.common import roundup
 from xpra.util.env import envint, envbool
-from xpra.util.io import CaptureStdErr
 from xpra.platform.darwin import get_OSXApplication
 from xpra.log import Logger
 
@@ -87,14 +86,13 @@ def do_init() -> None:
     import warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*invalid cast from 'GtkMenuBar'")
-        with CaptureStdErr():
-            menu = mh.rebuild()
-            # ensure that the menu bar has a top-level parent to avoid Gtk warnings:
-            box = Gtk.Box()
-            window.add(box)
-            box.pack_start(menu, False, False, 0)
-            box.show()
-            osxapp.set_menu_bar(menu)
+        menu = mh.rebuild()
+        # ensure that the menu bar has a top-level parent to avoid Gtk warnings:
+        box = Gtk.Box()
+        window.add(box)
+        box.pack_start(menu, False, False, 0)
+        box.show()
+        osxapp.set_menu_bar(menu)
 
 
 def get_dummy_window(icon):
