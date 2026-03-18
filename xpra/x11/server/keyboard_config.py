@@ -9,6 +9,7 @@ import hashlib
 from collections.abc import Sequence
 from typing import Any
 
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
@@ -193,11 +194,16 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def parse_layout(self, props: typedict) -> int:
         """ used by both process_hello and process_keymap """
-        keymap_dict = typedict(props.dictget("keymap") or {})
+        if BACKWARDS_COMPATIBLE:
+            keymap_dict = typedict(props.dictget("keymap") or {}) or props
+        else:
+            keymap_dict = props
         layout = keymap_dict.strget("layout", "us")
         variant = keymap_dict.strget("variant")
         options = keymap_dict.strget("options")
         mods = int(layout != self.layout) + int(variant != self.variant) + int(options != self.options)
+        log("parse_layout(..)=%i layout: %r vs %r, variant: %r vs %r, options: %r vs %r",
+            mods, self.layout, layout, self.variant, variant, self.options, options)
         self.layout = layout
         self.variant = variant
         self.options = options
