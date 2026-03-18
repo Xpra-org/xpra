@@ -107,6 +107,8 @@ class KeyboardConfig(KeyboardConfigBase):
         self.backend = ""
         self.backend_engine = ""
 
+        with xlog:
+            self.map_all_keynames()
         self.compute_modifiers(True)
         self.compute_modifier_map()
 
@@ -396,10 +398,10 @@ class KeyboardConfig(KeyboardConfigBase):
         if not self.enabled:
             return
         log("set_keymap(%s) layout=%r, variant=%r, options=%r, query-struct=%r",
-            translate_only, self.layout, self.variant, self.options, self.query_struct)
+            translate_only, self.layout, self.variant, self.options, self.query_struct, backtrace=True)
         if translate_only or not self.keycodes:
             self.keycode_translation = set_keycode_translation(self.x11_keycodes, self.keycodes)
-            self.add_gtk_keynames()
+            self.map_all_keynames()
             self.add_loose_matches()
             self.compute_modifiers()
             self.compute_modifier_keynames()
@@ -436,7 +438,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     self.keycode_translation.update(set_keycode_translation(self.x11_keycodes, self.keycodes))
                 else:
                     self.keycode_translation = {}
-                self.add_gtk_keynames()
+                self.map_all_keynames()
 
                 # now set the new modifier mappings:
                 clean_keyboard_state()
@@ -458,28 +460,13 @@ class KeyboardConfig(KeyboardConfigBase):
             self.update_keyval_mappings()
             self.add_loose_matches()
 
-    def add_gtk_keynames(self) -> None:
-        # add the keynames we find via gtk
-        # since we may rely on finding those keynames from the client
-        # (used with non-native keymaps)
-        try:
-            from xpra.gtk.keymap import get_gtk_keymap
-            keymap = get_gtk_keymap()
-        except ImportError:
-            log("add_gtk_keynames()", exc_info=True)
-            return
-        log("add_gtk_keynames() gtk keymap=%s", Ellipsizer(keymap))
-        for _, keyname, keycode, _, _ in keymap:
-            if keyname not in self.keycode_translation:
-                self.keycode_translation[keyname] = keycode
-                if keyname in DEBUG_KEYSYMS:
-                    log.info("add_gtk_keynames: %s=%s", keyname, keycode)
-
     def add_loose_matches(self) -> None:
         # add lowercase versions of all keynames
         for key, keycode in tuple(self.keycode_translation.items()):
             if isinstance(key, str) and not key.islower():
-                self.keycode_translation[key.lower()] = keycode
+                low = key.lower()
+                if not self.keycode_translation.get(low):
+                    self.keycode_translation[low] = keycode
 
     def set_default_keymap(self) -> None:
         """
@@ -491,25 +478,8 @@ class KeyboardConfig(KeyboardConfigBase):
             return
         with xsync:
             clean_keyboard_state()
-            # keycodes:
-            keycode_to_keynames = get_keycode_mappings()
             self.keycode_translation = {}
-            # prefer keycodes that don't use the lowest level+mode:
-            default_for_keyname: dict[str, tuple[str | int, int]] = {}
-            for keycode, keynames in keycode_to_keynames.items():
-                for i, keyname in enumerate(keynames):
-                    self.keycode_translation[(keyname, i)] = keycode
-                    if keyname in DEBUG_KEYSYMS:
-                        log.info("set_default_keymap: %s=%s", (keyname, i), keycode)
-                    kd = default_for_keyname.get(keyname)
-                    if kd is None or kd[1] > i:
-                        default_for_keyname[keyname] = (keycode, i)
-            for keyname, kd in default_for_keyname.items():
-                keycode = kd[0]
-                self.keycode_translation[keyname] = keycode
-                if keyname in DEBUG_KEYSYMS:
-                    log.info("set_default_keymap: %s=%s", keyname, keycode)
-            self.add_gtk_keynames()
+            self.map_all_keynames()
             log("set_default_keymap: keycode_translation=%s", self.keycode_translation)
             # modifiers:
             self.keynames_for_mod = {}
@@ -529,6 +499,26 @@ class KeyboardConfig(KeyboardConfigBase):
             log("set_default_keymap: modifier_map=%s", self.modifier_map)
             self.update_keycode_mappings()
             self.update_keyval_mappings()
+
+    def map_all_keynames(self) -> None:
+        log("map_all_keynames()")
+        keycode_to_keynames = get_keycode_mappings()
+        default_for_keyname: dict[str, tuple[str | int, int]] = {}
+        for keycode, keynames in keycode_to_keynames.items():
+            for i, keyname in enumerate(keynames):
+                self.keycode_translation[(keyname, i)] = keycode
+                if keyname in DEBUG_KEYSYMS:
+                    log.info("set_default_keymap: %s=%s", (keyname, i), keycode)
+                kd = default_for_keyname.get(keyname)
+                # prefer keycodes that have the lowest level+mode:
+                if kd is None or kd[1] > i:
+                    default_for_keyname[keyname] = (keycode, i)
+        for keyname, kd in default_for_keyname.items():
+            keycode = kd[0]
+            if not self.keycode_translation.get(keyname):
+                self.keycode_translation[keyname] = keycode
+            if keyname in DEBUG_KEYSYMS:
+                log.info("set_default_keymap: %s=%s", keyname, keycode)
 
     def update_keycode_mappings(self) -> None:
         self.keycode_mappings = get_keycode_mappings()
