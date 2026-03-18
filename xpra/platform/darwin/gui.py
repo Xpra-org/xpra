@@ -75,6 +75,9 @@ except Exception:
     log("GetDblTime not found", exc_info=True)
 
 
+dummy_window = None
+
+
 def do_init() -> None:
     # use a dummy window so the menu bar doesn't spew out warnings:
     from xpra.platform.paths import get_icon
