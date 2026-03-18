@@ -2166,6 +2166,7 @@ if WIN32:
         if win32_tools_ENABLED:
             add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
             add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
+            add_console_exe("tests/scripts/benchmark_scaling.py", "xpra.ico",         "Benchmark_Scaling")
             if gtk3_ENABLED:
                 add_console_exe("packaging/MSWindows/tools/gtk_info.py",         "gtk.ico",          "GTK_info")
                 add_console_exe("xpra/gtk/keymap.py",        "keymap.ico",       "Keymap_info")

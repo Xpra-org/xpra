@@ -91,6 +91,7 @@ NVJPEG = envbool("XPRA_OPENGL_NVJPEG", True)
 NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
 ALWAYS_RGBA = envbool("XPRA_OPENGL_ALWAYS_RGBA", False)
 SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
+OPENGL_SCALING_FILTER = os.environ.get("XPRA_OPENGL_SCALING_FILTER", "").lower()
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
@@ -450,7 +451,7 @@ class GLWindowBackingBase(WindowBackingBase):
         vertex_shader = self.init_shader("vertex", GL_VERTEX_SHADER)
         from xpra.opengl.shaders import SOURCE
         for name, source in SOURCE.items():
-            if name in ("overlay", "blend", "vertex", "fixed-color"):
+            if name in ("overlay", "blend", "vertex", "fixed-color", "upscale"):
                 continue
             fragment_shader = self.init_shader(name, GL_FRAGMENT_SHADER)
             self.init_program(name, vertex_shader, fragment_shader)
@@ -460,6 +461,12 @@ class GLWindowBackingBase(WindowBackingBase):
         self.init_program("blend", vertex_shader, blend_shader)
         self.init_program("overlay", vertex_shader, overlay_shader)
         self.init_program("fixed-color", vertex_shader, fixed_color)
+        # Catmull-Rom upscale shader — fall back to glBlitFramebuffer if it fails
+        try:
+            upscale_shader = self.init_shader("upscale", GL_FRAGMENT_SHADER)
+            self.init_program("upscale", vertex_shader, upscale_shader)
+        except RuntimeError:
+            log.warn("Warning: upscale shader failed to compile, using bilinear scaling")
 
     def set_vao(self, index=0):
         vertices = [-1, -1, 1, -1, -1, 1, 1, 1]
@@ -870,15 +877,20 @@ class GLWindowBackingBase(WindowBackingBase):
         glViewport(*viewport)
 
         # Draw FBO texture on screen
-        sampling = GL_LINEAR if scaling else GL_NEAREST
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, self.textures[TEX_FBO], 0)
-        glReadBuffer(GL_COLOR_ATTACHMENT0)
+        if scaling and OPENGL_SCALING_FILTER not in ("bilinear", "nearest") and "upscale" in self.programs:
+            self._present_fbo_catmull_rom(xscale, yscale, left, top)
+        else:
+            sampling = GL_LINEAR if scaling else GL_NEAREST
+            if OPENGL_SCALING_FILTER == "nearest":
+                sampling = GL_NEAREST
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, self.textures[TEX_FBO], 0)
+            glReadBuffer(GL_COLOR_ATTACHMENT0)
 
-        for x, y, w, h in rectangles:
-            glBlitFramebuffer(x, y, w, h,
-                              round(x*xscale), round(y*yscale), round((x+w)*xscale), round((y+h)*yscale),
-                              GL_COLOR_BUFFER_BIT, sampling)
+            for x, y, w, h in rectangles:
+                glBlitFramebuffer(x, y, w, h,
+                                  round(x*xscale), round(y*yscale), round((x+w)*xscale), round((y+h)*yscale),
+                                  GL_COLOR_BUFFER_BIT, sampling)
 
         if self.pointer_overlay:
             self.draw_pointer(xscale, yscale)
@@ -915,6 +927,36 @@ class GLWindowBackingBase(WindowBackingBase):
         gl_frame_terminator()
 
         log("%s.do_present_fbo() done", self)
+
+    def _present_fbo_catmull_rom(self, xscale: float, yscale: float, left: int, top: int) -> None:
+        target = GL_TEXTURE_RECTANGLE
+        program = self.programs["upscale"]
+        glUseProgram(program)
+
+        # Bind FBO texture with GL_LINEAR for the bilinear trick on the center fetch
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(target, self.textures[TEX_FBO])
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glUniform1i(glGetUniformLocation(program, "fbo"), 0)
+
+        glUniform2f(glGetUniformLocation(program, "viewport_pos"),
+                    left * xscale, top * yscale)
+        glUniform2f(glGetUniformLocation(program, "scaling"), xscale, yscale)
+
+        pos_buffer = self.set_vao(0)
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+
+        glDeleteBuffers(1, [pos_buffer])
+        glDisableVertexAttribArray(0)
+        glBindVertexArray(0)
+        glUseProgram(0)
+
+        # Restore FBO texture filter for paint operations
+        glBindTexture(target, self.textures[TEX_FBO])
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glBindTexture(target, 0)
 
     def save_fbo(self) -> None:
         width, height = self.size
