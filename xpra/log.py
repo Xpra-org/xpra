@@ -549,7 +549,7 @@ class Logger:
         if LOG_PREFIX:
             msg = LOG_PREFIX + msg
         frame = kwargs.pop("frame", None)
-        backtrace = kwargs.pop("backtrace", level >= BACKTRACE_LEVEL) or bool(frame)
+        backtrace = kwargs.pop("backtrace", level >= BACKTRACE_LEVEL) or bool(frame) or kwargs.pop("traceback", False)
         if backtrace or any(exp.match(msg) for exp in backtrace_expressions):
             import traceback
             tb = traceback.extract_stack(frame)
