@@ -6,6 +6,7 @@
 
 from xpra.client.gtk3.window.window import ClientWindow
 from xpra.gtk.window import set_visual
+from xpra.platform.gui import setup_gl_drawing_area, cleanup_gl_drawing_area
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.log import Logger
@@ -87,6 +88,7 @@ class GLClientWindowBase(ClientWindow):
         self._backing.paint_screen = True
 
     def destroy(self) -> None:
+        cleanup_gl_drawing_area(self)
         self.remove_backing()
         super().destroy()
 
@@ -94,6 +96,7 @@ class GLClientWindowBase(ClientWindow):
         self.drawing_area = None
 
     def new_backing(self, bw: int, bh: int) -> None:
+        cleanup_gl_drawing_area(self)
         widget = super().new_backing(bw, bh)
         if self.drawing_area:
             self.remove(self.drawing_area)
@@ -107,6 +110,7 @@ class GLClientWindowBase(ClientWindow):
             self.drawing_area.set_size_request(*minsize)
         self.add(widget)
         self.drawing_area = widget
+        setup_gl_drawing_area(self, widget)
         # maybe redundant?:
         self.apply_geometry_hints(self.geometry_hints)
 

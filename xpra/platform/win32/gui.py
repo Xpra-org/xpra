@@ -1,19 +1,21 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Copyright (C) 2011 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2026 Netflix, Inc.
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
 import os
+import re
 import sys
 import types
 from typing import Any
 from collections.abc import Callable, Sequence
 from ctypes import (
     WinDLL,  # @UnresolvedImport
-    CDLL, pythonapi, py_object,
+    CDLL, pythonapi, py_object, c_void_p,
     HRESULT, c_bool, create_string_buffer, byref, addressof, sizeof,  # @UnresolvedImport
 )
 from ctypes.wintypes import HWND, DWORD, POINT, RECT, HGDIOBJ, LPCWSTR
@@ -34,6 +36,8 @@ from xpra.platform.win32.common import (
     GetIntSystemParametersInfo,
     GetUserObjectInformationA, OpenInputDesktop, CloseDesktop,
     GetMonitorInfo,
+    SetCursor, SUBCLASSPROC,
+    SetWindowSubclass, RemoveWindowSubclass, DefSubclassProc,
 )
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -47,8 +51,10 @@ grablog = Logger("win32", "grab")
 screenlog = Logger("win32", "screen")
 keylog = Logger("win32", "keyboard")
 pointerlog = Logger("win32", "pointer")
+cursorlog = Logger("win32", "cursor")
 
 GLib = gi_import("GLib")
+Gdk = gi_import("Gdk")
 
 REINIT_VISIBLE_WINDOWS = envbool("XPRA_WIN32_REINIT_VISIBLE_WINDOWS", True)
 APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
@@ -626,6 +632,200 @@ def remove_window_hooks(window) -> None:
             window.win32hooks = None
     except Exception:
         log.error("remove_window_hooks(%s)", exc_info=True)
+
+
+# ---- GL DrawingArea cursor subclass ----
+#
+# On Win32, GL windows have a separate child HWND for the DrawingArea.
+# GDK's WM_SETCURSOR handler doesn't apply the cursor to this child HWND,
+# so it always shows the arrow cursor. We subclass the child HWND via
+# comctl32 SetWindowSubclass to intercept WM_SETCURSOR and call SetCursor
+# with the correct HCURSOR ourselves.
+
+# GdkWin32Cursor.__repr__ returns e.g. "<GdkWin32Cursor at 0x1a2b3c4d5e6f)"
+# We extract the C struct address to read the HCURSOR field directly.
+_HCURSOR_PATTERN = re.compile(r"GdkWin32Cursor at (0x[0-9a-fA-F]+)\)")
+
+# Byte offset of the HCURSOR field within the GdkWin32Cursor C struct.
+# Layout: GObject(24) + display*(8) + cursor_type(4)+pad(4) + name*(8) + HCURSOR(8)
+# See: https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gdk/win32/gdkprivate-win32.h
+# This is ABI-fragile: tied to GTK3's struct layout. GTK3 is in maintenance
+# mode (3.24.x final) so the layout is effectively frozen. If GTK4 is ever
+# used, this offset will be wrong — GTK4 uses a different cursor API entirely.
+# On failure, get_hcursor_from_gdk_cursor returns 0 and the subclass is not installed.
+_GDKWIN32CURSOR_HCURSOR_OFFSET = 48
+
+# Win32 message constants for the subclass proc
+_WM_SETCURSOR = 0x0020
+_WM_NCDESTROY = 0x0082
+_HTCLIENT = 1
+_GL_CURSOR_SUBCLASS_ID = 0xAC01
+
+
+def _get_hcursor_from_gdk_cursor(cursor) -> int:
+    """Extract the Win32 HCURSOR handle from a GdkWin32Cursor's C struct."""
+    m = _HCURSOR_PATTERN.search(repr(cursor))
+    if not m:
+        cursorlog.warn("Warning: cannot parse GdkWin32Cursor repr: %s", repr(cursor)[:80])
+        return 0
+    c_ptr = int(m.group(1), 16)
+    try:
+        val = c_void_p.from_address(c_ptr + _GDKWIN32CURSOR_HCURSOR_OFFSET).value or 0
+        cursorlog("extracted HCURSOR=%s from GdkWin32Cursor struct at %s",
+                  hex(val) if val else 0, hex(c_ptr))
+        return val
+    except Exception as e:
+        cursorlog.warn("Warning: failed reading HCURSOR at offset %d: %s",
+                       _GDKWIN32CURSOR_HCURSOR_OFFSET, e)
+        return 0
+
+
+def _install_gl_cursor_subclass(window, hwnd: int, hcursor: int) -> None:
+    """Subclass an HWND to intercept WM_SETCURSOR and apply our cursor.
+    Uses SetWindowSubclass (comctl32) which is safe and chainable."""
+    existing = getattr(window, "_gl_cursor_info", None)
+    if existing and existing[0] == hwnd:
+        # Already subclassed this HWND — just update the cursor handle
+        window._gl_cursor_holder[0] = hcursor
+        cursorlog("updated HCURSOR=%s on existing subclass hwnd=%s wid=%#x",
+                  hex(hcursor) if hcursor else 0, hex(hwnd), window.wid)
+        return
+
+    _remove_gl_cursor_subclass(window)
+
+    # Mutable holder so we can update HCURSOR without re-subclassing
+    hcursor_holder = [hcursor]
+    window._gl_cursor_holder = hcursor_holder
+
+    wid = window.wid
+
+    @SUBCLASSPROC
+    def subclass_proc(h, msg, wparam, lparam, uid, ref_data):
+        try:
+            if msg == _WM_SETCURSOR and (lparam & 0xFFFF) == _HTCLIENT:
+                hc = hcursor_holder[0]
+                if hc:
+                    SetCursor(c_void_p(hc))
+                    return 1  # handled — prevents DefWindowProc from setting arrow
+            if msg == _WM_NCDESTROY:
+                RemoveWindowSubclass(h, subclass_proc, _GL_CURSOR_SUBCLASS_ID)
+                window._gl_cursor_info = None
+                window._gl_cursor_holder = None
+                cursorlog("gl cursor subclass removed on WM_NCDESTROY wid=%#x", wid)
+        except Exception as e:
+            cursorlog.warn("Warning: gl cursor subclass error: %s", e)
+        return DefSubclassProc(h, msg, wparam, lparam)
+
+    result = SetWindowSubclass(hwnd, subclass_proc, _GL_CURSOR_SUBCLASS_ID, 0)
+    if result:
+        # Store strong references to prevent GC of the callback
+        window._gl_cursor_info = (hwnd, subclass_proc, _GL_CURSOR_SUBCLASS_ID)
+        cursorlog("installed gl cursor subclass on hwnd=%s hcursor=%s wid=%#x",
+                  hex(hwnd), hex(hcursor) if hcursor else 0, window.wid)
+    else:
+        cursorlog.warn("Warning: SetWindowSubclass failed for hwnd=%s wid=%#x",
+                       hex(hwnd), window.wid)
+        window._gl_cursor_holder = None
+
+
+def _remove_gl_cursor_subclass(window) -> None:
+    """Remove the cursor subclass if installed."""
+    info = getattr(window, "_gl_cursor_info", None)
+    if not info:
+        return
+    hwnd, callback, subclass_id = info
+    window._gl_cursor_info = None
+    window._gl_cursor_holder = None
+    window._gl_cursor_ref = None
+    try:
+        RemoveWindowSubclass(hwnd, callback, subclass_id)
+        cursorlog("removed gl cursor subclass from hwnd=%s wid=%#x", hex(hwnd), window.wid)
+    except Exception as e:
+        cursorlog.warn("Warning: RemoveWindowSubclass failed: %s", e)
+
+
+def _update_gl_cursor(window, cursor) -> bool:
+    """Called from set_windows_cursor when a cursor update arrives.
+    Updates the HCURSOR holder so the subclass applies the new cursor on
+    the next WM_SETCURSOR without needing to re-subclass the HWND.
+    Always returns False so the caller also calls gdkwin.set_cursor() —
+    GDK needs the cursor stored on the parent HWND for drag scenarios
+    where WM_SETCURSOR goes to the parent instead of the child."""
+    info = getattr(window, "_gl_cursor_info", None)
+    if not info:
+        return False
+    holder = getattr(window, "_gl_cursor_holder", None)
+    if holder is None:
+        return False
+    if not cursor:
+        holder[0] = 0
+        window._gl_cursor_ref = None
+        return False
+    hcursor = _get_hcursor_from_gdk_cursor(cursor)
+    if hcursor:
+        holder[0] = hcursor
+        window._gl_cursor_ref = cursor  # prevent GC of Win32 HCURSOR
+    else:
+        holder[0] = 0
+        window._gl_cursor_ref = None
+    return False
+
+
+def setup_gl_drawing_area(window, widget) -> None:
+    """Install Win32 cursor handling for a GL DrawingArea widget.
+    Connects to the widget's realize signal to subclass the child HWND."""
+    cursorlog("setup_gl_drawing_area(%s, %s) wid=%#x", window, widget, window.wid)
+
+    def on_realize(w):
+        hwnd = get_window_handle(w)
+        cursorlog("gl drawing area realized: widget=%s, hwnd=%s, wid=%#x",
+                  w, hex(hwnd) if hwnd else 0, window.wid)
+        if not hwnd:
+            cursorlog.warn("Warning: GL DrawingArea has no HWND, cursor subclass not installed")
+            return
+
+        # Check if parent window has a different HWND (for diagnostics)
+        parent_hwnd = get_window_handle(window)
+        cursorlog("gl cursor: parent_hwnd=%s, child_hwnd=%s, same=%s",
+                  hex(parent_hwnd) if parent_hwnd else 0,
+                  hex(hwnd),
+                  parent_hwnd == hwnd)
+
+        # Check if GDK already has a cursor set on this widget
+        gdkwin = w.get_window()
+        existing_cursor = gdkwin.get_cursor() if gdkwin else None
+        hcursor = 0
+        if existing_cursor:
+            hcursor = _get_hcursor_from_gdk_cursor(existing_cursor)
+            cursorlog("gl cursor: existing GDK cursor=%s, hcursor=%s",
+                      existing_cursor, hex(hcursor) if hcursor else 0)
+
+        _install_gl_cursor_subclass(window, hwnd, hcursor)
+
+        # Attach _update_cursor_subclass method for duck-typing by set_windows_cursor
+        window._update_cursor_subclass = lambda cursor: _update_gl_cursor(window, cursor)
+        cursorlog("gl cursor: attached _update_cursor_subclass to window wid=%#x", window.wid)
+
+    def on_enter(_w, _event=None):
+        # Apply cursor immediately when mouse enters the DrawingArea,
+        # so there's no flicker before the next WM_SETCURSOR message.
+        holder = getattr(window, "_gl_cursor_holder", None)
+        if holder and holder[0]:
+            SetCursor(c_void_p(holder[0]))
+            cursorlog("gl cursor: SetCursor on enter-notify, hcursor=%s wid=%#x",
+                      hex(holder[0]), window.wid)
+
+    widget.connect("realize", on_realize)
+    widget.add_events(Gdk.EventMask.ENTER_NOTIFY_MASK)
+    widget.connect_after("enter-notify-event", on_enter)
+
+
+def cleanup_gl_drawing_area(window) -> None:
+    """Remove the GL DrawingArea cursor subclass."""
+    _remove_gl_cursor_subclass(window)
+    # Clean up the duck-type method
+    if hasattr(window, "_update_cursor_subclass"):
+        del window._update_cursor_subclass
 
 
 def get_xdpi() -> int:

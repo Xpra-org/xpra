@@ -943,7 +943,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             # trays don't have a gdk window
             if gdkwin:
                 self._cursors[w] = cursor_data
-                gdkwin.set_cursor(cursor)
+                update_fn = getattr(w, "_update_cursor_subclass", None)
+                if update_fn is None or not update_fn(cursor):
+                    gdkwin.set_cursor(cursor)
 
     def make_cursor(self, cursor_data: Sequence) -> Gdk.Cursor | None:
         # if present, try cursor ny name:
