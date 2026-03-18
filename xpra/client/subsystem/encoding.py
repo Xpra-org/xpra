@@ -129,7 +129,10 @@ class Encodings(StubClientMixin):
 
     def run(self) -> None:
         if not BACKWARDS_COMPATIBLE:
-            start_thread(self.load_all_codecs, "load-all-codecs", daemon=True)
+            def load() -> None:
+                self.load_all_codecs()
+                self.after_handshake(self.send_encoding_config)
+            start_thread(load, "load-all-codecs", daemon=True)
 
     def load_all_codecs(self) -> None:
         log("load_all_codecs()")
@@ -149,7 +152,6 @@ class Encodings(StubClientMixin):
         vh = getVideoHelper()
         vh.set_modules(video_decoders=self.video_decoders, csc_modules=self.csc_modules)
         vh.init()
-        self.after_handshake(self.send_encoding_config)
 
     def cleanup(self) -> None:
         with log.trap_error("Error during video helper cleanup"):
