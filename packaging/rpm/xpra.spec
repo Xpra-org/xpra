@@ -816,17 +816,20 @@ fi
 
 
 %changelog
-* Sun Mar 15 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
+* Wed Mar 18 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install
    Python compatibility regression
-   log $ARCH in MacOS builds
    prefer non-dot ssh paths on MS Windows
    pyu2f missing build dependency
    partial support for some RHEL 10 clones
    pynvml 13.590.48
-   enable avif on MacOS but not GStreamer video
    `pycuda` 2026.1
+- MacOS:
+   log $ARCH in MacOS builds
+   enable avif on MacOS but not GStreamer video
+   workaround `GioUnix-2.0.typelib` warnings
+   silence Gtk warning
 - MS Windows:
    client errors on control-c
    packaging fix for python-pillow
@@ -875,6 +878,7 @@ fi
    remove duplicate version data
    avoid `KeyError` parsing some broken icon files
    more meaningful labels on session info dialog
+   log line wrapping
 
 * Thu Dec 04 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
 - Platforms, build and packaging:

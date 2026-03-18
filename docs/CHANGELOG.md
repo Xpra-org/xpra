@@ -1,25 +1,28 @@
 # Changelog
 
-## [5.1.5] 2026-03-15
+## [5.1.5] 2026-03-18
 * Platforms, build and packaging:
     * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
-    * [Python compatibility regression](https://github.com/Xpra-org/xpra/commit/1282fa77ee948c459e69538095a96d08310e18d7)
-    * [log `$ARCH` in MacOS builds](https://github.com/Xpra-org/xpra/commit/125520531b748580cd5b8e6507ae72f6564a52a9)
+    * [Python compatibility regression](https://github.com/Xpra-org/xpra/commit/1282fa77ee948c459e69538095a96d08310e18d7) [and again](https://github.com/Xpra-org/xpra/commit/bc1aa0da761a9d611c56bb4e2fa42d3481886be6)
     * [prefer non-dot ssh paths on MS Windows](https://github.com/Xpra-org/xpra/commit/92a70ad0c562ac7092513b86b086437c9ef5e572)
     * [`pyu2f` missing build dependency](https://github.com/Xpra-org/xpra/commit/86e68e3ae450449032899b2513bf8e2c0d71251e)
     * [partial support for some RHEL 10 clones](https://github.com/Xpra-org/xpra/commit/21a305e28ed70ad0ba3e107502c4220ad14a4293)
     * [`pynvml` 13.590.48](https://github.com/Xpra-org/xpra/commit/2c2e1f5d5183094d82f8c0238582326ccc736e42)
-    * [enable `avif` on MacOS](https://github.com/Xpra-org/xpra/commit/4f057fa9bdf28e22f57d318f0e145b238205b780) [but not GStreamer video](https://github.com/Xpra-org/xpra/commit/e539bf12dfaf0d77a706876df1bbfea0262d0a1a)
     * [`pycuda` 2026.1](https://github.com/Xpra-org/xpra/commit/61e3f248cfa59e342776585d1aec9e500e7b0d1f)
+* MacOS:
+    * [enable `avif`](https://github.com/Xpra-org/xpra/commit/4f057fa9bdf28e22f57d318f0e145b238205b780) [but not GStreamer video](https://github.com/Xpra-org/xpra/commit/e539bf12dfaf0d77a706876df1bbfea0262d0a1a)
+    * [log `$ARCH` build log](https://github.com/Xpra-org/xpra/commit/125520531b748580cd5b8e6507ae72f6564a52a9)
+    * [workaround `GioUnix-2.0.typelib` warnings](https://github.com/Xpra-org/xpra/commit/8b97840484358d68e58c30a6bd1ca4d1ce1873fa)
+    * [silence Gtk warning](https://github.com/Xpra-org/xpra/commit/8da9dece466a83bd961d2cef09feda31697e758e)
 * MS Windows:
     * [client errors on control-c](https://github.com/Xpra-org/xpra/commit/c0d8374cc2edf60b3b3963a7bdfcef6cc2cd45ac)
     * [packaging fix for python-pillow](https://github.com/Xpra-org/xpra/commit/1ac190a1dd5c733e336eef7d4dbcc3afef5710f0)
     * [warnings when `named-pipe`s are the only local sockets available](https://github.com/Xpra-org/xpra/commit/a0ffd57f4e34c7a405e04edd345284bb799c8339)
     * [directsound device queries](https://github.com/Xpra-org/xpra/commit/045a23e94e58bd93612ac1333bf29b9243ad44db)
 * Major:
-    * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/18344cff9a1aab0d2f323aa7f1b557f80314f50a) + [fixup](https://github.com/Xpra-org/xpra/commit/bc8b7d1493790ee307e33961c50d41d80efb278a)
+    * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/18344cff9a1aab0d2f323aa7f1b557f80314f50a) + [fixup](https://github.com/Xpra-org/xpra/commit/bc8b7d1493790ee307e33961c50d41d80efb278a) + [another](https://github.com/Xpra-org/xpra/commit/ef512c6ecda9ab1587a8cda83efa76502060d715)
     * [handle notify2 backend failures gracefully](https://github.com/Xpra-org/xpra/commit/715f4c5bb6189697c0fd207e8140d5c59944204b)
-    * [initial "fast" socket read could spin until the connection failed](https://github.com/Xpra-org/xpra/commit/332fb57b108865ff672b5277d66fefb3b1e23c88)
+    * [initial "fast" socket read could spin until the connection failed](https://github.com/Xpra-org/xpra/commit/332fb57b108865ff672b5277d66fefb3b1e23c88) + [fixup](https://github.com/Xpra-org/xpra/commit/30f7a939cd8ea8b2159adb0bb243adbac325a6b5)
     * [DND errors under Wayland](https://github.com/Xpra-org/xpra/commit/50f2c82d2881df0bb1b478a28aa1ab186b7843e7)
     * [X11 calls missing trap context](https://github.com/Xpra-org/xpra/commit/3e5d16ae9d851c6753b1258e66db290c74d4a12a)
     * [missing CUDA context when clients connect early](https://github.com/Xpra-org/xpra/commit/c350adc106af923478ca97f53fa93058f022a286)
@@ -59,6 +62,7 @@
     * [remove duplicate version data](https://github.com/Xpra-org/xpra/commit/ed884e42347fb02fc5319984671b044490904cdb)
     * [avoid `KeyError` parsing some broken icon files](https://github.com/Xpra-org/xpra/commit/273d1ac232d822375328d6d34835014c9b8fa691)
     * [more meaningful labels on session info dialog](https://github.com/Xpra-org/xpra/commit/67eee64b41a59bf49cf140533a18959e78558ac7)
+    * [log line wrapping](https://github.com/Xpra-org/xpra/commit/da456cc4198b0e16813692c2651b698c608d6ae6)
 
 ## [5.1.4] 2025-12-04
 * Platforms, build and packaging:
