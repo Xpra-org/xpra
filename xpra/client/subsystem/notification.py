@@ -102,13 +102,12 @@ class NotificationClient(StubClientMixin):
         else:
             self.send("notification-action", nid, action_id)
 
-    def get_notifier_classes(self) -> Sequence[Callable]:
+    @staticmethod
+    def get_notifier_classes() -> Sequence[Callable]:
         # subclasses will generally add their toolkit specific variants
         # by overriding this method
         # use the native ones first:
-        if not NATIVE_NOTIFIER:
-            return ()
-        return get_backends()
+        return get_backends() if NATIVE_NOTIFIER else ()
 
     def notify_client(self, nid: int | NotificationID, summary: str, body: str, actions: Sequence[str] = (),
                       hints: dict | None = None, expire_timeout=10 * 1000, icon_name: str = "", callback=noop) -> None:

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.system import is_Wayland
@@ -33,8 +34,8 @@ class XpraClient(GTKXpraClient):
                 return f"GTK3 {backend}"
         return "GTK3"
 
-    def get_notifier_classes(self) -> list[type]:
-        ncs = super().get_notifier_classes()
+    def get_notifier_classes(self) -> Sequence[Callable]:
+        ncs = list(super().get_notifier_classes())
 
         def nwarn(notifier_name: str, err: Exception) -> None:
             from xpra.log import Logger

@@ -7,6 +7,7 @@
 from collections.abc import Sequence
 from Foundation import NSUserNotificationCenter, NSUserNotification, NSUserNotificationDefaultSoundName
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.notification.base import NotifierBase, NID
@@ -19,7 +20,7 @@ GLib = gi_import("GLib")
 
 class OSX_Notifier(NotifierBase):
 
-    def __init__(self, closed_cb=None, action_cb=None):
+    def __init__(self, closed_cb=noop, action_cb=noop):
         super().__init__(closed_cb, action_cb)
         self.gtk_notifier = None
         self.gtk_notifications = set()

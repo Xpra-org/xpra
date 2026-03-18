@@ -20,6 +20,7 @@
 
 from collections.abc import Sequence
 
+from xpra.common import noop
 from xpra.os_util import OSX, gi_import
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label, modify_fg, color_parse
@@ -43,7 +44,7 @@ DEFAULT_HEIGHT = 100
 
 class GTKNotifier(NotifierBase):
 
-    def __init__(self, closed_cb=None, action_cb=None, size_x=DEFAULT_WIDTH, size_y=DEFAULT_HEIGHT, timeout=5):
+    def __init__(self, closed_cb=noop, action_cb=noop, size_x=DEFAULT_WIDTH, size_y=DEFAULT_HEIGHT, timeout=5):
         super().__init__(closed_cb, action_cb)
         self.handles_actions = True
         """
@@ -147,12 +148,10 @@ class GTKNotifier(NotifierBase):
             self._offset = offset
 
     def popup_closed(self, nid, reason, text="") -> None:
-        if self.closed_cb:
-            self.closed_cb(nid, reason, text)
+        self.closed_cb(nid, reason, text)
 
     def popup_action(self, nid, action_id) -> None:
-        if self.action_cb:
-            self.action_cb(nid, str(action_id))
+        self.action_cb(nid, str(action_id))
 
 
 class Popup(Gtk.Window):
