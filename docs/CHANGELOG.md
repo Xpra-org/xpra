@@ -14,6 +14,7 @@
     * [log `$ARCH` build log](https://github.com/Xpra-org/xpra/commit/125520531b748580cd5b8e6507ae72f6564a52a9)
     * [workaround `GioUnix-2.0.typelib` warnings](https://github.com/Xpra-org/xpra/commit/8b97840484358d68e58c30a6bd1ca4d1ce1873fa)
     * [silence Gtk warning](https://github.com/Xpra-org/xpra/commit/8da9dece466a83bd961d2cef09feda31697e758e)
+    * [support newer `GdkPixbuf` versions](https://github.com/Xpra-org/xpra/commit/9b0a009a5d30a62a92cb3a05d166c2efdb1f00fc)
 * MS Windows:
     * [client errors on control-c](https://github.com/Xpra-org/xpra/commit/c0d8374cc2edf60b3b3963a7bdfcef6cc2cd45ac)
     * [packaging fix for python-pillow](https://github.com/Xpra-org/xpra/commit/1ac190a1dd5c733e336eef7d4dbcc3afef5710f0)

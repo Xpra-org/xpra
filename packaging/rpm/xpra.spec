@@ -830,6 +830,7 @@ fi
    enable avif on MacOS but not GStreamer video
    workaround `GioUnix-2.0.typelib` warnings
    silence Gtk warning
+   support newer `GdkPixbuf` versions
 - MS Windows:
    client errors on control-c
    packaging fix for python-pillow
