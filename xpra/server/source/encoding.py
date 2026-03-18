@@ -50,6 +50,8 @@ class EncodingsConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
+        if BACKWARDS_COMPATIBLE and "encoding" in caps:
+            return True
         return bool(caps.dictget("encoding") or caps.strtupleget("encodings")) or caps.boolget("windows")
 
     def init_state(self) -> None:
@@ -262,9 +264,11 @@ class EncodingsConnection(StubClientConnection):
         # since v6.3, we can have a "batch" dict in the "encoding" caps
         # rather than having it at the top level:
         batch_caps = c.get("batch", {})
-        enc_caps = c.dictget("encoding")
-        if isinstance(enc_caps, dict):
-            batch_caps = enc_caps.get("batch", batch_caps)
+        if BACKWARDS_COMPATIBLE and not isinstance(c.get("encoding"), dict):
+            enc_caps = {}
+        else:
+            enc_caps = c.dictget("encoding")
+        batch_caps = enc_caps.get("batch", batch_caps)
 
         def batch_value(prop: str, default: int, minv=-1, maxv=-1) -> int:
             assert default is not None
