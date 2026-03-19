@@ -31,6 +31,7 @@ def parse_hints(dbus_hints) -> dict:
         if data:
             v = parse_image_path(data) if x == "image-path" else parse_image_data(data)
             if v:
+                log("parse_hints(..) using image-data from %r", x)
                 hints["image-data"] = v
                 break
     for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
@@ -96,9 +97,23 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             try:
                 actions = tuple(str(x) for x in actions)
                 hints = parse_hints(hints)
+                # forward app_icon image data using hints,
+                # because clients expect this value to be a string
+                app_icon_str = str(app_icon or "")
+                if app_icon_str:
+                    app_icon_data = parse_image_path(app_icon_str)
+                    if not app_icon_data:
+                        try:
+                            from xpra.platform.posix.menu_helper import find_pixmap_icon
+                            app_icon_data = parse_image_path(find_pixmap_icon(app_icon_str))
+                        except ImportError:
+                            pass
+                    if app_icon_data:
+                        hints["app-icon-data"] = app_icon_data
+                    app_icon_str = os.path.basename(app_icon_str)
                 args = (
                     self.dbus_id, int(nid), str(app_name),
-                    int(replaces_nid), str(app_icon),
+                    int(replaces_nid), app_icon_str,
                     str(summary), str(body),
                     actions, hints, int(expire_timeout),
                 )

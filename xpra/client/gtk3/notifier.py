@@ -5,6 +5,7 @@
 
 from collections.abc import Sequence
 
+from xpra.notification.common import IconData
 from xpra.os_util import gi_import
 from xpra.notification.base import NotifierBase, NID
 
@@ -15,10 +16,11 @@ class GINotifier(NotifierBase):
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout: int, icon) -> None:
+                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout: int,
+                    icon: IconData | None) -> None:
         if not self.dbus_check(dbus_id):
             return
-        icon_string = self.get_icon_string(nid, app_icon, icon)
+        icon_string = self.get_icon_string(nid, app_icon, icon, hints)
         Notify.init(app_name or "Xpra")
         n = Notify.Notification.new(summary=summary, body=body, icon=icon_string)
 

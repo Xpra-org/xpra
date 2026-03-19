@@ -7,6 +7,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.notification.common import IconData
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.os_util import gi_import
@@ -61,14 +62,15 @@ class DBUSNotifier(NotifierBase):
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions, hints: dict, timeout: int, icon) -> None:
+                    summary: str, body: str, actions, hints: dict, timeout: int,
+                    icon: IconData | None) -> None:
         if not self.dbus_check(dbus_id):
             return
         if not self.dbusnotify:
             return
         self.may_retry = True
         with log.trap_error("Error: dbus notify failed"):
-            icon_string = self.get_icon_string(nid, app_icon, icon)
+            icon_string = self.get_icon_string(nid, app_icon, icon, hints)
             log("get_icon_string%s=%s", (nid, app_icon, Ellipsizer(icon)), icon_string)
             if app_name == "Xpra":
                 # don't show "Xpra (via Xpra)"

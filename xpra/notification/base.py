@@ -7,6 +7,7 @@ import os
 import tempfile
 from typing import TypeAlias
 
+from xpra.notification.common import IconData
 from xpra.util.env import osexpand, envint
 from xpra.log import Logger
 from xpra.common import noop
@@ -41,35 +42,42 @@ class NotifierBase:
                     summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         raise NotImplementedError()
 
-    def get_icon_string(self, nid: NID, app_icon: str, icon) -> str:
+    def get_icon_string(self, nid: NID, app_icon: str, icon: IconData | None, hints: dict) -> str:
+        app_icon_data: IconData | None = hints.pop("app-icon-data", None)
+        if app_icon_data:
+            return self.temp_icon_file(int(nid), app_icon_data)
         if app_icon and not os.path.isabs(app_icon):
             # safe to use
             return app_icon
-        if not icon:
-            return ""
-        ext = icon[0]
-        if ext in ("png", "webp", "jpeg"):
-            icon_data = icon[3]
-            from xpra.platform.paths import get_xpra_tmp_dir
-            tmp = osexpand(get_xpra_tmp_dir())
-            d = tmp
-            missing = []
-            while d and not os.path.exists(d):
-                missing.append(d)
-                d = os.path.dirname(d)
-            for d in reversed(missing):
-                os.mkdir(d, 0o700)
-            temp = tempfile.NamedTemporaryFile(mode='w+b', suffix='.%s' % ext,
-                                               prefix='xpra-notification-icon-', dir=tmp, delete=False)
-            temp.write(icon_data)
-            temp.close()
-            self.temp_files[int(nid)] = temp.name
-            if AUTO_DELETE_DELAY > 0:
-                from xpra.os_util import gi_import
-                GLib = gi_import("GLib")
-                GLib.timeout_add(AUTO_DELETE_DELAY, self.clean_notification, nid)
-            return temp.name
+        if icon:
+            return self.temp_icon_file(int(nid), icon)
         return ""
+
+    def temp_icon_file(self, nid: int, icon: IconData) -> str:
+        ext = icon[0]
+        if ext not in ("png", "webp", "jpeg"):
+            log.warn("Warning: unsuppported icon data type %r", ext)
+            return ""
+        icon_data = icon[3]
+        from xpra.platform.paths import get_xpra_tmp_dir
+        tmp = osexpand(get_xpra_tmp_dir())
+        d = tmp
+        missing = []
+        while d and not os.path.exists(d):
+            missing.append(d)
+            d = os.path.dirname(d)
+        for d in reversed(missing):
+            os.mkdir(d, 0o700)
+        temp = tempfile.NamedTemporaryFile(mode='w+b', suffix='.%s' % ext,
+                                           prefix='xpra-notification-icon-', dir=tmp, delete=False)
+        temp.write(icon_data)
+        temp.close()
+        self.temp_files[nid] = temp.name
+        if AUTO_DELETE_DELAY > 0:
+            from xpra.os_util import gi_import
+            GLib = gi_import("GLib")
+            GLib.timeout_add(AUTO_DELETE_DELAY, self.clean_notification, nid)
+        return temp.name
 
     def clean_notification(self, nid: NID) -> None:
         temp_file = self.temp_files.pop(int(nid), "")
