@@ -60,6 +60,10 @@ def parse_image_path(path: str) -> IconData | None:
             return None
         try:
             img = Image.open(path)
+            msize = max(img.size)
+            if msize > 100:
+                w, h = img.size
+                img = img.resize(max(32, w * 100 // msize), max(32, h * 100 // msize))
             return image_data(img)
         except Exception as e:
             log(f"failed to open image {path!r}", exc_info=True)
