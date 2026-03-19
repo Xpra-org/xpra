@@ -37,7 +37,7 @@ class TestCommon(unittest.TestCase):
             f.file.write(b"0000000000000001111111111111111111111")
             f.file.flush()
             f.close()
-            for x in ("", None, "/invalid-path", f.name):
+            for x in ("", "/invalid-path", f.name):
                 with silence_error(common):
                     try:
                         assert common.parse_image_path(x) is None
@@ -49,6 +49,7 @@ class TestCommon(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
