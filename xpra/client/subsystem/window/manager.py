@@ -302,6 +302,11 @@ class WindowManagerClient(StubClientMixin):
 
     def show_window(self, wid: int, window, metadata, override_redirect: bool) -> None:
         window.show_all()
+        # apply the current cursor — without this, newly-shown windows
+        # show an arrow indefinitely (server doesn't resend cursor data):
+        last_cursor = getattr(self, "_last_cursor_data", ())
+        if last_cursor:
+            self.set_windows_cursor([window], last_cursor)
         if override_redirect and should_force_grab(metadata):
             log.warn("forcing grab for OR window %#x", wid)
             self.window_grab(wid, window)
