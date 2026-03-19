@@ -26,18 +26,13 @@ ACTIONS = envbool("XPRA_NOTIFICATIONS_ACTIONS", True)
 def parse_hints(dbus_hints) -> dict:
     hints = {}
     h = dbus_to_native(dbus_hints)
-    for x in ("image-data", "icon_data"):
+    for x in ("image-data", "image-path", "icon_data"):
         data = h.pop(x, None)
         if data:
-            v = parse_image_data(data)
+            v = parse_image_path(data) if x == "image-path" else parse_image_data(data)
             if v:
                 hints["image-data"] = v
                 break
-    if "image-data" not in hints:
-        image_path = h.pop("image-path", "")
-        v = parse_image_path(image_path)
-        if v:
-            hints["image-data"] = v
     for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
         v = h.get(x)
         if v is not None:
