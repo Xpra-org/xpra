@@ -26,6 +26,7 @@ notification = True
 dbus = True
 mmap = True
 ssl = True
+ssl_upgrade = True
 ssh = True
 logging = True
 tray = True

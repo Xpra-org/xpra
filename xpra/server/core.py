@@ -28,7 +28,7 @@ from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     is_request_allowed, Packet, has_websocket_handler, HttpResponse, FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
     pretty_socket, )
-from xpra.net.constants import MAX_PACKET_SIZE, SSL_UPGRADE, HTTP_UNSUPORTED, ConnectionMessage
+from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, SSL_UPGRADE, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -229,7 +229,9 @@ class ServerCore(ServerBaseClass):
             return
         self._ssl_attributes = get_ssl_attributes(opts, True)
         netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
-        self.ssl_upgrade = opts.ssl.lower() not in FALSE_OPTIONS
+        self.ssl_upgrade = SSL_UPGRADE and (
+            opts.ssl.lower() not in FALSE_OPTIONS and opts.ssl_upgrade.lower() not in FALSE_OPTIONS
+        )
 
     def setup(self) -> None:
         self.init_uuid()
@@ -1364,7 +1366,7 @@ class ServerCore(ServerBaseClass):
         packet_types = c.strtupleget("packet-types", ())
         encryption_caps = c.dictget("encryption")
         conn = getattr(proto, "_conn", None)
-        if SSL_UPGRADE and not encryption_caps and "ssl-upgrade" in packet_types and conn and conn.socktype in ("tcp",):
+        if self.ssl_upgrade and not encryption_caps and "ssl-upgrade" in packet_types and conn and conn.socktype in ("tcp",):
             options = conn.options
             if options.get("ssl-upgrade", "yes").lower() in TRUE_OPTIONS:
                 ssl_options = self.get_ssl_socket_options(options)
