@@ -199,11 +199,70 @@ void main()
 }}
 """
 
+# 9-tap Catmull-Rom bicubic upscaling shader.
+# Merges the middle weight pair (w1+w2, both positive) into one bilinear fetch
+# per axis, sampling outer weights (w0, w3) individually: 3x3 = 9 fetches
+# covering all 16 texels.
+# Ported from MJP's HLSL gist (MIT), adapted for sampler2DRect (pixel coords).
+# Reference: github.com/TheRealMJP/c83b8c0f46b63f3a88a5986f4fa982b1
+UPSCALE_SHADER = f"""
+#version {GLSL_VERSION}
+layout(origin_upper_left) in vec4 gl_FragCoord;
+uniform sampler2DRect fbo;
+uniform vec2 viewport_pos;
+uniform vec2 scaling;
+layout(location = 0) out vec4 frag_color;
+
+vec4 textureCatmullRom(sampler2DRect tex, vec2 coord) {{
+    vec2 center = floor(coord - 0.5) + 0.5;
+    vec2 f = coord - center;
+
+    // Catmull-Rom weights (Horner form)
+    vec2 w0 = f * (-0.5 + f * ( 1.0 - 0.5 * f));
+    vec2 w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
+    vec2 w2 = f * ( 0.5 + f * ( 2.0 - 1.5 * f));
+    vec2 w3 = f * f * (-0.5 + 0.5 * f);
+
+    // Merge middle pair for bilinear trick (w1 and w2 are both positive)
+    vec2 w12 = w1 + w2;
+    vec2 offset12 = w2 / w12;
+
+    // Sample positions (pixel coords for sampler2DRect)
+    vec2 p0  = center - 1.0;
+    vec2 p12 = center + offset12;
+    vec2 p3  = center + 2.0;
+
+    // 9 bilinear fetches (3x3 grid)
+    vec4 result =
+        texture(tex, vec2( p0.x,  p0.y)) * w0.x  * w0.y  +
+        texture(tex, vec2(p12.x,  p0.y)) * w12.x * w0.y  +
+        texture(tex, vec2( p3.x,  p0.y)) * w3.x  * w0.y  +
+
+        texture(tex, vec2( p0.x, p12.y)) * w0.x  * w12.y +
+        texture(tex, vec2(p12.x, p12.y)) * w12.x * w12.y +
+        texture(tex, vec2( p3.x, p12.y)) * w3.x  * w12.y +
+
+        texture(tex, vec2( p0.x,  p3.y)) * w0.x  * w3.y  +
+        texture(tex, vec2(p12.x,  p3.y)) * w12.x * w3.y  +
+        texture(tex, vec2( p3.x,  p3.y)) * w3.x  * w3.y;
+
+    return result;
+}}
+
+void main() {{
+    vec2 pos = (gl_FragCoord.xy - viewport_pos.xy) / scaling;
+    // FBO stores image-top at high GL y; origin_upper_left puts y=0 at screen top
+    pos.y = float(textureSize(fbo).y) - pos.y;
+    frag_color = textureCatmullRom(fbo, pos);
+}}
+"""
+
 SOURCE: dict[str, str] = {
     "blend": BLEND_SHADER,
     "vertex": VERTEX_SHADER,
     "overlay": OVERLAY_SHADER,
     "fixed-color": FIXED_COLOR_SHADER,
+    "upscale": UPSCALE_SHADER,
 }
 
 for full in (False, True):
