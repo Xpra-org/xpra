@@ -236,42 +236,53 @@ class CatmullRom2DTest(unittest.TestCase):
 class OpenGLScalingFilterEnvTest(unittest.TestCase):
     """Tests for the XPRA_OPENGL_SCALING_FILTER env var logic."""
 
-    def _should_use_catmull_rom(self, scaling, programs_has_upscale, env_value=""):
+    def _should_use_catmull_rom(self, scaling, upscaling, programs_has_upscale, env_value=""):
         """
         Reproduce the decision logic from do_present_fbo():
-        Use CR when: scaling AND env not overridden AND "upscale" in programs.
+        Use CR when: scaling AND upscaling AND env not overridden AND "upscale" in programs.
         """
         programs = {"upscale": 1} if programs_has_upscale else {}
         filter_env = env_value.lower()
         return (scaling
+                and upscaling
                 and filter_env not in ("bilinear", "nearest")
                 and "upscale" in programs)
 
     def test_default_uses_catmull_rom(self):
         self.assertTrue(self._should_use_catmull_rom(
-            scaling=True, programs_has_upscale=True, env_value=""))
+            scaling=True, upscaling=True, programs_has_upscale=True, env_value=""))
 
     def test_env_bilinear_disables_cr(self):
         self.assertFalse(self._should_use_catmull_rom(
-            scaling=True, programs_has_upscale=True, env_value="bilinear"))
+            scaling=True, upscaling=True, programs_has_upscale=True, env_value="bilinear"))
 
     def test_env_nearest_disables_cr(self):
         self.assertFalse(self._should_use_catmull_rom(
-            scaling=True, programs_has_upscale=True, env_value="nearest"))
+            scaling=True, upscaling=True, programs_has_upscale=True, env_value="nearest"))
 
     def test_no_shader_falls_back(self):
         self.assertFalse(self._should_use_catmull_rom(
-            scaling=True, programs_has_upscale=False, env_value=""))
+            scaling=True, upscaling=True, programs_has_upscale=False, env_value=""))
 
     def test_integer_scale_no_cr(self):
         """At integer scales, scaling=False, CR not used."""
         self.assertFalse(self._should_use_catmull_rom(
-            scaling=False, programs_has_upscale=True, env_value=""))
+            scaling=False, upscaling=True, programs_has_upscale=True, env_value=""))
 
     def test_1x_no_cr(self):
         """At 1:1 scale, scaling=False, CR not used."""
         self.assertFalse(self._should_use_catmull_rom(
-            scaling=False, programs_has_upscale=True, env_value=""))
+            scaling=False, upscaling=True, programs_has_upscale=True, env_value=""))
+
+    def test_downscaling_no_cr(self):
+        """Downscaling uses bilinear blit, not CR (CR aliases when downscaling)."""
+        self.assertFalse(self._should_use_catmull_rom(
+            scaling=True, upscaling=False, programs_has_upscale=True, env_value=""))
+
+    def test_mixed_scale_no_cr(self):
+        """One axis up, one axis down — fall back to bilinear."""
+        self.assertFalse(self._should_use_catmull_rom(
+            scaling=True, upscaling=False, programs_has_upscale=True, env_value=""))
 
 
 def main():

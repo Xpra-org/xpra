@@ -877,7 +877,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glViewport(*viewport)
 
         # Draw FBO texture on screen
-        if scaling and OPENGL_SCALING_FILTER not in ("bilinear", "nearest") and "upscale" in self.programs:
+        upscaling = xscale >= 1 and yscale >= 1
+        if scaling and upscaling and OPENGL_SCALING_FILTER not in ("bilinear", "nearest") and "upscale" in self.programs:
             self._present_fbo_catmull_rom(xscale, yscale, left, top)
         else:
             sampling = GL_LINEAR if scaling else GL_NEAREST
