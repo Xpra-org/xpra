@@ -40,7 +40,10 @@ def register_os_signal(callback: Callable[[int], None],
             pass
 
     def do_handle_signal() -> None:
-        callback(i_signum)
+        try:
+            callback(i_signum)
+        except Exception:
+            get_util_logger().warn(f"Warning: failed to handle {signame}", exc_info=True)
 
     if POSIX:
         # replace the previous definition if we had one:
