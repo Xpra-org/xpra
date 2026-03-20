@@ -7,9 +7,10 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.notification.common import IconData
+from xpra.dbus.notifications import validated_hints
+from xpra.notification.common import IconData, decompress_image_data
 from xpra.util.env import first_time
-from xpra.util.str_fn import csv, Ellipsizer, bytestostr
+from xpra.util.str_fn import csv, Ellipsizer
 from xpra.os_util import gi_import
 from xpra.dbus.helper import native_to_dbus
 from xpra.notification.base import NotifierBase, log, NID
@@ -22,6 +23,20 @@ DBusGMainLoop(set_as_default=True)
 
 NOTIFICATION_APP_NAME = os.environ.get("XPRA_NOTIFICATION_APP_NAME", "%s (via Xpra)")
 FD_NOTIFICATIONS = "org.freedesktop.Notifications"
+
+
+def to_dbus_hints(h: dict) -> dbus.types.Dictionary:
+    vhints = validated_hints(h)
+    dbus_hints = dbus.types.Dictionary(vhints, signature="sv")
+    for k, v in vhints.items():
+        dbus_hints[native_to_dbus(k)] = native_to_dbus(v)
+    image_data = h.get("image-data")
+    if image_data and image_data[0] == "png":
+        args = decompress_image_data(image_data)
+        if args and args[0] > 0 and args[1] > 0:
+            dbus_hints["image-data"] = tuple(native_to_dbus(x) for x in args)
+    log("to_dbus_hints(%s)=%s", h, dbus_hints)
+    return dbus.types.Dictionary(dbus_hints, signature="sv")
 
 
 class DBUSNotifier(NotifierBase):
@@ -62,7 +77,7 @@ class DBUSNotifier(NotifierBase):
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions, hints: dict, timeout: int,
+                    summary: str, body: str, actions: Sequence, hints: dict, timeout: int,
                     icon: IconData | None) -> None:
         if not self.dbus_check(dbus_id):
             return
@@ -93,7 +108,7 @@ class DBUSNotifier(NotifierBase):
                 log("NotifyError(%s, %s) for nid=%i", dbus_error, args, nid)
                 return self.NotifyError(nid, dbus_error)
 
-            dbus_hints = self.parse_hints(hints)
+            dbus_hints = to_dbus_hints(hints)
             log("calling %s%s", self.dbusnotify.Notify,
                 (app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout))
             self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout,
@@ -106,35 +121,6 @@ class DBUSNotifier(NotifierBase):
             if v == aid:
                 return k
         return 0
-
-    def noparse_hints(self, h) -> dict:
-        return h
-
-    def parse_hints(self, h) -> dbus.types.Dictionary:
-        hints = {}
-        for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
-            v = h.get(x)
-            if v is not None:
-                hints[native_to_dbus(x)] = native_to_dbus(v)
-        image_data = h.get("image-data")
-        if image_data and bytestostr(image_data[0]) == "png":
-            try:
-                from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
-                img_data = image_data[3]
-                img = open_only(img_data, ("png",))
-                w, h = img.size
-                channels = len(img.mode)
-                rowstride = w * channels
-                has_alpha = img.mode == "RGBA"
-                pixel_data = bytearray(img.tobytes("raw", img.mode))
-                args = w, h, rowstride, has_alpha, 8, channels, pixel_data
-                hints["image-data"] = tuple(native_to_dbus(x) for x in args)
-            except Exception as e:
-                log("parse_hints(%s) error on image-data=%s", h, image_data, exc_info=True)
-                log.error("Error parsing notification image:")
-                log.estr(e)
-        log("parse_hints(%s)=%s", h, hints)
-        return dbus.types.Dictionary(hints, signature="sv")
 
     def NotificationClosed(self, actual_id: dbus.UInt32, reason) -> None:
         nid = self._find_nid(actual_id)
@@ -241,7 +227,7 @@ def main():
         actions = ()
         n.show_notify("", None, 0, "Test", 0, "",
                       "Summary", "Body line1\nline2...",
-                      actions, {}, 0, "")
+                      actions, {}, 0, None)
         return False
 
     GLib.idle_add(show)

@@ -163,3 +163,61 @@ def get_gtk_theme_icon(icon_string: str):
         mode = "RGBA"
     from PIL import Image
     return Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
+
+
+# Ensure that the hints are of the correct type:
+def validated_hints(h: dict) -> dict[str, int | bool | str]:
+    hints: dict[str, int | bool | str] = {}
+    for attr, atype in {
+        "action-icons": bool,
+        "category": str,
+        "desktop-entry": str,
+        "resident": bool,
+        "transient": bool,
+        "x": int,
+        "y": int,
+        "urgency": int,
+    }.items():
+        if attr not in h:
+            continue
+        value = h.get(attr)
+        try:
+            validated = atype(value)
+        except (ValueError, TypeError) as e:
+            log.warn("Warning: unable to parse %r as a %s: %s", value, atype, e)
+            continue
+        else:
+            hints[attr] = validated
+    return hints
+
+
+# dbus image / icon hints lookup:
+# (try all attribute names from spec 0.9 onwards)
+def image_data_hint(hints: dict) -> IconData | None:
+    for attr in ("image-data", "image_data", "image-path", "image_path", "icon_data"):
+        value = hints.pop(attr, None)
+        if not value:
+            continue
+        image_data = parse_image_path(value) if attr.endswith("path") else parse_image_data(value)
+        if image_data:
+            log("parse_hints(..) using image-data from %r", attr)
+            return image_data
+    return None
+
+
+def decompress_image_data(icon_data: IconData) -> tuple[int, int, int, bool, int, int, bytearray]:
+    try:
+        from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
+        img_data = icon_data[3]
+        img = open_only(img_data, ("png",))
+        w, h = img.size
+        channels = len(img.mode)
+        rowstride = w * channels
+        has_alpha = img.mode == "RGBA"
+        pixel_data = bytearray(img.tobytes("raw", img.mode))
+        return w, h, rowstride, has_alpha, 8, channels, pixel_data
+    except Exception as e:
+        log("parse_hints(%s) error on image-data=%s", h, image_data, exc_info=True)
+        log.error("Error parsing notification image:")
+        log.estr(e)
+        return 0, 0, 0, False, 0, 0, bytearray()

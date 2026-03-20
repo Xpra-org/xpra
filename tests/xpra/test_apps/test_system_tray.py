@@ -34,9 +34,6 @@ class StatusIcon:
                                   click_cb=self.notification_action,
                                   exit_cb=self.notification_closed)
             self.notifier.app_name_format = "%s"
-            #ensure we can send the image-path hint with the dbus backend:
-            if hasattr(self.notifier, "noparse_hints"):
-                self.notifier.parse_hints = self.notifier.noparse_hints
         except Exception as e:
             import traceback
             traceback.print_stack()
@@ -76,7 +73,7 @@ class StatusIcon:
             "image-path": "/usr/share/xpra/icons/encoding.png",
         }
         self.notifier.show_notify("dbus-id", None, self.nid, self.name, 0,
-                                  "", "Notification Summary", "Notification Body", actions, hints, 60*1000, "")
+                                  "", "Notification Summary", "Notification Body", actions, hints, 60*1000, None)
         self.nid += 1
 
 

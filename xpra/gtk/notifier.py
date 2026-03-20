@@ -21,6 +21,7 @@
 from collections.abc import Sequence
 
 from xpra.common import noop
+from xpra.notification.common import IconData
 from xpra.os_util import OSX, gi_import
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label, modify_fg, color_parse
@@ -111,7 +112,8 @@ class GTKNotifier(NotifierBase):
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout, icon) -> None:
+                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout,
+                    icon: IconData | None) -> None:
         GLib.idle_add(self.new_popup, int(nid), summary, body, actions, icon, timeout, 0 < timeout <= 600)
 
     def new_popup(self, nid: int, summary: str, body: str, actions: Sequence[str],

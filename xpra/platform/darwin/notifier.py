@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from Foundation import NSUserNotificationCenter, NSUserNotification, NSUserNotificationDefaultSoundName
 
 from xpra.common import noop
+from xpra.notification.common import IconData
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.notification.base import NotifierBase, NID
@@ -31,7 +32,7 @@ class OSX_Notifier(NotifierBase):
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
                     summary: str, body: str,
-                    actions: Sequence[str], hints: dict, expire_timeout: int, icon):
+                    actions: Sequence[str], hints: dict, expire_timeout: int, icon: IconData | None):
         GTK_NOTIFIER = envbool("XPRA_OSX_GTK_NOTIFIER", True)
         if actions and GTK_NOTIFIER:
             # try to use GTK notifier if we have actions buttons to handle:

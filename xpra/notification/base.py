@@ -5,6 +5,7 @@
 
 import os
 import tempfile
+from collections.abc import Sequence
 from typing import TypeAlias
 
 from xpra.notification.common import IconData
@@ -39,7 +40,8 @@ class NotifierBase:
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions, hints, timeout: int, icon) -> None:
+                    summary: str, body: str, actions: Sequence, hints: dict, timeout: int,
+                    icon: IconData | None) -> None:
         raise NotImplementedError()
 
     def get_icon_string(self, nid: NID, app_icon: str, icon: IconData | None, hints: dict) -> str:

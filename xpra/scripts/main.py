@@ -4592,8 +4592,6 @@ def run_notify(_options, args) -> ExitValue:
     log.enable_debug()
     notifier = DBUSNotifier()
     notifier.app_name_format = "%s"
-    # ensure we can send the image-path hint:
-    notifier.parse_hints = notifier.noparse_hints
     actions = ()  # ("0", "Hello", "1", "Goodbye")
     hints = {
         "image-path": "/usr/share/xpra/icons/encoding.png",
@@ -4601,7 +4599,7 @@ def run_notify(_options, args) -> ExitValue:
     nid = int(monotonic()) % 2**16
     notifier.show_notify("dbus-id", None, nid, "xpra test app", 0, "",
                          title, body,
-                         actions, hints, 60*1000, "")
+                         actions, hints, 60*1000, None)
     nid += 1
     from gi.repository import GLib  # @UnresolvedImport
     loop = GLib.MainLoop()

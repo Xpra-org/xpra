@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from collections.abc import Sequence
 from typing import Any
 import notify2
 
@@ -29,7 +30,7 @@ class PyNotifyNotifier(NotifierBase):
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions, hints, timeout: int,
+                    summary: str, body: str, actions: Sequence, hints: dict, timeout: int,
                     icon: IconData | None) -> None:
         if not self.dbus_check(dbus_id):
             return
@@ -64,7 +65,8 @@ def main(args):
     def show() -> bool:
         nid = 1
         n = PyNotifyNotifier()
-        n.show_notify("", None, nid, "Test", 0, "", summary, body, ["0", "Hello", "1", "Bye"], {}, 0, "")
+        n.show_notify("", None, nid, "Test", 0, "", summary, body,
+                      ["0", "Hello", "1", "Bye"], {}, 0, None)
         GLib.timeout_add(5000, close_notify, nid)
         return False
 

@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Callable
 import dbus.service
 
-from xpra.notification.common import parse_image_data, parse_image_path
+from xpra.notification.common import parse_image_path, validated_hints, image_data_hint
 from xpra.dbus.helper import dbus_to_native
 from xpra.common import noop
 from xpra.util.str_fn import csv
@@ -23,22 +23,15 @@ BUS_PATH = "/org/freedesktop/Notifications"
 ACTIONS = envbool("XPRA_NOTIFICATIONS_ACTIONS", True)
 
 
-def parse_hints(dbus_hints) -> dict:
-    hints = {}
+def parse_dbus_hints(dbus_hints) -> dict[str, Any]:
     h = dbus_to_native(dbus_hints)
-    for x in ("image-data", "image-path", "icon_data"):
-        data = h.pop(x, None)
-        if data:
-            v = parse_image_path(data) if x == "image-path" else parse_image_data(data)
-            if v:
-                log("parse_hints(..) using image-data from %r", x)
-                hints["image-data"] = v
-                break
-    for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
-        v = h.get(x)
-        if v is not None:
-            hints[x] = v
-    log("parse_hints(%s)=%s", dbus_hints, hints)
+    # generic hints:
+    hints: dict[str, Any] = validated_hints(h)
+    # icon / image hints:
+    image_data = image_data_hint(h)
+    if image_data:
+        hints["image-data"] = image_data
+    log("parse_dbus_hints(%s)=%s", dbus_hints, hints)
     return hints
 
 
@@ -96,7 +89,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         if self.notify_callback:
             try:
                 actions = tuple(str(x) for x in actions)
-                hints = parse_hints(hints)
+                hints = parse_dbus_hints(hints)
                 # forward app_icon image data using hints,
                 # because clients expect this value to be a string
                 app_icon_str = str(app_icon or "")
@@ -131,7 +124,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def GetServerInformation(self):
         # name, vendor, version, spec-version
         from xpra import __version__
-        v = ["xpra-notification-proxy", "xpra", __version__, "1.1"]
+        v = ["xpra-notification-proxy", "xpra", __version__, "1.2"]
         log("GetServerInformation()=%s", v)
         return v
 
