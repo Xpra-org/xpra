@@ -17,7 +17,8 @@ def notify(*_args) -> bool:
     image_data = parse_image_path("/usr/share/xpra/icons/encoding.png")
     if image_data:
         hints["image-data"] = image_data
-    notifier.show_notify("dbus-id", None, nid, "xpra test app", 0, "",
+    app_icon = "/usr/share/xpra/icons/alert.png"
+    notifier.show_notify("dbus-id", None, nid, "xpra test app", 0, app_icon,
                          "Notification %i Summary" % nid, "Notification %i Body" % nid,
                          actions, hints, 60*1000, None)
     nid += 1
