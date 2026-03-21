@@ -15,11 +15,15 @@ def get_backends() -> list[Callable]:
     try:
         from xpra.notification.dbus_backend import DBUS_Notifier_factory
         ncs.append(DBUS_Notifier_factory)
-    except Exception as e:
+    except ImportError as e:
         log("cannot load dbus notifier: %s", e)
+    except Exception as e:
+        log("cannot load dbus notifier: %s", e, exc_info=True)
     try:
         from xpra.notification.pynotify_backend import PyNotifyNotifier
         ncs.append(PyNotifyNotifier)
-    except Exception as e:
+    except ImportError as e:
         log("cannot load pynotify notifier: %s", e)
+    except Exception as e:
+        log("cannot load pynotify notifier: %s", e, exc_info=True)
     return ncs
