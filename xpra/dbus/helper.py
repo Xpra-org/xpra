@@ -17,7 +17,9 @@ def dbus_to_native(value):
     if isinstance(value, dict):
         d = {}
         for k, v in value.items():
-            d[dbus_to_native(k)] = dbus_to_native(v)
+            nkey = dbus_to_native(k)
+            assert isinstance(nkey, (int, str))
+            d[nkey] = dbus_to_native(v)
         return d
     if isinstance(value, str):
         return str(value)
@@ -31,19 +33,25 @@ def dbus_to_native(value):
     return value
 
 
-def native_to_dbus(value, signature=None):
+def native_to_dbus(value, signature="", intsize=64):
     try:
         from dbus import types
     except ImportError as e:
         raise RuntimeError(f"the dbus bindings are missing: {e}")
     if value is None:
         return None
+    if isinstance(value, bool):
+        return types.Boolean(value)
     if isinstance(value, int):
+        if intsize == 32:
+            return types.Int32(value)
         return types.Int64(value)
     if isinstance(value, str):
         return types.String(value)
     if isinstance(value, float):
         return types.Double(value)
+    if isinstance(value, bytearray):
+        return types.Array(value, signature="y")
     if isinstance(value, (tuple, list, bytearray)):
         if not value:
             return types.Array(signature="s")
@@ -67,9 +75,9 @@ def native_to_dbus(value, signature=None):
     if isinstance(value, dict):
         if not value:
             return types.Dictionary({}, signature=signature or "sv")
-        if signature is None:
+        if not signature:
             keytypes = set(type(x) for x in value.keys())
-            sig = None
+            sig = ""
             if len(keytypes) == 1:
                 # just one type of key:
                 keytype = tuple(keytypes)[0]

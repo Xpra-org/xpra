@@ -12,7 +12,7 @@ from xpra.notification.common import IconData, decompress_image_data
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.os_util import gi_import
-from xpra.dbus.helper import native_to_dbus
+from xpra.dbus.helper import native_to_dbus, dbus_to_native
 from xpra.notification.base import NotifierBase, log, NID
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop, threads_init
@@ -23,20 +23,6 @@ DBusGMainLoop(set_as_default=True)
 
 NOTIFICATION_APP_NAME = os.environ.get("XPRA_NOTIFICATION_APP_NAME", "%s (via Xpra)")
 FD_NOTIFICATIONS = "org.freedesktop.Notifications"
-
-
-def to_dbus_hints(h: dict) -> dbus.types.Dictionary:
-    vhints = validated_hints(h)
-    dbus_hints = dbus.types.Dictionary(vhints, signature="sv")
-    for k, v in vhints.items():
-        dbus_hints[native_to_dbus(k)] = native_to_dbus(v)
-    image_data = h.get("image-data")
-    if image_data and image_data[0] == "png":
-        args = decompress_image_data(image_data)
-        if args and args[0] > 0 and args[1] > 0:
-            dbus_hints["image-data"] = tuple(native_to_dbus(x) for x in args)
-    log("to_dbus_hints(%s)=%s", h, dbus_hints)
-    return dbus.types.Dictionary(dbus_hints, signature="sv")
 
 
 class DBUSNotifier(NotifierBase):
@@ -50,17 +36,26 @@ class DBUSNotifier(NotifierBase):
         self.dbusnotify = self.setup_dbusnotify()
         self.handles_actions = "actions" in self.get_capabilities()
         self.may_retry = True
+        self.spec_version = self.get_spec_version()
         log("dbus.get_default_main_loop()=%s", dbus.get_default_main_loop())
 
     def setup_dbusnotify(self) -> dbus.Interface:
         self.org_fd_notifications = self.dbus_session.get_object(FD_NOTIFICATIONS, '/org/freedesktop/Notifications')
         self.org_fd_notifications.connect_to_signal("NotificationClosed", self.NotificationClosed)
         self.org_fd_notifications.connect_to_signal("ActionInvoked", self.ActionInvoked)
-
         # connect_to_signal("HelloSignal", hello_signal_handler, dbus_interface="com.example.TestService", arg0="Hello")
         dbusnotify = dbus.Interface(self.org_fd_notifications, FD_NOTIFICATIONS)
         log("using dbusnotify: %s(%s)", type(dbusnotify), FD_NOTIFICATIONS)
         return dbusnotify
+
+    def get_spec_version(self) -> tuple[int, ...]:
+        server_info = tuple(dbus_to_native(x) for x in self.dbusnotify.GetServerInformation())
+        log("server info=%s", server_info)
+        try:
+            self.spec_version = tuple(int(x) for x in server_info[3].split("."))[:2]  # "1.2" -> (1, 2)
+        except (TypeError, ValueError):
+            self.spec_version = (0, 9)
+        return self.spec_version
 
     def get_capabilities(self) -> Sequence[str]:
         caps = tuple(str(x) for x in self.dbusnotify.GetCapabilities())
@@ -77,7 +72,7 @@ class DBUSNotifier(NotifierBase):
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions: Sequence, hints: dict, timeout: int,
+                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout: int,
                     icon: IconData | None) -> None:
         if not self.dbus_check(dbus_id):
             return
@@ -108,12 +103,35 @@ class DBUSNotifier(NotifierBase):
                 log("NotifyError(%s, %s) for nid=%i", dbus_error, args, nid)
                 return self.NotifyError(nid, dbus_error)
 
-            dbus_hints = to_dbus_hints(hints)
+            dbus_hints = self.to_dbus_hints(hints)
             log("calling %s%s", self.dbusnotify.Notify,
                 (app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout))
             self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout,
                                    reply_handler=NotifyReply,
                                    error_handler=NotifyError)
+
+    def to_dbus_hints(self, h: dict) -> dbus.types.Dictionary:
+        vhints = validated_hints(h)
+        dbus_hints = dbus.types.Dictionary(vhints, signature="sv")
+        for k, v in vhints.items():
+            dbus_hints[native_to_dbus(k)] = native_to_dbus(v)
+        # we always send the attribute as `image-data` in our own metadata:
+        image_data: IconData | None = h.get("image-data")
+        if image_data and image_data[0] == "png":
+            args = decompress_image_data(image_data)
+            if args and args[0] > 0 and args[1] > 0:
+                if self.spec_version >= (1, 2):
+                    image_attr = "image-data"
+                elif self.spec_version == (1, 1):
+                    image_attr = "image_data"
+                else:
+                    image_attr = "icon_data"
+                from dbus import Struct
+                elements = [native_to_dbus(x, intsize=32) for x in args]
+                log.info("elements=%s", elements)
+                dbus_hints[image_attr] = Struct(elements, signature="iiibiiay")
+        log("to_dbus_hints(%s)=%s", h, dbus_hints)
+        return dbus.types.Dictionary(dbus_hints, signature="sv")
 
     def _find_nid(self, actual_id) -> int:
         aid = int(actual_id)
