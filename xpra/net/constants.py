@@ -15,7 +15,6 @@ from typing import Final, Sequence
 from xpra.os_util import LINUX, WIN32
 from xpra.util.env import envint, envbool
 
-SSL_UPGRADE: bool = envbool("XPRA_SSL_UPGRADE", False)
 AUTO_ABSTRACT_SOCKET = envbool("XPRA_AUTO_ABSTRACT_SOCKET", LINUX)
 
 # not actually implemented on win32:

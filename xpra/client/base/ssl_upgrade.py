@@ -5,7 +5,6 @@
 
 from xpra.client.base.stub import StubClientMixin
 from xpra.net.common import Packet
-from xpra.net.constants import SSL_UPGRADE
 from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode
@@ -20,7 +19,6 @@ class SSLUpgradeClient(StubClientMixin):
     """
 
     def _process_ssl_upgrade(self, packet: Packet) -> None:
-        assert SSL_UPGRADE
         ssl_attrs = typedict(packet.get_dict(1))
         start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs,))
 

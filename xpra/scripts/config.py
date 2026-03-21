@@ -1266,7 +1266,7 @@ def get_defaults() -> dict[str, Any]:
         "forward-xdg-open"  : None,
         "modal-windows"     : False,
         "bandwidth-detection" : False,
-        "ssl-upgrade"       : True,
+        "ssl-upgrade"       : None,
         "websocket-upgrade" : True,
         "ssh-upgrade"       : True,
         "splash"            : None,

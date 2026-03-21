@@ -28,7 +28,7 @@ from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     is_request_allowed, Packet, has_websocket_handler, HttpResponse, FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
     pretty_socket, )
-from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, SSL_UPGRADE, ConnectionMessage
+from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -224,14 +224,13 @@ class ServerCore(ServerBaseClass):
         try:
             from xpra.net.tls.file import get_ssl_attributes
         except ImportError as e:
-            netlog("init_ssl(..) no ssl: %s", e)
+            ssllog("init_ssl(..) no ssl: %s", e)
             self.ssl_upgrade = False
             return
         self._ssl_attributes = get_ssl_attributes(opts, True)
-        netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
-        self.ssl_upgrade = SSL_UPGRADE and (
-            opts.ssl.lower() not in FALSE_OPTIONS and opts.ssl_upgrade.lower() not in FALSE_OPTIONS
-        )
+        ssllog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
+        self.ssl_upgrade = opts.ssl.lower() not in FALSE_OPTIONS and opts.ssl_upgrade is not False
+        log("ssl-upgrade(%s, %s)=%s", opts.ssl, opts.ssl_upgrade, self.ssl_upgrade)
 
     def setup(self) -> None:
         self.init_uuid()
