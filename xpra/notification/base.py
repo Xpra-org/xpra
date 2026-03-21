@@ -40,7 +40,7 @@ class NotifierBase:
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions: Sequence, hints: dict, timeout: int,
+                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout: int,
                     icon: IconData | None) -> None:
         raise NotImplementedError()
 

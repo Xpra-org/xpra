@@ -5,7 +5,7 @@
 
 import os
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 import dbus.service
 
 from xpra.notification.common import parse_image_path, validated_hints, image_data_hint
@@ -77,7 +77,8 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         return self.counter
 
     @dbus.service.method(BUS_NAME, in_signature='susssasa{sv}i', out_signature='u')
-    def Notify(self, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
+    def Notify(self, app_name: str, replaces_nid: int, app_icon: str, summary: str, body: str, actions: Sequence[str],
+               hints: dict, expire_timeout: int):
         if replaces_nid == 0:
             nid = self.next_id()
         else:
@@ -121,7 +122,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         return nid
 
     @dbus.service.method(BUS_NAME, out_signature='ssss')
-    def GetServerInformation(self):
+    def GetServerInformation(self) -> tuple[str, str, str, str]:
         # name, vendor, version, spec-version
         from xpra import __version__
         v = ["xpra-notification-proxy", "xpra", __version__, "1.2"]
@@ -129,7 +130,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         return v
 
     @dbus.service.method(BUS_NAME, out_signature='as')
-    def GetCapabilities(self):
+    def GetCapabilities(self) -> list[str]:
         caps = get_capabilities()
         log("GetCapabilities()=%s", csv(caps))
         return caps
