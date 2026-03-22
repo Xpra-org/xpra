@@ -18,7 +18,7 @@ def dbus_to_native(value):
         d = {}
         for k, v in value.items():
             nkey = dbus_to_native(k)
-            assert isinstance(nkey, (int, str))
+            assert isinstance(nkey, (int, bool, float, str))
             d[nkey] = dbus_to_native(v)
         return d
     if isinstance(value, str):
