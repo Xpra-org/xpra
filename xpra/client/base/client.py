@@ -16,13 +16,14 @@ from types import FrameType
 from collections.abc import Callable, Sequence
 
 from xpra.scripts.config import InitExit
-from xpra.common import (
-    noerr, noop, may_show_progress,
-)
+from xpra.common import noerr, noop, may_show_progress
 from xpra.net.constants import ConnectionMessage
 from xpra.net import compression
-from xpra.net.common import Packet, PacketElement, PacketHandlerType, disconnect_is_an_error, FULL_INFO, LOG_HELLO, \
-    BACKWARDS_COMPATIBLE
+from xpra.net.common import (
+    Packet, PacketElement, PacketHandlerType,
+    disconnect_is_an_error,
+    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
+)
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID
