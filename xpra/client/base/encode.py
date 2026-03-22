@@ -58,6 +58,7 @@ class EncodeClient(ClientBaseClass):
         self.encodings = get_encodings()
 
     def init(self, opts) -> None:
+        # encode client needs bidirectional mmap by default for performance:
         if opts.mmap.lower() == "auto":
             opts.mmap = "yes"
         for cc in CLIENT_BASES:
@@ -79,6 +80,7 @@ class EncodeClient(ClientBaseClass):
                 self.encoding_options[attr] = value
 
     def setup_connection(self, conn) -> None:
+        # ensures that MmapClient will get a chance to setup:
         for cc in CLIENT_BASES:
             cc.setup_connection(self, conn)
 
