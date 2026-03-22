@@ -2087,7 +2087,7 @@ def set_client_features(opts) -> None:
     features.dbus = b(opts.dbus) and icheck("dbus") and icheck("xpra.dbus")
     features.mmap = b(opts.mmap) and icheck("xpra.net.mmap")
     features.ssl = b(opts.ssl) and icheck("ssl")
-    features.ssl_upgrade = features.ssl and opts.ssl_upgrade != "auto" and b(opts.ssl_upgrade)
+    features.ssl_upgrade = features.ssl and opts.ssl_upgrade is not None and b(opts.ssl_upgrade)
     features.ssh = b(opts.ssh)
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
