@@ -683,6 +683,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
             "qrcode",
             "show-menu", "show-about", "show-session-info",
             "connect-test",
+            "record",
     ) or mode.startswith("request-"):
         return run_client(script_file, cmdline, error_cb, options, args, mode)
     if mode in ("stop", "exit"):
@@ -1589,6 +1590,16 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         basic()
         from xpra.client.base.command import ConnectTestXpraClient
         app = ConnectTestXpraClient(opts)
+    elif mode == "record":
+        set_client_features(opts)
+        basic()
+        from xpra.client.base.record import RecordClient
+        app = RecordClient(opts)
+        opts.encoding = handle_client_encoding_option(app, opts.encoding)
+        app.init(opts)
+        if opts.splash:
+            from xpra import __version__
+            app.progress_process = make_progress_process(opts.session_name or "Xpra Recorder v%s" % __version__)
     elif mode == "_monitor":
         basic()
         from xpra.client.base.command import MonitorXpraClient
@@ -1696,21 +1707,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
     may_show_progress(app, 30, "client configuration")
     try:
         app.init(opts)
-        if opts.encoding == "auto":
-            opts.encoding = ""
-        if opts.encoding:
-            from xpra.client.base import features
-            if features.encoding:
-                einfo = ""
-                encodings = list(app.get_encodings()) + ["auto", "stream"]
-                err = opts.encoding not in encodings
-                ehelp = opts.encoding == "help"
-                if err and not ehelp:
-                    einfo = f"invalid encoding: {opts.encoding}\n"
-                if err or ehelp:
-                    from xpra.codecs.loader import encodings_help
-                    raise InitInfo(einfo + "%s xpra client supports the following encodings:\n * %s" %
-                                   (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
+        opts.encoding = handle_client_encoding_option(app, opts.encoding)
 
         def handshake_complete(*_args) -> None:
             may_show_progress(app, 100, "connection established")
@@ -1760,6 +1757,27 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
         app.cleanup()
         raise
     return app
+
+
+def handle_client_encoding_option(app, encoding: str) -> str:
+    if encoding == "auto":
+        encoding = ""
+    if not encoding:
+        return ""
+    from xpra.client.base import features
+    if not features.encoding:
+        return ""
+    einfo = ""
+    encodings = list(app.get_encodings()) + ["auto", "stream"]
+    err = encoding not in encodings
+    ehelp = encoding == "help"
+    if err and not ehelp:
+        einfo = f"invalid encoding: {encoding}\n"
+    if err or ehelp:
+        from xpra.codecs.loader import encodings_help
+        raise InitInfo(einfo + "%s xpra client supports the following encodings:\n * %s" %
+                       (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
+    return encoding
 
 
 def enable_listen_mode(app, error_cb: Callable, opts):
