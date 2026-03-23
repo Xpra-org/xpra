@@ -193,4 +193,4 @@ class WindowDraw(StubClientMixin):
     def init_authenticated_packet_handlers(self) -> None:
         if BACKWARDS_COMPATIBLE:
             self.add_legacy_alias("draw", "window-draw")
-        self.add_packets("window-draw", main_thread=True)
+        self.add_packets("window-draw", "eos", main_thread=True)

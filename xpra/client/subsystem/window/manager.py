@@ -182,7 +182,6 @@ class WindowManagerClient(StubClientMixin):
         y = packet.get_i16(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
-        assert 0 <= w < 32768 and 0 <= h < 32768
         metadata = self.cook_metadata(True, packet[6])
         # newer versions use metadata only:
         override_redirect |= metadata.boolget("override-redirect", False)
@@ -198,7 +197,7 @@ class WindowManagerClient(StubClientMixin):
                     window.set_modal(False)
         metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
         assert wid not in self._id_to_window, "we already have a window {}: {}".format(wid, self.get_window(wid))
-        if w < 1 or h < 1:
+        if w < 1 or w >= 32768 or h < 1 or h >= 32768:
             log.error("Error: window %#x dimensions %ix%i are invalid", wid, w, h)
             w, h = 1, 1
         rel_pos = metadata.inttupleget("relative-position")
@@ -690,6 +689,4 @@ class WindowManagerClient(StubClientMixin):
             "window-resized",
             "window-metadata",
             "window-destroy",
-            # still need to be prefixed:
-            "eos",
             main_thread=True)
