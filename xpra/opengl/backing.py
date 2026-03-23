@@ -934,16 +934,18 @@ class GLWindowBackingBase(WindowBackingBase):
         program = self.programs["upscale"]
         glUseProgram(program)
 
-        # Bind FBO texture with GL_LINEAR for the bilinear trick on the center fetch
+        # GL_NEAREST: the 16-tap shader fetches individual texels (no bilinear trick)
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(target, self.textures[TEX_FBO])
-        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glUniform1i(glGetUniformLocation(program, "fbo"), 0)
 
         glUniform2f(glGetUniformLocation(program, "viewport_pos"),
                     left * xscale, top * yscale)
         glUniform2f(glGetUniformLocation(program, "scaling"), xscale, yscale)
+        glUniform1i(glGetUniformLocation(program, "use_sigmoid"), 1)
+        glUniform1f(glGetUniformLocation(program, "ar_strength"), 0.8)
 
         pos_buffer = self.set_vao(0)
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
