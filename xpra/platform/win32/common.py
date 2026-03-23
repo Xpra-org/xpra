@@ -399,6 +399,12 @@ GetPhysicalCursorPos.restype = BOOL
 SetPhysicalCursorPos = user32.SetPhysicalCursorPos
 SetPhysicalCursorPos.argtypes = [INT, INT]
 SetPhysicalCursorPos.restype = BOOL
+SetCursor = user32.SetCursor
+SetCursor.argtypes = [HCURSOR]
+SetCursor.restype = HCURSOR
+IsWindow = user32.IsWindow
+IsWindow.argtypes = [HWND]
+IsWindow.restype = BOOL
 GetCursorInfo = user32.GetCursorInfo
 GetCursorInfo.argtypes = [POINTER(CURSORINFO)]
 GetCursorInfo.restype = BOOL
@@ -1043,3 +1049,27 @@ class PAINTSTRUCT(Structure):
         ('fIncUpdate', BOOL),
         ('rgbReserved', c_char * 32),
     ]
+
+
+comctl32 = WinDLL("comctl32", use_last_error=True)
+
+# LRESULT CALLBACK SubclassProc(HWND, UINT, WPARAM, LPARAM, UINT_PTR, DWORD_PTR)
+# https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nc-commctrl-subclassproc
+SUBCLASSPROC = WINFUNCTYPE(
+    LRESULT,       # return
+    HWND,          # hWnd
+    UINT,          # uMsg
+    WPARAM,        # wParam
+    LPARAM,        # lParam
+    c_size_t,      # uIdSubclass (UINT_PTR)
+    c_size_t,      # dwRefData (DWORD_PTR)
+)
+SetWindowSubclass = comctl32.SetWindowSubclass
+SetWindowSubclass.argtypes = [HWND, SUBCLASSPROC, c_size_t, c_size_t]
+SetWindowSubclass.restype = BOOL
+RemoveWindowSubclass = comctl32.RemoveWindowSubclass
+RemoveWindowSubclass.argtypes = [HWND, SUBCLASSPROC, c_size_t]
+RemoveWindowSubclass.restype = BOOL
+DefSubclassProc = comctl32.DefSubclassProc
+DefSubclassProc.argtypes = [HWND, UINT, WPARAM, LPARAM]
+DefSubclassProc.restype = LRESULT
