@@ -24,7 +24,7 @@ from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland
 from xpra.util.io import load_binary_file
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE, pretty_socket
-from xpra.common import noerr
+from xpra.common import noerr, is_covered_by_opaque_region
 from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
 from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.util.stats import std_unit
@@ -1360,7 +1360,17 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             if override_redirect:
                 return False
             if metadata.boolget("has-alpha", False):
-                return False
+                # windows that declare themselves fully opaque via
+                # _NET_WM_OPAQUE_REGION can safely use OpenGL despite has-alpha.
+                # opaque-region is in server coordinates, w/h are client-scaled,
+                # so scale opaque-region up rather than scaling w/h back down
+                # to avoid rounding errors from the round-trip conversion
+                opr = tuple(
+                    (self.sx(ox), self.sy(oy), self.sx(ow), self.sy(oh))
+                    for ox, oy, ow, oh in metadata.tupleget("opaque-region")
+                )
+                if not is_covered_by_opaque_region(opr, w, h):
+                    return False
             if not metadata.boolget("decorations", True):
                 return False
             hbl = (self.headerbar or "").lower().strip()
