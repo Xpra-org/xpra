@@ -23,6 +23,7 @@ from xpra.util.thread import check_main_thread
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_DRAW
 from xpra.constants import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
+from xpra.common import is_covered_by_opaque_region
 from xpra.server.window.windowicon import WindowIconSource
 from xpra.server.window.perfstats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
@@ -945,13 +946,8 @@ class WindowSource(WindowIconSource):
         cv = self.global_statistics.congestion_value
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         ww, wh = self.window_dimensions
-        opr = self._opaque_region
-        for coords in opr:
-            r = rectangle(*coords)
-            if r.contains(0, 0, ww, wh):
-                # window is fully opaque
-                self._want_alpha = False
-                break
+        if self._want_alpha and is_covered_by_opaque_region(self._opaque_region, ww, wh):
+            self._want_alpha = False
         self._lossless_threshold_base = max(0, min(90, 60+self._current_speed//5 + int(cv*100) - int(self.is_shadow)*20))
         self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
         # calculate the threshold for using rgb

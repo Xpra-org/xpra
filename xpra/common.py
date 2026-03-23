@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Protocol, Any
-from collections.abc import Callable, Sized, Iterable
+from collections.abc import Callable, Sized, Iterable, Sequence
 
 from xpra.constants import NotificationID, Gravity
 
@@ -43,6 +43,19 @@ def noerr(fn: Callable, *args):
         return fn(*args)
     except Exception:
         return None
+
+
+def is_covered_by_opaque_region(opaque_region: Sequence[tuple], w: int, h: int) -> bool:
+    """Check if any opaque-region rectangle fully covers a window of size w x h.
+
+    Windows with 32-bit depth (ARGB) may declare themselves effectively opaque
+    via _NET_WM_OPAQUE_REGION. Each entry is (ox, oy, ow, oh); if any single
+    rectangle encloses the entire window area (0, 0, w, h), the window is opaque.
+    """
+    return any(
+        ox <= 0 and oy <= 0 and ox + ow >= w and oy + oh >= h
+        for ox, oy, ow, oh in opaque_region
+    )
 
 
 def roundup(n: int, m: int) -> int:
