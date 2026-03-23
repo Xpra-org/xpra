@@ -1479,7 +1479,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         cnt = self.clipboard_notification_timer
         if cnt:
             self.clipboard_notification_timer = 0
-            GLib.source_remove(cnt)
+            self.source_remove(cnt)
 
     def clipboard_notify(self, n: int) -> None:
         tray = getattr(self, "tray", None)

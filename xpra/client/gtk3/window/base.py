@@ -695,7 +695,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         sit = self.send_iconify_timer
         if sit:
             self.send_iconify_timer = 0
-            GLib.source_remove(sit)
+            self.source_remove(sit)
 
     def set_command(self, command) -> None:
         self.set_x11_property("WM_COMMAND", "latin1", command)
@@ -1061,7 +1061,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         geomlog("cancel_moveresize_timer() timer=%i", mrt)
         if mrt:
             self.moveresize_timer = 0
-            GLib.source_remove(mrt)
+            self.source_remove(mrt)
 
     def do_moveresize(self) -> None:
         self.moveresize_timer = 0

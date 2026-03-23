@@ -2822,6 +2822,7 @@ if client_ENABLED:
     add_modules("xpra.client")
     add_packages("xpra.client.base")
     add_packages("xpra.client.subsystem")
+    add_packages("xpra.client.subsystem.window")
     add_modules("xpra.scripts.pinentry")
     if qt6_client_ENABLED:
         add_modules("xpra.client.qt6")
@@ -3078,6 +3079,7 @@ if cythonize_more_ENABLED:
         ax("xpra.client.gui")
         ax("xpra.client.gui.window")
         ax("xpra.client.subsystem")
+        ax("xpra.client.subsystem.window")
         if qt6_client_ENABLED:
             ax("xpra.client.qt6")
         if pyglet_client_ENABLED:

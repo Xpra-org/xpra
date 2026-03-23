@@ -9,9 +9,12 @@ from datetime import timedelta
 
 from xpra.client.base.stub import StubClientMixin
 from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.util.env import envint
 from xpra.log import Logger
 
 log = Logger("event")
+
+FAKE_SUSPEND_RESUME: int = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
 
 
 class PowerEventClient(StubClientMixin):
@@ -32,6 +35,12 @@ class PowerEventClient(StubClientMixin):
         from xpra.platform.events import add_handler
         add_handler("suspend", self.suspend)
         add_handler("resume", self.resume)
+        if FAKE_SUSPEND_RESUME:
+            def fake_suspend() -> bool:
+                self.suspend()
+                self.timeout_add(FAKE_SUSPEND_RESUME * 500, self.resume)
+                return True
+            self.timeout_add(FAKE_SUSPEND_RESUME * 1000, fake_suspend)
 
     def start_ui_watcher(self, _client) -> None:
         if self.ui_watcher:

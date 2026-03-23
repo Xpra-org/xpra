@@ -137,7 +137,7 @@ class FocusWindow(GtkStubWindow):
         rft = self.recheck_focus_timer
         if rft:
             self.recheck_focus_timer = 0
-            GLib.source_remove(rft)
+            self.source_remove(rft)
 
     def schedule_recheck_focus(self) -> None:
         if self._override_redirect:

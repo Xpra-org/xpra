@@ -15,7 +15,6 @@ from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.client.gtk3.window.common import mask_buttons
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
 Gdk = gi_import("Gdk")
 
 log = Logger("window", "pointer")
@@ -138,14 +137,14 @@ class PointerWindow(GtkStubWindow):
         log(f"cancel_remove_pointer_overlay_timer() timer={rpot}")
         if rpot:
             self.remove_pointer_overlay_timer = 0
-            GLib.source_remove(rpot)
+            self.source_remove(rpot)
 
     def cancel_show_pointer_overlay_timer(self) -> None:
         rsot = self.show_pointer_overlay_timer
         log(f"cancel_show_pointer_overlay_timer() timer={rsot}")
         if rsot:
             self.show_pointer_overlay_timer = 0
-            GLib.source_remove(rsot)
+            self.source_remove(rsot)
 
     def show_pointer_overlay(self, pos) -> None:
         # schedule do_show_pointer_overlay if needed
@@ -166,7 +165,7 @@ class PointerWindow(GtkStubWindow):
         log("show_pointer_overlay(%s) previous value=%s, new value=%s", pos, prev, value)
         b.pointer_overlay = value
         if not self.show_pointer_overlay_timer:
-            self.show_pointer_overlay_timer = GLib.timeout_add(10, self.do_show_pointer_overlay, prev)
+            self.show_pointer_overlay_timer = self.timeout_add(10, self.do_show_pointer_overlay, prev)
 
     def do_show_pointer_overlay(self, prev) -> None:
         # queue a draw event at the previous and current position of the pointer
@@ -205,7 +204,7 @@ class PointerWindow(GtkStubWindow):
     def schedule_remove_pointer_overlay(self, delay: int = CURSOR_IDLE_TIMEOUT * 1000) -> None:
         log(f"schedule_remove_pointer_overlay({delay})")
         self.cancel_remove_pointer_overlay_timer()
-        self.remove_pointer_overlay_timer = GLib.timeout_add(delay, self.remove_pointer_overlay)
+        self.remove_pointer_overlay_timer = self.timeout_add(delay, self.remove_pointer_overlay)
 
     def remove_pointer_overlay(self) -> None:
         log("remove_pointer_overlay()")
@@ -356,13 +355,13 @@ class PointerWindow(GtkStubWindow):
         bpt = self.button_polling_timer
         if bpt:
             self.button_polling_timer = 0
-            GLib.source_remove(bpt)
+            self.source_remove(bpt)
 
     def start_button_polling(self) -> None:
         log("start_button_polling()")
         if self.button_polling_timer:
             return
-        self.button_polling_timer = GLib.timeout_add(BUTTON_POLLING_DELAY, self.poll_buttons)
+        self.button_polling_timer = self.timeout_add(BUTTON_POLLING_DELAY, self.poll_buttons)
 
     def poll_buttons(self) -> bool:
         with IgnoreWarningsContext():
