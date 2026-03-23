@@ -1098,11 +1098,13 @@ class SessionInfo(Gtk.Window):
                      self.windows_managed_label, self.transient_managed_label,
                      self.trays_managed_label, self.opengl_label)
 
-        self.encoder_info_box = Gtk.HBox(spacing=4)
+        self.encoder_info_box = Gtk.VBox(spacing=4)
         self.encoder_info_box.add(title_box("Window Encoders"))
+        self.encoder_labels = {}
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=0.0)
         al.set_margin_start(10)
         al.set_margin_end(10)
+        al.set_margin_top(20)
         al.add(self.encoder_info_box)
         vbox.add(al)
 
@@ -1172,33 +1174,63 @@ class SessionInfo(Gtk.Window):
             if self.client.client_supports_opengl:
                 self.opengl_label.set_text(str(gl))
 
-            # remove all the current labels:
-            for x in self.encoder_info_box.get_children():
-                self.encoder_info_box.remove(x)
+            # update encoder labels:
             server_last_info = self.last_info()
             if server_last_info:
                 window_encoder_stats = self.get_window_encoder_stats()
                 # log("window_encoder_stats=%s", window_encoder_stats)
+                for wid in list(self.encoder_labels):
+                    if wid not in window_encoder_stats:
+                        self.encoder_info_box.remove(self.encoder_labels.pop(wid))
                 for wid, props in window_encoder_stats.items():
-                    lbl = slabel("%s (%s)" % (wid, bytestostr(props.get(""))))
-                    lbl.show()
-                    info = ("%s=%s" % (k, v) for k, v in props.items() if k != "")
-                    lbl.set_tooltip_text(" ".join(info))
-                    self.encoder_info_box.add(lbl)
+                    title = props.get("title", "")
+                    encoder = bytestostr(props.get("", "?"))
+                    display = "%s - %s (%s)" % (wid, title, encoder) if title else "%s (%s)" % (wid, encoder)
+                    info = " ".join("%s=%s" % (k, v) for k, v in props.items() if k not in ("", "title"))
+                    if wid in self.encoder_labels:
+                        lbl = self.encoder_labels[wid]
+                        lbl.set_text(display)
+                        lbl.set_tooltip_text(info)
+                    else:
+                        lbl = slabel(display)
+                        lbl.set_tooltip_text(info)
+                        lbl.show()
+                        self.encoder_labels[wid] = lbl
+                        self.encoder_info_box.add(lbl)
         return True
 
     def get_window_encoder_stats(self) -> dict:
         window_encoder_stats = {}
-        # new-style server with namespace (easier):
+        # info["client"] is {int: source_info} — find our client by uuid
         server_last_info = self.last_info()
-        window_dict = server_last_info.get("window")
-        if window_dict and isinstance(window_dict, dict):
+        client_info = server_last_info.get("client", {})
+        window_dict = {}
+        for source in (v for v in client_info.values() if isinstance(v, dict)):
+            if bytestostr(source.get("uuid", "")) != self.client.uuid:
+                continue
+            w = source.get("window")
+            if isinstance(w, dict):
+                window_dict = w
+                break
+        if window_dict:
+            id_to_window = self.client._id_to_window
             for k, v in window_dict.items():
                 with log.trap_error("Error: cannot lookup window dict"):
                     wid = int(k)
                     encoder_stats = v.get("encoder")
                     if encoder_stats:
-                        window_encoder_stats[wid] = encoder_stats
+                        # video encoder is active
+                        stats = dict(encoder_stats)
+                    else:
+                        # fall back to last_used (e.g. "webp", "png") when video encoder is idle
+                        last_used = bytestostr(v.get("last_used", ""))
+                        if not last_used:
+                            continue
+                        stats = {"": last_used}
+                    win = id_to_window.get(wid)
+                    title = (win.get_title() if win else "") or ""
+                    stats["title"] = (title[:40] + "…") if len(title) > 40 else title
+                    window_encoder_stats[wid] = stats
         return window_encoder_stats
 
     def add_graphs_tab(self) -> None:
