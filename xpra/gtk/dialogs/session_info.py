@@ -1201,16 +1201,19 @@ class SessionInfo(Gtk.Window):
 
     def get_window_encoder_stats(self) -> dict:
         window_encoder_stats = {}
-        # info["client"] is always {int: source_info} (one entry per connected client)
+        # info["client"] is {int: source_info} — find our client by uuid
         server_last_info = self.last_info()
-        window_dict = {}
         client_info = server_last_info.get("client", {})
+        window_dict = {}
         for source in (v for v in client_info.values() if isinstance(v, dict)):
+            if bytestostr(source.get("uuid", "")) != self.client.uuid:
+                continue
             w = source.get("window")
             if isinstance(w, dict):
-                window_dict.update(w)
+                window_dict = w
+                break
         if window_dict:
-            id_to_window = getattr(self.client, "_id_to_window", {})
+            id_to_window = self.client._id_to_window
             for k, v in window_dict.items():
                 with log.trap_error("Error: cannot lookup window dict"):
                     wid = int(k)
@@ -1225,7 +1228,7 @@ class SessionInfo(Gtk.Window):
                             continue
                         stats = {"": last_used}
                     win = id_to_window.get(wid)
-                    title = (win.get_title() if win and hasattr(win, "get_title") else "") or ""
+                    title = (win.get_title() if win else "") or ""
                     stats["title"] = (title[:40] + "…") if len(title) > 40 else title
                     window_encoder_stats[wid] = stats
         return window_encoder_stats
