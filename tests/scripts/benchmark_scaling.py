@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # ABOUTME: Benchmarks scaling quality and throughput for Cairo and OpenGL renderers.
-# ABOUTME: Compares bilinear vs Catmull-Rom across multiple window sizes.
+# ABOUTME: Compares bilinear, Catmull-Rom, sigmoid upscaling, and anti-ringing variants.
 
 """
 Benchmark scaling quality and throughput for Cairo (bilinear/Catmull-Rom)
-and OpenGL (bilinear blit/Catmull-Rom shader).
+and OpenGL (bilinear blit/Catmull-Rom/sigmoid/anti-ringing shaders).
 
 Usage:
     python3 tests/scripts/benchmark_scaling.py [--sizes 640x480,1920x1080] [--frames 100] [--scale 1.6]
@@ -17,6 +17,7 @@ Detects available backends automatically:
 
 import argparse
 import math
+import multiprocessing
 import os
 import sys
 import time
@@ -36,6 +37,30 @@ def catmull_rom_weights(t):
     w2 = t * (0.5 + t * (2.0 - 1.5 * t))
     w3 = t * t * (-0.5 + 0.5 * t)
     return w0, w1, w2, w3
+
+
+# Sigmoid upscaling constants (mpv/libplacebo defaults)
+SIG_CENTER = 0.75
+SIG_SLOPE = 6.5
+SIG_OFFSET = 1.0 / (1.0 + math.exp(SIG_SLOPE * SIG_CENTER))
+SIG_SCALE = 1.0 / (1.0 + math.exp(SIG_SLOPE * (SIG_CENTER - 1.0))) - SIG_OFFSET
+
+# Anti-ringing clamp strength (libplacebo sweet spot per Artoriuz's evaluation)
+AR_STRENGTH = 0.8
+
+# RCAS sharpening strength (0.0 = maximum, 1.0 = minimum; 0.5 is conservative for text)
+CAS_SHARPNESS = 0.5
+
+
+def sigmoidize(x):
+    """Forward sigmoid: linear [0,1] -> sigmoid space."""
+    x = max(0.0, min(1.0, x))
+    return SIG_CENTER - math.log(1.0 / (x * SIG_SCALE + SIG_OFFSET) - 1.0) / SIG_SLOPE
+
+
+def unsigmoidize(x):
+    """Inverse sigmoid: sigmoid space -> linear."""
+    return (1.0 / SIG_SCALE) / (1.0 + math.exp(SIG_SLOPE * (SIG_CENTER - x))) - SIG_OFFSET / SIG_SCALE
 
 
 def catmull_rom_2d_cpu(src, src_w, src_h, dst_w, dst_h):
@@ -97,6 +122,61 @@ def catmull_rom_2d_cpu(src, src_w, src_h, dst_w, dst_h):
     return dst
 
 
+def catmull_rom_enhanced_cpu(src, src_w, src_h, dst_w, dst_h, use_sigmoid=False, ar_strength=0.0):
+    """
+    CPU reference: 16-tap Catmull-Rom with optional sigmoid and anti-ringing.
+    Uses direct 4x4 texel sampling (no bilinear trick) for sigmoid correctness.
+    """
+    dst = [0.0] * (dst_w * dst_h)
+    sx = src_w / dst_w
+    sy = src_h / dst_h
+
+    def clamp_get(r, c):
+        r = max(0, min(src_h - 1, r))
+        c = max(0, min(src_w - 1, c))
+        return src[r * src_w + c]
+
+    for dy in range(dst_h):
+        for dx in range(dst_w):
+            coord_x = (dx + 0.5) * sx
+            coord_y = (dy + 0.5) * sy
+
+            cx = math.floor(coord_x - 0.5) + 0.5
+            cy = math.floor(coord_y - 0.5) + 0.5
+            fx = coord_x - cx
+            fy = coord_y - cy
+
+            wx = catmull_rom_weights(fx)
+            wy = catmull_rom_weights(fy)
+
+            icx = int(cx - 0.5)
+            icy = int(cy - 0.5)
+
+            val = 0.0
+            for j in range(4):
+                for i in range(4):
+                    s = clamp_get(icy + j - 1, icx + i - 1)
+                    if use_sigmoid:
+                        s = sigmoidize(s)
+                    val += s * wx[i] * wy[j]
+
+            if use_sigmoid:
+                val = unsigmoidize(val)
+
+            if ar_strength > 0:
+                n00 = clamp_get(icy, icx)
+                n10 = clamp_get(icy, icx + 1)
+                n01 = clamp_get(icy + 1, icx)
+                n11 = clamp_get(icy + 1, icx + 1)
+                lo = min(n00, n10, n01, n11)
+                hi = max(n00, n10, n01, n11)
+                clamped = max(lo, min(hi, val))
+                val = val + ar_strength * (clamped - val)
+
+            dst[dy * dst_w + dx] = val
+    return dst
+
+
 def make_test_pattern(w, h):
     """Generate a test pattern with sharp edges and gradients."""
     data = [0.0] * (w * h)
@@ -139,12 +219,153 @@ def psnr(ref, test, n):
     return 10 * math.log10(1.0 / mse)
 
 
+def ssim_if_available(ref, test, w, h):
+    """Compute SSIM using numpy only. Returns None if numpy is unavailable."""
+    try:
+        import numpy as np
+    except ImportError:
+        return None
+
+    a = np.array(ref, dtype=np.float64).reshape(h, w)
+    b = np.array(test, dtype=np.float64).reshape(h, w)
+
+    # SSIM constants (Wang et al. 2004), data_range=1.0
+    C1 = (0.01) ** 2
+    C2 = (0.03) ** 2
+    win = 7
+
+    # Box-filter mean via cumulative sums (no scipy needed)
+    def box_mean(img):
+        cs = np.cumsum(np.cumsum(img, axis=0), axis=1)
+        padded = np.zeros((img.shape[0] + 1, img.shape[1] + 1))
+        padded[1:, 1:] = cs
+        r = win // 2
+        y0 = np.clip(np.arange(img.shape[0]) - r, 0, img.shape[0])
+        y1 = np.clip(np.arange(img.shape[0]) - r + win, 0, img.shape[0])
+        x0 = np.clip(np.arange(img.shape[1]) - r, 0, img.shape[1])
+        x1 = np.clip(np.arange(img.shape[1]) - r + win, 0, img.shape[1])
+        counts = np.outer(y1 - y0, x1 - x0).astype(np.float64)
+        sums = (padded[np.ix_(y1, x1)] - padded[np.ix_(y0, x1)]
+                - padded[np.ix_(y1, x0)] + padded[np.ix_(y0, x0)])
+        return sums / counts
+
+    mu_a = box_mean(a)
+    mu_b = box_mean(b)
+    sigma_a2 = box_mean(a * a) - mu_a * mu_a
+    sigma_b2 = box_mean(b * b) - mu_b * mu_b
+    sigma_ab = box_mean(a * b) - mu_a * mu_b
+
+    num = (2 * mu_a * mu_b + C1) * (2 * sigma_ab + C2)
+    den = (mu_a ** 2 + mu_b ** 2 + C1) * (sigma_a2 + sigma_b2 + C2)
+    return float(np.mean(num / den))
+
+
+def overshoot(src, src_w, src_h, result, dst_w, dst_h):
+    """
+    Measure ringing as mean overshoot beyond the nearest 4 source texel range.
+    Returns (mean_overshoot, max_overshoot) in [0,1] scale.
+    Uses numpy when available for speed.
+    """
+    try:
+        import numpy as np
+        return _overshoot_numpy(src, src_w, src_h, result, dst_w, dst_h, np)
+    except ImportError:
+        return _overshoot_python(src, src_w, src_h, result, dst_w, dst_h)
+
+
+def _overshoot_numpy(src, src_w, src_h, result, dst_w, dst_h, np):
+    src_arr = np.array(src, dtype=np.float64).reshape(src_h, src_w)
+    res_arr = np.array(result, dtype=np.float64).reshape(dst_h, dst_w)
+    sx = src_w / dst_w
+    sy = src_h / dst_h
+
+    dx = np.arange(dst_w)
+    dy = np.arange(dst_h)
+    coord_x = (dx + 0.5) * sx
+    coord_y = (dy + 0.5) * sy
+    icx = np.floor(coord_x - 0.5).astype(int)
+    icy = np.floor(coord_y - 0.5).astype(int)
+
+    # Clamp indices to valid range
+    cx0 = np.clip(icx, 0, src_w - 1)
+    cx1 = np.clip(icx + 1, 0, src_w - 1)
+    cy0 = np.clip(icy, 0, src_h - 1)
+    cy1 = np.clip(icy + 1, 0, src_h - 1)
+
+    # 4 nearest texels via outer indexing
+    n00 = src_arr[np.ix_(cy0, cx0)]
+    n10 = src_arr[np.ix_(cy0, cx1)]
+    n01 = src_arr[np.ix_(cy1, cx0)]
+    n11 = src_arr[np.ix_(cy1, cx1)]
+
+    lo = np.minimum(np.minimum(n00, n10), np.minimum(n01, n11))
+    hi = np.maximum(np.maximum(n00, n10), np.maximum(n01, n11))
+
+    over = np.maximum(0.0, res_arr - hi) + np.maximum(0.0, lo - res_arr)
+    return float(np.mean(over)), float(np.max(over))
+
+
+def _overshoot_python(src, src_w, src_h, result, dst_w, dst_h):
+    sx = src_w / dst_w
+    sy = src_h / dst_h
+    total = 0.0
+    peak = 0.0
+
+    def clamp_get(r, c):
+        r = max(0, min(src_h - 1, r))
+        c = max(0, min(src_w - 1, c))
+        return src[r * src_w + c]
+
+    for dy in range(dst_h):
+        for dx in range(dst_w):
+            coord_x = (dx + 0.5) * sx
+            coord_y = (dy + 0.5) * sy
+            icx = int(math.floor(coord_x - 0.5))
+            icy = int(math.floor(coord_y - 0.5))
+
+            n00 = clamp_get(icy, icx)
+            n10 = clamp_get(icy, icx + 1)
+            n01 = clamp_get(icy + 1, icx)
+            n11 = clamp_get(icy + 1, icx + 1)
+            lo = min(n00, n10, n01, n11)
+            hi = max(n00, n10, n01, n11)
+
+            val = result[dy * dst_w + dx]
+            over = max(0.0, val - hi) + max(0.0, lo - val)
+            total += over
+            if over > peak:
+                peak = over
+
+    n = dst_w * dst_h
+    return total / n, peak
+
+
 def bench_cpu_catmull_rom(src, src_w, src_h, dst_w, dst_h, frames):
     """Benchmark CPU Catmull-Rom and return (ms_per_frame, result)."""
     result = catmull_rom_2d_cpu(src, src_w, src_h, dst_w, dst_h)
     start = time.monotonic()
     for _ in range(frames):
         result = catmull_rom_2d_cpu(src, src_w, src_h, dst_w, dst_h)
+    elapsed = time.monotonic() - start
+    return elapsed / frames * 1000, result
+
+
+def _run_cpu_bench(args):
+    """Top-level wrapper for multiprocessing (must be picklable)."""
+    label, src_data, sw, sh, dw, dh, nframes, kwargs = args
+    if kwargs:
+        ms, result = bench_cpu_enhanced(src_data, sw, sh, dw, dh, nframes, **kwargs)
+    else:
+        ms, result = bench_cpu_catmull_rom(src_data, sw, sh, dw, dh, nframes)
+    return label, ms, result
+
+
+def bench_cpu_enhanced(src, src_w, src_h, dst_w, dst_h, frames, **kwargs):
+    """Benchmark catmull_rom_enhanced_cpu and return (ms_per_frame, result)."""
+    result = catmull_rom_enhanced_cpu(src, src_w, src_h, dst_w, dst_h, **kwargs)
+    start = time.monotonic()
+    for _ in range(frames):
+        result = catmull_rom_enhanced_cpu(src, src_w, src_h, dst_w, dst_h, **kwargs)
     elapsed = time.monotonic() - start
     return elapsed / frames * 1000, result
 
@@ -419,6 +640,82 @@ def link_program(vertex, fragment):
     return program
 
 
+# --- GLSL shader variants for benchmarking ---
+# All variants use the single uniform-controlled shader from shaders.py.
+# Different variants are achieved by setting use_sigmoid and ar_strength uniforms
+# on the single compiled program at draw time.
+
+
+# RCAS: Robust Contrast-Adaptive Sharpening (post-process, 5-tap cross pattern).
+# Ported from AMD FidelityFX FSR 1.0 (MIT license).
+# Reference: https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5
+# Operates on an already-upscaled image in a second pass.
+RCAS_SHADER = f"""
+#version 330 core
+layout(origin_upper_left) in vec4 gl_FragCoord;
+uniform sampler2DRect src;
+layout(location = 0) out vec4 frag_color;
+
+// Approximate medium-precision reciprocal (AMD APrxMedRcpF1):
+// bit-hack initial estimate + one Newton-Raphson refinement.
+float rcpAprx(float a) {{
+    float b = uintBitsToFloat(uint(0x7ef19fff) - floatBitsToUint(a));
+    return b * (-b * a + 2.0);
+}}
+
+void main() {{
+    // Flip y: origin_upper_left puts y=0 at screen top, but the FBO texture
+    // follows GL convention with y=0 at bottom.
+    vec2 pos = gl_FragCoord.xy;
+    pos.y = float(textureSize(src).y) - pos.y;
+
+    // 5-tap cross pattern on the upscaled image
+    vec3 b = texture(src, pos + vec2( 0.0, -1.0)).rgb;
+    vec3 d = texture(src, pos + vec2(-1.0,  0.0)).rgb;
+    vec3 e = texture(src, pos).rgb;
+    vec3 f = texture(src, pos + vec2( 1.0,  0.0)).rgb;
+    vec3 h = texture(src, pos + vec2( 0.0,  1.0)).rgb;
+
+    // Luma of the cross (BT.709 weights)
+    const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+    float bL = dot(b, LUMA);
+    float dL = dot(d, LUMA);
+    float eL = dot(e, LUMA);
+    float fL = dot(f, LUMA);
+    float hL = dot(h, LUMA);
+
+    // Min/max of the 4 neighbors (excluding center)
+    float mn1L = min(min(bL, dL), min(fL, hL));
+    float mx1L = max(max(bL, dL), max(fL, hL));
+
+    // Analytically solve for max negative weight before any pixel clips.
+    // hitMin: weight limit before output goes below 0
+    // hitMax: weight limit before output goes above 1
+    float hitMinL = min(mn1L, eL) / (4.0 * mx1L);
+    float hitMaxL = (1.0 - max(mx1L, eL)) / (4.0 * mn1L - 4.0);
+    float lobeL = max(-hitMinL, hitMaxL);
+
+    // FSR_RCAS_LIMIT = 0.25 - 1/16 = 0.1875
+    float lobe = max(-0.1875, min(lobeL, 0.0)) * exp2(-clamp({CAS_SHARPNESS}, 0.0, 2.0));
+
+    // Noise detection: reduce sharpening in noisy/dithered areas
+    float nz = 0.25 * (bL + dL + fL + hL) - eL;
+    float range = max(max(max(bL, dL), max(eL, fL)), hL)
+                - min(min(min(bL, dL), min(eL, fL)), hL);
+    nz = clamp(abs(nz) * rcpAprx(max(range, 1.0 / 65536.0)), 0.0, 1.0);
+    lobe *= (-0.5 * nz + 1.0);
+
+    // Final resolve with approximate reciprocal
+    float rcpW = rcpAprx(4.0 * lobe + 1.0);
+    frag_color = vec4(
+        clamp((lobe * (b.r + d.r + f.r + h.r) + e.r) * rcpW, 0.0, 1.0),
+        clamp((lobe * (b.g + d.g + f.g + h.g) + e.g) * rcpW, 0.0, 1.0),
+        clamp((lobe * (b.b + d.b + f.b + h.b) + e.b) * rcpW, 0.0, 1.0),
+        1.0);
+}}
+"""
+
+
 class GLBenchContext:
     """Manages GL resources for benchmarking blit vs shader scaling."""
 
@@ -479,11 +776,26 @@ class GLBenchContext:
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
 
-        # Compile shaders
+        # Compile shaders: one upscale program (uniforms control variant) + RCAS
         from xpra.opengl.shaders import SOURCE, VERTEX_SHADER
         vs = compile_shader(VERTEX_SHADER, GL_VERTEX_SHADER)
         fs = compile_shader(SOURCE["upscale"], GL_FRAGMENT_SHADER)
         self.program = link_program(vs, fs)
+
+        fs_rcas = compile_shader(RCAS_SHADER, GL_FRAGMENT_SHADER)
+        self.program_rcas = link_program(vs, fs_rcas)
+
+        # Second destination texture/FBO for two-pass CAS pipeline
+        self.cas_tex = glGenTextures(1)
+        glBindTexture(target, self.cas_tex)
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexImage2D(target, 0, GL_RGBA8, dst_w, dst_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+
+        self.cas_fbo = glGenFramebuffers(1)
+        glBindFramebuffer(GL_FRAMEBUFFER, self.cas_fbo)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.cas_tex, 0)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
     def upload_pattern(self, pattern):
         """Upload a grayscale float pattern as RGBA8 to the source texture."""
@@ -529,14 +841,14 @@ class GLBenchContext:
         elapsed = time.monotonic() - start
         return elapsed / frames * 1000
 
-    def bench_catmull_rom(self, frames):
-        """Benchmark Catmull-Rom shader rendering."""
+    def bench_upscale(self, frames, use_sigmoid=False, ar_strength=0.0):
+        """Benchmark the upscale shader with given uniform settings."""
         from OpenGL.GL import (
             glFinish, glViewport, glUseProgram, glActiveTexture, glBindTexture,
-            glTexParameteri, glGetUniformLocation, glUniform1i, glUniform2f,
+            glTexParameteri, glGetUniformLocation, glUniform1i, glUniform1f, glUniform2f,
             glBindVertexArray, glDrawArrays,
             GL_TEXTURE0, GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER,
-            GL_TEXTURE_MIN_FILTER, GL_LINEAR, GL_NEAREST, GL_TRIANGLE_STRIP,
+            GL_TEXTURE_MIN_FILTER, GL_NEAREST, GL_TRIANGLE_STRIP,
         )
         from OpenGL.GL.ARB.framebuffer_object import glBindFramebuffer, GL_FRAMEBUFFER
 
@@ -553,11 +865,13 @@ class GLBenchContext:
         glUseProgram(program)
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(target, self.src_tex)
-        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glUniform1i(glGetUniformLocation(program, "fbo"), 0)
         glUniform2f(glGetUniformLocation(program, "viewport_pos"), 0, 0)
         glUniform2f(glGetUniformLocation(program, "scaling"), xscale, yscale)
+        glUniform1i(glGetUniformLocation(program, "use_sigmoid"), int(use_sigmoid))
+        glUniform1f(glGetUniformLocation(program, "ar_strength"), ar_strength)
         glBindVertexArray(self.vao)
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
         glFinish()
@@ -571,11 +885,96 @@ class GLBenchContext:
         # Clean up state
         glBindVertexArray(0)
         glUseProgram(0)
+        glBindTexture(target, 0)
+
+        return elapsed / frames * 1000
+
+    def bench_two_pass(self, frames, use_sigmoid=False, ar_strength=0.0):
+        """Benchmark upscale + RCAS sharpening (two-pass pipeline)."""
+        from OpenGL.GL import (
+            glFinish, glViewport, glUseProgram, glActiveTexture, glBindTexture,
+            glTexParameteri, glGetUniformLocation, glUniform1i, glUniform1f, glUniform2f,
+            glBindVertexArray, glDrawArrays,
+            GL_TEXTURE0, GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER,
+            GL_TEXTURE_MIN_FILTER, GL_NEAREST, GL_TRIANGLE_STRIP,
+        )
+        from OpenGL.GL.ARB.framebuffer_object import glBindFramebuffer, GL_FRAMEBUFFER
+
+        sw, sh = self.src_w, self.src_h
+        dw, dh = self.dst_w, self.dst_h
+        xscale = dw / sw
+        yscale = dh / sh
+        program = self.program
+        target = GL_TEXTURE_RECTANGLE
+
+        # Warm up: pass 1 (upscale src → dst_fbo)
+        glBindFramebuffer(GL_FRAMEBUFFER, self.dst_fbo)
+        glViewport(0, 0, dw, dh)
+        glUseProgram(program)
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(target, self.src_tex)
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glUniform1i(glGetUniformLocation(program, "fbo"), 0)
+        glUniform2f(glGetUniformLocation(program, "viewport_pos"), 0, 0)
+        glUniform2f(glGetUniformLocation(program, "scaling"), xscale, yscale)
+        glUniform1i(glGetUniformLocation(program, "use_sigmoid"), int(use_sigmoid))
+        glUniform1f(glGetUniformLocation(program, "ar_strength"), ar_strength)
+        glBindVertexArray(self.vao)
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+
+        # Warm up: pass 2 (CAS dst_tex → cas_fbo)
+        glBindFramebuffer(GL_FRAMEBUFFER, self.cas_fbo)
+        glUseProgram(self.program_rcas)
+        glBindTexture(target, self.dst_tex)
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glUniform1i(glGetUniformLocation(self.program_rcas, "src"), 0)
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+        glFinish()
+
+        start = time.monotonic()
+        for _ in range(frames):
+            # Pass 1: upscale
+            glBindFramebuffer(GL_FRAMEBUFFER, self.dst_fbo)
+            glUseProgram(program)
+            glBindTexture(target, self.src_tex)
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+
+            # Pass 2: CAS sharpen
+            glBindFramebuffer(GL_FRAMEBUFFER, self.cas_fbo)
+            glUseProgram(self.program_rcas)
+            glBindTexture(target, self.dst_tex)
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+
+            glFinish()
+        elapsed = time.monotonic() - start
+
+        # Clean up
+        glBindVertexArray(0)
+        glUseProgram(0)
         glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glBindTexture(target, 0)
 
         return elapsed / frames * 1000
+
+    def readback_cas_grayscale(self):
+        """Read back the CAS FBO as grayscale floats."""
+        from OpenGL.GL import glReadPixels, GL_RGBA, GL_UNSIGNED_BYTE
+        from OpenGL.GL.ARB.framebuffer_object import glBindFramebuffer, GL_FRAMEBUFFER
+
+        dw, dh = self.dst_w, self.dst_h
+        glBindFramebuffer(GL_FRAMEBUFFER, self.cas_fbo)
+        data = glReadPixels(0, 0, dw, dh, GL_RGBA, GL_UNSIGNED_BYTE)
+        result = [0.0] * (dw * dh)
+        for i in range(dw * dh):
+            offset = i * 4
+            r = data[offset]
+            g = data[offset + 1]
+            b = data[offset + 2]
+            result[i] = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+        return result
 
     def readback_grayscale(self):
         """Read back the destination FBO as grayscale floats."""
@@ -631,13 +1030,32 @@ def main():
     except ImportError:
         print("Cairo not available, skipping Cairo benchmarks")
 
+    # CPU info
+    cpu_name = ""
+    try:
+        with open("/proc/cpuinfo") as f:
+            for line in f:
+                if line.startswith("model name"):
+                    cpu_name = line.split(":", 1)[1].strip()
+                    break
+    except OSError:
+        pass
+
     print(f"Benchmark: scale={scale}x, frames={frames}")
     print(f"Ground truth is generated at destination resolution, then downsampled")
-    print(f"to source resolution. PSNR measures how well each method recovers the original.")
+    print(f"to source resolution. Metrics:")
+    print(f"  PSNR: peak signal-to-noise ratio (higher = closer to ground truth)")
+    print(f"  Overshoot: mean amount output exceeds nearest source texel range (ringing severity)")
+    if ssim_if_available([0.0, 1.0], [0.0, 1.0], 2, 1) is not None:
+        print(f"  SSIM: structural similarity index (higher = perceptually closer to ground truth)")
+    if cpu_name:
+        print(f"CPU: {cpu_name} ({multiprocessing.cpu_count()} cores, {multiprocessing.cpu_count() // 4} workers)")
     if have_gl:
         print(f"GPU: {gl_renderer}")
-    print(f"{'Size':>12s}  {'Backend':>30s}  {'ms/frame':>10s}  {'PSNR':>12s}")
-    print("-" * 70)
+    have_ssim_pkg = ssim_if_available([0.0, 1.0], [0.0, 1.0], 2, 1) is not None
+    ssim_hdr = "      SSIM" if have_ssim_pkg else ""
+    print(f"{'Size':>12s}  {'Backend':>40s}  {'ms/frame':>10s}  {'PSNR':>8s}  {'Overshoot':>10s}{ssim_hdr}")
+    print("-" * (88 + (10 if have_ssim_pkg else 0)))
 
     for src_w, src_h in sizes:
         dst_w = int(src_w * scale)
@@ -648,11 +1066,38 @@ def main():
         source = downsample_box(ground_truth, dst_w, dst_h, src_w, src_h)
         n = dst_w * dst_h
 
-        # CPU Catmull-Rom
+        # CPU benchmarks (reduced frames for large sizes, parallelized)
         cpu_frames = max(1, frames // 100) if src_w > 640 else max(1, frames // 10)
-        cpu_ms, cpu_result = bench_cpu_catmull_rom(source, src_w, src_h, dst_w, dst_h, cpu_frames)
-        p = psnr(ground_truth, cpu_result, n)
-        print(f"{src_w}x{src_h:>4d}  {'CPU Catmull-Rom':>30s}  {cpu_ms:10.2f}  {p:10.1f} dB")
+
+        have_ssim = ssim_if_available([0.0, 1.0], [0.0, 1.0], 2, 1) is not None
+
+        def print_result(label, ms, result, size_prefix=""):
+            p = psnr(ground_truth, result, n)
+            mean_os, _ = overshoot(source, src_w, src_h, result, dst_w, dst_h)
+            prefix = f"{size_prefix:>12s}" if size_prefix else f"{'':>12s}"
+            line = f"{prefix}  {label:>40s}  {ms:10.2f}  {p:6.1f}dB  {mean_os:10.6f}"
+            if have_ssim:
+                s = ssim_if_available(ground_truth, result, dst_w, dst_h)
+                line += f"  {s:.6f}"
+            print(line)
+
+        # Run all 4 CPU variants in parallel
+        cpu_workers = max(1, multiprocessing.cpu_count() // 4)
+        cpu_args = [
+            ("CPU Catmull-Rom", source, src_w, src_h, dst_w, dst_h, cpu_frames, {}),
+            ("CPU CR + anti-ringing", source, src_w, src_h, dst_w, dst_h, cpu_frames,
+             {"ar_strength": AR_STRENGTH}),
+            ("CPU CR + sigmoid", source, src_w, src_h, dst_w, dst_h, cpu_frames,
+             {"use_sigmoid": True}),
+            ("CPU CR + sigmoid + anti-ringing", source, src_w, src_h, dst_w, dst_h, cpu_frames,
+             {"use_sigmoid": True, "ar_strength": AR_STRENGTH}),
+        ]
+
+        with multiprocessing.Pool(min(cpu_workers, len(cpu_args))) as pool:
+            cpu_results = pool.map(_run_cpu_bench, cpu_args)
+
+        for i, (label, ms, result) in enumerate(cpu_results):
+            print_result(label, ms, result, f"{src_w}x{src_h}" if i == 0 else "")
 
         if have_cairo:
             src_surface = make_cairo_surface(source, src_w, src_h)
@@ -660,30 +1105,41 @@ def main():
             ms, dst_surface = bench_cairo(src_surface, dst_w, dst_h, scale, scale,
                                           cairo.FILTER_GOOD, frames)
             gray = surface_to_grayscale(dst_surface, dst_w, dst_h)
-            p = psnr(ground_truth, gray, n)
-            print(f"{'':>12s}  {'Cairo bilinear (GOOD)':>30s}  {ms:10.2f}  {p:10.1f} dB")
+            print_result("Cairo bilinear (GOOD)", ms, gray)
 
             ms, dst_surface = bench_cairo(src_surface, dst_w, dst_h, scale, scale,
                                           cairo.FILTER_BEST, frames)
             gray = surface_to_grayscale(dst_surface, dst_w, dst_h)
-            p = psnr(ground_truth, gray, n)
-            print(f"{'':>12s}  {'Cairo Catmull-Rom (BEST)':>30s}  {ms:10.2f}  {p:10.1f} dB")
+            print_result("Cairo Catmull-Rom (BEST)", ms, gray)
 
         if have_gl:
             ctx = GLBenchContext(src_w, src_h, dst_w, dst_h)
             ctx.upload_pattern(source)
 
+            def bench_gl(label, **kwargs):
+                ms = ctx.bench_upscale(frames, **kwargs)
+                ctx.bench_upscale(1, **kwargs)  # final render for readback
+                gray = ctx.readback_grayscale()
+                print_result(label, ms, gray)
+
+            def bench_gl_cas(label, **kwargs):
+                ms = ctx.bench_two_pass(frames, **kwargs)
+                ctx.bench_two_pass(1, **kwargs)  # final render
+                gray = ctx.readback_cas_grayscale()
+                print_result(label, ms, gray)
+
+            # Bilinear blit (uses glBlitFramebuffer, not the shader)
             ms = ctx.bench_blit(frames)
             ctx.bench_blit(1)
             gray = ctx.readback_grayscale()
-            p = psnr(ground_truth, gray, n)
-            print(f"{'':>12s}  {'OpenGL bilinear (blit)':>30s}  {ms:10.2f}  {p:10.1f} dB")
+            print_result("OpenGL bilinear (blit)", ms, gray)
 
-            ms = ctx.bench_catmull_rom(frames)
-            ctx.bench_catmull_rom(1)
-            gray = ctx.readback_grayscale()
-            p = psnr(ground_truth, gray, n)
-            print(f"{'':>12s}  {'OpenGL Catmull-Rom (shader)':>30s}  {ms:10.2f}  {p:10.1f} dB")
+            bench_gl("OpenGL Catmull-Rom")  # no sigmoid, no AR = plain CR (16-tap)
+            bench_gl("OpenGL CR + anti-ringing", ar_strength=AR_STRENGTH)
+            bench_gl("OpenGL CR + sigmoid", use_sigmoid=True)
+            bench_gl("OpenGL CR + sigmoid + anti-ringing", use_sigmoid=True, ar_strength=AR_STRENGTH)
+            bench_gl_cas("OpenGL CR + CAS")
+            bench_gl_cas("OpenGL CR + sigmoid + AR + CAS", use_sigmoid=True, ar_strength=AR_STRENGTH)
 
         print()
 
