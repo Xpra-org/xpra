@@ -184,6 +184,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.gl_max_viewport_dims = 0, 0
         self.gl_texture_size_limit = 0
         self._cursors = weakref.WeakKeyDictionary()
+        # Last cursor data applied; show_window() uses this to apply the
+        # current cursor to newly-created windows.
+        self._last_cursor_data: tuple = ()
         # frame request hidden window:
         self.frame_request_window = None
         # group leader bits:
@@ -930,6 +933,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             if cursor is None:
                 # use default:
                 cursor = get_default_cursor()
+        self._last_cursor_data = cursor_data
         for w in windows:
             w.set_cursor_data(cursor_data)
             # the cursor should only apply to the window contents (aka "drawingarea"),
