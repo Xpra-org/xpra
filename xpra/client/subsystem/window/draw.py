@@ -145,7 +145,7 @@ class WindowDraw(StubClientMixin):
         # rename old encoding aliases early:
         options = typedict()
         if len(packet) > 10:
-            options.update(packet[10])
+            options.update(packet.get_dict(10))
         dtype = DRAW_TYPES.get(type(data), type(data))
         log(DRAW_LOG_FMT, len(data), dtype, wid, packet_sequence, width, height, x, y, coding, options)
         start = monotonic()
