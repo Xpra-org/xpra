@@ -99,7 +99,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                     if not app_icon_data:
                         try:
                             from xpra.platform.posix.menu_helper import find_pixmap_icon
-                            app_icon_data = parse_image_path(find_pixmap_icon(app_icon_str))
+                            app_icon_data = parse_image_path(find_pixmap_icon(app_icon_str, extensions=("png", "xpm")))
                         except ImportError:
                             pass
                     if app_icon_data:

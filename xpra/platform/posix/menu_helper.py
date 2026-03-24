@@ -231,18 +231,19 @@ def find_resources_icon(*names: str) -> str:
     return ""
 
 
-def find_pixmap_icon(*names: str) -> str:
+def find_pixmap_icon(*names: str, **kwargs) -> str:
     if not LOAD_FROM_PIXMAPS:
         return ""
     pixmaps_dirs = [d + '/icons' for d in os.environ.get("XDG_DATA_DIRS", "").split(":") if d]
     pixmaps_dir = f"{sys.prefix}/share/pixmaps"
     icons_dir = f"{sys.prefix}/share/icons"
+    extensions = kwargs.pop("extensions", EXTENSIONS)
     pixmaps_dirs += [pixmaps_dir, os.path.join(pixmaps_dir, "comps"), icons_dir]
     for d in pixmaps_dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
             continue
         for name in names:
-            for ext in EXTENSIONS:
+            for ext in extensions:
                 fn = os.path.join(d, f"{name}.{ext}")
                 if fn and os.path.exists(fn):
                     return fn
