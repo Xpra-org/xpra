@@ -28,9 +28,23 @@
 # G = Y - (a * e / b) * Cr - (c * d / b) * Cb
 # B = Y + d * Cb
 
+import math
+
 from xpra.codecs.constants import get_subsampling_divs
 
 GLSL_VERSION = "330 core"
+
+# Sigmoid upscaling constants (mpv/libplacebo defaults).
+# Compresses contrast before filtering to reduce ringing on sharp edges.
+# Reference: libplacebo src/shaders/colorspace.c, mpv video/out/gpu/video.c
+_SIG_CENTER = 0.75
+_SIG_SLOPE = 6.5
+_SIG_OFFSET = 1.0 / (1.0 + math.exp(_SIG_SLOPE * _SIG_CENTER))
+_SIG_SCALE = 1.0 / (1.0 + math.exp(_SIG_SLOPE * (_SIG_CENTER - 1.0))) - _SIG_OFFSET
+_SIG_INV_SLOPE = 1.0 / _SIG_SLOPE
+_SIG_INV_SCALE = 1.0 / _SIG_SCALE
+_SIG_OFF_SCALE = _SIG_OFFSET / _SIG_SCALE
+
 
 CS_MULTIPLIERS: dict[str, tuple[float, float, float, float, float]] = {
     "bt601": (0.299, 0.587, 0.114, 1.772, 1.402),
@@ -199,19 +213,45 @@ void main()
 }}
 """
 
-# 9-tap Catmull-Rom bicubic upscaling shader.
-# Merges the middle weight pair (w1+w2, both positive) into one bilinear fetch
-# per axis, sampling outer weights (w0, w3) individually: 3x3 = 9 fetches
-# covering all 16 texels.
-# Ported from MJP's HLSL gist (MIT), adapted for sampler2DRect (pixel coords).
-# Reference: github.com/TheRealMJP/c83b8c0f46b63f3a88a5986f4fa982b1
+# 16-tap Catmull-Rom upscaling shader with uniform-controlled sigmoid and AR.
+# All code is compiled in; uniforms control which enhancements are active.
+# Always uses GL_NEAREST (individual texel fetches, no bilinear trick).
+#
+# Sigmoid upscaling (from mpv/libplacebo): transforms texel values through a
+# sigmoid curve before filtering, reducing ringing at sharp edges.
+# Anti-ringing clamp (from mpv/libplacebo/madVR): constrains the output to
+# the min/max range of the 4 nearest source texels.
+#
+# References:
+# - libplacebo src/shaders/colorspace.c (sigmoid, center=0.75, slope=6.5)
+# - artoriuz.github.io/blog/mpv_upscaling.html (AR sweet spot ~0.8)
 UPSCALE_SHADER = f"""
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
 uniform sampler2DRect fbo;
 uniform vec2 viewport_pos;
 uniform vec2 scaling;
+uniform bool use_sigmoid;
+uniform float ar_strength;
 layout(location = 0) out vec4 frag_color;
+
+const float SIG_CENTER    = {_SIG_CENTER};
+const float SIG_SLOPE     = {_SIG_SLOPE};
+const float SIG_OFFSET    = {_SIG_OFFSET};
+const float SIG_SCALE     = {_SIG_SCALE};
+const float SIG_INV_SLOPE = {_SIG_INV_SLOPE};
+const float SIG_INV_SCALE = {_SIG_INV_SCALE};
+const float SIG_OFF_SCALE = {_SIG_OFF_SCALE};
+
+vec3 sig_forward(vec3 c) {{
+    c = clamp(c, 0.0, 1.0);
+    return vec3(SIG_CENTER) - log(vec3(1.0) / (c * SIG_SCALE + SIG_OFFSET) - vec3(1.0)) * SIG_INV_SLOPE;
+}}
+
+vec3 sig_inverse(vec3 c) {{
+    return vec3(SIG_INV_SCALE) / (vec3(1.0) + exp(vec3(SIG_SLOPE) * (vec3(SIG_CENTER) - c)))
+           - vec3(SIG_OFF_SCALE);
+}}
 
 vec4 textureCatmullRom(sampler2DRect tex, vec2 coord) {{
     vec2 center = floor(coord - 0.5) + 0.5;
@@ -223,28 +263,33 @@ vec4 textureCatmullRom(sampler2DRect tex, vec2 coord) {{
     vec2 w2 = f * ( 0.5 + f * ( 2.0 - 1.5 * f));
     vec2 w3 = f * f * (-0.5 + 0.5 * f);
 
-    // Merge middle pair for bilinear trick (w1 and w2 are both positive)
-    vec2 w12 = w1 + w2;
-    vec2 offset12 = w2 / w12;
+    float wx[4] = float[4](w0.x, w1.x, w2.x, w3.x);
+    float wy[4] = float[4](w0.y, w1.y, w2.y, w3.y);
 
-    // Sample positions (pixel coords for sampler2DRect)
-    vec2 p0  = center - 1.0;
-    vec2 p12 = center + offset12;
-    vec2 p3  = center + 2.0;
+    // 16-tap loop: fetch each texel, cache center 2x2 for AR, optionally sigmoidize
+    vec4 n00, n10, n01, n11;
+    vec4 result = vec4(0.0);
+    for (int j = 0; j < 4; j++) {{
+        for (int i = 0; i < 4; i++) {{
+            vec2 pos = center + vec2(float(i) - 1.0, float(j) - 1.0);
+            vec4 s = texture(tex, pos);
+            if (i == 1 && j == 1) n00 = s;
+            if (i == 2 && j == 1) n10 = s;
+            if (i == 1 && j == 2) n01 = s;
+            if (i == 2 && j == 2) n11 = s;
+            if (use_sigmoid)
+                s.rgb = sig_forward(s.rgb);
+            result += s * wx[i] * wy[j];
+        }}
+    }}
+    if (use_sigmoid)
+        result.rgb = sig_inverse(result.rgb);
 
-    // 9 bilinear fetches (3x3 grid)
-    vec4 result =
-        texture(tex, vec2( p0.x,  p0.y)) * w0.x  * w0.y  +
-        texture(tex, vec2(p12.x,  p0.y)) * w12.x * w0.y  +
-        texture(tex, vec2( p3.x,  p0.y)) * w3.x  * w0.y  +
-
-        texture(tex, vec2( p0.x, p12.y)) * w0.x  * w12.y +
-        texture(tex, vec2(p12.x, p12.y)) * w12.x * w12.y +
-        texture(tex, vec2( p3.x, p12.y)) * w3.x  * w12.y +
-
-        texture(tex, vec2( p0.x,  p3.y)) * w0.x  * w3.y  +
-        texture(tex, vec2(p12.x,  p3.y)) * w12.x * w3.y  +
-        texture(tex, vec2( p3.x,  p3.y)) * w3.x  * w3.y;
+    if (ar_strength > 0.0) {{
+        vec4 lo = min(min(n00, n10), min(n01, n11));
+        vec4 hi = max(max(n00, n10), max(n01, n11));
+        result = mix(result, clamp(result, lo, hi), ar_strength);
+    }}
 
     return result;
 }}
