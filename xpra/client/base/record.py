@@ -2,21 +2,24 @@
 # Copyright (C) 2026 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+import json
 import os.path
-from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.exit_codes import ExitValue
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import WINDOW_DRAW_ACK, WINDOW_REFRESH
+from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.log import Logger
 
 log = Logger("client", "encoding")
 
-EXT_ALIASES = {"jpg": "jpeg"}
+REFRESH = envint("XPRA_RECORD_REFRESH", 10)
 
 
 def get_client_base_classes() -> tuple[type, ...]:
@@ -51,9 +54,41 @@ class WindowModel:
         self.metadata = {}
         self.geometry = geom
         self.directory = directory
+        self.sequence = 0
+        if not os.path.exists(directory):
+            os.mkdir(directory, 0o755)
 
     def update_metadata(self, metadata) -> None:
         self.metadata.update(metadata)
+
+    def sequence_dir(self) -> str:
+        batch_dir = os.path.join(self.directory, str(self.sequence))
+        if not os.path.exists(batch_dir):
+            os.mkdir(batch_dir, 0o755)
+        return batch_dir
+
+    def record(self, event: str, **kwargs) -> None:
+        log("record: %s : %r", event, kwargs)
+        data = {
+            "event": event,
+        }
+        data.update(kwargs)
+        self.save_json("event.json", data)
+
+    def save_json(self, filename: str, data: dict) -> None:
+        seq_dir = self.sequence_dir()
+        path = os.path.join(seq_dir, filename)
+        with open(path, "w") as f:
+            f.write(json.dumps(data))
+
+    def save_data(self, filename: str, data) -> None:
+        seq_dir = self.sequence_dir()
+        path = os.path.join(seq_dir, filename)
+        with open(path, "wb") as f:
+            f.write(data)
+
+    def next(self) -> None:
+        self.sequence += 1
 
 
 class RecordClient(GObjectClientAdapter, ClientBaseClass):
@@ -66,14 +101,17 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         self.windows = options.windows
         self._id_to_window: dict[int, Any] = {}
         self.encodings: Sequence[str] = ("png", "webp", "jpeg")
+        self.encoding_options = {}
         self.record_directory = os.path.join(os.path.abspath(os.getcwd()), "record")
+        self.sequence = 0
+        self.refresh_needed: set[int] = set()
+        self.refresh_timer = 0
 
     def init(self, opts) -> None:
         for cc in CLIENT_BASES:
             cc.init(self, opts)
         if opts.encoding and opts.encoding not in self.encodings:
             self.encodings = tuple(list(self.encodings) + [opts.encoding])
-        # why is this here!?
         self.encoding_options = {
             "options": self.encodings,
             "core": self.encodings,
@@ -94,6 +132,16 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             os.mkdir(self.record_directory, 0o755)
         return super().run()
 
+    def cleanup(self):
+        self.cancel_refresh()
+        super().cleanup()
+
+    def cancel_refresh(self) -> None:
+        rt = self.refresh_timer
+        if rt:
+            self.refresh_timer = 0
+            self.source_remove(rt)
+
     def client_toolkit(self) -> str:
         raise "offscreen-recorder"
 
@@ -113,26 +161,35 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         return super().server_connection_established(c)
 
     def _process_startup_complete(self, packet: Packet) -> None:
-        pass
+        self.refresh_timer = self.timeout_add(REFRESH * 1000, self.request_refresh)
 
     def print_server_info(self, c: typedict) -> None:
         log.info("recording from:")
         super().print_server_info(c)
+
+    def request_refresh(self) -> bool:
+        quality = 100
+        options = {"refresh-now": True}
+        client_properties = {}
+        for wid in tuple(self.refresh_needed):
+            self.send(WINDOW_REFRESH, wid, 0, quality, options, client_properties)
+        self.refresh_needed = set()
+        return True
 
     def _process_encodings(self, packet: Packet) -> None:
         encodings = typedict(packet.get_dict(1)).dictget("encodings", {}).get("core", ())
         common = tuple(set(self.encodings) & set(encodings))
         log("server encodings=%s, common=%s", encodings, common)
 
-    def get_window(self, wid: int):
+    def get_window(self, wid: int) -> WindowModel | None:
         return self._id_to_window.get(wid)
 
     def _process_window_create(self, packet: Packet) -> None:
-        return self._process_new_common(packet, False)
+        self._process_new_common(packet, False)
 
     def _process_new_override_redirect(self, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        return self._process_new_common(packet, True)
+        self._process_new_common(packet, True)
 
     def _process_new_common(self, packet: Packet, override_redirect: bool):
         wid = packet.get_wid()
@@ -158,12 +215,14 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
                 y = pwin.rel_pos[1] + rel_pos[1]
                 log("relative position(%s)=%s", rel_pos, (x, y))
         geom = (x, y, w, h)
-        directory = os.path.join(self.record_directory, "%i" % wid)
+        directory = os.path.join(self.record_directory, "%x" % wid)
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
-        model = WindowModel(wid, geom, override_redirect, directory)
-        model.update_metadata(metadata)
-        self._id_to_window[wid] = model
+        window = WindowModel(wid, geom, override_redirect, directory)
+        window.update_metadata(metadata)
+        self._id_to_window[wid] = window
+        window.record("new", geometry=(x, y, w, h), metadata=metadata)
+        window.next()
 
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         # should not be received!
@@ -175,6 +234,8 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         window = self.get_window(wid)
         if window:
             window.update_metadata(metadata)
+            window.save_json("metadata.json", self.metadata)
+            window.next()
 
     def _process_window_move_resize(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -185,6 +246,8 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         window = self.get_window(wid)
         if window:
             window.geometry = (x, y, w, h)
+            window.record("move-resize", geometry=(x, y, w, h))
+            window.next()
 
     def _process_window_resized(self, packet: Packet) -> None:
         wid = int(packet[1])
@@ -194,12 +257,22 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         if window:
             x, y = window.geometry[:2]
             window.geometry = (x, y, w, h)
+            window.record("resized", geometry=(x, y, w, h))
+            window.next()
 
     def _process_raise_window(self, packet: Packet) -> None:
-        pass
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        if window:
+            window.record("raise")
+            window.next()
 
     def _process_window_restack(self, packet: Packet) -> None:
-        pass
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        if window:
+            window.record("restack")
+            window.next()
 
     def _process_configure_override_redirect(self, packet: Packet) -> None:
         self._process_window_move_resize(packet)
@@ -210,6 +283,8 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         if window:
             assert window is not None
             del self._id_to_window[wid]
+            window.record("destroy")
+            window.next()
 
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -226,10 +301,27 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         data = packet[7]
         packet_sequence = packet.get_u64(8)
         rowstride = packet.get_u32(9)
-        log.info("record: %ix%i %s update", width, height, coding)
-        filename = os.path.join(window.directory, "%i.%s" % (monotonic(), coding))
-        with open(filename, "wb") as f:
-            f.write(data)
+        metadata: dict[str, Any] = {
+            "geometry": (x, y, width, height),
+            "encoding": coding,
+            "packet-sequence": packet_sequence,
+            "rowstride": rowstride,
+        }
+        options = typedict()
+        if len(packet) > 10:
+            options.update(packet.get_dict(10))
+            metadata["options"] = packet.get_dict(10) or {}
+        flush = options.intget("flush", 0)
+        log("record: %ix%i %s update", width, height, coding)
+        window.save_data("%i.%s" % (flush, coding), data)
+        window.save_json("%i.%s" % (flush, "json"), metadata)
+        if flush == 0:
+            window.next()
+        decode_time = 0
+        message = ""
+        self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
+        if x != 0 or y != 0 or (width, height) != window.geometry[2:4] or options.intget("quality", 100) != 100:
+            self.refresh_needed.add(wid)
 
     def _process_eos(self, packet: Packet) -> None:
         pass
@@ -245,6 +337,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             self.add_legacy_alias("configure-override-redirect", "window-move-resize")
             self.add_legacy_alias("draw", "window-draw")
         self.add_packets(
+            "startup-complete",
             "window-create",
             "window-restack",
             "window-initiate-moveresize",
