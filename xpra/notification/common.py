@@ -7,7 +7,7 @@ import os.path
 from io import BytesIO
 from typing import TypeAlias
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.env import first_time
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
@@ -195,13 +195,19 @@ def validated_hints(h: dict) -> dict[str, int | bool | str]:
 # (try all attribute names from spec 0.9 onwards)
 def image_data_hint(hints: dict) -> IconData | None:
     for attr in ("image-data", "image_data", "image-path", "image_path", "icon_data"):
-        value = hints.pop(attr, None)
+        value: str = hints.pop(attr, "")
         if not value:
             continue
-        image_data = parse_image_path(value) if attr.endswith("path") else parse_image_data(value)
-        if image_data:
+        if attr.endswith("path"):
+            if not os.path.isabs(value) and POSIX and not OSX:
+                from xpra.platform.posix.menu_helper import find_icon
+                value = find_icon(value)
+            icon_data = parse_image_path(value)
+        else:
+            icon_data = parse_image_data(value)
+        if icon_data:
             log("parse_hints(..) using image-data from %r", attr)
-            return image_data
+            return icon_data
     return None
 
 
