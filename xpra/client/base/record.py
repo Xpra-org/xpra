@@ -22,6 +22,11 @@ log = Logger("client", "encoding")
 REFRESH = envint("XPRA_RECORD_REFRESH", 10)
 
 
+def save_json(path: str, data: dict) -> None:
+    with open(path, "w") as f:
+        f.write(json.dumps(data))
+
+
 def get_client_base_classes() -> tuple[type, ...]:
     classes: list[type] = []
     # Warning: MmapClient must come first,
@@ -55,6 +60,7 @@ class WindowModel:
         self.geometry = geom
         self.directory = directory
         self.sequence = 0
+        self.event_no = 0
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
 
@@ -68,26 +74,27 @@ class WindowModel:
         return batch_dir
 
     def record(self, event: str, **kwargs) -> None:
-        log("record: %s : %r", event, kwargs)
+        seq_dir = self.sequence_dir()
         data = {
             "event": event,
         }
         data.update(kwargs)
-        self.save_json("event.json", data)
-
-    def save_json(self, filename: str, data: dict) -> None:
-        seq_dir = self.sequence_dir()
-        path = os.path.join(seq_dir, filename)
-        with open(path, "w") as f:
-            f.write(json.dumps(data))
-
-    def save_data(self, filename: str, data) -> None:
-        seq_dir = self.sequence_dir()
-        path = os.path.join(seq_dir, filename)
-        with open(path, "wb") as f:
-            f.write(data)
+        # special case for `data` in `draw` packets:
+        if event == "draw":
+            img_data: bytes = data.pop("data", b"")
+            encoding = data.get("encoding")
+            if img_data and encoding:
+                filename = f"{self.event_no}.{encoding}"
+                path = os.path.join(seq_dir, filename)
+                with open(path, "wb") as f:
+                    f.write(img_data)
+        self.event_no += 1
+        path = os.path.join(seq_dir, f"{self.event_no}.json")
+        save_json(path, data)
+        log("recorded: %s : %r", event, data)
 
     def next(self) -> None:
+        self.event_no = 0
         self.sequence += 1
 
 
@@ -234,7 +241,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         window = self.get_window(wid)
         if window:
             window.update_metadata(metadata)
-            window.save_json("metadata.json", self.metadata)
+            window.record("metadata", metadata=metadata)
             window.next()
 
     def _process_window_move_resize(self, packet: Packet) -> None:
@@ -301,26 +308,20 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         data = packet[7]
         packet_sequence = packet.get_u64(8)
         rowstride = packet.get_u32(9)
-        metadata: dict[str, Any] = {
-            "geometry": (x, y, width, height),
-            "encoding": coding,
-            "packet-sequence": packet_sequence,
-            "rowstride": rowstride,
-        }
-        options = typedict()
+        options = {}
         if len(packet) > 10:
-            options.update(packet.get_dict(10))
-            metadata["options"] = packet.get_dict(10) or {}
-        flush = options.intget("flush", 0)
+            options = packet.get_dict(10)
+        flush = options.get("flush", 0)
         log("record: %ix%i %s update", width, height, coding)
-        window.save_data("%i.%s" % (flush, coding), data)
-        window.save_json("%i.%s" % (flush, "json"), metadata)
+        window.record("draw",
+                      geometry=(x, y, width, height), encoding=coding, packet_sequence=packet_sequence,
+                      rowstride=rowstride, options=options, data=data)
         if flush == 0:
             window.next()
         decode_time = 0
         message = ""
         self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
-        if x != 0 or y != 0 or (width, height) != window.geometry[2:4] or options.intget("quality", 100) != 100:
+        if x != 0 or y != 0 or (width, height) != window.geometry[2:4] or options.get("quality", 100) != 100:
             self.refresh_needed.add(wid)
 
     def _process_eos(self, packet: Packet) -> None:

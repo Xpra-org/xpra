@@ -748,6 +748,9 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "desktop-greeter":
         check_gtk_client()
         return run_desktop_greeter()
+    if mode == "replay":
+        from xpra.client.base.replay import Replay
+        return Replay().run()
     if mode == "launcher":
         check_gtk_client()
         from xpra.client.gtk3.launcher import main as launcher_main
