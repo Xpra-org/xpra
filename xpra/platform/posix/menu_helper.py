@@ -192,7 +192,7 @@ def load_entry_icon(props: dict):
             cmd = os.path.basename(cmd).split(" ")[0]
             if cmd not in names:
                 names.append(cmd)
-    filename = _find_icon(*names)
+    filename = do_find_icon(*names)
     icondata = None
     if filename:
         icondata = icon_util.load_icon_from_file(filename)
@@ -206,38 +206,38 @@ def load_entry_icon(props: dict):
     return props
 
 
-def _find_icon(*names: str) -> str:
+def do_find_icon(*names: str, extensions=EXTENSIONS) -> str:
     if not EXPORT_ICONS:
         return ""
-    return find_resources_icon(*names) or \
-        find_pixmap_icon(*names) or \
-        find_theme_icon(*names) or \
-        find_glob_icon(*names, category="apps")
+    return find_resources_icon(*names, extensions=extensions) or \
+        find_pixmap_icon(*names, extensions=extensions) or \
+        find_theme_icon(*names, extensions=extensions) or \
+        find_glob_icon(*names, category="apps", extensions=extensions)
 
 
-def find_icon(*names: str) -> str:
+def find_icon(*names: str, extensions=EXTENSIONS) -> str:
     """ this function must not be called when loading the menus """
-    return _find_icon(*names) or find_menu_icon(*names)
+    return do_find_icon(*names, extensions=extensions) or find_menu_icon(*names, extensions=extensions)
 
 
-def find_resources_icon(*names: str) -> str:
+def find_resources_icon(*names: str, extensions=EXTENSIONS) -> str:
     if not LOAD_FROM_RESOURCES:
         return ""
     # loads the icon from our own list of icons:
     for name in names:
-        fn = get_icon_filename(name)
-        if fn and os.path.exists(fn):
-            return fn
+        for ext in extensions:
+            fn = get_icon_filename(name, ext=ext)
+            if fn and os.path.exists(fn):
+                return fn
     return ""
 
 
-def find_pixmap_icon(*names: str, **kwargs) -> str:
+def find_pixmap_icon(*names: str, extensions=EXTENSIONS) -> str:
     if not LOAD_FROM_PIXMAPS:
         return ""
     pixmaps_dirs = [d + '/icons' for d in os.environ.get("XDG_DATA_DIRS", "").split(":") if d]
     pixmaps_dir = f"{sys.prefix}/share/pixmaps"
     icons_dir = f"{sys.prefix}/share/icons"
-    extensions = kwargs.pop("extensions", EXTENSIONS)
     pixmaps_dirs += [pixmaps_dir, os.path.join(pixmaps_dir, "comps"), icons_dir]
     for d in pixmaps_dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
@@ -253,7 +253,7 @@ def find_pixmap_icon(*names: str, **kwargs) -> str:
 ic_lock = RLock()
 
 
-def find_theme_icon(*names: str) -> str:
+def find_theme_icon(*names: str, extensions=EXTENSIONS) -> str:
     if not LOAD_FROM_THEME:
         return ""
     if not (IconTheme and Config and themes):
@@ -263,7 +263,7 @@ def find_theme_icon(*names: str) -> str:
         for theme in themes.values():
             with ic_lock:
                 try:
-                    fn = IconTheme.LookupIcon(name, size, theme=theme, extensions=EXTENSIONS)
+                    fn = IconTheme.LookupIcon(name, size, theme=theme, extensions=extensions)
                     if fn and os.path.exists(fn):
                         return fn
                 except TypeError as e:
@@ -293,7 +293,7 @@ def add_entry_icon(entry_props: dict[str, Any], category: str):
     entry_props["IconType"] = ext
 
 
-def find_glob_icon(*names: str, category: str = "categories") -> str:
+def find_glob_icon(*names: str, category: str = "categories", extensions=EXTENSIONS) -> str:
     if not LOAD_GLOB:
         return ""
     icondirs = getattr(IconTheme, "icondirs", [])
@@ -304,7 +304,7 @@ def find_glob_icon(*names: str, category: str = "categories") -> str:
     for name in names:
         for dn in dirnames:
             for d in icondirs:
-                for ext in EXTENSIONS:
+                for ext in extensions:
                     pathnames += [
                         os.path.join(d, "*", "*", dn, f"{name}.{ext}"),
                         os.path.join(d, "*", dn, "*", f"{name}.{ext}"),
@@ -321,7 +321,7 @@ def find_glob_icon(*names: str, category: str = "categories") -> str:
     return ""
 
 
-def find_menu_icon(*names: str) -> str:
+def do_find_menu_icon(*names: str) -> str:
     """
     find a menu entry matching the name,
     then search using the icon name from this menu entry
@@ -337,6 +337,13 @@ def find_menu_icon(*names: str) -> str:
                 continue
             if (name and name in names) or (cmd and cmd in names):
                 return filename
+    return ""
+
+
+def find_menu_icon(*names: str, extensions=EXTENSIONS) -> str:
+    filename = do_find_menu_icon(*names)
+    if filename and os.path.splitext(filename)[1].lstrip(".") in extensions:
+        return filename
     return ""
 
 
@@ -621,7 +628,7 @@ def load_desktop_sessions() -> dict[str, Any]:
                 name = de.getName()
                 if not entry.get("IconData"):
                     names = get_icon_names_for_session(name.lower())
-                    icon_filename = _find_icon(*names)
+                    icon_filename = do_find_icon(*names)
                     if icon_filename:
                         icondata = icon_util.load_icon_from_file(icon_filename)
                         if icondata:
