@@ -8,7 +8,6 @@
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
 import os
-import re
 import sys
 import types
 from typing import Any
@@ -642,41 +641,99 @@ def remove_window_hooks(window) -> None:
 # comctl32 SetWindowSubclass to intercept WM_SETCURSOR and call SetCursor
 # with the correct HCURSOR ourselves.
 
-# GdkWin32Cursor.__repr__ returns e.g. "<GdkWin32Cursor at 0x1a2b3c4d5e6f)"
-# We extract the C struct address to read the HCURSOR field directly.
-_HCURSOR_PATTERN = re.compile(r"GdkWin32Cursor at (0x[0-9a-fA-F]+)\)")
+# GDK's GdkWin32Cursor struct stores the Win32 HCURSOR handle, but
+# there's no public accessor function. We find the field offset at
+# runtime by probing: create two cursors of different types, get their
+# C struct pointers, and find the pointer-aligned offset where both
+# contain different values that are valid cursor handles (verified by
+# GetIconInfo). This avoids hardcoded offsets and works regardless of
+# cursor themes or struct layout changes.
+_HCURSOR_OFFSET = None  # discovered at runtime by _probe_hcursor_offset()
 
-# Byte offset of the HCURSOR field within the GdkWin32Cursor C struct.
-# Layout: GObject(24) + display*(8) + cursor_type(4)+pad(4) + name*(8) + HCURSOR(8)
-# See: https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gdk/win32/gdkprivate-win32.h
-# This is ABI-fragile: tied to GTK3's struct layout. GTK3 is in maintenance
-# mode (3.24.x final) so the layout is effectively frozen. If GTK4 is ever
-# used, this offset will be wrong — GTK4 uses a different cursor API entirely.
-# On failure, get_hcursor_from_gdk_cursor returns 0 and the subclass is not installed.
-_GDKWIN32CURSOR_HCURSOR_OFFSET = 48
 
-# Win32 message constants for the subclass proc
-_WM_SETCURSOR = 0x0020
-_WM_NCDESTROY = 0x0082
-_HTCLIENT = 1
+def _probe_hcursor_offset() -> int:
+    """Discover the HCURSOR field offset in GdkWin32Cursor by creating two
+    probe cursors and finding where their struct contents differ by a
+    valid cursor handle.
+
+    Returns the byte offset, or -1 if the probe fails."""
+    from gi.repository import GObject as GObjectLib
+    from xpra.platform.win32.common import GetIconInfo, ICONINFO, DeleteObject
+
+    display = Gdk.Display.get_default()
+    if not display:
+        cursorlog("_probe_hcursor_offset: no display")
+        return -1
+
+    # Create two cursors of different types — their HCURSOR handles will
+    # differ, letting us identify which struct field holds the handle.
+    cursor_a = Gdk.Cursor.new_for_display(display, Gdk.CursorType.ARROW)
+    cursor_b = Gdk.Cursor.new_for_display(display, Gdk.CursorType.CROSSHAIR)
+    if not cursor_a or not cursor_b:
+        cursorlog("_probe_hcursor_offset: failed to create probe cursors")
+        return -1
+
+    ptr_a = PyCapsule_GetPointer(cursor_a.__gpointer__, None)
+    ptr_b = PyCapsule_GetPointer(cursor_b.__gpointer__, None)
+
+    # Query the GType system for the exact struct size so we don't scan
+    # past the end of the allocation.
+    try:
+        query = GObjectLib.type_query(type(cursor_a).__gtype__)
+        scan_limit = query.instance_size
+        cursorlog("_probe_hcursor_offset: GdkWin32Cursor instance_size=%d", scan_limit)
+    except Exception as e:
+        cursorlog.warn("Warning: cannot query GdkWin32Cursor instance size: %s", e)
+        return -1
+
+    ptr_size = sizeof(c_void_p)
+    for offset in range(0, scan_limit, ptr_size):
+        val_a = c_void_p.from_address(ptr_a + offset).value or 0
+        val_b = c_void_p.from_address(ptr_b + offset).value or 0
+        if not val_a or not val_b or val_a == val_b:
+            continue
+        # Both non-zero and different — check if they're valid cursor handles
+        info = ICONINFO()
+        if GetIconInfo(val_a, byref(info)):
+            # Clean up bitmaps returned by GetIconInfo
+            if info.hbmMask:
+                DeleteObject(info.hbmMask)
+            if info.hbmColor:
+                DeleteObject(info.hbmColor)
+            info2 = ICONINFO()
+            if GetIconInfo(val_b, byref(info2)):
+                if info2.hbmMask:
+                    DeleteObject(info2.hbmMask)
+                if info2.hbmColor:
+                    DeleteObject(info2.hbmColor)
+                cursorlog("_probe_hcursor_offset: found HCURSOR at offset %d "
+                          "(probe_a=%s, probe_b=%s)", offset, hex(val_a), hex(val_b))
+                return offset
+    cursorlog.warn("Warning: failed to discover HCURSOR offset in GdkWin32Cursor")
+    return -1
+
+# Unique ID for our SetWindowSubclass registration. The comctl32 subclass
+# API uses this to distinguish multiple subclasses on the same HWND.
+# Arbitrary value; just needs to be unique within this process.
 _GL_CURSOR_SUBCLASS_ID = 0xAC01
 
 
 def _get_hcursor_from_gdk_cursor(cursor) -> int:
-    """Extract the Win32 HCURSOR handle from a GdkWin32Cursor's C struct."""
-    m = _HCURSOR_PATTERN.search(repr(cursor))
-    if not m:
-        cursorlog.warn("Warning: cannot parse GdkWin32Cursor repr: %s", repr(cursor)[:80])
+    """Extract the Win32 HCURSOR handle from a GdkCursor's C struct
+    using the runtime-discovered field offset."""
+    global _HCURSOR_OFFSET
+    if _HCURSOR_OFFSET is None:
+        _HCURSOR_OFFSET = _probe_hcursor_offset()
+    if _HCURSOR_OFFSET < 0:
         return 0
-    c_ptr = int(m.group(1), 16)
     try:
-        val = c_void_p.from_address(c_ptr + _GDKWIN32CURSOR_HCURSOR_OFFSET).value or 0
-        cursorlog("extracted HCURSOR=%s from GdkWin32Cursor struct at %s",
-                  hex(val) if val else 0, hex(c_ptr))
-        return val
+        gpointer = PyCapsule_GetPointer(cursor.__gpointer__, None)
+        hcursor = c_void_p.from_address(gpointer + _HCURSOR_OFFSET).value or 0
+        cursorlog("extracted HCURSOR=%s from GdkCursor at offset %d",
+                  hex(hcursor) if hcursor else 0, _HCURSOR_OFFSET)
+        return hcursor
     except Exception as e:
-        cursorlog.warn("Warning: failed reading HCURSOR at offset %d: %s",
-                       _GDKWIN32CURSOR_HCURSOR_OFFSET, e)
+        cursorlog.warn("Warning: failed to extract HCURSOR: %s", e)
         return 0
 
 
@@ -702,12 +759,12 @@ def _install_gl_cursor_subclass(window, hwnd: int, hcursor: int) -> None:
     @SUBCLASSPROC
     def subclass_proc(h, msg, wparam, lparam, uid, ref_data):
         try:
-            if msg == _WM_SETCURSOR and (lparam & 0xFFFF) == _HTCLIENT:
+            if msg == win32con.WM_SETCURSOR and (lparam & 0xFFFF) == win32con.HTCLIENT:  # LOWORD = hit-test
                 hc = hcursor_holder[0]
                 if hc:
                     SetCursor(c_void_p(hc))
                     return 1  # handled — prevents DefWindowProc from setting arrow
-            if msg == _WM_NCDESTROY:
+            if msg == win32con.WM_NCDESTROY:
                 RemoveWindowSubclass(h, subclass_proc, _GL_CURSOR_SUBCLASS_ID)
                 window._gl_cursor_info = None
                 window._gl_cursor_holder = None
