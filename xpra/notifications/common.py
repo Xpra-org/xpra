@@ -59,6 +59,8 @@ def parse_image_data(data) -> Optional[IconData]:
     return None
 
 def parse_image_path(path:str) -> Optional[IconData]:
+    if not path:
+        return None
     if path and path.startswith("file://"):
         path = path[len("file://"):]
     if path.endswith(".svg"):
