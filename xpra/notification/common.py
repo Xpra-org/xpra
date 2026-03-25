@@ -203,8 +203,8 @@ def image_data_hint(hints: dict) -> IconData | None:
             continue
         if attr.endswith("path"):
             if not os.path.isabs(value) and POSIX and not OSX:
-                from xpra.platform.posix.menu_helper import find_icon
-                value = find_icon(value)
+                from xpra.platform.posix.menu_helper import do_find_icon
+                value = do_find_icon(value, extensions=("png", "xpm"))
             icon_data = parse_image_path(value)
         else:
             icon_data = parse_image_data(value)
