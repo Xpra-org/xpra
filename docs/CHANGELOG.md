@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.5] 2026-03-18
+## [5.1.5] 2026-03-25
 * Platforms, build and packaging:
     * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
     * [Python compatibility regression](https://github.com/Xpra-org/xpra/commit/1282fa77ee948c459e69538095a96d08310e18d7) [and again](https://github.com/Xpra-org/xpra/commit/bc1aa0da761a9d611c56bb4e2fa42d3481886be6)
@@ -9,11 +9,15 @@
     * [partial support for some RHEL 10 clones](https://github.com/Xpra-org/xpra/commit/21a305e28ed70ad0ba3e107502c4220ad14a4293)
     * [`pynvml` 13.590.48](https://github.com/Xpra-org/xpra/commit/2c2e1f5d5183094d82f8c0238582326ccc736e42)
     * [`pycuda` 2026.1](https://github.com/Xpra-org/xpra/commit/61e3f248cfa59e342776585d1aec9e500e7b0d1f)
+    * [`cx_Freeze` compatibility update](https://github.com/Xpra-org/xpra/commit/adcbef97111b0798556d9cc9d93208b905ac7ed9)
+    * [remove EOL Ubuntu releases: Lunar, Mantic, Plucky and Oracular](https://github.com/Xpra-org/xpra/commit/b90bb750c2573517db1a1bb71ff9942bb6e23f42)
+    * [add packaging for Ubuntu Questing and Resolute](https://github.com/Xpra-org/xpra/commit/9101cfff6a8d1b99f2412deeaf9d9c36eb432dc6)
 * MacOS:
+    * [verify signing key is available](https://github.com/Xpra-org/xpra/commit/ac431a96b7aa8d91e2a5c060cdbdca5501309d49)
     * [enable `avif`](https://github.com/Xpra-org/xpra/commit/4f057fa9bdf28e22f57d318f0e145b238205b780) [but not GStreamer video](https://github.com/Xpra-org/xpra/commit/e539bf12dfaf0d77a706876df1bbfea0262d0a1a)
     * [log `$ARCH` build log](https://github.com/Xpra-org/xpra/commit/125520531b748580cd5b8e6507ae72f6564a52a9)
     * [workaround `GioUnix-2.0.typelib` warnings](https://github.com/Xpra-org/xpra/commit/8b97840484358d68e58c30a6bd1ca4d1ce1873fa)
-    * [silence Gtk warning](https://github.com/Xpra-org/xpra/commit/8da9dece466a83bd961d2cef09feda31697e758e)
+    * [silence Gtk warning](https://github.com/Xpra-org/xpra/commit/8da9dece466a83bd961d2cef09feda31697e758e) + [fixup](https://github.com/Xpra-org/xpra/commit/d99540c6a04e9b2eb7706b204ef4703447ea05f8), [remove corresponding logging workaround](https://github.com/Xpra-org/xpra/commit/7d3fcced598cad201161363a257eee8b6a78c77e)
     * [support newer `GdkPixbuf` versions](https://github.com/Xpra-org/xpra/commit/9b0a009a5d30a62a92cb3a05d166c2efdb1f00fc)
 * MS Windows:
     * [client errors on control-c](https://github.com/Xpra-org/xpra/commit/c0d8374cc2edf60b3b3963a7bdfcef6cc2cd45ac)
@@ -39,6 +43,7 @@
     * [client keyboard 'options' attribute was not forwarded](https://github.com/Xpra-org/xpra/commit/639cf8c4c445c0b389b66e316ca65f64afacdf93)
     * [honour layout and variant overrides](https://github.com/Xpra-org/xpra/commit/7978abb0fd1dc4900dfb07875c14289064143308)
 * Minor:
+    * [try harder to locate the notification icons](https://github.com/Xpra-org/xpra/commit/b3beb4544f3805202d8747140c6f617ade34ac34) [but not `SVG`s](https://github.com/Xpra-org/xpra/commit/7225fe9f8180116d572fbc5cc19624d4e41f2916)
     * [honour the `XPRA_MONITOR_CHANGE_REINIT` environment variable](https://github.com/Xpra-org/xpra/commit/1b81940da7c6529a70a988ba67c27060c1b9740d)
     * [spurious UI thread events on client startup](https://github.com/Xpra-org/xpra/commit/316a5762aae49ba256f7516a19919fb727bd9f7a)
     * [expose `desktop` flag for desktop windows](https://github.com/Xpra-org/xpra/commit/84744d437e25d2bc942136d63048907d31ced4ed)

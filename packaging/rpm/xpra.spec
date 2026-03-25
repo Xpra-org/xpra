@@ -816,16 +816,20 @@ fi
 
 
 %changelog
-* Wed Mar 18 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
+* Wed Mar 25 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install
    Python compatibility regression
    prefer non-dot ssh paths on MS Windows
    pyu2f missing build dependency
    partial support for some RHEL 10 clones
-   pynvml 13.590.48
+   `pynvml` 13.590.48
    `pycuda` 2026.1
+   `cx_Freeze` compatibility update
+   remove EOL Ubuntu releases: Lunar, Mantic, Plucky and Oracular
+   add packaging for Ubuntu Questing and Resolute
 - MacOS:
+   verify signing key is available
    log $ARCH in MacOS builds
    enable avif on MacOS but not GStreamer video
    workaround `GioUnix-2.0.typelib` warnings
@@ -855,6 +859,7 @@ fi
    client keyboard 'options' attribute was not forwarded
    honour layout and variant overrides
 - Minor:
+   try harder to locate the notification icons
    honour the XPRA_MONITOR_CHANGE_REINIT environment variable
    spurious UI thread events on client startup
    expose desktop flag for desktop windows
