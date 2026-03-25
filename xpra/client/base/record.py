@@ -5,6 +5,7 @@
 
 import json
 import os.path
+from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
@@ -53,7 +54,8 @@ ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 class WindowModel:
 
-    def __init__(self, wid: int, geom: tuple[int, int, int, int], override_redirect: bool, directory: str):
+    def __init__(self, wid: int, geom: tuple[int, int, int, int], override_redirect: bool,
+                 directory: str, start: float):
         self.wid = wid
         self.override_redirect = override_redirect
         self.metadata = {}
@@ -61,6 +63,7 @@ class WindowModel:
         self.directory = directory
         self.sequence = 0
         self.event_no = 0
+        self.start = start
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
 
@@ -77,6 +80,7 @@ class WindowModel:
         seq_dir = self.sequence_dir()
         data = {
             "event": event,
+            "timestamp": round((monotonic() - self.start) * 1000),
         }
         data.update(kwargs)
         # special case for `data` in `draw` packets:
@@ -88,10 +92,10 @@ class WindowModel:
                 path = os.path.join(seq_dir, filename)
                 with open(path, "wb") as f:
                     f.write(img_data)
-        self.event_no += 1
         path = os.path.join(seq_dir, f"{self.event_no}.json")
         save_json(path, data)
         log("recorded: %s : %r", event, data)
+        self.event_no += 1
 
     def next(self) -> None:
         self.event_no = 0
@@ -113,6 +117,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         self.sequence = 0
         self.refresh_needed: set[int] = set()
         self.refresh_timer = 0
+        self.start = monotonic()
 
     def init(self, opts) -> None:
         for cc in CLIENT_BASES:
@@ -225,7 +230,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         directory = os.path.join(self.record_directory, "%x" % wid)
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
-        window = WindowModel(wid, geom, override_redirect, directory)
+        window = WindowModel(wid, geom, override_redirect, directory, self.start)
         window.update_metadata(metadata)
         self._id_to_window[wid] = window
         window.record("new", geometry=(x, y, w, h), metadata=metadata)
