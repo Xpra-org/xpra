@@ -206,11 +206,14 @@ TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int], TEST_DATA]]] = {
             (64, 64): (
                 unhex("12000a0b00000002affff036be40103219110100010000004b17c531ecb5321932af9b2fab54ee58012c"),
             ),
-            # gst-launch-1.0 videotestsrc pattern=white num-buffers=1 ! video/x-raw,width=320,height=240 ! av1enc ! filesink location=frame.av1
-            # python3 -c 'import binascii;f=open("./frame.av1", "rb");print(binascii.hexlify(f.read()))'
+            # gst-launch-1.0 videotestsrc pattern=white num-buffers=5 ! video/x-raw,width=320,height=240,format=I420 ! av1enc ! filesink location=frame.av1
+            # (format=I420 forces Profile 0/4:2:0; without it av1enc defaults to Profile 1/4:4:4)
             (320, 240): (
-                unhex("12000a0b200000043cffbf83fff304321e135f580100000064da5eaa0fbffffffffe7101ff919be2abfac8dbed66a0"),
+                unhex("12000a0c000000043cffbf83fff300803217135f580100000064da5eaa0fbfffffe70fb116a33d9ba0"),
                 unhex("1200322539afb004080000000000000000000000000000000000000000000114000000f16f9f789ecc"),
+                unhex("1200322539afb408100010000000000040000000800040002000100008000514000000f16f9f789ecc"),
+                unhex("1200322439afb80c200010400000000080002000800080004000200010000914000600f1e476d240"),
+                unhex("1200322439afbc1040001040c0000000c0004000900080006000300018000d14000600f1e476d240"),
             ),
             # got this one from nvenc:
             (1920, 1080): (
