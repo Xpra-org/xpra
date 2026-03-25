@@ -56,6 +56,9 @@ def parse_image_data(data) -> IconData | None:
 def parse_image_path(path: str) -> IconData | None:
     if path.startswith("file://"):
         path = path[len("file://"):]
+    if path.endswith(".svg"):
+        log("pillow can't load SVG %r", path)
+        return None
     if path and os.path.exists(path):
         Image = PIL_Image()
         if not Image:
