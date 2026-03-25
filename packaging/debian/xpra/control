@@ -317,6 +317,7 @@ Depends: xpra-common (= ${binary:Version})
 #oracular:              ,libopenh264-7
 #plucky:              ,libopenh264-8
 #questing:              ,libopenh264-8
+#resolute:              ,libopenh264-8
 #bookworm:              ,libopenh264-7
 #trixie:              ,libopenh264-8
 #forky:              ,libopenh264-8
@@ -325,6 +326,7 @@ Depends: xpra-common (= ${binary:Version})
 #oracular:              ,libdav1d7
 #plucky:              ,libdav1d7
 #questing:              ,libdav1d7
+#resolute:              ,libdav1d7
 #bookworm:              ,libdav1d6
 #trixie:              ,libdav1d7
 #forky:              ,libdav1d7
@@ -358,6 +360,7 @@ Depends: xpra-codecs (= ${binary:Version})
 #oracular:              ,libavif16
 #plucky:              ,libavif16
 #questing:              ,libavif16
+#resolute:              ,libavif16
 #bookworm:              ,libavif15
 #trixie:              ,libavif16
 #forky:              ,libavif16
