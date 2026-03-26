@@ -996,6 +996,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     dirstr, button, buttons)
             self.moveresize_event = None
             self.cancel_moveresize_timer()
+            # flush any pending resize so the final size is applied
+            if self.moveresize_data:
+                self.do_moveresize()
         else:
             x = event.x_root
             y = event.y_root
