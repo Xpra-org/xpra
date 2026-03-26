@@ -171,7 +171,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.remove_pointer_overlay_timer: int = 0
         self.show_pointer_overlay_timer: int = 0
         self.moveresize_timer: int = 0
-        self.moveresize_event = None
+        self.moveresize_event: tuple[int, int, int, int, tuple[int], int, int, int, int] | tuple = ()
+        self.moveresize_data: tuple[tuple, tuple] | tuple = ()
         # only set this initially:
         # (so the server can't make us kill just any pid!)
         watcher_pid = metadata.intget("watcher-pid", 0)
@@ -987,14 +988,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         dirstr = MOVERESIZE_DIRECTION_STRING.get(direction, direction)
         buttons = mask_buttons(event.state)
         geomlog("motion_moveresize(%s) direction=%s, buttons=%s", event, dirstr, buttons)
-        if start_buttons is None:
+        if not start_buttons:
             # first time around, store the buttons
             start_buttons = buttons
-            self.moveresize_event[4] = buttons
+            self.moveresize_event = (x_root, y_root, direction, button, start_buttons, wx, wy, ww, wh)
         if (button > 0 and button not in buttons) or (button == 0 and start_buttons != buttons):
             geomlog("%s for window button %i is no longer pressed (buttons=%s) cancelling moveresize",
                     dirstr, button, buttons)
-            self.moveresize_event = None
+            self.moveresize_event = ()
             self.cancel_moveresize_timer()
             # flush any pending resize so the final size is applied
             if self.moveresize_data:
@@ -1030,15 +1031,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 dx = max(ww - maxw, dx)
             # calculate move + resize:
             if direction == MoveResize.MOVE:
-                data = (wx + dx, wy + dy), None
+                data = (wx + dx, wy + dy), ()
             elif direction == MoveResize.SIZE_BOTTOMRIGHT:
-                data = None, (ww + dx, wh + dy)
+                data = (), (ww + dx, wh + dy)
             elif direction == MoveResize.SIZE_BOTTOM:
-                data = None, (ww, wh + dy)
+                data = (), (ww, wh + dy)
             elif direction == MoveResize.SIZE_BOTTOMLEFT:
                 data = (wx + dx, wy), (ww - dx, wh + dy)
             elif direction == MoveResize.SIZE_RIGHT:
-                data = None, (ww + dx, wh)
+                data = (), (ww + dx, wh)
             elif direction == MoveResize.SIZE_LEFT:
                 data = (wx + dx, wy), (ww - dx, wh)
             elif direction == MoveResize.SIZE_TOPRIGHT:
@@ -1049,7 +1050,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 data = (wx + dx, wy + dy), (ww - dx, wh - dy)
             else:
                 # not handled yet!
-                data = None
+                data = ()
             geomlog("%s for window %ix%i: started at %s, now at %s, delta=%s, button=%s, buttons=%s, data=%s",
                     dirstr, ww, wh, (x_root, y_root), (x, y), (dx, dy), button, buttons, data)
             if data:
@@ -1116,8 +1117,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_x11(x, y, direction, button, source_indication)
         elif direction == MoveResize.CANCEL:
-            self.moveresize_event = None
-            self.moveresize_data = None
+            self.moveresize_event = ()
+            self.moveresize_data = ()
             self.cancel_moveresize_timer()
         elif MOVERESIZE_GDK:
             if direction in (MoveResize.MOVE, MoveResize.MOVE_KEYBOARD):
@@ -1133,7 +1134,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # use window coordinates (which include decorations)
             wx, wy = self.get_window().get_root_origin()
             ww, wh = self.get_size()
-            self.moveresize_event = [x_root, y_root, direction, button, None, wx, wy, ww, wh]
+            self.moveresize_event = (x_root, y_root, direction, button, (), wx, wy, ww, wh)
         poll = getattr(self, "start_button_polling", noop)
         poll()
 
@@ -1506,7 +1507,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         keyname = Gdk.keyval_name(keyval) or ""
         if self.moveresize_event and keyname in BREAK_MOVERESIZE:
             # cancel move resize if there is one:
-            self.moveresize_event = None
+            self.moveresize_event = ()
             self.cancel_moveresize_timer()
             return True
         # let the event propagate to the next handler
