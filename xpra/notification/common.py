@@ -57,6 +57,7 @@ def parse_image_data(data) -> IconData | None:
 
 
 def parse_image_path(path: str) -> IconData | None:
+    log("parse_image_path(%s)", path)
     if path.startswith("file://"):
         path = path[len("file://"):]
     if not os.path.exists(path):
@@ -226,7 +227,9 @@ def image_data_hint(hints: dict) -> IconData | None:
         if attr.endswith("path"):
             if not os.path.isabs(value) and POSIX and not OSX:
                 from xpra.platform.posix.menu_helper import do_find_icon
+                name = value
                 value = do_find_icon(value, extensions=ICON_EXTENSIONS)
+                log("do_find_icon(%s, %s)=%s", name, ICON_EXTENSIONS, value)
             icon_data = parse_image_path(value)
         else:
             icon_data = parse_image_data(value)
