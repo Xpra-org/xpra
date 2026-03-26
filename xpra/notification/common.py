@@ -16,6 +16,10 @@ log = Logger("dbus", "notify")
 
 IconData: TypeAlias = tuple[str, int, int, bytes]
 
+SVG_SIZE = 96
+
+ICON_EXTENSIONS = ("png", "xpm", "svg")
+
 
 def PIL_Image():
     try:
@@ -50,34 +54,52 @@ def parse_image_data(data) -> IconData | None:
         if channels == 4 and not has_alpha:
             img = img.convert("RGB")
         return image_data(img)
-    return None
 
 
 def parse_image_path(path: str) -> IconData | None:
     if path.startswith("file://"):
         path = path[len("file://"):]
-    if path.endswith(".svg"):
-        log("pillow can't load SVG %r", path)
+    if not os.path.exists(path):
         return None
-    if path and os.path.exists(path):
-        Image = PIL_Image()
-        if not Image:
-            return None
-        try:
-            img = Image.open(path)
-            msize = max(img.size)
-            if msize > 100:
-                w, h = img.size
-                img = img.resize((max(32, w * 100 // msize), max(32, h * 100 // msize)), Image.Resampling.BILINEAR)
+    Image = PIL_Image()
+    if not Image:
+        return None
+    if path.endswith(".svg"):
+        from xpra.util.thread import is_main_thread
+        if is_main_thread():
+            try:
+                from xpra.codecs.icon_util import svg_to_png
+            except ImportError as e:
+                log("cannot parse svg image %r: %s", path, e)
+                return None
+            svg_data = load_binary_file(path)
+            png_data = svg_to_png(path, svg_data, SVG_SIZE, SVG_SIZE)
+            if not png_data:
+                return None
+            img = Image.open(BytesIO(png_data))
             return image_data(img)
-        except Exception as e:
-            log(f"failed to open image {path!r}", exc_info=True)
-            log.error("Error loading image for notification")
-            log.error(f" using path {path!r}:")
-            estr = str(e)
-            if estr.endswith(f"{path!r}"):
-                estr = estr[:-len(f"{path!r}")]
-            log.error(f" {estr}")
+        else:
+            from threading import current_thread
+            log.warn("Warning: cannot load SVG image %r", path)
+            log.warn(" from %r thread", current_thread())
+            log("parse_image_path(%s)", path, backtrace=True)
+        return None
+    try:
+        img = Image.open(path)
+        w, h = img.size
+        maxsize = max(w, h)
+        minsize = min(w, h)
+        if maxsize > 100 or 0 < minsize < 48:
+            img = img.resize((max(48, w * 100 // maxsize), max(48, h * 100 // maxsize)), Image.Resampling.BILINEAR)
+        return image_data(img)
+    except Exception as e:
+        log(f"failed to open image {path!r}", exc_info=True)
+        log.error("Error loading image for notification")
+        log.error(f" using path {path!r}:")
+        estr = str(e)
+        if estr.endswith(f"{path!r}"):
+            estr = estr[:-len(f"{path!r}")]
+        log.error(f" {estr}")
     return None
 
 
@@ -204,7 +226,7 @@ def image_data_hint(hints: dict) -> IconData | None:
         if attr.endswith("path"):
             if not os.path.isabs(value) and POSIX and not OSX:
                 from xpra.platform.posix.menu_helper import do_find_icon
-                value = do_find_icon(value, extensions=("png", "xpm"))
+                value = do_find_icon(value, extensions=ICON_EXTENSIONS)
             icon_data = parse_image_path(value)
         else:
             icon_data = parse_image_data(value)

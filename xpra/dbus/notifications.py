@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Callable, Sequence
 import dbus.service
 
-from xpra.notification.common import parse_image_path, validated_hints, image_data_hint
+from xpra.notification.common import parse_image_path, validated_hints, image_data_hint, ICON_EXTENSIONS
 from xpra.dbus.helper import dbus_to_native
 from xpra.common import noop
 from xpra.util.str_fn import csv
@@ -99,7 +99,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                     if not app_icon_data:
                         try:
                             from xpra.platform.posix.menu_helper import do_find_icon
-                            app_icon_data = parse_image_path(do_find_icon(app_icon_str, extensions=("png", "xpm")))
+                            app_icon_data = parse_image_path(do_find_icon(app_icon_str, extensions=ICON_EXTENSIONS))
                         except ImportError:
                             pass
                     if app_icon_data:
