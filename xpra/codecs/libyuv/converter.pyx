@@ -191,6 +191,20 @@ cdef extern from "libyuv/convert.h" namespace "libyuv":
                    int width,
                    int height) nogil
 
+cdef extern from "libyuv/convert_from.h" namespace "libyuv":
+    int I420ToNV12(const uint8_t* src_y,
+                   int src_stride_y,
+                   const uint8_t* src_u,
+                   int src_stride_u,
+                   const uint8_t* src_v,
+                   int src_stride_v,
+                   uint8_t* dst_y,
+                   int dst_stride_y,
+                   uint8_t* dst_uv,
+                   int dst_stride_uv,
+                   int width,
+                   int height) nogil
+
 
 FILTER_STR: Dict[FilterMode, str] = {
     kFilterNone : "None",
@@ -238,7 +252,7 @@ MAX_HEIGHT = 32768
 COLORSPACES: Dict[str, Sequence[str]] = {
     "BGRX" : ("YUV444P", "YUV420P", "NV12"),
     "NV12" : ("RGB", "BGRX", "RGBX", "YUV420P"),
-    "YUV420P" : ("RGB", "XBGR", "RGBX", "BGRX"),
+    "YUV420P" : ("RGB", "XBGR", "RGBX", "BGRX", "NV12"),
     "YUV444P" : ("BGRX", "RGBX"),
     "YUYV" : ("BGRX", ),
 }
@@ -416,8 +430,24 @@ cdef class Converter:
             self.init_yuv_output()
         elif dst_format=="NV12":
             self.planes = 2
-            self.rgb_scaling = scaling
-            self.init_yuv_output()
+            if src_format == "YUV420P" and scaling:
+                # I420ToNV12 runs post-scale: scale the 3 planar inputs to dst dims first,
+                # then convert.  Set up scaled_* for YUV420P (3 planes).
+                self.yuv_scaling = scaling
+                self.init_yuv_scaled_buffer("YUV420P", dst_width, dst_height)
+                # Size NV12 output planes at dst dims.  Temporarily alias src=dst so
+                # init_yuv_output picks dst dimensions, and clear yuv_scaling so it
+                # does not pre-allocate a self.output_buffer we will not use.
+                self.src_width = dst_width
+                self.src_height = dst_height
+                self.yuv_scaling = False
+                self.init_yuv_output()
+                self.src_width = src_width
+                self.src_height = src_height
+                self.yuv_scaling = scaling
+            else:
+                self.rgb_scaling = scaling
+                self.init_yuv_output()
         elif dst_format in ("RGB", "BGRX", "RGBX", "XBGR"):
             self.planes = 1
             self.yuv_scaling = scaling
@@ -569,6 +599,8 @@ cdef class Converter:
                 return self.nv12_to_yuv(image)
             return self.convert_nv12_image(image)
         if self.src_format in ("YUV420P", "YUV444P"):
+            if self.dst_format == "NV12":
+                return self.yuv_to_nv12(image)
             return self.convert_yuv_image(image)
         if self.src_format == "YUYV":
             return self.convert_yuyv_image(image)
@@ -706,6 +738,104 @@ cdef class Converter:
             # allocates its own buffer and sets cython_buffer on the result.
             out_image.cython_buffer = 0
             return self.scale_yuv_image(out_image)
+        out_image.cython_buffer = <uintptr_t> output_buffer
+        return out_image
+
+    def yuv_to_nv12(self, image: ImageWrapper) -> ImageWrapper:
+        self.validate_image_src_size(image)
+        cdef double start = monotonic()
+        cdef int iplanes = image.get_planes()
+        cdef int width = self.dst_width
+        cdef int height = self.dst_height
+        cdef int full_range = image.get_full_range()
+        cdef int i
+        cdef int src_pw, src_ph
+        cdef uintptr_t plane_ptr
+        cdef uint8_t *scaled_buffer = NULL
+        cdef uint8_t *scaled_planes[3]
+        cdef uintptr_t y_ptr, u_ptr, v_ptr
+        cdef int r = 0
+        if iplanes != 3:
+            raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
+        if self.dst_format != "NV12":
+            raise ValueError(f"invalid dst format {self.dst_format!r} for yuv_to_nv12")
+        pixels = image.get_pixels()
+        strides = image.get_rowstride()
+        cdef int y_stride = strides[0]
+        cdef int u_stride = strides[1]
+        cdef int v_stride = strides[2]
+        if SHOW_PLANE_RANGES:
+            show_plane_range("Y", pixels[0], self.src_width, y_stride, self.src_height)
+            show_plane_range("U", pixels[1], self.src_width // 2, u_stride, self.src_height // 2)
+            show_plane_range("V", pixels[2], self.src_width // 2, v_stride, self.src_height // 2)
+        cdef int plane_stride
+        if self.yuv_scaling:
+            # Pre-scale each YUV420P plane to dst dims using ScalePlane,
+            # then feed the scaled planar data directly into I420ToNV12.
+            scaled_buffer = <uint8_t*> memalign(self.scaled_buffer_size)
+            if scaled_buffer == NULL:
+                raise RuntimeError(f"failed to allocate {self.scaled_buffer_size} bytes for scaled buffer")
+            divs = get_subsampling_divs("YUV420P")
+            for i in range(3):
+                scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]
+                src_pw = self.src_width  // divs[i][0]
+                src_ph = self.src_height // divs[i][1]
+                plane_stride = strides[i]
+                with buffer_context(pixels[i]) as plane_buf:
+                    plane_ptr = <uintptr_t> int(plane_buf)
+                    with nogil:
+                        ScalePlane(<uint8_t*> plane_ptr, plane_stride,
+                                   src_pw, src_ph,
+                                   scaled_planes[i], self.scaled_stride[i],
+                                   self.scaled_width[i], self.scaled_height[i],
+                                   self.filtermode)
+            log("libyuv.ScalePlane 3 planes, took %.1fms", 1000.0*(monotonic()-start))
+        # Allocate NV12 output buffer; caller owns it via cython_buffer.
+        cdef uint8_t *output_buffer = <uint8_t*> memalign(self.out_buffer_size)
+        if output_buffer == NULL:
+            if scaled_buffer != NULL:
+                memfree(scaled_buffer)
+            raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
+        cdef uint8_t *out_y  = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[0])
+        cdef uint8_t *out_uv = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[1])
+        if self.yuv_scaling:
+            with nogil:
+                r = I420ToNV12(scaled_planes[0], self.scaled_stride[0],
+                               scaled_planes[1], self.scaled_stride[1],
+                               scaled_planes[2], self.scaled_stride[2],
+                               out_y,  self.out_stride[0],
+                               out_uv, self.out_stride[1],
+                               width, height)
+            memfree(scaled_buffer)
+        else:
+            with buffer_context(pixels[0]) as y_buf:
+                y_ptr = <uintptr_t> int(y_buf)
+                with buffer_context(pixels[1]) as u_buf:
+                    u_ptr = <uintptr_t> int(u_buf)
+                    with buffer_context(pixels[2]) as v_buf:
+                        v_ptr = <uintptr_t> int(v_buf)
+                        with nogil:
+                            r = I420ToNV12(<const uint8_t*> y_ptr, y_stride,
+                                           <const uint8_t*> u_ptr, u_stride,
+                                           <const uint8_t*> v_ptr, v_stride,
+                                           out_y,  self.out_stride[0],
+                                           out_uv, self.out_stride[1],
+                                           width, height)
+        if r != 0:
+            memfree(output_buffer)
+            raise RuntimeError(f"libyuv I420ToNV12 failed and returned {r}")
+        image.free()
+        cdef double elapsed = monotonic() - start
+        log("libyuv.I420ToNV12 took %.1fms (yuv_scaling=%s)", 1000.0*elapsed, bool(self.yuv_scaling))
+        self.time += elapsed
+        cdef object out_strides = [self.out_stride[0], self.out_stride[1]]
+        cdef object planes = [
+            PyMemoryView_FromMemory(<char*> out_y,  self.out_size[0], PyBUF_WRITE),
+            PyMemoryView_FromMemory(<char*> out_uv, self.out_size[1], PyBUF_WRITE),
+        ]
+        self.frames += 1
+        out_image = YUVImageWrapper(0, 0, width, height, planes, "NV12", 24, out_strides, 1, 2)
+        out_image.set_full_range(bool(full_range))
         out_image.cython_buffer = <uintptr_t> output_buffer
         return out_image
 
