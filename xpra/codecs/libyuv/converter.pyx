@@ -177,6 +177,20 @@ cdef extern from "libyuv/planar_functions.h" namespace "libyuv":
                    int width,
                    int height) nogil
 
+cdef extern from "libyuv/convert.h" namespace "libyuv":
+    int NV12ToI420(const uint8_t* src_y,
+                   int src_stride_y,
+                   const uint8_t* src_uv,
+                   int src_stride_uv,
+                   uint8_t* dst_y,
+                   int dst_stride_y,
+                   uint8_t* dst_u,
+                   int dst_stride_u,
+                   uint8_t* dst_v,
+                   int dst_stride_v,
+                   int width,
+                   int height) nogil
+
 
 FILTER_STR: Dict[FilterMode, str] = {
     kFilterNone : "None",
@@ -223,7 +237,7 @@ MAX_WIDTH = 32768
 MAX_HEIGHT = 32768
 COLORSPACES: Dict[str, Sequence[str]] = {
     "BGRX" : ("YUV444P", "YUV420P", "NV12"),
-    "NV12" : ("RGB", "BGRX", "RGBX"),
+    "NV12" : ("RGB", "BGRX", "RGBX", "YUV420P"),
     "YUV420P" : ("RGB", "XBGR", "RGBX", "BGRX"),
     "YUV444P" : ("BGRX", "RGBX"),
     "YUYV" : ("BGRX", ),
@@ -551,6 +565,8 @@ cdef class Converter:
         if self.src_format in ("BGRX", "BGRA"):
             return self.convert_bgrx_image(image)
         if self.src_format=="NV12":
+            if self.dst_format=="YUV420P":
+                return self.nv12_to_yuv(image)
             return self.convert_nv12_image(image)
         if self.src_format in ("YUV420P", "YUV444P"):
             return self.convert_yuv_image(image)
@@ -625,6 +641,73 @@ cdef class Converter:
         self.time += elapsed
         return ImageWrapper(0, 0, self.dst_width, self.dst_height,
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
+
+    def nv12_to_yuv(self, image: ImageWrapper) -> ImageWrapper:
+        self.validate_image_src_size(image)
+        cdef double start = monotonic()
+        cdef int iplanes = image.get_planes()
+        cdef int width = self.src_width
+        cdef int height = self.src_height
+        if iplanes != 2:
+            raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
+        if self.dst_format != "YUV420P":
+            raise ValueError(f"invalid dst format {self.dst_format!r} for nv12_to_yuv")
+        pixels = image.get_pixels()
+        strides = image.get_rowstride()
+        cdef int y_stride = strides[0]
+        cdef int uv_stride = strides[1]
+        cdef int full_range = image.get_full_range()
+        cdef uint8_t *output_buffer
+        cdef uint8_t *out_planes[3]
+        cdef int i
+        if self.yuv_scaling:
+            # self.output_buffer is a persistent scratch buffer owned by the converter;
+            # we write the unscaled YUV420P here, then ScalePlane into a fresh allocation.
+            output_buffer = self.output_buffer
+        else:
+            output_buffer = <uint8_t*> memalign(self.out_buffer_size)
+            if output_buffer == NULL:
+                raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
+        for i in range(3):
+            out_planes[i] = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[i])
+        cdef uintptr_t y_ptr, uv_ptr
+        cdef int r = 0
+        if SHOW_PLANE_RANGES:
+            show_plane_range("Y",  pixels[0], width, y_stride,  height)
+            show_plane_range("UV", pixels[1], width, uv_stride, height // 2)
+        with buffer_context(pixels[0]) as y_buf:
+            y_ptr = <uintptr_t> int(y_buf)
+            with buffer_context(pixels[1]) as uv_buf:
+                uv_ptr = <uintptr_t> int(uv_buf)
+                with nogil:
+                    r = NV12ToI420(<const uint8_t*> y_ptr,  y_stride,
+                                   <const uint8_t*> uv_ptr, uv_stride,
+                                   out_planes[0], self.out_stride[0],
+                                   out_planes[1], self.out_stride[1],
+                                   out_planes[2], self.out_stride[2],
+                                   width, height)
+        if r != 0:
+            raise RuntimeError(f"libyuv NV12ToI420 failed and returned {r}")
+        image.free()
+        cdef double elapsed = monotonic() - start
+        log("libyuv.NV12ToI420 took %.1fms", 1000.0 * elapsed)
+        self.time += elapsed
+        cdef object out_strides = []
+        cdef object planes = []
+        for i in range(3):
+            out_strides.append(self.out_stride[i])
+            planes.append(PyMemoryView_FromMemory(<char*> out_planes[i], self.out_size[i], PyBUF_WRITE))
+        self.frames += 1
+        out_image = YUVImageWrapper(0, 0, width, height, planes, "YUV420P", 24, out_strides, 1, 3)
+        out_image.set_full_range(bool(full_range))
+        if self.yuv_scaling:
+            # Don't transfer ownership of self.output_buffer to the wrapper —
+            # the converter manages its lifetime via clean().  scale_yuv_image
+            # allocates its own buffer and sets cython_buffer on the result.
+            out_image.cython_buffer = 0
+            return self.scale_yuv_image(out_image)
+        out_image.cython_buffer = <uintptr_t> output_buffer
+        return out_image
 
     def validate_image_dst_size(self, image: ImageWrapper) -> None:
         # ensure that the image fits:
