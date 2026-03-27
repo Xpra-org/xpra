@@ -1436,7 +1436,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 geomlog("window unchanged")
             else:
                 geomlog("unchanged position %ix%i, using resize(%i, %i)", x, y, w, h)
-                self.resize(w, h)
+                self.resize(w, h, resize_counter)
             return
         # we have to move:
         if not self.get_realized():
