@@ -95,6 +95,10 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
 def svg_to_png(filename: str, icondata, w: int = 128, h: int = 128) -> bytes:
     if not SVG_TO_PNG:
         return b""
+    from xpra.util.thread import is_main_thread
+    if not is_main_thread():
+        log.warn("Warning: cannot convert svg to png from secondary threads")
+        return b""
     rsvg = load_rsvg()
     log("svg_to_png%s rsvg=%s", (filename, f"{len(icondata)} bytes", w, h), rsvg)
     if not rsvg:
