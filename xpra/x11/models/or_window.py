@@ -1,22 +1,19 @@
-# ABOUTME: Override-redirect window model for unmanaged (OR) X11 windows.
-# ABOUTME: Re-reads geometry after event subscription to catch races with fast-resizing windows.
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Copyright (C) 2011 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+# Override-redirect window model for unmanaged (OR) X11 windows.
+
 from xpra.os_util import gi_import
 from xpra.x11.common import Unmanageable
 from xpra.x11.models.base import BaseWindowModel
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.log import Logger
 
 X11Window = X11WindowBindings()
 
 GObject = gi_import("GObject")
-
-geomlog = Logger("x11", "window", "geometry")
 
 
 class OverrideRedirectWindowModel(BaseWindowModel):
@@ -63,8 +60,10 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         actual_geom = actual[:4]
         model_geom = self._gproperties.get("geometry")
         if model_geom and model_geom != actual_geom:
+            from xpra.log import Logger
+            geomlog = Logger("x11", "window", "geometry")
             geomlog.info("OR window %#x geometry changed during setup: %s -> %s",
-                        self.xid, model_geom, actual_geom)
+                         self.xid, model_geom, actual_geom)
             self._updateprop("geometry", actual_geom)
 
 
