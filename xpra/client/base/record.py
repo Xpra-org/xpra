@@ -5,7 +5,7 @@
 
 import json
 import os.path
-from time import monotonic
+from time import monotonic, time
 from typing import Any
 from collections.abc import Sequence
 
@@ -61,7 +61,6 @@ class WindowModel:
         self.metadata = {}
         self.geometry = geom
         self.directory = directory
-        self.sequence = 0
         self.event_no = 0
         self.start = start
         if not os.path.exists(directory):
@@ -70,17 +69,12 @@ class WindowModel:
     def update_metadata(self, metadata) -> None:
         self.metadata.update(metadata)
 
-    def sequence_dir(self) -> str:
-        batch_dir = os.path.join(self.directory, str(self.sequence))
-        if not os.path.exists(batch_dir):
-            os.mkdir(batch_dir, 0o755)
-        return batch_dir
-
     def record(self, event: str, **kwargs) -> None:
-        seq_dir = self.sequence_dir()
         data = {
             "event": event,
-            "timestamp": round((monotonic() - self.start) * 1000),
+            "wid": self.wid,
+            "timestamp": int((monotonic() - self.start) * 1000),
+            "time": int(time() * 1000),
         }
         data.update(kwargs)
         # special case for `data` in `draw` packets:
@@ -89,17 +83,13 @@ class WindowModel:
             encoding = data.get("encoding")
             if img_data and encoding:
                 filename = f"{self.event_no}.{encoding}"
-                path = os.path.join(seq_dir, filename)
+                path = os.path.join(self.directory, filename)
                 with open(path, "wb") as f:
                     f.write(img_data)
-        path = os.path.join(seq_dir, f"{self.event_no}.json")
+        path = os.path.join(self.directory, f"{self.event_no}.json")
         save_json(path, data)
         log("recorded: %s : %r", event, data)
         self.event_no += 1
-
-    def next(self) -> None:
-        self.event_no = 0
-        self.sequence += 1
 
 
 class RecordClient(GObjectClientAdapter, ClientBaseClass):
@@ -234,7 +224,6 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         window.update_metadata(metadata)
         self._id_to_window[wid] = window
         window.record("new", geometry=(x, y, w, h), metadata=metadata)
-        window.next()
 
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         # should not be received!
@@ -247,7 +236,6 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         if window:
             window.update_metadata(metadata)
             window.record("metadata", metadata=metadata)
-            window.next()
 
     def _process_window_move_resize(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -259,7 +247,6 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         if window:
             window.geometry = (x, y, w, h)
             window.record("move-resize", geometry=(x, y, w, h))
-            window.next()
 
     def _process_window_resized(self, packet: Packet) -> None:
         wid = int(packet[1])
@@ -270,21 +257,18 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             x, y = window.geometry[:2]
             window.geometry = (x, y, w, h)
             window.record("resized", geometry=(x, y, w, h))
-            window.next()
 
     def _process_raise_window(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         if window:
             window.record("raise")
-            window.next()
 
     def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         if window:
             window.record("restack")
-            window.next()
 
     def _process_configure_override_redirect(self, packet: Packet) -> None:
         self._process_window_move_resize(packet)
@@ -296,7 +280,6 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             assert window is not None
             del self._id_to_window[wid]
             window.record("destroy")
-            window.next()
 
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -316,13 +299,10 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         options = {}
         if len(packet) > 10:
             options = packet.get_dict(10)
-        flush = options.get("flush", 0)
         log("record: %ix%i %s update", width, height, coding)
         window.record("draw",
                       geometry=(x, y, width, height), encoding=coding, packet_sequence=packet_sequence,
                       rowstride=rowstride, options=options, data=data)
-        if flush == 0:
-            window.next()
         decode_time = 0
         message = ""
         self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
