@@ -1084,7 +1084,7 @@ fi
 
 
 %changelog
-* Wed Mar 25 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
+* Fri Mar 27 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
 - Platforms, build and packaging:
    `pycuda` 2026.1
    add Fedora 44, remove Fedora 41
@@ -1104,6 +1104,7 @@ fi
 - Major:
    missing CUDA context causing NVENC failures
    clients connecting quickly may miss some server encodings
+   override-redirect windows using outdated dimensions
 - Minor:
    server shows missing X11 context warnings with some clients
    honour `XPRA_NVIDIA_HARDWARE` both ways
@@ -1111,6 +1112,8 @@ fi
    bump version of the notification spec we claim to support
    slots interfere with pygobject and should not be used
    try harder to find notification icons
+   move-resize could miss the last event
+   AV1 codec test data does not match the metadata
 - Cosmetic:
    skip `OpenGL` zerocopy warning on the server side
    avoid errors when `netdev_query` is missing

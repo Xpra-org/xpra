@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.4.4] 2026-03-25
+## [6.4.4] 2026-03-27
 * Platforms, build and packaging:
   * [`pycuda` 2026.1](https://github.com/Xpra-org/xpra/commit/dab23526cd93784ee9b0afbdfa927de4a584505a)
   * [add Fedora 44, remove Fedora 41](https://github.com/Xpra-org/xpra/commit/eac8640c24bd67c74f2da5f22c5508a76be2d6f7)
@@ -20,6 +20,7 @@
 * Major:
   * [missing CUDA context causing NVENC failures](https://github.com/Xpra-org/xpra/commit/5a1896ad0efc3705fbdfd979ea66ba001aff4a15)
   * [clients connecting quickly may miss some server encodings](https://github.com/Xpra-org/xpra/commit/3dd1c18da4f6e99d8a816d4ec631e703181b04ee) + [cleanup](https://github.com/Xpra-org/xpra/commit/869951db8fd6724b286d808579cadbc47f1be86c) + [fixup](https://github.com/Xpra-org/xpra/commit/6da25080556a523fea3b424ebf78b2acd3bd963b) + [another](https://github.com/Xpra-org/xpra/commit/c82b43b5d0b4e9e4922cc6d8a01a1787ee703f59)
+  * [override-redirect windows using outdated dimensions](https://github.com/Xpra-org/xpra/commit/ece967a1e87bd8b778d2d2b74c4db4d87e32eaab)
 * Minor:
   * [server shows missing X11 context warnings with some clients](https://github.com/Xpra-org/xpra/commit/f906982af956213bbd2e4ce87aca9bb6e70e2634)
   * [honour `XPRA_NVIDIA_HARDWARE` both ways](https://github.com/Xpra-org/xpra/commit/7a9a7636145b90a294615ecc50ab6f019584c322)
@@ -29,6 +30,8 @@
   * [handle refresh rate out of range more gracefully](https://github.com/Xpra-org/xpra/commit/c811a3481fc7dd258ec9f3e75038a1fc559f9c88)
   * [pulseaudio device detection and initialization](https://github.com/Xpra-org/xpra/commit/0705926de8893d7ea7198baeee85a4c810ce0a60)
   * [try harder to find notification icons](https://github.com/Xpra-org/xpra/commit/3db0acc9a5a9d5ca5ac8440dee4c5b699fe5ec7c) [but not `SVG`s](https://github.com/Xpra-org/xpra/commit/9e4ae537a1b2fa04d36de73bb10f8aa37ac4797b), [and handle invalid calls gracefully](https://github.com/Xpra-org/xpra/commit/7310cf9aa612de8217090b157d1c70ce0aaa9dfd)
+  * [move-resize could miss the last event](https://github.com/Xpra-org/xpra/commit/ad67c018d35dfa587c17d28db8a6b3c6e53e12e6)
+  * [AV1 codec test data does not match the metadata](https://github.com/Xpra-org/xpra/commit/3c90f7b7018535930913746069436a8bde3fb4a1)
 * Cosmetic:
   * [skip `OpenGL` zerocopy warning on the server side](https://github.com/Xpra-org/xpra/commit/283f392c6a4d64ab60b2252d844aea8135a7d2dc)
   * [avoid errors when `netdev_query` is missing](https://github.com/Xpra-org/xpra/commit/b6d70b9b1499c335f9e770dc4183e8d4c7197f9a)
