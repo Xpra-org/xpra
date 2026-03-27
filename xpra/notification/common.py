@@ -18,7 +18,7 @@ IconData: TypeAlias = tuple[str, int, int, bytes]
 
 SVG_SIZE = 96
 
-ICON_EXTENSIONS = ("png", "xpm", "svg")
+ICON_EXTENSIONS = ("png", "xpm", )
 
 
 def PIL_Image():
@@ -61,11 +61,17 @@ def parse_image_path(path: str) -> IconData | None:
     if path.startswith("file://"):
         path = path[len("file://"):]
     if not os.path.exists(path):
+        log(" %r does not exist", path)
         return None
     Image = PIL_Image()
     if not Image:
+        log(" cannot parse images without python-pillow")
         return None
     if path.endswith(".svg"):
+        # note: this code path is currently unused,
+        # because we don't include `svg` in `ICON_EXTENSIONS`
+        # even if we did, `svg_to_png` requires GdkPixbuf,
+        # which requires Gtk, which we do not want.
         from xpra.util.thread import is_main_thread
         if is_main_thread():
             try:
@@ -76,6 +82,7 @@ def parse_image_path(path: str) -> IconData | None:
             svg_data = load_binary_file(path)
             png_data = svg_to_png(path, svg_data, SVG_SIZE, SVG_SIZE)
             if not png_data:
+                log("svg_to_png failed")
                 return None
             img = Image.open(BytesIO(png_data))
             return image_data(img)
