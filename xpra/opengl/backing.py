@@ -82,7 +82,7 @@ PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envint("XPRA_WEBP_YUV", 1)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
-FORCE_VIDEO_PIXEL_FORMAT = os.environ.get("XPRA_FORCE_VIDEO_PIXEL_FORMAT", "")
+FORCE_VIDEO_PIXEL_FORMAT = tuple(x.strip() for x in os.environ.get("XPRA_FORCE_VIDEO_PIXEL_FORMAT", "").split(",") if x.strip())
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
@@ -1556,7 +1556,7 @@ class GLWindowBackingBase(WindowBackingBase):
         pixel_format = img.get_pixel_format()
         if FORCE_VIDEO_PIXEL_FORMAT:
             cd = self.make_csc(enc_width, enc_height, pixel_format,
-                               width, height, (FORCE_VIDEO_PIXEL_FORMAT,), options)
+                               width, height, FORCE_VIDEO_PIXEL_FORMAT, options)
             img = cd.convert_image(img)
             pixel_format = img.get_pixel_format()
             log.warn(f"converting to {pixel_format} using {cd}")
