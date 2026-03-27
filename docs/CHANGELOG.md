@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.5] 2026-03-25
+## [5.1.5] 2026-03-27
 * Platforms, build and packaging:
     * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
     * [Python compatibility regression](https://github.com/Xpra-org/xpra/commit/1282fa77ee948c459e69538095a96d08310e18d7) [and again](https://github.com/Xpra-org/xpra/commit/bc1aa0da761a9d611c56bb4e2fa42d3481886be6)
@@ -32,6 +32,7 @@
     * [X11 calls missing trap context](https://github.com/Xpra-org/xpra/commit/3e5d16ae9d851c6753b1258e66db290c74d4a12a)
     * [missing CUDA context when clients connect early](https://github.com/Xpra-org/xpra/commit/c350adc106af923478ca97f53fa93058f022a286)
     * [missing encodings](https://github.com/Xpra-org/xpra/commit/8710475d7d08c9d2436b5acd60a59026efa5e525)
+    * [override-redirect windows using outdated dimensions](https://github.com/Xpra-org/xpra/commit/3d4a7e3cb896b621caf577fa677ad12d18202a8e)
 * Printing:
     * [incorrect cups backend exit codes could cause DoS](https://github.com/Xpra-org/xpra/commit/6127a6d704ab71b6043a4a3a3b7a173e51626c16), [ie: `FILE_TOO_BIG`](https://github.com/Xpra-org/xpra/commit/194f2cb38f3d4d62c2664ef3b90297575f7a5c79)
     * [use more widely compatible socket syntax](https://github.com/Xpra-org/xpra/commit/01a91109d6a69aae2f741a9ff92b68986d2674f8)
@@ -56,6 +57,8 @@
     * [bump version of the notification spec we claim to support](https://github.com/Xpra-org/xpra/commit/20ec1ed240c000486269239acf29d0c0024b77fe)
     * [slots interfere with pygobject and should not be used](https://github.com/Xpra-org/xpra/commit/2fcceabdefa6a04d6e8ecf6659bcce683c3328ef)
     * [pulseaudio setup race condition](https://github.com/Xpra-org/xpra/commit/41219f1d50869535bbdfbff5b62d6bd21f0045b2)
+    * [add guard against threading issues](https://github.com/Xpra-org/xpra/commit/5ffb040dfe63191141393e50ca9461d4706a39f0)
+    * [move-resize could miss the last event](https://github.com/Xpra-org/xpra/commit/b1858b399ff167b614e9273de20f1ff0ef019f07)
 * Cosmetic:
     * [make socket eof detection less spammy](https://github.com/Xpra-org/xpra/commit/a7a00921edc54294b37c49622d3f63f548555091)
     * [invalid syntax used in man page](https://github.com/Xpra-org/xpra/commit/2291f9bb214d245b56340e8e20b61f2ca6d27787)

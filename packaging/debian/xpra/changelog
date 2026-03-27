@@ -27,6 +27,7 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     initial "fast" socket read could spin until the connection failed
     DND errors under Wayland
     X11 calls missing trap context
+    override-redirect windows using outdated dimensions
   * Printing:
     incorrect cups backend exit codes could cause DoS, ie: FILE_TOO_BIG
     use more widely compatible socket syntax
@@ -53,6 +54,8 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     bump version of the notification spec we claim to support
     slots interfere with pygobject and should not be used
     pulseaudio setup race condition
+    add guard against threading issues
+    move-resize could miss the last event
   * Cosmetic:
     make socket eof detection less spammy
     invalid syntax used in man page
@@ -67,7 +70,7 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     more meaningful labels on session info dialog
     log line wrapping
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 25 Mar 2026 19:28:28 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 27 Mar 2026 18:18:16 +0700
 
 xpra (5.1.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

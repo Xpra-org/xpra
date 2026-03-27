@@ -816,7 +816,7 @@ fi
 
 
 %changelog
-* Wed Mar 25 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
+* Wed Mar 27 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install
    Python compatibility regression
@@ -848,6 +848,7 @@ fi
    X11 calls missing trap context
    missing CUDA context when clients connect early
    missing encodings
+   override-redirect windows using outdated dimensions
 - Printing:
    incorrect cups backend exit codes could cause DoS, ie: FILE_TOO_BIG
    use more widely compatible socket syntax
@@ -872,6 +873,8 @@ fi
    bump version of the notification spec we claim to support
    slots interfere with pygobject and should not be used
    pulseaudio setup race condition
+   add guard against threading issues
+   move-resize could miss the last event
 - Cosmetic:
    make socket eof detection less spammy
    invalid syntax used in man page
