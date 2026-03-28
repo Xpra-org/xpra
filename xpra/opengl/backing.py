@@ -39,7 +39,7 @@ from OpenGL.GL import (
     glTexParameteri,
     glTexImage2D,
     glClear, glClearColor,
-    glDrawBuffer, glReadBuffer,
+    glDrawBuffer, glReadBuffer, glReadPixels,
     GL_FLOAT, GL_ARRAY_BUFFER,
     GL_STATIC_DRAW, GL_FALSE,
     glDrawArrays, GL_TRIANGLE_STRIP, GL_TRIANGLES,
@@ -93,6 +93,7 @@ ALWAYS_RGBA = envbool("XPRA_OPENGL_ALWAYS_RGBA", False)
 SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
 OPENGL_SCALING_FILTER = os.environ.get("XPRA_OPENGL_SCALING_FILTER", "").lower()
 
+OPENGL_NV12 = envbool("XPRA_OPENGL_NV12", True)
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
 PLANAR_FORMATS = (
@@ -242,6 +243,7 @@ class GLWindowBackingBase(WindowBackingBase):
         "RGB", "BGR",
     )
     HAS_ALPHA: bool = GL_ALPHA_SUPPORTED
+    _nv12_gl_ok: bool | None = None  # cached across all windows
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
         self.wid: int = wid
@@ -468,6 +470,95 @@ class GLWindowBackingBase(WindowBackingBase):
         except RuntimeError:
             log.warn("Warning: upscale shader failed to compile, using bilinear scaling")
 
+    def _test_nv12_gl(self) -> bool:
+        """Detect GL drivers where GL_LUMINANCE_ALPHA .a is broken.
+        Renders a known NV12 test pattern and checks the output color.
+        Returns True if the driver's .a swizzle works correctly.
+
+        NOTE: this only tests the GL driver's texture format support.
+        It binds uniforms directly (bypassing render_planar_update) and
+        uses a small texture where coordinate scaling is irrelevant.
+        Shader code correctness is validated by tests/scripts/test_nv12_shader.py."""
+        if GLWindowBackingBase._nv12_gl_ok is not None:
+            return GLWindowBackingBase._nv12_gl_ok
+        try:
+            target = GL_TEXTURE_RECTANGLE
+            # 4×4 Y plane: mid-gray (0x80)
+            y_data = bytes([0x80] * (4 * 4))
+            # 2×2 UV plane: U=0x80 (neutral), V=0x40 (shifted green)
+            uv_data = bytes([0x80, 0x40] * (2 * 2))
+
+            # upload Y to TEX_Y
+            glActiveTexture(GL_TEXTURE0)
+            glBindTexture(target, self.textures[TEX_Y])
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0)
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+            glTexImage2D(target, 0, GL_LUMINANCE, 4, 4, 0,
+                         GL_LUMINANCE, GL_UNSIGNED_BYTE, y_data)
+
+            # upload UV to TEX_U
+            glActiveTexture(GL_TEXTURE1)
+            glBindTexture(target, self.textures[TEX_U])
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexImage2D(target, 0, GL_LUMINANCE_ALPHA, 2, 2, 0,
+                         GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, uv_data)
+
+            # render to tmp_fbo with NV12 full-range shader
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
+            glBindTexture(target, self.textures[TEX_TMP_FBO])
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   target, self.textures[TEX_TMP_FBO], 0)
+            glDrawBuffer(GL_COLOR_ATTACHMENT0)
+            glViewport(0, 0, 4, 4)
+
+            program = self.programs.get("NV12_to_RGB_FULL")
+            if not program:
+                log.warn("Warning: NV12_to_RGB_FULL shader not found, skipping NV12 test")
+                GLWindowBackingBase._nv12_gl_ok = False
+                return False
+            glUseProgram(program)
+
+            glActiveTexture(GL_TEXTURE0)
+            glBindTexture(target, self.textures[TEX_Y])
+            glUniform1i(glGetUniformLocation(program, "Y"), 0)
+            glActiveTexture(GL_TEXTURE1)
+            glBindTexture(target, self.textures[TEX_U])
+            glUniform1i(glGetUniformLocation(program, "UV"), 1)
+
+            glUniform2f(glGetUniformLocation(program, "viewport_pos"), 0, 0)
+            glUniform2f(glGetUniformLocation(program, "scaling"), 1.0, 1.0)
+
+            pos_buffer = self.set_vao(0)
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+            glDeleteBuffers(1, [pos_buffer])
+            glDisableVertexAttribArray(0)
+            glBindVertexArray(0)
+            glUseProgram(0)
+
+            # read back one pixel
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
+            glReadBuffer(GL_COLOR_ATTACHMENT0)
+            pixel = glReadPixels(2, 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE)
+            r_val = pixel[0]
+
+            # With correct .a swizzle (V=0x40): BT.601 full-range gives R≈39 (greenish)
+            # With broken .g swizzle (V=U=0x80): R≈128 (neutral) or higher
+            ok = r_val < 100
+            GLWindowBackingBase._nv12_gl_ok = ok
+            if ok:
+                log("NV12 GL self-test passed: R=%d", r_val)
+            else:
+                log.warn("Warning: NV12 GL self-test failed (R=%d), disabling NV12 shader", r_val)
+            return ok
+        except (GLError, Exception):
+            log("NV12 GL self-test error", exc_info=True)
+            log.warn("Warning: NV12 GL self-test failed with error, disabling NV12 shader")
+            GLWindowBackingBase._nv12_gl_ok = False
+            return False
+
     def set_vao(self, index=0):
         vertices = [-1, -1, 1, -1, -1, 1, 1, 1]
         # noinspection PyTypeChecker,PyCallingNonCallable
@@ -593,6 +684,11 @@ class GLWindowBackingBase(WindowBackingBase):
 
         # Create and assign fragment programs
         self.init_shaders()
+
+        # verify NV12 shader works on this GL driver
+        if not OPENGL_NV12 or not self._test_nv12_gl():
+            self.RGB_MODES = tuple(m for m in self.RGB_MODES if m != "NV12")
+            log("NV12 disabled, RGB_MODES=%s", self.RGB_MODES)
 
         self.gl_setup = True
         log("gl_init(%s, %s) done", context, skip_fbo)
@@ -1563,11 +1659,28 @@ class GLWindowBackingBase(WindowBackingBase):
             log.warn(f" img={img}")
             log.warn(f" rowstride={img.get_rowstride()}, {pixel_format}")
             cd.clean()
-        if pixel_format in ("GBRP10", "YUV444P10"):
-            # call superclass to handle csc
-            # which will end up calling paint rgb with r210 data
-            super().do_video_paint(coding, img, x, y, enc_width, enc_height, width, height, options, callbacks)
-            return
+        if pixel_format not in self.RGB_MODES:
+            if pixel_format in PLANAR_FORMATS:
+                # convert to a planar format we can shader-paint (e.g. NV12→YUV420P)
+                planar_targets = tuple(f for f in self.RGB_MODES if f in PLANAR_FORMATS)
+                if planar_targets:
+                    # shader handles scaling via viewport — CSC only converts colorspace
+                    src_format = pixel_format
+                    cd = self.make_csc(enc_width, enc_height, pixel_format,
+                                       enc_width, enc_height, planar_targets, options)
+                    img = cd.convert_image(img)
+                    pixel_format = img.get_pixel_format()
+                    log("do_video_paint CSC fallback: %s→%s via %s", src_format, pixel_format, cd)
+                    cd.clean()
+                else:
+                    super().do_video_paint(coding, img, x, y, enc_width, enc_height,
+                                           width, height, options, callbacks)
+                    return
+            else:
+                # packed format — let superclass handle CSC to RGB
+                super().do_video_paint(coding, img, x, y, enc_width, enc_height,
+                                       width, height, options, callbacks)
+                return
         # ignore the bit depth, which is transparent to the shader once we've uploaded the pixel data:
         fmt_name = pixel_format.replace("P16", "P")
         shader = f"{fmt_name}_to_RGB"
@@ -1653,7 +1766,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 iformat = internal_formats[index]
                 dformat = data_formats[index]
                 uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
-                glTexImage2D(target, 0, iformat, width // div_w, height // div_h, 0, dformat, uformat, None)
+                tex_w = width // div_w
+                if dformat == GL_LUMINANCE_ALPHA:
+                    tex_w //= 2
+                glTexImage2D(target, 0, iformat, tex_w, height // div_h, 0, dformat, uformat, None)
                 # glBindTexture(target, 0)        #redundant: we rebind below:
 
         gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
@@ -1757,14 +1873,18 @@ class GLWindowBackingBase(WindowBackingBase):
         if not program:
             raise RuntimeError(f"no {shader} found!")
         glUseProgram(program)
+        # NV12 shader uses "Y" and "UV" uniforms; other shaders use single-char names
+        # derived from the shader name (e.g. "YUV420P_to_RGB" → "Y", "U", "V")
+        nv12 = self.planar_pixel_format == "NV12"
+        nv12_names = ("Y", "UV")
         for texture, tex_index in textures:
             glActiveTexture(texture)
             glBindTexture(target, self.textures[tex_index])
             # TEX_Y is 0, so effectively index==tex_index
             index = tex_index-TEX_Y
-            plane_name = shader[index:index + 1]  # ie: "YUV420P_to_RGB"  0 -> "Y"
-            tex_loc = glGetUniformLocation(program, plane_name)  # ie: "Y" -> 0
-            glUniform1i(tex_loc, index)  # tell the shader where to find the texture: 0 -> TEXTURE_0
+            plane_name = nv12_names[index] if nv12 else shader[index:index + 1]
+            tex_loc = glGetUniformLocation(program, plane_name)
+            glUniform1i(tex_loc, index)
 
         # no need to call glGetAttribLocation(program, "position")
         # since we specify the location in the shader:
