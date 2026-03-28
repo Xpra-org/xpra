@@ -232,4 +232,4 @@ class PlatformClient(StubClientMixin):
         elif prop in ("_NET_DESKTOP_NAMES", "_NET_NUMBER_OF_DESKTOPS"):
             self.desktops_changed("from %s event" % self._root_props_watcher)
         else:
-            log.error("unknown property %s", prop)
+            log.error("Error: unknown property %r", prop)
