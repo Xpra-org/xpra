@@ -114,12 +114,31 @@ cdef class XShmWrapper:
     def __repr__(self):
         return "XShmWrapper(%#x - %ix%i)" % (self.window, self.width, self.height)
 
+    cdef void release(self):
+        if self.closed:
+            return
+        self.closed = True
+        self.cleanup()
+        self.shminfo.shmaddr = NULL
+        self.shminfo.shmid = -1
+        self.shminfo.readOnly = 0
+        self.image = NULL
+        self.display = NULL
+        self.visual = NULL
+        self.ref_count = 0
+        self.got_image = 0
+
+    def close(self):
+        self.release()
+
     def setup(self) -> Tuple[bool, bool, bool]:
         #returns:
         # (init_ok, may_retry_this_window, XShm_global_failure)
         self.ref_count = 0
         self.closed = False
         self.shminfo.shmaddr = <char *> -1
+        self.shminfo.shmid = -1
+        self.shminfo.readOnly = 0
 
         self.image = XShmCreateImage(self.display, self.visual, self.depth,
                           ZPixmap, NULL, &self.shminfo,
@@ -127,7 +146,7 @@ cdef class XShmWrapper:
         xshmdebug("XShmWrapper.setup() XShmCreateImage(%ix%i-%i) %s", self.width, self.height, self.depth, self.image!=NULL)
         if self.image==NULL:
             log.error("XShmWrapper.setup() XShmCreateImage(%ix%i-%i) failed!", self.width, self.height, self.depth)
-            self.cleanup()
+            self.release()
             #if we cannot create an XShm XImage, we may try again
             #(it could be dimensions are too big?)
             return False, True, False
@@ -139,7 +158,7 @@ cdef class XShmWrapper:
         xshmdebug("XShmWrapper.setup() shmget(PRIVATE, %i bytes, %#x) shmid=%#x", size, IPC_CREAT | 0777, self.shminfo.shmid)
         if self.shminfo.shmid < 0:
             log.error("XShmWrapper.setup() shmget(PRIVATE, %i bytes, %#x) failed, bytes_per_line=%i, width=%i, height=%i", size, IPC_CREAT | 0777, self.image.bytes_per_line, self.width, self.height)
-            self.cleanup()
+            self.release()
             return False, False, False
         # Attach:
         self.image.data = <char *> shmat(self.shminfo.shmid, NULL, 0)
@@ -147,7 +166,7 @@ cdef class XShmWrapper:
         xshmdebug("XShmWrapper.setup() shmat(%s, NULL, 0) %s", self.shminfo.shmid, self.shminfo.shmaddr != <char *> -1)
         if self.shminfo.shmaddr == <char *> -1:
             log.error("XShmWrapper.setup() shmat(%s, NULL, 0) failed!", self.shminfo.shmid)
-            self.cleanup()
+            self.release()
             #we may try again with this window, or any other window:
             #(as this really shouldn't happen at all)
             return False, True, False
