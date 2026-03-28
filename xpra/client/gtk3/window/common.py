@@ -27,7 +27,10 @@ def _use_x11_bindings() -> bool:
     except ImportError:
         log("no xwayland bindings", exc_info=True)
         return False
-    return not isxwayland()
+    if isxwayland():
+        return False
+    from xpra.x11.bindings.display_source import get_display_ptr
+    return get_display_ptr() != 0
 
 
 _use_x11 = None
