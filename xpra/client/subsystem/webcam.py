@@ -95,11 +95,11 @@ class WebcamForwarder(StubClientMixin):
                 self.connect("handshake-complete", self.start_sending_webcam)
         return True
 
-    def suspend_webcam(self) -> None:
+    def suspend_webcam(self, _client) -> None:
         self.webcam_resume_restart = bool(self.webcam_device)
         self.stop_sending_webcam()
 
-    def resume_webcam(self) -> None:
+    def resume_webcam(self, _client) -> None:
         wrr = self.webcam_resume_restart
         if wrr:
             self.webcam_resume_restart = False

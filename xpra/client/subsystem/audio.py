@@ -317,14 +317,14 @@ class AudioClient(StubClientMixin):
             # to find the pulseaudio server:
             self.idle_add(self.start_sending_audio)
 
-    def suspend_audio(self) -> None:
+    def suspend_audio(self, _client) -> None:
         self.audio_resume_restart = bool(self.audio_sink)
         if self.audio_sink:
             self.stop_receiving_audio()
         if self.audio_source:
             self.stop_sending_audio()
 
-    def resume_audio(self) -> None:
+    def resume_audio(self, _client) -> None:
         ars = self.audio_resume_restart
         if ars:
             self.audio_resume_restart = False
