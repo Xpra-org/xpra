@@ -7,6 +7,7 @@
 from collections import namedtuple
 import dbus.service  # @UnresolvedImport
 import dbus.types  # @UnresolvedImport
+import dbus.exceptions  # @UnresolvedImport
 
 from xpra.dbus.helper import dbus_to_native, native_to_dbus
 from xpra.dbus.common import init_session_bus
@@ -75,14 +76,18 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".Ungrab()")
         self.server.control_command_resume()
 
-    @dbus.service.method(INTERFACE, in_signature='s')
-    def Start(self, command):
+    @dbus.service.method(INTERFACE, in_signature='s', sender_keyword='sender')
+    def Start(self, command, sender=None):
+        if not bool(self.server.is_dbus_sender_allowed(sender)):
+            raise dbus.exceptions.DBusException("org.xpra.Error.NotAuthorized", "D-Bus caller is not authorized")
         c = ns(command)
         self.log(".Start(%s)", c)
         self.server.do_control_command_start(True, c)
 
-    @dbus.service.method(INTERFACE, in_signature='s')
-    def StartChild(self, command):
+    @dbus.service.method(INTERFACE, in_signature='s', sender_keyword='sender')
+    def StartChild(self, command, sender=None):
+        if not bool(self.server.is_dbus_sender_allowed(sender)):
+            raise dbus.exceptions.DBusException("org.xpra.Error.NotAuthorized", "D-Bus caller is not authorized")
         c = ns(command)
         self.log(".StartChild(%s)", c)
         self.server.do_control_command_start(False, c)
