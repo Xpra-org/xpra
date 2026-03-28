@@ -7,6 +7,7 @@
 
 import os
 import signal
+import subprocess
 import sys
 from time import monotonic, sleep
 from collections import deque
@@ -123,6 +124,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         # for handling resize synchronization between client and server (this is not xsync!):
         self.last_client_configure_event = 0.0
         self.snc_timer = 0
+        self.polkit_agent_command: tuple[str, ...] = ()
 
     def init(self, opts) -> None:
         self.wm_name = opts.wm_name
@@ -149,6 +151,51 @@ class SeamlessServer(GObject.GObject, ServerBase):
         if self.sync_xvfb > 0:
             self.init_root_overlay()
         self.init_wm()
+        if self.session_type == "desktop":
+            GLib.timeout_add(1000, self.start_polkit_agent)
+
+    def has_polkit_authentication_agent(self) -> bool:
+        cmd = [
+            "dbus-send", "--session",
+            "--dest=org.freedesktop.DBus",
+            "--type=method_call",
+            "--print-reply",
+            "/org/freedesktop/DBus",
+            "org.freedesktop.DBus.ListNames",
+        ]
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=5, check=False)
+        except (OSError, subprocess.SubprocessError):
+            log("has_polkit_authentication_agent()", exc_info=True)
+            return False
+        if proc.returncode != 0:
+            return False
+        return "AuthenticationAgent" in proc.stdout
+
+    def start_polkit_agent(self) -> bool:
+        if self.has_polkit_authentication_agent():
+            return False
+        commands = (
+            ("xfce-polkit",),
+            ("mate-polkit",),
+            ("lxqt-policykit-agent",),
+            ("/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1",),
+            ("/usr/libexec/polkit-gnome-authentication-agent-1",),
+            ("/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1",),
+            ("/usr/lib/polkit-kde-authentication-agent-1",),
+            ("/usr/libexec/polkit-kde-authentication-agent-1",),
+        )
+        for command in commands:
+            try:
+                subprocess.Popen(command, env=os.environ.copy(), close_fds=True, start_new_session=True)
+                self.polkit_agent_command = command
+                log.info("started PolicyKit authentication agent: %s", " ".join(command))
+                break
+            except FileNotFoundError:
+                continue
+            except OSError:
+                log("start_polkit_agent()", exc_info=True)
+        return False
 
     def validate_display(self) -> None:
         try:
