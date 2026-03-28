@@ -59,6 +59,8 @@ class DisplayClient(StubClientMixin):
         self.desktop_fullscreen = False
         self.desktop_scaling = False
         self.screen_size_change_timer = 0
+        self.screen_size_change_counter = 0
+        self.screen_size_change_suspended = False
         self.opengl_enabled: bool = False
         self.opengl_props: dict[str, Any] = {}
         self.client_supports_opengl: bool = False
@@ -90,6 +92,22 @@ class DisplayClient(StubClientMixin):
 
     def load(self):
         self.after_handshake(self.adjust_display)
+        self.connect("suspend", self.suspend_screen_size_change)
+        self.connect("resume", self.resume_screen_size_change)
+
+    def suspend_screen_size_change(self, _screen) -> bool:
+        self.screen_size_change_suspended = True
+        return True
+
+    def resume_screen_size_change(self, _screen) -> bool:
+        self.screen_size_change_suspended = False
+        if self.screen_size_change_counter > 0:
+            # we had some screen size change events whilst suspended,
+            # so fire it now that we have resumed:
+            self.screen_size_change_counter = 0
+            self.cancel_screen_size_change_timer()
+            self.schedule_screen_size_change_timer()
+        return True
 
     def parse_scaling(self, desktop_scaling: str) -> None:
         root_w, root_h = self.get_root_size()
@@ -98,10 +116,7 @@ class DisplayClient(StubClientMixin):
         scalinglog("scaling(%s)=%s", self.initial_scaling, (self.xscale, self.yscale))
 
     def cleanup(self) -> None:
-        ssct = self.screen_size_change_timer
-        if ssct:
-            self.screen_size_change_timer = 0
-            self.source_remove(ssct)
+        self.cancel_screen_size_change_timer()
 
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         raise NotImplementedError()
@@ -500,19 +515,27 @@ class DisplayClient(StubClientMixin):
             ws_changed()
 
     def screen_size_changed(self, *args) -> None:
-        log("screen_size_changed(%s) timer=%s", args, self.screen_size_change_timer)
-        if self.screen_size_change_timer:
+        log("screen_size_changed(%s) timer=%s, suspended=%s, counter=%i",
+            args, self.screen_size_change_timer, self.screen_size_change_suspended, self.screen_size_change_counter)
+        if self.screen_size_change_suspended:
+            self.screen_size_change_counter += 1
             return
+        self.cancel_screen_size_change_timer()
+        self.schedule_screen_size_change_timer()
+
+    def schedule_screen_size_change_timer(self):
         # update via timer so the data is more likely to be final (up to date) when we query it,
         # some properties (like _NET_WORKAREA for X11 clients via posix gui "PlatformClient") may
         # trigger multiple calls to screen_size_changed, delayed by some amount
         # (sometimes up to 1s..)
         delay = 1000
-        # if we are suspending, wait longer:
-        # (better chance that the suspend-resume cycle will have completed)
-        if self._suspended_at > 0 and self._suspended_at - monotonic() < 5 * 1000:
-            delay = 5 * 1000
         self.screen_size_change_timer = self.timeout_add(delay, self.do_process_screen_size_change)
+
+    def cancel_screen_size_change_timer(self):
+        ssct = self.screen_size_change_timer
+        if ssct:
+            self.screen_size_change_timer = 0
+            self.source_remove(ssct)
 
     def do_process_screen_size_change(self) -> None:
         self.screen_size_change_timer = 0
