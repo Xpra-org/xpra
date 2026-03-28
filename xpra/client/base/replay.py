@@ -12,6 +12,7 @@ from typing import NoReturn
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.util.io import load_binary_file
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, sorted_nicely, Ellipsizer
 from xpra.log import Logger
 
@@ -66,24 +67,27 @@ def may_load(event: dict) -> None:
     event.update(load_json(filename))
 
 
-def may_load_draw(event: dict) -> None:
+def may_load_draw(event: dict) -> bytes:
     if event.get("event", "") != "draw":
         # wrong event type
-        return
-    if event.get("data", b""):
+        return b""
+    data = event.get("data", b"")
+    if data:
         # we already have the data
-        return
+        return data
     encoding = event.get("encoding", "")
     if not encoding:
         log.warn("Warning: draw packet without encoding!")
-        return
+        return b""
     # pixel data should have been saved separately:
     filename = event["filename"]
     image_path = os.path.splitext(filename)[0] + f".{encoding}"
     if not os.path.exists(image_path):
         log.warn("Warning: draw image %r not found!", image_path)
-        return
-    event["data"] = load_binary_file(image_path)
+        return b""
+    data = load_binary_file(image_path)
+    event["data"] = data
+    return data
 
 
 def free_event(event: dict) -> None:
@@ -104,6 +108,7 @@ class WindowReplay:
         self.events: dict[int, dict] = load_events_placeholders(self.directory)
         self.group_index = 0
         self.event_index = 0
+        self.window = None
 
     def get_event(self) -> dict:
         if self.event_index >= len(self.events):
@@ -131,6 +136,47 @@ class WindowReplay:
             self.event_index += 1
         return self.get_event()
 
+    def process_event(self) -> None:
+        event = self.get_event()
+        etype = event.get("event", "")
+        if etype == "new":
+            # hard-coded Gtk dependency here..
+            def get_window_base_classes() -> tuple[type, ...]:
+                from xpra.client.gtk3.window.base import GTKClientWindowBase
+                WINDOW_BASES: list[type] = [GTKClientWindowBase]
+                return tuple(WINDOW_BASES)
+            from xpra.client.gtk3.window import factory
+            factory.get_window_base_classes = get_window_base_classes
+            from xpra.client.gui.fake_client import FakeClient
+            from xpra.client.gtk3.window.window import ClientWindow
+            client = FakeClient()
+            group_leader = None
+            geom = event.get("geometry", (0, 0, 1, 1))
+            backing_size = geom[2:4]
+            metadata = typedict(event.get("metadata", {}))
+            override_redirect = metadata.boolget("override-redirect", False)
+            client_props = typedict()
+            from xpra.client.gui.window_border import WindowBorder
+            border = WindowBorder()
+            max_window_size = 2**15, 2**15
+            pixel_depth = metadata.intget("pixel-depth", 24)
+            self.window = ClientWindow(client, group_leader, self.wid,
+                                       geom,
+                                       backing_size,
+                                       metadata, override_redirect, client_props,
+                                       border, max_window_size, pixel_depth, headerbar="no")
+            self.window.show()
+        elif etype == "draw":
+            data = may_load_draw(event)
+            x, y, width, height = event.get("geometry", (0, 0, 1, 1))
+            coding = event.get("encoding", "")
+            rowstride = event.get("rowstride", 0)
+            options = typedict(event.get("options", {}))
+            self.window.draw_region(x, y, width, height, coding, data, rowstride, options, [])
+        else:
+            log.warn("%r not handled yet!", etype)
+        self.next_event()
+
 
 class Replay(GObjectClientAdapter):
 
@@ -144,6 +190,8 @@ class Replay(GObjectClientAdapter):
         self.event_timer = 0
         self.time_index = 0
         self.last_timestamp = 0
+        from xpra.codecs.loader import load_codec
+        load_codec("dec_pillow")
 
     def run(self) -> ExitValue:
         if not os.path.exists(self.record_directory):
@@ -209,10 +257,10 @@ class Replay(GObjectClientAdapter):
         assert event
         # log("process_next_event: %s", Ellipsizer(event, limit=200))
         log("process_next_event: %s", event.get("event", ""))
+        model = self.window_replay[event["wid"]]
+        model.process_event()
         # move time forward to this event:
         self.time_index = max(self.time_index, event.get("timestamp", 0))
-        model = self.window_replay[event["wid"]]
-        model.next_event()
         self.schedule_next_event()
 
     def cleanup(self):

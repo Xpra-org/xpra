@@ -15,6 +15,7 @@ log = Logger("client")
 
 class FakeClient(AdHocStruct):
     def __init__(self):
+        self.title = ""
         self.sp = self.sx = self.sy = self.srect = self.no_scaling
         self.cx = self.cy = self.no_scaling
         self.xscale = self.yscale = 1
