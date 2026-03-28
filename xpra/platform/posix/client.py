@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.client.base.stub import StubClientMixin
 from xpra.platform.posix.gui import x11_bindings, X11WindowBindings
 from xpra.util.parsing import str_to_bool
@@ -16,6 +18,8 @@ GLib = gi_import("GLib")
 log = Logger("posix")
 eventlog = Logger("posix", "events")
 xinputlog = Logger("posix", "xinput")
+
+FAKE_ROOT_PROP_EVENTS = tuple(x for x in os.environ.get("XPRA_FAKE_ROOT_PROP_EVENTS", "").split(",") if x)
 
 
 def get_resource_manager() -> bytes | None:
@@ -67,6 +71,13 @@ class PlatformClient(StubClientMixin):
         # this would trigger warnings with our temporary opengl windows:
         # only enable it after we have connected:
         self.after_handshake(self.setup_xi)
+        if FAKE_ROOT_PROP_EVENTS:
+            def fake_root_prop_change() -> bool:
+                import random
+                prop = random.choice(FAKE_ROOT_PROP_EVENTS)
+                self._handle_root_prop_changed(self, prop)
+                return True
+            GLib.timeout_add(10*1000, fake_root_prop_change)
 
     def init_x11_filter(self) -> None:
         if self._x11_filter:
@@ -218,18 +229,15 @@ class PlatformClient(StubClientMixin):
             if rm is not None:
                 self.send("server-settings", {"resource-manager": rm})
             return
-        # check that our client class has the methods: `screen_size_changed`, etc:
-        try:
-            from xpra.client.subsystem.display import DisplayClient
-        except ImportError:
-            return
-        if not isinstance(self, DisplayClient):
-            return
-        if prop == "_NET_WORKAREA":
-            self.screen_size_changed("from %s event" % self._root_props_watcher)
-        elif prop == "_NET_CURRENT_DESKTOP":
-            self.workspace_changed("from %s event" % self._root_props_watcher)
-        elif prop in ("_NET_DESKTOP_NAMES", "_NET_NUMBER_OF_DESKTOPS"):
-            self.desktops_changed("from %s event" % self._root_props_watcher)
-        else:
+        method_name = {
+            "_NET_WORKAREA": "screen_size_changed",
+            "_NET_CURRENT_DESKTOP": "workspace_changed",
+            "_NET_DESKTOP_NAMES": "desktops_changed",
+            "_NET_NUMBER_OF_DESKTOPS": "desktops_changed",
+        }.get(prop, "")
+        if not method_name:
             log.error("Error: unknown property %r", prop)
+            return
+        handler = getattr(self, method_name, noop)
+        log("handler(%r)=%s", prop, handler)
+        handler("from %r event on %s" % (prop, self._root_props_watcher))
