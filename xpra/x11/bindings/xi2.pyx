@@ -753,10 +753,10 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         #self.select_xi2_events()
 
 
-cdef X11CoreBindingsInstance singleton = None
+cdef X11XI2BindingsInstance singleton = None
 
 
-def X11XI2Bindings() -> X11CoreBindingsInstance:
+def X11XI2Bindings() -> X11XI2BindingsInstance:
     global singleton
     if singleton is None:
         singleton = X11XI2BindingsInstance()
