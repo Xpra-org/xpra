@@ -1554,7 +1554,7 @@ class GLWindowBackingBase(WindowBackingBase):
             # copy so the data will be usable (usually a str)
             img.clone_pixel_data()
         pixel_format = img.get_pixel_format()
-        if FORCE_VIDEO_PIXEL_FORMAT:
+        if FORCE_VIDEO_PIXEL_FORMAT and pixel_format not in FORCE_VIDEO_PIXEL_FORMAT:
             cd = self.make_csc(enc_width, enc_height, pixel_format,
                                width, height, FORCE_VIDEO_PIXEL_FORMAT, options)
             img = cd.convert_image(img)
