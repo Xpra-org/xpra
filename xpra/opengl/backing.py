@@ -1659,6 +1659,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
                 tex_w = width // div_w
                 if dformat == GL_LUMINANCE_ALPHA:
+                    # uploading 2 components - `UV` as `LUMINANCE` and `ALPHA` respectively.
                     tex_w //= 2
                 glTexImage2D(target, 0, iformat, tex_w, height // div_h, 0, dformat, uformat, None)
                 # glBindTexture(target, 0)        #redundant: we rebind below:
@@ -1681,7 +1682,7 @@ class GLWindowBackingBase(WindowBackingBase):
             div_w, div_h = divs[index]
             w = width // div_w
             if dformat == GL_LUMINANCE_ALPHA:
-                # uploading 2 components
+                # uploading 2 components - `UV` as `LUMINANCE` and `ALPHA` respectively.
                 w //= 2
             elif dformat not in (GL_RED, GL_LUMINANCE):
                 raise RuntimeError(f"unexpected data format {dformat} for {pixel_format}")
