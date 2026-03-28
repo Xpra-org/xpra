@@ -1350,14 +1350,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.send("configure-window", *packet)
             geomlog("%s", packet)
         else:
-            config: dict[str, PacketElement] = {
-                "pointer": {
+            config: dict[str, PacketElement] = {}
+            if hasattr(self, "get_mouse_position"):
+                config["pointer"] = {
                     "wid": self.wid if not self.is_OR() else 0,
                     "position": self.get_mouse_position(),
                     "modifiers": self._client.get_current_modifiers(),
                     # "device-id": -1,
                 }
-            }
             if props:
                 config["properties"] = props
             if state:
