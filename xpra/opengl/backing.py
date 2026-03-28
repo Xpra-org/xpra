@@ -223,6 +223,11 @@ def charclamp(val: int | float) -> int:
     return max(0, min(255, round(val)))
 
 
+def get_tex_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
+    bytespp = 2 if (pixel_format.endswith("P16") or pixel_format.endswith("P10")) else 1
+    return get_plane_name(pixel_format, index) * bytespp
+
+
 class GLWindowBackingBase(WindowBackingBase):
     """
     The logic is as follows:
@@ -1684,9 +1689,10 @@ class GLWindowBackingBase(WindowBackingBase):
         for texture, index in textures:
             # "YUV420P" -> ("Y", "U", "V")
             # "YUVA420P" -> ("Y", "U", "V", "A")
+            # "YUV420P16" -> ("YY", "UU", "VV")
             # "GBRP16" -> ("GG", "BB", "RR")
             # "NV12" -> ("Y", "UV")
-            tex_name = get_plane_name(pixel_format, index)
+            tex_name = get_tex_name(pixel_format, index)
             dformat = data_formats[index]  # data format: ie: GL_RED
             uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
             rowstride = rowstrides[index]
@@ -1777,16 +1783,12 @@ class GLWindowBackingBase(WindowBackingBase):
         if not program:
             raise RuntimeError(f"no {shader} found!")
         glUseProgram(program)
-        # NV12 shader uses "Y" and "UV" uniforms; other shaders use single-char names
-        # derived from the shader name (e.g. "YUV420P_to_RGB" → "Y", "U", "V")
-        nv12 = self.planar_pixel_format == "NV12"
-        nv12_names = ("Y", "UV")
         for texture, tex_index in textures:
             glActiveTexture(texture)
             glBindTexture(target, self.textures[tex_index])
             # TEX_Y is 0, so effectively index==tex_index
             index = tex_index-TEX_Y
-            plane_name = nv12_names[index] if nv12 else shader[index:index + 1]
+            plane_name = get_plane_name(self.planar_pixel_format, index)
             tex_loc = glGetUniformLocation(program, plane_name)
             glUniform1i(tex_loc, index)
 

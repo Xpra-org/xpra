@@ -82,10 +82,9 @@ CSC_ALIAS: dict[str, str] = {"NV12": "YUV420P"}
 
 
 def get_plane_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
-    bytespp = 2 if (pixel_format.endswith("P16") or pixel_format.endswith("P10")) else 1
     return ({
         "NV12": ("Y", "UV"),
-    }.get(pixel_format, list(pixel_format))[index]) * bytespp
+    }.get(pixel_format, list(pixel_format))[index])
 
 
 # noinspection PyPep8
