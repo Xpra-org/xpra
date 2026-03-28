@@ -429,7 +429,7 @@ def get_network_caps(full_info: int = 1) -> dict[str, Any]:
 
 def get_paramiko_info() -> dict[str, Sequence[int]]:
     paramiko = sys.modules.get("paramiko")
-    if paramiko:
+    if paramiko and hasattr(paramiko, "__version_info__"):
         return {
             "version": paramiko.__version_info__,
         }
