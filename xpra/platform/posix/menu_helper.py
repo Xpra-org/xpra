@@ -90,7 +90,11 @@ def export(entry, properties: Sequence[str]) -> dict[str, Any]:
             log_fn("error on %s", entry, exc_info=True)
             log.error(f"Error parsing {prop!r}: {e}")
     log_fn(f"properties({name})={props}")
-    load_entry_icon(props)
+    try:
+        load_entry_icon(props)
+    except KeyError as e:
+        log("load_entry_icon(%s)", props, exc_info=True)
+        log.warn(f"Warning: failed to load icon: {e}")
     return props
 
 
