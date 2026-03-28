@@ -23,7 +23,6 @@ from xpra.scripts.server import deadly_signal
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
-from xpra.server.auth import AuthenticatedServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     is_request_allowed, Packet, has_websocket_handler, HttpResponse, FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
@@ -105,6 +104,7 @@ def force_close_connection(conn) -> None:
 def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.control import ControlHandler
     from xpra.server.glib_server import GLibServer
+    from xpra.server.auth import AuthenticatedServer
     from xpra.server.subsystem.platform import PlatformServer
     from xpra.server.subsystem.daemon import DaemonServer
     from xpra.server.subsystem.sessionfiles import SessionFilesServer
@@ -1385,7 +1385,7 @@ class ServerCore(ServerBaseClass):
         # this will call auth_verified if successful
         # it may also just send challenge packets,
         # in which case we'll end up here parsing the hello again
-        start_thread(AuthenticatedServer.verify_auth, "authenticate connection", daemon=True, args=(self, proto, packet, c))
+        start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
     def _process_ssl_upgrade(self, proto: SocketProtocol, packet: Packet) -> None:
         socktype = proto._conn.socktype
