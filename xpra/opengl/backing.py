@@ -1560,8 +1560,7 @@ class GLWindowBackingBase(WindowBackingBase):
             img.clone_pixel_data()
         pixel_format = img.get_pixel_format()
         if FORCE_VIDEO_PIXEL_FORMAT and pixel_format not in FORCE_VIDEO_PIXEL_FORMAT:
-            cd = self.make_csc(enc_width, enc_height, pixel_format,
-                               width, height, FORCE_VIDEO_PIXEL_FORMAT, options)
+            cd = self.make_csc(enc_width, enc_height, pixel_format, width, height, FORCE_VIDEO_PIXEL_FORMAT, options)
             img = cd.convert_image(img)
             pixel_format = img.get_pixel_format()
             log.warn(f"converting to {pixel_format} using {cd}")
@@ -1569,27 +1568,10 @@ class GLWindowBackingBase(WindowBackingBase):
             log.warn(f" rowstride={img.get_rowstride()}, {pixel_format}")
             cd.clean()
         if pixel_format not in self.RGB_MODES:
-            if pixel_format in PLANAR_FORMATS:
-                # convert to a planar format we can shader-paint (e.g. NV12→YUV420P)
-                planar_targets = tuple(f for f in self.RGB_MODES if f in PLANAR_FORMATS)
-                if planar_targets:
-                    # shader handles scaling via viewport — CSC only converts colorspace
-                    src_format = pixel_format
-                    cd = self.make_csc(enc_width, enc_height, pixel_format,
-                                       enc_width, enc_height, planar_targets, options)
-                    img = cd.convert_image(img)
-                    pixel_format = img.get_pixel_format()
-                    log("do_video_paint CSC fallback: %s→%s via %s", src_format, pixel_format, cd)
-                    cd.clean()
-                else:
-                    super().do_video_paint(coding, img, x, y, enc_width, enc_height,
-                                           width, height, options, callbacks)
-                    return
-            else:
-                # packed format — let superclass handle CSC to RGB
-                super().do_video_paint(coding, img, x, y, enc_width, enc_height,
-                                       width, height, options, callbacks)
-                return
+            # let superclass handle CSC to RGB
+            super().do_video_paint(coding, img, x, y, enc_width, enc_height,
+                                   width, height, options, callbacks)
+            return
         # ignore the bit depth, which is transparent to the shader once we've uploaded the pixel data:
         fmt_name = pixel_format.replace("P16", "P")
         shader = f"{fmt_name}_to_RGB"
