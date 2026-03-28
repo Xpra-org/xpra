@@ -30,7 +30,7 @@ def main(args=()) -> ExitValue:
             if not os.path.exists(conf):
                 print(f"# {conf!r} does not exist yet")
                 return ExitCode.FILE_NOT_FOUND
-            bak = conf[-5:]+".bak"
+            bak = str(os.path.splitext(conf)) + ".bak"
             with open(conf, "r", encoding="utf8") as read:
                 with open(bak, "w", encoding="utf8") as write:
                     write.write(read.read())
