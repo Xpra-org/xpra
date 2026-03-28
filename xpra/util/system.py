@@ -119,8 +119,7 @@ def get_distribution_version_id() -> str:
         return ""
     try:
         v = load_os_release_file()
-        for bline in v.splitlines():
-            line = bline.decode()
+        for line in v.splitlines():
             if line.startswith("VERSION_ID="):
                 return line.split("=", 1)[1].strip('"')
     except Exception:
