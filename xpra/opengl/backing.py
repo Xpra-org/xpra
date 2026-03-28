@@ -1563,11 +1563,28 @@ class GLWindowBackingBase(WindowBackingBase):
             log.warn(f" img={img}")
             log.warn(f" rowstride={img.get_rowstride()}, {pixel_format}")
             cd.clean()
-        if pixel_format in ("GBRP10", "YUV444P10"):
-            # call superclass to handle csc
-            # which will end up calling paint rgb with r210 data
-            super().do_video_paint(coding, img, x, y, enc_width, enc_height, width, height, options, callbacks)
-            return
+        if pixel_format not in self.RGB_MODES:
+            if pixel_format in PLANAR_FORMATS:
+                # convert to a planar format we can shader-paint (e.g. NV12→YUV420P)
+                planar_targets = tuple(f for f in self.RGB_MODES if f in PLANAR_FORMATS)
+                if planar_targets:
+                    # shader handles scaling via viewport — CSC only converts colorspace
+                    src_format = pixel_format
+                    cd = self.make_csc(enc_width, enc_height, pixel_format,
+                                       enc_width, enc_height, planar_targets, options)
+                    img = cd.convert_image(img)
+                    pixel_format = img.get_pixel_format()
+                    log("do_video_paint CSC fallback: %s→%s via %s", src_format, pixel_format, cd)
+                    cd.clean()
+                else:
+                    super().do_video_paint(coding, img, x, y, enc_width, enc_height,
+                                           width, height, options, callbacks)
+                    return
+            else:
+                # packed format — let superclass handle CSC to RGB
+                super().do_video_paint(coding, img, x, y, enc_width, enc_height,
+                                       width, height, options, callbacks)
+                return
         # ignore the bit depth, which is transparent to the shader once we've uploaded the pixel data:
         fmt_name = pixel_format.replace("P16", "P")
         shader = f"{fmt_name}_to_RGB"
@@ -1653,7 +1670,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 iformat = internal_formats[index]
                 dformat = data_formats[index]
                 uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
-                glTexImage2D(target, 0, iformat, width // div_w, height // div_h, 0, dformat, uformat, None)
+                tex_w = width // div_w
+                if dformat == GL_LUMINANCE_ALPHA:
+                    tex_w //= 2
+                glTexImage2D(target, 0, iformat, tex_w, height // div_h, 0, dformat, uformat, None)
                 # glBindTexture(target, 0)        #redundant: we rebind below:
 
         gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
@@ -1757,14 +1777,18 @@ class GLWindowBackingBase(WindowBackingBase):
         if not program:
             raise RuntimeError(f"no {shader} found!")
         glUseProgram(program)
+        # NV12 shader uses "Y" and "UV" uniforms; other shaders use single-char names
+        # derived from the shader name (e.g. "YUV420P_to_RGB" → "Y", "U", "V")
+        nv12 = self.planar_pixel_format == "NV12"
+        nv12_names = ("Y", "UV")
         for texture, tex_index in textures:
             glActiveTexture(texture)
             glBindTexture(target, self.textures[tex_index])
             # TEX_Y is 0, so effectively index==tex_index
             index = tex_index-TEX_Y
-            plane_name = shader[index:index + 1]  # ie: "YUV420P_to_RGB"  0 -> "Y"
-            tex_loc = glGetUniformLocation(program, plane_name)  # ie: "Y" -> 0
-            glUniform1i(tex_loc, index)  # tell the shader where to find the texture: 0 -> TEXTURE_0
+            plane_name = nv12_names[index] if nv12 else shader[index:index + 1]
+            tex_loc = glGetUniformLocation(program, plane_name)
+            glUniform1i(tex_loc, index)
 
         # no need to call glGetAttribLocation(program, "position")
         # since we specify the location in the shader:
