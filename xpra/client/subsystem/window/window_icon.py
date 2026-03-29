@@ -43,7 +43,9 @@ def load_overlay_image(icon_filename: str):
         log.info("window icon overlay requires python-pillow")
         return None
     with log.trap_error(f"Error: failed to load overlay icon {icon_filename!r}"):
-        return Image.open(icon_filename)
+        img = Image.open(icon_filename)
+        img.load()
+        return img
 
 
 class WindowIcon(StubClientMixin):
