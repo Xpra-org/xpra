@@ -8,6 +8,8 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import KEYBOARD_RECORD
+from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import Ellipsizer
 from xpra.server.source.stub import StubClientConnection
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
@@ -34,6 +36,7 @@ class KeyboardConnection(StubClientConnection):
     def init_state(self) -> None:
         self.keyboard_config = None
         self.ibus = False
+        self.record = False
 
     def cleanup(self) -> None:
         self.keyboard_config = None
@@ -41,6 +44,17 @@ class KeyboardConnection(StubClientConnection):
     def parse_client_caps(self, c: typedict) -> None:
         self.ibus = c.boolget("ibus")
         ibuslog(f"client ibus support: {self.ibus}")
+        keyboard = c.get("keyboard")
+        if isinstance(keyboard, dict) and typedict(keyboard).boolget("record", False):
+            proto = getattr(self, "protocol", None)
+            conn = getattr(proto, "_conn", None)
+            options = getattr(conn, "options", None) or {}
+            record = options.get("record", "no")
+            log("client wants to record keyboard events")
+            log(" proto=%s, conn=%s, options=%s, record=%s", proto, conn, options, record)
+            if str_to_bool(record):
+                log.info("keyboard recording enabled for connection %s", conn)
+                self.record = True
 
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {}
@@ -124,3 +138,15 @@ class KeyboardConnection(StubClientConnection):
             log.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)
             return -1, 0
         return kc.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
+
+    def record_key(self, wid: int, press: bool, name: str,
+                   keyval: int, keycode: int, modifiers: Sequence[str], is_mod: bool, sync: bool) -> None:
+        self.send_async(KEYBOARD_RECORD, wid, {
+            "press": press,
+            "name": name,
+            "keyval": keyval,
+            "keycode": keycode,
+            "modifiers": modifiers,
+            "is-modifier": is_mod,
+            "sync": sync,
+        })

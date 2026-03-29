@@ -306,8 +306,16 @@ class KeyboardServer(StubServerMixin):
         if keycode in self.keys_timedout:
             del self.keys_timedout[keycode]
 
+        from xpra.server.source.keyboard import KeyboardConnection  # pylint: disable=import-outside-toplevel
+        record_connections = tuple(x for x in self._server_sources.values() if isinstance(x, KeyboardConnection) and x.record)
+
+        def record(press: bool) -> None:
+            for ss in record_connections:
+                ss.record_key(wid, press, name, keyval, keycode, modifiers, is_mod, sync)
+
         def press() -> None:
             log("handle keycode pressing   %3i: key '%s'", keycode, name)
+            record(True)
             self.keys_pressed[keycode] = name
             self.fake_key(keycode, True)
 
@@ -315,6 +323,7 @@ class KeyboardServer(StubServerMixin):
             log("handle keycode unpressing %3i: key '%s'", keycode, name)
             if keycode in self.keys_pressed:
                 del self.keys_pressed[keycode]
+            record(False)
             self.fake_key(keycode, False)
 
         if pressed:

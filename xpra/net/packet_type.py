@@ -33,6 +33,7 @@ WINDOW_DRAW_ACK: Final[str] = "damage-sequence" if BACKWARDS_COMPATIBLE else "wi
 KEYBOARD_EVENT: Final[str] = "keyboard-event"
 KEYBOARD_CONFIG: Final[str] = "keyboard-config"
 KEYBOARD_SYNC: Final[str] = "set-keyboard-sync-enabled" if BACKWARDS_COMPATIBLE else "keyboard-sync"
+KEYBOARD_RECORD: Final[str] = "keyboard-record"
 
 POINTER_MOTION: Final[str] = "pointer" if BACKWARDS_COMPATIBLE else "pointer-motion"
 POINTER_BUTTON: Final[str] = "pointer-button"

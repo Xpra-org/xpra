@@ -153,6 +153,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             caps["windows"] = True
             caps["encoding"] = self.encoding_options
             caps["share"] = True
+            caps["keyboard"] = {"record": True}
         return caps
 
     def server_connection_established(self, c: typedict) -> bool:
@@ -313,6 +314,13 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
     def _process_eos(self, packet: Packet) -> None:
         pass
 
+    def _process_keyboard_record(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        record = packet.get_dict(2)
+        if record:
+            window.record("key-event", key_event=record)
+
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets("startup-complete", "encodings", main_thread=True)
         if BACKWARDS_COMPATIBLE:
@@ -334,4 +342,5 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             "window-destroy",
             "window-draw",
             "eos",
+            "keyboard-record",
         )
