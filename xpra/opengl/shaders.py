@@ -141,7 +141,7 @@ void main()
     highp float y = texture(Y, pos).r {ymult};
     vec2 uv_pos = pos * 0.5;
     highp float u = (texture(UV, uv_pos).r - 0.5) {umult};
-    highp float v = (texture(UV, uv_pos).a - 0.5) {vmult};
+    highp float v = (texture(UV, uv_pos).g - 0.5) {vmult};
 
     highp float r = y +           {e} * v;
     highp float g = y + {f} * u + {g} * v;
