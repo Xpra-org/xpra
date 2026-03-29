@@ -86,6 +86,33 @@ class TestSnapToIncrement(unittest.TestCase):
         assert round(sw * 2) == 808
         assert round(sh * 2) == 608
 
+    def test_nearest_rounds_to_closest(self):
+        hints = {"width_inc": 10, "height_inc": 10, "base_width": 4, "base_height": 4}
+        # 810 is 6 past 804, closer to 814 → rounds up
+        assert snap_to_increment(810, 810, hints, nearest=True) == (814, 814)
+        # 808 is 4 past 804, closer to 804 → rounds down
+        assert snap_to_increment(808, 808, hints, nearest=True) == (804, 804)
+        # 809 is exactly 5 past 804 (midpoint) → rounds up
+        assert snap_to_increment(809, 809, hints, nearest=True) == (814, 814)
+        # already on grid
+        assert snap_to_increment(804, 804, hints, nearest=True) == (804, 804)
+
+    def test_nearest_stable_roundtrip_sub1x_scale(self):
+        # At 0.5x scale: the cx→snap_nearest→sx round-trip must be a fixed point.
+        # This is the key property that prevents oscillation at sub-1x scales.
+        hints = {"width_inc": 7, "height_inc": 7, "base_width": 4, "base_height": 4}
+        scale = 0.5
+        for client_w in range(20, 40):
+            server_w = round(client_w / scale)
+            snapped_sw = snap_to_increment(server_w, server_w, hints, nearest=True)[0]
+            snapped_cw = round(snapped_sw * scale)
+            # round-trip from snapped client value must be stable
+            server_w2 = round(snapped_cw / scale)
+            snapped_sw2 = snap_to_increment(server_w2, server_w2, hints, nearest=True)[0]
+            snapped_cw2 = round(snapped_sw2 * scale)
+            assert snapped_cw == snapped_cw2, \
+                f"unstable at client_w={client_w}: {snapped_cw} → {snapped_cw2}"
+
 
 if __name__ == "__main__":
     unittest.main()
