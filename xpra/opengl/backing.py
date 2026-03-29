@@ -22,7 +22,7 @@ from OpenGL.GL import (
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
-    GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_RG, GL_RG8, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
+    GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_RG, GL_RG8, GL_LUMINANCE,
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_TEXTURE3, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_DITHER,
@@ -1658,7 +1658,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 dformat = data_formats[index]
                 uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
                 tex_w = width // div_w
-                if dformat in (GL_LUMINANCE_ALPHA, GL_RG):
+                if dformat == GL_RG:
                     # uploading 2 components per texel (UV interleaved)
                     tex_w //= 2
                 glTexImage2D(target, 0, iformat, tex_w, height // div_h, 0, dformat, uformat, None)
@@ -1681,7 +1681,7 @@ class GLWindowBackingBase(WindowBackingBase):
             rowstride = rowstrides[index]
             div_w, div_h = divs[index]
             w = width // div_w
-            if dformat in (GL_LUMINANCE_ALPHA, GL_RG):
+            if dformat == GL_RG:
                 # uploading 2 components per texel (UV interleaved)
                 w //= 2
             elif dformat not in (GL_RED, GL_LUMINANCE):
