@@ -113,6 +113,17 @@ class TestSnapToIncrement(unittest.TestCase):
             assert snapped_cw == snapped_cw2, \
                 f"unstable at client_w={client_w}: {snapped_cw} → {snapped_cw2}"
 
+    def test_snap_shrinks_maximized_size(self):
+        # Snapping a maximized/fullscreen window would shrink it below screen size.
+        # This validates WHY we skip snapping for maximized/fullscreen windows.
+        hints = {"width_inc": 10, "height_inc": 20, "base_width": 4, "base_height": 2}
+        screen_w, screen_h = 1920, 1080
+        snapped_w, snapped_h = snap_to_increment(screen_w, screen_h, hints)
+        # screen size is almost never on the grid — snap shrinks it
+        assert snapped_w <= screen_w
+        assert snapped_h <= screen_h
+        assert (snapped_w, snapped_h) != (screen_w, screen_h)
+
 
 if __name__ == "__main__":
     unittest.main()

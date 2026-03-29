@@ -1116,6 +1116,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def do_increment_snap(self) -> None:
         self.increment_snap_timer = 0
+        if self._fullscreen or self._maximized:
+            return
         target = self.increment_snap_target
         if not target:
             return
@@ -1400,16 +1402,18 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._set_backing_size(w, h)
         self.send_configure_event(skip_geometry)
         # schedule client window snap if the size is off the server grid
-        inc = self.size_constraints.intpair("increment")
-        if inc:
-            snapped_sw, snapped_sh = self.snap_to_server_grid(self.cx(w), self.cy(h), nearest=True)
-            snapped_w, snapped_h = self.sx(snapped_sw), self.sy(snapped_sh)
-            if (snapped_w, snapped_h) != (w, h):
-                self.increment_snap_target = (w, h, snapped_w, snapped_h)
-                if not self.increment_snap_timer:
-                    self.increment_snap_timer = GLib.timeout_add(50, self.do_increment_snap)
-            else:
-                self.increment_snap_target = None
+        # (skip for maximized/fullscreen — the small border is expected)
+        if not self._fullscreen and not self._maximized:
+            inc = self.size_constraints.intpair("increment")
+            if inc:
+                snapped_sw, snapped_sh = self.snap_to_server_grid(self.cx(w), self.cy(h), nearest=True)
+                snapped_w, snapped_h = self.sx(snapped_sw), self.sy(snapped_sh)
+                if (snapped_w, snapped_h) != (w, h):
+                    self.increment_snap_target = (w, h, snapped_w, snapped_h)
+                    if not self.increment_snap_timer:
+                        self.increment_snap_timer = GLib.timeout_add(50, self.do_increment_snap)
+                else:
+                    self.increment_snap_target = None
         if self._backing and not self._iconified:
             geomlog("configure event: queueing redraw")
             self.repaint(0, 0, w, h)
@@ -1431,7 +1435,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
         # snap to server grid so the server doesn't send a correction back;
         # nearest rounding keeps the cx→snap→sx round-trip stable at any scale
-        sw, sh = self.snap_to_server_grid(sw, sh, nearest=True)
+        # (skip for maximized/fullscreen — the small border is expected)
+        if not self._fullscreen and not self._maximized:
+            sw, sh = self.snap_to_server_grid(sw, sh, nearest=True)
 
         if BACKWARDS_COMPATIBLE:
             packet: Sequence[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state,
