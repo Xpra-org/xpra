@@ -22,7 +22,7 @@ from OpenGL.GL import (
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
-    GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
+    GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_RG, GL_RG8, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_TEXTURE3, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_DITHER,
@@ -118,7 +118,7 @@ PIXEL_INTERNAL_FORMAT: dict[str, Sequence[IntConstant]] = {
     # defaults to: GL_R8, GL_R8, GL_R8, GL_R8
     # (meaning: up to 4 planes, 8 bits each)
     # override for formats that use 16 bit per channel:
-    "NV12": (GL_LUMINANCE, GL_LUMINANCE_ALPHA),
+    "NV12": (GL_R8, GL_RG8),
     "GBRP": (GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE),  # invalid according to the spec! (only value that works)
     "GBRP16": (GL_R16, GL_R16, GL_R16),
     "YUV444P10": (GL_R16, GL_R16, GL_R16),
@@ -129,7 +129,7 @@ PIXEL_INTERNAL_FORMAT: dict[str, Sequence[IntConstant]] = {
 PIXEL_DATA_FORMAT: dict[str, Sequence[IntConstant]] = {
     # defaults to: (GL_RED, GL_RED, GL_RED, GL_RED))
     # (meaning: uploading one channel at a time)
-    "NV12": (GL_LUMINANCE, GL_LUMINANCE_ALPHA),  # Y is one channel, UV contains two channels
+    "NV12": (GL_RED, GL_RG),  # Y is one channel, UV contains two channels
 }
 PIXEL_UPLOAD_FORMAT: dict[str, Sequence[IntConstant] | IntConstant] = {
     "r210": GL_UNSIGNED_INT_2_10_10_10_REV,
@@ -1658,8 +1658,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 dformat = data_formats[index]
                 uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
                 tex_w = width // div_w
-                if dformat == GL_LUMINANCE_ALPHA:
-                    # uploading 2 components - `UV` as `LUMINANCE` and `ALPHA` respectively.
+                if dformat in (GL_LUMINANCE_ALPHA, GL_RG):
+                    # uploading 2 components per texel (UV interleaved)
                     tex_w //= 2
                 glTexImage2D(target, 0, iformat, tex_w, height // div_h, 0, dformat, uformat, None)
                 # glBindTexture(target, 0)        #redundant: we rebind below:
@@ -1681,8 +1681,8 @@ class GLWindowBackingBase(WindowBackingBase):
             rowstride = rowstrides[index]
             div_w, div_h = divs[index]
             w = width // div_w
-            if dformat == GL_LUMINANCE_ALPHA:
-                # uploading 2 components - `UV` as `LUMINANCE` and `ALPHA` respectively.
+            if dformat in (GL_LUMINANCE_ALPHA, GL_RG):
+                # uploading 2 components per texel (UV interleaved)
                 w //= 2
             elif dformat not in (GL_RED, GL_LUMINANCE):
                 raise RuntimeError(f"unexpected data format {dformat} for {pixel_format}")
