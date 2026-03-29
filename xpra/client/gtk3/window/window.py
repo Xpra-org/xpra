@@ -1,4 +1,5 @@
 # This file is part of Xpra.
+# Copyright (C) 2026 Netflix, Inc.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
@@ -170,6 +171,13 @@ class ClientWindow(WindowBaseClass):
                 field = ASPECT_FIELDS[k]
                 setattr(geom, field, float(v))
                 mask |= int(name_to_hint.get(k, 0))
+        # only honour resize increment if we also have the base size;
+        # without base, the WM would snap to the wrong grid offset
+        if (mask & int(wh.RESIZE_INC)) and not (mask & int(wh.BASE_SIZE)):
+            geomlog("apply_geometry_hints: clearing RESIZE_INC (no BASE_SIZE) to prevent wrong-offset WM snapping")
+            mask &= ~int(wh.RESIZE_INC)
+            geom.width_inc = 0
+            geom.height_inc = 0
         gdk_hints = Gdk.WindowHints(mask)
         geomlog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
         self.set_geometry_hints(self.drawing_area, geom, gdk_hints)
