@@ -503,9 +503,15 @@ def _create_egl_context():
 
 
 def _create_wgl_context():
-    """GL context via WGL with a hidden window (Windows)."""
+    """GL 3.3 context via WGL ARB bootstrap, with legacy fallback (Windows).
+
+    On x64 Windows the legacy wglCreateContext often returns GDI Generic (GL 1.1).
+    The standard fix is a two-phase bootstrap: create a throwaway legacy context to
+    load the ARB extension pointers, then use wglCreateContextAttribsARB to request
+    GL 3.3 core profile on a fresh window.
+    """
     import ctypes
-    from ctypes import sizeof, byref, c_void_p
+    from ctypes import sizeof, byref, c_void_p, c_int, c_float, POINTER
 
     user32 = ctypes.windll.user32
     gdi32 = ctypes.windll.gdi32
@@ -541,32 +547,6 @@ def _create_wgl_context():
             ("hIconSm", ctypes.c_void_p),
         ]
 
-    h_inst = ctypes.windll.kernel32.GetModuleHandleA(None)
-    classname = b"XpraBenchmarkGL"
-    wc = WNDCLASSEX()
-    wc.cbSize = sizeof(WNDCLASSEX)
-    wc.style = 0x0020 | 0x0002 | 0x0001  # CS_OWNDC | CS_HREDRAW | CS_VREDRAW
-    wc.lpfnWndProc = _wnd_proc_cb
-    wc.hInstance = h_inst
-    wc.hBrush = 5  # COLOR_WINDOW
-    wc.lpszClassName = classname
-    atom = user32.RegisterClassExA(byref(wc))
-    if not atom:
-        raise RuntimeError("RegisterClassExA failed")
-
-    # Create hidden window
-    hwnd = user32.CreateWindowExA(
-        0, atom, b"Xpra Benchmark GL",
-        0x00000000 | 0x00080000,  # WS_OVERLAPPED | WS_SYSMENU
-        -2147483648, -2147483648, 1, 1,  # CW_USEDEFAULT
-        None, None, h_inst, None,
-    )
-    if not hwnd:
-        raise RuntimeError("CreateWindowExA failed")
-
-    hdc = user32.GetDC(hwnd)
-
-    # Set pixel format
     class PIXELFORMATDESCRIPTOR(ctypes.Structure):
         _fields_ = [
             ("nSize", ctypes.c_ushort), ("nVersion", ctypes.c_ushort),
@@ -586,27 +566,143 @@ def _create_wgl_context():
             ("dwDamageMask", ctypes.c_uint),
         ]
 
-    pfd = PIXELFORMATDESCRIPTOR()
-    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR)
-    pfd.nVersion = 1
-    pfd.dwFlags = 0x04 | 0x20 | 0x01  # PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER
-    pfd.iPixelType = 0  # PFD_TYPE_RGBA
-    pfd.cColorBits = 32
-    pfd.cDepthBits = 24
-    pfd.cStencilBits = 2
+    h_inst = ctypes.windll.kernel32.GetModuleHandleA(None)
+    classname = b"XpraBenchmarkGL"
+    wc = WNDCLASSEX()
+    wc.cbSize = sizeof(WNDCLASSEX)
+    wc.style = 0x0020 | 0x0002 | 0x0001  # CS_OWNDC | CS_HREDRAW | CS_VREDRAW
+    wc.lpfnWndProc = _wnd_proc_cb
+    wc.hInstance = h_inst
+    wc.hBrush = 5  # COLOR_WINDOW
+    wc.lpszClassName = classname
+    atom = user32.RegisterClassExA(byref(wc))
+    if not atom:
+        raise RuntimeError("RegisterClassExA failed")
 
-    pf = gdi32.ChoosePixelFormat(hdc, byref(pfd))
-    if not pf:
-        raise RuntimeError("ChoosePixelFormat failed")
-    gdi32.SetPixelFormat(hdc, pf, byref(pfd))
+    def make_window(title):
+        hwnd = user32.CreateWindowExA(
+            0, atom, title,
+            0x00000000 | 0x00080000,  # WS_OVERLAPPED | WS_SYSMENU
+            -2147483648, -2147483648, 1, 1,  # CW_USEDEFAULT
+            None, None, h_inst, None,
+        )
+        if not hwnd:
+            raise RuntimeError("CreateWindowExA failed")
+        return hwnd, user32.GetDC(hwnd)
 
-    hglrc = opengl32.wglCreateContext(hdc)
-    if not hglrc:
-        raise RuntimeError("wglCreateContext failed")
-    opengl32.wglMakeCurrent(hdc, hglrc)
+    def make_basic_pfd():
+        pfd = PIXELFORMATDESCRIPTOR()
+        pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR)
+        pfd.nVersion = 1
+        pfd.dwFlags = 0x04 | 0x20 | 0x01  # PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER
+        pfd.iPixelType = 0  # PFD_TYPE_RGBA
+        pfd.cColorBits = 32
+        pfd.cDepthBits = 24
+        pfd.cStencilBits = 2
+        return pfd
 
-    # Store refs to prevent GC (the context must stay alive for the benchmark)
-    _create_wgl_context._refs = (_wnd_proc_cb, hwnd, hdc, hglrc)
+    def set_basic_pixel_format(hdc):
+        pfd = make_basic_pfd()
+        pf = gdi32.ChoosePixelFormat(hdc, byref(pfd))
+        if not pf:
+            raise RuntimeError("ChoosePixelFormat failed")
+        gdi32.SetPixelFormat(hdc, pf, byref(pfd))
+
+    # Phase 1: bootstrap context to load ARB extension pointers.
+    # The legacy wglCreateContext may return GDI Generic on x64, but that's
+    # enough to call wglGetProcAddress for the ARB functions.
+    boot_hwnd, boot_hdc = make_window(b"Xpra GL Bootstrap")
+    set_basic_pixel_format(boot_hdc)
+    boot_hglrc = opengl32.wglCreateContext(boot_hdc)
+    if not boot_hglrc:
+        raise RuntimeError("wglCreateContext failed (bootstrap)")
+    opengl32.wglMakeCurrent(boot_hdc, boot_hglrc)
+
+    opengl32.wglGetProcAddress.restype = c_void_p
+    opengl32.wglGetProcAddress.argtypes = [ctypes.c_char_p]
+    choose_pf_ptr = opengl32.wglGetProcAddress(b"wglChoosePixelFormatARB")
+    create_ctx_ptr = opengl32.wglGetProcAddress(b"wglCreateContextAttribsARB")
+
+    if choose_pf_ptr and create_ctx_ptr:
+        # Phase 2: destroy bootstrap, create real context via ARB extensions.
+        # SetPixelFormat can only be called once per window, so we need a fresh one.
+        CHOOSE_PF_T = ctypes.WINFUNCTYPE(
+            c_int, c_void_p, POINTER(c_int), POINTER(c_float),
+            ctypes.c_uint, POINTER(c_int), POINTER(ctypes.c_uint))
+        CREATE_CTX_T = ctypes.WINFUNCTYPE(
+            c_void_p, c_void_p, c_void_p, POINTER(c_int))
+        wglChoosePixelFormatARB = CHOOSE_PF_T(choose_pf_ptr)
+        wglCreateContextAttribsARB = CREATE_CTX_T(create_ctx_ptr)
+
+        opengl32.wglMakeCurrent(None, None)
+        opengl32.wglDeleteContext(boot_hglrc)
+        user32.ReleaseDC(boot_hwnd, boot_hdc)
+        user32.DestroyWindow(boot_hwnd)
+
+        hwnd, hdc = make_window(b"Xpra Benchmark GL")
+
+        # Request a hardware-accelerated RGBA pixel format
+        WGL_DRAW_TO_WINDOW_ARB   = 0x2001
+        WGL_ACCELERATION_ARB     = 0x2003
+        WGL_SUPPORT_OPENGL_ARB   = 0x2010
+        WGL_DOUBLE_BUFFER_ARB    = 0x2011
+        WGL_PIXEL_TYPE_ARB       = 0x2013
+        WGL_COLOR_BITS_ARB       = 0x2014
+        WGL_DEPTH_BITS_ARB       = 0x2022
+        WGL_STENCIL_BITS_ARB     = 0x2023
+        WGL_FULL_ACCELERATION_ARB = 0x2027
+        WGL_TYPE_RGBA_ARB        = 0x202B
+        pf_attribs = (c_int * 19)(
+            WGL_DRAW_TO_WINDOW_ARB, 1,
+            WGL_SUPPORT_OPENGL_ARB, 1,
+            WGL_DOUBLE_BUFFER_ARB, 1,
+            WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+            WGL_COLOR_BITS_ARB, 32,
+            WGL_DEPTH_BITS_ARB, 24,
+            WGL_STENCIL_BITS_ARB, 2,
+            WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
+            0,
+        )
+        pf_id = c_int()
+        num_formats = ctypes.c_uint()
+        ok = wglChoosePixelFormatARB(hdc, pf_attribs, None, 1,
+                                     byref(pf_id), byref(num_formats))
+
+        hglrc = None
+        if ok and num_formats.value > 0:
+            pfd = make_basic_pfd()
+            gdi32.SetPixelFormat(hdc, pf_id.value, byref(pfd))
+
+            # Request GL 3.3 core profile
+            WGL_CONTEXT_MAJOR_VERSION_ARB    = 0x2091
+            WGL_CONTEXT_MINOR_VERSION_ARB    = 0x2092
+            WGL_CONTEXT_PROFILE_MASK_ARB     = 0x9126
+            WGL_CONTEXT_CORE_PROFILE_BIT_ARB = 0x00000001
+            ctx_attribs = (c_int * 7)(
+                WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+                WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+                WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+                0,
+            )
+            hglrc = wglCreateContextAttribsARB(hdc, None, ctx_attribs)
+
+        if not hglrc:
+            # ARB pixel format or context creation failed; fall back to legacy
+            user32.ReleaseDC(hwnd, hdc)
+            user32.DestroyWindow(hwnd)
+            hwnd, hdc = make_window(b"Xpra Benchmark GL")
+            set_basic_pixel_format(hdc)
+            hglrc = opengl32.wglCreateContext(hdc)
+            if not hglrc:
+                raise RuntimeError("wglCreateContext failed")
+
+        opengl32.wglMakeCurrent(hdc, hglrc)
+        _create_wgl_context._refs = (_wnd_proc_cb, hwnd, hdc, hglrc,
+                                     wglChoosePixelFormatARB, wglCreateContextAttribsARB)
+    else:
+        # No ARB extensions — keep the bootstrap context as-is.
+        # This works on ARM64 where the legacy path returns a modern context.
+        _create_wgl_context._refs = (_wnd_proc_cb, boot_hwnd, boot_hdc, boot_hglrc)
 
 
 def compile_shader(source, shader_type):
@@ -1017,9 +1113,28 @@ def main():
     gl_renderer = ""
     try:
         create_gl_context()
-        from OpenGL.GL import glGetString, GL_RENDERER
+        from OpenGL.GL import glGetString, GL_RENDERER, GL_VERSION
         gl_renderer = glGetString(GL_RENDERER).decode()
-        have_gl = True
+        gl_version_str = glGetString(GL_VERSION).decode()
+        # Parse major.minor from version string (e.g. "4.6.0 NVIDIA 535.129.03")
+        import re
+        m = re.match(r"(\d+)\.(\d+)", gl_version_str)
+        gl_major, gl_minor = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+        if "GDI Generic" in gl_renderer:
+            print(f"OpenGL renderer is GDI Generic (no GPU acceleration), skipping GPU benchmarks")
+            print(f"  (this typically happens over RDP or when no GPU driver is installed)")
+        elif gl_major < 3 or (gl_major == 3 and gl_minor < 3):
+            print(f"OpenGL {gl_version_str} ({gl_renderer}) is below 3.3, skipping GPU benchmarks")
+        else:
+            # Shaders use #version 330 core — verify we have a core profile context
+            from OpenGL.GL import glGetIntegerv, GL_CONTEXT_PROFILE_MASK
+            GL_CONTEXT_CORE_PROFILE_BIT = 0x00000001
+            profile = glGetIntegerv(GL_CONTEXT_PROFILE_MASK)
+            if not (profile & GL_CONTEXT_CORE_PROFILE_BIT):
+                print(f"OpenGL {gl_version_str} ({gl_renderer}) is compatibility profile,")
+                print(f"  skipping GPU benchmarks (shaders require core profile)")
+            else:
+                have_gl = True
     except Exception as e:
         print(f"OpenGL not available ({e}), skipping GPU benchmarks")
 
@@ -1145,4 +1260,5 @@ def main():
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     main()
