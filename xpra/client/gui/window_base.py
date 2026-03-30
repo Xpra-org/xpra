@@ -16,6 +16,7 @@ from xpra.client.gui.window.backing import fire_paint_callbacks
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
 from xpra.common import gravity_str, force_size_constraint
+from xpra.util.glib_scheduler import GLibScheduler
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
@@ -59,7 +60,7 @@ def validhostname(value):
     return value
 
 
-class ClientWindowBase(ClientWidgetBase):
+class ClientWindowBase(ClientWidgetBase, GLibScheduler):
 
     def __init__(self, client, group_leader, wid: int,
                  geom: tuple[int, int, int, int],

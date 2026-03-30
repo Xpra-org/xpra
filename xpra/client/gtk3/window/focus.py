@@ -16,7 +16,6 @@ from xpra.util.gobject import one_arg_signal
 from xpra.gtk.util import ds_inited
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
 Gdk = gi_import("Gdk")
 
 log = Logger("focus", "grab")
@@ -149,7 +148,7 @@ class FocusWindow(GtkStubWindow):
             self.recheck_focus()
         elif not self.recheck_focus_timer:
             log(f"will recheck focus in {FOCUS_RECHECK_DELAY}ms")
-            self.recheck_focus_timer = GLib.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
+            self.recheck_focus_timer = self.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
 
     def do_x11_focus_out_event(self, event) -> None:
         log("do_x11_focus_out_event(%s)", event)

@@ -17,7 +17,6 @@ from xpra.constants import WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.gtk.util import get_default_root_window
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
 Gdk = gi_import("Gdk")
 
 log = Logger("window", "workspace")
@@ -149,13 +148,13 @@ class WorkspaceWindow(GtkStubWindow):
                 self.workspace_changed()
             return True
 
-        self.workspace_timer = GLib.timeout_add(1000, poll_workspace)
+        self.workspace_timer = self.timeout_add(1000, poll_workspace)
 
     def cancel_workspace_timer(self) -> None:
         wt = self.workspace_timer
         if wt:
             self.workspace_timer = 0
-            GLib.source_remove(wt)
+            self.source_remove(wt)
 
     def workspace_changed(self) -> None:
         # on X11 clients, this fires from the root window property watcher

@@ -38,7 +38,6 @@ from xpra.platform.gui import (
 )
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 Gio = gi_import("Gio")
@@ -428,7 +427,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         cursor_data = getattr(self, "cursor_data", ())
         if cursor_data:
             # call via idle_add so that the backing has time to be realized too:
-            self.when_realized("cursor", GLib.idle_add, self._backing.set_cursor_data, cursor_data)
+            self.when_realized("cursor", self.idle_add, self._backing.set_cursor_data, cursor_data)
         return b
 
     def adjusted_position(self, ox, oy) -> tuple[int, int]:
@@ -672,7 +671,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     ww, wh = self.get_size()
                     self.repaint(0, 0, ww, wh)
 
-                GLib.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
+                self.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
             if REFRESH_MAXIMIZED:
                 self._client.send_refresh(self.wid)
 
@@ -680,7 +679,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.emit("state-updated")
         # if we have state updates, send them back to the server using a configure window packet:
         if self._window_state and not self.window_state_timer:
-            self.window_state_timer = GLib.timeout_add(25, self.send_updated_window_state)
+            self.window_state_timer = self.timeout_add(25, self.send_updated_window_state)
 
     def send_updated_window_state(self) -> None:
         statelog(f"sending configure event with window state={self._window_state}")
@@ -692,7 +691,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         wst = self.window_state_timer
         if wst:
             self.window_state_timer = 0
-            GLib.source_remove(wst)
+            self.source_remove(wst)
 
     def schedule_send_iconify(self) -> None:
         # calculate a good delay to prevent races causing minimize/unminimize loops:
@@ -706,7 +705,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 delay += int(1000 * worst)
                 delay = min(1000, delay)
         statelog("telling server about iconification with %sms delay", delay)
-        self.send_iconify_timer = GLib.timeout_add(delay, self.send_iconify)
+        self.send_iconify_timer = self.timeout_add(delay, self.send_iconify)
 
     def send_iconify(self) -> None:
         self.send_iconify_timer = 0
@@ -1099,7 +1098,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 # do it via a timer to batch things together
                 self.moveresize_data = data
                 if self.moveresize_timer is None:
-                    self.moveresize_timer = GLib.timeout_add(20, self.do_moveresize)
+                    self.moveresize_timer = self.timeout_add(20, self.do_moveresize)
 
     def cancel_moveresize_timer(self) -> None:
         mrt = self.moveresize_timer
@@ -1112,7 +1111,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         ist = self.increment_snap_timer
         if ist:
             self.increment_snap_timer = 0
-            GLib.source_remove(ist)
+            self.source_remove(ist)
 
     def do_increment_snap(self) -> None:
         self.increment_snap_timer = 0
@@ -1411,7 +1410,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if (snapped_w, snapped_h) != (w, h):
                     self.increment_snap_target = (w, h, snapped_w, snapped_h)
                     if not self.increment_snap_timer:
-                        self.increment_snap_timer = GLib.timeout_add(50, self.do_increment_snap)
+                        self.increment_snap_timer = self.timeout_add(50, self.do_increment_snap)
                 else:
                     self.increment_snap_target = None
         if self._backing and not self._iconified:
