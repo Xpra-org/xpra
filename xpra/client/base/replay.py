@@ -102,7 +102,8 @@ def free_event(event: dict) -> None:
 
 class WindowReplay:
 
-    def __init__(self, wid: int, directory: str):
+    def __init__(self, client, wid: int, directory: str):
+        self.client = client
         self.wid = wid
         self.directory = directory
         self.events: dict[int, dict] = {}
@@ -174,34 +175,9 @@ class WindowReplay:
         event = typedict(self.get_event())
         etype = event.strget("event", "")
         if etype == "new":
-            # hard-coded Gtk dependency here..
-            def get_window_base_classes() -> tuple[type, ...]:
-                from xpra.client.gtk3.window.base import GTKClientWindowBase
-                from xpra.client.gtk3.window.pointer import PointerWindow
-                WINDOW_BASES: list[type] = [GTKClientWindowBase, PointerWindow]
-                return tuple(WINDOW_BASES)
-            from xpra.client.gtk3.window import factory
-            factory.get_window_base_classes = get_window_base_classes
-            from xpra.client.gui.fake_client import FakeClient
-            from xpra.client.gtk3.window.window import ClientWindow
-            client = FakeClient()
-            from xpra.gtk.util import get_root_size
-            client.get_root_size = get_root_size
-            group_leader = None
-            geom = event.inttupleget("geometry", (0, 0, 1, 1))
-            backing_size = geom[2:4]
+            geom: tuple[int, int, int, int] = event.inttupleget("geometry", (0, 0, 1, 1))
             metadata = typedict(event.dictget("metadata", {}))
-            override_redirect = metadata.boolget("override-redirect", False)
-            client_props = typedict()
-            from xpra.client.gui.window_border import WindowBorder
-            border = WindowBorder()
-            max_window_size = 2**15, 2**15
-            pixel_depth = metadata.intget("pixel-depth", 24)
-            self.window = ClientWindow(client, group_leader, self.wid,
-                                       geom,
-                                       backing_size,
-                                       metadata, override_redirect, client_props,
-                                       border, max_window_size, pixel_depth, headerbar="no")
+            self.window = self.client.make_client_window(self.wid, geom, metadata)
             self.window.show()
         elif etype == "draw":
             data = event.bytesget("data") or may_load_blob(event, "encoding")
@@ -280,6 +256,33 @@ class WindowReplay:
             self.process_event()
 
 
+class WindowModel:
+    """
+    This fake window class doesn't do anything with the requests.
+    """
+
+    def __init__(self, wid: int, *args):
+        self.wid = wid
+
+    def show(self):
+        pass
+
+    def draw_region(self, x, y, width, height, coding, data, rowstride, options, callbacks):
+        pass
+
+    def set_cursor_data(self, data):
+        pass
+
+    def show_pointer_overlay(self, position):
+        pass
+
+    def move_resize(self, *geometry):
+        pass
+
+    def update_metadata(self, metadata):
+        pass
+
+
 class Replay(GObjectClientAdapter):
 
     def __init__(self):
@@ -292,15 +295,19 @@ class Replay(GObjectClientAdapter):
         self.event_timer = 0
         self.time_index = 0
         self.last_timestamp = 0
-        from xpra.codecs.loader import load_codec
-        load_codec("dec_pillow")
+
+    def send(self, packet_type:str, *args, **kwargs) -> None:
+        log("ignoring request to send %r", packet_type)
+
+    def make_client_window(self, wid: int, geometry: tuple[int, int, int, int], metadata: typedict):
+        return WindowModel(wid)
 
     def load(self) -> None:
         windows = os.listdir(self.record_directory)
         for wid_str in windows:
             wid = int(wid_str, 16)
             directory = os.path.join(self.record_directory, wid_str)
-            wr = WindowReplay(wid, directory)
+            wr = WindowReplay(self, wid, directory)
             wr.load()
             self.window_replay[wid] = wr
             self.last_timestamp = max(self.last_timestamp, wr.last_event().get("timestamp", 0))
@@ -315,6 +322,11 @@ class Replay(GObjectClientAdapter):
         log.info(" total time: %i seconds", self.last_timestamp // 1000)
         self.schedule_next_event()
         return super().run()
+
+    @staticmethod
+    def get_root_size() -> tuple[int, int]:
+        from xpra.gtk.util import get_root_size
+        return get_root_size()
 
     def schedule_next_event(self) -> None:
         event = self.find_next_event()

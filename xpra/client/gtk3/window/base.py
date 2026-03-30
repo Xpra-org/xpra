@@ -1410,7 +1410,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             geomlog("%s", packet)
         else:
             config: dict[str, PacketElement] = {}
-            if hasattr(self, "get_mouse_position"):
+            if not self._client.readonly and hasattr(self, "get_mouse_position"):
                 config["pointer"] = {
                     "wid": self.wid if not self.is_OR() else 0,
                     "position": self.get_mouse_position(),
