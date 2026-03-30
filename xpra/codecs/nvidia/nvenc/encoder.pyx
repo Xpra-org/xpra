@@ -1109,13 +1109,31 @@ cdef class Encoder:
         with device_lock:
             self.do_clean()
 
-    cdef void do_clean(self):
+    def do_clean(self):
         cdc = self.cuda_device_context
         log("clean() cuda_context=%s, encoder context=%#x", cdc, <uintptr_t> self.context)
         if cdc:
-            with cdc:
-                self.cuda_clean()
+            # Use blocking lock acquisition for cleanup.
+            # cuda_device_context.__enter__ uses non-blocking acquire(False)
+            # which raises TransientCodecException if the encode thread
+            # holds the lock during compress_image(). Since do_clean runs
+            # in a daemon thread, it can afford to wait.
+            if not cdc.lock.acquire(timeout=5):
+                log.warn("Warning: timeout acquiring CUDA device lock for encoder cleanup")
+                self._force_context_release()
                 self.cuda_device_context = None
+            else:
+                try:
+                    if cdc.context:
+                        cdc.context.push()
+                    try:
+                        self.cuda_clean()
+                    finally:
+                        if cdc.context:
+                            cdc.context.pop()
+                    self.cuda_device_context = None
+                finally:
+                    cdc.lock.release()
         self.width = 0
         self.height = 0
         self.input_width = 0
@@ -1156,6 +1174,15 @@ cdef class Encoder:
         self.bytes_out = 0
         log("clean() done")
 
+    def _force_context_release(self):
+        # last-resort fallback when the CUDA device lock times out:
+        # decrement the counter so scoring is not permanently degraded
+        if self.context!=NULL:
+            log.warn("Warning: releasing nvenc context counter without proper CUDA cleanup")
+            self.context = NULL
+            global context_counter
+            context_counter.decrease()
+
     cdef void cuda_clean(self):
         log("cuda_clean()")
         cdef NVENCSTATUS r
@@ -1166,25 +1193,27 @@ cdef class Encoder:
                 log.warn("got exception on flushEncoder, continuing anyway", exc_info=True)
         self.buffer_clean()
         if self.context!=NULL:
-            if self.bitstreamBuffer!=NULL:
-                log("cuda_clean() destroying output bitstream buffer %#x", <uintptr_t> self.bitstreamBuffer)
+            try:
+                if self.bitstreamBuffer!=NULL:
+                    log("cuda_clean() destroying output bitstream buffer %#x", <uintptr_t> self.bitstreamBuffer)
+                    if DEBUG_API:
+                        log("nvEncDestroyBitstreamBuffer(%#x)", <uintptr_t> self.bitstreamBuffer)
+                    with nogil:
+                        r = self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer)
+                    raiseNVENC(r, "destroying output buffer")
+                    self.bitstreamBuffer = NULL
+                log("cuda_clean() destroying encoder %#x", <uintptr_t> self.context)
                 if DEBUG_API:
-                    log("nvEncDestroyBitstreamBuffer(%#x)", <uintptr_t> self.bitstreamBuffer)
+                    log("nvEncDestroyEncoder(%#x)", <uintptr_t> self.context)
                 with nogil:
-                    r = self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer)
-                raiseNVENC(r, "destroying output buffer")
-                self.bitstreamBuffer = NULL
-            log("cuda_clean() destroying encoder %#x", <uintptr_t> self.context)
-            if DEBUG_API:
-                log("nvEncDestroyEncoder(%#x)", <uintptr_t> self.context)
-            with nogil:
-                r = self.functionList.nvEncDestroyEncoder(self.context)
-            raiseNVENC(r, "destroying context")
-            self.functionList = NULL
-            self.context = NULL
-            global context_counter
-            context_counter.decrease()
-            log(f"cuda_clean() (still {context_counter} contexts in use)")
+                    r = self.functionList.nvEncDestroyEncoder(self.context)
+                raiseNVENC(r, "destroying context")
+            finally:
+                self.functionList = NULL
+                self.context = NULL
+                global context_counter
+                context_counter.decrease()
+                log(f"cuda_clean() (still {context_counter} contexts in use)")
         else:
             log("skipping encoder context cleanup")
         self.cuda_context_ptr = <void *> 0
