@@ -1126,7 +1126,15 @@ def main():
         elif gl_major < 3 or (gl_major == 3 and gl_minor < 3):
             print(f"OpenGL {gl_version_str} ({gl_renderer}) is below 3.3, skipping GPU benchmarks")
         else:
-            have_gl = True
+            # Shaders use #version 330 core — verify we have a core profile context
+            from OpenGL.GL import glGetIntegerv, GL_CONTEXT_PROFILE_MASK
+            GL_CONTEXT_CORE_PROFILE_BIT = 0x00000001
+            profile = glGetIntegerv(GL_CONTEXT_PROFILE_MASK)
+            if not (profile & GL_CONTEXT_CORE_PROFILE_BIT):
+                print(f"OpenGL {gl_version_str} ({gl_renderer}) is compatibility profile,")
+                print(f"  skipping GPU benchmarks (shaders require core profile)")
+            else:
+                have_gl = True
     except Exception as e:
         print(f"OpenGL not available ({e}), skipping GPU benchmarks")
 
