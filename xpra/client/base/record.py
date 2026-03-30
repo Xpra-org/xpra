@@ -16,11 +16,15 @@ from xpra.net.packet_type import WINDOW_DRAW_ACK, WINDOW_REFRESH
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
+from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("client", "encoding")
 
+GLib = gi_import("GLib")
+
 REFRESH = envint("XPRA_RECORD_REFRESH", 10)
+SYNC_GAP = envint("XPRA_SYNC_GAP", 1)
 
 
 def save_json(path: str, data: dict) -> None:
@@ -63,6 +67,7 @@ class WindowModel:
         self.directory = directory
         self.event_no = 0
         self.start = start
+        self.sync_timer = 0
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
 
@@ -90,6 +95,13 @@ class WindowModel:
         save_json(path, data)
         log("recorded: %s : %r", event, data)
         self.event_no += 1
+        if event != "sync" and not self.sync_timer:
+            self.sync_timer = GLib.timeout_add(SYNC_GAP * 1000, self.record_sync)
+
+    def record_sync(self) -> bool:
+        self.sync_timer = 0
+        self.record("sync", metatada=self.metadata, geometry=self.geometry)
+        return False
 
 
 class RecordClient(GObjectClientAdapter, ClientBaseClass):
