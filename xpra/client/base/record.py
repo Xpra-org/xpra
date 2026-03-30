@@ -341,7 +341,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         window = self.get_window(wid)
         record = packet.get_dict(2)
         if record:
-            window.record("key-event", key_event=record)
+            window.record("key-event", key=record)
 
     def _process_cursor_default(self, packet: Packet) -> None:
         for window in self._id_to_window.values():

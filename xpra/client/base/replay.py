@@ -7,6 +7,7 @@ import sys
 import glob
 import json
 import os.path
+from collections.abc import Sequence
 from typing import NoReturn
 
 from xpra.client.base.gobject import GObjectClientAdapter
@@ -104,11 +105,44 @@ class WindowReplay:
     def __init__(self, wid: int, directory: str):
         self.wid = wid
         self.directory = directory
-        self.events: dict[int, dict] = load_events_placeholders(self.directory)
+        self.events: dict[int, dict] = {}
         self.group_index = 0
         self.event_index = 0
         self.cursor: tuple[str, int ,int, int, int, int, int, int, bytes, str] | tuple = ()
+        self.sync_index: Sequence[tuple[int, int]] = []
+        self.all_timestamps: Sequence[int] = []
         self.window = None
+
+    def load(self):
+        self.events: dict[int, dict] = load_events_placeholders(self.directory)
+        self.ensure_sync_index()
+
+    def ensure_sync_index(self) -> None:
+        """
+        Walk every event once to record (timestamp, event_index) for sync
+        events and to collect all timestamps.
+        Results are cached.
+        """
+        sync: list[tuple[int, int]] = []
+        all_ts: list[int] = []
+        for idx in sorted(self.events.keys()):
+            ev = typedict(self.events[idx])
+            may_load(ev)
+            ts = ev.intget("timestamp", -1)
+            if ts >= 0:
+                all_ts.append(ts)
+            if ev.strget("event", "") == "sync":
+                sync.append((ts, idx))
+            if not CACHE:
+                free_event(ev)
+        self.sync_index: list[tuple[int, int]] = sync
+        self.all_timestamps: list[int] = all_ts
+
+    def get_all_timestamps(self) -> Sequence[int]:
+        return self.all_timestamps
+
+    def get_sync_timestamps(self) -> Sequence[int]:
+        return tuple(set(ts for ts, _ in self.sync_index))
 
     def get_event(self) -> dict:
         if self.event_index >= len(self.events):
@@ -151,6 +185,8 @@ class WindowReplay:
             from xpra.client.gui.fake_client import FakeClient
             from xpra.client.gtk3.window.window import ClientWindow
             client = FakeClient()
+            from xpra.gtk.util import get_root_size
+            client.get_root_size = get_root_size
             group_leader = None
             geom = event.inttupleget("geometry", (0, 0, 1, 1))
             backing_size = geom[2:4]
@@ -203,10 +239,45 @@ class WindowReplay:
                 self.window.motion_cancels_pointer_overlay = False
                 self.window.show_pointer_overlay(position)
         elif etype == "key-event":
-            log.info("key-event: %s", event)
+            log("key-event: %s", event)
+            log.info("key: %r", event.dictget("key", {}).get("name", ""))
+        elif etype == "sync":
+            log("sync point")
+            geometry = event.inttupleget("geometry", (0, 0, 1, 1))
+            self.window.move_resize(*geometry)
+            metadata = typedict(event.dictget("metadata", {}))
+            self.window.update_metadata(metadata)
         else:
             log.warn("%r not handled yet!", etype)
         self.next_event()
+
+    def find_sync_index(self, target_ts: int):
+        sync_idx: int = -1
+        for ts, idx in self.sync_index:
+            if ts <= target_ts:
+                sync_idx = idx
+            else:
+                break
+        return sync_idx
+
+    def seek_to(self, target_ms: int) -> None:
+        sync_idx = self.find_sync_index(target_ms)
+        if sync_idx < 0:
+            log.warn("Warning: no sync point at or before %dms for wid 0x%x – seek skipped",
+                     target_ms, self.wid)
+            return
+
+        # start at previous sync point:
+        self.event_index = sync_idx
+        # fast-replay any events between the sync point and target_ms
+        while self.event_index < len(self.events):
+            ev = self.events.get(self.event_index)
+            if not ev:
+                break
+            may_load(ev)
+            if typedict(ev).intget("timestamp", 0) > target_ms:
+                break
+            self.process_event()
 
 
 class Replay(GObjectClientAdapter):
@@ -224,16 +295,20 @@ class Replay(GObjectClientAdapter):
         from xpra.codecs.loader import load_codec
         load_codec("dec_pillow")
 
-    def run(self) -> ExitValue:
-        if not os.path.exists(self.record_directory):
-            return ExitCode.FILE_NOT_FOUND
+    def load(self) -> None:
         windows = os.listdir(self.record_directory)
         for wid_str in windows:
             wid = int(wid_str, 16)
             directory = os.path.join(self.record_directory, wid_str)
             wr = WindowReplay(wid, directory)
+            wr.load()
             self.window_replay[wid] = wr
             self.last_timestamp = max(self.last_timestamp, wr.last_event().get("timestamp", 0))
+
+    def run(self) -> ExitValue:
+        if not os.path.exists(self.record_directory):
+            return ExitCode.FILE_NOT_FOUND
+        self.load()
         log.info("replaying record for %i windows: %s",
                  len(self.window_replay), csv(hex(wid) for wid in self.window_replay.keys()))
         log.info(" found %i events", sum(wr.count() for wr in self.window_replay.values()))
@@ -303,6 +378,7 @@ class Replay(GObjectClientAdapter):
     def exit(self) -> NoReturn:
         sys.exit(int(self.exit_code or ExitCode.OK))
 
+    @staticmethod
     def force_quit(exit_code: ExitValue = ExitCode.FAILURE) -> NoReturn:
         from xpra import os_util
         os_util.force_quit(int(exit_code))
@@ -315,7 +391,8 @@ def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Replay"):
-        return int(Replay().run())
+        replay = Replay()
+        return int(replay.run())
 
 
 if __name__ == "__main__":
