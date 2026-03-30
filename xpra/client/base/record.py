@@ -76,16 +76,16 @@ class WindowModel:
             "timestamp": int((monotonic() - self.start) * 1000),
             "time": int(time() * 1000),
         }
-        data.update(kwargs)
-        # special case for `data` in `draw` packets:
-        if event == "draw":
-            img_data: bytes = data.pop("data", b"")
-            encoding = data.get("encoding")
-            if img_data and encoding:
-                filename = f"{self.event_no}.{encoding}"
-                path = os.path.join(self.directory, filename)
+        # remove bytes data and store as a separate file
+        # (ie: `encoding` in `draw` packets or `pixels` in `cursor_data` packets)
+        for key, value in dict(kwargs).items():
+            if isinstance(value, (bytes, memoryview)):
+                bin_data = bytes(kwargs.pop(key, b""))
+                path = os.path.join(self.directory, f"{self.event_no}.{key}")
                 with open(path, "wb") as f:
-                    f.write(img_data)
+                    f.write(bin_data)
+        # everything else is added to the dictionary:
+        data.update(kwargs)
         path = os.path.join(self.directory, f"{self.event_no}.json")
         save_json(path, data)
         log("recorded: %s : %r", event, data)
@@ -150,10 +150,14 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
     def make_hello(self) -> dict[str, Any]:
         caps: dict[str, Any] = {}
         if self.windows:
-            caps["windows"] = True
-            caps["encoding"] = self.encoding_options
-            caps["share"] = True
-            caps["keyboard"] = {"record": True}
+            caps = {
+                "windows": True,
+                "encoding": self.encoding_options,
+                "share": True,
+                "keyboard": {"record": True},
+                "cursor": {"encodings": ("png", ), "backwards-compatible": False},
+                "pointer": {"record": True},
+            }
         return caps
 
     def server_connection_established(self, c: typedict) -> bool:
@@ -302,9 +306,15 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         if len(packet) > 10:
             options = packet.get_dict(10)
         log("record: %ix%i %s update", width, height, coding)
-        window.record("draw",
-                      geometry=(x, y, width, height), encoding=coding, packet_sequence=packet_sequence,
-                      rowstride=rowstride, options=options, data=data)
+        kwargs = {
+            "geometry": (x, y, width, height),
+            "encoding": coding,
+            "packet_sequence": packet_sequence,
+            "rowstride": rowstride,
+            "options": options,
+            coding: data,
+        }
+        window.record("draw", **kwargs)
         decode_time = 0
         message = ""
         self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
@@ -320,6 +330,48 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         record = packet.get_dict(2)
         if record:
             window.record("key-event", key_event=record)
+
+    def _process_cursor_default(self, packet: Packet) -> None:
+        for window in self._id_to_window.values():
+            window.cursor = ()
+            window.record("cursor-default")
+
+    def _process_cursor_data(self, packet: Packet) -> None:
+        encoding = packet.get_str(1)
+        w = packet.get_u16(2)
+        h = packet.get_u16(3)
+        xhot = packet.get_u16(4)
+        yhot = packet.get_u16(5)
+        serial = packet.get_u64(6)
+        pixels = packet.get_bytes(7)
+        name = packet.get_str(8)
+        kwargs = {
+            "encoding": encoding,
+            "w": w,
+            "h": h,
+            "xhot": xhot,
+            "yhot": yhot,
+            "serial": serial,
+            encoding: pixels,
+            "name": name,
+        }
+        for window in self._id_to_window.values():
+            window.record("cursor-data", **kwargs)
+
+    def _process_pointer_position(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: window %#x not found!", wid)
+            return
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        if len(packet) >= 6:
+            rx = packet.get_i16(4)
+            ry = packet.get_i16(5)
+        else:
+            rx, ry = -1, -1
+        window.record("pointer-position", position=(x, y, rx, ry))
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets("startup-complete", "encodings", main_thread=True)
@@ -343,4 +395,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             "window-draw",
             "eos",
             "keyboard-record",
+            "cursor-data",
+            "cursor-default",
+            "pointer-position",
         )

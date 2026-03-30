@@ -44,6 +44,7 @@ class CursorsConnection(StubClientConnection):
         self.send_cursors = False
         self.cursor_encodings: Sequence[str] = ()
         self.cursor_timer = 0
+        self.cursor_backwards_compatible = BACKWARDS_COMPATIBLE
         self.last_cursor_sent: tuple = ()
 
     def init_from(self, _protocol, server) -> None:
@@ -66,7 +67,8 @@ class CursorsConnection(StubClientConnection):
         self.send_cursors = bool(cursor)
         if isinstance(cursor, dict):
             self.cursor_encodings = typedict(cursor).strtupleget("encodings")
-        if BACKWARDS_COMPATIBLE:
+            self.cursor_backwards_compatible = typedict(cursor).boolget("backwards-compatible", True)
+        if self.cursor_backwards_compatible:
             self.send_cursors |= self.send_windows and c.boolget("cursors")
             if not self.cursor_encodings:
                 self.cursor_encodings = c.strtupleget("encodings.cursor")
@@ -137,7 +139,7 @@ class CursorsConnection(StubClientConnection):
         encoding, cpixels = self.compress_cursor_pixels(pixels, w, h, serial)
         log("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
             w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
-        if BACKWARDS_COMPATIBLE:
+        if self.cursor_backwards_compatible:
             cursor_data = list(cursor_data)
             cursor_data[7] = cpixels
             args = [encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
@@ -148,7 +150,7 @@ class CursorsConnection(StubClientConnection):
     def send_empty_cursor(self) -> None:
         log("send_empty_cursor(..)")
         self.last_cursor_sent = ()
-        if BACKWARDS_COMPATIBLE:
+        if self.cursor_backwards_compatible:
             self.send_more("cursor", "")
         else:
             self.send_more(CURSOR_DEFAULT)

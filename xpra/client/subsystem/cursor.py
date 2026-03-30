@@ -61,6 +61,7 @@ class CursorClient(StubClientMixin):
             encodings.append("png")
         cursor_caps: dict[str, Any] = {
             "encodings": encodings,
+            "backwards-compatible": BACKWARDS_COMPATIBLE,
         }
         from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size
         for name, size in {

@@ -18,6 +18,8 @@ from xpra.log import Logger
 
 log = Logger("client")
 
+CACHE = True
+
 
 def load_json(path: str) -> dict:
     with open(path, "r") as f:
@@ -67,27 +69,24 @@ def may_load(event: dict) -> None:
     event.update(load_json(filename))
 
 
-def may_load_draw(event: dict) -> bytes:
-    if event.get("event", "") != "draw":
-        # wrong event type
-        return b""
+def may_load_blob(event: dict, key: str) -> bytes:
     data = event.get("data", b"")
     if data:
         # we already have the data
         return data
-    encoding = event.get("encoding", "")
-    if not encoding:
-        log.warn("Warning: draw packet without encoding!")
+    # ie: "encoding" -> "png"
+    value = event.get(key, "")
+    if not value:
+        log.warn("Warning: %r packet without %r", event.strget("event"), key)
         return b""
-    # pixel data should have been saved separately:
+    # this data should have been saved separately,
+    # re-construct the filename from this event's filename:
     filename = event["filename"]
-    image_path = os.path.splitext(filename)[0] + f".{encoding}"
-    if not os.path.exists(image_path):
-        log.warn("Warning: draw image %r not found!", image_path)
+    blob_path = os.path.splitext(filename)[0] + f".{value}"
+    if not os.path.exists(blob_path):
+        log.warn("Warning: %s blob %r not found!", event.strget("event"), blob_path)
         return b""
-    data = load_binary_file(image_path)
-    event["data"] = data
-    return data
+    return load_binary_file(blob_path)
 
 
 def free_event(event: dict) -> None:
@@ -108,6 +107,7 @@ class WindowReplay:
         self.events: dict[int, dict] = load_events_placeholders(self.directory)
         self.group_index = 0
         self.event_index = 0
+        self.cursor: tuple[str, int ,int, int, int, int, int, int, bytes, str] | tuple = ()
         self.window = None
 
     def get_event(self) -> dict:
@@ -137,13 +137,14 @@ class WindowReplay:
         return self.get_event()
 
     def process_event(self) -> None:
-        event = self.get_event()
-        etype = event.get("event", "")
+        event = typedict(self.get_event())
+        etype = event.strget("event", "")
         if etype == "new":
             # hard-coded Gtk dependency here..
             def get_window_base_classes() -> tuple[type, ...]:
                 from xpra.client.gtk3.window.base import GTKClientWindowBase
-                WINDOW_BASES: list[type] = [GTKClientWindowBase]
+                from xpra.client.gtk3.window.pointer import PointerWindow
+                WINDOW_BASES: list[type] = [GTKClientWindowBase, PointerWindow]
                 return tuple(WINDOW_BASES)
             from xpra.client.gtk3.window import factory
             factory.get_window_base_classes = get_window_base_classes
@@ -151,9 +152,9 @@ class WindowReplay:
             from xpra.client.gtk3.window.window import ClientWindow
             client = FakeClient()
             group_leader = None
-            geom = event.get("geometry", (0, 0, 1, 1))
+            geom = event.inttupleget("geometry", (0, 0, 1, 1))
             backing_size = geom[2:4]
-            metadata = typedict(event.get("metadata", {}))
+            metadata = typedict(event.dictget("metadata", {}))
             override_redirect = metadata.boolget("override-redirect", False)
             client_props = typedict()
             from xpra.client.gui.window_border import WindowBorder
@@ -167,12 +168,42 @@ class WindowReplay:
                                        border, max_window_size, pixel_depth, headerbar="no")
             self.window.show()
         elif etype == "draw":
-            data = may_load_draw(event)
-            x, y, width, height = event.get("geometry", (0, 0, 1, 1))
-            coding = event.get("encoding", "")
-            rowstride = event.get("rowstride", 0)
-            options = typedict(event.get("options", {}))
+            data = event.bytesget("data") or may_load_blob(event, "encoding")
+            if CACHE:
+                event["data"] = data        # cache it for next time
+            x, y, width, height = event.inttupleget("geometry", (0, 0, 1, 1))
+            coding = event.strget("encoding", "")
+            rowstride = event.intget("rowstride", 0)
+            options = typedict(event.dictget("options", {}))
             self.window.draw_region(x, y, width, height, coding, data, rowstride, options, [])
+        elif etype == "cursor-default":
+            # set_cursor_data(self, cursor_data: Sequence) -> None:
+            self.window.set_cursor_data(())
+        elif etype == "cursor-data":
+            encoding = event.strget("encoding", "")
+            if encoding != "png":
+                log.warn("Warning: cursor data encoding %r is not supported", encoding)
+                return
+            w = event.intget("w", 0)
+            h = event.intget("h", 0)
+            xhot = event.intget("xhot", 0)
+            yhot = event.intget("yhot", 0)
+            serial = event.intget("serial", 0)
+            name = event.strget("name", "")
+            pixels = event.bytesget("pixels")
+            if not pixels:
+                cpixels = may_load_blob(event, "encoding")
+                from xpra.client.subsystem.cursor import decompress_cursor_data
+                pixels = decompress_cursor_data(encoding, cpixels, serial)
+            cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, name, pixels)
+            self.window.set_cursor_data(cursor_data)
+        elif etype == "pointer-position":
+            position = event.inttupleget("position", (0, 0, 1, 1))
+            if len(position) >= 4:
+                self.window.motion_cancels_pointer_overlay = False
+                self.window.show_pointer_overlay(position)
+        elif etype == "key-event":
+            log.info("key-event: %s", event)
         else:
             log.warn("%r not handled yet!", etype)
         self.next_event()
@@ -258,7 +289,10 @@ class Replay(GObjectClientAdapter):
         # log("process_next_event: %s", Ellipsizer(event, limit=200))
         log("process_next_event: %s", event.get("event", ""))
         model = self.window_replay[event["wid"]]
-        model.process_event()
+        try:
+            model.process_event()
+        except Exception:
+            log.error("Error processing event, trying to continue", exc_info=True)
         # move time forward to this event:
         self.time_index = max(self.time_index, event.get("timestamp", 0))
         self.schedule_next_event()

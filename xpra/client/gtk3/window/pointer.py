@@ -76,6 +76,7 @@ class PointerWindow(GtkStubWindow):
         self.show_pointer_overlay_timer = 0
         self.button_pressed: dict[int, int] = {}
         self.button_polling_timer = 0
+        self.motion_cancels_pointer_overlay = True
 
     def cleanup(self) -> None:
         self.cancel_show_pointer_overlay_timer()
@@ -146,7 +147,7 @@ class PointerWindow(GtkStubWindow):
             self.show_pointer_overlay_timer = 0
             self.source_remove(rsot)
 
-    def show_pointer_overlay(self, pos) -> None:
+    def show_pointer_overlay(self, pos: Sequence[int]) -> None:
         # schedule do_show_pointer_overlay if needed
         b = self._backing
         if not b:
@@ -226,8 +227,9 @@ class PointerWindow(GtkStubWindow):
 
     def _do_motion_notify_event(self, event) -> None:
         # Gtk.Window.do_motion_notify_event(self, event)
-        self.cancel_remove_pointer_overlay_timer()
-        self.remove_pointer_overlay()
+        if self.motion_cancels_pointer_overlay:
+            self.cancel_remove_pointer_overlay_timer()
+            self.remove_pointer_overlay()
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
