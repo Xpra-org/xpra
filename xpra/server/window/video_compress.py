@@ -1037,7 +1037,7 @@ class WindowVideoSource(WindowSource):
             encoding, r, self.full_frames_only, non_video, self.video_encodings)
         return r
 
-    def process_damage_region(self, damage_time, x: int, y: int, w: int, h: int,
+    def process_damage_region(self, damage_time: float, x: int, y: int, w: int, h: int,
                               coding: str, options: dict, flush=0) -> bool:
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
