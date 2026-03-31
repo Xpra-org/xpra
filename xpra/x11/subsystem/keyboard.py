@@ -344,3 +344,6 @@ class X11KeyboardServer(KeyboardServer):
             # pylint: disable=access-member-before-definition
             server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
             self.keyboard_config = server_source.keyboard_config
+        # setxkbmap resets X11 autorepeat to defaults, so re-apply:
+        if self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
+            self.set_keyboard_repeat(self.key_repeat_delay, self.key_repeat_interval)
