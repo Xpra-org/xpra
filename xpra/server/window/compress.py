@@ -272,6 +272,7 @@ class WindowSource(WindowIconSource):
         self.is_tray: bool = window.is_tray()
         self.is_shadow: bool = window.is_shadow()
         self.has_alpha: bool = HAS_ALPHA and window.has_alpha()
+        self.discard_alpha = False
         self.has_shape = False
         self.window_dimensions = ww, wh
         # ugly callback for window filters:
@@ -359,6 +360,7 @@ class WindowSource(WindowIconSource):
             sid = window.connect("notify::window-type", self.window_type_changed)
             self.window_signal_handlers.append(sid)
         self._opaque_region = self.window.get("opaque-region", ())
+        self.update_discard_alpha()
         if "opaque-region" in dyn_props:
             sid = window.connect("notify::opaque-region", self.window_opaque_region_changed)
             self.window_signal_handlers.append(sid)
@@ -798,6 +800,7 @@ class WindowSource(WindowIconSource):
         self._opaque_region = window.get_property("opaque-region") or ()
         log("window_opaque_region_changed(%s, %s) opaque-region=%s", window, args, self._opaque_region)
         self.update_encoding_options()
+        self.update_discard_alpha()
         return True
 
     def set_client_properties(self, properties: typedict) -> None:
@@ -1706,6 +1709,7 @@ class WindowSource(WindowIconSource):
         log("window dimensions changed from %s to %s", self.window_dimensions, (ww, wh))
         self.window_dimensions = ww, wh
         self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
+        self.update_discard_alpha()
         self.window_dimensions_updated()
 
     def get_packets_backlog(self) -> int:
@@ -2133,23 +2137,35 @@ class WindowSource(WindowIconSource):
             return nodata("sequence %i is cancelled", sequence)
         pixel_format = image.get_pixel_format()
         image_depth = image.get_depth()
-        if image_depth == 32 and pixel_format.find("A") >= 0:
-            alpha = self.has_alpha
-            opr = self._opaque_region
-            if alpha and opr:
-                for coords in opr:
-                    r = rectangle(*coords)
-                    if r.contains(x, y, w, h):
-                        alpha = False
-                        break
-            if not alpha:
+        if image_depth == 32 and self.has_alpha and pixel_format.find("A") >= 0:
+            if self.discard_alpha:
+                # update globally:
                 pixel_format = pixel_format.replace("A", "X")   # ie: BGRA -> BGRX
                 image.set_pixel_format(pixel_format)
                 image_depth = 24
-                log("removed alpha from image metadata: %s", pixel_format)
+            elif self.opaque_contains(x, y, w, h):
+                # only this image can be stripped of alpha, the global pixel_format still has it
+                image.set_pixel_format(pixel_format.replace("A", "X"))
+                image_depth = 24
         self.image_depth = image_depth
         self.pixel_format = pixel_format
         return image
+
+    def update_discard_alpha(self) -> None:
+        ww, wh = self.window_dimensions
+        self.discard_alpha = self.opaque_contains(0, 0, ww, wh)
+        log("update_discard_alpha() opaque=%s, dimensions=%s, discard_alpha=%s",
+            self._opaque_region, self.window_dimensions, self.discard_alpha)
+
+    def opaque_contains(self, x: int, y: int, w: int, h: int) -> bool:
+        opr = self._opaque_region
+        if not opr:
+            return False
+        for coords in opr:
+            r = rectangle(*coords)
+            if r.contains(x, y, w, h):
+                return True
+        return False
 
     def process_damage_region(self, damage_time: float, x: int, y: int, w: int, h: int,
                               coding: str, options: dict, flush=0):
