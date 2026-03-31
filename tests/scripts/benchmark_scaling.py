@@ -1098,6 +1098,8 @@ def main():
                         help="Number of frames to benchmark")
     parser.add_argument("--scale", type=float, default=1.6,
                         help="Scale factor")
+    parser.add_argument("--no-cpu", action="store_true",
+                        help="Skip CPU benchmarks")
     args = parser.parse_args()
 
     sizes = []
@@ -1185,8 +1187,12 @@ def main():
         cpu_frames = max(1, frames // 100) if src_w > 640 else max(1, frames // 10)
 
         have_ssim = ssim_if_available([0.0, 1.0], [0.0, 1.0], 2, 1) is not None
+        first_row = [True]
 
         def print_result(label, ms, result, size_prefix=""):
+            if not size_prefix and first_row[0]:
+                size_prefix = f"{src_w}x{src_h}"
+            first_row[0] = False
             p = psnr(ground_truth, result, n)
             mean_os, _ = overshoot(source, src_w, src_h, result, dst_w, dst_h)
             prefix = f"{size_prefix:>12s}" if size_prefix else f"{'':>12s}"
@@ -1197,22 +1203,23 @@ def main():
             print(line)
 
         # Run all 4 CPU variants in parallel
-        cpu_workers = max(1, multiprocessing.cpu_count() // 4)
-        cpu_args = [
-            ("CPU Catmull-Rom", source, src_w, src_h, dst_w, dst_h, cpu_frames, {}),
-            ("CPU CR + anti-ringing", source, src_w, src_h, dst_w, dst_h, cpu_frames,
-             {"ar_strength": AR_STRENGTH}),
-            ("CPU CR + sigmoid", source, src_w, src_h, dst_w, dst_h, cpu_frames,
-             {"use_sigmoid": True}),
-            ("CPU CR + sigmoid + anti-ringing", source, src_w, src_h, dst_w, dst_h, cpu_frames,
-             {"use_sigmoid": True, "ar_strength": AR_STRENGTH}),
-        ]
+        if not args.no_cpu:
+            cpu_workers = max(1, multiprocessing.cpu_count() // 4)
+            cpu_args = [
+                ("CPU Catmull-Rom", source, src_w, src_h, dst_w, dst_h, cpu_frames, {}),
+                ("CPU CR + anti-ringing", source, src_w, src_h, dst_w, dst_h, cpu_frames,
+                 {"ar_strength": AR_STRENGTH}),
+                ("CPU CR + sigmoid", source, src_w, src_h, dst_w, dst_h, cpu_frames,
+                 {"use_sigmoid": True}),
+                ("CPU CR + sigmoid + anti-ringing", source, src_w, src_h, dst_w, dst_h, cpu_frames,
+                 {"use_sigmoid": True, "ar_strength": AR_STRENGTH}),
+            ]
 
-        with multiprocessing.Pool(min(cpu_workers, len(cpu_args))) as pool:
-            cpu_results = pool.map(_run_cpu_bench, cpu_args)
+            with multiprocessing.Pool(min(cpu_workers, len(cpu_args))) as pool:
+                cpu_results = pool.map(_run_cpu_bench, cpu_args)
 
-        for i, (label, ms, result) in enumerate(cpu_results):
-            print_result(label, ms, result, f"{src_w}x{src_h}" if i == 0 else "")
+            for i, (label, ms, result) in enumerate(cpu_results):
+                print_result(label, ms, result, f"{src_w}x{src_h}" if i == 0 else "")
 
         if have_cairo:
             src_surface = make_cairo_surface(source, src_w, src_h)
