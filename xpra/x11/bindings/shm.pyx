@@ -290,9 +290,11 @@ cdef class XShmWrapper:
 cdef class XShmImageWrapper(XImageWrapper):
 
     cdef object free_callback
+    cdef Bool frozen
 
     def __init__(self, *args):
         self.free_callback = None
+        self.frozen = False
 
     def __repr__(self):
         return "XShmImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
@@ -313,9 +315,12 @@ cdef class XShmImageWrapper(XImageWrapper):
         return ptr
 
     def freeze(self) -> bool:
+        if self.frozen:
+            return True
         #we just force a restride, which will allocate a new pixel buffer:
         cdef unsigned int newstride = roundup(self.width*len(self.pixel_format), 4)
         self.timestamp = int(monotonic() * 1000)
+        self.frozen = True
         return self.restride(newstride)
 
     def free(self) -> None:
