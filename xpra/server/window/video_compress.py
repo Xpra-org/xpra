@@ -1082,7 +1082,7 @@ class WindowVideoSource(WindowSource):
 
         def call_encode(ew: int, eh: int, eimage: ImageWrapper, encoding: str, flush: int) -> None:
             if self.is_cancelled(sequence):
-                free_image_wrapper(image)
+                free_image_wrapper(eimage)
                 log("call_encode: sequence %s is cancelled", sequence)
                 return
             now = monotonic()
