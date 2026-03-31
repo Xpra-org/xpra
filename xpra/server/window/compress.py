@@ -2040,9 +2040,8 @@ class WindowSource(WindowIconSource):
         log("send_delayed_regions: queuing %i regions", len(i_reg_enc))
         encodings = []
         for i, region, actual_encoding in reversed(i_reg_enc):
-            if not self.process_damage_region(damage_time, region.x, region.y, region.width, region.height,
-                                              actual_encoding, options, flush=i):
-                log("failed on %i: %s", i, region)
+            self.process_damage_region(damage_time, region.x, region.y, region.width, region.height,
+                                       actual_encoding, options, flush=i)
             encodings.append(actual_encoding)
         log("send_delayed_regions: queued %i regions for encoding using %s", len(i_reg_enc), encodings)
 
@@ -2153,23 +2152,28 @@ class WindowSource(WindowIconSource):
         return image
 
     def process_damage_region(self, damage_time: float, x: int, y: int, w: int, h: int,
-                              coding: str, options: dict, flush=0) -> bool:
+                              coding: str, options: dict, flush=0):
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
-            Actual damage region processing:
-            we extract the rgb data from the pixmap and:
-            * if doing av-sync, we place the data on the encode queue with a timer,
-              when the timer fires, we queue the work for the damage thread
-            * without av-sync, we just queue the work immediately
-            The damage thread will call make_data_packet_cb which does the actual compression.
+            Requests the `ImageWrapper` then calls `process_damage_image` on it.
+            The damage thread will call `make_data_packet_cb` which does the actual compression.
             This runs in the UI thread.
         """
-        assert coding is not None
+        if not coding:
+            raise RuntimeError("no encoding specified")
         rgb_request_time = monotonic()
         image = self.get_damage_image(x, y, w, h)
-        if image is None:
-            return False
+        if image:
+            self.process_damage_image(damage_time, rgb_request_time, image, x, y, w, h, coding, options, flush)
+
+    def process_damage_image(self, damage_time: float, rgb_request_time: float,
+                             image: ImageWrapper,
+                             x: int, y: int, w: int, h: int, coding: str, options: dict, flush=0):
+        """
+        This method is not actually used in practice,
+        as all window sources use the WindowVideoSource subclass.
+        """
         log("get_damage_image%s took %ims", (x, y, w, h), 1000*(monotonic()-rgb_request_time))
         sequence = self._sequence
 
@@ -2187,7 +2191,6 @@ class WindowSource(WindowIconSource):
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
         log("process_damage_region: wid=%#x, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
             self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
-        return True
 
     def scaled_size(self, image: ImageWrapper) -> tuple[int, int] | None:
         crs = self.client_render_size

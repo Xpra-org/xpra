@@ -1037,10 +1037,11 @@ class WindowVideoSource(WindowSource):
             encoding, r, self.full_frames_only, non_video, self.video_encodings)
         return r
 
-    def process_damage_region(self, damage_time: float, x: int, y: int, w: int, h: int,
-                              coding: str, options: dict, flush=0) -> bool:
+    def process_damage_image(self, damage_time: float, rgb_request_time: float,
+                             image: ImageWrapper,
+                             x: int, y: int, w: int, h: int, coding: str, options: dict, flush=0):
         """
-            Called by 'damage' or 'send_delayed_regions' to process a damage region.
+            This may be called from any thread - the window object should not be accessed here.
 
             Actual damage region processing:
             we extract the rgb data from the pixmap and:
@@ -1050,13 +1051,6 @@ class WindowVideoSource(WindowSource):
             The damage thread will call make_data_packet_cb which does the actual compression.
             This runs in the UI thread.
         """
-        log("process_damage_region%s", (damage_time, x, y, w, h, coding, options, flush))
-        if not coding:
-            raise RuntimeError("no encoding specified")
-        rgb_request_time = monotonic()
-        image = self.get_damage_image(x, y, w, h)
-        if image is None:
-            return False
         elapsed = int(1000 * (monotonic() - rgb_request_time))
         log("get_damage_image%s took %ims", (x, y, w, h), elapsed)
         sequence = self._sequence
