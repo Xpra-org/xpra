@@ -1057,7 +1057,8 @@ class WindowVideoSource(WindowSource):
         image = self.get_damage_image(x, y, w, h)
         if image is None:
             return False
-        log("get_damage_image%s took %ims", (x, y, w, h), 1000*(monotonic()-rgb_request_time))
+        elapsed = monotonic() - rgb_request_time
+        log("get_damage_image%s took %ims", (x, y, w, h), 1000 * elapsed)
         sequence = self._sequence
 
         w = image.get_width()
@@ -1076,7 +1077,6 @@ class WindowVideoSource(WindowSource):
         # * the video encoder needs a thread safe image
         #   (the xshm backing may change from underneath us if we don't freeze it)
         av_delay = eoptions.intget("av-delay", 0)
-        elapsed = monotonic() - rgb_request_time
         av_delay = max(0, av_delay - elapsed)
         cve = self.common_video_encodings
         video_mode = coding in cve or (coding in ("auto", "stream") and cve)
