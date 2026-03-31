@@ -1076,6 +1076,8 @@ class WindowVideoSource(WindowSource):
         # * the video encoder needs a thread safe image
         #   (the xshm backing may change from underneath us if we don't freeze it)
         av_delay = eoptions.intget("av-delay", 0)
+        elapsed = monotonic() - rgb_request_time
+        av_delay = max(0, av_delay - elapsed)
         cve = self.common_video_encodings
         video_mode = coding in cve or (coding in ("auto", "stream") and cve)
         must_freeze = ALWAYS_FREEZE or av_delay > 0 or (video_mode and not image.is_thread_safe())
