@@ -214,7 +214,7 @@ class WindowReplay:
             if len(position) >= 4:
                 self.window.motion_cancels_pointer_overlay = False
                 self.window.show_pointer_overlay(position)
-        elif etype == "key-event":
+        elif etype in ("key-event", "key"):
             log("key-event: %s", event)
             log.info("key: %r", event.dictget("key", {}).get("name", ""))
         elif etype == "sync":
