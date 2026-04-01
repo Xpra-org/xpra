@@ -21,7 +21,7 @@
 %global __requires_exclude ^(libnvjpeg|libnvidia-|libcudart).*\\.so.*$
 
 Name:           %{python3}-torch-vision
-Version:        0.25.0
+Version:        0.26.0
 Release:        1
 URL:            https://github.com/pytorch/vision
 Summary:        The torchvision package consists of popular datasets, model architectures, and common image transformations for computer vision
@@ -54,7 +54,7 @@ Requires:   	turbojpeg
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "a7ac1b3ab489d71f6e27edfad1e27616e4b8a9b1517e60fce4a950600d3510e8" ]; then
+if [ "${sha256}" != "fb95b6b78b3801c4d4d6332f7a5a0b6c624588e1b39e0d6fa145227b0c749403" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -75,5 +75,8 @@ rm -rf %{buildroot}
 %{python3_sitearch}/torchvision-*%{version}-*egg-info
 
 %changelog
+* Wed Apr 01 2026 Antoine Martin <antoine@xpra.org> - 0.26.0-1
+- new upstream release
+
 * Sat Feb 07 2026 Antoine Martin <antoine@xpra.org> - 0.25.0-1
 - initial packaging
