@@ -28,11 +28,11 @@ FAST_DECODE_MIN_SPEED: int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 # note: this is just for defining the order of encodings,
 # so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
 PREFERRED_ENCODING_ORDER: Sequence[str] = (
-    "h264", "vp9", "vp8", "mpeg4",
+    "h265", "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "png", "png/P", "png/L", "webp", "avif",
     "rgb", "rgb24", "rgb32", "jpeg", "jpega",
-    "h265", "av1",
+    "av1",
     "scroll",
     "grayscale",
     "stream",

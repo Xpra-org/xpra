@@ -247,7 +247,7 @@ def _get_spec(encoding: str, in_cs: str, out_css: Sequence[str]) -> VideoSpec:
     has_lossless_mode = LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
     width_mask = get_width_mask(in_cs)
     height_mask = get_height_mask(in_cs)
-    has_lossless_mode = in_cs in ("XRGB", "BGRX", "r210") and encoding == "h264"
+    has_lossless_mode = in_cs in ("XRGB", "BGRX", "r210") and LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
 
     #the output will actually be in one of those two formats once decoded
     #because internally that's what we convert to before encoding
