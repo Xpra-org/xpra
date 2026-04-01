@@ -22,7 +22,7 @@
 %global __requires_exclude ^lib(cudart|cublas|cublasLt|cufft|cufile|cupti|curand|cusolver|cusparse|nvrtc)\\.so\\..*
 
 Name:           %{python3}-torch-cuda
-Version:        2.10.0
+Version:        2.11.0
 Release:        1
 URL:            https://github.com/pytorch/pytorch
 Summary:        PyTorch provides tensor computation with strong GPU acceleration and deep neural networks built on a tape-based autograd system
@@ -65,7 +65,7 @@ Requires:       cuda
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "fa8ccbe87f83f48735505371c1c313b4aa6db400b0ae4f8a02844d1e150c695f" ]; then
+if [ "${sha256}" != "ab3fde9e7e382f45ac942be6ea2c2ef362c5ccd6f55ed6d5f35e6ea81d3ab88e" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -152,5 +152,8 @@ rm -rf %{buildroot}
 %{python3_sitearch}/functorch
 
 %changelog
+* Wed Apr 01 2026 Antoine Martin <antoine@xpra.org> - 2.11.0-1
+- new upstream release
+
 * Sun Feb 08 2026 Antoine Martin <antoine@xpra.org> - 2.10.0-1
 - initial packaging for xpra with CUDA support builtin
