@@ -1319,7 +1319,7 @@ class WindowVideoSource(WindowSource):
         scorelog("verify_csc_and_encoder() scores=%s", scores)
         if not scores:
             return False
-        _, _, _, csc_width, csc_height, csc_spec, enc_in_format, _, enc_width, enc_height, encoder_spec = scores[0]
+        _, _, _, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec = scores[0]
         csce = self._csc_encoder
         if csce:
             if csc_spec is None:
@@ -1354,6 +1354,9 @@ class WindowVideoSource(WindowSource):
                 return False
             if not isinstance(ve, encoder_spec.codec_class):
                 scorelog(f" found a better video encoder class than {type(ve)}: {encoder_spec.codec_class}")
+                return False
+            if self.actual_scaling != encoder_scaling:
+                scorelog(" change of scaling from %s to %s", self.actual_scaling, encoder_scaling)
                 return False
         #everything is still valid:
         return True
