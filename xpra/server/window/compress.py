@@ -803,6 +803,22 @@ class WindowSource(WindowIconSource):
         self.update_discard_alpha()
         return True
 
+    def update_discard_alpha(self) -> None:
+        ww, wh = self.window_dimensions
+        self.discard_alpha = self.opaque_contains(0, 0, ww, wh)
+        log("update_discard_alpha() opaque=%s, dimensions=%s, discard_alpha=%s",
+            self._opaque_region, self.window_dimensions, self.discard_alpha)
+
+    def opaque_contains(self, x: int, y: int, w: int, h: int) -> bool:
+        opr = self._opaque_region
+        if not opr:
+            return False
+        for coords in opr:
+            r = rectangle(*coords)
+            if r.contains(x, y, w, h):
+                return True
+        return False
+
     def set_client_properties(self, properties: typedict) -> None:
         # filter out stuff we don't care about
         # to see if there is anything to set at all,
@@ -2100,75 +2116,8 @@ class WindowSource(WindowIconSource):
         # WindowVideoSource overrides this method
         return self.full_frames_only
 
-    def get_damage_image(self, x: int, y: int, w: int, h: int) -> ImageWrapper | None:
-        check_main_thread()
-
-        def nodata(msg, *args) -> ImageWrapper | None:
-            log("get_damage_image: "+msg, *args)
-            return None
-        if not self.window.is_managed():
-            return nodata("the window %s is not managed", self.window)
-        ww, wh = self.may_update_window_dimensions()
-        if x+w < 0 or y+h < 0:
-            return nodata(f"dropped, window is offscreen at {x},{y}")
-        if x+w > ww or y+h > wh:
-            # window is now smaller than the region we're trying to request
-            w = ww-x
-            h = wh-y
-        if w <= 0 or h <= 0:
-            return nodata(f"dropped, invalid dimensions {w},{h}")
-        self._sequence += 1
-        sequence = self._sequence
-        if self.is_cancelled(sequence):
-            return nodata("sequence %s is cancelled", sequence)
-        image = self.window.get_image(x, y, w, h)
-        if image is None:
-            return nodata("no pixel data for window %s, wid=%#x", self.window, self.wid)
-        image_filter = self.image_filter
-        if image_filter:
-            image = image_filter.process_image(image)
-        # image may have been clipped to the new window size during resize:
-        w = image.get_width()
-        h = image.get_height()
-        if w == 0 or h == 0:
-            return nodata("invalid dimensions: %ix%i", w, h)
-        if self.is_cancelled(sequence):
-            free_image_wrapper(image)
-            return nodata("sequence %i is cancelled", sequence)
-        pixel_format = image.get_pixel_format()
-        image_depth = image.get_depth()
-        if image_depth == 32 and self.has_alpha and pixel_format.find("A") >= 0:
-            if self.discard_alpha:
-                # update globally:
-                pixel_format = pixel_format.replace("A", "X")   # ie: BGRA -> BGRX
-                image.set_pixel_format(pixel_format)
-                image_depth = 24
-            elif self.opaque_contains(x, y, w, h):
-                # only this image can be stripped of alpha, the global pixel_format still has it
-                image.set_pixel_format(pixel_format.replace("A", "X"))
-                image_depth = 24
-        self.image_depth = image_depth
-        self.pixel_format = pixel_format
-        return image
-
-    def update_discard_alpha(self) -> None:
-        ww, wh = self.window_dimensions
-        self.discard_alpha = self.opaque_contains(0, 0, ww, wh)
-        log("update_discard_alpha() opaque=%s, dimensions=%s, discard_alpha=%s",
-            self._opaque_region, self.window_dimensions, self.discard_alpha)
-
-    def opaque_contains(self, x: int, y: int, w: int, h: int) -> bool:
-        opr = self._opaque_region
-        if not opr:
-            return False
-        for coords in opr:
-            r = rectangle(*coords)
-            if r.contains(x, y, w, h):
-                return True
-        return False
-
     def process_damage_region(self, damage_time: float, x: int, y: int, w: int, h: int,
-                              coding: str, options: dict, flush=0):
+                              coding: str, options: dict, flush=0) -> None:
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
@@ -2178,21 +2127,76 @@ class WindowSource(WindowIconSource):
         """
         if not coding:
             raise RuntimeError("no encoding specified")
+        check_main_thread()
         rgb_request_time = monotonic()
-        image = self.get_damage_image(x, y, w, h)
-        if image:
-            self.process_damage_image(damage_time, rgb_request_time, image, x, y, w, h, coding, options, flush)
+
+        if not self.window.is_managed():
+            log("process_damage_region: the window %s is not managed", self.window)
+            return
+        ww, wh = self.may_update_window_dimensions()
+        if x + w < 0 or y + h < 0:
+            log("process_damage_region: dropped, window is offscreen at %i%,%i", x, y)
+            return
+        if x + w > ww or y + h > wh:
+            # window is now smaller than the region we're trying to request
+            w = ww - x
+            h = wh - y
+        if w <= 0 or h <= 0:
+            log("process_damage_region: dropped, invalid dimensions %ix%i", w, h)
+            return
+        self._sequence += 1
+        sequence = self._sequence
+        if self.is_cancelled(sequence):
+            log("process_damage_region: sequence %s is cancelled", sequence)
+            return
+        image = self.window.get_image(x, y, w, h)
+        if image is None:
+            log("process_damage_region: no pixel data for window %s, wid=%#x", self.window, self.wid)
+            return
+
+        image_filter = self.image_filter
+        if image_filter:
+            image = image_filter.process_image(image)
+        self.process_damage_image(damage_time, rgb_request_time, image, coding, sequence, options, flush)
 
     def process_damage_image(self, damage_time: float, rgb_request_time: float,
                              image: ImageWrapper,
-                             x: int, y: int, w: int, h: int, coding: str, options: dict, flush=0):
-        """
-        This method is not actually used in practice,
-        as all window sources use the WindowVideoSource subclass.
-        """
-        log("get_damage_image%s took %ims", (x, y, w, h), 1000*(monotonic()-rgb_request_time))
-        sequence = self._sequence
+                             coding: str, sequence: int, options: dict, flush=0):
+        elapsed = int(1000 * (monotonic() - rgb_request_time))
+        log("retrieving %s took %ims", image, elapsed)
 
+        # image may have been clipped to the new window size during resize:
+        w = image.get_width()
+        h = image.get_height()
+        if w == 0 or h == 0:
+            log("process_damage_image: invalid dimensions: %ix%i", w, h)
+            return
+        if self.is_cancelled(sequence):
+            free_image_wrapper(image)
+            log("process_damage_image: sequence %i is cancelled", sequence)
+            return
+
+        # record the current window depth / format:
+        pixel_format = image.get_pixel_format()
+        image_depth = image.get_depth()
+        if image_depth == 32 and self.has_alpha and pixel_format.find("A") >= 0:
+            # we may want to discard alpha, either globally, or just for this update:
+            if self.discard_alpha:
+                # update globally:
+                pixel_format = pixel_format.replace("A", "X")   # ie: BGRA -> BGRX
+                image.set_pixel_format(pixel_format)
+                image_depth = 24
+            else:
+                x = image.get_target_x()
+                y = image.get_target_y()
+                if self.opaque_contains(x, y, w, h):
+                    # only this image can be stripped of alpha, the global pixel_format still has it
+                    image.set_pixel_format(pixel_format.replace("A", "X"))
+                    image_depth = 24
+        self.image_depth = image_depth
+        self.pixel_format = pixel_format
+
+        # prepare encoding options:
         eoptions = typedict(options)
         if self.send_window_size:
             eoptions["window-size"] = self.window_dimensions
@@ -2202,11 +2206,26 @@ class WindowSource(WindowIconSource):
             eoptions["scaled-width"] = sw
             eoptions["scaled-height"] = sh
 
+        self.do_process_damage_image(damage_time, rgb_request_time, image, coding, sequence, eoptions, flush)
+
+    def do_process_damage_image(self, damage_time: float, rgb_request_time: float,
+                                image: ImageWrapper,
+                                coding: str, sequence: int, eoptions: typedict, flush=0):
+        """
+        This method is not actually used in practice,
+        as all window sources use the WindowVideoSource subclass.
+        It just shows what a basic non-video implementation would do.
+        """
         now = monotonic()
+        elapsed = int(1000 * (now - rgb_request_time))
+        log("retrieving %s took %ims, options=%s", image, elapsed, eoptions)
+
+        w = image.get_width()
+        h = image.get_height()
         item = (w, h, damage_time, now, image, coding, sequence, eoptions, flush)
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
         log("process_damage_region: wid=%#x, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
-            self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
+            self.wid, sequence, w, h, coding, 1000 * (now - damage_time), elapsed)
 
     def scaled_size(self, image: ImageWrapper) -> tuple[int, int] | None:
         crs = self.client_render_size

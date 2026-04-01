@@ -1037,9 +1037,9 @@ class WindowVideoSource(WindowSource):
             encoding, r, self.full_frames_only, non_video, self.video_encodings)
         return r
 
-    def process_damage_image(self, damage_time: float, rgb_request_time: float,
-                             image: ImageWrapper,
-                             x: int, y: int, w: int, h: int, coding: str, options: dict, flush=0):
+    def do_process_damage_image(self, damage_time: float, rgb_request_time: float,
+                                image: ImageWrapper,
+                                coding: str, sequence: int, eoptions: typedict, flush=0):
         """
             This may be called from any thread - the window object should not be accessed here.
 
@@ -1052,19 +1052,10 @@ class WindowVideoSource(WindowSource):
             This runs in the UI thread.
         """
         elapsed = int(1000 * (monotonic() - rgb_request_time))
-        log("get_damage_image%s took %ims", (x, y, w, h), elapsed)
-        sequence = self._sequence
+        log("retrieving %s took %ims", image, elapsed)
 
         w = image.get_width()
         h = image.get_height()
-        eoptions = typedict(options)
-        if self.send_window_size:
-            eoptions["window-size"] = self.window_dimensions
-        resize = self.scaled_size(image)
-        if resize:
-            sw, sh = resize
-            eoptions["scaled-width"] = sw
-            eoptions["scaled-height"] = sh
 
         # freeze if:
         # * we want av-sync
