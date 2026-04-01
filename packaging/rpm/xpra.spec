@@ -816,7 +816,7 @@ fi
 
 
 %changelog
-* Wed Mar 27 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
+* Wed Apr 01 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install
    Python compatibility regression
@@ -847,8 +847,11 @@ fi
    DND errors under Wayland
    X11 calls missing trap context
    missing CUDA context when clients connect early
+   CUDA context leak
    missing encodings
    override-redirect windows using outdated dimensions
+   sub-image use after free
+   video downscaling becomes sticky
 - Printing:
    incorrect cups backend exit codes could cause DoS, ie: FILE_TOO_BIG
    use more widely compatible socket syntax
@@ -859,6 +862,7 @@ fi
    help clients figure out modifier mappings
    client keyboard 'options' attribute was not forwarded
    honour layout and variant overrides
+   keyboard repeat rate lost after client sets new keymap
 - Minor:
    try harder to locate the notification icons
    honour the XPRA_MONITOR_CHANGE_REINIT environment variable
@@ -875,6 +879,7 @@ fi
    pulseaudio setup race condition
    add guard against threading issues
    move-resize could miss the last event
+   NVENC's `hevc` does support lossless mode
 - Cosmetic:
    make socket eof detection less spammy
    invalid syntax used in man page
@@ -888,6 +893,8 @@ fi
    avoid `KeyError` parsing some broken icon files
    more meaningful labels on session info dialog
    log line wrapping
+   correct type for XI2 cython bindings
+   file descriptor leak warning
 
 * Thu Dec 04 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
 - Platforms, build and packaging:
