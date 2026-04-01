@@ -28,11 +28,10 @@ FAST_DECODE_MIN_SPEED: int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 # note: this is just for defining the order of encodings,
 # so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
 PREFERRED_ENCODING_ORDER: Sequence[str] = (
-    "h265", "h264", "vp9", "vp8", "mpeg4",
+    "h265", "av1", "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "png", "png/P", "png/L", "webp", "avif",
     "rgb", "rgb24", "rgb32", "jpeg", "jpega",
-    "av1",
     "scroll",
     "grayscale",
     "stream",
@@ -46,9 +45,8 @@ PREFERRED_REFRESH_ENCODING_ORDER: Sequence[str] = (
     "webp", "avif", "png", "png/P", "png/L", "rgb", "rgb24", "rbg32", "jpeg", "jpega",
 )
 STREAM_ENCODINGS: Sequence[str] = (
-    "h264", "vp9", "vp8", "mpeg4",
+    "h265", "av1", "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
-    "h265", "av1",
 )
 
 # encoding order for edges (usually one pixel high or wide):
@@ -62,7 +60,7 @@ HELP_ORDER: Sequence[str] = (
     "auto",
     "stream",
     "grayscale",
-    "h264", "h265", "av1", "vp8", "vp9", "mpeg4",
+    "h265", "av1", "h264", "vp8", "vp9", "mpeg4",
     "png", "png/P", "png/L", "webp", "avif",
     "rgb", "jpeg", "jpega",
     "scroll",
