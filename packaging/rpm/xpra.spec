@@ -1084,7 +1084,7 @@ fi
 
 
 %changelog
-* Fri Mar 27 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
+* Wed Apr 01 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
 - Platforms, build and packaging:
    `pycuda` 2026.1
    add Fedora 44, remove Fedora 41
@@ -1103,9 +1103,14 @@ fi
    avoid Gtk critical warning
 - Major:
    missing CUDA context causing NVENC failures
+   CUDA context leak
    clients connecting quickly may miss some server encodings
    override-redirect windows using outdated dimensions
+   broken distro detection, RHEL 10 clones Xvfb failures
+   sub-image use after free
+   video downscaling becomes sticky
 - Minor:
+   keyboard repeat rate lost after client sets new keymap
    server shows missing X11 context warnings with some clients
    honour `XPRA_NVIDIA_HARDWARE` both ways
    clipboard tray menu entry is not pre-selected
@@ -1114,6 +1119,9 @@ fi
    try harder to find notification icons
    move-resize could miss the last event
    AV1 codec test data does not match the metadata
+   configuration backup filename truncated
+   NVENC's `hevc` does support lossless mode
+   missing bandwidth and lantency data in sesion info graphs
 - Cosmetic:
    skip `OpenGL` zerocopy warning on the server side
    avoid errors when `netdev_query` is missing
@@ -1125,6 +1133,8 @@ fi
    invalid time shown on session info dialog
    log line wrapping
    trap signal callback exceptions and log them
+   correct type for XI2 cython bindings
+   file descriptor leak warning
 
 * Sat Jan 31 2026 Antoine Martin <antoine@xpra.org> 6.4.3-10
 - Platforms, build and packaging:

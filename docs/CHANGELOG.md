@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.4.4] 2026-03-27
+## [6.4.4] 2026-04-01
 * Platforms, build and packaging:
   * [`pycuda` 2026.1](https://github.com/Xpra-org/xpra/commit/dab23526cd93784ee9b0afbdfa927de4a584505a)
   * [add Fedora 44, remove Fedora 41](https://github.com/Xpra-org/xpra/commit/eac8640c24bd67c74f2da5f22c5508a76be2d6f7)
@@ -19,9 +19,14 @@
   * [avoid Gtk critical warning](https://github.com/Xpra-org/xpra/commit/59b89fb6276142d97bc9c060e988b019f3561637) and [remove corresponding logging workaround](https://github.com/Xpra-org/xpra/commit/c397fbf7acd77d1c2c4dcdc494853283f1e1aa4f)
 * Major:
   * [missing CUDA context causing NVENC failures](https://github.com/Xpra-org/xpra/commit/5a1896ad0efc3705fbdfd979ea66ba001aff4a15)
+  * [CUDA context leak](https://github.com/Xpra-org/xpra/commit/2975a058bb8782780a6b72d43ac588f0aad41b32)
   * [clients connecting quickly may miss some server encodings](https://github.com/Xpra-org/xpra/commit/3dd1c18da4f6e99d8a816d4ec631e703181b04ee) + [cleanup](https://github.com/Xpra-org/xpra/commit/869951db8fd6724b286d808579cadbc47f1be86c) + [fixup](https://github.com/Xpra-org/xpra/commit/6da25080556a523fea3b424ebf78b2acd3bd963b) + [another](https://github.com/Xpra-org/xpra/commit/c82b43b5d0b4e9e4922cc6d8a01a1787ee703f59)
   * [override-redirect windows using outdated dimensions](https://github.com/Xpra-org/xpra/commit/ece967a1e87bd8b778d2d2b74c4db4d87e32eaab)
+  * [broken distro detection, RHEL 10 clones Xvfb failures](https://github.com/Xpra-org/xpra/commit/ecff8de3d5bccb7227df2ee83d53009f3dc28d0e)
+  * [sub-image use after free](https://github.com/Xpra-org/xpra/commit/45d0c4e2130b80a127de0e367dd23c0a49459789)
+  * [video downscaling becomes sticky](https://github.com/Xpra-org/xpra/commit/8f3c34ff03382a19823d8a627b22718828455630)
 * Minor:
+  * [keyboard repeat rate lost after client sets new keymap](https://github.com/Xpra-org/xpra/commit/7237a19b8398b4673f5960a3a618c739568130a9)
   * [server shows missing X11 context warnings with some clients](https://github.com/Xpra-org/xpra/commit/f906982af956213bbd2e4ce87aca9bb6e70e2634)
   * [honour `XPRA_NVIDIA_HARDWARE` both ways](https://github.com/Xpra-org/xpra/commit/7a9a7636145b90a294615ecc50ab6f019584c322)
   * [clipboard tray menu entry is not pre-selected](https://github.com/Xpra-org/xpra/commit/4548e5ede6ea97d3bed0d1f09b1845699cf3d910)
@@ -32,6 +37,9 @@
   * [try harder to find notification icons](https://github.com/Xpra-org/xpra/commit/3db0acc9a5a9d5ca5ac8440dee4c5b699fe5ec7c) [but not `SVG`s](https://github.com/Xpra-org/xpra/commit/9e4ae537a1b2fa04d36de73bb10f8aa37ac4797b), [and handle invalid calls gracefully](https://github.com/Xpra-org/xpra/commit/7310cf9aa612de8217090b157d1c70ce0aaa9dfd)
   * [move-resize could miss the last event](https://github.com/Xpra-org/xpra/commit/ad67c018d35dfa587c17d28db8a6b3c6e53e12e6)
   * [AV1 codec test data does not match the metadata](https://github.com/Xpra-org/xpra/commit/3c90f7b7018535930913746069436a8bde3fb4a1)
+  * [configuration backup filename truncated](https://github.com/Xpra-org/xpra/commit/3981df5e6929d59f829c5150c92eeff3234776f3)
+  * [NVENC's `hevc` does support lossless mode](https://github.com/Xpra-org/xpra/commit/287802e459235df0177ac0ea74153a4fbc4af37f)
+  * [missing bandwidth and lantency data in sesion info graphs](https://github.com/Xpra-org/xpra/commit/675cbe1205cc6d995220c133c7af78b9df6e615c)
 * Cosmetic:
   * [skip `OpenGL` zerocopy warning on the server side](https://github.com/Xpra-org/xpra/commit/283f392c6a4d64ab60b2252d844aea8135a7d2dc)
   * [avoid errors when `netdev_query` is missing](https://github.com/Xpra-org/xpra/commit/b6d70b9b1499c335f9e770dc4183e8d4c7197f9a)
@@ -43,6 +51,8 @@
   * [invalid time shown on session info dialog](https://github.com/Xpra-org/xpra/commit/6d5ea1d18fe818e688294526293c448d018b5556)
   * [log line wrapping](https://github.com/Xpra-org/xpra/commit/b0fe98fd0878bc5a25d203a1da6909257271b2ec)
   * [trap signal callback exceptions and log them](https://github.com/Xpra-org/xpra/commit/d5d54a82ca6c7416ce11a35c4df02d1a0facc87f)
+  * [correct type for XI2 cython bindings](https://github.com/Xpra-org/xpra/commit/39e550786fef71672f8fa3b7449a00bf34035709)
+  * [file descriptor leak warning](https://github.com/Xpra-org/xpra/commit/0b69916a45d87cbedbb7701cad0b3709c9878879)
 
 ## [6.4.3] 2026-01-31
 * Platforms, build and packaging:
