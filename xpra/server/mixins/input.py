@@ -257,7 +257,7 @@ class InputServer(StubServerMixin):
         """ Schedules/cancels the key repeat timeouts """
         self.cancel_key_repeat_timer()
         if pressed:
-            delay_ms = min(1500, max(250, delay_ms))
+            delay_ms = min(2000, max(1000, delay_ms))
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             now = monotonic()
             self.key_repeat_timer = self.timeout_add(delay_ms, self._key_repeat_timeout,
