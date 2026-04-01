@@ -4,14 +4,16 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections.abc import Callable
 from time import sleep
 from typing import Any
 
 from xpra.server.source.stub import StubClientConnection
-from xpra.server.window.compress import WindowSource
+from xpra.server.window.compress import WindowSource, free_image_wrapper
 from xpra.codecs.loader import load_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.util.str_fn import csv
+from xpra.util.thread import start_thread
 from xpra.util.env import envbool, envint
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -23,23 +25,53 @@ CONTENT_TYPES = set(ct for ct in os.environ.get("XPRA_IMAGEFILTER_CONTENT_TYPES"
 WINDOW_TYPES = set(ct for ct in os.environ.get("XPRA_IMAGEFILTER_WINDOW_TYPES", "").split(",") if ct)
 MODULES = os.environ.get("XPRA_IMAGEFILTER_MODULES", "torch,pillow").split(",")
 DELAY = envint("XPRA_IMAGE_FILTER_DELAY", 0)
+THREADED_FILTERS = tuple(os.environ.get("XPRA_THREADED_FILTERS", "torch").split(","))
+TIMEOUT = envint("XPRA_THREADED_FILTER_TIMEOUT", 5)
 
 
 class ImageFilter:
-    def __init__(self, wid: int, filter):
+    def __init__(self, wid: int, imagefilter):
         self.wid = wid
-        self.filter = filter
+        self.filter = imagefilter
+        self.threaded = "*" in THREADED_FILTERS or imagefilter.get_info().get("type", "") in THREADED_FILTERS
+        self.thread = None
+        log("ImageFilter(%#x, %s) threaded=%s", wid, imagefilter, self.threaded)
 
-    def process_image(self, image: ImageWrapper) -> ImageWrapper:
+    def process_image(self, image: ImageWrapper, callback: Callable[[ImageWrapper], None]) -> None:
+        log("%s.process_image(%s, %s)", self, image, callback)
+        if not self.threaded:
+            self.do_process_image(image, callback)
+            return
+        if not self.wait_for_thread():
+            free_image_wrapper(image)
+            return
+        self.thread = start_thread(self.do_process_image, "image-filter-process-image-%#x" % self.wid,
+                                   daemon=True, args=(image, callback))
+
+    def do_process_image(self, image: ImageWrapper, callback: Callable[[ImageWrapper], None]) -> None:
         if DELAY > 0:
             sleep(DELAY / 1000)
-        return self.filter.convert_image(image)
+        filtered = self.filter.convert_image(image)
+        free_image_wrapper(image)
+        callback(filtered)
 
     def clean(self) -> None:
+        self.wait_for_thread()
         filt = self.filter
         if filt:
             self.filter = None
             filt.clean()
+
+    def wait_for_thread(self) -> bool:
+        t = self.thread
+        if not t:
+            return True
+        t.join(timeout=TIMEOUT)
+        if t.is_alive():
+            log.error("Error: image filter thread timeout")
+            return False
+        self.thread = None
+        return True
 
     def __repr__(self):
         return "ImageFilter(%#x, %s)" % (self.wid, self.filter)
@@ -51,6 +83,8 @@ class ImageFilterConnection(StubClientConnection):
     """
     PREFIX = "imagefilter"
 
+    FAILED_FILTERS: set[str] = set()
+
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         ifilt = envbool("XPRA_WINDOW_IMAGE_FILTER", bool(CONTENT_TYPES) or bool(WINDOW_TYPES))
@@ -59,10 +93,15 @@ class ImageFilterConnection(StubClientConnection):
     def __init__(self):
         super().__init__()
         for mod in MODULES:
-            self.filter_module = load_codec(f"filter_{mod}")
+            if mod in ImageFilterConnection.FAILED_FILTERS:
+                log("%s in FAILED_FILTERS", mod)
+                self.filter_module = None
+            else:
+                self.filter_module = load_codec(f"filter_{mod}")
             log("filter(%s)=%s", mod, self.filter_module)
             if self.filter_module:
                 break
+            ImageFilterConnection.FAILED_FILTERS.add(mod)
         if not self.filter_module:
             log.warn("Warning: no imagefilter modules found, tried: %s", csv(MODULES))
 

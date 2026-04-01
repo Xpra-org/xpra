@@ -23,6 +23,7 @@ def get_version() -> tuple[int, int]:
 
 
 torch_info: dict[str, Any] = {
+    "type": get_type(),
     "version": get_version(),
 }
 

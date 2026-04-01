@@ -8,7 +8,7 @@ from PIL import Image, ImageFilter
 
 from xpra.codecs.debug import SAVE_TO_FILE, may_save_image
 from xpra.util.objects import typedict
-from xpra.codecs.image import ImageWrapper
+from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.constants import CSCSpec
 from xpra.util.str_fn import parse_function_call
 from xpra.log import Logger
@@ -26,6 +26,7 @@ def get_version() -> tuple[int, int]:
 
 def get_info() -> dict[str, Any]:
     info: dict[str, Any] = {
+        "type": get_type(),
         "version": get_version(),
     }
     return info
@@ -131,7 +132,8 @@ class Filter:
         assert height <= self.height, "expected image height smaller than %i got %i" % (self.height, height)
         bgrx = image.get_pixels()
         img = Image.frombuffer("RGBA", (width, height), bgrx, "raw", "BGRA", image.get_rowstride())
-        if image.get_pixel_format() == "BGRX":
+        pixel_format = image.get_pixel_format()
+        if pixel_format == "BGRX":
             img.putalpha(255)
         if SAVE_TO_FILE:
             from io import BytesIO
@@ -142,9 +144,12 @@ class Filter:
             may_save_image("png", png_data)
         modified = img.filter(self.transform)
         bgrx = modified.tobytes("raw", "BGRA", 0, 1)
-        image.set_pixels(bgrx)
-        image.set_rowstride(width * 4)
-        return image
+        filtered = ImageWrapper(image.get_x(), image.get_y(), width, height, bgrx, pixel_format, image.get_depth(),
+                                width * 4, 4, planes=PlanarFormat.PACKED, thread_safe=True)
+        filtered.set_target_x(image.get_target_x())
+        filtered.set_target_y(image.get_target_y())
+        log("convert_image(%s)=%s (transform=%s)", image, filtered, self.transform)
+        return filtered
 
 
 def selftest(full=False):

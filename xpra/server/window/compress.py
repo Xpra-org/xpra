@@ -2154,10 +2154,14 @@ class WindowSource(WindowIconSource):
             log("process_damage_region: no pixel data for window %s, wid=%#x", self.window, self.wid)
             return
 
+        def process_damage_image(img: ImageWrapper) -> None:
+            self.process_damage_image(damage_time, rgb_request_time, img, coding, sequence, options, flush)
+
         image_filter = self.image_filter
         if image_filter:
-            image = image_filter.process_image(image)
-        self.process_damage_image(damage_time, rgb_request_time, image, coding, sequence, options, flush)
+            image_filter.process_image(image, process_damage_image)
+        else:
+            process_damage_image(image)
 
     def process_damage_image(self, damage_time: float, rgb_request_time: float,
                              image: ImageWrapper,
