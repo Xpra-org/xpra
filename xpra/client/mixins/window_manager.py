@@ -306,7 +306,9 @@ class WindowClient(StubClientMixin):
                     log.info("window icon overlay requires python-pillow")
                 else:
                     try:
-                        self.overlay_image = Image.open(icon_filename)
+                        img = Image.open(icon_filename)
+                        img.load()
+                        self.overlay_image = img
                     except Exception as e:
                         log.error("Error: failed to load overlay icon '%s':", icon_filename, exc_info=True)
                         log.estr(e)
