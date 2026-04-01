@@ -275,7 +275,7 @@ CLASS_INFO = {
 
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
-cdef X11CoreBindingsInstance singleton = None
+cdef X11XI2BindingsInstance singleton = None
 def X11XI2Bindings():
     global singleton
     if singleton is None:
