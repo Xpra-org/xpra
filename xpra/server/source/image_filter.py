@@ -33,9 +33,10 @@ class ImageFilter:
     def __init__(self, wid: int, imagefilter):
         self.wid = wid
         self.filter = imagefilter
-        self.threaded = "*" in THREADED_FILTERS or imagefilter.get_info().get("type", "") in THREADED_FILTERS
+        filter_type = imagefilter.get_info().get("type", "")
+        self.threaded = "*" in THREADED_FILTERS or filter_type in THREADED_FILTERS
         self.thread = None
-        log("ImageFilter(%#x, %s) threaded=%s", wid, imagefilter, self.threaded)
+        log("ImageFilter(%#x, %s) filter_type=%s, threaded=%s", wid, imagefilter, filter_type, self.threaded)
 
     def process_image(self, image: ImageWrapper, callback: Callable[[ImageWrapper], None]) -> None:
         log("%s.process_image(%s, %s)", self, image, callback)
