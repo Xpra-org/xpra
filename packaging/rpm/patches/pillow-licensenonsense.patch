@@ -8,5 +8,5 @@
 -license-files = [ "LICENSE" ]
 +license = {text = "MIT-CMU"}
  authors = [
-   { name = "Jeffrey A. Clark", email = "aclark@aclark.net" },
+   { name = "Jeffrey 'Alex' Clark", email = "aclark@aclark.net" },
  ]
