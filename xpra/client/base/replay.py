@@ -239,7 +239,7 @@ class WindowReplay:
             metadata = typedict(event.dictget("metadata", {}))
             self.window.update_metadata(metadata)
         elif etype == "metadata":
-            metadata = event.dictget("metadata") or {}
+            metadata = typedict(event.dictget("metadata", {}))
             log("metadata: %s", metadata)
             self.window.update_metadata(metadata)
         else:
