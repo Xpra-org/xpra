@@ -95,8 +95,16 @@ class WindowModel:
         save_json(path, data)
         log("recorded: %s : %r", event, data)
         self.event_no += 1
-        if event != "sync" and not self.sync_timer:
+        if event == "destroy":
+            self.cancel_sync_timer()
+        elif event != "sync" and not self.sync_timer:
             self.sync_timer = GLib.timeout_add(SYNC_GAP * 1000, self.record_sync)
+
+    def cancel_sync_timer(self) -> None:
+        st = self.sync_timer
+        if st:
+            self.sync_timer = 0
+            GLib.source_remove(st)
 
     def record_sync(self) -> bool:
         self.sync_timer = 0

@@ -185,6 +185,9 @@ class WindowReplay:
 
     def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
+        if not self.window and etype != "new":
+            log.warn("Warning: event %r received, but window is gone!", etype)
+            return
         if etype == "new":
             geom: tuple[int, int, int, int] = event.inttupleget("geometry", (0, 0, 1, 1))
             metadata = typedict(event.dictget("metadata", {}))
