@@ -30,6 +30,7 @@ class GtkReplay(Replay):
         self.readonly = True
         self.title = "replay: @title@"
         self.find_window = noop
+        self.update_focus = noop
         self.sp = self.sx = self.sy = self.srect = self.no_scaling
         self.cx = self.cy = self.no_scaling
         self.fsx = self.fsy = self.no_scaling
