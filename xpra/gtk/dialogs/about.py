@@ -51,6 +51,13 @@ def close_about(*_args) -> bool:
     return True
 
 
+def destroy_about(*_args) -> None:
+    global about_dialog
+    if about_dialog:
+        about_dialog.hide()
+    about_dialog = None
+
+
 def about(on_close=close_about, parent: Gtk.Window | None = None):
     global about_dialog
     if about_dialog:
@@ -76,6 +83,7 @@ def about(on_close=close_about, parent: Gtk.Window | None = None):
     dialog.set_program_name(APPLICATION_NAME)
     dialog.connect("response", on_close)
     dialog.connect("delete-event", on_close)
+    dialog.connect("destroy", destroy_about)
     add_close_accel(dialog, on_close)
     about_dialog = dialog
     dialog.show()
