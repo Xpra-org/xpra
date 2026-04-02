@@ -1265,6 +1265,10 @@ class SessionInfo(Gtk.Window):
         if h <= 0:
             return True
         start_x_offset = min(1.0, (monotonic() - self.last_populate_time) * 0.95)
+        from xpra.common import DEFAULT_DPI
+        screen = Gdk.Screen.get_default()
+        dpi = screen.get_resolution() if screen else -1
+        scale = max(1, dpi / DEFAULT_DPI) if dpi > 0 else self.get_scale_factor()
         rect = box.get_allocation()
         maxw, maxh = self.client.get_root_size()
         ngraphs = 2 + int(SHOW_SOUND_STATS)
@@ -1317,7 +1321,8 @@ class SessionInfo(Gtk.Window):
             surface = make_graph_imagesurface(datasets, labels=labels,
                                               width=w, height=h,
                                               title="Bandwidth", min_y_scale=10, rounding=10,
-                                              start_x_offset=start_x_offset)
+                                              start_x_offset=start_x_offset,
+                                              scale=scale)
             set_graph_surface(self.bandwidth_graph, surface)
 
         def norm_lists(items, size=N_SAMPLES) -> tuple:
@@ -1353,7 +1358,8 @@ class SessionInfo(Gtk.Window):
         surface = make_graph_imagesurface(latency_values, labels=latency_labels,
                                           width=w, height=h,
                                           title="Latency (ms)", min_y_scale=10, rounding=25,
-                                          start_x_offset=start_x_offset)
+                                          start_x_offset=start_x_offset,
+                                          scale=scale)
         set_graph_surface(self.latency_graph, surface)
 
         if features.audio and SHOW_SOUND_STATS and self.client.audio_sink:
@@ -1369,7 +1375,8 @@ class SessionInfo(Gtk.Window):
             surface = make_graph_imagesurface(queue_values, labels=queue_labels,
                                               width=w, height=h,
                                               title="Audio Buffer (ms)", min_y_scale=10, rounding=25,
-                                              start_x_offset=start_x_offset)
+                                              start_x_offset=start_x_offset,
+                                              scale=scale)
             set_graph_surface(self.audio_queue_graph, surface)
         return True
 

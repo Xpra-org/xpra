@@ -33,6 +33,9 @@ def gravity_str(v) -> str:
         return str(v)
 
 
+DEFAULT_DPI: int = 96
+
+
 def noop(*_args, **_kwargs) -> None:
     """ do nothing """
 
