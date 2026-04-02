@@ -223,6 +223,10 @@ class WindowReplay:
             self.window.move_resize(*geometry)
             metadata = typedict(event.dictget("metadata", {}))
             self.window.update_metadata(metadata)
+        elif etype == "metadata":
+            metadata = event.dictget("metadata") or {}
+            log("metadata: %s", metadata)
+            self.window.update_metadata(metadata)
         else:
             log.warn("%r not handled yet!", etype)
         self.next_event()
