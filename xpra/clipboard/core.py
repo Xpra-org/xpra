@@ -308,7 +308,7 @@ class ClipboardProtocolHelperCore:
         """ export local targets """
         return _filter_targets(local_targets)
 
-    def _munge_raw_selection_to_wire(self, target: str, dtype: str, dformat: int, data) -> tuple[Any, Any]:
+    def _munge_raw_selection_to_wire(self, target: str, dtype: str, dformat: int, data) -> tuple[str, Any]:
         log("_munge_raw_selection_to_wire%s", (target, dtype, dformat, repr_ellipsized(bytestostr(data))))
         if self.max_clipboard_send_size > 0:
             log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
@@ -324,7 +324,7 @@ class ClipboardProtocolHelperCore:
                 "PIXEL", "COLORMAP"
         ):
             log("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data or b""))
-            return None, None
+            return "", ()
         if target == "TARGETS" and dtype == "ATOM" and isinstance(data, (tuple, list)):
             # targets is special cased here
             # because we can get the values in wire format already (not atoms)
@@ -338,7 +338,7 @@ class ClipboardProtocolHelperCore:
             log.error(" dtype=%s, dformat=%s, data=%s (%s)", dtype, dformat, repr_ellipsized(str(data)), type(data))
             raise
 
-    def _do_munge_raw_selection_to_wire(self, target: str, dtype: str, dformat: int, data) -> tuple[Any, Any]:
+    def _do_munge_raw_selection_to_wire(self, target: str, dtype: str, dformat: int, data) -> tuple[str, Any]:
         """ this method is overridden in xclipboard to parse X11 atoms """
         # Other types need special handling, and all types need to be
         # converting into an endian-neutral format:
@@ -347,24 +347,24 @@ class ClipboardProtocolHelperCore:
             # you should be using gdk_clipboard for atom support!
             if dtype in ("ATOM", "ATOM_PAIR") and POSIX:
                 # we cannot handle gdk atoms here (but gdk_clipboard does)
-                return None, None
+                return "", ()
             # important note: on 64 bits, format=32 means 8 bytes, not 4
             # that's just the way it is...
             binfmt = b"@" + b"L" * (len(data) // sizeof_long)
             ints = struct.unpack(binfmt, data)
-            return b"integers", ints
+            return "integers", ints
         if dformat == 16:
             binfmt = b"=" + b"H" * (len(data) // sizeof_short)
             ints = struct.unpack(binfmt, data)
-            return b"integers", ints
+            return "integers", ints
         if dformat == 8:
             for x in self.filter_res:
                 if x.match(data):
                     log.warn("clipboard buffer contains blocklisted pattern '%s' and has been dropped!", x.pattern)
-                    return None, None
-            return b"bytes", data
+                    return "", ()
+            return "bytes", data
         log.error(f"Error: unhandled format {dformat} for clipboard data type {dtype}")
-        return None, None
+        return "", ()
 
     def _munge_wire_selection_to_raw(self, encoding: str, dtype: str, dformat: int, data) -> bytes | str:
         log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s",
@@ -459,7 +459,7 @@ class ClipboardProtocolHelperCore:
             log("clipboard raw -> wire: %r -> %r",
                 (dtype, dformat, Ellipsizer(data)), Ellipsizer(munged))
         wire_encoding, wire_data = munged
-        if wire_encoding is None:
+        if not wire_encoding:
             no_contents()
             return
         wire_data = self._may_compress(dtype, dformat, wire_data)

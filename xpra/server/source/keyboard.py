@@ -9,9 +9,8 @@ from collections.abc import Sequence
 
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import KEYBOARD_RECORD
-from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import Ellipsizer
-from xpra.server.source.stub import StubClientConnection
+from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -46,15 +45,7 @@ class KeyboardConnection(StubClientConnection):
         ibuslog(f"client ibus support: {self.ibus}")
         keyboard = c.get("keyboard")
         if isinstance(keyboard, dict) and typedict(keyboard).boolget("record", False):
-            proto = getattr(self, "protocol", None)
-            conn = getattr(proto, "_conn", None)
-            options = getattr(conn, "options", None) or {}
-            record = options.get("record", "no")
-            log("client wants to record keyboard events")
-            log(" proto=%s, conn=%s, options=%s, record=%s", proto, conn, options, record)
-            if str_to_bool(record) or "keyboard" in record.split(","):
-                log.info("keyboard recording enabled for connection %s", conn)
-                self.keyboard_record = True
+            self.keyboard_record = is_recording_allowed(self, "keyboard")
 
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {}

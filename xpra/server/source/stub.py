@@ -10,6 +10,23 @@ from xpra.util.signal_emitter import SignalEmitter
 from xpra.net.common import PacketElement
 
 
+def is_recording_allowed(server_source, subsystem: str) -> bool:
+    proto = getattr(server_source, "protocol", None)
+    conn = getattr(proto, "_conn", None)
+    options = getattr(conn, "options", None) or {}
+    record = options.get("record", "no")
+    from xpra.log import Logger
+    log = Logger("server", "auth")
+    log("client wants to record %r events", subsystem)
+    log(" proto=%s, conn=%s, options=%s, record=%s", proto, conn, options, record)
+    from xpra.util.parsing import str_to_bool
+    if str_to_bool(record) or subsystem in record.split(",") or "all" in record.split(","):
+        log.info("%r recording enabled for connection %s", subsystem, conn)
+        return True
+    log.warn("Warning: client %s is not allowed to record %r events", conn, subsystem)
+    return False
+
+
 class StubClientConnection(SignalEmitter):
     """
     Base class for client-connection subsystem.

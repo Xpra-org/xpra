@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 from xpra.clipboard.common import get_local_selections, ALL_CLIPBOARDS
 from xpra.os_util import gi_import
-from xpra.server.source.stub import StubClientConnection
+from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envint
@@ -44,6 +44,7 @@ class ClipboardConnection(StubClientConnection):
         self.clipboard_want_targets = False
         self.clipboard_selections = get_local_selections()
         self.clipboard_preferred_targets: Sequence[str] = ()
+        self.clipboard_record = False
 
     def cleanup(self) -> None:
         self.cancel_clipboard_progress_timer()
@@ -58,6 +59,7 @@ class ClipboardConnection(StubClientConnection):
             self.clipboard_want_targets = ccaps.boolget("want_targets")
             self.clipboard_selections = ccaps.strtupleget("selections", ALL_CLIPBOARDS)
             self.clipboard_preferred_targets = ccaps.strtupleget("preferred-targets", ())
+            self.clipboard_record = is_recording_allowed(self, "clipboard")
         log("client clipboard: enabled=%s, notifications=%s",
             self.clipboard_enabled, self.clipboard_notifications)
         log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
@@ -106,7 +108,7 @@ class ClipboardConnection(StubClientConnection):
         self.clipboard_progress_timer = GLib.timeout_add(delay, may_send_progress_update)
 
     def send_clipboard(self, packet) -> None:
-        if not self.clipboard_enabled or not self.hello_sent:
+        if (not self.clipboard_enabled and not self.clipboard_record) or not self.hello_sent:
             return
         if getattr(self, "suspended", False):
             return
@@ -132,8 +134,8 @@ class ClipboardConnection(StubClientConnection):
         # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressible, compressed_wrapper
         # Note: this runs in the 'encode' thread!
-        packet = list(packet)
-        for i, item in enumerate(packet):
+        lpacket = list(packet)
+        for i, item in enumerate(lpacket):
             if isinstance(item, Compressible):
-                packet[i] = compressed_wrapper(item.datatype, item.data, level=9, can_inline=False, brotli=True)
-        self.queue_packet(tuple(packet))
+                lpacket[i] = compressed_wrapper(item.datatype, item.data, level=9, can_inline=False, brotli=True)
+        self.queue_packet(tuple(lpacket))

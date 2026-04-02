@@ -154,7 +154,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     # x11 specific munging support:
     ############################################################################
 
-    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data) -> tuple[Any, Any]:
+    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data) -> tuple[str, Any]:
         if dformat == 32 and dtype in ("ATOM", "ATOM_PAIR"):
             return "atoms", self.remote_targets(xatoms_to_strings(data))
         return super()._munge_raw_selection_to_wire(target, dtype, dformat, data)

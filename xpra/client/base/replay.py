@@ -74,22 +74,18 @@ def may_load(event: dict) -> None:
     event.update(load_json(filename))
 
 
-def may_load_blob(event: dict, key: str) -> bytes:
+def may_load_blob(event: dict, ext="", warn=True) -> bytes:
     data = event.get("data", b"")
     if data:
         # we already have the data
         return data
-    # ie: "encoding" -> "png"
-    value = event.get(key, "")
-    if not value:
-        log.warn("Warning: %r packet without %r", event.strget("event"), key)
-        return b""
     # this data should have been saved separately,
     # re-construct the filename from this event's filename:
     filename = event["filename"]
-    blob_path = os.path.splitext(filename)[0] + f".{value}"
+    blob_path = os.path.splitext(filename)[0] + f".{ext}"
     if not os.path.exists(blob_path):
-        log.warn("Warning: %s blob %r not found!", event.strget("event"), blob_path)
+        fn = log.warn if warn else log
+        fn("Warning: %s blob %r not found!", event.strget("event"), blob_path)
         return b""
     return load_binary_file(blob_path)
 
@@ -187,7 +183,7 @@ class WindowReplay:
     def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
         if not self.window and etype != "new":
-            log.warn("Warning: event %r received, but window is gone!", etype)
+            log.warn("Warning: event %r received, but window %#x is gone!", etype, self.wid)
             return
         if etype == "new":
             geom: tuple[int, int, int, int] = event.inttupleget("geometry", (0, 0, 1, 1))
@@ -199,7 +195,9 @@ class WindowReplay:
             self.window.destroy()
             self.window = None
         elif etype == "draw":
-            data = event.bytesget("data") or may_load_blob(event, "encoding")
+            # ie: encoding="png"
+            encoding = event.get("encoding", "")
+            data = event.bytesget("data") or may_load_blob(event, ext=encoding)
             if CACHE:
                 event["data"] = data        # cache it for next time
             x, y, width, height = event.inttupleget("geometry", (0, 0, 1, 1))
@@ -223,7 +221,7 @@ class WindowReplay:
             name = event.strget("name", "")
             pixels = event.bytesget("pixels")
             if not pixels:
-                cpixels = may_load_blob(event, "encoding")
+                cpixels = may_load_blob(event, ext=encoding)
                 from xpra.client.subsystem.cursor import decompress_cursor_data
                 pixels = decompress_cursor_data(encoding, cpixels, serial)
             cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, name, pixels)
@@ -236,6 +234,12 @@ class WindowReplay:
         elif etype in ("key-event", "key"):
             log("key-event: %s", event)
             log.info("key: %r", event.dictget("key", {}).get("name", ""))
+        elif etype == "clipboard":
+            log("clipboard: %s", event.get("data"))
+            # only "clipboard-contents" packets generate this file:
+            contents = may_load_blob(event, "contents", False)
+            if contents:
+                log.info("clipboard contents: %s", contents)
         elif etype == "sync":
             log("sync point")
             geometry = event.inttupleget("geometry", (0, 0, 1, 1))

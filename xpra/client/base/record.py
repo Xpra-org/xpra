@@ -26,10 +26,17 @@ GLib = gi_import("GLib")
 REFRESH = envint("XPRA_RECORD_REFRESH", 10)
 SYNC_GAP = envint("XPRA_SYNC_GAP", 1)
 
+NO_GEOMETRY = (0, 0, 0, 0)
+
 
 def save_json(path: str, data: dict) -> None:
+    try:
+        text = json.dumps(data)
+    except TypeError:
+        log.error("Error writing %r to %r", data, path)
+        return
     with open(path, "w") as f:
-        f.write(json.dumps(data))
+        f.write(text)
 
 
 def get_client_base_classes() -> tuple[type, ...]:
@@ -108,7 +115,12 @@ class WindowModel:
 
     def record_sync(self) -> bool:
         self.sync_timer = 0
-        self.record("sync", metatada=self.metadata, geometry=self.geometry)
+        kwargs: dict[str, Any] = {
+            "metatada": self.metadata,
+        }
+        if self.geometry != NO_GEOMETRY:
+            kwargs["geometry"] = self.geometry
+        self.record("sync", **kwargs)
         return False
 
 
@@ -177,6 +189,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
                 "keyboard": {"record": True},
                 "cursor": {"encodings": ("png", ), "backwards-compatible": False},
                 "pointer": {"record": True},
+                "clipboard": {"record": True},
             }
         return caps
 
@@ -189,6 +202,15 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
 
     def _process_startup_complete(self, packet: Packet) -> None:
         self.refresh_timer = self.timeout_add(REFRESH * 1000, self.request_refresh)
+        # create the "desktop" window:
+        geom = NO_GEOMETRY
+        wid = 0
+        directory = os.path.join(self.record_directory, "%x" % wid)
+        if not os.path.exists(directory):
+            os.mkdir(directory, 0o755)
+        window = WindowModel(wid, geom, False, directory, self.start)
+        window.record("new")
+        self._id_to_window[wid] = window
 
     def print_server_info(self, c: typedict) -> None:
         log.info("recording from:")
@@ -352,6 +374,20 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         if record:
             window.record("key", key=record)
 
+    def _process_clipboard_record(self, packet: Packet) -> None:
+        # example packet:
+        # 'clipboard-record', 'client', 'clipboard-contents', 6, 'CLIPBOARD', 'UTF8_STRING', 8, 'bytes', b'foo', 0
+        window = self.get_window(0)
+        subpacket_type = packet.get_str(2)
+        record = list(packet[1:])
+        kwargs = {
+            "record": record,
+        }
+        if subpacket_type == "clipboard-contents" and isinstance(record[7], bytes):
+            kwargs["contents"] = record[7]
+            record[7] = ''
+        window.record("clipboard", **kwargs)
+
     def _process_cursor_default(self, packet: Packet) -> None:
         for window in self._id_to_window.values():
             window.cursor = ()
@@ -419,4 +455,5 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             "cursor-data",
             "cursor-default",
             "pointer-position",
+            "clipboard-record",
         )

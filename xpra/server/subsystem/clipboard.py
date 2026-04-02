@@ -157,8 +157,7 @@ class ClipboardServer(StubServerMixin):
 
     def parse_hello_ui_clipboard(self, ss) -> None:
         # take the clipboard if no-one else has it yet:
-        if not getattr(ss, "clipboard_enabled", False):
-            log("client does not support clipboard")
+        if not self.can_source_own_clipboard(ss):
             return
         if not self._clipboard_helper:
             log("server does not support clipboard")
@@ -169,10 +168,18 @@ class ClipboardServer(StubServerMixin):
             return
         self.set_clipboard_source(ss)
 
-    def set_clipboard_source(self, ss) -> None:
+    @staticmethod
+    def can_source_own_clipboard(ss) -> bool:
         if not getattr(ss, "clipboard_enabled", False):
-            # don't use this client as clipboard source!
-            # (its clipboard is disabled)
+            log("client does not support clipboard")
+            return False
+        if getattr(ss, "clipboard_record", False):
+            log("client records clipboard, does not own it")
+            return False
+        return True
+
+    def set_clipboard_source(self, ss) -> None:
+        if not self.can_source_own_clipboard(ss):
             return
         if self._clipboard_client == ss:
             return
@@ -203,11 +210,13 @@ class ClipboardServer(StubServerMixin):
             # protocol has been dropped!
             return
         packet_type = packet.get_type()
+        self.may_record("server", packet_type, *packet[1:])
         if packet_type == "clipboard-status" or (BACKWARDS_COMPATIBLE and packet_type == "set-clipboard-enabled"):
             self._process_clipboard_status(proto, packet)
             return
         if self._clipboard_client != ss:
             log("the clipboard packet '%s' does not come from the clipboard owner!", packet[0])
+            log(" owner is %s, request from %s", self._clipboard_client, ss)
             return
         if not ss.clipboard_enabled:
             # this can happen when we disable clipboard in the middle of transfers
@@ -253,11 +262,19 @@ class ClipboardServer(StubServerMixin):
         if self._clipboard_client:
             self._clipboard_client.send_clipboard_progress(local_requests)
 
-    def send_clipboard_packet(self, packet_type, *parts: PacketElement) -> None:
+    def send_clipboard_packet(self, packet_type: str, *parts: PacketElement) -> None:
         assert self.clipboard
         if self._clipboard_client:
             packet = (packet_type, *parts)
             self._clipboard_client.send_clipboard(packet)
+            self.may_record("client", packet_type, *parts)
+
+    def may_record(self, direction, packet_type: str, *parts: PacketElement) -> None:
+        sources = tuple(self._server_sources.values())
+        for ss in sources:
+            if ss.clipboard_record:
+                rec_packet = ("clipboard-record", direction, packet_type, *parts)
+                ss.send_clipboard(rec_packet)
 
     def init_packet_handlers(self) -> None:
         if self.clipboard:

@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.client.base.replay import Replay
+from xpra.client.base.replay import Replay, WindowModel
 from xpra.util.objects import typedict
 from xpra.net import common as net_common
 from xpra.common import noop
@@ -52,6 +52,9 @@ class GtkReplay(Replay):
         return {}
 
     def make_client_window(self, wid: int, geometry: tuple[int, int, int, int], metadata: typedict):
+        if wid == 0:
+            return WindowModel(wid)
+
         def get_window_base_classes() -> tuple[type, ...]:
             from xpra.client.gtk3.window.base import GTKClientWindowBase
             from xpra.client.gtk3.window.pointer import PointerWindow
