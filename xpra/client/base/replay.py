@@ -14,7 +14,7 @@ from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, sorted_nicely, Ellipsizer
+from xpra.util.str_fn import csv, sorted_nicely, print_nested_dict
 from xpra.log import Logger
 
 log = Logger("client")
@@ -173,12 +173,23 @@ class WindowReplay:
 
     def process_event(self) -> None:
         event = typedict(self.get_event())
+        try:
+            self.do_process_event(event)
+        except Exception:
+            log.error("Error processing event, trying to continue", exc_info=True)
+            print_nested_dict(event, prefix=" ", print_fn=log.error)
+
+    def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
         if etype == "new":
             geom: tuple[int, int, int, int] = event.inttupleget("geometry", (0, 0, 1, 1))
             metadata = typedict(event.dictget("metadata", {}))
             self.window = self.client.make_client_window(self.wid, geom, metadata)
+            log("new-window: %s", self.window)
             self.window.show()
+        elif etype == "destroy":
+            self.window.destroy()
+            self.window = None
         elif etype == "draw":
             data = event.bytesget("data") or may_load_blob(event, "encoding")
             if CACHE:
@@ -300,6 +311,9 @@ class Replay(GObjectClientAdapter):
         self.time_index = 0
         self.last_timestamp = 0
 
+    def __repr__(self):
+        return "Replay"
+
     def send(self, packet_type:str, *args, **kwargs) -> None:
         log("ignoring request to send %r", packet_type)
 
@@ -320,8 +334,8 @@ class Replay(GObjectClientAdapter):
         if not os.path.exists(self.record_directory):
             return ExitCode.FILE_NOT_FOUND
         self.load()
-        log.info("replaying record for %i windows: %s",
-                 len(self.window_replay), csv(hex(wid) for wid in self.window_replay.keys()))
+        log.info("%s replaying record for %i windows: %s",
+                 self, len(self.window_replay), csv(hex(wid) for wid in self.window_replay.keys()))
         log.info(" found %i events", sum(wr.count() for wr in self.window_replay.values()))
         log.info(" total time: %i seconds", self.last_timestamp // 1000)
         self.schedule_next_event()
@@ -343,7 +357,7 @@ class Replay(GObjectClientAdapter):
             return
         # timestamp is in milliseconds:
         delay = max(0, timestamp - self.time_index)
-        log("schedule_next_event: in %ims: %s", delay, Ellipsizer(event))
+        log("schedule_next_event: in %ims, %s", delay, event.get("filename", ""))
         self.event_timer = self.timeout_add(delay, self.process_next_event, event)
 
     def end_of_replay(self):
@@ -380,10 +394,7 @@ class Replay(GObjectClientAdapter):
         # log("process_next_event: %s", Ellipsizer(event, limit=200))
         log("process_next_event: %s", event.get("event", ""))
         model = self.window_replay[event["wid"]]
-        try:
-            model.process_event()
-        except Exception:
-            log.error("Error processing event, trying to continue", exc_info=True)
+        model.process_event()
         # move time forward to this event:
         self.time_index = max(self.time_index, event.get("timestamp", 0))
         self.schedule_next_event()

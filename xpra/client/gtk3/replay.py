@@ -31,6 +31,9 @@ class GtkReplay(Replay):
         self.cx = self.cy = self.no_scaling
         self.fsx = self.fsy = self.no_scaling
 
+    def __repr__(self):
+        return "GtkReplay"
+
     def send(self, packet_type:str, *args, **kwargs) -> None:
         log("ignoring request to send %r", packet_type)
 
