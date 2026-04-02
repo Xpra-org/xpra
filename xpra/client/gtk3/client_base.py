@@ -985,6 +985,16 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                   encoding, xhot, yhot, serial, w, h, len(pixels))
         cursorlog("default cursor size is %s, maximum=%s", csize, (cmaxw, cmaxh))
         fw, fh = get_fixed_cursor_size()
+        # scale by desktop-scale when OS requires a fixed cursor size,
+        # so cursors like I-bars match the scaled remote content:
+        if fw > 0 and fh > 0 and (self.xscale != 1 or self.yscale != 1):
+            sw, sh = round(w * self.xscale), round(h * self.yscale)
+            sx, sy = round(x * self.xscale), round(y * self.yscale)
+            cursorlog("scaling cursor %ix%i to %ix%i for desktop-scale %s/%s",
+                      w, h, sw, sh, self.xscale, self.yscale)
+            pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)
+            pixels = pixbuf.get_pixels()
+            w, h, x, y = sw, sh, sx, sy
         if fw > 0 and fh > 0 and (w != fw or h != fh):
             # OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
             if w <= fw and h <= fh:
