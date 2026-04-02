@@ -322,10 +322,11 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             "geometry": (x, y, width, height),
             "encoding": coding,
             "packet_sequence": packet_sequence,
-            "rowstride": rowstride,
             "options": options,
             coding: data,
         }
+        if rowstride:
+            kwargs["rowstride"] = rowstride
         window.record("draw", **kwargs)
         decode_time = 0
         message = ""
