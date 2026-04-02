@@ -119,6 +119,108 @@ def get_local_cursor(cursor_name: str):
     return None
 
 
+def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | None:
+    # if present, try cursor ny name:
+    display = Gdk.Display.get_default()
+    if not display:
+        return None
+    cursorlog("make_cursor(%s) has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
+              Ellipsizer(cursor_data),
+              len(cursor_data) >= 10, bool(cursor_types), xscale, yscale, USE_LOCAL_CURSORS)
+    pixbuf = None
+    if len(cursor_data) >= 10 and cursor_types and USE_LOCAL_CURSORS:
+        cursor_name = bytestostr(cursor_data[9])
+        pixbuf = get_local_cursor(cursor_name)
+    # create cursor from the pixel data:
+    encoding, _, _, w, h, xhot, yhot, serial, pixels = cursor_data[0:9]
+    if encoding != "raw":
+        cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
+        return None
+    if not pixbuf:
+        if not pixels:
+            cursorlog.warn("Warning: no cursor pixel data")
+            cursorlog.warn(f" in cursor data {cursor_data}")
+            return None
+        if len(pixels) < w * h * 4:
+            cursorlog.warn("Warning: not enough pixels provided in cursor data")
+            cursorlog.warn(" %s needed and only %s bytes found:", w * h * 4, len(pixels))
+            cursorlog.warn(" '%s')", repr_ellipsized(hexstr(pixels)))
+            return None
+        pixbuf = get_pixbuf_from_data(pixels, True, w, h, w * 4)
+    else:
+        w = pixbuf.get_width()
+        h = pixbuf.get_height()
+        pixels = pixbuf.get_pixels()
+    x = max(0, min(xhot, w - 1))
+    y = max(0, min(yhot, h - 1))
+    csize = display.get_default_cursor_size()
+    cmaxw, cmaxh = display.get_maximal_cursor_size()
+    cursorlog("new %s cursor at %s,%s with serial=%#x, dimensions: %sx%s, len(pixels)=%s",
+              encoding, xhot, yhot, serial, w, h, len(pixels))
+    cursorlog("default cursor size is %s, maximum=%s", csize, (cmaxw, cmaxh))
+
+    # always apply desktop-scale first:
+    if xscale != 1 or yscale != 1:
+        sw = round(w * xscale)
+        sh = round(h * yscale)
+        sx = round(x * xscale)
+        sy = round(y * yscale)
+        sw = max(1, sw)
+        sh = max(1, sh)
+        # ensure we honour the max size if there is one:
+        if 0 < cmaxw < sw or 0 < cmaxh < sh:
+            ratio = 1.0
+            if cmaxw > 0:
+                ratio = max(ratio, w / cmaxw)
+            if cmaxh > 0:
+                ratio = max(ratio, h / cmaxh)
+            cursorlog("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
+            sx, sy = round(sx / ratio), round(sy / ratio)
+            sw, sh = min(cmaxw, round(sw / ratio)), min(cmaxh, round(sh / ratio))
+
+        cursorlog("scaling cursor to %ix%i for desktop-scale %s/%s", sw, sh, xscale, yscale)
+        pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)
+        pixels = pixbuf.get_pixels()
+        w, h, x, y = sw, sh, sx, sy
+
+    fw, fh = get_fixed_cursor_size()
+    # OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
+    # we may have to paste it into a bigger pixbuf, or crop it:
+    if fw > 0 and fh > 0 and (w, h) != (fw, fh):
+        if w <= fw and h <= fh:
+            cursorlog("pasting %ix%i cursor to fixed OS size %ix%i", w, h, fw, fh)
+            try:
+                from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
+            except ImportError:
+                return None
+            img = Image.frombytes("RGBA", (w, h), memoryview_to_bytes(pixels), "raw", "BGRA", w * 4, 1)
+            target = Image.new("RGBA", (fw, fh))
+            target.paste(img, (0, 0, w, h))
+            pixels = target.tobytes("raw", "BGRA")
+            pixbuf = get_pixbuf_from_data(pixels, True, fw, fh, fw * 4)
+        else:
+            cursorlog("downscaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
+            pixbuf = pixbuf.scale_simple(fw, fh, GdkPixbuf.InterpType.BILINEAR)
+            xratio, yratio = w / fw, h / fh
+            x, y = round(x / xratio), round(y / yratio)
+    if SAVE_CURSORS:
+        pixbuf.savev("cursor-%#x.png" % serial, "png", [], [])
+    # clamp to pixbuf size:
+    w = pixbuf.get_width()
+    h = pixbuf.get_height()
+    x = max(0, min(x, w - 1))
+    y = max(0, min(y, h - 1))
+    try:
+        c = Gdk.Cursor.new_from_pixbuf(display, pixbuf, x, y)
+    except RuntimeError as e:
+        log.error("Error: failed to create cursor:")
+        log.estr(e)
+        log.error(" Gdk.Cursor.new_from_pixbuf%s", (display, pixbuf, x, y))
+        log.error(" using size %ix%i with hotspot at %ix%i", w, h, x, y)
+        c = None
+    return c
+
+
 def get_group_ref(metadata: dict) -> str:
     # ie: refs="group-leader-xid" or "pid+class-instance"
     for ref_str in WINDOW_GROUPING:
@@ -926,7 +1028,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         cursor = None
         if cursor_data:
             try:
-                cursor = self.make_cursor(cursor_data)
+                cursor = make_cursor(cursor_data, self.xscale, self.yscale)
                 cursorlog(f"make_cursor(..)={cursor}")
             except Exception as e:
                 log.warn("error creating cursor: %s (using default)", e, exc_info=True)
@@ -944,115 +1046,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             if gdkwin:
                 self._cursors[w] = cursor_data
                 gdkwin.set_cursor(cursor)
-
-    def make_cursor(self, cursor_data: Sequence) -> Gdk.Cursor | None:
-        # if present, try cursor ny name:
-        display = Gdk.Display.get_default()
-        if not display:
-            return None
-        cursorlog("make_cursor(%s) has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
-                  Ellipsizer(cursor_data),
-                  len(cursor_data) >= 10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
-        pixbuf = None
-        if len(cursor_data) >= 10 and cursor_types and USE_LOCAL_CURSORS:
-            cursor_name = bytestostr(cursor_data[9])
-            pixbuf = get_local_cursor(cursor_name)
-        # create cursor from the pixel data:
-        encoding, _, _, w, h, xhot, yhot, serial, pixels = cursor_data[0:9]
-        if encoding != "raw":
-            cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
-            return None
-        if not pixbuf:
-            if not pixels:
-                cursorlog.warn("Warning: no cursor pixel data")
-                cursorlog.warn(f" in cursor data {cursor_data}")
-                return None
-            if len(pixels) < w * h * 4:
-                cursorlog.warn("Warning: not enough pixels provided in cursor data")
-                cursorlog.warn(" %s needed and only %s bytes found:", w * h * 4, len(pixels))
-                cursorlog.warn(" '%s')", repr_ellipsized(hexstr(pixels)))
-                return None
-            pixbuf = get_pixbuf_from_data(pixels, True, w, h, w * 4)
-        else:
-            w = pixbuf.get_width()
-            h = pixbuf.get_height()
-            pixels = pixbuf.get_pixels()
-        x = max(0, min(xhot, w - 1))
-        y = max(0, min(yhot, h - 1))
-        csize = display.get_default_cursor_size()
-        cmaxw, cmaxh = display.get_maximal_cursor_size()
-        cursorlog("new %s cursor at %s,%s with serial=%#x, dimensions: %sx%s, len(pixels)=%s",
-                  encoding, xhot, yhot, serial, w, h, len(pixels))
-        cursorlog("default cursor size is %s, maximum=%s", csize, (cmaxw, cmaxh))
-        fw, fh = get_fixed_cursor_size()
-        # scale by desktop-scale when OS requires a fixed cursor size,
-        # so cursors like I-bars match the scaled remote content:
-        if fw > 0 and fh > 0 and (self.xscale != 1 or self.yscale != 1):
-            sw, sh = round(w * self.xscale), round(h * self.yscale)
-            sx, sy = round(x * self.xscale), round(y * self.yscale)
-            cursorlog("scaling cursor %ix%i to %ix%i for desktop-scale %s/%s",
-                      w, h, sw, sh, self.xscale, self.yscale)
-            pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)
-            pixels = pixbuf.get_pixels()
-            w, h, x, y = sw, sh, sx, sy
-        if fw > 0 and fh > 0 and (w != fw or h != fh):
-            # OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
-            if w <= fw and h <= fh:
-                cursorlog("pasting %ix%i cursor to fixed OS size %ix%i", w, h, fw, fh)
-                try:
-                    from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
-                except ImportError:
-                    return None
-                img = Image.frombytes("RGBA", (w, h), memoryview_to_bytes(pixels), "raw", "BGRA", w * 4, 1)
-                target = Image.new("RGBA", (fw, fh))
-                target.paste(img, (0, 0, w, h))
-                pixels = target.tobytes("raw", "BGRA")
-                cursor_pixbuf = get_pixbuf_from_data(pixels, True, fw, fh, fw * 4)
-            else:
-                cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
-                cursor_pixbuf = pixbuf.scale_simple(fw, fh, GdkPixbuf.InterpType.BILINEAR)
-                xratio, yratio = w / fw, h / fh
-                x, y = round(x / xratio), round(y / yratio)
-        else:
-            sx, sy, sw, sh = x, y, w, h
-            # scale the cursors:
-            if self.xscale != 1 or self.yscale != 1:
-                sx, sy, sw, sh = self.srect(x, y, w, h)
-            sw = max(1, sw)
-            sh = max(1, sh)
-            # ensure we honour the max size if there is one:
-            if 0 < cmaxw < sw or 0 < cmaxh < sh:
-                ratio = 1.0
-                if cmaxw > 0:
-                    ratio = max(ratio, w / cmaxw)
-                if cmaxh > 0:
-                    ratio = max(ratio, h / cmaxh)
-                cursorlog("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
-                sx, sy = round(x / ratio), round(y / ratio)
-                sw, sh = min(cmaxw, round(w / ratio)), min(cmaxh, round(h / ratio))
-            if sw != w or sh != h:
-                cursorlog("scaling cursor from %ix%i hotspot at %ix%i to %ix%i hotspot at %ix%i",
-                          w, h, x, y, sw, sh, sx, sy)
-                cursor_pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)
-                x, y = sx, sy
-            else:
-                cursor_pixbuf = pixbuf
-        if SAVE_CURSORS:
-            cursor_pixbuf.savev("cursor-%#x.png" % serial, "png", [], [])
-        # clamp to pixbuf size:
-        w = cursor_pixbuf.get_width()
-        h = cursor_pixbuf.get_height()
-        x = max(0, min(x, w - 1))
-        y = max(0, min(y, h - 1))
-        try:
-            c = Gdk.Cursor.new_from_pixbuf(display, cursor_pixbuf, x, y)
-        except RuntimeError as e:
-            log.error("Error: failed to create cursor:")
-            log.estr(e)
-            log.error(" Gdk.Cursor.new_from_pixbuf%s", (display, cursor_pixbuf, x, y))
-            log.error(" using size %ix%i with hotspot at %ix%i", w, h, x, y)
-            c = None
-        return c
 
     def window_grab(self, wid: int, window) -> None:
         event_mask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
