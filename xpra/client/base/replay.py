@@ -15,9 +15,12 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, sorted_nicely, print_nested_dict
+from xpra.net import common as net_common
 from xpra.log import Logger
 
 log = Logger("client")
+
+net_common.BACKWARDS_COMPATIBLE = False
 
 CACHE = True
 

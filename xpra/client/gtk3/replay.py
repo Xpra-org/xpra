@@ -7,10 +7,13 @@ from typing import Any
 
 from xpra.client.base.replay import Replay
 from xpra.util.objects import typedict
+from xpra.net import common as net_common
 from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("client")
+
+net_common.BACKWARDS_COMPATIBLE = False
 
 
 class GtkReplay(Replay):
