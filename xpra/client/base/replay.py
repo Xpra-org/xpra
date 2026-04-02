@@ -319,7 +319,6 @@ class Replay(GObjectClientAdapter):
         self.last_timestamp = 0
         rate = options.refresh_rate.lower()
         self.rate = 1.0 if (rate in TRUE_OPTIONS or rate == "auto") else 1/float(rate)
-        log.warn("refresh_rate=%s", options.refresh_rate)
 
     def __repr__(self):
         return "Replay"
