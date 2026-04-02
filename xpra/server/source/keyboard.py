@@ -36,7 +36,7 @@ class KeyboardConnection(StubClientConnection):
     def init_state(self) -> None:
         self.keyboard_config = None
         self.ibus = False
-        self.record = False
+        self.keyboard_record = False
 
     def cleanup(self) -> None:
         self.keyboard_config = None
@@ -52,9 +52,9 @@ class KeyboardConnection(StubClientConnection):
             record = options.get("record", "no")
             log("client wants to record keyboard events")
             log(" proto=%s, conn=%s, options=%s, record=%s", proto, conn, options, record)
-            if str_to_bool(record):
+            if str_to_bool(record) or "keyboard" in record.split(","):
                 log.info("keyboard recording enabled for connection %s", conn)
-                self.record = True
+                self.keyboard_record = True
 
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {}

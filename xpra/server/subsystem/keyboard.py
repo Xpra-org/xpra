@@ -307,7 +307,7 @@ class KeyboardServer(StubServerMixin):
             del self.keys_timedout[keycode]
 
         from xpra.server.source.keyboard import KeyboardConnection  # pylint: disable=import-outside-toplevel
-        record_connections = tuple(x for x in self._server_sources.values() if isinstance(x, KeyboardConnection) and x.record)
+        record_connections = tuple(x for x in self._server_sources.values() if isinstance(x, KeyboardConnection) and x.keyboard_record)
 
         def record(press: bool) -> None:
             for ss in record_connections:
