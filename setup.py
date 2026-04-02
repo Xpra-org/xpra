@@ -1870,6 +1870,7 @@ if WIN32:
                 "HarfBuzz-0.0",
                 "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
                 "Rsvg-2.0",
+                "GLibWin32-2.0",
             )
             add_gi_typelib("cairo-1.0",
                            "fontconfig-2.0", "freetype2-2.0",
