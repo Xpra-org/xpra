@@ -181,6 +181,7 @@ class WindowReplay:
         except Exception:
             log.error("Error processing event, trying to continue", exc_info=True)
             print_nested_dict(event, prefix=" ", print_fn=log.error)
+        self.next_event()
 
     def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
@@ -243,7 +244,6 @@ class WindowReplay:
             self.window.update_metadata(metadata)
         else:
             log.warn("%r not handled yet!", etype)
-        self.next_event()
 
     def find_sync_index(self, target_ts: int):
         sync_idx: int = -1
