@@ -18,8 +18,8 @@ net_common.BACKWARDS_COMPATIBLE = False
 
 class GtkReplay(Replay):
 
-    def __init__(self):
-        Replay.__init__(self)
+    def __init__(self, options):
+        Replay.__init__(self, options)
         from xpra.codecs.loader import load_codec
         load_codec("dec_pillow")
         # fake client methods:
@@ -83,12 +83,17 @@ class GtkReplay(Replay):
         raise "gtk replay"
 
 
-def main() -> int:
+def do_main(options) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Replay"):
-        replay = GtkReplay()
+        replay = GtkReplay(options)
         return int(replay.run())
+
+
+def main() -> int:
+    from xpra.scripts.config import make_defaults_struct
+    return do_main(make_defaults_struct())
 
 
 if __name__ == "__main__":

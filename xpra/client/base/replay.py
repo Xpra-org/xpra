@@ -14,6 +14,7 @@ from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
+from xpra.util.parsing import TRUE_OPTIONS
 from xpra.util.str_fn import csv, sorted_nicely, print_nested_dict
 from xpra.net import common as net_common
 from xpra.log import Logger
@@ -306,7 +307,7 @@ class WindowModel:
 
 class Replay(GObjectClientAdapter):
 
-    def __init__(self):
+    def __init__(self, options):
         GObjectClientAdapter.__init__(self)
         self.client_type = "replay"
         self.record_directory = os.path.join(os.path.abspath(os.getcwd()), "record")
@@ -316,6 +317,9 @@ class Replay(GObjectClientAdapter):
         self.event_timer = 0
         self.time_index = 0
         self.last_timestamp = 0
+        rate = options.refresh_rate.lower()
+        self.rate = 1.0 if (rate in TRUE_OPTIONS or rate == "auto") else 1/float(rate)
+        log.warn("refresh_rate=%s", options.refresh_rate)
 
     def __repr__(self):
         return "Replay"
@@ -342,6 +346,7 @@ class Replay(GObjectClientAdapter):
         self.load()
         log.info("%s replaying record for %i windows: %s",
                  self, len(self.window_replay), csv(hex(wid) for wid in self.window_replay.keys()))
+        log.info(" using rate=%f", self.rate)
         log.info(" found %i events", sum(wr.count() for wr in self.window_replay.values()))
         log.info(" total time: %i seconds", self.last_timestamp // 1000)
         self.schedule_next_event()
@@ -362,7 +367,7 @@ class Replay(GObjectClientAdapter):
             log.warn("Warning: event %r does not have a valid timestamp", event)
             return
         # timestamp is in milliseconds:
-        delay = max(0, timestamp - self.time_index)
+        delay = max(0, round((timestamp - self.time_index) * self.rate))
         log("schedule_next_event: in %ims, %s", delay, event.get("filename", ""))
         self.event_timer = self.timeout_add(delay, self.process_next_event, event)
 
@@ -420,12 +425,17 @@ class Replay(GObjectClientAdapter):
         raise "replay"
 
 
-def main() -> int:
+def do_main(config) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Replay"):
-        replay = Replay()
+        replay = Replay(config)
         return int(replay.run())
+
+
+def main() -> int:
+    from xpra.scripts.config import make_defaults_struct
+    return do_main(make_defaults_struct())
 
 
 if __name__ == "__main__":
