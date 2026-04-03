@@ -183,7 +183,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         caps: dict[str, Any] = {}
         if self.windows:
             caps = {
-                "windows": True,
+                "windows": {"restack": True},
                 "encoding": self.encoding_options,
                 "share": True,
                 "keyboard": {"record": True},
@@ -370,6 +370,9 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
     def _process_keyboard_record(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: window %#x not found!", wid)
+            return
         record = packet.get_dict(2)
         if record:
             window.record("key", key=record)
@@ -380,13 +383,29 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         window = self.get_window(0)
         subpacket_type = packet.get_str(2)
         record = list(packet[1:])
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "record": record,
         }
         if subpacket_type == "clipboard-contents" and isinstance(record[7], bytes):
             kwargs["contents"] = record[7]
             record[7] = ''
         window.record("clipboard", **kwargs)
+
+    def _process_window_bell(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: window %#x not found!", wid)
+            return
+        device = packet.get_u16(2)
+        percent = packet.get_i8(3)
+        pitch = packet.get_i32(4)
+        duration = packet.get_i32(5)
+        bell_class = packet.get_u32(6)
+        bell_id = packet.get_u32(7)
+        bell_name = packet.get_str(8)
+        window.record("bell", device=device, percent=percent, pitch=pitch, duration=duration,
+                      bell_class=bell_class, bell_id=bell_id, bell_name=bell_name)
 
     def _process_cursor_default(self, packet: Packet) -> None:
         for window in self._id_to_window.values():
@@ -440,6 +459,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             self.add_legacy_alias("lost-window", "window-destroy")
             self.add_legacy_alias("configure-override-redirect", "window-move-resize")
             self.add_legacy_alias("draw", "window-draw")
+            self.add_legacy_alias("bell", "window-bell")
         self.add_packets(
             "startup-complete",
             "window-create",
@@ -450,6 +470,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             "window-metadata",
             "window-destroy",
             "window-draw",
+            "window-bell",
             "eos",
             "keyboard-record",
             "cursor-data",

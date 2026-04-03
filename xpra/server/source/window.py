@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.net.packet_type import (
     WINDOW_RESTACK, WINDOW_RAISE, WINDOW_INITIATE_MOVERESIZE, WINDOW_DESTROY, WINDOW_RESIZED,
-    WINDOW_MOVE_RESIZE, WINDOW_METADATA,
+    WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL,
 )
 from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection
@@ -19,9 +19,7 @@ from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.common import (
-    may_notify_client, force_size_constraint,
-)
+from xpra.common import may_notify_client, force_size_constraint
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.log import Logger
@@ -123,16 +121,22 @@ class WindowsConnection(StubClientConnection):
             window_source.no_idle()
 
     def parse_client_caps(self, c: typedict) -> None:
-        self.send_windows = c.boolget("ui_client", True) and c.boolget("windows", True)
+        windows = c.get("windows")
+        if isinstance(windows, dict):
+            wcaps = typedict(windows)
+            self.send_windows = c.boolget("ui_client", True) and bool(windows)
+        else:
+            wcaps = c
+            self.send_windows = c.boolget("ui_client", True) and c.boolget("windows", True)
         self.pointer_grabs = c.boolget("pointer.grabs")
         self.send_bell = c.boolget("bell")
         self.system_tray = c.boolget("system_tray")
         self.metadata_supported = c.strtupleget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
         log("metadata supported=%s", self.metadata_supported)
-        self.window_frame_sizes = c.dictget("window.frame_sizes", {})
-        self.window_min_size = c.inttupleget("window.min-size", (0, 0))
-        self.window_max_size = c.inttupleget("window.max-size", (0, 0))
-        self.window_restack = c.boolget("window.restack", False)
+        self.window_frame_sizes = wcaps.dictget("frame_sizes", {})
+        self.window_min_size = wcaps.inttupleget("min-size", (0, 0))
+        self.window_max_size = wcaps.inttupleget("max-size", (0, 0))
+        self.window_restack = wcaps.boolget("restack", False)
         # window filters:
         try:
             for object_name, property_name, operator, value in c.tupleget("window-filters"):
@@ -150,7 +154,6 @@ class WindowsConnection(StubClientConnection):
             "windows": self.send_windows,
             "bell": self.send_bell,
             "system-tray": self.system_tray,
-            "suspended": self.suspended,
             "restack": self.window_restack,
         }
         wsize: dict[str, Any] = {
@@ -224,7 +227,7 @@ class WindowsConnection(StubClientConnection):
              bell_class, bell_id: int, bell_name: str) -> None:
         if not self.send_bell or self.suspended or not self.hello_sent:
             return
-        self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
+        self.send_async(WINDOW_BELL, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     ######################################################################
     # window filters:

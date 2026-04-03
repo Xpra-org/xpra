@@ -33,7 +33,7 @@ class WindowBell(StubClientMixin):
         self.bell_enabled = self.server_bell and self.client_supports_bell
         return True
 
-    def _process_bell(self, packet: Packet) -> None:
+    def _process_window_bell(self, packet: Packet) -> None:
         if not self.bell_enabled:
             return
         wid = packet.get_wid()
@@ -52,4 +52,5 @@ class WindowBell(StubClientMixin):
         raise NotImplementedError()
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("bell", main_thread=True)
+        self.add_legacy_alias("bell", "window-bell")
+        self.add_packets("window-bell", main_thread=True)

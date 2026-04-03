@@ -59,7 +59,7 @@ class ClipboardConnection(StubClientConnection):
             self.clipboard_want_targets = ccaps.boolget("want_targets")
             self.clipboard_selections = ccaps.strtupleget("selections", ALL_CLIPBOARDS)
             self.clipboard_preferred_targets = ccaps.strtupleget("preferred-targets", ())
-            self.clipboard_record = is_recording_allowed(self, "clipboard")
+            self.clipboard_record = ccaps.boolget("record") and is_recording_allowed(self, "clipboard")
         log("client clipboard: enabled=%s, notifications=%s",
             self.clipboard_enabled, self.clipboard_notifications)
         log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
@@ -74,6 +74,7 @@ class ClipboardConnection(StubClientConnection):
                 "want-targets": self.clipboard_want_targets,
                 "preferred-targets": self.clipboard_preferred_targets,
                 "selections": self.clipboard_selections,
+                "record": self.clipboard_record,
             },
         }
 

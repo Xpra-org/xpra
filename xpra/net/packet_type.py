@@ -29,6 +29,7 @@ WINDOW_FOCUS: Final[str] = "focus" if BACKWARDS_COMPATIBLE else "window-focus"
 WINDOW_ACTION: Final[str] = "window-action"
 WINDOW_REFRESH: Final[str] = "buffer-refresh" if BACKWARDS_COMPATIBLE else "window-refresh"
 WINDOW_DRAW_ACK: Final[str] = "damage-sequence" if BACKWARDS_COMPATIBLE else "window-draw-ack"
+WINDOW_BELL: Final[str] = "bell" if BACKWARDS_COMPATIBLE else "window-bell"
 
 KEYBOARD_EVENT: Final[str] = "keyboard-event"
 KEYBOARD_CONFIG: Final[str] = "keyboard-config"
