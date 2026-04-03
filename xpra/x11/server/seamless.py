@@ -120,8 +120,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.session_type = "seamless"
         self._exit_with_windows = False
         self._xsettings_enabled = True
-        # for handling resize synchronization between client and server (this is not xsync!):
-        self.last_client_configure_event = 0.0
         self.snc_timer = 0
 
     def init(self, opts) -> None:
@@ -507,32 +505,42 @@ class SeamlessServer(GObject.GObject, ServerBase):
             # unchanged
             return
         window.set_property("client-geometry", (x, y, nw, nh))
-        lcce = self.last_client_configure_event
         if not window.get_property("shown"):
             self.size_notify_clients(window)
             return
         if self.snc_timer > 0:
             GLib.source_remove(self.snc_timer)
         # TODO: find a better way to choose the timer delay:
-        # for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
+        # for now, we wait at least 100ms, up to 250ms if a client has just sent us a resize:
         # (lcce should always be in the past, so min(..) should be redundant here)
+        lcce = self.get_last_client_configure_event_time()
         delay = max(100, min(250, 250 + round(1000 * (lcce - monotonic()))))
         self.snc_timer = GLib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
-    def size_notify_clients(self, window, lcce=-1) -> None:
-        geomlog("size_notify_clients(%s, %s) last_client_configure_event=%s",
-                window, lcce, self.last_client_configure_event)
+    def get_last_client_configure_event_time(self) -> float:
+        lcce = 0.0
+        for source in self._server_sources.values():
+            lcce = max(lcce, getattr(source, "last_client_configure_event", 0.0))
+        return lcce
+
+    def size_notify_clients(self, window, last_lcce=-1) -> None:
+        geomlog("size_notify_clients(%s, %s)",window, last_lcce)
         self.snc_timer = 0
         wid = self._window_to_id.get(window)
         if not wid:
             geomlog("size_notify_clients: window is gone")
             return
-        if lcce > 0 and lcce != self.last_client_configure_event:
-            geomlog("size_notify_clients: we have received a new client resize since")
-            return
         x, y, nw, nh = window.get_property("client-geometry")
         resize_counter = window.get_property("resize-counter")
         for ss in self.window_sources():
+            lcce = getattr(ss, "last_client_configure_event", 0.0)
+            if 0 < last_lcce < lcce:
+                geomlog("size_notify_clients: we have received a new client resize since")
+                geomlog(" last-configure-events: system=%s, %s=%s", last_lcce, ss, lcce)
+                return
+            geomlog("size_notify_clients: sending to %s", ss)
+            # client has never configured the window,
+            # (passive or `record` client) or this is newer event:
             ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
             # refresh to ensure the client gets the new window contents:
             # TODO: to save bandwidth, we should compare the dimensions and skip the refresh
@@ -972,7 +980,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             self.client_configure_window(window, geometry, resize_counter)
             ncg = window.get_property("client-geometry") or ()
             if ocg != ncg:
-                self.last_client_configure_event = monotonic()
+                ss.last_client_configure_event = monotonic()
                 self.repaint_root_overlay()
                 if ocg[2:4] != ncg[2:4] and SHARING_SYNC_SIZE:
                     # try to ensure this won't trigger a resizing loop:

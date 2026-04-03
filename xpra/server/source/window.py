@@ -87,6 +87,8 @@ class WindowsConnection(StubClientConnection):
         self.window_restack = False
         self.system_tray = False
         self.metadata_supported: Sequence[str] = ()
+        # for handling resize synchronization between client and server (this is not xsync!):
+        self.last_client_configure_event = 0.0
 
     def cleanup(self) -> None:
         for window_source in self.all_window_sources():
