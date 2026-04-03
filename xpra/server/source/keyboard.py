@@ -49,9 +49,14 @@ class KeyboardConnection(StubClientConnection):
 
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {}
+        kci = {
+            "ibus": self.ibus,
+            "record": self.keyboard_record,
+        }
         kc = self.keyboard_config
         if kc:
-            info["keyboard"] = kc.get_info()
+            kci.update(kc.get_info())
+        info["keyboard"] = kci
         return info
 
     def get_caps(self) -> dict[str, Any]:
