@@ -1133,12 +1133,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             x, y = int(move[0]), int(move[1])
         if resize:
             w, h = int(resize[0]), int(resize[1])
-            if self._client.readonly:
-                # change size-constraints first,
-                # so the resize can be honoured:
-                sc = typedict(force_size_constraint(w, h))
-                self._metadata.update(sc)
-                self.set_metadata(sc)
+            self.may_update_metadata(w, h)
         if move and resize:
             self.get_window().move_resize(x, y, w, h)
         elif move:
@@ -1443,6 +1438,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         else:
             self.new_backing(bw, bh)
 
+    def may_update_metadata(self, w: int, h: int) -> None:
+        if self._client.readonly:
+            # change size-constraints first,
+            # so the resize can be honoured:
+            sc = typedict(force_size_constraint(w, h))
+            self._metadata.update(sc)
+            self.set_metadata(sc)
+
     def resize(self, w: int, h: int, resize_counter: int = 0, force: bool = False) -> None:
         ww, wh = self.get_size()
         geomlog("resize(%s, %s, %s) current size=%s, fullscreen=%s, maximized=%s",
@@ -1453,12 +1456,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.repaint(0, 0, w, h)
             return
         if not self._fullscreen and not self._maximized:
-            if self._client.readonly:
-                # change size-constraints first,
-                # so the resize can be honoured:
-                sc = typedict(force_size_constraint(w, h))
-                self._metadata.update(sc)
-                self.set_metadata(sc)
+            self.may_update_metadata(w, h)
             if force:
                 # use GDK directly to bypass WM geometry hint enforcement
                 gdkwin = self.get_window()
@@ -1503,12 +1501,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             y += self.window_offset[1]
             # TODO: check this doesn't move it off-screen!
         self._resize_counter = resize_counter
-        if self._client.readonly:
-            # change size-constraints first,
-            # so the resize can be honoured:
-            sc = typedict(force_size_constraint(w, h))
-            self._metadata.update(sc)
-            self.set_metadata(sc)
+        self.may_update_metadata(w, h)
         wx, wy = self.get_drawing_area_geometry()[:2]
         if (wx, wy) == (x, y):
             # same location, just resize:
