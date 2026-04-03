@@ -71,7 +71,7 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.window:
         from xpra.server.source.image_filter import ImageFilterConnection
         mixins.append(ImageFilterConnection)
-    # must be after windows mixin, so that it can assume "self.send_windows" is set
+    # must be after windows mixin, so that it can assume "self.window_enabled" is set
     if features.encoding:
         from xpra.server.source.encoding import EncodingsConnection
         mixins.append(EncodingsConnection)

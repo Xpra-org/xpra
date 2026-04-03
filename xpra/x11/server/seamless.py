@@ -468,7 +468,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         metadata = {"x11-property": event}
         wid = self._window_to_id[window]
         for ss in self.window_sources():
-            ms = getattr(ss, "metadata_supported", ())
+            ms = getattr(ss, "window_metadata_supported", ())
             if "x11-property" in ms:
                 ss.send(WINDOW_METADATA, wid, metadata)
 
@@ -513,14 +513,14 @@ class SeamlessServer(GObject.GObject, ServerBase):
         # TODO: find a better way to choose the timer delay:
         # for now, we wait at least 100ms, up to 250ms if a client has just sent us a resize:
         # (lcce should always be in the past, so min(..) should be redundant here)
-        lcce = self.get_last_client_configure_event_time()
+        lcce = self.get_window_configure_time_time()
         delay = max(100, min(250, 250 + round(1000 * (lcce - monotonic()))))
         self.snc_timer = GLib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
-    def get_last_client_configure_event_time(self) -> float:
+    def get_window_configure_time_time(self) -> float:
         lcce = 0.0
         for source in self._server_sources.values():
-            lcce = max(lcce, getattr(source, "last_client_configure_event", 0.0))
+            lcce = max(lcce, getattr(source, "window_configure_time", 0.0))
         return lcce
 
     def size_notify_clients(self, window, last_lcce=-1) -> None:
@@ -533,7 +533,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         x, y, nw, nh = window.get_property("client-geometry")
         resize_counter = window.get_property("resize-counter")
         for ss in self.window_sources():
-            lcce = getattr(ss, "last_client_configure_event", 0.0)
+            lcce = getattr(ss, "window_configure_time", 0.0)
             if 0 < last_lcce < lcce:
                 geomlog("size_notify_clients: we have received a new client resize since")
                 geomlog(" last-configure-events: system=%s, %s=%s", last_lcce, ss, lcce)
@@ -980,7 +980,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             self.client_configure_window(window, geometry, resize_counter)
             ncg = window.get_property("client-geometry") or ()
             if ocg != ncg:
-                ss.last_client_configure_event = monotonic()
+                ss.window_configure_time = monotonic()
                 self.repaint_root_overlay()
                 if ocg[2:4] != ncg[2:4] and SHARING_SYNC_SIZE:
                     # try to ensure this won't trigger a resizing loop:

@@ -69,7 +69,7 @@ class CursorsConnection(StubClientConnection):
             self.cursor_encodings = typedict(cursor).strtupleget("encodings")
             self.cursor_backwards_compatible = typedict(cursor).boolget("backwards-compatible", True)
         if self.cursor_backwards_compatible:
-            self.send_cursors |= self.send_windows and c.boolget("cursors")
+            self.send_cursors |= getattr(self, "window_enabled", False) and c.boolget("cursors")
             if not self.cursor_encodings:
                 self.cursor_encodings = c.strtupleget("encodings.cursor")
         log(f"parse_client_caps(..) cursors={self.send_cursors}, cursor encodings={self.cursor_encodings}")

@@ -79,16 +79,16 @@ class WindowsConnection(StubClientConnection):
         # WindowSource for each Window ID
         self.window_sources: dict[int, Any] = {}
         self.window_frame_sizes: dict = {}
-        self.send_bell = False
-        self.send_windows = True
-        self.pointer_grabs = False
+        self.window_bell = False
+        self.window_enabled = True
         self.window_min_size: tuple[int, int] = (0, 0)
         self.window_max_size: tuple[int, int] = (0, 0)
         self.window_restack = False
+        self.window_metadata_supported: Sequence[str] = ()
+        self.pointer_grabs = False
         self.system_tray = False
-        self.metadata_supported: Sequence[str] = ()
         # for handling resize synchronization between client and server (this is not xsync!):
-        self.last_client_configure_event = 0.0
+        self.window_configure_time = 0.0
 
     def cleanup(self) -> None:
         for window_source in self.all_window_sources():
@@ -126,15 +126,15 @@ class WindowsConnection(StubClientConnection):
         windows = c.get("windows")
         if isinstance(windows, dict):
             wcaps = typedict(windows)
-            self.send_windows = c.boolget("ui_client", True) and bool(windows)
+            self.window_enabled = c.boolget("ui_client", True) and bool(windows)
         else:
             wcaps = c
-            self.send_windows = c.boolget("ui_client", True) and c.boolget("windows", True)
+            self.window_enabled = c.boolget("ui_client", True) and c.boolget("windows", True)
         self.pointer_grabs = c.boolget("pointer.grabs")
-        self.send_bell = c.boolget("bell")
+        self.window_bell = c.boolget("bell")
         self.system_tray = c.boolget("system_tray")
-        self.metadata_supported = c.strtupleget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
-        log("metadata supported=%s", self.metadata_supported)
+        self.window_metadata_supported = c.strtupleget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
+        log("metadata supported=%s", self.window_metadata_supported)
         self.window_frame_sizes = wcaps.dictget("frame_sizes", {})
         self.window_min_size = wcaps.inttupleget("min-size", (0, 0))
         self.window_max_size = wcaps.inttupleget("max-size", (0, 0))
@@ -153,8 +153,8 @@ class WindowsConnection(StubClientConnection):
     # info:
     def get_info(self) -> dict[str, Any]:
         info = {
-            "windows": self.send_windows,
-            "bell": self.send_bell,
+            "windows": self.window_enabled,
+            "bell": self.window_bell,
             "system-tray": self.system_tray,
             "restack": self.window_restack,
         }
@@ -227,7 +227,7 @@ class WindowsConnection(StubClientConnection):
 
     def bell(self, wid: int, device: int, percent: int, pitch: int, duration: int,
              bell_class, bell_id: int, bell_name: str) -> None:
-        if not self.send_bell or self.suspended or not self.hello_sent:
+        if not self.window_bell or self.suspended or not self.hello_sent:
             return
         self.send_async(WINDOW_BELL, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
@@ -249,10 +249,10 @@ class WindowsConnection(StubClientConnection):
         self.window_filters.append((self.uuid, window_filter))
 
     def can_send_window(self, window) -> bool:
-        if not self.hello_sent or not (self.send_windows or self.system_tray):
+        if not self.hello_sent or not (self.window_enabled or self.system_tray):
             return False
         # we could also allow filtering for system tray windows?
-        if self.window_filters and self.send_windows and not window.is_tray():
+        if self.window_filters and self.window_enabled and not window.is_tray():
             for uuid, window_filter in self.window_filters:
                 filterslog("can_send_window(%s) checking %s for uuid=%s (client uuid=%s)",
                            window, window_filter, uuid, self.uuid)
@@ -260,13 +260,13 @@ class WindowsConnection(StubClientConnection):
                     v = uuid in ("*", self.uuid)
                     filterslog("can_send_window(%s)=%s", window, v)
                     return v
-        if self.send_windows and self.system_tray:
+        if self.window_enabled and self.system_tray:
             # common case shortcut
             v = True
         elif window.is_tray():
             v = self.system_tray
         else:
-            v = self.send_windows
+            v = self.window_enabled
         filterslog("can_send_window(%s)=%s", window, v)
         return v
 
@@ -302,7 +302,7 @@ class WindowsConnection(StubClientConnection):
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property
     def _make_metadata(self, window, propname: str, skip_defaults=False) -> dict[str, Any]:
-        if propname not in self.metadata_supported:
+        if propname not in self.window_metadata_supported:
             metalog("make_metadata: client does not support %r", propname)
             return {}
         metadata = make_window_metadata(window, propname, skip_defaults=skip_defaults)
@@ -443,7 +443,7 @@ class WindowsConnection(StubClientConnection):
             log("batch config updated for window %#x: %s", wid, ws.batch_config)
 
     def set_client_properties(self, wid: int, window, new_client_properties: typedict) -> None:
-        assert self.send_windows
+        assert self.window_enabled
         ws = self.make_window_source(wid, window)
         ws.set_client_properties(new_client_properties)
 
@@ -521,7 +521,7 @@ class WindowsConnection(StubClientConnection):
             and WindowSource will calculate and record the "client latency".
             (since it knows when the "draw" packet was sent)
         """
-        if not self.send_windows:
+        if not self.window_enabled:
             log.error("client_ack_damage when we don't send any window data!?")
             return
         if decode_time > 0:
