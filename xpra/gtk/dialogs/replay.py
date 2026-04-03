@@ -28,13 +28,13 @@ class TimelineScale(Gtk.DrawingArea):
     """
     A custom timeline bar that draws:
       - a filled elapsed region
-      - amber ticks for every event
+      - a heatmap strip showing event density (amber→red)
       - taller green ticks for sync-point events
       - a draggable white playhead
     """
     HEIGHT = 52
     TRACK_H = 8
-    TICK_H_EVENT = 10    # amber, below track
+    HEATMAP_H = 10       # event-density strip, below track
     TICK_H_SYNC = 22     # green, straddles the track
 
     def __init__(self, total_ms: int):
@@ -45,6 +45,8 @@ class TimelineScale(Gtk.DrawingArea):
         self.sync_times: list[int] = []
         self._seek_cb = noop
         self._dragging = False
+        self._heatmap_cache: list[float] = []
+        self._heatmap_width: int = 0
 
         self.set_size_request(-1, self.HEIGHT)
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK | Gdk.EventMask.POINTER_MOTION_MASK)
@@ -59,6 +61,7 @@ class TimelineScale(Gtk.DrawingArea):
     def set_events_data(self, event_times: list[int], sync_times: list[int]) -> None:
         self.event_times = event_times
         self.sync_times = sync_times
+        self._heatmap_cache = []   # invalidate cached heatmap
         self.queue_draw()
 
     def set_position(self, ms: int) -> None:
@@ -97,13 +100,8 @@ class TimelineScale(Gtk.DrawingArea):
         self._rounded_rect(cr, tx, ty, max(0, ew), th, th / 2)
         cr.fill()
 
-        # Amber ticks – every event (drawn below track)
-        tick_y = ty + th + 3
-        cr.set_source_rgba(0.95, 0.72, 0.12, 0.50)
-        for t in self.event_times:
-            x = self._ms_to_x(t, tx, tw)
-            cr.rectangle(x - 0.5, tick_y, 1, self.TICK_H_EVENT)
-            cr.fill()
+        # Heatmap strip – event density (amber→red), drawn below track
+        self._draw_heatmap(cr, tx, ty, tw, th)
 
         # Green ticks – sync points (straddle the track, taller)
         sync_y = mid_y - self.TICK_H_SYNC / 2
@@ -133,6 +131,52 @@ class TimelineScale(Gtk.DrawingArea):
         cr.arc(x + w - r, y + h - r, r, 0,               math.pi / 2)
         cr.arc(x + r,     y + h - r, r, math.pi / 2,     math.pi)
         cr.close_path()
+
+    # ── heatmap ───────────────────────────────────────────────────────────────
+
+    def _build_heatmap(self, n: int) -> list[float]:
+        """Return a normalised density list of length *n* (cached by width)."""
+        if self._heatmap_cache and self._heatmap_width == n:
+            return self._heatmap_cache
+        buckets = [0.0] * n
+        for t in self.event_times:
+            i = int((t / self.total_ms) * (n - 1))
+            buckets[max(0, min(n - 1, i))] += 1.0
+        # Gaussian blur – sigma grows slightly with widget width for smoothness
+        sigma = max(2.0, n / 200.0)
+        kr = int(sigma * 3)
+        raw = [math.exp(-0.5 * (j / sigma) ** 2) for j in range(-kr, kr + 1)]
+        ksum = sum(raw)
+        kernel = [k / ksum for k in raw]
+        blurred = [0.0] * n
+        for i in range(n):
+            for j, k in enumerate(kernel):
+                idx = i + j - kr
+                if 0 <= idx < n:
+                    blurred[i] += buckets[idx] * k
+        mx = max(blurred) if blurred else 1.0
+        if mx > 0:
+            blurred = [v / mx for v in blurred]
+        self._heatmap_cache = blurred
+        self._heatmap_width = n
+        return blurred
+
+    def _draw_heatmap(self, cr: cairo.Context, tx: int, ty: int, tw: int, th: int) -> None:
+        if not self.event_times:
+            return
+        n = max(1, int(tw))
+        heat = self._build_heatmap(n)
+        heat_y = ty + th + 2
+        for i, v in enumerate(heat):
+            if v < 0.01:
+                continue
+            # amber (low) → orange → red (high)
+            r = 1.0
+            g = max(0.0, 0.72 - v * 0.62)
+            b = 0.0
+            cr.set_source_rgba(r, g, b, min(1.0, v * 0.85 + 0.15))
+            cr.rectangle(tx + i, heat_y, 1, self.HEATMAP_H)
+            cr.fill()
 
     # ── mouse interaction ─────────────────────────────────────────────────────
 
@@ -251,7 +295,10 @@ def do_main(options) -> int:
         from xpra.client.gtk3.replay import GtkReplay
         replay = GtkReplay(options)
         replay.load()
-        ControlWindow(replay)
+        ctrl = ControlWindow(replay)
+        all_ts = sorted(set(ts for wr in replay.window_replay.values() for ts in wr.get_all_timestamps()))
+        sync_ts = sorted(set(ts for wr in replay.window_replay.values() for ts in wr.get_sync_timestamps()))
+        ctrl.set_events_data(all_ts, sync_ts)
         return replay.run()
 
 
