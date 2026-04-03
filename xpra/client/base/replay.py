@@ -7,6 +7,7 @@ import sys
 import glob
 import json
 import os.path
+import time
 from collections.abc import Sequence
 from typing import NoReturn
 
@@ -344,6 +345,8 @@ class Replay(GObjectClientAdapter):
         self.is_playing = True
         rate = options.refresh_rate.lower()
         self.rate = 1.0 if (rate in TRUE_OPTIONS or rate == "auto") else 1/float(rate)
+        self._wall_start: float = 0.0    # monotonic seconds when play last (re)started
+        self._replay_start: int = 0      # time_index value at that moment
 
     def __repr__(self):
         return "Replay"
@@ -372,6 +375,7 @@ class Replay(GObjectClientAdapter):
         log.info(" using rate=%f", self.rate)
         log.info(" found %i events", sum(wr.count() for wr in self.window_replay.values()))
         log.info(" total time: %i seconds", self.last_timestamp // 1000)
+        self._anchor()
         self.schedule_next_event()
         return super().run()
 
@@ -380,12 +384,34 @@ class Replay(GObjectClientAdapter):
         from xpra.gtk.util import get_root_size
         return get_root_size()
 
+    def _anchor(self) -> None:
+        """Record the wall-clock / replay-time pair used by visual_time."""
+        self._wall_start = time.monotonic()
+        self._replay_start = self.time_index
+
+    @property
+    def visual_time(self) -> int:
+        """Continuously interpolated playhead position (ms), smooth between events."""
+        if not self.is_playing or not self._wall_start:
+            return self.time_index
+        elapsed_ms = (time.monotonic() - self._wall_start) * 1000
+        return min(self.last_timestamp, int(self._replay_start + elapsed_ms * self.rate))
+
+    def set_rate(self, rate: float) -> None:
+        """Change playback rate, re-anchoring so visual_time stays continuous."""
+        if self.is_playing:
+            self.time_index = self.visual_time
+            self._anchor()
+        self.rate = rate
+
     def toggle_play_pause(self) -> None:
         if self.is_playing:
+            self.time_index = self.visual_time
             self.is_playing = False
             self.cancel_event_timer()
         else:
             self.is_playing = True
+            self._anchor()
             self.schedule_next_event()
 
     def seek(self, target_ms: int) -> None:
@@ -404,6 +430,7 @@ class Replay(GObjectClientAdapter):
 
         self.is_playing = was_playing
         if self.is_playing:
+            self._anchor()
             self.schedule_next_event()
 
     def schedule_next_event(self) -> None:

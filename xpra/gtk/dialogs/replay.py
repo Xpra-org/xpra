@@ -262,7 +262,7 @@ class ControlWindow:
         self.replay.seek(0)
 
     def speed_changed(self, *args) -> None:
-        self.replay.rate = self.speed_spin.get_value()
+        self.replay.set_rate(self.speed_spin.get_value())
 
     def set_events_data(self, event_times: list[int], sync_times: list[int]) -> None:
         self.timeline.set_events_data(event_times, sync_times)
@@ -278,7 +278,7 @@ class ControlWindow:
     def _tick(self) -> bool:
         """Runs every 100 ms to refresh the UI."""
         r = self.replay
-        ms, total = r.time_index, r.last_timestamp
+        ms, total = r.visual_time, r.last_timestamp
         self.timeline.set_position(ms)
         self.time_label.set_text(f"{_fmt_time(ms)} / {_fmt_time(total)}")
         self.play_btn.set_label("▶" if not r.is_playing else "⏸")
