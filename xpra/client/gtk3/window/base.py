@@ -1408,6 +1408,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             y += self.window_offset[1]
             # TODO: check this doesn't move it off-screen!
         self._resize_counter = resize_counter
+        if self._client.readonly:
+            # change size-constraints first,
+            # so the resize can be honoured:
+            sc = typedict(force_size_constraint(w, h))
+            self._metadata.update(sc)
+            self.set_metadata(sc)
         wx, wy = self.get_drawing_area_geometry()[:2]
         if (wx, wy) == (x, y):
             # same location, just resize:
