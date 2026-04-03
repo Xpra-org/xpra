@@ -169,6 +169,9 @@ class WindowReplay:
     def next_event(self) -> dict:
         if self.event_index < len(self.events):
             self.event_index += 1
+            while self.event_index not in self.events and self.event_index < len(self.events):
+                log.warn("Warning: event %i missing!", self.event_index)
+                self.event_index += 1
         return self.get_event()
 
     def process_event(self) -> None:
@@ -182,6 +185,7 @@ class WindowReplay:
 
     def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
+        log.info("%4i event=%s", event.get("index", 0), etype)
         if not self.window and etype != "new":
             log.warn("Warning: event %r received, but window %#x is gone!", etype, self.wid)
             return
@@ -250,6 +254,16 @@ class WindowReplay:
             metadata = typedict(event.dictget("metadata", {}))
             log("metadata: %s", metadata)
             self.window.update_metadata(metadata)
+        elif etype == "resize":
+            size = event.inttupleget("size", (0, 0))
+            log.warn("resize: %s", size)
+            if size != (0, 0):
+                self.window.resize(*size)
+        elif etype == "move-resize":
+            geometry = event.inttupleget("geometry", (0, 0, 0, 0))
+            log.warn("move-resize: %s", geometry)
+            if max(geometry) > 0:
+                self.window.move_resize(*geometry)
         else:
             log.warn("%r not handled yet!", etype)
 
@@ -300,6 +314,9 @@ class WindowModel:
         pass
 
     def show_pointer_overlay(self, position):
+        pass
+
+    def resize(self, *size):
         pass
 
     def move_resize(self, *geometry):

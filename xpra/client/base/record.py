@@ -87,6 +87,7 @@ class WindowModel:
             "wid": self.wid,
             "timestamp": int((monotonic() - self.start) * 1000),
             "time": int(time() * 1000),
+            "index": self.event_no,
         }
         # remove bytes data and store as a separate file
         # (ie: `encoding` in `draw` packets or `pixels` in `cursor_data` packets)
@@ -304,7 +305,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         if window:
             x, y = window.geometry[:2]
             window.geometry = (x, y, w, h)
-            window.record("resized", geometry=(x, y, w, h))
+            window.record("resize", size=(w, h))
 
     def _process_raise_window(self, packet: Packet) -> None:
         wid = packet.get_wid()
