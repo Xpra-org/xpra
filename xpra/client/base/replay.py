@@ -276,7 +276,7 @@ class WindowReplay:
                 break
         return sync_idx
 
-    def seek_to(self, target_ms: int) -> None:
+    def seek(self, target_ms: int) -> None:
         sync_idx = self.find_sync_index(target_ms)
         if sync_idx < 0:
             log.warn("Warning: no sync point at or before %dms for wid 0x%x – seek skipped",
@@ -338,6 +338,7 @@ class Replay(GObjectClientAdapter):
         self.event_timer = 0
         self.time_index = 0
         self.last_timestamp = 0
+        self.is_playing = True
         rate = options.refresh_rate.lower()
         self.rate = 1.0 if (rate in TRUE_OPTIONS or rate == "auto") else 1/float(rate)
 
@@ -376,6 +377,32 @@ class Replay(GObjectClientAdapter):
     def get_root_size() -> tuple[int, int]:
         from xpra.gtk.util import get_root_size
         return get_root_size()
+
+    def toggle_play_pause(self) -> None:
+        if self.is_playing:
+            self.is_playing = False
+            self.cancel_event_timer()
+        else:
+            self.is_playing = True
+            self.schedule_next_event()
+
+    def seek(self, target_ms: int) -> None:
+        """
+        Seek every window to *target_ms*.
+        Each WindowReplay finds its own last sync point, so windows that have
+        no sync before *target_ms* are simply skipped with a warning.
+        """
+        was_playing = self.is_playing
+        self.is_playing = False
+        self.cancel_event_timer()
+
+        self.time_index = target_ms
+        for wr in self.window_replay.values():
+            wr.seek(target_ms)
+
+        self.is_playing = was_playing
+        if self.is_playing:
+            self.schedule_next_event()
 
     def schedule_next_event(self) -> None:
         event = self.find_next_event()
