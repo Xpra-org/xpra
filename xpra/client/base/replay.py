@@ -132,7 +132,7 @@ class WindowReplay:
             ts = ev.intget("timestamp", -1)
             if ts >= 0:
                 all_ts.append(ts)
-            if ev.strget("event", "") == "sync":
+            if ev.strget("event", "") in ("sync", "new"):
                 sync.append((ts, idx))
             if not CACHE:
                 free_event(ev)
@@ -185,14 +185,18 @@ class WindowReplay:
 
     def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
-        log.info("%4i event=%s", event.get("index", 0), etype)
+        log("%-8i wid=%6x - %4i : %s", event.get("timestamp", 0), self.wid, event.get("index", 0), etype)
         if not self.window and etype != "new":
             log.warn("Warning: event %r received, but window %#x is gone!", etype, self.wid)
             return
         if etype == "new":
             geom: tuple[int, int, int, int] = event.inttupleget("geometry", (0, 0, 1, 1))
             metadata = typedict(event.dictget("metadata", {}))
-            self.window = self.client.make_client_window(self.wid, geom, metadata)
+            if self.window:
+                self.window.update_metadata(metadata)
+                self.window.move_resize(*geom)
+            else:
+                self.window = self.client.make_client_window(self.wid, geom, metadata)
             log("new-window: %s", self.window)
             self.window.show()
         elif etype == "destroy":
@@ -247,28 +251,28 @@ class WindowReplay:
         elif etype == "sync":
             log("sync point")
             geometry = event.inttupleget("geometry", (0, 0, 1, 1))
-            self.window.move_resize(*geometry)
             metadata = typedict(event.dictget("metadata", {}))
             self.window.update_metadata(metadata)
+            self.window.move_resize(*geometry)
         elif etype == "metadata":
             metadata = typedict(event.dictget("metadata", {}))
             log("metadata: %s", metadata)
             self.window.update_metadata(metadata)
         elif etype == "resize":
             size = event.inttupleget("size", (0, 0))
-            log.warn("resize: %s", size)
+            log("resize: %s", size)
             if size != (0, 0):
                 self.window.resize(*size)
         elif etype == "move-resize":
             geometry = event.inttupleget("geometry", (0, 0, 0, 0))
-            log.warn("move-resize: %s", geometry)
+            log("move-resize: %s", geometry)
             if max(geometry) > 0:
                 self.window.move_resize(*geometry)
         else:
             log.warn("%r not handled yet!", etype)
 
     def find_sync_index(self, target_ts: int):
-        sync_idx: int = -1
+        sync_idx: int = 0
         for ts, idx in self.sync_index:
             if ts <= target_ts:
                 sync_idx = idx
@@ -278,13 +282,12 @@ class WindowReplay:
 
     def seek(self, target_ms: int) -> None:
         sync_idx = self.find_sync_index(target_ms)
-        if sync_idx < 0:
-            log.warn("Warning: no sync point at or before %dms for wid 0x%x – seek skipped",
-                     target_ms, self.wid)
-            return
-
         # start at previous sync point:
         self.event_index = sync_idx
+        if self.wid > 0 and sync_idx == 0 and self.window:
+            # window did not exist yet!
+            self.window.destroy()
+            self.window = None
         # fast-replay any events between the sync point and target_ms
         while self.event_index < len(self.events):
             ev = self.events.get(self.event_index)
@@ -364,7 +367,6 @@ class Replay(GObjectClientAdapter):
     def run(self) -> ExitValue:
         if not os.path.exists(self.record_directory):
             return ExitCode.FILE_NOT_FOUND
-        self.load()
         log.info("%s replaying record for %i windows: %s",
                  self, len(self.window_replay), csv(hex(wid) for wid in self.window_replay.keys()))
         log.info(" using rate=%f", self.rate)
@@ -414,7 +416,7 @@ class Replay(GObjectClientAdapter):
             log.warn("Warning: event %r does not have a valid timestamp", event)
             return
         # timestamp is in milliseconds:
-        delay = max(0, round((timestamp - self.time_index) * self.rate))
+        delay = max(0, round((timestamp - self.time_index) / self.rate))
         log("schedule_next_event: in %ims, %s", delay, event.get("filename", ""))
         self.event_timer = self.timeout_add(delay, self.process_next_event, event)
 
@@ -477,6 +479,7 @@ def do_main(config) -> int:
     from xpra.platform import program_context
     with program_context("Replay"):
         replay = Replay(config)
+        replay.load()
         return int(replay.run())
 
 

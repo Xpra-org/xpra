@@ -4,9 +4,12 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from types import FrameType
 
-from xpra.client.base.replay import Replay, WindowModel
+from xpra.exit_codes import ExitValue
+from xpra.util.glib import install_signal_handlers
 from xpra.util.objects import typedict
+from xpra.client.base.replay import Replay, WindowModel
 from xpra.net import common as net_common
 from xpra.common import noop
 from xpra.log import Logger
@@ -37,6 +40,13 @@ class GtkReplay(Replay):
 
     def __repr__(self):
         return "GtkReplay"
+
+    def run(self) -> ExitValue:
+        install_signal_handlers("replay", self.handle_app_signal)
+        return super().run()
+
+    def handle_app_signal(self, signum: int, _frame: FrameType = None) -> None:
+        self.quit(128 - signum)
 
     def send(self, packet_type:str, *args, **kwargs) -> None:
         log("ignoring request to send %r", packet_type)
@@ -92,6 +102,7 @@ def do_main(options) -> int:
     from xpra.platform import program_context
     with program_context("Replay"):
         replay = GtkReplay(options)
+        replay.load()
         return int(replay.run())
 
 
