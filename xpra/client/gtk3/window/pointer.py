@@ -192,15 +192,16 @@ class PointerWindow(GtkStubWindow):
             return x, y, w, h
 
         value = b.pointer_overlay
+        log("do_show_pointer_overlay: value=%s", value)
         if value:
             # repaint the scale value (in window coordinates):
             x, y, w, h = abs_coords(*value[2:5])
-            self.repaint(x, y, w, h)
+            self.redraw()
             # clear it shortly after:
             self.schedule_remove_pointer_overlay()
         if prev:
             x, y, w, h = abs_coords(*prev[2:5])
-            self.repaint(x, y, w, h)
+            self.redraw()
 
     def schedule_remove_pointer_overlay(self, delay: int = CURSOR_IDLE_TIMEOUT * 1000) -> None:
         log(f"schedule_remove_pointer_overlay({delay})")
