@@ -379,9 +379,11 @@ class CairoBackingBase(WindowBackingBase):
         return True
 
     def cairo_draw_pointer(self, context):
-        if self.pointer_overlay and self.cursor_data:
-            px, py, _size, start_time = self.pointer_overlay[2:]
-            cairo_paint_pointer_overlay(context, self.cursor_data, px, py, start_time)
+        if self.pointer_overlay:
+            cursor_data = self.cursor_data or self.default_cursor_data
+            if cursor_data:
+                px, py, _size, start_time = self.pointer_overlay[2:]
+                cairo_paint_pointer_overlay(context, cursor_data, px, py, start_time)
 
     def cairo_draw_border(self, context, border) -> None:
         log("cairo_draw_border(%s, %s)", context, border)
