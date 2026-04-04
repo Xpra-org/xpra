@@ -99,9 +99,7 @@ def get_scaling_filter(content_type: str, sx: float, sy: float):
         return FILTER_GOOD
     if "text" in content_type:
         # use nearest-neighbor for text windows at integer upscale >= 2x
-        if (round(sx) >= 2 and round(sy) >= 2
-                and abs(sx - round(sx)) <= 0.1
-                and abs(sy - round(sy)) <= 0.1):
+        if round(sx) >= 2 and round(sy) >= 2 and abs(sx - round(sx)) <= 0.1 and abs(sy - round(sy)) <= 0.1:
             return FILTER_NEAREST
         # use Catmull-Rom (bicubic) for text at non-integer scales
         return FILTER_BEST
