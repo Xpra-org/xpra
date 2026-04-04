@@ -255,7 +255,6 @@ class WindowSource(WindowIconSource):
         self.client_refresh_encodings: Sequence[str] = encoding_options.strtupleget("auto_refresh_encodings")
         self.max_soft_expired: int = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps: bool = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
-        self.send_window_size: bool = encoding_options.boolget("send-window-size", False)
         self.decoder_speed = typedict(self.encoding_options.dictget("decoder-speed") or {})
         self.batch_config = batch_config
         # auto-refresh:
@@ -613,7 +612,6 @@ class WindowSource(WindowIconSource):
                 "max"            : self.max_soft_expired,
             },
             "send-timetamps"        : self.send_timetamps,
-            "send-window-size"      : self.send_window_size,
             "rgb_formats"           : self.rgb_formats,
             "bit-depth"             : {
                 "source"                : self.image_depth,
@@ -843,7 +841,6 @@ class WindowSource(WindowIconSource):
             # remove rgb formats with alpha
             rgb_formats = tuple(x for x in rgb_formats if x.find("A") < 0)
         self.rgb_formats = rgb_formats
-        self.send_window_size = properties.boolget("encoding.send-window-size", self.send_window_size)
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default=None))
         # select the defaults encoders:
         # (in case pillow was selected previously and the client side scaling changed)
@@ -2202,8 +2199,7 @@ class WindowSource(WindowIconSource):
 
         # prepare encoding options:
         eoptions = typedict(options)
-        if self.send_window_size:
-            eoptions["window-size"] = self.window_dimensions
+        eoptions["window-size"] = self.window_dimensions
         resize = self.scaled_size(image)
         if resize:
             sw, sh = resize
@@ -2880,10 +2876,9 @@ class WindowSource(WindowIconSource):
         for v in (x, y, outw, outh, outstride):
             if not isinstance(v, int):
                 raise RuntimeError(f"expected int, found {v} ({type(v)})")
-        if self.send_window_size:
-            ws = options.get("window-size")
-            if ws:
-                client_options["window-size"] = ws
+        ws = options.get("window-size")
+        if ws:
+            client_options["window-size"] = ws
         packet = Packet(WINDOW_DRAW, self.wid, x, y, outw, outh, coding, data,
                         self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1

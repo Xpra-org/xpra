@@ -493,8 +493,9 @@ class WindowBackingBase:
             "encodings.rgb_formats": self.get_rgb_formats(),
             "encoding.transparency": self._alpha_enabled,
             "encoding.full_csc_modes": self._get_full_csc_modes(self.get_rgb_formats()),
-            "encoding.send-window-size": True,
             "encoding.render-size": self.render_size,
+            # always on in v6.5:
+            "encoding.send-window-size": True,
         }
 
     def _get_full_csc_modes(self, rgb_modes: Iterable[str]) -> dict[str, Any]:
