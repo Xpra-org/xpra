@@ -20,6 +20,7 @@ from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.client.base.stub import StubClientMixin
+from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("window")
@@ -509,7 +510,9 @@ class WindowManagerClient(StubClientMixin):
             del self._id_to_window[wid]
             del self._window_to_id[window]
             self.destroy_window(wid, window)
-        self.set_tray_icon()
+        # weak dependency on Tray mixin:
+        set_tray_icon = getattr(self, "set_tray_icon", noop)
+        set_tray_icon()
 
     def may_reenable_modal_windows(self, window) -> None:
         orwids = tuple(wid for wid, w in self._id_to_window.items() if w.is_OR() and w != window)
