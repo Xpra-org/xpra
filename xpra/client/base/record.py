@@ -448,7 +448,48 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             ry = packet.get_i16(5)
         else:
             rx, ry = -1, -1
-        window.record("pointer-position", position=(x, y, rx, ry))
+        window.record("pointer-motion", position=(x, y, rx, ry))
+
+    def _process_pointer_motion(self, packet: Packet) -> None:
+        device_id = packet.get_i64(1)
+        seq = packet.get_u64(2)
+        wid = packet.get_wid(3)
+        pdata = packet.get_ints(4)
+        props = packet.get_dict(5)
+        x, y = pdata[:2]
+        rx, ry = pdata[2:4] if len(pdata) >= 4 else (-1, -1)
+        window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: window %#x not found!", wid)
+            return
+        window.record("pointer-motion", position=(x, y, rx, ry), device_id=device_id, sequence=seq, props=props)
+
+    def _process_pointer_button(self, packet: Packet) -> None:
+        device_id = packet.get_i64(1)
+        seq = packet.get_u64(2)
+        wid = packet.get_wid(3)
+        button = packet.get_u8(4)
+        pressed = packet.get_bool(5)
+        pointer = packet.get_ints(6)
+        props = packet.get_dict(7)
+        window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: window %#x not found!", wid)
+            return
+        window.record("pointer-button", position=pointer, device_id=device_id, sequence=seq, props=props,
+                      button=button, pressed=pressed)
+
+    def _process_pointer_wheel(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        button = packet.get_u8(2)
+        distance = packet.get_i64(3)
+        pointer = packet.get_ints(4)
+        modifiers = packet.get_strs(5)
+        window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: window %#x not found!", wid)
+            return
+        window.record("pointer-wheel", position=pointer, button=button, distance=distance, modifiers=tuple(modifiers))
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets("startup-complete", "encodings", main_thread=True)
@@ -477,5 +518,8 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             "cursor-data",
             "cursor-default",
             "pointer-position",
+            "pointer-button",
+            "pointer-motion",
+            "pointer-wheel",
             "clipboard-record",
         )

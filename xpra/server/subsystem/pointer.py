@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -193,8 +193,15 @@ class PointerServer(StubServerMixin):
         if not pointer:
             return None
         if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
+            seq = self.pointer_sequence.get(device_id, 0)
+            self.may_record_pointer_event("pointer-motion", device_id, seq, wid, pointer, props or {})
             return pointer
         return None
+
+    def may_record_pointer_event(self, packet_type: str, *data: PacketElement) -> None:
+        for ss in self._server_sources.values():
+            if getattr(ss, "pointer_record", False):
+                ss.send_async(packet_type, *data)
 
     def _process_pointer_button(self, proto, packet: Packet) -> None:
         log("process_pointer_button(%s, %s)", proto, packet)
@@ -322,6 +329,8 @@ class PointerServer(StubServerMixin):
             self._update_modifiers(proto, wid, props.get("modifiers", ()))
         props = {}
         if self.process_mouse_common(proto, device_id, wid, pointer, props):
+            seq = self.pointer_sequence.get(device_id, 0)
+            self.may_record_pointer_event("pointer-button", device_id, seq, wid, button, pressed, pointer, props)
             self.button_action(device_id, wid, button, pressed, props)
 
     def button_action(self, device_id: int, wid: int, button: int, pressed: bool, props: dict) -> None:
@@ -352,8 +361,7 @@ class PointerServer(StubServerMixin):
                 return
             self.pointer_sequence[device_id] = seq
         pointer = pdata[:2]
-        if len(pdata) >= 4:
-            ss.mouse_last_relative_position = pdata[2:4]
+        ss.mouse_last_relative_position = pdata[2:4] if len(pdata) >= 4 else (-1, -1)
         ss.mouse_last_position = pointer
         if self.ui_driver and self.ui_driver != ss.uuid:
             return
@@ -376,8 +384,7 @@ class PointerServer(StubServerMixin):
         pdata = packet.get_ints(2)
         modifiers = packet.get_strs(3)
         pointer = pdata[:2]
-        if len(pdata) >= 4:
-            ss.mouse_last_relative_position = pdata[2:4]
+        ss.mouse_last_relative_position = pdata[2:4] if len(pdata) >= 4 else (-1, -1)
         ss.mouse_last_position = pointer
         if self.ui_driver and self.ui_driver != ss.uuid:
             return
@@ -407,9 +414,11 @@ class PointerServer(StubServerMixin):
         if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
             self.last_mouse_user = ss.uuid
             self._update_modifiers(proto, wid, modifiers)
+            self.may_record_pointer_event("pointer-wheel", wid, button, distance, tuple(pointer), tuple(modifiers))
             self.pointer_device.wheel_motion(button, distance / 1000.0)  # pylint: disable=no-member
 
     def record_wheel_event(self, wid: int, button: int) -> None:
+        """ this may be used as a compression hint """
         log("recording scroll event for button %i", button)
         for ss in self.window_sources():
             ss.record_scroll_event(wid)

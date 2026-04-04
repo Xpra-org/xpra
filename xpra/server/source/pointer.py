@@ -31,9 +31,11 @@ class PointerConnection(StubClientConnection):
         # mouse echo:
         self.mouse_last_position: tuple[int, int] | None = None
         self.mouse_last_relative_position: tuple[int, int] | None = None
+        self.pointer_record = False
 
     def parse_client_caps(self, c: typedict) -> None:
         pointer = typedict(c.dictget("pointer", {}))
+        self.pointer_record = pointer.boolget("record")
         log(f"parse_client_caps(..) {pointer=}")
         dc = typedict(pointer.dictget("double_click", {}))
         if not BACKWARDS_COMPATIBLE:

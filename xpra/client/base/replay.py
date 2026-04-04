@@ -235,11 +235,21 @@ class WindowReplay:
                 pixels = decompress_cursor_data(encoding, cpixels, serial)
             cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, name, pixels)
             self.window.set_cursor_data(cursor_data)
-        elif etype == "pointer-position":
+        elif etype in ("pointer-position", "pointer-motion"):
             position = event.inttupleget("position", (0, 0, 1, 1))
             if len(position) >= 4:
                 self.window.motion_cancels_pointer_overlay = False
                 self.window.show_pointer_overlay(position)
+        elif etype == "pointer-button":
+            pressed = event.boolget("pressed")
+            button = event.intget("button", 0)
+            if button:
+                log.info("button %i %spressed", button, ["un", ""][int(pressed)])
+        elif etype == "pointer-wheel":
+            button = event.intget("button", 0)
+            distance = event.intget("distance", 0)
+            if button and distance:
+                log.info("wheel button %i moved %i", button, distance)
         elif etype in ("key-event", "key"):
             log("key-event: %s", event)
             log.info("key: %r", event.dictget("key", {}).get("name", ""))
