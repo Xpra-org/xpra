@@ -75,9 +75,6 @@ class ClientWidgetBase:
         Subclasses may resume normal operation that were suspended by freeze()
         """
 
-    def set_cursor_data(self, cursor_data) -> None:  # pragma: no cover
-        pass
-
     def new_backing(self, w: int, h: int):  # pragma: no cover
         raise NotImplementedError
 
