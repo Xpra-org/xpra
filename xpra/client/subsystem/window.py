@@ -36,6 +36,7 @@ from xpra.util.objects import typedict, make_instance, AdHocStruct
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool, first_time
 from xpra.client.base.stub import StubClientMixin
+from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("window")
@@ -1268,7 +1269,9 @@ class WindowClient(StubClientMixin):
                 wid, w, h, coding, len(data), img, window)
         if window and img:
             window.update_icon(img)
-            self.set_tray_icon()
+            # weak dependency on Tray mixin:
+            set_tray_icon = getattr(self, "set_tray_icon", noop)
+            set_tray_icon()
 
     def _process_window_move_resize(self, packet: Packet) -> None:
         wid = packet.get_wid()
