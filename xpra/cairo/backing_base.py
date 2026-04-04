@@ -65,11 +65,16 @@ def clamp(val: float) -> float:
     return max(0.0, min(1.0, val))
 
 
-def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_time) -> None:
-    if not cursor_data or make_image_surface == noop:
+def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_time: float) -> None:
+    if not cursor_data:
+        log("cairo_paint_pointer_overlay: no cursor data")
+        return
+    if make_image_surface == noop:
+        log("cairo_paint_pointer_overlay: no make_image_surface")
         return
     elapsed = max(0, monotonic() - start_time)
     if elapsed > 6:
+        log("cairo_paint_pointer_overlay: elapsed=%i", elapsed)
         return
 
     cw = cursor_data[3]
@@ -377,11 +382,11 @@ class CairoBackingBase(WindowBackingBase):
         return True
 
     def cairo_draw_pointer(self, context):
-        if self.pointer_overlay:
-            cursor_data = self.cursor_data or self.default_cursor_data
-            if cursor_data:
-                px, py, _size, start_time = self.pointer_overlay[2:]
-                cairo_paint_pointer_overlay(context, cursor_data, px, py, start_time)
+        cursor_data = self.cursor_data or self.default_cursor_data
+        log("cairo_draw_pointer(%s) cursor_data=%s, pointer_overlay=%s", context, cursor_data, self.pointer_overlay)
+        if self.pointer_overlay and cursor_data:
+            px, py, _size, start_time = self.pointer_overlay[2:]
+            cairo_paint_pointer_overlay(context, cursor_data, px, py, start_time)
 
     def cairo_draw_border(self, context, border) -> None:
         log("cairo_draw_border(%s, %s)", context, border)
