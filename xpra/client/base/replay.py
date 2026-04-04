@@ -175,6 +175,9 @@ class WindowReplay:
                 self.event_index += 1
         return self.get_event()
 
+    def event_info(self, etype: str, msg: str):
+        self.client.notable_event_cb(etype, msg)
+
     def process_event(self) -> None:
         event = typedict(self.get_event())
         try:
@@ -190,6 +193,9 @@ class WindowReplay:
         if not self.window and etype != "new":
             log.warn("Warning: event %r received, but window %#x is gone!", etype, self.wid)
             return
+
+        def event_info(msg: str) -> None:
+            self.event_info(etype, msg)
         if etype == "new":
             geom: tuple[int, int, int, int] = event.inttupleget("geometry", (0, 0, 1, 1))
             metadata = typedict(event.dictget("metadata", {}))
@@ -244,21 +250,21 @@ class WindowReplay:
             pressed = event.boolget("pressed")
             button = event.intget("button", 0)
             if button:
-                log.info("button %i %spressed", button, ["un", ""][int(pressed)])
+                event_info(f"button {button} {'pressed' if pressed else 'released'}")
         elif etype == "pointer-wheel":
             button = event.intget("button", 0)
             distance = event.intget("distance", 0)
             if button and distance:
-                log.info("wheel button %i moved %i", button, distance)
+                event_info(f"button {button} moved {distance}")
         elif etype in ("key-event", "key"):
-            log("key-event: %s", event)
-            log.info("key: %r", event.dictget("key", {}).get("name", ""))
+            name = event.dictget("key", {}).get("name", "")
+            event_info("key: %r", name)
         elif etype == "clipboard":
             log("clipboard: %s", event.get("data"))
             # only "clipboard-contents" packets generate this file:
             contents = may_load_blob(event, "contents", False)
             if contents:
-                log.info("clipboard contents: %s", contents)
+                event_info("contents: %s" % (contents,))
         elif etype == "sync":
             log("sync point")
             geometry = event.inttupleget("geometry", (0, 0, 1, 1))
@@ -340,6 +346,10 @@ class WindowModel:
         pass
 
 
+def log_notable_event(etype: str, msg: str) -> None:
+    log.info("%s: %s", etype, msg)
+
+
 class Replay(GObjectClientAdapter):
 
     def __init__(self, options):
@@ -357,6 +367,7 @@ class Replay(GObjectClientAdapter):
         self.rate = 1.0 if (rate in TRUE_OPTIONS or rate == "auto") else 1/float(rate)
         self._wall_start: float = 0.0    # monotonic seconds when play last (re)started
         self._replay_start: int = 0      # time_index value at that moment
+        self.notable_event_cb = log_notable_event
 
     def __repr__(self):
         return "Replay"

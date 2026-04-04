@@ -202,6 +202,70 @@ class TimelineScale(Gtk.DrawingArea):
         self._seek_cb(self._x_to_ms(x, tx, tw))
 
 
+class EventLog(Gtk.ScrolledWindow):
+    """Scrollable log of non-visual events (keyboard, clipboard, pointer buttons)."""
+
+    MAX_LINES = 100
+
+    # event-type → foreground colour (chosen to read on both light and dark themes)
+    TYPE_COLORS: dict[str, str] = {
+        "key":            "#1a7fd4",   # blue
+        "pointer":        "#c03828",   # red
+        "clipboard":      "#b07800",   # dark amber
+    }
+    DEFAULT_COLOR = "#606060"
+
+    def __init__(self):
+        super().__init__()
+        self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.set_size_request(-1, 110)
+
+        self._buf = Gtk.TextBuffer()
+        self._tv = Gtk.TextView(buffer=self._buf)
+        self._tv.set_editable(False)
+        self._tv.set_cursor_visible(False)
+        self._tv.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self._tv.set_monospace(True)
+        self._tv.set_left_margin(4)
+        self._tv.set_right_margin(4)
+        self.add(self._tv)
+
+        self._line_count = 0
+        self._type_tags: dict[str, Gtk.TextTag] = {}
+        for etype, color in self.TYPE_COLORS.items():
+            self._type_tags[etype] = self._buf.create_tag(f"t_{etype}", foreground=color, weight=700)
+        self._default_tag = self._buf.create_tag("t_default", foreground=self.DEFAULT_COLOR, weight=700)
+
+    def append(self, etype: str, message: str) -> None:
+        buf = self._buf
+        if self._line_count >= self.MAX_LINES:
+            # Remove the oldest line (first line + its trailing newline)
+            start = buf.get_start_iter()
+            end = start.copy()
+            end.forward_line()
+            buf.delete(start, end)
+        else:
+            self._line_count += 1
+
+        end_iter = buf.get_end_iter()
+        if buf.get_char_count() > 0:
+            buf.insert(end_iter, "\n")
+            end_iter = buf.get_end_iter()
+
+        # just keep the event-type prefix:
+        # "pointer-button" -> "pointer"
+        tag = self._type_tags.get(etype.split("-", 1)[0], self._default_tag)
+        buf.insert_with_tags(end_iter, f"{etype}: ", tag)
+        end_iter = buf.get_end_iter()
+        buf.insert(end_iter, message)
+
+        GLib.idle_add(self._scroll_to_end)
+
+    def _scroll_to_end(self) -> bool:
+        self._tv.scroll_to_iter(self._buf.get_end_iter(), 0.0, False, 0.0, 0.0)
+        return False
+
+
 class ControlWindow:
     """Floating playback-control window."""
 
@@ -209,7 +273,7 @@ class ControlWindow:
         self.replay = replay
 
         win = Gtk.Window(title="Xpra Replay")
-        win.set_default_size(720, 120)
+        win.set_default_size(720, 280)
         win.set_resizable(True)
         win.set_keep_above(True)
         win.connect("delete-event", lambda *_: replay.quit(ExitCode.OK))
@@ -250,6 +314,10 @@ class ControlWindow:
         self.speed_spin = Gtk.SpinButton(adjustment=adj, digits=2)
         self.speed_spin.connect("value-changed", self.speed_changed)
         row.pack_start(self.speed_spin, False, False, 0)
+
+        # Event log
+        self.event_log = EventLog()
+        outer.pack_start(self.event_log, True, True, 0)
 
         self.replay.end_of_replay = self.end_of_replay
 
@@ -299,6 +367,7 @@ def do_main(options) -> int:
         all_ts = sorted(set(ts for wr in replay.window_replay.values() for ts in wr.get_all_timestamps()))
         sync_ts = sorted(set(ts for wr in replay.window_replay.values() for ts in wr.get_sync_timestamps()))
         ctrl.set_events_data(all_ts, sync_ts)
+        replay.notable_event_cb = ctrl.event_log.append
         return replay.run()
 
 
