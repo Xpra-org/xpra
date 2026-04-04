@@ -27,6 +27,7 @@ class GtkReplay(Replay):
         load_codec("dec_pillow")
         # fake client methods:
         self.xscale = self.yscale = 1
+        self.default_cursor_data = self._load_default_cursor()
         self.server_window_frame_extents = False
         self.wheel_smooth = False
         self.encoding_defaults = {}
@@ -58,6 +59,22 @@ class GtkReplay(Replay):
         return args
 
     @staticmethod
+    def _load_default_cursor() -> tuple:
+        import os.path
+        from xpra.platform.paths import get_icon_dir
+        filename = os.path.join(get_icon_dir(), "cross.png")
+        if os.path.exists(filename):
+            try:
+                from PIL import Image
+                img = Image.open(filename).convert("RGBA")
+                w, h = img.size
+                pixels = img.tobytes("raw", "BGRA")
+                return "raw", 0, 0, w, h, w // 2, h // 2, 0, pixels, "cross"
+            except Exception as e:
+                log("failed to load default cursor from %r: %s", filename, e)
+        return ()
+
+    @staticmethod
     def get_window_frame_sizes(*_args) -> dict[str, Any]:
         return {}
 
@@ -82,11 +99,17 @@ class GtkReplay(Replay):
         border = WindowBorder()
         max_window_size = 2 ** 15, 2 ** 15
         pixel_depth = metadata.intget("pixel-depth", 24)
-        return ClientWindow(self, group_leader, wid,
-                            geometry,
-                            backing_size,
-                            metadata, override_redirect, client_props,
-                            border, max_window_size, pixel_depth, headerbar="no")
+        window = ClientWindow(self, group_leader, wid,
+                              geometry,
+                              backing_size,
+                              metadata, override_redirect, client_props,
+                              border, max_window_size, pixel_depth, headerbar="no")
+        # new_backing() was already called during __init__ and read default_cursor_data
+        # from the window, which didn't have it yet — patch both window and backing now:
+        window.default_cursor_data = self.default_cursor_data
+        if window._backing:
+            window._backing.default_cursor_data = self.default_cursor_data
+        return window
 
     @staticmethod
     def get_root_size() -> tuple[int, int]:

@@ -70,6 +70,7 @@ class WindowModel:
         self.wid = wid
         self.override_redirect = override_redirect
         self.metadata = {}
+        self.cursor_data = ()
         self.geometry = geom
         self.directory = directory
         self.event_no = 0
@@ -118,6 +119,7 @@ class WindowModel:
         self.sync_timer = 0
         kwargs: dict[str, Any] = {
             "metatada": self.metadata,
+            "cursor-data": self.cursor_data,
         }
         if self.geometry != NO_GEOMETRY:
             kwargs["geometry"] = self.geometry
@@ -410,7 +412,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
 
     def _process_cursor_default(self, packet: Packet) -> None:
         for window in self._id_to_window.values():
-            window.cursor = ()
+            window.cursor_data = {}
             window.record("cursor-default")
 
     def _process_cursor_data(self, packet: Packet) -> None:
@@ -422,7 +424,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         serial = packet.get_u64(6)
         pixels = packet.get_bytes(7)
         name = packet.get_str(8)
-        kwargs = {
+        cursor_data = {
             "encoding": encoding,
             "w": w,
             "h": h,
@@ -433,7 +435,8 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             "name": name,
         }
         for window in self._id_to_window.values():
-            window.record("cursor-data", **kwargs)
+            window.cursor_data = cursor_data
+            window.record("cursor-data", **cursor_data)
 
     def _process_pointer_position(self, packet: Packet) -> None:
         wid = packet.get_wid()

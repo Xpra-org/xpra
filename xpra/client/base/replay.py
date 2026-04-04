@@ -7,7 +7,7 @@ import sys
 import glob
 import json
 import os.path
-import time
+from time import monotonic
 from collections.abc import Sequence
 from typing import NoReturn
 
@@ -16,7 +16,7 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.util.parsing import TRUE_OPTIONS
-from xpra.util.str_fn import csv, sorted_nicely, print_nested_dict
+from xpra.util.str_fn import csv, sorted_nicely, print_nested_dict, Ellipsizer
 from xpra.net import common as net_common
 from xpra.log import Logger
 
@@ -99,6 +99,27 @@ def free_event(event: dict) -> None:
     keys_to_remove = tuple(key for key in event if key != "filename")
     for key in keys_to_remove:
         event.pop(key, None)
+
+
+def to_cursor_data(event: typedict) -> tuple:
+    if not event:
+        return ()
+    encoding = event.strget("encoding", "")
+    if encoding != "png":
+        log.warn("Warning: cursor data encoding %r is not supported", encoding)
+        return ()
+    w = event.intget("w", 0)
+    h = event.intget("h", 0)
+    xhot = event.intget("xhot", 0)
+    yhot = event.intget("yhot", 0)
+    serial = event.intget("serial", 0)
+    name = event.strget("name", "")
+    pixels = event.bytesget("pixels")
+    if not pixels:
+        cpixels = may_load_blob(event, ext=encoding)
+        from xpra.client.subsystem.cursor import decompress_cursor_data
+        pixels = decompress_cursor_data(encoding, cpixels, serial)
+    return "raw", 0, 0, w, h, xhot, yhot, serial, pixels, name
 
 
 class WindowReplay:
@@ -221,31 +242,18 @@ class WindowReplay:
             options = typedict(event.dictget("options", {}))
             self.window.draw_region(x, y, width, height, coding, data, rowstride, options, [])
         elif etype == "cursor-default":
-            # set_cursor_data(self, cursor_data: Sequence) -> None:
             self.window.set_cursor_data(())
         elif etype == "cursor-data":
-            encoding = event.strget("encoding", "")
-            if encoding != "png":
-                log.warn("Warning: cursor data encoding %r is not supported", encoding)
-                return
-            w = event.intget("w", 0)
-            h = event.intget("h", 0)
-            xhot = event.intget("xhot", 0)
-            yhot = event.intget("yhot", 0)
-            serial = event.intget("serial", 0)
-            name = event.strget("name", "")
-            pixels = event.bytesget("pixels")
-            if not pixels:
-                cpixels = may_load_blob(event, ext=encoding)
-                from xpra.client.subsystem.cursor import decompress_cursor_data
-                pixels = decompress_cursor_data(encoding, cpixels, serial)
-            cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, name, pixels)
+            cursor_data = to_cursor_data(event)
+            log("cursor-data: %s", Ellipsizer(cursor_data))
             self.window.set_cursor_data(cursor_data)
         elif etype in ("pointer-position", "pointer-motion"):
-            position = event.inttupleget("position", (0, 0, 1, 1))
+            position = event.inttupleget("position", ())
             if len(position) >= 4:
+                log("pointer motion: %s", position)
+                rx, ry = position[2:4]
                 self.window.motion_cancels_pointer_overlay = False
-                self.window.show_pointer_overlay(position)
+                self.window.show_pointer_overlay((rx, ry, 10, monotonic()))
         elif etype == "pointer-button":
             pressed = event.boolget("pressed")
             button = event.intget("button", 0)
@@ -258,7 +266,7 @@ class WindowReplay:
                 event_info(f"button {button} moved {distance}")
         elif etype in ("key-event", "key"):
             name = event.dictget("key", {}).get("name", "")
-            event_info("key: %r", name)
+            event_info("key: %r" % name)
         elif etype == "clipboard":
             log("clipboard: %s", event.get("data"))
             # only "clipboard-contents" packets generate this file:
@@ -269,6 +277,9 @@ class WindowReplay:
             log("sync point")
             geometry = event.inttupleget("geometry", (0, 0, 1, 1))
             metadata = typedict(event.dictget("metadata", {}))
+            cursor = event.dictget("cursor-data", {})
+            if cursor:
+                self.window.set_cursor_data(to_cursor_data(typedict(cursor)))
             self.window.update_metadata(metadata)
             self.window.move_resize(*geometry)
         elif etype == "metadata":
@@ -407,7 +418,7 @@ class Replay(GObjectClientAdapter):
 
     def _anchor(self) -> None:
         """Record the wall-clock / replay-time pair used by visual_time."""
-        self._wall_start = time.monotonic()
+        self._wall_start = monotonic()
         self._replay_start = self.time_index
 
     @property
@@ -415,7 +426,7 @@ class Replay(GObjectClientAdapter):
         """Continuously interpolated playhead position (ms), smooth between events."""
         if not self.is_playing or not self._wall_start:
             return self.time_index
-        elapsed_ms = (time.monotonic() - self._wall_start) * 1000
+        elapsed_ms = (monotonic() - self._wall_start) * 1000
         return min(self.last_timestamp, int(self._replay_start + elapsed_ms * self.rate))
 
     def set_rate(self, rate: float) -> None:
