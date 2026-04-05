@@ -146,7 +146,7 @@ class MenuProvider:
 
         start_thread(load, "load-menu-data", True)
 
-    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> dict[str, Any]:
+    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> dict[str, Any] | None:
         log("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_MENU_DATA:
             return {}
@@ -159,6 +159,9 @@ class MenuProvider:
                     add_work_item(self.got_menu_data)
             finally:
                 lock.release()
+        elif self.menu_data is None:
+            # lock is held by the loader thread and data isn't ready yet
+            return None
         if remove_icons and self.menu_data:
             return noicondata(self.menu_data)
         return self.menu_data or {}

@@ -15,7 +15,10 @@ from xpra.x11.error import xsync, xlog
 from xpra.x11.models.core import CoreX11WindowModel, Above, RESTACKING_STR
 from xpra.x11.bindings.core import constants
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties, GUESS_CONTENT
+from xpra.server.window.content_guesser import (
+    guess_content_type, get_content_type_properties,
+    is_menu_data_loaded, GUESS_CONTENT,
+)
 from xpra.util.background_worker import add_work_item
 from xpra.log import Logger
 
@@ -280,6 +283,7 @@ class BaseWindowModel(CoreX11WindowModel):
         super().__init__(xid)
         self.last_unmap_serial = 0
         self._input_field = True  # The WM_HINTS input field
+        self._content_type_retry_pending = False
         if GUESS_CONTENT:
             # watch for changes to properties that are used to derive the content-type:
             for x in get_content_type_properties():
@@ -473,6 +477,18 @@ class BaseWindowModel(CoreX11WindowModel):
             content_types = ("picture", )
         metalog(f"guess_content_type() {content_types=}")
         self._set_content_types(*content_types)
+        if not is_menu_data_loaded() and not self._content_type_retry_pending:
+            # may get a better result once XDG menu data is available
+            metalog("guess_content_type() menu data not ready, will retry on reload")
+            self._content_type_retry_pending = True
+            from xpra.server.menu_provider import get_menu_provider
+            mp = get_menu_provider()
+            mp.on_reload.append(self.retry_guess_content_type)
+
+    def retry_guess_content_type(self, _data) -> None:
+        metalog("retry_guess_content_type")
+        self._content_type_retry_pending = False
+        add_work_item(self.guess_content_type)
 
     def _set_content_types(self, *content_types: str) -> None:
         self._updateprop("content-type", "+".join(content_types) if content_types else "")

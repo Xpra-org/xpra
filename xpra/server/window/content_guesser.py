@@ -207,22 +207,29 @@ def load_categories_to_type() -> ConfDict:
 command_to_type: dict[str, str] | None = None
 
 
-def load_command_to_type() -> dict[str, str]:
+def load_command_to_type() -> dict[str, str] | None:
+    """Returns None if XDG menu data is not yet loaded."""
     if not GUESS_CONTENT:
         return {}
     global command_to_type
     if command_to_type is None:
-        command_to_type = do_load_command_to_type()
+        result = do_load_command_to_type()
+        if result is None:
+            return None
+        command_to_type = result
     return command_to_type
 
 
-def do_load_command_to_type() -> dict[str, str]:
+def do_load_command_to_type() -> dict[str, str] | None:
+    """Returns None if XDG menu data is not yet loaded."""
     c2t = {}
     categories_to_type = load_categories_to_type()
     if not categories_to_type:
         return c2t
     from xpra.server.menu_provider import get_menu_provider
-    menu_data = get_menu_provider().get_menu_data(remove_icons=True)
+    menu_data = get_menu_provider().get_menu_data(remove_icons=True, wait=False)
+    if menu_data is None:
+        return None
 
     def find_category_type(categories) -> str:
         for c in categories:
@@ -252,12 +259,19 @@ def do_load_command_to_type() -> dict[str, str]:
     return c2t
 
 
+def is_menu_data_loaded() -> bool:
+    from xpra.server.menu_provider import get_menu_provider
+    return get_menu_provider().menu_data is not None
+
+
 def guess_content_type_from_command(window) -> str:
     if POSIX and not OSX:
         command = getprop(window, "command") or ""
         log(f"guess_content_type_from_command({window}) command={command}")
         if command:
             ctt = load_command_to_type()
+            if ctt is None:
+                return ""
             commands = [command]
             for x in command.split("\0"):
                 if x and x not in commands:
