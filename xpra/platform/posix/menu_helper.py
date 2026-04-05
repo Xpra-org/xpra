@@ -12,13 +12,13 @@ using python-xdg
 import os
 import sys
 import glob
-from time import monotonic
+from time import monotonic, sleep
 from contextlib import nullcontext
 from threading import RLock
 from typing import Any
 from collections.abc import Generator, Sequence
 
-from xpra.util.env import envbool, OSEnvContext, first_time, IgnoreWarningsContext, get_saved_env
+from xpra.util.env import envbool, envint, OSEnvContext, first_time, IgnoreWarningsContext, get_saved_env
 from xpra.codecs import icon_util
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
@@ -32,6 +32,7 @@ LOAD_FROM_PIXMAPS: bool = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", ENABLED)
 LOAD_FROM_THEME: bool = envbool("XPRA_XDG_LOAD_FROM_THEME", ENABLED)
 LOAD_GLOB: bool = envbool("XPRA_XDG_LOAD_GLOB", False)
 LOAD_FROM_MENU: bool = envbool("XPRA_XDG_LOAD_FROM_MENU", True)
+MENU_DELAY = envint("XPRA_MENU_DELAY", 0)
 
 EXPORT_ICONS: bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
 DEBUG_COMMANDS: list[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
@@ -509,6 +510,7 @@ def load_xdg_menu_data() -> dict:
 
 
 def do_load_xdg_menu_data():
+    sleep(MENU_DELAY)
     error = None
     from xdg.Menu import parse
     # see ticket #2340,
