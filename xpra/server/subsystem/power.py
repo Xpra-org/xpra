@@ -6,9 +6,17 @@
 
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.platform.events import add_handler, remove_handler
+from xpra.common import may_notify_client
+from xpra.util.env import envbool
+from xpra.constants import NotificationID
 from xpra.log import Logger
 
 log = Logger("event")
+
+NOTIFY_SUSPEND_EVENTS = envbool("XPRA_NOTIFY_SUSPEND_EVENTS", True)
+
+NOTIFY_MESSAGE_TITLE = "Server Suspending"
+NOTIFY_MESSAGE_BODY = "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon."
 
 
 class PowerEventServer(StubServerMixin):
@@ -24,10 +32,15 @@ class PowerEventServer(StubServerMixin):
         remove_handler("suspend", self.suspend_event)
         remove_handler("resume", self.resume_event)
 
-    @staticmethod
-    def suspend_event(*_args) -> None:
+    def suspend_event(self, *args) -> None:
+        log("suspend_event%s", args)
         log.info("suspending")
+        if NOTIFY_SUSPEND_EVENTS:
+            for source in self._server_sources.values():
+                may_notify_client(source, NotificationID.IDLE, NOTIFY_MESSAGE_TITLE, NOTIFY_MESSAGE_BODY,
+                                  expire_timeout=10 * 1000, icon_name="shutdown")
 
     @staticmethod
-    def resume_event(*_args) -> None:
+    def resume_event(self, *args) -> None:
+        log("resume_event%s", args)
         log.info("resuming")

@@ -5,18 +5,10 @@
 # pylint: disable-msg=E1101
 
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.common import may_notify_client
-from xpra.constants import NotificationID
 from xpra.net.common import Packet
-from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("events")
-
-NOTIFY_SUSPEND_EVENTS = envbool("XPRA_NOTIFY_SUSPEND_EVENTS", True)
-
-NOTIFY_MESSAGE_TITLE = "Server Suspending"
-NOTIFY_MESSAGE_BODY = "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon."
 
 
 class SuspendServer(StubServerMixin):
@@ -29,10 +21,6 @@ class SuspendServer(StubServerMixin):
         log("suspend(%s) source=%s", packet[1:], ss)
         if ss:
             ss.emit("suspend")
-        if NOTIFY_SUSPEND_EVENTS:
-            for source in self._server_sources.values():
-                may_notify_client(source, NotificationID.IDLE, NOTIFY_MESSAGE_TITLE, NOTIFY_MESSAGE_BODY,
-                                  expire_timeout=10 * 1000, icon_name="shutdown")
 
     def _process_resume(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
