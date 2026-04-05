@@ -109,15 +109,15 @@ def add_handler(event: str, handler: Callable) -> None:
     log(f"add_handler({event!r}, {handler})")
 
     def forward(*args) -> None:
-        log(f"event: {event!r}, calling {handler}")
+        log(f"event: {event!r}, calling {handler}{args}")
         try:
-            handler(args)
+            handler(*args)
         except Exception as e:
             log.error(f"Error handling {event!r} event")
-            log.error(f" using {handler}:")
+            log.error(f" using {handler}{args}:")
             log.estr(e)
 
-    def add(*args):
+    def add(*args) -> None:
         cleanup = add_bus_handler(*args)
         if cleanup:
             bus_signal_match.setdefault((event, handler), []).append(cleanup)

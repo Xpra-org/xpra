@@ -81,7 +81,8 @@ class PowerEventClient(StubClientMixin):
         else:
             log.info(message)
 
-    def suspend(self) -> None:
+    def suspend(self, *args) -> None:
+        log("suspend(%s)", args)
         log.info(f"{self} suspending")
         self.suspended = time()
         self.emit("suspend")
@@ -91,7 +92,8 @@ class PowerEventClient(StubClientMixin):
         else:
             self.send("suspend")
 
-    def resume(self) -> None:
+    def resume(self, *args) -> None:
+        log("resume(%s)", args)
         self.emit("resume")
         elapsed = max(0.0, time() - self.suspended) if self.suspended else 0.0
         self.suspended = 0.0
