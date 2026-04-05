@@ -456,7 +456,7 @@ class BaseWindowModel(CoreX11WindowModel):
 
     def _update_content_type(self) -> None:
         # watch for changes to properties that are used to derive the content-type:
-        content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True) or ""
+        content_type: str = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True) or ""
         # the _XPRA_CONTENT_TYPE property takes precedence
         if not content_type and GUESS_CONTENT:
             # guess_content_type can take a while as it will load the xdg menu data
@@ -472,9 +472,9 @@ class BaseWindowModel(CoreX11WindowModel):
         if not content_types and self.is_tray():
             content_types = ("picture", )
         metalog(f"guess_content_type() {content_types=}")
-        self._set_content_types(content_types)
+        self._set_content_types(*content_types)
 
-    def _set_content_types(self, content_types: Sequence[str]) -> None:
+    def _set_content_types(self, *content_types: str) -> None:
         self._updateprop("content-type", "+".join(content_types) if content_types else "")
         self._updateprop("content-types", tuple(content_types))
 
