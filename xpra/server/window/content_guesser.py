@@ -98,11 +98,16 @@ content_type_defs: ConfDict | None = None
 def load_content_type_defs() -> ConfDict:
     global content_type_defs
     if content_type_defs is None:
-        content_type_defs = _load_dict_dirs("content-type", parse_content_types)
-        if GUESS_CONTENT:
-            # add env defs:
-            content_type_defs.update(parse_content_types(CONTENT_TYPE_DEFS.split(",")))
+        content_type_defs = do_load_content_type_defs()
     return content_type_defs
+
+
+def do_load_content_type_defs() -> ConfDict:
+    ctd = _load_dict_dirs("content-type", parse_content_types)
+    if GUESS_CONTENT:
+        # add env defs:
+        ctd.update(parse_content_types(CONTENT_TYPE_DEFS.split(",")))
+    return ctd
 
 
 def parse_content_types(lines) -> dict[str, dict[Any, tuple[str, str]]]:
@@ -206,12 +211,16 @@ def load_command_to_type() -> dict[str, str]:
     if not GUESS_CONTENT:
         return {}
     global command_to_type
-    if command_to_type is not None:
-        return command_to_type
-    command_to_type = {}
+    if command_to_type is None:
+        command_to_type = do_load_command_to_type()
+    return command_to_type
+
+
+def do_load_command_to_type() -> dict[str, str]:
+    c2t = {}
     categories_to_type = load_categories_to_type()
     if not categories_to_type:
-        return command_to_type
+        return c2t
     from xpra.server.menu_provider import get_menu_provider
     menu_data = get_menu_provider().get_menu_data(remove_icons=True)
 
@@ -225,7 +234,7 @@ def load_command_to_type() -> dict[str, str]:
                 if c.lower().find(category_name) >= 0:
                     return ct
         return ""
-    log("load_command_to_type() menu_data=%s, categories_to_type=%s", menu_data, categories_to_type)
+    log("do_load_command_to_type() menu_data=%s, categories_to_type=%s", menu_data, categories_to_type)
     if menu_data and categories_to_type:
         for category, category_props in menu_data.items():
             log("category %s: %s", category, Ellipsizer(category_props))
@@ -238,9 +247,9 @@ def load_command_to_type() -> dict[str, str]:
                 if cmd and categories:
                     ctype = find_category_type(categories)
                     if ctype:
-                        command_to_type[cmd] = str(ctype)
-    log("load_command_to_type()=%s", command_to_type)
-    return command_to_type
+                        c2t[cmd] = str(ctype)
+    log("do_load_command_to_type()=%s", c2t)
+    return c2t
 
 
 def guess_content_type_from_command(window) -> str:
