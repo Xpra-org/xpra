@@ -16,6 +16,7 @@ from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger
 
 log = Logger("window", "util")
+log.enable_debug()
 
 GUESS_CONTENT = envbool("XPRA_GUESS_CONTENT", True)
 DEFAULT_CONTENT_TYPE = os.environ.get("XPRA_DEFAULT_CONTENT_TYPE", "")
