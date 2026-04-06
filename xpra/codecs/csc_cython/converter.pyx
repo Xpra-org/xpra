@@ -82,7 +82,7 @@ COLORSPACES: Dict[str, Sequence[str]] = {
     "RGBX"       : get_CS("RGBX",    ["YUV420P", "YUV420P16", "YUV444P"]),
     "BGR"        : get_CS("BGR",     ["YUV420P", "YUV420P16", "YUV444P"]),
     "RGB"        : get_CS("RGB",     ["YUV420P", "YUV420P16", "YUV444P"]),
-    "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX"]),
+    "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX", "YUV420P16"]),
     "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
     "r210"       : get_CS("r210",    ["YUV420P", "BGR48", "YUV444P10"]),
     "YUV444P10"  : get_CS("YUV444P10", ["r210"]),
@@ -114,6 +114,8 @@ def get_specs() -> Sequence[CSCSpec]:
             if in_cs in ("r210", "YUV444P") or out_cs=="r210":
                 can_scale = False
             elif in_cs == "GBRP10":
+                can_scale = False
+            elif out_cs == "YUV420P16" and in_cs == "YUV420P":
                 can_scale = False
             if in_cs == "YUV420P":
                 #safer not to try to handle odd dimensions as input:
@@ -583,6 +585,10 @@ cdef class Converter:
             assert_no_scaling()
             allocate_rgb(4)
             self.convert_image_function = self.GBRP10_to_r210
+        elif src_format=="YUV420P" and dst_format=="YUV420P16":
+            assert_no_scaling()
+            allocate_yuv("YUV420P16", 2)
+            self.convert_image_function = self.YUV420P_to_YUV420P16
         elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX", "RGB", "BGR"):
             #3 or 4 bytes per pixel:
             allocate_rgb(len(dst_format))
@@ -1209,6 +1215,50 @@ cdef class Converter:
         for i in range(3):
             PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(<char *> r210, 30)
+
+    def YUV420P_to_YUV420P16(self, image: ImageWrapper) -> CythonImageWrapper:
+        self.validate_planar3_image(image)
+        planes = image.get_pixels()
+        input_strides = image.get_rowstride()
+        log("YUV420P_to_YUV420P16(%s) strides=%s", image, input_strides)
+
+        cdef unsigned int width = self.dst_width
+        cdef unsigned int height = self.dst_height
+
+        #allocate output buffer:
+        cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
+        cdef unsigned short *Y16 = <unsigned short *> (output_image + self.offsets[0])
+        cdef unsigned short *U16 = <unsigned short *> (output_image + self.offsets[1])
+        cdef unsigned short *V16 = <unsigned short *> (output_image + self.offsets[2])
+
+        cdef unsigned int Ystride_out = self.dst_strides[0] // 2
+        cdef unsigned int Ustride_out = self.dst_strides[1] // 2
+        cdef unsigned int Vstride_out = self.dst_strides[2] // 2
+        cdef unsigned int Ystride_in = input_strides[0]
+        cdef unsigned int Ustride_in = input_strides[1]
+        cdef unsigned int Vstride_in = input_strides[2]
+
+        cdef Py_buffer py_buf[3]
+        cdef int i
+        for i in range(3):
+            if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                raise ValueError("failed to read pixel data from %s" % type(planes[i]))
+        cdef const unsigned char *Ybuf = <const unsigned char *> py_buf[0].buf
+        cdef const unsigned char *Ubuf = <const unsigned char *> py_buf[1].buf
+        cdef const unsigned char *Vbuf = <const unsigned char *> py_buf[2].buf
+
+        cdef unsigned int x, y
+        with nogil:
+            for y in range(height):
+                for x in range(width):
+                    Y16[y * Ystride_out + x] = <unsigned short> Ybuf[y * Ystride_in + x] << 8
+            for y in range(height // 2):
+                for x in range(width // 2):
+                    U16[y * Ustride_out + x] = <unsigned short> Ubuf[y * Ustride_in + x] << 8
+                    V16[y * Vstride_out + x] = <unsigned short> Vbuf[y * Vstride_in + x] << 8
+        for i in range(3):
+            PyBuffer_Release(&py_buf[i])
+        return self.planar3_image_wrapper(<void *> output_image, 48)
 
     def YUV420P_to_RGBX(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_YUV420P_to_RGB(image, 4, RGBX_B, RGBX_G, RGBX_R, RGBX_X)
