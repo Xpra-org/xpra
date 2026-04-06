@@ -20,7 +20,7 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size, get_display_size
-from xpra.platform.win32.pointer import get_position, move_pointer
+from xpra.platform.win32.pointer import move_pointer
 from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow.common import get_monitors
@@ -348,9 +348,6 @@ class ShadowServer(GTKShadowServerBase):
             cd,
             ((w, h), [(w, h), ]),
         )
-
-    def get_pointer_position(self) -> tuple[int, int]:
-        return get_position()
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         x, y = pos[:2]

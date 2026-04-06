@@ -304,11 +304,6 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         self.restore_cursor(proto)
         return [ax, ay] + list(pointer[2:])
 
-    def get_pointer_position(self) -> tuple[int, int]:
-        from xpra.gtk.util import get_default_root_window
-        root = get_default_root_window()
-        return root.get_pointer()[-3:-1]
-
     def get_notification_tray(self):
         return self.tray_widget
 

@@ -5,5 +5,14 @@
 # later version. See the file COPYING for details.
 
 
+def get_position() -> tuple[int, int]:
+    from xpra.platform.posix.gui import x11_bindings
+    if x11_bindings():
+        from xpra.x11.bindings.core import X11CoreBindings
+        return X11CoreBindings().query_pointer()
+    from xpra.gtk.util import get_default_root_window
+    return get_default_root_window().get_pointer()[-3:-1]
+
+
 def get_pointer_device():
     return None

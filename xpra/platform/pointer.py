@@ -8,11 +8,16 @@
 from xpra.platform import platform_import
 
 
+def get_position() -> tuple[int, int]:
+    raise NotImplementedError()
+
+
 def get_pointer_device():
     return None
 
 
 platform_import(globals(), "pointer", True,
+                "get_position",
                 "get_pointer_device")
 
 
