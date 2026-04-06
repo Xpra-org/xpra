@@ -6,21 +6,15 @@
 import math
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import
-from xpra.util.str_fn import memoryview_to_bytes
+import cairo
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.fixes import XFixesBindings
 from xpra.x11.bindings.composite import XCompositeBindings
 from xpra.x11.error import xsync, xswallow, xlog
-from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba, bgra_to_rgbx, r210_to_rgbx, bgr565_to_rgbx
-from cairo import OPERATOR_OVER, OPERATOR_SOURCE  # pylint: disable=no-name-in-module
+from xpra.cairo.context import xlib_surface_create
+from xpra.cairo.image import make_image_surface, CAIRO_FORMATS
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
-GObject = gi_import("GObject")
-Gdk = gi_import("Gdk")
-GdkX11 = gi_import("GdkX11")
 
 log = Logger("screen")
 
@@ -109,49 +103,31 @@ def paint_root_overlay_windows(cr, windows: Sequence) -> None:
 
 def update_root_overlay(root_overlay: int, window, x: int, y: int, image) -> None:
     log("update_root_overlay%s", (root_overlay, window, x, y, image))
-    display = Gdk.Display.get_default()
-    overlaywin = GdkX11.X11Window.foreign_new_for_display(display, root_overlay)
-    cr = overlaywin.cairo_create()
+    surface = xlib_surface_create(root_overlay)
+    cr = cairo.Context(surface)
     paint_overlay_window(cr, window, x, y, image)
 
 
 def paint_overlay_window(cr, window, x: int, y: int, image) -> None:
     log("paint_overlay_window%s", (cr, window, x, y, image))
     wx, wy = window.get_property("geometry")[:2]
-    # FIXME: we should paint the root overlay directly
-    # either using XCopyArea or XShmPutImage,
-    # using GTK and having to unpremultiply then convert to RGB is just too slooooow
     width = image.get_width()
     height = image.get_height()
     rowstride = image.get_rowstride()
     img_data = image.get_pixels()
     rgb_format = image.get_pixel_format()
-    log("update_root_overlay%s rgb_format=%s, img_data=%i (%s)",
+    log("paint_overlay_window%s rgb_format=%s, img_data=%i (%s)",
         (window, x, y, image), rgb_format, len(img_data), type(img_data))
-    operator = OPERATOR_SOURCE
-    if rgb_format == "BGRA":
-        img_data = unpremultiply_argb(img_data)
-        img_data = bgra_to_rgba(img_data)
-        operator = OPERATOR_OVER
-    elif rgb_format == "BGRX":
-        img_data = bgra_to_rgbx(img_data)
-    elif rgb_format == "r210":
-        # lossy...
-        img_data = r210_to_rgbx(img_data, width, height, rowstride, width * 4)
-        rowstride = width * 4
-    elif rgb_format == "BGR565":
-        img_data = bgr565_to_rgbx(img_data)
-        rowstride *= 2
-    else:
-        raise ValueError(f"xync-xvfb root overlay paint code does not handle {rgb_format} pixel format")
-    img_data = memoryview_to_bytes(img_data)
-    log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx + x, wy + y, width, height))
-    from xpra.gtk.pixbuf import get_pixbuf_from_data
-    pixbuf = get_pixbuf_from_data(img_data, True, width, height, rowstride)
+    cairo_fmt = next((fmt for fmt, fmts in CAIRO_FORMATS.items() if rgb_format in fmts), None)
+    if cairo_fmt is None:
+        raise ValueError(f"root overlay paint code does not handle {rgb_format!r} pixel format")
+    img_surface = make_image_surface(cairo_fmt, rgb_format, img_data, width, height, rowstride)
+    operator = cairo.OPERATOR_OVER if rgb_format == "BGRA" else cairo.OPERATOR_SOURCE
+    log("paint_overlay_window%s painting rectangle %s", (window, x, y, image), (wx + x, wy + y, width, height))
     cr.new_path()
     cr.rectangle(wx + x, wy + y, width, height)
     cr.clip()
-    Gdk.cairo_set_source_pixbuf(cr, pixbuf, wx + x, wy + y)
+    cr.set_source_surface(img_surface, wx + x, wy + y)
     cr.set_operator(operator)
     cr.paint()
     with xlog:

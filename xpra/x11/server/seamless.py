@@ -1115,13 +1115,11 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.repaint_root_overlay_timer = 0
         with xsync:
             root_width, root_height = X11WindowBindings().get_root_size()
-        Gdk = gi_import("Gdk")
-        GdkX11 = gi_import("GdkX11")
-        display = Gdk.Display.get_default()
-        overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
-        log("overlaywin: %s", overlaywin.get_geometry())
-        cr = overlaywin.cairo_create()
+        import cairo
+        from xpra.cairo.context import xlib_surface_create
         from xpra.x11.server.root_overlay import fill_rect
+        surface = xlib_surface_create(self.root_overlay)
+        cr = cairo.Context(surface)
         # clear to black
         fill_rect(cr, (0, 0, 0), 0, 0, root_width, root_height)
         self.paint_overlay_monitors(cr)

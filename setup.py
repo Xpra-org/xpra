@@ -2802,6 +2802,7 @@ if gtk_x11_ENABLED:
 toggle_packages(cairo_ENABLED, "xpra.cairo")
 tace(cairo_ENABLED, "xpra.cairo.image", "py3cairo",
      extra_compile_args=["-Wno-error=parentheses-equality"] if CC_is_clang() else [], optimize=3)
+tace(cairo_ENABLED and x11_ENABLED, "xpra.cairo.context", "py3cairo,x11,cairo")
 
 
 # build tests, but don't install them:
