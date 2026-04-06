@@ -20,6 +20,47 @@ from xpra.x11.bindings.xlib cimport (
     XInternalConnectionNumbers,
 )
 from libc.stdint cimport uintptr_t
+from libc.string cimport memset
+from cpython.ref cimport PyObject, Py_INCREF, Py_DECREF
+
+cdef extern from "glib.h":
+    ctypedef int gint
+    ctypedef int gboolean
+    ctypedef void* gpointer
+    ctypedef unsigned int guint
+    ctypedef unsigned short gushort
+
+    ctypedef struct GSource:
+        pass
+
+    ctypedef gboolean (*GSourceFunc)(gpointer user_data) noexcept
+
+    ctypedef struct GSourceFuncs:
+        gboolean (*prepare)  (GSource *source, gint *timeout_) noexcept
+        gboolean (*check)    (GSource *source) noexcept
+        gboolean (*dispatch) (GSource *source, GSourceFunc callback, gpointer user_data) noexcept
+        void     (*finalize) (GSource *source)
+
+    ctypedef struct GMainContext:
+        pass
+
+    ctypedef struct GPollFD:
+        int      fd
+        gushort  events
+        gushort  revents
+
+    GSource         *g_source_new(GSourceFuncs *source_funcs, guint struct_size) nogil
+    void             g_source_add_poll(GSource *source, GPollFD *fd) nogil
+    guint            g_source_attach(GSource *source, GMainContext *context) nogil
+    void             g_source_unref(GSource *source) nogil
+    GMainContext    *g_main_context_default() nogil
+
+    int G_IO_IN
+    int G_IO_PRI
+    int G_IO_HUP
+    int G_IO_ERR
+    int G_IO_NVAL
+    gboolean G_SOURCE_CONTINUE
 
 from xpra.x11.bindings.events import get_x_event_type_name, get_x_event_signals
 from xpra.x11.dispatch import route_event
@@ -136,19 +177,57 @@ cdef void watch_proc(Display *display, XPointer client_data, int fd, Bool openin
     log("watch_proc%s", (<uintptr_t> display, client_data, fd, opening, <uintptr_t> watch_data))
 
 
+# Custom GLib source that wakes up both when the X11 fd has data (via GPollFD)
+# and when Xlib has already buffered events (via prepare/check calling XPending).
+# This avoids the need for a periodic timer to catch events that Xlib read
+# ahead (e.g. during XSync) before GLib could observe the fd becoming readable.
+
+cdef struct X11GSource:
+    GSource   base
+    Display  *display
+    GPollFD   poll_fd
+    PyObject *loop   # owned reference to the Python EventLoop
+
+cdef GSourceFuncs x11_source_funcs
+
+cdef gboolean x11_source_prepare(GSource *source, gint *timeout) noexcept:
+    timeout[0] = -1   # no timeout: fd poll or XPending will wake us
+    return XPending((<X11GSource *> source).display) > 0
+
+cdef gboolean x11_source_check(GSource *source) noexcept:
+    cdef X11GSource *s = <X11GSource *> source
+    return s.poll_fd.revents != 0 or XPending(s.display) > 0
+
+cdef gboolean x11_source_dispatch(GSource *source, GSourceFunc callback, gpointer user_data) noexcept:
+    cdef X11GSource *s = <X11GSource *> source
+    (<object> s.loop).process_events()
+    return G_SOURCE_CONTINUE
+
+cdef void x11_source_finalize(GSource *source) noexcept:
+    cdef X11GSource *s = <X11GSource *> source
+    if s.loop:
+        Py_DECREF(<object> s.loop)
+        s.loop = NULL
+
+x11_source_funcs.prepare  = x11_source_prepare
+x11_source_funcs.check    = x11_source_check
+x11_source_funcs.dispatch = x11_source_dispatch
+x11_source_funcs.finalize = x11_source_finalize
+
+
 def register_glib_source(context) -> None:
     from xpra.x11.bindings.display_source import get_display_ptr
     if not get_display_ptr():
         raise RuntimeError("no display!")
     from xpra.x11.bindings.core import X11CoreBindings
     X11Core = X11CoreBindings()
-    cdef uintptr_t display = <uintptr_t> get_display_ptr()
-    r = XAddConnectionWatch(<Display *> display, watch_proc, <XPointer> NULL)
+    cdef uintptr_t display_ptr = <uintptr_t> get_display_ptr()
+    r = XAddConnectionWatch(<Display *> display_ptr, watch_proc, <XPointer> NULL)
     log("XAddConnectionWatch(..)=%s", r)
 
     cdef int* fd_return
     cdef int count
-    cdef Status ret = XInternalConnectionNumbers(<Display *> display, &fd_return, &count)
+    cdef Status ret = XInternalConnectionNumbers(<Display *> display_ptr, &fd_return, &count)
     log("XInternalConnectionNumbers()=%i", ret)
     if ret:
         log("internal connections: %i", count)
@@ -158,23 +237,17 @@ def register_glib_source(context) -> None:
 
     cdef unsigned int fd = X11Core.get_connection_number()
     log("register_glib_source() X11 fd=%i", fd)
-    from xpra.os_util import gi_import
-    GLib = gi_import("GLib")
+
     loop = EventLoop()
 
-    def x11_callback(data) -> bool:
-        log("x11_callback(%s)", data)
-        loop.process_events()
-        return True
-
-    def timer(*args):
-        loop.process_events()
-        return True
-    GLib.timeout_add(1000, timer)
-
-    ioc = GLib.IOCondition
-    glib_source = GLib.unix_fd_source_new(fd, ioc.IN | ioc.PRI | ioc.HUP | ioc.ERR | ioc.NVAL)
-    glib_source.set_name("X11")
-    glib_source.set_can_recurse(True)
-    glib_source.set_callback(x11_callback, None)
-    glib_source.attach(context)
+    cdef X11GSource *source = <X11GSource *> g_source_new(&x11_source_funcs, sizeof(X11GSource))
+    memset(source, 0, sizeof(X11GSource))
+    source.display = <Display *> display_ptr
+    source.poll_fd.fd = fd
+    source.poll_fd.events = G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR | G_IO_NVAL
+    source.loop = <PyObject *> loop
+    Py_INCREF(loop)
+    g_source_add_poll(<GSource *> source, &source.poll_fd)
+    g_source_attach(<GSource *> source, g_main_context_default())
+    g_source_unref(<GSource *> source)
+    log("register_glib_source() done, source attached")
