@@ -44,15 +44,15 @@ def get_gtk_version_info() -> dict[str, Any]:
     giv("pixbuf", "GdkPixbuf", "_version")
     giv("pixbuf", "GdkPixbuf", "PIXBUF_VERSION")
 
-    def MAJORMICROMINOR(name: str, module) -> None:
+    def major_micro_minor(name: str, module) -> None:
         try:
             v = tuple(getattr(module, x) for x in ("MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"))
             av(name, ".".join(str(x) for x in v))
         except Exception:
             pass
 
-    MAJORMICROMINOR("gtk", gi_import("Gtk"))
-    MAJORMICROMINOR("glib", gi_import("GLib"))
+    major_micro_minor("gtk", gi_import("Gtk"))
+    major_micro_minor("glib", gi_import("GLib"))
     try:
         import cairo
         av("cairo", parse_version(cairo.version_info))  # pylint: disable=no-member
