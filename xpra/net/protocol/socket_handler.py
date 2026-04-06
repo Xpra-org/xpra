@@ -887,11 +887,14 @@ class SocketProtocol:
 
     def check_eof(self, raw_count=0) -> bool:
         self.eof_pending = False
-        if not self._closed and self.input_raw_packetcount <= raw_count:
+        if self._closed:
+            return False
+        if self.input_raw_packetcount <= raw_count:
             eventlog("check_eof: eof detected")
             self._process_read(b"")
             self.timeout_add(100, self.close)
             return False
+        eventlog.warn("Warning: ignored stray eof reading from connection")
         return False
 
     def con_read(self) -> SizedBuffer:
