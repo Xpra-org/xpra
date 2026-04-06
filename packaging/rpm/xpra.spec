@@ -409,6 +409,7 @@ Recommends:			libayatana-appindicator-gtk3
 Recommends:			%{package_prefix}-audio
 Recommends:			%{py3rpmname}-pyopengl
 Recommends:			%{py3rpmname}-pyu2f
+Recommends:			%{py3rpmname}-fido2
 Recommends:         %{py3rpmname}-psutil
 Recommends:         ibus-libs
 Suggests:			sshpass
