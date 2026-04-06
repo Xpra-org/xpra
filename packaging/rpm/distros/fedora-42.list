@@ -9,6 +9,7 @@ python3-cython
 python3-pycuda
 python3-pynvml
 python3-pyu2f
+python3-fido2
 python3-uinput
 python3-pylsqpack
 python3-aioquic
@@ -28,6 +29,7 @@ python3-pynvml
 python3-pybind11
 python3-pillow
 python3-pyu2f
+python3-fido2
 python3-uinput
 python3-wheel
 # disabled due to compilation error:
@@ -49,6 +51,7 @@ python3-pycuda
 python3-pillow
 python3-pynvml
 python3-pyu2f
+python3-fido2
 python3-uinput
 python3-wheel
 python3-dbus

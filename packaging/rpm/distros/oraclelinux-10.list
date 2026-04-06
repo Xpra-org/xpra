@@ -8,6 +8,7 @@ python3-cython
 python3-pycuda
 python3-pynvml
 python3-pyu2f
+python3-fido2
 python3-uinput
 python3-cairo
 python3-wheel

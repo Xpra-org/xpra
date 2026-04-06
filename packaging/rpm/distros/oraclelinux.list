@@ -14,6 +14,7 @@ python3-pycuda
 python3-pillow
 python3-pynvml
 python3-pyu2f
+python3-fido2
 python3-uinput
 python3-wheel
 python3-dbus

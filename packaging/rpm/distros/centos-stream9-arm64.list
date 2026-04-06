@@ -10,6 +10,7 @@ python3-setuptools
 python3-cython
 python3-pillow
 python3-pyu2f
+python3-fido2
 python3-uinput
 python3-dbus
 python3-pyxdg

@@ -7,6 +7,7 @@ gstreamer1-plugin-timestamp
 # default python:
 python3-cython
 python3-pyu2f
+python3-fido2
 python3-uinput
 python3-pylsqpack
 python3-aioquic
@@ -18,6 +19,7 @@ python3-setuptools
 python3-cython
 python3-pillow
 python3-pyu2f
+python3-fido2
 python3-uinput
 python3-wheel
 python3-pylsqpack
@@ -32,6 +34,7 @@ python3-setuptools
 python3-cython
 python3-pillow
 python3-pyu2f
+python3-fido2
 python3-uinput
 python3-wheel
 python3-pylsqpack
