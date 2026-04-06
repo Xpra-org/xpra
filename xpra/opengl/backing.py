@@ -243,6 +243,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     RGB_MODES: Sequence[str] = (
         "YUV420P", "YUV422P", "YUV444P", "NV12",
+        "YUV420P16",
         "GBRP", "BGRA", "BGRX", "RGBA", "RGBX",
         "RGB", "BGR",
     )
