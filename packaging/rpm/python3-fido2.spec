@@ -29,10 +29,12 @@ Group:          Development/Libraries/Python
 Source0:		https://files.pythonhosted.org/packages/source/f/fido2/fido2-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Requires:       %{py3rpmname}
+Requires:       libfido2
 BuildRequires:  %{py3rpmname}-devel
 BuildRequires:  %{py3rpmname}-pip
 BuildRequires:  %{py3rpmname}-setuptools
 BuildRequires:  %{py3rpmname}-wheel
+BuildRequires:  libfido2-devel
 
 %description
 Provides library functionality for communicating with a FIDO device over USB as well as verifying attestation and assertion signatures.
