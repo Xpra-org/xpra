@@ -317,6 +317,7 @@ vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
 amf_ENABLED             = pkg_config_version("1.0", "amf") or has_header_file("AMF/components/VideoEncoderVCE.h")
 amf_encoder_ENABLED     = amf_ENABLED
+mf_decoder_ENABLED      = DEFAULT and WIN32
 remote_encoder_ENABLED  = DEFAULT
 # opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
@@ -369,6 +370,7 @@ ENCODER_SWITCHES = [
 DECODER_SWITCHES = [
     "openh264_decoder",
     "nvdec", "nvjpeg_decoder",
+    "mf_decoder",
     "vpx_decoder", "webp_decoder", "pillow_decoder",
     "jpeg_decoder", "avif_decoder",
 ]
@@ -1722,6 +1724,7 @@ def clean() -> None:
     # these files would match the pattern of generated files, but they are not, so protect them:
     PROTECTED = [
         "xpra/buffers/memalign.c",
+        "xpra/codecs/mf/mf_decode.c",
         "xpra/platform/win32/setappid.cpp",
         "xpra/x11/gtk/gdk_x11_macros.c",
     ]
@@ -3008,6 +3011,10 @@ if amf_ENABLED:
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
     toggle_packages(WIN32, "xpra.platform.win32.d3d11")
     tace(WIN32, "xpra.platform.win32.d3d11.device")
+toggle_packages(mf_decoder_ENABLED, "xpra.codecs.mf")
+if mf_decoder_ENABLED:
+    ace("xpra.codecs.mf.decoder,xpra/codecs/mf/mf_decode.c",
+        extra_link_args=("-lmfplat", "-lmfuuid", "-lole32", "-ld3d11", "-ldxguid"))
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
 toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
 toggle_packages(remote_encoder_ENABLED, "xpra.codecs.remote")

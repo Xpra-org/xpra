@@ -36,6 +36,7 @@ NOWARN = [
     "filter_pillow",
     "dec_avif", "enc_avif",
     "enc_amf",
+    "dec_mf",
 ]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
@@ -81,7 +82,7 @@ DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
     "pillow", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
 ))
 DECODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("dec", x) for x in (
-    "vpx", "openh264", "nvdec", "aom",
+    "mf", "nvdec", "vpx", "openh264", "aom",
 ))
 SOURCES: Sequence[str] = filt("v4l2", "evdi", "drm", "nvfbc")
 
@@ -280,6 +281,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "nvdec"         : ("nvdec decoder",     "nvidia.nvdec", "decoder", "Decoder"),
     "dec_gstreamer" : ("gstreamer decoder", "gstreamer",    "decoder", "Decoder"),
     "dec_aom"       : ("aom decoder",       "aom",          "decoder", "Decoder"),
+    "dec_mf"        : ("mf decoder",        "mf",           "decoder", "Decoder"),
     # sources:
     "v4l2"          : ("v4l2 source",       "v4l2",         "virtual", "VirtualWebcam"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),
