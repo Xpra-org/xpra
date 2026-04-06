@@ -144,12 +144,8 @@ class GTKServer(StubServerMixin):
             caps["screen_sizes"] = get_screen_sizes()
         return caps
 
-    def get_info(self, _proto) -> dict[str, Any]:
-        return {
-            "versions": dict_version_trim(get_gtk_version_info()),
-        }
-
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         return {
+            "versions": dict_version_trim(get_gtk_version_info()),
             "screen_sizes": get_screen_sizes(),
         }
