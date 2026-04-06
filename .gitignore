@@ -179,4 +179,6 @@ tests/unittests/test-file*
 /xpra/wayland/xdg-shell-protocol.h
 /xpra/*.c
 
+/xpra/**/*.so
+
 /.mypy_cache/
