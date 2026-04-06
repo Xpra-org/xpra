@@ -7,8 +7,8 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.net.packet_type import DISPLAY_SCREENSHOT
+from xpra.server.shadow.common import parse_geometries
 from xpra.util.str_fn import csv
-from xpra.util.env import envbool
 from xpra.util.gobject import to_gsignals
 from xpra.common import noop
 from xpra.os_util import gi_import
@@ -19,39 +19,10 @@ from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
 GObject = gi_import("GObject")
 
 screenlog = Logger("screen")
 log = Logger("shadow")
-
-MULTI_WINDOW = envbool("XPRA_SHADOW_MULTI_WINDOW", True)
-
-
-def parse_geometry(s) -> list[int]:
-    try:
-        parts = s.split("@")
-        if len(parts) == 1:
-            x = y = 0
-        else:
-            x, y = (int(v.strip(" ")) for v in parts[1].split("x"))
-        w, h = (int(v.strip(" ")) for v in parts[0].split("x"))
-        geometry = [x, y, w, h]
-        screenlog("capture geometry: %s", geometry)
-        return geometry
-    except ValueError:
-        screenlog("failed to parse geometry %r", s, exc_info=True)
-        screenlog.error("Error: invalid display geometry specified: %r", s)
-        screenlog.error(" use the format: WIDTHxHEIGHT@x,y")
-        raise
-
-
-def parse_geometries(s: str) -> list[list[int]]:
-    g = []
-    for geometry_str in s.split("/"):
-        if geometry_str:
-            g.append(parse_geometry(geometry_str))
-    return g
 
 
 class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
