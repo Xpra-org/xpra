@@ -73,12 +73,6 @@ def release_root_overlay(xid: int) -> None:
         XComposite.XCompositeReleaseOverlayWindow(xid)
 
 
-def cairo_create(root_overlay: int):
-    display = Gdk.Display.get_default()
-    overlaywin = GdkX11.X11Window.foreign_new_for_display(display, root_overlay)
-    return overlaywin.cairo_create()
-
-
 def paint_overlay_monitors(cr, screen: Sequence) -> None:
     log("paint_overlay_monitors%s", (cr, screen))
     if len(screen) < 10:
