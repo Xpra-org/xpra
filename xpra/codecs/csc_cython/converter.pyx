@@ -78,10 +78,10 @@ def get_CS(in_cs, valid_options) -> Sequence[str]:
 
 
 COLORSPACES: Dict[str, Sequence[str]] = {
-    "BGRX"       : get_CS("BGRX",    ["YUV420P", "YUV444P"]),
-    "RGBX"       : get_CS("RGBX",    ["YUV420P", "YUV444P"]),
-    "BGR"        : get_CS("BGR",     ["YUV420P", "YUV444P"]),
-    "RGB"        : get_CS("RGB",     ["YUV420P", "YUV444P"]),
+    "BGRX"       : get_CS("BGRX",    ["YUV420P", "YUV420P16", "YUV444P"]),
+    "RGBX"       : get_CS("RGBX",    ["YUV420P", "YUV420P16", "YUV444P"]),
+    "BGR"        : get_CS("BGR",     ["YUV420P", "YUV420P16", "YUV444P"]),
+    "RGB"        : get_CS("RGB",     ["YUV420P", "YUV420P16", "YUV444P"]),
     "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX"]),
     "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
     "r210"       : get_CS("r210",    ["YUV420P", "BGR48", "YUV444P10"]),
@@ -235,6 +235,15 @@ cdef inline unsigned char clamp(const long value) noexcept nogil:
     if v >= MAX_CLAMP:
         return 0xff         #2**8-1
     return <unsigned char> (v>>16)
+
+
+cdef inline unsigned short clamp16(const long value) noexcept nogil:
+    if value <= 0:
+        return 0
+    cdef long v = value + 2**7
+    if v >= MAX_CLAMP:
+        return 0xffff       #2**16-1
+    return <unsigned short> (v >> 8)
 
 
 cdef inline unsigned short clamp10(const long value) noexcept nogil:
@@ -514,7 +523,7 @@ cdef class Converter:
             log("allocate_rgb(%i) buffer_size=%s, dst size=%s, stride=%s",
                 Bpp, self.buffer_size, self.dst_sizes[0], self.dst_strides[0])
 
-        if src_format in ("BGRX", "RGBX", "RGB", "BGR", "r210") and dst_format in ("YUV420P", "YUV444P"):
+        if src_format in ("BGRX", "RGBX", "RGB", "BGR", "r210") and dst_format in ("YUV420P", "YUV420P16", "YUV444P"):
             if dst_format == "YUV420P":
                 allocate_yuv(dst_format)
                 if src_format=="BGRX":
@@ -528,6 +537,18 @@ cdef class Converter:
                 else:
                     assert src_format=="r210"
                     self.convert_image_function = self.r210_to_YUV420P
+            elif dst_format == "YUV420P16":
+                allocate_yuv(dst_format, 2)
+                if src_format=="BGRX":
+                    self.convert_image_function = self.BGRX_to_YUV420P16
+                elif src_format=="RGBX":
+                    self.convert_image_function = self.RGBX_to_YUV420P16
+                elif src_format=="BGR":
+                    self.convert_image_function = self.BGR_to_YUV420P16
+                elif src_format=="RGB":
+                    self.convert_image_function = self.RGB_to_YUV420P16
+                else:
+                    raise ValueError(f"unsupported src format {src_format!r} for YUV420P16")
             elif dst_format == "YUV444P":
                 allocate_yuv(dst_format)
                 if src_format=="BGRX":
@@ -800,6 +821,95 @@ cdef class Converter:
                                 V[y*Vstride + x] = clamp_studio_UV(VR * Rsum + VG * Gsum + VB * Bsum + VC)
         PyBuffer_Release(&py_buf)
         return self.planar3_image_wrapper(<void *> output_image)
+
+    def BGR_to_YUV420P16(self, image: ImageWrapper) -> CythonImageWrapper:
+        return self.do_RGB_to_YUV420P16(image, 3, BGR_R, BGR_G, BGR_B)
+
+    def RGB_to_YUV420P16(self, image: ImageWrapper) -> CythonImageWrapper:
+        return self.do_RGB_to_YUV420P16(image, 3, RGB_B, RGB_G, RGB_R)
+
+    def BGRX_to_YUV420P16(self, image: ImageWrapper) -> CythonImageWrapper:
+        return self.do_RGB_to_YUV420P16(image, 4, BGRX_R, BGRX_G, BGRX_B)
+
+    def RGBX_to_YUV420P16(self, image: ImageWrapper) -> CythonImageWrapper:
+        return self.do_RGB_to_YUV420P16(image, 4, RGBX_B, RGBX_G, RGBX_R)
+
+    cdef do_RGB_to_YUV420P16(self,
+                             image: ImageWrapper,
+                             const uint8_t Bpp,
+                             const uint8_t Rindex,
+                             const uint8_t Gindex,
+                             const uint8_t Bindex,
+                             ):
+        cdef unsigned int x, y, o
+        cdef unsigned int sx, sy, ox, oy
+        cdef unsigned char R, G, B
+        cdef unsigned short Rsum, Gsum, Bsum
+        cdef unsigned char count, dx, dy
+
+        self.validate_rgb_image(image)
+        pixels = image.get_pixels()
+        cdef unsigned int input_stride = image.get_rowstride()
+        log("do_RGB_to_YUV420P16(%s, %i, %i, %i, %i) input=%s, strides=%s", image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride)
+
+        #allocate output buffer:
+        cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
+        # strides are in bytes; uint16 planes are indexed in short units:
+        cdef unsigned short *Y = <unsigned short *> (output_image + self.offsets[0])
+        cdef unsigned short *U = <unsigned short *> (output_image + self.offsets[1])
+        cdef unsigned short *V = <unsigned short *> (output_image + self.offsets[2])
+
+        #copy to local variables (ensures C code will be optimized correctly)
+        cdef unsigned int Ystride = self.dst_strides[0] // 2
+        cdef unsigned int Ustride = self.dst_strides[1] // 2
+        cdef unsigned int Vstride = self.dst_strides[2] // 2
+        cdef unsigned int src_width = self.src_width
+        cdef unsigned int src_height = self.src_height
+        cdef unsigned int dst_width = self.dst_width
+        cdef unsigned int dst_height = self.dst_height
+
+        #we process 4 pixels at a time:
+        cdef unsigned int workw = roundup(dst_width, 2) // 2
+        cdef unsigned int workh = roundup(dst_height, 2) // 2
+
+        cdef Py_buffer py_buf
+        if PyObject_GetBuffer(pixels, &py_buf, PyBUF_ANY_CONTIGUOUS):
+            raise ValueError("failed to read pixel data from %s" % type(pixels))
+        cdef const unsigned char *input_image = <const unsigned char *> py_buf.buf
+
+        with nogil:
+            for y in range(workh):
+                for x in range(workw):
+                    Rsum = Gsum = Bsum = 0
+                    count = 0
+                    for dy in range(2):
+                        oy = y*2 + dy
+                        if oy >= dst_height:
+                            break
+                        sy = oy * src_height // dst_height
+                        for dx in range(2):
+                            ox = x*2 + dx
+                            if ox >= dst_width:
+                                break
+                            sx = ox * src_width // dst_width
+                            o = sy * input_stride + sx * Bpp
+                            R = input_image[o + Rindex]
+                            G = input_image[o + Gindex]
+                            B = input_image[o + Bindex]
+                            Y[oy * Ystride + ox] = clamp16(YR * R + YG * G + YB * B + YC)
+                            count += 1
+                            Rsum += R
+                            Gsum += G
+                            Bsum += B
+                    #write 1U and 1V:
+                    if count > 0:
+                        Rsum /= count
+                        Gsum /= count
+                        Bsum /= count
+                        U[y * Ustride + x] = clamp16(UR * Rsum + UG * Gsum + UB * Bsum + UC)
+                        V[y * Vstride + x] = clamp16(VR * Rsum + VG * Gsum + VB * Bsum + VC)
+        PyBuffer_Release(&py_buf)
+        return self.planar3_image_wrapper(<void *> output_image, 48)
 
     def BGR_to_YUV444P(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_RGB_to_YUV444P(image, 3, BGR_R, BGR_G, BGR_B)
