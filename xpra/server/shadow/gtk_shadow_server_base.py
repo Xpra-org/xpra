@@ -12,7 +12,6 @@ from xpra.util.str_fn import csv
 from xpra.util.gobject import to_gsignals
 from xpra.common import noop
 from xpra.os_util import gi_import
-from xpra.util.parsing import str_to_bool
 from xpra.server import features
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException
@@ -30,8 +29,7 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
 
     def __init__(self, attrs: dict[str, str]):
         GObject.GObject.__init__(self)
-        ShadowServerBase.__init__(self)
-        self.multi_window = str_to_bool(attrs.get("multi-window", True))
+        ShadowServerBase.__init__(self, attrs)
 
     def add_tray_menu_items(self, tray_menu):
         if features.window:
@@ -167,7 +165,6 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
                 self.window_matches = windows.split("/")
                 return self.makeDynamicWindowModels()
             match_str = opt_dict.get("plug")
-            self.multi_window = str_to_bool(opt_dict.get("multi-window", self.multi_window))
             geometries_str = opt_dict.get("geometry", "")
             if geometries_str:
                 geometries = parse_geometries(geometries_str)

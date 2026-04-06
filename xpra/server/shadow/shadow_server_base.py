@@ -21,7 +21,7 @@ from xpra.net.packet_type import WINDOW_CREATE
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
-from xpra.util.parsing import DEFAULT_REFRESH_RATE
+from xpra.util.parsing import DEFAULT_REFRESH_RATE, str_to_bool
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
 from xpra.log import Logger
@@ -70,7 +70,7 @@ class ShadowServerBase(ServerBase):
     # 20 fps unless the client specifies more:
     DEFAULT_REFRESH_RATE = DEFAULT_REFRESH_RATE
 
-    def __init__(self, capture=None):
+    def __init__(self, attrs: dict[str, str], capture=None):
         # noinspection PyArgumentList
         ServerBase.__init__(self)
         self.capture = capture
@@ -88,6 +88,7 @@ class ShadowServerBase(ServerBase):
         self.session_name = "shadow"
         self.session_type = "shadow"
         self.keyboard_config = None
+        self.multi_window = str_to_bool(attrs.get("multi-window", True))
         batch_config.ALWAYS = True  # always batch
 
     def init(self, opts) -> None:
