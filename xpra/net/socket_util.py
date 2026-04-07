@@ -449,12 +449,12 @@ def parse_bind_options(opts) -> dict[str, Any]:
     min_port = int(opts.min_port)
     bind_options: dict[str, Any] = {}
     for mode in BIND_OPTION_TYPES:
-        value = getattr(opts, "bind_%s" % mode, "")
+        value = getattr(opts, "bind_%s" % mode, ())
         if value:
-            default_port = DEFAULT_PORTS.get(mode, 0)
             if mode == "vsock":
-                value = parse_bind_vsock(opts.bind_vsock)
+                value = parse_bind_vsock(value)
             else:
+                default_port = DEFAULT_PORTS.get(mode, 0)
                 value = parse_bind_ip(value, default_port, min_port)
             if value:
                 bind_options[mode] = value
