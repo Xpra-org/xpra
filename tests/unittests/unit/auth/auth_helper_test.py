@@ -26,12 +26,6 @@ class TestGetAuthModule(unittest.TestCase):
         self.assertEqual(name, "file")
         self.assertEqual(options.get("filename"), "pass.txt")
 
-    def test_comma_options(self):
-        # legacy comma separator
-        name, cls, options = self._get("env,name=MYPASSWD")
-        self.assertEqual(name, "env")
-        self.assertEqual(options.get("name"), "MYPASSWD")
-
     def test_bracket_syntax(self):
         name, cls, options = self._get("exec(command=/bin/echo)")
         self.assertEqual(name, "exec")
@@ -63,7 +57,7 @@ class TestGetAuthModule(unittest.TestCase):
             get_auth_module("nonexistent_module_xyz")
 
     def test_kwargs_passed_through(self):
-        _name, _cls, options = get_auth_module("allow", extra_opt="hello")
+        _name, _mod, _cls, options = get_auth_module("allow", extra_opt="hello")
         self.assertEqual(options.get("extra_opt"), "hello")
 
 
