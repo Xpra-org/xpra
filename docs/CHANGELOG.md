@@ -1,13 +1,39 @@
 # Changelog
 
-## [6.5] 2025-11-19
+## [6.5] 2026-04-07
 * Platforms, build and packaging:
   * [use `wasapi2` on MS Windows](https://github.com/Xpra-org/xpra/issues/4735)
   * [support for Linux Mint in install scripts](https://github.com/Xpra-org/xpra/issues/4727)
+  * [fix cursor scaling on MS Windows](https://github.com/Xpra-org/xpra/pull/4857)
+  * [macOS notarization preparation](https://github.com/Xpra-org/xpra/issues/2441)
+  * [PoC native MS Windows client backend](https://github.com/Xpra-org/xpra/issues/921)
+  * [add `printing` build option on MS Windows](https://github.com/Xpra-org/xpra/pull/4809)
+* Network:
+  * [re-enable `ssl-protocol=TLS_CLIENT` by default](https://github.com/Xpra-org/xpra/issues/4660)
+* OpenGL:
+  * [Catmull-Rom bicubic scaling shader](https://github.com/Xpra-org/xpra/pull/4819)
+  * [sigmoid upscaling and anti-ringing upscale shader](https://github.com/Xpra-org/xpra/pull/4826)
+  * [MS Windows can use OpenGL for opaque-region-covered alpha windows](https://github.com/Xpra-org/xpra/pull/4821)
+  * [fix `NV12` shader](https://github.com/Xpra-org/xpra/pull/4835)
+  * [support `YUV420P16` natively][https://github.com/Xpra-org/xpra/issues/4621]
+* Encodings:
+  * [pre-process screen updates with filters (ie: `pytorch`)](https://github.com/Xpra-org/xpra/issues/4776)
+  * [prefer AV1](https://github.com/Xpra-org/xpra/pull/4854)
+  * [NVENC supports lossless mode with `hevc`](https://github.com/Xpra-org/xpra/pull/4850)
 * Features:
+  * [content aware cairo upscaling filter](https://github.com/Xpra-org/xpra/pull/4806)
+  * [session recording client and replay tool](https://github.com/Xpra-org/xpra/issues/4812)
   * [asynchronous initialization](https://github.com/Xpra-org/xpra/issues/4557)
   * [more specific content types](https://github.com/Xpra-org/xpra/issues/4765)
   * [http error pages overrides](https://github.com/Xpra-org/xpra/issues/4732)
+  * [notification forwarding fixes and improvements](https://github.com/Xpra-org/xpra/issues/4817)
+  * [fido2 authentication module](https://github.com/Xpra-org/xpra/issues/4516)
+  * [support `image/png` with Gtk clipboard backend (Wayland)](https://github.com/Xpra-org/xpra/pull/4717)
+  * [monitor geometry syncing tools](https://github.com/Xpra-org/xpra/issues/4723)
+  * [snap window resize to increment grid](https://github.com/Xpra-org/xpra/pull/4831)
+  * [support free-threaded builds](https://github.com/Xpra-org/xpra/issues/4782)
+* Cosmetic:
+  * [session info graph labels for HiDPI displays](https://github.com/Xpra-org/xpra/pull/4856)
 
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:
