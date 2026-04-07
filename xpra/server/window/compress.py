@@ -79,6 +79,8 @@ ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 250)
 SLOW_SEND_THRESHOLD = envint("XPRA_SLOW_SEND_THRESHOLD", 20*1000*1000)
 FRAME_OVERHEAD = envint("XPRA_FRAME_OVERHEAD", 1)
 DAMAGE_PADDING = envint("XPRA_DAMAGE_PADDING", 0)
+DAMAGE_WIDTH_PADDING = envint("XPRA_DAMAGE_HEIGHT_PADDING", DAMAGE_PADDING)
+DAMAGE_HEIGHT_PADDING = envint("XPRA_DAMAGE_WIDTH_PADDING", DAMAGE_PADDING)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 BROWSER_ALPHA_FIX = envbool("XPRA_BROWSER_ALPHA_FIX", True)
@@ -1603,11 +1605,11 @@ class WindowSource(WindowIconSource):
             return
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
-        elif DAMAGE_PADDING:
-            x2 = x + w + DAMAGE_PADDING
-            y2 = y + h + DAMAGE_PADDING
-            x = max(0, x - DAMAGE_PADDING)
-            y = max(0, y - DAMAGE_PADDING)
+        elif DAMAGE_WIDTH_PADDING or DAMAGE_HEIGHT_PADDING:
+            x2 = x + w + DAMAGE_WIDTH_PADDING
+            y2 = y + h + DAMAGE_HEIGHT_PADDING
+            x = max(0, x - DAMAGE_WIDTH_PADDING)
+            y = max(0, y - DAMAGE_HEIGHT_PADDING)
             w = min(ww - x, x2 - x)
             h = min(wh - y, y2 - y)
         self.do_damage(ww, wh, x, y, w, h, options)
