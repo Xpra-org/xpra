@@ -74,8 +74,10 @@ class AuthenticatedServer(StubServerMixin):
             # per socket authentication option:
             # ie: --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=pass.txt:foo=bar
             # -> sock_auth = ["hosts", "file:filename=pass.txt:foo=bar"]
-            if not isinstance(sock_auth, (list, dict)):
-                sock_auth = sock_auth.split(",")
+            # ie: --bind-tcp=0.0.0.0:10000,auth=exec(command=/bin/echo,foo=bar)
+            # -> sock_auth = "exec(command=/bin/echo,foo=bar)"
+            if not isinstance(sock_auth, (list, tuple)):
+                sock_auth = [sock_auth]
             auth_classes = self.get_auth_modules(conn.socktype, sock_auth)
         else:
             # use authentication configuration defined for all sockets of this type:
@@ -95,9 +97,6 @@ class AuthenticatedServer(StubServerMixin):
                 def parse_socket_dirs(v) -> Sequence[str]:
                     if isinstance(v, (tuple, list)):
                         return v
-                    # FIXME: this can never actually match ","
-                    # because we already split connection options with it.
-                    # We need to change the connection options parser to be smarter
                     return str(v).split(",")
 
                 opts["socket-dirs"] = parse_socket_dirs(opts.get("socket-dirs", self._socket_dirs))

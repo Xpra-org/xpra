@@ -153,10 +153,34 @@ def parse_scaling(desktop_scaling: str, root_w: int, root_h: int,
     return sx, sy
 
 
+def split_dict_str(s: str, sep: str = ",") -> list[str]:
+    """Split *s* on *sep* but ignore separators inside parentheses.
+    ie: "a=1,b=exec(x=2,y=3),c=4" -> ["a=1", "b=exec(x=2,y=3)", "c=4"]
+    """
+    parts: list[str] = []
+    depth = 0
+    current: list[str] = []
+    for ch in s:
+        if ch == "(":
+            depth += 1
+            current.append(ch)
+        elif ch == ")":
+            depth -= 1
+            current.append(ch)
+        elif ch == sep and depth == 0:
+            parts.append("".join(current))
+            current = []
+        else:
+            current.append(ch)
+    if current:
+        parts.append("".join(current))
+    return parts
+
+
 def parse_simple_dict(s: str, sep: str = ",") -> dict[str, str | list[str] | dict[str, str]]:
     # parse the options string and add the pairs:
     d: dict[str, str | list[str] | dict[str, str]] = {}
-    for el in s.split(sep):
+    for el in split_dict_str(s, sep):
         if not el:
             continue
         if el.startswith("#") or el.find("=") < 0:
@@ -171,7 +195,7 @@ def parse_simple_dict(s: str, sep: str = ",") -> dict[str, str | list[str] | dic
                 vparts = v.split("=", 1)
                 if cur is None:
                     # first time we see this key 'k'
-                    if len(vparts) == 2:
+                    if len(vparts) == 2 and "(" not in vparts[0]:
                         # looks like a nested dictionary
                         return {vparts[0]: vparts[1]}
                     # first value found for this key,

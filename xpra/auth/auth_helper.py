@@ -21,19 +21,25 @@ AuthDef: TypeAlias = tuple[str, Any, type, dict]
 
 def get_auth_module(auth_str: str, cwd=os.getcwd(), **auth_options) -> AuthDef:
     log("get_auth_module(%s, {..})", auth_str)
-    # separate options from the auth module name
-    # either with ":" or "," as separator
-    scpos = auth_str.find(":")
-    cpos = auth_str.find(",")
-    if cpos < 0 or scpos < cpos:
-        parts = auth_str.split(":", 1)
+    # bracket syntax: "exec(command=/bin/echo,foo=bar)"
+    bracket = auth_str.find("(")
+    if bracket > 0 and auth_str.endswith(")"):
+        auth = auth_str[:bracket]
+        auth_options.update(parse_simple_dict(auth_str[bracket + 1:-1]))
     else:
-        parts = auth_str.split(",", 1)
-    auth = parts[0]
+        # separate options from the auth module name
+        # either with ":" or "," as separator
+        scpos = auth_str.find(":")
+        cpos = auth_str.find(",")
+        if cpos < 0 or scpos < cpos:
+            parts = auth_str.split(":", 1)
+        else:
+            parts = auth_str.split(",", 1)
+        auth = parts[0]
+        if len(parts) > 1:
+            auth_options.update(parse_simple_dict(parts[1]))
     if auth.endswith("base") or auth.endswith("helper"):
         raise ValueError(f"invalid authentication module name {auth}")
-    if len(parts) > 1:
-        auth_options.update(parse_simple_dict(parts[1]))
     auth_options["exec_cwd"] = cwd
     try:
         if auth == "sys":

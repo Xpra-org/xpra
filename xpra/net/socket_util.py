@@ -24,7 +24,7 @@ from xpra.os_util import (
 )
 from xpra.util.io import path_permission_info, umask_context, is_writable
 from xpra.util.str_fn import csv, memoryview_to_bytes
-from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS
+from xpra.util.parsing import parse_simple_dict, split_dict_str, TRUE_OPTIONS
 from xpra.util.env import envint, envbool, SilenceWarningsContext
 from xpra.util.thread import start_thread
 
@@ -628,7 +628,8 @@ def parse_bind_ip(bind_ip: list[str], default_port=DEFAULT_PORT, min_port=0) -> 
     if bind_ip:
         for spec in bind_ip:
             # ie: "127.0.0.1:10000,someoption=somevalue"
-            parts = spec.split(",", 1)
+            # split only on the first comma that is not inside parentheses:
+            parts = split_dict_str(spec, ",")
             # ie: "127.0.0.1:10000"
             ip_port = parts[0]
             if ":" not in spec:
@@ -646,8 +647,8 @@ def parse_bind_ip(bind_ip: list[str], default_port=DEFAULT_PORT, min_port=0) -> 
                 except (TypeError, ValueError):
                     raise InitException(f"invalid port number: {port}") from None
             options = {}
-            if len(parts) == 2:
-                options = parse_simple_dict(parts[1])
+            if len(parts) > 1:
+                options = parse_simple_dict(",".join(parts[1:]))
             ip_sockets[(host, iport)] = options
     return ip_sockets
 
@@ -676,7 +677,7 @@ def parse_bind_vsock(bind_vsock: list[str]) -> dict[tuple[int, int], dict]:
     if bind_vsock:
         from xpra.scripts.parsing import parse_vsock_cid  # pylint: disable=import-outside-toplevel
         for spec in bind_vsock:
-            parts = spec.split(",", 1)
+            parts = split_dict_str(spec, ",")
             cid_port = parts[0].split(":")
             if len(cid_port) != 2:
                 raise ValueError(f"invalid format for vsock: {parts[0]!r}, use 'CID:PORT' format")
@@ -686,8 +687,8 @@ def parse_bind_vsock(bind_vsock: list[str]) -> dict[tuple[int, int], dict]:
             except ValueError:
                 raise ValueError(f"vsock port must be an integer, {cid_port[0]!r} is not")
             options = {}
-            if len(parts) == 2:
-                options = parse_simple_dict(parts[1])
+            if len(parts) > 1:
+                options = parse_simple_dict(",".join(parts[1:]))
             vsock_sockets[(cid, iport)] = options
     return vsock_sockets
 
