@@ -141,16 +141,21 @@ def process_control_command(protocol, commands: dict[str, Callable], *args) -> t
         log.warn(f"Warning: {err}")
         return 6, err
     name = args[0]
+    command = commands.get(name) or commands.get("*")
+    log(f"process_control_command control_commands[{name!r}]={command}")
+    if not command:
+        log.warn(f"Warning: invalid command: {name!r}")
+        log.warn(f" must be one of: {csv(commands)}")
+        return 6, "invalid command"
     try:
-        command = commands.get(name) or commands.get("*")
-        log(f"process_control_command control_commands[{name!r}]={command}")
-        if not command:
-            log.warn(f"Warning: invalid command: {name!r}")
-            log.warn(f" must be one of: {csv(commands)}")
-            return 6, "invalid command"
         log(f"process_control_command calling {command.run}({args[1:]})")
         v = command.run(*args[1:])
         return 0, v
+    except ValueError as e:
+        log("command=%s args=%s", command, args[1:], exc_info=True)
+        log.error(f"Error processing control command {name!r}")
+        log.estr(e)
+        return 127, str(e)
     except ControlError as e:
         log.error(f"Error {e.code} processing control command {name!r}")
         msgs = [f" {e}"]
