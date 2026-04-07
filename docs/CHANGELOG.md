@@ -8,8 +8,11 @@
   * [macOS notarization preparation](https://github.com/Xpra-org/xpra/issues/2441)
   * [PoC native MS Windows client backend](https://github.com/Xpra-org/xpra/issues/921)
   * [add `printing` build option on MS Windows](https://github.com/Xpra-org/xpra/pull/4809)
+  * [`ArchLinux` setup support](https://github.com/Xpra-org/xpra/pull/4737/)
 * Network:
   * [re-enable `ssl-protocol=TLS_CLIENT` by default](https://github.com/Xpra-org/xpra/issues/4660)
+  * [per authentication module options](https://github.com/Xpra-org/xpra/issues/3791)
+  * [re-connect fails for seamless remote ssh start](https://github.com/Xpra-org/xpra/pull/4738)
 * OpenGL:
   * [Catmull-Rom bicubic scaling shader](https://github.com/Xpra-org/xpra/pull/4819)
   * [sigmoid upscaling and anti-ringing upscale shader](https://github.com/Xpra-org/xpra/pull/4826)
@@ -33,7 +36,9 @@
   * [snap window resize to increment grid](https://github.com/Xpra-org/xpra/pull/4831)
   * [support free-threaded builds](https://github.com/Xpra-org/xpra/issues/4782)
 * Cosmetic:
+  * [honour MS Windows dark / light theme](https://github.com/Xpra-org/xpra/pull/4792)
   * [session info graph labels for HiDPI displays](https://github.com/Xpra-org/xpra/pull/4856)
+  * [window encoders details in session info](https://github.com/Xpra-org/xpra/pull/4797)
 
 ## [6.4] 2025-09-29
 * Platforms, build and packaging:
