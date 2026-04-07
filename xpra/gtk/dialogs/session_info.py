@@ -329,6 +329,17 @@ def save_graph(_ebox, btn, graph) -> None:
         log.warn(f"Warning: unknown chooser response: {response}")
 
 
+def format_encoder_pipeline(encoder: str, decoder: str = "", renderer: str = "") -> str:
+    parts = []
+    if encoder:
+        parts.append(encoder)
+    if decoder:
+        parts.append(decoder)
+    if renderer:
+        parts.append(renderer)
+    return " \u2192 ".join(parts)
+
+
 class SessionInfo(Gtk.Window):
 
     def __init__(self, client, session_name, conn, show_client=True, show_server=True):
@@ -1099,7 +1110,7 @@ class SessionInfo(Gtk.Window):
                      self.trays_managed_label, self.opengl_label)
 
         self.encoder_info_box = Gtk.VBox(spacing=4)
-        self.encoder_info_box.add(title_box("Window Encoders"))
+        self.encoder_info_box.add(title_box("Window Encoders and Renderers"))
         self.encoder_labels = {}
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=0.0)
         al.set_margin_start(10)
@@ -1174,44 +1185,66 @@ class SessionInfo(Gtk.Window):
             if self.client.client_supports_opengl:
                 self.opengl_label.set_text(str(gl))
 
-            # update encoder labels:
-            server_last_info = self.last_info()
-            if server_last_info:
-                window_encoder_stats = self.get_window_encoder_stats()
-                # log("window_encoder_stats=%s", window_encoder_stats)
-                for wid in list(self.encoder_labels):
-                    if wid not in window_encoder_stats:
-                        self.encoder_info_box.remove(self.encoder_labels.pop(wid))
-                for wid, props in window_encoder_stats.items():
-                    title = props.get("title", "")
-                    encoder = bytestostr(props.get("", "?"))
-                    display = "%s - %s (%s)" % (wid, title, encoder) if title else "%s (%s)" % (wid, encoder)
-                    info = " ".join("%s=%s" % (k, v) for k, v in props.items() if k not in ("", "title"))
-                    if wid in self.encoder_labels:
-                        lbl = self.encoder_labels[wid]
-                        lbl.set_text(display)
-                        lbl.set_tooltip_text(info)
-                    else:
-                        lbl = slabel(display)
-                        lbl.set_tooltip_text(info)
-                        lbl.show()
-                        self.encoder_labels[wid] = lbl
-                        self.encoder_info_box.add(lbl)
+            # update encoder and renderer labels:
+            id_to_window = getattr(self.client, "_id_to_window", {})
+            window_encoder_stats = self.get_window_encoder_stats()
+            # remove labels for windows that no longer exist:
+            for wid in list(self.encoder_labels):
+                if wid not in id_to_window:
+                    self.encoder_info_box.remove(self.encoder_labels.pop(wid))
+            # update or create labels for all windows:
+            for wid, win in tuple(id_to_window.items()):
+                renderer = "OpenGL" if win.is_GL() else "Cairo"
+                props = window_encoder_stats.get(wid, {})
+                title = props.get("title", "")
+                if not title:
+                    title = (win.get_title() if hasattr(win, "get_title") else "") or ""
+                    title = (title[:40] + "\u2026") if len(title) > 40 else title
+                encoder = bytestostr(props.get("", "")) if props else ""
+                decoder = ""
+                if props.get("_video"):
+                    # show codec name with encoder in parens: "h265 (nvenc)"
+                    codec = bytestostr(props.get("codec", ""))
+                    if codec and encoder:
+                        encoder = "%s (%s)" % (codec, encoder)
+                    elif codec:
+                        encoder = codec
+                    try:
+                        backing = getattr(win, "_backing", None)
+                        vd = getattr(backing, "_video_decoder", None) if backing else None
+                        decoder = vd.get_type() if vd else ""
+                    except (AttributeError, RuntimeError):
+                        pass
+                pipeline = format_encoder_pipeline(encoder, decoder, renderer)
+                display = "%s - %s (%s)" % (wid, title, pipeline) if title else "%s (%s)" % (wid, pipeline)
+                if wid in self.encoder_labels:
+                    lbl = self.encoder_labels[wid]
+                    lbl.set_text(display)
+                else:
+                    lbl = slabel(display)
+                    lbl.show()
+                    self.encoder_labels[wid] = lbl
+                    self.encoder_info_box.add(lbl)
+                if props:
+                    info = " ".join("%s=%s" % (k, v) for k, v in props.items() if k not in ("", "title", "_video", "codec"))
+                    lbl.set_tooltip_text(info)
         return True
 
     def get_window_encoder_stats(self) -> dict:
         window_encoder_stats = {}
-        # info["client"] is {int: source_info} — find our client by uuid
         server_last_info = self.last_info()
         client_info = server_last_info.get("client", {})
         window_dict = {}
-        for source in (v for v in client_info.values() if isinstance(v, dict)):
-            if bytestostr(source.get("uuid", "")) != self.client.uuid:
-                continue
+        if "window" in client_info:
+            # single client: client_info IS the source info
+            sources = [client_info]
+        else:
+            # multiple clients: client_info is {int: source_info}
+            sources = [v for v in client_info.values() if isinstance(v, dict)]
+        for source in sources:
             w = source.get("window")
             if isinstance(w, dict):
-                window_dict = w
-                break
+                window_dict.update(w)
         if window_dict:
             id_to_window = self.client._id_to_window
             for k, v in window_dict.items():
@@ -1221,6 +1254,7 @@ class SessionInfo(Gtk.Window):
                     if encoder_stats:
                         # video encoder is active
                         stats = dict(encoder_stats)
+                        stats["_video"] = True
                     else:
                         # fall back to last_used (e.g. "webp", "png") when video encoder is idle
                         last_used = bytestostr(v.get("last_used", ""))
@@ -1228,8 +1262,8 @@ class SessionInfo(Gtk.Window):
                             continue
                         stats = {"": last_used}
                     win = id_to_window.get(wid)
-                    title = (win.get_title() if win else "") or ""
-                    stats["title"] = (title[:40] + "…") if len(title) > 40 else title
+                    title = (win.get_title() if win and hasattr(win, "get_title") else "") or ""
+                    stats["title"] = (title[:40] + "\u2026") if len(title) > 40 else title
                     window_encoder_stats[wid] = stats
         return window_encoder_stats
 
