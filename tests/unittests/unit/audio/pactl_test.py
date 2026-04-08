@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2026 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2026 Netflix, Inc.
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
-from xpra.audio.pulseaudio.pactl_impl import do_get_pa_device_options
+from xpra.audio.pulseaudio.pactl_impl import do_get_pa_device_options, do_get_source_channels
 
 # Minimal pactl list output with one Sink section and one Source section
 SINK_AND_SOURCE = b"""Sink #0
@@ -75,6 +75,52 @@ class TestDoGetPaDeviceOptions(unittest.TestCase):
     def test_empty_output(self):
         devices = do_get_pa_device_options(b"", monitors=None, input_or_output=None)
         assert devices == {}
+
+
+SOURCES_OUTPUT = """Source #0
+\tState: SUSPENDED
+\tName: Xpra-Microphone.monitor
+\tDescription: Monitor of Xpra-Microphone
+\tSample Specification: s16le 2ch 44100Hz
+\tChannel Map: front-left,front-right
+
+Source #1
+\tState: RUNNING
+\tName: Xpra-Speaker.monitor
+\tDescription: Monitor of Xpra-Speaker
+\tSample Specification: s16le 2ch 48000Hz
+\tChannel Map: front-left,front-right
+
+Source #2
+\tState: SUSPENDED
+\tName: Xpra-Mic-Source
+\tDescription: Xpra-Mic-Source
+\tSample Specification: s16le 1ch 44100Hz
+\tChannel Map: mono
+
+"""
+
+
+class TestDoGetSourceChannels(unittest.TestCase):
+
+    def test_stereo_monitor(self):
+        assert do_get_source_channels(SOURCES_OUTPUT, "Xpra-Speaker.monitor") == 2
+
+    def test_mono_source(self):
+        assert do_get_source_channels(SOURCES_OUTPUT, "Xpra-Mic-Source") == 1
+
+    def test_unknown_source(self):
+        assert do_get_source_channels(SOURCES_OUTPUT, "nonexistent") == 0
+
+    def test_empty_output(self):
+        assert do_get_source_channels("", "Xpra-Speaker.monitor") == 0
+
+    def test_surround_source(self):
+        surround = """Source #0
+\tName: surround.monitor
+\tSample Specification: s16le 6ch 48000Hz
+"""
+        assert do_get_source_channels(surround, "surround.monitor") == 6
 
 
 def main():

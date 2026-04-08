@@ -44,6 +44,10 @@ def get_pa_device_options(*_args) -> dict[str, Any]:
     return {}
 
 
+def get_source_channels(source_name: str) -> int:
+    return 0
+
+
 def get_info() -> dict[str, Any]:
     return {
         "pulseaudio.wrapper": "none",

@@ -62,6 +62,7 @@ get_pulse_cookie_hash = _pulseaudio_util.get_pulse_cookie_hash
 get_pactl_server = _pulseaudio_util.get_pactl_server
 set_source_mute = _pulseaudio_util.set_source_mute
 set_sink_mute = _pulseaudio_util.set_sink_mute
+get_source_channels = _pulseaudio_util.get_source_channels
 
 
 def main() -> None:
