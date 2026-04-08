@@ -204,6 +204,35 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
     return devices
 
 
+def get_source_channels(source_name: str) -> int:
+    """Query the channel count for a PulseAudio source by name.
+    Returns 0 if the source is not found or cannot be determined.
+    """
+    code, out, _ = pactl_output(False, "list", "sources")
+    if code != 0 or not out:
+        return 0
+    return do_get_source_channels(bytestostr(out), source_name)
+
+
+def do_get_source_channels(pactl_list_output: str, source_name: str) -> int:
+    """Parse pactl list sources output to find channel count for a source."""
+    in_target = False
+    for line in pactl_list_output.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("Name: "):
+            in_target = stripped[len("Name: "):] == source_name
+        elif in_target and stripped.startswith("Sample Specification:"):
+            # format: "s16le 2ch 48000Hz"
+            for part in stripped.split():
+                if part.endswith("ch"):
+                    try:
+                        return int(part[:-2])
+                    except ValueError:
+                        pass
+            break
+    return 0
+
+
 def get_info() -> dict[str, Any]:
     i = 0
     dinfo = {}

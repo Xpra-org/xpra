@@ -47,6 +47,25 @@ CUTTER_PRE_LENGTH = envint("XPRA_CUTTER_PRE_LENGTH", 100)
 CUTTER_RUN_LENGTH = envint("XPRA_CUTTER_RUN_LENGTH", 1000)
 
 
+def _get_source_channels(src_type: str, src_options: dict) -> int:
+    """Query the native channel count for a PulseAudio source device.
+    Returns 0 if the source type is not pulsesrc or the query fails.
+    """
+    if src_type != "pulsesrc":
+        return 0
+    device = src_options.get("device", "")
+    if not device:
+        return 0
+    try:
+        from xpra.audio.pulseaudio.util import get_source_channels
+        channels = get_source_channels(device)
+        log("source %r channels: %i", device, channels)
+        return channels
+    except Exception as e:
+        log("failed to query source channels for %r: %s", device, e)
+        return 0
+
+
 class AudioSource(AudioPipeline):
     __gsignals__ = AudioPipeline.__generic_signals__.copy()
     __gsignals__ |= {
@@ -114,11 +133,16 @@ class AudioSource(AudioPipeline):
                 "min-threshold-time": 0,
                 "max-size-buffers": 0,
                 "max-size-bytes": 0,
-                "max-size-time": SOURCE_QUEUE_TIME * MS_TO_NS,
+                "max-size-time": SOURCE_QUEUE_TIME,
                 "leaky": GST_QUEUE_LEAK_DOWNSTREAM,
             }))
         # if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
         pipeline_els += ["audioconvert"]
+        # preserve the source's native channel count to prevent GStreamer
+        # from negotiating down to mono during backward caps fixation:
+        channels = _get_source_channels(src_type, src_options)
+        if channels > 0:
+            pipeline_els.append(f"audio/x-raw,channels={channels}")
         if has_plugins("removesilence"):
             pipeline_els += [
                 "removesilence",
