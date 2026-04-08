@@ -9,26 +9,33 @@
   * [PoC native MS Windows client backend](https://github.com/Xpra-org/xpra/issues/921)
   * [add `printing` build option on MS Windows](https://github.com/Xpra-org/xpra/pull/4809)
   * [`ArchLinux` setup support](https://github.com/Xpra-org/xpra/pull/4737/)
+  * [remove `libspng` codecs](https://github.com/Xpra-org/xpra/issues/4791)
 * Network:
   * [re-enable `ssl-protocol=TLS_CLIENT` by default](https://github.com/Xpra-org/xpra/issues/4660)
   * [per authentication module options](https://github.com/Xpra-org/xpra/issues/3791)
   * [re-connect fails for seamless remote ssh start](https://github.com/Xpra-org/xpra/pull/4738)
+  * [http error pages overrides](https://github.com/Xpra-org/xpra/issues/4732)
+  * [expose http headers to authentication modules](https://github.com/Xpra-org/xpra/issues/4755)
 * OpenGL:
   * [Catmull-Rom bicubic scaling shader](https://github.com/Xpra-org/xpra/pull/4819)
   * [sigmoid upscaling and anti-ringing upscale shader](https://github.com/Xpra-org/xpra/pull/4826)
   * [MS Windows can use OpenGL for opaque-region-covered alpha windows](https://github.com/Xpra-org/xpra/pull/4821)
   * [fix `NV12` shader](https://github.com/Xpra-org/xpra/pull/4835)
   * [support `YUV420P16` natively][https://github.com/Xpra-org/xpra/issues/4621]
+  * [faster client startup with `opengl=nocheck`](https://github.com/Xpra-org/xpra/issues/4768)
 * Encodings:
   * [pre-process screen updates with filters (ie: `pytorch`)](https://github.com/Xpra-org/xpra/issues/4776)
   * [prefer AV1](https://github.com/Xpra-org/xpra/pull/4854)
   * [NVENC supports lossless mode with `hevc`](https://github.com/Xpra-org/xpra/pull/4850)
+* Documentation:
+  * [network diagnostics](https://github.com/Xpra-org/xpra/issues/4740)
 * Features:
+  * [multiple content-types per window](https://github.com/Xpra-org/xpra/issues/4765)
+  * [faster content-type detection](https://github.com/Xpra-org/xpra/issues/4818)
   * [content aware cairo upscaling filter](https://github.com/Xpra-org/xpra/pull/4806)
   * [session recording client and replay tool](https://github.com/Xpra-org/xpra/issues/4812)
   * [asynchronous initialization](https://github.com/Xpra-org/xpra/issues/4557)
   * [more specific content types](https://github.com/Xpra-org/xpra/issues/4765)
-  * [http error pages overrides](https://github.com/Xpra-org/xpra/issues/4732)
   * [notification forwarding fixes and improvements](https://github.com/Xpra-org/xpra/issues/4817)
   * [fido2 authentication module](https://github.com/Xpra-org/xpra/issues/4516)
   * [support `image/png` with Gtk clipboard backend (Wayland)](https://github.com/Xpra-org/xpra/pull/4717)
