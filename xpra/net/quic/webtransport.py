@@ -44,6 +44,8 @@ class ServerWebTransportConnection(XpraQuicConnection):
             if isinstance(event, DatagramReceived):
                 # self.read_datagram_queue.put(event.data)
                 log("datagram ignored")
+            elif isinstance(event, DataReceived):
+                self.read_queue.put(event.data)
             elif isinstance(event, WebTransportStreamDataReceived):
                 if event.stream_id != self.stream_id:
                     log(f"switching to stream_id={event.stream_id}")
@@ -75,10 +77,6 @@ class ServerWebTransportConnection(XpraQuicConnection):
         log(f"send_http_close({code}, {reason!r})")
         self.send_headers(0, {":status": code})
         self.transmit()
-
-    def do_write(self, stream_id: int, data: bytes) -> None:
-        log("wt.do_write(%i, %i bytes)", stream_id, len(data))
-        self.connection._quic.send_stream_data(stream_id=stream_id, data=data, end_stream=self.closed)
 
     def send_datagram(self, data: bytes) -> None:
         log("send_datagram(%i bytes)", len(data))

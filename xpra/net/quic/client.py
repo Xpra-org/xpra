@@ -119,7 +119,6 @@ class ClientWebTransportConnection(XpraQuicConnection):
                  host: str, port: int, info=None, options=None):
         super().__init__(connection, stream_id, transmit, host, port, "webtransport", info, options)
         self.write_buffer: SimpleQueue | None = SimpleQueue()
-        self._data_stream_id: int | None = None
 
     def flush_writes(self) -> None:
         try:
@@ -134,16 +133,6 @@ class ClientWebTransportConnection(XpraQuicConnection):
             self.write_buffer.put((buf, packet_type))
             return len(buf)
         return super().write(buf, packet_type)
-
-    def get_data_stream_id(self) -> int:
-        if self._data_stream_id is None:
-            self._data_stream_id = self.connection._quic.get_next_available_stream_id()
-        return self._data_stream_id
-
-    def do_write(self, stream_id: int, data: bytes) -> None:
-        sid = self.get_data_stream_id()
-        log("wt.do_write(%i, %i bytes) data stream=%i", stream_id, len(data), sid)
-        self.connection._quic.send_stream_data(stream_id=sid, data=data, end_stream=self.closed)
 
     def http_event_received(self, event: H3Event) -> None:
         log("wt.client.http_event_received(%s)", Ellipsizer(event))
