@@ -44,6 +44,7 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.digest import get_salt, gendigest
 from xpra.platform import set_name, threaded_server_init
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
+from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
     force_quit, POSIX,
     get_username_for_uid, get_hex_uuid, getuid, gi_import,
@@ -181,6 +182,7 @@ class ServerCore(ServerBaseClass):
         self._ws_timeout: int = 5
         self._socket_dir: str = ""
         self._socket_dirs: list = []
+        self.dotxpra: DotXpra | None = None
         self.unix_socket_paths: list[str] = []
         self.touch_timer: int = 0
         self.session_files: list[str] = [
@@ -206,6 +208,7 @@ class ServerCore(ServerBaseClass):
         if not self._socket_dir and opts.socket_dirs:
             self._socket_dir = opts.socket_dirs[0]
         self._socket_dirs = opts.socket_dirs
+        self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
         self.compression_level = opts.compression_level
         self.exit_with_client = opts.exit_with_client
         self.readonly = opts.readonly
