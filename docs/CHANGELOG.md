@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5] 2026-04-07
+## [6.5] 2026-04-08
 * Platforms, build and packaging:
   * [use `wasapi2` on MS Windows](https://github.com/Xpra-org/xpra/issues/4735)
   * [support for Linux Mint in install scripts](https://github.com/Xpra-org/xpra/issues/4727)
@@ -17,6 +17,7 @@
   * [http error pages overrides](https://github.com/Xpra-org/xpra/issues/4732)
   * [expose http headers to authentication modules](https://github.com/Xpra-org/xpra/issues/4755)
   * [client support for WebTransport connections](https://github.com/Xpra-org/xpra/issues/4306)
+  * [handle X11 buffered reads without timers](https://github.com/Xpra-org/xpra/issues/4655)
 * OpenGL:
   * [Catmull-Rom bicubic scaling shader](https://github.com/Xpra-org/xpra/pull/4819)
   * [sigmoid upscaling and anti-ringing upscale shader](https://github.com/Xpra-org/xpra/pull/4826)
@@ -25,11 +26,13 @@
   * [support `YUV420P16` natively][https://github.com/Xpra-org/xpra/issues/4621]
   * [faster client startup with `opengl=nocheck`](https://github.com/Xpra-org/xpra/issues/4768)
 * Encodings:
+  * [`MediaFoundation` hardware video decoder for MS Windows](https://github.com/Xpra-org/xpra/pull/4860)
   * [pre-process screen updates with filters (ie: `pytorch`)](https://github.com/Xpra-org/xpra/issues/4776)
   * [prefer AV1](https://github.com/Xpra-org/xpra/pull/4854)
   * [NVENC supports lossless mode with `hevc`](https://github.com/Xpra-org/xpra/pull/4850)
 * Documentation:
   * [network diagnostics](https://github.com/Xpra-org/xpra/issues/4740)
+  * [subsystems](https://github.com/Xpra-org/xpra/issues/3981)
 * Features:
   * [multiple content-types per window](https://github.com/Xpra-org/xpra/issues/4765)
   * [faster content-type detection](https://github.com/Xpra-org/xpra/issues/4818)
