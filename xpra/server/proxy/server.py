@@ -184,6 +184,8 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
         log("ProxyServer.init(%s)", opts)
         self.pings = int(opts.pings)
         self._start_sessions = opts.proxy_start_sessions
+        from xpra.platform.dotxpra import DotXpra
+        self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
         for bc in SERVER_BASES:
             bc.init(self, opts)
         # ensure we cache the platform info before intercepting SIGCHLD
