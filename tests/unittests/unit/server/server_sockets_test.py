@@ -27,6 +27,14 @@ NOVERIFY = "--ssl-server-verify-mode=none"
 NOHOSTNAME = "--ssl-check-hostname=no"
 
 
+def get_openssl_command(keyfile: str, outfile: str) -> list[str]:
+    return [
+        "openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
+        "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
+        "-keyout", keyfile, "-out", outfile,
+    ]
+
+
 class GenSSLCertContext:
     __slots__ = ("tmpdir", "keyfile", "outfile", "certfile")
 
@@ -40,11 +48,7 @@ class GenSSLCertContext:
         self.tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
         self.keyfile = os.path.join(self.tmpdir, "key.pem")
         self.outfile = os.path.join(self.tmpdir, "out.pem")
-        openssl_command = [
-            "openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
-            "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
-            "-keyout", self.keyfile, "-out", self.outfile,
-        ]
+        openssl_command = get_openssl_command(self.keyfile, self.outfile)
         proc = Popen(args=openssl_command)
         assert pollwait(proc, 20) == 0, "openssl certificate generation failed"
         # combine the two files:
@@ -169,11 +173,7 @@ class ServerSocketsTest(ServerTestUtil):
         tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
         keyfile = os.path.join(tmpdir, "key.pem")
         outfile = os.path.join(tmpdir, "out.pem")
-        openssl_command = [
-            "openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
-            "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
-            "-keyout", keyfile, "-out", outfile,
-        ]
+        openssl_command = get_openssl_command(keyfile, outfile)
         openssl = self.run_command(openssl_command)
         assert pollwait(openssl, 20) == 0, "openssl certificate generation failed"
         # combine the two files:
