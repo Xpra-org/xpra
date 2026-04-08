@@ -93,7 +93,7 @@ By definition, shadow mode gives access to the full desktop, without any kind of
 For these reasons, it may be worth considering [desktop mode](Desktop.md) instead.
 
 ### [Network](../Network) and [Authentication](Authentication.md)
-Xpra supports natively many different types of network connections (`tcp`, `ssl`, `ws`, `wss`, `vnc`, `ssh`, `vsock`, `quic`, etc) and most of these can be [encrypted](../Network/Encryption.md) and multiplexed through a single port.
+Xpra supports natively many different types of network connections (`tcp`, `ssl`, `ws`, `wss`, `vnc`, `ssh`, `vsock`, `quic`, `wt`, etc) and most of these can be [encrypted](../Network/Encryption.md) and multiplexed through a single port.
 The safest option will depend on the type of xpra client connecting - but generally speaking, `ssl`, `quic` and `ssh` are considered the safest as they provide host verification and encryption in one protocol.
 Each connection can also combine any number of [authentication modules](./Authentication.md#authentication-modules).
 

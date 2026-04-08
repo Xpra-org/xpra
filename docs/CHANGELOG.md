@@ -16,6 +16,7 @@
   * [re-connect fails for seamless remote ssh start](https://github.com/Xpra-org/xpra/pull/4738)
   * [http error pages overrides](https://github.com/Xpra-org/xpra/issues/4732)
   * [expose http headers to authentication modules](https://github.com/Xpra-org/xpra/issues/4755)
+  * [client support for WebTransport connections](https://github.com/Xpra-org/xpra/issues/4306)
 * OpenGL:
   * [Catmull-Rom bicubic scaling shader](https://github.com/Xpra-org/xpra/pull/4819)
   * [sigmoid upscaling and anti-ringing upscale shader](https://github.com/Xpra-org/xpra/pull/4826)

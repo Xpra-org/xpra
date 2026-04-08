@@ -29,3 +29,4 @@ configuration options as [SSL](SSL.md).
 * QUIC is UDP based, you need to open the UDP port of your choosing on your firewall.
 * [some tuning](https://github.com/Xpra-org/xpra/issues/3376#issuecomment-1311271256) may be needed
 * xpra version 5.0 or later is required
+* the client supports both plain quic URIs (ie: `xpra attach quic://HOST:port/`) and WebTransport connections (ie: `xpra attach wt://HOST:port/`)
