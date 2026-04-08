@@ -132,6 +132,7 @@ tests/unittests/test-file*
 /xpra/codecs/nvidia/*/*.cpp
 /xpra/codecs/*/*.cpp
 /xpra/codecs/*/*.c
+!/xpra/codecs/mf/mf_decode.c
 /xpra/codecs/*.c
 /xpra/gtk/*.c
 /xpra/gtk/dialogs/*.c
