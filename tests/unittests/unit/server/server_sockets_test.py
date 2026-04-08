@@ -31,6 +31,7 @@ def get_openssl_command(keyfile: str, outfile: str) -> list[str]:
     return [
         "openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
         "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
+        "-addext", "subjectAltName=DNS:localhost,IP:127.0.0.1",
         "-keyout", keyfile, "-out", outfile,
     ]
 

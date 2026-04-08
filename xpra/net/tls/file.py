@@ -12,7 +12,7 @@ from xpra.net.tls.common import KEY_FILENAME, CERT_FILENAME, SSL_CERT_FILENAME, 
 from xpra.os_util import is_admin, OSX, WIN32, POSIX
 from xpra.scripts.config import InitExit
 from xpra.util.parsing import TRUE_OPTIONS
-from xpra.util.env import osexpand
+from xpra.util.env import osexpand, envbool
 from xpra.util.io import umask_context, load_binary_file
 from xpra.util.str_fn import std, Ellipsizer
 
@@ -234,6 +234,9 @@ def gen_ssl_cert() -> tuple[str, str]:
         "-keyout", keypath,
         "-out", certpath,
     ]
+    ALT_LOCALHOST = envbool("XPRA_SSL_ALT_LOCALHOST", True)
+    if ALT_LOCALHOST:
+        cmd += ["-addext", "subjectAltName=DNS:localhost,IP:127.0.0.1"]
     openssl_config = ""
     creationflags = 0
     if WIN32:
