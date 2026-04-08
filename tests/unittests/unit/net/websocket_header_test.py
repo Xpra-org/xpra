@@ -46,6 +46,9 @@ class WebsocketHeaderTest(unittest.TestCase):
                         v = decode_hybi(wsdata[:int(has_mask)*4+i])
                         assert v is None, "got %s" % (v,)
 
+    def test_invalid_opcode(self):
+        self.assertRaises(ValueError, encode_hybi_header, 0xFF, 0)
+
 
 def main():
     unittest.main()

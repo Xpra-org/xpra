@@ -8,7 +8,7 @@ import unittest
 from xpra.util.stats import (
     values_to_diff_scaled_values, get_list_stats, get_weighted_list_stats,
     to_std_unit, std_unit, std_unit_dec,
-    find_invpow,
+    find_invpow, values_to_scaled_values,
 )
 
 
@@ -92,6 +92,12 @@ class TestSimpleStats(unittest.TestCase):
         percentile = range(1, 10)
         for p in percentile:
             assert stats.get(f"{p}0p")==p
+
+    def test_scaled_values_padding(self):
+        # passing a tuple (not a list) with fewer items than num_values triggers
+        # list() conversion (line 63) and None padding (line 75)
+        scale, data = values_to_scaled_values((10, 20), 10, 10)
+        assert None in data
 
 
 def main():

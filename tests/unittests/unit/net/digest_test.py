@@ -12,7 +12,7 @@ import unittest
 from xpra.net.digest import (
     get_digests, get_digest_module,
     choose_digest, gendigest, verify_digest,
-    get_salt,
+    get_salt, get_caps,
 )
 
 
@@ -54,6 +54,17 @@ class TestDigest(unittest.TestCase):
             nvd(salt=salt[1:])
             nvd(response=d[1:])
             assert verify_digest(digest, password, salt, d)
+
+    def test_get_caps(self):
+        caps = get_caps()
+        assert "digest" in caps
+        assert "salt-digest" in caps
+        for sd in caps["salt-digest"]:
+            assert sd not in ("xor", "des")
+
+    def test_salt_length_limits(self):
+        self.assertRaises(ValueError, get_salt, 2)
+        self.assertRaises(ValueError, get_salt, 1024)
 
     def test_choose_digest(self):
         for h in ("hmac+sha512", "hmac+sha384", "hmac+sha256", "hmac+sha224",
