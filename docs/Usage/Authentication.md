@@ -14,16 +14,16 @@ When using [SSH](../Network/SSH.md) to connect to a server, [encryption](../Netw
 ***
 
 ## Server Syntax
-Starting with version 4.0, the preferred way of specifying authentication is within the socket option itself. \
+Starting with version 6.5, options for individual authentication modules can be specified using brackets. \
 ie for starting a [seamless](Seamless.md) server with a `TCP` socket protected by a password stored in a `file`:
 ```shell
 xpra seamless --start=xterm -d auth
-     --bind-tcp=0.0.0.0:10000,auth=file,filename=password.txt
+     --bind-tcp=0.0.0.0:10000,auth=file(filename=password.txt)
 ```
-So that multiple sockets can use different authentication modules, and those modules can more easily be chained:
+Multiple sockets can use different authentication modules, and those modules can more easily be chained:
 ```shell
 xpra seamless --start=xterm -d auth \
-     --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file,filename=password.txt \
+     --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file(filename=password.txt) \
      --bind-tcp=0.0.0.0:10001,auth=sys
 ```
 
@@ -60,6 +60,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [ldap](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/ldap.py)                           | Uses ldap via [python-ldap](https://www.python-ldap.org/en/latest/)                     | [#1791](https://github.com/Xpra-org/xpra/issues/1791)                               |
 | [ldap3](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/ldap3.py)                         | Uses ldap via [python-ldap3](https://github.com/cannatag/ldap3)                         | [#1791](https://github.com/Xpra-org/xpra/issues/1791)                               |
 | [u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/u2f.py)                             | [Universal 2nd Factor](https://en.wikipedia.org/wiki/Universal_2nd_Factor)              | [#1789](https://github.com/Xpra-org/xpra/issues/1789)                               |
+| [fido2](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/fido2.py)                         | [FIDO Alliance](https://en.wikipedia.org/wiki/FIDO_Alliance)                            | [#1789](https://github.com/Xpra-org/xpra/issues/4516)                               |
 | [otp](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otp.py)                             | One Time Password                                                                       | [pyotp](https://github.com/pyauth/pyotp)                                            |
 | [http-header](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/http-header.py)             | validate websocket http headers                                                         | [#4438](https://github.com/Xpra-org/xpra/issues/4438)                               |
 </details>
@@ -117,6 +118,7 @@ xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt -
 | [kerberos](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/kerberos.py) | `kerberos-services` specifies the valid kerberos services to connect to<br/>the wildcard `*` may be used |
 | [prompt](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/prompt.py)     | GUI clients should see a dialog, console users a text prompt                                             |
 | [u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/u2f.py)           | `APP_ID` specifies the u2f authentication application ID                                                 |
+| [fido2](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/fido2.py)       | `APP_ID` specifies the FIDO2 authentication application ID                                               |
 | [uri](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/uri.py)           | Uses values parsed from the connection string, ie: `tcp://foo:bar@host`                                  |
 </details>
 
