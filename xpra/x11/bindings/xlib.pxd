@@ -226,16 +226,16 @@ cdef extern from "X11/Xlib.h":
     Bool XGetEventData(Display *display, XGenericEventCookie *cookie)
     void XFreeEventData(Display *display, XGenericEventCookie *cookie)
 
-    Window XDefaultRootWindow(Display * display)
+    Window XDefaultRootWindow(Display * display) nogil
 
     Bool XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return, int *root_x_return, int *root_y_return,
                        int *win_x_return, int *win_y_return, unsigned int *mask_return)
-    int XFlush(Display *dpy)
-    int XSync(Display *dpy, Bool discard)
+    int XFlush(Display *dpy) nogil
+    int XSync(Display *dpy, Bool discard) nogil
 
-    int XConnectionNumber(Display *display)
+    int XConnectionNumber(Display *display) nogil
 
-    int XPending(Display *display)
+    int XPending(Display *display) nogil
 
     unsigned long XLastKnownRequestProcessed(Display *display)
 

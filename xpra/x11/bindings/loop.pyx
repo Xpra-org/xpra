@@ -20,7 +20,6 @@ from xpra.x11.bindings.xlib cimport (
     XInternalConnectionNumbers,
 )
 from libc.stdint cimport uintptr_t
-from libc.string cimport memset
 from cpython.ref cimport PyObject, Py_INCREF, Py_DECREF
 
 cdef extern from "glib.h":
@@ -190,23 +189,25 @@ cdef struct X11GSource:
 
 cdef GSourceFuncs x11_source_funcs
 
-cdef gboolean x11_source_prepare(GSource *source, gint *timeout) noexcept:
+cdef gboolean x11_source_prepare(GSource *source, gint *timeout) noexcept nogil:
     timeout[0] = -1   # no timeout: fd poll or XPending will wake us
     return XPending((<X11GSource *> source).display) > 0
 
-cdef gboolean x11_source_check(GSource *source) noexcept:
+cdef gboolean x11_source_check(GSource *source) noexcept nogil:
     cdef X11GSource *s = <X11GSource *> source
     return s.poll_fd.revents != 0 or XPending(s.display) > 0
 
-cdef gboolean x11_source_dispatch(GSource *source, GSourceFunc callback, gpointer user_data) noexcept:
+cdef gboolean x11_source_dispatch(GSource *source, GSourceFunc callback, gpointer user_data) noexcept nogil:
     cdef X11GSource *s = <X11GSource *> source
-    (<object> s.loop).process_events()
+    with gil:
+        (<object> s.loop).process_events()
     return G_SOURCE_CONTINUE
 
-cdef void x11_source_finalize(GSource *source) noexcept:
+cdef void x11_source_finalize(GSource *source) noexcept nogil:
     cdef X11GSource *s = <X11GSource *> source
     if s.loop:
-        Py_DECREF(<object> s.loop)
+        with gil:
+            Py_DECREF(<object> s.loop)
         s.loop = NULL
 
 x11_source_funcs.prepare  = x11_source_prepare
@@ -241,7 +242,6 @@ def register_glib_source(context) -> None:
     loop = EventLoop()
 
     cdef X11GSource *source = <X11GSource *> g_source_new(&x11_source_funcs, sizeof(X11GSource))
-    memset(source, 0, sizeof(X11GSource))
     source.display = <Display *> display_ptr
     source.poll_fd.fd = fd
     source.poll_fd.events = G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR | G_IO_NVAL
