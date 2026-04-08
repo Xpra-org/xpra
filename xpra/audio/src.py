@@ -114,7 +114,7 @@ class AudioSource(AudioPipeline):
                 "min-threshold-time": 0,
                 "max-size-buffers": 0,
                 "max-size-bytes": 0,
-                "max-size-time": SOURCE_QUEUE_TIME * MS_TO_NS,
+                "max-size-time": SOURCE_QUEUE_TIME,
                 "leaky": GST_QUEUE_LEAK_DOWNSTREAM,
             }))
         # if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
