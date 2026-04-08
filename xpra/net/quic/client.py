@@ -22,6 +22,7 @@ from aioquic.h3.events import (
     H3Event,
     HeadersReceived,
     PushPromiseReceived,
+    WebTransportStreamDataReceived,
 )
 from aioquic.quic.connection import QuicConnection
 from aioquic.asyncio.protocol import QuicConnectionProtocol
@@ -54,6 +55,13 @@ WS_HEADERS: dict[str, str | int] = {
     ":protocol": "websocket",
     "sec-websocket-version": 13,
     "sec-websocket-protocol": "xpra",
+    "user-agent": USER_AGENT,
+}
+
+WT_HEADERS: dict[str, str] = {
+    ":method": "CONNECT",
+    ":scheme": "https",
+    ":protocol": "webtransport",
     "user-agent": USER_AGENT,
 }
 
@@ -103,6 +111,89 @@ class ClientWebSocketConnection(XpraQuicConnection):
             log(f"PushPromiseReceived headers: {event.headers}")
             return
         super().http_event_received(event)
+
+
+class ClientWebTransportConnection(XpraQuicConnection):
+
+    def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
+                 host: str, port: int, info=None, options=None):
+        super().__init__(connection, stream_id, transmit, host, port, "webtransport", info, options)
+        self.write_buffer: SimpleQueue | None = SimpleQueue()
+        self._data_stream_id: int | None = None
+
+    def flush_writes(self) -> None:
+        try:
+            while self.write_buffer.qsize():
+                self.stream_write(*self.write_buffer.get())
+        finally:
+            self.write_buffer = None
+
+    def write(self, buf, packet_type: str = "") -> int:
+        log(f"wt.write(%s, %s) {len(buf)} bytes", Ellipsizer(buf), packet_type)
+        if self.write_buffer is not None:
+            self.write_buffer.put((buf, packet_type))
+            return len(buf)
+        return super().write(buf, packet_type)
+
+    def get_data_stream_id(self) -> int:
+        if self._data_stream_id is None:
+            self._data_stream_id = self.connection._quic.get_next_available_stream_id()
+        return self._data_stream_id
+
+    def do_write(self, stream_id: int, data: bytes) -> None:
+        sid = self.get_data_stream_id()
+        log("wt.do_write(%i, %i bytes) data stream=%i", stream_id, len(data), sid)
+        self.connection._quic.send_stream_data(stream_id=sid, data=data, end_stream=self.closed)
+
+    def http_event_received(self, event: H3Event) -> None:
+        log("wt.client.http_event_received(%s)", Ellipsizer(event))
+        if isinstance(event, HeadersReceived):
+            status = dict(event.headers).get(b":status", b"")
+            if status != b"200":
+                self.close(QuicErrorCode.APPLICATION_ERROR, f"unexpected status {status!r}")
+                return
+            self.accepted = True
+            self.flush_writes()
+            return
+        if isinstance(event, WebTransportStreamDataReceived):
+            self.read_queue.put(event.data)
+            return
+        super().http_event_received(event)
+
+
+class WebTransportClient(QuicConnectionProtocol):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # WebTransport requires H3 with enable_webtransport=True
+        self._http: H3Connection = H3Connection(self._quic, enable_webtransport=True)
+        self._sessions: dict[int, ClientWebTransportConnection] = {}
+
+    def open(self, host: str, port: int, path: str) -> ClientWebTransportConnection:
+        log(f"WebTransportClient.open({host}, {port}, {path})")
+        stream_id = self._quic.get_next_available_stream_id()
+        conn = ClientWebTransportConnection(self._http, stream_id, self.transmit, host, port)
+        self._sessions[stream_id] = conn
+        headers = {":authority": host, ":path": path}
+        headers.update(WT_HEADERS)
+        log("open: sending http headers for webtransport connect")
+        self._http.send_headers(stream_id=stream_id, headers=binary_headers(headers))
+        self.transmit()
+        return conn
+
+    def quic_event_received(self, event: QuicEvent) -> None:
+        for http_event in self._http.handle_event(event):
+            self.http_event_received(http_event)
+
+    def http_event_received(self, event: H3Event) -> None:
+        if isinstance(event, WebTransportStreamDataReceived):
+            session = self._sessions.get(event.session_id)
+        else:
+            stream_id = getattr(event, "stream_id", None)
+            session = self._sessions.get(stream_id) if stream_id is not None else None
+        if session:
+            session.http_event_received(event)
+        else:
+            log("WebTransportClient: no session for %s", event)
 
 
 class WebSocketClient(QuicConnectionProtocol):
@@ -214,9 +305,9 @@ async def get_address_options(host: str, port: int) -> tuple:
     return tuple(infos)
 
 
-def quic_connect(host: str, port: int, path: str, fast_open: bool,
-                 ssl_cert: str, ssl_key: str, ssl_key_password: str,
-                 ssl_ca_certs, ssl_server_verify_mode: str, ssl_server_name: str):
+def _make_quic_configuration(ssl_cert: str, ssl_key: str, ssl_key_password: str,
+                             ssl_ca_certs, ssl_server_verify_mode: str,
+                             ssl_server_name: str, host: str) -> QuicConfiguration:
     configuration = QuicConfiguration(
         alpn_protocols=H3_ALPN,
         is_client=True,
@@ -238,20 +329,14 @@ def quic_connect(host: str, port: int, path: str, fast_open: bool,
             ipaddress.ip_address(host)
         except ValueError:
             configuration.server_name = host
+    return configuration
 
-    # configuration.max_data = args.max_data
-    # configuration.max_stream_data = args.max_stream_data
-    # configuration.quic_logger = QuicFileLogger(args.quic_log)
-    # configuration.secrets_log_file = open(args.secrets_log, "a")
 
-    def create_protocol() -> WebSocketClient:
-        connection = QuicConnection(configuration=configuration)
-        return WebSocketClient(connection)
-
+def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: bool):
     tl = get_threaded_loop()
     log(f"getting the list of address options for {host!r}:{port}")
     addresses = tl.sync(get_address_options, host, port)
-    log(f"quic_connect will try {addresses=}")
+    log(f"_quic_connect will try {addresses=}")
 
     async def connect(addr_info):
         # ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
@@ -276,7 +361,7 @@ def quic_connect(host: str, port: int, path: str, fast_open: bool,
                 tl.call_later(CONNECT_TIMEOUT, verify_connected, protocol)
             log(f"{protocol}.open({host!r}, {port}, {path!r})")
             conn = protocol.open(host, port, path)
-            log(f"websocket connection {conn}")
+            log(f"quic connection {conn}")
             return conn
         except Exception as e:
             log("connect()", exc_info=True)
@@ -313,6 +398,20 @@ def quic_connect(host: str, port: int, path: str, fast_open: bool,
             if estr not in errors:
                 errors.append(estr)
     raise InitExit(ExitCode.CONNECTION_FAILED, "failed to connect: " + csv(errors))
+
+
+def quic_connect(host: str, port: int, path: str, fast_open: bool,
+                 ssl_cert: str, ssl_key: str, ssl_key_password: str,
+                 ssl_ca_certs, ssl_server_verify_mode: str, ssl_server_name: str,
+                 client_class: type[QuicConnectionProtocol] = WebSocketClient):
+    configuration = _make_quic_configuration(ssl_cert, ssl_key, ssl_key_password,
+                                             ssl_ca_certs, ssl_server_verify_mode,
+                                             ssl_server_name, host)
+
+    def create_protocol() -> QuicConnectionProtocol:
+        return client_class(QuicConnection(configuration=configuration))
+
+    return _quic_connect(create_protocol, host, port, path, fast_open)
 
 
 def verify_connected(protocol) -> None:

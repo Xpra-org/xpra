@@ -510,6 +510,14 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
         opts.display = None
         return desc
 
+    if protocol == "wt":
+        add_credentials()
+        add_host_port(DEFAULT_PORTS.get("wt", DEFAULT_PORT))
+        add_path()
+        add_query()
+        desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
+        return desc
+
     if protocol in ("tcp", "ssl", "ws", "wss", "vnc", "quic"):
         add_credentials()
         host, port = add_host_port(DEFAULT_PORTS.get(protocol, DEFAULT_PORT))

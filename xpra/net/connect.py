@@ -98,6 +98,7 @@ def connect_to_hyperv(display_desc: dict[str, Any]):
 
 
 def connect_to_quic(display_desc: dict[str, Any], opts):
+    dtype = display_desc["type"]
     host = display_desc["host"]
     port = display_desc["port"]
     path = "/" + display_desc.get("display", "")
@@ -109,15 +110,15 @@ def connect_to_quic(display_desc: dict[str, Any], opts):
     ssl_key_password = ssl_options.get("key-password", opts.ssl_key_password)
     ssl_server_name = ssl_options.get("server-hostname")
     try:
-        from xpra.net.quic.client import quic_connect, FAST_OPEN
+        from xpra.net.quic.client import quic_connect, WebSocketClient, WebTransportClient, FAST_OPEN
         import aioquic
         assert aioquic
     except ImportError as e:
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR, f"cannot use quic sockets: {e}") from None
     fast_open = bool(display_desc.get("fast-open", FAST_OPEN))
-    conn = quic_connect(host, port, path, fast_open,
-                        ssl_cert, ssl_key, ssl_key_password,
-                        ssl_ca_certs, ssl_server_verify_mode, ssl_server_name)
+    ssl_args = (ssl_cert, ssl_key, ssl_key_password, ssl_ca_certs, ssl_server_verify_mode, ssl_server_name)
+    client_class = WebTransportClient if dtype == "wt" else WebSocketClient
+    conn = quic_connect(host, port, path, fast_open, *ssl_args, client_class=client_class)
     return conn
 
 
@@ -235,7 +236,7 @@ def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=no
         return connect_to_vsock(display_desc)
     if dtype == "hyperv":
         return connect_to_hyperv(display_desc)
-    if dtype == "quic":
+    if dtype in ("quic", "wt"):
         return connect_to_quic(display_desc, opts)
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
         return connect_to_tcp(display_desc)

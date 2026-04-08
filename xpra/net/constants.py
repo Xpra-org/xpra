@@ -31,6 +31,7 @@ DEFAULT_PORTS: Final[dict[str, int]] = {
     "vnc": 5900,
     "rdp": 3389,
     "quic": DEFAULT_PORT,
+    "wt": DEFAULT_PORT,
     "vsock": DEFAULT_PORT,
 }
 
@@ -38,9 +39,9 @@ SOCKET_TYPES: Final[Sequence[str]] = (
     "tcp", "ws", "wss", "ssl", "ssh", "rfb",
     "vsock", "hyperv", "socket",
     "named-pipe",
-    "quic",
+    "quic", "wt",
 )
-IP_SOCKTYPES: Final[Sequence[str]] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
+IP_SOCKTYPES: Final[Sequence[str]] = ("tcp", "ssl", "ws", "wss", "ssh", "quic", "wt")
 TCP_SOCKTYPES: Final[Sequence[str]] = ("tcp", "ssl", "ws", "wss", "ssh")
 URL_MODES: Final[dict[str, str]] = {
     "xpra": "tcp",

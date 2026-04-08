@@ -50,8 +50,8 @@ class AuthenticatedServer(StubServerMixin):
 
     def init_auth(self, opts) -> None:
         for x in SOCKET_TYPES:
-            if x == "hyperv":
-                # we don't support listening on hyperv sockets yet
+            if x in ("hyperv", "wt"):
+                # client-only socket types: no server bind, no auth option
                 continue
             if x in ("socket", "named-pipe"):
                 # use local-auth for these:
