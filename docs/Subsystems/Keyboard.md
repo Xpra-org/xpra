@@ -45,12 +45,13 @@ To save space in the initial `hello` packet, the full keymap may be sent separat
 
 ## Network Packets
 
-| Packet Type      | Arguments                                                                                                                                             | Information                                                         |
-|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| `key-action`     | `keyname` : string, `pressed` : boolean, `modifiers` : list of strings, `keyval` : integer, `string` : string, `keycode` : integer, `group` : integer | The client should try to populate as many attributes as possible.   |
-| `keymap-changed` | `attributes` : dictionary                                                                                                                             | The number of clipboard requests waiting                            |
+| Packet Type       | Direction        | Arguments                                                                                                                                             | Information                                                         |
+|-------------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| `keyboard-event`  | client to server | `keyname` : string, `pressed` : boolean, `modifiers` : list of strings, `keyval` : integer, `string` : string, `keycode` : integer, `group` : integer | The client should try to populate as many attributes as possible.   |
+| `keyboard-config` | client to server | `attributes` : dictionary                                                                                                                             | Send an updated keymap to the server                                |
+| `keyboard-sync`   | client to server | `enabled` : boolean                                                                                                                                   | Enable or disable keyboard synchronization                          |
 
-The attributes should contain a `keymap` key with another dictionary.
+The `keyboard-config` attributes should contain a `keymap` key with another dictionary.
 
 
 ## Keymap Dictionary

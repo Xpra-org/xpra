@@ -59,10 +59,11 @@ The supported encodings are:
 
 ## Network Packets
 
-| Packet Type  | Arguments          | Purpose                                      |
-|--------------|--------------------|----------------------------------------------|
-| `cursor-set` | boolean            | Tell the server to enable or disable cursors |
-| `cursor`     | cursor packet data | Use the cursor specified                     |
+| Packet Type      | Direction        | Arguments          | Purpose                                      |
+|------------------|------------------|--------------------|----------------------------------------------|
+| `cursor-set`     | client to server | boolean            | Tell the server to enable or disable cursors |
+| `cursor-data`    | server to client | cursor packet data | Use the cursor specified                     |
+| `cursor-default` | server to client |                    | Restore the default cursor                   |
 
 ### Cursor Packet Data
 

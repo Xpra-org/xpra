@@ -33,8 +33,9 @@ Alternatively, the client can just supply the value `True` instead of the dictio
 
 ## Network Packets
 
-| Packet Type        | Arguments                       |
-|--------------------|---------------------------------|
-| `pointer-position` | `wid`, position data, modifiers |
-| `pointer-button`   | `device_id`, `sequence`, `wid`, `button`, `pressed`, position data, properties |
-| `input-devices`    |                                 |
+| Packet Type      | Direction        | Arguments                                                                       |
+|------------------|------------------|---------------------------------------------------------------------------------|
+| `pointer-motion` | client to server | `device_id`, `sequence`, `wid`, position data, modifiers, properties           |
+| `pointer-button` | client to server | `device_id`, `sequence`, `wid`, `button`, `pressed`, position data, properties |
+| `pointer-wheel`  | client to server | `device_id`, `sequence`, `wid`, `button`, `distance`, position data, modifiers |
+| `input-devices`  | client to server |                                                                                 |

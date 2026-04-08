@@ -6,11 +6,11 @@ This subsystem allows clients to execute new commands on the server.
 
 ## Implementations
 
-| Component         | Link                                                                                                                   |
-|-------------------|------------------------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.subsystem.child_command](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/child_command.py) |
-| client connection | n/a                                                                                                                    |
-| server            | [xpra.server.subsystem.child_command](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/child_command.py)     |
+| Component         | Link                                                                                                           |
+|-------------------|----------------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.subsystem.command](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/command.py) |
+| client connection | n/a                                                                                                            |
+| server            | [xpra.server.subsystem.command](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/command.py) |
 
 
 ## Client Capabilities
@@ -36,11 +36,11 @@ If the client requested it, the server sends the menu using a generic `setting-c
 
 ### Client-to-Server
 
-The only packet type that can be sent to the server is `start-command`:
+The only packet type that can be sent to the server is `command-start`:
 
 | Argument        | Type            | Purpose                                                                                          |
 |-----------------|-----------------|--------------------------------------------------------------------------------------------------|
-| `start-command` | string          | packet type                                                                                      |
+| `command-start` | string          | packet type                                                                                      |
 | name            | string          | The name of the command to execute, for presentation purposes only                               |
 | command         | list of strings | The full command to execute                                                                      |
 | ignore          | boolean         | Whether this command should be taken into account by the `exit-with-children` server feature     |

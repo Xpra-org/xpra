@@ -31,5 +31,5 @@ The server exposes two flags using the `remote-logging` capability prefix:
 | `logging-event`   | `level` : integer<br/>`message` : string or list of strings<br/>`time` : integer | both             |
 | `logging-control` | `action` : string, only either `start` or `stop`                                 | client to server |
 
-The `logging` packets can be sent to the server if it exposes the `receive` capability,
+The `logging-event` packets can be sent to the server if it exposes the `receive` capability,
 or sent from the server to the client following a `start` `logging-control` request.
