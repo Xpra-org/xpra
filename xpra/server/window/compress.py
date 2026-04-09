@@ -81,6 +81,8 @@ FRAME_OVERHEAD = envint("XPRA_FRAME_OVERHEAD", 1)
 DAMAGE_PADDING = envint("XPRA_DAMAGE_PADDING", 0)
 DAMAGE_WIDTH_PADDING = envint("XPRA_DAMAGE_HEIGHT_PADDING", DAMAGE_PADDING)
 DAMAGE_HEIGHT_PADDING = envint("XPRA_DAMAGE_WIDTH_PADDING", DAMAGE_PADDING)
+DAMAGE_WIDTH_PADDING_PCT = envint("XPRA_DAMAGE_HEIGHT_PADDING_PCT", 0)
+DAMAGE_HEIGHT_PADDING_PCT = envint("XPRA_DAMAGE_WIDTH_PADDING_PCT", 0)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 BROWSER_ALPHA_FIX = envbool("XPRA_BROWSER_ALPHA_FIX", True)
@@ -1605,11 +1607,13 @@ class WindowSource(WindowIconSource):
             return
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
-        elif DAMAGE_WIDTH_PADDING or DAMAGE_HEIGHT_PADDING:
-            x2 = x + w + DAMAGE_WIDTH_PADDING
-            y2 = y + h + DAMAGE_HEIGHT_PADDING
-            x = max(0, x - DAMAGE_WIDTH_PADDING)
-            y = max(0, y - DAMAGE_HEIGHT_PADDING)
+        elif DAMAGE_WIDTH_PADDING or DAMAGE_HEIGHT_PADDING or DAMAGE_WIDTH_PADDING_PCT or DAMAGE_HEIGHT_PADDING_PCT:
+            w_padding = max(DAMAGE_WIDTH_PADDING, round(w * DAMAGE_WIDTH_PADDING_PCT / 100))
+            h_padding = max(DAMAGE_HEIGHT_PADDING, round(h * DAMAGE_HEIGHT_PADDING_PCT / 100))
+            x2 = x + w + w_padding
+            y2 = y + h + h_padding
+            x = max(0, x - w_padding)
+            y = max(0, y - h_padding)
             w = min(ww - x, x2 - x)
             h = min(wh - y, y2 - y)
         self.do_damage(ww, wh, x, y, w, h, options)
