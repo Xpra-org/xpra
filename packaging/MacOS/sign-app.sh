@@ -86,7 +86,7 @@ echo "  MacOS/Xpra"
 sign_runtime "${CONTENTS_DIR}/MacOS/Xpra"
 echo "  Xpra_NoDock.app"
 sign_runtime "${CONTENTS_DIR}/Xpra_NoDock.app"
-echo "  Xpra.app"
+echo "  ${APP_NAME}"
 sign_runtime "${APP_DIR}"
 
 echo "Verification"
@@ -100,5 +100,5 @@ spctl --status
 spctl --assess -vvv --type execute "${APP_DIR}"
 
 echo "*******************************************************************************"
-echo "Copying Xpra.app to ~/Desktop"
+echo "Copying ${APP_NAME} to ~/Desktop"
 ditto "${APP_DIR}" "${HOME}/Desktop/${APP_NAME}"
