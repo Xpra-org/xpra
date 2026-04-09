@@ -13,6 +13,7 @@ from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.exit_codes import ExitValue
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_DRAW_ACK, WINDOW_REFRESH
+from xpra.platform.paths import initial_cwd
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -138,7 +139,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         self._id_to_window: dict[int, Any] = {}
         self.encodings: Sequence[str] = ("png", "webp", "jpeg")
         self.encoding_options = {}
-        self.record_directory = os.path.join(os.path.abspath(os.getcwd()), "record")
+        self.record_directory = os.path.join(initial_cwd, "record")
         self.sequence = 0
         self.refresh_needed: set[int] = set()
         self.refresh_timer = 0

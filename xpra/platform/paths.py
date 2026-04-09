@@ -18,6 +18,11 @@ from xpra.platform import platform_import
 from xpra.util.system import is_free_threaded
 
 
+# this needs to be done before importing the platform specific functions,
+# the `win32` backend will overwrite cwd with the application directory:
+initial_cwd = os.path.abspath(os.getcwd())
+
+
 def valid_dir(path) -> bool:
     try:
         return bool(path) and os.path.exists(path) and os.path.isdir(path)

@@ -13,6 +13,7 @@ from typing import NoReturn
 
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.exit_codes import ExitValue, ExitCode
+from xpra.platform.paths import initial_cwd
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.util.parsing import TRUE_OPTIONS
@@ -366,7 +367,7 @@ class Replay(GObjectClientAdapter):
     def __init__(self, options):
         GObjectClientAdapter.__init__(self)
         self.client_type = "replay"
-        self.record_directory = os.path.join(os.path.abspath(os.getcwd()), "record")
+        self.record_directory = os.path.join(initial_cwd, "record")
         self.sequence = 0
         self.window_replay: dict[int, WindowReplay] = {}
         # all times are in milliseconds:
