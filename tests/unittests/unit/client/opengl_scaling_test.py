@@ -243,10 +243,7 @@ class OpenGLScalingFilterEnvTest(unittest.TestCase):
         """
         programs = {"upscale": 1} if programs_has_upscale else {}
         filter_env = env_value.lower()
-        return (scaling
-                and upscaling
-                and filter_env not in ("bilinear", "nearest")
-                and "upscale" in programs)
+        return all((scaling, upscaling, filter_env not in ("bilinear", "nearest"), "upscale" in programs))
 
     def test_default_uses_catmull_rom(self):
         self.assertTrue(self._should_use_catmull_rom(
