@@ -231,13 +231,14 @@ class ServerSocketsTest(ServerTestUtil):
                                            f"--ssl-key={genssl.keyfile}",
                                            )
 
-                def tc(exit_code, *client_args):
-                    self.verify_connect(f"quic://127.0.0.1:{port}/", exit_code, *client_args)
+                def tc(socktype: str, exit_code: ExitCode, *client_args):
+                    self.verify_connect(f"{socktype}://127.0.0.1:{port}/", exit_code, *client_args)
 
                 # asyncio makes it too difficult to emit the correct exception here:
                 # we should be getting ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE..
-                tc(ExitCode.CONNECTION_FAILED)
-                tc(ExitCode.OK, NOVERIFY, NOHOSTNAME)
+                for socktype in ("quic", "wt"):
+                    tc(socktype, ExitCode.CONNECTION_FAILED)
+                    tc(socktype, ExitCode.OK, NOVERIFY, NOHOSTNAME)
             finally:
                 if server:
                     server.terminate()
