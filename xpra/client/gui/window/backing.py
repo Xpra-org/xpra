@@ -86,7 +86,6 @@ def load_video() -> None:
     global _loaded_video
     if _loaded_video:
         return
-    _loaded_video = True
     vh = getVideoHelper()
     for csc_in in vh.get_csc_inputs():
         CSC_OPTIONS[csc_in] = vh.get_csc_specs(csc_in)
@@ -94,6 +93,7 @@ def load_video() -> None:
     for encoding in vh.get_decodings():
         VIDEO_DECODERS[encoding] = vh.get_decoder_specs(encoding)
     log("video decoders: %s", VIDEO_DECODERS)
+    _loaded_video = bool(VIDEO_DECODERS)
 
 
 def fire_paint_callbacks(callbacks: PaintCallbacks, success: int | bool = True, message="") -> None:
