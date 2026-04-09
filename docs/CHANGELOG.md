@@ -46,6 +46,7 @@
   * [monitor geometry syncing tools](https://github.com/Xpra-org/xpra/issues/4723)
   * [snap window resize to increment grid](https://github.com/Xpra-org/xpra/pull/4831)
   * [support free-threaded builds](https://github.com/Xpra-org/xpra/issues/4782)
+  * [better unit test coverage](https://github.com/Xpra-org/xpra/issues/2873)
 * Cosmetic:
   * [honour MS Windows dark / light theme](https://github.com/Xpra-org/xpra/pull/4792)
   * [session info graph labels for HiDPI displays](https://github.com/Xpra-org/xpra/pull/4856)
