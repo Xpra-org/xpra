@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -199,65 +200,50 @@ class TestGetEncodingProperties(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# GL context tests: require Xvfb + Mesa software rendering
+# GL context tests: require an actual OpenGL context.
+# On Linux uses Xvfb + Mesa software rendering (LIBGL_ALWAYS_SOFTWARE=1).
+# On macOS / Windows a display is assumed to already be present.
 # ---------------------------------------------------------------------------
 
-POSIX = os.name == "posix"
-OSX = False
-try:
-    import sys
-    OSX = sys.platform == "darwin"
-except Exception:
-    pass
-
-_gl_available = False
-if POSIX and not OSX:
-    try:
-        from xpra.client.gtk3.opengl.drawing_area import GLDrawingArea
-        _gl_available = True
-    except Exception:
-        pass
-
-
-@unittest.skipUnless(_gl_available, "GLDrawingArea not available")
 class TestGLInit(unittest.TestCase):
-    """
-    Tests that require an actual OpenGL context.
-    Uses Xvfb + Mesa software rendering (LIBGL_ALWAYS_SOFTWARE=1).
-    """
 
     xvfb = None
 
     @classmethod
     def setUpClass(cls):
         import time
-        from unit.process_test_util import ProcessTestUtil
-        ProcessTestUtil.setUpClass()
-        cls.ptu = ProcessTestUtil()
-        cls.ptu.setUp()
-        os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
-        os.environ["GDK_BACKEND"] = "x11"
-        cls.xvfb = cls.ptu.start_Xvfb()
-        os.environ["DISPLAY"] = cls.xvfb.display or ""
-        try:
-            from xpra.x11.bindings.wait_for_x_server import wait_for_x_server
-            wait_for_x_server(cls.xvfb.display or "", 10)
-        except ImportError:
-            time.sleep(3)
-        from xpra.x11.gtk.display_source import init_gdk_display_source
-        init_gdk_display_source()
+        if os.name == "posix" and sys.platform != "darwin":
+            from unit.process_test_util import ProcessTestUtil
+            ProcessTestUtil.setUpClass()
+            cls.ptu = ProcessTestUtil()
+            cls.ptu.setUp()
+            os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
+            os.environ["GDK_BACKEND"] = "x11"
+            cls.xvfb = cls.ptu.start_Xvfb()
+            os.environ["DISPLAY"] = cls.xvfb.display or ""
+            try:
+                from xpra.x11.bindings.wait_for_x_server import wait_for_x_server
+                wait_for_x_server(cls.xvfb.display or "", 10)
+            except ImportError:
+                time.sleep(3)
+            from xpra.os_util import gi_import
+            Gdk = gi_import("Gdk")
+            Gdk.Display.open(cls.xvfb.display or "")
+            from xpra.x11.gtk.display_source import init_gdk_display_source
+            init_gdk_display_source()
 
     @classmethod
     def tearDownClass(cls):
         if cls.xvfb:
             cls.xvfb.terminate()
             cls.xvfb = None
-        from unit.process_test_util import ProcessTestUtil
-        cls.ptu.tearDown()
-        ProcessTestUtil.tearDownClass()
+            from unit.process_test_util import ProcessTestUtil
+            cls.ptu.tearDown()
+            ProcessTestUtil.tearDownClass()
 
     def _make_gl_backing(self, window_alpha=False, pixel_depth=0):
         from xpra.os_util import gi_import
+        from xpra.client.gtk3.opengl.drawing_area import GLDrawingArea
         Gtk = gi_import("Gtk")
         win = Gtk.Window()
         win.set_default_size(256, 256)
@@ -266,8 +252,6 @@ class TestGLInit(unittest.TestCase):
         backing.render_size = (256, 256)
         win.add(backing._backing)
         win.show_all()
-        # pump events so GTK realize fires
-        from xpra.os_util import gi_import
         GLib = gi_import("GLib")
         ctx = GLib.main_context_default()
         for _ in range(20):
