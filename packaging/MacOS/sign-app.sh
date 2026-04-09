@@ -84,10 +84,10 @@ for bin in Python daemonizer gst-inspect-1.0 gst-launch-1.0 gst-plugin-scanner s
 done
 echo "  Helpers"
 sign_runtime "${CONTENTS_DIR}/Helpers/"*
-echo "  MacOS/Xpra"
-sign_runtime "${CONTENTS_DIR}/MacOS/Xpra"
 echo "  Xpra_NoDock.app"
 sign_runtime "${CONTENTS_DIR}/Xpra_NoDock.app"
+echo "  MacOS/Xpra"
+sign_runtime "${CONTENTS_DIR}/MacOS/Xpra"
 echo "  ${APP_NAME}"
 sign_runtime "${APP_DIR}"
 
@@ -103,4 +103,4 @@ spctl --assess -vvv --type execute "${APP_DIR}"
 
 echo "*******************************************************************************"
 echo "Copying ${APP_NAME} to ~/Desktop"
-ditto "${APP_DIR}" "${HOME}/Desktop/${APP_NAME}"
+ditto "${APP_DIR}" "${HOME}/Desktop/${APP_NAME}.app"
