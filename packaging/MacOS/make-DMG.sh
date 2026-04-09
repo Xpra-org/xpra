@@ -5,9 +5,12 @@ cd "${MACOS_SCRIPT_DIR}" || exit 1
 
 PYTHON="python3"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
-APP_NAME="Xpra"
+LIGHT="${LIGHT:=0}"
+CLIENT_ONLY="${CLIENT_ONLY:=$LIGHT}"
 if [ "${CLIENT_ONLY}" == "1" ]; then
-	APP_NAME="Xpra-Client"
+  APP_NAME="Xpra-Light"
+else
+  APP_NAME="Xpra"
 fi
 APP_DIR="image/${APP_NAME}.app"
 

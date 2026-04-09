@@ -1,7 +1,14 @@
 #!/bin/bash
 
 MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-APP_DIR="${MACOS_SCRIPT_DIR}/image/Xpra.app"
+LIGHT="${LIGHT:=0}"
+CLIENT_ONLY="${CLIENT_ONLY:=$LIGHT}"
+if [ "${CLIENT_ONLY}" == "1" ]; then
+  APP_NAME="Xpra-Light"
+else
+  APP_NAME="Xpra"
+fi
+APP_DIR="${MACOS_SCRIPT_DIR}/image/${APP_NAME}.app"
 CONTENTS_DIR="${APP_DIR}/Contents"
 X11_DIR="${CONTENTS_DIR}/Frameworks/X11"
 
@@ -94,4 +101,4 @@ spctl --assess -vvv --type execute "${APP_DIR}"
 
 echo "*******************************************************************************"
 echo "Copying Xpra.app to ~/Desktop"
-ditto "${APP_DIR}" "${HOME}/Desktop/Xpra.app"
+ditto "${APP_DIR}" "${HOME}/Desktop/${APP_NAME}"

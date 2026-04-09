@@ -22,7 +22,8 @@ STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_GSTREAMER}"
 GSTREAMER_VIDEO="${GSTREAMER_VIDEO:=0}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
-CLIENT_ONLY="${CLIENT_ONLY:=0}"
+LIGHT="${LIGHT:=0}"
+CLIENT_ONLY="${CLIENT_ONLY:=$LIGHT}"
 ARCH="${ARCH:=$(arch)}"
 if [ "${ARCH}" == "i386" ]; then
 	ARCH="x86_64"
@@ -46,7 +47,7 @@ else
 	BUILD_ARGS="${BUILD_ARGS} --without-gstreamer_video"
 fi
 if [ "${CLIENT_ONLY}" == "1" ]; then
-	APP_DIR="${MACOS_SCRIPT_DIR}/image/Xpra-Client.app"
+	APP_DIR="${MACOS_SCRIPT_DIR}/image/Xpra-Light.app"
 	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy"
 	DO_TESTS="0"
 	DO_X11="0"
@@ -155,7 +156,7 @@ for info_plist in "Info.plist" "Xpra_NoDock.app/Contents/Info.plist"; do
 	sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${plist}"
 	sed -i '' -e "s+%ARCH%+$ARCH+g" "${plist}"
 	if [ "${CLIENT_ONLY}" == "1" ]; then
-		sed -i '' -e "s+Xpra+Xpra-Client+g" "${plist}"
+		sed -i '' -e "s+Xpra+Xpra-Light+g" "${plist}"
 		sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" "${plist}"
 	fi
 done
