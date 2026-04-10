@@ -37,7 +37,7 @@ def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
     dbus_address = dbus_env.get("DBUS_SESSION_BUS_ADDRESS")
     if not (dbus_pid and dbus_address):
         # less reliable: get it from the wminfo output:
-        from xpra.scripts.main import exec_wminfo
+        from xpra.scripts.display import exec_wminfo
         wminfo = exec_wminfo(display_name)
         if not dbus_pid:
             try:

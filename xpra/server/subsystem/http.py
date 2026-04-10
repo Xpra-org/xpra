@@ -155,7 +155,7 @@ class HttpServer(StubServerMixin):
         return json_response(displays_info)
 
     def get_displays(self) -> dict[str, Any]:
-        from xpra.scripts.main import get_displays_info  # pylint: disable=import-outside-toplevel
+        from xpra.scripts.display import get_displays_info  # pylint: disable=import-outside-toplevel
         return get_displays_info(self.dotxpra)
 
     def http_sessions_request(self, _uri, _post_data: bytes) -> HttpResponse:

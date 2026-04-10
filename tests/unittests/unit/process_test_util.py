@@ -21,7 +21,7 @@ from xpra.os_util import (
 from xpra.util.io import pollwait
 from xpra.platform.paths import get_xpra_command
 from xpra.platform.dotxpra import DISPLAY_PREFIX
-from xpra.scripts.main import X11_SOCKET_DIR, stat_display_socket
+from xpra.scripts.display import X11_SOCKET_DIR, stat_display_socket
 from xpra.scripts.config import get_defaults
 
 from xpra.log import Logger

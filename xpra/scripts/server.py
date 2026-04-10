@@ -778,7 +778,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             # just a virtual name for the only display available:
             display_name = "Main"
         else:
-            from xpra.scripts.main import guess_display
+            from xpra.scripts.display import guess_display
             display_name = guess_display(desktop_display, sessions_dir=opts.sessions_dir)
     elif upgrading and not extra_args:
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
