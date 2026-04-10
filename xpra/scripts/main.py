@@ -842,6 +842,9 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "send-file":
         check_gtk("send-file")
         return run_send_file(args)
+    if mode == "qrcode":
+        check_gtk("qrcode")
+        return run_qrcode(args)
     if mode == "splash":
         check_gtk("splash")
         return run_splash(args)
