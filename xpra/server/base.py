@@ -453,7 +453,7 @@ class ServerBase(ServerBaseClass):
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         log("ServerBase.get_threaded_info%s", (proto, kwargs))
         start = monotonic()
-        info: dict[str, Any] = {}
+        info: dict[str, Any] = ServerCore.get_threaded_info(self, proto, **kwargs)
         subsystems = kwargs.get("subsystems", ())
 
         def up(prefix, d) -> None:
