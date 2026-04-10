@@ -25,7 +25,7 @@ OGG = "ogg"
 MKA = "mka"
 MPEG4 = "mpeg4"
 ID3V2 = "id3v2"
-# RTP = "rtp"
+RTP = "rtp"
 RAW = "raw"
 
 # stream compression
@@ -36,7 +36,7 @@ FLAC_OGG = FLAC + "+" + OGG
 OPUS_OGG = OPUS + "+" + OGG
 VORBIS_OGG = VORBIS + "+" + OGG
 OPUS_MKA = OPUS + "+" + MKA
-# OPUS_RTP    = OPUS+"+"+RTP
+OPUS_RTP = OPUS + "+" + RTP
 VORBIS_MKA = VORBIS + "+" + MKA
 AAC_MPEG4 = AAC + "+" + MPEG4
 WAV_LZ4 = WAV + "+" + LZ4

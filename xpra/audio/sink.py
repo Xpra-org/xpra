@@ -22,7 +22,7 @@ from xpra.audio.gstreamer_util import (
     get_queue_time, get_decoders,
     get_default_sink_plugin, get_sink_plugins,
     MP3, CODEC_ORDER, QUEUE_LEAK,
-    GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS,
+    GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS, RTP_SINK_CAPS,
 )
 from xpra.util.gobject import one_arg_signal
 from xpra.net.compression import decompress_by_name
@@ -166,6 +166,10 @@ class AudioSink(AudioPipeline):
         self.src = self.pipeline.get_by_name("src")
         self.sink = self.pipeline.get_by_name("sink")
         self.queue = self.pipeline.get_by_name("queue")
+        rtp_caps_str = RTP_SINK_CAPS.get(codec)
+        if rtp_caps_str and self.src:
+            Gst = gi_import("Gst")
+            self.src.set_property("caps", Gst.Caps.from_string(rtp_caps_str))
         if self.queue:
             if QUEUE_SILENT:
                 self.queue.set_property("silent", False)

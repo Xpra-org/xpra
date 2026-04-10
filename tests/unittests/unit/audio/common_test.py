@@ -24,6 +24,11 @@ class TestCommon(unittest.TestCase):
             assert common.audio_option_or_all("invalid options", (common.VORBIS, common.OGG, ), ONE_OPTION)==ONE_OPTION
             assert common.audio_option_or_all("no valid options", (common.VORBIS, common.OGG, ), ())==()
 
+    def test_rtp_constants(self):
+        assert common.RTP == "rtp"
+        assert common.OPUS_RTP == common.OPUS + "+" + common.RTP
+        assert "+" in common.OPUS_RTP
+
 
 def main():
     unittest.main()

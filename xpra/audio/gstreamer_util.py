@@ -14,7 +14,7 @@ from xpra.gstreamer.common import (
     import_gst, get_gst_version,
 )
 from xpra.audio.common import (
-    FLAC_OGG, OPUS_OGG, OPUS_MKA, VORBIS_OGG, VORBIS_MKA,
+    FLAC_OGG, OPUS_OGG, OPUS_MKA, OPUS_RTP, VORBIS_OGG, VORBIS_MKA,
     AAC_MPEG4, WAV_LZ4,
     VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, WAV, WAVPACK, MP3_ID3V2,
     MPEG4, MKA, OGG,
@@ -123,6 +123,8 @@ CODEC_OPTIONS: Sequence[tuple[str, str, str, str, str, str]] = (
     # this can cause "could not link opusenc0 to webmmux0"
     (OPUS_MKA   , "opusenc",        "matroskamux",  "opusdec",                      "matroskademux",    ""),
     (OPUS_MKA   , "opusenc",        "webmmux",      "opusdec",                      "matroskademux",    ""),
+    # RTP: each packet is an independently-decodeable RTP frame; suitable for QUIC datagrams
+    (OPUS_RTP   , "opusenc",        "rtpopuspay",   "rtpopusdepay ! opusdec",       "",                 ""),
     (AAC_MPEG4  , "avenc_aac",      "mp4mux",       "avdec_aac",                    "qtdemux",          ""),
     (AAC_MPEG4  , "voaacenc",       "mp4mux",       "faad",                         "qtdemux",          ""),
 )
@@ -184,7 +186,6 @@ ENCODER_DEFAULT_OPTIONS: dict[str, dict[str, Any]] = {
     },
 }
 
-# we may want to review this if/when we implement UDP transport:
 # noinspection PyPep8
 MUXER_DEFAULT_OPTIONS: dict[str, dict[str, Any]] = {
     "oggmux": {
@@ -208,6 +209,18 @@ MUXER_DEFAULT_OPTIONS: dict[str, dict[str, Any]] = {
     },
 }
 
+# Caps to set on appsrc for RTP codecs.
+# rtpopusdepay requires explicit RTP caps on its upstream peer — it cannot
+# negotiate from ANY caps because it needs to know the payload type and
+# clock-rate before it can parse the RTP header.
+RTP_SINK_CAPS: dict[str, str] = {
+    # payload=96 matches rtpopuspay's default PT (first dynamic slot, RFC 3551).
+    # The value is arbitrary for xpra-to-xpra (no SDP negotiation), but must
+    # be identical on both sides so rtpopusdepay accepts the incoming packets.
+    # If you change it, also set pt=N on rtpopuspay in MUXER_DEFAULT_OPTIONS.
+    OPUS_RTP: "application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=96",
+}
+
 # based on the encoder options above:
 RECORD_PIPELINE_LATENCY = 25
 ENCODER_LATENCY: dict[str, int] = {
@@ -219,6 +232,7 @@ ENCODER_LATENCY: dict[str, int] = {
     WAV: 0,
     WAVPACK: 600,
     OPUS: 0,
+    OPUS_RTP: 0,
 }
 
 CODEC_ORDER = (
@@ -230,6 +244,8 @@ CODEC_ORDER = (
     OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS,
     MP3, MP3_ID3V2, FLAC_OGG, AAC_MPEG4,
     VORBIS, OPUS_MKA, MP3_MPEG4,
+    # RTP payloaded — packet-oriented, for use with QUIC datagrams:
+    OPUS_RTP,
 )
 
 
