@@ -1540,7 +1540,7 @@ class ServerCore(ServerBaseClass):
         return capabilities
 
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
-        log.warn("ServerCore.get_threaded_info(%s, %s)", proto, kwargs)
+        log("ServerCore.get_threaded_info(%s, %s)", proto, kwargs)
         start = monotonic()
         # this function is for non UI thread info, see also: `get_ui_info`
         info = {}
@@ -1549,6 +1549,19 @@ class ServerCore(ServerBaseClass):
             if subsystems and subsystem_name(bc) not in subsystems:
                 continue
             info.update(bc.get_info(self, proto))
+
+        # soft dependency on Info subsystem:
+        if hasattr(self, "get_server_info"):
+            authenticated = bool(proto and proto.authenticators)
+            socktype = getattr(getattr(proto, "_conn", None), "socktype", "")
+            local = socktype in ("socket", "named-pipe")
+            log("get_threaded_info(%s, %s) authenticated=%s, subsystems=%s, local=%s",
+                proto, kwargs, authenticated, subsystems, local)
+            full = FULL_INFO > 0 or authenticated or local
+            info = self.get_server_info(full)
+            if full and (not subsystems or "threads" in subsystems):
+                from xpra.server.subsystem.info import get_thread_info
+                info["threads"] = get_thread_info(proto)
 
         end = monotonic()
         log("ServerCore.get_info took %ims", (end - start) * 1000)
