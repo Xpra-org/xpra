@@ -174,9 +174,11 @@ class InfoServer(StubServerMixin):
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         authenticated = bool(proto and proto.authenticators)
         subsystems = kwargs.get("subsystems", ())
-        log.info("get_threaded_info(%s, %s) authenticated=%s, subsystems=%s",
-                 proto, kwargs, authenticated, subsystems)
-        full = FULL_INFO > 0 or authenticated
+        socktype = getattr(getattr(proto, "_conn", None), "socktype", "")
+        local = socktype in ("socket", "named-pipe")
+        log("get_threaded_info(%s, %s) authenticated=%s, subsystems=%s, local=%s",
+            proto, kwargs, authenticated, subsystems, local)
+        full = FULL_INFO > 0 or authenticated or local
         info = self.get_server_info(full)
         if full and (not subsystems or "threads" in subsystems):
             info["threads"] = get_thread_info(proto)
