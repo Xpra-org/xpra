@@ -143,7 +143,7 @@ def get_frame_info(ignore_threads: Sequence[Thread] = ()) -> dict[str | int, Any
                 thread_ident[t.ident] = None
         thread_ident |= {
             threading.current_thread().ident: "info",
-            main_thread.ident: "main",
+            main_thread().ident: "main",
         }
         frames = sys._current_frames()  # pylint: disable=protected-access
         for i, frame_pair in enumerate(frames.items()):
