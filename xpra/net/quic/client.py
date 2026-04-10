@@ -89,13 +89,45 @@ WT_HEADERS: dict[str, str] = {
     "user-agent": USER_AGENT,
 }
 
+# route these client->server packet type prefixes to independent QUIC streams
+CLIENT_SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
+    "XPRA_QUIC_CLIENT_SUBSTREAM_PACKET_TYPES",
+    "key-,pointer"
+).split(",") if x.strip())
+
 
 class ClientWebSocketConnection(XpraQuicConnection):
 
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
-                 host: str, port: int, info=None, options=None):
+                 host: str, port: int, info=None, options=None,
+                 register_substream: Callable | None = None):
         super().__init__(connection, stream_id, transmit, host, port, "wss", info, options)
         self.write_buffer = SimpleQueue()
+        # configure client-specific substream packet types
+        self._substream_packet_types = CLIENT_SUBSTREAM_PACKET_TYPES
+        self._register_substream = register_substream
+
+    def enable_substreams(self) -> None:
+        """Enable client->server substreams. Called after server hello confirms support."""
+        if self._substream_packet_types:
+            self._use_substreams = True
+            log.info("enabling client->server QUIC substreams for: %s",
+                     ", ".join(self._substream_packet_types))
+            # pre-allocate streams so the first keystroke/mouse move has no setup delay
+            for prefix in self._substream_packet_types:
+                stream_type = prefix.rstrip("-")
+                self._packet_type_streams[stream_type] = self.stream_id
+                self._pending_substreams.add(stream_type)
+
+            def allocate_pending():
+                if self._pending_substreams:
+                    pending = list(self._pending_substreams)
+                    self._pending_substreams.clear()
+                    for st in pending:
+                        self._allocate_substream(st)
+                    self.transmit()
+
+            get_threaded_loop().call(allocate_pending)
 
     def flush_writes(self) -> None:
         # flush the buffered writes:
@@ -230,11 +262,17 @@ class WebSocketClient(QuicConnectionProtocol):
                 self._connected_waiter = None
                 waiter.set_exception(e)
 
+    def register_substream(self, stream_id: int, handler: ClientWebSocketConnection) -> None:
+        """Register a client-initiated substream so it bypasses H3 processing."""
+        log(f"register_substream({stream_id}, {handler})")
+        self._substream_map[stream_id] = handler
+
     def open(self, host: str, port: int, path: str) -> ClientWebSocketConnection:
         log(f"open({host}, {port}, {path})")
         stream_id = self._quic.get_next_available_stream_id()
         websocket = ClientWebSocketConnection(self._http, stream_id, self.transmit,
-                                              host, port)
+                                              host, port,
+                                              register_substream=self.register_substream)
         self._websockets[stream_id] = websocket
         headers = {
             ":authority": host,

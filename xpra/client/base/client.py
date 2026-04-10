@@ -559,6 +559,11 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         p.parse_remote_caps(caps)
         self.server_packet_types = caps.strtupleget("packet-types")
         netlog(f"parse_network_capabilities(..) server_packet_types={self.server_packet_types}")
+        # enable client->server QUIC substreams if the server supports them
+        if caps.boolget("quic.substreams"):
+            conn = getattr(p, "_conn", None)
+            if conn and hasattr(conn, "enable_substreams"):
+                conn.enable_substreams()
         return True
 
     def _process_startup_complete(self, packet: Packet) -> None:

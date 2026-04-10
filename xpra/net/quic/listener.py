@@ -19,6 +19,7 @@ from aioquic.h3.events import (
     HeadersReceived,
     WebTransportStreamDataReceived,
 )
+from aioquic.quic.connection import stream_is_client_initiated, stream_is_unidirectional
 from aioquic.quic.events import ConnectionTerminated, DatagramFrameReceived, ProtocolNegotiated, QuicEvent, StreamDataReceived
 
 from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
@@ -50,6 +51,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
         super().__init__(*args, **kwargs)
         self._handlers: dict[int, Handler] = {}
         self._substream_handlers: dict[int, Handler] = {}
+        self._pending_client_substreams: dict[int, bytes] = {}
         self._http: HttpConnection | None = None
 
     def register_substream(self, stream_id: int, handler: Handler) -> None:
@@ -78,6 +80,55 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 log("error closing handler %s", handler, exc_info=True)
         self._handlers.clear()
         self._substream_handlers.clear()
+        self._pending_client_substreams.clear()
+
+    def _handle_client_substream_data(self, event: StreamDataReceived) -> bool:
+        """Detect and register client-initiated raw QUIC substreams.
+
+        Client-initiated bidirectional streams (stream_id % 4 == 0) that are NOT
+        the main WebSocket stream are treated as substreams. The first bytes must
+        be "xpra:<type>\\n" to identify the stream type.
+        """
+        stream_id = event.stream_id
+        # only intercept client-initiated bidirectional streams
+        if not stream_is_client_initiated(stream_id) or stream_is_unidirectional(stream_id):
+            return False
+        # stream 0 is always the main WebSocket — must reach H3
+        # (can't rely on _handlers check: first event arrives before H3 registers it)
+        if stream_id == 0:
+            return False
+        # skip streams already managed by H3
+        if stream_id in self._handlers:
+            return False
+        # accumulate until we see the "xpra:<type>\n" header
+        buf = self._pending_client_substreams.get(stream_id, b"") + event.data
+        if b"\n" not in buf:
+            log(f"client substream {stream_id}: buffering {len(buf)} bytes, waiting for header")
+            self._pending_client_substreams[stream_id] = buf
+            return True
+        header, remainder = buf.split(b"\n", 1)
+        self._pending_client_substreams.pop(stream_id, None)
+        try:
+            header_str = header.decode("ascii")
+        except (UnicodeDecodeError, ValueError):
+            log.warn(f"Warning: invalid client substream header on stream {stream_id}")
+            return False
+        if not header_str.startswith("xpra:"):
+            log.warn(f"Warning: unexpected client substream header on stream {stream_id}: {header_str!r}")
+            return False
+        stream_type = header_str[5:]
+        # find the WebSocket handler (skip HTTP request handlers)
+        handler = next((h for h in self._handlers.values()
+                        if isinstance(h, ServerWebSocketConnection)), None)
+        if not handler:
+            log.warn(f"Warning: no handler for client substream {stream_id}")
+            return True
+        self._substream_handlers[stream_id] = handler
+        log.info(f"new client substream {stream_id} for {stream_type!r} packets")
+        if remainder:
+            log(f"client substream {stream_id}: delivering {len(remainder)} bytes after header")
+            handler.put_raw_substream_data(remainder, stream_id)
+        return True
 
     def connection_lost(self, exc) -> None:
         self._cleanup_handlers(f"transport lost: {exc}")
@@ -96,10 +147,14 @@ class HttpServerProtocol(QuicConnectionProtocol):
         elif isinstance(event, DatagramFrameReceived) and event.data == b"quack":
             self._quic.send_datagram_frame(b"quack-ack")
         # route raw QUIC substreams directly, bypassing H3
-        if isinstance(event, StreamDataReceived) and event.stream_id in self._substream_handlers:
-            log(f"substream {event.stream_id}: received {len(event.data)} bytes")
-            self._substream_handlers[event.stream_id].put_raw_substream_data(event.data, event.stream_id)
-            return
+        if isinstance(event, StreamDataReceived):
+            if event.stream_id in self._substream_handlers:
+                log(f"substream {event.stream_id}: received {len(event.data)} bytes")
+                self._substream_handlers[event.stream_id].put_raw_substream_data(event.data, event.stream_id)
+                return
+            # detect new client-initiated substreams
+            if self._handle_client_substream_data(event):
+                return
         # pass event to the HTTP layer
         log(f"hsp:quic_event_received(..) http={self._http}")
         if self._http is not None:
