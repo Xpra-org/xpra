@@ -580,6 +580,13 @@ def create_udp_socket(host: str, iport: int, family: socket.AddressFamily=socket
     else:
         sockaddr = (host, iport)
     sock = socket.socket(family, socket.SOCK_DGRAM)
+    # larger buffers reduce packet drops during Python GIL pauses
+    UDP_BUFFER_SIZE = int(os.environ.get("XPRA_UDP_BUFFER_SIZE", 4 * 1024 * 1024))
+    for opt in (socket.SO_RCVBUF, socket.SO_SNDBUF):
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, opt, UDP_BUFFER_SIZE)
+        except OSError:
+            pass
     try:
         sock.bind(sockaddr)
     except Exception:
