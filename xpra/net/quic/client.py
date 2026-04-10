@@ -1,5 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2026 Netflix, Inc.
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +13,8 @@ from typing import Union, cast
 from collections.abc import Callable
 
 from aioquic.quic.configuration import QuicConfiguration
-from aioquic.quic.events import QuicEvent
+from aioquic.quic.connection import stream_is_client_initiated, stream_is_unidirectional
+from aioquic.quic.events import QuicEvent, StreamDataReceived
 from aioquic.quic.packet import QuicErrorCode
 from aioquic.h3.connection import H3_ALPN
 from aioquic.h0.connection import H0Connection
@@ -21,7 +23,6 @@ from aioquic.h3.events import (
     DataReceived,
     H3Event,
     HeadersReceived,
-    PushPromiseReceived,
     WebTransportStreamDataReceived,
 )
 from aioquic.quic.connection import QuicConnection
@@ -106,10 +107,6 @@ class ClientWebSocketConnection(XpraQuicConnection):
                     self.accepted = True
                     self.flush_writes()
             return
-        if isinstance(event, PushPromiseReceived):
-            log(f"PushPromiseReceived: {event}")
-            log(f"PushPromiseReceived headers: {event.headers}")
-            return
         super().http_event_received(event)
 
 
@@ -189,8 +186,9 @@ class WebSocketClient(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._http: HttpConnection | None = None
-        self._push_types: dict[str, int] = {}
         self._websockets: dict[int, ClientWebSocketConnection] = {}
+        self._substream_map: dict[int, ClientWebSocketConnection] = {}
+        self._substream_buffers: dict[int, bytes] = {}
         if self._quic.configuration.alpn_protocols[0].startswith("hq-"):
             self._http = H0Connection(self._quic)
         else:
@@ -212,33 +210,62 @@ class WebSocketClient(QuicConnectionProtocol):
         self.transmit()
         return websocket
 
+    def _is_server_bidirectional(self, stream_id: int) -> bool:
+        return not stream_is_client_initiated(stream_id) and not stream_is_unidirectional(stream_id)
+
+    def _handle_substream_data(self, event: StreamDataReceived) -> bool:
+        stream_id = event.stream_id
+        # already-registered substream: route directly
+        websocket = self._substream_map.get(stream_id)
+        if websocket:
+            log(f"substream {stream_id}: {len(event.data)} bytes")
+            websocket.put_raw_substream_data(event.data, stream_id)
+            return True
+        # only intercept server-initiated bidirectional streams
+        # (server-initiated unidirectional streams are used by H3 internally)
+        if not self._is_server_bidirectional(stream_id):
+            return False
+        # accumulate until we see the type prefix header ("xpra:<type>\n")
+        buf = self._substream_buffers.get(stream_id, b"") + event.data
+        if b"\n" not in buf:
+            log(f"substream {stream_id}: buffering {len(buf)} bytes, waiting for header")
+            self._substream_buffers[stream_id] = buf
+            return True
+        header, remainder = buf.split(b"\n", 1)
+        self._substream_buffers.pop(stream_id, None)
+        header_str = header.decode()
+        if not header_str.startswith("xpra:"):
+            log.warn(f"Warning: unexpected substream header on stream {stream_id}: {header_str!r}")
+            return False
+        stream_type = header_str[5:]  # strip "xpra:" prefix
+        # find parent websocket (there's only one per connection in practice)
+        websocket = next(iter(self._websockets.values()), None)
+        if not websocket:
+            log.warn(f"Warning: no websocket for substream {stream_id}")
+            return True
+        self._substream_map[stream_id] = websocket
+        log.info(f"new substream {stream_id} for {stream_type!r} packets")
+        if remainder:
+            log(f"substream {stream_id}: delivering {len(remainder)} bytes after header")
+            websocket.put_raw_substream_data(remainder, stream_id)
+        return True
+
     def quic_event_received(self, event: QuicEvent) -> None:
+        # route raw QUIC substreams directly, bypassing H3
+        if isinstance(event, StreamDataReceived) and self._handle_substream_data(event):
+            return
         for http_event in self._http.handle_event(event):
             self.http_event_received(http_event)
 
     def http_event_received(self, event: H3Event) -> None:
-        if not isinstance(event, (HeadersReceived, DataReceived, PushPromiseReceived)):
+        if not isinstance(event, (HeadersReceived, DataReceived)):
             log.warn(f"Warning: unexpected http event type: {event}")
             return
         stream_id = event.stream_id
         websocket: ClientWebSocketConnection | None = self._websockets.get(stream_id)
         if not websocket:
-            # perhaps this is a new substream?
-            sub = -1
-            hdict = {}
-            if isinstance(event, HeadersReceived):
-                hdict = {k.decode(): v.decode() for k, v in event.headers}
-                sub = int(hdict.get("substream", -1))
-            if sub < 0:
-                log.warn(f"Warning: unexpected websocket stream id: {stream_id} in {event}")
-                return
-            websocket = self._websockets.get(sub)
-            if not websocket:
-                log.warn(f"Warning: stream {sub} not found in {self._websockets}")
-                return
-            subtype = hdict.get("stream-type")
-            log.info(f"new quic substream {stream_id} for {subtype} packets")
-            self._websockets[stream_id] = websocket
+            log.warn(f"Warning: unexpected websocket stream id: {stream_id} in {event}")
+            return
         websocket.http_event_received(event)
 
 
@@ -303,6 +330,13 @@ def _make_quic_configuration(ssl_cert: str, ssl_key: str, ssl_key_password: str,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
     )
     configuration.verify_mode = parse_ssl_verify_mode(ssl_server_verify_mode)
+    if not ssl_ca_certs:
+        try:
+            import certifi
+            ssl_ca_certs = certifi.where()
+            log(f"using certifi CA bundle: {ssl_ca_certs}")
+        except (ImportError, FileNotFoundError):
+            log("certifi not available, no default CA bundle")
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:

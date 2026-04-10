@@ -1,5 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2026 Netflix, Inc.
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +19,7 @@ from aioquic.h3.events import (
     HeadersReceived,
     WebTransportStreamDataReceived,
 )
-from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicEvent
+from aioquic.quic.events import ConnectionTerminated, DatagramFrameReceived, ProtocolNegotiated, QuicEvent, StreamDataReceived
 
 from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
 from xpra.net.quic.http import HttpRequestHandler
@@ -35,7 +36,8 @@ from xpra.log import Logger
 
 log = Logger("quic")
 
-quic_logger = QuicLogger()
+# qlog records every QUIC frame into memory — significant GC pressure at high throughput
+quic_logger = QuicLogger() if log.is_debug_enabled() else None
 
 HttpConnection = Union[H0Connection, H3Connection]
 Handler = Union[HttpRequestHandler, ServerWebSocketConnection, ServerWebTransportConnection]
@@ -47,10 +49,45 @@ class HttpServerProtocol(QuicConnectionProtocol):
         log(f"HttpServerProtocol({args}, {kwargs}) xpra-server={self._xpra_server}")
         super().__init__(*args, **kwargs)
         self._handlers: dict[int, Handler] = {}
+        self._substream_handlers: dict[int, Handler] = {}
         self._http: HttpConnection | None = None
+
+    def register_substream(self, stream_id: int, handler: Handler) -> None:
+        log(f"register_substream({stream_id}, {handler})")
+        self._substream_handlers[stream_id] = handler
+
+    def _cleanup_handlers(self, reason: str = "") -> None:
+        """Close all handlers and unblock their read threads.
+
+        Ensures the xpra protocol detects the disconnect and cleans up
+        audio sources, client state, etc.
+        """
+        if not self._handlers:
+            return
+        log.info("cleaning up %d QUIC handlers: %s", len(self._handlers), reason)
+        for handler in self._handlers.values():
+            log.info("closing handler %s", handler)
+            try:
+                if not getattr(handler, "closed", True):
+                    handler.close()
+                # unblock the SocketProtocol read thread so it detects EOF
+                rq = getattr(handler, "read_queue", None)
+                if rq:
+                    rq.put(b"")
+            except Exception:
+                log("error closing handler %s", handler, exc_info=True)
+        self._handlers.clear()
+        self._substream_handlers.clear()
+
+    def connection_lost(self, exc) -> None:
+        self._cleanup_handlers(f"transport lost: {exc}")
+        super().connection_lost(exc)
 
     def quic_event_received(self, event: QuicEvent) -> None:
         log("hsp:quic_event_received(%s)", Ellipsizer(event))
+        if isinstance(event, ConnectionTerminated):
+            self._cleanup_handlers(f"QUIC terminated: {event.reason_phrase}")
+            return
         if isinstance(event, ProtocolNegotiated):
             if event.alpn_protocol in H3_ALPN:
                 self._http = H3Connection(self._quic, enable_webtransport=True)
@@ -58,7 +95,12 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 self._http = H0Connection(self._quic)
         elif isinstance(event, DatagramFrameReceived) and event.data == b"quack":
             self._quic.send_datagram_frame(b"quack-ack")
-        #  pass event to the HTTP layer
+        # route raw QUIC substreams directly, bypassing H3
+        if isinstance(event, StreamDataReceived) and event.stream_id in self._substream_handlers:
+            log(f"substream {event.stream_id}: received {len(event.data)} bytes")
+            self._substream_handlers[event.stream_id].put_raw_substream_data(event.data, event.stream_id)
+            return
+        # pass event to the HTTP layer
         log(f"hsp:quic_event_received(..) http={self._http}")
         if self._http is not None:
             for http_event in self._http.handle_event(event):
@@ -139,7 +181,8 @@ class HttpServerProtocol(QuicConnectionProtocol):
             }
             wsc = ServerWebSocketConnection(connection=self._http, scope=scope,
                                             stream_id=event.stream_id,
-                                            transmit=self.transmit)
+                                            transmit=self.transmit,
+                                            register_substream=self.register_substream)
             socket_options = {}
             self._xpra_server.make_protocol("quic", wsc, socket_options, protocol_class=WebSocketProtocol)
             return wsc
