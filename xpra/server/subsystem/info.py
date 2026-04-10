@@ -171,25 +171,16 @@ class InfoServer(StubServerMixin):
         log("get_all_info: non ui info collected in %ims", (end - start) * 1000)
         callback(proto, ui_info)
 
-    def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
-        authenticated = bool(proto and proto.authenticators)
-        subsystems = kwargs.get("subsystems", ())
-        socktype = getattr(getattr(proto, "_conn", None), "socktype", "")
-        local = socktype in ("socket", "named-pipe")
-        log("get_threaded_info(%s, %s) authenticated=%s, subsystems=%s, local=%s",
-            proto, kwargs, authenticated, subsystems, local)
-        full = FULL_INFO > 0 or authenticated or local
-        info = self.get_server_info(full)
-        if full and (not subsystems or "threads" in subsystems):
-            info["threads"] = get_thread_info(proto)
+    def get_info(self, _proto) -> dict[str, Any]:
         if self.session_name:
-            info["session"] = {"name": self.session_name}
-        return info
+            return {"name": self.session_name}
+        return {}
 
     def get_ui_info(self, _proto: SocketProtocol, **kwargs) -> dict[str, Any]:
         # this function is for info which MUST be collected from the UI thread
         return {}
 
+    # this is called by ServerCore directly so that the "full" flag can be passed in
     def get_server_info(self, full=False) -> dict[str, Any]:
         if full:
             info = self.get_full_server_info()
