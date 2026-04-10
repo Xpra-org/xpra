@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2010 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2026 Netflix, Inc.
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -51,12 +52,16 @@ NON_AUTO_SINK_ATTRIBUTES: dict[str, Any] = {
 
 SINK_DEFAULT_ATTRIBUTES: dict[str, dict[str, str]] = {
     "pulsesink": {"client-name": "Xpra"},
+    "wasapisink": {"low-latency": "true", "buffer-time": "10000"},
+    "wasapi2sink": {"low-latency": "true", "buffer-time": "10000"},
 }
 
 QUEUE_SILENT = envbool("XPRA_QUEUE_SILENT", False)
 QUEUE_TIME = get_queue_time(450)
 
 UNMUTE_DELAY = envint("XPRA_UNMUTE_DELAY", 1000)
+# sinks that handle volume internally and don't pop on start:
+NO_UNMUTE_RAMP = {"wasapisink", "wasapi2sink"}
 GRACE_PERIOD = envint("XPRA_SOUND_GRACE_PERIOD", 2000)
 # percentage: from 0 for no margin, to 200% which triples the buffer target
 MARGIN = max(0, min(200, envint("XPRA_SOUND_MARGIN", 50)))
@@ -184,6 +189,8 @@ class AudioSink(AudioPipeline):
         return "AudioSink('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self) -> None:
+        from xpra.audio.device_monitor import stop_device_monitor
+        stop_device_monitor()
         super().cleanup()
         self.cancel_volume_timer()
         self.sink_type = ""
@@ -192,8 +199,19 @@ class AudioSink(AudioPipeline):
     def start(self) -> bool:
         if not super().start():
             return False
-        GLib.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
+        if self.sink_type in NO_UNMUTE_RAMP:
+            self.set_volume(int(self.normal_volume * 100))
+        else:
+            GLib.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
+        from xpra.audio.device_monitor import start_device_monitor
+        start_device_monitor(self._on_device_change)
         return True
+
+    def _on_device_change(self) -> None:
+        log.info("audio output device changed")
+        # emit synchronously — idle_emit would race with cleanup:
+        self.emit("error", "AUDIO_DEVICE_CHANGED")
+        self.cleanup()
 
     def start_adjust_volume(self, interval: int = 100) -> bool:
         if self.volume_timer != 0:

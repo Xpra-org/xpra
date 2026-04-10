@@ -169,5 +169,62 @@ def main():
     unittest.main()
 
 
+class DeviceInvalidationTest(unittest.TestCase):
+    """Tests for WASAPI device invalidation detection and restart."""
+
+    def test_is_recoverable_audio_error(self):
+        from xpra.client.subsystem.audio import _is_recoverable_audio_error
+        # on non-Win32, all errors are non-recoverable:
+        if not WIN32:
+            assert not _is_recoverable_audio_error("AUDCLNT_E_DEVICE_INVALIDATED")
+            assert not _is_recoverable_audio_error("88890004")
+            return
+        # on Win32, WASAPI device invalidation is recoverable:
+        assert _is_recoverable_audio_error("AUDCLNT_E_DEVICE_INVALIDATED")
+        assert _is_recoverable_audio_error("IAudioClient::GetCurrentPadding failed (88890004)")
+        assert _is_recoverable_audio_error("something device_invalidated something")
+        assert not _is_recoverable_audio_error("some other gstreamer error")
+        assert not _is_recoverable_audio_error("")
+
+    def _make_client(self):
+        x = AudioClient()
+        x.exit_code = None
+        x.send = lambda *a: None
+        x._signal_callbacks = {}
+        x.idle_add = lambda fn, *a: 0
+        x.timeout_add = lambda delay, fn, *a: 0
+        return x
+
+    def _make_fake_sink(self, x):
+        fake_sink = AdHocStruct()
+        fake_sink.codec = "opus"
+        fake_sink.sequence = x.audio_sink_sequence
+        fake_sink.cleanup = lambda: None
+        x.audio_sink = fake_sink
+        x.speaker_enabled = True
+        return fake_sink
+
+    def test_device_changed_restarts(self):
+        x = self._make_client()
+        fake_sink = self._make_fake_sink(x)
+
+        scheduled = []
+        x.idle_add = lambda fn, *a: scheduled.append(("idle", fn)) or 0
+        x.timeout_add = lambda delay, fn, *a: scheduled.append((delay, fn)) or 0
+
+        x.audio_sink_error(fake_sink, "AUDIO_DEVICE_CHANGED")
+        assert x.audio_sink is None, "sink should have been stopped"
+        assert len(scheduled) >= 1, "expected at least one scheduled callback"
+
+    def test_non_device_error_does_not_restart(self):
+        x = self._make_client()
+        fake_sink = self._make_fake_sink(x)
+        x.audio_resume_restart = False
+
+        x.audio_sink_error(fake_sink, "some other fatal error")
+        assert x.audio_sink is None, "sink should have been stopped"
+        assert not x.audio_resume_restart, "resume flag should not be set"
+
+
 if __name__ == '__main__':
     main()

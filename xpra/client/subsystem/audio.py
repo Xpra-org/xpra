@@ -1,5 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2026 Netflix, Inc.
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +16,7 @@ from xpra.net.compression import Compressed
 from xpra.net.packet_type import CONNECTION_LOST
 from xpra.common import noop, SizedBuffer, may_notify_client
 from xpra.constants import NotificationID
-from xpra.os_util import get_machine_id, get_user_uuid, OSX, POSIX
+from xpra.os_util import get_machine_id, get_user_uuid, WIN32, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint
@@ -27,6 +28,13 @@ avsynclog = Logger("av-sync")
 log = Logger("client", "audio")
 
 QUERY_SLEEP = envint("XPRA_AUDIO_QUERY_SLEEP", 0)
+
+
+def _is_recoverable_audio_error(error_str: str) -> bool:
+    if not WIN32:
+        return False
+    upper = error_str.upper()
+    return "DEVICE_INVALIDATED" in upper or "88890004" in upper
 
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
 DELTA_THRESHOLD = envint("XPRA_AV_SYNC_DELTA_THRESHOLD", 40)
@@ -549,10 +557,33 @@ class AudioClient(StubClientMixin):
             log("audio_sink_error(%s, %s) not the current sink, ignoring it", audio_sink, error)
             return
         estr = bytestostr(error).replace("gst-resource-error-quark: ", "")
-        self.may_notify_audio("Speaker forwarding error", estr)
-        log.warn("Error: stopping speaker:")
-        log.warn(" %s", estr)
+        if "AUDIO_DEVICE_CHANGED" in estr:
+            # audio subprocess detected a device change — restart quickly:
+            log.info("audio output device changed, restarting speaker")
+            self.stop_receiving_audio()
+            self.idle_add(self._restart_audio_after_device_change)
+            return
+        if _is_recoverable_audio_error(estr):
+            # recoverable device error (e.g. WASAPI invalidation before monitor detected it):
+            log.info("audio device removed, waiting for new device")
+            self.audio_resume_restart = True
+        else:
+            self.may_notify_audio("Speaker forwarding error", estr)
+            log.warn("Error: stopping speaker:")
+            log.warn(" %s", estr)
         self.stop_receiving_audio()
+
+    DEVICE_RESTART_INITIAL_MS = 1000
+    DEVICE_RESTART_MAX_MS = 60000
+
+    def _restart_audio_after_device_change(self, delay: int = 200) -> None:
+        """Restart audio after a device change with exponential backoff on failure."""
+        def do_restart():
+            if not self.start_receiving_audio():
+                next_delay = min(delay * 2, self.DEVICE_RESTART_MAX_MS)
+                log.info("audio restart failed, retrying in %dms", next_delay)
+                self.timeout_add(next_delay, lambda: self._restart_audio_after_device_change(next_delay))
+        self.timeout_add(delay, do_restart)
 
     def audio_process_stopped(self, audio_sink, *args) -> None:
         if self.exit_code is not None:
