@@ -119,7 +119,7 @@ class WindowModel:
     def record_sync(self) -> bool:
         self.sync_timer = 0
         kwargs: dict[str, Any] = {
-            "metatada": self.metadata,
+            "metadata": self.metadata,
             "cursor-data": self.cursor_data,
         }
         if self.geometry != NO_GEOMETRY:
@@ -181,7 +181,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             self.source_remove(rt)
 
     def client_toolkit(self) -> str:
-        raise "offscreen-recorder"
+        return "offscreen-recorder"
 
     def make_hello(self) -> dict[str, Any]:
         caps: dict[str, Any] = {}
@@ -266,7 +266,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             pwin = self._id_to_window.get(parent)
             if pwin:
                 x = pwin.geometry[0] + rel_pos[0]
-                y = pwin.rel_pos[1] + rel_pos[1]
+                y = pwin.geometry[1] + rel_pos[1]
                 log("relative position(%s)=%s", rel_pos, (x, y))
         geom = (x, y, w, h)
         directory = os.path.join(self.record_directory, "%x" % wid)

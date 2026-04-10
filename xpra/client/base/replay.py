@@ -531,7 +531,7 @@ class Replay(GObjectClientAdapter):
         os_util.force_quit(int(exit_code))
 
     def client_toolkit(self) -> str:
-        raise "replay"
+        return "replay"
 
 
 def do_main(config) -> int:

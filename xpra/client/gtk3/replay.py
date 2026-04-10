@@ -117,7 +117,7 @@ class GtkReplay(Replay):
         return get_root_size()
 
     def client_toolkit(self) -> str:
-        raise "gtk replay"
+        return "gtk replay"
 
 
 def do_main(options) -> int:
