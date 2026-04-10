@@ -12,6 +12,7 @@ from collections.abc import Callable
 from aioquic import __version__ as aioquic_version
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
+from aioquic.h3.connection import StreamType
 from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
 from aioquic.quic.packet import QuicErrorCode
 
@@ -31,6 +32,12 @@ DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_DATAGRAM_PACKET_TYPES",
     ""
 ).split(",") if x.strip())
+
+# aioquic iterates _streams in dict insertion order with no priority
+# mechanism — the first stream gets full access to the congestion window.
+# This defines the send priority: types listed first get scheduled first.
+# Types not listed here (and the main WebSocket stream) are sent last.
+STREAM_PRIORITY = ("key", "pointer", "sound", "webcam", "draw")
 
 if envbool("XPRA_QUIC_LOGGER", True):
     override_aioquic_logger()
@@ -225,6 +232,80 @@ class XpraQuicConnection(Connection):
         log.info(f"new substream {stream_id} for {stream_type!r}")
         if self._register_substream:
             self._register_substream(stream_id, self)
+        try:
+            self._prioritize_streams()
+        except Exception:
+            log.warn("Warning: failed to prioritize QUIC streams", exc_info=True)
+
+    def _prioritize_streams(self) -> None:
+        """Reorder aioquic's internal stream dict so realtime streams are sent first.
+
+        aioquic's _write_application iterates _streams in dict insertion order
+        and gives each stream access to the congestion window in that order.
+        The first stream can consume the entire window, starving later ones.
+
+        Order after reordering:
+          1. Main/control streams (non-substream) — always first
+          2. Substreams in STREAM_PRIORITY order (input, audio, video)
+        """
+        quic = getattr(self.connection, "_quic", None)
+        if not quic:
+            return
+        streams = quic._streams
+        if not streams:
+            return
+
+        # map substream stream_ids to their priority index
+        type_priority = {}
+        for stream_type, sid in self._packet_type_streams.items():
+            if sid in self._substream_ids:
+                try:
+                    type_priority[sid] = STREAM_PRIORITY.index(stream_type)
+                except ValueError:
+                    type_priority[sid] = len(STREAM_PRIORITY)
+
+        # sort: non-substream entries first (main WebSocket stream, H3 control)
+        # so control packets always have priority, then substreams by STREAM_PRIORITY
+        def sort_key(item):
+            sid = item[0]
+            if sid not in type_priority:
+                return -1   # main/control streams first
+            return type_priority[sid]
+
+        sorted_items = sorted(streams.items(), key=sort_key)
+        streams.clear()
+        streams.update(sorted_items)
+        # log the reordered stream IDs with their type names for debugging
+        sid_to_type = {v: k for k, v in self._packet_type_streams.items() if v in self._substream_ids}
+        h3 = self.connection
+        # discover H3's named stream ID attributes (e.g. _local_control_stream_id)
+        h3_labels = {}
+        try:
+            for attr in dir(h3):
+                if attr.endswith("_stream_id") and attr.startswith("_"):
+                    val = getattr(h3, attr, None)
+                    if isinstance(val, int):
+                        # "_local_control_stream_id" -> "local-control"
+                        h3_labels[val] = attr[1:].removesuffix("_stream_id").replace("_", "-")
+        except Exception:
+            pass
+        h3_streams = getattr(h3, "_stream", {})
+        def label(sid):
+            if sid in sid_to_type:
+                return sid_to_type[sid]
+            if sid == self.stream_id:
+                return "websocket"
+            if sid in h3_labels:
+                return h3_labels[sid]
+            h3s = h3_streams.get(sid)
+            if h3s and h3s.stream_type is not None:
+                try:
+                    return StreamType(h3s.stream_type).name.lower()
+                except ValueError:
+                    return f"h3-{h3s.stream_type}"
+            return f"quic-{sid}"
+        order = [(sid, label(sid)) for sid, _ in sorted_items]
+        log.info("QUIC stream send priority: %s", order)
 
     @staticmethod
     def _strip_ws_header(data: bytes) -> bytes:
