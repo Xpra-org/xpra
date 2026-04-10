@@ -6,6 +6,7 @@
 
 import re
 import os
+import asyncio
 import socket
 import ipaddress
 from queue import SimpleQueue
@@ -44,6 +45,28 @@ from xpra.log import Logger
 log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
+
+
+def format_tls_error(exc: Exception) -> tuple[int, str]:
+    """Map a TLS/OpenSSL exception to (ExitCode, user-friendly message)."""
+    try:
+        from OpenSSL.crypto import Error as OpenSSLError
+    except ImportError:
+        OpenSSLError = None
+    if OpenSSLError and isinstance(exc, OpenSSLError):
+        # OpenSSL errors are lists of (lib, func, reason) tuples
+        reasons = " ".join(r[2] for r in exc.args[0] if r[2]).strip()
+        if "no such file" in reasons:
+            return ExitCode.SSL_FAILURE, f"SSL CA certificate file not found: {reasons}"
+        if "hostname mismatch" in reasons:
+            return ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE, f"SSL certificate hostname mismatch: {reasons}"
+        if "certificate verify failed" in reasons:
+            return ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE, f"SSL certificate verify failed: {reasons}"
+        return ExitCode.SSL_FAILURE, f"SSL error: {reasons}"
+    msg = str(exc)
+    if not msg or msg == str(type(exc)):
+        return ExitCode.SSL_FAILURE, "SSL handshake failed"
+    return ExitCode.SSL_FAILURE, f"SSL handshake failed: {msg}"
 
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
@@ -189,10 +212,23 @@ class WebSocketClient(QuicConnectionProtocol):
         self._websockets: dict[int, ClientWebSocketConnection] = {}
         self._substream_map: dict[int, ClientWebSocketConnection] = {}
         self._substream_buffers: dict[int, bytes] = {}
+        self._tls_error: Exception | None = None
         if self._quic.configuration.alpn_protocols[0].startswith("hq-"):
             self._http = H0Connection(self._quic)
         else:
             self._http = H3Connection(self._quic)
+
+    def datagram_received(self, data, addr) -> None:
+        try:
+            super().datagram_received(data, addr)
+        except Exception as e:
+            log("datagram_received TLS error", exc_info=True)
+            self._tls_error = e
+            # resolve the connected waiter so we don't hang until timeout
+            if self._connected_waiter is not None:
+                waiter = self._connected_waiter
+                self._connected_waiter = None
+                waiter.set_exception(e)
 
     def open(self, host: str, port: int, path: str) -> ClientWebSocketConnection:
         log(f"open({host}, {port}, {path})")
@@ -330,13 +366,31 @@ def _make_quic_configuration(ssl_cert: str, ssl_key: str, ssl_key_password: str,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
     )
     configuration.verify_mode = parse_ssl_verify_mode(ssl_server_verify_mode)
-    if not ssl_ca_certs:
+    if not ssl_ca_certs or ssl_ca_certs == "default":
+        # "default" means "use OS cert store" — handled by ssl.load_default_certs()
+        # for TCP+SSL, but aioquic uses pyOpenSSL which has no equivalent.
+        # Find the CA bundle ourselves instead.
+        # certifi.where() may return a stale build-time path in cx_Freeze frozen
+        # builds, so also check relative to the executable.
+        ssl_ca_certs = ""
+        ca_candidates = []
         try:
             import certifi
-            ssl_ca_certs = certifi.where()
-            log(f"using certifi CA bundle: {ssl_ca_certs}")
-        except (ImportError, FileNotFoundError):
-            log("certifi not available, no default CA bundle")
+            ca_candidates.append(certifi.where())
+        except ImportError:
+            pass
+        # frozen build: cacert.pem is next to the executable in lib/certifi/
+        import sys
+        exe_dir = os.path.dirname(getattr(sys, "executable", ""))
+        if exe_dir:
+            ca_candidates.append(os.path.join(exe_dir, "lib", "certifi", "cacert.pem"))
+        for ca_path in ca_candidates:
+            if ca_path and os.path.exists(ca_path):
+                ssl_ca_certs = ca_path
+                log(f"using CA bundle: {ssl_ca_certs}")
+                break
+        else:
+            log("no CA bundle found, certificate verification may fail")
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:
@@ -368,46 +422,53 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
         sock, local_addr = create_local_socket(af)
         transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
         log(f"{transport=}, {protocol=}")
-        protocol = cast(QuicConnectionProtocol, protocol)
+        protocol = cast(WebSocketClient, protocol)
         addr = addr_info[4]  # ie: ('192.168.0.10', 10000)
         log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)} with {fast_open=}")
         if fast_open:
+            # fast-open: queue handshake, then open() triggers transmit
+            # sending ClientHello + websocket headers together
             protocol.connect(addr, transmit=False)
+            conn = protocol.open(host, port, path)
         else:
             protocol.connect(addr)
+        from xpra.scripts.main import CONNECT_TIMEOUT
         log("awaiting connected state")
         try:
-            if not fast_open:
-                await protocol.wait_connected()
-            else:
-                from xpra.scripts.main import CONNECT_TIMEOUT
-                tl.call_later(CONNECT_TIMEOUT, verify_connected, protocol)
-            log(f"{protocol}.open({host!r}, {port}, {path!r})")
-            conn = protocol.open(host, port, path)
-            log(f"quic connection {conn}")
-            return conn
+            # check for TLS errors that arrived before we started waiting
+            if protocol._tls_error:
+                raise protocol._tls_error
+            await asyncio.wait_for(protocol.wait_connected(), timeout=CONNECT_TIMEOUT)
+        except asyncio.TimeoutError:
+            # check if a TLS error was captured before the timeout
+            if protocol._tls_error:
+                exit_code, msg = format_tls_error(protocol._tls_error)
+                raise InitExit(exit_code, msg) from None
+            raise InitExit(ExitCode.CONNECTION_FAILED, "connection timed out") from None
         except Exception as e:
             log("connect()", exc_info=True)
-            # try to get a more meaningful exception message:
-            einfo = str(e)
-            if not einfo:
-                quic_conn = getattr(protocol, "_quic", None)
-                if quic_conn:
-                    close_event = getattr(quic_conn, "_close_event", None)
-                    log(f"{close_event=}, {dir(close_event)}")
-                    if close_event:
-                        err = close_event.error_code
-                        msg = close_event.reason_phrase
-                        if err & QuicErrorCode.CRYPTO_ERROR:
-                            raise InitExit(ExitCode.CONNECTION_FAILED, msg)
-                        # if (err & 0xFF)==QuicErrorCode.CONNECTION_REFUSED:
-                        #    raise InitExit(ExitCode.CONNECTION_FAILED, msg)
-                        raise RuntimeError(close_event.reason_phrase) from None
-            raise RuntimeError(str(e)) from None
+            # prefer the TLS error captured by datagram_received
+            if protocol._tls_error:
+                exit_code, msg = format_tls_error(protocol._tls_error)
+                raise InitExit(exit_code, msg) from None
+            # check for server-initiated CRYPTO_ERROR in the close event
+            close_event = getattr(protocol._quic, "_close_event", None)
+            if close_event:
+                err = close_event.error_code
+                msg = close_event.reason_phrase
+                if err & QuicErrorCode.CRYPTO_ERROR:
+                    raise InitExit(ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE,
+                                   msg or "SSL certificate verification rejected by server") from None
+                if msg:
+                    raise InitExit(ExitCode.CONNECTION_FAILED, msg) from None
+            exit_code, msg = format_tls_error(e)
+            raise InitExit(exit_code, msg) from None
+        if not fast_open:
+            log(f"{protocol}.open({host!r}, {port}, {path!r})")
+            conn = protocol.open(host, port, path)
+        log(f"websocket connection {conn}")
+        return conn
 
-    # protocol.close()
-    # await protocol.wait_closed()
-    # transport.close()
     if len(addresses) == 1:
         return tl.sync(connect, addresses[0])
 
@@ -423,6 +484,7 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
     raise InitExit(ExitCode.CONNECTION_FAILED, "failed to connect: " + csv(errors))
 
 
+
 def quic_connect(host: str, port: int, path: str, fast_open: bool,
                  ssl_cert: str, ssl_key: str, ssl_key_password: str,
                  ssl_ca_certs, ssl_server_verify_mode: str, ssl_server_name: str,
@@ -435,10 +497,3 @@ def quic_connect(host: str, port: int, path: str, fast_open: bool,
         return client_class(QuicConnection(configuration=configuration))
 
     return _quic_connect(create_protocol, host, port, path, fast_open)
-
-
-def verify_connected(protocol) -> None:
-    # this is only useful for debugging,
-    # as we have no way to send a message to the main thread,
-    # I guess it may still show up in some debug log?
-    log("verify_connect(%s) connected=%s", protocol, protocol._connected)
