@@ -162,5 +162,6 @@ def get_frame_info(ignore_threads: Sequence[Thread] = ()) -> dict[str | int, Any
             }
         del frames
     except Exception as e:
+        get_util_logger().debug("get_frame_info(%s)", ignore_threads, exc_info=True)
         get_util_logger().error("failed to get frame info: %s", e)
     return info
