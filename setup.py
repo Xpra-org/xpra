@@ -356,6 +356,7 @@ verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
 tests_ENABLED           = False
 rebuild_ENABLED         = not skip_build
+wireshark_ENABLED       = DEFAULT and POSIX and not OSX
 
 
 # allow some of these flags to be modified on the command line:
@@ -441,6 +442,7 @@ SWITCHES += [
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
     "win32_tools", "websockets_browser_cookie",
     "yaml",
+    "wireshark",
 ]
 SWITCHES = list(sorted(set(SWITCHES)))
 
@@ -2551,6 +2553,22 @@ else:
                 self.copytodir("fs/lib/systemd/system/xpra-encoder.socket", systemd_dir)
             if POSIX and dbus_ENABLED and proxy_ENABLED:
                 self.copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
+
+            if wireshark_ENABLED:
+                # figure out where to install it:
+                epan_dir = ""
+                for candidate in (
+                        "/usr/lib64/wireshark/plugins/*/epan",   # Fedora, RHEL
+                        "/usr/lib/*/wireshark/plugins/*/epan",   # Debian
+                        "/usr/lib64/wireshark/plugins",
+                        "/usr/lib/wireshark/plugins"
+                ):
+                    try:
+                        epan_dir = glob(candidate)[0]
+                        break
+                    except IndexError:
+                        continue
+                self.copytodir("fs/lib/wireshark/plugins/xpra_dissector.lua", epan_dir)
 
             if docs_ENABLED:
                 doc_dir = f"{self.actual_install_dir}/share/doc/xpra/"

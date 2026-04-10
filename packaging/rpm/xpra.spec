@@ -59,7 +59,7 @@ autoprov: no
 %endif
 
 %if 0%{?el10}
-%define DEFAULT_BUILD_ARGS --without-evdi --without-cuda_rebuild --with-qt6_client --with-tk_client --without-docs
+%define DEFAULT_BUILD_ARGS --without-evdi --without-cuda_rebuild --with-qt6_client --with-tk_client --without-docs --without-wireshark
 %define pyqt6 1
 %endif
 
@@ -152,6 +152,9 @@ Conflicts:			python3-xpra < 6
 Obsoletes:			python3-xpra < 6
 %if "%{package_prefix}"!="xpra"
 Provides:           xpra = %{version}-%{release}
+%endif
+%if !0%{?el10}
+BuildRequires:      wireshark-cli
 %endif
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -769,6 +772,9 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/http-headers/*
 %if 0%{?with_selinux}
 %{_datadir}/selinux/*/*.pp
+%endif
+%if !0%{?el10}
+%{_libdir}/wireshark/*
 %endif
 
 %files -n %{package_prefix}-common
