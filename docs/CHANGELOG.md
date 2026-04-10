@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5] 2026-04-08
+## [6.5] 2026-04-10
 * Platforms, build and packaging:
   * [use `wasapi2` on MS Windows](https://github.com/Xpra-org/xpra/issues/4735)
   * [support for Linux Mint in install scripts](https://github.com/Xpra-org/xpra/issues/4727)
@@ -23,7 +23,7 @@
   * [sigmoid upscaling and anti-ringing upscale shader](https://github.com/Xpra-org/xpra/pull/4826)
   * [MS Windows can use OpenGL for opaque-region-covered alpha windows](https://github.com/Xpra-org/xpra/pull/4821)
   * [fix `NV12` shader](https://github.com/Xpra-org/xpra/pull/4835)
-  * [support `YUV420P16` natively][https://github.com/Xpra-org/xpra/issues/4621]
+  * [support `YUV420P16` natively](https://github.com/Xpra-org/xpra/issues/4621)
   * [faster client startup with `opengl=nocheck`](https://github.com/Xpra-org/xpra/issues/4768)
 * Encodings:
   * [`MediaFoundation` hardware video decoder for MS Windows](https://github.com/Xpra-org/xpra/pull/4860)
@@ -34,6 +34,7 @@
   * [network diagnostics](https://github.com/Xpra-org/xpra/issues/4740)
   * [subsystems](https://github.com/Xpra-org/xpra/issues/3981)
 * Features:
+  * [wireshark dissector](https://github.com/Xpra-org/xpra/issues/1188)
   * [multiple content-types per window](https://github.com/Xpra-org/xpra/issues/4765)
   * [faster content-type detection](https://github.com/Xpra-org/xpra/issues/4818)
   * [content aware cairo upscaling filter](https://github.com/Xpra-org/xpra/pull/4806)
