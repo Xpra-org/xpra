@@ -2179,6 +2179,7 @@ if WIN32:
                 add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
                 add_gui_exe("packaging/MSWindows/tools/systemtray_test.py", "xpra.ico",         "SystemTray_Test")
                 add_gui_exe("xpra/gtk/dialogs/u2f_tool.py",     "authentication.ico", "U2F_Tool")
+                add_gui_exe("xpra/gtk/dialogs/fido2_tool.py", "authentication.ico", "Fido2_Tool")
             if client_ENABLED or server_ENABLED:
                 add_console_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_cmd")
                 add_gui_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_gui")
@@ -2251,6 +2252,7 @@ if WIN32:
     remove_packages(*external_excludes)
     external_includes += [
         "pyu2f",
+        "fido2",
         "mmap",
         "comtypes", "comtypes.stream",      # used by webcam, netdev_query, taskbar progress (file-transfers), etc
         "wmi", "win32com",
