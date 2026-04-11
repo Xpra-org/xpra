@@ -23,10 +23,9 @@ from xpra.scripts.main import (
     nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
     isdisplaytype,
     check_display,
-    find_session_by_name,
-    find_mode_pos,
-    strip_attach_extra_positional_args,
 )
+from xpra.scripts.picker import find_session_by_name
+from xpra.scripts.args import find_mode_pos, strip_attach_extra_positional_args
 from xpra.net.connect import connect_to, get_host_target_string
 
 
@@ -125,15 +124,16 @@ class TestMain(unittest.TestCase):
             try:
                 #silence errors since we're expecting them:
                 from xpra.scripts import main as xpra_main
-                saved_timeout = xpra_main.CONNECT_TIMEOUT
+                from xpra.net import connect as xpra_connect
+                saved_timeout = xpra_connect.CONNECT_TIMEOUT
                 saved_werr = xpra_main.werr
                 try:
-                    xpra_main.CONNECT_TIMEOUT = 5
+                    xpra_connect.CONNECT_TIMEOUT = 5
                     xpra_main.werr = noop
                     conn = connect_to(d, opts)
                 finally:
                     xpra_main.werr = saved_werr
-                    xpra_main.CONNECT_TIMEOUT = saved_timeout
+                    xpra_connect.CONNECT_TIMEOUT = saved_timeout
             except Exception:
                 #from xpra.util import get_util_logger
                 #get_util_logger().error("connect_to(%s, %s)", d, opts, exc_info=True)
