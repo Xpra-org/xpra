@@ -27,9 +27,7 @@ from collections.abc import Callable, Iterable
 from xpra.common import noerr, noop, may_show_progress, may_notify_client
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
-from xpra.util.str_fn import (
-    nonl, csv, print_nested_dict, sorted_nicely, bytestostr,
-)
+from xpra.util.str_fn import nonl, csv, print_nested_dict, sorted_nicely, bytestostr
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
 from xpra.util.parsing import (
     TRUE_OPTIONS, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS,
@@ -37,11 +35,7 @@ from xpra.util.parsing import (
     get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data,
 )
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
-from xpra.os_util import (
-    getuid, getgid, is_admin,
-    gi_import,
-    WIN32, OSX, POSIX
-)
+from xpra.os_util import getuid, getgid, is_admin, gi_import, WIN32, OSX, POSIX
 from xpra.util.io import load_binary_file, stderr_print, info, warn, error
 from xpra.util.system import is_Wayland, set_proc_title, is_systemd_pid1, stop_proc
 from xpra.scripts.parsing import (
@@ -66,7 +60,6 @@ from xpra.net.constants import SOCKET_TYPES, SocketState
 from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format
 from xpra.scripts.display import (
     stat_display_socket,
-    guess_display,
     x11_display_socket, get_xvfb_pid,
     get_display_pids,
     get_display_info, get_displays_info,
@@ -89,6 +82,7 @@ from xpra.scripts.args import (
     find_mode_pos,
 )
 from xpra.scripts.picker import (
+    pick_shadow_display,
     pick_display,
     do_pick_display,
     connect_or_fail,
@@ -606,11 +600,6 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
         return 128 + signal.SIGINT
 
 
-def is_terminal() -> bool:
-    from xpra.platform import is_terminal as ist
-    return ist()
-
-
 def DotXpra(*args, **kwargs):
     from xpra.platform import dotxpra
     return dotxpra.DotXpra(*args, **kwargs)
@@ -768,6 +757,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
             check_gtk_client()
         except InitExit as e:
             # the user likely called `xpra` from a non GUI session
+            from xpra.platform import is_terminal
             if is_terminal():
                 stderr_print("Error: cannot show the xpra gui")
                 stderr_print(f" {e}")
@@ -2174,19 +2164,6 @@ def run_splash(args) -> ExitValue:
     return splash.main(args)
 
 
-def pick_shadow_display(args, uid=getuid(), gid=getgid(), sessions_dir="") -> str:
-    if len(args) == 1 and args[0]:
-        if OSX or WIN32:
-            return args[0]
-        if args[0][0] == ":":
-            # display_name was provided:
-            return args[0]
-    if OSX or WIN32:
-        # no need for a specific display
-        return "Main"
-    return guess_display(None, uid, gid, sessions_dir)
-
-
 def start_macos_shadow(cmd, env, cwd) -> None:
     # launch the shadow server via launchctl,
     # so it can have GUI access:
@@ -2754,6 +2731,7 @@ def run_about() -> ExitValue:
     try:
         check_gtk_client()
     except InitExit:
+        from xpra.platform import is_terminal
         if is_terminal():
             from xpra.util.version import XPRA_VERSION
             from xpra.gtk.dialogs import about

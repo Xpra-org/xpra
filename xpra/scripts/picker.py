@@ -116,6 +116,21 @@ def pick_vnc_display(error_cb, vnc_arg: str) -> dict[str, Any]:
     return {}
 
 
+def pick_shadow_display(args, uid=getuid(), gid=getgid(), sessions_dir="") -> str:
+    from xpra.os_util import WIN32, OSX
+    if len(args) == 1 and args[0]:
+        if OSX or WIN32:
+            return args[0]
+        if args[0][0] == ":":
+            # display_name was provided:
+            return args[0]
+    if OSX or WIN32:
+        # no need for a specific display
+        return "Main"
+    from xpra.scripts.display import guess_display
+    return guess_display(None, uid, gid, sessions_dir)
+
+
 def pick_display(error_cb, opts, extra_args, cmdline: Sequence[str] = ()) -> dict[str, Any]:
     if len(extra_args) == 1 and extra_args[0].startswith("vnc"):
         vnc_display = pick_vnc_display(error_cb, extra_args[0])
