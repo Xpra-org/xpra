@@ -274,7 +274,7 @@ def set_server_features(opts, mode: str) -> None:
         features.ssh = features.gtk = features.tray = features.opengl = False
         features.bell = features.systray = False
     else:
-        if opts.backend == "x11" or mode in ("desktop", "monitor"):
+        if opts.backend == "x11" or mode in ("desktop", "monitor", "expand"):
             x11 = True
         elif mode == "shadow":
             x11 = POSIX
