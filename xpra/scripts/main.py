@@ -105,6 +105,49 @@ VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 LIST_REPROBE_TIMEOUT: int = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 SPLASH_EXIT_DELAY: int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 
+NO_NETWORK_SUBCOMMANDS = (
+    "sbom",
+    "splash", "root-size",
+    "list", "list-windows", "list-mdns", "mdns-gui",
+    "list-clients",
+    "list-sessions", "sessions", "displays",
+    "clean-displays", "clean-sockets", "clean",
+    "xwait", "xinfo", "wminfo", "wmname",
+    "xshm",
+    "desktop-greeter", "gui", "start-gui",
+    "docs", "documentation", "about", "html5",
+    "pinentry", "input_pass", "_dialog", "_pass",
+    "opengl", "opengl-probe", "opengl-test", "opengl-save",
+    "autostart",
+    "encoding", "video",
+    "nvinfo", "webcam",
+    "keyboard", "gtk-info", "gui-info", "network-info", "monitor-info",
+    "compression", "packet-encoding", "path-info",
+    "printing-info", "version-info", "version-check", "toolbox",
+    "initenv", "setup-ssl", "show-ssl",
+    "auth",
+    "notify",
+    "dbus-system-list", "dbus-session-list",
+    "applications-menu", "sessions-menu",
+    "_proxy",
+    "configure", "showconfig", "showsetting", "setting", "set", "unset",
+    "otp",
+    "wait-for-x11", "wait-for-wayland",
+    "xvfb-command", "xvfb",
+)
+STDOUT_SUBCOMMANDS = (
+    "attach", "listen", "launcher",
+    "sessions", "mdns-gui",
+    "bug-report", "session-info", "docs", "documentation", "about", "license",
+    "recover",
+    "splash", "qrcode",
+    "opengl-test",
+    "desktop-greeter",
+    "show-menu", "show-about", "show-session-info",
+    "webcam",
+    "showconfig",
+    "root-size",
+)
 
 # pylint: disable=import-outside-toplevel
 # noinspection PyBroadException
@@ -251,22 +294,7 @@ def clean_std_pipes() -> None:
 
 
 def configure_logging(options, mode: str) -> None:
-    if mode in (
-            "attach", "listen", "launcher",
-            "sessions", "mdns-gui",
-            "bug-report", "session-info", "docs", "documentation", "about", "license",
-            "recover",
-            "splash", "qrcode",
-            "opengl-test",
-            "desktop-greeter",
-            "show-menu", "show-about", "show-session-info",
-            "webcam",
-            "showconfig",
-            "root-size",
-    ):
-        to = sys.stdout
-    else:
-        to = sys.stderr
+    to = sys.stdout if mode in STDOUT_SUBCOMMANDS else sys.stderr
     # a bit naughty here, but it's easier to let xpra.log initialize
     # the logging system every time, and just undo things here..
     from xpra.log import (
@@ -531,36 +559,7 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
         return systemd_run_wrap(mode, argv, options.systemd_run_args, user=getuid() != 0)
     configure_env(options.env)
     configure_logging(options, mode)
-    if mode not in (
-            "sbom",
-            "splash", "root-size",
-            "list", "list-windows", "list-mdns", "mdns-gui",
-            "list-clients",
-            "list-sessions", "sessions", "displays",
-            "clean-displays", "clean-sockets", "clean",
-            "xwait", "xinfo", "wminfo", "wmname",
-            "xshm",
-            "desktop-greeter", "gui", "start-gui",
-            "docs", "documentation", "about", "html5",
-            "pinentry", "input_pass", "_dialog", "_pass",
-            "opengl", "opengl-probe", "opengl-test", "opengl-save",
-            "autostart",
-            "encoding", "video",
-            "nvinfo", "webcam",
-            "keyboard", "gtk-info", "gui-info", "network-info", "monitor-info",
-            "compression", "packet-encoding", "path-info",
-            "printing-info", "version-info", "version-check", "toolbox",
-            "initenv", "setup-ssl", "show-ssl",
-            "auth",
-            "notify",
-            "dbus-system-list", "dbus-session-list",
-            "applications-menu", "sessions-menu",
-            "_proxy",
-            "configure", "showconfig", "showsetting", "setting", "set", "unset",
-            "otp",
-            "wait-for-x11", "wait-for-wayland",
-            "xvfb-command", "xvfb",
-    ):
+    if mode not in NO_NETWORK_SUBCOMMANDS:
         configure_network(options)
         verify_gir()
 
