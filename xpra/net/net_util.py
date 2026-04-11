@@ -424,6 +424,12 @@ def get_network_caps(full_info: int = 1) -> dict[str, Any]:
         caps["flush"] = FLUSH_HEADER
     caps.update(get_compression_caps(full_info))
     caps.update(get_packet_encoding_caps(full_info))
+    try:
+        from xpra.net.quic.websocket import SUBSTREAM_PACKET_TYPES
+        if SUBSTREAM_PACKET_TYPES:
+            caps["quic.substreams"] = True
+    except ImportError:
+        pass
     return caps
 
 

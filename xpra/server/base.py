@@ -276,6 +276,11 @@ class ServerBase(ServerBaseClass):
         # use blocking sockets from now on:
         if not WIN32:
             set_socket_timeout(proto._conn, None)
+        # enable QUIC substreams if the client supports them:
+        conn = proto._conn
+        if c.boolget("quic.substreams") and hasattr(conn, "_use_substreams"):
+            conn._use_substreams = True
+            log.info("enabling QUIC substreams for this client")
 
         def drop_client(reason="unknown", *args) -> None:
             self.disconnect_client(proto, reason, *args)

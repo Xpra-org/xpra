@@ -34,6 +34,9 @@ class WebSocketProtocol(SocketProtocol):
         self._process_read = self.parse_ws_frame
         self.make_chunk_header: Callable = self.make_xpra_header
         self.make_frame_header: Callable = self.make_wsframe_header
+        # wire up raw substream delivery to bypass WS framing
+        if hasattr(self._conn, "_raw_read_cb"):
+            self._conn._raw_read_cb = self.substream_read_queue_put
 
     def __repr__(self):
         return f"WebSocket({self._conn})"

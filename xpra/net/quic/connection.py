@@ -1,16 +1,18 @@
 # This file is part of Xpra.
 # Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2026 Netflix, Inc.
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-from queue import SimpleQueue
+from queue import Empty, SimpleQueue
 from typing import Union, Any
 from collections.abc import Callable
 
 from aioquic import __version__ as aioquic_version
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
+from aioquic.h3.connection import StreamType
 from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
 from aioquic.quic.packet import QuicErrorCode
 
@@ -31,6 +33,12 @@ DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     ""
 ).split(",") if x.strip())
 
+# aioquic iterates _streams in dict insertion order with no priority
+# mechanism — the first stream gets full access to the congestion window.
+# This defines the send priority: types listed first get scheduled first.
+# Types not listed here (and the main WebSocket stream) are sent last.
+STREAM_PRIORITY = ("key", "pointer", "sound", "webcam", "draw")
+
 if envbool("XPRA_QUIC_LOGGER", True):
     override_aioquic_logger()
 
@@ -45,10 +53,18 @@ class XpraQuicConnection(Connection):
         self.socktype_wrapped = "quic"
         self.connection: HttpConnection = connection
         self.read_queue: SimpleQueue[bytes] = SimpleQueue()
+        self._raw_read_cb: Callable[[bytes, int], None] | None = None
         self.stream_id: int = stream_id
         self.transmit: Callable[[], None] = transmit
         self.accepted: bool = False
         self.closed: bool = False
+        # substream send infrastructure (configured by subclasses)
+        self._packet_type_streams: dict[str, int] = {}
+        self._substream_ids: set[int] = set()
+        self._pending_substreams: set[str] = set()
+        self._use_substreams: bool = False
+        self._substream_packet_types: tuple[str, ...] = ()
+        self._register_substream: Callable | None = None
 
     def __repr__(self):
         return f"XpraQuicConnection<{self.socktype}:{self.stream_id}>"
@@ -84,6 +100,20 @@ class XpraQuicConnection(Connection):
             self.read_queue.put(event.data)
         else:
             log.warn(f"Warning: unhandled websocket http event {event}")
+
+    def _close_dead_connection(self, reason: str = "write failed") -> None:
+        """Mark connection closed and unblock the read thread.
+
+        Called when a write to the QUIC stream fails, indicating the peer
+        is gone (e.g., SIGKILL). Putting empty bytes in the read queue
+        unblocks SocketProtocol's read thread, which triggers the full
+        xpra disconnect chain (stops audio sources, cleans up state).
+        """
+        if self.closed:
+            return
+        log.info("QUIC connection dead (%s): %s", reason, self)
+        self.closed = True
+        self.read_queue.put(b"")
 
     def close(self, code=QuicErrorCode.NO_ERROR, reason="closing") -> None:
         log(f"quic.close({code}, {reason})")
@@ -126,7 +156,7 @@ class XpraQuicConnection(Connection):
             log(f"sending {packet_type!r} using datagram")
             return len(buf)
         stream_id = self.get_packet_stream_id(packet_type)
-        log("quic.stream_write(%s, %s) using stream id %s", Ellipsizer(buf), packet_type, stream_id)
+        log("%s.stream_write(%s, %s) using stream id %s", self, Ellipsizer(buf), packet_type, stream_id)
 
         def do_write() -> None:
             if self.closed:
@@ -135,21 +165,181 @@ class XpraQuicConnection(Connection):
             try:
                 self.do_write(stream_id, data)
                 self.transmit()
-            except AssertionError:
+            except Exception:
                 if self.closed:
                     log(f"connection is already closed, packet {packet_type} dropped")
                     return
-                raise
+                log(f"write failed for {packet_type} on stream {stream_id}", exc_info=True)
+                self._close_dead_connection(f"write failed: {packet_type}")
 
         get_threaded_loop().call(do_write)
         return len(buf)
 
     def do_write(self, stream_id: int, data: bytes) -> None:
-        self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
+        # process any pending substream allocations (we're on the asyncio loop now)
+        if self._pending_substreams:
+            pending = list(self._pending_substreams)
+            self._pending_substreams.clear()
+            log(f"allocating pending substreams: {pending}")
+            for stream_type in pending:
+                self._allocate_substream(stream_type)
+        if stream_id in self._substream_ids:
+            # raw QUIC stream — strip WS frame header, bypass H3
+            # WS framing is always added by make_wsframe_header (format thread)
+            # and stripped here (asyncio thread) to avoid a race between the
+            # framing decision and stream routing across threads
+            data = self._strip_ws_header(data)
+            log(f"substream {stream_id}: writing {len(data)} bytes")
+            self.connection._quic.send_stream_data(stream_id=stream_id, data=data, end_stream=self.closed)
+        else:
+            # main WebSocket stream — use H3 DATA frames
+            self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
 
     def get_packet_stream_id(self, packet_type: str) -> int:
+        if self.closed or not self._use_substreams or not packet_type:
+            return self.stream_id
+        if not any(packet_type.startswith(x) for x in self._substream_packet_types):
+            return self.stream_id
+        # ie: "sound-data" -> "sound", "key-action" -> "key"
+        stream_type = packet_type.split("-", 1)[0]
+        stream_id = self._packet_type_streams.get(stream_type)
+        if stream_id is not None:
+            # already allocated substream:
+            return stream_id
+        # reserve the stream type so we don't retry on the next packet;
+        # actual allocation happens on the asyncio loop in _allocate_substream()
+        self._packet_type_streams[stream_type] = self.stream_id
+        self._pending_substreams.add(stream_type)
         return self.stream_id
+
+    def _allocate_substream(self, stream_type: str) -> None:
+        """Allocate a raw QUIC stream for a packet type. Must run on the asyncio loop."""
+        log(f"_allocate_substream({stream_type!r})")
+        quic = self.connection._quic
+        try:
+            stream_id = quic.get_next_available_stream_id()
+        except Exception:
+            log(f"unable to allocate new stream-id for {stream_type!r}", exc_info=True)
+            log.warn(f"Warning: unable to allocate a new stream-id for {stream_type!r}")
+            self._use_substreams = False
+            return
+        # send type prefix as first bytes (QUIC guarantees in-order per-stream)
+        header = f"xpra:{stream_type}\n".encode()
+        log(f"sending substream header on stream {stream_id}: {header!r}")
+        quic.send_stream_data(stream_id, header)
+        self._substream_ids.add(stream_id)
+        self._packet_type_streams[stream_type] = stream_id
+        log.info(f"new substream {stream_id} for {stream_type!r}")
+        if self._register_substream:
+            self._register_substream(stream_id, self)
+        try:
+            self._prioritize_streams()
+        except Exception:
+            log.warn("Warning: failed to prioritize QUIC streams", exc_info=True)
+
+    def _prioritize_streams(self) -> None:
+        """Reorder aioquic's internal stream dict so realtime streams are sent first.
+
+        aioquic's _write_application iterates _streams in dict insertion order
+        and gives each stream access to the congestion window in that order.
+        The first stream can consume the entire window, starving later ones.
+
+        Order after reordering:
+          1. Main/control streams (non-substream) — always first
+          2. Substreams in STREAM_PRIORITY order (input, audio, video)
+        """
+        quic = getattr(self.connection, "_quic", None)
+        if not quic:
+            return
+        streams = quic._streams
+        if not streams:
+            return
+
+        # map substream stream_ids to their priority index
+        type_priority = {}
+        for stream_type, sid in self._packet_type_streams.items():
+            if sid in self._substream_ids:
+                try:
+                    type_priority[sid] = STREAM_PRIORITY.index(stream_type)
+                except ValueError:
+                    type_priority[sid] = len(STREAM_PRIORITY)
+
+        # sort: non-substream entries first (main WebSocket stream, H3 control)
+        # so control packets always have priority, then substreams by STREAM_PRIORITY
+        def sort_key(item):
+            sid = item[0]
+            if sid not in type_priority:
+                return -1   # main/control streams first
+            return type_priority[sid]
+
+        sorted_items = sorted(streams.items(), key=sort_key)
+        streams.clear()
+        streams.update(sorted_items)
+        # log the reordered stream IDs with their type names for debugging
+        sid_to_type = {v: k for k, v in self._packet_type_streams.items() if v in self._substream_ids}
+        h3 = self.connection
+        # discover H3's named stream ID attributes (e.g. _local_control_stream_id)
+        h3_labels = {}
+        try:
+            for attr in dir(h3):
+                if attr.endswith("_stream_id") and attr.startswith("_"):
+                    val = getattr(h3, attr, None)
+                    if isinstance(val, int):
+                        # "_local_control_stream_id" -> "local-control"
+                        h3_labels[val] = attr[1:].removesuffix("_stream_id").replace("_", "-")
+        except Exception:
+            pass
+        h3_streams = getattr(h3, "_stream", {})
+        def label(sid):
+            if sid in sid_to_type:
+                return sid_to_type[sid]
+            if sid == self.stream_id:
+                return "websocket"
+            if sid in h3_labels:
+                return h3_labels[sid]
+            h3s = h3_streams.get(sid)
+            if h3s and h3s.stream_type is not None:
+                try:
+                    return StreamType(h3s.stream_type).name.lower()
+                except ValueError:
+                    return f"h3-{h3s.stream_type}"
+            return f"quic-{sid}"
+        order = [(sid, label(sid)) for sid, _ in sorted_items]
+        log.info("QUIC stream send priority: %s", order)
+
+    @staticmethod
+    def _strip_ws_header(data: bytes) -> bytes:
+        """Strip the WebSocket binary frame header from data."""
+        if len(data) < 2 or data[0] != 0x82:
+            return data
+        length_byte = data[1] & 0x7F
+        if length_byte <= 125:
+            return data[2:]
+        if length_byte == 126:
+            return data[4:]
+        # length_byte == 127
+        return data[10:]
+
+    def put_raw_substream_data(self, data: bytes, stream_id: int = 1) -> None:
+        """Deliver substream data directly to the xpra packet parser, bypassing WebSocket framing."""
+        log(f"put_raw_substream_data: {len(data)} bytes on stream {stream_id}")
+        if self._raw_read_cb:
+            self._raw_read_cb(data, stream_id)
+        else:
+            log.warn("Warning: raw substream data received but no parser callback set")
+
+    # check for closed connection every READ_TIMEOUT seconds
+    READ_TIMEOUT = 60
 
     def read(self, n: int) -> bytes:
         log("quic.read(%s)", n)
-        return self.read_queue.get()
+        while not self.closed:
+            try:
+                return self.read_queue.get(timeout=self.READ_TIMEOUT)
+            except Empty:
+                continue
+        # drain any remaining data before signaling EOF
+        try:
+            return self.read_queue.get_nowait()
+        except Empty:
+            return b""

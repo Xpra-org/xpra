@@ -1,10 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2026 Netflix, Inc.
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import re
 import os
+import asyncio
 import socket
 import ipaddress
 from queue import SimpleQueue
@@ -12,7 +14,8 @@ from typing import Union, cast
 from collections.abc import Callable
 
 from aioquic.quic.configuration import QuicConfiguration
-from aioquic.quic.events import QuicEvent
+from aioquic.quic.connection import stream_is_client_initiated, stream_is_unidirectional
+from aioquic.quic.events import QuicEvent, StreamDataReceived
 from aioquic.quic.packet import QuicErrorCode
 from aioquic.h3.connection import H3_ALPN
 from aioquic.h0.connection import H0Connection
@@ -21,7 +24,6 @@ from aioquic.h3.events import (
     DataReceived,
     H3Event,
     HeadersReceived,
-    PushPromiseReceived,
     WebTransportStreamDataReceived,
 )
 from aioquic.quic.connection import QuicConnection
@@ -44,6 +46,28 @@ log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
 
+
+def format_tls_error(exc: Exception) -> tuple[int, str]:
+    """Map a TLS/OpenSSL exception to (ExitCode, user-friendly message)."""
+    try:
+        from OpenSSL.crypto import Error as OpenSSLError
+    except ImportError:
+        OpenSSLError = None
+    if OpenSSLError and isinstance(exc, OpenSSLError):
+        # OpenSSL errors are lists of (lib, func, reason) tuples
+        reasons = " ".join(r[2] for r in exc.args[0] if r[2]).strip()
+        if "no such file" in reasons:
+            return ExitCode.SSL_FAILURE, f"SSL CA certificate file not found: {reasons}"
+        if "hostname mismatch" in reasons:
+            return ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE, f"SSL certificate hostname mismatch: {reasons}"
+        if "certificate verify failed" in reasons:
+            return ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE, f"SSL certificate verify failed: {reasons}"
+        return ExitCode.SSL_FAILURE, f"SSL error: {reasons}"
+    msg = str(exc)
+    if not msg or msg == str(type(exc)):
+        return ExitCode.SSL_FAILURE, "SSL handshake failed"
+    return ExitCode.SSL_FAILURE, f"SSL handshake failed: {msg}"
+
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 HOSTS_PREFER_IPV4 = os.environ.get("XPRA_HOSTS_PREFER_IPV4", "localhost,127.0.0.1").split(",")
@@ -65,13 +89,45 @@ WT_HEADERS: dict[str, str] = {
     "user-agent": USER_AGENT,
 }
 
+# route these client->server packet type prefixes to independent QUIC streams
+CLIENT_SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
+    "XPRA_QUIC_CLIENT_SUBSTREAM_PACKET_TYPES",
+    "key-,pointer"
+).split(",") if x.strip())
+
 
 class ClientWebSocketConnection(XpraQuicConnection):
 
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
-                 host: str, port: int, info=None, options=None):
+                 host: str, port: int, info=None, options=None,
+                 register_substream: Callable | None = None):
         super().__init__(connection, stream_id, transmit, host, port, "wss", info, options)
         self.write_buffer = SimpleQueue()
+        # configure client-specific substream packet types
+        self._substream_packet_types = CLIENT_SUBSTREAM_PACKET_TYPES
+        self._register_substream = register_substream
+
+    def enable_substreams(self) -> None:
+        """Enable client->server substreams. Called after server hello confirms support."""
+        if self._substream_packet_types:
+            self._use_substreams = True
+            log.info("enabling client->server QUIC substreams for: %s",
+                     ", ".join(self._substream_packet_types))
+            # pre-allocate streams so the first keystroke/mouse move has no setup delay
+            for prefix in self._substream_packet_types:
+                stream_type = prefix.rstrip("-")
+                self._packet_type_streams[stream_type] = self.stream_id
+                self._pending_substreams.add(stream_type)
+
+            def allocate_pending():
+                if self._pending_substreams:
+                    pending = list(self._pending_substreams)
+                    self._pending_substreams.clear()
+                    for st in pending:
+                        self._allocate_substream(st)
+                    self.transmit()
+
+            get_threaded_loop().call(allocate_pending)
 
     def flush_writes(self) -> None:
         # flush the buffered writes:
@@ -105,10 +161,6 @@ class ClientWebSocketConnection(XpraQuicConnection):
                         return
                     self.accepted = True
                     self.flush_writes()
-            return
-        if isinstance(event, PushPromiseReceived):
-            log(f"PushPromiseReceived: {event}")
-            log(f"PushPromiseReceived headers: {event.headers}")
             return
         super().http_event_received(event)
 
@@ -189,18 +241,38 @@ class WebSocketClient(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._http: HttpConnection | None = None
-        self._push_types: dict[str, int] = {}
         self._websockets: dict[int, ClientWebSocketConnection] = {}
+        self._substream_map: dict[int, ClientWebSocketConnection] = {}
+        self._substream_buffers: dict[int, bytes] = {}
+        self._tls_error: Exception | None = None
         if self._quic.configuration.alpn_protocols[0].startswith("hq-"):
             self._http = H0Connection(self._quic)
         else:
             self._http = H3Connection(self._quic)
 
+    def datagram_received(self, data, addr) -> None:
+        try:
+            super().datagram_received(data, addr)
+        except Exception as e:
+            log("datagram_received TLS error", exc_info=True)
+            self._tls_error = e
+            # resolve the connected waiter so we don't hang until timeout
+            if self._connected_waiter is not None:
+                waiter = self._connected_waiter
+                self._connected_waiter = None
+                waiter.set_exception(e)
+
+    def register_substream(self, stream_id: int, handler: ClientWebSocketConnection) -> None:
+        """Register a client-initiated substream so it bypasses H3 processing."""
+        log(f"register_substream({stream_id}, {handler})")
+        self._substream_map[stream_id] = handler
+
     def open(self, host: str, port: int, path: str) -> ClientWebSocketConnection:
         log(f"open({host}, {port}, {path})")
         stream_id = self._quic.get_next_available_stream_id()
         websocket = ClientWebSocketConnection(self._http, stream_id, self.transmit,
-                                              host, port)
+                                              host, port,
+                                              register_substream=self.register_substream)
         self._websockets[stream_id] = websocket
         headers = {
             ":authority": host,
@@ -212,33 +284,62 @@ class WebSocketClient(QuicConnectionProtocol):
         self.transmit()
         return websocket
 
+    def _is_server_bidirectional(self, stream_id: int) -> bool:
+        return not stream_is_client_initiated(stream_id) and not stream_is_unidirectional(stream_id)
+
+    def _handle_substream_data(self, event: StreamDataReceived) -> bool:
+        stream_id = event.stream_id
+        # already-registered substream: route directly
+        websocket = self._substream_map.get(stream_id)
+        if websocket:
+            log(f"substream {stream_id}: {len(event.data)} bytes")
+            websocket.put_raw_substream_data(event.data, stream_id)
+            return True
+        # only intercept server-initiated bidirectional streams
+        # (server-initiated unidirectional streams are used by H3 internally)
+        if not self._is_server_bidirectional(stream_id):
+            return False
+        # accumulate until we see the type prefix header ("xpra:<type>\n")
+        buf = self._substream_buffers.get(stream_id, b"") + event.data
+        if b"\n" not in buf:
+            log(f"substream {stream_id}: buffering {len(buf)} bytes, waiting for header")
+            self._substream_buffers[stream_id] = buf
+            return True
+        header, remainder = buf.split(b"\n", 1)
+        self._substream_buffers.pop(stream_id, None)
+        header_str = header.decode()
+        if not header_str.startswith("xpra:"):
+            log.warn(f"Warning: unexpected substream header on stream {stream_id}: {header_str!r}")
+            return False
+        stream_type = header_str[5:]  # strip "xpra:" prefix
+        # find parent websocket (there's only one per connection in practice)
+        websocket = next(iter(self._websockets.values()), None)
+        if not websocket:
+            log.warn(f"Warning: no websocket for substream {stream_id}")
+            return True
+        self._substream_map[stream_id] = websocket
+        log.info(f"new substream {stream_id} for {stream_type!r} packets")
+        if remainder:
+            log(f"substream {stream_id}: delivering {len(remainder)} bytes after header")
+            websocket.put_raw_substream_data(remainder, stream_id)
+        return True
+
     def quic_event_received(self, event: QuicEvent) -> None:
+        # route raw QUIC substreams directly, bypassing H3
+        if isinstance(event, StreamDataReceived) and self._handle_substream_data(event):
+            return
         for http_event in self._http.handle_event(event):
             self.http_event_received(http_event)
 
     def http_event_received(self, event: H3Event) -> None:
-        if not isinstance(event, (HeadersReceived, DataReceived, PushPromiseReceived)):
+        if not isinstance(event, (HeadersReceived, DataReceived)):
             log.warn(f"Warning: unexpected http event type: {event}")
             return
         stream_id = event.stream_id
         websocket: ClientWebSocketConnection | None = self._websockets.get(stream_id)
         if not websocket:
-            # perhaps this is a new substream?
-            sub = -1
-            hdict = {}
-            if isinstance(event, HeadersReceived):
-                hdict = {k.decode(): v.decode() for k, v in event.headers}
-                sub = int(hdict.get("substream", -1))
-            if sub < 0:
-                log.warn(f"Warning: unexpected websocket stream id: {stream_id} in {event}")
-                return
-            websocket = self._websockets.get(sub)
-            if not websocket:
-                log.warn(f"Warning: stream {sub} not found in {self._websockets}")
-                return
-            subtype = hdict.get("stream-type")
-            log.info(f"new quic substream {stream_id} for {subtype} packets")
-            self._websockets[stream_id] = websocket
+            log.warn(f"Warning: unexpected websocket stream id: {stream_id} in {event}")
+            return
         websocket.http_event_received(event)
 
 
@@ -303,6 +404,31 @@ def _make_quic_configuration(ssl_cert: str, ssl_key: str, ssl_key_password: str,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
     )
     configuration.verify_mode = parse_ssl_verify_mode(ssl_server_verify_mode)
+    if not ssl_ca_certs or ssl_ca_certs == "default":
+        # "default" means "use OS cert store" — handled by ssl.load_default_certs()
+        # for TCP+SSL, but aioquic uses pyOpenSSL which has no equivalent.
+        # Find the CA bundle ourselves instead.
+        # certifi.where() may return a stale build-time path in cx_Freeze frozen
+        # builds, so also check relative to the executable.
+        ssl_ca_certs = ""
+        ca_candidates = []
+        try:
+            import certifi
+            ca_candidates.append(certifi.where())
+        except ImportError:
+            pass
+        # frozen build: cacert.pem is next to the executable in lib/certifi/
+        import sys
+        exe_dir = os.path.dirname(getattr(sys, "executable", ""))
+        if exe_dir:
+            ca_candidates.append(os.path.join(exe_dir, "lib", "certifi", "cacert.pem"))
+        for ca_path in ca_candidates:
+            if ca_path and os.path.exists(ca_path):
+                ssl_ca_certs = ca_path
+                log(f"using CA bundle: {ssl_ca_certs}")
+                break
+        else:
+            log("no CA bundle found, certificate verification may fail")
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:
@@ -334,46 +460,53 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
         sock, local_addr = create_local_socket(af)
         transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
         log(f"{transport=}, {protocol=}")
-        protocol = cast(QuicConnectionProtocol, protocol)
+        protocol = cast(WebSocketClient, protocol)
         addr = addr_info[4]  # ie: ('192.168.0.10', 10000)
         log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)} with {fast_open=}")
         if fast_open:
+            # fast-open: queue handshake, then open() triggers transmit
+            # sending ClientHello + websocket headers together
             protocol.connect(addr, transmit=False)
+            conn = protocol.open(host, port, path)
         else:
             protocol.connect(addr)
+        from xpra.scripts.main import CONNECT_TIMEOUT
         log("awaiting connected state")
         try:
-            if not fast_open:
-                await protocol.wait_connected()
-            else:
-                from xpra.scripts.main import CONNECT_TIMEOUT
-                tl.call_later(CONNECT_TIMEOUT, verify_connected, protocol)
-            log(f"{protocol}.open({host!r}, {port}, {path!r})")
-            conn = protocol.open(host, port, path)
-            log(f"quic connection {conn}")
-            return conn
+            # check for TLS errors that arrived before we started waiting
+            if protocol._tls_error:
+                raise protocol._tls_error
+            await asyncio.wait_for(protocol.wait_connected(), timeout=CONNECT_TIMEOUT)
+        except asyncio.TimeoutError:
+            # check if a TLS error was captured before the timeout
+            if protocol._tls_error:
+                exit_code, msg = format_tls_error(protocol._tls_error)
+                raise InitExit(exit_code, msg) from None
+            raise InitExit(ExitCode.CONNECTION_FAILED, "connection timed out") from None
         except Exception as e:
             log("connect()", exc_info=True)
-            # try to get a more meaningful exception message:
-            einfo = str(e)
-            if not einfo:
-                quic_conn = getattr(protocol, "_quic", None)
-                if quic_conn:
-                    close_event = getattr(quic_conn, "_close_event", None)
-                    log(f"{close_event=}, {dir(close_event)}")
-                    if close_event:
-                        err = close_event.error_code
-                        msg = close_event.reason_phrase
-                        if err & QuicErrorCode.CRYPTO_ERROR:
-                            raise InitExit(ExitCode.CONNECTION_FAILED, msg)
-                        # if (err & 0xFF)==QuicErrorCode.CONNECTION_REFUSED:
-                        #    raise InitExit(ExitCode.CONNECTION_FAILED, msg)
-                        raise RuntimeError(close_event.reason_phrase) from None
-            raise RuntimeError(str(e)) from None
+            # prefer the TLS error captured by datagram_received
+            if protocol._tls_error:
+                exit_code, msg = format_tls_error(protocol._tls_error)
+                raise InitExit(exit_code, msg) from None
+            # check for server-initiated CRYPTO_ERROR in the close event
+            close_event = getattr(protocol._quic, "_close_event", None)
+            if close_event:
+                err = close_event.error_code
+                msg = close_event.reason_phrase
+                if err & QuicErrorCode.CRYPTO_ERROR:
+                    raise InitExit(ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE,
+                                   msg or "SSL certificate verification rejected by server") from None
+                if msg:
+                    raise InitExit(ExitCode.CONNECTION_FAILED, msg) from None
+            exit_code, msg = format_tls_error(e)
+            raise InitExit(exit_code, msg) from None
+        if not fast_open:
+            log(f"{protocol}.open({host!r}, {port}, {path!r})")
+            conn = protocol.open(host, port, path)
+        log(f"websocket connection {conn}")
+        return conn
 
-    # protocol.close()
-    # await protocol.wait_closed()
-    # transport.close()
     if len(addresses) == 1:
         return tl.sync(connect, addresses[0])
 
@@ -389,6 +522,7 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
     raise InitExit(ExitCode.CONNECTION_FAILED, "failed to connect: " + csv(errors))
 
 
+
 def quic_connect(host: str, port: int, path: str, fast_open: bool,
                  ssl_cert: str, ssl_key: str, ssl_key_password: str,
                  ssl_ca_certs, ssl_server_verify_mode: str, ssl_server_name: str,
@@ -401,10 +535,3 @@ def quic_connect(host: str, port: int, path: str, fast_open: bool,
         return client_class(QuicConnection(configuration=configuration))
 
     return _quic_connect(create_protocol, host, port, path, fast_open)
-
-
-def verify_connected(protocol) -> None:
-    # this is only useful for debugging,
-    # as we have no way to send a message to the main thread,
-    # I guess it may still show up in some debug log?
-    log("verify_connect(%s) connected=%s", protocol, protocol._connected)
