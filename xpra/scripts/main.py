@@ -29,7 +29,7 @@ from xpra.common import noerr, noop, may_show_progress, may_notify_client
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import (
-    nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr,
+    nonl, csv, print_nested_dict, sorted_nicely, bytestostr,
     sort_human, is_valid_hostname,
 )
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
@@ -37,12 +37,12 @@ from xpra.util.parsing import parse_scaling, TRUE_OPTIONS, FALSE_OPTIONS, ALL_BO
     parse_bool_or, get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
-    getuid, getgid, get_username_for_uid, force_quit, is_admin,
+    getuid, getgid, get_username_for_uid, is_admin,
     gi_import,
     WIN32, OSX, POSIX
 )
-from xpra.util.io import load_binary_file, stderr_print, use_tty, info, warn, error
-from xpra.util.system import is_Wayland, SIGNAMES, set_proc_title, is_systemd_pid1, stop_proc
+from xpra.util.io import load_binary_file, stderr_print, info, warn, error
+from xpra.util.system import is_Wayland, set_proc_title, is_systemd_pid1, stop_proc
 from xpra.scripts.parsing import (
     get_usage,
     parse_display_name, parse_env,
@@ -70,6 +70,10 @@ from xpra.scripts.display import (
     x11_display_socket, get_xvfb_pid,
     get_display_pids,
     get_display_info, get_displays_info,
+)
+from xpra.scripts.glprobe import (
+    run_opengl_probe, save_opengl_probe,
+    run_glprobe, run_glcheck, run_glsaveprobe,
 )
 
 assert callable(error), "used by modules importing this function from here"
@@ -1914,101 +1918,6 @@ def make_progress_process(title="Xpra") -> Popen | None:
     return progress_process
 
 
-def run_opengl_probe() -> tuple[str, dict]:
-    log = Logger("opengl")
-    if not find_spec("OpenGL"):
-        log("OpenGL module not found!")
-        error = "missing OpenGL module"
-        return f"error:{error}", {
-            "error": error,
-            "success": False,
-        }
-    from xpra.platform.paths import get_nodock_command
-    from xpra.net.subprocess_wrapper import exec_kwargs
-    cmd = get_nodock_command() + ["opengl"]
-    env = get_exec_env()
-    if is_debug_enabled("opengl"):
-        cmd += ["-d", "opengl"]
-    else:
-        env["NOTTY"] = "1"
-    env["XPRA_HIDE_DOCK"] = "1"
-    env["XPRA_REDIRECT_OUTPUT"] = "0"
-    start = monotonic()
-    kwargs = exec_kwargs(stderr=PIPE)
-    log(f"run_opengl_probe() using cmd={cmd} with env={env=} and {kwargs=}")
-    try:
-        proc = Popen(cmd, stdout=PIPE, env=env, universal_newlines=True, **kwargs)
-    except Exception as e:
-        log.warn("Warning: failed to execute OpenGL probe command")
-        log.warn(" %s", e)
-        return "failed", {"message": str(e).replace("\n", " ")}
-    try:
-        stdout, stderr = proc.communicate(timeout=OPENGL_PROBE_TIMEOUT)
-        r = proc.returncode
-    except TimeoutExpired:
-        log("opengl probe command timed out")
-        proc.kill()
-        stdout, stderr = proc.communicate()
-        r = None
-    log("xpra opengl stdout:")
-    for line in stdout.splitlines():
-        log(" %s", line)
-    log("xpra opengl stderr:")
-    for line in stderr.splitlines():
-        log(" %s", line)
-    log("OpenGL probe command returned %s for command=%s", r, cmd)
-    end = monotonic()
-    log("probe took %ims", 1000 * (end - start))
-    props = {}
-    for line in stdout.splitlines():
-        parts = line.split("=", 1)
-        if len(parts) == 2:
-            key = parts[0]
-            value = parts[1]
-            if key.find("-size") > 0:
-                try:
-                    value = int(value)
-                except ValueError:
-                    pass
-            if key.endswith("-dims"):
-                try:
-                    value = tuple(int(item.strip(" ")) for item in value.split(","))
-                except ValueError:
-                    pass
-            elif value in ("True", "False"):
-                value = value == "True"
-            props[key] = value
-    log("parsed OpenGL properties=%s", props)
-
-    def probe_message() -> str:
-        tdprops = typedict(props)
-        err = tdprops.strget("error")
-        msg = tdprops.strget("message")
-        warning = tdprops.strget("warning").split(":")[0]
-        if err:
-            return f"error:{err}"
-        if r == 1:
-            return "crash"
-        if r is None:
-            return "timeout"
-        if r > 128:
-            return "failed:%s" % SIGNAMES.get(r - 128)
-        if r != 0:
-            return "failed:%s" % SIGNAMES.get(0 - r, 0 - r)
-        if not tdprops.boolget("success", False):
-            return "error:%s" % (err or msg or warning)
-        if not tdprops.boolget("safe", False):
-            return "warning:%s" % (err or msg)
-        if not tdprops.boolget("enable", True):
-            return f"disabled:{msg}"
-        return "success"
-
-    # log.warn("Warning: OpenGL probe failed: %s", msg)
-    message = probe_message()
-    log(f"probe_message()={message!r}")
-    return message, props
-
-
 def _monitors_args(args: list[str]) -> tuple[str, str]:
     from xpra.log import consume_verbose_argv
     consume_verbose_argv(args, "screen", "randr")
@@ -2759,129 +2668,6 @@ def run_qrcode(args) -> ExitValue:
 def run_splash(args) -> ExitValue:
     from xpra.gtk.dialogs import splash
     return splash.main(args)
-
-
-def run_glprobe(opts, show=False) -> ExitValue:
-    if show:
-        from xpra.platform.gui import init, set_default_icon
-        set_default_icon("opengl.png")
-        init()
-    import signal
-
-    def signal_handler(signum, _frame) -> NoReturn:
-        force_quit(128 - signum)
-
-    for name in ("ABRT", "BUS", "FPE", "HUP", "ILL", "INT", "PIPE", "SEGV", "TERM"):
-        value = getattr(signal, f"SIG{name}", 0)
-        if value:
-            signal.signal(value, signal_handler)
-
-    props = do_run_glcheck(opts, show)
-    if not props.get("success", False):
-        return ExitCode.FAILURE
-    if not props.get("safe", False):
-        return ExitCode.OPENGL_UNSAFE
-    return ExitCode.OK
-
-
-def do_run_glcheck(opts, show=False) -> dict[str, Any]:
-    # suspend all logging:
-    saved_level = None
-    log = Logger("opengl")
-    log(f"do_run_glcheck(.., {show})")
-    if not is_debug_enabled("opengl") or not use_tty():
-        saved_level = logging.root.getEffectiveLevel()
-        logging.root.setLevel(logging.WARN)
-    try:
-        from xpra.opengl.window import get_gl_client_window_module, test_gl_client_window
-        opengl_str = (opts.opengl or "").lower()
-        opengl_props, gl_client_window_module = get_gl_client_window_module(opengl_str)
-        log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
-        if gl_client_window_module and (opengl_props.get("safe", False) or opengl_str.startswith("force")):
-            gl_client_window_class = gl_client_window_module.GLClientWindow
-            pixel_depth = int(opts.pixel_depth)
-            log("do_run_glcheck() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
-            if pixel_depth not in (0, 16, 24, 30) and pixel_depth < 32:
-                pixel_depth = 0
-            draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=show)
-            log(f"draw result={draw_result}")
-            opengl_props.update(draw_result)
-            if not draw_result.get("success", False):
-                opengl_props["safe"] = False
-        log("do_run_glcheck(.., %s)=%s", show, opengl_props)
-        return opengl_props
-    except Exception as e:
-        if is_debug_enabled("opengl"):
-            log("do_run_glcheck(..)", exc_info=True)
-        if use_tty():
-            stderr_print(f"error={e!r}")
-        return {
-            "success": False,
-            "message": str(e).replace("\n", " "),
-        }
-    finally:
-        if saved_level is not None:
-            logging.root.setLevel(saved_level)
-
-
-def run_glcheck(opts) -> ExitValue:
-    # cheap easy check first:
-    log = Logger("opengl")
-    if not find_spec("OpenGL"):
-        log("OpenGL module not found!")
-        props = {
-            "error": "missing OpenGL module",
-            "success": False,
-        }
-    else:
-        check_gtk_client()
-        if POSIX and not OSX and not is_Wayland():
-            log("forcing x11 Gdk backend")
-            with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
-                try:
-                    from xpra.x11.gtk.display_source import init_gdk_display_source
-                    init_gdk_display_source()
-                except ImportError as e:
-                    log(f"no bindings x11 bindings: {e}")
-                except Exception:
-                    log("error initializing gdk display source", exc_info=True)
-        try:
-            props = do_run_glcheck(opts)
-        except Exception as e:
-            props = {
-                "error": str(e).replace("\n", " "),
-                "success": False,
-            }
-    log("run_glcheck(..) props=%s", props)
-    for k in sorted(props.keys()):
-        v = props[k]
-        # skip not human readable:
-        if k not in ("extensions", "glconfig", "GLU.extensions",):
-            vstr = str(v)
-            try:
-                if k.endswith("dims"):
-                    vstr = csv(v)
-                else:
-                    vstr = pver(v)
-            except ValueError:
-                pass
-            sys.stdout.write("%s=%s\n" % (k, vstr))
-    sys.stdout.flush()
-    return 0
-
-
-def run_glsaveprobe() -> ExitValue:
-    probe_info = run_opengl_probe()[1]
-    glinfo = typedict(probe_info)
-    safe = glinfo.boolget("safe", False)
-    save_opengl_probe(safe)
-    print(f"saved opengl={safe} in ")
-    return 0
-
-
-def save_opengl_probe(result: bool) -> None:
-    from xpra.util.config import save_user_config_file, CONFIGURE_TOOL_CONFIG
-    save_user_config_file({"opengl": result}, filename=CONFIGURE_TOOL_CONFIG)
 
 
 def pick_shadow_display(args, uid=getuid(), gid=getgid(), sessions_dir="") -> str:

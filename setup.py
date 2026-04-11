@@ -1176,7 +1176,7 @@ def toggle_packages(enabled: bool, *module_names: str) -> None:
 # always included:
 if modules_ENABLED:
     add_packages("xpra.util", "xpra.net")
-    add_modules("xpra", "xpra.platform", "xpra.scripts.display", "xpra.scripts.main")
+    add_modules("xpra", "xpra.platform", "xpra.scripts.display", "xpra.scripts.glprobe", "xpra.scripts.main")
 
 
 #*******************************************************************************
