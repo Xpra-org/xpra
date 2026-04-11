@@ -11,7 +11,6 @@ import os.path
 import time
 import logging
 from time import monotonic
-from importlib import import_module
 from importlib.util import find_spec
 from collections.abc import Sequence
 
@@ -23,6 +22,7 @@ from typing import Any, NoReturn
 from collections.abc import Callable, Iterable
 
 from xpra.common import noerr, noop, may_show_progress, may_notify_client
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import csv, print_nested_dict, sorted_nicely, bytestostr
@@ -827,6 +827,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         return run_glsaveprobe()
     if mode == "example":
         check_gtk_client()
+        from xpra.gtk.examples.run import run_example
         return run_example(args)
     if mode == "autostart":
         return run_autostart(script_file, args)
@@ -901,6 +902,8 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         from xpra.gtk.dialogs import toolbox
         return toolbox.main(args)
     if mode == "initenv":
+        if not BACKWARDS_COMPATIBLE:
+            raise InitExit(ExitCode.UNSUPPORTED, "initenv is no longer supported")
         # legacy subcommand should be removed in v7
         if not POSIX:
             raise InitExit(ExitCode.UNSUPPORTED, "initenv is not supported on this OS")
@@ -1631,7 +1634,7 @@ def run_set_monitor(options, args: list[str]) -> int:
     if not mdef:
         raise InitExit(ExitCode.FAILURE, "invalid monitor data")
 
-    from xpra.common import adjust_monitor_refresh_rate
+    from xpra.util.parsing import adjust_monitor_refresh_rate
     mdef = adjust_monitor_refresh_rate(options.refresh_rate, mdef)
 
     from xpra.x11.bindings.display_source import set_display_name, init_display_source
@@ -2090,40 +2093,6 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
         attach_args = strip_attach_extra_positional_args(attach_args)
         return exec_reconnect(script_file, attach_args)
     return r
-
-
-def run_example(args) -> ExitValue:
-    all_examples = (
-        "bell", "clicks",
-        "colors-gradient", "colors-plain", "colors",
-        "cursors",
-        "file-chooser",
-        "fontrendering",
-        "grabs",
-        "header-bar",
-        "initiate-moveresize",
-        "text-entry",
-        "transparent-colors",
-        "transparent-window",
-        "tray",
-        "window-focus", "window-geometry-hints",
-        "window-opacity", "window-overrideredirect",
-        "window-states", "window-title",
-        "window-transient",
-        "opengl",
-        "view-keyboard", "view-clipboard",
-    )
-    if not args or args[0] not in all_examples:
-        raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(sorted(all_examples))}")
-    example = args[0]
-    classname = example.replace("-", "_")
-    modpath = f"xpra.gtk.dialogs.{classname}" if example in ("view-keyboard", "view-clipboard")\
-        else f"xpra.gtk.examples.{classname}"
-    try:
-        module = import_module(modpath)
-    except ImportError as e:
-        raise InitException(f"failed to import example {classname}: {e}") from None
-    return module.main(args)
 
 
 def run_autostart(script_file, args) -> ExitValue:
