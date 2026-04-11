@@ -174,10 +174,11 @@ def clear_cache() -> None:
     log(f"clear_cache() IconTheme={IconTheme}")
     if not IconTheme:
         return
-    IconTheme.themes = []
-    IconTheme.theme_cache = {}
-    IconTheme.dir_cache = {}
-    IconTheme.icon_cache = {}
+    with ic_lock:
+        IconTheme.themes = []
+        IconTheme.theme_cache = {}
+        IconTheme.dir_cache = {}
+        IconTheme.icon_cache = {}
 
 
 def load_entry_icon(props: dict):
@@ -265,6 +266,10 @@ def find_theme_icon(*names: str) -> str:
                     fn = IconTheme.LookupIcon(name, size, theme=theme, extensions=EXTENSIONS)
                     if fn and os.path.exists(fn):
                         return fn
+                except KeyError:
+                    # theme_cache was cleared by another thread between the
+                    # 'not in' check and the subsequent access in LookupIcon
+                    log(f"find_theme_icon({names}) theme_cache race on {name=}, {theme=}", exc_info=True)
                 except TypeError as e:
                     log(f"find_theme_icon({names}) error on {name=}, {size=}", exc_info=True)
                     if first_time("xdg-icon-lookup"):
