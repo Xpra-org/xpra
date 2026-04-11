@@ -62,10 +62,6 @@ from xpra.scripts.display import (
     get_display_pids,
     get_display_info, get_displays_info,
 )
-from xpra.scripts.glprobe import (
-    run_opengl_probe, save_opengl_probe,
-    run_glprobe, run_glcheck, run_glsaveprobe,
-)
 from xpra.scripts.sessions import (
     identify_new_socket,
     run_list_sessions,
@@ -815,15 +811,19 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         check_gtk("splash")
         return run_splash(args)
     if mode == "opengl":
+        from xpra.scripts.glprobe import run_glcheck
         return run_glcheck(options)
     if mode == "opengl-probe":
         check_gtk_client()
+        from xpra.scripts.glprobe import run_glprobe
         return run_glprobe(options)
     if mode == "opengl-test":
         check_gtk_client()
+        from xpra.scripts.glprobe import run_glprobe
         return run_glprobe(options, True)
     if mode == "opengl-save-probe":
         check_gtk_client()
+        from xpra.scripts.glprobe import run_glsaveprobe
         return run_glsaveprobe()
     if mode == "example":
         check_gtk_client()
@@ -1715,6 +1715,7 @@ def make_client(opts):
 
         if opts.opengl in ("probe", "nowarn"):
             may_show_progress(app, 20, "validating OpenGL configuration")
+            from xpra.scripts.glprobe import run_opengl_probe, save_opengl_probe
             probe, probe_info = run_opengl_probe()
             glinfo = typedict(probe_info)
             safe = glinfo.boolget("safe", False)
