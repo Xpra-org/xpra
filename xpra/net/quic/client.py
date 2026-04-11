@@ -346,7 +346,7 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
             if not fast_open:
                 await protocol.wait_connected()
             else:
-                from xpra.scripts.main import CONNECT_TIMEOUT
+                from xpra.scripts.picker import CONNECT_TIMEOUT
                 tl.call_later(CONNECT_TIMEOUT, verify_connected, protocol)
             log(f"{protocol}.open({host!r}, {port}, {path!r})")
             conn = protocol.open(host, port, path)
