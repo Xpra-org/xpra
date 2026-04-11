@@ -38,6 +38,10 @@ class ShadowX11Server(GTKShadowServerBase):
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
         self.session_files.append("xauthority")
 
+    def set_initial_resolution(self) -> None:
+        # shadow servers must not change the host display resolution
+        pass
+
     def set_keymap(self, server_source, force=False) -> None:
         if self.readonly:
             return
