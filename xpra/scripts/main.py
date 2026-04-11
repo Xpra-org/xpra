@@ -34,7 +34,7 @@ from xpra.util.parsing import (
 )
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import getuid, getgid, is_admin, gi_import, WIN32, OSX, POSIX
-from xpra.util.io import load_binary_file, stderr_print, info, warn, error
+from xpra.util.io import load_binary_file, stderr_print, info, warn, error, clean_std_pipes
 from xpra.util.system import is_Wayland, set_proc_title, is_systemd_pid1, stop_proc
 from xpra.scripts.parsing import (
     get_usage,
@@ -268,20 +268,6 @@ def do_main(script_file: str, cmdline: list[str]) -> ExitValue:
     finally:
         platform_clean()
         clean_std_pipes()
-
-
-def clean_std_pipes() -> None:
-    if not envbool("XPRA_CLEAN_STD_PIPES", True):
-        return
-
-    def closestd(std) -> None:
-        if std:
-            try:
-                std.close()
-            except OSError:  # pragma: no cover
-                pass
-    closestd(sys.stdout)
-    closestd(sys.stderr)
 
 
 def configure_logging(options, mode: str) -> None:

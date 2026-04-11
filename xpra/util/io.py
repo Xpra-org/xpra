@@ -388,3 +388,18 @@ def osclose(*fds: int) -> None:
             log("os.close(%s)", fd, exc_info=True)
             log.error("Error closing file download:")
             log.estr(e)
+
+
+def clean_std_pipes() -> None:
+    from xpra.util.env import envbool
+    if not envbool("XPRA_CLEAN_STD_PIPES", True):
+        return
+
+    def closestd(std) -> None:
+        if std:
+            try:
+                std.close()
+            except OSError:  # pragma: no cover
+                pass
+    closestd(sys.stdout)
+    closestd(sys.stderr)
