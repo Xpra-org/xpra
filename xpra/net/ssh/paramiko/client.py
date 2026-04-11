@@ -11,7 +11,8 @@ from typing import Any, NoReturn
 from collections.abc import Sequence
 
 from xpra.net.ssh.paramiko.util import keymd5, get_key_fingerprints, load_private_key, SSHSocketConnection
-from xpra.scripts.main import InitException, InitExit, shellquote
+from xpra.scripts.main import InitException, InitExit
+from xpra.scripts.args import shellquote
 from xpra.net.connect import host_target_string
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username

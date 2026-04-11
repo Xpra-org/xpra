@@ -11,7 +11,8 @@ from shutil import which
 from subprocess import PIPE, Popen
 from collections.abc import Callable
 
-from xpra.scripts.main import InitException, InitExit, shellquote
+from xpra.scripts.main import InitException, InitExit
+from xpra.scripts.args import shellquote
 from xpra.net.connect import host_target_string
 from xpra.net.bytestreams import ConnectionClosedException
 from xpra.common import noop

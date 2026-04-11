@@ -36,7 +36,7 @@ class CommandClient(StubClientMixin):
     def init(self, opts) -> None:
         self.start_new_commands = str_to_bool(opts.start_new_commands)
         if self.start_new_commands and (opts.start or opts.start_child):
-            from xpra.scripts.main import strip_defaults_start_child
+            from xpra.scripts.args import strip_defaults_start_child
             from xpra.scripts.config import make_defaults_struct
             defaults = make_defaults_struct()
             self.request_start = strip_defaults_start_child(opts.start, defaults.start)

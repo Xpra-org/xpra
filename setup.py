@@ -1180,6 +1180,7 @@ if modules_ENABLED:
                 "xpra.platform",
                 "xpra.scripts.display",
                 "xpra.scripts.glprobe",
+                "xpra.scripts.args",
                 "xpra.scripts.sessions",
                 "xpra.scripts.main",
                 )

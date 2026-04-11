@@ -29,7 +29,6 @@ from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import (
     nonl, csv, print_nested_dict, sorted_nicely, bytestostr,
-    is_valid_hostname,
 )
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
 from xpra.util.parsing import parse_scaling, TRUE_OPTIONS, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OFF_OPTIONS, str_to_bool, \
@@ -47,7 +46,7 @@ from xpra.scripts.parsing import (
     parse_display_name, parse_env,
     fixup_defaults,
     validated_encodings, validate_encryption, do_parse_cmdline, show_audio_codec_help,
-    MODE_ALIAS, REVERSE_MODE_ALIAS,
+    MODE_ALIAS,
 )
 from xpra.scripts.config import (
     XpraConfig,
@@ -79,6 +78,13 @@ from xpra.scripts.sessions import (
     run_list_sessions,
     run_list, clean_sockets,
     run_list_windows, run_list_clients,
+)
+from xpra.scripts.args import (
+    strip_defaults_start_child,
+    split_display_arg,
+    is_connection_arg,
+    strip_attach_extra_positional_args,
+    find_mode_pos,
 )
 
 assert callable(error), "used by modules importing this function from here"
@@ -591,26 +597,6 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
     except KeyboardInterrupt as e:
         info(f"\ncaught {e!r}, exiting")
         return 128 + signal.SIGINT
-
-
-def is_connection_arg(arg) -> bool:
-    if POSIX and (arg.startswith(":") or arg.startswith("wayland-")):
-        return True
-    if any(arg.startswith(f"{mode}://") for mode in SOCKET_TYPES):
-        return True
-    if any(arg.startswith(f"{mode}:") for mode in SOCKET_TYPES):
-        return True
-    if any(arg.startswith(f"{mode}/") for mode in SOCKET_TYPES):
-        return True
-    # could be a plain TCP address, specifying a display,
-    # ie: 127.0.0.1:0 or SOMEHOST:0.0
-    parts = arg.split(":")
-    if len(parts) == 2:
-        host, display = parts
-        if is_valid_hostname(host) and display.replace(".", "").isdigit():
-            # this is a valid connection argument
-            return True
-    return False
 
 
 def is_terminal() -> bool:
@@ -1397,46 +1383,6 @@ def exec_reconnect(script_file: str, cmdline: list[str]) -> ExitCode:
         return ExitCode.FAILURE
 
 
-def strip_attach_extra_positional_args(cmdline: list[str]) -> list[str]:
-    """
-    When reconnecting we re-exec the client using `attach`.
-
-    For `seamless`/`desktop`/`monitor`, positional non-connection arguments are
-    treated as implicit `--start-child` commands, but those must not be kept
-    during reconnect (otherwise `attach` will treat them as extra display args).
-
-    This function keeps the first display argument after `attach`, plus any
-    subsequent options (and their values), and drops any extra positional args.
-    """
-    try:
-        attach_pos = cmdline.index("attach")
-    except ValueError:
-        return cmdline
-
-    display_pos = None
-    for i in range(attach_pos + 1, len(cmdline)):
-        arg = cmdline[i]
-        if arg.startswith("-"):
-            continue
-        if is_display_arg(arg) or is_connection_arg(arg):
-            display_pos = i
-            break
-    if display_pos is None:
-        return cmdline
-
-    cleaned = cmdline[:display_pos + 1]
-    expecting_option_value = False
-    for arg in cmdline[display_pos + 1:]:
-        if expecting_option_value:
-            cleaned.append(arg)
-            expecting_option_value = False
-        elif arg.startswith("-"):
-            cleaned.append(arg)
-            expecting_option_value = arg.startswith("--") and "=" not in arg
-        # extra positional argument after the display: drop it
-    return cleaned
-
-
 def win32_reconnect(script_file: str, cmdline: list[str]) -> ExitCode:
     # the cx_Freeze wrapper changes the cwd to the directory containing the exe,
     # so we have to re-construct the actual path to the exe:
@@ -1535,27 +1481,6 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
             call(app.quit, ExitCode.CONNECTION_FAILED)
 
     call(setup_connection)
-
-
-def is_display_arg(arg: str) -> bool:
-    if arg.startswith(":") or arg.startswith("wayland-"):
-        return True
-    for prefix in SOCKET_TYPES:
-        if arg.startswith(f"{prefix}://"):
-            return True
-    # could still be a naked display number without the ":" prefix:
-    try:
-        return int(arg) >= 0
-    except ValueError:
-        return False
-
-
-def split_display_arg(args: list[str]) -> tuple[list[str], list[str]]:
-    if not args:
-        return [], []
-    if is_display_arg(args[0]):
-        return args[:1], args[1:]
-    return [], args
 
 
 # `run` mode may have to return a fake client "App" object with two methods:
@@ -2245,22 +2170,6 @@ def get_start_new_session_dict(opts, mode: str, extra_args) -> dict[str, Any]:
     return sns
 
 
-def shellquote(s: str) -> str:
-    return '"' + s.replace('"', '\\"') + '"'
-
-
-def strip_defaults_start_child(start_child, defaults_start_child):
-    if start_child and defaults_start_child:
-        # ensure we don't pass start / start-child commands
-        # which came from defaults (the configuration files)
-        # only the ones specified on the command line:
-        # (and only remove them once so the command line can re-add the same ones!)
-        for x in defaults_start_child:
-            if x in start_child:
-                start_child.remove(x)
-    return start_child
-
-
 def match_client_display_size(options, display_is_remote=True) -> None:
     if options.resize_display.lower() != "auto":
         return
@@ -2404,21 +2313,6 @@ def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> ExitV
     warn(f" {err}")
     warn(" more information may be available in your system log")
     return None
-
-
-def find_mode_pos(args, mode: str) -> int:
-    rmode = REVERSE_MODE_ALIAS.get(mode, str(mode))
-    mode_strs = [rmode]
-    if rmode.find("-") > 0:
-        mode_strs.append(rmode.split("-", 1)[1])  # ie: "start-desktop" -> "desktop"
-    if mode == "seamless":  # ie: "seamless" -> "start"
-        mode_strs.append("start")
-    for mstr in mode_strs:
-        try:
-            return args.index(mstr)
-        except ValueError:
-            pass
-    raise InitException(f"mode {mode!r} not found in command line arguments {args}")
 
 
 def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str, defaults) -> ExitValue:
