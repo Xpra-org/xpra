@@ -88,8 +88,6 @@ from xpra.scripts.picker import (
     get_sockpath,
 )
 from xpra.scripts.common import bypass_no_gtk, no_gtk
-from xpra.scripts.settings import run_showconfig, run_showsetting, run_setting
-from xpra.net.mdns.list import run_list_mdns
 
 assert callable(error), "used by modules importing this function from here"
 
@@ -691,6 +689,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         return run_list_clients(error_cb, options, args)
     if mode == "list-mdns":
         no_gtk()
+        from xpra.net.mdns.list import run_list_mdns
         return run_list_mdns(error_cb, args)
     if mode == "mdns-gui":
         check_gtk_client()
@@ -911,8 +910,10 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         write_runner_shell_scripts(script, False)
         return ExitCode.OK
     if mode == "setup-ssl":
+        from xpra.net.tls.common import setup_ssl
         return setup_ssl(options, args, cmdline)
     if mode == "show-ssl":
+        from xpra.net.tls.common import show_ssl
         return show_ssl(options, args, cmdline)
     if mode == "auth":
         return run_auth(options, args)
@@ -954,12 +955,16 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "sbom":
         return run_sbom(args)
     if mode == "showconfig":
+        from xpra.scripts.settings import run_showconfig
         return run_showconfig(options, args)
     if mode == "showsetting":
+        from xpra.scripts.settings import run_showsetting
         return run_showsetting(args)
     if mode in ("set", "setting"):
+        from xpra.scripts.settings import run_setting
         return run_setting(True, args)
     if mode == "unset":
+        from xpra.scripts.settings import run_setting
         return run_setting(False, args)
     if mode != "help":
         print(f"Invalid subcommand {mode!r}")
@@ -3120,82 +3125,6 @@ def run_version_check(args) -> ExitValue:
 
 def err(*args) -> NoReturn:
     raise InitException(*args)
-
-
-def get_remote_proxy_command_output(options, args: list[str], cmdline: list[str], subcommand="setup-ssl") -> tuple[dict, bytes]:
-    if len(args) != 1:
-        raise InitExit(ExitCode.FAILURE, "a single optional argument may be specified")
-    arg = args[0]
-    disp = parse_display_name(error_handler, options, arg, cmdline)
-    if disp.get("type", "") != "ssh":
-        raise InitExit(ExitCode.FAILURE, "argument must be an ssh URL")
-    disp["display_as_args"] = []
-    disp["proxy_command"] = [subcommand, ]
-
-    from xpra.net.ssh import util
-    util.LOG_EOF = False
-
-    def ssh_fail(*_args) -> NoReturn:
-        sys.exit(int(ExitCode.SSH_FAILURE))
-
-    def ssh_log(*args) -> None:
-        log = Logger("ssh")
-        log.debug(*args)
-
-    from xpra.net.connect import connect_to_ssh
-    conn = connect_to_ssh(disp, options, debug_cb=ssh_log, ssh_fail_cb=ssh_fail)
-    data = b""
-    until = monotonic() + 30
-    while monotonic() < until:
-        bdata = conn.read(4096)
-        if not bdata:
-            break
-        data += bdata
-    noerr(conn.close)
-    return disp, data
-
-
-def setup_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
-    from xpra.net.tls.file import strip_cert
-    from xpra.net.tls.file import gen_ssl_cert
-    from xpra.net.tls.file import save_ssl_config_file
-    if args:
-        disp, data = get_remote_proxy_command_output(options, args, cmdline, "setup-ssl")
-        if not data:
-            raise InitExit(ExitCode.FAILURE, "no certificate data received, check the command output")
-        data = strip_cert(data)
-        host = disp["host"]
-        save_ssl_config_file(host, port=0, filename="cert.pem", fileinfo="certificate", filedata=data)
-        return ExitCode.OK
-    _keyfile, certfile = gen_ssl_cert()
-    cert = load_binary_file(certfile)
-    sys.stdout.write(cert.decode("latin1"))
-    return 0
-
-
-def show_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
-    from xpra.net.tls.file import strip_cert
-    from xpra.net.tls.file import find_ssl_cert
-    from xpra.net.tls.common import CERT_FILENAME
-    from xpra.net.tls.common import KEY_FILENAME
-    if args:
-        _disp, data = get_remote_proxy_command_output(options, args, cmdline, "show-ssl")
-        if not data:
-            raise InitExit(ExitCode.FAILURE, "no certificate data received, check the command output")
-        cert = strip_cert(data)
-    else:
-        log = Logger("ssl")
-        keypath = find_ssl_cert(KEY_FILENAME)
-        certpath = find_ssl_cert(CERT_FILENAME)
-        if not keypath or not certpath:
-            log.info("no certificate found")
-            return ExitCode.NO_DATA
-        log.info("found an existing SSL certificate:")
-        log.info(f" {keypath!r}")
-        log.info(f" {certpath!r}")
-        cert = load_binary_file(certpath)
-    sys.stdout.write(cert.decode("latin1"))
-    return ExitCode.OK
 
 
 def run_sbom(args: list[str]) -> ExitValue:
