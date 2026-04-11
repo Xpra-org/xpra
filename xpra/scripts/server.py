@@ -28,7 +28,6 @@ from xpra.scripts.main import (
     no_gtk, nox,
     validate_encryption, parse_env, configure_env,
     make_progress_process,
-    may_block_numpy,
 )
 from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
 from xpra.scripts.sessions import get_xpra_sessions
@@ -329,7 +328,7 @@ def enforce_server_features() -> None:
     """
     Prevent the modules from being imported later
     """
-    from xpra.util.pysystem import enforce_features
+    from xpra.util.pysystem import enforce_features, may_block_numpy
     from xpra.server import features
     enforce_features(features, {
         "debug": "xpra.server.subsystem.debug",

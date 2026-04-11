@@ -99,3 +99,42 @@ def set_client_features(opts) -> None:
         log = Logger("util")
         log.warn("Warning missing modules: %s", csv(impwarn))
         log.warn(f" for Python {sys.version}")
+
+    if envbool("XPRA_ENFORCE_FEATURES", True):
+        enforce_client_features()
+
+
+def enforce_client_features() -> None:
+    from xpra.util.pysystem import enforce_features, may_block_numpy
+    from xpra.client.base import features
+    enforce_features(features, {
+        "debug": "xpra.client.base.debug",
+        "control": "xpra.control,xpra.client.base.control",
+        "file": "xpra.net.file_transfer,xpra.client.base.file",
+        "printer": "xpra.client.base.printer",
+        "display": "xpra.client.subsystem.display",
+        "window": "xpra.client.subsystem.window",
+        "cursor": "xpra.client.subsystem.cursor",
+        "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
+        "x11": "xpra.x11,gi.repository.GdkX11",
+        "webcam": "xpra.client.subsystem.webcam",
+        "audio": "xpra.audio,xpra.client.subsystem.audio",
+        "clipboard": "xpra.clipboard,xpra.client.subsystem.clipboard",
+        "keyboard": "xpra.keyboard,xpra.client.subsystem.keyboard",
+        "pointer": "xpra.client.subsystem.pointer",
+        "notification": "xpra.notification,xpra.client.subsystem.notification",
+        "dbus": "dbus,xpra.dbus",
+        "mmap": "mmap,xpra.net.mmap,xpra.client.subsystem.mmap",
+        "ssl": "ssl,xpra.net.tls",
+        "ssh": "paramiko,xpra.net.ssh",
+        "logging": "xpra.client.subsystem.logging",
+        "tray": "xpra.client.subsystem.tray",
+        "ping": "xpra.client.subsystem.ping",
+        "bandwidth": "xpra.client.subsystem.bandwidth",
+        "socket": "xpra.client.subsystem.socket",
+        "ssh_agent": "xpra.client.subssytem.ssh_agent",
+        "encoding": "xpra.client.subsystem.encodings",
+        "native": "xpra.platform.client",
+        "power": "xpra.client.subsystem.power",
+    })
+    may_block_numpy()

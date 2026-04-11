@@ -1660,64 +1660,6 @@ def run_set_monitor(options, args: list[str]) -> int:
     return 0
 
 
-def enforce_client_features() -> None:
-    from xpra.util.pysystem import enforce_features
-    from xpra.client.base import features
-    enforce_features(features, {
-        "debug": "xpra.client.base.debug",
-        "control": "xpra.control,xpra.client.base.control",
-        "file": "xpra.net.file_transfer,xpra.client.base.file",
-        "printer": "xpra.client.base.printer",
-        "display": "xpra.client.subsystem.display",
-        "window": "xpra.client.subsystem.window",
-        "cursor": "xpra.client.subsystem.cursor",
-        "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
-        "x11": "xpra.x11,gi.repository.GdkX11",
-        "webcam": "xpra.client.subsystem.webcam",
-        "audio": "xpra.audio,xpra.client.subsystem.audio",
-        "clipboard": "xpra.clipboard,xpra.client.subsystem.clipboard",
-        "keyboard": "xpra.keyboard,xpra.client.subsystem.keyboard",
-        "pointer": "xpra.client.subsystem.pointer",
-        "notification": "xpra.notification,xpra.client.subsystem.notification",
-        "dbus": "dbus,xpra.dbus",
-        "mmap": "mmap,xpra.net.mmap,xpra.client.subsystem.mmap",
-        "ssl": "ssl,xpra.net.tls",
-        "ssh": "paramiko,xpra.net.ssh",
-        "logging": "xpra.client.subsystem.logging",
-        "tray": "xpra.client.subsystem.tray",
-        "ping": "xpra.client.subsystem.ping",
-        "bandwidth": "xpra.client.subsystem.bandwidth",
-        "socket": "xpra.client.subsystem.socket",
-        "ssh_agent": "xpra.client.subssytem.ssh_agent",
-        "encoding": "xpra.client.subsystem.encodings",
-        "native": "xpra.platform.client",
-        "power": "xpra.client.subsystem.power",
-    })
-    may_block_numpy()
-
-
-def may_block_numpy() -> None:
-    """
-    Loading the `numpy` module uses a lot of memory due to the huge number of shared libraries it depends on,
-    the only modules that really use numpy for anything useful are our nvidia GPU codecs,
-    so we check to see if such hardware is present and if not then we can block numpy.
-    This will prevent other modules from importing numpy, as if it wasn't installed.
-    ie: `OpenGL_accelerate` has a numpy format handler, but we don't use it!
-    """
-    if envbool("XPRA_MAY_BLOCK_NUMPY", True) and "numpy" not in sys.modules:
-        reason = ""
-        try:
-            from xpra.codecs.nvidia.util import has_nvidia_hardware
-            if not has_nvidia_hardware():
-                reason = "no nvidia hardware"
-        except ImportError:
-            reason = "no nvidia codecs"
-        if reason:
-            get_logger().debug(f"{reason}, blocking `numpy` import")
-            # noinspection PyTypeChecker
-            sys.modules["numpy"] = None
-
-
 NOGI = ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication") if not OSX else ("GdkX11", )
 
 
@@ -1782,8 +1724,6 @@ def make_client(opts):
 
         from xpra.client.base.features import set_client_features
         set_client_features(opts)
-        if envbool("XPRA_ENFORCE_FEATURES", True):
-            enforce_client_features()
 
         from xpra.client.gtk3.client import XpraClient
         app = XpraClient()
@@ -2794,7 +2734,6 @@ def run_top(error_cb: Callable, options, args: list[str], cmdline: list[str]) ->
 def run_encode(error_cb: Callable, options, args: list[str], cmdline: list[str]) -> ExitValue:
     from xpra.client.base.features import set_client_features
     set_client_features(options)
-    enforce_client_features()
     from xpra.client.base.encode import EncodeClient
     if not args:
         raise ValueError("please specify a display and at least one filename")
