@@ -144,7 +144,22 @@ STDOUT_SUBCOMMANDS = (
     "showconfig",
     "root-size",
 )
-
+CLIENT_SUBCOMMANDS = (
+    "attach", "listen", "detach",
+    "screenshot", "version", "info", "id",
+    "control", "run", "_monitor", "shell", "print",
+    "qrcode",
+    "show-menu", "show-about", "show-session-info",
+    "connect-test",
+    "record",
+)
+SERVER_SUBCOMMANDS = (
+    "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
+    "upgrade", "upgrade-seamless", "upgrade-desktop",
+    "proxy",
+    "encoder",
+    "runner",
+)
 # pylint: disable=import-outside-toplevel
 # noinspection PyBroadException
 
@@ -648,27 +663,13 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
                         options.video_decoders = ["none"]
                         return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
-    if mode in (
-            "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
-            "upgrade", "upgrade-seamless", "upgrade-desktop",
-            "proxy",
-            "encoder",
-            "runner",
-    ):
+    if mode in SERVER_SUBCOMMANDS:
         return run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
     if mode == "run" and args and args[0].startswith(":"):
         # for local displays, run via "_proxy_run"
         # which will use plain-X11 connections if needed:
         return run_proxy_run(error_cb, options, script_file, cmdline, args)
-    if mode in (
-            "attach", "listen", "detach",
-            "screenshot", "version", "info", "id",
-            "control", "run", "_monitor", "shell", "print",
-            "qrcode",
-            "show-menu", "show-about", "show-session-info",
-            "connect-test",
-            "record",
-    ) or mode.startswith("request-"):
+    if mode in CLIENT_SUBCOMMANDS or mode.startswith("request-"):
         return run_client(script_file, cmdline, error_cb, options, args, mode)
     if mode in ("stop", "exit"):
         no_gtk()
