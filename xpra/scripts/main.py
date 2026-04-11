@@ -32,7 +32,7 @@ from xpra.util.str_fn import (
 )
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
 from xpra.util.parsing import (
-    TRUE_OPTIONS, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OFF_OPTIONS,
+    TRUE_OPTIONS, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS,
     parse_scaling, str_to_bool, parse_bool_or,
     get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data,
 )
@@ -1277,6 +1277,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         from xpra.client.base.command import ConnectTestXpraClient
         app = ConnectTestXpraClient(opts)
     elif mode == "record":
+        from xpra.client.base.features import set_client_features
         set_client_features(opts)
         basic()
         from xpra.client.base.record import RecordClient
@@ -1660,61 +1661,6 @@ def run_set_monitor(options, args: list[str]) -> int:
     return 0
 
 
-def set_client_features(opts) -> None:
-    def b(v) -> bool:
-        return str(v).lower() not in FALSE_OPTIONS
-
-    def bo(v) -> bool:
-        return str(v).lower() not in FALSE_OPTIONS or str(v).lower() in OFF_OPTIONS
-
-    impwarn: set[str] = set()
-
-    def icheck(mod: str, warn=True) -> bool:
-        if find_spec(mod):
-            return True
-        if (mod not in impwarn) and warn:
-            impwarn.add(mod)
-        return False
-
-    from xpra.client.base import features
-    features.debug = features.debug or b(opts.debug)
-    features.command = opts.commands
-    features.control = opts.control
-    features.file = b(opts.file_transfer) and icheck("xpra.net.file_transfer")
-    features.printer = features.file and b(opts.printing)
-    features.display = opts.windows
-    features.window = opts.windows
-    features.cursor = opts.windows and opts.cursors
-    features.gstreamer = opts.gstreamer
-    features.x11 = opts.backend in ("x11", "auto") and icheck("xpra.x11", not (WIN32 or OSX))
-    features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and icheck("xpra.audio")
-    features.webcam = bo(opts.webcam) and icheck("xpra.codecs")
-    features.clipboard = b(opts.clipboard) and icheck("xpra.clipboard")
-    features.keyboard = icheck("xpra.keyboard")
-    features.pointer = b(opts.pointer)
-    features.notification = opts.notifications and icheck("xpra.notification")
-    features.dbus = b(opts.dbus) and icheck("dbus") and icheck("xpra.dbus")
-    features.mmap = b(opts.mmap) and icheck("xpra.net.mmap")
-    features.ssl = b(opts.ssl) and icheck("ssl")
-    features.ssl_upgrade = features.ssl and opts.ssl_upgrade is not None and b(opts.ssl_upgrade)
-    features.ssh = b(opts.ssh)
-    features.logging = b(opts.remote_logging)
-    features.tray = b(opts.tray)
-    from xpra.net.common import BACKWARDS_COMPATIBLE
-    features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
-    features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
-    features.ssh_agent = envbool("XPRA_SSH_AGENT", True)
-    features.socket = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
-    features.encoding = opts.windows
-    features.native = envbool("XPRA_CLIENT_NATIVE_BINDINGS", True)
-    features.power = envbool("XPRA_POWER_EVENTS", True)
-
-    if impwarn:
-        log = get_logger()
-        log.warn("Warning missing modules: %s", csv(impwarn))
-        log.warn(f" for Python {sys.version}")
-
-
 def enforce_client_features() -> None:
     from xpra.util.pysystem import enforce_features
     from xpra.client.base import features
@@ -1835,6 +1781,7 @@ def make_client(opts):
         from xpra.platform.gui import init as gui_init
         gui_init()
 
+        from xpra.client.base.features import set_client_features
         set_client_features(opts)
         if envbool("XPRA_ENFORCE_FEATURES", True):
             enforce_client_features()
@@ -2846,6 +2793,7 @@ def run_top(error_cb: Callable, options, args: list[str], cmdline: list[str]) ->
 
 
 def run_encode(error_cb: Callable, options, args: list[str], cmdline: list[str]) -> ExitValue:
+    from xpra.client.base.features import set_client_features
     set_client_features(options)
     enforce_client_features()
     from xpra.client.base.encode import EncodeClient
