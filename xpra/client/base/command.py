@@ -782,7 +782,7 @@ class WaitForDisconnectXpraClient(DetachXpraClient):
 class RequestStartClient(HelloRequestClient):
     """ request the system proxy server to start a new session for us """
     # wait longer for this command to return:
-    from xpra.scripts.main import WAIT_SERVER_TIMEOUT
+    from xpra.scripts.sessions import WAIT_SERVER_TIMEOUT
     COMMAND_TIMEOUT = EXTRA_TIMEOUT + WAIT_SERVER_TIMEOUT
 
     def dots(self) -> bool:

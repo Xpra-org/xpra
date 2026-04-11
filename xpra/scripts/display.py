@@ -402,7 +402,7 @@ def get_displays(dotxpra=None, display_names=None) -> dict[str, Any]:
     # and remove xpra sessions
     xpra_sessions = {}
     if dotxpra:
-        from xpra.scripts.main import get_xpra_sessions  # pylint: disable=import-outside-toplevel
+        from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
         xpra_sessions = get_xpra_sessions(dotxpra)
     displays = find_displays()
     log(f"find_displays()={displays}")

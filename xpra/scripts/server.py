@@ -27,11 +27,11 @@ from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.main import (
     no_gtk, nox,
     validate_encryption, parse_env, configure_env,
-    stat_display_socket, get_xpra_sessions,
     make_progress_process,
-    X11_SOCKET_DIR,
     may_block_numpy,
 )
+from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
+from xpra.scripts.sessions import get_xpra_sessions
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
     OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,

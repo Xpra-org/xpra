@@ -144,7 +144,7 @@ class ServerBase(ServerBaseClass):
         return get_displays(self.dotxpra, display_names=(os.environ.get("DISPLAY"),))
 
     def get_xpra_sessions(self) -> dict[str, Any]:
-        from xpra.scripts.main import get_xpra_sessions  # pylint: disable=import-outside-toplevel
+        from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra, matching_display=os.environ.get("DISPLAY"))
 
     ######################################################################
