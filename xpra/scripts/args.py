@@ -8,11 +8,19 @@ Command-line argument parsing utilities extracted from xpra.scripts.main.
 Pure functions with no GTK/platform dependencies.
 """
 
-from xpra.os_util import POSIX
+from typing import Any
+from collections.abc import Sequence
+
+from xpra.os_util import POSIX, getuid, getgid
 from xpra.net.constants import SOCKET_TYPES
-from xpra.util.str_fn import is_valid_hostname
+from xpra.util.str_fn import is_valid_hostname, csv
 from xpra.scripts.parsing import REVERSE_MODE_ALIAS
-from xpra.scripts.config import InitException
+from xpra.scripts.config import (
+    OPTION_TYPES, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS,
+    START_COMMAND_OPTIONS, BIND_OPTIONS, OPTIONS_ADDED_SINCE_V5, OPTIONS_COMPAT_NAMES,
+    InitException,
+    fixup_options, make_defaults_struct,
+)
 
 
 def shellquote(s: str) -> str:
@@ -110,6 +118,65 @@ def strip_attach_extra_positional_args(cmdline: list[str]) -> list[str]:
             expecting_option_value = arg.startswith("--") and "=" not in arg
         # extra positional argument after the display: drop it
     return cleaned
+
+
+def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdline: Sequence[str] = ()) -> list[str]:
+    option_types = {}
+    for x, ftype in OPTION_TYPES.items():
+        if x not in CLIENT_ONLY_OPTIONS:
+            option_types[x] = ftype
+    return get_command_args(opts, uid, gid, option_types, compat, cmdline)
+
+
+def get_command_args(opts, uid: int, gid: int, option_types: dict[str, Any],
+                     compat=False, cmdline: Sequence[str] = ()) -> list[str]:
+    defaults = make_defaults_struct(uid=uid, gid=gid)
+    fdefaults = defaults.clone()
+    fixup_options(fdefaults)
+    args = []
+    for x, ftype in option_types.items():
+        if x in NON_COMMAND_LINE_OPTIONS:
+            continue
+        if compat and x in OPTIONS_ADDED_SINCE_V5:
+            continue
+        fn = x.replace("-", "_")
+        ov = getattr(opts, fn)
+        dv = getattr(defaults, fn)
+        fv = getattr(fdefaults, fn)
+        incmdline = (f"--{x}" in cmdline or f"--no-{x}" in cmdline or any(c.startswith(f"--{x}=") for c in cmdline))
+        if not incmdline:
+            # we may skip this option if the value is the same as the default:
+            if ftype is list:
+                # compare lists using their csv representation:
+                if csv(ov) == csv(dv) or csv(ov) == csv(fv):
+                    continue
+            if ov in (dv, fv):
+                continue  # same as the default
+        argname = f"--{x}="
+        if compat:
+            argname = OPTIONS_COMPAT_NAMES.get(argname, argname)
+        # lists are special cased depending on how OptionParse will be parsing them:
+        if ftype is list:
+            # warn("%s: %s vs %s\n" % (x, ov, dv))
+            if x in START_COMMAND_OPTIONS + BIND_OPTIONS + [
+                "pulseaudio-configure-commands",
+                "speaker-codec", "microphone-codec",
+                "key-shortcut", "start-env", "env",
+                "socket-dirs",
+            ]:
+                # individual arguments (ie: "--start=xterm" "--start=gedit" ..)
+                for e in ov:
+                    args.append(f"{argname}{e}")
+            else:
+                # those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
+                args.append(f"{argname}" + ",".join(str(v) for v in ov))
+        elif ftype is bool:
+            args.append(f"{argname}" + ["no", "yes"][int(ov)])
+        elif ftype in (int, float, str):
+            args.append(f"{argname}{ov}")
+        else:
+            raise InitException(f"unknown option type {ftype!r} for {x!r}")
+    return args
 
 
 def find_mode_pos(args, mode: str) -> int:

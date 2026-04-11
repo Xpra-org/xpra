@@ -45,8 +45,8 @@ from xpra.scripts.parsing import (
 )
 from xpra.scripts.config import (
     XpraConfig,
-    OPTION_TYPES, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
-    START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V5, OPTIONS_COMPAT_NAMES,
+    CLIENT_OPTIONS,
+    START_COMMAND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS,
     InitException, InitInfo, InitExit,
     fixup_options,
     find_docs_path, find_html5_path,
@@ -78,6 +78,7 @@ from xpra.scripts.args import (
     is_connection_arg,
     strip_attach_extra_positional_args,
     find_mode_pos,
+    get_start_server_args,
 )
 from xpra.scripts.picker import (
     pick_shadow_display,
@@ -2347,65 +2348,6 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
                                                display_name,
                                                uid)
     return proc, socket_path, display
-
-
-def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdline: Sequence[str]=()) -> list[str]:
-    option_types = {}
-    for x, ftype in OPTION_TYPES.items():
-        if x not in CLIENT_ONLY_OPTIONS:
-            option_types[x] = ftype
-    return get_command_args(opts, uid, gid, option_types, compat, cmdline)
-
-
-def get_command_args(opts, uid: int, gid: int, option_types: dict[str, Any],
-                     compat=False, cmdline: Sequence[str]=()) -> list[str]:
-    defaults = make_defaults_struct(uid=uid, gid=gid)
-    fdefaults = defaults.clone()
-    fixup_options(fdefaults)
-    args = []
-    for x, ftype in option_types.items():
-        if x in NON_COMMAND_LINE_OPTIONS:
-            continue
-        if compat and x in OPTIONS_ADDED_SINCE_V5:
-            continue
-        fn = x.replace("-", "_")
-        ov = getattr(opts, fn)
-        dv = getattr(defaults, fn)
-        fv = getattr(fdefaults, fn)
-        incmdline = (f"--{x}" in cmdline or f"--no-{x}" in cmdline or any(c.startswith(f"--{x}=") for c in cmdline))
-        if not incmdline:
-            # we may skip this option if the value is the same as the default:
-            if ftype is list:
-                # compare lists using their csv representation:
-                if csv(ov) == csv(dv) or csv(ov) == csv(fv):
-                    continue
-            if ov in (dv, fv):
-                continue  # same as the default
-        argname = f"--{x}="
-        if compat:
-            argname = OPTIONS_COMPAT_NAMES.get(argname, argname)
-        # lists are special cased depending on how OptionParse will be parsing them:
-        if ftype is list:
-            # warn("%s: %s vs %s\n" % (x, ov, dv))
-            if x in START_COMMAND_OPTIONS + BIND_OPTIONS + [
-                "pulseaudio-configure-commands",
-                "speaker-codec", "microphone-codec",
-                "key-shortcut", "start-env", "env",
-                "socket-dirs",
-            ]:
-                # individual arguments (ie: "--start=xterm" "--start=gedit" ..)
-                for e in ov:
-                    args.append(f"{argname}{e}")
-            else:
-                # those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
-                args.append(f"{argname}" + ",".join(str(v) for v in ov))
-        elif ftype is bool:
-            args.append(f"{argname}" + ["no", "yes"][int(ov)])
-        elif ftype in (int, float, str):
-            args.append(f"{argname}{ov}")
-        else:
-            raise InitException(f"unknown option type {ftype!r} for {x!r}")
-    return args
 
 
 def run_proxy_run(error_cb: Callable, options, script_file: str, cmdline: list[str], args: list[str]) -> ExitValue:

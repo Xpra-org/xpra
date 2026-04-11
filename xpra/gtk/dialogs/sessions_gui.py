@@ -14,7 +14,7 @@ from xpra.platform.gui import force_focus
 from xpra.util.child_reaper import get_child_reaper
 from xpra.exit_codes import exit_str
 from xpra.scripts.config import OPTION_TYPES
-from xpra.scripts.main import get_command_args
+from xpra.scripts.args import get_command_args
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, imagebutton, label, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
