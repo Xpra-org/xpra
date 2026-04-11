@@ -914,6 +914,8 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         return run_dbus_session_list()
     if mode == "u2f":
         return run_u2f(args)
+    if mode == "fido2":
+        return run_fido2(args)
     if mode == "otp":
         return run_otp(args)
     if mode == "configure":
@@ -3057,6 +3059,11 @@ def run_auth(_options, args) -> ExitValue:
 def run_u2f(args: list[str]) -> ExitValue:
     from xpra.gtk.dialogs.u2f_tool import main
     return main(["u2f_tool.py"] + args)
+
+
+def run_fido2(args: list[str]) -> ExitValue:
+    from xpra.gtk.dialogs.fido2_tool import main
+    return main(["fido2_tool.py"] + args)
 
 
 def run_otp(args: list[str]) -> ExitValue:
