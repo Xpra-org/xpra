@@ -38,10 +38,9 @@ class EVDIModel(CaptureWindowModel):
         return ImageWrapper(0, 0, width, height, buf, "BGRX", 24, width * 4, )
 
 
-class ExpandServer(GObject.GObject, ShadowX11Server):
+class ExpandServer(ShadowX11Server):
 
     def __init__(self, attrs: dict[str, str]):
-        GObject.GObject.__init__(self)
         ShadowX11Server.__init__(self, attrs)
         self.session_type = "X11 evdi expand"
         self.evdi_device = None
