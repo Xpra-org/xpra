@@ -24,8 +24,9 @@ from xpra.util.io import info, warn, wait_for_socket, which
 from xpra.util.parsing import parse_str_dict, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, str_to_bool, parse_bool_or, \
     parse_resolutions, get_refresh_rate_for_value
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
+from xpra.scripts.common import no_gtk
 from xpra.scripts.main import (
-    no_gtk, nox,
+    nox,
     validate_encryption, parse_env, configure_env,
     make_progress_process,
 )

@@ -82,7 +82,7 @@ class GTKServer(StubServerMixin):
 
     def init(self, opts) -> None:
         log("GTKServer.init(..)")
-        from xpra.scripts.main import no_gtk
+        from xpra.scripts.common import no_gtk
         no_gtk()
 
     def get_display_name(self) -> str:

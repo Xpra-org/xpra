@@ -161,7 +161,7 @@ def run_list_sessions(args, options) -> ExitValue:
 
 
 def run_list(error_cb: Callable, opts, extra_args, clean: bool = True) -> ExitValue:
-    from xpra.scripts.main import no_gtk
+    from xpra.scripts.common import no_gtk
     no_gtk()
     if extra_args:
         error_cb("too many arguments for `list` mode")
@@ -252,7 +252,7 @@ def exec_and_parse(subcommand="id", display="") -> dict[str, str]:
 
 
 def run_list_windows(error_cb: Callable, opts, extra_args) -> ExitValue:
-    from xpra.scripts.main import no_gtk
+    from xpra.scripts.common import no_gtk
     no_gtk()
     if extra_args:
         error_cb("too many arguments for `list-windows` mode")
@@ -303,7 +303,7 @@ def run_list_windows(error_cb: Callable, opts, extra_args) -> ExitValue:
 
 
 def run_list_clients(error_cb: Callable, opts, extra_args) -> ExitValue:
-    from xpra.scripts.main import no_gtk
+    from xpra.scripts.common import no_gtk
     no_gtk()
     if extra_args:
         error_cb("too many arguments for `list-windows` mode")

@@ -34,8 +34,9 @@ from xpra.net.constants import DEFAULT_PORT
 from xpra.util.thread import start_thread
 from xpra.gtk.dialogs.about import about
 from xpra.gtk.dialogs.util import hb_button
+from xpra.scripts.common import bypass_no_gtk
 from xpra.scripts.main import (
-    make_client, bypass_no_gtk,
+    make_client,
     configure_network, configure_env, configure_logging,
 )
 from xpra.net.connect import connect_to

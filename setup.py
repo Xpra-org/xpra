@@ -1178,6 +1178,7 @@ if modules_ENABLED:
     add_packages("xpra.util", "xpra.net")
     add_modules("xpra",
                 "xpra.platform",
+                "xpra.scripts.common",
                 "xpra.scripts.display",
                 "xpra.scripts.glprobe",
                 "xpra.scripts.args",

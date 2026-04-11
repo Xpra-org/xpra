@@ -94,6 +94,7 @@ from xpra.scripts.picker import (
     connect_or_fail,
     get_sockpath,
 )
+from xpra.scripts.common import bypass_no_gtk, no_gtk
 
 assert callable(error), "used by modules importing this function from here"
 
@@ -2105,28 +2106,6 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
         attach_args = strip_attach_extra_positional_args(attach_args)
         return exec_reconnect(script_file, attach_args)
     return r
-
-
-no_gtk_bypass = False
-
-
-def bypass_no_gtk(v=True) -> None:
-    global no_gtk_bypass
-    no_gtk_bypass = v
-
-
-def no_gtk() -> None:
-    if no_gtk_bypass:
-        return
-    if OSX:
-        # we can't verify on macos because importing GtkosxApplication
-        # will import Gtk, and we need GtkosxApplication early to find the paths
-        return
-    Gtk = sys.modules.get("gi.repository.Gtk")
-    if Gtk is None:
-        # all good, not loaded
-        return
-    raise InitException("the Gtk module is already loaded: %s" % Gtk)
 
 
 def run_example(args) -> ExitValue:
