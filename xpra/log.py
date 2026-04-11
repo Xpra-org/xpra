@@ -156,6 +156,22 @@ def standard_logging(log, level: int, msg: str, *args, **kwargs) -> None:
     log(level, msg, *args, **kwargs)
 
 
+def inject_debug_logging(cmdline: list[str]) -> None:
+    # other scripts can set XPRA_DEBUG_DOTFILE="" to skip this injection:
+    debug_dotfile = os.environ.get("XPRA_DEBUG_DOTFILE", os.path.expanduser("~/.xpra/debug"))
+    from xpra.util.io import load_binary_file
+    data = load_binary_file(debug_dotfile)
+    if not data:
+        return
+    debug_categories = []
+    for line in data.splitlines():
+        debug_categories += [x for x in line.decode("latin1").strip().split(" ") if x]
+    if not debug_categories:
+        return
+    from xpra.util.str_fn import csv
+    cmdline.append(f"--debug={csv(debug_categories)}")
+
+
 # this allows us to capture all logging and redirect it:
 # the default 'standard_logging' uses the logger,
 # but the client may inject its own handler here.

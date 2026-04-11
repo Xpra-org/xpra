@@ -57,7 +57,7 @@ from xpra.scripts.config import (
     xvfb_command,
 )
 from xpra.net.constants import SOCKET_TYPES, SocketState
-from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format
+from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format, inject_debug_logging
 from xpra.scripts.display import (
     stat_display_socket,
     x11_display_socket, get_xvfb_pid,
@@ -187,20 +187,6 @@ def add_process(*args, **kwargs):
 
 def get_logger() -> Logger:
     return Logger("util")
-
-
-def inject_debug_logging(cmdline: list[str]) -> None:
-    # other scripts can set XPRA_DEBUG_DOTFILE="" to skip this injection:
-    debug_dotfile = os.environ.get("XPRA_DEBUG_DOTFILE", os.path.expanduser("~/.xpra/debug"))
-    data = load_binary_file(debug_dotfile)
-    if not data:
-        return
-    debug_categories = []
-    for line in data.splitlines():
-        debug_categories += [x for x in line.decode("latin1").strip().split(" ") if x]
-    if not debug_categories:
-        return
-    cmdline.append(f"--debug={csv(debug_categories)}")
 
 
 def main(cmdline: list[str]) -> int:
