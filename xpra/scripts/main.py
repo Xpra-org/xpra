@@ -795,31 +795,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode in ("docs", "documentation"):
         return run_docs()
     if mode == "about":
-        try:
-            check_gtk_client()
-        except InitExit:
-            if is_terminal():
-                from xpra.util.version import XPRA_VERSION
-                from xpra.gtk.dialogs import about
-                from xpra.scripts.config import get_build_info
-                stderr_print(f"Xpra {XPRA_VERSION}")
-                stderr_print()
-                for line in get_build_info():
-                    stderr_print(line)
-                stderr_print()
-                stderr_print("Main authors:")
-                for author in about.MAIN_AUTHORS:
-                    stderr_print(f"- {author}")
-                stderr_print()
-                stderr_print("License: GPL2+")
-                stderr_print("run `xpra license` to see the full license")
-                stderr_print()
-                stderr_print("For more information, see:")
-                stderr_print(f"{about.SITE_URL}")
-                return 0
-            raise
-        from xpra.gtk.dialogs import about
-        return about.main()
+        return run_about()
     if mode == "license":
         from xpra.gtk.dialogs.about import load_license
         stderr_print(load_license())
@@ -2907,6 +2883,35 @@ def run_docs() -> ExitValue:
     if not path:
         raise InitExit(ExitCode.FILE_NOT_FOUND, "documentation not found!")
     return _browser_open_file(path)
+
+
+def run_about() -> ExitValue:
+    try:
+        check_gtk_client()
+    except InitExit:
+        if is_terminal():
+            from xpra.util.version import XPRA_VERSION
+            from xpra.gtk.dialogs import about
+            from xpra.scripts.config import get_build_info
+
+            stderr_print(f"Xpra {XPRA_VERSION}")
+            stderr_print()
+            for line in get_build_info():
+                stderr_print(line)
+            stderr_print()
+            stderr_print("Main authors:")
+            for author in about.MAIN_AUTHORS:
+                stderr_print(f"- {author}")
+            stderr_print()
+            stderr_print("License: GPL2+")
+            stderr_print("run `xpra license` to see the full license")
+            stderr_print()
+            stderr_print("For more information, see:")
+            stderr_print(f"{about.SITE_URL}")
+            return 0
+        raise
+    from xpra.gtk.dialogs import about
+    return about.main()
 
 
 def run_html5(url_options: str | dict = "") -> ExitValue:
