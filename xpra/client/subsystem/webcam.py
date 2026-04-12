@@ -48,6 +48,7 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_send_timer = 0
         self.webcam_lock = RLock()
         self.webcam_resume_restart = False
+        self.webcam_csc = None
         self.server_webcam = False
         self.server_webcam_encodings: Sequence[str] = ()
         self.server_virtual_video_devices = 0
@@ -114,16 +115,22 @@ class WebcamForwarder(StubClientMixin):
             return
         with self.webcam_lock:
             with OSEnvContext(LANG="C", LC_ALL="C"):
+                available = False
                 try:
-                    import cv2
-                    from PIL import Image
-                    assert cv2 and Image
-                except ImportError as e:
-                    log("init webcam failure", exc_info=True)
+                    import cv2  # noqa: F401
+                    available = True
+                except ImportError:
+                    pass
+                if not available:
+                    try:
+                        import libcamera  # noqa: F401
+                        available = True
+                    except ImportError:
+                        pass
+                if not available:
+                    log("init webcam failure: neither cv2 nor libcamera found")
                     if WIN32:
-                        log.info("opencv not found:")
-                        log.info(" %s", e)
-                        log.info(" webcam forwarding is not available")
+                        log.info("opencv not found, webcam forwarding is not available")
                     self.webcam_forwarding = False
                     return
             if not self.webcam_send_timer:
@@ -132,7 +139,6 @@ class WebcamForwarder(StubClientMixin):
 
     def do_start_sending_webcam(self, device_str: str) -> None:
         assert self.server_webcam
-        device = 0
         virt_devices, all_video_devices, non_virtual = {}, {}, {}
         try:
             from xpra.platform.webcam import get_virtual_video_devices, get_all_video_devices
@@ -145,46 +151,43 @@ class WebcamForwarder(StubClientMixin):
         except ImportError as e:
             log("no webcam_util: %s", e)
         log("do_start_sending_webcam(%s)", device_str)
-        if device_str in ("auto", "on", "yes", "off", "false", "true"):
-            if non_virtual:
-                device = tuple(non_virtual.keys())[0]
-        else:
-            log("device_str: %s", device_str)
-            try:
-                device = int(device_str)
-            except ValueError:
-                p = device_str.find("video")
-                if p >= 0:
-                    try:
-                        log("device_str: %s", device_str[p:])
-                        device = int(device_str[p + len("video"):])
-                    except ValueError:
-                        device = 0
-        if device in virt_devices:
-            log.warn("Warning: video device %s is a virtual device", virt_devices.get(device, device))
-            if WEBCAM_ALLOW_VIRTUAL:
-                log.warn(" environment override - this may hang..")
-            else:
-                log.warn(" corwardly refusing to use it")
-                log.warn(" set WEBCAM_ALLOW_VIRTUAL=1 to force enable it")
-                return
-        import cv2
-        log("do_start_sending_webcam(%s) device=%i", device_str, device)
+
+        from xpra.client.webcam import open_camera, make_csc_to_bgrx
+        try:
+            webcam_device = open_camera(device_str, virt_devices, non_virtual)
+        except Exception as e:
+            log.warn("Warning: failed to open webcam device %r: %s", device_str, e)
+            return
+
+        # Warn and optionally refuse virtual devices on the cv2 path
+        from xpra.client.webcam.cv2_camera import CV2Camera
+        if isinstance(webcam_device, CV2Camera):
+            device_no = webcam_device._device_no
+            if device_no in virt_devices:
+                log.warn("Warning: video device %s is a virtual device", virt_devices.get(device_no, device_no))
+                if WEBCAM_ALLOW_VIRTUAL:
+                    log.warn(" environment override - this may hang..")
+                else:
+                    log.warn(" cowardly refusing to use it")
+                    log.warn(" set WEBCAM_ALLOW_VIRTUAL=1 to force enable it")
+                    webcam_device.release()
+                    return
+
         self.webcam_frame_no = 0
         try:
-            # test capture:
-            webcam_device = cv2.VideoCapture(device)  # 0 -> /dev/video0 @UndefinedVariable
-            ret, frame = webcam_device.read()
-            log("test capture using %s: %s, %s", webcam_device, ret, frame is not None)
-            assert ret, "no device or permission"
-            assert frame is not None, "no data"
-            assert frame.ndim == 3, "unexpected  number of dimensions: %s" % frame.ndim
-            h, w, Bpp = frame.shape
-            assert Bpp == 3, "unexpected number of bytes per pixel: %s" % Bpp
-            assert frame.size == w * h * Bpp
-            self.webcam_device_no = device
+            # Test capture
+            image = webcam_device.read()
+            log("test capture using %s: %s", webcam_device, image)
+            assert image is not None, "no device, no permission, or no data"
+            w, h = image.get_width(), image.get_height()
+
+            # Set up CSC if the device does not deliver BGRX
+            csc = make_csc_to_bgrx(webcam_device.pixel_format, w, h)
+            self.webcam_csc = csc
+
+            self.webcam_device_no = getattr(webcam_device, "_device_no", 0)
             self.webcam_device = webcam_device
-            self.send("webcam-start", device, w, h)
+            self.send("webcam-start", self.webcam_device_no, w, h)
             self.webcam_state_changed()
             log("webcam started")
             if self.send_webcam_frame():
@@ -194,6 +197,7 @@ class WebcamForwarder(StubClientMixin):
                 self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
         except Exception as e:
             log.warn("webcam test capture failed: %s", e)
+            webcam_device.release()
 
     def cancel_webcam_send_timer(self) -> None:
         wst = self.webcam_send_timer
@@ -236,6 +240,13 @@ class WebcamForwarder(StubClientMixin):
             wd.release()
         except Exception as e:
             log.error("Error closing webcam device %s: %s", wd, e)
+        csc = self.webcam_csc
+        if csc is not None:
+            self.webcam_csc = None
+            try:
+                csc.clean()
+            except Exception as e:
+                log("error cleaning webcam CSC: %s", e)
         self.webcam_state_changed()
 
     def may_send_webcam_frame(self) -> bool:
@@ -279,38 +290,67 @@ class WebcamForwarder(StubClientMixin):
             formats = [x for x in preferred_order if x in common_encodings] + common_encodings
             encoding = formats[0]
             start = monotonic()
-            import cv2
-            ret, frame = self.webcam_device.read()
-            assert ret, "capture failed"
-            assert frame.ndim == 3, "invalid frame data"
-            h, w, Bpp = frame.shape
-            assert Bpp == 3 and frame.size == w * h * Bpp
+            image = self.webcam_device.read()
+            assert image is not None, "capture failed"
+
+            # Apply CSC to convert to BGRX if needed
+            csc = self.webcam_csc
+            if csc is not None:
+                image = csc.convert_image(image)
+
+            w, h = image.get_width(), image.get_height()
             end = monotonic()
             log("webcam frame capture took %ims", (end - start) * 1000)
 
-            options = {}
-            # try to use mmap if available:
+            options: dict[str, Any] = {}
+            # Try to use mmap if available
             mmap_write_area = getattr(self, "mmap_write_area", None)
             if mmap_write_area and mmap_write_area.enabled:
-                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-                options["pixel-format"] = "BGRX"
-                mmap_data = mmap_write_area.write_data(rgb)
+                # Convert to BGRX for mmap path (we already have BGRX from the csc above,
+                # or BGR from cv2 which we need to convert to BGRX here)
+                pixel_format = image.get_pixel_format()
+                if pixel_format == "BGR":
+                    import cv2
+                    import numpy
+                    raw = numpy.frombuffer(image.get_pixels(), dtype=numpy.uint8).reshape(h, w, 3)
+                    bgrx = cv2.cvtColor(raw, cv2.COLOR_BGR2RGBA)
+                    pixel_format = "BGRX"
+                    from xpra.codecs.image import ImageWrapper as _IW
+                    image = _IW(0, 0, w, h, bgrx.tobytes(), "BGRX", 32, w * 4, planes=_IW.PACKED)
+                options["pixel-format"] = pixel_format
+                mmap_data = mmap_write_area.write_data(image.get_pixels())
                 log("mmap_write_area=%s, mmap_data=%s", self.mmap_write_area.get_info(), mmap_data)
                 encoding = "mmap"
                 img_data = b""
                 options["chunks"] = mmap_data
             else:
-                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # @UndefinedVariable
-                # slow via pillow:
-                start = monotonic()
-                from PIL import Image  # @UnresolvedImport
+                # Encode via Pillow: convert to RGB first
+                pixel_format = image.get_pixel_format()
+                pixels = image.get_pixels()
+                if pixel_format in ("BGR", "BGRX"):
+                    import cv2
+                    import numpy
+                    channels = 3 if pixel_format == "BGR" else 4
+                    raw = numpy.frombuffer(pixels, dtype=numpy.uint8).reshape(h, w, channels)
+                    if pixel_format == "BGR":
+                        rgb = cv2.cvtColor(raw, cv2.COLOR_BGR2RGB)
+                    else:
+                        rgb = cv2.cvtColor(raw, cv2.COLOR_BGRA2RGB)
+                    pil_data = rgb.tobytes()
+                    pil_mode = "RGB"
+                else:
+                    # For NV12/YUYV that were not CSC'd, fall back to raw bytes
+                    pil_data = pixels if isinstance(pixels, bytes) else bytes(pixels)
+                    pil_mode = "RGB"
+                from PIL import Image
                 from io import BytesIO
-                image = Image.fromarray(rgb)
+                pil_image = Image.frombytes(pil_mode, (w, h), pil_data)
                 buf = BytesIO()
-                image.save(buf, format=encoding)
+                pil_image.save(buf, format=encoding)
                 data = buf.getvalue()
                 buf.close()
                 img_data = compression.Compressed(encoding, data)
+                start = monotonic()
                 end = monotonic()
                 log("webcam frame compression to %s took %ims", encoding, (end - start) * 1000)
 

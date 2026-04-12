@@ -36,7 +36,7 @@ def valid_encodings(args: Sequence[str]) -> list[str]:
 def find_csc_spec(src_format: str, dst_format: str):
     from xpra.codecs.video import getVideoHelper
     specs = getVideoHelper().get_csc_specs(src_format).get(dst_format, ())
-    log.error(f"{specs=}")
+    log("find_csc_spec(%s, %s) specs=%s", src_format, dst_format, specs)
     for spec in specs:
         if src_format not in spec.input_colorspace:
             continue

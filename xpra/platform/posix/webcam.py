@@ -145,7 +145,7 @@ def add_video_device_change_callback(callback: Callable) -> None:
     Gio = gi_import("Gio")
     from xpra.platform.webcam import _video_device_change_callbacks, _fire_video_device_change
     log(f"add_video_device_change_callback({callback})")
-    global device_timetamps, device_monitor
+    global device_monitor
 
     def dev_directory_changed(*_args) -> None:
         old = dict(device_timetamps)
@@ -169,6 +169,30 @@ def add_video_device_change_callback(callback: Callable) -> None:
             log("add_video_device_change_callback(%s)", callback, exc_info=True)
             log.warn("Warning: unable to use Gio file monitor: %s", e)
     _video_device_change_callbacks.append(callback)
+
+
+def get_libcamera_devices() -> dict[str, dict]:
+    """
+    Return a dict of {camera_id: {"id": camera_id, "name": name}}
+    for all cameras visible to the libcamera stack.
+    Returns an empty dict if libcamera is not installed.
+    """
+    try:
+        import libcamera
+    except ImportError as e:
+        log("libcamera not available: %s", e)
+        return {}
+    try:
+        cm = libcamera.CameraManager.singleton()
+        devices: dict[str, dict] = {}
+        for camera in cm.cameras:
+            camera_id = camera.id
+            devices[camera_id] = {"id": camera_id, "name": camera_id}
+        log("get_libcamera_devices() found %i cameras", len(devices))
+        return devices
+    except Exception as e:
+        log("get_libcamera_devices() error: %s", e)
+        return {}
 
 
 def remove_video_device_change_callback(callback: Callable) -> None:

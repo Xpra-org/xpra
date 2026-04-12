@@ -236,7 +236,7 @@ Suggests: xpra-codecs-nvidia (= ${binary:Version})
 # for CPU percentage in "xpra top"
         ,python-psutil
 # webcam support:
-        ,python3-opencv
+        ,python3-libcamera
         ,xpra-client-gnome
 # password prompts:
         ,pinentry-gnome3

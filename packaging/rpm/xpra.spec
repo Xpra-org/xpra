@@ -417,6 +417,7 @@ Recommends:         %{py3rpmname}-psutil
 Recommends:         ibus-libs
 Suggests:			sshpass
 Suggests:           %{package_prefix}-client-gnome
+Suggests:           %{package_prefix}-libcamera
 %if 0%{?run_tests}
 %if 0%{?fedora}
 BuildRequires:		xclip
