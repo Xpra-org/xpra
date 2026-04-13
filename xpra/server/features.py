@@ -103,7 +103,7 @@ def set_server_features(opts, mode: str) -> None:
         features.command = opts.commands
         features.mdns = opts.mdns and impcheck("net.mdns")
         features.notification = (features.dbus or WIN32 or OSX) and opts.notifications and impcheck("notification")
-        features.webcam = b(opts.webcam) and impcheck("codecs")
+        features.webcam = b(opts.webcam) and impcheck("codecs") and impcheck("webcam")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
         features.x11 = x11 and impcheck("x11")
@@ -159,7 +159,7 @@ def enforce_server_features() -> None:
         "mdns": "xpra.net.mdns,xpra.xpra.server.subsystem.mdns",
         "command": "xpra.server.subsystem.child_command",
         "notification": "xpra.notification,xpra.server.subsystem.notification,xpra.server.source.notification",
-        "webcam": "xpra.server.subsystem.webcam,xpra.server.source.webcam",
+        "webcam": "xpra.webcam,xpra.server.subsystem.webcam,xpra.server.source.webcam",
         "clipboard": "xpra.clipboard,xpra.server.subsystem.clipboard,xpra.server.source.clipboard",
         "audio": "xpra.audio,xpra.server.subsystem.audio,xpra.server.source.audio",
         "pulseaudio": "xpra.server.subsystem.pulseaudio",

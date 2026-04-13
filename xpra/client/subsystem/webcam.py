@@ -145,7 +145,7 @@ class WebcamForwarder(StubClientMixin):
 
     def do_start_sending_webcam(self, device_str: str) -> None:
         assert self.server_webcam
-        from xpra.client.webcam import open_camera
+        from xpra.webcam import open_camera
         try:
             webcam_device = open_camera(device_str)
         except Exception as e:
@@ -170,7 +170,7 @@ class WebcamForwarder(StubClientMixin):
                 target_formats = PIL_FORMATS
 
             if pixel_format not in target_formats:
-                from xpra.client.webcam import make_csc
+                from xpra.webcam import make_csc
                 self.webcam_csc = make_csc(pixel_format, w, h, target_formats)
 
             if mmap_write_area and mmap_write_area.enabled:

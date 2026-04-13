@@ -2868,8 +2868,6 @@ if client_ENABLED:
         add_modules("xpra.client.tk")
     if win32_client_ENABLED:
         add_modules("xpra.client.win32")
-    if webcam_ENABLED:
-        add_modules("xpra.client.webcam")
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
 toggle_packages(client_ENABLED, "xpra.client.gui", "xpra.client.gui.window")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3.window")
@@ -2895,6 +2893,8 @@ if client_ENABLED or server_ENABLED:
 if server_ENABLED or proxy_ENABLED:
     add_modules("xpra.scripts.server")
     add_modules("xpra.scripts.session")
+
+toggle_packages(webcam_ENABLED, "xpra.webcam")
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 toggle_packages(opengl_ENABLED, "xpra.opengl")

@@ -7,7 +7,7 @@ import threading
 from typing import Any
 
 from xpra.codecs.image import ImageWrapper
-from xpra.client.webcam.base import CameraDevice
+from xpra.webcam.base import CameraDevice
 from xpra.log import Logger
 
 log = Logger("webcam")

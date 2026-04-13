@@ -71,7 +71,7 @@ def set_client_features(opts) -> None:
     features.gstreamer = opts.gstreamer
     features.x11 = opts.backend in ("x11", "auto") and icheck("xpra.x11", not (WIN32 or OSX))
     features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and icheck("xpra.audio")
-    features.webcam = bo(opts.webcam) and icheck("xpra.codecs")
+    features.webcam = bo(opts.webcam) and icheck("xpra.codecs") and icheck("xpra.webcam")
     features.clipboard = b(opts.clipboard) and icheck("xpra.clipboard")
     features.keyboard = icheck("xpra.keyboard")
     features.pointer = b(opts.pointer)
@@ -117,7 +117,7 @@ def enforce_client_features() -> None:
         "cursor": "xpra.client.subsystem.cursor",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
-        "webcam": "xpra.client.subsystem.webcam",
+        "webcam": "xpra.webcam,xpra.client.subsystem.webcam",
         "audio": "xpra.audio,xpra.client.subsystem.audio",
         "clipboard": "xpra.clipboard,xpra.client.subsystem.clipboard",
         "keyboard": "xpra.keyboard,xpra.client.subsystem.keyboard",

@@ -11,10 +11,10 @@ Provides a unified factory (open_camera) that selects between libcamera
 
 Usage::
 
-    from xpra.client.webcam import open_camera, make_csc
+    from xpra.webcam import open_camera, make_csc
 
-    device = open_camera(device_str, virt_devices, non_virtual)
-    csc = make_csc(device.pixel_format, device.width, device.height, "BGRX")
+    device = open_camera(device_str)
+    csc = make_csc(device.pixel_format, device.width, device.height, ("BGRX", ))
 
     image = device.read()
     if image is not None and csc is not None:
@@ -24,10 +24,11 @@ Usage::
     if csc is not None:
         csc.clean()
 """
+
 from collections.abc import Sequence
 from typing import Any
 
-from xpra.client.webcam.base import CameraDevice
+from xpra.webcam.base import CameraDevice
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -94,7 +95,7 @@ def open_camera(device_str: str) -> CameraDevice | None:
             camera_id = next(iter(lc_devices))
         if camera_id is not None:
             log("using libcamera backend for %r (camera_id=%r)", device_str, camera_id)
-            from xpra.client.webcam.libcamera_camera import LibcameraCamera
+            from xpra.webcam.libcamera_camera import LibcameraCamera
             return LibcameraCamera(camera_id)
 
     virt_devices: dict[int, Any] = {}
@@ -112,7 +113,7 @@ def open_camera(device_str: str) -> CameraDevice | None:
 
     device_no = _parse_device_no(device_str, non_virtual)
     log("using cv2 backend for %r (device_no=%i)", device_str, device_no)
-    from xpra.client.webcam.cv2_camera import CV2Camera
+    from xpra.webcam.cv2_camera import CV2Camera
     from xpra.util.env import envbool
     webcam_device = CV2Camera(device_no)
     if virt_devices and device_no in virt_devices:

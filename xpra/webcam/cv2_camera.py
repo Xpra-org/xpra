@@ -7,7 +7,7 @@ import numpy
 import cv2
 
 from xpra.codecs.image import ImageWrapper
-from xpra.client.webcam.base import CameraDevice
+from xpra.webcam.base import CameraDevice
 from xpra.log import Logger
 
 log = Logger("webcam")
