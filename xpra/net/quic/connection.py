@@ -146,10 +146,15 @@ class XpraQuicConnection(Connection):
 
     def do_write(self, stream_id: int, data: bytes) -> None:
         self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
+        self.output_bytecount += len(data)
+        self.output_writecount += 1
 
     def get_packet_stream_id(self, packet_type: str) -> int:
         return self.stream_id
 
     def read(self, n: int) -> bytes:
         log("quic.read(%s)", n)
-        return self.read_queue.get()
+        data = self.read_queue.get()
+        self.input_bytecount += len(data)
+        self.input_readcount += 1
+        return data
