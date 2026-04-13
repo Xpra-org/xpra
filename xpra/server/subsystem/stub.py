@@ -22,6 +22,8 @@ if envbool("XPRA_UNIT_TEST"):
 else:
     superclass = object
 
+ENV_BLOCKLIST = ("LS_COLORS", )
+
 
 class StubServerMixin(superclass):
     """
@@ -121,7 +123,7 @@ class StubServerMixin(superclass):
         """
 
     def get_child_env(self) -> dict[str, str]:
-        return os.environ.copy()
+        return dict((k, v) for k,v in os.environ.items() if k not in ENV_BLOCKLIST)
 
     def get_full_child_command(self, cmd, _use_wrapper: bool = True) -> list[str]:
         # make sure we have it as a list:
