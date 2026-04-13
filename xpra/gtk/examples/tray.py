@@ -38,7 +38,6 @@ class FakeApplication:
         self.server_lock = True
         self.server_lock_toggle = True
         self.server_av_sync = True
-        self.server_virtual_video_devices = 4
         self.server_webcam = True
         self.server_audio_send = True
         self.server_audio_receive = True

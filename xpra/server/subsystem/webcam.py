@@ -4,15 +4,18 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+import os
 import os.path
+from subprocess import Popen
 from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX
+from xpra.util.objects import typedict
 from xpra.net.common import Packet
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.log import Logger
+from xpra.log import Logger, is_debug_enabled
 
 log = Logger("webcam")
 
@@ -44,9 +47,10 @@ def init_virtual_video_devices() -> int:
 
 class WebcamServer(StubServerMixin):
     """
-    Mixin for servers that handle webcam forwarding,
-    it just delegates to the webcam source mixin,
-    so each user can have its own webcam device(s).
+    Mixin for servers that handle webcam forwarding.
+    Supports two modes:
+    - v4l2 mode: frames are written into a virtual video device (requires v4l2loopback)
+    - client_mode: a webcam-client subprocess is spawned; frames are forwarded to it directly
     """
     PREFIX = "webcam"
 
@@ -54,13 +58,31 @@ class WebcamServer(StubServerMixin):
         StubServerMixin.__init__(self)
         self.webcam_device = ""
         self.webcam_encodings: Sequence[str] = ()
-        self.webcam_enabled: bool = False
+        self.webcam_enabled = False
+        self.webcam_virtual = False
         self.webcam_virtual_video_devices: int = 0
+        self.webcam_client_mode: bool = False
+        self.webcam_rgb_formats = "RGB", "BGR", "BGRX"
+        # token → (ss_uuid, device_id) — consumed on first use
+        self.webcam_client_tokens: dict[str, tuple[str, int]] = {}
+        # (ss_uuid, device_id) → proto — populated when webcam-client connects
+        self.webcam_client_connections: dict[tuple[str, int], Any] = {}
+        # (ss_uuid, device_id) → Popen
+        self.webcam_client_processes: dict[tuple[str, int], Popen] = {}
 
     def init(self, opts) -> None:
         self.webcam_enabled = opts.webcam.lower() not in FALSE_OPTIONS
+        if not self.webcam_enabled:
+            return
+        self.webcam_virtual = True
+        self.webcam_client_mode = True
         if os.path.isabs(opts.webcam):
             self.webcam_device = opts.webcam
+            self.webcam_client_mode = False
+        elif opts.webcam.lower() == "window":
+            self.webcam_virtual = False
+        elif opts.webcam.lower() in ("v4l2", "virtual"):
+            self.webcam_client_mode = False
 
     def init_state(self) -> None:
         # duplicated
@@ -68,13 +90,18 @@ class WebcamServer(StubServerMixin):
 
     def setup(self) -> None:
         self.init_webcam()
+        if self.webcam_client_mode:
+            self.hello_request_handlers["webcam-client"] = self._handle_hello_webcam_client
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {
             WebcamServer.PREFIX: {
                 "enabled": self.webcam_enabled,
                 "encodings": self.webcam_encodings,
+                "rgb-formats": self.webcam_rgb_formats,
+                "virtual": self.webcam_virtual,
                 "devices": self.webcam_virtual_video_devices,
+                "client_mode": self.webcam_client_mode,
             },
         }
 
@@ -85,7 +112,10 @@ class WebcamServer(StubServerMixin):
         if self.webcam_enabled:
             info.update({
                 "encodings": self.webcam_encodings,
+                "rgb-formats": self.webcam_rgb_formats,
+                "virtual": self.webcam_virtual,
                 "devices": self.webcam_virtual_video_devices,
+                "client_mode": self.webcam_client_mode,
             })
         if self.webcam_device:
             info["device"] = self.webcam_device
@@ -109,12 +139,61 @@ class WebcamServer(StubServerMixin):
             log.error("Error: webcam forwarding disabled:")
             log.estr(e)
             self.webcam_enabled = False
+            return
         if self.webcam_device:
             self.webcam_virtual_video_devices = 1
-        else:
+            return
+        if self.webcam_client_mode:
+            log.info("webcam window mode enabled")
+        if self.webcam_virtual:
             self.webcam_virtual_video_devices = init_virtual_video_devices()
-            if self.webcam_virtual_video_devices == 0:
-                self.webcam_enabled = False
+            self.webcam_virtual = bool(self.webcam_virtual_video_devices)
+            if not self.webcam_virtual_video_devices:
+                log.info("no v4l2 virtual devices found")
+        self.webcam_enabled = self.webcam_virtual or self.webcam_client_mode
+
+    # ------------------------------------------------------------------
+    # Hello handler for the webcam-client subprocess
+
+    def _handle_hello_webcam_client(self, proto, caps: typedict) -> bool:
+        wc = caps.dictget("webcam-client") or {}
+        wcd = typedict(wc)
+        token = wcd.strget("token")
+        device_id = wcd.intget("device", -1)
+        log("_handle_hello_webcam_client: token=%r, device_id=%i", token[:8] + "…" if token else "", device_id)
+        if not token or device_id < 0:
+            log.warn("Warning: invalid webcam-client hello (missing token or device)")
+            self.disconnect_client(proto, "invalid webcam-client hello")
+            return True
+        info = self.webcam_client_tokens.pop(token, None)
+        if not info:
+            log.warn("Warning: unknown or expired webcam-client token")
+            self.disconnect_client(proto, "invalid webcam-client token")
+            return True
+        ss_uuid, expected_device_id = info
+        if device_id != expected_device_id:
+            log.warn("Warning: webcam-client device mismatch: got %i, expected %i", device_id, expected_device_id)
+            self.disconnect_client(proto, "device mismatch")
+            return True
+        # Find the server source that owns this device and wire up the forwarder
+        key = (ss_uuid, device_id)
+        self.webcam_client_connections[key] = proto
+        for ss in self._server_sources.values():
+            if getattr(ss, "uuid", None) == ss_uuid:
+                ss.set_webcam_client_proto(device_id, proto)
+                break
+        else:
+            log.warn("Warning: server source %r not found for webcam-client", ss_uuid)
+            self.disconnect_client(proto, "source not found")
+            return True
+        # Accept the connection with a minimal hello ack
+        proto.large_packets.append("webcam-frame")
+        proto.send_now(Packet("hello", {"webcam": True}))
+        log("webcam-client connection accepted for device %i", device_id)
+        return True
+
+    # ------------------------------------------------------------------
+    # Packet handlers
 
     def _process_webcam_start(self, proto, packet: Packet) -> None:
         if self.readonly:
@@ -127,7 +206,43 @@ class WebcamServer(StubServerMixin):
         device_id = packet.get_i64(1)
         w = packet.get_u16(2)
         h = packet.get_u16(3)
-        ss.start_virtual_webcam(device_id, w, h)
+        if self.webcam_client_mode:
+            ss.setup_webcam_client_forwarder(device_id, w, h)
+            self._spawn_webcam_client(ss, device_id, w, h)
+        else:
+            ss.start_virtual_webcam(device_id, w, h)
+
+    def _spawn_webcam_client(self, ss, device_id: int, w: int, h: int) -> None:
+        import secrets
+        token = secrets.token_hex(16)
+        self.webcam_client_tokens[token] = (ss.uuid, device_id)
+
+        socket_path = ""
+        if self.unix_socket_paths:
+            socket_path = self.unix_socket_paths[0]
+        if not socket_path:
+            log.warn("Warning: cannot spawn webcam-client: no unix socket path available")
+            self.webcam_client_tokens.pop(token, None)
+            ss.send_webcam_stop(device_id, "no server socket available")
+            return
+
+        from xpra.platform.paths import get_xpra_command
+        uri = f"socket://{socket_path}?device={device_id}&token={token}"
+        cmd = get_xpra_command() + ["webcam-client", uri]
+        if is_debug_enabled("webcam"):
+            cmd.append("--debug=webcam")
+        env = self.get_child_env()
+        log("spawning webcam-client: %s", cmd)
+        log(" with env=%s", env)
+        try:
+            proc = Popen(cmd, env=env, close_fds=True)
+            key = (ss.uuid, device_id)
+            self.webcam_client_processes[key] = proc
+            log("webcam-client process spawned: pid=%i", proc.pid)
+        except Exception as e:
+            log.error("Error: failed to spawn webcam-client process: %s", e)
+            self.webcam_client_tokens.pop(token, None)
+            ss.send_webcam_stop(device_id, f"spawn failed: {e}")
 
     def _process_webcam_stop(self, proto, packet: Packet) -> None:
         if self.readonly:
@@ -141,6 +256,17 @@ class WebcamServer(StubServerMixin):
         if len(packet) >= 3:
             message = packet.get_str(2)
         ss.stop_virtual_webcam(device_id, message)
+        self._cleanup_webcam_client(getattr(ss, "uuid", ""), device_id)
+
+    def _cleanup_webcam_client(self, ss_uuid: str, device_id: int) -> None:
+        key = (ss_uuid, device_id)
+        self.webcam_client_connections.pop(key, None)
+        proc = self.webcam_client_processes.pop(key, None)
+        if proc:
+            try:
+                proc.terminate()
+            except OSError:
+                pass
 
     def _process_webcam_frame(self, proto, packet: Packet) -> None:
         if self.readonly:

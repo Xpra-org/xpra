@@ -110,7 +110,7 @@ NO_NETWORK_SUBCOMMANDS = (
     "opengl", "opengl-probe", "opengl-test", "opengl-save",
     "autostart",
     "encoding", "video",
-    "nvinfo", "webcam",
+    "nvinfo", "webcam", "webcam-client",
     "keyboard", "gtk-info", "gui-info", "network-info", "monitor-info",
     "compression", "packet-encoding", "path-info",
     "printing-info", "version-info", "version-check", "toolbox",
@@ -841,6 +841,13 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         check_gtk("webcam")
         from xpra.gtk.dialogs import show_webcam
         return show_webcam.main(["show_webcam.py"] + args)
+    if mode == "webcam-client":
+        check_gtk("webcam-client")
+        if not args:
+            error_cb("webcam-client requires a server URI")
+        params = parse_display_name(error_cb, options, args[0], cmdline)
+        from xpra.scripts.webcam_client import main as webcam_client_main
+        return webcam_client_main(params)
     if mode == "keyboard":
         from xpra.platform import keyboard
         return keyboard.main()

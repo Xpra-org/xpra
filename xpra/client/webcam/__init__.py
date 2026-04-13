@@ -7,24 +7,24 @@
 Webcam capture abstraction.
 
 Provides a unified factory (open_camera) that selects between libcamera
-(preferred on Linux when available) and cv2 (OpenCV) backends.
+(preferred on Linux when available) and cv2 (OpenCV) backends, plus CSC helpers.
 
 Usage::
 
-    from xpra.client.webcam import open_camera, make_csc_to_bgrx
+    from xpra.client.webcam import open_camera, make_csc
 
     device = open_camera(device_str, virt_devices, non_virtual)
-    csc = make_csc_to_bgrx(device.pixel_format, device.width, device.height)
+    csc = make_csc(device.pixel_format, device.width, device.height, "BGRX")
 
-    ok, image = device.read()
-    if ok and csc is not None:
+    image = device.read()
+    if image is not None and csc is not None:
         image = csc.convert_image(image)
 
     device.release()
     if csc is not None:
         csc.clean()
 """
-
+from collections.abc import Sequence
 from typing import Any
 
 from xpra.client.webcam.base import CameraDevice
@@ -72,27 +72,18 @@ def _parse_device_no(device_str: str, non_virtual: dict[int, Any]) -> int:
     return 0
 
 
-def open_camera(
-    device_str: str,
-    virt_devices: dict[int, Any],
-    non_virtual: dict[int, Any],
-) -> CameraDevice:
+def open_camera(device_str: str) -> CameraDevice | None:
     """
-    Open a camera device appropriate for *device_str*.
+    Open a camera device appropriate for *device_str*, or return None if the
+    device should not be used.
 
     Selection priority:
     1. If libcamera is available and *device_str* matches a known camera ID
        (or is an AUTO_OPTIONS value), use LibcameraCamera.
     2. Otherwise fall back to CV2Camera.
 
-    Parameters
-    ----------
-    device_str:
-        The webcam option string from xpra configuration.
-    virt_devices:
-        Dict of virtual v4l2 device numbers (used to warn / skip).
-    non_virtual:
-        Dict of non-virtual v4l2 device numbers (used for "auto" selection).
+    When a CV2Camera lands on a virtual v4l2 device number, a warning is
+    logged and None is returned unless XPRA_WEBCAM_ALLOW_VIRTUAL is set.
     """
     lc_devices = _get_libcamera_devices()
     if lc_devices:
@@ -106,43 +97,67 @@ def open_camera(
             from xpra.client.webcam.libcamera_camera import LibcameraCamera
             return LibcameraCamera(camera_id)
 
+    virt_devices: dict[int, Any] = {}
+    non_virtual: dict[int, Any] = {}
+    try:
+        from xpra.platform.webcam import get_virtual_video_devices, get_all_video_devices
+        virt_devices = get_virtual_video_devices()
+        all_video_devices = get_all_video_devices()  # pylint: disable=assignment-from-none
+        non_virtual = {k: v for k, v in all_video_devices.items() if k not in virt_devices}
+        log("virtual video devices=%s", virt_devices)
+        log("all video devices=%s", all_video_devices)
+        log("found %s non-virtual video devices: %s", len(non_virtual), non_virtual)
+    except ImportError as e:
+        log("no webcam_util: %s", e)
+
     device_no = _parse_device_no(device_str, non_virtual)
     log("using cv2 backend for %r (device_no=%i)", device_str, device_no)
     from xpra.client.webcam.cv2_camera import CV2Camera
-    return CV2Camera(device_no)
+    from xpra.util.env import envbool
+    webcam_device = CV2Camera(device_no)
+    if virt_devices and device_no in virt_devices:
+        log.warn("Warning: video device %s is a virtual device", virt_devices.get(device_no, device_no))
+        if envbool("XPRA_WEBCAM_ALLOW_VIRTUAL", False):
+            log.warn(" environment override - this may hang..")
+        else:
+            log.warn(" cowardly refusing to use it")
+            log.warn(" set XPRA_WEBCAM_ALLOW_VIRTUAL=1 to force enable it")
+            webcam_device.release()
+            return None
+    return webcam_device
 
 
-def make_csc_to_bgrx(src_format: str, w: int, h: int):
+def make_csc(src_format: str, w: int, h: int, dst_formats: Sequence[str]):
     """
-    Create and initialise a CSC converter that converts *src_format* → BGRX,
-    or return None if *src_format* is already BGRX.
+    Create and initialise a CSC converter from *src_format* to the first
+    matching format in *dst_formats*, or return None if none is found.
 
-    Tries libyuv first (supports NV12, YUYV), then csc_cython as a fallback.
-    Returns None if no suitable converter is found.
-
-    Note: libcamera support requires xpra-codecs compiled with libyuv.
+    Discovers available CSC modules via the codec loader (get_csc_modules /
+    load_codec) so the choice of backend is determined by what is installed,
+    without relying on the global VideoHelper singleton being pre-initialised.
     """
-    if src_format == "BGRX":
+    dst_formats = [f for f in dst_formats if f != src_format]
+    if not dst_formats:
         return None
-    for mod_name in ("libyuv.converter", "csc_cython.converter"):
-        try:
-            from importlib import import_module
-            mod = import_module(f"xpra.codecs.{mod_name}")
-        except ImportError:
-            continue
-        try:
-            specs = mod.get_specs(src_format, "BGRX")
-        except Exception:
-            continue
-        for spec in specs:
-            try:
-                conv = spec.codec_class()
-                conv.init_context(w, h, src_format, w, h, "BGRX", {})
-                log("make_csc_to_bgrx: using %s for %s->BGRX", mod_name, src_format)
-                return conv
-            except Exception as e:
-                log("make_csc_to_bgrx: %s spec failed: %s", mod_name, e)
-    log.warn("Warning: no CSC converter found for %s→BGRX", src_format)
-    log.warn(" libcamera webcam frames will not be forwarded correctly")
-    log.warn(" ensure xpra-codecs is built with libyuv support")
+    from xpra.codecs.loader import load_codec
+    from xpra.codecs.video import get_csc_modules
+    from xpra.util.objects import typedict
+    for dst_format in dst_formats:
+        for name in get_csc_modules():
+            mod = load_codec(name)
+            if mod is None:
+                continue
+            for spec in mod.get_specs():
+                if spec.input_colorspace != src_format:
+                    continue
+                if dst_format not in spec.output_colorspaces:
+                    continue
+                try:
+                    conv = spec.codec_class()
+                    conv.init_context(w, h, src_format, w, h, dst_format, typedict())
+                    log("make_csc: using %s (%s) for %s->%s", name, spec.codec_class, src_format, dst_format)
+                    return conv
+                except Exception as e:
+                    log("make_csc: %s spec failed: %s", name, e)
+    log.warn("Warning: no CSC converter found for %s→%s", src_format, dst_formats)
     return None

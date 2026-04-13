@@ -37,8 +37,7 @@ class LibcameraCamera(CameraDevice):
     Uses a threading.Event to bridge the asynchronous request-completed
     callback into a synchronous read() call.
 
-    Typical pixel formats delivered are NV12 or YUYV; callers should use
-    make_csc_to_bgrx() from the webcam factory to convert to BGRX.
+    Typical pixel formats delivered are NV12 or YUYV
     """
 
     def __init__(self, camera_id: str) -> None:

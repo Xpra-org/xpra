@@ -10,12 +10,60 @@ from xpra.common import noop
 from xpra.os_util import POSIX, OSX
 from xpra.util.objects import typedict
 from xpra.util.env import envint
+from xpra.net.common import Packet
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("webcam")
 
 MAX_WEBCAM_DEVICES = envint("XPRA_MAX_WEBCAM_DEVICES", 1)
+
+
+class WebcamClientForwarder:
+    """
+    Placeholder device used in client_mode instead of a VirtualWebcam.
+    Stores the protocol connection to the spawned webcam-client process and
+    forwards compressed frames directly without any decode/re-encode step.
+    """
+
+    def __init__(self, device_id: int, w: int, h: int) -> None:
+        self._device_id = device_id
+        self._w = w
+        self._h = h
+        self._proto = None
+
+    def set_proto(self, proto) -> None:
+        self._proto = proto
+
+    def is_ready(self) -> bool:
+        return self._proto is not None
+
+    def forward(self, frame_no: int, encoding: str, w: int, h: int, data, options: dict) -> None:
+        proto = self._proto
+        if proto is None:
+            log("WebcamClientForwarder.forward: no protocol yet, dropping frame %i", frame_no)
+            return
+        from xpra.net.common import Packet
+        proto.send_now(Packet("webcam-frame", self._device_id, frame_no, encoding, w, h, data, options))
+
+    def get_width(self) -> int:
+        return self._w
+
+    def get_height(self) -> int:
+        return self._h
+
+    def clean(self) -> None:
+        proto = self._proto
+        self._proto = None
+        if proto:
+            try:
+                proto.send_now(Packet("webcam-stop", self._device_id, "session ended"))
+                proto.close()
+            except Exception as e:
+                log("WebcamClientForwarder.clean() proto close error: %s", e)
+
+    def __repr__(self) -> str:
+        return f"WebcamClientForwarder({self._device_id}, {self._w}x{self._h})"
 
 
 def valid_encodings(args: Sequence[str]) -> list[str]:
@@ -74,12 +122,14 @@ class WebcamConnection(StubClientConnection):
         self.webcam_enabled = server.webcam_enabled
         self.webcam_device = server.webcam_device
         self.webcam_encodings = valid_encodings(server.webcam_encodings)
-        log("WebcamMixin: enabled=%s, device=%s, encodings=%s",
-            self.webcam_enabled, self.webcam_device, self.webcam_encodings)
+        self.webcam_client_mode = getattr(server, "webcam_client_mode", False)
+        log("WebcamMixin: enabled=%s, device=%s, encodings=%s, client_mode=%s",
+            self.webcam_enabled, self.webcam_device, self.webcam_encodings, self.webcam_client_mode)
 
     def init_state(self) -> None:
-        # for each webcam device_id, the actual device used
+        # for each webcam device_id, the actual device used (VirtualWebcam or WebcamClientForwarder)
         self.webcam_forwarding_devices: dict = {}
+        self.webcam_client_mode: bool = False
 
     def cleanup(self) -> None:
         self.stop_all_virtual_webcams()
@@ -104,6 +154,24 @@ class WebcamConnection(StubClientConnection):
             }
         from xpra.platform.posix.webcam import get_virtual_video_devices  # pylint: disable=import-outside-toplevel
         return get_virtual_video_devices()
+
+    def setup_webcam_client_forwarder(self, device_id: int, w: int, h: int) -> None:
+        """Create a WebcamClientForwarder for client_mode.  The proto is set later when the process connects."""
+        forwarder = WebcamClientForwarder(device_id, w, h)
+        self.webcam_forwarding_devices[device_id] = forwarder
+        log.info("webcam forwarding using webcam-client process")
+        log.info(" device %i, %ix%i", device_id, w, h)
+
+    def set_webcam_client_proto(self, device_id: int, proto) -> None:
+        """Called when the spawned webcam-client process connects back and sends its hello."""
+        forwarder = self.webcam_forwarding_devices.get(device_id)
+        if not isinstance(forwarder, WebcamClientForwarder):
+            log.warn("Warning: set_webcam_client_proto: device %i is not a WebcamClientForwarder", device_id)
+            return
+        forwarder.set_proto(proto)
+        log("webcam-client proto registered for device %i, sending ack", device_id)
+        # Tell the forwarding client to start sending frames
+        self.send_webcam_ack(device_id, 0, forwarder.get_width(), forwarder.get_height())
 
     def send_webcam_ack(self, device, frame: int, *args) -> None:
         self.send_async("webcam-ack", device, frame, *args)
@@ -193,6 +261,11 @@ class WebcamConnection(StubClientConnection):
             log.error("Error: webcam forwarding is not active, dropping frame")
             self.send_webcam_stop(device_id, "not started")
             return False
+        # client_mode: forward the compressed packet directly, no decode/re-encode
+        if isinstance(webcam, WebcamClientForwarder):
+            webcam.forward(frame_no, encoding, w, h, data, options)
+            self.send_webcam_ack(device_id, frame_no)
+            return True
         free = noop
         try:
             if encoding == "mmap":
