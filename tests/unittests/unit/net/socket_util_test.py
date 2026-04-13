@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
+import sys
 import tempfile
 import os
 import unittest
@@ -18,6 +19,9 @@ from xpra.net.socket_util import (
     parse_bind_ip,
     parse_sock_perms,
     parse_bind_vsock,
+    parse_bind_options,
+    check_ssh_upgrades,
+    get_bind_sockpaths,
     SocketListener,
     hosts,
     close_sockets,
@@ -42,6 +46,11 @@ class TestValidateAbstractSocketpath(unittest.TestCase):
         assert validate_abstract_socketpath("has.dot") is False
         assert validate_abstract_socketpath("has@at") is False
         assert validate_abstract_socketpath("") is True  # vacuously true: all() on empty
+
+
+def make_xpra_header(flags=0, level=0, index=0, size=32):
+    """Build an 8-byte xpra packet header."""
+    return b"P" + bytes([flags, level, index]) + size.to_bytes(4, "big")
 
 
 class TestLooksLikeXpraPacket(unittest.TestCase):
@@ -74,6 +83,42 @@ class TestLooksLikeXpraPacket(unittest.TestCase):
         header = b"P" + b"\x00" * 3 + too_big.to_bytes(4, "big")
         assert looks_like_xpra_packet(header) is False
 
+    def test_both_compressors_rejected(self):
+        # LZ4_FLAG=0x10, BROTLI_FLAG=0x40 — both set means compressors > 1
+        from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
+        flags = LZ4_FLAG | BROTLI_FLAG
+        # compression_level > 0 to pass the level check if we got that far
+        header = make_xpra_header(flags=flags, level=1)
+        assert looks_like_xpra_packet(header) is False
+
+    def test_compressor_set_but_level_zero(self):
+        # One compressor enabled but compression_level == 0: rejected
+        from xpra.net.protocol.header import LZ4_FLAG
+        header = make_xpra_header(flags=LZ4_FLAG, level=0)
+        assert looks_like_xpra_packet(header) is False
+
+    def test_compressor_with_nonzero_level_accepted(self):
+        from xpra.net.protocol.header import LZ4_FLAG
+        header = make_xpra_header(flags=LZ4_FLAG, level=1)
+        assert looks_like_xpra_packet(header) is True
+
+    def test_rencode_and_yaml_rejected(self):
+        # FLAGS_RENCODE=0x1, FLAGS_YAML=0x4 — mutually exclusive
+        from xpra.net.protocol.header import FLAGS_RENCODE, FLAGS_YAML
+        flags = FLAGS_RENCODE | FLAGS_YAML
+        header = make_xpra_header(flags=flags, level=0)
+        assert looks_like_xpra_packet(header) is False
+
+    def test_rencode_alone_accepted(self):
+        from xpra.net.protocol.header import FLAGS_RENCODE
+        header = make_xpra_header(flags=FLAGS_RENCODE, level=0)
+        assert looks_like_xpra_packet(header) is True
+
+    def test_yaml_alone_accepted(self):
+        from xpra.net.protocol.header import FLAGS_YAML
+        header = make_xpra_header(flags=FLAGS_YAML, level=0)
+        assert looks_like_xpra_packet(header) is True
+
 
 class TestGuessPacketType(unittest.TestCase):
 
@@ -100,6 +145,19 @@ class TestGuessPacketType(unittest.TestCase):
 
     def test_html_tag(self):
         assert guess_packet_type(b"<html><head>") == "http"
+
+    def test_rdp(self):
+        # RDP: starts with \x03\x00, next two bytes encode total length
+        # size = data[2]*256 + data[3], and len(data) >= size
+        size = 7
+        data = b"\x03\x00" + bytes([0, size]) + b"\x00" * (size - 4)
+        assert guess_packet_type(data) == "rdp"
+
+    def test_rdp_size_too_large(self):
+        # size field claims more bytes than are present → not rdp
+        size = 100
+        data = b"\x03\x00" + bytes([0, size]) + b"\x00" * 3  # only 7 bytes, but size=100
+        assert guess_packet_type(data) != "rdp"
 
     def test_unknown(self):
         assert guess_packet_type(b"\x00\x01\x02\x03garbage") == ""
@@ -329,6 +387,129 @@ class TestParseBindVsock(unittest.TestCase):
             pass
         else:
             raise AssertionError("expected ValueError for non-integer port")
+
+
+class TestCheckSshUpgrades(unittest.TestCase):
+
+    def test_paramiko_blocked_returns_false(self):
+        # Setting sys.modules["paramiko"] = None makes find_spec return None
+        saved = sys.modules.get("paramiko", ...)
+        sys.modules["paramiko"] = None
+        try:
+            result = check_ssh_upgrades(warn=False)
+            self.assertFalse(result)
+        finally:
+            if saved is ...:
+                sys.modules.pop("paramiko", None)
+            else:
+                sys.modules["paramiko"] = saved
+
+    def test_no_warn_does_not_raise(self):
+        saved = sys.modules.get("paramiko", ...)
+        sys.modules["paramiko"] = None
+        try:
+            check_ssh_upgrades(warn=False)   # must not raise
+        finally:
+            if saved is ...:
+                sys.modules.pop("paramiko", None)
+            else:
+                sys.modules["paramiko"] = saved
+
+
+class TestParseBindOptions(unittest.TestCase):
+
+    def _make_opts(self, **overrides):
+        from xpra.util.objects import AdHocStruct
+        opts = AdHocStruct()
+        opts.min_port = 1024
+        for name in ("tcp", "ssl", "ws", "wss", "ssh", "quic", "rfb", "rdp", "vsock"):
+            setattr(opts, f"bind_{name}", ())
+        for k, v in overrides.items():
+            setattr(opts, k, v)
+        return opts
+
+    def test_empty(self):
+        opts = self._make_opts()
+        result = parse_bind_options(opts)
+        self.assertEqual(result, {})
+
+    def test_tcp(self):
+        opts = self._make_opts(bind_tcp=["127.0.0.1:10000"])
+        result = parse_bind_options(opts)
+        self.assertIn("tcp", result)
+        self.assertIn(("127.0.0.1", 10000), result["tcp"])
+
+    def test_vsock(self):
+        opts = self._make_opts(bind_vsock=["3:5000"])
+        result = parse_bind_options(opts)
+        self.assertIn("vsock", result)
+        self.assertIn((3, 5000), result["vsock"])
+
+    def test_vsock_invalid_ignored(self):
+        # invalid vsock format raises ValueError in parse_bind_vsock;
+        # parse_bind_options should propagate it
+        opts = self._make_opts(bind_vsock=["badvalue"])
+        with self.assertRaises((ValueError, Exception)):
+            parse_bind_options(opts)
+
+    def test_multiple_types(self):
+        opts = self._make_opts(bind_tcp=["127.0.0.1:10000"], bind_ssl=["127.0.0.1:10443"])
+        result = parse_bind_options(opts)
+        self.assertIn("tcp", result)
+        self.assertIn("ssl", result)
+
+
+@unittest.skipUnless(POSIX, "abstract sockets only on POSIX")
+class TestGetBindSockpathsAbstract(unittest.TestCase):
+
+    def _make_dotxpra(self):
+        class FakeDotXpra:
+            def osexpand(self, s):
+                return s
+
+            def socket_path(self, s):
+                return "/tmp/" + s
+
+            def norm_socket_paths(self, display_name):
+                return []
+        return FakeDotXpra()
+
+    def test_explicit_abstract_socket(self):
+        dotxpra = self._make_dotxpra()
+        with tempfile.TemporaryDirectory() as session_dir:
+            result = get_bind_sockpaths(
+                ["@mysocket"], session_dir, ":7", dotxpra,
+                os.getuid(), os.getgid(),
+            )
+        self.assertIn("@mysocket", result)
+
+    def test_abstract_socket_with_options(self):
+        dotxpra = self._make_dotxpra()
+        with tempfile.TemporaryDirectory() as session_dir:
+            result = get_bind_sockpaths(
+                ["@mysocket,auth=allow"], session_dir, ":7", dotxpra,
+                os.getuid(), os.getgid(),
+            )
+        self.assertIn("@mysocket", result)
+        self.assertEqual(result["@mysocket"].get("auth"), "allow")
+
+    def test_invalid_abstract_socket_name_raises(self):
+        dotxpra = self._make_dotxpra()
+        with tempfile.TemporaryDirectory() as session_dir:
+            with self.assertRaises(ValueError):
+                get_bind_sockpaths(
+                    ["@has/slash"], session_dir, ":7", dotxpra,
+                    os.getuid(), os.getgid(),
+                )
+
+    def test_none_and_empty_skipped(self):
+        dotxpra = self._make_dotxpra()
+        with tempfile.TemporaryDirectory() as session_dir:
+            result = get_bind_sockpaths(
+                ["none", ""], session_dir, ":7", dotxpra,
+                os.getuid(), os.getgid(),
+            )
+        self.assertEqual(result, {})
 
 
 @unittest.skipUnless(POSIX, "Unix domain socket creation only on POSIX")

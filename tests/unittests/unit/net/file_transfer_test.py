@@ -218,6 +218,22 @@ class TestFileTransferAttributes(unittest.TestCase):
         assert fta.file_transfer is True
 
 
+class MinimalFTH(FileTransferHandler):
+    """Minimal concrete subclass with no-op send/compressed_wrapper for testing."""
+
+    def __init__(self):
+        super().__init__()
+        self.sent: list = []
+        self.init_attributes()
+
+    def send(self, packet_type, *parts):
+        self.sent.append((packet_type,) + parts)
+
+    def compressed_wrapper(self, datatype, data, level=5):
+        from xpra.net import compression
+        return compression.Compressed(datatype, data)
+
+
 class TestFileTransferHandler(unittest.TestCase):
 
     def test_basic(self):
@@ -242,6 +258,36 @@ class TestFileTransferHandler(unittest.TestCase):
         caps = typedict({"file": {"enabled": True, "size-limit": 1024 * 1024, "open": True, "open-url": True}})
         fth.parse_file_transfer_caps(caps)
         assert fth.remote_file_transfer
+        fth.cleanup()
+
+    def test_parse_file_transfer_caps_ask_flags(self):
+        fth = FileTransferHandler()
+        fth.init_attributes()
+        caps = typedict({"file": {"enabled": True, "ask": True, "open-ask": True, "open-url-ask": True,
+                                  "chunks": 65536, "ask-timeout": 30}})
+        fth.parse_file_transfer_caps(caps)
+        self.assertTrue(fth.remote_file_transfer)
+        self.assertTrue(fth.remote_file_transfer_ask)
+        self.assertTrue(fth.remote_open_files_ask)
+        self.assertTrue(fth.remote_open_url_ask)
+        self.assertEqual(fth.remote_file_chunks, 65536)
+        self.assertEqual(fth.remote_file_ask_timeout, 30)
+        fth.cleanup()
+
+    def test_parse_printer_caps(self):
+        fth = FileTransferHandler()
+        fth.init_attributes()
+        caps = typedict({"file": {"printing": True, "printing-ask": True}})
+        fth.parse_printer_caps(caps)
+        self.assertTrue(fth.remote_printing)
+        self.assertTrue(fth.remote_printing_ask)
+        fth.cleanup()
+
+    def test_parse_printer_caps_disabled(self):
+        fth = FileTransferHandler()
+        fth.init_attributes()
+        fth.parse_printer_caps(typedict())
+        self.assertFalse(fth.remote_printing)
         fth.cleanup()
 
     def test_check_file_size_within_limit(self):
@@ -273,6 +319,214 @@ class TestFileTransferHandler(unittest.TestCase):
         fth.parse_file_transfer_caps(caps)
         info = fth.get_info()
         assert isinstance(info, dict)
+        fth.cleanup()
+
+    def test_get_info_contains_remote(self):
+        fth = MinimalFTH()
+        info = fth.get_info()
+        self.assertIn("remote", info)
+        remote = info["remote"]
+        for key in ("file-transfer", "file-size-limit", "open-files", "open-url", "printing"):
+            self.assertIn(key, remote)
+        fth.cleanup()
+
+    # ------------------------------------------------------------------
+    # accept_data
+
+    def test_accept_data_file_transfer_enabled(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        ok, printit, openit = fth.accept_data("sid", "file", "hello.txt", False, False)
+        self.assertTrue(ok)
+        self.assertFalse(printit)
+        self.assertFalse(openit)
+        fth.cleanup()
+
+    def test_accept_data_file_transfer_disabled(self):
+        fth = MinimalFTH()
+        fth.file_transfer = False
+        ok, printit, openit = fth.accept_data("sid", "file", "hello.txt", False, False)
+        self.assertFalse(ok)
+        fth.cleanup()
+
+    def test_accept_data_ask_blocks(self):
+        # file_transfer_ask=True means we need explicit pre-approval
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.file_transfer_ask = True
+        ok, _, _ = fth.accept_data("unknown-id", "file", "f.txt", False, False)
+        self.assertFalse(ok)
+        fth.cleanup()
+
+    def test_accept_data_pre_accepted(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.files_accepted["my-id"] = False
+        ok, _, _ = fth.accept_data("my-id", "file", "f.txt", False, False)
+        self.assertTrue(ok)
+        # consumed on use
+        self.assertNotIn("my-id", fth.files_accepted)
+        fth.cleanup()
+
+    def test_accept_data_openit_disabled(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.open_files = False
+        ok, _, openit = fth.accept_data("sid", "file", "f.txt", False, True)
+        self.assertTrue(ok)
+        self.assertFalse(openit)
+        fth.cleanup()
+
+    # ------------------------------------------------------------------
+    # send_open_url
+
+    def test_send_open_url_blocked(self):
+        fth = MinimalFTH()
+        fth.init_attributes()
+        fth.remote_open_url = False
+        result = fth.send_open_url("https://example.com")
+        self.assertFalse(result)
+        self.assertEqual(fth.sent, [])
+        fth.cleanup()
+
+    def test_send_open_url_allowed(self):
+        fth = MinimalFTH()
+        fth.init_attributes()
+        fth.remote_open_url = True
+        fth.remote_open_url_ask = False
+        result = fth.send_open_url("https://example.com")
+        self.assertTrue(result)
+        self.assertTrue(any(p[0] == "open-url" for p in fth.sent))
+        fth.cleanup()
+
+    # ------------------------------------------------------------------
+    # send_file
+
+    def test_send_file_transfer_disabled(self):
+        fth = MinimalFTH()
+        fth.file_transfer = False
+        result = fth.send_file("f.txt", "", b"data", 4)
+        self.assertFalse(result)
+        fth.cleanup()
+
+    def test_send_file_remote_not_supported(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.remote_file_transfer = False
+        result = fth.send_file("f.txt", "", b"data", 4)
+        self.assertFalse(result)
+        fth.cleanup()
+
+    def test_send_file_size_too_large(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.file_size_limit = 100
+        fth.remote_file_transfer = True
+        fth.remote_file_size_limit = 100
+        result = fth.send_file("big.bin", "", b"x" * 200, 200)
+        self.assertFalse(result)
+        fth.cleanup()
+
+    def test_send_file_success(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.file_size_limit = 10 * 1000 * 1000
+        fth.remote_file_transfer = True
+        fth.remote_file_size_limit = 10 * 1000 * 1000
+        fth.remote_file_transfer_ask = False
+        data = b"hello world"
+        result = fth.send_file("hello.txt", "text/plain", data, len(data))
+        self.assertTrue(result)
+        self.assertTrue(any(p[0] == "send-file" for p in fth.sent))
+        fth.cleanup()
+
+    def test_send_file_print_disabled(self):
+        fth = MinimalFTH()
+        fth.printing = False
+        result = fth.send_file("doc.pdf", "application/pdf", b"data", 4, printit=True)
+        self.assertFalse(result)
+        fth.cleanup()
+
+    # ------------------------------------------------------------------
+    # send_data_ask_timeout
+
+    def test_send_data_ask_timeout_missing(self):
+        fth = MinimalFTH()
+        # should warn but not raise
+        result = fth.send_data_ask_timeout("nonexistent-id")
+        self.assertFalse(result)
+        fth.cleanup()
+
+    def test_send_data_ask_timeout_cleans_up(self):
+        fth = MinimalFTH()
+        fth.pending_send_data["my-id"] = SendPendingData(
+            datatype="file", url="/tmp/f.txt", mimetype="", data=b"",
+            filesize=0, printit=False, openit=False, options={},
+        )
+        fth.pending_send_data_timers["my-id"] = 0
+        result = fth.send_data_ask_timeout("my-id")
+        self.assertFalse(result)
+        self.assertNotIn("my-id", fth.pending_send_data)
+        fth.cleanup()
+
+    # ------------------------------------------------------------------
+    # cancel_download
+
+    def test_cancel_download_not_found(self):
+        fth = MinimalFTH()
+        # should log error but not raise
+        fth.cancel_download("unknown-send-id")
+        fth.cleanup()
+
+    def test_cancel_download_found(self):
+        import hashlib
+        import tempfile
+        fth = MinimalFTH()
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tmp.close()
+        fd = os.open(tmp.name, os.O_RDWR)
+        state = ReceiveChunkState(
+            start=0.0, fd=fd, filename=tmp.name, mimetype="",
+            printit=False, openit=False, filesize=0,
+            options=typedict(), digest=hashlib.sha256(), written=0,
+            cancelled=False, send_id="my-send-id", timer=0, chunk=0,
+        )
+        fth.receive_chunks_in_progress["chunk-abc"] = state
+        fth.cancel_download("my-send-id")
+        self.assertTrue(state.cancelled)
+        fth.cleanup()
+
+    # ------------------------------------------------------------------
+    # do_process_file_data_request
+
+    def test_do_process_file_data_request_file_transfer_disabled(self):
+        fth = MinimalFTH()
+        fth.file_transfer = False
+        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, False, typedict())
+        # should respond with False
+        self.assertTrue(any(p[0] == "file-data-response" and p[2] is False for p in fth.sent))
+        fth.cleanup()
+
+    def test_do_process_file_data_request_url_disabled(self):
+        fth = MinimalFTH()
+        fth.open_url = False
+        fth.do_process_file_data_request("url", "sid", "https://x.com", 0, False, False, typedict())
+        self.assertTrue(any(p[0] == "file-data-response" and p[2] is False for p in fth.sent))
+        fth.cleanup()
+
+    def test_do_process_file_data_request_unknown_type(self):
+        fth = MinimalFTH()
+        fth.do_process_file_data_request("unknown-type", "sid", "x", 0, False, False, typedict())
+        self.assertTrue(any(p[0] == "file-data-response" and p[2] is False for p in fth.sent))
+        fth.cleanup()
+
+    def test_do_process_file_data_request_pre_requested(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.files_requested["f.txt"] = True
+        opts = typedict({"request-file": ("f.txt", True)})
+        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
+        self.assertTrue(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
         fth.cleanup()
 
 
