@@ -56,8 +56,8 @@ def _sign_challenge(private_key, salt: bytes, app_id: str = "Xpra",
     server_b64 = base64.urlsafe_b64encode(salt).decode().rstrip("=")
     client_data = {
         "challenge": server_b64,
-        "origin":    origin,
-        "typ":       "navigator.id.getAssertion",
+        "origin": origin,
+        "typ": "navigator.id.getAssertion",
     }
     client_param = sha256(json.dumps(client_data, sort_keys=True).encode()).digest()
     param = app_param + pack(b">B", user_presence) + pack(b">I", counter) + client_param
