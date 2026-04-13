@@ -80,8 +80,8 @@ def get_CS(in_cs, valid_options) -> Sequence[str]:
 COLORSPACES: Dict[str, Sequence[str]] = {
     "BGRX"       : get_CS("BGRX",    ["YUV420P", "YUV420P16", "YUV444P"]),
     "RGBX"       : get_CS("RGBX",    ["YUV420P", "YUV420P16", "YUV444P"]),
-    "BGR"        : get_CS("BGR",     ["YUV420P", "YUV420P16", "YUV444P"]),
-    "RGB"        : get_CS("RGB",     ["YUV420P", "YUV420P16", "YUV444P"]),
+    "BGR"        : get_CS("BGR",     ["YUV420P", "YUV420P16", "YUV444P", "BGRX"]),
+    "RGB"        : get_CS("RGB",     ["YUV420P", "YUV420P16", "YUV444P", "RGBX"]),
     "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX", "YUV420P16"]),
     "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
     "r210"       : get_CS("r210",    ["YUV420P", "BGR48", "YUV444P10"]),
@@ -116,6 +116,8 @@ def get_specs() -> Sequence[CSCSpec]:
             elif in_cs == "GBRP10":
                 can_scale = False
             elif out_cs == "YUV420P16" and in_cs == "YUV420P":
+                can_scale = False
+            elif (in_cs == "BGR" and out_cs == "BGRX") or (in_cs == "RGB" and out_cs == "RGBX"):
                 can_scale = False
             if in_cs == "YUV420P":
                 #safer not to try to handle odd dimensions as input:
@@ -609,6 +611,14 @@ cdef class Converter:
             else:
                 assert dst_format=="BGRX"
                 self.convert_image_function = self.GBRP_to_BGRX
+        elif src_format=="BGR" and dst_format=="BGRX":
+            assert_no_scaling()
+            allocate_rgb(4)
+            self.convert_image_function = self.BGR_to_BGRX
+        elif src_format=="RGB" and dst_format=="RGBX":
+            assert_no_scaling()
+            allocate_rgb(4)
+            self.convert_image_function = self.RGB_to_RGBX
         else:
             raise ValueError("BUG: src_format=%s, dst_format=%s", src_format, dst_format)
 
@@ -1435,6 +1445,55 @@ cdef class Converter:
         for i in range(3):
             PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(<char *> output_image, 24)
+
+
+    def BGR_to_BGRX(self, image: ImageWrapper) -> CythonImageWrapper:
+        return self.do_BGR_to_BGRX(image)
+
+    def RGB_to_RGBX(self, image: ImageWrapper) -> CythonImageWrapper:
+        """
+        Delegates to do_BGR_to_BGRX unchanged because the byte-level operation
+        is identical for both BGR→BGRX and RGB→RGBX.
+
+        The byte-offset constants are defined as mirror images of each other on
+        both little- and big-endian platforms:
+
+            BGR_B  == RGB_R     BGRX_B  == RGBX_R
+            BGR_G  == RGB_G     BGRX_G  == RGBX_G
+            BGR_R  == RGB_B     BGRX_R  == RGBX_B
+
+        so the three copy assignments and the X=255 fill in do_BGR_to_BGRX
+        produce the correct output for an RGB→RGBX conversion too.
+        """
+        return self.do_BGR_to_BGRX(image)
+
+    cdef do_BGR_to_BGRX(self, image: ImageWrapper):
+        cdef unsigned int x, y, o, i
+        cdef unsigned char *output_image
+
+        self.validate_rgb_image(image)
+        pixels = image.get_pixels()
+        cdef unsigned int input_stride = image.get_rowstride()
+        cdef unsigned int src_width = self.src_width
+        cdef unsigned int src_height = self.src_height
+        cdef unsigned int dst_stride = self.dst_strides[0]
+        log("do_BGR_to_BGRX(%s) input_stride=%i, dst_stride=%i", image, input_stride, dst_stride)
+
+        output_image = <unsigned char*> memalign(self.buffer_size)
+
+        cdef uintptr_t buf
+        with buffer_context(pixels) as bc:
+            buf = <uintptr_t> int(bc)
+            with nogil:
+                for y in range(src_height):
+                    for x in range(src_width):
+                        i = y * input_stride + x * 3
+                        o = y * dst_stride  + x * 4
+                        output_image[o + BGRX_B] = (<unsigned char*> buf)[i + BGR_B]
+                        output_image[o + BGRX_G] = (<unsigned char*> buf)[i + BGR_G]
+                        output_image[o + BGRX_R] = (<unsigned char*> buf)[i + BGR_R]
+                        output_image[o + BGRX_X] = 255
+        return self.packed_image_wrapper(<char *> output_image, 32)
 
 
 def selftest(full=False):
