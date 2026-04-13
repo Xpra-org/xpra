@@ -1187,8 +1187,6 @@ if modules_ENABLED:
                 "xpra.scripts.picker",
                 "xpra.scripts.main",
                 )
-    if webcam_ENABLED:
-        add_modules("xpra.scripts.webcam_client")
 
 #*******************************************************************************
 # Utility methods for building with Cython
