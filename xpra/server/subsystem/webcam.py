@@ -239,6 +239,15 @@ class WebcamServer(StubServerMixin):
             key = (ss.uuid, device_id)
             self.webcam_client_processes[key] = proc
             log("webcam-client process spawned: pid=%i", proc.pid)
+
+            def on_webcam_client_exit(_proc_info) -> None:
+                log("webcam-client process for device %i exited", device_id)
+                self._cleanup_webcam_client(ss.uuid, device_id)
+                ss.send_webcam_stop(device_id, "webcam-client exited")
+
+            from xpra.util.child_reaper import get_child_reaper
+            get_child_reaper().add_process(proc, f"webcam-client-{device_id}", cmd,
+                                           ignore=False, forget=True, callback=on_webcam_client_exit)
         except Exception as e:
             log.error("Error: failed to spawn webcam-client process: %s", e)
             self.webcam_client_tokens.pop(token, None)
