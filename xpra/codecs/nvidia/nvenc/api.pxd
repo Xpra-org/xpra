@@ -9,7 +9,7 @@ from collections.abc import Sequence
 import binascii
 import ctypes
 
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, uint64_t   # pylint: disable=syntax-error
+from libc.stdint cimport int8_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t   # pylint: disable=syntax-error
 
 
 cdef inline int MIN(int a, int b) noexcept nogil:
@@ -91,6 +91,12 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CAPS_SUPPORT_UNIDIRECTIONAL_B
         NV_ENC_CAPS_SUPPORT_MVHEVC_ENCODE
         NV_ENC_CAPS_SUPPORT_YUV422_ENCODE
+
+    ctypedef enum NV_ENC_QP_MAP_MODE:
+        NV_ENC_QP_MAP_DISABLED = 0  #[in]: qpDeltaMap is not used
+        NV_ENC_QP_MAP_EMPHASIS = 1  #[in]: qpDeltaMap values are NV_ENC_EMPHASIS_MAP_LEVEL (0-5)
+        NV_ENC_QP_MAP_DELTA    = 2  #[in]: qpDeltaMap values are signed QP offsets (-51 to +51)
+        NV_ENC_QP_MAP          = 3  #[in]: qpDeltaMap values are absolute QP values
 
     ctypedef enum NV_ENC_DEVICE_TYPE:
         NV_ENC_DEVICE_TYPE_DIRECTX
@@ -738,7 +744,12 @@ cdef extern from "nvEncodeAPI.h":
         uint8_t     targetQuality       #[in]: Target CQ (Constant Quality) level for VBR mode (range 0-51 with 0-automatic)
         uint8_t     targetQualityLSB    #[in]: Fractional part of target quality (as 8.8 fixed point format)
         uint16_t    lookaheadDepth      #[in]: Maximum depth of lookahead with range 0-32 (only used if enableLookahead=1)
-        uint32_t    reserved[9]
+        uint32_t    reserved0           #[in]: Reserved (was lowDelayKeyFrameScale + padding in SDK 9.0+)
+        float       yDCQPDelta          #[in]: Specifies the DC QP delta for luma (SDK 9.0+)
+        float       cbDCQPDelta         #[in]: Specifies the DC QP delta for Cb chroma (SDK 9.0+)
+        float       crDCQPDelta         #[in]: Specifies the DC QP delta for Cr chroma (SDK 9.0+)
+        uint32_t    qpMapMode           #[in]: NV_ENC_QP_MAP_MODE: specifies QP delta map mode (SDK 9.0+)
+        uint32_t    reserved[4]         #[in]: Reserved and must be set to 0
 
     ctypedef struct NV_ENC_CONFIG:
         uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_CONFIG_VER.
@@ -990,8 +1001,10 @@ cdef extern from "nvEncodeAPI.h":
                                         #If _NV_ENC_INITIALIZE_PARAMS::enablePTD == 1, then the Encoder will generate an IDR frame corresponding to this input.
         uint32_t    newDarHeight        #[in]: Specifies the new disalay aspect ratio height for current Encoding session, in case of dynamic resolution change. Client should only set this in combination with NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_DYN_RES_CHANGE.
                                         #If _NV_ENC_INITIALIZE_PARAMS::enablePTD == 1, then the Encoder will generate an IDR frame corresponding to this input.
-        uint32_t    reserved1[259]      #[in]: Reserved and must be set to 0
-        void*       reserved2[63]       #[in]: Reserved and must be set to NULL
+        uint32_t    qpDeltaMapSize      #[in]: Number of bytes in qpDeltaMap array (SDK 9.0+)
+        uint32_t    reserved1[258]      #[in]: Reserved and must be set to 0
+        int8_t*     qpDeltaMap          #[in]: Per-macroblock QP delta map pointer (SDK 9.0+); NULL to disable
+        void*       reserved2[62]       #[in]: Reserved and must be set to NULL
 
     ctypedef enum NVENCSTATUS:
         NV_ENC_SUCCESS

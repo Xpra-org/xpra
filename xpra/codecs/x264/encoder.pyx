@@ -36,6 +36,9 @@ TUNE = os.environ.get("XPRA_X264_TUNE")
 LOG_NALS = envbool("XPRA_X264_LOG_NALS")
 SAVE_TO_FILE: str = os.environ.get("XPRA_SAVE_TO_FILE", "")
 BLANK_VIDEO = envbool("XPRA_X264_BLANK_VIDEO")
+SUPPORT_ROI: bool = envbool("XPRA_X264_ROI", False)
+ROI_CHANGED_DELTA: float = float(os.environ.get("XPRA_X264_ROI_CHANGED_DELTA", "-4"))
+ROI_BACKGROUND_DELTA: float = float(os.environ.get("XPRA_X264_ROI_BACKGROUND_DELTA", "4"))
 
 
 DEF X264_MBINFO_CONSTANT = 1
@@ -950,7 +953,9 @@ cdef class Encoder:
             pic_in.img.i_stride[i] = 0
             memset(&py_buf[i], 0, sizeof(Py_buffer))
 
-        cdef int mb_count = roundup(self.width, 16) // 16 * roundup(self.height, 16) // 16
+        cdef int mb_w = roundup(self.width, 16) // 16
+        cdef int mb_h = roundup(self.height, 16) // 16
+        cdef int mb_count = mb_w * mb_h
         cdef uint8_t *mb_info = NULL
         if MB_INFO:
             mb_info = <uint8_t*> memalign(mb_count)
@@ -959,6 +964,30 @@ cdef class Encoder:
             # for i in range(mb_count):
             #     mb_info[i] = i % 2
         pic_in.prop.mb_info = mb_info
+
+        cdef int mb_x, mb_y, mb_x1, mb_y1, mb_x2, mb_y2
+        cdef int rx, ry, rw, rh
+        cdef int j
+        cdef float *quant_offsets = NULL
+        if SUPPORT_ROI:
+            damage = options.get("damage")
+            if damage:
+                quant_offsets = <float*> memalign(mb_count * sizeof(float))
+                if quant_offsets == NULL:
+                    raise MemoryError("failed to allocate quant_offsets")
+                for j in range(mb_count):
+                    quant_offsets[j] = ROI_BACKGROUND_DELTA
+                for rect in damage:
+                    rx, ry, rw, rh = rect
+                    mb_x1 = rx >> 4
+                    mb_y1 = ry >> 4
+                    mb_x2 = min(mb_w, (rx + rw + 15) >> 4)
+                    mb_y2 = min(mb_h, (ry + rh + 15) >> 4)
+                    for mb_y in range(mb_y1, mb_y2):
+                        for mb_x in range(mb_x1, mb_x2):
+                            quant_offsets[mb_y * mb_w + mb_x] = ROI_CHANGED_DELTA
+                pic_in.prop.quant_offsets = quant_offsets
+                pic_in.prop.quant_offsets_free = &mb_info_free
 
         try:
             if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:

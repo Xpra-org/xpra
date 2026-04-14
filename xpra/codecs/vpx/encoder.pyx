@@ -36,6 +36,7 @@ from libc.string cimport memset
 
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
+SUPPORT_ROI: bool = envbool("XPRA_VPX_ROI", False)
 
 cdef int default_nthreads = max(1, int(math.sqrt(os.cpu_count()+1)))
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", default_nthreads)
@@ -75,6 +76,8 @@ cdef extern from "Python.h":
 cdef extern from "vpx/vp8cx.h":
     const vpx_codec_iface_t *vpx_codec_vp8_cx()
     const vpx_codec_iface_t *vpx_codec_vp9_cx()
+    int VP8E_SET_ACTIVEMAP
+    vpx_codec_err_t vpx_codec_control_active_map "vpx_codec_control_"(vpx_codec_ctx_t *ctx, int ctrl_id, vpx_active_map_t *map)
 
 cdef extern from "vpx/vpx_encoder.h":
     int VPX_ENCODER_ABI_VERSION
@@ -161,6 +164,11 @@ cdef extern from "vpx/vpx_encoder.h":
     cdef int VPX_DL_REALTIME
     cdef int VPX_DL_GOOD_QUALITY
     cdef int VPX_DL_BEST_QUALITY
+
+    ctypedef struct vpx_active_map_t:
+        uint8_t *active_map
+        unsigned int rows
+        unsigned int cols
 
     vpx_codec_err_t vpx_codec_enc_config_default(vpx_codec_iface_t *iface,
                               vpx_codec_enc_cfg_t *cfg, unsigned int usage)
@@ -547,6 +555,13 @@ cdef class Encoder:
     def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
+        cdef int mb_w = 0
+        cdef int mb_h = 0
+        cdef int mb_count = 0
+        cdef int mb_x1, mb_y1, mb_x2, mb_y2, mb_yi
+        cdef int rx, ry, rw, rh
+        cdef uint8_t *active_map_data = NULL
+        cdef vpx_active_map_t active_map
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
@@ -587,6 +602,29 @@ cdef class Encoder:
                     py_buf[i].len, "YUV"[i], istrides[i]*(self.height//ydiv))
                 pic_in[i] = <uint8_t *> py_buf[i].buf
                 strides[i] = istrides[i]
+            if SUPPORT_ROI:
+                damage = options.get("damage")
+                mb_w = roundup(self.width, 16) // 16
+                mb_h = roundup(self.height, 16) // 16
+                mb_count = mb_w * mb_h
+                active_map_data = <uint8_t*> malloc(mb_count)
+                if active_map_data != NULL:
+                    if damage:
+                        memset(active_map_data, 0, mb_count)
+                        for rect in damage:
+                            rx, ry, rw, rh = rect
+                            mb_x1 = rx >> 4
+                            mb_y1 = ry >> 4
+                            mb_x2 = MIN(mb_w, (rx + rw + 15) >> 4)
+                            mb_y2 = MIN(mb_h, (ry + rh + 15) >> 4)
+                            for mb_yi in range(mb_y1, mb_y2):
+                                memset(active_map_data + mb_yi * mb_w + mb_x1, 1, mb_x2 - mb_x1)
+                    else:
+                        memset(active_map_data, 1, mb_count)
+                    active_map.active_map = active_map_data
+                    active_map.rows = mb_h
+                    active_map.cols = mb_w
+                    vpx_codec_control_active_map(self.context, VP8E_SET_ACTIVEMAP, &active_map)
             return self.do_compress_image(pic_in, strides, full_range), {
                 "csc"       : self.src_format,
                 "frame"     : int(self.frames),
@@ -598,6 +636,15 @@ cdef class Encoder:
             for i in range(3):
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
+            if active_map_data != NULL:
+                # reset to all-active so stale ROI does not persist to next frame
+                memset(active_map_data, 1, mb_count)
+                active_map.active_map = active_map_data
+                active_map.rows = mb_h
+                active_map.cols = mb_w
+                vpx_codec_control_active_map(self.context, VP8E_SET_ACTIVEMAP, &active_map)
+                free(active_map_data)
+                active_map_data = NULL
 
     cdef bytes do_compress_image(self, uint8_t *pic_in[3], int strides[3], int full_range):
         #actual compression (no gil):

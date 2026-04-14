@@ -34,7 +34,7 @@ log = Logger("encoder", "nvenc")
 from pycuda import driver  # @UnresolvedImport
 import numpy
 
-from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, uint64_t   # pylint: disable=syntax-error
+from libc.stdint cimport uintptr_t, int8_t, uint8_t, uint16_t, uint32_t, uint64_t   # pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset, memcpy
 
@@ -82,6 +82,8 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NV_ENC_CAPS_EXPOSED_COUNT, NV_ENC_CAPS_WIDTH_MAX, NV_ENC_CAPS_HEIGHT_MAX, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT,
     NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES, NV_ENC_CAPS_SUPPORT_YUV444_ENCODE, NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE,
     NV_ENC_CAPS_SUPPORT_INTRA_REFRESH,
+    NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP,
+    NV_ENC_QP_MAP_DELTA,
     NV_ENCODE_API_FUNCTION_LIST_VER,
     NVENC_INFINITE_GOPLENGTH,
     NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME,
@@ -114,6 +116,11 @@ cdef int CONTEXT_LIMIT = envint("XPRA_NVENC_CONTEXT_LIMIT", 32)
 cdef int THREADED_INIT = envbool("XPRA_NVENC_THREADED_INIT", True)
 cdef int SLOW_DOWN_INIT = envint("XPRA_NVENC_SLOW_DOWN_INIT", 0)
 cdef int INTRA_REFRESH = envbool("XPRA_NVENC_INTRA_REFRESH", True)
+cdef int SUPPORT_ROI = envbool("XPRA_NVENC_ROI", False)
+# QP delta applied to macroblocks inside a damage region (more bits = higher quality)
+cdef int ROI_CHANGED_DELTA = envint("XPRA_NVENC_ROI_CHANGED_DELTA", -8)
+# QP delta applied to macroblocks outside any damage region (fewer bits = lower quality)
+cdef int ROI_BACKGROUND_DELTA = envint("XPRA_NVENC_ROI_BACKGROUND_DELTA", 8)
 
 device_lock = Lock()
 
@@ -391,6 +398,7 @@ cdef class Encoder:
     cdef object profile_name
     cdef object pixel_format
     cdef uint8_t lossless
+    cdef uint8_t support_roi
     #statistics, etc:
     cdef double time
     cdef uint64_t first_frame_timestamp
@@ -763,6 +771,10 @@ cdef class Encoder:
             log("NVENC initialized with '%s' codec and '%s' preset" % (self.codec_name, self.preset_name))
 
             self.dump_caps(self.codec_name, codec)
+            self.support_roi = SUPPORT_ROI and bool(
+                self.query_encoder_caps(codec, <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP)
+            )
+            log("support_roi=%s", bool(self.support_roi))
         finally:
             if params.encodeConfig!=NULL:
                 free(params.encodeConfig)
@@ -890,6 +902,8 @@ cdef class Encoder:
         #rcParams.constQP.qpInterP = qp
         #rcParams.constQP.qpInterB = qp
         #rcParams.constQP.qpIntra = qp
+        if self.support_roi:
+            rc.qpMapMode = NV_ENC_QP_MAP_DELTA
 
     cdef tune_h264(self, NV_ENC_CONFIG_H264 *h264, int gopLength):
         h264.level = NV_ENC_LEVEL_H264_5 #NV_ENC_LEVEL_AUTOSELECT
@@ -1051,6 +1065,12 @@ cdef class Encoder:
                 "bytes_in"  : self.bytes_in,
                 "bytes_out" : self.bytes_out,
                 "ratio_pct" : int(100 * self.bytes_out // b)
+            }
+        if self.support_roi:
+            info["roi"] = {
+                "supported"         : True,
+                "changed-delta"     : ROI_CHANGED_DELTA,
+                "background-delta"  : ROI_BACKGROUND_DELTA,
             }
         if self.preset_name:
             info["preset"] = self.preset_name
@@ -1332,9 +1352,10 @@ cdef class Encoder:
             speed = options.get("speed", -1)
             if speed>=0:
                 self.set_encoding_speed(speed)
-            return self.do_compress_image(cuda_context, image)
+            damage = options.get("damage") if self.support_roi else None
+            return self.do_compress_image(cuda_context, image, damage)
 
-    cdef Tuple do_compress_image(self, cuda_context, image: ImageWrapper):
+    cdef Tuple do_compress_image(self, cuda_context, image: ImageWrapper, damage=None):
         assert self.context, "nvenc context is not initialized"
         assert cuda_context, "missing device context"
         cdef unsigned int w = image.get_width()
@@ -1378,7 +1399,7 @@ cdef class Encoder:
         cdef NV_ENC_INPUT_PTR mappedResource = self.map_input_resource()
         assert mappedResource!=NULL
         try:
-            return self.nvenc_compress(input_size, mappedResource, image.get_timestamp(), image.get_full_range())
+            return self.nvenc_compress(input_size, mappedResource, image.get_timestamp(), image.get_full_range(), damage)
         finally:
             self.unmap_input_resource(mappedResource)
 
@@ -1530,7 +1551,7 @@ cdef class Encoder:
         cdef NVENCSTATUS r = self.functionList.nvEncUnmapInputResource(self.context, mappedResource)
         raiseNVENC(r, "unmapping input resource")
 
-    cdef Tuple nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0, full_range=True):
+    cdef Tuple nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0, full_range=True, damage=None):
         cdef NV_ENC_PIC_PARAMS pic
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         assert input_size>0, "invalid input size %i" % input_size
@@ -1588,9 +1609,34 @@ cdef class Encoder:
         #rc.maxQP.qpIntra = qmax
         #rc.averageBitRate = self.target_bitrate
         #rc.maxBitRate = self.max_bitrate
+        cdef int mb_w, mb_h, mb_count, mb_x1, mb_y1, mb_x2, mb_y2, mb_y
+        cdef int rx, ry, rw, rh
+        cdef int8_t *qp_map = NULL
+        if self.support_roi and damage:
+            mb_w = (self.encoder_width + 15) >> 4
+            mb_h = (self.encoder_height + 15) >> 4
+            mb_count = mb_w * mb_h
+            qp_map = <int8_t*> malloc(mb_count)
+            if qp_map == NULL:
+                raise MemoryError("failed to allocate QP delta map")
+            memset(qp_map, ROI_BACKGROUND_DELTA, mb_count)
+            for rect in damage:
+                rx, ry, rw, rh = rect
+                mb_x1 = rx >> 4
+                mb_y1 = ry >> 4
+                mb_x2 = min(mb_w, (rx + rw + 15) >> 4)
+                mb_y2 = min(mb_h, (ry + rh + 15) >> 4)
+                for mb_y in range(mb_y1, mb_y2):
+                    memset(qp_map + mb_y * mb_w + mb_x1, ROI_CHANGED_DELTA, mb_x2 - mb_x1)
+            pic.qpDeltaMap = qp_map
+            pic.qpDeltaMapSize = mb_count
+            log("ROI qp map: %ix%i macroblocks, %i damage rects", mb_w, mb_h, len(damage))
         cdef NVENCSTATUS r
         with nogil:
             r = self.functionList.nvEncEncodePicture(self.context, &pic)
+        if qp_map != NULL:
+            free(qp_map)
+            qp_map = NULL
         raiseNVENC(r, "error during picture encoding")
 
         memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
