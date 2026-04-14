@@ -204,7 +204,7 @@ class WindowsMixin(StubSourceMixin):
             }
         gbc = self.global_batch_config
         if gbc:
-            info["batch"] = self.global_batch_config.get_info()
+            info["batch"] = gbc.get_info()
         s = self.statistics
         if s:
             info.update(s.get_info())
