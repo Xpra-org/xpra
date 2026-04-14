@@ -532,8 +532,7 @@ class DisplayClient(StubClientMixin):
         self.screen_size_change_timer = self.timeout_add(delay, self.do_process_screen_size_change)
 
     def cancel_screen_size_change_timer(self):
-        ssct = self.screen_size_change_timer
-        if ssct:
+        if ssct := self.screen_size_change_timer:
             self.screen_size_change_timer = 0
             self.source_remove(ssct)
 

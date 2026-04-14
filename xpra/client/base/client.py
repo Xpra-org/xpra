@@ -241,8 +241,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         return protocol
 
     def cancel_verify_connected_timer(self):
-        vct = self.verify_connected_timer
-        if vct:
+        if vct := self.verify_connected_timer:
             self.verify_connected_timer = 0
             self.source_remove(vct)
 

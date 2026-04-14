@@ -53,8 +53,7 @@ class KeyboardConnection(StubClientConnection):
             "ibus": self.ibus,
             "record": self.keyboard_record,
         }
-        kc = self.keyboard_config
-        if kc:
+        if kc := self.keyboard_config:
             kci.update(kc.get_info())
         info["keyboard"] = kci
         return info
@@ -82,8 +81,7 @@ class KeyboardConnection(StubClientConnection):
         return self.keyboard_config.set_layout(layout, variant, options)
 
     def keys_changed(self) -> None:
-        kc = self.keyboard_config
-        if kc:
+        if kc := self.keyboard_config:
             kc.compute_modifier_map()
             kc.compute_modifier_keynames()
         log("keys_changed() updated keyboard config=%s", self.keyboard_config)
@@ -95,8 +93,7 @@ class KeyboardConnection(StubClientConnection):
 
     def set_default_keymap(self):
         log("set_default_keymap() keyboard_config=%s", self.keyboard_config)
-        kc = self.keyboard_config
-        if kc:
+        if kc := self.keyboard_config:
             kc.set_default_keymap()
         return kc
 
@@ -104,8 +101,7 @@ class KeyboardConnection(StubClientConnection):
         if keyname in DEFAULT_MODIFIER_MEANINGS:
             return True
         # keyboard config should always exist if we are here?
-        kc = self.keyboard_config
-        if kc:
+        if kc := self.keyboard_config:
             return kc.is_modifier(keycode)
         return False
 

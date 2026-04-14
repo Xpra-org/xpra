@@ -101,8 +101,7 @@ class ChallengeClient(StubClientMixin):
                 items = (ch_name,)
                 ierror = log.warn
             for auth in items:
-                instance = self.get_challenge_handler(auth, ierror)
-                if instance:
+                if instance := self.get_challenge_handler(auth, ierror):
                     self.challenge_handlers.append(instance)
         log("challenge-handlers=%r", self.challenge_handlers)
 
@@ -268,8 +267,7 @@ class ChallengeClient(StubClientMixin):
             self.auth_error(ExitCode.PASSWORD_REQUIRED,
                             "this server requires authentication and no password is available")
             return
-        encryption = self.get_encryption()
-        if encryption:
+        if self.get_encryption():
             assert len(packet) >= 3, "challenge does not contain encryption details to use for the response"
             server_cipher = typedict(packet.get_dict(2))
             key = self.get_encryption_key()

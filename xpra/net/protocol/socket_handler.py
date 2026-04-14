@@ -402,14 +402,11 @@ class SocketProtocol:
             "closed": self._closed,
             "eof-pending": self.eof_pending,
         }
-        comp = self.compressor
-        if comp:
+        if comp := self.compressor:
             info["compressor"] = comp
-        encoder = self.encoder
-        if encoder:
+        if encoder := self.encoder:
             info["encoder"] = encoder
-        conn = self._conn
-        if conn:
+        if conn := self._conn:
             with log.trap_error("Error collecting connection information on %s", conn):
                 info.update(conn.get_info())
         # add stats to connection info:
@@ -509,8 +506,7 @@ class SocketProtocol:
 
     def add_packet_to_queue(self, packet: Packet, synchronous=True, more=False) -> None:
         if not more:
-            shm = self._source_has_more
-            if shm:
+            if shm := self._source_has_more:
                 shm.clear()
         if not packet:
             return
@@ -561,8 +557,7 @@ class SocketProtocol:
                     items.append(header)
                     items.append(payload)
         # WebSocket header may be added here:
-        frame_header = self.make_frame_header(packet_type, items)  # pylint: disable=assignment-from-none
-        if frame_header:
+        if frame_header := self.make_frame_header(packet_type, items):  # pylint: disable=assignment-from-none
             item0 = items[0]
             if len(item0) < PACKET_JOIN_SIZE:
                 if not isinstance(item0, bytes):

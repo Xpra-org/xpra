@@ -128,8 +128,7 @@ class AudioConnection(StubClientConnection):
         timers = self.new_stream_timers.copy()
         self.new_stream_timers = {}
         for proc, timer in timers.items():
-            timer = self.new_stream_timers.pop(proc, 0)
-            if timer:
+            if timer := self.new_stream_timers.pop(proc, 0):
                 GLib.source_remove(timer)
             stop_proc(proc, "new-stream notification")
 
@@ -530,8 +529,7 @@ class AudioConnection(StubClientConnection):
         return f"new sequence is {self.audio_source_sequence}"
 
     def cancel_audio_fade_timer(self) -> None:
-        sft = self.audio_fade_timer
-        if sft:
+        if sft := self.audio_fade_timer:
             self.audio_fade_timer = 0
             GLib.source_remove(sft)
 

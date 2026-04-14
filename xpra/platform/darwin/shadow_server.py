@@ -211,8 +211,7 @@ class ShadowServer(GTKShadowServerBase):
     def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool, pointer, props):
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers"))
-        pointer = self.process_mouse_common(proto, device_id, wid, pointer)
-        if pointer:
+        if pointer := self.process_mouse_common(proto, device_id, wid, pointer):
             self.button_action(device_id, wid, button, pressed, props)
 
     def make_hello(self, source) -> dict[str, Any]:

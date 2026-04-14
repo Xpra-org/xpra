@@ -30,8 +30,7 @@ class QueueScheduler:
     def source_remove(self, tid: int) -> None:
         log("source_remove(%i)", tid)
         with self.timer_lock:
-            timer = self.timers.pop(tid, None)
-            if timer:
+            if timer := self.timers.pop(tid, None):
                 timer.cancel()
 
     def idle_add(self, fn: Callable, *args, **kwargs) -> int:

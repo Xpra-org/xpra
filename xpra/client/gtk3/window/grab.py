@@ -77,8 +77,7 @@ class GrabWindow(GtkStubWindow):
 
     def keyboard_ungrab(self, *args) -> None:
         log("keyboard_ungrab%s", args)
-        gdkwin = self.get_window()
-        if gdkwin:
+        if gdkwin := self.get_window():
             d = gdkwin.get_display()
             if d:
                 seat = d.get_default_seat()
@@ -138,8 +137,7 @@ class GrabWindow(GtkStubWindow):
         log("pointer_ungrab%s pointer_grabbed=%s",
             args, self._client.pointer_grabbed)
         self._client.pointer_grabbed = None
-        gdkwin = self.get_window()
-        if gdkwin:
+        if gdkwin := self.get_window():
             d = gdkwin.get_display()
             if d:
                 d.pointer_ungrab(Gdk.CURRENT_TIME)

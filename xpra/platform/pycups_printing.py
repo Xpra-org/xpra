@@ -381,9 +381,8 @@ def schedule_polling_timer() -> None:
 
 def cancel_polling_timer() -> None:
     global _polling_timer
-    pt = _polling_timer
-    log("cancel_polling_timer() timer=%s", pt)
-    if pt:
+    log("cancel_polling_timer() timer=%s", _polling_timer)
+    if pt := _polling_timer:
         try:
             _polling_timer = 0
             pt.cancel()

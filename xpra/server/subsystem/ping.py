@@ -35,8 +35,7 @@ class PingServer(StubServerMixin):
             self.ping_timer = GLib.timeout_add(1000 * self.pings, self.send_ping)
 
     def cleanup(self) -> None:
-        pt = self.ping_timer
-        if pt:
+        if pt := self.ping_timer:
             self.ping_timer = 0
             GLib.source_remove(pt)
 
@@ -61,8 +60,7 @@ class PingServer(StubServerMixin):
         return True
 
     def _process_ping_echo(self, proto, packet: Packet) -> None:
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.process_ping_echo(packet)
 
     def _process_ping(self, proto, packet: Packet) -> None:
@@ -70,8 +68,7 @@ class PingServer(StubServerMixin):
         sid = ""
         if len(packet) >= 4:
             sid = packet.get_str(3)
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.process_ping(time_to_echo, sid)
 
     def init_packet_handlers(self) -> None:

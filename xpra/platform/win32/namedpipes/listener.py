@@ -110,8 +110,7 @@ class NamedPipeListener(Thread):
         except Exception:
             log.error("Error: named pipe '%s'", self.pipe_name, exc_info=True)
             return ExitCode.FAILURE
-        tp = self.token_process
-        if tp:
+        if tp := self.token_process:
             self.token_process = INVALID_HANDLE
             CloseHandle(tp)
         self.security_attributes = None

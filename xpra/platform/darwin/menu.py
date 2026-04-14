@@ -129,8 +129,7 @@ class OSXMenuHelper(GTKTrayMenu):
             self.add_to_menu_bar(label, submenu)
 
     def add_to_app_menu(self, label: str, submenu) -> None:
-        item = self.app_menus.get(label)
-        if item:
+        if item := self.app_menus.get(label):
             log("application menu already has a '%s' entry", label)
             if submenu is not None:
                 item.set_submenu(submenu)
@@ -389,8 +388,7 @@ class OSXMenuHelper(GTKTrayMenu):
         swapkeys_menuitem = checkitem("Control/Command Key Swap", swapkeys_toggled)
 
         def set_swapkeys_menuitem(*args):
-            keyboard = self._get_keyboard()
-            if keyboard:
+            if keyboard := self._get_keyboard():
                 log("set_swapkeys_menuitem(%s) keyboard=%s, swap_keys=%s", args, keyboard, keyboard.swap_keys)
                 swapkeys_menuitem.set_active(keyboard.swap_keys)
             else:
@@ -427,8 +425,7 @@ class OSXMenuHelper(GTKTrayMenu):
         self.numlock_menuitem.set_active(True)
 
         def set_numlock_menuitem(*args):
-            keyboard = self._get_keyboard()
-            if keyboard:
+            if keyboard := self._get_keyboard():
                 log("set_numlock_menuitem(%s) keyboard=%s, num_lock_state=%s", args, keyboard, keyboard.num_lock_state)
                 self.numlock_menuitem.set_active(keyboard.num_lock_state)
             else:

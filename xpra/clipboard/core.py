@@ -225,8 +225,7 @@ class ClipboardProtocolHelperCore:
     def send_tokens(self, selections: Iterable[str] = ()) -> None:
         log("send_tokens(%s)", selections)
         for selection in selections:
-            proxy = self._clipboard_proxies.get(selection)
-            if proxy:
+            if proxy := self._clipboard_proxies.get(selection):
                 proxy._have_token = False
                 proxy.do_emit_token()
 
@@ -248,8 +247,7 @@ class ClipboardProtocolHelperCore:
                 target, dtype, dformat, data = packet_data[1]
                 wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
                 if wire_encoding:
-                    wire_data = self._may_compress(dtype, dformat, wire_data)
-                    if wire_data:
+                    if wire_data := self._may_compress(dtype, dformat, wire_data):
                         packet += [target, dtype, dformat, wire_encoding, wire_data]
                         claim = proxy._can_send
                         packet += [claim, self.local_greedy]
@@ -519,8 +517,7 @@ class ClipboardProtocolHelperCore:
 
     def process_clipboard_packet(self, packet: Packet) -> None:
         packet_type = packet.get_type()
-        handler = self._packet_handlers.get(packet_type)
-        if handler:
+        if handler := self._packet_handlers.get(packet_type):
             handler(packet)
         else:
             log.warn(f"Warning: no clipboard packet handler for {packet_type!r}")

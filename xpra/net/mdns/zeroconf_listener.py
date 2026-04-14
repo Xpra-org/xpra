@@ -64,12 +64,10 @@ class ZeroconfListener:
         log("ServiceBrowser%s=%s", (self.zeroconf, self.service_type, self), self.browser)
 
     def stop(self) -> None:
-        b = self.browser
-        if b:
+        if b := self.browser:
             self.browser = None
             noerr(b.cancel)
-        zc = self.zeroconf
-        if zc:
+        if zc := self.zeroconf:
             self.zeroconf = None
             noerr(zc.close)
 

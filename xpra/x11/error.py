@@ -119,8 +119,7 @@ class _ErrorManager:
         return Xexit(self.depth == 0 and need_sync)
 
     def safe_x_exit(self) -> None:
-        err = self.Xexit()
-        if err:
+        if err := self.Xexit():
             log(f"Warning: '{err}' detected while already in unwind; discarding")
 
     def _call(self, need_sync: bool, fun: Callable, args: tuple, kwargs: dict) -> Any:
@@ -136,12 +135,10 @@ class _ErrorManager:
         except Exception as e:
             elog("_call%s", (need_sync, fun, args, kwargs), exc_info=True)
             log("_call%s %s", (need_sync, fun, args, kwargs), e)
-            err = self.Xexit(need_sync)
-            if err:
+            if err := self.Xexit(need_sync):
                 log(f"XError '{err}' detected while already in unwind; discarding")
             raise
-        err = self.Xexit(need_sync)
-        if err:
+        if err := self.Xexit(need_sync):
             raise XError(err)
         return value
 

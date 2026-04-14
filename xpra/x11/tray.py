@@ -137,8 +137,7 @@ class SystemTray(GObject.GObject):
             for xid, xtray in tray_windows.items():
                 self.undock(xid)
                 X11Window.Unmap(xtray)
-            xid = self.xid
-            if xid:
+            if xid := self.xid:
                 self.xid = 0
                 X11Window.Unmap(xid)
         log("SystemTray.cleanup() done")

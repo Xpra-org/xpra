@@ -128,8 +128,7 @@ class CursorManager(StubServerMixin):
 
     def _process_cursor_set(self, proto, packet: Packet) -> None:
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.send_cursors = packet.get_bool(1)
 
     def suspend_cursor(self, proto) -> None:
@@ -140,8 +139,7 @@ class CursorManager(StubServerMixin):
         if self.cursor_suspended:
             return
         self.cursor_suspended = True
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.cancel_cursor_timer()
             ss.send_empty_cursor()
 

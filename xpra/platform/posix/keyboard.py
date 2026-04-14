@@ -215,8 +215,7 @@ class Keyboard(KeyboardBase):
             return {}, [], []
         from xpra.x11.error import xlog
         with xlog:
-            mod_mappings = self.keyboard_bindings.get_modifier_mappings()
-            if mod_mappings:
+            if mod_mappings := self.keyboard_bindings.get_modifier_mappings():
                 # ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
                 log("modifier mappings=%s", mod_mappings)
                 meanings: dict[str, str] = {}
@@ -292,8 +291,7 @@ class Keyboard(KeyboardBase):
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
         if self.keyboard_bindings:
             try:
-                v = self.keyboard_bindings.get_key_repeat_rate()
-                if v:
+                if v := self.keyboard_bindings.get_key_repeat_rate():
                     assert len(v) == 2
                     log("get_keyboard_repeat()=%s", v)
                     return v[0], v[1]

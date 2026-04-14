@@ -79,8 +79,7 @@ class TrayClient(StubClientMixin):
         self.connect("startup-complete", tray_ready)
 
     def cleanup(self) -> None:
-        t = self.tray
-        if t:
+        if t := self.tray:
             self.tray = None
             with log.trap_error("Error during tray cleanup"):
                 t.cleanup()
@@ -161,8 +160,7 @@ class TrayClient(StubClientMixin):
         t: list[str] = []
         if self.session_name or self.server_session_name:
             t.append(self.session_name or self.server_session_name)
-        ce = self.get_connection_endpoint()
-        if ce:
+        if ce := self.get_connection_endpoint():
             t.append(ce)
         if not t:
             t.insert(0, "Xpra")

@@ -77,8 +77,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         GObjectClientAdapter.run_loop(self)
 
     def cleanup(self) -> None:
-        wms = self.win32_message_source
-        if wms:
+        if wms := self.win32_message_source:
             self.win32_message_source = 0
             GLib.source_remove(wms)
         UIXpraClient.cleanup(self)

@@ -113,8 +113,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
 
         einfo = {}
         for k in ("peername", "sockname", "compression", "cipher", "peercert", "sslcontext"):
-            v = self._transport.get_extra_info(k)
-            if v:
+            if v := self._transport.get_extra_info(k):
                 einfo[k] = v
 
         scope = {

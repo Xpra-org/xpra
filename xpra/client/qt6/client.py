@@ -181,15 +181,13 @@ class Qt6Client:
 
     def _process_window_close(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self.windows.get(wid)
-        if window:
+        if window := self.windows.get(wid):
             window.close()
             del self.windows[wid]
 
     def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self.windows.get(wid)
-        if window:
+        if window := self.windows.get(wid):
             window.raise_()
 
     def _process_window_draw(self, packet: Packet) -> None:

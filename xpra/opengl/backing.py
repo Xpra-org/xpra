@@ -302,8 +302,7 @@ class GLWindowBackingBase(WindowBackingBase):
             "bit-depth": self.bit_depth,
             "internal-format": INTERNAL_FORMAT_TO_STR.get(tif) or str(tif),
         }
-        le = self.last_present_fbo_error
-        if le:
+        if le := self.last_present_fbo_error:
             info["last-error"] = le
         return info
 
@@ -527,8 +526,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 pass
         from OpenGL.GL import glDeleteShader
         err_str = err_str.strip("\n\r")
-        shader = self.shaders.pop(name, None)
-        if shader:
+        if shader := self.shaders.pop(name, None):
             glDeleteShader(shader)
         log.error(f"Error compiling {name!r} OpenGL shader:")
         for line in err_str.split("\n"):
@@ -663,12 +661,10 @@ class GLWindowBackingBase(WindowBackingBase):
                     log.error(f"Error deleting {name!r} shader")
                     log.error(f" {gle}")
             vaos = []
-            vao = self.vao
-            if vao:
+            if vao := self.vao:
                 self.vao = None
                 vaos.append(vao)
-            vao = self.spinner_vao
-            if vao:
+            if vao := self.spinner_vao:
                 self.spinner_vao = None
                 vaos.append(vao)
             if vaos:
@@ -685,8 +681,7 @@ class GLWindowBackingBase(WindowBackingBase):
             log(f"{self}.close()", exc_info=True)
             log.error("Error closing OpenGL backing, some resources have not been freed")
             log.estr(e)
-        b = self._backing
-        if b:
+        if b := self._backing:
             self._backing = None
             b.destroy()
         self.close_gl_config()

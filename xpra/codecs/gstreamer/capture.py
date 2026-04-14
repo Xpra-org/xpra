@@ -132,8 +132,7 @@ class Capture(Pipeline):
 
     def clean(self) -> None:
         self.stop()
-        f = self.file
-        if f:
+        if f := self.file:
             self.file = None
             f.close()
 

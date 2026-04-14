@@ -246,11 +246,9 @@ class WebcamServer(StubServerMixin):
         self._cleanup_webcam_client(device_id, "stop")
 
     def _cleanup_webcam_client(self, device_id: int, reason: str) -> None:
-        proto = self.webcam_client_connections.pop(device_id, None)
-        if proto:
+        if proto := self.webcam_client_connections.pop(device_id, None):
             proto.close(reason)
-        proc = self.webcam_client_processes.pop(device_id, None)
-        if proc:
+        if proc := self.webcam_client_processes.pop(device_id, None):
             try:
                 proc.terminate()
             except OSError:

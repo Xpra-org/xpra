@@ -172,10 +172,8 @@ class WindowServer(StubServerMixin):
             "size": window.get_dimensions(),
             "xshm": window.uses_xshm(),
         })
-        wid = self._window_to_id.get(window)
-        if wid:
-            wprops = self.client_properties.get(wid)
-            if wprops:
+        if wid := self._window_to_id.get(window):
+            if wprops := self.client_properties.get(wid):
                 info["client-properties"] = wprops
         return info
 
@@ -269,8 +267,7 @@ class WindowServer(StubServerMixin):
             message = packet.get_str(6)
         else:
             message = ""
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
 
     def refresh_window(self, window) -> None:
@@ -330,8 +327,7 @@ class WindowServer(StubServerMixin):
             ss.update_batch(wid, window, batch_props)
 
     def _refresh_windows(self, proto, wid_windows, opts=None) -> None:
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             self.do_refresh_windows(ss, wid_windows, opts)
 
     def do_refresh_windows(self, ss, wid_windows, opts=None) -> None:

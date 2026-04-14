@@ -36,8 +36,7 @@ class ClientWidgetBase:
             "window-alpha": self._window_alpha,
             "pixel-depth": self.pixel_depth,
         }
-        b = self._backing
-        if b:
+        if b := self._backing:
             info["backing"] = b.get_info()
         return info
 

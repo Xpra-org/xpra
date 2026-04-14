@@ -199,8 +199,7 @@ class OpenRequestsWindow:
             self.cancel_download(send_id, "User cancelled")
 
         def show_progressbar(position=0, total=1) -> None:
-            expire = self.expire_labels.pop(send_id, None)
-            if expire:
+            if expire := self.expire_labels.pop(send_id, None):
                 expire_label = expire[0]
                 expire_label.set_text("")
             for b in hbox.get_children():
@@ -244,8 +243,7 @@ class OpenRequestsWindow:
             cb_answer(ACCEPT, True)
             show_progressbar()
 
-        pbd = self.progress_bars.pop(send_id, None)
-        if pbd:
+        if pbd := self.progress_bars.pop(send_id, None):
             # we already accepted this one, show stop + progressbar
             show_progressbar(pbd[2], pbd[3])
             return hbox
@@ -269,9 +267,9 @@ class OpenRequestsWindow:
             self.populate_timer = GLib.timeout_add(1000, self.update_expires_label)
 
     def cancel_timer(self) -> None:
-        if self.populate_timer:
-            GLib.source_remove(self.populate_timer)
+        if pt := self.populate_timer:
             self.populate_timer = 0
+            GLib.source_remove(pt)
 
     def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None) -> None:
         pbd = self.progress_bars.get(transfer_id)

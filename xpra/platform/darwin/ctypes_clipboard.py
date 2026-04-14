@@ -65,8 +65,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
             self.local_clipboard_changed()
 
     def update_change_count(self) -> None:
-        p = self.pasteboard
-        if p:
+        if p := self.pasteboard:
             self.change_count = p.changeCount()
 
     def clear(self) -> None:
@@ -79,8 +78,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
             log("do_emit_token() targets=%s", targets)
             packet_data.append(targets)
             if self._greedy_client and "TEXT" in targets:
-                text = self.get_clipboard_text()
-                if text:
+                if text := self.get_clipboard_text():
                     packet_data += ["STRING", "bytes", 8, text]
         self.send_clipboard_token_handler(self, tuple(packet_data))
 
@@ -107,8 +105,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
             return
         if target in IMAGE_FORMATS:
             try:
-                data = self.get_image_contents(target)
-                if data:
+                if data := self.get_image_contents(target):
                     got_contents(target, 8, data)
                     return
             except Exception:

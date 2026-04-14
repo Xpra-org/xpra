@@ -184,8 +184,7 @@ class WebcamConnection(StubClientConnection):
     def start_virtual_webcam(self, device_id, w: int, h: int) -> bool:
         log("start_virtual_webcam%s", (device_id, w, h))
         assert w > 0 and h > 0
-        webcam = self.webcam_forwarding_devices.get(device_id)
-        if webcam:
+        if self.webcam_forwarding_devices.get(device_id):
             log.warn("Warning: virtual webcam device %s already in use,", device_id)
             log.warn(" stopping it first")
             self.stop_virtual_webcam(device_id)

@@ -43,7 +43,6 @@ class DBUS_Connection(StubClientConnection):
             self.dbus_server = dbus_exception_wrap(make_dbus_server, "setting up client dbus instance")
 
     def cleanup(self) -> None:
-        ds = self.dbus_server
-        if ds:
+        if ds := self.dbus_server:
             self.dbus_server = None
             GLib.idle_add(ds.cleanup)

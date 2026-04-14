@@ -52,8 +52,7 @@ class PlatformClient(StubClientMixin):
                 self.setup_event_listener()
 
     def cleanup(self) -> None:
-        cdt = self.check_display_timer
-        if cdt:
+        if cdt := self.check_display_timer:
             GLib.source_remove(cdt)
             self.check_display_timer = 0
         try:

@@ -346,8 +346,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # Note: we cannot just call self.get_window_frame_size() here because
             # the window is not realized yet, and it may take a while for the window manager
             # to set the frame-extents property anyway
-            wfs = self._client.get_window_frame_sizes()
-            if wfs:
+            if wfs := self._client.get_window_frame_sizes():
                 geomlog("setup_window() window frame sizes=%s", wfs)
                 v = wfs.get("offset")
                 if v:
@@ -686,8 +685,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.send_configure_event(True)
 
     def cancel_window_state_timer(self) -> None:
-        wst = self.window_state_timer
-        if wst:
+        if wst := self.window_state_timer:
             self.window_state_timer = 0
             self.source_remove(wst)
 
@@ -714,8 +712,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.cancel_window_state_timer()
 
     def cancel_send_iconifiy_timer(self) -> None:
-        sit = self.send_iconify_timer
-        if sit:
+        if sit := self.send_iconify_timer:
             self.send_iconify_timer = 0
             self.source_remove(sit)
 
@@ -1099,9 +1096,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     self.moveresize_timer = self.timeout_add(20, self.do_moveresize)
 
     def cancel_moveresize_timer(self) -> None:
-        mrt = self.moveresize_timer
-        geomlog("cancel_moveresize_timer() timer=%i", mrt)
-        if mrt:
+        if mrt := self.moveresize_timer:
+            geomlog("cancel_moveresize_timer() timer=%i", mrt)
             self.moveresize_timer = 0
             self.source_remove(mrt)
 
@@ -1270,8 +1266,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         frame = self._client.get_frame_extents(self).get("frame", ())
         if not frame:
             # default to global value we may have:
-            wfs = self._client.get_window_frame_sizes()
-            if wfs:
+            if wfs := self._client.get_window_frame_sizes():
                 frame = wfs.get("frame", ())
         return frame
 
@@ -1307,8 +1302,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def update_relative_position(self) -> None:
         x, y = self.get_position()
         log("update_relative_position() follow_configure=%s", self._follow_configure)
-        fc = self._follow_configure
-        if fc:
+        if fc := self._follow_configure:
             event_time, event_pos = fc
             # until we see the event we caused by calling move(),
             # or if we timeout (for safety - some platforms may skip events?),
@@ -1459,8 +1453,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.may_update_metadata(w, h)
             if force:
                 # use GDK directly to bypass WM geometry hint enforcement
-                gdkwin = self.get_window()
-                if gdkwin:
+                if gdkwin := self.get_window():
                     geomlog("resize(%i, %i) using GDK (bypass WM hints)", w, h)
                     gdkwin.resize(w, h)
                 else:

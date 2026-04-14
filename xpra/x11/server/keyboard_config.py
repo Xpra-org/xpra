@@ -658,8 +658,7 @@ class KeyboardConfig(KeyboardConfigBase):
         # noinspection PyChainedComparisons
         if keycode < 0 and keyval > 0:
             # last resort, find using the keyval:
-            group_mapping = self.keyval_mappings.get(keyval, {})
-            if group_mapping:
+            if group_mapping := self.keyval_mappings.get(keyval, {}):
                 # this keyval was found!
                 # try to preserve the group:
                 keycodes = group_mapping.get(keyval, [])

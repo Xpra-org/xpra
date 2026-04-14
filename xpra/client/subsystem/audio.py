@@ -36,6 +36,7 @@ def _is_recoverable_audio_error(error_str: str) -> bool:
     upper = error_str.upper()
     return "DEVICE_INVALIDATED" in upper or "88890004" in upper
 
+
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
 DELTA_THRESHOLD = envint("XPRA_AV_SYNC_DELTA_THRESHOLD", 40)
 DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
@@ -234,11 +235,9 @@ class AudioClient(StubClientMixin):
             "microphone": self.microphone_enabled,
             "properties": dict(self.audio_properties),
         }
-        ss = self.audio_source
-        if ss:
+        if ss := self.audio_source:
             info["src"] = ss.get_info()
-        ss = self.audio_sink
-        if ss:
+        if ss := self.audio_sink:
             info["sink"] = ss.get_info()
         return {AudioClient.PREFIX: info}
 
@@ -333,8 +332,7 @@ class AudioClient(StubClientMixin):
             self.stop_sending_audio()
 
     def resume_audio(self, _client) -> None:
-        ars = self.audio_resume_restart
-        if ars:
+        if self.audio_resume_restart:
             self.audio_resume_restart = False
             self.start_receiving_audio()
 
@@ -390,8 +388,7 @@ class AudioClient(StubClientMixin):
             assert self.server_audio_receive, "client support for receiving audio is disabled"
             if not self.audio_loop_check("microphone"):
                 return
-            ss = self.audio_source
-            if ss:
+            if ss := self.audio_source:
                 enabled = True
                 if ss.get_state() == "active":
                     log.error("Error: microphone forwarding is already active")

@@ -242,8 +242,7 @@ class SplashScreen(Gtk.Window):
         self.exit()
 
     def cancel_timeout_timer(self) -> None:
-        tt = self.timeout_timer
-        if tt:
+        if tt := self.timeout_timer:
             self.timeout_timer = 0
             GLib.source_remove(tt)
 
@@ -312,20 +311,17 @@ class SplashScreen(Gtk.Window):
         set_window_progress(self, pct)
 
     def cancel_exit_timer(self) -> None:
-        et = self.exit_timer
-        if et:
+        if et := self.exit_timer:
             self.exit_timer = 0
             GLib.source_remove(et)
 
     def cancel_fade_out_timer(self) -> None:
-        fot = self.fade_out_timer
-        if fot:
+        if fot := self.fade_out_timer:
             self.fade_out_timer = 0
             GLib.source_remove(fot)
 
     def cancel_progress_timer(self) -> None:
-        pt = self.progress_timer
-        if pt:
+        if pt := self.progress_timer:
             self.progress_timer = 0
             GLib.source_remove(pt)
 

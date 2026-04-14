@@ -185,11 +185,9 @@ class WindowsConnection(StubClientConnection):
                 "packet_queue_pixels": pqpi,
             },
         }
-        gbc = self.global_batch_config
-        if gbc:
-            info["batch"] = self.global_batch_config.get_info()
-        s = self.statistics
-        if s:
+        if gbc := self.global_batch_config:
+            info["batch"] = gbc.get_info()
+        if s := self.statistics:
             info.update(s.get_info())
         if self.window_sources:
             total_pixels = 0
@@ -373,13 +371,11 @@ class WindowsConnection(StubClientConnection):
         Use this method to cancel all currently pending and ongoing
         damage requests for a window.
         """
-        ws = self.window_sources.get(wid)
-        if ws:
+        if ws := self.window_sources.get(wid):
             ws.cancel_damage()
 
     def record_scroll_event(self, wid: int) -> None:
-        ws = self.window_sources.get(wid)
-        if ws:
+        if ws := self.window_sources.get(wid):
             ws.record_scroll_event()
 
     def reinit_encoders(self) -> None:
@@ -391,8 +387,7 @@ class WindowsConnection(StubClientConnection):
         ws.map(coords)
 
     def unmap_window(self, wid: int, _window) -> None:
-        ws = self.window_sources.get(wid)
-        if ws:
+        if ws := self.window_sources.get(wid):
             ws.unmap()
 
     def restack_window(self, wid: int, window, detail: int, sibling: int) -> None:
@@ -416,8 +411,7 @@ class WindowsConnection(StubClientConnection):
         """ The given window is gone, ensure we free all the related resources """
         if not self.can_send_window(window):
             return
-        ws = self.window_sources.pop(wid, None)
-        if ws:
+        if ws := self.window_sources.pop(wid, None):
             self.emit("remove-window-source", ws)
             ws.cleanup()
         self.calculate_window_pixels.pop(wid, None)
@@ -430,8 +424,7 @@ class WindowsConnection(StubClientConnection):
         self.damage(wid, window, 0, 0, w, h, opts)
 
     def update_batch(self, wid: int, window, batch_props: typedict) -> None:
-        ws = self.window_sources.get(wid)
-        if ws:
+        if ws := self.window_sources.get(wid):
             if "reset" in batch_props:
                 ws.batch_config = self.make_batch_config(wid, window)
             for x in ("always", "locked"):
@@ -451,8 +444,7 @@ class WindowsConnection(StubClientConnection):
         return self.window_sources.get(wid)
 
     def make_window_source(self, wid: int, window):
-        ws = self.window_sources.get(wid)
-        if ws:
+        if ws := self.window_sources.get(wid):
             return ws
         batch_config = self.make_batch_config(wid, window)
         ww, wh = window.get_dimensions()
@@ -507,8 +499,7 @@ class WindowsConnection(StubClientConnection):
             damage_options = options.copy()
         else:
             damage_options = {}
-        s = self.statistics
-        if s:
+        if s := self.statistics:
             s.damage_last_events.append((wid, monotonic(), w * h))
         ws = self.make_window_source(wid, window)
         ws.damage(x, y, w, h, damage_options)
@@ -526,8 +517,7 @@ class WindowsConnection(StubClientConnection):
             return
         if decode_time > 0:
             self.statistics.client_decode_time.append((wid, monotonic(), width * height, decode_time))
-        ws = self.window_sources.get(wid)
-        if ws:
+        if ws := self.window_sources.get(wid):
             ws.damage_packet_acked(damage_packet_sequence, width, height, decode_time, message)
             self.may_recalculate(wid, width * height)
 

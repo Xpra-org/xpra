@@ -182,8 +182,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             log.estr(e)
 
     def release_root_overlay(self) -> None:
-        ro = self.root_overlay
-        if ro:
+        if ro := self.root_overlay:
             self.root_overlay = 0
             from xpra.x11.server.root_overlay import release_root_overlay
             release_root_overlay(ro)
@@ -243,8 +242,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             self.x11_ungrab()
 
     def update_size_constraints(self, minw, minh, maxw, maxh) -> None:
-        wm = self._wm
-        if wm:
+        if wm := self._wm:
             wm.set_size_constraints(minw, minh, maxw, maxh)
         elif features.window:
             # update the static default so the Wm instance will use it
@@ -299,8 +297,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
         info = super().get_ui_info(proto, **kwargs)
         # _NET_WM_NAME:
-        wm = self._wm
-        if wm:
+        if wm := self._wm:
             info.setdefault("state", {})["window-manager-name"] = wm.get_net_wm_name()
         return info
 
@@ -381,8 +378,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
 
     def set_desktop_geometry(self, width: int, height: int) -> None:
-        wm = self._wm
-        if wm:
+        if wm := self._wm:
             wm.update_desktop_geometry(width, height)
 
     def set_dpi(self, xdpi: int, ydpi: int) -> None:
@@ -561,8 +557,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 # all the windows we manage should be Gdk.WINDOW_FOREIGN
                 windowlog("ignoring TEMP window %#x", xid)
                 return
-        window = self._id_to_window.get(xid)
-        if window:
+        if window := self._id_to_window.get(xid):
             if window.is_managed():
                 windowlog("found existing window model %s for %#x, will refresh it", type(window), xid)
                 ww, wh = window.get_dimensions()
@@ -908,8 +903,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         mod, geom = clamp_window(x, y, w, h)
         if mod:
             # tell this client to honour the new location
-            ss = self.get_server_source(proto)
-            if ss:
+            if ss := self.get_server_source(proto):
                 resize_counter = max(resize_counter, window.get_property("resize-counter"))
                 x, y, w, h = geom
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
@@ -995,8 +989,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
     def schedule_configure_damage(self, wid: int, delay=CONFIGURE_DAMAGE_RATE) -> None:
         # rate-limit the damage events
-        timer = self.configure_damage_timers.get(wid)
-        if timer:
+        if self.configure_damage_timers.get(wid):
             return  # we already have one pending
 
         def damage() -> None:
@@ -1008,8 +1001,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.configure_damage_timers[wid] = GLib.timeout_add(delay, damage)
 
     def cancel_configure_damage(self, wid: int) -> None:
-        timer = self.configure_damage_timers.pop(wid, None)
-        if timer:
+        if timer := self.configure_damage_timers.pop(wid, None):
             GLib.source_remove(timer)
 
     def cancel_all_configure_damage(self) -> None:
@@ -1106,8 +1098,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.repaint_root_overlay_timer = GLib.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
 
     def cancel_repaint_root_overlay(self) -> None:
-        rrot = self.repaint_root_overlay_timer
-        if rrot:
+        if rrot := self.repaint_root_overlay_timer:
             self.repaint_root_overlay_timer = 0
             GLib.source_remove(rrot)
 

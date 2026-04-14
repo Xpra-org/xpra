@@ -58,8 +58,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
             WindowDamageHandler.do_destroy(self)
 
     def invalidate_pixmap(self) -> None:
-        lt = self._listening_to
-        if lt:
+        if lt := self._listening_to:
             self._listening_to = []
             self._cleanup_listening(lt)
         WindowDamageHandler.invalidate_pixmap(self)

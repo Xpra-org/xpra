@@ -238,11 +238,9 @@ class WindowBackingBase:
             "fps": self.fps_value,
             "paint": self.paint_stats,
         }
-        vd = self._video_decoder
-        if vd:
+        if vd := self._video_decoder:
             info["video-decoder"] = vd.get_info()
-        csc = self._csc_decoder
-        if csc:
+        if csc := self._csc_decoder:
             info["csc"] = csc.get_info()
         return info
 
@@ -297,8 +295,7 @@ class WindowBackingBase:
         return monotonic() - last_fps_event < max_time
 
     def cancel_fps_refresh(self) -> None:
-        frt = self.fps_refresh_timer
-        if frt:
+        if frt := self.fps_refresh_timer:
             self.fps_refresh_timer = 0
             GLib.source_remove(frt)
 
@@ -449,8 +446,7 @@ class WindowBackingBase:
         return self.cuda_context
 
     def free_cuda_context(self) -> None:
-        cc = self.cuda_context
-        if cc:
+        if cc := self.cuda_context:
             self.cuda_context = None
             cc.free()
 
@@ -674,8 +670,7 @@ class WindowBackingBase:
             if not specs:
                 continue
             for spec in specs:
-                v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
-                if v:
+                if self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height):
                     # not suitable
                     continue
                 score = - (spec.quality + spec.speed + spec.score_boost)
@@ -705,8 +700,7 @@ class WindowBackingBase:
                 videolog.error(" * %-10s:", dst_format)
                 for spec in specs:
                     errs = []
-                    size_error = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
-                    if size_error:
+                    if size_error := self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height):
                         errs.append(size_error)
                     if not spec.can_scale and (src_width != dst_width or src_height != dst_height):
                         errs.append("scaling not supported")

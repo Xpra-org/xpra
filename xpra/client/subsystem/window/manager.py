@@ -205,8 +205,7 @@ class WindowManagerClient(StubClientMixin):
         parent = metadata.intget("parent")
         geomlog("relative-position=%s (parent=%s)", rel_pos, parent)
         if parent and rel_pos:
-            pwin = self._id_to_window.get(parent)
-            if pwin:
+            if pwin := self._id_to_window.get(parent):
                 # apply scaling to relative position:
                 p_pos = pwin.sp(*rel_pos)
                 x = pwin._pos[0] + p_pos[0]
@@ -266,8 +265,7 @@ class WindowManagerClient(StubClientMixin):
         # find a "transient-for" value using the pid to find a suitable window
         # if possible, choosing the currently focused window (if there is one..)
         pid = metadata.intget("pid", 0)
-        watcher_pid = self.assign_signal_watcher_pid(wid, pid, metadata.strget("title"))
-        if watcher_pid:
+        if watcher_pid := self.assign_signal_watcher_pid(wid, pid, metadata.strget("title")):
             metadata["watcher-pid"] = watcher_pid
         if override_redirect and metadata.strget("role").lower() == "popup" and pid:
             self.patch_OR_popup_transient_for(metadata)
@@ -341,8 +339,7 @@ class WindowManagerClient(StubClientMixin):
     def reinit_windows(self, new_size_fn=None) -> None:
         # now replace all the windows with new ones:
         for wid in tuple(self._id_to_window.keys()):
-            window = self.get_window(wid)
-            if window:
+            if window := self.get_window(wid):
                 self.reinit_window(wid, window, new_size_fn)
         self.send_refresh_all()
 
@@ -438,8 +435,7 @@ class WindowManagerClient(StubClientMixin):
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         geomlog("%s", packet)
         wid = packet.get_wid()
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             x_root = packet.get_i16(2)
             y_root = packet.get_i16(3)
             direction = packet.get_i8(4)
@@ -451,8 +447,7 @@ class WindowManagerClient(StubClientMixin):
         wid = packet.get_wid()
         metadata = packet.get_dict(2)
         metalog("metadata update for window %i: %s", wid, metadata)
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             metadata = self.cook_metadata(False, metadata)
             window.update_metadata(metadata)
 
@@ -502,8 +497,7 @@ class WindowManagerClient(StubClientMixin):
 
     def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             assert window is not None
             if window.is_OR() and self.modal_windows:
                 self.may_reenable_modal_windows(window)

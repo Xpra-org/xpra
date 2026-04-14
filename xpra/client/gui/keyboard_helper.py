@@ -79,8 +79,7 @@ class KeyboardHelper:
         log("KeyboardHelper(%s) keyboard=%s",
             (net_send, keyboard_sync, key_shortcuts,
              raw, model, layout, layouts, variant, variants, options), self.keyboard)
-        key_repeat = self.keyboard.get_keyboard_repeat()
-        if key_repeat:
+        if key_repeat := self.keyboard.get_keyboard_repeat():
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
 
     def set_platform_layout(self, layout: str) -> None:
@@ -293,8 +292,7 @@ class KeyboardHelper:
         return val
 
     def get_keymap_spec(self) -> dict[str, Any]:
-        query_struct = self.keyboard.get_keymap_spec()
-        if query_struct:
+        if query_struct := self.keyboard.get_keymap_spec():
             if self.backend:
                 query_struct["backend"] = self.backend
             if self.model_option:

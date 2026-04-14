@@ -112,8 +112,7 @@ class Pipeline(GObject.GObject):
             self.emit("info", info)
 
     def cancel_emit_info_timer(self) -> None:
-        eit = self.emit_info_timer
-        if eit:
+        if eit := self.emit_info_timer:
             self.emit_info_timer = 0
             GLib.source_remove(eit)
 
@@ -196,8 +195,7 @@ class Pipeline(GObject.GObject):
         self.pipeline = None
         self.state = "destroyed"
         self.info = {}
-        f = self.file
-        if f:
+        if f := self.file:
             self.file = None
             noerr(f.close)
         log("Pipeline.cleanup() done")

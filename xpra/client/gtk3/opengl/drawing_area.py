@@ -60,8 +60,7 @@ class GLDrawingArea(GLWindowBackingBase):
     def with_gl_context(self, cb: Callable, *args) -> None:
         da = self._backing
         if da and da.get_mapped():
-            gl_context = self.gl_context()
-            if gl_context:
+            if gl_context := self.gl_context():
                 with gl_context:
                     cb(gl_context, *args)
             else:
@@ -95,8 +94,7 @@ class GLDrawingArea(GLWindowBackingBase):
             pass
 
     def close_gl_config(self) -> None:
-        c = self.context
-        if c:
+        if c := self.context:
             self.context = None
             c.destroy()
 

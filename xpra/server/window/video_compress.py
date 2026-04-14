@@ -284,14 +284,12 @@ class WindowVideoSource(WindowSource):
 
     def do_set_auto_refresh_delay(self, min_delay, delay) -> None:
         super().do_set_auto_refresh_delay(min_delay, delay)
-        r = self.video_subregion
-        if r:
+        if r := self.video_subregion:
             r.set_auto_refresh_delay(self.base_auto_refresh_delay)
 
     def update_av_sync_frame_delay(self) -> None:
         self.av_sync_frame_delay = 0
-        ve = self._video_encoder
-        if ve:
+        if ve := self._video_encoder:
             # how many frames are buffered in the encoder, if any:
             d = ve.get_info().get("delayed", 0)
             if d > 0:
@@ -313,8 +311,7 @@ class WindowVideoSource(WindowSource):
 
     def get_info(self) -> dict[str, Any]:
         info = super().get_info()
-        sr = self.video_subregion
-        if sr:
+        if sr := self.video_subregion:
             sri = sr.get_info()
             sri["video-mode"] = self.subregion_is_video()
             info["video_subregion"] = sri
@@ -348,8 +345,7 @@ class WindowVideoSource(WindowSource):
         }
         if self._last_pipeline_check > 0:
             einfo["pipeline_last_check"] = int(1000*(monotonic()-self._last_pipeline_check))
-        lps = self.last_pipeline_scores
-        if lps:
+        if lps := self.last_pipeline_scores:
             popts : dict[int, dict[str, Any]] = {}
             for i, lp in enumerate(lps):
                 popts[i] = get_pipeline_score_info(*lp)
@@ -423,8 +419,7 @@ class WindowVideoSource(WindowSource):
                 self.close_video_stream_file()
 
     def close_video_stream_file(self) -> None:
-        vsf = self.video_stream_file
-        if vsf:
+        if vsf := self.video_stream_file:
             self.video_stream_file = None
             with log.trap_error(f"Error closing video stream file {vsf}"):
                 vsf.close()
@@ -591,8 +586,7 @@ class WindowVideoSource(WindowSource):
                     break
         rgbmax = self._rgb_auto_threshold
         videomin = cww*cwh // (1+video_hint*2)
-        sr = self.video_subregion.rectangle
-        if sr:
+        if sr := self.video_subregion.rectangle:
             videomin = min(videomin, sr.width * sr.height)
             rgbmax = min(rgbmax, sr.width*sr.height//2)
         elif text_hint:
@@ -681,8 +675,7 @@ class WindowVideoSource(WindowSource):
                 if gp:
                     self.gstreamer_timer = GLib.timeout_add(GSTREAMER_X11_TIMEOUT, self.gstreamer_nodamage)
                     return
-        vs = self.video_subregion
-        if vs:
+        if vs := self.video_subregion:
             r = vs.rectangle
             if r and r.intersects(x, y, w, h):
                 # the damage will take care of scheduling it again
@@ -695,8 +688,7 @@ class WindowVideoSource(WindowSource):
         self.stop_gstreamer_pipeline()
 
     def cancel_gstreamer_timer(self) -> None:
-        gt = self.gstreamer_timer
-        if gt:
+        if gt := self.gstreamer_timer:
             self.gstreamer_timer = 0
             GLib.source_remove(gt)
 
@@ -757,8 +749,7 @@ class WindowVideoSource(WindowSource):
     def cancel_damage(self, limit: int = 0) -> None:
         self.cancel_encode_from_queue()
         self.free_encode_queue_images()
-        vsr = self.video_subregion
-        if vsr:
+        if vsr := self.video_subregion:
             vsr.cancel_refresh_timer()
         self.free_scroll_data()
         self.last_scroll_time = 0
@@ -1004,8 +995,7 @@ class WindowVideoSource(WindowSource):
 
         # merge existing damage delayed region if there is one:
         # (this codepath can fire from a video region refresh callback)
-        dr = self._damage_delayed
-        if dr:
+        if dr := self._damage_delayed:
             regions = dr.regions + regions
             damage_time = min(damage_time, dr.damage_time)
             self._damage_delayed = None
@@ -1364,8 +1354,7 @@ class WindowVideoSource(WindowSource):
         ww, wh = self.window_dimensions
         w = ww & self.width_mask
         h = wh & self.height_mask
-        vs = self.video_subregion
-        if vs:
+        if vs := self.video_subregion:
             r = vs.rectangle
             if r:
                 w = r.width & self.width_mask
@@ -1413,8 +1402,7 @@ class WindowVideoSource(WindowSource):
         if not scores:
             return False
         _, _, _, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec = scores[0]
-        csce = self._csc_encoder
-        if csce:
+        if csce := self._csc_encoder:
             if csc_spec is None:
                 scorelog(f" csc {csce} is no longer needed")
                 return False
@@ -1432,8 +1420,7 @@ class WindowVideoSource(WindowSource):
                 scorelog(" change of csc output dimensions from %ix%i to %ix%i",
                          csce.get_dst_width(), csce.get_dst_height(), enc_width, enc_height)
                 return False
-        ve = self._video_encoder
-        if ve:
+        if ve := self._video_encoder:
             if ve.is_closed():
                 scorelog(f" {ve} is closed")
                 return False
@@ -2603,8 +2590,7 @@ class WindowVideoSource(WindowSource):
         self.b_frame_flush_data = ()
 
     def cancel_video_encoder_flush_timer(self) -> None:
-        bft: int = self.b_frame_flush_timer
-        if bft:
+        if bft := self.b_frame_flush_timer:
             self.b_frame_flush_timer = 0
             GLib.source_remove(bft)
 
@@ -2679,8 +2665,7 @@ class WindowVideoSource(WindowSource):
             self.schedule_video_encoder_timer()
 
     def cancel_video_encoder_timer(self) -> None:
-        vet: int = self.video_encoder_timer
-        if vet:
+        if vet := self.video_encoder_timer:
             self.video_encoder_timer = 0
             GLib.source_remove(vet)
 

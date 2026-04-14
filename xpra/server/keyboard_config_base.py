@@ -59,8 +59,7 @@ class KeyboardConfigBase:
         if not keyname and client_keycode < 0:
             return -1, group
         if not pressed:
-            r = self.pressed_translation.get(client_keycode)
-            if r:
+            if r := self.pressed_translation.get(client_keycode):
                 # del self.pressed_translation[client_keycode]
                 return r
         keycode, group = self.do_get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)

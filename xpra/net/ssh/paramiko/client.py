@@ -96,8 +96,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
         self.process = None
 
     def error_is_closed(self, e) -> bool:
-        p = self.process
-        if p:
+        if p := self.process:
             # if the process has terminated,
             # then the connection must be closed:
             if p[0].poll() is not None:
@@ -673,8 +672,7 @@ class AuthenticationManager:
         else:
             log("ssh host key verification skipped")
 
-        banner = self.transport.get_banner()
-        if banner:
+        if banner := self.transport.get_banner():
             log.info("SSH server banner:")
             for x in banner.splitlines():
                 log.info(f" {x}")
@@ -994,8 +992,7 @@ class ChannelRunFactory:
             if osname.startswith("Windows") or osname in ("msys", "cygwin"):
                 # on MS Windows,
                 # always prefer the application path found in the registry:
-                installpath = self.getexeinstallpath(osname)
-                if installpath:
+                if installpath := self.getexeinstallpath(osname):
                     return winpath(f"{installpath}\\Xpra_cmd.exe")
                 elif xpra_cmd.find("/") < 0 and xpra_cmd.find("\\") < 0:
                     test_path = winpath(f"{DEFAULT_WIN32_INSTALL_PATH}\\{xpra_cmd}")
@@ -1011,8 +1008,7 @@ class ChannelRunFactory:
                     find_command = "which"
 
             if find_command:
-                found = self.get_which(find_command, xpra_cmd)
-                if found:
+                if found := self.get_which(find_command, xpra_cmd):
                     return found
 
             if xpra_cmd == "xpra" and osname in ("msys", "cygwin"):

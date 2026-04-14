@@ -393,8 +393,7 @@ class ShadowServer(GTKShadowServerBase):
             self._update_modifiers(proto, wid, props.get("modifiers"))
         # ignore device_id on win32:
         did = -1
-        pointer = self.process_mouse_common(proto, did, wid, pointer)
-        if pointer:
+        if pointer := self.process_mouse_common(proto, did, wid, pointer):
             self.get_server_source(proto).emit("user-event", "button-action")
             self.button_action(did, wid, button, pressed, props)
 

@@ -133,8 +133,7 @@ class FocusWindow(GtkStubWindow):
         return changed
 
     def cancel_focus_timer(self) -> None:
-        rft = self.recheck_focus_timer
-        if rft:
+        if rft := self.recheck_focus_timer:
             self.recheck_focus_timer = 0
             self.source_remove(rft)
 

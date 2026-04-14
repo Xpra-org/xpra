@@ -32,8 +32,7 @@ class CairoBacking(CairoBackingBase):
     RGB_MODES: Sequence[str] = ("BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565")
 
     def __repr__(self):
-        b = self._backing
-        if b:
+        if b := self._backing:
             binfo = "ImageSurface(%i, %i)" % (b.get_width(), b.get_height())
         else:
             binfo = "None"

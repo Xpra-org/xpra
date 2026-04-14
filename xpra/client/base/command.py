@@ -67,8 +67,7 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
     def run(self) -> ExitValue:
         def start_protocol() -> None:
             # protocol may be None in "listen" mode
-            protocol = self._protocol
-            if protocol:
+            if protocol := self._protocol:
                 protocol.start()
         self.idle_add(start_protocol)
         return super().run()
@@ -77,8 +76,7 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         log.warn("timeout!")  # pragma: no cover
 
     def cancel_command_timeout(self) -> None:
-        ct = self.command_timeout
-        if ct:
+        if ct := self.command_timeout:
             self.command_timeout = None
             self.source_remove(ct)
 
@@ -437,8 +435,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.update_screen()
 
     def cancel_info_timer(self) -> None:
-        it = self.info_timer
-        if it:
+        if it := self.info_timer:
             self.info_timer = 0
             self.source_remove(it)
 
@@ -475,8 +472,7 @@ class ShellXpraClient(SendCommandConnectClient):
         """
 
     def cleanup(self) -> None:
-        siw = self.stdin_io_watch
-        if siw:
+        if siw := self.stdin_io_watch:
             self.stdin_io_watch = None
             self.source_remove(siw)
         super().cleanup()

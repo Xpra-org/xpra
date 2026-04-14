@@ -284,8 +284,7 @@ class Keyboard(KeyboardBase):
 
     def process_key_event(self, send_key_action_cb: Callable, wid: int, key_event) -> None:
         if self.swap_keys or key_event.keyname in ALWAYS_SWAP:
-            trans = self.key_translations.get(key_event.keyname)
-            if trans:
+            if trans := self.key_translations.get(key_event.keyname):
                 log("swap keys: translating key '%s' to %s", key_event, trans)
                 key_event.keycode, key_event.keyname = trans
         if key_event.keycode == self.num_lock_keycode:

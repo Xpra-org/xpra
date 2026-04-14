@@ -253,8 +253,7 @@ class DotXpra:
                 dstr = "*"
             potential_sockets = glob.glob(base + dstr)
             for sockpath in sorted(potential_sockets):
-                state = self.is_socket_match(sockpath, check_uid, matching_state)
-                if state:
+                if state := self.is_socket_match(sockpath, check_uid, matching_state):
                     display = local(sockpath[len(base):])
                     add_result(d, (state, display, sockpath))
         return sd

@@ -290,8 +290,7 @@ class Wm(GObject.GObject):
         remove_fallback_receiver("x11-child-map-request-event", self)
         for win in tuple(self._windows.values()):
             win.unmanage(True)
-        xid = self._ewmh_window
-        if xid:
+        if xid := self._ewmh_window:
             self._ewmh_window = 0
             with xswallow:
                 prop_del(xid, "_NET_SUPPORTING_WM_CHECK")
@@ -313,8 +312,7 @@ class Wm(GObject.GObject):
         if not xid:
             return
         from xpra.x11.models.window import configure_bits
-        model = self._windows.get(xid)
-        if model:
+        if model := self._windows.get(xid):
             # the window has been reparented already,
             # but we're getting the configure request event on the root window
             # forward it to the model

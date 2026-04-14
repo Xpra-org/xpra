@@ -59,8 +59,7 @@ class ClipboardServer(StubServerMixin):
             ch.client_reset()
 
     def cleanup(self) -> None:
-        ch = self._clipboard_helper
-        if ch:
+        if ch := self._clipboard_helper:
             self._clipboard_helper = None
             ch.cleanup()
 
@@ -78,8 +77,7 @@ class ClipboardServer(StubServerMixin):
         if self._clipboard_helper is None:
             return {}
         ci = self._clipboard_helper.get_info()
-        cc = self._clipboard_client
-        if cc:
+        if cc := self._clipboard_client:
             ci["client"] = cc.uuid
         return {ClipboardServer.PREFIX: ci}
 
@@ -233,8 +231,7 @@ class ClipboardServer(StubServerMixin):
         if self.readonly:
             return
         clipboard_enabled = packet.get_bool(1)
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             self.set_clipboard_enabled_status(ss, clipboard_enabled)
 
     def set_clipboard_enabled_status(self, ss, clipboard_enabled: bool) -> None:

@@ -50,8 +50,7 @@ class WindowPointer(StubClientMixin):
         return True
 
     def cancel_poll_pointer_timer(self) -> None:
-        ppt = self.poll_pointer_timer
-        if ppt:
+        if ppt := self.poll_pointer_timer:
             self.poll_pointer_timer = 0
             self.source_remove(ppt)
 

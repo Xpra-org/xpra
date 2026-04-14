@@ -84,10 +84,10 @@ class PingConnection(StubClientConnection):
             self.disconnect(ConnectionMessage.CLIENT_PING_TIMEOUT, message)
 
     def cancel_ping_echo_timers(self) -> None:
-        timers = self.check_ping_echo_timers.values()
-        self.check_ping_echo_timers = {}
-        for t in timers:
-            GLib.source_remove(t)
+        if timers := self.check_ping_echo_timers.values():
+            self.check_ping_echo_timers = {}
+            for t in timers:
+                GLib.source_remove(t)
 
     def process_ping(self, time_to_echo, sid) -> None:
         l1, l2, l3 = 0, 0, 0
@@ -109,8 +109,7 @@ class PingConnection(StubClientConnection):
         l2 = packet.get_u64(3)
         l3 = packet.get_u64(4)
         server_ping_latency = packet.get_i64(5)
-        timer = self.check_ping_echo_timers.pop(echoedtime, None)
-        if timer:
+        if timer := self.check_ping_echo_timers.pop(echoedtime, None):
             GLib.source_remove(timer)
         self.last_ping_echoed_time = echoedtime
         client_ping_latency = monotonic() - echoedtime / 1000.0

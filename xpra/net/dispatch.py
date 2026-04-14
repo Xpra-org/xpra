@@ -75,18 +75,15 @@ class PacketDispatcher:
 
         try:
             if authenticated:
-                handler = self._authenticated_ui_packet_handlers.get(packet_type)
-                if handler:
+                if handler := self._authenticated_ui_packet_handlers.get(packet_type):
                     log("process ui packet %s", packet_type)
                     call_handler(True)
                     return
-                handler = self._authenticated_packet_handlers.get(packet_type)
-                if handler:
+                if handler := self._authenticated_packet_handlers.get(packet_type):
                     log("process non-ui packet %s", packet_type)
                     call_handler(False)
                     return
-            handler = self._default_packet_handlers.get(packet_type)
-            if handler:
+            if handler := self._default_packet_handlers.get(packet_type):
                 log("process default packet %s", packet_type)
                 call_handler(False)
                 return

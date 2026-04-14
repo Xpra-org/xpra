@@ -97,8 +97,7 @@ class DisplayManager(StubServerMixin):
         self.cancel_screen_size_changed_timer()
 
     def cancel_screen_size_changed_timer(self):
-        ssct = self.screen_size_changed_timer
-        if ssct:
+        if ssct := self.screen_size_changed_timer:
             self.screen_size_changed_timer = 0
             GLib.source_remove(ssct)
 
@@ -112,12 +111,10 @@ class DisplayManager(StubServerMixin):
         dinfo = get_display_name() or self.get_display_name()
         dtype = get_display_type()
         dinfo = f"{dtype} display {dinfo}"      #ie: "X11 display :0"
-        size = self.get_display_size()
-        if size:
+        if size := self.get_display_size():
             w, h = size
             dinfo += f" size {w}x{h}"
-        bit_depth = self.get_display_bit_depth()
-        if bit_depth:
+        if bit_depth := self.get_display_bit_depth():
             dinfo += f"\n with {bit_depth} bit colors"
         return dinfo
 
@@ -170,15 +167,13 @@ class DisplayManager(StubServerMixin):
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
         if "display" in source.wants:
-            root_size = self.get_display_size()
-            if root_size:
+            if root_size := self.get_display_size():
                 caps |= {
                     "actual_desktop_size": root_size,
                     "root_window_size": root_size,
                     "desktop_size": get_desktop_size_capability(source, *root_size),
                 }
-            max_size = self.get_max_screen_size()
-            if max_size:
+            if max_size := self.get_max_screen_size():
                 caps["max_desktop_size"] = max_size
             name = get_display_name()
             if name:
@@ -190,8 +185,7 @@ class DisplayManager(StubServerMixin):
         return {"display": caps}
 
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
-        max_size = self.get_max_screen_size()
-        if max_size:
+        if max_size := self.get_max_screen_size():
             return {"server": {"max_desktop_size": max_size}}
         return {}
 
@@ -253,8 +247,7 @@ class DisplayManager(StubServerMixin):
         w = dw or sw
         h = dh or sh
         # clamp to max supported:
-        max_size = self.get_max_screen_size()
-        if max_size:
+        if max_size := self.get_max_screen_size():
             maxw, maxh = max_size
             w = min(w, maxw)
             h = min(h, maxh)

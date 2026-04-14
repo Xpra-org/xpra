@@ -95,8 +95,7 @@ class PingClient(StubClientMixin):
             self.ping_timer = self.timeout_add(1000 * self.pings, self.send_ping)
 
     def cancel_ping_timer(self) -> None:
-        pt = self.ping_timer
-        if pt:
+        if pt := self.ping_timer:
             self.ping_timer = 0
             self.source_remove(pt)
 
@@ -129,8 +128,7 @@ class PingClient(StubClientMixin):
         return False
 
     def cancel_ping_echo_timeout_timer(self) -> None:
-        pett = self.ping_echo_timeout_timer
-        if pett:
+        if pett := self.ping_echo_timeout_timer:
             self.ping_echo_timeout_timer = 0
             self.source_remove(pett)
 

@@ -98,13 +98,11 @@ class WindowDamageHandler:
     def destroy_damage_handle(self) -> None:
         log("destroy_damage_handle()")
         self.invalidate_pixmap()
-        dh = self._damage_handle
-        if dh:
+        if dh := self._damage_handle:
             self._damage_handle = 0
             with xlog:
                 XDamage.XDamageDestroy(dh)
-        sh = self._xshm_handle
-        if sh:
+        if sh := self._xshm_handle:
             self._xshm_handle = None
             with xlog:
                 sh.cleanup()
@@ -113,8 +111,7 @@ class WindowDamageHandler:
 
     def destroy_present_handle(self) -> None:
         log("destroy_present_handle()")
-        ph = self._present_handle
-        if ph:
+        if ph := self._present_handle:
             self._present_handle = 0
             with xlog:
                 XPresent.FreeInput(self.xid, ph)
@@ -198,8 +195,7 @@ class WindowDamageHandler:
         shm = None  # XShmWrapper instance
         try:
             with xsync:
-                shm = self.get_xshm_handle()
-                if shm:
+                if shm := self.get_xshm_handle():
                     shm_image = shm.get_image(handle.get_drawable(), x, y, width, height)
                     if shm_image:
                         return shm_image

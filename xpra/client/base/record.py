@@ -111,8 +111,7 @@ class WindowModel:
             self.sync_timer = GLib.timeout_add(SYNC_GAP * 1000, self.record_sync)
 
     def cancel_sync_timer(self) -> None:
-        st = self.sync_timer
-        if st:
+        if st := self.sync_timer:
             self.sync_timer = 0
             GLib.source_remove(st)
 
@@ -175,8 +174,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         super().cleanup()
 
     def cancel_refresh(self) -> None:
-        rt = self.refresh_timer
-        if rt:
+        if rt := self.refresh_timer:
             self.refresh_timer = 0
             self.source_remove(rt)
 
@@ -263,8 +261,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         parent = metadata.intget("parent")
         log("relative-position=%s (parent=%s)", rel_pos, parent)
         if parent and rel_pos:
-            pwin = self._id_to_window.get(parent)
-            if pwin:
+            if pwin := self._id_to_window.get(parent):
                 x = pwin.geometry[0] + rel_pos[0]
                 y = pwin.geometry[1] + rel_pos[1]
                 log("relative position(%s)=%s", rel_pos, (x, y))
@@ -284,8 +281,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
         metadata = packet.get_dict(2)
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             window.update_metadata(metadata)
             window.record("metadata", metadata=metadata)
 
@@ -295,8 +291,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         y = packet.get_i16(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             window.geometry = (x, y, w, h)
             window.record("move-resize", geometry=(x, y, w, h))
 
@@ -304,22 +299,19 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         wid = int(packet[1])
         w = int(packet[2])
         h = int(packet[3])
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             x, y = window.geometry[:2]
             window.geometry = (x, y, w, h)
             window.record("resize", size=(w, h))
 
     def _process_raise_window(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             window.record("raise")
 
     def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             window.record("restack")
 
     def _process_configure_override_redirect(self, packet: Packet) -> None:
@@ -327,8 +319,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
 
     def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             assert window is not None
             del self._id_to_window[wid]
             window.record("destroy")

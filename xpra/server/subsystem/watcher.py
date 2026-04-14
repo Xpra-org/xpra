@@ -22,7 +22,6 @@ class UIWatcher(StubServerMixin):
         self.ui_watcher.start()
 
     def cleanup(self, stop=True) -> None:
-        uiw = self.ui_watcher
-        if uiw:
+        if uiw := self.ui_watcher:
             self.ui_watcher = None
             uiw.stop()

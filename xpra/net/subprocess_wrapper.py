@@ -141,15 +141,13 @@ class SubprocessCallee:
             if self.protocol:
                 self.protocol.close()
                 self.protocol = None
-            i = self._input
-            if i:
+            if i := self._input:
                 self._input = None
                 try:
                     i.close()
                 except OSError:
                     log("%s.close()", i, exc_info=True)
-            o = self._output
-            if o:
+            if o := self._output:
                 self._output = None
                 try:
                     o.close()
@@ -228,8 +226,7 @@ class SubprocessCallee:
         log("send: adding '%s' message (%s items already in queue)", packet_type, self.send_queue.qsize())
         packet = (packet_type, *args)
         self.send_queue.put(packet)
-        p = self.protocol
-        if p:
+        if p := self.protocol:
             p.source_has_more()
         INJECT_FAULT(p)
 
@@ -387,8 +384,7 @@ class SubprocessCaller(SignalEmitter):
         self.process = None
 
     def stop_protocol(self) -> None:
-        p = self.protocol
-        if p:
+        if p := self.protocol:
             self.protocol = None
             log("%s.stop_protocol() calling %s", self, p.close)
             try:
@@ -418,8 +414,7 @@ class SubprocessCaller(SignalEmitter):
     def send(self, packet_type: str, *packet_data: PacketElement) -> None:
         packet = Packet(packet_type, *packet_data)
         self.send_queue.put(packet)
-        p = self.protocol
-        if p:
+        if p := self.protocol:
             p.source_has_more()
             if FLUSH:
                 conn = p._conn

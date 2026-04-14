@@ -98,8 +98,7 @@ class Win32Tray(TrayBase):
             self.tray_widget.set_blinking(on)
 
     def get_geometry(self) -> tuple[int, int, int, int]:
-        tw = self.tray_widget
-        if tw:
+        if tw := self.tray_widget:
             geom = tw.get_geometry()
             if geom:
                 return geom

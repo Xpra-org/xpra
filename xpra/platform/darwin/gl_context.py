@@ -189,8 +189,7 @@ class AGLContext:
         if c:
             self.window_context = None
             c.destroy()
-        glc = self.gl_context
-        if glc:
+        if glc := self.gl_context:
             self.gl_context = None
             glc.clearDrawable()
         self.pixel_format = None

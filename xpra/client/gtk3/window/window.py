@@ -84,8 +84,7 @@ class ClientWindow(WindowBaseClass):
 
     def show_xpra_menu(self, *_args) -> None:
         # this is called by the headerbar
-        mh = self._client.get_window_menu_helper()
-        if mh:
+        if mh := self._client.get_window_menu_helper():
             mh.build()
             mh.popup(0, 0)
 
@@ -118,8 +117,7 @@ class ClientWindow(WindowBaseClass):
             return default_value
 
     def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:
-        gdkwindow = self.drawing_area.get_window()
-        if gdkwindow:
+        if gdkwindow := self.drawing_area.get_window():
             x, y = gdkwindow.get_origin()[1:]
         else:
             x, y = self.get_position()

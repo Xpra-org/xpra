@@ -52,8 +52,7 @@ class WindowDraw(StubClientMixin):
     def cleanup(self) -> None:
         log("WindowClient.cleanup()")
         # tell the draw thread to exit:
-        dq = self._draw_queue
-        if dq:
+        if dq := self._draw_queue:
             dq.put(None)
         if dq:
             dq.put(None)
@@ -129,8 +128,7 @@ class WindowDraw(StubClientMixin):
 
             def draw_cleanup() -> None:
                 if coding == "mmap":
-                    area = self.mmap_read_area
-                    if area:
+                    if area := self.mmap_read_area:
                         from xpra.net.mmap.io import int_from_buffer
                         # we need to ack the data to free the space!
                         data_start = int_from_buffer(area.mmap, 0)

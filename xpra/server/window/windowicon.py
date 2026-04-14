@@ -113,8 +113,7 @@ class WindowIconSource:
         self.cancel_window_icon_timer()
 
     def cancel_window_icon_timer(self) -> None:
-        swit = self.send_window_icon_timer
-        if swit:
+        if swit := self.send_window_icon_timer:
             self.send_window_icon_timer = 0
             GLib.source_remove(swit)
 
@@ -198,13 +197,11 @@ class WindowIconSource:
                         if dim not in sizes:
                             sizes.append(dim)
             for size in sizes:
-                icon = self.window.get_default_window_icon(size)
-                if icon:
+                if icon := self.window.get_default_window_icon(size):
                     icons.append(icon)
             if not icons:
                 # try to find one using the wmclass:
-                icon = self.get_default_window_icon()
-                if icon:
+                if icon := self.get_default_window_icon():
                     log("send_window_icon window %s using default window icon", self.window)
                     icons.append(icon)
         max_w, max_h = self.window_icon_max_size

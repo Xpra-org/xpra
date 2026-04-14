@@ -200,11 +200,9 @@ class TwoFileConnection(Connection):
             self._abort_test(action)
 
     def flush(self) -> None:
-        r = self._readable
-        if r:
+        if r := self._readable:
             r.flush()
-        w = self._writeable
-        if w:
+        if w := self._writeable:
             w.flush()
 
     def read(self, n) -> bytes:
@@ -219,8 +217,7 @@ class TwoFileConnection(Connection):
         log("%s.close() close callback=%s, readable=%s, writeable=%s",
             self, self._close_cb, self._readable, self._writeable)
         super().close()
-        cc = self._close_cb
-        if cc:
+        if cc := self._close_cb:
             self._close_cb = None
             log("%s.close() calling %s", self, cc)
             with log.trap_error(f"{self}.close() error on callback {cc}"):
@@ -289,8 +286,7 @@ class SocketConnection(Connection):
                     interval = 3
                     kmax = 5
                     if WIN32:
-                        sock = self.get_raw_socket()
-                        if sock:
+                        if sock := self.get_raw_socket():
                             # @UndefinedVariable pylint: disable=no-member
                             sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idletime * 1000, interval * 1000))
                     elif OSX:
@@ -334,8 +330,7 @@ class SocketConnection(Connection):
 
     def _setsockopt(self, *args) -> None:
         if self.active:
-            sock = self.get_raw_socket()
-            if sock:
+            if sock := self.get_raw_socket():
                 sock.setsockopt(*args)
 
     def set_nodelay(self, nodelay: bool) -> None:
@@ -404,8 +399,7 @@ class SocketConnection(Connection):
             d["remote"] = self.remote or ""
             d["protocol-type"] = self.protocol_type
             if FULL_INFO > 0:
-                si = self.get_socket_info()
-                if si:
+                if si := self.get_socket_info():
                     d["socket"] = si
         except OSError:
             log.error("Error accessing socket information", exc_info=True)
@@ -589,8 +583,7 @@ class SocketPeekWrapper:
             if length >= bufsize:
                 log("patched_recv() peeking using existing data: %i bytes", bufsize)
                 return self.peeked[:bufsize]
-            v = self.socket.recv(bufsize - length)
-            if v:
+            if v := self.socket.recv(bufsize - length):
                 log("patched_recv() peeked more: %i bytes", len(v))
                 self.peeked += v
             return self.peeked

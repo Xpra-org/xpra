@@ -212,8 +212,7 @@ class TopClient:
         curses.cbreak()
 
     def cleanup(self) -> None:
-        scr = self.stdscr
-        if scr:
+        if scr := self.stdscr:
             curses.nocbreak()
             scr.erase()
             curses_clean(scr)
@@ -463,15 +462,13 @@ class TopSessionClient(InfoTimerClient):
         self.close_log()
 
     def close_log(self) -> None:
-        log_file = self.log_file
-        if log_file:
+        if log_file := self.log_file:
             self.log("closing log")
             self.log_file = None
             log_file.close()
 
     def log(self, message) -> None:
-        lf = self.log_file
-        if lf:
+        if lf := self.log_file:
             now = datetime.now()
             # we log from multiple threads,
             # so the file may have been closed
@@ -480,8 +477,7 @@ class TopSessionClient(InfoTimerClient):
             noerr(lf.flush)
 
     def err(self, e) -> None:
-        lf = self.log_file
-        if lf:
+        if lf := self.log_file:
             noerr(lf.write, b"%s\n" % e)
             noerr(lf.write, traceback.format_exc().encode())
         else:
@@ -575,8 +571,7 @@ class TopSessionClient(InfoTimerClient):
             if height <= 5:
                 return
             hpos = 5
-            gl_info = self.get_gl_info(self.slidictget("display").dictget("opengl"))
-            if gl_info:
+            if gl_info := self.get_gl_info(self.slidictget("display").dictget("opengl")):
                 addstr_main(5, 0, gl_info)
                 hpos += 1
 
@@ -683,8 +678,7 @@ class TopSessionClient(InfoTimerClient):
                         rinfo += f", {cpu:3}% CPU"
                 except Exception:
                     pass
-        cpuinfo = self.slidictget("cpuinfo")
-        if cpuinfo:
+        if cpuinfo := self.slidictget("cpuinfo"):
             rinfo += ", " + cpuinfo.strget("hz_actual")
         elapsed = monotonic() - self.server_last_info_time
         if self.server_last_info_time == 0:
@@ -711,8 +705,7 @@ class TopSessionClient(InfoTimerClient):
                 mdw, mdh = mds
                 sinfo += f" (max {mdw}x{mdh})"
             dinfo.append(sinfo)
-        cursor_info = self.slidictget("cursor")
-        if cursor_info:
+        if cursor_info := self.slidictget("cursor"):
             cx, cy = cursor_info.inttupleget("position", (0, 0))
             dinfo.append(f"cursor at {cx}x{cy}")
         pid = display_info.intget("pid")
@@ -796,13 +789,11 @@ class TopSessionClient(InfoTimerClient):
         qs_info = ""
         qs_color = GREEN
         if edict:
-            sinfo = self.td(edict.dictget("speed") or {})
-            if sinfo:
+            if sinfo := self.td(edict.dictget("speed") or {}):
                 cur = sinfo.intget("cur")
                 avg = sinfo.intget("avg")
                 qs_info = f"speed: {cur}% (avg: f{avg}%)"
-            qinfo = self.td(edict.dictget("quality") or {})
-            if qinfo:
+            if qinfo := self.td(edict.dictget("quality") or {}):
                 qs_info = qs_info.ljust(24)
                 cur = qinfo.intget("cur")
                 avg = qinfo.intget("avg")

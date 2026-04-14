@@ -279,8 +279,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         path = getattr(self, "path", "")
         if path.endswith("?echo-headers"):
             # ie: "en-GB,en-US;q=0.8,en;q=0.6"
-            accept = self.headers.get("Accept-Language")
-            if accept:
+            if accept := self.headers.get("Accept-Language"):
                 self.extra_headers["Echo-Accept-Language"] = std(accept, extras="-,./:;=")
         headers = self.get_headers()
         if self.extra_headers:
@@ -346,8 +345,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def handle_request(self) -> None:
         if not self.handle_authentication():
             return
-        content = self.send_head()
-        if content:
+        if content := self.send_head():
             try:
                 self.wfile.write(content)
             except (BrokenPipeError, ConnectionResetError, socket.error) as e:

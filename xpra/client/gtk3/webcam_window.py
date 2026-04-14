@@ -130,7 +130,6 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
             self._area.queue_draw()
 
     def _on_draw(self, _widget, ctx) -> None:
-        pixbuf = self._pixbuf
-        if pixbuf:
+        if pixbuf := self._pixbuf:
             Gdk.cairo_set_source_pixbuf(ctx, pixbuf, 0, 0)
             ctx.paint()

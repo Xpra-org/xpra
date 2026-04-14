@@ -99,8 +99,7 @@ class ClientTray(ClientWidgetBase):
 
     def reconfigure(self, force_send_configure=False) -> None:
         geometry = None
-        tw = self.tray_widget
-        if tw:
+        if tw := self.tray_widget:
             geometry = tw.get_geometry()
         log("%s.reconfigure(%s) geometry=%s", self, force_send_configure, geometry)
         if geometry is None:
@@ -191,8 +190,7 @@ class ClientTray(ClientWidgetBase):
     def set_tray_icon(self, rgb_format: str, w: int, h: int, rowstride: int, pixels, options: typedict) -> None:
         log("%s.set_tray_icon(%s, %s, %s, %s, %s bytes)", self, rgb_format, w, h, rowstride, len(pixels))
         has_alpha = rgb_format.find("A") >= 0
-        tw = self.tray_widget
-        if tw:
+        if tw := self.tray_widget:
             # some tray implementations can't deal with memoryviews..
             if isinstance(pixels, (memoryview, bytearray)):
                 pixels = memoryview_to_bytes(pixels)
@@ -202,8 +200,7 @@ class ClientTray(ClientWidgetBase):
         """ not supported yet - not needed anyway? """
 
     def destroy(self) -> None:
-        tw = self.tray_widget
-        if tw:
+        if tw := self.tray_widget:
             self.tray_widget = None
             tw.cleanup()
 

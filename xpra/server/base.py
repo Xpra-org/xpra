@@ -535,8 +535,7 @@ class ServerBase(ServerBaseClass):
         Allows us to keep window properties for a client after disconnection.
         (we keep it in a map with the client's uuid as key)
         """
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.set_client_properties(wid, window, typedict(new_client_properties))
             # filter out encoding properties, which are expected to be set every time:
             ncp = {}
@@ -579,8 +578,7 @@ class ServerBase(ServerBaseClass):
 
     def _process_lock_toggle(self, proto, packet: Packet) -> None:
         assert self.lock is None
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.lock = packet.get_bool(1)
             log("lock set to %s for client %i", ss.lock, ss.counter)
 
@@ -601,8 +599,7 @@ class ServerBase(ServerBaseClass):
             self._potential_protocols.remove(protocol)
         except ValueError:
             pass
-        source = self._server_sources.pop(protocol, None)
-        if source:
+        if source := self._server_sources.pop(protocol, None):
             self.cleanup_source(source)
             mdns_update = getattr(self, "mdns_update", noop)
             add_work_item(mdns_update)

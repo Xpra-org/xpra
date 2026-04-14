@@ -57,8 +57,7 @@ class TrayMenu(MenuHelper):
 
     def cleanup(self) -> None:
         super().cleanup()
-        menu = self.menu
-        if menu:
+        if menu := self.menu:
             self.menu = 0
             DestroyMenu(menu)
 

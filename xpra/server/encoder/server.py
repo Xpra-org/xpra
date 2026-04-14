@@ -107,8 +107,7 @@ class EncoderServer(ServerBase):
         self.sharing = self.sharing is not False
 
     def cleanup_source(self, source) -> None:
-        encoders = self.encoders.pop(source.uuid, {})
-        if encoders:
+        if encoders := self.encoders.pop(source.uuid, {}):
             for seq, encoder in encoders.items():
                 try:
                     encoder.clean()

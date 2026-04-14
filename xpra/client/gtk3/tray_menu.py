@@ -530,8 +530,7 @@ class GTKTrayMenu(GTKMenuHelper):
         set_sensitive(kbsync, False)
 
         def set_keyboard_sync_menuitem(*args) -> None:
-            kh = self.client.keyboard_helper
-            if kh:
+            if kh := self.client.keyboard_helper:
                 log("set_keyboard_sync_menuitem%s enabled=%s", args, kh.sync)
             can_set_sync = kh and self.client.server_keyboard
             sens_tooltip(kbsync, can_set_sync,
@@ -1517,8 +1516,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def make_showhidewindowsmenuitem(self) -> Gtk.ImageMenuItem:
         def set_showhide_icon(icon_name: str) -> None:
-            image = self.get_image(icon_name, self.menu_icon_size)
-            if image:
+            if image := self.get_image(icon_name, self.menu_icon_size):
                 showhide.set_image(image)
 
         showhidewindows_state = [True]
@@ -1669,8 +1667,7 @@ class GTKTrayMenu(GTKMenuHelper):
             # uri = self.client.display_desc.get("display_name")
             # if uri:
             #    messages.append("URI: %s" % uri)
-            session_name = self.client.session_name or self.client.server_session_name
-            if session_name:
+            if session_name := self.client.session_name or self.client.server_session_name:
                 messages.append("Shutting down the session '%s' may result in data loss," % session_name)
             else:
                 messages.append("Shutting down this session may result in data loss,")

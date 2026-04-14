@@ -80,8 +80,7 @@ class PortalShadow(GTKShadowServerBase):
         self.disconnect_authenticating_client(ConnectionMessage.AUTHENTICATION_FAILED, message)
 
     def disconnect_authenticating_client(self, reason: ConnectionMessage, message: str) -> None:
-        ac = self.authenticating_client
-        if ac:
+        if ac := self.authenticating_client:
             self.authenticating_client = None
             self.disconnect_protocol(ac.protocol, reason, message)
             self.cleanup_source(ac)
@@ -107,8 +106,7 @@ class PortalShadow(GTKShadowServerBase):
         """
 
     def stop_capture(self) -> None:
-        c = self.capture
-        if c:
+        if c := self.capture:
             self.capture = None
             c.clean()
 
@@ -318,8 +316,7 @@ class PortalShadow(GTKShadowServerBase):
         log(f"capture_error({capture}, {message}) wid={wid:#x}")
         log.error("Error capturing screen:")
         log.estr(message)
-        model = self.get_window(wid)
-        if model:
+        if model := self.get_window(wid):
             self._remove_window(model)
         for ss in tuple(self._server_sources.values()):
             may_notify_client(ss, NotificationID.FAILURE, "Session Capture Failed", str(message))

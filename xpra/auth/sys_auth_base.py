@@ -108,8 +108,7 @@ class SysAuthenticatorBase:
     def get_passwords(self) -> Sequence[str]:
         """ this default implementation just returns a tuple
             with the password from `get_password` if there is one """
-        p = self.get_password()  # pylint: disable=assignment-from-none
-        if p:
+        if p := self.get_password():  # pylint: disable=assignment-from-none
             if not isinstance(p, str):
                 raise ValueError(f"password value is not a string: {type(p)}")
             return (p,)
@@ -129,8 +128,7 @@ class SysAuthenticatorBase:
         return password and self.get_password() == password
 
     def authenticate(self, caps: typedict) -> bool:
-        r = self.do_authenticate(caps)
-        if r:
+        if r := self.do_authenticate(caps):
             self.passed = True
             log("authentication challenge passed for %s", self)
         return r

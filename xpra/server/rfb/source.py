@@ -165,6 +165,5 @@ class RFBSource:
         self.send(msg)
 
     def send(self, msg) -> None:
-        p = self.protocol
-        if p:
+        if p := self.protocol:
             p.send(msg)

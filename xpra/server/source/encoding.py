@@ -114,8 +114,7 @@ class EncodingsConnection(StubClientConnection):
         self.queue_encode(None)
 
     def free_cuda_device_context(self) -> None:
-        cdd = self.cuda_device_context
-        if cdd:
+        if cdd := self.cuda_device_context:
             self.cuda_device_context = None
             cdd.free()
 
@@ -253,8 +252,7 @@ class EncodingsConnection(StubClientConnection):
             self.calculate_timer = GLib.timeout_add(delay, add_work_item, self.recalculate_delays)
 
     def cancel_recalculate_timer(self) -> None:
-        ct = self.calculate_timer
-        if ct:
+        if ct := self.calculate_timer:
             self.calculate_timer = 0
             GLib.source_remove(ct)
 

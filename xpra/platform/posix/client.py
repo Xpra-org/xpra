@@ -210,8 +210,7 @@ class PlatformClient(StubClientMixin):
         return False
 
     def _get_xsettings(self):
-        xw = self._xsettings_watcher
-        if xw:
+        if xw := self._xsettings_watcher:
             with log.trap_error("Error retrieving XSETTINGS"):
                 return xw.get_settings()
         return None

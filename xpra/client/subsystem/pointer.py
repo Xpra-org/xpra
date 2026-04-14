@@ -146,8 +146,7 @@ class PointerClient(StubClientMixin):
         self.have_more()
 
     def cancel_send_mouse_position_timer(self) -> None:
-        mpt = self._mouse_position_timer
-        if mpt:
+        if mpt := self._mouse_position_timer:
             self._mouse_position_timer = 0
             self.source_remove(mpt)
 

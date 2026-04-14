@@ -179,8 +179,7 @@ class Win32Eventlistener:
         log("Win32Eventlistener.cleanup()")
         self.event_callbacks = {}
 
-        hwnd = self.hwnd
-        if hwnd:
+        if hwnd := self.hwnd:
             WTSUnRegisterSessionNotification(hwnd)
 
             self.hwnd = None

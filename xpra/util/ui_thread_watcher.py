@@ -168,8 +168,7 @@ class UIThreadWatcher:
         self.cancel_ui_wakeup_timer()
 
     def cancel_ui_wakeup_timer(self) -> None:
-        uiwt = self.ui_wakeup_timer
-        if uiwt:
+        if uiwt := self.ui_wakeup_timer:
             self.ui_wakeup_timer = 0
             GLib.source_remove(uiwt)
 

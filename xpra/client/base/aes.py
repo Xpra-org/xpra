@@ -43,8 +43,7 @@ class AESClient(StubClientMixin):
         return {}
 
     def get_caps(self) -> dict[str, Any]:
-        cipher_caps = self.get_cipher_caps()
-        if cipher_caps:
+        if cipher_caps := self.get_cipher_caps():
             return {"encryption": cipher_caps}
         return {}
 
@@ -104,8 +103,7 @@ class AESClient(StubClientMixin):
         p = self._protocol
         if not p:
             return False
-        encryption = self.get_encryption()
-        if encryption:
+        if self.get_encryption():
             # server uses a new cipher after second hello:
             key = self.get_encryption_key()
             assert key, "encryption key is missing"

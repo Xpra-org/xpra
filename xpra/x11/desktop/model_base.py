@@ -223,7 +223,6 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         raise NotImplementedError
 
     def cancel_resize_timer(self) -> None:
-        rt = self.resize_timer
-        if rt:
+        if rt := self.resize_timer:
             self.resize_timer = 0
             GLib.source_remove(rt)

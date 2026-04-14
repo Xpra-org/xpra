@@ -82,8 +82,7 @@ class KeyboardServer(StubServerMixin):
         self._keys_changed()
 
     def stop_keymap_timer(self) -> None:
-        kct = self.keymap_changing_timer
-        if kct:
+        if kct := self.keymap_changing_timer:
             self.keymap_changing_timer = 0
             GLib.source_remove(kct)
 
@@ -148,8 +147,7 @@ class KeyboardServer(StubServerMixin):
             "keys_pressed": tuple(self.keys_pressed.values()),
             "modifiers": self.mod_meanings,
         }
-        kc = self.keyboard_config
-        if kc:
+        if kc := self.keyboard_config:
             info.update(kc.get_info())
         log("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
@@ -345,8 +343,7 @@ class KeyboardServer(StubServerMixin):
             self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, is_mod, self.key_repeat_delay)
 
     def cancel_key_repeat_timer(self) -> None:
-        krt = self.key_repeat_timer
-        if krt:
+        if krt := self.key_repeat_timer:
             self.key_repeat_timer = 0
             GLib.source_remove(krt)
 

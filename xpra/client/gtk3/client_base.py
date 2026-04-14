@@ -357,8 +357,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         for name, dialog in self.sub_dialogs.items():
             dialog.close()
         self.cancel_clipboard_notification_timer()
-        mh = self.menu_helper
-        if mh:
+        if mh := self.menu_helper:
             self.menu_helper = None
             mh.cleanup()
         UIXpraClient.cleanup(self)
@@ -395,8 +394,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return self.process_challenge_prompt_dialog(prompt)
 
     def stop_pinentry(self) -> None:
-        pp = self.pinentry_proc
-        if pp:
+        if pp := self.pinentry_proc:
             self.pinentry_proc = None
             noerr(pp.terminate)
             for fd_name in ("stdin", "stdout", "stderr"):
@@ -426,8 +424,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         get_child_reaper().add_process(proc, "pinentry", cmd, True, True)
         self.pinentry_proc = proc
         q = f"Enter {prompt}"
-        p = self._protocol
-        if p:
+        if p := self._protocol:
             conn = getattr(p, "_conn", None)
             if conn:
                 cinfo = conn.get_info()
@@ -599,8 +596,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.sub_dialogs["ask-data"] = dialog
 
     def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None) -> None:
-        fad = self.sub_dialogs.get("ask-data")
-        if fad:
+        if fad := self.sub_dialogs.get("ask-data"):
             GLib.idle_add(fad.transfer_progress_update, send, transfer_id, elapsed, position, total, error)
 
     def accept_data(self, send_id, dtype: str, url: str, printit: bool, openit: bool) -> tuple[bool, bool, bool]:
@@ -628,8 +624,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return True, ui_printit, ui_openit
 
     def close_file_size_warning(self) -> None:
-        dialog = self.sub_dialogs.pop("file-size-warning")
-        if dialog:
+        if dialog := self.sub_dialogs.pop("file-size-warning"):
             # close previous warning
             dialog.close()
 
@@ -662,8 +657,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.send_start_command("Client-Download-File", command, True)
 
     def show_file_upload(self, *args) -> None:
-        dialog = self.sub_dialogs.get("file-upload")
-        if dialog:
+        if dialog := self.sub_dialogs.get("file-upload"):
             dialog.present()
             return
         filelog(f"show_file_upload{args} can open={self.remote_open_files}")
@@ -784,8 +778,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         send_info_request = getattr(self, "send_info_request", noop)
         send_info_request()
 
-        dialog = self.sub_dialogs.get("bug-report")
-        if dialog:
+        if dialog := self.sub_dialogs.get("bug-report"):
             force_focus()
             dialog.show()
             return
@@ -1406,8 +1399,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return None
 
     def find_gdk_window(self, metadata: typedict, metadata_key="transient-for"):
-        client_window = self.find_window(metadata, metadata_key)
-        if client_window:
+        if client_window := self.find_window(metadata, metadata_key):
             gdk_window = client_window.get_window()
             if gdk_window:
                 return gdk_window
@@ -1426,8 +1418,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         ref_metadata["wid"] = wid
         refkey = get_group_ref(ref_metadata)
         log(f"get_group_leader: refkey={refkey}, metadata={metadata}, refs={self._ref_to_group_leader}")
-        group_leader_window = self._ref_to_group_leader.get(refkey)
-        if group_leader_window:
+        if group_leader_window := self._ref_to_group_leader.get(refkey):
             log("found existing group leader window %s using ref=%s", group_leader_window, refkey)
             return group_leader_window
         # we need to create one:
@@ -1495,8 +1486,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return ch
 
     def cancel_clipboard_notification_timer(self) -> None:
-        cnt = self.clipboard_notification_timer
-        if cnt:
+        if cnt := self.clipboard_notification_timer:
             self.clipboard_notification_timer = 0
             self.source_remove(cnt)
 

@@ -25,8 +25,7 @@ class SystemTrayServer(StubServerMixin):
             self.init_system_tray()
 
     def cleanup(self) -> None:
-        tray = self._tray
-        if tray:
+        if tray := self._tray:
             self._tray = None
             tray.cleanup()
 

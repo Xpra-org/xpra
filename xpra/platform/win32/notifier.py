@@ -56,8 +56,7 @@ class Win32_Notifier(NotifierBase):
         if GTK_NOTIFIER and (actions or not getHWND):
             log("show_notify(..) using gtk fallback, GTK_NOTIFIER=%s, tray=%s, getHWND=%s, actions=%s",
                 GTK_NOTIFIER, tray, getHWND, actions)
-            gtk_notifier = self.get_gtk_notifier()
-            if gtk_notifier:
+            if gtk_notifier := self.get_gtk_notifier():
                 gtk_notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions,
                                          hints, expire_timeout, icon)
                 self.gtk_notifications.add(nid)

@@ -68,8 +68,7 @@ class KeyboardClient(StubClientMixin):
             log.warn(f"Warning: no keyboard support, {e}")
 
     def cleanup(self) -> None:
-        kh = self.keyboard_helper
-        if kh:
+        if kh := self.keyboard_helper:
             self.keyboard_helper = None
             kh.cleanup()
 

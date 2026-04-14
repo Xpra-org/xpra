@@ -117,8 +117,7 @@ class ShadowServerBase(ServerBase):
         self.cleanup_capture()
 
     def cleanup_capture(self) -> None:
-        capture = self.capture
-        if capture:
+        if capture := self.capture:
             self.capture = None
             capture.clean()
 
@@ -184,8 +183,7 @@ class ShadowServerBase(ServerBase):
     ############################################################################
     # notification
     def cleanup_notifier(self) -> None:
-        n = self.notifier
-        if n:
+        if n := self.notifier:
             self.notifier = None
             n.cleanup()
 
@@ -402,8 +400,7 @@ class ShadowServerBase(ServerBase):
         if server_uuid:
             if server_uuid == self.uuid:
                 log.warn("Warning: shadowing your own display can be quite confusing")
-                clipboard = self._clipboard_helper and c.boolget("clipboard", True)
-                if clipboard:
+                if self._clipboard_helper and c.boolget("clipboard", True):
                     log.warn("Warning: clipboard sharing cannot be enabled!")
                     log.warn(" consider using the --no-clipboard option")
                     c["clipboard"] = False

@@ -178,8 +178,7 @@ class MenuProvider:
         clear_cache()
 
     def cancel_menu_reload(self) -> None:
-        xmrt = self.menu_reload_timer
-        if xmrt:
+        if xmrt := self.menu_reload_timer:
             self.menu_reload_timer = 0
             GLib.source_remove(xmrt)
 

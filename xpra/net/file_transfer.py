@@ -338,8 +338,7 @@ class FileTransferHandler(FileTransferAttributes):
 
     def cancel_file(self, chunk_id: str, message: str, chunk: int = 0) -> None:
         filelog("cancel_file%s", (chunk_id, message, chunk))
-        chunk_state = self.receive_chunks_in_progress.get(chunk_id)
-        if chunk_state:
+        if chunk_state := self.receive_chunks_in_progress.get(chunk_id):
             # mark it as cancelled:
             chunk_state.cancelled = True
             timer = chunk_state.timer
@@ -616,8 +615,7 @@ class FileTransferHandler(FileTransferAttributes):
         rf = options.tupleget("request-file")
         if rf and len(rf) >= 2:
             argf = rf[0]
-            cb = self.file_request_callback.pop(argf, None)
-            if cb:
+            if cb := self.file_request_callback.pop(argf, None):
                 cb(filename, filesize)
                 return
         if printit or openit:
@@ -922,8 +920,7 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = packet.get_str(1)
         accept = packet.get_i8(2)
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
-        timer = self.pending_send_data_timers.pop(send_id, None)
-        if timer:
+        if timer := self.pending_send_data_timers.pop(send_id, None):
             GLib.source_remove(timer)
         try:
             spd: SendPendingData = self.pending_send_data[send_id]

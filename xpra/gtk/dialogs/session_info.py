@@ -400,8 +400,7 @@ class SessionInfo(Gtk.Window):
 
     def get_window_title(self) -> str:
         t = ["Session Info"]
-        c = self.client
-        if c:
+        if c := self.client:
             if c.session_name or c.server_session_name:
                 t.append(c.session_name or c.server_session_name)
             p = c._protocol
@@ -487,8 +486,7 @@ class SessionInfo(Gtk.Window):
         self.tab_box.pack_start(grid, expand=True, fill=True, padding=0)
         grid.show_all()
         # ensure we re-draw the whole window:
-        window = self.get_window()
-        if window:
+        if window := self.get_window():
             alloc = self.get_allocation()
             window.invalidate_rect(alloc, True)
 
@@ -610,8 +608,7 @@ class SessionInfo(Gtk.Window):
 
         self.server_latency = get_ping_latency_records(self.client.server_ping_latency)
         self.client_latency = get_ping_latency_records(self.client.client_ping_latency)
-        server_last_info = self.last_info()
-        if server_last_info:
+        if server_last_info := self.last_info():
             # populate running averages for graphs:
 
             def getavg(*names):

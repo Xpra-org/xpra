@@ -59,8 +59,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
             self.progress()
         log.warn("Warning: remote clipboard request timed out")
         log.warn(" request id %i, selection=%s, target=%s", request_id, selection, target)
-        proxy = self._get_proxy(selection)
-        if proxy:
+        if proxy := self._get_proxy(selection):
             proxy.got_contents(target)
 
     def _clipboard_got_contents(self, request_id: int, dtype: str = "", dformat: int = 0, data=None) -> None:
@@ -84,8 +83,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     def client_reset(self) -> None:
         super().client_reset()
         # timeout all pending requests
-        cor = self._clipboard_outstanding_requests
-        if cor:
+        if cor := self._clipboard_outstanding_requests:
             log.info("cancelling %i clipboard requests", len(cor))
             self._clipboard_outstanding_requests = {}
             for request_id in cor:

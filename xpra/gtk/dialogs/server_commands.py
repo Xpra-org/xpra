@@ -182,8 +182,7 @@ class ServerCommandsWindow:
             self.populate_timer = GLib.timeout_add(1000, self.populate_table)
 
     def cancel_timer(self) -> None:
-        pt = self.populate_timer
-        if pt:
+        if pt := self.populate_timer:
             self.populate_timer = 0
             GLib.source_remove(pt)
 

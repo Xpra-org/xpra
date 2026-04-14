@@ -686,8 +686,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             for k, v in size_constraints.items():
                 geomlog.error("  %s=%s", k, v)
         self.window_gravity = OVERRIDE_GRAVITY or size_constraints.intget("gravity", DEFAULT_GRAVITY)
-        b = self._backing
-        if b:
+        if b := self._backing:
             b.gravity = self.window_gravity
 
     def set_locale(self, locale: str) -> None:
@@ -796,8 +795,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         self._client.scalereset()
 
     def magic_key(self, *args) -> None:
-        b = self.border
-        if b:
+        if b := self.border:
             b.toggle()
             log("magic_key%s border=%s", args, b)
             self.repaint(0, 0, *self._size)
@@ -857,8 +855,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
 
     def eos(self) -> None:
         """ Note: this runs from the draw thread (not UI thread) """
-        backing = self._backing
-        if backing:
+        if backing := self._backing:
             backing.eos()
 
     def set_alert_state(self, alert_state: bool) -> None:

@@ -170,8 +170,8 @@ class NetworkListener(StubClientMixin):
         packet_type = packet.get_type()
 
         def close() -> None:
-            t = self._close_timers.pop(proto, 0)
-            if t:
+            if t := self._close_timers.pop(proto, 0):
+                self.source_remove(t)
                 proto.close()
             try:
                 self._potential_protocols.remove(proto)

@@ -123,8 +123,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         # for now, we only handle text targets:
         text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
         if text_targets:
-            text = self.clipboard.wait_for_text()
-            if text:
+            if text := self.clipboard.wait_for_text():
                 # should verify the target is actually utf8...
                 text_target = text_targets[0]
                 send_token(targets, (text_target, "UTF8_STRING", 8, text))
@@ -162,8 +161,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         atom = next((x for x in get_targets() if x.name() == target), None)
         if atom:
-            sel = self.clipboard.wait_for_contents(atom)
-            if sel:
+            if sel := self.clipboard.wait_for_contents(atom):
                 data = sel.get_data()
                 data = filter_data(dtype=target, dformat=8, data=data)
                 got_contents(target, 8, data)

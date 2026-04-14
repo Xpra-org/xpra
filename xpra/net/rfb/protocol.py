@@ -314,8 +314,7 @@ class RFBProtocol:
         self.terminate_queue_threads()
         self._process_packet_cb(self, Packet(CONNECTION_LOST))
         GLib.idle_add(self.clean)
-        log_file = self.log
-        if log_file:
+        if log_file := self.log:
             self.log = None
             log_file.close()
         log("RFBProtocol.close() done")

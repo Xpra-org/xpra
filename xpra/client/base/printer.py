@@ -120,9 +120,8 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
         self.send_printers_timer = self.timeout_add(500, self.do_send_printers)
 
     def cancel_send_printers_timer(self) -> None:
-        spt = self.send_printers_timer
-        printlog("cancel_send_printers_timer() send_printers_timer=%s", spt)
-        if spt:
+        if spt := self.send_printers_timer:
+            printlog("cancel_send_printers_timer() send_printers_timer=%s", spt)
             self.send_printers_timer = 0
             self.source_remove(spt)
 

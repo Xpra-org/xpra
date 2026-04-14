@@ -184,8 +184,7 @@ class CairoBackingBase(WindowBackingBase):
         return cr
 
     def close(self) -> None:
-        backing = self._backing
-        if backing:
+        if backing := self._backing:
             backing.finish()
             self._backing = None
         super().close()
@@ -435,8 +434,7 @@ class CairoBackingBase(WindowBackingBase):
 
             def refresh_screen() -> None:
                 self.fps_refresh_timer = 0
-                b = self._backing
-                if b:
+                if self._backing:
                     self.update_fps()
                     rw, rh = self.render_size
                     self.repaint(0, 0, rw, rh)

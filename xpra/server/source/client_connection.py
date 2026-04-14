@@ -184,8 +184,7 @@ class ClientConnection(StubClientConnection):
                 (now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1] == wid))
             )
         self.packet_queue.append((packet, wid, pixels, wait_for_more))
-        p = self.protocol
-        if p:
+        if p := self.protocol:
             p.source_has_more()
 
     def encode_loop(self) -> None:
@@ -239,8 +238,7 @@ class ClientConnection(StubClientConnection):
         """ This method queues non-damage packets (higher priority) """
         synchronous = bool(kwargs.get("synchronous", True))
         will_have_more = bool(kwargs.get("will_have_more", not synchronous))
-        p = self.protocol
-        if p:
+        if p := self.protocol:
             packet = Packet(packet_type, *parts)
             self.ordinary_packets.append((packet, synchronous, will_have_more))
             p.source_has_more()
@@ -269,8 +267,7 @@ class ClientConnection(StubClientConnection):
             "packet-types": self.client_packet_types,
             "control-commands": self.client_control_commands,
         }
-        p = self.protocol
-        if p:
+        if p := self.protocol:
             info["connection"] = p.get_info()
         info.update(self.get_features_info())
         return info

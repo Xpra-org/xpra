@@ -122,16 +122,13 @@ class ExpandServer(ShadowX11Server):
         self.refresh_windows()
 
     def cleanup(self) -> None:
-        fdw = self.fd_watch
-        if fdw:
+        if fdw := self.fd_watch:
             self.fd_watch = None
             GLib.source_remove(fdw)
-        c = self.evdi_channel
-        if c:
+        if c := self.evdi_channel:
             self.evdi_channel = None
             c.shutdown(False)
-        ed = self.evdi_device
-        if ed:
+        if ed := self.evdi_device:
             self.evdi_device = None
             ed.cleanup()
         super().cleanup()

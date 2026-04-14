@@ -177,25 +177,20 @@ class PlatformClient(StubClientMixin):
     def cleanup(self) -> None:
         log("PlatformClient.cleanup()")
         self._keyboard_poll_exit = True
-        cha = self._console_handler_added
-        if cha:
+        if self._console_handler_added:
             self._console_handler_added = False
             # removing can cause crashes!?
             # setup_console_event_listener(self.handle_console_event, False)
-        el = self._eventlistener
-        if el:
+        if el := self._eventlistener:
             self._eventlistener = None
             el.cleanup()
-        khid = self._keyboard_hook_id
-        if khid:
+        if khid := self._keyboard_hook_id:
             self._keyboard_hook_id = 0
             UnhookWindowsHookEx(khid)
-        kpt = self._keyboard_poll_timer
-        if kpt:
+        if kpt := self._keyboard_poll_timer:
             self._keyboard_poll_timer = 0
             GLib.source_remove(kpt)
-        sst = self._screensaver_timer
-        if sst:
+        if sst := self._screensaver_timer:
             self._screensaver_timer = 0
             GLib.source_remove(sst)
         log("PlatformClient.cleanup() ended")

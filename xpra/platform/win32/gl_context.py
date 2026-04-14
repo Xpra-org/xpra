@@ -244,8 +244,7 @@ class WGLContext:
         return context
 
     def destroy(self) -> None:
-        c = self.context
-        if c:
+        if c := self.context:
             self.context = 0
             if not wglDeleteContext(c):
                 raise RuntimeError("wglDeleteContext failed for context %#x" % c)

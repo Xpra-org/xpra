@@ -122,8 +122,7 @@ class XpraMonitorServer(DesktopServerBase):
         # from triggering a call to via reconfigure_monitors via reconfigure:
         try:
             self.reconfigure_locked = True
-            mdef = self.mirror_client_monitor_layout()
-            if mdef:
+            if mdef := self.mirror_client_monitor_layout():
                 self.setting_changed("monitors", mdef)
         except Exception:
             log("Warning: failed to mirror client monitor layout", exc_info=True)

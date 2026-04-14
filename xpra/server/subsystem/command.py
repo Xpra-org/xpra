@@ -268,8 +268,7 @@ class ChildCommandServer(StubServerMixin):
     def cleanup(self) -> None:
         # during cleanup, just ignore the reaper exit callback:
         self.reaper_exit = noop
-        mp = self.menu_provider
-        if mp:
+        if mp := self.menu_provider:
             self.menu_provider = None
             mp.cleanup()
 
@@ -407,13 +406,11 @@ class ChildCommandServer(StubServerMixin):
         started = []
         for x in start_list:
             if x:
-                proc = self.start_command(x, x, ignore=True, source=source)
-                if proc:
+                if proc := self.start_command(x, x, ignore=True, source=source):
                     started.append(proc)
         for x in start_child_list:
             if x:
-                proc = self.start_command(x, x, ignore=False, source=source)
-                if proc:
+                if proc := self.start_command(x, x, ignore=False, source=source):
                     started.append(proc)
         procs = tuple(x for x in started if x)
         if not self.session_name:

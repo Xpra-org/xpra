@@ -415,8 +415,7 @@ class WindowModel(BaseWindowModel):
         x, y, w, h = geom[:4]
 
         def intpair(key: str, default: tuple[int, int]) -> tuple[int, int]:
-            value = self.get(key)
-            if value:
+            if value := self.get(key):
                 return int(value[0]), int(value[1])
             return default
         ax, ay = intpair("requested-position", (x, y))
@@ -431,8 +430,7 @@ class WindowModel(BaseWindowModel):
 
     def do_unmanaged(self, wm_exiting: bool) -> None:
         log("unmanaging window: %s (%s - %s)", self, self.corral_xid, self.xid)
-        cxid = self.corral_xid
-        if cxid:
+        if cxid := self.corral_xid:
             self.corral_xid = 0
             remove_event_receiver(cxid, self)
             geom = None

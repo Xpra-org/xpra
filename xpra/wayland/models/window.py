@@ -161,11 +161,9 @@ class Window(WindowModelStub):
     def acknowledge_changes(self) -> None:
         if not self._managed:
             return
-        surface = self._gproperties.get("surface", 0)
-        if surface:
+        if surface := self._gproperties.get("surface", 0):
             frame_done(surface)
-        display = self._gproperties.get("display", 0)
-        if display:
+        if display := self._gproperties.get("display", 0):
             flush_clients(display)
 
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper:

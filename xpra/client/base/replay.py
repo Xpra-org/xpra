@@ -485,8 +485,7 @@ class Replay(GObjectClientAdapter):
         self.quit(ExitCode.OK)
 
     def cancel_event_timer(self) -> None:
-        et = self.event_timer
-        if et:
+        if et := self.event_timer:
             self.event_timer = 0
             self.source_remove(et)
 

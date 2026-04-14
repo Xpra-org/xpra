@@ -407,8 +407,7 @@ class UIXpraClient(ClientBaseClass):
         windows = tuple(getattr(self, "_id_to_window", {}).values())
         if not windows:
             return
-        ok = self._server_ok or FORCE_ALERT
-        if ok:
+        if self._server_ok or FORCE_ALERT:
             log.info("server is OK again")
             return
         log.info("server is not responding, drawing alert state over the windows")

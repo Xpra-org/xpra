@@ -117,9 +117,8 @@ class ManagerSelection(GObject.GObject):
                 self.exit_timer = GLib.timeout_add(SELECTION_EXIT_TIMEOUT * 1000, self.exit_timeout)
 
     def cancel_exit_timer(self) -> None:
-        et = self.exit_timer
-        log("cancel_exit_timer() exit timer=%i", et)
-        if et:
+        if et := self.exit_timer:
+            log("cancel_exit_timer() exit timer=%i", et)
             self.exit_timer = 0
             GLib.source_remove(et)
 

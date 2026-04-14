@@ -79,8 +79,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         return "X11Clipboard"
 
     def cleanup_window(self) -> None:
-        xid = self.event_window_xid
-        if xid:
+        if xid := self.event_window_xid:
             self.event_window_xid = 0
             remove_event_receiver(xid, self)
             remove_event_window(xid)
@@ -109,20 +108,17 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     ############################################################################
     def do_x11_selection_request(self, event: X11Event) -> None:
         log("do_x11_selection_request(%s)", event)
-        proxy = self._get_proxy(event.selection)
-        if proxy:
+        if proxy := self._get_proxy(event.selection):
             proxy.do_selection_request_event(event)
 
     def do_x11_selection_clear(self, event: X11Event) -> None:
         log("do_x11_selection_clear(%s)", event)
-        proxy = self._get_proxy(event.selection)
-        if proxy:
+        if proxy := self._get_proxy(event.selection):
             proxy.do_selection_clear_event(event)
 
     def do_x11_xfixes_selection_notify_event(self, event: X11Event) -> None:
         log("do_x11_xfixes_selection_notify_event(%s)", event)
-        proxy = self._get_proxy(event.selection)
-        if proxy:
+        if proxy := self._get_proxy(event.selection):
             proxy.do_selection_notify_event(event)
 
     def do_x11_client_message_event(self, event: X11Event) -> None:
@@ -146,8 +142,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
             return
         selection = parts[0]  # ie: PRIMARY
         # target = parts[1]           # ie: VALUE
-        proxy = self._get_proxy(selection)
-        if proxy:
+        if proxy := self._get_proxy(selection):
             proxy.do_property_notify(event)
 
     ############################################################################

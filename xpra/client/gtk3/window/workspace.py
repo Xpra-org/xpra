@@ -151,8 +151,7 @@ class WorkspaceWindow(GtkStubWindow):
         self.workspace_timer = self.timeout_add(1000, poll_workspace)
 
     def cancel_workspace_timer(self) -> None:
-        wt = self.workspace_timer
-        if wt:
+        if wt := self.workspace_timer:
             self.workspace_timer = 0
             self.source_remove(wt)
 
@@ -279,8 +278,7 @@ class WorkspaceWindow(GtkStubWindow):
             from pyvda.pyvda import VirtualDesktop
             return VirtualDesktop.current().number - 1
 
-        window = self.get_window()
-        if window:
+        if window := self.get_window():
             root = window.get_screen().get_root_window()
         else:
             # if we are called during init...

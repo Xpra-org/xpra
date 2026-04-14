@@ -493,8 +493,7 @@ class ClientWindow(GObject.GObject):
         InvalidateRect(self.hwnd, None, True)
 
     def eos(self):
-        backing = self.backing
-        if backing:
+        if backing := self.backing:
             backing.eos()
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
@@ -533,16 +532,14 @@ class ClientWindow(GObject.GObject):
     def destroy(self) -> None:
         """Called by the client to initiate window destruction"""
         log("destroy() hwnd=%#x", self.hwnd)
-        hwnd = self.hwnd
-        if hwnd:
+        if hwnd := self.hwnd:
             self.hwnd = 0
             # Just destroy the window - cleanup happens in WM_NCDESTROY
             DestroyWindow(hwnd)
             # The message loop will handle the rest
 
     def cleanup(self) -> None:
-        backing = self.backing
-        if backing:
+        if backing := self.backing:
             self.backing = None
             backing.close()
 
@@ -551,8 +548,7 @@ class ClientWindow(GObject.GObject):
             DestroyIcon(hicon)
         self.hicons.clear()
 
-        hdc = self.hdc
-        if hdc:
+        if hdc := self.hdc:
             self.hdc = 0
             DeleteDC(hdc)
 

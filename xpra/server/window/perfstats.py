@@ -149,8 +149,7 @@ class WindowPerformanceStatistics:
             recent1MB = 1.0 * 1024 * 1024 / rds
             weight_div = max(0.25, rds / (4 * 1000 * 1000))
             mayaddfac(*calculate_for_average(metric, avg1MB, recent1MB, weight_offset=0.0, weight_div=weight_div))
-        ldet = self.last_damage_event_time
-        if ldet:
+        if ldet := self.last_damage_event_time:
             # If nothing happens for a while then we can reduce the batch delay,
             # however we must ensure this is not caused by a high system latency,
             # so we ignore short elapsed times.

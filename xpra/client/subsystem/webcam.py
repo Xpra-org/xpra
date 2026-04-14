@@ -106,8 +106,7 @@ class WebcamForwarder(StubClientMixin):
         self.stop_sending_webcam()
 
     def resume_webcam(self, _client) -> None:
-        wrr = self.webcam_resume_restart
-        if wrr:
+        if self.webcam_resume_restart:
             self.webcam_resume_restart = False
             self.start_sending_webcam()
 
@@ -204,14 +203,12 @@ class WebcamForwarder(StubClientMixin):
             webcam_device.release()
 
     def cancel_webcam_send_timer(self) -> None:
-        wst = self.webcam_send_timer
-        if wst:
+        if wst := self.webcam_send_timer:
             self.webcam_send_timer = 0
             self.source_remove(wst)
 
     def cancel_webcam_check_ack_timer(self) -> None:
-        wact = self.webcam_ack_check_timer
-        if wact:
+        if wact := self.webcam_ack_check_timer:
             self.webcam_ack_check_timer = 0
             self.source_remove(wact)
 

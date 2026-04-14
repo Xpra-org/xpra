@@ -574,8 +574,7 @@ class WindowSource(WindowIconSource):
             "csc_modes"       : dict(self.full_csc_modes or {}),
             "decoder-speed"   : dict(self.decoder_speed),
         }
-        larm = self.last_auto_refresh_message
-        if larm:
+        if larm := self.last_auto_refresh_message:
             esinfo.update(
                 {
                     "auto-refresh"    : {
@@ -622,17 +621,14 @@ class WindowSource(WindowIconSource):
                 "client"                : self.client_bit_depth,
             },
         })
-        ma = self.mapped_at
-        if ma:
+        if ma := self.mapped_at:
             info["mapped-at"] = ma
-        crs = self.client_render_size
-        if crs:
+        if crs := self.client_render_size:
             info["render-size"] = crs
         info["damage.fps"] = int(self.get_damage_fps())
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
-        cdd = self.cuda_device_context
-        if cdd:
+        if cdd := self.cuda_device_context:
             info["cuda-device"] = cdd.get_info()
         return info
 
@@ -980,8 +976,7 @@ class WindowSource(WindowIconSource):
         if cv > 0.1:
             max_rgb_threshold = int(32*1024/(1+cv))
             min_rgb_threshold = 1024
-        bwl = self.bandwidth_limit
-        if bwl:
+        if bwl := self.bandwidth_limit:
             max_rgb_threshold = min(max_rgb_threshold, max(bwl//1000, 1024))
         weight = 1 + int(self.is_OR or self.is_tray or self.is_shadow)*2
         v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * weight)
@@ -1256,40 +1251,34 @@ class WindowSource(WindowIconSource):
                 self.statistics.encoding_pending.pop(sequence, None)
 
     def cancel_expire_timer(self) -> None:
-        et = self.expire_timer
-        if et:
+        if et := self.expire_timer:
             self.expire_timer = 0
             GLib.source_remove(et)
 
     def cancel_may_send_timer(self) -> None:
-        mst = self.may_send_timer
-        if mst:
+        if mst := self.may_send_timer:
             self.may_send_timer = 0
             GLib.source_remove(mst)
 
     def cancel_soft_timer(self) -> None:
-        st = self.soft_timer
-        if st:
+        if st := self.soft_timer:
             self.soft_timer = 0
             GLib.source_remove(st)
 
     def cancel_refresh_timer(self) -> None:
-        rt = self.refresh_timer
-        if rt:
+        if rt := self.refresh_timer:
             self.refresh_timer = 0
             GLib.source_remove(rt)
             self.refresh_event_time = 0
             self.refresh_target_time = 0
 
     def cancel_timeout_timer(self) -> None:
-        tt = self.timeout_timer
-        if tt:
+        if tt := self.timeout_timer:
             self.timeout_timer = 0
             GLib.source_remove(tt)
 
     def cancel_av_sync_timer(self) -> None:
-        avst = self.av_sync_timer
-        if avst:
+        if avst := self.av_sync_timer:
             self.av_sync_timer = 0
             GLib.source_remove(avst)
 
@@ -1632,8 +1621,7 @@ class WindowSource(WindowIconSource):
                     sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * pct // 100))
                     self.refresh_target_time = max(self.refresh_target_time, now + sched_delay/1000.0)
 
-        delayed = self._damage_delayed
-        if delayed:
+        if delayed := self._damage_delayed:
             # use existing delayed region:
             regions = delayed.regions
             if self.full_frames_only or len(regions) >= self.max_small_regions:
@@ -2160,8 +2148,7 @@ class WindowSource(WindowIconSource):
         def process_damage_image(img: ImageWrapper) -> None:
             self.process_damage_image(damage_time, rgb_request_time, img, coding, sequence, options, flush)
 
-        image_filter = self.image_filter
-        if image_filter:
+        if image_filter := self.image_filter:
             image_filter.process_image(image, process_damage_image)
         else:
             process_damage_image(image)
@@ -2206,8 +2193,7 @@ class WindowSource(WindowIconSource):
         # prepare encoding options:
         eoptions = typedict(options)
         eoptions["window-size"] = self.window_dimensions
-        resize = self.scaled_size(image)
-        if resize:
+        if resize := self.scaled_size(image):
             sw, sh = resize
             eoptions["scaled-width"] = sw
             eoptions["scaled-height"] = sh
@@ -2664,8 +2650,7 @@ class WindowSource(WindowIconSource):
                     send_speed = avg_send_speed
         bandwidthlog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps) for wid=%#x",
                      source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024, self.wid)
-        rtt = self.refresh_target_time
-        if rtt:
+        if rtt := self.refresh_target_time:
             # a refresh now would really hurt us!
             self.refresh_target_time = max(rtt, now+2)
         self.record_congestion_event(source, late_pct, send_speed)
@@ -2779,8 +2764,7 @@ class WindowSource(WindowIconSource):
         self.full_quality_refresh({})
 
     def cancel_decode_error_refresh_timer(self) -> None:
-        dert: int = self.decode_error_refresh_timer
-        if dert:
+        if dert := self.decode_error_refresh_timer:
             self.decode_error_refresh_timer = 0
             GLib.source_remove(dert)
 

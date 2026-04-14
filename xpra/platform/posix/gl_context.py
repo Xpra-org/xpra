@@ -332,8 +332,7 @@ class GLXContext:
         return GLXWindowContext(self.context, gdk_window.get_xid())
 
     def destroy(self) -> None:
-        c = self.context
-        if c:
+        if c := self.context:
             self.context = None
             GLX.glXDestroyContext(self.xdisplay, c)
 

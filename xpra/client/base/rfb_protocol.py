@@ -57,8 +57,7 @@ class RFBClientProtocol(RFBProtocol):
                 if start_send_cb:
                     start_send_cb()
                 log("packet: %s", rfbdata[0])
-                handler = self._rfb_converters.get(rfbdata[0])
-                if handler:
+                if handler := self._rfb_converters.get(rfbdata[0]):
                     handler(rfbdata)
                 if end_send_cb:
                     end_send_cb()

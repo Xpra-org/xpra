@@ -543,8 +543,7 @@ class ServerCore(ServerBaseClass):
             self.touch_timer = GLib.timeout_add(60 * 1000, self.touch_sockets)
 
     def cancel_touch_timer(self) -> None:
-        tt = self.touch_timer
-        if tt:
+        if tt := self.touch_timer:
             self.touch_timer = 0
             GLib.source_remove(tt)
 
@@ -960,8 +959,7 @@ class ServerCore(ServerBaseClass):
         self.handle_rfb_connection(conn, data)
 
     def cancel_upgrade_to_rfb_timer(self, protocol) -> None:
-        t = self.socket_rfb_upgrade_timer.pop(protocol, None)
-        if t:
+        if t := self.socket_rfb_upgrade_timer.pop(protocol, None):
             GLib.source_remove(t)
 
     def make_protocol(self, socktype: str, conn, socket_options, protocol_class=SocketProtocol, pre_read=()):
@@ -1225,8 +1223,7 @@ class ServerCore(ServerBaseClass):
                         data = b""
                     if data:
                         messages.append(f" read buffer={data!r}")
-                        packet_type = self.guess_packet_type(data)
-                        if packet_type:
+                        if packet_type := self.guess_packet_type(data):
                             messages.append(f" looks like {packet_type!r}")
                     else:
                         # no data was ever received,
@@ -1240,8 +1237,7 @@ class ServerCore(ServerBaseClass):
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
     def cancel_verify_connection_accepted(self, protocol: SocketProtocol) -> None:
-        t = self.socket_verify_timer.pop(protocol, None)
-        if t:
+        if t := self.socket_verify_timer.pop(protocol, None):
             GLib.source_remove(t)
 
     def send_disconnect(self, proto: SocketProtocol, *reasons) -> None:

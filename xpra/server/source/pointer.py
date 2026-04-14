@@ -57,11 +57,9 @@ class PointerConnection(StubClientConnection):
 
     def get_info(self) -> dict[str, Any]:
         dc_info: dict[str, Any] = {}
-        dct = self.double_click_time
-        if dct:
+        if dct := self.double_click_time:
             dc_info["time"] = dct
-        dcd = self.double_click_distance
-        if dcd:
+        if dcd := self.double_click_distance:
             dc_info["distance"] = dcd
         info = {}
         if dc_info:

@@ -129,8 +129,7 @@ class RemoteServerAdapter(baseclass):
         super().cleanup()
 
     def cancel_schedule_connect(self) -> None:
-        ct = self.connect_timer
-        if ct:
+        if ct := self.connect_timer:
             self.connect_timer = 0
             self.source_remove(ct)
 
@@ -274,7 +273,6 @@ class RemoteServerAdapter(baseclass):
         return self._ordinary_packets.pop(0), True, bool(self._ordinary_packets)
 
     def disconnect(self) -> None:
-        p = self.protocol
-        if p:
+        if p := self.protocol:
             self.protocol = None
             p.close()

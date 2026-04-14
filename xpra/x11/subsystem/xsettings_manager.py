@@ -109,8 +109,7 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
         remove_event_receiver(rxid, self)
 
     def _add_watch(self) -> None:
-        owner = self.xsettings_owner()
-        if owner:
+        if owner := self.xsettings_owner():
             add_event_receiver(owner, self)
 
     def do_x11_client_message_event(self, event: X11Event) -> None:

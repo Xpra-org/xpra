@@ -421,8 +421,7 @@ class CoreX11WindowModel(WindowModelStub):
     def setup(self) -> None:
         # Start listening for important events.
         X11Window.addDefaultEvents(self.xid)
-        c = self._composite
-        if c:
+        if c := self._composite:
             self._damage_forward_handle = c.connect("contents-changed", self._forward_contents_changed)
         self._setup_property_sync()
 
@@ -454,8 +453,7 @@ class CoreX11WindowModel(WindowModelStub):
     def acknowledge_changes(self) -> None:
         if not self._managed:
             return
-        c = self._composite
-        if c:
+        if c := self._composite:
             c.acknowledge_changes()
         else:
             log("composite window destroyed outside the UI thread?")
@@ -704,8 +702,7 @@ class CoreX11WindowModel(WindowModelStub):
             except Exception:
                 metalog("_handle_property_change(%s)", name, exc_info=True)
             self.emit("x11-property-changed", (name, "", 0, ""))
-        handler = self._x11_property_handlers.get(name)
-        if handler:
+        if handler := self._x11_property_handlers.get(name):
             try:
                 with xsync:
                     handler(self)

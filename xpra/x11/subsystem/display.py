@@ -297,8 +297,7 @@ class X11DisplayManager(DisplayManager):
         # randr:
         if self.randr:
             with xlog:
-                sizes = self.get_all_screen_sizes()
-                if sizes:
+                if sizes := self.get_all_screen_sizes():
                     info["randr"] = {
                         "": True,
                         "options": tuple(reversed(sorted(sizes))),

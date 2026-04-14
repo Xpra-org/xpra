@@ -329,8 +329,7 @@ class StartSession(Gtk.Window):
         if not changed:
             return
         current = self.display_combo.get_active_text()
-        model = self.display_combo.get_model()
-        if model:
+        if model := self.display_combo.get_model():
             model.clear()
         selected = 0
         for i, display in enumerate(new_display_list):
@@ -450,8 +449,7 @@ class StartSession(Gtk.Window):
                         self.categories[name] = submenu
         except Exception:
             log("failed to parse menus", exc_info=True)
-        model = self.category_combo.get_model()
-        if model:
+        if model := self.category_combo.get_model():
             model.clear()
         for name in sorted(self.categories.keys()):
             self.category_combo.append_text(name)
@@ -504,8 +502,7 @@ class StartSession(Gtk.Window):
         name = self.command_combo.get_active_text()
         log("command_changed(%s) command=%s", args, name)
         if name:
-            seamless = self.seamless_btn.get_active()
-            if seamless:
+            if self.seamless_btn.get_active():
                 self.desktop_entry = self.commands[name]
             else:
                 self.desktop_entry = self.xsessions[name]
@@ -598,8 +595,7 @@ class StartSession(Gtk.Window):
 
     def get_run_mode(self) -> str:
         shadow = self.shadow_btn.get_active()
-        seamless = self.seamless_btn.get_active()
-        if seamless:
+        if self.seamless_btn.get_active():
             return "seamless"
         if shadow:
             return "shadow"
@@ -655,11 +651,9 @@ class StartSession(Gtk.Window):
         else:
             mode = self.mode_combo.get_active_text().lower()
             uri = f"{mode}://"
-            username = self.username_entry.get_text()
-            if username:
+            if username := self.username_entry.get_text():
                 uri += f"{username}@"
-            host = self.host_entry.get_text()
-            if host:
+            if host := self.host_entry.get_text():
                 uri += host
             try:
                 port = int(self.port_entry.get_text())

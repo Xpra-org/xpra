@@ -120,8 +120,7 @@ class CursorsConnection(StubClientConnection):
             self.cursor_timer = GLib.timeout_add(delay, do_send_cursor)
 
     def cancel_cursor_timer(self) -> None:
-        ct = self.cursor_timer
-        if ct:
+        if ct := self.cursor_timer:
             self.cursor_timer = 0
             GLib.source_remove(ct)
 

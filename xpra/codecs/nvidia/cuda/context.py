@@ -563,8 +563,7 @@ class cuda_device_context:
         self.lock.release()
 
     def pop_context(self) -> None:
-        c = self.context
-        if c:
+        if c := self.context:
             c.pop()
         # except driver.LogicError as e:
         # log.warn("Warning: PyCUDA %s", e)

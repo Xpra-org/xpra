@@ -81,8 +81,7 @@ class IdleConnection(StubClientConnection):
             self.notify_close(NotificationID.IDLE)
 
     def cancel_idle_timeout(self) -> None:
-        it = self.idle_timer
-        if it:
+        if it := self.idle_timer:
             self.idle_timer = 0
             GLib.source_remove(it)
 
@@ -92,8 +91,7 @@ class IdleConnection(StubClientConnection):
             self.idle_timer = GLib.timeout_add(self.idle_timeout * 1000, self.idle_timedout)
 
     def cancel_idle_grace_timeout(self) -> None:
-        igt = self.idle_grace_timer
-        if igt:
+        if igt := self.idle_grace_timer:
             self.idle_grace_timer = 0
             GLib.source_remove(igt)
 

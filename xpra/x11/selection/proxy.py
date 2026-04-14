@@ -298,8 +298,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, event.time)
             return
 
-        waiting = self.remote_requests.setdefault(req_target, [])
-        if waiting:
+        if waiting := self.remote_requests.setdefault(req_target, []):
             log("already waiting for '%s' remote request: %s", req_target, waiting)
         else:
             self.emit("send-clipboard-request", self._selection, req_target)
@@ -458,8 +457,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 got_contents("ATOM", 32, xatoms)
                 return
         else:
-            target_data = self.target_data.get(target)
-            if target_data:
+            if target_data := self.target_data.get(target):
                 dtype, dformat, value = target_data
                 got_contents(dtype, dformat, value)
                 return
@@ -566,8 +564,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.incr_data_timer = GLib.timeout_add(1 * 1000, self.incr_data_timeout)
 
     def cancel_incr_data_timer(self) -> None:
-        idt = self.incr_data_timer
-        if idt:
+        if idt := self.incr_data_timer:
             self.incr_data_timer = 0
             GLib.source_remove(idt)
 

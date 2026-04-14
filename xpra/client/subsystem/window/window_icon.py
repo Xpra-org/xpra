@@ -64,8 +64,7 @@ class WindowIcon(StubClientMixin):
         # make sure the window icons are the ones we want:
         log("reinit_window_icons()")
         for wid in tuple(self._id_to_window.keys()):
-            window = self.get_window(wid)
-            if window:
+            if window := self.get_window(wid):
                 reset_icon = getattr(window, "reset_icon", None)
                 if reset_icon:
                     reset_icon()

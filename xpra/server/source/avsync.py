@@ -84,8 +84,7 @@ class AVSyncConnection(StubClientConnection):
         self.update_av_sync_delay_total()
 
     def update_av_sync_delay_total(self) -> None:
-        enabled = self.av_sync and bool(getattr(self, "audio_source", None))
-        if enabled:
+        if enabled := self.av_sync and bool(getattr(self, "audio_source", None)):
             encoder_latency = self.get_audio_source_latency()
             self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + self.av_sync_delta + encoder_latency))
             log("av-sync set to %ims (from client queue latency=%s, encoder latency=%s, delta=%s)",

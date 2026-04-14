@@ -57,14 +57,12 @@ class PowerEventClient(StubClientMixin):
         from xpra.platform.events import remove_handler
         remove_handler("suspend", self.suspend)
         remove_handler("resume", self.resume)
-        uw = self.ui_watcher
-        if uw:
+        if uw := self.ui_watcher:
             self.ui_watcher = None
             uw.stop()
 
     def ui_thread_tick(self):
-        uiw = self.ui_watcher
-        if uiw:
+        if uiw := self.ui_watcher:
             uiw.tick()
 
     def ui_pause(self):

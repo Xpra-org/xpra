@@ -775,15 +775,13 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         self.cleanup_window()
 
     def cleanup_window(self) -> None:
-        w = self.window
-        if w:
+        if w := self.window:
             self.window = None
             RemoveClipboardFormatListener(w)
             DestroyWindow(w)
-        wch = self.wndclass_handle
-        if wch:
+        if self.wndclass_handle:
             self.wndclass = None
-            self.wndclass_handle = None
+            self.wndclass_handle = 0
             UnregisterClassW(CLIPBOARD_WINDOW_CLASS_NAME, GetModuleHandleA(0))
 
     def make_proxy(self, selection: str) -> Win32ClipboardProxy:

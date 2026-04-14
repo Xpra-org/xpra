@@ -39,8 +39,7 @@ class BaseMmapArea:
         return bool(self.mmap) and self.enabled and self.size > 0
 
     def close(self) -> None:
-        mmap = self.mmap
-        if mmap:
+        if mmap := self.mmap:
             try:
                 mmap.close()
             except BufferError:

@@ -136,8 +136,7 @@ class GDICapture:
             self.dc = None
             self.wnd = None
             ReleaseDC(wnd, dc)
-        memdc = self.memdc
-        if memdc:
+        if memdc := self.memdc:
             self.memdc = None
             DeleteDC(memdc)
 

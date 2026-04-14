@@ -68,8 +68,7 @@ class CaptureWindowModel:
 
     def get_info(self) -> dict[str, Any]:
         info = {}
-        c = self.capture
-        if c:
+        if c := self.capture:
             info["capture"] = c.get_info()
         return info
 

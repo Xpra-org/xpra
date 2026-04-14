@@ -37,8 +37,7 @@ class ShellServer(StubServerMixin):
 
     def _process_shell_exec(self, proto, packet: Packet) -> None:
         code = packet.get_str(1)
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             self.counter += 1
             self.commands.append(code)
             ss.shell_exec(code)

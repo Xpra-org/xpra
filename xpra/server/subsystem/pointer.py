@@ -113,8 +113,7 @@ class PointerServer(StubServerMixin):
                 log("cannot get pointer device class from %s: %s", self.pointer_device, e)
 
     def update_touchpad_size(self) -> None:
-        td = self.touchpad_device
-        if td:
+        if td := self.touchpad_device:
             # this handler only runs when the DisplayManager emits the signal,
             # so we can assume that the `get_display_size()` method is available:
             root_w, root_h = self.get_display_size()
@@ -265,8 +264,7 @@ class PointerServer(StubServerMixin):
     def get_pointer_device(self, deviceid: int):
         # log("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)
         if self.input_devices_data:
-            device_data = self.input_devices_data.get(deviceid)
-            if device_data:
+            if device_data := self.input_devices_data.get(deviceid):
                 log("get_pointer_device(%i) device=%s", deviceid, device_data.get("name"))
         device = self.pointer_device_map.get(deviceid) or self.pointer_device
         return device
@@ -277,8 +275,7 @@ class PointerServer(StubServerMixin):
         from xpra.server.subsystem.window import WindowServer
         if len(pos) >= 4 and isinstance(self, WindowServer):
             # relative coordinates
-            model = self.get_window(wid)
-            if model:
+            if model := self.get_window(wid):
                 rx, ry = pos[2:4]
                 geom = model.get_geometry()
                 x = geom[0] + rx
@@ -313,8 +310,7 @@ class PointerServer(StubServerMixin):
     def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
         if self.readonly:
             return
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             if self.ui_driver and self.ui_driver != ss.uuid:
                 return
             if hasattr(ss, "keyboard_config"):

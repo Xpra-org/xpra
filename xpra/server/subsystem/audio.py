@@ -162,13 +162,11 @@ class AudioServer(StubServerMixin):
         self._process_audio_data(proto, packet)
 
     def _process_audio_data(self, proto, packet: Packet) -> None:
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.audio_data(*packet[1:])
 
     def _process_audio_capabilities(self, proto, packet: Packet) -> None:
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.client_audio_capabilities(packet.get_dict(1))
 
     def init_packet_handlers(self) -> None:

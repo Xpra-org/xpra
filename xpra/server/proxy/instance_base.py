@@ -261,8 +261,7 @@ class ProxyInstance:
     def filter_client_caps(self, remove=CLIENT_REMOVE_CAPS) -> dict:
         fc = filter_caps(self.caps, remove, self.server_protocol)
         # the display string may override the username:
-        username = self.disp_desc.get("username")
-        if username:
+        if username := self.disp_desc.get("username"):
             fc["username"] = username
         # update with options provided via config if any:
         fc.update(sanitize_session_options(self.session_options))
@@ -352,16 +351,14 @@ class ProxyInstance:
         return replace_packet_item(packet, index, compressed_wrapper(name, data, can_inline=False, **kw))
 
     def cancel_server_ping_timer(self) -> None:
-        spt = self.server_ping_timer
-        log("cancel_server_ping_timer() server_ping_timer=%s", spt)
-        if spt:
+        if spt := self.server_ping_timer:
+            log("cancel_server_ping_timer() server_ping_timer=%s", spt)
             self.server_ping_timer = 0
             self.source_remove(spt)
 
     def cancel_client_ping_timer(self) -> None:
-        cpt = self.client_ping_timer
-        log("cancel_client_ping_timer() client_ping_timer=%s", cpt)
-        if cpt:
+        if cpt := self.client_ping_timer:
+            log("cancel_client_ping_timer() client_ping_timer=%s", cpt)
             self.client_ping_timer = 0
             self.source_remove(cpt)
 

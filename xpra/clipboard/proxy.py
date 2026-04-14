@@ -204,14 +204,12 @@ class ClipboardProxyCore:
         pass
 
     def cancel_emit_token(self) -> None:
-        ett = self._emit_token_timer
-        if ett:
+        if ett := self._emit_token_timer:
             self._emit_token_timer = 0
             GLib.source_remove(ett)
 
     def cancel_unblock(self) -> None:
-        boc = self._block_owner_change
-        if boc:
+        if boc := self._block_owner_change:
             self._block_owner_change = 0
             GLib.source_remove(boc)
 

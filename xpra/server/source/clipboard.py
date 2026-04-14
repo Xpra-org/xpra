@@ -85,8 +85,7 @@ class ClipboardConnection(StubClientConnection):
         self.send_async(packet_type, self.clipboard_enabled, reason)
 
     def cancel_clipboard_progress_timer(self) -> None:
-        cpt = self.clipboard_progress_timer
-        if cpt:
+        if cpt := self.clipboard_progress_timer:
             self.clipboard_progress_timer = 0
             GLib.source_remove(cpt)
 

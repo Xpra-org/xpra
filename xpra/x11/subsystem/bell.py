@@ -64,8 +64,7 @@ class BellServer(StubServerMixin):
 
     def _process_bell_set(self, proto, packet: Packet) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
-        ss = self.get_server_source(proto)
-        if ss:
+        if ss := self.get_server_source(proto):
             ss.window_bell = packet.get_bool(1)
 
     def do_x11_xkb_event(self, event: X11Event) -> None:

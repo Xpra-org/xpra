@@ -237,14 +237,12 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
         return True
 
     def stop_control_socket(self) -> None:
-        cs = self.control_socket
-        if cs:
+        if self.control_socket:
             try:
                 self.control_socket.close()
             except OSError:
                 pass
-        csc = self.control_socket_cleanup
-        if csc:
+        if csc := self.control_socket_cleanup:
             self.control_socket_cleanup = None
             csc()
 

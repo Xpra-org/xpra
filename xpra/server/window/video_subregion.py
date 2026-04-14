@@ -130,9 +130,8 @@ class VideoSubregion:
         self.auto_refresh_delay = d
 
     def cancel_refresh_timer(self) -> None:
-        rt = self.refresh_timer
-        refreshlog("%s.cancel_refresh_timer() timer=%s", self, rt)
-        if rt:
+        if rt := self.refresh_timer:
+            refreshlog("%s.cancel_refresh_timer() timer=%s", self, rt)
             self.refresh_timer = 0
             GLib.source_remove(rt)
 
@@ -165,8 +164,7 @@ class VideoSubregion:
             "damaged": self.damaged,
             "exclusion-zones": [(r.x, r.y, r.width, r.height) for r in self.exclusion_zones]
         })
-        ls = self.last_scores
-        if ls:
+        if ls := self.last_scores:
             # convert rectangles into tuples:
             info["scores"] = {r.get_geometry(): score for r, score in ls.items() if r is not None}
         rr = tuple(self.refresh_regions)
@@ -218,9 +216,8 @@ class VideoSubregion:
             self.refresh_timer = GLib.timeout_add(delay, self.refresh)
 
     def cancel_nonvideo_refresh_timer(self) -> None:
-        nvrt = self.nonvideo_refresh_timer
-        refreshlog("cancel_nonvideo_refresh_timer() timer=%s", nvrt)
-        if nvrt:
+        if nvrt := self.nonvideo_refresh_timer:
+            refreshlog("cancel_nonvideo_refresh_timer() timer=%s", nvrt)
             self.nonvideo_refresh_timer = 0
             GLib.source_remove(nvrt)
             self.nonvideo_regions = []

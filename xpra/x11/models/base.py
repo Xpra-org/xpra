@@ -312,8 +312,7 @@ class BaseWindowModel(CoreX11WindowModel):
         # query the X11 property directly,
         # in case the python property isn't set yet
         if not self.is_OR():
-            transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
-            if transient_for:
+            if self.prop_get("WM_TRANSIENT_FOR", "window"):
                 # EWMH says that even if it's transient-for, we MUST check to
                 # see if it's override-redirect (and if so treat as NORMAL).
                 # But we wouldn't be here if this was override-redirect.

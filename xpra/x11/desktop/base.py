@@ -123,8 +123,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         super().do_cleanup()
         if MODIFY_GSETTINGS:
             self.restore_gsettings()
-        rpw = self.root_prop_watcher
-        if rpw:
+        if rpw := self.root_prop_watcher:
             self.root_prop_watcher = None
             rpw.cleanup()
 

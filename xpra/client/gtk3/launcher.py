@@ -280,8 +280,7 @@ class ApplicationWindow:
                     self.mdns_gui = mdns_sessions(self.config)
 
                     def close_mdns() -> None:
-                        mdns_gui = self.mdns_gui
-                        if mdns_gui:
+                        if mdns_gui := self.mdns_gui:
                             self.mdns_gui = None
                             mdns_gui.close()
 
@@ -708,8 +707,7 @@ class ApplicationWindow:
         self.do_connect()
 
     def clean_client(self) -> None:
-        c = self.client
-        if c:
+        if c := self.client:
             c.disconnect_and_quit = noop
             c.warn_and_quit = noop
             c.quit = noop
@@ -1072,8 +1070,7 @@ class ApplicationWindow:
         self.path_entry.set_text(self.config.path)
 
     def close_window(self, *_args) -> None:
-        w = self.window
-        if w:
+        if w := self.window:
             self.window = None
             w.destroy()
 

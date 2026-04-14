@@ -157,8 +157,7 @@ class SSHSocketConnection(SocketConnection):
 
     def get_info(self) -> dict[str, Any]:
         i = super().get_info()
-        s = self._socket
-        if s:
+        if s := self._socket:
             i["ssh-channel"] = {
                 "id": s.get_id(),
                 "name": s.get_name(),

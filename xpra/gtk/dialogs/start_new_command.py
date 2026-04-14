@@ -142,8 +142,7 @@ class StartNewCommand:
             return
         category = self.category_combo.get_active_text()
         entries = typedict(typedict(self.menu.dictget(category, {})).dictget("Entries", {}))
-        command_name = self.command_combo.get_active_text()
-        if command_name:
+        if command_name := self.command_combo.get_active_text():
             update_config("command", command_name)
         log("command_changed(%s) category=%s, entries=%s, command_name=%s", args, category, entries, command_name)
         command = ""

@@ -39,8 +39,7 @@ class SplashServer(StubServerMixin):
         self.stop_splash_process()
 
     def stop_splash_process(self) -> None:
-        sp = self.splash_process
-        if sp:
+        if sp := self.splash_process:
             self.splash_process = None
             try:
                 sp.terminate()

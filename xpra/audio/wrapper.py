@@ -127,8 +127,7 @@ class AudioSubprocess(SubprocessCallee):
         GLib.timeout_add(1000, self.do_stop)
 
     def export_info(self) -> bool:
-        wo = self.wrapped_object
-        if wo:
+        if wo := self.wrapped_object:
             self.send("info", wo.get_info())
         return wo is not None
 
@@ -344,8 +343,7 @@ class SourceSubprocessWrapper(AudioSubprocessWrapper):
         _add_debug_args(self.command)
 
     def __repr__(self):
-        proc = self.process
-        if proc:
+        if proc := self.process:
             try:
                 return "source_subprocess_wrapper(%s)" % proc.pid
             except AttributeError:
@@ -373,8 +371,7 @@ class SinkSubprocessWrapper(AudioSubprocessWrapper):
         self.send("add_data", data, metadata, packet_metadata)
 
     def __repr__(self):
-        proc = self.process
-        if proc:
+        if proc := self.process:
             try:
                 return "sink_subprocess_wrapper(%s)" % proc.pid
             except AttributeError:

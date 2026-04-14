@@ -129,21 +129,18 @@ class PointerWindow(GtkStubWindow):
     # pointer overlay handling
     def set_cursor_data(self, cursor_data: Sequence) -> None:
         self.cursor_data = cursor_data
-        b = self._backing
-        if b:
+        if b := self._backing:
             self.when_realized("cursor", b.set_cursor_data, cursor_data)
 
     def cancel_remove_pointer_overlay_timer(self) -> None:
-        rpot = self.remove_pointer_overlay_timer
-        log(f"cancel_remove_pointer_overlay_timer() timer={rpot}")
-        if rpot:
+        if rpot := self.remove_pointer_overlay_timer:
+            log(f"cancel_remove_pointer_overlay_timer() timer={rpot}")
             self.remove_pointer_overlay_timer = 0
             self.source_remove(rpot)
 
     def cancel_show_pointer_overlay_timer(self) -> None:
-        rsot = self.show_pointer_overlay_timer
-        log(f"cancel_show_pointer_overlay_timer() timer={rsot}")
-        if rsot:
+        if rsot := self.show_pointer_overlay_timer:
+            log(f"cancel_show_pointer_overlay_timer() timer={rsot}")
             self.show_pointer_overlay_timer = 0
             self.source_remove(rsot)
 
@@ -355,8 +352,7 @@ class PointerWindow(GtkStubWindow):
 
     def cancel_button_polling(self) -> None:
         log("cancel_button_polling()")
-        bpt = self.button_polling_timer
-        if bpt:
+        if bpt := self.button_polling_timer:
             self.button_polling_timer = 0
             self.source_remove(bpt)
 

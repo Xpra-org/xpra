@@ -140,8 +140,7 @@ class GDIBacking(WindowBackingBase):
         fire_paint_callbacks(callbacks)
 
     def close(self) -> None:
-        bitmap = self.bitmap
-        if bitmap:
+        if bitmap := self.bitmap:
             self.bitmap = 0
             DeleteObject(bitmap)
         super().close()

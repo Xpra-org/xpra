@@ -58,8 +58,7 @@ class ImageFilter:
 
     def clean(self) -> None:
         self.wait_for_thread()
-        filt = self.filter
-        if filt:
+        if filt := self.filter:
             self.filter = None
             filt.clean()
 

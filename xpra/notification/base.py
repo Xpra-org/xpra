@@ -32,10 +32,9 @@ class NotifierBase:
         self.handles_actions = False
 
     def cleanup(self) -> None:
-        tf = self.temp_files
-        if tf:
+        if tf := self.temp_files.keys():
             self.temp_files = {}
-            for nid in self.temp_files:
+            for nid in tf:
                 self.clean_notification(nid)
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
