@@ -682,14 +682,23 @@ def install_dev_env() -> int:
     cmd = install_dev_env_command()
     if not cmd:
         return 1
-    if os.geteuid() != 0:
-        cmd.insert(0, "sudo")
     from shutil import which
-    exe = which(cmd[0])
+    if WIN32:
+        bash = which("bash")
+        if not bash or not os.environ.get("MINGW_PREFIX"):
+            raise RuntimeError("you must run this command from a MINGW64 shell")
+        return subprocess.Popen(cmd).wait()
+    if POSIX and os.geteuid() != 0:
+        cmd.insert(0, "sudo")
+    exe = which(cmd[0]) if not os.path.isabs(cmd[0]) else cmd[0]
     os.execv(exe, cmd)
 
 
 def install_dev_env_command() -> list[str]:
+    if WIN32:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        setup_script = os.path.join(script_dir, "packaging", "MSWindows", "SETUP.sh")
+        return ["bash", setup_script]
     if not LINUX:
         print(f"'dev-env' subcommand is not supported on {sys.platform!r}")
         return []
