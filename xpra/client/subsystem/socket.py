@@ -158,6 +158,7 @@ class NetworkListener(StubClientMixin):
         def close() -> None:
             t = self._close_timers.pop(proto, 0)
             if t:
+                self.source_remove(t)
                 proto.close()
             try:
                 self._potential_protocols.remove(proto)
