@@ -1925,8 +1925,7 @@ class WindowSource(WindowIconSource):
     def do_send_delayed(self) -> None:
         self.cancel_timeout_timer()
         self.cancel_soft_timer()
-        delayed = self._damage_delayed
-        if not delayed:
+        if not (delayed := self._damage_delayed):
             return
         self._damage_delayed = None
         damagelog("do_send_delayed() damage delayed=%s", delayed)
@@ -1956,12 +1955,12 @@ class WindowSource(WindowIconSource):
             dr = delayed_regions
             self.send_regions(dr.damage_time, dr.regions, dr.encoding, dr.options)
 
-    def send_regions(self, damage_time, regions, coding: str, options: dict) -> None:
+    def send_regions(self, damage_time: float, regions: list[rectangle], coding: str, options: dict) -> None:
         # window video source overrides this method
         # in order to filter out the video region
         self.do_send_regions(damage_time, regions, coding, options)
 
-    def do_send_regions(self, damage_time, regions, coding: str, options: dict,
+    def do_send_regions(self, damage_time: float, regions: list[rectangle], coding: str, options: dict,
                         exclude_region=None, get_best_encoding: Callable | None = None) -> None:
         ww, wh = self.window_dimensions
         options = self.assign_sq_options(options)
@@ -1970,7 +1969,7 @@ class WindowSource(WindowIconSource):
         def get_encoding(w: int, h: int) -> str:
             return get_best_encoding(w, h, options, coding)
 
-        def send_full_window_update(cause) -> None:
+        def send_full_window_update(cause: str) -> None:
             encoding = get_encoding(ww, wh)
             log("send_delayed_regions: using full window update %sx%s as %5s: %s, from %s",
                 ww, wh, encoding, cause, get_best_encoding)
