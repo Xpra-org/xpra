@@ -64,7 +64,7 @@ def get_NM_adapter_type(device_name, ignore_inactive=True) -> str:
         return ""
     adapter_type = nmdevice.get_device_type().value_name
     if adapter_type.startswith("NM_DEVICE_TYPE_"):
-        adapter_type = adapter_type[len("NM_DEVICE_TYPE_"):]
+        adapter_type = adapter_type.removeprefix("NM_DEVICE_TYPE_")
     log(f"NM device-type({device_name})={adapter_type}")
     return adapter_type
 

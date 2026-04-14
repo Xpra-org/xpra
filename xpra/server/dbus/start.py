@@ -50,10 +50,10 @@ def start_dbus(dbus_launch: str) -> tuple[int, dict]:
                 continue
             sep = "="
             if line.startswith("setenv "):
-                line = line[len("setenv "):]
+                line = line.removeprefix("setenv ")
                 sep = " "
             if line.startswith("set "):
-                line = line[len("set "):]
+                line = line.removeprefix("set ")
             parts = line.split(sep, 1)
             if len(parts) != 2:
                 continue

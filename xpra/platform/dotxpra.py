@@ -238,7 +238,7 @@ class DotXpra:
                 # find all the directories that could be session directories:
                 for p in os.listdir(d):
                     if p.startswith("wayland-"):
-                        p = p[len("wayland-"):]
+                        p = p.removeprefix("wayland-")
                     try:
                         int(p)
                     except ValueError:

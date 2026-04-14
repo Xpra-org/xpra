@@ -347,7 +347,7 @@ class EncodingsConnection(StubClientConnection):
             if k.startswith("theme.") or k.startswith("encoding.icons."):
                 self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c.get(k)
             elif k.startswith("encoding."):
-                stripped_k = k[len("encoding."):]
+                stripped_k = k.removeprefix("encoding.")
                 if stripped_k in ("transparency", "rgb_lz4"):
                     v = c.boolget(k)
                 elif stripped_k in (

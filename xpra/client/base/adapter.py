@@ -57,7 +57,7 @@ def get_server_socket_path(session_dir: str, mode="encoder", system_socket_path=
         return ""
     for line in cdata.decode("utf8").splitlines():
         if line.startswith("mode="):
-            server_mode = line[len("mode="):]
+            server_mode = line.removeprefix("mode=")
             if server_mode == mode:
                 return socket
     return ""

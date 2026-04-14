@@ -69,7 +69,7 @@ def get_virtual_video_devices(capture_only=True) -> dict[int, dict]:
         if not f.startswith("video"):
             continue
         try:
-            no_str = f[len("video"):]
+            no_str = f.removeprefix("video")
             no = int(no_str)
             assert no >= 0
         except (TypeError, ValueError, AssertionError):
@@ -114,7 +114,7 @@ def get_all_video_devices(capture_only=True) -> dict[int, dict[str, Any]]:
             continue
         device_paths.add(dev_file)
         try:
-            no_str = f[len("video"):]
+            no_str = f.removeprefix("video")
             no = int(no_str)
             assert no >= 0
         except (TypeError, ValueError, AssertionError):

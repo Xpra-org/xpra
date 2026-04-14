@@ -108,7 +108,7 @@ class DragNDropWindow(GtkStubWindow):
             if not uri.startswith("file://"):
                 log.warn("Warning: cannot handle drag-n-drop URI '%s'", uri)
                 continue
-            filename = unquote(uri[len("file://"):].rstrip("\n\r"))
+            filename = unquote(uri.removeprefix("file://").rstrip("\n\r"))
             if WIN32:
                 filename = filename.lstrip("/")
             abspath = os.path.abspath(filename)

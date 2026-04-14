@@ -59,7 +59,7 @@ def parse_image_data(data) -> IconData | None:
 def parse_image_path(path: str) -> IconData | None:
     log("parse_image_path(%s)", path)
     if path.startswith("file://"):
-        path = path[len("file://"):]
+        path = path.removeprefix("file://")
     if not os.path.exists(path):
         log(" %r does not exist", path)
         return None

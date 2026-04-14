@@ -26,7 +26,7 @@ def prettify_plug_name(s, default="") -> str:
     # prettify strings on win32
     s = re.sub(r"[0-9\.]*\\", "-", s).lstrip("-")
     if s.startswith("WinSta-"):
-        s = s[len("WinSta-"):]
+        s = s.removeprefix("WinSta-")
     # ie: "(Standard monitor types) DELL ..."
     if s.startswith("(") and s.lower().find("standard") < s.find(") "):
         s = s.split(") ", 1)[1]

@@ -287,7 +287,7 @@ def capture_and_encode(capture_element: str, encoding: str,
         log(f"unable to find a GStreamer video encoder with csc modes={full_csc_modes}")
         return None
     assert encoder_spec.codec_type.startswith("gstreamer-")
-    encoder = encoder_spec.codec_type[len("gstreamer-"):]
+    encoder = encoder_spec.codec_type.removeprefix("gstreamer-")
     encoding = encoder_spec.encoding
     csc_mode = encoder_spec.input_colorspace
     return CaptureAndEncode(capture_element, encoding, encoder, csc_mode, w, h, framerate)

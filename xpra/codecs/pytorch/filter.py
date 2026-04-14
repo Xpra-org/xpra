@@ -128,7 +128,7 @@ class Filter:
         import torchvision.transforms.v2 as transforms
         if transform_str.startswith("functional."):
             functional = transforms.functional
-            transform_str = transform_str[len("functional."):]
+            transform_str = transform_str.removeprefix("functional.")
             function_name, kwargs = parse_function_call(transform_str)
             self.transform = getattr(functional, function_name)
             self.kwargs = kwargs

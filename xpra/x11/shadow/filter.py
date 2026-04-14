@@ -91,10 +91,10 @@ def window_matches(wspec, model_class):
                         if get_pid(xid) == pid:
                             xids.append(xid)
             elif m.startswith("command="):
-                command = m[len("command="):]
+                command = m.removeprefix("command=")
                 xids += matchre(command, commands)
             elif m.startswith("class="):
-                _class = m[len("class="):]
+                _class = m.removeprefix("class=")
                 xids += matchre(_class, classes)
             else:
                 # assume this is a window name:

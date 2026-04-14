@@ -194,13 +194,13 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
             in_source_section = line.startswith("Source #")
         line = line.strip()
         if line.startswith("Name: "):
-            name = line[len("Name: "):]
+            name = line.removeprefix("Name: ")
         if line.startswith("device.class = "):
-            device_class = line[len("device-class = "):]
+            device_class = line.removeprefix("device-class = ")
         if line.startswith("Monitor of Sink: "):
-            monitor_of_sink = line[len("Monitor of Sink: "):]
+            monitor_of_sink = line.removeprefix("Monitor of Sink: ")
         if line.startswith("device.description = "):
-            device_description = line[len("device.description = "):].strip('"')
+            device_description = line.removeprefix("device.description = ")
     return devices
 
 
@@ -220,7 +220,7 @@ def do_get_source_channels(pactl_list_output: str, source_name: str) -> int:
     for line in pactl_list_output.splitlines():
         stripped = line.strip()
         if stripped.startswith("Name: "):
-            in_target = stripped[len("Name: "):] == source_name
+            in_target = stripped.removeprefix("Name: ") == source_name
         elif in_target and stripped.startswith("Sample Specification:"):
             # format: "s16le 2ch 48000Hz"
             for part in stripped.split():

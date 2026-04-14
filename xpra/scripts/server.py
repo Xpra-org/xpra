@@ -861,9 +861,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         # if we had saved the start / start-desktop config, reload it:
         mode = apply_config(opts, mode, cmdline)
         if mode.startswith("upgrade-"):
-            mode = mode[len("upgrade-"):]
+            mode = mode.removeprefix("upgrade-")
         if mode.startswith("start-"):
-            mode = mode[len("start-"):]
+            mode = mode.removeprefix("start-")
         upgrading_desktop = mode == "desktop"
         upgrading_monitor = mode == "monitor"
         upgrading_seamless = not (upgrading_desktop or upgrading_monitor)

@@ -169,7 +169,7 @@ def parse_URL(url: str) -> tuple[str, dict]:
         options = validate_config(f_params)
     scheme = up.scheme
     if scheme.startswith("xpra+"):
-        scheme = scheme[len("xpra+"):]
+        scheme = scheme.removeprefix("xpra+")
     if scheme in IP_SOCKTYPES:
         address = f"{scheme}://{address}"
     if up.path:
@@ -288,7 +288,7 @@ def normalize_display_name(display_name: str) -> str:
     if POSIX and not OSX and display_name.startswith("vsock://") and len(display_name) > len("vsock://"):
         # hackish pre-parsing:
         # extract location: "vsock://10:any/foo?arg=20" -> "10:any"
-        parts = display_name[len("vsock://"):].split("/", 1)
+        parts = display_name.removeprefix("vsock://").split("/", 1)
         netloc = parts[0]
         extra = parts[1] if len(parts) > 1 else ""
         for s in ("any", "auto"):

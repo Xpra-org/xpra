@@ -330,7 +330,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding: Callable, se
         if encoding.startswith("label:"):
             if not HIDE_DISABLED_MENU_ENTRIES:
                 label = Gtk.MenuItem()
-                label.set_label(encoding[len("label:"):])
+                label.set_label(encoding.removeprefix("label:"))
                 set_sensitive(label, False)
                 encodings_submenu.append(label)
             continue

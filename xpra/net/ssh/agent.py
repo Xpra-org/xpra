@@ -108,7 +108,7 @@ def setup_proxy_ssh_socket(
     agent_uuid = None
     for x in cmdline:
         if x.startswith("--env=SSH_AGENT_UUID="):
-            agent_uuid = x[len("--env=SSH_AGENT_UUID="):]
+            agent_uuid = x.removeprefix("--env=SSH_AGENT_UUID=")
             break
     # prevent illegal paths:
     if not agent_uuid or agent_uuid.find("/") >= 0 or agent_uuid.find(".") >= 0:

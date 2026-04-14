@@ -368,11 +368,11 @@ def main(args: list[str]) -> ExitValue:
     title = TITLE
     for arg in args:
         if arg.startswith("--icon="):
-            icon = arg[len("--icon="):]
+            icon = arg.removeprefix("--icon=")
         elif arg.startswith("--title="):
-            title = arg[len("--title="):]
+            title = arg.removeprefix("--title=")
         elif arg.startswith("--session-name="):
-            title = arg[len("--session-name="):]
+            title = arg.removeprefix("--session-name=")
     from xpra.platform import program_context
     with program_context("splash", "Splash"):
         Gtk.Window.set_auto_startup_notification(setting=False)

@@ -517,7 +517,7 @@ def find_evdi_devices() -> List[str]:
         if not f.startswith("card"):
             continue
         try:
-            device = int(f[len("card"):])
+            device = int(f.removeprefix("card"))
             r = evdi_check_device(device)
             log(f"find_evdi_devices() evdi_check_device({device})={r}")
             if r==AVAILABLE:

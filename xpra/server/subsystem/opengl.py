@@ -63,10 +63,10 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
             error = bytestostr(err).strip("\n\r")
             for x in str(err).splitlines():
                 if x.startswith("RuntimeError: "):
-                    error = x[len("RuntimeError: "):]
+                    error = x.removeprefix("RuntimeError: ")
                     break
                 if x.startswith("ImportError: "):
-                    error = x[len("ImportError: "):]
+                    error = x.removeprefix("ImportError: ")
                     break
             props["error"] = error
             log.warn("Warning: OpenGL support check failed:")
