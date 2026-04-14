@@ -13,7 +13,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.platform.notification import get_backends
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, make_instance
-from xpra.util.str_fn import repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.util.env import envbool
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
@@ -83,7 +83,7 @@ class NotificationClient(StubClientMixin):
 
     def make_notifier(self):
         nc = self.get_notifier_classes()
-        log("make_notifier() notifier classes: %s", nc)
+        log("make_notifier() notifier classes: %s", csv(nc))
         return make_instance(nc, self.notification_closed, self.notification_action)
 
     def notification_closed(self, nid: int, reason=3, text="") -> None:
@@ -105,7 +105,9 @@ class NotificationClient(StubClientMixin):
         # subclasses will generally add their toolkit specific variants
         # by overriding this method
         # use the native ones first:
-        return get_backends() if NATIVE_NOTIFIER else ()
+        ncs = get_backends() if NATIVE_NOTIFIER else ()
+        log("get_notifier_classes() %s.%s()=%s (native=%s)", get_backends.__module__, get_backends.__name__, ncs, NATIVE_NOTIFIER)
+        return ncs
 
     def notify_client(self, nid: int | NotificationID, summary: str, body: str, actions: Sequence[str] = (),
                       hints: dict | None = None, expire_timeout=10 * 1000, icon_name: str = "", callback=noop) -> None:

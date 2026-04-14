@@ -35,6 +35,8 @@ class XpraClient(GTKXpraClient):
         return "GTK3"
 
     def get_notifier_classes(self) -> Sequence[Callable]:
+        # it is safe to assume that if we are called,
+        # then we do have the notification subsystem feature, so we can call:
         ncs = list(super().get_notifier_classes())
 
         def nwarn(notifier_name: str, err: Exception) -> None:
