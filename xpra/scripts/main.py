@@ -2099,12 +2099,19 @@ def run_autostart(script_file, args) -> ExitValue:
         print(f"Usage: {script_file!r} autostart enable|disable|status")
         return 1
 
+    # no CLI argument: show the GUI
+    if not args or WIN32:
+        if WIN32 or gtk_init_check():
+            check_display()
+            from xpra.gtk.dialogs.autostart import main as autostart_main
+            return autostart_main(args)
+
     if len(args) != 1:
         return err("invalid number of arguments")
     arg = args[0].lower()
     if arg not in ("enable", "disable", "status"):
         return err(f"invalid argument {arg!r}")
-    if not POSIX or OSX:
+    if OSX:
         print("autostart is not supported on this platform")
         return 1
     from xpra.platform.autostart import set_autostart, get_status
