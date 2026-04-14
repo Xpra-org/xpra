@@ -66,6 +66,30 @@ def get_OSXApplication():
     return macapp
 
 
+def is_app_bundle() -> bool:
+    # we cannot call UNUserNotificationCenter.currentNotificationCenter()
+    # if we're not in a proper app bundle, otherwise it will crash hard!
+    from Foundation import NSBundle
+    bundle = NSBundle.mainBundle()
+    bundle_url = bundle.bundleURL().path()
+    bundle_id = bundle.bundleIdentifier()
+    info = dict(bundle.infoDictionary())
+    app = ""
+    path = bundle_url
+    while path != "/":
+        if path.endswith(".app"):
+            app = os.path.splitext(os.path.basename(path))[0]
+            break
+        path = os.path.dirname(path)
+
+    is_app = app.startswith("Xpra") and bundle_id is not None
+    from xpra.log import Logger
+    log = Logger("macos")
+    log("darwin bundle=%s, url=%r, id=%r, app=%r, info=%r, is_app=%r",
+        bundle, bundle_url, bundle_id, app, info, is_app)
+    return is_app
+
+
 # workaround for Big Sur dylib cache mess:
 # https://stackoverflow.com/a/65599706/428751
 def patch_find_library() -> None:

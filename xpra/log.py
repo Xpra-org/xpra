@@ -245,6 +245,7 @@ ALIASES: dict[str, str] = {
     "print": "printing",
     "display": "screen",
     "macos": "osx",
+    "notification": "notify",
 }
 
 # noinspection PyPep8

@@ -14,3 +14,20 @@ def get_backends() -> list[Callable]:
 
 
 platform_import(globals(), "notification", False, "get_backends")
+
+
+def main(argv: list[str]) -> int:
+    from xpra.log import consume_verbose_argv
+    from xpra.platform import program_context
+    with program_context("Notifications", "Notifications"):
+        consume_verbose_argv(argv, "util", "notify")
+        backends = get_backends()
+        print("found %i backends:", len(backends))
+        for backend in backends:
+            print(backend)
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main(sys.argv))
