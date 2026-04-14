@@ -527,6 +527,265 @@ class TestUnixDomainSocket(unittest.TestCase):
             assert not os.path.exists(sockpath)
 
 
+@unittest.skipUnless(POSIX, "abstract sockets only on POSIX")
+class TestCreateAbstractSocket(unittest.TestCase):
+
+    def test_valid_path(self):
+        from xpra.net.socket_util import create_abstract_socket
+        name = f"@xpra-unittest-{os.getpid()}"
+        sock, cleanup = create_abstract_socket(name)
+        try:
+            assert sock.family == socket.AF_UNIX
+        finally:
+            cleanup()
+
+    def test_missing_at_prefix_raises(self):
+        from xpra.net.socket_util import create_abstract_socket
+        with self.assertRaises(ValueError):
+            create_abstract_socket("no-at-prefix")
+
+    def test_invalid_chars_raises(self):
+        from xpra.net.socket_util import create_abstract_socket
+        with self.assertRaises(ValueError):
+            create_abstract_socket("@has/slash")
+
+    def test_invalid_dot_raises(self):
+        from xpra.net.socket_util import create_abstract_socket
+        with self.assertRaises(ValueError):
+            create_abstract_socket("@has.dot")
+
+    def test_cleanup_callable(self):
+        from xpra.net.socket_util import create_abstract_socket
+        name = f"@xpra-cleanup-{os.getpid()}"
+        sock, cleanup = create_abstract_socket(name)
+        sock.close()
+        cleanup()   # must not raise
+
+
+class TestAddListenSocketNamedPipe(unittest.TestCase):
+
+    def test_named_pipe_sets_callback_and_starts(self):
+        from unittest.mock import MagicMock
+        from xpra.net.socket_util import add_listen_socket, SocketListener
+        mock_sock = MagicMock()
+        listener = SocketListener("named-pipe", mock_sock, r"\\.\pipe\xpra-test", {}, lambda: None, lambda: None)
+        cb = MagicMock()
+        result = add_listen_socket(listener, None, cb)
+        assert result is None
+        assert mock_sock.new_connection_cb is cb
+        mock_sock.start.assert_called_once()
+
+    def test_error_does_not_propagate(self):
+        from unittest.mock import MagicMock
+        from xpra.net.socket_util import add_listen_socket, SocketListener
+        mock_sock = MagicMock()
+        mock_sock.listen.side_effect = OSError("simulated error")
+        listener = SocketListener("tcp", mock_sock, ("127.0.0.1", 9999), {}, lambda: None, lambda: None)
+        # should not raise
+        add_listen_socket(listener, None, lambda l: True)
+
+
+class TestAcceptConnection(unittest.TestCase):
+
+    def test_basic(self):
+        from xpra.net.socket_util import accept_connection, SocketListener
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(("127.0.0.1", port))
+        try:
+            listener = SocketListener("tcp", server, ("127.0.0.1", port), {}, lambda: None, lambda: None)
+            conn = accept_connection(listener, timeout=1.0)
+            assert conn is not None
+            assert conn.socktype == "tcp"
+            conn._socket.close()
+        finally:
+            client.close()
+            server.close()
+
+    def test_returns_none_on_error(self):
+        from unittest.mock import MagicMock
+        from xpra.net.socket_util import accept_connection, SocketListener
+        mock_sock = MagicMock()
+        mock_sock.accept.side_effect = OSError("connection refused")
+        listener = SocketListener("tcp", mock_sock, ("127.0.0.1", 9999), {}, lambda: None, lambda: None)
+        conn = accept_connection(listener)
+        assert conn is None
+
+
+class TestPeekConnection(unittest.TestCase):
+
+    def test_returns_data(self):
+        from xpra.net.socket_util import peek_connection
+        from xpra.net.bytestreams import SocketConnection
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(("127.0.0.1", port))
+        accepted, _ = server.accept()
+        accepted.sendall(b"PEEK!")
+        accepted.close()
+        server.close()
+        conn = SocketConnection(client, client.getsockname(), ("127.0.0.1", port), ("127.0.0.1", port), "tcp")
+        try:
+            data = peek_connection(conn, timeout=500)
+            assert data == b"PEEK!"
+        finally:
+            client.close()
+
+    def test_empty_on_no_data(self):
+        from xpra.net.socket_util import peek_connection
+        from xpra.net.bytestreams import SocketConnection
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(("127.0.0.1", port))
+        accepted, _ = server.accept()
+        conn = SocketConnection(client, client.getsockname(), ("127.0.0.1", port), ("127.0.0.1", port), "tcp")
+        try:
+            data = peek_connection(conn, timeout=50)
+            assert data == b""
+        finally:
+            accepted.close()
+            client.close()
+            server.close()
+
+
+class TestSocketFastRead(unittest.TestCase):
+
+    def test_reads_available_data(self):
+        from xpra.net.socket_util import socket_fast_read
+        from xpra.net.bytestreams import SocketConnection
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(("127.0.0.1", port))
+        accepted, _ = server.accept()
+        accepted.sendall(b"Q")
+        accepted.close()
+        server.close()
+        conn = SocketConnection(client, client.getsockname(), ("127.0.0.1", port), ("127.0.0.1", port), "tcp")
+        try:
+            data = socket_fast_read(conn, timeout=1)
+            assert data == b"Q"
+        finally:
+            client.close()
+
+    def test_returns_empty_when_no_data(self):
+        from xpra.net.socket_util import socket_fast_read
+        from xpra.net.bytestreams import SocketConnection
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(("127.0.0.1", port))
+        accepted, _ = server.accept()
+        conn = SocketConnection(client, client.getsockname(), ("127.0.0.1", port), ("127.0.0.1", port), "tcp")
+        try:
+            data = socket_fast_read(conn, timeout=0.02)
+            assert data == b""
+        finally:
+            accepted.close()
+            client.close()
+            server.close()
+
+
+@unittest.skipUnless(sys.platform.startswith("linux"), "TCP_INFO only on Linux")
+class TestGetSockoptTcpInfo(unittest.TestCase):
+
+    def _make_connected_pair(self):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(("127.0.0.1", port))
+        accepted, _ = server.accept()
+        return server, client, accepted
+
+    def test_returns_dict(self):
+        from xpra.net.socket_util import get_sockopt_tcp_info, POSIX_TCP_INFO
+        server, client, accepted = self._make_connected_pair()
+        try:
+            TCP_INFO = getattr(socket, "TCP_INFO", 11)
+            result = get_sockopt_tcp_info(client, TCP_INFO, POSIX_TCP_INFO)
+            assert isinstance(result, dict)
+        finally:
+            accepted.close()
+            client.close()
+            server.close()
+
+    def test_state_field_present(self):
+        from xpra.net.socket_util import get_sockopt_tcp_info, POSIX_TCP_INFO
+        server, client, accepted = self._make_connected_pair()
+        try:
+            TCP_INFO = getattr(socket, "TCP_INFO", 11)
+            result = get_sockopt_tcp_info(client, TCP_INFO, POSIX_TCP_INFO)
+            assert "state" in result
+        finally:
+            accepted.close()
+            client.close()
+            server.close()
+
+    def test_invalid_sockopt_returns_empty(self):
+        from xpra.net.socket_util import get_sockopt_tcp_info, POSIX_TCP_INFO
+        from ctypes import c_uint8
+        server, client, accepted = self._make_connected_pair()
+        try:
+            # Request more fields than the kernel returns; the while loop trims them
+            # down to what's actually available.  Result is still a dict.
+            extra_attrs = POSIX_TCP_INFO + (("rtt", c_uint8),) * 200
+            TCP_INFO = getattr(socket, "TCP_INFO", 11)
+            result = get_sockopt_tcp_info(client, TCP_INFO, extra_attrs)
+            assert isinstance(result, dict)
+        finally:
+            accepted.close()
+            client.close()
+            server.close()
+
+
+class TestSetupQuicSocket(unittest.TestCase):
+
+    def test_no_aioquic_raises_init_exit(self):
+        import sys
+        from xpra.net.socket_util import setup_quic_socket
+        from xpra.scripts.config import InitExit
+        saved = sys.modules.get("aioquic", ...)
+        sys.modules["aioquic"] = None
+        try:
+            with self.assertRaises(InitExit):
+                setup_quic_socket("127.0.0.1", 0, {})
+        finally:
+            if saved is ...:
+                sys.modules.pop("aioquic", None)
+            else:
+                sys.modules["aioquic"] = saved
+
+    def test_with_aioquic_creates_listener(self):
+        try:
+            import aioquic  # noqa: F401
+        except ImportError:
+            self.skipTest("aioquic not available")
+        from xpra.net.socket_util import setup_quic_socket, SocketListener
+        sl = setup_quic_socket("127.0.0.1", 0, {})
+        try:
+            assert isinstance(sl, SocketListener)
+            assert sl.socktype == "quic"
+            assert sl.address[0] == "127.0.0.1"
+            assert sl.address[1] > 0
+        finally:
+            sl.cleanup()
+
+
 def main():
     unittest.main()
 
