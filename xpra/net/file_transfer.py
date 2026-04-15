@@ -503,6 +503,7 @@ class FileTransferHandler(FileTransferAttributes):
         if len(packet) >= 9:
             send_id = packet.get_str(8)
         chunk_id = options.strget("file-chunk-id")
+        log = filelog
 
         def cancel(message: str) -> None:
             log.error(f"Error: {message}")
