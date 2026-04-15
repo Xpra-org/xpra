@@ -7,6 +7,8 @@
 
 from typing import Any
 
+from cairo import OPERATOR_CLEAR
+
 from xpra.client.gtk3.window.base import HAS_X11_BINDINGS
 from xpra.client.gtk3.window.factory import get_window_base_classes
 from xpra.gtk.util import event_mask_strs
@@ -117,12 +119,16 @@ class ClientWindow(WindowBaseClass):
             return default_value
 
     def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:
-        gdkwindow = self.drawing_area.get_window()
+        da = self.drawing_area
+        gdkwindow = da.get_window()
         if gdkwindow:
             x, y = gdkwindow.get_origin()[1:]
         else:
             x, y = self.get_position()
-        w, h = self.get_size()
+        # Use the drawing area's own allocation so that CSD padding and
+        # headerbar height are not counted as part of the paintable area.
+        w = da.get_allocated_width()
+        h = da.get_allocated_height()
         return x, y, w, h
 
     def apply_geometry_hints(self, hints: typedict) -> None:
@@ -186,6 +192,22 @@ class ClientWindow(WindowBaseClass):
         dw, dh = geom[2], geom[3]
         return dw < maxw and dh < maxh
 
+    def do_draw(self, context) -> bool:
+        # set_app_paintable(True) on the window suppresses GTK's automatic
+        # background clear before the draw signal.  With CSD active the window
+        # surface is larger than the drawing_area (resize-handle gutters on
+        # left/right/bottom, shadow padding) and those areas would never be
+        # initialised, leaving old screen content ("garbage") visible.
+        # Clear the whole surface to transparent first so the compositor sees
+        # empty alpha, then let the GTK vfunc paint the CSD frame and propagate
+        # the draw to children (headerbar + drawing_area).
+        context.save()
+        context.set_operator(OPERATOR_CLEAR)
+        context.paint()
+        context.restore()
+        Gtk.Window.do_draw(self, context)
+        return False
+
     def draw_widget(self, widget, context) -> bool:
         paintlog("draw_widget(%s, %s)", widget, context)
         if not self.get_mapped():
@@ -193,7 +215,12 @@ class ClientWindow(WindowBaseClass):
         backing = self._backing
         if not backing:
             return False
-        w, h = self.get_size()
+        # Use the drawing area's allocated size, not the window's total size.
+        # With a headerbar (CSD) the window's get_size() includes the titlebar
+        # height and any compositor shadow padding, which would cause cairo_draw
+        # to clip and scale against the wrong dimensions.
+        w = widget.get_allocated_width()
+        h = widget.get_allocated_height()
         backing.cairo_draw(context, w, h)
         return True
 
