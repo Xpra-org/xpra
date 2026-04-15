@@ -106,6 +106,7 @@ CODECS: Dict[str, int] = {
     "vp9":  MF_CODEC_VP9,
     "av1":  MF_CODEC_AV1,
 }
+HARDWARE_DECODERS: list[str] = []
 
 
 def get_encodings() -> Sequence[str]:
@@ -122,6 +123,7 @@ MAX_WIDTH, MAX_HEIGHT = 16384, 16384
 def get_specs() -> Sequence[VideoSpec]:
     specs = []
     for encoding in CODECS:
+        hardware = encoding in HARDWARE_DECODERS
         specs.append(VideoSpec(
             encoding=encoding,
             input_colorspace="YUV420P",
@@ -129,13 +131,13 @@ def get_specs() -> Sequence[VideoSpec]:
             has_lossless_mode=False,
             codec_class=Decoder,
             codec_type=get_type(),
-            quality=40, speed=100,
-            size_efficiency=40,
-            setup_cost=0,
+            quality=40, speed=50 + 50 * int(hardware),
+            size_efficiency=40 + 40 * int(hardware),
+            setup_cost=int(hardware) * 50,
             min_w=64, min_h=64,  # D3D11 device creation is ~10ms; not worth it for small images
             width_mask=0xFFFE, height_mask=0xFFFE,
             max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
-            cpu_cost=10, gpu_cost=50,
+            cpu_cost=int(not hardware) * 100, gpu_cost=int(hardware) * 100,
         ))
     return tuple(specs)
 
