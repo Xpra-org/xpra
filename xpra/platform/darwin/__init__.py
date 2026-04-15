@@ -23,14 +23,44 @@ def do_init_env() -> None:
     init_env_common()
     if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
         os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
-    # GStreamer's paths:
-    bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS", "")
-    if bundle_contents:
-        rsc_dir = os.path.join(bundle_contents, "Resources")
-        if "GST_PLUGIN_PATH" not in os.environ:
-            os.environ["GST_PLUGIN_PATH"] = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
-        if "GST_PLUGIN_SCANNER" not in os.environ:
-            os.environ["GST_PLUGIN_SCANNER"] = os.path.join(rsc_dir, "libexec", "gstreamer-1.0", "gst-plugin-scanner")
+    setup_app_bundle_env()
+
+
+def setup_app_bundle_env() -> None:
+    bundle_contents = os.environ.get("XPRA_BUNDLE_CONTENTS", "")
+    if not bundle_contents:
+        return
+    bundle_res = f"{bundle_contents}/Resources"
+    bundle_frameworks = f"{bundle_contents}/Frameworks"
+    bundle_lib = f"{bundle_res}/lib"
+    bundle_share = f"{bundle_res}/share"
+    bundle_etc = f"{bundle_res}/etc"
+
+    os.environ.update({
+        "GST_BUNDLE_CONTENTS": bundle_contents,
+        "GST_PLUGIN_PATH": f"{bundle_lib}/gstreamer-1.0",
+        "GST_PLUGIN_SCANNER": f"{bundle_contents}/Helpers/gst-plugin-scanner",
+        "XDG_CONFIG_DIRS": f"{bundle_etc}/xdg",
+        "XDG_DATA_DIRS": bundle_share,
+        "GTK_DATA_PREFIX": bundle_res,
+        "GTK_EXE_PREFIX": bundle_res,
+        "GTK_PATH": bundle_res,
+        "GTK_THEME": "Adwaita",
+        "GTK_IM_MODULE_FILE": f"{bundle_lib}/gtk-3.0/3.0.0/gtk.immodules",
+        "GDK_PIXBUF_MODULE_FILE": f"{bundle_lib}/gdk-pixbuf-2.0/2.10.0/loaders.cache",
+        "GI_TYPELIB_PATH": f"{bundle_lib}/girepository-1.0",
+        "CAIRO_MODULE_DIR": f"{bundle_frameworks}/cairo",
+        "PANGO_RC_FILE": f"{bundle_etc}/pango/pangorc",
+        "PANGO_LIBDIR": f"{bundle_lib}",
+        "PANGO_SYSCONFDIR": f"{bundle_etc}",
+        "GSETTINGS_SCHEMA_DIR": f"{bundle_share}/glib-2.0/schemas/",
+    })
+    x11_dir = f"{bundle_frameworks}/X11"
+    if os.path.exists(x11_dir) and os.path.isdir(x11_dir):
+        def addpath(key: str, path: str) -> None:
+            os.environ[key] = os.pathsep.join([path] + os.environ.get(key, "").split(os.pathsep))
+        addpath("PATH", f"{x11_dir}/bin")
+        addpath("DYLD_LIBRARY_PATH", f"{x11_dir}/lib")
 
 
 def default_gtk_main_exit() -> None:
