@@ -276,4 +276,6 @@ def selftest(full=False) -> None:
     log("mf selftest: %s", get_info())
     from xpra.codecs.checks import testdecoder
     from xpra.codecs.mf import decoder
-    testdecoder(decoder, full)
+    working = testdecoder(decoder, full)
+    global CODECS
+    CODECS = dict((k, v) for k, v in CODECS.items() if k in working)
