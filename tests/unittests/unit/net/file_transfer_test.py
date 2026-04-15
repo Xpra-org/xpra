@@ -6,7 +6,11 @@
 
 import os
 import unittest
+import tempfile
+from unittest.mock import MagicMock, patch
+from time import monotonic
 
+from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.net.file_transfer import (
     basename, safe_open_download_file,
@@ -528,6 +532,482 @@ class TestFileTransferHandler(unittest.TestCase):
         fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
         self.assertTrue(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
         fth.cleanup()
+
+# ---------------------------------------------------------------------------
+# Helpers shared by packet-handler tests
+# ---------------------------------------------------------------------------
+
+
+class _FullHandler(FileTransferHandler):
+    """Concrete handler with all abstract methods filled in for packet tests."""
+
+    def __init__(self):
+        self.init_attributes()
+        self.file_transfer = True
+        self.file_transfer_ask = False
+        self.file_size_limit = 1024 ** 3
+        self.printing = True
+        self.printing_ask = False
+        self.open_files = True
+        self.open_files_ask = False
+        self.open_url = True
+        self.open_url_ask = False
+        self.file_ask_timeout = 60
+        self.file_chunks = 65536
+        self.open_command = "xdg-open"
+        self.remote_file_transfer = True
+        self.remote_file_transfer_ask = False
+        self.remote_file_size_limit = 1024 ** 3
+        self.remote_file_chunks = 65536
+        self.remote_printing = True
+        self.remote_printing_ask = False
+        self.remote_open_files = True
+        self.remote_open_files_ask = False
+        self.remote_open_url = True
+        self.remote_open_url_ask = False
+        self.remote_file_ask_timeout = 60
+        self.sent = []
+        self.progress = []
+
+    def send(self, packet_type, *args):
+        self.sent.append((packet_type,) + args)
+
+    def compressed_wrapper(self, datatype, data, level=5):
+        from xpra.net.compression import Compressed
+        return Compressed(datatype, data)
+
+    def transfer_progress_update(self, send=True, transfer_id="", elapsed=0.0,
+                                 position=0, total=0, error=None):
+        self.progress.append((send, transfer_id, position, total, error))
+
+
+def _make_receive_state(h, chunk_id="cid1", filesize=100):
+    fd_val, path = tempfile.mkstemp()
+    state = ReceiveChunkState(
+        start=monotonic(), fd=fd_val, filename=path, mimetype="raw",
+        printit=False, openit=False, filesize=filesize,
+        options=typedict({"sha256": ""}), digest=None, written=0,
+        cancelled=False, send_id="sid1", timer=0, chunk=0,
+    )
+    h.receive_chunks_in_progress[chunk_id] = state
+    return state, path
+
+
+def _make_send_state(h, chunk_id="scid1", data=b"0123456789" * 10):
+    from xpra.net.file_transfer import SendChunkState
+    state = SendChunkState(
+        start=monotonic(), data=data, chunk_size=10, timer=0, chunk=0,
+    )
+    h.send_chunks_in_progress[chunk_id] = state
+    return state
+
+
+# ---------------------------------------------------------------------------
+# _process_file_send_chunk
+# ---------------------------------------------------------------------------
+
+class TestProcessFileSendChunk(unittest.TestCase):
+
+    def _pkt(self, chunk_id="cid1", chunk=1, data=b"hello", has_more=False):
+        return Packet("file-send-chunk", chunk_id, chunk, data, has_more)
+
+    def test_unknown_chunk_id_cancels(self):
+        h = _FullHandler()
+        pkt = self._pkt(chunk_id="no-such-id")
+        with patch("xpra.net.file_transfer.GLib"), \
+             patch.object(h, "cancel_file") as m:
+            h._process_file_send_chunk(pkt)
+            m.assert_called()
+
+    def test_cancelled_state_ignored(self):
+        h = _FullHandler()
+        state, path = _make_receive_state(h)
+        state.cancelled = True
+        pkt = self._pkt(chunk=1)
+        try:
+            with patch("xpra.net.file_transfer.GLib"):
+                h._process_file_send_chunk(pkt)
+            assert not any(p[0] == "ack-file-chunk" for p in h.sent)
+        finally:
+            try:
+                os.close(state.fd)
+                os.unlink(path)
+            except OSError:
+                pass
+
+    def test_chunk_mismatch_cancels(self):
+        h = _FullHandler()
+        state, path = _make_receive_state(h)
+        state.chunk = 5  # next expected would be 6
+        pkt = self._pkt(chunk=3)
+        try:
+            with patch("xpra.net.file_transfer.GLib"), \
+                 patch.object(h, "cancel_file") as m:
+                h._process_file_send_chunk(pkt)
+                m.assert_called()
+        finally:
+            try:
+                os.close(state.fd)
+                os.unlink(path)
+            except OSError:
+                pass
+
+    def test_overflow_cancels(self):
+        h = _FullHandler()
+        state, path = _make_receive_state(h, filesize=5)
+        state.chunk = 0
+        pkt = self._pkt(chunk=1, data=b"x" * 100)
+        try:
+            with patch("xpra.net.file_transfer.GLib"), \
+                 patch.object(h, "cancel_file") as m:
+                h._process_file_send_chunk(pkt)
+                m.assert_called()
+        finally:
+            try:
+                os.close(state.fd)
+                os.unlink(path)
+            except OSError:
+                pass
+
+    def test_has_more_acks_and_sets_timer(self):
+        h = _FullHandler()
+        state, path = _make_receive_state(h, filesize=1000)
+        state.chunk = 0
+        pkt = self._pkt(chunk=1, data=b"part", has_more=True)
+        try:
+            with patch("xpra.net.file_transfer.GLib") as mock_glib:
+                mock_glib.timeout_add.return_value = 42
+                mock_glib.source_remove.return_value = True
+                h._process_file_send_chunk(pkt)
+            assert any(p[0] == "ack-file-chunk" and p[2] is True for p in h.sent)
+            assert state.timer == 42
+        finally:
+            try:
+                os.close(state.fd)
+                os.unlink(path)
+            except OSError:
+                pass
+
+    def test_final_chunk_calls_process_downloaded(self):
+        h = _FullHandler()
+        data = b"complete"
+        state, path = _make_receive_state(h, filesize=len(data))
+        state.chunk = 0
+        pkt = self._pkt(chunk=1, data=data, has_more=False)
+        with patch.object(h, "process_downloaded_file") as m, \
+             patch("xpra.net.file_transfer.GLib"):
+            h._process_file_send_chunk(pkt)
+            m.assert_called_once()
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+    def test_digest_mismatch_cancels(self):
+        import hashlib
+        h = _FullHandler()
+        data = b"content"
+        state, path = _make_receive_state(h, filesize=len(data))
+        state.chunk = 0
+        state.digest = hashlib.sha256()
+        state.options = typedict({"sha256": "0" * 64})  # intentionally wrong
+        pkt = self._pkt(chunk=1, data=data, has_more=False)
+        with patch.object(h, "cancel_file") as m, \
+             patch("xpra.net.file_transfer.GLib"):
+            h._process_file_send_chunk(pkt)
+            m.assert_called()
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# _process_file_send
+# ---------------------------------------------------------------------------
+
+class TestProcessFileSend(unittest.TestCase):
+
+    def _pkt(self, filename="f.txt", mimetype="", printit=False, openit=False,
+             filesize=10, data=b"0123456789", options=None, send_id=""):
+        opts = options or {}
+        parts = [filename, mimetype, printit, openit, filesize, data, opts]
+        if send_id:
+            parts.append(send_id)
+        return Packet("file-send", *parts)
+
+    def test_zero_filesize_rejected(self):
+        h = _FullHandler()
+        pkt = self._pkt(filesize=0, data=b"")
+        with patch("xpra.net.file_transfer.GLib"):
+            h._process_file_send(pkt)
+        assert not any(p[0] == "ack-file-chunk" for p in h.sent)
+
+    def test_too_large_rejected(self):
+        h = _FullHandler()
+        h.file_size_limit = 5
+        pkt = self._pkt(filesize=100, data=b"x" * 100)
+        with patch("xpra.net.file_transfer.GLib"):
+            h._process_file_send(pkt)
+
+    def test_non_chunked_calls_process_downloaded(self):
+        h = _FullHandler()
+        data = b"hello world"
+        pkt = self._pkt(filename="hello.txt", filesize=len(data), data=data)
+        tmp_fd, tmp_path = tempfile.mkstemp()
+        with patch("xpra.net.file_transfer.safe_open_download_file",
+                   return_value=(tmp_path, tmp_fd)), \
+             patch.object(h, "process_downloaded_file") as m, \
+             patch("xpra.net.file_transfer.GLib"):
+            h._process_file_send(pkt)
+            m.assert_called_once()
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+
+    def test_chunked_creates_receive_state(self):
+        h = _FullHandler()
+        pkt = self._pkt(filename="big.bin", filesize=200, data=b"",
+                        options={"file-chunk-id": "cid99"})
+        tmp_fd, tmp_path = tempfile.mkstemp()
+        with patch("xpra.net.file_transfer.safe_open_download_file",
+                   return_value=(tmp_path, tmp_fd)), \
+             patch("xpra.net.file_transfer.GLib") as mock_glib:
+            mock_glib.timeout_add.return_value = 1
+            h._process_file_send(pkt)
+        assert "cid99" in h.receive_chunks_in_progress
+        h.receive_chunks_in_progress.clear()
+        try:
+            os.close(tmp_fd)
+        except OSError:
+            pass
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# process_downloaded_file
+# ---------------------------------------------------------------------------
+
+class TestProcessDownloadedFile(unittest.TestCase):
+
+    def test_request_file_callback_called(self):
+        h = _FullHandler()
+        called = []
+        h.file_request_callback["myarg"] = lambda fn, sz: called.append((fn, sz))
+        opts = typedict({"request-file": ("myarg", True)})
+        with patch("xpra.net.file_transfer.GLib"):
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, opts)
+        assert called
+
+    def test_no_action_no_thread(self):
+        h = _FullHandler()
+        with patch("xpra.net.file_transfer.start_thread") as m, \
+             patch("xpra.net.file_transfer.GLib"):
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, typedict())
+            m.assert_not_called()
+
+    def test_printit_starts_thread(self):
+        h = _FullHandler()
+        with patch("xpra.net.file_transfer.start_thread") as m, \
+             patch("xpra.net.file_transfer.GLib"):
+            h.process_downloaded_file("/tmp/f.txt", "raw", True, False, 100, typedict())
+            m.assert_called_once()
+
+    def test_openit_starts_thread(self):
+        h = _FullHandler()
+        with patch("xpra.net.file_transfer.start_thread") as m, \
+             patch("xpra.net.file_transfer.GLib"):
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, True, 100, typedict())
+            m.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# _print_file
+# ---------------------------------------------------------------------------
+
+class TestPrintFile(unittest.TestCase):
+
+    def test_no_printer_name_deletes_file(self):
+        h = _FullHandler()
+        tmp_fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(tmp_fd)
+        with patch("xpra.net.file_transfer.GLib"), \
+             patch("xpra.platform.printing.get_printers", return_value={"HP": {}}), \
+             patch("xpra.platform.printing.print_files") as m_print, \
+             patch("xpra.platform.printing.printing_finished", return_value=True):
+            h._print_file(path, "application/pdf", typedict({}))
+            m_print.assert_not_called()
+        assert not os.path.exists(path)
+
+    def test_printer_not_found_deletes_file(self):
+        h = _FullHandler()
+        tmp_fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(tmp_fd)
+        with patch("xpra.net.file_transfer.GLib"), \
+             patch("xpra.platform.printing.get_printers", return_value={}), \
+             patch("xpra.platform.printing.print_files") as m_print, \
+             patch("xpra.platform.printing.printing_finished", return_value=True):
+            h._print_file(path, "application/pdf", typedict({"printer": "NoSuchPrinter"}))
+            m_print.assert_not_called()
+        assert not os.path.exists(path)
+
+    def test_successful_print(self):
+        h = _FullHandler()
+        tmp_fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(tmp_fd)
+        with patch("xpra.net.file_transfer.GLib") as mock_glib, \
+             patch("xpra.platform.printing.get_printers", return_value={"MyPrinter": {}}), \
+             patch("xpra.platform.printing.print_files", return_value=1) as m_print, \
+             patch("xpra.platform.printing.printing_finished", return_value=True):
+            mock_glib.timeout_add.return_value = 0
+            h._print_file(path, "application/pdf",
+                          typedict({"printer": "MyPrinter", "title": "My Doc"}))
+            m_print.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# send_data_request
+# ---------------------------------------------------------------------------
+
+class TestSendDataRequest(unittest.TestCase):
+
+    def test_returns_send_id(self):
+        h = _FullHandler()
+        with patch("xpra.net.file_transfer.GLib") as mock_glib:
+            mock_glib.timeout_add.return_value = 1
+            send_id = h.send_data_request("upload", "file", "/tmp/f.txt")
+        assert send_id
+        assert send_id in h.pending_send_data
+
+    def test_sends_file_data_request_packet(self):
+        from xpra.net.packet_type import FILE_DATA_REQUEST
+        h = _FullHandler()
+        with patch("xpra.net.file_transfer.GLib") as mock_glib:
+            mock_glib.timeout_add.return_value = 1
+            h.send_data_request("upload", "file", "/tmp/f.txt")
+        assert any(p[0] == FILE_DATA_REQUEST for p in h.sent)
+
+    def test_drops_when_too_many_pending(self):
+        from xpra.net.file_transfer import MAX_CONCURRENT_FILES
+        h = _FullHandler()
+        for i in range(MAX_CONCURRENT_FILES):
+            h.pending_send_data[f"id{i}"] = MagicMock()
+        with patch("xpra.net.file_transfer.GLib"):
+            send_id = h.send_data_request("upload", "file", "/tmp/x.txt")
+        assert send_id == ""
+
+
+# ---------------------------------------------------------------------------
+# _process_file_data_response
+# ---------------------------------------------------------------------------
+
+class TestProcessFileDataResponse(unittest.TestCase):
+
+    def _register(self, h, send_id, datatype="file", url="/tmp/f.txt", openit=False):
+        h.pending_send_data[send_id] = SendPendingData(
+            datatype=datatype, url=url, mimetype="", data=b"data",
+            filesize=4, printit=False, openit=openit, options={},
+        )
+
+    def test_deny_removes_pending(self):
+        h = _FullHandler()
+        self._register(h, "s1")
+        pkt = Packet("send-data-response", "s1", DENY)
+        with patch("xpra.net.file_transfer.GLib"):
+            h._process_file_data_response(pkt)
+        assert "s1" not in h.pending_send_data
+
+    def test_unknown_id_warns(self):
+        h = _FullHandler()
+        pkt = Packet("send-data-response", "no-such-id", ACCEPT)
+        with patch("xpra.net.file_transfer.GLib"):
+            h._process_file_data_response(pkt)   # must not raise
+
+    def test_accept_file_calls_do_send_file(self):
+        h = _FullHandler()
+        self._register(h, "s2")
+        pkt = Packet("send-data-response", "s2", ACCEPT)
+        with patch.object(h, "do_send_file") as m, \
+             patch("xpra.net.file_transfer.GLib"):
+            h._process_file_data_response(pkt)
+            m.assert_called_once()
+
+    def test_accept_url_calls_do_send_open_url(self):
+        h = _FullHandler()
+        self._register(h, "s3", datatype="url", url="https://example.com")
+        pkt = Packet("send-data-response", "s3", ACCEPT)
+        with patch.object(h, "do_send_open_url") as m, \
+             patch("xpra.net.file_transfer.GLib"):
+            h._process_file_data_response(pkt)
+            m.assert_called_once_with("https://example.com", "s3")
+
+    def test_open_response_opens_locally(self):
+        h = _FullHandler()
+        self._register(h, "s4", datatype="file", url="/tmp/f.txt", openit=True)
+        pkt = Packet("send-data-response", "s4", OPEN)
+        with patch.object(h, "_open_file") as m, \
+             patch("xpra.net.file_transfer.GLib"):
+            h._process_file_data_response(pkt)
+            m.assert_called_once_with("/tmp/f.txt")
+
+
+# ---------------------------------------------------------------------------
+# _process_file_ack_chunk
+# ---------------------------------------------------------------------------
+
+class TestProcessFileAckChunk(unittest.TestCase):
+
+    def test_state_false_cancels_sending(self):
+        h = _FullHandler()
+        _make_send_state(h, "sc1")
+        pkt = Packet("ack-file-chunk", "sc1", False, "Cancelled", 0)
+        with patch("xpra.net.file_transfer.GLib"), \
+             patch.object(h, "cancel_sending") as m:
+            h._process_file_ack_chunk(pkt)
+            m.assert_called_once_with("sc1")
+
+    def test_unknown_id_logs_error(self):
+        h = _FullHandler()
+        pkt = Packet("ack-file-chunk", "no-id", True, "", 0)
+        with patch("xpra.net.file_transfer.GLib"):
+            h._process_file_ack_chunk(pkt)  # must not raise
+
+    def test_chunk_mismatch_cancels(self):
+        h = _FullHandler()
+        state = _make_send_state(h, "sc2")
+        state.chunk = 3
+        pkt = Packet("ack-file-chunk", "sc2", True, "", 5)
+        with patch("xpra.net.file_transfer.GLib"), \
+             patch.object(h, "cancel_sending") as m:
+            h._process_file_ack_chunk(pkt)
+            m.assert_called_once_with("sc2")
+
+    def test_all_data_sent_cancels(self):
+        h = _FullHandler()
+        state = _make_send_state(h, "sc3", data=b"")
+        state.chunk = 1
+        pkt = Packet("ack-file-chunk", "sc3", True, "", 1)
+        with patch("xpra.net.file_transfer.GLib"), \
+             patch.object(h, "cancel_sending") as m:
+            h._process_file_ack_chunk(pkt)
+            m.assert_called_once_with("sc3")
+
+    def test_sends_next_chunk(self):
+        from xpra.net.packet_type import FILE_SEND_CHUNK
+        h = _FullHandler()
+        state = _make_send_state(h, "sc4", data=b"0123456789" * 5)
+        state.chunk = 0
+        pkt = Packet("ack-file-chunk", "sc4", True, "", 0)
+        with patch("xpra.net.file_transfer.GLib") as mock_glib:
+            mock_glib.timeout_add.return_value = 1
+            mock_glib.source_remove.return_value = True
+            h._process_file_ack_chunk(pkt)
+        assert any(p[0] == FILE_SEND_CHUNK for p in h.sent)
+        assert state.chunk == 1
 
 
 def main():
