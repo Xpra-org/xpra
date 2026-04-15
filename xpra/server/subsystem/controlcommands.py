@@ -29,6 +29,32 @@ TOGGLE_FEATURES = (
 )
 
 
+def parse_4intlist(v) -> list:
+    if not v:
+        return []
+    intlist = []
+    # ie: v = " (0,10,100,20), (200,300,20,20)"
+    while v:
+        v = v.strip().strip(",").strip()  # ie: "(0,10,100,20)"
+        lp = v.find("(")
+        assert lp == 0, "invalid leading characters: %s" % v[:lp]
+        rp = v.find(")")
+        assert (lp + 1) < rp
+        item = v[lp + 1:rp].strip()  # "0,10,100,20"
+        items = [int(x) for x in item]  # 0,10,100,20
+        assert len(items) == 4, f"expected 4 numbers but got {len(items)}"
+        intlist.append(items)
+    return intlist
+
+
+def parse_boolean_value(v):
+    if str(v).lower() in TRUE_OPTIONS:
+        return True
+    if str(v).lower() in FALSE_OPTIONS:
+        return False
+    raise ControlError(f"a boolean is required, not {v!r}")
+
+
 class ServerBaseControlCommands(StubServerMixin):
     """
     Control commands for ServerBase
@@ -39,30 +65,6 @@ class ServerBaseControlCommands(StubServerMixin):
         self.add_control_commands()
 
     def add_control_commands(self) -> None:
-        def parse_boolean_value(v):
-            if str(v).lower() in TRUE_OPTIONS:
-                return True
-            if str(v).lower() in FALSE_OPTIONS:
-                return False
-            raise ControlError(f"a boolean is required, not {v!r}")
-
-        def parse_4intlist(v) -> list:
-            if not v:
-                return []
-            intlist = []
-            # ie: v = " (0,10,100,20), (200,300,20,20)"
-            while v:
-                v = v.strip().strip(",").strip()  # ie: "(0,10,100,20)"
-                lp = v.find("(")
-                assert lp == 0, "invalid leading characters: %s" % v[:lp]
-                rp = v.find(")")
-                assert (lp + 1) < rp
-                item = v[lp + 1:rp].strip()  # "0,10,100,20"
-                items = [int(x) for x in item]  # 0,10,100,20
-                assert len(items) == 4, f"expected 4 numbers but got {len(items)}"
-                intlist.append(items)
-            return intlist
-
         for cmd in (
                 ArgsControlCommand("focus", "give focus to the window id", validation=[int]),
                 ArgsControlCommand("map", "maps the window id", validation=[int]),
