@@ -392,7 +392,7 @@ class FileTransferHandler(FileTransferAttributes):
                         os.unlink(filename)
                     except OSError:
                         filelog.error(f"Error: failed to delete uploaded file {filename!r}")
-            progress(-1, message)
+                progress(-1, message)
 
         if not chunk_state:
             error(f"file transfer id {chunk_id!r} not found")
@@ -930,6 +930,7 @@ class FileTransferHandler(FileTransferAttributes):
             return
         if accept == DENY:
             filelog.info("the request to send %s '%s' has been denied", spd.datatype, spd.url)
+            self.pending_send_data.pop(send_id, None)
             return
         if accept not in (ACCEPT, OPEN):
             raise ValueError(f"unknown value for send-data response: {accept!r}")
