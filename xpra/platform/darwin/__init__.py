@@ -73,10 +73,10 @@ def is_app_bundle() -> bool:
     bundle = NSBundle.mainBundle()
     bundle_url = bundle.bundleURL().path()
     bundle_id = bundle.bundleIdentifier()
-    info = dict(bundle.infoDictionary())
+    info = dict(bundle.infoDictionary() or {})
     app = ""
     path = bundle_url
-    while path != "/":
+    while path and path != "/":
         if path.endswith(".app"):
             app = os.path.splitext(os.path.basename(path))[0]
             break
