@@ -863,15 +863,18 @@ class WindowServer(StubServerMixin):
             vs.reset()
         return f"reset video region heuristics for window {wid:#x}"
 
-    def control_command_lock_batch_delay(self, wid: int, delay: int) -> None:
+    def control_command_lock_batch_delay(self, wid: int, delay: int) -> str:
         for ws in self._ws_from_args(wid):
             ws.lock_batch_delay(delay)
+        return f"batch delay locked to {delay}"
 
-    def control_command_unlock_batch_delay(self, wid: int) -> None:
+    def control_command_unlock_batch_delay(self, wid: int) -> str:
         for ws in self._ws_from_args(wid):
             ws.unlock_batch_delay()
+        return "batch delay unlocked"
 
-    def control_command_image_filter(self, wid: str, enabled: bool) -> None:
+    def control_command_image_filter(self, wid: str, enabled: bool) -> str:
         for ws in self._ws_from_args(wid):
             ws.image_filter.enabled = enabled
             ws.refresh()
+        return "image filter %s" % ("enabled" if enabled else "disabled")
