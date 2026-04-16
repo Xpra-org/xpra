@@ -2673,6 +2673,8 @@ else:
         # Note: despite our best efforts, `py2app` will not copy all the modules we need
         # so the make-app.sh script still has to hack around this problem.
         add_modules(*external_includes)
+        excludes += ["pkg_resources", "setuptools"]
+
         # noinspection PyPep8
         py2app_options = {
             'iconfile'          : './fs/share/icons/xpra.icns',
