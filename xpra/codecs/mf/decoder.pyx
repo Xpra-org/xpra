@@ -166,7 +166,10 @@ cdef class Decoder:
         if status != MF_DEC_OK:
             raise RuntimeError("failed to create MF %s decoder (%dx%d): %s" % (
                 encoding, width, height, mf_decode_status_str(status).decode("latin-1")))
-        log("mf %s decoder created: hardware=%s", encoding, mf_decoder_is_hardware(self.context))
+        hardware = bool(mf_decoder_is_hardware(self.context))
+        log("mf %s decoder created: hardware=%s", encoding, hardware)
+        if hardware:
+            HARDWARE_DECODERS.append(encoding)
 
     def get_encoding(self) -> str:
         return self.encoding
