@@ -229,7 +229,8 @@ class WindowSource(WindowIconSource):
         self.queue_packet = queue_packet                # callback to add a network packet to the outgoing queue
         self.wid: int = wid
         self.window = window                            # only to be used from the UI thread!
-        self.image_filter = None
+        from xpra.server.source.image_filter import NoFilter
+        self.image_filter = NoFilter
         self.global_statistics: GlobalPerformanceStatistics = statistics             # shared/global statistics from ClientConnection
         self.statistics: WindowPerformanceStatistics = WindowPerformanceStatistics()
         self.av_sync: bool = av_sync                   # flag: enabled or not?
@@ -2147,10 +2148,7 @@ class WindowSource(WindowIconSource):
         def process_damage_image(img: ImageWrapper) -> None:
             self.process_damage_image(damage_time, rgb_request_time, img, coding, sequence, options, flush)
 
-        if image_filter := self.image_filter:
-            image_filter.process_image(image, process_damage_image)
-        else:
-            process_damage_image(image)
+        self.image_filter.process_image(image, process_damage_image)
 
     def process_damage_image(self, damage_time: float, rgb_request_time: float,
                              image: ImageWrapper,

@@ -29,17 +29,34 @@ THREADED_FILTERS = tuple(os.environ.get("XPRA_THREADED_FILTERS", "torch").split(
 TIMEOUT = envint("XPRA_THREADED_FILTER_TIMEOUT", 5)
 
 
+class NoFilter:
+
+    def __repr__(self):
+        return "NoFilter"
+
+    @staticmethod
+    def process_image(image: ImageWrapper, callback: Callable[[ImageWrapper], None]) -> None:
+        callback(image)
+
+    def clean(self) -> None:
+        pass
+
+
 class ImageFilter:
     def __init__(self, wid: int, imagefilter):
         self.wid = wid
         self.filter = imagefilter
         filter_type = imagefilter.get_info().get("type", "")
+        self.enabled = True
         self.threaded = "*" in THREADED_FILTERS or filter_type in THREADED_FILTERS
         self.thread = None
         log("ImageFilter(%#x, %s) filter_type=%s, threaded=%s", wid, imagefilter, filter_type, self.threaded)
 
     def process_image(self, image: ImageWrapper, callback: Callable[[ImageWrapper], None]) -> None:
-        log("%s.process_image(%s, %s)", self, image, callback)
+        log("%s.process_image(%s, %s) enabled=%s", self, image, callback, self.enabled)
+        if not self.enabled:
+            callback(image)
+            return
         if not self.threaded:
             self.do_process_image(image, callback)
             return
@@ -135,6 +152,7 @@ class ImageFilterConnection(StubClientConnection):
         width, height = ws.window_dimensions
         ifilt = self.filter_module.Filter()
         ifilt.init_context(width, height, "BGRX", width, height, "BGRX", options)
+
         ws.image_filter = ImageFilter(ws.wid, ifilt)
         log("imagefilter for window %#x %ix%i: %s", ws.wid, width, height, ws.image_filter)
 
@@ -149,8 +167,7 @@ class ImageFilterConnection(StubClientConnection):
         self.initialize_imagefilter(ss, ws)
 
     def clean_imagefilter(self, ss, ws: WindowSource) -> None:
-        ifilt = ws.image_filter
-        log("clean_imagefilter(%s, %s) image_filter=%s", ss, ws, ifilt)
-        if ifilt:
-            ws.image_filter = None
+        if ifilt := ws.image_filter:
+            log("clean_imagefilter(%s, %s) image_filter=%s", ss, ws, ifilt)
+            ws.image_filter = NoFilter
             ifilt.clean()

@@ -8,6 +8,7 @@ from time import monotonic
 from typing import Any, NoReturn
 from collections.abc import Sequence
 
+from xpra.net.control.common import parse_boolean_value
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
@@ -107,6 +108,7 @@ class WindowServer(StubServerMixin):
            min_args=1, max_args=1, validation=[int]),
         ac("remove-window-filters", "remove all window filters", min_args=0, max_args=0),
         ac("add-window-filter", "add a window filter", min_args=4, max_args=5)
+        ac("image-filter", "configure the image filter", min_args=2, max_args=2, validation=[str, parse_boolean_value])
         # encoding bits:
         for name in (
                 "quality", "min-quality", "max-quality",
@@ -869,3 +871,8 @@ class WindowServer(StubServerMixin):
     def control_command_unlock_batch_delay(self, wid: int) -> None:
         for ws in self._ws_from_args(wid):
             ws.unlock_batch_delay()
+
+    def control_command_image_filter(self, wid: int, enabled: bool) -> None:
+        for ws in self._ws_from_args(wid):
+            ws.image_filter.enabled = parse_boolean_value(enabled)
+            ws.refresh()
