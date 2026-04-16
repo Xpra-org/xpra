@@ -294,6 +294,7 @@ def configure_logging(options, mode: str) -> None:
             "_dialog", "_pass",
             "pinentry",
             "opengl",
+            "control",
             "example",
     ) or mode.startswith("upgrade") or mode.startswith("request-"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
