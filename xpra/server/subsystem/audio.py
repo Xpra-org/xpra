@@ -44,10 +44,6 @@ class AudioServer(StubServerMixin):
         self.microphone_codecs: Sequence[str] = ()
         self.audio_properties = typedict()
         self.av_sync = False
-        self.add_audio_control_commands()
-
-    def add_audio_control_commands(self) -> None:
-        self.args_control("audio-output", "control audio forwarding", min_args=1, max_args=2)
 
     def init(self, opts) -> None:
         self.audio_source_plugin = opts.audio_source
@@ -65,6 +61,10 @@ class AudioServer(StubServerMixin):
     def setup(self) -> None:
         # this is slow, use a separate thread:
         start_thread(self.init_audio_options, "audio-setup", True)
+        self.add_audio_control_commands()
+
+    def add_audio_control_commands(self) -> None:
+        self.args_control("audio-output", "control audio forwarding", min_args=1, max_args=2)
 
     def get_info(self, _proto) -> dict[str, Any]:
         if self.audio_properties:

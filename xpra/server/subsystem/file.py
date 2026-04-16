@@ -31,6 +31,11 @@ class FileServer(StubServerMixin):
     def __init__(self):
         StubServerMixin.__init__(self)
         self.file_transfer = FileTransferAttributes()
+
+    def init(self, opts) -> None:
+        self.file_transfer.init_opts(opts, can_ask=False)
+
+    def setup(self) -> None:
         self.add_file_control_commands()
 
     def add_file_control_commands(self) -> None:
@@ -38,9 +43,6 @@ class FileServer(StubServerMixin):
         ac("print", "sends the file to the client(s) for printing", min_args=1)
         ac("open-url", "open the URL on the client(s)", min_args=1, max_args=2)
         ac("send-file", "sends the file to the client(s)", min_args=1, max_args=4)
-
-    def init(self, opts) -> None:
-        self.file_transfer.init_opts(opts, can_ask=False)
 
     def get_server_features(self, _source) -> dict[str, Any]:
         f = self.file_transfer.get_file_transfer_features()

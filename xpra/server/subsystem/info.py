@@ -87,6 +87,7 @@ class InfoServer(StubServerMixin):
         self.hello_request_handlers["info"] = self._handle_hello_request_info
         self.session_name = ""
 
+    def setup(self) -> None:
         self.add_info_control_commands()
 
     def add_info_control_commands(self) -> None:

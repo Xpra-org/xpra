@@ -44,10 +44,6 @@ class KeyboardServer(StubServerMixin):
         # timers for cancelling key repeat when we get jitter
         self.key_repeat_timer = 0
         self.keys_pressed: dict[int, Any] = {}
-        self.add_keyboard_control_commands()
-
-    def add_keyboard_control_commands(self) -> None:
-        self.args_control("key", "press or unpress a key", min_args=1, max_args=2)
 
     def init(self, opts) -> None:
         for option in ("sync", "layout", "layouts", "variant", "variants", "options"):
@@ -66,6 +62,10 @@ class KeyboardServer(StubServerMixin):
         self.watch_keymap_changes()
         self.keyboard_config = self.get_keyboard_config({"keymap": self.keymap_options})
         self.connect("last-client-exited", self.clear_keys_pressed)
+        self.add_keyboard_control_commands()
+
+    def add_keyboard_control_commands(self) -> None:
+        self.args_control("key", "press or unpress a key", min_args=1, max_args=2)
 
     def make_keyboard_device(self):
         from xpra.platform.keyboard import get_keyboard_device

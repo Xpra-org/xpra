@@ -217,14 +217,6 @@ class ChildCommandServer(StubServerMixin):
             self.exec_start_late_commands()
         self.connect("running", server_is_running)
 
-        self.add_command_control_commands()
-
-    def add_command_control_commands(self) -> None:
-        self.args_control("start", "executes the command arguments in the server context", min_args=1)
-        self.args_control("start-child","executes the command arguments in the server context, "
-                                        "as a 'child' (honouring exit-with-children)", min_args=1)
-        self.args_control("start-env", "modify the environment used to start new commands", min_args=1)
-
     def init(self, opts) -> None:
         self.exit_with_children = opts.exit_with_children
         self.terminate_children = opts.terminate_children
@@ -255,6 +247,13 @@ class ChildCommandServer(StubServerMixin):
         start_thread(self.threaded_command_setup, "threaded-command-setup", daemon=True)
         self.connect("last-client-exited", self.exec_on_last_client_exit)
         self.connect("client-exited", self.remove_client)
+        self.add_command_control_commands()
+
+    def add_command_control_commands(self) -> None:
+        self.args_control("start", "executes the command arguments in the server context", min_args=1)
+        self.args_control("start-child","executes the command arguments in the server context, "
+                                        "as a 'child' (honouring exit-with-children)", min_args=1)
+        self.args_control("start-env", "modify the environment used to start new commands", min_args=1)
 
     def exec_on_last_client_exit(self, *args) -> None:
         log("exec_on_last_client_exit%s", args)

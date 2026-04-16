@@ -31,18 +31,17 @@ class NotificationForwarder(StubServerMixin):
         self.notifications_forwarder = None
         self.notifications = False
 
+    def init(self, opts) -> None:
+        self.notifications = opts.notifications
+
+    def setup(self) -> None:
+        self.init_notification_forwarder()
         self.add_notification_control_commands()
 
     def add_notification_control_commands(self) -> None:
         ac = self.args_control
         ac("send-notification", "sends a notification to the client(s)", min_args=4, max_args=5, validation=[int])
         ac("close-notification", "send the request to close an existing notification to the client(s)", min_args=1, max_args=2, validation=[int])
-
-    def init(self, opts) -> None:
-        self.notifications = opts.notifications
-
-    def setup(self) -> None:
-        self.init_notification_forwarder()
 
     def cleanup(self) -> None:
         if nf := self.notifications_forwarder:

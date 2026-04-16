@@ -198,13 +198,6 @@ class ServerCore(ServerBaseClass):
 
         self._default_packet_handlers: dict[str, Callable] = {}
 
-        self.add_core_control_commands()
-
-    def add_core_control_commands(self) -> None:
-        from xpra.net.control.common import parse_boolean_value
-        self.args_control("readonly", "set readonly state for client(s)", min_args=1, max_args=1,
-                          validation=[parse_boolean_value]),
-
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)
         self.session_name = str(opts.session_name)
@@ -247,6 +240,12 @@ class ServerCore(ServerBaseClass):
             bc.setup(self)
         self.start_listen_sockets()
         self.init_packet_handlers()
+        self.add_core_control_commands()
+
+    def add_core_control_commands(self) -> None:
+        from xpra.net.control.common import parse_boolean_value
+        self.args_control("readonly", "set readonly state for client(s)", min_args=1, max_args=1,
+                          validation=[parse_boolean_value]),
 
     ######################################################################
     # run / stop:

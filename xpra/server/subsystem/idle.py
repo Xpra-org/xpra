@@ -24,17 +24,16 @@ class IdleTimeoutServer(StubServerMixin):
         self.server_idle_timeout = 0
         self.server_idle_timer = 0
 
-        self.add_idle_control_commands()
-
-    def add_idle_control_commands(self) -> None:
-        self.args_control("server-idle-timeout", "set the server idle timeout", validation=[int])
-
     def init(self, opts) -> None:
         self.server_idle_timeout = opts.server_idle_timeout
 
     def setup(self) -> None:
         self.schedule_server_timeout()
         self.connect("last-client-exited", self.schedule_server_timeout)
+        self.add_idle_control_commands()
+
+    def add_idle_control_commands(self) -> None:
+        self.args_control("server-idle-timeout", "set the server idle timeout", validation=[int])
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         self.cancel_server_timeout()

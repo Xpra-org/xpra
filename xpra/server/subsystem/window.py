@@ -47,6 +47,29 @@ class WindowServer(StubServerMixin):
         self.window_min_size = 0, 0
         self.window_max_size = 2 ** 15 - 1, 2 ** 15 - 1
 
+    def init(self, opts) -> None:
+        def parse_window_size(v, default_value=(0, 0)):
+            try:
+                # split on "," or "x":
+                pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
+                assert len(pv) == 2
+                w, h = pv
+                if w <= 0 or h <= 0 or w >= 32768 or h >= 32768:
+                    raise ValueError(f"invalid window size {w}x{h}")
+                return w, h
+            except Exception:
+                return default_value
+
+        self.window_min_size = parse_window_size(opts.min_size, (0, 0))
+        self.window_max_size = parse_window_size(opts.max_size, (2 ** 15 - 1, 2 ** 15 - 1))
+
+    def setup(self) -> None:
+        minw, minh = self.window_min_size
+        maxw, maxh = self.window_max_size
+        self.update_size_constraints(minw, minh, maxw, maxh)
+        # when the main loop runs, load the windows:
+        GLib.idle_add(self.load_existing_windows)
+        self.connect("last-client-exited", self.reset_focus)
         self.add_window_control_commands()
 
     def add_window_control_commands(self) -> None:
@@ -90,30 +113,6 @@ class WindowServer(StubServerMixin):
                 "speed", "min-speed", "max-speed",
         ):
             ac(name, "set encoding %s (from 0 to 100)" % name, min_args=1, validation=[from0to100])
-
-    def init(self, opts) -> None:
-        def parse_window_size(v, default_value=(0, 0)):
-            try:
-                # split on "," or "x":
-                pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
-                assert len(pv) == 2
-                w, h = pv
-                if w <= 0 or h <= 0 or w >= 32768 or h >= 32768:
-                    raise ValueError(f"invalid window size {w}x{h}")
-                return w, h
-            except Exception:
-                return default_value
-
-        self.window_min_size = parse_window_size(opts.min_size, (0, 0))
-        self.window_max_size = parse_window_size(opts.max_size, (2 ** 15 - 1, 2 ** 15 - 1))
-
-    def setup(self) -> None:
-        minw, minh = self.window_min_size
-        maxw, maxh = self.window_max_size
-        self.update_size_constraints(minw, minh, maxw, maxh)
-        # when the main loop runs, load the windows:
-        GLib.idle_add(self.load_existing_windows)
-        self.connect("last-client-exited", self.reset_focus)
 
     def cleanup(self) -> None:
         for window in tuple(self._window_to_id.keys()):

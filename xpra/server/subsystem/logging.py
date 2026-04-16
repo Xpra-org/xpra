@@ -45,13 +45,6 @@ class LoggingServer(StubServerMixin):
         self.local_logging: Callable = noop
         self.logging_clients: dict[Any, float] = {}
 
-        self.add_log_control_commands()
-
-    def add_log_control_commands(self) -> None:
-        from xpra.net.control.common import add_control_command
-        from xpra.net.control.debug import DebugControl
-        add_control_command(self, "debug", DebugControl())
-
     def init(self, opts) -> None:
         self.log_both = (opts.remote_logging or "").lower() == "both"
         if opts.remote_logging.lower() not in FALSE_OPTIONS:
@@ -59,6 +52,14 @@ class LoggingServer(StubServerMixin):
             # "yes" is here for backwards compatibility:
             self.remote_logging_receive = opts.remote_logging.lower() in ["allow", "receive", "both"] + list(
                 TRUE_OPTIONS)
+
+    def setup(self) -> None:
+        self.add_log_control_commands()
+
+    def add_log_control_commands(self) -> None:
+        from xpra.net.control.common import add_control_command
+        from xpra.net.control.debug import DebugControl
+        add_control_command(self, "debug", DebugControl())
 
     def cleanup(self) -> None:
         self.stop_capturing_logging()

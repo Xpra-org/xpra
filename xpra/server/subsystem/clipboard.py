@@ -37,13 +37,6 @@ class ClipboardServer(StubServerMixin):
         self._clipboard_client = None
         self._clipboards: Sequence[str] = ()
 
-        self.add_clipboard_control_commands()
-
-    def add_clipboard_control_commands(self) -> None:
-        ac = self.args_control
-        ac("clipboard-direction", "restrict clipboard transfers", min_args=1, max_args=1)
-        ac("clipboard-limits", "restrict clipboard transfers size", min_args=2, max_args=2, validation=[int, int])
-
     def init(self, opts) -> None:
         self.clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS
         self.clipboard_direction = opts.clipboard_direction
@@ -58,6 +51,12 @@ class ClipboardServer(StubServerMixin):
         def new_ui_driver(_server, source) -> None:
             self.set_clipboard_source(source)
         self.connect("new-ui-driver", new_ui_driver)
+        self.add_clipboard_control_commands()
+
+    def add_clipboard_control_commands(self) -> None:
+        ac = self.args_control
+        ac("clipboard-direction", "restrict clipboard transfers", min_args=1, max_args=1)
+        ac("clipboard-limits", "restrict clipboard transfers size", min_args=2, max_args=2, validation=[int, int])
 
     def reset_clipboard(self, *args) -> None:
         ch = self._clipboard_helper
