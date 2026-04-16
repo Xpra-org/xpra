@@ -17,7 +17,6 @@ from xpra.server.proxy.instance_base import ProxyInstance
 from xpra.util.queue_scheduler import QueueScheduler
 from xpra.util.daemon import setuidgid
 from xpra.server.subsystem.control import ControlHandler
-from xpra.server import features
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol.factory import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -68,6 +67,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
                                disp_desc, cipher, cipher_mode, encryption_key, caps)
         QueueScheduler.__init__(self)
         ControlHandler.__init__(self)
+        self.control_enabled = True
         Process.__init__(self, name=str(client_conn), daemon=False)
         self.client_conn = client_conn
         self.server_conn = server_conn
@@ -128,7 +128,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
 
     def run(self) -> ExitValue:
         register_SIGUSR_signals(self.idle_add)
-        ControlHandler.add_default_control_commands(self, features.control)
+        ControlHandler.add_default_control_commands(self)
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
         self.client_protocol = client_protocol_class(self.client_conn,

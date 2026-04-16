@@ -7,6 +7,7 @@ from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
+from xpra.common import noop
 from xpra.server import ServerExitMode
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -22,6 +23,11 @@ class IdleTimeoutServer(StubServerMixin):
         StubServerMixin.__init__(self)
         self.server_idle_timeout = 0
         self.server_idle_timer = 0
+
+        self.add_idle_control_commands()
+
+    def add_idle_control_commands(self) -> None:
+        self.args_control("server-idle-timeout", "set the server idle timeout", validation=[int])
 
     def init(self, opts) -> None:
         self.server_idle_timeout = opts.server_idle_timeout
@@ -57,3 +63,16 @@ class IdleTimeoutServer(StubServerMixin):
         return {
             "idle-timeout": int(self.server_idle_timeout),
         }
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_server_idle_timeout(self, t: int) -> str:
+        self.server_idle_timeout = t
+        reschedule = len(self._server_sources) == 0
+        # weak dependency on IdleTimeoutServer:
+        if reschedule:
+            schedule_server_timeout = getattr(self, "schedule_server_timeout", noop)
+            schedule_server_timeout()
+        return f"server-idle-timeout set to {t}"

@@ -37,6 +37,13 @@ class ClipboardServer(StubServerMixin):
         self._clipboard_client = None
         self._clipboards: Sequence[str] = ()
 
+        self.add_clipboard_control_commands()
+
+    def add_clipboard_control_commands(self) -> None:
+        ac = self.args_control
+        ac("clipboard-direction", "restrict clipboard transfers", min_args=1, max_args=1)
+        ac("clipboard-limits", "restrict clipboard transfers size", min_args=2, max_args=2, validation=[int, int])
+
     def init(self, opts) -> None:
         self.clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS
         self.clipboard_direction = opts.clipboard_direction
@@ -282,3 +289,32 @@ class ClipboardServer(StubServerMixin):
             ):
                 self.add_packet_handler(f"{ClipboardServer.PREFIX}-%s" % x, self._process_clipboard_packet)
             self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardServer.PREFIX}-status")
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_clipboard_direction(self, direction: str, *_args) -> str:
+        ch = self._clipboard_helper
+        assert self.clipboard and ch
+        direction = direction.lower()
+        DIRECTIONS = ("to-server", "to-client", "both", "disabled")
+        if direction not in DIRECTIONS:
+            raise ValueError(f"invalid direction {direction!r}, must be one of " + csv(DIRECTIONS))
+        self.clipboard_direction = direction
+        can_send = direction in ("to-server", "both")
+        can_receive = direction in ("to-client", "both")
+        ch.set_direction(can_send, can_receive)
+        msg = f"clipboard direction set to {direction!r}"
+        log(msg)
+        self.setting_changed("clipboard-direction", direction)
+        return msg
+
+    def control_command_clipboard_limits(self, max_send: int, max_recv: int, *_args) -> str:
+        ch = self._clipboard_helper
+        assert self.clipboard and ch
+        ch.set_limits(max_send, max_recv)
+        msg = f"clipboard send limit set to {max_send}, recv limit set to {max_recv} (single copy/paste)"
+        log(msg)
+        self.setting_changed("clipboard-limits", {'send': max_send, 'recv': max_recv})
+        return msg

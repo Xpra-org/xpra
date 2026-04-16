@@ -11,6 +11,7 @@ from collections.abc import Callable
 from xpra.util.env import envbool
 from xpra.os_util import getuid, getgid
 from xpra.util.objects import typedict
+from xpra.common import noop
 from xpra.os_util import WIN32
 
 # when running the unit tests,
@@ -137,3 +138,13 @@ class StubServerMixin(superclass):
     def get_server_source(_proto):
         """ returns the client connection source object for the given protocol """
         return None
+
+    def args_control(self, name: str, descr: str, **kwargs) -> None:
+        from xpra.net.control.common import add_args_control_command
+        run = getattr(self, "control_command_%s" % name.replace("-", "_"), noop)
+        if run == noop:
+            from xpra.log import Logger
+            Logger("util").warn("Warning: control command %r not found on %s", name, self)
+            return
+        kwargs["run"] = run
+        add_args_control_command(self, name, descr, **kwargs)

@@ -17,24 +17,33 @@ class ControlHandler(StubServerMixin):
     def __init__(self):
         StubServerMixin.__init__(self)
         self.control_commands: dict[str, Any] = {}
+        self.control_enabled = False
 
-    def add_default_control_commands(self, enabled=True):
+    def init(self, opts) -> None:
+        self.control_enabled = opts.control
+
+    def setup(self) -> None:
+        self.add_default_control_commands()
+
+    def add_default_control_commands(self) -> None:
         # for things that can take longer:
         try:
             from xpra.net.control.common import HelloCommand, HelpCommand, DisabledCommand
-            from xpra.net.control.debug import DebugControl
         except ImportError:
             return
         self.control_commands = {
             "hello": HelloCommand(),
         }
-        if enabled:
-            self.add_control_command("debug", DebugControl())
-            self.add_control_command("help", HelpCommand(self.control_commands))
+        if self.control_enabled:
+            self.do_add_control_command("help", HelpCommand(self.control_commands))
         else:
-            self.add_control_command("*", DisabledCommand())
+            self.do_add_control_command("*", DisabledCommand())
 
     def add_control_command(self, name: str, control) -> None:
+        if self.control_enabled:
+            self.do_add_control_command(name, control)
+
+    def do_add_control_command(self, name: str, control) -> None:
         self.control_commands[name] = control
 
     def process_control_command(self, proto, *args) -> tuple[int, str]:
@@ -43,7 +52,8 @@ class ControlHandler(StubServerMixin):
 
     def handle_command_request(self, proto, *args) -> None:
         """ client sent a command request as part of the hello packet """
-        assert args, "no arguments supplied"
+        if not args:
+            raise ValueError("no arguments supplied")
         from xpra.net.control.common import process_control_command
         code, response = process_control_command(proto, self.control_commands, *args)
         hello = {"command_response": (code, response)}

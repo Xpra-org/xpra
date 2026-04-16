@@ -17,6 +17,7 @@ from xpra.util.version import (
     XPRA_VERSION, version_str, get_version_info,
     get_build_info, get_host_info, parse_version,
 )
+from xpra.common import noop
 from xpra.net.common import is_request_allowed, Packet, FULL_INFO
 from xpra.net.net_util import get_info as get_net_info
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -85,6 +86,11 @@ class InfoServer(StubServerMixin):
     def __init__(self):
         self.hello_request_handlers["info"] = self._handle_hello_request_info
         self.session_name = ""
+
+        self.add_info_control_commands()
+
+    def add_info_control_commands(self) -> None:
+        self.args_control("name", "set the session name", min_args=1, max_args=1)
 
     def _handle_hello_request_info(self, proto, caps: typedict) -> bool:
         subsystems = caps.strtupleget("subsystems", ())
@@ -251,3 +257,15 @@ class InfoServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         self.add_packets("info-request", main_thread=True)
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_name(self, name: str) -> str:
+        self.session_name = name
+        log.info(f"changed session name: {self.session_name!r}")
+        self.setting_changed("session_name", name)
+        mdns_update = getattr(self, "mdns_update", noop)
+        mdns_update()
+        return f"session name set to {name}"

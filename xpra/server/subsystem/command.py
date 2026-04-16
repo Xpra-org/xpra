@@ -217,6 +217,14 @@ class ChildCommandServer(StubServerMixin):
             self.exec_start_late_commands()
         self.connect("running", server_is_running)
 
+        self.add_command_control_commands()
+
+    def add_command_control_commands(self) -> None:
+        self.args_control("start", "executes the command arguments in the server context", min_args=1)
+        self.args_control("start-child","executes the command arguments in the server context, "
+                                        "as a 'child' (honouring exit-with-children)", min_args=1)
+        self.args_control("start-env", "modify the environment used to start new commands", min_args=1)
+
     def init(self, opts) -> None:
         self.exit_with_children = opts.exit_with_children
         self.terminate_children = opts.terminate_children
@@ -590,3 +598,45 @@ class ChildCommandServer(StubServerMixin):
         if self.start_new_commands:
             self.add_packets(f"{ChildCommandServer.PREFIX}-start")
             self.add_legacy_alias("start-command", f"{ChildCommandServer.PREFIX}-start")
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_start(self, *args) -> str:
+        return self.do_control_command_start(True, *args)
+
+    def control_command_start_child(self, *args) -> str:
+        return self.do_control_command_start(False, *args)
+
+    def do_control_command_start(self, ignore: bool, *args) -> str:
+        from xpra.net.control.common import ControlError
+        if not self.start_new_commands:
+            raise ControlError("this feature is currently disabled")
+        proc = self.start_command(shlex.join(args), args, ignore=ignore)
+        if not proc:
+            raise ControlError("failed to start new child command %r" % shlex.join(args))
+        return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
+
+    def control_command_start_env(self, action: str = "set", var_name: str = "", value=None) -> str:
+        if action != "get" and not var_name:
+            raise RuntimeError("the environment variable name must be specified")
+        if action == "unset":
+            assert value is None, f"invalid number of arguments for {action}"
+            if self.start_env.pop(var_name, None) is None:
+                return f"{var_name!r} is not set"
+            return f"{var_name} unset"
+        if action == "set":
+            assert value, "the value must be specified"
+            self.start_env[var_name] = value
+            return f"{var_name}={value}"
+        if action == "get":
+            env = self.get_child_env()
+            if var_name:
+                if var_name not in env:
+                    return f"# {var_name!r} is not defined"
+                value = env[var_name]
+                return f"{var_name}={value}"
+            else:
+                return "\n".join(f"{k}={v}" for k, v in sorted(env.items()))
+        return f"invalid start-env subcommand {action!r}"

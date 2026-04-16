@@ -31,6 +31,13 @@ class NotificationForwarder(StubServerMixin):
         self.notifications_forwarder = None
         self.notifications = False
 
+        self.add_notification_control_commands()
+
+    def add_notification_control_commands(self) -> None:
+        ac = self.args_control
+        ac("send-notification", "sends a notification to the client(s)", min_args=4, max_args=5, validation=[int])
+        ac("close-notification", "send the request to close an existing notification to the client(s)", min_args=1, max_args=2, validation=[int])
+
     def init(self, opts) -> None:
         self.notifications = opts.notifications
 
@@ -194,3 +201,38 @@ class NotificationForwarder(StubServerMixin):
         if self.notifications:
             self.add_packets("notification-close", "notification-action", "notification-status", main_thread=True)
             self.add_legacy_alias("set-notify", "notification-status")
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_send_notification(self, nid: int, title: str, message: str, client_uuids) -> str:
+        if not self.notifications:
+            msg = "notification are disabled"
+            log(msg)
+            return msg
+        from xpra.net.control.common import control_get_sources
+        sources = control_get_sources(self, client_uuids)
+        log("control_command_send_notification(%i, %s, %s, %s) will send to sources %s (matching %s)",
+            nid, title, message, client_uuids, sources, client_uuids)
+        count = 0
+        for source in sources:
+            if source.notify(0, nid, "control channel", 0, "", title, message, [], {}, 10, ""):
+                count += 1
+        msg = f"notification id {nid}: message sent to {count} clients"
+        log(msg)
+        return msg
+
+    def control_command_close_notification(self, nid: int, client_uuids) -> str:
+        if not self.notifications:
+            msg = "notification are disabled"
+            log(msg)
+            return msg
+        from xpra.net.control.common import control_get_sources
+        sources = control_get_sources(self, client_uuids)
+        log("control_command_close_notification(%s, %s) will send to %s", nid, client_uuids, sources)
+        for source in sources:
+            source.notify_close(nid)
+        msg = f"notification id {nid}: close request sent to {len(sources)} clients"
+        log(msg)
+        return msg

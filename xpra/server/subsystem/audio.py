@@ -10,6 +10,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.common import noop
 from xpra.os_util import gi_import
+from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.util.env import first_time, envint
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
@@ -43,6 +44,10 @@ class AudioServer(StubServerMixin):
         self.microphone_codecs: Sequence[str] = ()
         self.audio_properties = typedict()
         self.av_sync = False
+        self.add_audio_control_commands()
+
+    def add_audio_control_commands(self) -> None:
+        self.args_control("audio-output", "control audio forwarding", min_args=1, max_args=2)
 
     def init(self, opts) -> None:
         self.audio_source_plugin = opts.audio_source
@@ -176,3 +181,14 @@ class AudioServer(StubServerMixin):
             self.add_packets(f"{AudioServer.PREFIX}-capabilities", main_thread=True)
             self.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")
             self.add_legacy_alias("sound-data", f"{AudioServer.PREFIX}-data")
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_audio_output(self, *args) -> str:
+        msg = []
+        from xpra.net.control.common import control_get_sources
+        for csource in tuple(control_get_sources(self)):
+            msg.append(f"{csource} : " + str(csource.audio_control(*args)))
+        return csv(msg)

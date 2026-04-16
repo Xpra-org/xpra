@@ -22,7 +22,6 @@ from xpra.util.version import XPRA_VERSION, version_str, version_compat_check
 from xpra.scripts.server import deadly_signal
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
-from xpra.server import features
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     is_request_allowed, Packet, has_websocket_handler, HttpResponse, FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
@@ -199,6 +198,13 @@ class ServerCore(ServerBaseClass):
 
         self._default_packet_handlers: dict[str, Callable] = {}
 
+        self.add_core_control_commands()
+
+    def add_core_control_commands(self) -> None:
+        from xpra.net.control.common import parse_boolean_value
+        self.args_control("readonly", "set readonly state for client(s)", min_args=1, max_args=1,
+                          validation=[parse_boolean_value]),
+
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)
         self.session_name = str(opts.session_name)
@@ -240,11 +246,7 @@ class ServerCore(ServerBaseClass):
         for bc in SERVER_BASES:
             bc.setup(self)
         self.start_listen_sockets()
-        self.init_control_commands()
         self.init_packet_handlers()
-
-    def init_control_commands(self) -> None:
-        self.add_default_control_commands(features.control)
 
     ######################################################################
     # run / stop:
@@ -1628,3 +1630,14 @@ class ServerCore(ServerBaseClass):
         log.error("Error: RDP protocol is not supported by this server")
         log("handle_rdp_connection%s", (conn, data))
         force_close_connection(conn)
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_readonly(self, onoff) -> str:
+        log("control_command_readonly(%s)", onoff)
+        self.readonly = onoff
+        msg = f"server readonly: {onoff}"
+        log.info(msg)
+        return msg

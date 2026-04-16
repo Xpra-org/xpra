@@ -8,10 +8,67 @@ from collections.abc import Callable, Sequence
 
 from xpra.log import Logger
 from xpra.util.str_fn import csv
-from xpra.util.parsing import str_to_bool
+from xpra.util.parsing import str_to_bool, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.common import noop
 
 log = Logger("util", "command")
+
+
+def add_control_command(server, name: str, control) -> None:
+    # weak dependency on the control subsystem:
+    add = getattr(server, "add_control_command", noop)
+    log("%s.add_control_command: %s(%s, %s)", server, add, name, control)
+    add(name, control)
+
+
+def add_args_control_command(server, name: str, descr: str, **kwargs) -> None:
+    control = ArgsControlCommand(name, descr, **kwargs)
+    add_control_command(server, name, control)
+
+
+def control_get_sources(server, client_uuids_str="*"):
+    # find the client uuid specified as a string:
+    sources = getattr(server, "_server_sources", None)
+    if sources is None:
+        raise RuntimeError("no server sources found in %s" % server)
+    if client_uuids_str == "UI":
+        sources = [ss for ss in sources.values() if ss.ui_client]
+    elif client_uuids_str == "*":
+        sources = sources.values()
+    else:
+        client_uuids = client_uuids_str.split(",")
+        sources = [ss for ss in sources.values() if ss.uuid in client_uuids]
+        uuids = tuple(ss.uuid for ss in sources)
+        notfound = any(x for x in client_uuids if x not in uuids)
+        if notfound:
+            log.warn(f"Warning: client connection not found for uuid(s): {notfound}")
+    return sources
+
+
+def parse_4intlist(v) -> list:
+    if not v:
+        return []
+    intlist = []
+    # ie: v = " (0,10,100,20), (200,300,20,20)"
+    while v:
+        v = v.strip().strip(",").strip()  # ie: "(0,10,100,20)"
+        lp = v.find("(")
+        assert lp == 0, "invalid leading characters: %s" % v[:lp]
+        rp = v.find(")")
+        assert (lp + 1) < rp
+        item = v[lp + 1:rp].strip()  # "0,10,100,20"
+        items = [int(x) for x in item]  # 0,10,100,20
+        assert len(items) == 4, f"expected 4 numbers but got {len(items)}"
+        intlist.append(items)
+    return intlist
+
+
+def parse_boolean_value(v):
+    if str(v).lower() in TRUE_OPTIONS:
+        return True
+    if str(v).lower() in FALSE_OPTIONS:
+        return False
+    raise ControlError(f"a boolean is required, not {v!r}")
 
 
 class ControlError(Exception):

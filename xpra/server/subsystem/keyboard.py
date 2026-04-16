@@ -9,7 +9,7 @@ from typing import Any
 from time import monotonic
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import Ellipsizer
+from xpra.util.str_fn import Ellipsizer, csv
 from xpra.util.objects import typedict
 from xpra.keyboard.common import DELAY_KEYBOARD_DATA
 from xpra.common import noerr
@@ -44,6 +44,10 @@ class KeyboardServer(StubServerMixin):
         # timers for cancelling key repeat when we get jitter
         self.key_repeat_timer = 0
         self.keys_pressed: dict[int, Any] = {}
+        self.add_keyboard_control_commands()
+
+    def add_keyboard_control_commands(self) -> None:
+        self.args_control("key", "press or unpress a key", min_args=1, max_args=2)
 
     def init(self, opts) -> None:
         for option in ("sync", "layout", "layouts", "variant", "variants", "options"):
@@ -430,3 +434,31 @@ class KeyboardServer(StubServerMixin):
             "keyboard-event", "keyboard-config", "keyboard-sync",
             main_thread=True
         )
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_key(self, keycode_str: str, press) -> str:
+        if self.readonly:
+            return "command key denied by readonly mode"
+        from xpra.net.control.common import ControlError
+        try:
+            if keycode_str.startswith("0x"):
+                keycode = int(keycode_str, 16)
+            else:
+                keycode = int(keycode_str)
+        except ValueError:
+            raise ControlError(f"invalid keycode specified: {keycode_str!r} (not a number)") from None
+        if keycode <= 0 or keycode >= 255:
+            raise ControlError(f"invalid keycode value: {keycode} (must be between 1 and 255)")
+        if press is not True:
+            if press in ("1", "press"):
+                press = True
+            elif press in ("0", "unpress"):
+                press = False
+            else:
+                raise ControlError("if present, the press argument must be one of: " + csv(
+                    ("1", "press", "0", "unpress")))
+        self.fake_key(keycode, press)
+        return ("pressed" if press else "unpressed") + f" {keycode}"

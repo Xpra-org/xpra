@@ -4,7 +4,8 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-from typing import Any
+from time import monotonic
+from typing import Any, NoReturn
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
@@ -24,6 +25,11 @@ geomlog = Logger("geometry")
 eventslog = Logger("events")
 
 
+def control_error(*args, **kwargs) -> NoReturn:
+    from xpra.net.control.common import ControlError
+    raise ControlError(*args, **kwargs)
+
+
 class WindowServer(StubServerMixin):
     """
     Mixin for servers that forward windows.
@@ -40,6 +46,50 @@ class WindowServer(StubServerMixin):
         self.window_filters = []
         self.window_min_size = 0, 0
         self.window_max_size = 2 ** 15 - 1, 2 ** 15 - 1
+
+        self.add_window_control_commands()
+
+    def add_window_control_commands(self) -> None:
+        from xpra.util.parsing import parse_scaling_value, from0to100
+        from xpra.net.control.common import parse_boolean_value, parse_4intlist
+        ac = self.args_control
+        ac("focus", "give focus to the window id", validation=[int])
+        ac("map", "maps the window id", validation=[int])
+        ac("unmap", "unmaps the window id", validation=[int])
+        ac("suspend", "suspend screen updates", max_args=0)
+        ac("resume", "resume screen updates", max_args=0)
+        ac("ungrab", "cancels any grabs", max_args=0)
+        ac("workspace", "move a window to a different workspace", min_args=2, max_args=2, validation=[int, int])
+        ac("close", "close a window", min_args=1, max_args=1, validation=[int])
+        ac("delete", "delete a window", min_args=1, max_args=1, validation=[int])
+        ac("move", "move a window", min_args=3, max_args=3, validation=[int, int, int])
+        ac("resize", "resize a window", min_args=3, max_args=3, validation=[int, int, int])
+        ac("moveresize", "move and resize a window", min_args=5, max_args=5, validation=[int, int, int, int, int])
+        ac("scaling-control", "set the scaling-control aggressiveness (from 0 to 100)", min_args=1, validation=[from0to100])
+        ac("scaling", "set a specific scaling value", min_args=1, validation=[parse_scaling_value])
+        ac("auto-refresh", "set a specific auto-refresh value", min_args=1, validation=[float])
+        ac("refresh", "refresh some or all windows", min_args=0)
+        ac("encoding", "picture encoding", min_args=2)
+        ac("request-update", "request a screen update using a specific encoding", min_args=3)
+        ac("video-region-enabled", "enable video region", min_args=2, max_args=2, validation=[int, parse_boolean_value])
+        ac("video-region-detection", "enable video detection", min_args=2, max_args=2, validation=[int, parse_boolean_value])
+        ac("video-region-exclusion-zones",
+           "set window regions to exclude from video regions: 'WID,(x,y,w,h),(x,y,w,h),..', ie: '1 (0,10,100,20),(200,300,20,20)'",
+           min_args=2, max_args=2, validation=[int, parse_4intlist])
+        ac("video-region", "set the video region", min_args=5, max_args=5, validation=[int, int, int, int, int])
+        ac("reset-video-region", "reset video region heuristics", min_args=1, max_args=1, validation=[int]),
+        ac("lock-batch-delay", "set a specific batch delay for a window", min_args=2, max_args=2, validation=[int, int]),
+        ac("unlock-batch-delay",
+           "let the heuristics calculate the batch delay again for a window (following a 'lock-batch-delay')",
+           min_args=1, max_args=1, validation=[int]),
+        ac("remove-window-filters", "remove all window filters", min_args=0, max_args=0),
+        ac("add-window-filter", "add a window filter", min_args=4, max_args=5)
+        # encoding bits:
+        for name in (
+                "quality", "min-quality", "max-quality",
+                "speed", "min-speed", "max-speed",
+        ):
+            ac(name, "set encoding %s (from 0 to 100)" % name, min_args=1, validation=[from0to100])
 
     def init(self, opts) -> None:
         def parse_window_size(v, default_value=(0, 0)):
@@ -510,3 +560,313 @@ class WindowServer(StubServerMixin):
             "window-action",
             "window-draw-ack",
             main_thread=True)
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_focus(self, wid: int) -> str:
+        if self.readonly:
+            return "focus request denied by readonly mode"
+        if not isinstance(wid, int):
+            raise ValueError(f"argument should have been an int, but found {type(wid)}")
+        self._focus(None, wid, None)
+        return f"gave focus to window {wid:#x}"
+
+    def control_command_map(self, wid: int) -> str:
+        if self.readonly:
+            return "map request denied by readonly mode"
+        if not isinstance(wid, int):
+            raise ValueError(f"argument should have been an int, but found {type(wid)}")
+        window = self.get_window(wid)
+        assert window, f"window {wid:#x} not found"
+        if window.is_tray():
+            return f"cannot map tray window {wid:#x}"
+        if window.is_OR():
+            return f"cannot map override redirect window {wid:#x}"
+        window.show()
+        # window.set_owner(dm)
+        # iconic = window.get_property("iconic")
+        # if iconic:
+        #    window.set_property("iconic", False)
+        # w, h = window.get_geometry()[2:4]
+        # self.refresh_window_area(window, 0, 0, w, h)
+        self.repaint_root_overlay()
+        return "mapped window %s" % wid
+
+    def control_command_unmap(self, wid: int) -> str:
+        if self.readonly:
+            return "unmap request denied by readonly mode"
+        if not isinstance(wid, int):
+            raise ValueError(f"argument should have been an int, but found {type(wid)}")
+        window = self.get_window(wid)
+        assert window, f"window {wid:#x} not found"
+        if window.is_tray():
+            return f"cannot unmap tray window {wid:#x}"
+        if window.is_OR():
+            return f"cannot unmap override redirect window {wid:#x}"
+        window.hide()
+        self.repaint_root_overlay()
+        return f"unmapped window {wid:#x}"
+
+    def control_command_suspend(self) -> str:
+        for csource in tuple(self._server_sources.values()):
+            csource.suspend(True, self._id_to_window)
+        count = len(self._server_sources)
+        return f"suspended {count} clients"
+
+    def control_command_resume(self) -> str:
+        for csource in tuple(self._server_sources.values()):
+            csource.resume(True, self._id_to_window)
+        count = len(self._server_sources)
+        return f"resumed {count} clients"
+
+    def control_command_ungrab(self) -> str:
+        for csource in tuple(self._server_sources.values()):
+            csource.pointer_ungrab(-1)
+        count = len(self._server_sources)
+        return f"ungrabbed {count} clients"
+
+    def control_command_workspace(self, wid: int, workspace: int) -> str:
+        window = self.get_window(wid)
+        if not window:
+            control_error(f"window {wid:#x} does not exist")
+        if "workspace" not in window.get_property_names():
+            control_error(f"cannot set workspace on window {window}")
+        if workspace < 0:
+            control_error(f"invalid workspace value: {workspace}")
+        window.set_property("workspace", workspace)
+        return f"window {wid:#x} moved to workspace {workspace}"
+
+    def control_command_close(self, wid: int) -> str:
+        window = self.get_window(wid)
+        if not window:
+            control_error(f"window {wid:#x} does not exist")
+        window.request_close()
+        return f"requested window {window} closed"
+
+    def control_command_delete(self, wid: int) -> str:
+        window = self.get_window(wid)
+        if not window:
+            control_error(f"window {wid:#x} does not exist")
+        window.send_delete()
+        return f"requested window {window} deleted"
+
+    def control_command_move(self, wid: int, x: int, y: int) -> str:
+        window = self.get_window(wid)
+        if not window:
+            control_error(f"window {wid:#x} does not exist")
+        ww, wh = window.get_dimensions()
+        count = 0
+        for source in tuple(self._server_sources.values()):
+            move_resize_window = getattr(source, "move_resize_window", None)
+            if move_resize_window:
+                move_resize_window(wid, window, x, y, ww, wh)
+                count += 1
+        return f"window {wid:#x} moved to {x},{y} for {count} clients"
+
+    def control_command_resize(self, wid: int, w: int, h: int) -> str:
+        window = self.get_window(wid)
+        if not window:
+            control_error(f"window {wid:#x} does not exist")
+        count = 0
+        for source in tuple(self._server_sources.values()):
+            resize_window = getattr(source, "resize_window", None)
+            if resize_window:
+                resize_window(wid, window, w, h)
+                count += 1
+        return f"window {wid:#x} resized to {w}x{h} for {count} clients"
+
+    def control_command_moveresize(self, wid: int, x: int, y: int, w: int, h: int) -> str:
+        window = self.get_window(wid)
+        if not window:
+            control_error(f"window {wid:#x} does not exist")
+        count = 0
+        for source in tuple(self._server_sources.values()):
+            move_resize_window = getattr(source, "move_resize_window", None)
+            if move_resize_window:
+                move_resize_window(wid, window, x, y, w, h)
+                count += 1
+        return f"window {wid:#x} moved to {x},{y} and resized to {w}x{h} for {count} clients"
+
+    def _ws_from_args(self, *args):
+        # converts the args to valid window ids,
+        # then returns all the window sources for those wids
+        from xpra.net.control.common import ControlError, control_get_sources
+        if len(args) == 0 or len(args) == 1 and args[0] == "*":
+            # default to all if unspecified:
+            wids = tuple(self._id_to_window.keys())
+        else:
+            wids = []
+            for x in args:
+                try:
+                    wid = int(x)
+                except ValueError:
+                    raise ControlError(f"invalid window id: {x!r}") from None
+                if wid in self._id_to_window:
+                    wids.append(wid)
+                else:
+                    log(f"window id {wid:#x} does not exist")
+        wss = []
+        for csource in tuple(control_get_sources(self)):
+            for wid in wids:
+                ws = csource.window_sources.get(wid)
+                window = self.get_window(wid)
+                if window and ws:
+                    wss.append(ws)
+        return wss
+
+    def _set_encoding_property(self, name: str, value, *wids) -> str:
+        for ws in self._ws_from_args(*wids):
+            fn = getattr(ws, "set_" + name.replace("-", "_"))  # ie: "set_quality"
+            fn(value)
+        # now also update the defaults:
+        for csource in tuple(self._server_sources.values()):
+            csource.default_encoding_options[name] = value
+        return f"{name} set to {value}"
+
+    def control_command_quality(self, quality: int, *wids) -> str:
+        return self._set_encoding_property("quality", quality, *wids)
+
+    def control_command_min_quality(self, min_quality: int, *wids) -> str:
+        return self._set_encoding_property("min-quality", min_quality, *wids)
+
+    def control_command_max_quality(self, max_quality: int, *wids) -> str:
+        return self._set_encoding_property("max-quality", max_quality, *wids)
+
+    def control_command_speed(self, speed: int, *wids) -> str:
+        return self._set_encoding_property("speed", speed, *wids)
+
+    def control_command_min_speed(self, min_speed: int, *wids) -> str:
+        return self._set_encoding_property("min-speed", min_speed, *wids)
+
+    def control_command_max_speed(self, max_speed: int, *wids) -> str:
+        return self._set_encoding_property("max-speed", max_speed, *wids)
+
+    def control_command_auto_refresh(self, auto_refresh, *wids) -> str:
+        delay = int(float(auto_refresh) * 1000.0)  # ie: 0.5 -> 500 (milliseconds)
+        for ws in self._ws_from_args(*wids):
+            ws.set_auto_refresh_delay(auto_refresh)
+        return f"auto-refresh delay set to {delay}ms for windows {wids}"
+
+    def control_command_refresh(self, *wids) -> str:
+        for ws in self._ws_from_args(*wids):
+            ws.full_quality_refresh({})
+        return f"refreshed windows {wids}"
+
+    def control_command_scaling_control(self, scaling_control, *wids) -> str:
+        for ws in tuple(self._ws_from_args(*wids)):
+            ws.set_scaling_control(scaling_control)
+            ws.refresh()
+        return f"scaling-control set to {scaling_control} on windows {wids}"
+
+    def control_command_scaling(self, scaling, *wids) -> str:
+        for ws in tuple(self._ws_from_args(*wids)):
+            ws.set_scaling(scaling)
+            ws.refresh()
+        return f"scaling set to {scaling} on windows {wids}"
+
+    def control_command_encoding(self, encoding: str, *args) -> str:
+        if encoding in ("add", "remove"):
+            cmd = encoding
+            assert len(args) > 0
+            encoding = args[0]
+            wids = args[1:]
+            for ws in tuple(self._ws_from_args(*wids)):
+                encodings = list(ws.encodings)
+                core_encodings = list(ws.core_encodings)
+                for enc_list in (encodings, core_encodings):
+                    if cmd == "add" and encoding not in enc_list:
+                        log(f"adding {encoding} to {enc_list} for {ws}")
+                        enc_list.append(encoding)
+                    elif cmd == "remove" and encoding in enc_list:
+                        log(f"removing {encoding} to {enc_list} for {ws}")
+                        enc_list.remove(encoding)
+                    else:
+                        continue
+                ws.encodings = tuple(encodings)
+                ws.core_encodings = tuple(core_encodings)
+                ws.do_set_client_properties(typedict())
+                ws.refresh()
+            return ["removed", "added"][cmd == "add"] + " " + encoding
+
+        strict = None  # means no change
+        if encoding in ("strict", "nostrict"):
+            strict = encoding == "strict"
+            encoding = args[0]
+            wids = args[1:]
+        elif len(args) > 0 and args[0] in ("strict", "nostrict"):
+            # remove "strict" marker
+            strict = args[0] == "strict"
+            wids = args[1:]
+        else:
+            wids = args
+        for ws in tuple(self._ws_from_args(*wids)):
+            ws.set_new_encoding(encoding, strict)
+            ws.refresh()
+        return f"set encoding to {encoding}%s for windows {wids}" % ["", " (strict)"][int(strict or 0)]
+
+    def control_command_request_update(self, encoding: str, geom, *args) -> str:
+        wids = args
+        now = monotonic()
+        options = {
+            "auto_refresh": True,
+            "av-delay": 0,
+        }
+        log("request-update using %r, geometry=%s, windows(%s)=%s", encoding, geom, wids, self._ws_from_args(*wids))
+        for ws in tuple(self._ws_from_args(*wids)):
+            if geom == "all":
+                x = y = 0
+                w, h = ws.window_dimensions
+            else:
+                x, y, w, h = (int(x) for x in geom.split(","))
+            ws.process_damage_region(now, x, y, w, h, encoding, options)
+        return "damage requested"
+
+    def _control_video_subregions_from_wid(self, wid: int) -> list:
+        if wid not in self._id_to_window:
+            from xpra.net.control.common import ControlError
+            raise ControlError(f"invalid window {wid:#x}")
+        video_subregions = []
+        for ws in self._ws_from_args(wid):
+            vs = getattr(ws, "video_subregion", None)
+            if not vs:
+                log.warn(f"Warning: cannot set video region enabled flag on window {wid:#x}")
+                log.warn(f" no video subregion attribute found in {type(ws)}")
+                continue
+            video_subregions.append(vs)
+        # log("_control_video_subregions_from_wid(%s)=%s", wid, video_subregions)
+        return video_subregions
+
+    def control_command_video_region_enabled(self, wid: int, enabled: bool) -> str:
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.set_enabled(enabled)
+        return "video region %s for window %i" % (["disabled", "enabled"][int(enabled)], wid)
+
+    def control_command_video_region_detection(self, wid: int, detection) -> str:
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.set_detection(detection)
+        return "video region detection %s for window %i" % (["disabled", "enabled"][int(detection)], wid)
+
+    def control_command_video_region(self, wid: int, x: int, y: int, w: int, h: int) -> str:
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.set_region(x, y, w, h)
+        return "video region set to %s for window %i" % ((x, y, w, h), wid)
+
+    def control_command_video_region_exclusion_zones(self, wid: int, zones) -> str:
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.set_exclusion_zones(zones)
+        return f"video exclusion zones set to {zones} for window {wid:#x}"
+
+    def control_command_reset_video_region(self, wid: int) -> str:
+        for vs in self._control_video_subregions_from_wid(wid):
+            vs.reset()
+        return f"reset video region heuristics for window {wid:#x}"
+
+    def control_command_lock_batch_delay(self, wid: int, delay: int) -> None:
+        for ws in self._ws_from_args(wid):
+            ws.lock_batch_delay(delay)
+
+    def control_command_unlock_batch_delay(self, wid: int) -> None:
+        for ws in self._ws_from_args(wid):
+            ws.unlock_batch_delay()
