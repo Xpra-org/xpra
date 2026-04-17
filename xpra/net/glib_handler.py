@@ -10,6 +10,7 @@ from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.net.common import may_log_packet, Packet, PacketHandlerType
 from xpra.log import Logger
+from xpra.util.str_fn import ellipsize
 
 log = Logger("network")
 
@@ -109,5 +110,6 @@ class GLibPacketHandler:
         packet_type = packet.get_type()
         log("invalid packet: %s", packet)
         log.error(f"Error: unknown or invalid packet type {packet_type!r}")
+        log.error(" %s", ellipsize(packet))
         log.error(f" received from {proto}")
         proto.close()
