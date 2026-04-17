@@ -6,7 +6,6 @@
 import os
 from collections.abc import Callable
 
-from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.util.env import SilenceWarningsContext
 from xpra.common import noop
@@ -74,7 +73,7 @@ class TrayMenu(StubServerMixin):
     def cleanup(self) -> None:
         self.cleanup_tray()
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+    def add_new_client(self, *_args) -> None:
         if not self.tray_icon:
             self.set_tray_icon("server-connected")
 

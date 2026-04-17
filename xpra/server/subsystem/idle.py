@@ -5,7 +5,6 @@
 
 from typing import Any
 
-from xpra.util.objects import typedict
 from xpra.os_util import gi_import
 from xpra.common import noop
 from xpra.server import ServerExitMode
@@ -35,7 +34,7 @@ class IdleTimeoutServer(StubServerMixin):
     def add_idle_control_commands(self) -> None:
         self.args_control("server-idle-timeout", "set the server idle timeout", validation=[int])
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+    def add_new_client(self, *_args) -> None:
         self.cancel_server_timeout()
 
     def cancel_server_timeout(self) -> None:

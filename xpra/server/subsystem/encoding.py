@@ -117,7 +117,7 @@ class EncodingServer(StubServerMixin):
             if hasattr(ss, "threaded_init_complete"):
                 ss.threaded_init_complete(self)
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+    def add_new_client(self, ss, *_args) -> None:
         # If the background encoding setup finished before this client connected,
         # reinit_encodings() already ran with no sources and this client missed
         # threaded_init_complete(). Send the full encoding capabilities now.

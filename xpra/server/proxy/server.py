@@ -296,9 +296,8 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
             # already handled in superclass
             return
         self.accept_client(proto, c)
-        request = c.strget("request")
 
-        if request:
+        if request := c.strget("request"):
             if not self.handle_hello_request(request, proto, c):
                 self.send_disconnect(proto, f"error: invalid request, {request!r} is not supported by the proxy server")
             return

@@ -125,8 +125,8 @@ class EncoderServer(ServerBase):
         if not isinstance(ss, EncodingsConnection):
             raise ValueError("client did not enable encoding")
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
-        super().add_new_client(ss, c, send_ui, share_count)
+    def add_new_client(self, ss, *args) -> None:
+        super().add_new_client(ss, *args)
         ss.protocol.large_packets.append("encode-response")
 
     def _process_encode(self, proto: SocketProtocol, packet: Packet) -> None:

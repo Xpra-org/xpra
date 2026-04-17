@@ -11,7 +11,6 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.util.env import envbool
-from xpra.util.objects import typedict
 from xpra.net.common import get_ssh_port, FULL_INFO
 from xpra.util.parsing import str_to_bool
 from xpra.platform.info import get_username
@@ -60,7 +59,7 @@ class MdnsServer(StubServerMixin):
     def cleanup(self) -> None:
         self.mdns_cleanup()
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+    def add_new_client(self, *_args) -> None:
         idle_work(self.mdns_update)
 
     def can_upgrade(self, socktype: str, tosocktype: str, options: dict[str, str]) -> bool:

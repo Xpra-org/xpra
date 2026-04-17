@@ -309,7 +309,7 @@ class ChildCommandServer(StubServerMixin):
             caps["subcommands"] = get_subcommands()
         return caps
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+    def add_new_client(self, ss, *_args) -> None:
         self.exec_on_connect_commands(ss)
 
     def remove_client(self, server, ss) -> None:
