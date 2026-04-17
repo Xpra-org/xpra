@@ -9,6 +9,7 @@ from collections.abc import Callable
 from xpra.common import noop
 from xpra.net.common import may_log_packet, Packet, PacketHandlerType, BACKWARDS_COMPATIBLE
 from xpra.log import Logger
+from xpra.util.str_fn import ellipsize
 
 log = Logger("network")
 
@@ -106,5 +107,6 @@ class PacketDispatcher:
         packet_type = packet.get_type()
         log("invalid packet: %s", packet)
         log.error(f"Error: unknown or invalid packet type {packet_type!r}")
+        log.error(" %s", ellipsize(packet))
         log.error(f" received from {proto}")
         proto.close()
