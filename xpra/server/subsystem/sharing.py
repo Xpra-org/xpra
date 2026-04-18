@@ -173,6 +173,14 @@ class SharingServer(StubServerMixin):
         self.setting_changed("lock-toggle", lock is None)
         return f"lock set to {self.lock}"
 
+    def _sharing_clients(self, exclude=None) -> dict[int, Any]:
+        """Returns {counter: proto} for all connected clients that require sharing, excluding `exclude`."""
+        return {
+            getattr(ss, "counter", 0): proto
+            for proto, ss in tuple(self._server_sources.items())
+            if ss is not exclude and ss.requires_sharing()
+        }
+
     def control_command_set_sharing(self, sharing) -> str:
         sharing = str_to_bool(sharing)
         message = f"sharing set to {self.sharing}"
@@ -182,17 +190,12 @@ class SharingServer(StubServerMixin):
         self.setting_changed("sharing", sharing is not False)
         self.setting_changed("sharing-toggle", sharing is None)
         if not sharing:
-            # there can only be one ui client now,
-            # disconnect all but the first ui_client:
-            # (using the 'counter' value to figure out who was first connected)
-            ui_clients = {
-                getattr(ss, "counter", 0): proto
-                for proto, ss in tuple(self._server_sources.items()) if getattr(ss, "ui_client", False)
-            }
-            n = len(ui_clients)
+            # keep only the first-connected client that requires sharing
+            sharing_clients = self._sharing_clients()
+            n = len(sharing_clients)
             if n > 1:
-                for c in sorted(ui_clients)[1:]:
-                    proto = ui_clients[c]
-                    self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is no longer shared")
+                for c in sorted(sharing_clients)[1:]:
+                    self.disconnect_client(sharing_clients[c], ConnectionMessage.SESSION_BUSY,
+                                           "this session is no longer shared")
                 message += f", disconnected {n - 1} clients"
         return message
