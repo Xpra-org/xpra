@@ -148,20 +148,13 @@ class PointerServer(StubServerMixin):
 
         GLib.timeout_add(1000, verify_uinput_moved)
 
-    def get_caps(self, source) -> dict[str, Any]:
-        caps: dict[str, Any] = {}
-        if "features" in source.wants:
-            caps = {
-                "wheel.precise": self.pointer_device.has_precise_wheel(),
-                "pointer.optional": True,
-                "touchpad-device": bool(self.touchpad_device),
-            }
-        return caps
-
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {
             "input-devices": self.input_devices,
             "pointer.relative": True,  # assumed available in 5.0.3
+            "pointer.optional": True,
+            "wheel.precise": self.pointer_device.has_precise_wheel(),
+            "touchpad-device": bool(self.touchpad_device),
         }
 
     def _adjust_pointer(self, proto, device_id, wid: int, pointer):

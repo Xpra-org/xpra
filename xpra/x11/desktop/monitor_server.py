@@ -96,16 +96,15 @@ class XpraMonitorServer(DesktopServerBase):
         with xlog:
             set_initial_resolution(res, self.dpi or self.default_dpi)
 
-    def make_hello(self, source) -> dict[str, Any]:
-        capabilities = super().make_hello(source)
-        if "features" in source.wants:
-            capabilities |= {
-                "monitor": True,
-                "multi-monitors": True,
-                "monitors": self.get_monitor_config(),
-                "monitors.min-size": MIN_SIZE,
-                "monitors.max-size": MAX_SIZE,
-            }
+    def get_server_features(self, source=None) -> dict[str, Any]:
+        capabilities = super().get_server_features(source)
+        capabilities |= {
+            "monitor": True,
+            "multi-monitors": True,
+            "monitors": self.get_monitor_config(),
+            "monitors.min-size": MIN_SIZE,
+            "monitors.max-size": MAX_SIZE,
+        }
         return capabilities
 
     def configure_best_screen_size(self) -> tuple[int, int]:

@@ -262,21 +262,20 @@ class SeamlessServer(GObject.GObject, ServerBase):
         super().server_event(event_type, *args)
         self.emit("server-event", event_type, args)
 
-    def make_hello(self, source) -> dict[str, Any]:
-        capabilities = super().make_hello(source)
-        if "features" in source.wants:
-            capabilities.setdefault("pointer", {})["grabs"] = True
-            capabilities.setdefault("window", {}).update({
-                "frame-extents": True,
-                "configure.delta": True,
-                "signals": WINDOW_SIGNALS,
-                "dragndrop": True,
-                "states": [
-                    "iconified", "focused", "fullscreen",
-                    "above", "below",
-                    "sticky", "iconified", "maximized",
-                ],
-            })
+    def get_server_features(self, server_source=None) -> dict[str, Any]:
+        capabilities = super().get_server_features(server_source)
+        capabilities.setdefault("pointer", {})["grabs"] = True
+        capabilities.setdefault("window", {}).update({
+            "frame-extents": True,
+            "configure.delta": True,
+            "signals": WINDOW_SIGNALS,
+            "dragndrop": True,
+            "states": [
+                "iconified", "focused", "fullscreen",
+                "above", "below",
+                "sticky", "iconified", "maximized",
+            ],
+        })
         return capabilities
 
     ##########################################################################

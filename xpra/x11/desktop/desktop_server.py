@@ -89,11 +89,10 @@ class XpraDesktopServer(DesktopServerBase):
         geomlog(f"will resize {desktop_models}")
         desktop_models[0].resize(w, h)
 
-    def make_hello(self, source) -> dict[str, Any]:
-        capabilities = super().make_hello(source)
-        if "features" in source.wants:
-            capabilities["desktop"] = True
-        return capabilities
+    def get_server_features(self, source=None) -> dict[str, Any]:
+        caps = super().get_server_features(source)
+        caps["desktop"] = True
+        return caps
 
     def load_existing_windows(self) -> None:
         from xpra.x11.desktop.desktop_model import ScreenDesktopModel

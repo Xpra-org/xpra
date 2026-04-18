@@ -141,9 +141,12 @@ class GTKServer(StubServerMixin):
         caps: dict[str, Any] = {}
         if "versions" in source.wants and FULL_INFO >= 2:
             caps["versions"] = get_gtk_version_info()
-        if "features" in source.wants:
-            caps["screen_sizes"] = get_screen_sizes()
         return caps
+
+    def get_server_features(self, _source) -> dict[str, Any]:
+        return {
+            "screen_sizes": get_screen_sizes(),
+        }
 
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         return {

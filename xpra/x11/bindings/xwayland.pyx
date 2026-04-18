@@ -36,6 +36,8 @@ def isX11(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
 
 
 def isxwayland(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
+    import traceback
+    traceback.print_stack()
     b = display_name.encode()
     cdef char* display = b
     cdef Display *d = NULL

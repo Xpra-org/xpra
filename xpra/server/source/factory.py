@@ -10,7 +10,7 @@ from collections.abc import Sequence, Callable
 from xpra.server import features
 from xpra.util.str_fn import print_nested_dict
 from xpra.util.objects import typedict, merge_dicts
-from xpra.net.common import LOG_HELLO
+from xpra.net.common import LOG_HELLO, BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("server")
@@ -184,16 +184,11 @@ def get_client_connection_class(caps: typedict):
             return info
 
         def parse_hello(self, c: typedict) -> None:
-            self.ui_client = c.boolget("ui_client", True)
             self.wants: list[str] = list(c.strtupleget("wants", self.wants))
-            for x, enabled in {
-                "encodings": self.ui_client,
-                "display": self.ui_client,
-                "versions": True,
-                "features": True,
-            }.items():
-                if enabled:
-                    self.wants.append(x)
+            if BACKWARDS_COMPATIBLE and c.boolget("ui_client"):
+                for x in ("encodings", "display", "versions", "features"):
+                    if x not in self.wants:
+                        self.wants.append(x)
             for bc in CC_BASES:
                 log("%s.parse_client_caps(..)", bc)
                 bc.parse_client_caps(self, c)

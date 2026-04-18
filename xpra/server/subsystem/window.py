@@ -132,7 +132,9 @@ class WindowServer(StubServerMixin):
         """ this method is overriden by most types of servers """
 
     def get_server_features(self, _source) -> dict[str, Any]:
-        return {}
+        return {
+            "windows": True,
+        }
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {

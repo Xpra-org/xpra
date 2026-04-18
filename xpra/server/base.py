@@ -19,7 +19,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envbool
-from xpra.server import features, ServerExitMode
+from xpra.server import ServerExitMode
 from xpra.server.factory import get_server_base_classes
 from xpra.log import Logger
 
@@ -327,7 +327,9 @@ class ServerBase(ServerBaseClass):
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         # these are flags that have been added over time with new versions
         # to expose new server features:
-        f: dict[str, Any] = {}
+        f: dict[str, Any] = {
+            "client-shutdown": self.client_shutdown,
+        }
         for c in SERVER_BASES:
             if c != ServerCore:
                 bf = c.get_server_features(self, server_source)
@@ -344,13 +346,7 @@ class ServerBase(ServerBaseClass):
                 merge_dicts(capabilities, caps)
         capabilities["server_type"] = "base"
         if "features" in source.wants:
-            capabilities |= {
-                "client-shutdown": self.client_shutdown,
-                "windows": features.window,
-                "keyboard": features.keyboard,
-            }
-            sf = self.get_server_features(source)
-            capabilities.update(sf)
+            capabilities.update(self.get_server_features(source))
         return capabilities
 
     def send_hello(self, server_source, server_cipher: dict) -> None:

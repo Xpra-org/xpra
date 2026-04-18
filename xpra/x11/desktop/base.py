@@ -147,15 +147,14 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         # geometry is not synced with the client's for desktop servers
         pass
 
-    def make_hello(self, source) -> dict[str, Any]:
-        capabilities = super().make_hello(source)
-        if "features" in source.wants:
-            capabilities.setdefault("pointer", {})["grabs"] = True
-            capabilities["desktop"] = True
-            capabilities.setdefault("window", {}).update({
-                "decorations": True,
-                "states": ["iconified", "focused"],
-            })
+    def get_server_features(self, source=None) -> dict[str, Any]:
+        capabilities = super().get_server_features(source)
+        capabilities.setdefault("pointer", {})["grabs"] = True
+        capabilities["desktop"] = True
+        capabilities.setdefault("window", {}).update({
+            "decorations": True,
+            "states": ["iconified", "focused"],
+        })
         return capabilities
 
     def load_existing_windows(self) -> None:

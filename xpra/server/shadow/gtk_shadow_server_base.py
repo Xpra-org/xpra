@@ -52,11 +52,10 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         for wid in tuple(self.mapped):
             self.stop_refresh(wid)
 
-    def make_hello(self, source) -> dict[str, Any]:
-        caps = super().make_hello(source)
-        if "features" in source.wants:
-            from xpra.gtk.info import get_screen_sizes
-            caps["screen_sizes"] = get_screen_sizes()
+    def get_server_features(self, source=None) -> dict[str, Any]:
+        caps = super().get_server_features(source)
+        from xpra.gtk.info import get_screen_sizes
+        caps["screen_sizes"] = get_screen_sizes()
         return caps
 
     def accept_client_ssh_agent(self, uuid: str, ssh_auth_sock: str) -> None:

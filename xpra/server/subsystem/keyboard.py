@@ -108,7 +108,9 @@ class KeyboardServer(StubServerMixin):
         return {"keyboard": info}
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
-        return {}
+        return {
+            "keyboard": True,
+        }
 
     def get_caps(self, _source) -> dict[str, Any]:
         caps: dict[str, Any] = {
