@@ -102,7 +102,6 @@ class ClientConnection(StubClientConnection):
         self.hello_sent = 0.0
         self.share = False
         self.lock = False
-        self.client_control_commands: Sequence[str] = ()
         self.xdg_menu = True
         self.menu = False
         self.ssh_auth_sock = ""
@@ -136,7 +135,6 @@ class ClientConnection(StubClientConnection):
         # general features:
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
-        self.client_control_commands = c.strtupleget("control_commands")
         if BACKWARDS_COMPATIBLE:
             # `xdg-menu` is the pre v6.4 legacy name:
             self.xdg_menu = c.boolget("xdg-menu", False)
@@ -263,7 +261,6 @@ class ClientConnection(StubClientConnection):
             "hello-sent": bool(self.hello_sent),
             "ssh-auth-sock": self.ssh_auth_sock,
             "packet-types": self.client_packet_types,
-            "control-commands": self.client_control_commands,
         }
         if p := self.protocol:
             info["connection"] = p.get_info()

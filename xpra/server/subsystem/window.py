@@ -48,6 +48,9 @@ class WindowServer(StubServerMixin):
         self.window_filters = []
         self.window_min_size = 0, 0
         self.window_max_size = 2 ** 15 - 1, 2 ** 15 - 1
+        # keep properties specific to a client uuid, outside the connection instance
+        # so they will survive a re-connection:
+        self.client_properties: dict[int, dict] = {}
 
     def init(self, opts) -> None:
         def parse_window_size(v, default_value=(0, 0)):
@@ -102,14 +105,15 @@ class WindowServer(StubServerMixin):
            "set window regions to exclude from video regions: 'WID,(x,y,w,h),(x,y,w,h),..', ie: '1 (0,10,100,20),(200,300,20,20)'",
            min_args=2, max_args=2, validation=[int, parse_4intlist])
         ac("video-region", "set the video region", min_args=5, max_args=5, validation=[int, int, int, int, int])
-        ac("reset-video-region", "reset video region heuristics", min_args=1, max_args=1, validation=[int]),
-        ac("lock-batch-delay", "set a specific batch delay for a window", min_args=2, max_args=2, validation=[int, int]),
+        ac("reset-video-region", "reset video region heuristics", min_args=1, max_args=1, validation=[int])
+        ac("lock-batch-delay", "set a specific batch delay for a window", min_args=2, max_args=2, validation=[int, int])
         ac("unlock-batch-delay",
            "let the heuristics calculate the batch delay again for a window (following a 'lock-batch-delay')",
            min_args=1, max_args=1, validation=[int]),
-        ac("remove-window-filters", "remove all window filters", min_args=0, max_args=0),
+        ac("remove-window-filters", "remove all window filters", min_args=0, max_args=0)
         ac("add-window-filter", "add a window filter", min_args=4, max_args=5)
         ac("image-filter", "configure the image filter", min_args=2, max_args=2, validation=[str, parse_boolean_value])
+        ac("client-property", "set a client property", min_args=4, max_args=5, validation=[int])
         # encoding bits:
         for name in (
                 "quality", "min-quality", "max-quality",
@@ -175,6 +179,31 @@ class WindowServer(StubServerMixin):
         if minh > 0 and minh > maxh:
             maxh = minh
         self.update_size_constraints(minw, minh, maxw, maxh)
+
+    def _set_client_properties(self, proto, wid: int, window, new_client_properties: dict) -> None:
+        """
+        Allows us to keep window properties for a client after disconnection.
+        (we keep it in a map with the client's uuid as key)
+        """
+        if ss := self.get_server_source(proto):
+            ss.set_client_properties(wid, window, typedict(new_client_properties))
+            # filter out encoding properties, which are expected to be set every time:
+            ncp = {}
+            for k, v in new_client_properties.items():
+                if v is None:
+                    log.warn("removing invalid None property for %s", k)
+                    continue
+                k = str(k)
+                if k == "event":
+                    # event is used as a workaround in _process_window_map,
+                    # it isn't a real client property and should not be stored:
+                    continue
+                if not k.startswith("encoding"):
+                    ncp[k] = v
+            if ncp:
+                log("set_client_properties updating window %#x of source %s with %s", wid, ss.uuid, ncp)
+                client_properties = self.client_properties.setdefault(wid, {}).setdefault(ss.uuid, {})
+                client_properties.update(ncp)
 
     def update_size_constraints(self, minw: int, minh: int, maxw: int, maxh: int) -> None:
         # subclasses may update the window models
@@ -880,3 +909,16 @@ class WindowServer(StubServerMixin):
             ws.image_filter.enabled = enabled
             ws.refresh()
         return "image filter %s" % ("enabled" if enabled else "disabled")
+
+    def control_command_client_property(self, wid: int, uuid, prop: str, value, conv="") -> str:
+        wid = int(wid)
+        conv_fn = {
+            "int": int,
+            "float": float,
+            "": str,
+        }.get(conv)
+        assert conv_fn
+        typeinfo = "%s " % (conv or "string")
+        value = conv_fn(value)
+        self.client_properties.setdefault(wid, {}).setdefault(uuid, {})[prop] = value
+        return f"property {prop!r} set to {typeinfo} value {value!r} for window {wid:#x}, client {uuid}"

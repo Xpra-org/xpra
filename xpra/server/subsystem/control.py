@@ -5,8 +5,10 @@
 
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.util.str_fn import csv
+from xpra.net.common import Packet, PacketElement
 from xpra.net.control.common import ControlCode
+from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -37,6 +39,7 @@ class ControlHandler(StubServerMixin):
         }
         if self.control_enabled:
             self.do_add_control_command("help", HelpCommand(self.control_commands))
+            self.args_control("client", "forwards a control command to the client(s)", min_args=1)
         else:
             self.do_add_control_command("*", DisabledCommand())
 
@@ -59,3 +62,30 @@ class ControlHandler(StubServerMixin):
         code, response = process_control_command(proto, self.control_commands, *args)
         hello = {"command_response": (int(code), response)}
         proto.send_now(Packet("hello", hello))
+
+    #########################################
+    # Control Commands
+    #########################################
+
+    def control_command_client(self, command: str, *args: PacketElement) -> str:
+        try:
+            from xpra.server.source.control import ControlConnection
+        except ImportError:
+            return "no control support available"
+        control_connections = get_sources_by_type(self, ControlConnection)
+        if command == "help":
+            all_control_commands = []
+            for source in control_connections:
+                all_control_commands += list(source.client_control_commands)
+            return "clients may support the following control commands: %s" % csv(all_control_commands)
+
+        count = 0
+        for source in control_connections:
+            # forwards to *the* client, if there is *one*
+            if command not in source.client_control_commands:
+                log.info(f"client command {command!r} not forwarded to client {source} (not supported)")
+            else:
+                source.send_client_command(command, *args)
+                count += 1
+
+        return f"client control command {command!r} forwarded to {count} clients"

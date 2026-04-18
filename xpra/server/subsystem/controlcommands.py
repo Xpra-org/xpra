@@ -8,7 +8,7 @@
 
 from xpra.util.str_fn import csv
 from xpra.common import noop
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet
 from xpra.net.control.common import ArgsControlCommand, ControlError, parse_boolean_value
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -40,12 +40,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 ArgsControlCommand("compression", "sets the packet compressor", min_args=1, max_args=1),
                 ArgsControlCommand("encoder", "sets the packet encoder", min_args=1, max_args=1),
 
-                ArgsControlCommand("set-ui-driver", "set the client connection driving the session", min_args=1,
-                                   max_args=1),
-                # session and clients:
-                ArgsControlCommand("client", "forwards a control command to the client(s)", min_args=1),
-                ArgsControlCommand("client-property", "set a client property", min_args=4, max_args=5,
-                                   validation=[int]),
+                ArgsControlCommand("set-ui-driver", "set the client connection driving the session", min_args=1, max_args=1),
         ):
             cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"), noop)
             if cmd.do_run != noop:
@@ -108,38 +103,6 @@ class ServerBaseControlCommands(StubServerMixin):
             cproto.enable_encoder(e)
         self.all_send_client_command(f"enable_{e}")
         return f"encoders set to {encoder}"
-
-    def all_send_client_command(self, command: str, *args: PacketElement) -> None:
-        """ forwards the command to all clients """
-        for source in tuple(self._server_sources.values()):
-            # forwards to *the* client, if there is *one*
-            if command not in source.client_control_commands:
-                log.info(f"client command {command!r} not forwarded to client {source} (not supported)")
-            else:
-                source.send_client_command(command, *args)
-
-    def control_command_client(self, command: str, *args: PacketElement) -> str:
-        if command == "help":
-            all_control_commands = []
-            for source in tuple(self._server_sources.values()):
-                all_control_commands += list(source.client_control_commands)
-            return "clients support the following control commands: %s" % csv(all_control_commands)
-
-        self.all_send_client_command(command, *args)
-        return f"client control command {command!r} forwarded to clients"
-
-    def control_command_client_property(self, wid: int, uuid, prop: str, value, conv=None) -> str:
-        wid = int(wid)
-        conv_fn = {
-            "int": int,
-            "float": float,
-            "": str,
-        }.get(conv)
-        assert conv_fn
-        typeinfo = "%s " % (conv or "string")
-        value = conv_fn(value)
-        self.client_properties.setdefault(wid, {}).setdefault(uuid, {})[prop] = value
-        return f"property {prop!r} set to {typeinfo} value {value!r} for window {wid:#x}, client {uuid}"
 
     def control_command_set_ui_driver(self, uuid) -> str:
         ss = [s for s in self._server_sources.values() if s.uuid == uuid]

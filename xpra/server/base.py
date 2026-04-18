@@ -66,7 +66,6 @@ class ServerBase(ServerBaseClass):
             "stop": self._handle_hello_request_stop,
         })
         self._server_sources: dict = {}
-        self.client_properties: dict[int, dict] = {}
         self.ui_driver = None
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
 
@@ -450,31 +449,6 @@ class ServerBase(ServerBaseClass):
     def _process_server_settings(self, proto, packet: Packet) -> None:
         # only used by x11 servers
         pass
-
-    def _set_client_properties(self, proto, wid: int, window, new_client_properties: dict) -> None:
-        """
-        Allows us to keep window properties for a client after disconnection.
-        (we keep it in a map with the client's uuid as key)
-        """
-        if ss := self.get_server_source(proto):
-            ss.set_client_properties(wid, window, typedict(new_client_properties))
-            # filter out encoding properties, which are expected to be set every time:
-            ncp = {}
-            for k, v in new_client_properties.items():
-                if v is None:
-                    log.warn("removing invalid None property for %s", k)
-                    continue
-                k = str(k)
-                if k == "event":
-                    # event is used as a workaround in _process_window_map,
-                    # it isn't a real client property and should not be stored:
-                    continue
-                if not k.startswith("encoding"):
-                    ncp[k] = v
-            if ncp:
-                log("set_client_properties updating window %#x of source %s with %s", wid, ss.uuid, ncp)
-                client_properties = self.client_properties.setdefault(wid, {}).setdefault(ss.uuid, {})
-                client_properties.update(ncp)
 
     ######################################################################
     # settings toggle:
