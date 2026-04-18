@@ -904,6 +904,26 @@ class WindowServer(StubServerMixin):
             ws.unlock_batch_delay()
         return "batch delay unlocked"
 
+    def control_command_remove_window_filters(self) -> str:
+        # modify the existing list object,
+        # which is referenced by all the sources
+        count = len(self.window_filters)
+        self.window_filters[:] = []
+        return f"removed {count} window-filters"
+
+    def control_command_add_window_filter(self, object_name: str, property_name: str, operator: str, value,
+                                          client_uuids="") -> str:
+        from xpra.server.window import filters  # pylint: disable=import-outside-toplevel
+        window_filter = filters.get_window_filter(object_name, property_name, operator, value)
+        # log("%s%s=%s", filters.get_window_filter, (object_name, property_name, operator, value), window_filter)
+        if client_uuids == "*":
+            # applies to all sources:
+            self.window_filters.append(("*", window_filter))
+        else:
+            for client_uuid in client_uuids.split(","):
+                self.window_filters.append((client_uuid, window_filter))
+        return f"added window-filter: {window_filter} for client uuids={client_uuids}"
+
     def control_command_image_filter(self, wid: str, enabled: bool) -> str:
         for ws in self._ws_from_args(wid):
             ws.image_filter.enabled = enabled
