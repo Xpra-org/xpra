@@ -81,8 +81,9 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.audio and features.av_sync:
         from xpra.server.source.avsync import AVSyncConnection
         mixins.append(AVSyncConnection)
-    from xpra.server.source.idle_mixin import IdleConnection
-    mixins.append(IdleConnection)
+    if features.idle:
+        from xpra.server.source.idle_mixin import IdleConnection
+        mixins.append(IdleConnection)
     return tuple(mixins)
 
 

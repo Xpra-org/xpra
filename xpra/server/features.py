@@ -124,7 +124,7 @@ def set_server_features(opts, mode: str) -> None:
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
-        features.idle = opts.server_idle_timeout > 0
+        features.idle = opts.server_idle_timeout > 0 or opts.idle_timeout > 0
         features.gtk = mode not in ("desktop", "monitor", "seamless") or opts.backend.lower() == "gtk"
         features.tray = features.gtk and b(opts.tray) and mode == "shadow"
         features.opengl = features.display and b(opts.opengl) and impcheck("opengl")
