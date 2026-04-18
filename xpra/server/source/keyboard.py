@@ -40,6 +40,9 @@ class KeyboardConnection(StubClientConnection):
     def cleanup(self) -> None:
         self.keyboard_config = None
 
+    def requires_sharing(self) -> bool:
+        return not self.keyboard_record
+
     def parse_client_caps(self, c: typedict) -> None:
         self.ibus = c.boolget("ibus")
         ibuslog(f"client ibus support: {self.ibus}")

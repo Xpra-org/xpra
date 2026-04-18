@@ -97,7 +97,6 @@ class ServerMixinTest(unittest.TestCase):
         x.setup()
         x.init_packet_handlers()
         caps = typedict(caps or {})
-        send_ui = True
         self.source = None
         if source_mixin_class:
             self.source = source_mixin_class()
@@ -111,5 +110,5 @@ class ServerMixinTest(unittest.TestCase):
             self.source.get_info()
         x.get_caps(self.source)
         x.get_info(None)
-        x.parse_hello(self.source, caps, send_ui)
+        x.parse_hello(self.source, caps)
         x.get_info(self.source)

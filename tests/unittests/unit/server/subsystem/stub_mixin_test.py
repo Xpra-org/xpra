@@ -30,9 +30,9 @@ class EncodingMixinTest(unittest.TestCase):
         assert isinstance(x.get_ui_info(None), dict)
 
         caps = typedict()
-        x.parse_hello(None, caps, True)
-        x.add_new_client(None, caps, True, 1)
-        x.send_initial_data(None, caps, True, 1)
+        x.parse_hello(None, caps)
+        x.add_new_client(None, caps)
+        x.send_initial_data(None, caps)
 
         x.cleanup_protocol(None)
         x.cleanup()

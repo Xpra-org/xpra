@@ -119,11 +119,12 @@ class EncoderServer(ServerBase):
         super().init_packet_handlers()
         self.add_packets("encode", "context-request", "context-compress", "context-close")
 
-    def parse_hello(self, ss, c: typedict, send_ui: bool) -> None:
-        super().parse_hello(ss, c, send_ui)
+    def parse_hello(self, ss, c: typedict) -> str | ConnectionMessage:
+        super().parse_hello(ss, c)
         from xpra.server.source.encoding import EncodingsConnection
         if not isinstance(ss, EncodingsConnection):
-            raise ValueError("client did not enable encoding")
+            return "client did not enable encoding"
+        return ""
 
     def add_new_client(self, ss, *args) -> None:
         super().add_new_client(ss, *args)

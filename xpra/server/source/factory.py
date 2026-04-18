@@ -122,6 +122,14 @@ def get_client_connection_class(caps: typedict):
                 c.init_state(self)
             self.enable_connection()
 
+        def requires_sharing(self) -> bool:
+            for cc in CC_BASES:
+                if cc.requires_sharing(self):
+                    authlog = Logger("auth")
+                    authlog("%s.requires_sharing()=True", cc)
+                    return True
+            return False
+
         def close(self) -> None:
             log("%s.close()", self)
             for bc in reversed(CC_BASES):

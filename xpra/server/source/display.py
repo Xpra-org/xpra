@@ -12,7 +12,7 @@ from xpra.util.objects import typedict
 from xpra.util.screen import get_screen_info
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.parsing import validated_monitor_data
-from xpra.server.source.stub import StubClientConnection
+from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.log import Logger
 
 log = Logger("display")
@@ -45,6 +45,7 @@ class DisplayConnection(StubClientConnection):
         self.desktop_names: Sequence[str] = ()
         self.show_desktop_allowed: bool = False
         self.opengl_props: dict[str, Any] = {}
+        self.display_record = False
 
     def get_info(self) -> dict[str, Any]:
         info = {
@@ -62,6 +63,9 @@ class DisplayConnection(StubClientConnection):
         if self.desktop_size_unscaled:
             info["desktop_size"] = {"unscaled": self.desktop_size_unscaled}
         return info
+
+    def requires_sharing(self) -> bool:
+        return not self.display_record
 
     def parse_client_caps(self, c: typedict) -> None:
         if isinstance(c.get("display"), str):
@@ -95,6 +99,7 @@ class DisplayConnection(StubClientConnection):
         self.icc = c.dictget("icc", {})
         self.display_icc = c.dictget("display-icc", {})
         self.opengl_props = c.dictget("opengl", {})
+        self.display_record = c.boolget("record", False) and is_recording_allowed(self, "display")
 
     def set_monitors(self, monitors: dict[int, dict]) -> None:
         self.monitors = validated_monitor_data(monitors)

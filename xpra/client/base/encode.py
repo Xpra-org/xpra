@@ -10,7 +10,7 @@ from typing import Sequence, Any
 from xpra.client.base.command import HelloRequestClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -125,11 +125,12 @@ class EncodeClient(ClientBaseClass):
         hello = {}
         for cc in CLIENT_BASES:
             hello.update(cc.get_caps(self))
-        hello = {
+        hello: dict[str, Any] = {
             "request": "encode",
-            "ui_client": True,
             "encoding": self.encoding_options,
         }
+        if BACKWARDS_COMPATIBLE:
+            hello["ui_client"] = True
         log(f"{hello=}")
         return hello
 

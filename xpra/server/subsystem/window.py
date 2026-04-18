@@ -12,7 +12,9 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.server.source.window import WindowsConnection
+from xpra.server.common import get_sources_by_type
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import WINDOW_CREATE
 from xpra.log import Logger
 
@@ -143,9 +145,9 @@ class WindowServer(StubServerMixin):
         wids = kwargs.get("wids", ())
         return {"windows": self.get_windows_info(wids)}
 
-    def parse_hello(self, ss, caps: typedict, send_ui) -> None:
-        if send_ui:
-            self.parse_hello_ui_window_settings(ss, caps)
+    def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
+        self.parse_hello_ui_window_settings(ss, caps)
+        return ""
 
     def parse_hello_ui_window_settings(self, ss, c: typedict) -> None:
         """
@@ -178,11 +180,11 @@ class WindowServer(StubServerMixin):
         # subclasses may update the window models
         pass
 
-    def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
+    def send_initial_data(self, ss) -> None:
         iswc = isinstance(ss, WindowsConnection)
-        log("send_initial_data send_ui=%i, handles windows=%s, share-count=%i", send_ui, iswc, share_count)
-        if send_ui and iswc:
-            self.send_initial_windows(ss, share_count > 0)
+        if iswc:
+            windows_clients = get_sources_by_type(self, WindowsConnection, ss)
+            self.send_initial_windows(ss, len(windows_clients) > 0)
 
     def is_shown(self, _window) -> bool:
         return True

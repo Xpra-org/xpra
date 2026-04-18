@@ -23,14 +23,13 @@ counter = AtomicInteger()
 class RFBSource:
     __slots__ = (
         "protocol", "close_event",
-        "ui_client", "counter", "share", "uuid", "lock", "keyboard_config",
+        "counter", "share", "uuid", "lock", "keyboard_config",
         "encodings", "quality", "pixel_format"
     )
 
     def __init__(self, protocol, share=False):
         self.protocol = protocol
         self.close_event = Event()
-        self.ui_client = True
         self.counter = 0
         self.share = share
         self.uuid = "RFB%5i" % counter.increase()

@@ -9,6 +9,7 @@ from subprocess import Popen
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX
+from xpra.server.common import get_sources_by_type
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import XPRA_VERSION
 from xpra.x11.error import xlog, xsync, xswallow, XError
@@ -16,12 +17,12 @@ from xpra.exit_codes import ExitCode
 from xpra.util.system import is_X11
 from xpra.scripts.config import FALSE_OPTIONS, InitExit
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.common import (
-    may_notify_client,
-)
+from xpra.common import may_notify_client
 from xpra.constants import MAX_WINDOW_SIZE, NotificationID
-from xpra.util.parsing import parse_resolutions, parse_env_resolutions, get_refresh_rate_for_value, \
-    adjust_monitor_refresh_rate
+from xpra.util.parsing import (
+    parse_resolutions, parse_env_resolutions, get_refresh_rate_for_value,
+    adjust_monitor_refresh_rate,
+)
 from xpra.x11.xroot_props import root_set, root_get, root_del
 from xpra.server.subsystem.display import DisplayManager
 from xpra.log import Logger
@@ -347,11 +348,12 @@ class X11DisplayManager(DisplayManager):
         root_w, root_h = get_root_size()
         if not self.randr:
             return root_w, root_h
-        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
+        from xpra.server.source.display import DisplayConnection
+        display_clients = get_sources_by_type(self, DisplayConnection)
         max_w, max_h = 0, 0
         min_w, min_h = 16384, 16384
         client_sizes = {}
-        for ss in sss:
+        for ss in display_clients:
             client_size = ss.desktop_size
             if client_size:
                 w, h = client_size
@@ -548,13 +550,14 @@ class X11DisplayManager(DisplayManager):
         with xsync:
             if not RandRBindings().is_dummy16():
                 raise RuntimeError("cannot match monitor layout without RandR 1.6")
-        # if we have a single UI client,
+        # if we have a single display client,
         # see if we can emulate its monitor geometry exactly
-        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
-        log("%i sources=%s", len(sss), sss)
-        if len(sss) != 1:
+        from xpra.server.source.display import DisplayConnection
+        display_clients = get_sources_by_type(self, DisplayConnection)
+        log("%i display clients: %s", len(display_clients), display_clients)
+        if len(display_clients) != 1:
             return {}
-        ss = sss[0]
+        ss = display_clients[0]
         mdef = ss.get_monitor_definitions()
         if not mdef:
             return {}

@@ -295,7 +295,8 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
         if super().hello_oked(proto, c, auth_caps):
             # already handled in superclass
             return
-        self.accept_client(proto, c)
+
+        self.accept_protocol(proto, c)
 
         if request := c.strget("request"):
             if not self.handle_hello_request(request, proto, c):

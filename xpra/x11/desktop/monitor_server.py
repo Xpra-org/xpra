@@ -9,6 +9,7 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitException
 from xpra.net.common import Packet
+from xpra.server.common import get_sources_by_type
 from xpra.util.env import envbool
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.server.subsystem.window import WindowsConnection
@@ -108,12 +109,13 @@ class XpraMonitorServer(DesktopServerBase):
         return capabilities
 
     def configure_best_screen_size(self) -> tuple[int, int]:
-        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
-        log(f"configure_best_screen_size() sources={sss}")
-        if len(sss) != 1:
-            screenlog.info(f"screen used by {len(sss)} clients:")
+        from xpra.server.source.display import DisplayConnection
+        display_sources = get_sources_by_type(self, DisplayConnection)
+        log(f"configure_best_screen_size() sources={display_sources}")
+        if len(display_sources) != 1:
+            screenlog.info(f"screen used by {len(display_sources)} clients:")
             return get_screen_size()
-        ss = sss[0]
+        ss = display_sources[0]
         if not getattr(ss, "desktop_fullscreen", False):
             return get_screen_size()
         # try to match this client's layout:

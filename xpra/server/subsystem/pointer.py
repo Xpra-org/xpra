@@ -12,6 +12,7 @@ from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
+from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -68,8 +69,10 @@ class PointerServer(StubServerMixin):
         }
         return {PointerServer.PREFIX: info}
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
-        if share_count > 0:
+    def add_new_client(self, ss, c: typedict) -> None:
+        from xpra.server.source.pointer import PointerConnection
+        pointer_clients = get_sources_by_type(self, PointerConnection, ss)
+        if pointer_clients:
             self.double_click_time = -1
             self.double_click_distance = -1, -1
         else:

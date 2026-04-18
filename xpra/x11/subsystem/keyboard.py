@@ -13,6 +13,8 @@ from subprocess import Popen
 from xpra.common import noop
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
+from xpra.server.common import get_sources_by_type
+from xpra.server.source.keyboard import KeyboardConnection
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.env import envbool
 from xpra.util.io import find_libexec_command, which
@@ -248,9 +250,8 @@ class X11KeyboardServer(KeyboardServer):
         if pid:
             kill_pid(pid, "ibus-daemon")
 
-    def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
-        if send_ui:
-            self.send_ibus_layouts(ss)
+    def send_initial_data(self, ss) -> None:
+        self.send_ibus_layouts(ss)
 
     def send_ibus_layouts(self, ss):
         send_ibus_layouts = getattr(ss, "send_ibus_layouts", noop)
@@ -337,8 +338,8 @@ class X11KeyboardServer(KeyboardServer):
             GLib = gi_import("GLib")
             self.keymap_changing_timer = GLib.timeout_add(100, reenable_keymap_changes)
         # if sharing, don't set the keymap, translate the existing one:
-        other_ui_clients = [s.uuid for s in self._server_sources.values() if s != server_source and s.ui_client]
-        translate_only = len(other_ui_clients) > 0
+        other_kb_clients = get_sources_by_type(self, KeyboardConnection, server_source)
+        translate_only = len(other_kb_clients) > 0
         log("set_keymap(%s, %s) translate_only=%s", server_source, force, translate_only)
         with xsync:
             # pylint: disable=access-member-before-definition

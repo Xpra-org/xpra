@@ -328,14 +328,6 @@ class DBUS_Server(DBUS_Server_Base):
         for p in self.server._server_sources.keys():
             self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
 
-    @dbus.service.method(INTERFACE, in_signature='as')
-    def SendUIClientCommand(self, args):
-        nargs = n(args)
-        log("SendUIClientCommand(%s)", nargs)
-        for src in self.server._server_sources.values():
-            if src.ui_client:
-                src.send_client_command(*nargs)
-
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetAllInfo(self, callback, errback):
         self.log(".GetAllInfo()")

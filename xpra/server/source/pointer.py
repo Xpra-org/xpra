@@ -33,6 +33,9 @@ class PointerConnection(StubClientConnection):
         self.mouse_last_relative_position: tuple[int, int] | None = None
         self.pointer_record = False
 
+    def requires_sharing(self) -> bool:
+        return not self.pointer_record
+
     def parse_client_caps(self, c: typedict) -> None:
         pointer = typedict(c.dictget("pointer", {}))
         self.pointer_record = pointer.boolget("record")

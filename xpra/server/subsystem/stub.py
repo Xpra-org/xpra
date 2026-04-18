@@ -8,6 +8,7 @@ import shlex
 from typing import Any
 from collections.abc import Callable
 
+from xpra.net.constants import ConnectionMessage
 from xpra.util.env import envbool
 from xpra.os_util import getuid, getgid
 from xpra.util.objects import typedict
@@ -102,17 +103,18 @@ class StubServerMixin(superclass):
         Register the packet types that this mixin can handle.
         """
 
-    def parse_hello(self, ss, caps: typedict, send_ui: bool) -> None:
+    def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
         """
         Parse capabilities from a new connection.
         """
+        return ""
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+    def add_new_client(self, ss, c: typedict) -> None:
         """
         A new client is being handled, take any action needed.
         """
 
-    def send_initial_data(self, ss, caps, send_ui, share_count: int) -> None:
+    def send_initial_data(self, ss) -> None:
         """
         A new connection has been accepted, send initial data.
         """

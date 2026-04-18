@@ -10,7 +10,9 @@ from collections.abc import Sequence
 from importlib import import_module
 
 from xpra.clipboard.common import get_local_selections
+from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import FALSE_OPTIONS
@@ -75,9 +77,10 @@ class ClipboardServer(StubServerMixin):
             self._clipboard_client = None
             ch.client_reset()
 
-    def parse_hello(self, ss, _caps, send_ui: bool) -> None:
-        if send_ui and self.clipboard:
+    def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
+        if self.clipboard:
             self.parse_hello_ui_clipboard(ss)
+        return ""
 
     def get_info(self, _proto) -> dict[str, Any]:
         if self._clipboard_helper is None:

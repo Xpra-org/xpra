@@ -185,13 +185,14 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         caps: dict[str, Any] = {}
         if self.windows:
             caps = {
-                "windows": {"restack": True},
+                "windows": {"record": True, "restack": True},
                 "encoding": self.encoding_options,
                 "share": True,
                 "keyboard": {"record": True},
                 "cursor": {"encodings": ("png", ), "backwards-compatible": False},
                 "pointer": {"record": True},
                 "clipboard": {"record": True},
+                "display": {"record": True},
             }
         return caps
 

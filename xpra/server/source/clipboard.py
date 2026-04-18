@@ -49,6 +49,9 @@ class ClipboardConnection(StubClientConnection):
     def cleanup(self) -> None:
         self.cancel_clipboard_progress_timer()
 
+    def requires_sharing(self) -> bool:
+        return not self.clipboard_record
+
     def parse_client_caps(self, c: typedict) -> None:
         ccaps = c.get(ClipboardConnection.PREFIX)
         if ccaps and isinstance(ccaps, dict):

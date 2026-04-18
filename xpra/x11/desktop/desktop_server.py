@@ -8,6 +8,7 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.bindings.randr import RandRBindings
+from xpra.server.common import get_sources_by_type
 from xpra.server import features
 from xpra.x11.error import xsync, xlog
 from xpra.log import Logger
@@ -56,7 +57,8 @@ class XpraDesktopServer(DesktopServerBase):
         if not self.randr:
             screenlog("configure_best_screen_size() no randr")
             return root_w, root_h
-        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
+        from xpra.server.source.display import DisplayConnection
+        sss = get_sources_by_type(self, DisplayConnection)
         if len(sss) != 1:
             screenlog.info(f"screen used by {len(sss)} clients:")
             return root_w, root_h

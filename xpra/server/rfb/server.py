@@ -5,6 +5,7 @@
 # pylint: disable-msg=E1101
 
 from xpra.os_util import gi_import
+from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.util.system import is_X11
 from xpra.net.bytestreams import set_socket_timeout
@@ -125,7 +126,7 @@ class RFBServer(StubServerMixin):
         if not model:
             proto.close()
             return
-        self.accept_protocol(proto)
+        self.accept_protocol(proto, typedict())
         # use blocking sockets from now on:
         set_socket_timeout(proto._conn, None)
         accepted, share_count, disconnected = self.handle_sharing(proto, share=proto.share)

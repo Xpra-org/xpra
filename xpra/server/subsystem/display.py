@@ -6,6 +6,7 @@
 import os
 from typing import Any
 
+from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import DISPLAY_CONFIGURE
 from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.rectangle import rectangle
@@ -16,6 +17,7 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.common import noop
 from xpra.util.parsing import get_refresh_rate_for_value, DEFAULT_REFRESH_RATE
 from xpra.platform.gui import get_display_name, get_display_size
+from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -129,13 +131,13 @@ class DisplayManager(StubServerMixin):
     def get_refresh_rate_for_value(self, invalue) -> int:
         return get_refresh_rate_for_value(self.refresh_rate, invalue)
 
-    def parse_hello(self, ss, caps, send_ui: bool):
-        if send_ui:
-            self.parse_screen_info(ss)
+    def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
+        self.parse_screen_info(ss)
+        return ""
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
-        if not send_ui:
-            return
+    def add_new_client(self, ss, c: typedict) -> None:
+        from xpra.server.source.display import DisplayConnection
+        display_clients = get_sources_by_type(self, DisplayConnection, ss)
         # a bit of explanation:
         # normally these things are synchronized using xsettings, which we handle already,
         # but non-posix clients have no such thing,
@@ -144,8 +146,8 @@ class DisplayManager(StubServerMixin):
         # also, clients may want to override what is in their xsettings..
         # so if the client specifies what it wants to use, we patch the xsettings with it
         # (the actual xsettings part is done in `update_all_server_settings` in the X11 specific subclasses)
-        if share_count > 0:
-            log.info("sharing with %s other client(s)", share_count)
+        if display_clients:
+            log.info("sharing with %s other client(s)", len(display_clients))
             self.dpi = 0
             self.xdpi = 0
             self.ydpi = 0
@@ -418,7 +420,8 @@ class DisplayManager(StubServerMixin):
             process_icc(ss, iccdata)
         self.apply_refresh_rate(ss)
         # ensures that DPI and antialias information gets reset:
-        self.update_all_server_settings()
+        update_all_server_settings = getattr(self, "update_all_server_settings", noop)
+        update_all_server_settings()
 
     def dpi_changed(self) -> None:
         """

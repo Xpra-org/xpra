@@ -14,7 +14,7 @@ from xpra.net.packet_type import (
     WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL,
 )
 from xpra.os_util import gi_import
-from xpra.server.source.stub import StubClientConnection
+from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
@@ -89,6 +89,7 @@ class WindowsConnection(StubClientConnection):
         self.system_tray = False
         # for handling resize synchronization between client and server (this is not xsync!):
         self.window_configure_time = 0.0
+        self.window_record = False
 
     def cleanup(self) -> None:
         for window_source in self.all_window_sources():
@@ -122,14 +123,18 @@ class WindowsConnection(StubClientConnection):
         for window_source in self.all_window_sources():
             window_source.no_idle()
 
+    def requires_sharing(self) -> bool:
+        return not self.window_record
+
     def parse_client_caps(self, c: typedict) -> None:
         windows = c.get("windows")
+        ui_client = c.boolget("ui_client", True) or not BACKWARDS_COMPATIBLE
         if isinstance(windows, dict):
             wcaps = typedict(windows)
-            self.window_enabled = c.boolget("ui_client", True) and bool(windows)
+            self.window_enabled = ui_client and bool(windows)
         else:
             wcaps = c
-            self.window_enabled = c.boolget("ui_client", True) and c.boolget("windows", True)
+            self.window_enabled = ui_client and c.boolget("windows", True)
         self.pointer_grabs = c.boolget("pointer.grabs")
         self.window_bell = c.boolget("bell")
         self.system_tray = c.boolget("system_tray")
@@ -145,6 +150,7 @@ class WindowsConnection(StubClientConnection):
                 self.add_window_filter(object_name, property_name, operator, value)
         except Exception as e:
             filterslog.error("Error parsing window-filters: %s", e)
+        self.window_record = wcaps.boolget("record") and is_recording_allowed(self, "windows")
 
     def get_caps(self) -> dict[str, Any]:
         return {}

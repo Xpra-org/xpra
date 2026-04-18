@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections.abc import Sequence
 from time import monotonic
 from typing import Any
 
@@ -14,11 +15,10 @@ from xpra.util.background_worker import add_work_item
 from xpra.common import noop, subsystem_name
 from xpra.net.constants import ConnectionMessage
 from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.os_util import WIN32, gi_import
+from xpra.os_util import gi_import
 from xpra.util.objects import typedict, merge_dicts
-from xpra.util.str_fn import csv, Ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envbool
-from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import features, ServerExitMode
 from xpra.server.factory import get_server_base_classes
 from xpra.log import Logger
@@ -28,6 +28,7 @@ GLib = gi_import("GLib")
 log = Logger("server")
 netlog = Logger("network")
 authlog = Logger("auth")
+eventslog = Logger("events")
 
 SERVER_BASES = get_server_base_classes()
 SIGNALS: dict[str, int] = {}
@@ -67,8 +68,6 @@ class ServerBase(ServerBaseClass):
         self._server_sources: dict = {}
         self.client_properties: dict[int, dict] = {}
         self.ui_driver = None
-        self.sharing: bool | None = None
-        self.lock: bool | None = None
         self.idle_timeout: int = 0
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
 
@@ -86,6 +85,7 @@ class ServerBase(ServerBaseClass):
                 s.no_idle()
 
     def server_event(self, event_type: str, *args: PacketElement) -> None:
+        eventslog("server_event%s", (event_type, *args))
         for s in self._server_sources.values():
             s.send_server_event(event_type, *args)
         # the bus mixin is optional:
@@ -105,8 +105,6 @@ class ServerBase(ServerBaseClass):
             c.init(self, opts)
             end = monotonic()
             log("%3ims in %s.init", 1000 * (end - start), c)
-        self.sharing = opts.sharing
-        self.lock = opts.lock
         self.idle_timeout = opts.idle_timeout
 
     def setup(self) -> None:
@@ -185,67 +183,13 @@ class ServerBase(ServerBaseClass):
         return True
 
     def get_mdns_info(self) -> dict[str, Any]:
-        mdns_info = ServerCore.get_mdns_info(self)
+        mdns_info = super().get_mdns_info()
         if MDNS_CLIENT_COUNT:
             mdns_info["clients"] = len(self._server_sources)
         return mdns_info
 
     ######################################################################
     # handle new connections:
-    # noinspection PySimplifyBooleanCheck
-    def handle_sharing(self, proto, ui_client: bool = True, share: bool = False,
-                       uuid="") -> tuple[bool, int]:
-        share_count = 0
-        disconnected = 0
-        existing_sources = set(ss for p, ss in self._server_sources.items() if p != proto)
-        is_existing_client = uuid and any(ss.uuid == uuid for ss in existing_sources)
-        authlog("handle_sharing%s lock=%s, sharing=%s, existing sources=%s, is existing client=%s",
-                (proto, ui_client, share, uuid),
-                self.lock, self.sharing, existing_sources, is_existing_client)
-        # if other clients are connected, verify we can steal or share:
-        if existing_sources and not is_existing_client:
-            if self.sharing is True or (self.sharing is None and share and all(ss.share for ss in existing_sources)):
-                authlog("handle_sharing: sharing with %s", tuple(existing_sources))
-            elif self.lock is True:
-                authlog("handle_sharing: session is locked")
-                self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
-                return False, 0
-            elif self.lock is not False and any(ss.lock for ss in existing_sources):
-                authlog("handle_sharing: another client has locked the session: " + csv(
-                    ss for ss in existing_sources if ss.lock))
-                self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "a client has locked this session")
-                return False, 0
-        # we're either sharing, or the only client:
-        for p, ss in tuple(self._server_sources.items()):
-            if uuid and ss.uuid == uuid and ui_client and ss.ui_client:
-                authlog("uuid %s is the same as %s", uuid, ss)
-                authlog("existing sources: %s", existing_sources)
-                self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "new connection from the same uuid")
-                disconnected += 1
-            elif ui_client and ss.ui_client:
-                # check if existing sessions are willing to share:
-                if self.sharing is True:
-                    share_count += 1
-                elif self.sharing is False:
-                    self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this session does not allow sharing")
-                    disconnected += 1
-                else:
-                    assert self.sharing is None
-                    if not share:
-                        self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "the new client does not wish to share")
-                        disconnected += 1
-                    elif not ss.share:
-                        self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this client had not enabled sharing")
-                        disconnected += 1
-                    else:
-                        share_count += 1
-
-        # don't accept this connection if we're going to exit-with-client:
-        accepted = True
-        if disconnected > 0 and share_count == 0 and self.exit_with_client:
-            self.disconnect_client(proto, ConnectionMessage.SERVER_SHUTDOWN, "last client has exited")
-            accepted = False
-        return accepted, share_count
 
     def hello_oked(self, proto, c: typedict, auth_caps: dict) -> None:
         if self._server_sources.get(proto):
@@ -256,26 +200,8 @@ class ServerBase(ServerBaseClass):
             # has been handled
             return
         if not self.sanity_checks(proto, c):
+            log("client failed sanity checks")
             return
-        if not c.boolget("steal", True) and self._server_sources:
-            self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is already active")
-            return
-        log.info("Handshake complete; enabling connection")
-        self.server_event("handshake-complete")
-
-        # Things are okay, we accept this connection, and may disconnect previous one(s)
-        # (but only if this is going to be a UI session - control sessions can co-exist)
-        ui_client = c.boolget("ui_client", True)
-        share = c.boolget("share")
-        uuid = c.strget("uuid")
-        accepted, share_count = self.handle_sharing(proto, ui_client, share, uuid)
-        if not accepted:
-            return
-
-        self.accept_client(proto, c)
-        # use blocking sockets from now on:
-        if not WIN32:
-            set_socket_timeout(proto._conn, None)
 
         def drop_client(reason="unknown", *args) -> None:
             self.disconnect_client(proto, reason, *args)
@@ -290,8 +216,12 @@ class ServerBase(ServerBaseClass):
             ss.close()
             raise
         self._server_sources[proto] = ss
+        self.accept_protocol(proto, c)
         # process ui half in ui thread:
-        GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, ui_client, share_count)
+        GLib.idle_add(self.process_hello_ui, ss, c, auth_caps)
+
+    def get_sources_by_type(self, atype, notsource=None) -> Sequence:
+        return tuple(ss for ss in self._server_sources.values() if isinstance(ss, atype) and (notsource is None or ss.uuid != notsource.uuid))
 
     def _handle_hello_request_detach(self, proto, _caps: typedict) -> bool:
         # noinspection PySimplifyBooleanCheck
@@ -320,52 +250,61 @@ class ServerBase(ServerBaseClass):
         from xpra.server.source.factory import get_client_connection_class
         return get_client_connection_class(caps)
 
-    def process_hello_ui(self, ss, c: typedict, auth_caps: dict, send_ui: bool, share_count: int) -> None:
-        def reject(message="server is shutting down") -> None:
+    def process_hello_ui(self, ss, c: typedict, auth_caps: dict) -> None:
+        def reject(*args) -> None:
             p = ss.protocol
             if p:
-                self.disconnect_client(p, ConnectionMessage.CONNECTION_ERROR, message)
+                self.disconnect_client(p, *args)
 
-        # adds try:except around parse hello ui code:
+        def closing() -> None:
+            reject(ConnectionMessage.CONNECTION_ERROR, "server is shutting down")
+
         try:
             if self._closing:
-                reject()
+                closing()
                 return
 
+            err = self.parse_hello(ss, c)
+            if err:
+                reject(*err.split(":"))
+                return
+
+            # send_hello will take care of sending the current and max screen resolutions
+            self.send_hello(ss, auth_caps)
+
+            log.info("Handshake complete; enabling connection")
+            self.server_event("handshake-complete")
             self.notify_new_user(ss)
 
-            self.parse_hello(ss, c, send_ui)
-            # send_hello will take care of sending the current and max screen resolutions
-
-            self.send_hello(ss, auth_caps)
-            self.add_new_client(ss, c, send_ui, share_count)
-            self.update_all_server_settings(share_count == 0)  # if we're not sharing, reset all the settings
-            self.send_initial_data(ss, c, send_ui, share_count)
+            self.add_new_client(ss, c)
+            self.send_initial_data(ss)
             self.client_startup_complete(ss)
 
             if self._closing:
-                reject()
+                closing()
                 return
         except Exception:
             # log exception but don't disclose internal details to the client
-            log("process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))
+            log("process_hello_ui%s", (ss, c, auth_caps))
             log.error("Error: processing new connection from %s:", ss.protocol or ss, exc_info=True)
             reject("error accepting new connection")
 
-    def parse_hello(self, ss, c: typedict, send_ui: bool) -> None:
+    def parse_hello(self, ss, c: typedict) -> str | ConnectionMessage:
         for bc in SERVER_BASES:
             if bc != ServerCore:
-                bc.parse_hello(self, ss, c, send_ui)
+                if err := bc.parse_hello(self, ss, c):
+                    return err
+        return ""
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+    def add_new_client(self, ss, c: typedict) -> None:
         for bc in SERVER_BASES:
             if bc != ServerCore:
-                bc.add_new_client(self, ss, c, send_ui, share_count)
+                bc.add_new_client(self, ss, c)
 
-    def send_initial_data(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+    def send_initial_data(self, ss) -> None:
         for bc in SERVER_BASES:
             if bc != ServerCore:
-                bc.send_initial_data(self, ss, c, send_ui, share_count)
+                bc.send_initial_data(self, ss)
 
     def client_startup_complete(self, ss) -> None:
         ss.startup_complete()
@@ -409,10 +348,6 @@ class ServerBase(ServerBaseClass):
         if "features" in source.wants:
             capabilities |= {
                 "client-shutdown": self.client_shutdown,
-                "sharing": self.sharing is not False,
-                "sharing-toggle": self.sharing is None,
-                "lock": self.lock is not False,
-                "lock-toggle": self.lock is None,
                 "windows": features.window,
                 "keyboard": features.keyboard,
             }
@@ -472,13 +407,6 @@ class ServerBase(ServerBaseClass):
 
         if not subsystems or "features" in subsystems:
             up("features", self.get_features_info())
-        if not subsystems or "network" in subsystems:
-            up("network", {
-                "sharing": self.sharing is not False,
-                "sharing-toggle": self.sharing is None,
-                "lock": self.lock is not False,
-                "lock-toggle": self.lock is None,
-            })
         info["subsystems"] = self.get_subsystems()
 
         sources = tuple(self._server_sources.values())
@@ -492,7 +420,6 @@ class ServerBase(ServerBaseClass):
 
     def get_features_info(self) -> dict[str, Any]:
         i = {
-            "sharing": self.sharing is not False,
             "idle_timeout": self.idle_timeout,
         }
         i.update(self.get_server_features())
@@ -561,26 +488,6 @@ class ServerBase(ServerBaseClass):
         # tell all the clients (that can) about the new value for this setting
         for ss in tuple(self._server_sources.values()):
             ss.send_setting_change(setting, value)
-
-    def _process_sharing_toggle(self, proto, packet: Packet) -> None:
-        assert self.sharing is None
-        ss = self.get_server_source(proto)
-        if not ss:
-            return
-        sharing = packet.get_bool(1)
-        ss.share = sharing
-        if not sharing:
-            # disconnect other users:
-            for p, ss in tuple(self._server_sources.items()):
-                if p != proto:
-                    self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
-                                           f"client {ss.counter} no longer wishes to share the session")
-
-    def _process_lock_toggle(self, proto, packet: Packet) -> None:
-        assert self.lock is None
-        if ss := self.get_server_source(proto):
-            ss.lock = packet.get_bool(1)
-            log("lock set to %s for client %i", ss.lock, ss.counter)
 
     ######################################################################
     # add clients to http server info:
@@ -662,10 +569,9 @@ class ServerBase(ServerBaseClass):
     def init_packet_handlers(self) -> None:
         for c in SERVER_BASES:
             c.init_packet_handlers(self)
-        # no need for main thread:
-        self.add_packets("sharing-toggle", "lock-toggle")
-        self.add_packet_handler("set_deflate", noop)  # removed in v6
         if BACKWARDS_COMPATIBLE:
+            # no need for main thread:
+            self.add_packet_handler("set_deflate", noop)  # removed in v6
             # now moved to XSettingsServer
             self.add_packets("server-settings", main_thread=True)
         self.add_packets("shutdown-server", "exit-server")

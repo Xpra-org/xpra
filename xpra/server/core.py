@@ -35,7 +35,7 @@ from xpra.net.socket_util import (
 )
 from xpra.net.bytestreams import (
     Connection, SSLSocketConnection, SocketConnection,
-    log_new_connection, SOCKET_TIMEOUT
+    set_socket_timeout, log_new_connection, SOCKET_TIMEOUT
 )
 from xpra.net.net_util import get_network_caps, import_netifaces, get_all_ips
 from xpra.net.protocol.factory import get_server_protocol_class
@@ -45,7 +45,7 @@ from xpra.platform import set_name, threaded_server_init
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
-    force_quit, POSIX,
+    force_quit, POSIX, WIN32,
     get_username_for_uid, get_hex_uuid, getuid, gi_import,
 )
 from xpra.util.system import register_SIGUSR_signals, get_run_info
@@ -194,7 +194,6 @@ class ServerCore(ServerBaseClass):
         # Features:
         self.readonly = False
         self.compression_level = 1
-        self.exit_with_client = False
 
         self._default_packet_handlers: dict[str, Callable] = {}
 
@@ -209,7 +208,6 @@ class ServerCore(ServerBaseClass):
         self._socket_dirs = opts.socket_dirs
         self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
         self.compression_level = opts.compression_level
-        self.exit_with_client = opts.exit_with_client
         self.readonly = opts.readonly
         self.http = opts.http
         self.websocket_upgrade = opts.websocket_upgrade
@@ -1476,19 +1474,18 @@ class ServerCore(ServerBaseClass):
         proto.send_now(packet)
         return True
 
-    def accept_client(self, proto: SocketProtocol, c: typedict) -> None:
-        # max packet size from client (the biggest we can get are clipboard packets)
-        netlog("accept_client(%s, %s)", proto, c)
-        # note: when uploading files, we send them in chunks smaller than this size
-        proto.max_packet_size = MAX_PACKET_SIZE
-        proto.parse_remote_caps(c)
-        self.accept_protocol(proto)
-
-    def accept_protocol(self, proto: SocketProtocol) -> None:
+    def accept_protocol(self, proto: SocketProtocol, c: typedict) -> None:
+        netlog("accept_protocol(%s, %s)", proto, c)
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
         self.cancel_verify_connection_accepted(proto)
         self.cancel_upgrade_to_rfb_timer(proto)
+        # note: when uploading files, we send them in chunks smaller than this size
+        proto.max_packet_size = MAX_PACKET_SIZE
+        proto.parse_remote_caps(c)
+        # use blocking sockets from now on:
+        if not WIN32:
+            set_socket_timeout(proto._conn, None)
 
     def make_hello(self, source) -> dict[str, Any]:
         now = time()

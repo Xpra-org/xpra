@@ -303,7 +303,7 @@ class ChildCommandServer(StubServerMixin):
             return caps
         # don't assume we have a real ClientConnection object:
         wants = getattr(source, "wants", [])
-        if "features" in wants and getattr(source, "ui_client", False):
+        if "features" in wants:
             if BACKWARDS_COMPATIBLE:
                 caps["xdg-menu"] = {}
             caps["subcommands"] = get_subcommands()
@@ -316,7 +316,7 @@ class ChildCommandServer(StubServerMixin):
         log("remove_client(%s, %s)", server, ss)
         self.exec_on_disconnect_commands(ss)
 
-    def send_initial_data(self, ss, caps: typedict, send_ui: bool, share_count: int) -> None:
+    def send_initial_data(self, ss) -> None:
         menu = getattr(ss, "xdg_menu", False) or getattr(ss, "menu", False)
         log(f"send_initial_data(..) {menu=}")
         if not menu:

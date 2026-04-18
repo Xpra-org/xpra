@@ -6,10 +6,8 @@
 # pylint: disable-msg=E1101
 
 
-from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import csv
 from xpra.common import noop
-from xpra.net.constants import ConnectionMessage
 from xpra.net.common import Packet, PacketElement
 from xpra.net.control.common import ArgsControlCommand, ControlError, parse_boolean_value
 from xpra.server.subsystem.stub import StubServerMixin
@@ -43,8 +41,6 @@ class ServerBaseControlCommands(StubServerMixin):
                 ArgsControlCommand("compression", "sets the packet compressor", min_args=1, max_args=1),
                 ArgsControlCommand("encoder", "sets the packet encoder", min_args=1, max_args=1),
 
-                ArgsControlCommand("set-lock", "modify the lock attribute", min_args=1, max_args=1),
-                ArgsControlCommand("set-sharing", "modify the sharing attribute", min_args=1, max_args=1),
                 ArgsControlCommand("set-ui-driver", "set the client connection driving the session", min_args=1,
                                    max_args=1),
                 # session and clients:
@@ -152,36 +148,6 @@ class ServerBaseControlCommands(StubServerMixin):
         value = conv_fn(value)
         self.client_properties.setdefault(wid, {}).setdefault(uuid, {})[prop] = value
         return f"property {prop!r} set to {typeinfo} value {value!r} for window {wid:#x}, client {uuid}"
-
-    def control_command_set_lock(self, lock) -> str:
-        self.lock = str_to_bool(lock)
-        self.setting_changed("lock", lock is not False)
-        self.setting_changed("lock-toggle", lock is None)
-        return f"lock set to {self.lock}"
-
-    def control_command_set_sharing(self, sharing) -> str:
-        sharing = str_to_bool(sharing)
-        message = f"sharing set to {self.sharing}"
-        if sharing == self.sharing:
-            return message
-        self.sharing = sharing
-        self.setting_changed("sharing", sharing is not False)
-        self.setting_changed("sharing-toggle", sharing is None)
-        if not sharing:
-            # there can only be one ui client now,
-            # disconnect all but the first ui_client:
-            # (using the 'counter' value to figure out who was first connected)
-            ui_clients = {
-                getattr(ss, "counter", 0): proto
-                for proto, ss in tuple(self._server_sources.items()) if getattr(ss, "ui_client", False)
-            }
-            n = len(ui_clients)
-            if n > 1:
-                for c in sorted(ui_clients)[1:]:
-                    proto = ui_clients[c]
-                    self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is no longer shared")
-                message += f", disconnected {n - 1} clients"
-        return message
 
     def control_command_set_ui_driver(self, uuid) -> str:
         ss = [s for s in self._server_sources.values() if s.uuid == uuid]

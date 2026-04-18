@@ -12,6 +12,7 @@ from xpra.net.compression import Compressed
 from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.os_util import gi_import
+from xpra.server.common import get_sources_by_type
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
@@ -94,9 +95,15 @@ class ShadowX11Server(GTKShadowServerBase):
     def do_get_cursor_data(self) -> tuple[Any, Any]:
         return super().get_cursor_data()
 
-    def send_initial_data(self, ss, c, send_ui: bool, share_count: int) -> None:
-        super().send_initial_data(ss, c, send_ui, share_count)
-        if getattr(ss, "ui_client", True) and getattr(ss, "send_windows", True):
+    def send_initial_data(self, ss) -> None:
+        super().send_initial_data(ss)
+        try:
+            from xpra.server.source.window import WindowsConnection
+        except ImportError:
+            window_sources = ()
+        else:
+            window_sources = get_sources_by_type(self, WindowsConnection)
+        if window_sources:
             self.verify_capture(ss)
 
     def verify_capture(self, ss) -> None:

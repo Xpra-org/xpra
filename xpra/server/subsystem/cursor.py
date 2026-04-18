@@ -9,6 +9,7 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.common import get_sources_by_type
 from xpra.log import Logger
 
 log = Logger("cursor")
@@ -33,10 +34,14 @@ class CursorManager(StubServerMixin):
         log("init(..) cursors=%s", opts.cursors)
         self.cursors = opts.cursors
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
-        if not send_ui:
-            return
-        if share_count > 0:
+    def add_new_client(self, ss, c: typedict) -> None:
+        try:
+            from xpra.server.source.window import WindowsConnection
+        except ImportError:
+            windows_clients = ()
+        else:
+            windows_clients = len(get_sources_by_type(self, WindowsConnection, ss))
+        if windows_clients > 0:
             self.cursor_size = 24
         else:
             caps = typedict(c.dictget("cursor") or {})
@@ -46,9 +51,7 @@ class CursorManager(StubServerMixin):
                 if not self.cursor_size and BACKWARDS_COMPATIBLE:
                     self.cursor_size = c.intget("cursor.size", 0)
 
-    def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
-        if not send_ui:
-            return
+    def send_initial_data(self, ss) -> None:
         from xpra.server.source.cursor import CursorsConnection
         if isinstance(ss, CursorsConnection):
             ss.send_cursor()

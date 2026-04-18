@@ -296,12 +296,6 @@ class EncodingsConnection(StubClientConnection):
         log("default batch config: %s", dbc)
         self.vrefresh = c.intget("vrefresh", -1)
 
-        # we can't assume that the window mixin is loaded,
-        # or that the ui_client flag exists:
-        send_ui = getattr(self, "ui_client", True) and getattr(self, "send_windows", True)
-        if not send_ui:
-            log("windows/pixels forwarding is disabled for this client")
-            return
         evalue = c.get("encoding")
         if isinstance(evalue, dict):
             eopts = typedict(evalue)

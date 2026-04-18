@@ -8,12 +8,14 @@
 from typing import Any
 from time import monotonic
 
+from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import
 from xpra.util.str_fn import Ellipsizer, csv
 from xpra.util.objects import typedict
 from xpra.keyboard.common import DELAY_KEYBOARD_DATA
 from xpra.common import noerr
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -117,22 +119,23 @@ class KeyboardServer(StubServerMixin):
             caps["keyboard.fast-switching"] = True
         return caps
 
-    def parse_hello(self, ss, caps: typedict, send_ui: bool) -> None:
-        if send_ui:
-            self.parse_hello_ui_keyboard(ss, caps)
+    def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
+        self.parse_hello_ui_keyboard(ss, caps)
+        return ""
 
     def watch_keymap_changes(self) -> None:
         """ GTK servers will start listening for the 'keys-changed' signal """
 
     def parse_hello_ui_keyboard(self, ss, c: typedict) -> None:
-        other_ui_clients: list[str] = [s.uuid for s in self._server_sources.values() if s != ss and s.ui_client]
+        from xpra.server.source.keyboard import KeyboardConnection
+        keyboard_clients = get_sources_by_type(self, KeyboardConnection, ss)
         kb_client = hasattr(ss, "keyboard_config")
         if not kb_client:
             return
         ss.keyboard_config = self.get_keyboard_config(c)  # pylint: disable=assignment-from-none
 
         delay, interval = (500, 30)
-        if not other_ui_clients:
+        if not keyboard_clients:
             # so only activate this feature afterwards:
             delay, interval = c.intpair("key_repeat") or (500, 30)
             # always clear modifiers before setting a new keymap

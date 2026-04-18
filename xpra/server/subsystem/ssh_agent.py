@@ -84,9 +84,9 @@ class SshAgent(StubServerMixin):
                 return
         set_ssh_agent("")
 
-    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+    def add_new_client(self, ss, c: typedict) -> None:
         if not self.ssh_agent:
             return
         assert ss
-        if ss.uuid and send_ui:
+        if ss.uuid:
             accept_client_ssh_agent(ss.uuid, c.strget("ssh-auth-sock"))

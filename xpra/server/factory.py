@@ -12,6 +12,8 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server import features
     from xpra.server.core import ServerCore
     classes: list[type] = [ServerCore]
+    from xpra.server.subsystem.sharing import SharingServer
+    classes.append(SharingServer)
     # `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
     if features.ping:
         from xpra.server.subsystem.ping import PingServer

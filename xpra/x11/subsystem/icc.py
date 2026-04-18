@@ -5,6 +5,8 @@
 
 from typing import Any
 
+from xpra.server.common import get_sources_by_type
+from xpra.server.source.display import DisplayConnection
 from xpra.util.env import envbool
 from xpra.util.str_fn import hexstr
 from xpra.util.objects import typedict
@@ -23,9 +25,8 @@ class ICCServer(StubServerMixin):
         StubServerMixin.__init__(self)
         self.icc_profile = b""
 
-    def parse_hello(self, ss, caps, send_ui: bool):
-        if send_ui:
-            self.set_icc_profile()
+    def add_new_client(self, ss, caps: typedict) -> None:
+        self.set_icc_profile()
 
     # TODO: should use its own packet rather than getting called by `DisplayManager`:
     def process_icc(self, ss, iccdata: dict[str, Any]):
@@ -53,16 +54,17 @@ class ICCServer(StubServerMixin):
         if not SYNC_ICC:
             return
         from xpra.x11.xroot_props import root_set, root_array_set
-        ui_clients = [s for s in self._server_sources.values() if s.ui_client]
-        if len(ui_clients) != 1:
-            log("%i UI clients, resetting ICC profile to default", len(ui_clients))
+        display_clients = get_sources_by_type(self, DisplayConnection)
+        if len(display_clients) != 1:
+            log("%i display clients, resetting ICC profile to default", len(display_clients))
             self.reset_icc_profile()
             return
-        icc = typedict(ui_clients[0].icc)
+        icc_client = display_clients[0]
+        icc = typedict(icc_client.icc)
         for x in ("data", "icc-data", "icc-profile"):
             data = icc.bytesget(x)
             if data:
-                log("set_icc_profile() icc data for %s: %s (%i bytes)", ui_clients[0], hexstr(data), len(data))
+                log("set_icc_profile() icc data for %s: %s (%i bytes)", icc_client, hexstr(data), len(data))
                 self.icc_profile = data
                 root_array_set("_ICC_PROFILE", "u32", data)
                 root_set("_ICC_PROFILE_IN_X_VERSION", "u32", 0 * 100 + 4)  # 0.4 -> 0*100+4*1

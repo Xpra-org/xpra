@@ -15,6 +15,7 @@ from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitExit
+from xpra.server.common import get_sources_by_type
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
@@ -1118,10 +1119,14 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
     def paint_overlay_monitors(self, cr) -> None:
         # only draw the monitors if we have a single UI user connected:
-        sources = [source for source in self._server_sources.values() if source.ui_client]
-        if len(sources) != 1:
+        try:
+            from xpra.server.source.display import DisplayConnection
+        except ImportError:
             return
-        ss = sources[0]
+        display_sources = get_sources_by_type(self, DisplayConnection)
+        if len(display_sources) != 1:
+            return
+        ss = display_sources[0]
         if ss.screen_sizes and len(ss.screen_sizes) == 1:
             screen1 = ss.screen_sizes[0]
             from xpra.x11.server.root_overlay import paint_overlay_monitors
@@ -1145,7 +1150,12 @@ class SeamlessServer(GObject.GObject, ServerBase):
         from xpra.x11.server.root_overlay import paint_root_overlay_windows, paint_overlay_pointer
         paint_root_overlay_windows(cr, windows)
         # FIXME: use server mouse position, and use current cursor shape
-        sources = [source for source in self._server_sources.values() if source.ui_client]
+        try:
+            from xpra.server.source.pointer import PointerConnection
+        except ImportError:
+            sources = ()
+        else:
+            sources = get_sources_by_type(self, PointerConnection)
         if len(sources) == 1:
             ss = sources[0]
             mlp = getattr(ss, "mouse_last_position", (0, 0))

@@ -7,6 +7,7 @@ import os
 from typing import Any
 
 from xpra.net.common import Packet
+from xpra.common import noop
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr, strtobytes
 from xpra.util.parsing import str_to_bool
@@ -109,6 +110,10 @@ class XSettingsServer(StubServerMixin):
                 "resource-manager": b"",
                 "xsettings-blob": (0, [])
             }, reset=True, dpi=self.default_dpi, cursor_size=24)
+
+    def add_new_client(self, ss, c: typedict) -> None:
+        share_count = getattr(self, "get_ui_sharing_count", noop)(ss) or 0
+        self.update_all_server_settings(share_count == 0)  # if we're not sharing, reset all the settings
 
     def update_all_server_settings(self, reset=False) -> None:
         self.update_server_settings(

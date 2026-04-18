@@ -61,6 +61,12 @@ class StubClientConnection(SignalEmitter):
         """
         return False
 
+    def requires_sharing(self) -> bool:
+        """
+        Does this subsystem require 'sharing' to be enabled for multiple active clients?
+        """
+        return False
+
     def parse_client_caps(self, c: typedict) -> None:
         """
         Parse client attributes specified in the hello capabilities.

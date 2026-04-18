@@ -31,9 +31,7 @@ def control_get_sources(server, client_uuids_str="*"):
     sources = getattr(server, "_server_sources", None)
     if sources is None:
         raise RuntimeError("no server sources found in %s" % server)
-    if client_uuids_str == "UI":
-        sources = [ss for ss in sources.values() if ss.ui_client]
-    elif client_uuids_str == "*":
+    if client_uuids_str == "*":
         sources = sources.values()
     else:
         client_uuids = client_uuids_str.split(",")

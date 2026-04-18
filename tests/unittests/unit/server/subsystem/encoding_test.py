@@ -73,7 +73,7 @@ class EncodingMixinTest(ServerMixinTest):
         from xpra.net.common import BACKWARDS_COMPATIBLE
         packets = self._setup_encoding()
         self.mixin.threaded_encoding_done = True
-        self.mixin.add_new_client(self.source, typedict(), True, 0)
+        self.mixin.add_new_client(self.source, typedict())
         expected = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
         self.assertIn(expected, packets,
                       f"add_new_client should send {expected!r} when encoding setup is complete")
@@ -83,7 +83,7 @@ class EncodingMixinTest(ServerMixinTest):
         from xpra.net.common import BACKWARDS_COMPATIBLE
         packets = self._setup_encoding()
         self.mixin.threaded_encoding_done = False
-        self.mixin.add_new_client(self.source, typedict(), True, 0)
+        self.mixin.add_new_client(self.source, typedict())
         expected = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
         self.assertNotIn(expected, packets,
                          "add_new_client should not send encoding caps while setup is still running")

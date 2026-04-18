@@ -106,8 +106,6 @@ class ClientConnection(StubClientConnection):
         self.xdg_menu = True
         self.menu = False
         self.ssh_auth_sock = ""
-        # what we send back in hello packet:
-        self.ui_client = True
         # default 'wants' is not including "events" or "default_cursor":
         self.wants = ["encodings", "versions", "features", "display", "packet-types"]
         # these statistics are shared by all WindowSource instances:
@@ -290,7 +288,7 @@ class ClientConnection(StubClientConnection):
         self.send_more("setting-change", setting, value)
 
     def send_server_event(self, event_type: str, *args: PacketElement) -> None:
-        if "events" in self.wants:
+        if "events" in self.wants and self.hello_sent:
             self.send_more("server-event", event_type, *args)
 
     def send_client_command(self, command: str, *args: PacketElement) -> None:
