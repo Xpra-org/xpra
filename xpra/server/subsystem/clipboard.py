@@ -29,6 +29,7 @@ class ClipboardServer(StubServerMixin):
     Mixin for servers that handle clipboard synchronization.
     """
     PREFIX = "clipboard"
+    toggle_features = ("clipboard",)
 
     def __init__(self):
         StubServerMixin.__init__(self)

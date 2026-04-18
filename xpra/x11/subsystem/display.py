@@ -112,6 +112,7 @@ def log_randr_warning(msg="no randr bindings", error="") -> None:
 
 
 class X11DisplayManager(DisplayManager):
+    toggle_features = ("randr",)
     """
     Mixin for servers that handle displays.
     """

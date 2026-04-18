@@ -102,7 +102,6 @@ def force_close_connection(conn) -> None:
 
 
 def get_server_base_classes() -> tuple[type, ...]:
-    from xpra.server.subsystem.control import ControlHandler
     from xpra.server.glib_server import GLibServer
     from xpra.server.auth import AuthenticatedServer
     from xpra.server.subsystem.platform import PlatformServer
@@ -114,10 +113,13 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.version import VersionServer
     classes: list[type] = [
         GLibServer, PlatformServer, DaemonServer, SessionFilesServer,
-        AuthenticatedServer, ControlHandler, SplashServer,
+        AuthenticatedServer, SplashServer,
         IDServer, InfoServer, VersionServer,
     ]
     from xpra.server import features
+    if features.control:
+        from xpra.server.subsystem.control import ControlHandler
+        classes.append(ControlHandler)
     if features.mdns:
         from xpra.server.subsystem.mdns import MdnsServer
         classes.append(MdnsServer)

@@ -20,6 +20,7 @@ class CursorManager(StubServerMixin):
     Servers that send cursor bitmaps.
     """
     PREFIX = "cursor"
+    toggle_features = ("cursors",)
 
     def __init__(self):
         StubServerMixin.__init__(self)

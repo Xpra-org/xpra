@@ -46,6 +46,7 @@ def init_virtual_video_devices() -> int:
 
 
 class WebcamServer(StubServerMixin):
+    toggle_features = ("webcam",)
     """
     Mixin for servers that handle webcam forwarding.
     Supports two modes:

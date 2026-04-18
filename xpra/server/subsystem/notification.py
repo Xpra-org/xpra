@@ -25,6 +25,7 @@ class NotificationForwarder(StubServerMixin):
     Mixin for servers that forward notifications.
     """
     PREFIX = "notifications" if BACKWARDS_COMPATIBLE else "notification"
+    toggle_features = ("notifications",)
 
     def __init__(self):
         StubServerMixin.__init__(self)

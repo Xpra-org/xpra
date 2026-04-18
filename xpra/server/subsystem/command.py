@@ -174,6 +174,7 @@ def get_attrs(source) -> dict[str, Any]:
 
 
 class ChildCommandServer(StubServerMixin):
+    toggle_features = ("start-new-commands",)
     """
     Mixin for servers that start subcommands,
     ie "--start=xterm"

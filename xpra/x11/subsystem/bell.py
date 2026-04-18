@@ -20,6 +20,7 @@ class BellServer(StubServerMixin):
     Servers that forward bell events.
     """
     PREFIX = "bell"
+    toggle_features = ("bell",)
     __signals__ = {
         "x11-xkb-event": 1,
     }

@@ -21,9 +21,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.bandwidth:
         from xpra.server.subsystem.bandwidth import BandwidthServer
         classes.append(BandwidthServer)
-    if features.control:
-        from xpra.server.subsystem.controlcommands import ServerBaseControlCommands
-        classes.append(ServerBaseControlCommands)
     if features.debug:
         from xpra.server.subsystem.debug import DebugServer
         classes.append(DebugServer)

@@ -5,9 +5,10 @@
 
 from typing import Any
 
+from xpra.common import noop
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement
-from xpra.net.control.common import ControlCode
+from xpra.net.control.common import ControlCode, parse_boolean_value
 from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -40,6 +41,8 @@ class ControlHandler(StubServerMixin):
         if self.control_enabled:
             self.do_add_control_command("help", HelpCommand(self.control_commands))
             self.args_control("client", "forwards a control command to the client(s)", min_args=1)
+            self.args_control("toggle-feature", "toggle a server feature on or off",
+                              min_args=1, max_args=2, validation=[str, parse_boolean_value])
         else:
             self.do_add_control_command("*", DisabledCommand())
 
@@ -62,6 +65,18 @@ class ControlHandler(StubServerMixin):
         code, response = process_control_command(proto, self.control_commands, *args)
         hello = {"command_response": (int(code), response)}
         proto.send_now(Packet("hello", hello))
+
+    def _process_control_request(self, protocol, packet: Packet) -> None:
+        """ client sent a command request through its normal channel """
+        assert len(packet) >= 2, "invalid command request packet (too small!)"
+        # packet[0] = "control"
+        # this may end up calling do_handle_command_request via the adapter
+        code, msg = self.process_control_command(protocol, *packet[1:])
+        log("command request returned: %s (%s)", code, msg)
+
+    def init_packet_handlers(self) -> None:
+        self.add_packets("control-request")
+        self.add_legacy_alias("command_request", "control-request")
 
     #########################################
     # Control Commands
@@ -89,3 +104,26 @@ class ControlHandler(StubServerMixin):
                 count += 1
 
         return f"client control command {command!r} forwarded to {count} clients"
+
+    def control_command_toggle_feature(self, feature: str, state: str) -> str:
+        log("control_command_toggle_feature(%s, %s)", feature, state)
+        features: set[str] = set()
+        for cls in type(self).__mro__:
+            for f in cls.__dict__.get("toggle_features", ()):
+                features.add(f)
+        if feature == "help":
+            return "found the following features: %s" % csv(features)
+        if feature not in features:
+            msg = f"invalid feature {feature!r}"
+            log.warn(msg)
+            return msg
+        fn = feature.replace("-", "_")
+        if not hasattr(self, feature):
+            msg = f"attribute {feature!r} not found - bug?"
+            log.warn(msg)
+            return msg
+        cur = getattr(self, fn, None)
+        setattr(self, fn, state)
+        setting_changed = getattr(self, "setting_changed", noop)
+        setting_changed(feature, state)
+        return f"{feature} set to {state} (was {cur!r}"

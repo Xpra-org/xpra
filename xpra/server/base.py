@@ -49,6 +49,7 @@ class ServerBase(ServerBaseClass):
     to a specific backend (X11 or otherwise).
     See X11ServerBase and other platform specific subclasses.
     """
+    toggle_features = ("client-shutdown",)
     __signals__ = SIGNALS
     __signals__.update({
         "last-client-exited": 0,
