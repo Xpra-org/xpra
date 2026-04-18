@@ -556,8 +556,9 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         p.set_compression_level(self.compression_level)
         p.enable_compressor_from_caps(caps)
         p.parse_remote_caps(caps)
-        self.server_packet_types = caps.strtupleget("packet-types")
-        netlog(f"parse_network_capabilities(..) server_packet_types={self.server_packet_types}")
+        if BACKWARDS_COMPATIBLE:
+            self.server_packet_types = caps.strtupleget("packet-types")
+            netlog(f"parse_network_capabilities(..) server_packet_types={self.server_packet_types}")
         return True
 
     def _process_startup_complete(self, packet: Packet) -> None:
