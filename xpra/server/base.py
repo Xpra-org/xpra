@@ -68,7 +68,6 @@ class ServerBase(ServerBaseClass):
         self._server_sources: dict = {}
         self.client_properties: dict[int, dict] = {}
         self.ui_driver = None
-        self.idle_timeout: int = 0
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
 
     def suspend_event(self, *_args) -> None:
@@ -105,7 +104,6 @@ class ServerBase(ServerBaseClass):
             c.init(self, opts)
             end = monotonic()
             log("%3ims in %s.init", 1000 * (end - start), c)
-        self.idle_timeout = opts.idle_timeout
 
     def setup(self) -> None:
         log("starting component init")
@@ -419,11 +417,7 @@ class ServerBase(ServerBaseClass):
         return info
 
     def get_features_info(self) -> dict[str, Any]:
-        i = {
-            "idle_timeout": self.idle_timeout,
-        }
-        i.update(self.get_server_features())
-        return i
+        return {}
 
     def get_subsystems(self) -> list[str]:
         return super().get_subsystems() + [subsystem_name(c) for c in SERVER_BASES]

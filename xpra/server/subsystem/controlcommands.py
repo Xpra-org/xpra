@@ -33,7 +33,6 @@ class ServerBaseControlCommands(StubServerMixin):
     def add_control_commands(self) -> None:
         for cmd in (
                 # server globals:
-                ArgsControlCommand("idle-timeout", "set the idle timeout", validation=[int]),
                 ArgsControlCommand("toggle-feature",
                                    "toggle a server feature on or off, one of: %s" % csv(TOGGLE_FEATURES), min_args=1,
                                    max_args=2, validation=[str, parse_boolean_value]),
@@ -51,13 +50,6 @@ class ServerBaseControlCommands(StubServerMixin):
             cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"), noop)
             if cmd.do_run != noop:
                 self.add_control_command(cmd.name, cmd)
-
-    def control_command_idle_timeout(self, t: int) -> str:
-        self.idle_timeout = t
-        for csource in tuple(self._server_sources.values()):
-            csource.idle_timeout = t
-            csource.schedule_idle_timeout()
-        return f"idle-timeout set to {t}"
 
     def control_command_toggle_feature(self, feature: str, state: str) -> str:
         log("control_command_toggle_feature(%s, %s)", feature, state)

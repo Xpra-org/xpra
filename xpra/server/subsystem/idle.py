@@ -8,6 +8,7 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.common import noop
 from xpra.server import ServerExitMode
+from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -21,10 +22,12 @@ class IdleTimeoutServer(StubServerMixin):
     def __init__(self):
         StubServerMixin.__init__(self)
         self.server_idle_timeout = 0
+        self.idle_timeout = 0
         self.server_idle_timer = 0
 
     def init(self, opts) -> None:
         self.server_idle_timeout = opts.server_idle_timeout
+        self.idle_timeout = opts.idle_timeout
 
     def setup(self) -> None:
         self.schedule_server_timeout()
@@ -33,6 +36,7 @@ class IdleTimeoutServer(StubServerMixin):
 
     def add_idle_control_commands(self) -> None:
         self.args_control("server-idle-timeout", "set the server idle timeout", validation=[int])
+        self.args_control("idle-timeout", "set the idle timeout", validation=[int]),
 
     def add_new_client(self, *_args) -> None:
         self.cancel_server_timeout()
@@ -59,7 +63,8 @@ class IdleTimeoutServer(StubServerMixin):
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
-            "idle-timeout": int(self.server_idle_timeout),
+            "server-idle-timeout": int(self.server_idle_timeout),
+            "idle-timeout": self.idle_timeout,
         }
 
     #########################################
@@ -74,3 +79,15 @@ class IdleTimeoutServer(StubServerMixin):
             schedule_server_timeout = getattr(self, "schedule_server_timeout", noop)
             schedule_server_timeout()
         return f"server-idle-timeout set to {t}"
+
+    def control_command_idle_timeout(self, t: int) -> str:
+        self.idle_timeout = t
+        try:
+            from xpra.server.source.idle_mixin import IdleConnection
+        except ImportError:
+            return "no idle connection support"
+        idle_connections = get_sources_by_type(self, IdleConnection)
+        for csource in idle_connections:
+            csource.idle_timeout = t
+            csource.schedule_idle_timeout()
+        return f"idle-timeout set to {t} for {len(idle_connections)} connections"
