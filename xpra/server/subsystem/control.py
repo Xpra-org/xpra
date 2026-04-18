@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.net.common import Packet
+from xpra.net.control.common import ControlCode
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -46,7 +47,7 @@ class ControlHandler(StubServerMixin):
     def do_add_control_command(self, name: str, control) -> None:
         self.control_commands[name] = control
 
-    def process_control_command(self, proto, *args) -> tuple[int, str]:
+    def process_control_command(self, proto, *args) -> tuple[ControlCode | int, str]:
         from xpra.net.control.common import process_control_command
         return process_control_command(proto, self.control_commands, *args)
 
@@ -56,5 +57,5 @@ class ControlHandler(StubServerMixin):
             raise ValueError("no arguments supplied")
         from xpra.net.control.common import process_control_command
         code, response = process_control_command(proto, self.control_commands, *args)
-        hello = {"command_response": (code, response)}
+        hello = {"command_response": (int(code), response)}
         proto.send_now(Packet("hello", hello))

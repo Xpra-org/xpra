@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from enum import IntEnum
 from typing import Any
 from collections.abc import Callable, Sequence
 
@@ -69,8 +70,14 @@ def parse_boolean_value(v):
     raise ControlError(f"a boolean is required, not {v!r}")
 
 
+class ControlCode(IntEnum):
+    OK = 0
+    INVALID = 6
+    FAILED = 127
+
+
 class ControlError(Exception):
-    def __init__(self, msg: str, help_text: str = "", code: int = 127):
+    def __init__(self, msg: str, help_text: str = "", code: int = ControlCode.FAILED):
         super().__init__(msg)
         self.help = help_text
         self.code = code
@@ -181,7 +188,7 @@ class HelpCommand(ArgsControlCommand):
         return f"control command {name!r}: {command.help}"
 
 
-def process_control_command(protocol, commands: dict[str, Callable], *args) -> tuple[int, str]:
+def process_control_command(protocol, commands: dict[str, Callable], *args) -> tuple[ControlCode | int, str]:
     try:
         options = protocol._conn.options
         control = options.get("control", "yes")
@@ -190,27 +197,27 @@ def process_control_command(protocol, commands: dict[str, Callable], *args) -> t
     if not str_to_bool(control):
         err = "control commands are not enabled on this connection"
         log.warn(f"Warning: {err}")
-        return 6, err
+        return ControlCode.INVALID, err
     if not args:
         err = "control command must have arguments"
         log.warn(f"Warning: {err}")
-        return 6, err
+        return ControlCode.INVALID, err
     name = args[0]
     command = commands.get(name) or commands.get("*")
     log(f"process_control_command control_commands[{name!r}]={command}")
     if not command:
         log.warn(f"Warning: invalid command: {name!r}")
         log.warn(f" must be one of: {csv(commands)}")
-        return 6, "invalid command"
+        return ControlCode.INVALID, "invalid command"
     try:
         log(f"process_control_command calling {command.run}({args[1:]})")
         v = command.run(*args[1:])
-        return 0, v
+        return ControlCode.OK, v
     except ValueError as e:
         log("command=%s args=%s", command, args[1:], exc_info=True)
         log.error(f"Error processing control command {name!r}")
         log.estr(e)
-        return 127, str(e)
+        return ControlCode.FAILED, str(e)
     except ControlError as e:
         log.error(f"Error {e.code} processing control command {name!r}")
         msgs = [f" {e}"]
@@ -221,4 +228,4 @@ def process_control_command(protocol, commands: dict[str, Callable], *args) -> t
         return e.code, "\n".join(msgs)
     except Exception as e:
         log.error(f"error processing control command {name!r}", exc_info=True)
-        return 127, f"error processing control command: {e}"
+        return ControlCode.FAILED, f"error processing control command: {e}"

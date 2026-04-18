@@ -7,6 +7,7 @@ from typing import Any
 
 from xpra.client.base.stub import StubClientMixin
 from xpra.net.common import Packet
+from xpra.net.control.common import ControlCode
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
@@ -54,7 +55,7 @@ class ControlClient(StubClientMixin):
         code, msg = self.process_control_command(self._protocol, *args)
         log.warn(f"{code}, {msg!r}")
 
-    def process_control_command(self, proto, *args) -> tuple[int, str]:
+    def process_control_command(self, proto, *args) -> tuple[ControlCode | int, str]:
         from xpra.net.control.common import process_control_command
         return process_control_command(proto, self.control_commands, *args)
 
