@@ -14,7 +14,7 @@ from queue import SimpleQueue
 
 from xpra.net.packet_type import INFO_RESPONSE
 from xpra.util.thread import start_thread
-from xpra.util.objects import AtomicInteger, typedict, notypedict
+from xpra.util.objects import AtomicInteger, notypedict
 from xpra.util.env import envbool
 from xpra.net.common import Packet, PacketElement, FULL_INFO
 from xpra.net.compression import compressed_wrapper, Compressed, LevelCompressed
@@ -99,7 +99,6 @@ class ClientConnection(StubClientConnection):
 
     def init_state(self) -> None:
         self.hello_sent = 0.0
-        self.ssh_auth_sock = ""
         self.wants = ["encodings", "versions", "features", "display", "packet-types"]
         # these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
@@ -118,9 +117,6 @@ class ClientConnection(StubClientConnection):
         kw = {"lz4": getattr(self, "lz4", False)}
         kw.update(kwargs)
         return compressed_wrapper(datatype, data, can_inline=False, **kw)
-
-    def parse_client_caps(self, c: typedict) -> None:
-        self.ssh_auth_sock = c.strget("ssh-auth-sock")
 
     def startup_complete(self) -> None:
         log("startup_complete()")
@@ -240,7 +236,6 @@ class ClientConnection(StubClientConnection):
             "elapsed_time": int(monotonic() - self.connection_time),
             "counter": self.counter,
             "hello-sent": bool(self.hello_sent),
-            "ssh-auth-sock": self.ssh_auth_sock,
             "packet-types": self.client_packet_types,
         }
         if p := self.protocol:
