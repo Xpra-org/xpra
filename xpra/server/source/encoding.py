@@ -131,6 +131,9 @@ class EncodingsConnection(StubClientConnection):
         return caps
 
     def threaded_init_complete(self, server) -> None:
+        if not self.hello_sent:
+            # hello has not been sent yet; the source will be picked up by add_new_client once it is
+            return
         if "encodings" not in self.wants:
             return
         # by now, all the codecs have been initialized
