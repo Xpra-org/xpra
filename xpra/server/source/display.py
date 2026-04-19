@@ -46,6 +46,7 @@ class DisplayConnection(StubClientConnection):
         self.show_desktop_allowed: bool = False
         self.opengl_props: dict[str, Any] = {}
         self.display_record = False
+        self.resize_events = True
 
     def get_info(self) -> dict[str, Any]:
         info = {
@@ -77,6 +78,7 @@ class DisplayConnection(StubClientConnection):
             display_caps = c.dictget("display", {})
             if not BACKWARDS_COMPATIBLE and not display_caps:
                 raise ValueError("missing display capabilities")
+            self.resize_events = typedict(display_caps).boolget("resize-events", True)
             c = typedict(display_caps or c)
         if BACKWARDS_COMPATIBLE:
             self.vrefresh = c.intget("refresh-rate", c.intget("vrefresh", -1))
@@ -154,7 +156,7 @@ class DisplayConnection(StubClientConnection):
 
     def updated_desktop_size(self, root_w: int, root_h: int, max_w: int, max_h: int) -> bool:
         log("updated_desktop_size%s desktop_size=%s", (root_w, root_h, max_w, max_h), self.desktop_size)
-        if not self.hello_sent:
+        if not self.hello_sent or not self.resize_events:
             return False
         if self.desktop_size_server != (root_w, root_h):
             self.desktop_size_server = root_w, root_h

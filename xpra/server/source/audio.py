@@ -55,6 +55,8 @@ class AudioConnection(StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         audio = caps.get(AudioConnection.PREFIX)
         log("is_needed(..) audio=%s", audio)
+        if BACKWARDS_COMPATIBLE and "audio" in caps.strtupleget("wants"):
+            return True
         if isinstance(audio, dict):
             audio = typedict(audio)
             return audio.boolget("send") or audio.boolget("receive") or audio.boolget("async")
@@ -74,7 +76,6 @@ class AudioConnection(StubClientConnection):
         self.connect("resume", self.resume_audio_source)
 
     def init_state(self) -> None:
-        self.wants_audio = True
         self.audio_source_sequence = 0
         self.audio_source: Any = None
         self.audio_sink: Any = None
@@ -140,7 +141,6 @@ class AudioConnection(StubClientConnection):
         since it is populated from a signal.
         """
         log("client_audio_capabilities: %s", capabilities)
-        self.wants_audio = True
         self.parse_audio_caps(typedict(capabilities))
         if self.audio_properties:
             self.send_audio_capabilities()          # send now!
@@ -155,7 +155,6 @@ class AudioConnection(StubClientConnection):
     def parse_client_caps(self, c: typedict) -> None:
         """ if available in the hello packet, parse audio capabilities straight away """
         audio = typedict(c.dictget(AudioConnection.PREFIX) or {})
-        self.wants_audio = "audio" in c.strtupleget("wants") or audio.boolget("send") or audio.boolget("receive")
         self.parse_audio_caps(audio)
 
     def parse_audio_caps(self, audio: typedict) -> None:
@@ -172,9 +171,7 @@ class AudioConnection(StubClientConnection):
             self.audio_decoders, self.audio_encoders, self.audio_receive, self.audio_send)
 
     def get_caps(self) -> dict[str, Any]:
-        log("get_caps() wants_audio=%s, audio-properties=%s", self.wants_audio, self.audio_properties)
-        if not self.wants_audio:
-            return {}
+        log("get_caps() audio-properties=%s", self.audio_properties)
         if not BACKWARDS_COMPATIBLE:
             # tell the client to send us a packet when it is ready:
             return {AudioConnection.PREFIX: {"async": True}}
@@ -182,8 +179,6 @@ class AudioConnection(StubClientConnection):
 
     def get_audio_caps(self) -> dict[str, Any]:
         log("get_audio_caps()")
-        if not self.wants_audio:
-            return {}
         audio_caps = dict(self.audio_properties)
         if FULL_INFO < 2:
             # only expose these specific keys:

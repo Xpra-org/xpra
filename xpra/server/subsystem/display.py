@@ -36,6 +36,8 @@ def get_display_type() -> str:
 
 
 def get_desktop_size_capability(server_source, root_w: int, root_h: int) -> tuple[int, int]:
+    if not server_source:
+        return root_w, root_h
     client_size = server_source.desktop_size
     log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
     if not client_size:
@@ -167,24 +169,26 @@ class DisplayManager(StubServerMixin):
             self.dpi, self.xdpi, self.ydpi, self.antialias)
 
     def get_caps(self, source) -> dict[str, Any]:
-        caps: dict[str, Any] = {}
-        if "display" in source.wants:
-            if root_size := self.get_display_size():
-                caps |= {
-                    "actual_desktop_size": root_size,
-                    "root_window_size": root_size,
-                    "desktop_size": get_desktop_size_capability(source, *root_size),
-                }
-            if max_size := self.get_max_screen_size():
-                caps["max_desktop_size"] = max_size
-            name = get_display_name()
-            if name:
-                caps["name"] = name
+        caps: dict[str, Any] = self.get_display_caps(source)
         if BACKWARDS_COMPATIBLE:
             # legacy: use top level attributes:
             caps["display"] = caps.get("name", "")
             return caps
         return {"display": caps}
+
+    def get_display_caps(self, source) -> dict[str, Any]:
+        caps: dict[str, Any] = {}
+        if root_size := self.get_display_size():
+            caps |= {
+                "actual_desktop_size": root_size,
+                "root_window_size": root_size,
+                "desktop_size": get_desktop_size_capability(source, *root_size),
+            }
+        if max_size := self.get_max_screen_size():
+            caps["max_desktop_size"] = max_size
+        if name := get_display_name():
+            caps["name"] = name
+        return caps
 
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
         if max_size := self.get_max_screen_size():

@@ -124,16 +124,12 @@ class EncodingsConnection(StubClientConnection):
         return tuple(window_sources.values())
 
     def get_caps(self) -> dict[str, str | int]:
-        caps: dict[str, str | int] = {}
-        if "encodings" in self.wants and self.encoding:
-            caps["encoding"] = self.encoding
-        if "features" in self.wants:
-            caps["auto_refresh_delay"] = self.auto_refresh_delay
-        return caps
+        return {
+            "auto_refresh_delay": self.auto_refresh_delay,
+            "encoding": self.encoding,
+        }
 
     def threaded_init_complete(self, server) -> None:
-        if "encodings" not in self.wants:
-            return
         # by now, all the codecs have been initialized
         d = server.get_encoding_info()
         if FULL_INFO > 1:
@@ -142,16 +138,14 @@ class EncodingsConnection(StubClientConnection):
             for codec, version in codec_versions.items():
                 d[codec] = {"version": version}
         video = {}
-        if "video" in self.wants:
-            # client wants the full video encoder caps:
-            for encoding in self.video_helper.get_encodings():
-                especs = self.video_helper.get_encoder_specs(encoding)
-                ecaps = {}
-                for csc, specs in especs.items():
-                    ecaps[csc] = tuple(spec.to_dict("codec_class") for spec in specs)
-                if ecaps:
-                    video[encoding] = ecaps
-            log(f"video specs={video}")
+        for encoding in self.video_helper.get_encodings():
+            especs = self.video_helper.get_encoder_specs(encoding)
+            ecaps = {}
+            for csc, specs in especs.items():
+                ecaps[csc] = tuple(spec.to_dict("codec_class") for spec in specs)
+            if ecaps:
+                video[encoding] = ecaps
+        log(f"video specs={video}")
         packet_type = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
         self.send_async(packet_type, {"encodings": d, "video": video})
         # only print encoding info when not using mmap:
@@ -258,7 +252,6 @@ class EncodingsConnection(StubClientConnection):
 
     def parse_client_caps(self, c: typedict) -> None:
         # batch options:
-
         # since v6.3, we can have a "batch" dict in the "encoding" caps
         # rather than having it at the top level:
         batch_caps = c.get("batch", {})

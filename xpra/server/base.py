@@ -338,10 +338,9 @@ class ServerBase(ServerBaseClass):
             "client-shutdown": self.client_shutdown,
         }
         for c in SERVER_BASES:
-            if c != ServerCore:
-                bf = c.get_server_features(self, server_source)
-                log(f"get_server_features({c})={bf}")
-                merge_dicts(f, bf)
+            bf = c.get_server_features(self, server_source)
+            log(f"get_server_features({c})={bf}")
+            merge_dicts(f, bf)
         return f
 
     def make_hello(self, source) -> dict[str, Any]:
@@ -352,8 +351,6 @@ class ServerBase(ServerBaseClass):
                 log("%s.get_caps(%s)=%s", c, source, caps)
                 merge_dicts(capabilities, caps)
         capabilities["server_type"] = "base"
-        if "features" in source.wants:
-            capabilities.update(self.get_server_features(source))
         return capabilities
 
     def send_hello(self, server_source, server_cipher: dict) -> None:

@@ -221,6 +221,8 @@ class UIXpraClient(ClientBaseClass):
             caps.setdefault("wants", []).append("events")
         caps |= {
             "setting-change": True,
+            "server-features": True,
+            "versions": True,
             # generic server flags:
             "share": self.client_supports_sharing,
             "lock": self.client_lock,

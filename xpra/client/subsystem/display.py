@@ -144,6 +144,7 @@ class DisplayClient(StubClientMixin):
     def get_display_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {
             "show-desktop": True,
+            "resize-events": True,
             "refresh-rate": self.get_vrefresh(),
             "refresh-rate.raw": self.get_raw_vrefresh(),
         }

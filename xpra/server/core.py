@@ -1504,14 +1504,6 @@ class ServerCore(ServerBaseClass):
         }
         if FULL_INFO > 0:
             capabilities["hostname"] = socket.gethostname()
-        if source is None or "features" in source.wants:
-            capabilities |= {
-                "readonly-server": True,
-                "readonly": self.readonly,
-            }
-            server_log = os.environ.get("XPRA_SERVER_LOG", "")
-            if server_log:
-                capabilities["server-log"] = server_log
         if source and "packet-types" in source.wants:
             packet_types = []
             if BACKWARDS_COMPATIBLE:
@@ -1523,7 +1515,19 @@ class ServerCore(ServerBaseClass):
             capabilities["packet-types"] = packet_types
         if self.session_name:
             capabilities["session_name"] = self.session_name
+        if source and "features" in source.wants:
+            capabilities.update(self.get_server_features(source))
         return capabilities
+
+    def get_server_features(self, _source=None) -> dict[str, Any]:
+        caps: dict[str, Any] = {
+            "readonly-server": True,
+            "readonly": self.readonly,
+        }
+        server_log = os.environ.get("XPRA_SERVER_LOG", "")
+        if server_log:
+            caps["server-log"] = server_log
+        return caps
 
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         log("ServerCore.get_threaded_info(%s, %s)", proto, kwargs)
