@@ -71,7 +71,7 @@ class CursorManager(StubServerMixin):
             sizes["max"] = max_size
             if BACKWARDS_COMPATIBLE:
                 cursor_caps["max_size"] = max_size
-        if self.default_cursor_image and "default_cursor" in source.wants:
+        if self.default_cursor_image:
             ce = getattr(source, "cursor_encodings", ())
             if "default" not in ce:
                 # we have to send it this way
