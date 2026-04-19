@@ -120,9 +120,9 @@ class EncodingServer(StubServerMixin):
     def add_new_client(self, ss, *_args) -> None:
         # If the background encoding setup finished before this client connected,
         # reinit_encodings() already ran with no sources and this client missed
-        # threaded_init_complete(). Send the full encoding capabilities now.
+        # threaded_init_complete(). Schedule it after the hello is delivered.
         if getattr(self, "threaded_encoding_done", False) and hasattr(ss, "threaded_init_complete"):
-            ss.threaded_init_complete(self)
+            gi_import("GLib").idle_add(ss.threaded_init_complete, self)
 
     def threaded_encoding_setup(self) -> None:
         if INIT_DELAY > 0:
