@@ -340,8 +340,9 @@ class MonitorXpraClient(SendCommandConnectClient):
 
     def __init__(self, opts):
         super().__init__(opts)
-        for x in ("features", "events", "request"):
-            self.hello_extra.setdefault("wants", []).append(x)
+        if BACKWARDS_COMPATIBLE:
+            for x in ("features", "events", "request"):
+                self.hello_extra.setdefault("wants", []).append(x)
         self.hello_extra["request"] = "event"
 
     def timeout(self, *args) -> None:
@@ -707,7 +708,8 @@ class PrintClient(SendCommandConnectClient):
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = super().make_hello()
-        capabilities.setdefault("wants", []).append("features")
+        if BACKWARDS_COMPATIBLE:
+            capabilities.setdefault("wants", []).append("features")
         capabilities["request"] = "print"
         capabilities["print"] = ["print", self.filename, self.file_data] + list(self.command)
         return capabilities
