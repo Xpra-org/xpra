@@ -320,9 +320,6 @@ cdef class X11CoreBindingsInstance:
         return XConnectionNumber(self.display)
 
     def get_root_xid(self) -> cython.ulong:
-        log.warn("get_root_xid() display=%#x", <uintptr_t> self.display)
-        #import traceback
-        #traceback.print_stack()
         assert self.display
         return XDefaultRootWindow(self.display)
 
