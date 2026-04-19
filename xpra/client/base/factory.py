@@ -11,7 +11,8 @@ def get_client_base_classes() -> tuple[type, ...]:
     from xpra.client.base.aes import AESClient
     from xpra.client.base.progress import ProgressClient
     from xpra.client.base.challenge import ChallengeClient
-    CLIENT_BASES: list[type] = [NetworkClient, ServerInfoMixin, AESClient, ProgressClient, ChallengeClient]
+    from xpra.client.base.events import EventsClient
+    CLIENT_BASES: list[type] = [NetworkClient, ServerInfoMixin, AESClient, ProgressClient, ChallengeClient, EventsClient]
     if features.debug:
         from xpra.client.base.debug import DebugClient
         CLIENT_BASES.append(DebugClient)

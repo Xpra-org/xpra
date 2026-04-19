@@ -105,7 +105,6 @@ class ClientConnection(StubClientConnection):
         self.xdg_menu = True
         self.menu = False
         self.ssh_auth_sock = ""
-        # default 'wants' is not including "events" or "default_cursor":
         self.wants = ["encodings", "versions", "features", "display", "packet-types"]
         # these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()

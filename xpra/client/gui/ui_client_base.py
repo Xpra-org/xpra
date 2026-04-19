@@ -217,7 +217,8 @@ class UIXpraClient(ClientBaseClass):
     # hello:
     def make_hello(self) -> dict[str, Any]:
         caps = XpraClientBase.make_hello(self)
-        caps.setdefault("wants", []).append("events")
+        if BACKWARDS_COMPATIBLE:
+            caps.setdefault("wants", []).append("events")
         caps |= {
             "setting-change": True,
             # generic server flags:
@@ -290,8 +291,6 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # server messages:
     # noinspection PyMethodMayBeStatic
-    def _process_server_event(self, packet: Packet) -> None:
-        log(": ".join(str(x) for x in packet[1:]))
 
     def on_server_setting_changed(self, setting: str, cb: Callable[[str, Any], None]) -> None:
         self._on_server_setting_changed.setdefault(setting, []).append(cb)
@@ -445,5 +444,3 @@ class UIXpraClient(ClientBaseClass):
             c.init_authenticated_packet_handlers(self)
         # run from the UI thread:
         self.add_packets("startup-complete", "setting-change", main_thread=True)
-        # run directly from the network thread:
-        self.add_packets("server-event")
