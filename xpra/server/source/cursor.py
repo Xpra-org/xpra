@@ -66,8 +66,9 @@ class CursorsConnection(StubClientConnection):
         cursor = c.get("cursor")
         self.send_cursors = bool(cursor)
         if isinstance(cursor, dict):
-            self.cursor_encodings = typedict(cursor).strtupleget("encodings")
-            self.cursor_backwards_compatible = typedict(cursor).boolget("backwards-compatible", True)
+            dcursor = typedict(cursor)
+            self.cursor_encodings = dcursor.strtupleget("encodings")
+            self.cursor_backwards_compatible = dcursor.boolget("backwards-compatible", True)
         if self.cursor_backwards_compatible:
             self.send_cursors |= getattr(self, "window_enabled", False) and c.boolget("cursors")
             if not self.cursor_encodings:
