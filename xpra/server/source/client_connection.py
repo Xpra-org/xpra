@@ -287,7 +287,3 @@ class ClientConnection(StubClientConnection):
     def send_server_event(self, event_type: str, *args: PacketElement) -> None:
         if "events" in self.wants and self.hello_sent:
             self.send_more("server-event", event_type, *args)
-
-    def send_client_command(self, command: str, *args: PacketElement) -> None:
-        if self.hello_sent:
-            self.send_more("control", command, *args)

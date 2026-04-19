@@ -172,7 +172,10 @@ class DBUS_Source(dbus.service.Object):
     def SendClientCommand(self, args):
         cmd = n(args)
         self.log(".SendClientCommand(%s)", cmd)
-        self.source.send_client_command(*cmd)
+        if not hasattr(self.source, "send_client_command"):
+            self.log("SendClientCommand(%s) not supported on %s", cmd, self.source)
+        else:
+            self.source.send_client_command(*cmd)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def Detach(self, reason):
