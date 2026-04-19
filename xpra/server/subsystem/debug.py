@@ -4,11 +4,9 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-import os
 from typing import Any
 
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.os_util import POSIX
 from xpra.util.debug import CPUINFO, init_leak_detection
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -37,8 +35,6 @@ class DebugServer(StubServerMixin):
 
     def get_info(self, _source=None) -> dict[str, Any]:
         info = {}
-        if POSIX:
-            info["load"] = tuple(int(x * 1000) for x in os.getloadavg())
         if self.mem_bytes:
             info["total-memory"] = self.mem_bytes
         if self.cpu_info:
