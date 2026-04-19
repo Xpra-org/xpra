@@ -32,7 +32,7 @@ class EncodingMixinTest(unittest.TestCase):
         caps = typedict()
         x.parse_hello(None, caps)
         x.add_new_client(None, caps)
-        x.send_initial_data(None, caps)
+        x.send_initial_data(caps)
 
         x.cleanup_protocol(None)
         x.cleanup()
