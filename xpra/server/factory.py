@@ -144,7 +144,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     # this should be last so that the environment is fully prepared:
     if features.command:
         from xpra.server.subsystem.command import ChildCommandServer
+        from xpra.server.subsystem.menu import MenuServer
         classes.append(ChildCommandServer)
+        classes.append(MenuServer)
     # this should only be enabled for desktop and shadow servers:
     if features.rfb:
         from xpra.server.rfb.server import RFBServer

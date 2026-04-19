@@ -17,13 +17,13 @@ from xpra.util.child_reaper import get_child_reaper, ProcInfo
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer
+from xpra.util.str_fn import csv
 from xpra.util.env import envint, restore_script_env, source_env
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.system import stop_proc
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
-from xpra.scripts.parsing import parse_env, get_subcommands
+from xpra.scripts.parsing import parse_env
 from xpra.util.pid import write_pid
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -75,28 +75,6 @@ if WIN32:
         else:
             win32_signal_name = SIGNAL_ALIASES.get(signame, signame)
             os_kill_by_name(pid, win32_signal_name)
-
-
-def do_send_menu_data(ss, menu) -> None:
-    if ss.is_closed():
-        return
-    if not getattr(ss, "send_setting_change", False):
-        return
-    log("do_send_menu_data(%s, %s)", ss, Ellipsizer(menu))
-    if getattr(ss, "menu", False):
-        # v6.4 and later:
-        attr = "menu"
-    elif BACKWARDS_COMPATIBLE and getattr(ss, "xdg_menu", False):
-        # older versions:
-        attr = "xdg-menu"
-    else:
-        # not supported by this connection
-        return
-
-    def do_send() -> None:
-        ss.send_setting_change(attr, menu)
-        log(f"{len(menu)} menu data entries sent to {ss}")
-    GLib.idle_add(do_send)
 
 
 def guess_session_name(procs=(), exec_wrapper=()) -> str:
@@ -211,7 +189,6 @@ class ChildCommandServer(StubServerMixin):
         self.children_started: list[ProcInfo] = []
         self.reaper_exit: Callable = self.reaper_exit_check
         self.session_name = ""
-        self.menu_provider = None
 
         def server_is_running(*args) -> None:
             log("server_is_running%s", args)
@@ -238,11 +215,6 @@ class ChildCommandServer(StubServerMixin):
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
         self.source_env = source_env(opts.source_start)
         self.start_env = parse_env(opts.start_env)
-        if self.start_new_commands:
-            # may already have been initialized by servercore:
-            from xpra.server.menu_provider import get_menu_provider
-            self.menu_provider = get_menu_provider()
-            self.menu_provider.on_reload.append(self.send_updated_menu)
 
     def setup(self) -> None:
         start_thread(self.threaded_command_setup, "threaded-command-setup", daemon=True)
@@ -270,15 +242,9 @@ class ChildCommandServer(StubServerMixin):
 
         GLib.idle_add(set_reaper_callback)
 
-        if self.menu_provider:
-            self.menu_provider.setup()
-
     def cleanup(self) -> None:
         # during cleanup, just ignore the reaper exit callback:
         self.reaper_exit = noop
-        if mp := self.menu_provider:
-            self.menu_provider = None
-            mp.cleanup()
 
     def late_cleanup(self, stop=True) -> None:
         if self.terminate_children and stop:
@@ -292,50 +258,12 @@ class ChildCommandServer(StubServerMixin):
             "server-commands-info": not WIN32 and not OSX,
         }
 
-    def _get_menu_data(self) -> dict[str, Any] | None:
-        if not self.start_new_commands:
-            return None
-        assert self.menu_provider
-        return self.menu_provider.get_menu_data()
-
-    def get_caps(self, source) -> dict[str, Any]:
-        caps: dict[str, Any] = {}
-        if not source:
-            return caps
-        # don't assume we have a real ClientConnection object:
-        wants = getattr(source, "wants", [])
-        if "features" in wants:
-            if BACKWARDS_COMPATIBLE:
-                caps["xdg-menu"] = {}
-            caps["subcommands"] = get_subcommands()
-        return caps
-
     def add_new_client(self, ss, *_args) -> None:
         self.exec_on_connect_commands(ss)
 
     def remove_client(self, server, ss) -> None:
         log("remove_client(%s, %s)", server, ss)
         self.exec_on_disconnect_commands(ss)
-
-    def send_initial_data(self, ss) -> None:
-        menu = getattr(ss, "xdg_menu", False) or getattr(ss, "menu", False)
-        log(f"send_initial_data(..) {menu=}")
-        if not menu:
-            return
-        # this method may block if the menus are still being loaded,
-        # so do it in a throw-away thread:
-        start_thread(self.send_menu_data, "send-xdg-menu-data", True, (ss,))
-
-    def send_menu_data(self, ss) -> None:
-        if ss.is_closed():
-            return
-        menu = self._get_menu_data() or {}
-        do_send_menu_data(ss, menu)
-
-    def send_updated_menu(self, menu) -> None:
-        log("send_updated_menu(%s)", Ellipsizer(menu))
-        for source in tuple(self._server_sources.values()):
-            do_send_menu_data(source, menu)
 
     def get_info(self, _proto) -> dict[str, Any]:
         info: dict[Any, Any] = {
@@ -355,14 +283,6 @@ class ChildCommandServer(StubServerMixin):
             "source-env": self.source_env,
             "start-env": self.start_env,
         }
-        mp = self.menu_provider
-        if mp and FULL_INFO > 0:
-            info.update(
-                {
-                    "start-menu": mp.get_menu_data(remove_icons=True, wait=False) or {},
-                    "start-desktop-menu": mp.get_desktop_sessions(remove_icons=True) or {},
-                }
-            )
         for i, procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
         cinfo: dict[str, Any] = {ChildCommandServer.PREFIX: info}

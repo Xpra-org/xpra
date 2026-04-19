@@ -16,7 +16,7 @@ from xpra.net.packet_type import INFO_RESPONSE
 from xpra.util.thread import start_thread
 from xpra.util.objects import AtomicInteger, typedict, notypedict
 from xpra.util.env import envbool
-from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, PacketElement, FULL_INFO
 from xpra.net.compression import compressed_wrapper, Compressed, LevelCompressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.stub import StubClientConnection
@@ -99,8 +99,6 @@ class ClientConnection(StubClientConnection):
 
     def init_state(self) -> None:
         self.hello_sent = 0.0
-        self.xdg_menu = True
-        self.menu = False
         self.ssh_auth_sock = ""
         self.wants = ["encodings", "versions", "features", "display", "packet-types"]
         # these statistics are shared by all WindowSource instances:
@@ -122,11 +120,6 @@ class ClientConnection(StubClientConnection):
         return compressed_wrapper(datatype, data, can_inline=False, **kw)
 
     def parse_client_caps(self, c: typedict) -> None:
-        # general features:
-        if BACKWARDS_COMPATIBLE:
-            # `xdg-menu` is the pre v6.4 legacy name:
-            self.xdg_menu = c.boolget("xdg-menu", False)
-        self.menu = c.boolget("menu", False)
         self.ssh_auth_sock = c.strget("ssh-auth-sock")
 
     def startup_complete(self) -> None:
@@ -252,10 +245,6 @@ class ClientConnection(StubClientConnection):
         }
         if p := self.protocol:
             info["connection"] = p.get_info()
-        info["menu"] = bool(self.menu)
-        if BACKWARDS_COMPATIBLE:
-            # legacy pre v6.4 name:
-            info["xdg-menu"] = bool(self.xdg_menu)
         return info
 
     def send_info_response(self, info: dict) -> None:
