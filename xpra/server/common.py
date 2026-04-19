@@ -19,3 +19,9 @@ def get_sources_by_type(server, subsystem_type: type, exclude=None) -> Sequence:
         Logger("server").error("Error: no %r in %s", GET_SOURCES_BY_TYPE, server)
         return ()
     return fn(subsystem_type, exclude)
+
+
+def may_update_bandwidth_limits(server) -> None:
+    # this method is only available when the NetworkState mixin is enabled:
+    update_bandwidth_limits = getattr(server, "update_bandwidth_limits", noop)
+    update_bandwidth_limits()

@@ -14,6 +14,7 @@ from xpra.net.packet_type import (
     WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL,
 )
 from xpra.os_util import gi_import
+from xpra.server.common import may_update_bandwidth_limits
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
@@ -487,7 +488,7 @@ class WindowsConnection(StubClientConnection):
         self.window_sources[wid] = ws
         if len(self.window_sources) > 1:
             # re-distribute bandwidth:
-            self.may_update_bandwidth_limits()
+            may_update_bandwidth_limits(self)
         ws.init_encoders()
         self.emit("new-window-source", ws)
         return ws

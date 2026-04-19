@@ -14,7 +14,6 @@ from queue import SimpleQueue
 
 from xpra.net.packet_type import INFO_RESPONSE
 from xpra.util.thread import start_thread
-from xpra.common import noop
 from xpra.util.objects import AtomicInteger, typedict, notypedict
 from xpra.util.env import envbool
 from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
@@ -100,8 +99,6 @@ class ClientConnection(StubClientConnection):
 
     def init_state(self) -> None:
         self.hello_sent = 0.0
-        self.share = False
-        self.lock = False
         self.xdg_menu = True
         self.menu = False
         self.ssh_auth_sock = ""
@@ -124,16 +121,8 @@ class ClientConnection(StubClientConnection):
         kw.update(kwargs)
         return compressed_wrapper(datatype, data, can_inline=False, **kw)
 
-    def may_update_bandwidth_limits(self) -> None:
-        # this method is only available when the NetworkState mixin is enabled:
-        update_bandwidth_limits = getattr(self, "update_bandwidth_limits", noop)
-        if update_bandwidth_limits != noop:
-            update_bandwidth_limits()
-
     def parse_client_caps(self, c: typedict) -> None:
         # general features:
-        self.share = c.boolget("share")
-        self.lock = c.boolget("lock")
         if BACKWARDS_COMPATIBLE:
             # `xdg-menu` is the pre v6.4 legacy name:
             self.xdg_menu = c.boolget("xdg-menu", False)
@@ -263,15 +252,7 @@ class ClientConnection(StubClientConnection):
         }
         if p := self.protocol:
             info["connection"] = p.get_info()
-        info.update(self.get_features_info())
-        return info
-
-    def get_features_info(self) -> dict[str, Any]:
-        info = {
-            "lock": bool(self.lock),
-            "share": bool(self.share),
-            "menu": bool(self.menu),
-        }
+        info["menu"] = bool(self.menu)
         if BACKWARDS_COMPATIBLE:
             # legacy pre v6.4 name:
             info["xdg-menu"] = bool(self.xdg_menu)

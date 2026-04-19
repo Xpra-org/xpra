@@ -8,6 +8,7 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
+from xpra.server.common import get_sources_by_type
 from xpra.util.objects import typedict
 from xpra.server.window import batch_config
 from xpra.server.base import ServerBase
@@ -381,8 +382,12 @@ class ShadowServerBase(ServerBase):
                     from PIL import Image
                     img = Image.frombuffer("RGBA", (w, h), pixels, "raw", "BGRA", 0, 1)
                     img.save("cursor-%#x.png" % serial, format="PNG")
-            for ss in self.window_sources():
-                if hasattr(ss, "send_cursor"):
+            try:
+                from xpra.server.source.cursor import CursorsConnection
+            except ImportError:
+                pass
+            else:
+                for ss in get_sources_by_type(self, CursorsConnection):
                     ss.send_cursor()
 
     def do_get_cursor_data(self):

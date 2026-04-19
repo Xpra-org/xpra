@@ -39,6 +39,28 @@ class SharingServer(StubServerMixin):
         ac = self.args_control
         ac("set-lock", "modify the lock attribute", min_args=1, max_args=1)
         ac("set-sharing", "modify the sharing attribute", min_args=1, max_args=1)
+        self.hello_request_handlers["detach"] = self._handle_hello_request_detach
+
+    def _handle_hello_request_detach(self, proto, _caps: typedict) -> bool:
+        # noinspection PySimplifyBooleanCheck
+        if self.lock is True:
+            log("cannot detach: session is locked")
+            self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
+            return False
+        count = locked = 0
+        for p, ss in tuple(self._server_sources.items()):
+            if p != proto:
+                if ss.lock:
+                    locked += 1
+                else:
+                    log("handle_sharing: detaching %s", ss)
+                    self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
+                    count += 1
+        message = f"{count} clients have been disconnected"
+        if locked:
+            message += f", {locked} still have it locked"
+        self.disconnect_client(proto, ConnectionMessage.DONE, message)
+        return True
 
     def get_sharing_info(self) -> dict[str, Any]:
         return {

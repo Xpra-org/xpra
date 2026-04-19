@@ -64,7 +64,6 @@ class ServerBase(ServerBaseClass):
             c.__init__(self)
         log("ServerBase.__init__()")
         self.hello_request_handlers.update({
-            "detach": self._handle_hello_request_detach,
             "exit": self._handle_hello_request_exit,
             "stop": self._handle_hello_request_stop,
         })
@@ -227,27 +226,6 @@ class ServerBase(ServerBaseClass):
 
     def get_sources_by_type(self, atype, notsource=None) -> Sequence:
         return tuple(ss for ss in self._server_sources.values() if isinstance(ss, atype) and (notsource is None or ss.uuid != notsource.uuid))
-
-    def _handle_hello_request_detach(self, proto, _caps: typedict) -> bool:
-        # noinspection PySimplifyBooleanCheck
-        if self.lock is True:
-            authlog("cannot detach: session is locked")
-            self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
-            return False
-        count = locked = 0
-        for p, ss in tuple(self._server_sources.items()):
-            if p != proto:
-                if ss.lock:
-                    locked += 1
-                else:
-                    authlog("handle_sharing: detaching %s", ss)
-                    self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
-                    count += 1
-        message = f"{count} clients have been disconnected"
-        if locked:
-            message += f", {locked} still have it locked"
-        self.disconnect_client(proto, ConnectionMessage.DONE, message)
-        return True
 
     @staticmethod
     def get_client_connection_class(caps: typedict) -> type:

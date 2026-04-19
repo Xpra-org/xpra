@@ -12,6 +12,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.server.common import may_update_bandwidth_limits
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.window import batch_config
 from xpra.server.core import ClientException
@@ -173,7 +174,7 @@ class EncodingsConnection(StubClientConnection):
         if stats:
             stats.bytes_sent.append((now, conn.output_bytecount))
             stats.update_averages()
-        self.may_update_bandwidth_limits()
+        may_update_bandwidth_limits(self)
         wids = tuple(self.calculate_window_ids)  # make a copy so we don't clobber new wids
         focus = self.get_focus()
         sources = self.window_sources.items()
