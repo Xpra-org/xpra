@@ -10,7 +10,9 @@ from collections.abc import Sequence
 from time import monotonic
 from typing import Any
 
+from xpra.server.common import get_sources_by_type
 from xpra.server.core import ServerCore
+from xpra.server.source.events import EventConnection
 from xpra.util.background_worker import add_work_item
 from xpra.common import noop, subsystem_name
 from xpra.net.constants import ConnectionMessage
@@ -85,8 +87,13 @@ class ServerBase(ServerBaseClass):
 
     def server_event(self, event_type: str, *args: PacketElement) -> None:
         eventslog("server_event%s", (event_type, *args))
-        for s in self._server_sources.values():
-            s.send_server_event(event_type, *args)
+        try:
+            event_sources = get_sources_by_type(self, EventConnection)
+        except ImportError:
+            pass
+        else:
+            for s in event_sources:
+                s.send_server_event(event_type, *args)
         # the bus mixin is optional:
         dbus_server = getattr(self, "dbus_server", None)
         if dbus_server:

@@ -283,7 +283,3 @@ class ClientConnection(StubClientConnection):
 
     def send_setting_change(self, setting: str, value: PacketElement) -> None:
         self.send_more("setting-change", setting, value)
-
-    def send_server_event(self, event_type: str, *args: PacketElement) -> None:
-        if "events" in self.wants and self.hello_sent:
-            self.send_more("server-event", event_type, *args)

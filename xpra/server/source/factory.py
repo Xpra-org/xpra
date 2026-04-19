@@ -19,7 +19,8 @@ log = Logger("server")
 def get_enabled_mixins() -> Sequence[type]:
     # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo import ClientInfoConnection
-    mixins: list[type] = [ClientInfoConnection]
+    from xpra.server.source.events import EventConnection
+    mixins: list[type] = [ClientInfoConnection, EventConnection]
     if features.notification:
         from xpra.server.source.notification import NotificationConnection
         mixins.append(NotificationConnection)
