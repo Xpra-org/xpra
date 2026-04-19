@@ -105,7 +105,7 @@ class ControlHandler(StubServerMixin):
 
         return f"client control command {command!r} forwarded to {count} clients"
 
-    def control_command_toggle_feature(self, feature: str, state: str) -> str:
+    def control_command_toggle_feature(self, feature: str, state: str="") -> str:
         log("control_command_toggle_feature(%s, %s)", feature, state)
         features: set[str] = set()
         for cls in type(self).__mro__:
