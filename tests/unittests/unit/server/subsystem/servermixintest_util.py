@@ -90,6 +90,9 @@ class ServerMixinTest(unittest.TestCase):
         x.add_legacy_alias = self.add_legacy_alias
         x.add_packet_handler = self.add_packet_handler
         x.get_server_source = self.get_server_source
+        x.get_sources_by_type = lambda st, exclude=None: [
+            ss for ss in x._server_sources.values() if isinstance(ss, st) and ss != exclude
+        ]
         x.init_state()
         x.init(opts)
         x.auth_classes = {}
