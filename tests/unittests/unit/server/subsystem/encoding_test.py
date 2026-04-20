@@ -70,8 +70,10 @@ class EncodingMixinTest(ServerMixinTest):
 
     def test_add_new_client_sends_caps_when_init_done(self):
         """add_new_client() should send encoding caps immediately when threaded setup is complete."""
+        from time import monotonic
         from xpra.net.common import BACKWARDS_COMPATIBLE
         packets = self._setup_encoding()
+        self.source.hello_sent = monotonic()
         self.mixin.threaded_encoding_done = True
         self.mixin.add_new_client(self.source, typedict())
         expected = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
