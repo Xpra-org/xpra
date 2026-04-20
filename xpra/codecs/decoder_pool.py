@@ -185,6 +185,9 @@ class DecoderPool:
         self._destroy_cond = Condition(self._lock)
         self._shutdown = False
 
+    def is_shutdown(self) -> bool:
+        return self._shutdown
+
     # -------- acquire / release --------
 
     def acquire(self, W: int, H: int, key: Any) -> CachedDecoder:

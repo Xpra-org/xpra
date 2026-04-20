@@ -56,10 +56,10 @@ cdef extern from "vpl_decode.h":
     VPLDecodeStatus vpl_decode_startup()
     void            vpl_decode_shutdown()
     VPLDecodeStatus vpl_decoder_create(VPLDecoder **out, int width, int height,
-                                        int chroma444, int bit_depth)
-    void            vpl_decoder_destroy(VPLDecoder *dec)
+                                        int chroma444, int bit_depth) nogil
+    void            vpl_decoder_destroy(VPLDecoder *dec) nogil
     VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
-                                       int bit_depth)
+                                       int bit_depth) nogil
     VPLDecodeStatus vpl_decoder_decode(VPLDecoder *dec,
                                         const uint8_t *data, int data_len,
                                         VPLDecodedFrame *frame) nogil
@@ -78,6 +78,53 @@ cdef void _vpl_log_callback(const char *msg) noexcept with gil:
     log("%s", msg.decode("utf-8", "replace"))
 
 
+# ── raw C-level helpers exposed to xpra.codecs.vpl.pool ───────────────
+# The pool stores the integer address of the VPLDecoder pointer; Python
+# never dereferences it. All three helpers raise RuntimeError on VPL
+# failure so DecoderPool's reset-failure retry logic can trigger.
+
+
+# Bit-depth hint passed to the C layer on create/reset. lazy_init re-runs
+# DecodeHeader from the actual bitstream on every stream start, so this
+# value only controls the INITIAL surface allocation — a slot seeded here
+# as 8-bit decodes 10-bit streams fine (and vice versa) after the first
+# decode triggers re-Init with the real params.
+DEF VPL_POOL_BIT_DEPTH_HINT = 8
+
+
+def _vpl_pool_create(int width, int height, object key) -> int:
+    # ``key`` is a caller opaque (see xpra.codecs.vpl.pool.VPL_POOL_KEY);
+    # we don't partition by it here.
+    cdef VPLDecoder *dec = NULL
+    cdef VPLDecodeStatus status
+    cdef int bit_depth = VPL_POOL_BIT_DEPTH_HINT
+    with nogil:
+        status = vpl_decoder_create(&dec, width, height, 1, bit_depth)
+    if status != VPL_DEC_OK or dec is NULL:
+        raise RuntimeError("vpl_decoder_create(%dx%d) failed: %s" %
+                           (width, height,
+                            vpl_decode_status_str(status).decode("latin-1")))
+    return <size_t>dec
+
+
+def _vpl_pool_reset(addr: int, int width, int height, object key) -> None:
+    cdef VPLDecoder *dec = <VPLDecoder*><size_t>addr
+    cdef VPLDecodeStatus status
+    cdef int bit_depth = VPL_POOL_BIT_DEPTH_HINT
+    with nogil:
+        status = vpl_decoder_reset(dec, width, height, bit_depth)
+    if status != VPL_DEC_OK:
+        raise RuntimeError("vpl_decoder_reset(%dx%d) failed: %s" %
+                           (width, height,
+                            vpl_decode_status_str(status).decode("latin-1")))
+
+
+def _vpl_pool_destroy(addr: int) -> None:
+    cdef VPLDecoder *dec = <VPLDecoder*><size_t>addr
+    with nogil:
+        vpl_decoder_destroy(dec)
+
+
 def init_module(options: dict = None) -> None:
     log("vpl.init_module()")
     if not VPL_ENABLED:
@@ -91,6 +138,16 @@ def init_module(options: dict = None) -> None:
 
 
 def cleanup_module() -> None:
+    # Shut down the decoder pool first so cached/queued decoders destroy
+    # cleanly. Safe to call even if nothing has initialized the pool.
+    #
+    # Order note: vpl_decode_shutdown() is a no-op log line — there is no
+    # shared oneVPL runtime state. Each VPLDecoder owns its own MFXLoader
+    # and MFXSession, released by vpl_decoder_destroy() independently. So
+    # a pooled decoder that outlives cleanup_module (held across teardown
+    # then released) can still destroy correctly.
+    from xpra.codecs.vpl import pool as vpl_pool
+    vpl_pool.shutdown()
     vpl_decode_shutdown()
 
 
@@ -170,9 +227,8 @@ cdef class Decoder:
         self.width = width
         self.height = height
         self.frames = 0
-        # Bit depth: the C layer's lazy_init auto-detects from the bitstream
-        # header (DecodeHeader populates FrameInfo.FourCC and BitDepthLuma).
-        # Default to 8 here as a hint; the actual format is determined by the stream.
+        # Bit depth: only a hint for the unpooled direct-create path; the
+        # pool auto-detects per stream in lazy_init and ignores the hint.
         cdef int bit_depth = 8
         cdef VPLDecodeStatus status = vpl_decoder_create(&self.context, width, height, 1, bit_depth)
         if status == VPL_DEC_NOT_AVAILABLE:
