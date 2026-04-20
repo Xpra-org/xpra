@@ -50,7 +50,8 @@ class SharingServer(StubServerMixin):
         count = locked = 0
         for p, ss in tuple(self._server_sources.items()):
             if p != proto:
-                if ss.lock:
+                # weak dependency on `SharingConnection` mixin:
+                if getattr(ss, "lock", False):
                     locked += 1
                 else:
                     log("handle_sharing: detaching %s", ss)
