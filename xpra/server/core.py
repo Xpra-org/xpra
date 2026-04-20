@@ -1472,7 +1472,7 @@ class ServerCore(ServerBaseClass):
     def handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
         if not is_request_allowed(proto, request):
             msg = f"{request!r} requests are not enabled for this connection"
-            log.warn(f"Warning: {msg}")
+            log.error(f"Error: {msg}")
             self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
             return True
         return self.do_handle_hello_request(request, proto, caps)
@@ -1481,7 +1481,7 @@ class ServerCore(ServerBaseClass):
         handler = self.hello_request_handlers.get(request)
         log("do_handle_hello_request(%s, %s, ..) handler=%s", request, proto, handler)
         if not handler:
-            log.warn(f"Warning: no handler for hello request {request!r}")
+            log.error(f"Error: no handler for hello request {request!r}")
             return False
         return handler(proto, caps)
 
