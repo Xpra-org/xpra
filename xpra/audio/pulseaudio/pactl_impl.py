@@ -7,7 +7,7 @@
 import sys
 import hashlib
 import os.path
-from typing import Any, Optional
+from typing import Any
 
 from xpra.audio.pulseaudio.common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.os_util import WIN32, OSX
@@ -150,8 +150,8 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
 
 def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None,
                              ignored_devices=("bell-window-system",)):
-    def are_properties_acceptable(name: Optional[str], device_class: Optional[str],
-                                  monitor_of_sink: Optional[str]) -> bool:
+    def are_properties_acceptable(name: str | None, device_class: str | None,
+                                  monitor_of_sink: str | None) -> bool:
         if (name is None) or (device_class is None and monitor_of_sink is None):
             return False
         if name in ignored_devices:
@@ -174,10 +174,10 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
                 return False
         return True
 
-    name: Optional[str] = None
-    device_class: Optional[str] = None
-    monitor_of_sink: Optional[str] = None
-    device_description: Optional[str] = None
+    name: str | None = None
+    device_class: str | None = None
+    monitor_of_sink: str | None = None
+    device_description: str | None = None
     in_source_section: bool = False
     devices: dict[str, str] = {}
     for line in bytestostr(pactl_list_output).splitlines():

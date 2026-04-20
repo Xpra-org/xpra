@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Optional
 from collections.abc import Sequence
 
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
@@ -13,7 +12,7 @@ from xpra.log import Logger
 log = Logger("window", "shape")
 
 
-bit_to_rectangles: Optional[callable] = None
+bit_to_rectangles = None
 try:
     from xpra.codecs.argb import argb
 

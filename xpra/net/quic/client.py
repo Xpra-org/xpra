@@ -8,7 +8,7 @@ import os
 import socket
 import ipaddress
 from queue import SimpleQueue
-from typing import Union, cast
+from typing import cast
 from collections.abc import Callable
 
 from aioquic.quic.configuration import QuicConfiguration
@@ -42,7 +42,7 @@ from xpra.log import Logger
 
 log = Logger("quic")
 
-HttpConnection = Union[H0Connection, H3Connection]
+HttpConnection = H0Connection | H3Connection
 
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)

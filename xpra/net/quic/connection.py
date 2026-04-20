@@ -5,7 +5,7 @@
 
 import os
 from queue import SimpleQueue
-from typing import Union, Any
+from typing import Any
 from collections.abc import Callable
 
 from aioquic import __version__ as aioquic_version
@@ -24,7 +24,7 @@ from xpra.log import Logger
 
 log = Logger("quic")
 
-HttpConnection = Union[H0Connection, H3Connection]
+HttpConnection = H0Connection | H3Connection
 
 DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_DATAGRAM_PACKET_TYPES",

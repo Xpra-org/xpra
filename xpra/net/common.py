@@ -8,7 +8,7 @@ import sys
 import socket
 import struct
 import threading
-from typing import Any, Union, TypeAlias
+from typing import Any, TypeAlias
 from collections.abc import Callable, Sequence
 
 from xpra.exit_codes import ExitCode
@@ -48,10 +48,10 @@ PacketElementTypes: tuple[type, ...] = (
     tuple, list, dict, int, bool, str, bytes, memoryview,
     Compressible, Compressed, LargeStructure,
 )
-PacketElement: TypeAlias = Union[
-    tuple, list, dict, int, bool, str, bytes, memoryview,
-    Compressible, Compressed, LargeStructure,
-]
+PacketElement: TypeAlias = (
+    tuple | list | dict | int | bool | str | bytes | memoryview |
+    Compressible | Compressed | LargeStructure
+)
 
 
 class Packet(Sequence):

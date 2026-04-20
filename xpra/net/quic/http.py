@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os.path
-from typing import Union
 from collections.abc import Callable
 
 from aioquic.asyncio import QuicConnectionProtocol
@@ -22,7 +21,7 @@ from xpra.log import Logger
 
 log = Logger("quic")
 
-HttpConnection = Union[H0Connection, H3Connection]
+HttpConnection = H0Connection | H3Connection
 
 
 class HttpRequestHandler:

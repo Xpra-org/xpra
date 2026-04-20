@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Union
-
 import asyncio
 from aioquic.asyncio import QuicConnectionProtocol
 from aioquic.asyncio.server import QuicServer
@@ -37,8 +35,8 @@ log = Logger("quic")
 
 quic_logger = QuicLogger()
 
-HttpConnection = Union[H0Connection, H3Connection]
-Handler = Union[HttpRequestHandler, ServerWebSocketConnection, ServerWebTransportConnection]
+HttpConnection = H0Connection | H3Connection
+Handler = HttpRequestHandler | ServerWebSocketConnection | ServerWebTransportConnection
 
 
 class HttpServerProtocol(QuicConnectionProtocol):

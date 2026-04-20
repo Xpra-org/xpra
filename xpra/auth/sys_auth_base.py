@@ -5,7 +5,6 @@
 
 import os
 from collections import deque
-from typing import Deque
 from collections.abc import Callable, Sequence
 
 from xpra.net.constants import SocketState
@@ -35,7 +34,7 @@ def xor(s1, s2) -> bytes:
 
 
 class SysAuthenticatorBase:
-    USED_SALT: Deque[bytes] = deque(maxlen=USED_SALT_CACHE_SIZE)
+    USED_SALT: deque[bytes] = deque(maxlen=USED_SALT_CACHE_SIZE)
     DEFAULT_PROMPT = "password for user '{username}'"
     CLIENT_USERNAME = False
 

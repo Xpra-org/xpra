@@ -7,9 +7,8 @@
 
 import os
 from time import monotonic
-from typing import Any, Deque
+from typing import Any
 from collections.abc import Sequence
-
 from collections import deque
 from xpra.common import Self
 from xpra.util.parsing import MIN_VREFRESH, MAX_VREFRESH
@@ -83,10 +82,10 @@ class DamageBatchConfig:
         self.locked: bool = False  # to force a specific delay
         self.last_event: int = 0
         # the delays we have tried to use (milliseconds)
-        self.last_delays: Deque[tuple[float, int]] = deque(maxlen=64)
+        self.last_delays: deque[tuple[float, int]] = deque(maxlen=64)
         self.last_delay = None
         # the delays we actually used (milliseconds)
-        self.last_actual_delays: Deque[tuple[float, int]] = deque(maxlen=64)
+        self.last_actual_delays: deque[tuple[float, int]] = deque(maxlen=64)
         self.last_actual_delay = None
         self.last_updated: int = 0
         # the metrics derived from statistics which we use for calculating the new batch delay:

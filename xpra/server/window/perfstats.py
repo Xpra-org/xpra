@@ -7,8 +7,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Deque, Any
-
+from typing import Any
 from collections import deque
 from xpra.util.stats import get_list_stats, get_weighted_list_stats
 from xpra.util.str_fn import csv
@@ -50,15 +49,15 @@ class WindowPerformanceStatistics:
         self.init_time: float = monotonic()
         # records how long it took the client to decode frames:
         # (ack_time, no of pixels, decoding_time*1000*1000)
-        self.client_decode_time: Deque[tuple[float, int, int]] = deque(maxlen=NRECS)
+        self.client_decode_time: deque[tuple[float, int, int]] = deque(maxlen=NRECS)
         # encoding: (time, coding, pixels, bpp, compressed_size, encoding_time)
-        self.encoding_stats: Deque[tuple[float, str, int, int, int, float]] = deque(maxlen=NRECS)
+        self.encoding_stats: deque[tuple[float, str, int, int, int, float]] = deque(maxlen=NRECS)
         # records how long it took for a damage request to be sent
         # last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_in_latency: Deque[tuple[float, int, float, float]] = deque(maxlen=NRECS)
+        self.damage_in_latency: deque[tuple[float, int, float, float]] = deque(maxlen=NRECS)
         # records how long it took for a damage request to be processed
         # last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_out_latency: Deque[tuple[float, int, float, float]] = deque(maxlen=NRECS)
+        self.damage_out_latency: deque[tuple[float, int, float, float]] = deque(maxlen=NRECS)
         # records when damage packets are sent,
         # so we can calculate the "client_latency" when the client sends
         # the corresponding ack (WINDOW_DRAW_ACK packet - see "client_ack_damage")
@@ -69,13 +68,13 @@ class WindowPerformanceStatistics:
         # for each sequence no: (damage_time, w, h)
         self.encoding_pending: dict = {}
         # every time we get a damage event, we record: time,x,y,w,h
-        self.last_damage_events: Deque[tuple[float, int, int, int, int]] = deque(maxlen=4 * NRECS)
+        self.last_damage_events: deque[tuple[float, int, int, int, int]] = deque(maxlen=4 * NRECS)
         self.last_damage_event_time: float = 0
         self.last_recalculate: float = 0
         self.damage_events_count = 0
         self.packet_count = 0
 
-        self.resize_events: Deque[float] = deque(maxlen=4)  # (time)
+        self.resize_events: deque[float] = deque(maxlen=4)  # (time)
         self.last_resized: float = 0
         self.last_packet_time: float = 0
 

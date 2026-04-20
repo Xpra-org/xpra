@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Any, Deque
+from typing import Any
 from collections import deque
 from collections.abc import Sequence
 
@@ -39,7 +39,7 @@ class ClipboardConnection(StubClientConnection):
         self.clipboard_notifications_current = 0
         self.clipboard_notifications_pending = 0
         self.clipboard_progress_timer: int = 0
-        self.clipboard_stats: Deque[float] = deque(maxlen=MAX_CLIPBOARD_LIMIT * MAX_CLIPBOARD_LIMIT_DURATION)
+        self.clipboard_stats: deque[float] = deque(maxlen=MAX_CLIPBOARD_LIMIT * MAX_CLIPBOARD_LIMIT_DURATION)
         self.clipboard_greedy = False
         self.clipboard_want_targets = False
         self.clipboard_selections = get_local_selections()
