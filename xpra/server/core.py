@@ -154,7 +154,6 @@ class ServerCore(ServerBaseClass):
         self.start_time = time()
         self.hello_request_handlers.update({
             "connect_test": self._handle_hello_request_connect_test,
-            "screenshot": self._handle_hello_request_screenshot,
         })
         self.uuid = ""
         self.session_type: str = "unknown"
@@ -1469,11 +1468,6 @@ class ServerCore(ServerBaseClass):
         ctr = caps.strget("connect_test_request")
         response = {"connect_test_response": ctr}
         proto.send_now(Packet("hello", response))
-        return True
-
-    def _handle_hello_request_screenshot(self, proto, _caps: typedict) -> bool:
-        packet = self.make_screenshot_packet()
-        proto.send_now(packet)
         return True
 
     def accept_protocol(self, proto: SocketProtocol, c: typedict) -> None:

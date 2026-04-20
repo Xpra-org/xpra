@@ -74,6 +74,7 @@ class DisplayManager(StubServerMixin):
 
     def __init__(self):
         StubServerMixin.__init__(self)
+        self.hello_request_handlers["screenshot"] = self._handle_hello_request_screenshot
         self.display = os.environ.get("DISPLAY", "")
         self.display_options = ""
         self.screen_size_changed_timer = 0
@@ -472,6 +473,11 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # screenshots:
+    def _handle_hello_request_screenshot(self, proto, _caps: typedict) -> bool:
+        packet = self.make_screenshot_packet()
+        proto.send_now(packet)
+        return True
+
     def _process_display_request_screenshot(self, proto, _packet: Packet) -> None:
         packet = self.make_screenshot_packet()
         ss = self.get_server_source(proto)

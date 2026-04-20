@@ -47,6 +47,9 @@ class EncodingMixinTest(ServerMixinTest):
         self.mixin._server_sources[self.protocol] = self.source
         # ensure the source wants encoding caps so threaded_init_complete proceeds
         self.source.wants = ["encodings", "features"]
+        # hello_sent is normally set by ClientConnection; set it here so the guard passes
+        from time import monotonic
+        self.source.hello_sent = monotonic()
         # capture packets sent to the client
         packets = []
         self.source.send_async = lambda pt, *a, **kw: packets.append(pt)
