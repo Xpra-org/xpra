@@ -2578,7 +2578,18 @@ def run_stopexit(mode: str, error_cb: Callable, opts, extra_args: list[str], cmd
     return e
 
 
+def _has_display() -> bool:
+    if WIN32 or OSX:
+        return True
+    import os
+    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+
+
 def run_top(error_cb: Callable, options, args: list[str], cmdline: list[str]) -> ExitValue:
+    if not args and _has_display():
+        from xpra.gtk.dialogs.top import main as run_top_gui
+        run_top_gui(options)
+        return 0
     from xpra.client.base.top import TopClient, TopSessionClient
     if args:
         # try to show a specific session
