@@ -7,8 +7,10 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.server.common import get_sources_by_type
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import Ellipsizer
+from xpra.server.source.menu import MenuConnection
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -20,15 +22,11 @@ log = Logger("menu")
 def do_send_menu_data(ss, menu) -> None:
     if ss.is_closed():
         return
+    assert isinstance(ss, MenuConnection)
     if not getattr(ss, "send_setting_change", False):
         return
-    log("do_send_menu_data(%s, %s)", ss, Ellipsizer(menu))
-    if getattr(ss, "menu", False):
-        attr = "menu"
-    elif BACKWARDS_COMPATIBLE and getattr(ss, "xdg_menu", False):
-        attr = "xdg-menu"
-    else:
-        return
+    attr = "menu" if ss.menu else "xdg-menu"
+    log("do_send_menu_data(%s, %s) attr=%s", ss, Ellipsizer(menu), attr)
 
     def do_send() -> None:
         ss.send_setting_change(attr, menu)
@@ -81,14 +79,11 @@ class MenuServer(StubServerMixin):
         caps: dict[str, Any] = {}
         if BACKWARDS_COMPATIBLE:
             caps["xdg-menu"] = {}
-        from xpra.scripts.parsing import get_subcommands
-        caps["subcommands"] = get_subcommands()
         return caps
 
     def send_initial_data(self, ss) -> None:
-        if not (getattr(ss, "menu", False) or getattr(ss, "xdg_menu", False)):
-            return
-        start_thread(self.send_menu_data, "send-xdg-menu-data", True, (ss,))
+        if isinstance(ss, MenuConnection):
+            start_thread(self.send_menu_data, "send-xdg-menu-data", True, (ss,))
 
     def send_menu_data(self, ss) -> None:
         if ss.is_closed():
@@ -98,7 +93,8 @@ class MenuServer(StubServerMixin):
 
     def send_updated_menu(self, menu) -> None:
         log("send_updated_menu(%s)", Ellipsizer(menu))
-        for source in tuple(self._server_sources.values()):
+        menu_sources = get_sources_by_type(self, MenuConnection)
+        for source in menu_sources:
             do_send_menu_data(source, menu)
 
     def get_info(self, _proto) -> dict[str, Any]:

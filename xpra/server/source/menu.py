@@ -33,7 +33,7 @@ class MenuConnection(StubClientConnection):
         self.menu = c.boolget("menu", False)
 
     def get_info(self) -> dict[str, Any]:
-        info: dict[str, Any] = {"menu": bool(self.menu)}
+        info: dict[str, Any] = {"menu": self.menu}
         if BACKWARDS_COMPATIBLE:
-            info["xdg-menu"] = bool(self.xdg_menu)
+            info["xdg-menu"] = self.xdg_menu
         return info

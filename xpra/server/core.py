@@ -1524,6 +1524,9 @@ class ServerCore(ServerBaseClass):
             "readonly-server": True,
             "readonly": self.readonly,
         }
+        if FULL_INFO:
+            from xpra.scripts.parsing import get_subcommands
+            caps["subcommands"] = get_subcommands()
         server_log = os.environ.get("XPRA_SERVER_LOG", "")
         if server_log:
             caps["server-log"] = server_log
