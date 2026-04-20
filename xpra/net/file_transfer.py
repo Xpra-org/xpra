@@ -260,7 +260,8 @@ class FileTransferHandler(FileTransferAttributes):
             GLib.source_remove(t)
         self.pending_send_data_timers = {}
         for v in self.receive_chunks_in_progress.values():
-            GLib.source_remove(v.timer)
+            if v.timer:
+                GLib.source_remove(v.timer)
         self.receive_chunks_in_progress = {}
         for x in tuple(self.file_descriptors):
             try:
