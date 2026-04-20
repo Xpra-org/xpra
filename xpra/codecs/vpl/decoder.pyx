@@ -58,6 +58,8 @@ cdef extern from "vpl_decode.h":
     VPLDecodeStatus vpl_decoder_create(VPLDecoder **out, int width, int height,
                                         int chroma444, int bit_depth)
     void            vpl_decoder_destroy(VPLDecoder *dec)
+    VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
+                                       int bit_depth)
     VPLDecodeStatus vpl_decoder_decode(VPLDecoder *dec,
                                         const uint8_t *data, int data_len,
                                         VPLDecodedFrame *frame) nogil

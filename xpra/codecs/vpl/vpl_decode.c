@@ -339,6 +339,90 @@ void vpl_decoder_destroy(VPLDecoder *dec) {
     free(dec);
 }
 
+/* ── release the last mapped output surface ─────────────────────────── */
+
+void vpl_decoder_release_surface(VPLDecoder *dec) {
+    if (!dec)
+        return;
+    release_locked(dec);
+}
+
+/* ── close + release surface for idle pool slot ─────────────────────── */
+
+void vpl_decoder_idle(VPLDecoder *dec) {
+    if (!dec)
+        return;
+    release_locked(dec);
+    if (dec->session && dec->initialized) {
+        MFXVideoDECODE_Close(dec->session);
+        dec->initialized = 0;
+    }
+}
+
+/* ── reset decoder for reuse with new dims/bit_depth ────────────────── */
+
+VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
+                                   int bit_depth) {
+    if (!dec)
+        return VPL_DEC_ERROR;
+
+    vpl_log("vpl_decoder_reset: %dx%d %d-bit (was %dx%d %d-bit)",
+            width, height, bit_depth,
+            dec->width, dec->height, dec->bit_depth);
+
+    release_locked(dec);
+
+    if (dec->session && dec->initialized) {
+        mfxStatus sts = MFXVideoDECODE_Close(dec->session);
+        if (sts != MFX_ERR_NONE && sts != MFX_ERR_NOT_INITIALIZED) {
+            return set_error(dec, sts, "MFXVideoDECODE_Close");
+        }
+    }
+
+    dec->width = width;
+    dec->height = height;
+    dec->bit_depth = bit_depth;
+    dec->format = (bit_depth >= 10) ? VPL_FMT_Y410 : VPL_FMT_AYUV;
+    dec->initialized = 0;
+    dec->last_sts = MFX_ERR_NONE;
+    dec->last_error[0] = '\0';
+    /* Restore the optimistic HW default. A prior stream that hit
+       MFX_WRN_PARTIAL_ACCELERATION would have set this to 0; lazy_init
+       only flips it 1→0, never the other way, so a stale 0 would stick
+       across all later streams on this slot. */
+    dec->is_hw = 1;
+
+    /* Start from a clean mfxVideoParam. DecodeHeader on the previous stream
+       may have mutated CodecProfile / ChromaFormat / Crop / etc. Leaving
+       those in place makes pooled reuse behave differently from a fresh
+       create. Rebuild the same subset vpl_decoder_create() sets up. */
+    memset(&dec->param, 0, sizeof(dec->param));
+    dec->param.mfx.CodecId = MFX_CODEC_HEVC;
+    dec->param.mfx.CodecProfile = MFX_PROFILE_HEVC_REXT;
+    dec->param.IOPattern = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
+    dec->param.AsyncDepth = 1;
+    dec->param.mfx.FrameInfo.Width = (width + 15) & ~15;
+    dec->param.mfx.FrameInfo.Height = (height + 15) & ~15;
+    dec->param.mfx.FrameInfo.CropW = width;
+    dec->param.mfx.FrameInfo.CropH = height;
+    dec->param.mfx.FrameInfo.ChromaFormat = MFX_CHROMAFORMAT_YUV444;
+    dec->param.mfx.FrameInfo.BitDepthLuma = bit_depth;
+    dec->param.mfx.FrameInfo.BitDepthChroma = bit_depth;
+    if (bit_depth >= 10) {
+        dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_Y410;
+        dec->param.mfx.FrameInfo.Shift = 0;
+    } else {
+        dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_AYUV;
+        dec->param.mfx.FrameInfo.Shift = 0;
+    }
+
+    /* Next vpl_decoder_decode() call will trigger lazy_init() which re-runs
+       MFXVideoDECODE_DecodeHeader + MFXVideoDECODE_Init on the fresh
+       bitstream. Session and loader stay alive, saving MFXLoad +
+       MFXCreateSession on each reuse. */
+    return VPL_DEC_OK;
+}
+
 /* ── lazy init: parse header from first bitstream, then init decoder ── */
 
 static VPLDecodeStatus lazy_init(VPLDecoder *dec, mfxBitstream *bs) {

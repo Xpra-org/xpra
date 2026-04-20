@@ -55,6 +55,25 @@ VPLDecodeStatus vpl_decoder_create(VPLDecoder **out, int width, int height,
                                     int chroma444, int bit_depth);
 void            vpl_decoder_destroy(VPLDecoder *dec);
 
+/* Reconfigure an existing decoder for a new stream without destroying the
+   session/loader. Equivalent to vpl_decoder_create's post-session state:
+   session and loader stay alive, MFXVideoDECODE_Close runs, and the next
+   decode triggers lazy_init (DecodeHeader + MFXVideoDECODE_Init). Saves
+   MFXLoad + MFXCreateSession overhead on each reuse. */
+VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
+                                   int bit_depth);
+
+/* Unmap and release the last decoded output surface, if any. Called
+   before returning a pooled decoder to the cache so the mapped surface
+   does not stay pinned across idle time. */
+void vpl_decoder_release_surface(VPLDecoder *dec);
+
+/* Release the output surface AND close the decoder so its internal
+   surface pool / reference frames are freed during pool idle time. The
+   next decode will re-run lazy_init; session and loader stay alive so
+   MFXLoad + MFXCreateSession are still saved. */
+void vpl_decoder_idle(VPLDecoder *dec);
+
 /* Decode one compressed HEVC access unit.
    On VPL_DEC_OK, frame is populated; caller must copy before next call.
    On VPL_DEC_NEED_MORE_INPUT, frame is zeroed.
