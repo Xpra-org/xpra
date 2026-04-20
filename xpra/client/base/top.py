@@ -431,7 +431,7 @@ class TopSessionClient(InfoTimerClient):
         self.psprocess = {}
         start_thread(self.input_thread, "input-thread", daemon=True)
 
-    def server_connection_established(self, caps) -> bool:
+    def server_connection_established(self, caps: typedict) -> bool:
         self.log(f"server_connection_established({caps!r})")
         self.log("traceback: " + str(traceback.extract_stack()))
         self.setup()

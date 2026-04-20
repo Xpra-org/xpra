@@ -196,12 +196,12 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             }
         return caps
 
-    def server_connection_established(self, c: typedict) -> bool:
+    def server_connection_established(self, caps: typedict) -> bool:
         for cc in CLIENT_BASES:
-            if not cc.parse_server_capabilities(self, c):
+            if not cc.parse_server_capabilities(self, caps):
                 return False
         # this will call do_command()
-        return super().server_connection_established(c)
+        return super().server_connection_established(caps)
 
     def _process_startup_complete(self, packet: Packet) -> None:
         self.refresh_timer = self.timeout_add(REFRESH * 1000, self.request_refresh)
