@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from time import monotonic
 
 from xpra.util.objects import AdHocStruct, typedict
 from xpra.common import BACKWARDS_COMPATIBLE
@@ -48,6 +49,8 @@ class EncodingMixinTest(ServerMixinTest):
         self.mixin._server_sources[self.protocol] = self.source
         # ensure the source wants encoding caps so threaded_init_complete proceeds
         self.source.wants = ["encodings", "features"]
+        # hello_sent is normally set by ClientConnection; set it here so the guard passes
+        self.source.hello_sent = monotonic()
         # capture packets sent to the client
         packets = []
         self.source.send_async = lambda pt, *a, **kw: packets.append(pt)
@@ -64,7 +67,6 @@ class EncodingMixinTest(ServerMixinTest):
 
     def test_add_new_client_sends_caps_when_init_done(self):
         """add_new_client() should send encoding caps immediately when threaded setup is complete."""
-        from time import monotonic
         packets = self._setup_encoding()
         self.source.hello_sent = monotonic()
         self.mixin.threaded_encoding_done = True
