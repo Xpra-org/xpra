@@ -109,6 +109,7 @@ class ServerMixinTest(unittest.TestCase):
             self.source.protocol = self.protocol
             self.source.init_from(self.protocol, x)
             self.source.init_state()
+            self.source.hello_sent = 0.0
             self.source.parse_client_caps(caps)
             self.source.get_info()
         x.get_caps(self.source)
