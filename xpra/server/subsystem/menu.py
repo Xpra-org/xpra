@@ -71,15 +71,14 @@ class MenuServer(StubServerMixin):
         return self.menu_provider.get_menu_data()
 
     def get_caps(self, source) -> dict[str, Any]:
-        if not source:
+        if not source or not BACKWARDS_COMPATIBLE:
             return {}
         wants = getattr(source, "wants", [])
         if "features" not in wants:
             return {}
-        caps: dict[str, Any] = {}
-        if BACKWARDS_COMPATIBLE:
-            caps["xdg-menu"] = {}
-        return caps
+        return {
+            "xdg-menu": {},
+        }
 
     def send_initial_data(self, ss) -> None:
         if isinstance(ss, MenuConnection):
