@@ -4586,7 +4586,8 @@ def run_notify(_options, args) -> ExitValue:
                          title, body,
                          actions, hints, 60*1000, "")
     nid += 1
-    from gi.repository import GLib  # @UnresolvedImport
+    from xpra.os_util import gi_import
+    GLib = gi_import("GLib")
     loop = GLib.MainLoop()
     GLib.timeout_add(5 * 1000, loop.quit)
     loop.run()
