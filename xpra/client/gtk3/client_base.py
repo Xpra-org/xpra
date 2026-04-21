@@ -1031,7 +1031,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self._last_cursor_data = cursor_data
         for w in windows:
             # weak dependency on PointerWindow:
-            set_cursor_data = getattr(self, "set_cursor_data", noop)
+            set_cursor_data = getattr(w, "set_cursor_data", noop)
             set_cursor_data(cursor_data)
             # the cursor should only apply to the window contents (aka "drawingarea"),
             # and not the headerbar:
