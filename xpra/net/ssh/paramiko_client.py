@@ -801,7 +801,10 @@ def run_test_command(transport, cmd:str) -> Tuple[bytes,bytes,int]:
     chan.settimeout(EXEC_STDERR_TIMEOUT)
     err = chan_read(chan.makefile_stderr())
     log(f"exec_command err={err!r}")
-    chan.close()
+    try:
+        chan.close()
+    except EOFError:
+        log("chan.close() raised EOFError - transport already closed")
     return out, err, code
 
 
