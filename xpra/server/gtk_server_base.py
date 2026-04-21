@@ -165,6 +165,9 @@ class GTKServerBase(ServerBase):
                 "root_window_size"    : self.get_root_window_size(),
                 })
             info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
+        vi = dict_version_trim(get_gtk_version_info())
+        vi["type"] = "Python/gtk"
+        info.setdefault("server", {}).update(vi)
         return info
 
 
@@ -223,9 +226,6 @@ class GTKServerBase(ServerBase):
     def do_get_info(self, proto, *args) -> Dict[str,Any]:
         start = monotonic()
         info = super().do_get_info(proto, *args)
-        vi = dict_version_trim(get_gtk_version_info())
-        vi["type"] = "Python/gtk"
-        info.setdefault("server", {}).update(vi)
         log("GTKServerBase.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
