@@ -48,6 +48,8 @@ class GLDrawingArea(GLWindowBackingBase):
         self._backing = da
 
     def on_realize(self, *args) -> None:
+        from xpra.platform.gui import setup_gl_drawing_area
+        setup_gl_drawing_area(self._backing)
         onrcb = self.on_realize_cb
         log("GLDrawingArea.on_realize%s callbacks=%s", args, tuple(Ellipsizer(x) for x in onrcb))
         self.on_realize_cb = []
@@ -92,6 +94,11 @@ class GLDrawingArea(GLWindowBackingBase):
         else:
             # glFlush was enough
             pass
+
+    def close_gl(self, context) -> None:
+        from xpra.platform.gui import cleanup_gl_drawing_area
+        cleanup_gl_drawing_area(self._backing)
+        super().close_gl(context)
 
     def close_gl_config(self) -> None:
         if c := self.context:

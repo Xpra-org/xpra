@@ -34,6 +34,8 @@ from xpra.platform.win32.common import (
     GetIntSystemParametersInfo,
     GetUserObjectInformationA, OpenInputDesktop, CloseDesktop,
     GetMonitorInfo,
+    SUBCLASSPROC, SetWindowSubclass, RemoveWindowSubclass, DefSubclassProc,
+    SetCursor, GetCursor,
 )
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -1054,6 +1056,41 @@ WTS_SESSION_EVENTS: dict[int, str] = {
     WTS_SESSION_UNLOCK: "SESSION_UNLOCK",
     WTS_SESSION_REMOTE_CONTROL: "SESSION_REMOTE_CONTROL",
 }
+
+
+WM_SETCURSOR = 0x0020
+_GL_SUBCLASS_UID = 0xC055  # arbitrary uIdSubclass passed to SetWindowSubclass; unique per HWND, identifies our GL cursor hook
+_gl_subclass_procs: dict[int, object] = {}
+
+
+def setup_gl_drawing_area(widget) -> None:
+    cleanup_gl_drawing_area(widget)
+    hwnd = get_window_handle(widget)
+    if not hwnd:
+        return
+
+    def _proc(h, msg, wparam, lparam, uid, ref_data):
+        if msg == WM_SETCURSOR:
+            SetCursor(GetCursor())
+            return 1
+        return DefSubclassProc(h, msg, wparam, lparam)
+
+    proc = SUBCLASSPROC(_proc)
+    _gl_subclass_procs[hwnd] = proc
+    SetWindowSubclass(HWND(hwnd), proc, _GL_SUBCLASS_UID, 0)
+    log("setup_gl_drawing_area(%s) hwnd=%#x", widget, hwnd)
+
+
+def cleanup_gl_drawing_area(widget) -> None:
+    if not widget:
+        return
+    hwnd = get_window_handle(widget)
+    if not hwnd:
+        return
+    proc = _gl_subclass_procs.pop(hwnd, None)
+    if proc:
+        RemoveWindowSubclass(HWND(hwnd), proc, _GL_SUBCLASS_UID)
+        log("cleanup_gl_drawing_area(%s) hwnd=%#x", widget, hwnd)
 
 
 def main() -> None:

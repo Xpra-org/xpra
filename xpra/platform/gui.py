@@ -297,6 +297,14 @@ def gl_check() -> str:
     return ""  # no problem
 
 
+def setup_gl_drawing_area(_widget) -> None:
+    """Install platform hooks on the GL drawing area widget after it is realized."""
+
+
+def cleanup_gl_drawing_area(_widget) -> None:
+    """Remove platform hooks installed by setup_gl_drawing_area."""
+
+
 def get_wm_name() -> str:
     return ""
 
@@ -390,6 +398,8 @@ platform_import(globals(), "gui", False,
                 "can_access_display",
                 "set_window_progress",
                 "get_info",
+                "setup_gl_drawing_area",
+                "cleanup_gl_drawing_area",
                 )
 
 
