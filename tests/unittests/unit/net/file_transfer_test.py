@@ -924,7 +924,7 @@ class TestProcessFileDataResponse(unittest.TestCase):
     def test_invalid_accept_removes_pending(self):
         h = _FullHandler()
         self._register(h, "s1b")
-        pkt = Packet("send-data-response", "s1b", "bogus")
+        pkt = Packet("send-data-response", "s1b", 99)
         with patch("xpra.net.file_transfer.GLib"):
             with self.assertRaises(ValueError):
                 h._process_file_data_response(pkt)
