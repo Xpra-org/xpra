@@ -921,6 +921,15 @@ class TestProcessFileDataResponse(unittest.TestCase):
             h._process_file_data_response(pkt)
         assert "s1" not in h.pending_send_data
 
+    def test_invalid_accept_removes_pending(self):
+        h = _FullHandler()
+        self._register(h, "s1b")
+        pkt = Packet("send-data-response", "s1b", "bogus")
+        with patch("xpra.net.file_transfer.GLib"):
+            with self.assertRaises(ValueError):
+                h._process_file_data_response(pkt)
+        assert "s1b" not in h.pending_send_data
+
     def test_unknown_id_warns(self):
         h = _FullHandler()
         pkt = Packet("send-data-response", "no-such-id", ACCEPT)
