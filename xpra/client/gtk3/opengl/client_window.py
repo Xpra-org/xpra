@@ -97,7 +97,14 @@ class GLClientWindowBase(ClientWindow):
         widget = super().new_backing(bw, bh)
         if self.drawing_area:
             self.remove(self.drawing_area)
-        set_visual(widget, self._has_alpha)
+        # On Intel Win32, force RGBA visual so the GDI surface has a proper
+        # alpha channel (Intel's pixel format has alpha bits even when none
+        # are requested, and DWM reads undefined alpha as transparent).
+        # _is_intel is None before detection, so `or False` ensures a clean bool.
+        from xpra.os_util import WIN32
+        from xpra.opengl.backing import GLWindowBackingBase
+        intel = WIN32 and (GLWindowBackingBase._is_intel or False)
+        set_visual(widget, self._has_alpha or intel)
         widget.show()
         self.init_widget_events(widget)
         if self.drawing_area and self.size_constraints:

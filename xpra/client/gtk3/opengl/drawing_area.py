@@ -37,6 +37,7 @@ class GLDrawingArea(GLWindowBackingBase):
 
     def init_backing(self) -> None:
         da = Gtk.DrawingArea()
+        da.set_app_paintable(True)
         da.connect_after("realize", self.on_realize)
         # da.connect('configure_event', self.on_configure_event)
         # da.connect('draw', self.on_draw)

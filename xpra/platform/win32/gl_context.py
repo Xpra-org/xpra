@@ -238,6 +238,9 @@ class WGLContext:
             "double-buffered": bool(pfd.dwFlags & PFD_DOUBLEBUFFER)
         })
         log("DescribePixelFormat: %s", self.pixel_format_props)
+        if not self.alpha and pfd.cAlphaBits:
+            log.info("WGL pixel format has %i alpha bits despite requesting 0"
+                     " — DWM may composite with per-pixel alpha", pfd.cAlphaBits)
         context = wglCreateContext(self.hdc)
         assert context, "wglCreateContext failed"
         log("wglCreateContext(%#x)=%#x", self.hdc, context)
@@ -255,3 +258,45 @@ class WGLContext:
 
 
 GLContext = WGLContext
+
+
+def setup_intel_workarounds(backing_class) -> None:
+    """Override _fixup_present_alpha for Intel GPU DWM alpha workaround.
+
+    Intel's ChoosePixelFormat returns alpha bits even when none are requested.
+    DWM reads undefined alpha as transparent, causing window bleed-through
+    (freedesktop.org bug #14165). We force alpha=1 via glColorMask+glClear,
+    but Intel's glClear doesn't properly respect glColorMask without a prior
+    readback from the draw framebuffer to prime the driver.
+    """
+    from OpenGL.GL import (
+        GL_RGBA, GL_UNSIGNED_BYTE, GL_TEXTURE_RECTANGLE,
+        glGetIntegerv, glClearColor, glClear, glColorMask, glReadPixels, glReadBuffer,
+        GL_COLOR_BUFFER_BIT, GL_FALSE, GL_TRUE,
+    )
+    from OpenGL.GL.ARB.framebuffer_object import (
+        GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_DRAW_FRAMEBUFFER_BINDING,
+        glBindFramebuffer, glFramebufferTexture2D,
+    )
+    from xpra.opengl.backing import TEX_FBO
+    log.info("Intel GPU detected — enabling DWM alpha workarounds")
+
+    def _fixup_present_alpha(self) -> None:
+        if self._alpha_enabled:
+            return
+        if not getattr(self, '_intel_primed', False):
+            self._intel_primed = True
+            draw_fb = glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING)
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, draw_fb)
+            glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE)
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_RECTANGLE, self.textures[TEX_FBO], 0)
+            glReadBuffer(GL_COLOR_ATTACHMENT0)
+            glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE)
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE)
+        glClearColor(0, 0, 0, 1)
+        glClear(GL_COLOR_BUFFER_BIT)
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
+
+    backing_class._fixup_present_alpha = _fixup_present_alpha

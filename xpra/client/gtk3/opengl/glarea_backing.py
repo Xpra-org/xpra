@@ -22,7 +22,13 @@ def GLArea(alpha: bool) -> Gtk.GLArea:
     glarea = Gtk.GLArea()
     glarea.set_use_es(True)
     glarea.set_auto_render(False)
-    glarea.set_has_alpha(alpha)
+    # On Intel Win32, force alpha in readback so the GDI surface gets
+    # alpha=255 (freedesktop.org bug #14165).
+    # _is_intel is None before detection, so `or False` ensures a clean bool.
+    from xpra.os_util import WIN32
+    from xpra.opengl.backing import GLWindowBackingBase
+    intel = WIN32 and (GLWindowBackingBase._is_intel or False)
+    glarea.set_has_alpha(alpha or intel)
     glarea.set_has_depth_buffer(False)
     glarea.set_has_stencil_buffer(False)
     glarea.set_required_version(3, 2)

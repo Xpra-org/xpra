@@ -53,7 +53,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
     glGenFramebuffers, glDeleteFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
 )
 
-from xpra.os_util import gi_import
+from xpra.os_util import WIN32, gi_import
 from xpra.util.str_fn import repr_ellipsized, hexstr, csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.objects import typedict
@@ -248,6 +248,7 @@ class GLWindowBackingBase(WindowBackingBase):
         "RGB", "BGR",
     )
     HAS_ALPHA: bool = GL_ALPHA_SUPPORTED
+    _is_intel: bool | None = None  # cached across all windows
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
         self.wid: int = wid
@@ -411,7 +412,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if self._alpha_enabled:
             glClearColor(0, 0, 0, 1)
         else:
-            glClearColor(1, 1, 1, 0)
+            glClearColor(1, 1, 1, 1)
         glClear(GL_COLOR_BUFFER_BIT)
         # copy offscreen to new tmp:
         self.copy_fbo(w, h, sx, sy, dx, dy)
@@ -568,6 +569,13 @@ class GLWindowBackingBase(WindowBackingBase):
 
         if self.gl_setup:
             return
+        if GLWindowBackingBase._is_intel is None:
+            from OpenGL.GL import glGetString, GL_VENDOR
+            vendor = (glGetString(GL_VENDOR) or b"").decode("utf-8", "replace").lower()
+            GLWindowBackingBase._is_intel = "intel" in vendor
+            if WIN32 and GLWindowBackingBase._is_intel:
+                from xpra.platform.win32.gl_context import setup_intel_workarounds
+                setup_intel_workarounds(GLWindowBackingBase)
         mt = get_max_texture_size()
         w, h = self.size
         if w > mt or h > mt:
@@ -622,7 +630,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if self._alpha_enabled:
             glClearColor(0, 0, 0, 1)
         else:
-            glClearColor(1, 1, 1, 0)
+            glClearColor(1, 1, 1, 1)
         glClear(GL_COLOR_BUFFER_BIT)
 
     def close_gl_config(self) -> None:
@@ -782,7 +790,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if self._alpha_enabled:
             glClearColor(0, 0, 0, 1)
         else:
-            glClearColor(1, 1, 1, 0)
+            glClearColor(1, 1, 1, 1)
         glClear(GL_COLOR_BUFFER_BIT)
 
         glBlitFramebuffer(sx, sy, sx + w, sy + h,
@@ -841,6 +849,9 @@ class GLWindowBackingBase(WindowBackingBase):
             log.estr(e)
             log("Error presenting FBO", exc_info=True)
             self.last_present_fbo_error = str(e)
+
+    def _fixup_present_alpha(self) -> None:
+        """Platform hook for alpha fixups before present. Overridden on Win32+Intel."""
 
     def do_present_fbo(self, context) -> None:
         # the GL_DRAW_FRAMEBUFFER must already be set when calling this method
@@ -922,6 +933,8 @@ class GLWindowBackingBase(WindowBackingBase):
 
         if self.is_show_fps():
             self.draw_fps()
+
+        self._fixup_present_alpha()
 
         # Show the backbuffer on screen
         glFlush()
