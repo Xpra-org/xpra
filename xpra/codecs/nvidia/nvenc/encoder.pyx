@@ -411,6 +411,7 @@ cdef class Encoder:
     cdef uint8_t closed
     cdef uint16_t datagram
     cdef uint8_t threaded_init
+    cdef object init_complete  # threading.Event, set when threaded_init_device returns
 
     cdef object file
 
@@ -534,6 +535,13 @@ cdef class Encoder:
 
         self.threaded_init = options.boolget("threaded-init", THREADED_INIT)
         if self.threaded_init:
+            # `init_complete` lets threaded_clean serialize against
+            # threaded_init_device without needing the module-global
+            # `device_lock`. Without this, a close-during-init can let
+            # cleanup interleave with init_nvenc (which runs outside
+            # cdc.lock by design), corrupting state.
+            from threading import Event
+            self.init_complete = Event()
             start_thread(self.threaded_init_device, "threaded-init-device", daemon=True, args=(options,))
         else:
             self.init_device(options)
@@ -559,6 +567,18 @@ cdef class Encoder:
         return profile
 
     def threaded_init_device(self, options: typedict) -> None:
+        global device_lock
+        try:
+            self.do_threaded_init_device(options)
+        finally:
+            # Signal threaded_clean (which may already be spawned by a
+            # self.clean() call above, or by a concurrent disconnect on
+            # the calling side) that init has completed — success or
+            # failure — so it's safe to tear down encoder state.
+            if self.init_complete is not None:
+                self.init_complete.set()
+
+    def do_threaded_init_device(self, options: typedict) -> None:
         global device_lock
         with device_lock:
             if SLOW_DOWN_INIT:
@@ -1125,35 +1145,46 @@ cdef class Encoder:
                 self.do_clean()
 
     def threaded_clean(self) -> None:
-        global device_lock
-        with device_lock:
-            self.do_clean()
+        # Wait for threaded_init_device to finish before cleaning up.
+        # init_device drops cdc.lock between init_cuda_kernel and
+        # init_nvenc (by design — the NVENC example accesses the context
+        # after pop). That leaves a window where cleanup could otherwise
+        # interleave with init_nvenc's `nvEncRegisterResource` while
+        # buffer_clean is nulling out `self.cudaOutputBuffer`.
+        # `init_complete` provides per-encoder serialization — decoupled
+        # from the global `device_lock`, which is reserved for init and
+        # so doesn't cross-block new-encoder startup behind this wait.
+        if self.init_complete is not None:
+            self.init_complete.wait()
+        self.do_clean()
 
     def do_clean(self):
         cdc = self.cuda_device_context
         log("clean() cuda_context=%s, encoder context=%#x", cdc, <uintptr_t> self.context)
         if cdc:
-            # Use blocking lock acquisition for cleanup.
-            # cuda_device_context.__enter__ uses non-blocking acquire(False)
-            # which raises TransientCodecException if the encode thread
-            # holds the lock during compress_image(). Since do_clean runs
-            # in a daemon thread, it can afford to wait.
-            if not cdc.lock.acquire(timeout=5):
-                log.warn("Warning: timeout acquiring CUDA device lock for encoder cleanup")
-                self._force_context_release()
-                self.cuda_device_context = None
-            else:
+            # Block indefinitely on cdc.lock. Earlier revisions used a 5s
+            # timeout with an `_force_context_release` fallback, but the
+            # fallback left `self.inputBuffer` / `self.cudaInputBuffer` /
+            # `self.cudaOutputBuffer` live on the Encoder; when the Encoder
+            # was subsequently GC'd from a thread without the CUDA context
+            # pushed, pycuda emitted "X in out-of-thread context could not
+            # be cleaned up" warnings and leaked the underlying pinned /
+            # device memory. Accumulated pinned-memory leaks eventually
+            # SEGV in pycuda. compress_image always finishes in bounded
+            # time and do_clean runs on a daemon thread, so waiting is
+            # safe — strictly preferable to leaking.
+            cdc.lock.acquire()
+            try:
+                if cdc.context:
+                    cdc.context.push()
                 try:
-                    if cdc.context:
-                        cdc.context.push()
-                    try:
-                        self.cuda_clean()
-                    finally:
-                        if cdc.context:
-                            cdc.context.pop()
-                    self.cuda_device_context = None
+                    self.cuda_clean()
                 finally:
-                    cdc.lock.release()
+                    if cdc.context:
+                        cdc.context.pop()
+                self.cuda_device_context = None
+            finally:
+                cdc.lock.release()
         self.width = 0
         self.height = 0
         self.input_width = 0
@@ -1170,7 +1201,8 @@ cdef class Encoder:
         self.cuda_info = None
         self.pycuda_info = None
         self.cuda_device_info = None
-        self.kernel = None
+        # self.kernel is nulled inside cuda_clean under the pushed
+        # context; doing it here would leak the underlying Module.
         self.kernel_name = ""
         self.max_block_sizes = 0
         self.max_grid_sizes = 0
@@ -1193,15 +1225,6 @@ cdef class Encoder:
         self.bytes_in = 0
         self.bytes_out = 0
         log("clean() done")
-
-    def _force_context_release(self):
-        # last-resort fallback when the CUDA device lock times out:
-        # decrement the counter so scoring is not permanently degraded
-        if self.context!=NULL:
-            log.warn("Warning: releasing nvenc context counter without proper CUDA cleanup")
-            self.context = NULL
-            global context_counter
-            context_counter.decrease()
 
     cdef void cuda_clean(self):
         log("cuda_clean()")
@@ -1237,6 +1260,12 @@ cdef class Encoder:
         else:
             log("skipping encoder context cleanup")
         self.cuda_context_ptr = <void *> 0
+        # Release the CUDA kernel Function (and its parent Module) while
+        # the context is still pushed. Doing this from do_clean after
+        # context.pop() would drop the last ref in an out-of-thread
+        # context and trigger pycuda's "module in out-of-thread context
+        # could not be cleaned up" warning + leak.
+        self.kernel = None
 
     cdef void buffer_clean(self):
         if self.inputHandle!=NULL and self.context!=NULL:
