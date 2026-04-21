@@ -38,6 +38,13 @@ about_dialog = None
 def close_about(*_args):
     if about_dialog:
         about_dialog.hide()
+    return True
+
+def destroy_about(*_args):
+    global about_dialog
+    if about_dialog:
+        about_dialog.hide()
+    about_dialog = None
 
 def about(on_close=close_about):
     global about_dialog
@@ -65,6 +72,8 @@ def about(on_close=close_about):
     if hasattr(dialog, "set_program_name"):
         dialog.set_program_name(APPLICATION_NAME)
     dialog.connect("response", on_close)
+    dialog.connect("delete-event", on_close)
+    dialog.connect("destroy", destroy_about)
     add_close_accel(dialog, on_close)
     about_dialog = dialog
     dialog.show()
