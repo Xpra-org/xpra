@@ -143,6 +143,61 @@ class TestVplPool(unittest.TestCase):
                          float(vpl_pool.DEFAULT_IDLE_TIMEOUT))
         self.assertEqual(stubs.created, [])
 
+    def test_min_kept_idle_when_prewarm_spec_set(self):
+        """Explicit prewarm env var → pool protects the largest idle slot
+        from the reaper so the prewarmed decoder stays warm past the
+        idle_timeout."""
+        os.environ["XPRA_VPL_PREWARM_FULLSCREEN"] = "1920x1080"
+        stubs = _Stubs()
+        vpl_pool.init_pool(stubs.create, stubs.reset, stubs.destroy,
+                           scheduler=_sync)
+        self.assertEqual(vpl_pool.get_pool().min_kept_idle, 1)
+
+    def test_min_kept_idle_zero_when_prewarm_disabled(self):
+        """XPRA_VPL_PREWARM=0 + no explicit spec → prewarm is fully off
+        and reaper runs its full-reap behavior."""
+        # setUp already sets XPRA_VPL_PREWARM=0; no explicit spec either.
+        stubs = _Stubs()
+        vpl_pool.init_pool(stubs.create, stubs.reset, stubs.destroy,
+                           scheduler=_sync)
+        self.assertEqual(vpl_pool.get_pool().min_kept_idle, 0)
+
+    def test_min_kept_idle_zero_when_prewarm_spec_is_malformed(self):
+        """A typo'd XPRA_VPL_PREWARM_FULLSCREEN must NOT silently pin an
+        idle slot forever — prewarm protection should match whether a
+        prewarm is actually going to happen, not just whether the user
+        set the env var to something."""
+        os.environ["XPRA_VPL_PREWARM_FULLSCREEN"] = "totally bogus"
+        # XPRA_VPL_PREWARM=0 from setUp → auto-detect also off.
+        stubs = _Stubs()
+        vpl_pool.init_pool(stubs.create, stubs.reset, stubs.destroy,
+                           scheduler=_sync)
+        self.assertEqual(vpl_pool.get_pool().min_kept_idle, 0)
+
+    def test_min_kept_idle_zero_when_malformed_spec_with_autodetect_on(self):
+        """Malformed explicit spec suppresses auto-detect (the downstream
+        branch only runs auto-detect when prewarm_spec is empty), so the
+        net result is no prewarm at all — protection must stay off."""
+        os.environ["XPRA_VPL_PREWARM_FULLSCREEN"] = "oops"
+        os.environ["XPRA_VPL_PREWARM"] = "1"  # autodetect on by default
+        stubs = _Stubs()
+        vpl_pool.init_pool(stubs.create, stubs.reset, stubs.destroy,
+                           scheduler=_sync)
+        self.assertEqual(vpl_pool.get_pool().min_kept_idle, 0)
+        self.assertEqual(stubs.created, [])  # and no prewarm actually fires
+
+    def test_min_kept_idle_one_when_autodetect_enabled_no_spec(self):
+        """Default install (no explicit spec, auto-detect on): the pool
+        turns on slot protection. If auto-detect's GDK path fails at
+        runtime, the first naturally-acquired slot becomes the protected
+        one — acceptable per the module docstring."""
+        # Enable auto-detect for this one case.
+        os.environ["XPRA_VPL_PREWARM"] = "1"
+        stubs = _Stubs()
+        vpl_pool.init_pool(stubs.create, stubs.reset, stubs.destroy,
+                           scheduler=_sync)
+        self.assertEqual(vpl_pool.get_pool().min_kept_idle, 1)
+
     def test_shutdown_destroys_all(self):
         stubs = _Stubs()
         vpl_pool.init_pool(stubs.create, stubs.reset, stubs.destroy,

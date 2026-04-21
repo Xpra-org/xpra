@@ -71,7 +71,6 @@ cdef extern from "vpl_decode.h":
     VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
                                        int bit_depth) nogil
     void            vpl_decoder_release_surface(VPLDecoder *dec) nogil
-    void            vpl_decoder_idle(VPLDecoder *dec) nogil
     VPLDecodeStatus vpl_decoder_decode(VPLDecoder *dec,
                                         const uint8_t *data, int data_len,
                                         VPLDecodedFrame *frame) nogil
@@ -133,6 +132,14 @@ def _vpl_pool_create(int width, int height, object key) -> int:
 
 
 def _vpl_pool_reset(addr: int, int width, int height, object key) -> None:
+    # bit_depth is hardcoded to 8 because the only colorspace
+    # init_context accepts today is YUV444P (8-bit). The
+    # MFXVideoDECODE_Reset fast path inside vpl_decoder_reset trusts
+    # this hint as authoritative for new-stream params — adding 10-bit
+    # support (unblocking the Y410 path) requires plumbing real bit_depth
+    # through here AND partitioning the pool key on bit depth, otherwise
+    # a 10-bit stream would be decoded against an 8-bit AYUV slot.
+    # Tracked in memory/vpl_decoder_10bit_registration_gap.md.
     cdef VPLDecoder *dec = <VPLDecoder*><size_t>addr
     cdef VPLDecodeStatus status
     cdef int bit_depth = VPL_POOL_BIT_DEPTH_HINT
@@ -295,6 +302,12 @@ cdef class Decoder:
     def init_context(self, encoding: str, int width, int height, colorspace: str, options: typedict) -> None:
         log("vpl.init_context%s", (encoding, width, height, colorspace))
         assert encoding == "h265", "unsupported encoding: %s" % encoding
+        # If/when 10-bit support lands (see memory/vpl_decoder_10bit_
+        # registration_gap.md), this assertion MUST be updated together
+        # with _vpl_pool_reset's hardcoded VPL_POOL_BIT_DEPTH_HINT and
+        # the pool key partitioning — otherwise a 10-bit stream routed
+        # to an 8-bit-configured pool slot would be silently mis-decoded
+        # by the MFXVideoDECODE_Reset fast path.
         assert colorspace == "YUV444P", "invalid colorspace: %s" % colorspace
         self.encoding = encoding
         self.colorspace = colorspace
@@ -359,15 +372,17 @@ cdef class Decoder:
         slot = self._slot
         self._slot = None
         if slot is not None:
-            # Close the decoder (frees its internal surface pool + ref
-            # frames, up to ~160 MB at 2880x1800 4:4:4) and unmap the
-            # last decoded output surface. The session + loader stay
-            # alive so MFXLoad / MFXCreateSession are still saved on
-            # reuse; the reset_fn on next acquire then re-Inits for the
-            # new stream.
+            # Unmap any locked output surface from the last decode, but
+            # leave the decoder initialized (session + internal surface
+            # pool + DPB ~160 MB at 2880x1800 4:4:4 all stay alive). The
+            # next pool.acquire() calls vpl_decoder_reset() which uses
+            # MFXVideoDECODE_Reset to reconfigure in place — if we
+            # Close here, that fast path is forced to fall back to
+            # Close+Init on every reuse. The reaper reclaims the memory
+            # once the slot has been idle past XPRA_VPL_IDLE_TIMEOUT.
             if context:
                 with nogil:
-                    vpl_decoder_idle(context)
+                    vpl_decoder_release_surface(context)
             # Return the decoder to the pool for reuse. The pool owns the
             # VPLDecoder* handle now; don't destroy it here.
             from xpra.codecs.vpl import pool as vpl_pool

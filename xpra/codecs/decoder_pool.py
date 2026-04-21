@@ -153,6 +153,7 @@ class DecoderPool:
         idle_timeout_s: float = DEFAULT_IDLE_TIMEOUT_S,
         work_scheduler: Callable | None = None,
         allow_grow: bool = False,
+        min_kept_idle: int = 0,
     ):
         self.name = name
         self._create = create_fn
@@ -166,6 +167,13 @@ class DecoderPool:
         # Close+Init cycle). Default off matches the max-allocate +
         # reuse-for-smaller pattern used by NVIDIA CUVID, etc.
         self.allow_grow = allow_grow
+        # min_kept_idle: protect up to N idle slots from the reaper,
+        # preferring the largest-max_W*max_H (then freshest last_used).
+        # Used by pools with prewarm so the prewarmed largest slot stays
+        # warm indefinitely — otherwise idle_timeout reaps it and the
+        # next acquire pays the full create cost. Default 0 = no
+        # protection, full reap behavior.
+        self.min_kept_idle = min_kept_idle
         self._schedule = work_scheduler or _default_scheduler
         self._lock = Lock()
         self._prewarm_cond = Condition(self._lock)
@@ -410,17 +418,31 @@ class DecoderPool:
         now = monotonic()
         victims: list = []
         with self._lock:
+            # Step 0: pick protected idle slots (largest first, fresher
+            # wins ties). These survive both idle-timeout and over-target
+            # trim so a prewarmed large slot stays warm indefinitely.
+            protected: set[int] = set()
+            if self.min_kept_idle > 0:
+                idle = [s for s in self._slots if not s.in_use]
+                idle.sort(
+                    key=lambda s: (s.max_W * s.max_H, s.last_used),
+                    reverse=True,
+                )
+                protected = {id(s) for s in idle[:self.min_kept_idle]}
             # Step 1: idle timeout.
             kept: list[CachedDecoder] = []
             for s in self._slots:
-                if not s.in_use and (now - s.last_used) > self.idle_timeout_s:
+                if (not s.in_use
+                        and id(s) not in protected
+                        and (now - s.last_used) > self.idle_timeout_s):
                     victims.append(s.handle)
                 else:
                     kept.append(s)
             self._slots = kept
-            # Step 2: over-target trim (oldest idle first).
+            # Step 2: over-target trim (oldest idle first, skip protected).
             if len(self._slots) > self.target_size:
-                idle = [s for s in self._slots if not s.in_use]
+                idle = [s for s in self._slots
+                        if not s.in_use and id(s) not in protected]
                 idle.sort(key=lambda s: s.last_used)
                 over = len(self._slots) - self.target_size
                 to_trim = idle[:over]

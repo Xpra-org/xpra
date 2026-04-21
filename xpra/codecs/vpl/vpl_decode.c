@@ -19,6 +19,16 @@
 
 static vpl_log_fn g_log_fn = NULL;
 
+/* XPRA_VPL_RESET_FAST: 0 disables the MFXVideoDECODE_Reset fast path in
+   vpl_decoder_reset(), reverting to Close + fresh Init on every pool
+   reset. Populated by vpl_decode_startup() on every module init (not
+   just the first) so the flag tracks the current env across xpra
+   client reconnects. Reader is vpl_decoder_reset on a decoder worker
+   thread; unsynchronized-read is defensible because an aligned `int`
+   store/load is atomic on x86/ARM (our only targets — oneVPL is
+   Intel-only HW), so a torn read is not possible. */
+static int reset_fast_enabled = 1;
+
 void vpl_decode_set_log(vpl_log_fn fn) {
     g_log_fn = fn;
 }
@@ -69,6 +79,16 @@ struct VPLDecoder {
     VPLPixelFormat  format;
     int             is_hw;
     int             initialized;        /* MFXVideoDECODE_Init has been called */
+    /* Set by vpl_decoder_reset when the session is still alive from a
+       prior stream but needs reconfiguration for a new one. lazy_init
+       runs MFXVideoDECODE_DecodeHeader first (so dec->param carries the
+       new bitstream's Profile/Level/PicStruct/aspect/framerate etc.),
+       then tries MFXVideoDECODE_Reset before falling back to Close+Init
+       on MFX_ERR_REALLOC_SURFACE / MFX_ERR_INCOMPATIBLE_VIDEO_PARAM. We
+       cannot Reset at pool-acquire time because caller hints only cover
+       dims + bd; leaving prior-stream SPS fields in dec->param makes
+       MFX happy at Reset but fails at the first DecodeFrameAsync. */
+    int             reset_pending;
     mfxStatus       last_sts;
     char            last_error[128];
 };
@@ -170,6 +190,16 @@ VPLDecodeStatus vpl_decode_startup(void) {
        passthrough) or oneVPL without Intel GL (headless). Different
        questions, different layers — so we probe independently here. */
     mfxStatus sts;
+
+    /* Re-read the env var on every startup (not just the first) — the
+       xpra client reconnect path calls cleanup_module → init_module
+       which re-runs vpl_decode_startup in the same process, and the
+       user may have flipped XPRA_VPL_RESET_FAST between reconnects. */
+    const char *rf = getenv("XPRA_VPL_RESET_FAST");
+    reset_fast_enabled = !(rf && rf[0] == '0' && rf[1] == '\0');
+    if (!reset_fast_enabled) {
+        vpl_log("vpl_decode_startup: MFXVideoDECODE_Reset fast path disabled via XPRA_VPL_RESET_FAST=0");
+    }
 
     sts = probe_hevc_profile(MFX_PROFILE_HEVC_REXT);
     if (sts == MFX_ERR_NONE) {
@@ -329,7 +359,12 @@ void vpl_decoder_destroy(VPLDecoder *dec) {
     release_locked(dec);
 
     if (dec->session) {
-        if (dec->initialized)
+        /* The MFX decoder is live when either `initialized` is set OR
+           a fast-path Reset is pending: vpl_decoder_reset leaves the
+           session's MFX decoder alive while flipping `initialized=0`
+           and `reset_pending=1`. Missing that second case would leak
+           the decoder's internal surface pool + DPB. */
+        if (dec->initialized || dec->reset_pending)
             MFXVideoDECODE_Close(dec->session);
         MFXClose(dec->session);
     }
@@ -347,55 +382,16 @@ void vpl_decoder_release_surface(VPLDecoder *dec) {
     release_locked(dec);
 }
 
-/* ── close + release surface for idle pool slot ─────────────────────── */
-
-void vpl_decoder_idle(VPLDecoder *dec) {
-    if (!dec)
-        return;
-    release_locked(dec);
-    if (dec->session && dec->initialized) {
-        MFXVideoDECODE_Close(dec->session);
-        dec->initialized = 0;
-    }
-}
-
 /* ── reset decoder for reuse with new dims/bit_depth ────────────────── */
 
-VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
-                                   int bit_depth) {
-    if (!dec)
-        return VPL_DEC_ERROR;
-
-    vpl_log("vpl_decoder_reset: %dx%d %d-bit (was %dx%d %d-bit)",
-            width, height, bit_depth,
-            dec->width, dec->height, dec->bit_depth);
-
-    release_locked(dec);
-
-    if (dec->session && dec->initialized) {
-        mfxStatus sts = MFXVideoDECODE_Close(dec->session);
-        if (sts != MFX_ERR_NONE && sts != MFX_ERR_NOT_INITIALIZED) {
-            return set_error(dec, sts, "MFXVideoDECODE_Close");
-        }
-    }
-
-    dec->width = width;
-    dec->height = height;
-    dec->bit_depth = bit_depth;
-    dec->format = (bit_depth >= 10) ? VPL_FMT_Y410 : VPL_FMT_AYUV;
-    dec->initialized = 0;
-    dec->last_sts = MFX_ERR_NONE;
-    dec->last_error[0] = '\0';
-    /* Restore the optimistic HW default. A prior stream that hit
-       MFX_WRN_PARTIAL_ACCELERATION would have set this to 0; lazy_init
-       only flips it 1→0, never the other way, so a stale 0 would stick
-       across all later streams on this slot. */
-    dec->is_hw = 1;
-
-    /* Start from a clean mfxVideoParam. DecodeHeader on the previous stream
-       may have mutated CodecProfile / ChromaFormat / Crop / etc. Leaving
-       those in place makes pooled reuse behave differently from a fresh
-       create. Rebuild the same subset vpl_decoder_create() sets up. */
+/* Reset dec->param to the same clean-start baseline vpl_decoder_create
+   seeds. DecodeHeader on a prior stream may have mutated CodecProfile /
+   ChromaFormat / Crop / VUI / FrameRate; leaving those in place makes
+   pooled reuse carry stale SPS fields forward — Reset will then either
+   fail INCOMPATIBLE_VIDEO_PARAM on the first DecodeFrameAsync, or
+   succeed with outdated metadata. */
+static void reset_param_baseline(VPLDecoder *dec, int width, int height,
+                                  int bit_depth) {
     memset(&dec->param, 0, sizeof(dec->param));
     dec->param.mfx.CodecId = MFX_CODEC_HEVC;
     dec->param.mfx.CodecProfile = MFX_PROFILE_HEVC_REXT;
@@ -408,19 +404,92 @@ VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
     dec->param.mfx.FrameInfo.ChromaFormat = MFX_CHROMAFORMAT_YUV444;
     dec->param.mfx.FrameInfo.BitDepthLuma = bit_depth;
     dec->param.mfx.FrameInfo.BitDepthChroma = bit_depth;
-    if (bit_depth >= 10) {
-        dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_Y410;
-        dec->param.mfx.FrameInfo.Shift = 0;
-    } else {
-        dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_AYUV;
-        dec->param.mfx.FrameInfo.Shift = 0;
+    dec->param.mfx.FrameInfo.FourCC = (bit_depth >= 10) ? MFX_FOURCC_Y410
+                                                         : MFX_FOURCC_AYUV;
+    dec->param.mfx.FrameInfo.Shift = 0;
+}
+
+/* Fallback / slow path for vpl_decoder_reset. Closes the decoder and
+   rebuilds dec->param so the next vpl_decoder_decode() call will go
+   through lazy_init() (DecodeHeader + fresh Init on the new bitstream).
+   Session and loader stay alive, saving MFXLoad + MFXCreateSession on
+   each reuse.
+
+   Precondition: caller has already populated dec->{width, height,
+   bit_depth, format, is_hw, last_sts, last_error} — those are set in
+   vpl_decoder_reset before branching to either the fast path or here. */
+static VPLDecodeStatus rebuild_and_close(VPLDecoder *dec, int width, int height,
+                                          int bit_depth) {
+    /* MFX decoder is live if initialized OR a fast-path Reset is
+       pending (see vpl_decoder_destroy's matching gate). */
+    if (dec->session && (dec->initialized || dec->reset_pending)) {
+        mfxStatus sts = MFXVideoDECODE_Close(dec->session);
+        if (sts != MFX_ERR_NONE && sts != MFX_ERR_NOT_INITIALIZED) {
+            return set_error(dec, sts, "MFXVideoDECODE_Close");
+        }
+    }
+    dec->initialized = 0;
+    dec->reset_pending = 0;
+
+    reset_param_baseline(dec, width, height, bit_depth);
+
+    return VPL_DEC_OK;
+}
+
+VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
+                                   int bit_depth) {
+    if (!dec)
+        return VPL_DEC_ERROR;
+
+    vpl_log("vpl_decoder_reset: %dx%d %d-bit (was %dx%d %d-bit)",
+            width, height, bit_depth,
+            dec->width, dec->height, dec->bit_depth);
+
+    release_locked(dec);
+
+    dec->width = width;
+    dec->height = height;
+    dec->bit_depth = bit_depth;
+    dec->format = (bit_depth >= 10) ? VPL_FMT_Y410 : VPL_FMT_AYUV;
+    dec->last_sts = MFX_ERR_NONE;
+    dec->last_error[0] = '\0';
+    /* Restore the optimistic HW default. A prior stream that hit
+       MFX_WRN_PARTIAL_ACCELERATION would have set this to 0; lazy_init
+       only flips it 1→0, never the other way, so a stale 0 would stick
+       across all later streams on this slot. */
+    dec->is_hw = 1;
+
+    /* Fast path setup: if the decoder is already initialized from a
+       prior stream and the Reset path is enabled, defer the actual
+       MFXVideoDECODE_Reset until DecodeHeader has run on the new
+       bitstream. The caller gives us dims + bd but not the SPS-derived
+       fields (Profile, Level, PicStruct, AspectRatio, FrameRateExt*,
+       max_num_reorder_pics, VUI flags, ...). Leaving the prior
+       stream's values for those fields makes MFX accept the Reset but
+       then return MFX_ERR_INCOMPATIBLE_VIDEO_PARAM on the first
+       DecodeFrameAsync when the new stream's SPS disagrees.
+
+       Flagging reset_pending here and Reset'ing inside lazy_init
+       (after DecodeHeader fills dec->param from the real bitstream)
+       is the robust way to get the speedup without that mismatch.
+
+       Reset param to the clean-start baseline before lazy_init's
+       DecodeHeader runs — otherwise stale SPS / VUI / CropW etc. from
+       the previous stream survive into the Reset call when the new
+       stream's SPS doesn't explicitly overwrite them. */
+    if (dec->initialized && reset_fast_enabled && dec->session) {
+        reset_param_baseline(dec, width, height, bit_depth);
+        dec->reset_pending = 1;
+        dec->initialized = 0;
+        return VPL_DEC_OK;
     }
 
-    /* Next vpl_decoder_decode() call will trigger lazy_init() which re-runs
-       MFXVideoDECODE_DecodeHeader + MFXVideoDECODE_Init on the fresh
-       bitstream. Session and loader stay alive, saving MFXLoad +
-       MFXCreateSession on each reuse. */
-    return VPL_DEC_OK;
+    /* Don't clear reset_pending here — if it was set by a previous
+       fast-path-setup call (e.g. pool slot reacquired before any
+       frame arrived on the prior stream), rebuild_and_close's Close
+       gate needs to see it to avoid leaking the live MFX decoder.
+       rebuild_and_close clears both flags after closing. */
+    return rebuild_and_close(dec, width, height, bit_depth);
 }
 
 /* ── lazy init: parse header from first bitstream, then init decoder ── */
@@ -476,6 +545,34 @@ static VPLDecodeStatus lazy_init(VPLDecoder *dec, mfxBitstream *bs) {
             dec->param.mfx.FrameInfo.FourCC,
             dec->param.mfx.FrameInfo.ChromaFormat,
             dec->param.mfx.FrameInfo.BitDepthLuma);
+
+    /* Reset fast path. If the previous stream's session is still alive
+       (reset_pending set by vpl_decoder_reset), try
+       MFXVideoDECODE_Reset against the now-populated dec->param before
+       falling back to a full Close+Init. Typical cost on fit: ~1-5 ms.
+       Close+Init fallback: ~25 ms, hit when REALLOC_SURFACE (envelope
+       needs to grow) or INCOMPATIBLE_VIDEO_PARAM (Profile/Level etc.
+       shift beyond what Reset can reconfigure in place). */
+    if (dec->reset_pending) {
+        long long t0 = usec_now();
+        sts = MFXVideoDECODE_Reset(dec->session, &dec->param);
+        long long t1 = usec_now();
+        dec->reset_pending = 0;
+        /* Accept the same success codes Init tolerates below. Reset
+           returns MFX_WRN_INCOMPATIBLE_VIDEO_PARAM when the library
+           works around a minor mismatch internally — still usable. */
+        if (sts == MFX_ERR_NONE
+                || sts == MFX_WRN_VIDEO_PARAM_CHANGED
+                || sts == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM) {
+            vpl_log("vpl lazy_init: reset fast path OK (%lld us, sts=%d)",
+                    t1 - t0, (int)sts);
+            dec->initialized = 1;
+            return VPL_DEC_OK;
+        }
+        vpl_log("vpl lazy_init: reset fast path failed (sts=%d) after %lld us, Close+Init fallback",
+                (int)sts, t1 - t0);
+        MFXVideoDECODE_Close(dec->session);
+    }
 
     /* init decoder */
     sts = MFXVideoDECODE_Init(dec->session, &dec->param);

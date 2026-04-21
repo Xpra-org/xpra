@@ -26,7 +26,20 @@ Environment variables:
 - ``XPRA_VPL_PREWARM_FULLSCREEN`` — ``WxH`` or ``WxH@bitdepth``; when set
   and ``init_pool`` is called, a background prewarm is scheduled for
   those dimensions so the first full-screen acquire is a cache hit.
-  Default empty (disabled).
+  Default empty — in which case ``init_pool`` runs a GDK auto-detect
+  for the largest connected monitor. Set ``XPRA_VPL_PREWARM=0`` to
+  suppress the auto-detect path entirely (used by tests).
+
+Memory footprint: idle pool slots keep their decoder initialized
+across pool release/acquire cycles (this is what enables the
+``MFXVideoDECODE_Reset`` fast path in ``vpl_decoder_reset``). Each
+initialized slot holds roughly 160 MB of GPU-shared system memory at
+2880x1800 4:4:4 for its internal surface pool + DPB. Worst case with
+defaults: ``POOL_SIZE=4`` slots × ~160 MB ≈ 640 MB held transiently
+until ``IDLE_TIMEOUT`` expires (60 s). When prewarm is on, one slot is
+protected from the reaper indefinitely (~160 MB pinned). Tune
+``XPRA_VPL_POOL_SIZE`` / ``XPRA_VPL_IDLE_TIMEOUT`` if that pressure
+matters on a given setup.
 """
 
 import os
@@ -144,6 +157,18 @@ def init_pool(create_fn: Callable, reset_fn: Callable, destroy_fn: Callable,
         pool_size = envint("XPRA_VPL_POOL_SIZE", DEFAULT_POOL_SIZE)
         idle_timeout = envint("XPRA_VPL_IDLE_TIMEOUT", DEFAULT_IDLE_TIMEOUT)
         prewarm_spec = os.environ.get("XPRA_VPL_PREWARM_FULLSCREEN", "")
+        parsed_prewarm = parse_prewarm(prewarm_spec)
+        autodetect = os.environ.get("XPRA_VPL_PREWARM", "1") != "0"
+        # Protect the largest idle slot from the reaper iff a prewarm is
+        # actually going to happen. Two paths produce a prewarm:
+        #   1. explicit well-formed XPRA_VPL_PREWARM_FULLSCREEN
+        #   2. no spec at all + auto-detect enabled (GDK monitor probe)
+        # A malformed spec takes neither path (parse_prewarm rejects it
+        # AND the non-empty string suppresses auto-detect below), so
+        # it must NOT turn on protection — otherwise a typo would
+        # silently pin one idle slot (~160 MB) forever.
+        will_prewarm = (parsed_prewarm is not None
+                        or (not prewarm_spec and autodetect))
         kwargs = {
             "name": "vpl",
             "create_fn": create_fn,
@@ -151,10 +176,13 @@ def init_pool(create_fn: Callable, reset_fn: Callable, destroy_fn: Callable,
             "destroy_fn": destroy_fn,
             "target_size": pool_size,
             "idle_timeout_s": float(idle_timeout),
-            # vpl_decoder_reset does MFXVideoDECODE_Close + Init, which
-            # reallocates surfaces for any new dimensions. So a single
-            # slot can serve 1280x720 → 1920x1080 → 4K without cycling.
+            # vpl_decoder_reset tries MFXVideoDECODE_Reset first; on
+            # MFX_ERR_REALLOC_SURFACE or any other error it falls back to
+            # Close + fresh Init. Either way a single slot can serve
+            # 1280x720 → 1920x1080 → 4K without cycling, so allow_grow
+            # is on.
             "allow_grow": True,
+            "min_kept_idle": 1 if will_prewarm else 0,
         }
         if scheduler is not None:
             kwargs["work_scheduler"] = scheduler
@@ -163,13 +191,12 @@ def init_pool(create_fn: Callable, reset_fn: Callable, destroy_fn: Callable,
         # target this caller's pool, even if a concurrent shutdown+init
         # replaces ``_pool`` after we release the lock.
         new_pool = _pool
-        prewarm = parse_prewarm(prewarm_spec)
+        prewarm = parsed_prewarm
         prewarm_source = "env"
     # Auto-detect (max across all connected monitors) if no explicit env
     # var was given. Env var is still respected as an override — useful
     # when the remote desktop exceeds any local monitor. Set
     # XPRA_VPL_PREWARM=0 to disable prewarm entirely (e.g. in tests).
-    autodetect = os.environ.get("XPRA_VPL_PREWARM", "1") != "0"
     if prewarm is None and not prewarm_spec and autodetect:
         prewarm = _detect_prewarm_size()
         prewarm_source = "auto"

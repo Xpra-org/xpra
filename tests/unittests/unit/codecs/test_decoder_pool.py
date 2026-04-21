@@ -408,6 +408,129 @@ class TestDecoderPool(unittest.TestCase):
         self.assertIn(a, pool._slots)
         self.assertEqual(stub.destroy_count, 1)
 
+    def test_min_kept_idle_protects_largest_from_timeout(self):
+        """With ``min_kept_idle=1``, one idle slot must survive the
+        reaper's idle-timeout sweep — and it must be the largest (the
+        prewarmed one), not an incidentally-fresher smaller slot."""
+        stub = StubCodec()
+        pool = DecoderPool(
+            name="stub",
+            create_fn=stub.create,
+            reset_fn=stub.reset,
+            destroy_fn=stub.destroy,
+            idle_timeout_s=0.01,
+            work_scheduler=SyncScheduler(),
+            min_kept_idle=1,
+        )
+        big = pool.acquire(2880, 1800, "k")
+        small_a = pool.acquire(1280, 720, "k")
+        small_b = pool.acquire(1280, 720, "k")
+        # Release big FIRST so it's the oldest by last_used. Without the
+        # prefer-largest tie-breaker the reaper would trim it.
+        pool.release(big)
+        pool.release(small_a)
+        pool.release(small_b)
+        time.sleep(0.02)
+        pool.reap()
+        survivors = [s for s in pool._slots]
+        self.assertEqual(len(survivors), 1)
+        self.assertEqual(survivors[0].max_W, 2880)
+        self.assertEqual(survivors[0].max_H, 1800)
+        self.assertEqual(stub.destroy_count, 2)
+
+    def test_min_kept_idle_protects_from_over_target_trim(self):
+        """Over-target trim must also respect min_kept_idle — otherwise
+        a burst acquire+release of small slots past target would evict
+        the one large idle slot we're trying to preserve."""
+        stub = StubCodec()
+        pool = DecoderPool(
+            name="stub",
+            create_fn=stub.create,
+            reset_fn=stub.reset,
+            destroy_fn=stub.destroy,
+            target_size=1,
+            idle_timeout_s=3600.0,  # idle timeout disabled
+            work_scheduler=SyncScheduler(),
+            min_kept_idle=1,
+        )
+        big = pool.acquire(2880, 1800, "k")
+        small = pool.acquire(1280, 720, "k")
+        pool.release(big)
+        pool.release(small)
+        # Over target (2 > 1). With min_kept_idle=1, the largest must
+        # survive the trim — so `small` is reaped, not `big`.
+        pool.reap()
+        self.assertEqual(len(pool._slots), 1)
+        self.assertEqual(pool._slots[0].max_W, 2880)
+
+    def test_min_kept_idle_can_exceed_target_size(self):
+        """If min_kept_idle > target_size the protected set wins — trim
+        respects protection so a prewarm-pinned slot can't be evicted by
+        a burst of unrelated acquires."""
+        stub = StubCodec()
+        pool = DecoderPool(
+            name="stub",
+            create_fn=stub.create,
+            reset_fn=stub.reset,
+            destroy_fn=stub.destroy,
+            target_size=1,
+            idle_timeout_s=0.01,
+            work_scheduler=SyncScheduler(),
+            min_kept_idle=3,
+        )
+        # Acquire+release 5 slots at descending resolution.
+        slots = [pool.acquire(W, H, "k")
+                 for W, H in [(4096, 2160), (2880, 1800),
+                              (1920, 1080), (1280, 720), (640, 360)]]
+        for s in slots:
+            pool.release(s)
+        time.sleep(0.02)
+        pool.reap()
+        # 3 largest are protected → survive both idle-timeout and
+        # over-target trim. Two smallest are reaped.
+        self.assertEqual(len(pool._slots), 3)
+        sizes = sorted((s.max_W * s.max_H for s in pool._slots), reverse=True)
+        self.assertEqual(sizes[0], 4096 * 2160)
+        self.assertEqual(sizes[2], 1920 * 1080)
+
+    def test_prewarm_survives_reap_and_serves_next_acquire(self):
+        """End-to-end: prewarm creates an idle slot → slot sits past
+        idle_timeout → reaper keeps it (min_kept_idle=1) → next acquire
+        for that size is a cache hit, zero creates. This is what the
+        whole prewarm-pinning feature is for."""
+        stub = StubCodec()
+        pool = DecoderPool(
+            name="stub",
+            create_fn=stub.create,
+            reset_fn=stub.reset,
+            destroy_fn=stub.destroy,
+            idle_timeout_s=0.01,
+            work_scheduler=SyncScheduler(),
+            min_kept_idle=1,
+        )
+        pool.prewarm(1920, 1080, "k")
+        self.assertEqual(stub.create_count, 1)
+        time.sleep(0.02)
+        pool.reap()  # past idle_timeout but protected
+        self.assertEqual(len(pool._slots), 1)
+        self.assertEqual(stub.destroy_count, 0)
+        # Next acquire must hit the cache, not create a new slot.
+        slot = pool.acquire(1920, 1080, "k")
+        self.assertEqual(stub.create_count, 1)
+        self.assertEqual(stub.reset_count, 1)
+        pool.release(slot)
+
+    def test_min_kept_idle_zero_is_default_behavior(self):
+        """Regression: min_kept_idle defaults to 0 → reaper prunes every
+        idle-past-timeout slot, matching pre-feature behavior."""
+        pool, stub, _ = make_pool(idle_timeout_s=0.01)
+        a = pool.acquire(2880, 1800, "k")
+        pool.release(a)
+        time.sleep(0.02)
+        pool.reap()
+        self.assertEqual(len(pool._slots), 0)
+        self.assertEqual(stub.destroy_count, 1)
+
     def test_prewarm_creates_idle_slot_usable_on_next_acquire(self):
         stub = StubCodec()
         sched = DeferredScheduler()
