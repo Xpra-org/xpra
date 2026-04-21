@@ -891,9 +891,11 @@ class FileTransferHandler(FileTransferAttributes):
         dtype = net_utf8(v[0])
         url = net_utf8(v[1])
         if accept==DENY:
+            self.pending_send_data.pop(send_id, None)
             filelog.info("the request to send %s '%s' has been denied", dtype, url)
             return
         if accept not in (ACCEPT, OPEN):
+            self.pending_send_data.pop(send_id, None)
             raise ValueError(f"unknown value for send-data response: {accept!r}")
         if dtype=="file":
             mimetype, data, filesize, printit, openit, options = v[2:]
