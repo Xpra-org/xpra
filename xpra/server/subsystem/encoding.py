@@ -119,7 +119,7 @@ class EncodingServer(StubServerMixin):
         # reinit_encodings() already ran with no sources and this client missed
         # threaded_init_complete(). Schedule it after the hello is delivered.
         if getattr(self, "threaded_encoding_done", False) and hasattr(ss, "threaded_init_complete"):
-            gi_import("GLib").idle_add(ss.threaded_init_complete, self)
+            ss.threaded_init_complete(self)
 
     def threaded_setup(self) -> None:
         if INIT_DELAY > 0:
