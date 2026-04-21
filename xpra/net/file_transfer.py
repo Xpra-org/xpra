@@ -929,12 +929,13 @@ class FileTransferHandler(FileTransferAttributes):
         except KeyError:
             filelog.warn(f"Warning: cannot find send-file entry for {send_id!r}")
             return
+        if accept not in (ACCEPT, OPEN):
+            self.pending_send_data.pop(send_id, None)
+            raise ValueError(f"unknown value for send-data response: {accept!r}")
         if accept == DENY:
             filelog.info("the request to send %s '%s' has been denied", spd.datatype, spd.url)
             self.pending_send_data.pop(send_id, None)
             return
-        if accept not in (ACCEPT, OPEN):
-            raise ValueError(f"unknown value for send-data response: {accept!r}")
         if spd.datatype == "file":
             if accept == ACCEPT:
                 self.do_send_file(spd.url, spd.mimetype, spd.data, spd.filesize,
