@@ -445,7 +445,7 @@ class WindowVideoSource(WindowSource):
         # and the fallback should be reliable.
         # also, we only want picture encodings here,
         # and filtering using EDGE_ENCODING_ORDER gives us that.
-        if encoder_name != "nvjpeg" and encoding in EDGE_ENCODING_ORDER:
+        if encoder_name != "enc_nvjpeg" and encoding in EDGE_ENCODING_ORDER:
             self.video_fallback_encodings.setdefault(encoding, []).insert(0, encode_fn)
 
     def update_encoding_selection(self, encoding="", exclude=None, init=False) -> None:
