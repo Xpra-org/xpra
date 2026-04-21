@@ -93,7 +93,7 @@ def detect_ssh_stanza(cmd):
     return subcommands.get("_proxy")
 
 def find_fingerprint(filename:str, fingerprint):
-    hex_fingerprint = binascii.hexlify(fingerprint)
+    hex_fingerprint = binascii.hexlify(fingerprint).decode("ascii")
     log(f"looking for key fingerprint {hex_fingerprint} in {filename!r}")
     count = 0
     with open(filename, "r", encoding="latin1") as f:
