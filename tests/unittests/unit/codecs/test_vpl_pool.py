@@ -252,5 +252,40 @@ class TestVplPool(unittest.TestCase):
         self.assertEqual(len(stubs.destroyed), 1)
 
 
+class TestVplPoolIntegration(unittest.TestCase):
+    """Minimal behavioral checks for what the VPL Decoder class will invoke
+    on the wrapper. Full Decoder integration is hardware-only (Windows +
+    Intel iGPU) and is verified by the manual Edge repro in the plan."""
+
+    def setUp(self):
+        vpl_pool._reset_for_testing()
+        for k in ("XPRA_VPL_POOL_SIZE", "XPRA_VPL_IDLE_TIMEOUT",
+                  "XPRA_VPL_PREWARM_FULLSCREEN"):
+            os.environ.pop(k, None)
+
+    def tearDown(self):
+        vpl_pool._reset_for_testing()
+
+    def test_shutdown_is_idempotent(self):
+        stubs = _Stubs()
+        vpl_pool.init_pool(stubs.create, stubs.reset, stubs.destroy,
+                           scheduler=_sync)
+        vpl_pool.shutdown()
+        # Second call must not raise.
+        vpl_pool.shutdown()
+
+    def test_acquire_returns_slot_with_handle_attribute(self):
+        """The Decoder class casts slot.handle to VPLDecoder*; assert the
+        slot shape here so a future refactor that drops .handle fails
+        loudly in CI rather than on Windows hardware."""
+        stubs = _Stubs()
+        vpl_pool.init_pool(stubs.create, stubs.reset, stubs.destroy,
+                           scheduler=_sync)
+        slot = vpl_pool.acquire(1280, 720)
+        self.assertTrue(hasattr(slot, "handle"))
+        self.assertIsNotNone(slot.handle)
+        vpl_pool.release(slot)
+
+
 if __name__ == "__main__":
     unittest.main()
