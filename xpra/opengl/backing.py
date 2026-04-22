@@ -408,10 +408,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # but leave offscreen fbo with the old size
         self.gl_init(context, True)
         self.draw_to_tmp()
-        if self._alpha_enabled:
-            glClearColor(0, 0, 0, 1)
-        else:
-            glClearColor(1, 1, 1, 0)
+        glClearColor(0, 0, 0, 1)
         glClear(GL_COLOR_BUFFER_BIT)
         # copy offscreen to new tmp:
         self.copy_fbo(w, h, sx, sy, dx, dy)
@@ -619,10 +616,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindFramebuffer(GL_FRAMEBUFFER, fbo)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[texture_index], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT0)
-        if self._alpha_enabled:
-            glClearColor(0, 0, 0, 1)
-        else:
-            glClearColor(1, 1, 1, 0)
+        glClearColor(0, 0, 0, 1)
         glClear(GL_COLOR_BUFFER_BIT)
 
     def close_gl_config(self) -> None:
@@ -779,10 +773,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindTexture(target, self.textures[TEX_TMP_FBO])
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT0)
-        if self._alpha_enabled:
-            glClearColor(0, 0, 0, 1)
-        else:
-            glClearColor(1, 1, 1, 0)
+        glClearColor(0, 0, 0, 1)
         glClear(GL_COLOR_BUFFER_BIT)
 
         glBlitFramebuffer(sx, sy, sx + w, sy + h,
