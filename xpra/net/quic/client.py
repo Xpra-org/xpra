@@ -295,7 +295,7 @@ async def get_address_options(host: str, port: int) -> tuple:
 
 
 def _make_quic_configuration(ssl_cert: str, ssl_key: str, ssl_key_password: str,
-                             ssl_ca_certs, ssl_server_verify_mode: str,
+                             ssl_ca_certs: str, ssl_server_verify_mode: str,
                              ssl_server_name: str, host: str) -> QuicConfiguration:
     configuration = QuicConfiguration(
         alpn_protocols=H3_ALPN,
@@ -303,6 +303,7 @@ def _make_quic_configuration(ssl_cert: str, ssl_key: str, ssl_key_password: str,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
     )
     configuration.verify_mode = parse_ssl_verify_mode(ssl_server_verify_mode)
+    ssl_ca_certs = pyopenssl_ca_certs(ssl_ca_certs)
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:
@@ -319,6 +320,33 @@ def _make_quic_configuration(ssl_cert: str, ssl_key: str, ssl_key_password: str,
         except ValueError:
             configuration.server_name = host
     return configuration
+
+
+def pyopenssl_ca_certs(ca_certs: str) -> str:
+    if ca_certs and ca_certs != "default":
+        return ca_certs
+    # "default" means "use OS cert store" — handled by ssl.load_default_certs()
+    # for TCP+SSL, but aioquic uses pyOpenSSL which has no equivalent.
+    # Find the CA bundle ourselves instead.
+    # certifi.where() may return a stale build-time path in cx_Freeze frozen
+    # builds, so also check relative to the executable.
+    ca_candidates = []
+    try:
+        import certifi
+        ca_candidates.append(certifi.where())
+    except ImportError:
+        pass
+    # frozen build: cacert.pem is next to the executable in lib/certifi/
+    import sys
+    exe_dir = os.path.dirname(getattr(sys, "executable", ""))
+    if exe_dir:
+        ca_candidates.append(os.path.join(exe_dir, "lib", "certifi", "cacert.pem"))
+    for ca_path in ca_candidates:
+        if ca_path and os.path.exists(ca_path):
+            log(f"using CA bundle: {ca_path}")
+            return ca_path
+    log("no CA bundle found, certificate verification may fail")
+    return ""
 
 
 def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: bool):
@@ -391,7 +419,7 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
 
 def quic_connect(host: str, port: int, path: str, fast_open: bool,
                  ssl_cert: str, ssl_key: str, ssl_key_password: str,
-                 ssl_ca_certs, ssl_server_verify_mode: str, ssl_server_name: str,
+                 ssl_ca_certs: str, ssl_server_verify_mode: str, ssl_server_name: str,
                  client_class: type[QuicConnectionProtocol] = WebSocketClient):
     configuration = _make_quic_configuration(ssl_cert, ssl_key, ssl_key_password,
                                              ssl_ca_certs, ssl_server_verify_mode,
