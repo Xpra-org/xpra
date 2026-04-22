@@ -112,7 +112,7 @@ class WindowServer(StubServerMixin):
            min_args=1, max_args=1, validation=[int]),
         ac("remove-window-filters", "remove all window filters", min_args=0, max_args=0)
         ac("add-window-filter", "add a window filter", min_args=4, max_args=5)
-        ac("image-filter", "configure the image filter", min_args=2, max_args=2, validation=[str, parse_boolean_value])
+        ac("image-filter", "configure the image filter", min_args=2, max_args=2, validation=[str, str])
         ac("client-property", "set a client property", min_args=4, max_args=5, validation=[int])
         # encoding bits:
         for name in (
@@ -926,10 +926,15 @@ class WindowServer(StubServerMixin):
                 self.window_filters.append((client_uuid, window_filter))
         return f"added window-filter: {window_filter} for client uuids={client_uuids}"
 
-    def control_command_image_filter(self, wid: str, enabled: bool) -> str:
-        for ws in self._ws_from_args(wid):
-            ws.image_filter.enabled = enabled
-            ws.refresh()
+    def control_command_image_filter(self, wid: str, action: str) -> str:
+        if action == "status":
+            enabled = all(ws.image_filter.enabled for ws in self._ws_from_args(wid))
+        else:
+            from xpra.util.parsing import TRUE_OPTIONS
+            enabled = action.lower() in TRUE_OPTIONS
+            for ws in self._ws_from_args(wid):
+                ws.image_filter.enabled = enabled
+                ws.refresh()
         return "image filter %s" % ("enabled" if enabled else "disabled")
 
     def control_command_client_property(self, wid: int, uuid, prop: str, value, conv="") -> str:
