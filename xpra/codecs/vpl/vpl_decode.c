@@ -1,0 +1,624 @@
+/* This file is part of Xpra.
+ * Copyright (C) 2026 Netflix, Inc.
+ * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+ * later version. See the file COPYING for details.
+ * ABOUTME: Intel oneVPL HEVC 4:4:4 hardware decoder — C implementation.
+ * ABOUTME: Manages VPL session, HEVC RExt decode, and AYUV/Y410 frame extraction. */
+
+#include "vpl_decode.h"
+
+#include <vpl/mfxvideo.h>
+#include <vpl/mfxdispatcher.h>
+
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
+
+/* ── logging ────────────────────────────────────────────────────────── */
+
+static vpl_log_fn g_log_fn = NULL;
+
+void vpl_decode_set_log(vpl_log_fn fn) {
+    g_log_fn = fn;
+}
+
+static void vpl_log(const char *fmt, ...) {
+    if (!g_log_fn)
+        return;
+    char buf[512];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+    g_log_fn(buf);
+}
+
+/* ── timing (Windows QPC) ───────────────────────────────────────────── */
+
+#ifdef _WIN32
+#include <windows.h>
+static LARGE_INTEGER g_perf_freq = {0};
+static long long usec_now(void) {
+    LARGE_INTEGER now;
+    if (g_perf_freq.QuadPart == 0)
+        QueryPerformanceFrequency(&g_perf_freq);
+    QueryPerformanceCounter(&now);
+    return (long long)(now.QuadPart * 1000000 / g_perf_freq.QuadPart);
+}
+#else
+#include <time.h>
+static long long usec_now(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}
+#endif
+
+/* ── decoder state ──────────────────────────────────────────────────── */
+
+struct VPLDecoder {
+    mfxLoader       loader;
+    mfxSession      session;
+    mfxVideoParam   param;
+    mfxFrameSurface1 *locked_surface;   /* surface from last decode, awaiting release */
+    int             width;
+    int             height;
+    int             chroma444;
+    int             bit_depth;
+    VPLPixelFormat  format;
+    int             is_hw;
+    int             initialized;        /* MFXVideoDECODE_Init has been called */
+    mfxStatus       last_sts;
+    char            last_error[128];
+};
+
+/* ── error helpers ──────────────────────────────────────────────────── */
+
+static VPLDecodeStatus set_error(VPLDecoder *dec, mfxStatus sts, const char *context) {
+    if (dec) {
+        dec->last_sts = sts;
+        snprintf(dec->last_error, sizeof(dec->last_error),
+                 "%s failed: mfxStatus %d", context, (int)sts);
+        vpl_log("vpl error: %s", dec->last_error);
+    }
+    return VPL_DEC_ERROR;
+}
+
+const char* vpl_decode_status_str(VPLDecodeStatus status) {
+    switch (status) {
+        case VPL_DEC_OK:              return "ok";
+        case VPL_DEC_NEED_MORE_INPUT: return "need_more_input";
+        case VPL_DEC_STREAM_CHANGE:   return "stream_change";
+        case VPL_DEC_ERROR:           return "error";
+        case VPL_DEC_NOT_AVAILABLE:   return "not_available";
+        default:                      return "unknown";
+    }
+}
+
+int vpl_decoder_get_last_status(VPLDecoder *dec) {
+    return dec ? (int)dec->last_sts : 0;
+}
+
+const char* vpl_decoder_get_last_error(VPLDecoder *dec) {
+    return dec ? dec->last_error : "no decoder";
+}
+
+/* ── global init/shutdown ───────────────────────────────────────────── */
+
+/* Try to create a oneVPL session with HEVC decode for a specific profile.
+   Returns MFX_ERR_NONE on success (session is closed before returning). */
+static mfxStatus probe_hevc_profile(mfxU32 profile) {
+    mfxLoader loader;
+    mfxConfig cfg_impl, cfg_codec, cfg_profile;
+    mfxVariant val;
+    mfxSession session;
+    mfxStatus sts;
+
+    loader = MFXLoad();
+    if (!loader)
+        return MFX_ERR_UNSUPPORTED;
+
+    /* oneVPL's canonical pattern is one mfxConfig per filter property.
+       Setting multiple properties on a single mfxConfig is not
+       guaranteed to AND them across impls; separate configs are the
+       documented way to constrain the dispatcher to (HARDWARE AND
+       HEVC AND profile=X). Matches Intel's oneVPL sample code. */
+    cfg_impl = MFXCreateConfig(loader);
+    cfg_codec = MFXCreateConfig(loader);
+    cfg_profile = MFXCreateConfig(loader);
+    if (!cfg_impl || !cfg_codec || !cfg_profile) {
+        MFXUnload(loader);
+        return MFX_ERR_UNSUPPORTED;
+    }
+
+    memset(&val, 0, sizeof(val));
+    val.Type = MFX_VARIANT_TYPE_U32;
+
+    val.Data.U32 = MFX_IMPL_TYPE_HARDWARE;
+    sts = MFXSetConfigFilterProperty(cfg_impl,
+        (const mfxU8 *)"mfxImplDescription.Impl", val);
+    if (sts != MFX_ERR_NONE) { MFXUnload(loader); return sts; }
+
+    val.Data.U32 = MFX_CODEC_HEVC;
+    sts = MFXSetConfigFilterProperty(cfg_codec,
+        (const mfxU8 *)"mfxImplDescription.mfxDecoderDescription.decoder.CodecID", val);
+    if (sts != MFX_ERR_NONE) { MFXUnload(loader); return sts; }
+
+    val.Data.U32 = profile;
+    sts = MFXSetConfigFilterProperty(cfg_profile,
+        (const mfxU8 *)"mfxImplDescription.mfxDecoderDescription.decoder.decprofile.Profile", val);
+    if (sts != MFX_ERR_NONE) { MFXUnload(loader); return sts; }
+
+    sts = MFXCreateSession(loader, 0, &session);
+    if (sts == MFX_ERR_NONE)
+        MFXClose(session);
+    MFXUnload(loader);
+    return sts;
+}
+
+VPLDecodeStatus vpl_decode_startup(void) {
+    /* Probe for an Intel GPU with HEVC 4:4:4 RExt decode support.
+       xpra's HEVC 4:4:4 streams use the RExt profile (what nvenc produces),
+       so we probe for that specifically. SCC-only hardware (screen-content
+       tools: IBC, palette mode) would not be able to decode our streams
+       even though it nominally exposes a 4:4:4 capability.
+
+       The GL backing has its own Intel detection (GL_VENDOR string) for DWM
+       alpha workarounds, but that checks the rendering GPU, not the media
+       engine. A system can have Intel GL without oneVPL (old driver, VM
+       passthrough) or oneVPL without Intel GL (headless). Different
+       questions, different layers — so we probe independently here. */
+    mfxStatus sts;
+
+    sts = probe_hevc_profile(MFX_PROFILE_HEVC_REXT);
+    if (sts == MFX_ERR_NONE) {
+        vpl_log("vpl_decode_startup: Intel HEVC RExt 444 HW decoder available");
+        return VPL_DEC_OK;
+    }
+
+    vpl_log("vpl_decode_startup: no Intel HEVC RExt 444 HW decoder found (sts=%d)", (int)sts);
+    return VPL_DEC_NOT_AVAILABLE;
+}
+
+void vpl_decode_shutdown(void) {
+    vpl_log("vpl_decode_shutdown");
+}
+
+/* ── release locked surface from previous decode ────────────────────── */
+
+static void release_locked(VPLDecoder *dec) {
+    if (dec->locked_surface) {
+        dec->locked_surface->FrameInterface->Unmap(dec->locked_surface);
+        dec->locked_surface->FrameInterface->Release(dec->locked_surface);
+        dec->locked_surface = NULL;
+    }
+}
+
+/* ── create decoder ─────────────────────────────────────────────────── */
+
+VPLDecodeStatus vpl_decoder_create(VPLDecoder **out, int width, int height,
+                                    int chroma444, int bit_depth) {
+    mfxStatus sts;
+    mfxVariant val;
+    VPLDecoder *dec;
+
+    *out = NULL;
+
+    dec = (VPLDecoder *)calloc(1, sizeof(*dec));
+    if (!dec)
+        return VPL_DEC_ERROR;
+
+    dec->width = width;
+    dec->height = height;
+    dec->chroma444 = chroma444;
+    dec->bit_depth = bit_depth;
+
+    /* determine output format */
+    if (chroma444) {
+        dec->format = (bit_depth >= 10) ? VPL_FMT_Y410 : VPL_FMT_AYUV;
+    } else {
+        dec->format = VPL_FMT_UNKNOWN;
+        free(dec);
+        return VPL_DEC_NOT_AVAILABLE;  /* use MF decoder for 420 */
+    }
+
+    /* create loader */
+    dec->loader = MFXLoad();
+    if (!dec->loader) {
+        vpl_log("vpl_decoder_create: MFXLoad failed");
+        free(dec);
+        return VPL_DEC_NOT_AVAILABLE;
+    }
+
+    /* Filters: hardware impl + HEVC codec + RExt profile. One mfxConfig
+       per property per the canonical oneVPL pattern — see
+       probe_hevc_profile for rationale. Pinning the profile here matches
+       the probe so the dispatcher cannot bind this session to a non-RExt
+       HEVC implementation on systems that expose multiple. */
+    mfxConfig cfg_impl = MFXCreateConfig(dec->loader);
+    mfxConfig cfg_codec = MFXCreateConfig(dec->loader);
+    mfxConfig cfg_profile = MFXCreateConfig(dec->loader);
+    if (!cfg_impl || !cfg_codec || !cfg_profile) {
+        vpl_log("vpl_decoder_create: MFXCreateConfig failed");
+        MFXUnload(dec->loader);
+        free(dec);
+        return VPL_DEC_NOT_AVAILABLE;
+    }
+
+    memset(&val, 0, sizeof(val));
+    val.Type = MFX_VARIANT_TYPE_U32;
+    val.Data.U32 = MFX_IMPL_TYPE_HARDWARE;
+    sts = MFXSetConfigFilterProperty(cfg_impl,
+        (const mfxU8 *)"mfxImplDescription.Impl", val);
+    if (sts != MFX_ERR_NONE) {
+        vpl_log("vpl_decoder_create: filter Impl failed: %d", (int)sts);
+        MFXUnload(dec->loader);
+        free(dec);
+        return VPL_DEC_NOT_AVAILABLE;
+    }
+
+    val.Data.U32 = MFX_CODEC_HEVC;
+    sts = MFXSetConfigFilterProperty(cfg_codec,
+        (const mfxU8 *)"mfxImplDescription.mfxDecoderDescription.decoder.CodecID", val);
+    if (sts != MFX_ERR_NONE) {
+        vpl_log("vpl_decoder_create: filter CodecID failed: %d", (int)sts);
+        MFXUnload(dec->loader);
+        free(dec);
+        return VPL_DEC_NOT_AVAILABLE;
+    }
+
+    val.Data.U32 = MFX_PROFILE_HEVC_REXT;
+    sts = MFXSetConfigFilterProperty(cfg_profile,
+        (const mfxU8 *)"mfxImplDescription.mfxDecoderDescription.decoder.decprofile.Profile", val);
+    if (sts != MFX_ERR_NONE) {
+        vpl_log("vpl_decoder_create: filter Profile failed: %d", (int)sts);
+        MFXUnload(dec->loader);
+        free(dec);
+        return VPL_DEC_NOT_AVAILABLE;
+    }
+
+    /* create session */
+    sts = MFXCreateSession(dec->loader, 0, &dec->session);
+    if (sts != MFX_ERR_NONE) {
+        vpl_log("vpl_decoder_create: MFXCreateSession failed: %d (no Intel GPU?)", (int)sts);
+        MFXUnload(dec->loader);
+        free(dec);
+        return VPL_DEC_NOT_AVAILABLE;
+    }
+
+    /* configure decode parameters */
+    memset(&dec->param, 0, sizeof(dec->param));
+    dec->param.mfx.CodecId = MFX_CODEC_HEVC;
+    dec->param.mfx.CodecProfile = MFX_PROFILE_HEVC_REXT;
+    dec->param.IOPattern = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
+    dec->param.AsyncDepth = 1;
+
+    /* frame info hints — DecodeHeader will overwrite with actual values */
+    dec->param.mfx.FrameInfo.Width = (width + 15) & ~15;
+    dec->param.mfx.FrameInfo.Height = (height + 15) & ~15;
+    dec->param.mfx.FrameInfo.CropW = width;
+    dec->param.mfx.FrameInfo.CropH = height;
+    dec->param.mfx.FrameInfo.ChromaFormat = MFX_CHROMAFORMAT_YUV444;
+    dec->param.mfx.FrameInfo.BitDepthLuma = bit_depth;
+    dec->param.mfx.FrameInfo.BitDepthChroma = bit_depth;
+
+    if (bit_depth >= 10) {
+        dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_Y410;
+        dec->param.mfx.FrameInfo.Shift = 0;
+    } else {
+        dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_AYUV;
+    }
+
+    dec->is_hw = 1;  /* we filtered for hardware; will verify after init */
+
+    vpl_log("vpl_decoder_create: session created, %dx%d %s %d-bit",
+            width, height, chroma444 ? "444" : "420", bit_depth);
+
+    *out = dec;
+    return VPL_DEC_OK;
+}
+
+/* ── destroy decoder ────────────────────────────────────────────────── */
+
+void vpl_decoder_destroy(VPLDecoder *dec) {
+    if (!dec)
+        return;
+
+    vpl_log("vpl_decoder_destroy");
+    release_locked(dec);
+
+    if (dec->session) {
+        if (dec->initialized)
+            MFXVideoDECODE_Close(dec->session);
+        MFXClose(dec->session);
+    }
+    if (dec->loader)
+        MFXUnload(dec->loader);
+
+    free(dec);
+}
+
+/* ── lazy init: parse header from first bitstream, then init decoder ── */
+
+static VPLDecodeStatus lazy_init(VPLDecoder *dec, mfxBitstream *bs) {
+    mfxStatus sts;
+
+    /* parse SPS/PPS from bitstream to fill FrameInfo */
+    sts = MFXVideoDECODE_DecodeHeader(dec->session, bs, &dec->param);
+    if (sts == MFX_ERR_MORE_DATA) {
+        vpl_log("vpl lazy_init: need more data for header");
+        return VPL_DEC_NEED_MORE_INPUT;
+    }
+    if (sts != MFX_ERR_NONE && sts != MFX_WRN_PARTIAL_ACCELERATION) {
+        return set_error(dec, sts, "DecodeHeader");
+    }
+
+    /* verify the stream is actually 444 */
+    if (dec->param.mfx.FrameInfo.ChromaFormat != MFX_CHROMAFORMAT_YUV444) {
+        vpl_log("vpl lazy_init: stream is not 4:4:4 (chroma=0x%x), use MF decoder instead",
+                dec->param.mfx.FrameInfo.ChromaFormat);
+        snprintf(dec->last_error, sizeof(dec->last_error),
+                 "stream is not 4:4:4 (chroma=0x%x)", dec->param.mfx.FrameInfo.ChromaFormat);
+        dec->last_sts = MFX_ERR_UNSUPPORTED;
+        return VPL_DEC_ERROR;
+    }
+
+    /* update format based on what DecodeHeader found */
+    mfxU32 fourcc = dec->param.mfx.FrameInfo.FourCC;
+    if (fourcc == MFX_FOURCC_AYUV) {
+        dec->format = VPL_FMT_AYUV;
+    } else if (fourcc == MFX_FOURCC_Y410) {
+        dec->format = VPL_FMT_Y410;
+    } else {
+        vpl_log("vpl lazy_init: unexpected FourCC 0x%x from DecodeHeader", fourcc);
+        /* try to override to our preferred format */
+        if (dec->bit_depth >= 10) {
+            dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_Y410;
+            dec->format = VPL_FMT_Y410;
+        } else {
+            dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_AYUV;
+            dec->format = VPL_FMT_AYUV;
+        }
+    }
+
+    /* Keep the caller-supplied dimensions from vpl_decoder_create — they are
+       the real content size from the server's draw packet. DecodeHeader sets
+       Width/Height to padded values (e.g. 1643→1664) and may set CropW/CropH
+       to the same padded values, so neither is reliable for output sizing. */
+
+    vpl_log("vpl lazy_init: header parsed, %dx%d fourcc=0x%x chroma=0x%x depth=%d",
+            dec->width, dec->height,
+            dec->param.mfx.FrameInfo.FourCC,
+            dec->param.mfx.FrameInfo.ChromaFormat,
+            dec->param.mfx.FrameInfo.BitDepthLuma);
+
+    /* init decoder */
+    sts = MFXVideoDECODE_Init(dec->session, &dec->param);
+    if (sts != MFX_ERR_NONE && sts != MFX_WRN_PARTIAL_ACCELERATION &&
+        sts != MFX_WRN_INCOMPATIBLE_VIDEO_PARAM) {
+        return set_error(dec, sts, "MFXVideoDECODE_Init");
+    }
+    if (sts == MFX_WRN_PARTIAL_ACCELERATION) {
+        vpl_log("vpl lazy_init: partial acceleration (software fallback for some operations)");
+        dec->is_hw = 0;
+    }
+
+    dec->initialized = 1;
+    vpl_log("vpl lazy_init: decoder initialized, hw=%d", dec->is_hw);
+    return VPL_DEC_OK;
+}
+
+/* ── extract pixel data from decoded surface ────────────────────────── */
+
+static VPLDecodeStatus extract_frame(VPLDecoder *dec, mfxFrameSurface1 *surface,
+                                      VPLDecodedFrame *frame) {
+    mfxStatus sts;
+    long long t0, t1;
+
+    t0 = usec_now();
+    sts = surface->FrameInterface->Map(surface, MFX_MAP_READ);
+    t1 = usec_now();
+
+    if (sts != MFX_ERR_NONE) {
+        return set_error(dec, sts, "FrameInterface->Map");
+    }
+
+    mfxFrameData *data = &surface->Data;
+    mfxFrameInfo *info = &surface->Info;
+
+    /* Pitch is the row stride in bytes */
+    int pitch = data->PitchLow + ((int)data->PitchHigh << 16);
+
+    frame->stride = pitch;
+    /* Prefer the decoder's stored dimensions (from DecodeHeader CropW/CropH)
+       over the surface dimensions, which may be padded to alignment boundaries. */
+    frame->width = dec->width;
+    frame->height = dec->height;
+    frame->format = dec->format;
+    frame->us_map = (int)(t1 - t0);
+
+    /* For packed formats, the pixel data starts at the crop origin.
+       AYUV: 4 bytes/pixel, Y410: 4 bytes/pixel. */
+    int crop_x = info->CropX;
+    int crop_y = info->CropY;
+    int bpp = 4;  /* both AYUV and Y410 are 32 bpp */
+
+    if (dec->format == VPL_FMT_AYUV) {
+        /* AYUV packed: V,U,Y,A per pixel in data->V (or data->B) */
+        uint8_t *base = data->V ? data->V : data->Y;
+        if (!base) base = data->B;
+        if (!base) {
+            surface->FrameInterface->Unmap(surface);
+            snprintf(dec->last_error, sizeof(dec->last_error), "AYUV: no pixel pointer");
+            dec->last_sts = MFX_ERR_NULL_PTR;
+            return VPL_DEC_ERROR;
+        }
+        frame->data = base + crop_y * pitch + crop_x * bpp;
+    } else if (dec->format == VPL_FMT_Y410) {
+        /* Y410 packed: U10:Y10:V10:A2 per 32-bit word in data->Y410 (or data->Y) */
+        uint8_t *base = (uint8_t *)data->Y410;
+        if (!base) base = data->Y;
+        if (!base) {
+            surface->FrameInterface->Unmap(surface);
+            snprintf(dec->last_error, sizeof(dec->last_error), "Y410: no pixel pointer");
+            dec->last_sts = MFX_ERR_NULL_PTR;
+            return VPL_DEC_ERROR;
+        }
+        frame->data = base + crop_y * pitch + crop_x * bpp;
+    } else {
+        surface->FrameInterface->Unmap(surface);
+        snprintf(dec->last_error, sizeof(dec->last_error), "unsupported format %d", dec->format);
+        dec->last_sts = MFX_ERR_UNSUPPORTED;
+        return VPL_DEC_ERROR;
+    }
+
+    /* check nominal range */
+    frame->full_range = 0;  /* oneVPL doesn't expose this directly; rely on encoder hint */
+
+    /* keep surface mapped; store for cleanup on next decode call */
+    surface->FrameInterface->AddRef(surface);
+    dec->locked_surface = surface;
+
+    vpl_log("vpl extract: %dx%d stride=%d fmt=%s map=%dus",
+            frame->width, frame->height, pitch,
+            dec->format == VPL_FMT_AYUV ? "AYUV" : "Y410",
+            frame->us_map);
+
+    return VPL_DEC_OK;
+}
+
+/* ── decode one access unit ─────────────────────────────────────────── */
+
+VPLDecodeStatus vpl_decoder_decode(VPLDecoder *dec,
+                                    const uint8_t *data, int data_len,
+                                    VPLDecodedFrame *frame) {
+    mfxStatus sts;
+    mfxBitstream bs;
+    mfxFrameSurface1 *surface_out = NULL;
+    mfxSyncPoint syncp = NULL;
+    long long t0, t1, t2;
+    VPLDecodeStatus vst;
+    int retries;
+
+    memset(frame, 0, sizeof(*frame));
+    release_locked(dec);
+
+    /* set up bitstream */
+    memset(&bs, 0, sizeof(bs));
+    bs.Data = (mfxU8 *)data;
+    bs.DataLength = data_len;
+    bs.MaxLength = data_len;
+    bs.DataFlag = MFX_BITSTREAM_COMPLETE_FRAME;
+
+    /* lazy init on first call: parse header and init decoder */
+    if (!dec->initialized) {
+        vst = lazy_init(dec, &bs);
+        if (vst != VPL_DEC_OK)
+            return vst;
+    }
+
+    /* submit compressed data */
+    t0 = usec_now();
+    retries = 0;
+
+retry:
+    sts = MFXVideoDECODE_DecodeFrameAsync(dec->session, &bs, NULL,
+                                           &surface_out, &syncp);
+    t1 = usec_now();
+
+    if (sts == MFX_WRN_DEVICE_BUSY) {
+        if (retries++ < 100) {
+#ifdef _WIN32
+            Sleep(1);
+#else
+            usleep(1000);
+#endif
+            goto retry;
+        }
+        return set_error(dec, sts, "DecodeFrameAsync(device_busy)");
+    }
+
+    if (sts == MFX_ERR_MORE_DATA) {
+        frame->us_submit = (int)(t1 - t0);
+        return VPL_DEC_NEED_MORE_INPUT;
+    }
+
+    if (sts == MFX_ERR_MORE_SURFACE) {
+        /* shouldn't happen with internal allocation, but handle gracefully */
+        vpl_log("vpl decode: MFX_ERR_MORE_SURFACE (unexpected with internal alloc)");
+        frame->us_submit = (int)(t1 - t0);
+        return VPL_DEC_NEED_MORE_INPUT;
+    }
+
+    if (sts == MFX_WRN_VIDEO_PARAM_CHANGED) {
+        /* sequence header changed; update our cached dimensions */
+        mfxVideoParam new_param;
+        memset(&new_param, 0, sizeof(new_param));
+        new_param.mfx.CodecId = MFX_CODEC_HEVC;
+        MFXVideoDECODE_GetVideoParam(dec->session, &new_param);
+        dec->width = new_param.mfx.FrameInfo.CropW;
+        dec->height = new_param.mfx.FrameInfo.CropH;
+        if (dec->width == 0)
+            dec->width = new_param.mfx.FrameInfo.Width;
+        if (dec->height == 0)
+            dec->height = new_param.mfx.FrameInfo.Height;
+        vpl_log("vpl decode: param changed, new size %dx%d", dec->width, dec->height);
+
+        /* the decode may still have produced a frame */
+        if (!surface_out || !syncp) {
+            frame->us_submit = (int)(t1 - t0);
+            return VPL_DEC_STREAM_CHANGE;
+        }
+        /* fall through to sync + extract */
+    }
+
+    if (sts != MFX_ERR_NONE && sts != MFX_WRN_VIDEO_PARAM_CHANGED) {
+        return set_error(dec, sts, "DecodeFrameAsync");
+    }
+
+    if (!surface_out || !syncp) {
+        frame->us_submit = (int)(t1 - t0);
+        return VPL_DEC_NEED_MORE_INPUT;
+    }
+
+    /* sync: wait for GPU decode to finish */
+    sts = surface_out->FrameInterface->Synchronize(surface_out, 5000);
+    t2 = usec_now();
+
+    if (sts != MFX_ERR_NONE) {
+        surface_out->FrameInterface->Release(surface_out);
+        return set_error(dec, sts, "Synchronize");
+    }
+
+    frame->us_submit = (int)(t1 - t0);
+    frame->us_sync = (int)(t2 - t1);
+
+    /* extract pixels */
+    vst = extract_frame(dec, surface_out, frame);
+
+    /* release the async reference (extract_frame AddRef'd if it needs to keep it) */
+    surface_out->FrameInterface->Release(surface_out);
+
+    return vst;
+}
+
+/* ── queries ────────────────────────────────────────────────────────── */
+
+void vpl_decoder_get_output_size(VPLDecoder *dec, int *width, int *height) {
+    if (dec) {
+        *width = dec->width;
+        *height = dec->height;
+    } else {
+        *width = 0;
+        *height = 0;
+    }
+}
+
+int vpl_decoder_is_hardware(VPLDecoder *dec) {
+    return dec ? dec->is_hw : 0;
+}
+
+VPLPixelFormat vpl_decoder_get_format(VPLDecoder *dec) {
+    return dec ? dec->format : VPL_FMT_UNKNOWN;
+}
