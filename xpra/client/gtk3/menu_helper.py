@@ -137,10 +137,17 @@ def get_appimage(app_name: str, icondata=b"", menu_icon_size=24) -> Gtk.Image | 
             from xpra.codecs.pillow.decoder import open_only, is_svg  # pylint: disable=import-outside-toplevel
             if not is_svg(icondata):
                 img = open_only(icondata)
+                if img.mode not in ("RGB", "RGBA"):
+                    try:
+                        img = img.convert("RGB")
+                    except ValueError as e:
+                        log("ignoring %s image: %s", img.mode, e)
+                        return None
                 has_alpha = img.mode == "RGBA"
                 width, height = img.size
                 rowstride = width * (3 + int(has_alpha))
-                pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
+                imgdata = img.tobytes()
+                pixbuf = get_pixbuf_from_data(imgdata, has_alpha, width, height, rowstride)
                 return scaled_image(pixbuf, icon_size=menu_icon_size)
         except Exception as e:
             err(e)
