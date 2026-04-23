@@ -35,8 +35,16 @@ def get_display_type() -> str:
     return "Main"
 
 
+def is_display_connection(ss) -> bool:
+    try:
+        from xpra.server.source.display import DisplayConnection
+    except ImportError:
+        return False
+    return isinstance(ss, DisplayConnection)
+
+
 def get_desktop_size_capability(server_source, root_w: int, root_h: int) -> tuple[int, int]:
-    if not server_source:
+    if not server_source or not is_display_connection(server_source):
         return root_w, root_h
     client_size = server_source.desktop_size
     log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
@@ -135,10 +143,13 @@ class DisplayManager(StubServerMixin):
         return get_refresh_rate_for_value(self.refresh_rate, invalue)
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
-        self.parse_screen_info(ss)
+        if is_display_connection(ss):
+            self.parse_screen_info(ss)
         return ""
 
     def add_new_client(self, ss, c: typedict) -> None:
+        if not is_display_connection(ss):
+            return
         from xpra.server.source.display import DisplayConnection
         display_clients = get_sources_by_type(self, DisplayConnection, ss)
         # a bit of explanation:

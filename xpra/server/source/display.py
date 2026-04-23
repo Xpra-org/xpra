@@ -27,6 +27,13 @@ class DisplayConnection(StubClientConnection):
     """
     PREFIX = "display"
 
+    @classmethod
+    def is_needed(cls, caps: typedict) -> bool:
+        if isinstance(caps.get(DisplayConnection.PREFIX), (str, dict)):
+            return True
+        # legacy clients flattened display attributes at the top level:
+        return BACKWARDS_COMPATIBLE and any(k in caps for k in ("desktop_size", "screen_sizes", "monitors", "vrefresh", "refresh-rate"))
+
     def cleanup(self) -> None:
         self.init_state()
 
