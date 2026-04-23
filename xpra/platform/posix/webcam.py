@@ -164,10 +164,64 @@ def add_video_device_change_callback(callback: Callable) -> None:
     _video_device_change_callbacks.append(callback)
 
 
+def _video_devices_by_rdev() -> dict[tuple[int, int], str]:
+    """Map (major, minor) -> '/dev/videoN' for every v4l2 video node."""
+    result: dict[tuple[int, int], str] = {}
+    for dev in glob.glob("/dev/video*"):
+        try:
+            st = os.stat(dev)
+        except OSError:
+            continue
+        result[(os.major(st.st_rdev), os.minor(st.st_rdev))] = dev
+    return result
+
+
+def _libcamera_system_devices(camera) -> list[int]:
+    """
+    Read the ``SystemDevices`` property (a list of dev_t values) from a
+    libcamera ``Camera`` object, defensively across binding versions.
+    """
+    props = getattr(camera, "properties", None)
+    if props is None:
+        return []
+    # preferred: properties.SystemDevices control id
+    try:
+        from libcamera import properties as lc_props
+        key = getattr(lc_props, "SystemDevices", None)
+        if key is not None and key in props:
+            return list(props[key])
+    except ImportError:
+        pass
+    # fallback: iterate and match by name
+    try:
+        items = props.items()
+    except AttributeError:
+        return []
+    for key, val in items:
+        if getattr(key, "name", "") == "SystemDevices":
+            return list(val)
+    return []
+
+
+def _libcamera_device_paths(camera, rdev_map: dict[tuple[int, int], str]) -> list[str]:
+    paths: list[str] = []
+    for devnum in _libcamera_system_devices(camera):
+        try:
+            n = int(devnum)
+        except (TypeError, ValueError):
+            continue
+        dev = rdev_map.get((os.major(n), os.minor(n)))
+        if dev and dev not in paths:
+            paths.append(dev)
+    return paths
+
+
 def get_libcamera_devices() -> dict[str, dict]:
     """
-    Return a dict of {camera_id: {"id": camera_id, "name": name}}
+    Return a dict of {camera_id: {"id": ..., "name": ..., "device": ..., "devices": [...]}}
     for all cameras visible to the libcamera stack.
+    ``device`` / ``devices`` are the matching /dev/videoN paths when they can
+    be resolved via the camera's ``SystemDevices`` property.
     Returns an empty dict if libcamera is not installed.
     """
     try:
@@ -177,11 +231,17 @@ def get_libcamera_devices() -> dict[str, dict]:
         return {}
     try:
         cm = libcamera.CameraManager.singleton()
+        rdev_map = _video_devices_by_rdev()
         devices: dict[str, dict] = {}
         for camera in cm.cameras:
             camera_id = camera.id
-            devices[camera_id] = {"id": camera_id, "name": camera_id}
-        log("get_libcamera_devices() found %i cameras", len(devices))
+            info: dict = {"id": camera_id, "name": camera_id}
+            paths = _libcamera_device_paths(camera, rdev_map)
+            if paths:
+                info["devices"] = paths
+                info["device"] = paths[0]
+            devices[camera_id] = info
+        log("get_libcamera_devices() found %i cameras: %s", len(devices), devices)
         return devices
     except Exception as e:
         log("get_libcamera_devices() error: %s", e)
