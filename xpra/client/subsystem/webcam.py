@@ -10,6 +10,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
+from xpra.codecs.image import ImageWrapper
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -27,6 +28,49 @@ log = Logger("webcam")
 
 WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
 PIL_FORMATS = ("RGB", "RGBX", "RGBA")
+
+
+def save_to_buffer(image: ImageWrapper, encoding: str) -> bytes:
+    # Encode via Pillow.
+    # webcam_csc guarantees pixel_format is "RGB", "RGBX", or "RGBA".
+    pixel_format = image.get_pixel_format()
+    w = image.get_width()
+    h = image.get_height()
+    pixels = image.get_pixels()
+    if not isinstance(pixels, bytes):
+        pixels = bytes(pixels)
+    from PIL import Image
+    from io import BytesIO
+    if pixel_format == "RGB":
+        pil_image = Image.frombytes("RGB", (w, h), pixels)
+    elif pixel_format in ("RGBX", "RGBA"):
+        pil_image = Image.frombytes("RGBA", (w, h), pixels).convert("RGB")
+    else:
+        raise ValueError(f"unsupported pixel format for Pillow encoding: {pixel_format!r}")
+    start = monotonic()
+    buf = BytesIO()
+    pil_image.save(buf, format=encoding)
+    data = buf.getvalue()
+    buf.close()
+    end = monotonic()
+    log("webcam frame compression to %s took %ims", encoding, (end - start) * 1000)
+    return data
+
+
+def is_available() -> bool:
+    with OSEnvContext(LANG="C", LC_ALL="C"):
+        if POSIX and not OSX:
+            try:
+                import libcamera  # noqa: F401
+                return True
+            except ImportError as e:
+                log("is_available() no libcamera: %s", e)
+        try:
+            import cv2  # noqa: F401
+            return True
+        except ImportError as e:
+            log("is_available() no opencv: %s", e)
+        return False
 
 
 class WebcamForwarder(StubClientMixin):
@@ -81,7 +125,7 @@ class WebcamForwarder(StubClientMixin):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         v = c.get("webcam")
-        self.server_webcam_client_mode = False
+        log("parse_server_capabilities(..) webcam=%s", v)
         if isinstance(v, dict):
             cdict = typedict(v)
             self.server_webcam = cdict.boolget("enabled")
@@ -91,7 +135,8 @@ class WebcamForwarder(StubClientMixin):
         elif BACKWARDS_COMPATIBLE:
             # pre v6 / 5.0.2
             self.server_webcam = c.boolget("webcam")
-            self.server_webcam_encodings = c.strtupleget("webcam.encodings", ("png", "jpeg"))
+            if self.server_webcam:
+                self.server_webcam_encodings = c.strtupleget("webcam.encodings", ("png", "jpeg"))
         log("webcam server support: %s (encodings: %s, rgb-formats=%s, client_mode: %s)",
             self.server_webcam, csv(self.server_webcam_encodings), csv(self.server_webcam_rgb_formats),
             self.server_webcam_client_mode)
@@ -118,36 +163,24 @@ class WebcamForwarder(StubClientMixin):
         if not self.webcam_forwarding:
             return
         with self.webcam_lock:
-            with OSEnvContext(LANG="C", LC_ALL="C"):
-                available = False
-                if POSIX and not OSX:
-                    try:
-                        import libcamera  # noqa: F401
-                        available = True
-                    except ImportError:
-                        pass
-                if not available:
-                    try:
-                        import cv2  # noqa: F401
-                        available = True
-                    except ImportError:
-                        pass
-                if not available:
-                    log("init webcam failure: neither cv2 nor libcamera found")
-                    if WIN32 or OSX:
-                        log.info("opencv not found, webcam forwarding is not available")
-                    self.webcam_forwarding = False
-                    return
+            if not is_available():
+                log("init webcam failure: neither cv2 nor libcamera found")
+                if WIN32 or OSX:
+                    log.info("opencv not found, webcam forwarding is not available")
+                self.webcam_forwarding = False
+                return
             if not self.webcam_send_timer:
                 start_thread(self.do_start_sending_webcam, "start-sending-webcam",
                              daemon=True, args=(self.webcam_option, ))
 
     def do_start_sending_webcam(self, device_str: str) -> None:
+        log("do_start_sending_webcam(%s)", device_str)
         assert self.server_webcam
         from xpra.webcam import open_camera
         try:
             webcam_device = open_camera(device_str)
         except Exception as e:
+            log("open_camera(%s)", device_str, exc_info=True)
             log.warn("Warning: failed to open webcam device %r: %s", device_str, e)
             return
         if webcam_device is None:
@@ -293,34 +326,17 @@ class WebcamForwarder(StubClientMixin):
 
             options: dict[str, Any] = {}
             if encoding == "mmap":
-                mmap_write_area = getattr(self, "mmap_write_area", None)
+                from xpra.client.subsystem.mmap import MmapClient
+                assert isinstance(self, MmapClient)
+                mmap_write_area = self.mmap_write_area
                 options["pixel-format"] = pixel_format
                 mmap_data = mmap_write_area.write_data(image.get_pixels())
                 log("mmap_write_area=%s, mmap_data=%s", mmap_write_area.get_info(), mmap_data)
                 img_data = b""
                 options["chunks"] = mmap_data
             else:
-                # Encode via Pillow.
-                # webcam_csc guarantees pixel_format is "RGB", "RGBX", or "RGBA".
-                pixels = image.get_pixels()
-                if not isinstance(pixels, bytes):
-                    pixels = bytes(pixels)
-                from PIL import Image
-                from io import BytesIO
-                if pixel_format == "RGB":
-                    pil_image = Image.frombytes("RGB", (w, h), pixels)
-                elif pixel_format in ("RGBX", "RGBA"):
-                    pil_image = Image.frombytes("RGBA", (w, h), pixels).convert("RGB")
-                else:
-                    raise ValueError(f"unsupported pixel format for Pillow encoding: {pixel_format!r}")
-                start = monotonic()
-                buf = BytesIO()
-                pil_image.save(buf, format=encoding)
-                data = buf.getvalue()
-                buf.close()
+                data = save_to_buffer(image, encoding)
                 img_data = compression.Compressed(encoding, data)
-                end = monotonic()
-                log("webcam frame compression to %s took %ims", encoding, (end - start) * 1000)
 
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1
