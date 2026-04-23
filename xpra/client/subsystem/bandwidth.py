@@ -7,6 +7,7 @@
 from typing import Any
 from collections.abc import Callable
 
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.device_info import (
     get_NM_adapter_type, get_device_value, guess_adapter_type,
     jitter_for_adapter_type, guess_bandwidth_limit,
@@ -36,7 +37,7 @@ class BandwidthClient(StubClientMixin):
     def __init__(self):
         self.bandwidth_limit: int = 0
         self.bandwidth_detection: bool = False
-        self.server_bandwidth_limit: int = 0
+        self.bandwidth_server_limit: int = 0
 
     def init(self, opts) -> None:
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
@@ -45,16 +46,17 @@ class BandwidthClient(StubClientMixin):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "network": {
-                "bandwidth-limit": self.bandwidth_limit,
-                "bandwidth-detection": self.bandwidth_detection,
+            "bandwidth": {
+                "limit": self.bandwidth_limit,
+                "detection": self.bandwidth_detection,
+                "server-limit": self.bandwidth_server_limit,
             }
         }
 
     def get_caps(self) -> dict[str, Any]:
-        caps: dict[str, Any] = {
-            "network-state": True,
-        }
+        caps: dict[str, Any] = {}
+        if BACKWARDS_COMPATIBLE:
+            caps["network-state"] = True
         # get socket speed if we have it:
         pinfo = self._protocol.get_info()
         device_info = pinfo.get("socket", {}).get("device", {})
@@ -96,14 +98,19 @@ class BandwidthClient(StubClientMixin):
             else:
                 bandwidth_limit = guess_bandwidth_limit(adapter_type)
         log("bandwidth-limit capability=%s", bandwidth_limit)
-        if bandwidth_limit > 0:
-            caps["bandwidth-limit"] = bandwidth_limit
-        caps["bandwidth-detection"] = self.bandwidth_detection
+        if BACKWARDS_COMPATIBLE:
+            if bandwidth_limit > 0:
+                caps["bandwidth-limit"] = bandwidth_limit
+            caps["bandwidth-detection"] = self.bandwidth_detection
+        caps["bandwidth"] = {
+            "limit": bandwidth_limit,
+            "detection": self.bandwidth_detection,
+        }
         return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
-        log(f"{self.server_bandwidth_limit=}")
+        self.bandwidth_server_limit = c.intget("network.bandwidth-limit") or c.intget("bandwidth.limit")
+        log(f"{self.bandwidth_server_limit=}")
         return True
 
     def send_bandwidth_limit(self) -> None:

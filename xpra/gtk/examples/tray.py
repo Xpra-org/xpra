@@ -49,7 +49,7 @@ class FakeApplication:
         self.server_menu = False
         self.server_commands_info = None
         self.server_multi_monitors = False
-        self.server_bandwidth_limit = 0
+        self.bandwidth_server_limit = 0
         self.server_monitors = {}
         self.bandwidth_limit = 0
         self.speaker_allowed = True

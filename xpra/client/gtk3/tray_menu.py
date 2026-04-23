@@ -630,9 +630,9 @@ class GTKTrayMenu(GTKMenuHelper):
                                                            "so bandwidth limits are disabled")
                 set_sensitive(bandwidth_limit_menu_item, False)
             else:
-                initial_value = self.client.server_bandwidth_limit or self.client.bandwidth_limit or 0
-                bandwidthlog("set_bwlimitmenu() server_bandwidth_limit=%s, bandwidth_limit=%s, initial value=%s",
-                             self.client.server_bandwidth_limit, self.client.bandwidth_limit, initial_value)
+                initial_value = self.client.bandwidth_server_limit or self.client.bandwidth_limit or 0
+                bandwidthlog("set_bwlimitmenu() bandwidth_server_limit=%s, bandwidth_limit=%s, initial value=%s",
+                             self.client.bandwidth_server_limit, self.client.bandwidth_limit, initial_value)
 
                 options = BANDWIDTH_MENU_OPTIONS
                 if initial_value and initial_value not in options:
@@ -642,7 +642,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 for v in sorted(options):
                     menu.append(bwitem(v))
 
-                sbl = self.client.server_bandwidth_limit
+                sbl = self.client.bandwidth_server_limit
                 for bwlimit, c in menuitems.items():
                     c.set_active(initial_value == bwlimit)
                     # disable any values higher than what the server allows:

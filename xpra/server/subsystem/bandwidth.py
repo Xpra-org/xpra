@@ -7,9 +7,10 @@
 from typing import Any
 
 from xpra.server.subsystem.stub import StubServerMixin
+from xpra.util.objects import typedict
 from xpra.util.parsing import parse_with_unit
 from xpra.util.stats import std_unit
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.env import envint
 from xpra.log import Logger
 
@@ -24,6 +25,12 @@ class BandwidthServer(StubServerMixin):
     Adds bandwidth management
     """
     PREFIX = "bandwidth"
+
+    @classmethod
+    def is_needed(caps: typedict) -> bool:
+        if BACKWARDS_COMPATIBLE and caps.boolget("network-state"):
+            return True
+        return caps.boolget("bandwidth")
 
     def __init__(self):
         StubServerMixin.__init__(self)
@@ -43,11 +50,13 @@ class BandwidthServer(StubServerMixin):
         return {BandwidthServer.PREFIX: info}
 
     def get_server_features(self, _source) -> dict[str, Any]:
-        return {
-            "network": {
+        caps = self.get_info()
+        if BACKWARDS_COMPATIBLE:
+            caps["network"] = {
                 "bandwidth-limit": self.bandwidth_limit or 0,
+                "bandwidth-detection": self.bandwidth_detection
             }
-        }
+        return caps
 
     def _process_connection_data(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):

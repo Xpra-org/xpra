@@ -41,12 +41,12 @@ class BandwidthConnection(StubClientConnection):
         self.jitter = 0
         self.adapter_type = ""
         self.client_connection_data: dict[str, Any] = {}
-        self.soft_bandwidth_limit = self.bandwidth_limit = self.server_bandwidth_limit
+        self.soft_bandwidth_limit = self.bandwidth_limit = self.bandwidth_server_limit
         self.bandwidth_warnings = True
         self.bandwidth_warning_time = 0
 
     def init_from(self, _protocol, server) -> None:
-        self.server_bandwidth_limit = server.bandwidth_limit
+        self.bandwidth_server_limit = server.bandwidth_limit
         self.bandwidth_detection = server.bandwidth_detection
 
     def parse_client_caps(self, c: typedict) -> None:
@@ -61,12 +61,12 @@ class BandwidthConnection(StubClientConnection):
             self.bandwidth_detection = False
             self.jitter = 0
         else:
-            limit = self.server_bandwidth_limit or get_socket_bandwidth_limit(self.protocol)
+            limit = self.bandwidth_server_limit or get_socket_bandwidth_limit(self.protocol)
             self.bandwidth_limit = min(limit, bandwidth_limit)
             if self.bandwidth_detection:
                 self.bandwidth_detection = c.boolget("bandwidth-detection", False)
         log("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s",
-            self.server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
+            self.bandwidth_server_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
 
     def get_info(self) -> dict[str, Any]:
         info = {
