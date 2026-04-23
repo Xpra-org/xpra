@@ -92,7 +92,7 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_ack_check_timer = 0
         self.webcam_send_timer = 0
         self.webcam_lock = RLock()
-        self.webcam_resume_restart = False
+        self.webcam_resume_restart = ()
         self.webcam_csc = None
         self.webcam_encoding = ""
         self.server_webcam = False
@@ -142,24 +142,30 @@ class WebcamForwarder(StubClientMixin):
             self.server_webcam_client_mode)
         # In client_mode the server may report devices=1 without v4l2, honour that
         if self.webcam_forwarding and self.server_webcam:
-            if self.webcam_option == "on" or self.webcam_option.find("/dev/video") >= 0:
-                self.connect("handshake-complete", self.start_sending_webcam)
+            device = self.webcam_option
+            if device == "on" or device.find("/dev/video") >= 0:
+                try:
+                    device_no = int(device.removeprefix("/dev/video"))
+                except ValueError:
+                    device_no = 0
+                self.connect("handshake-complete", self.start_sending_webcam, device_no, device)
         return True
 
     def suspend_webcam(self, _client) -> None:
-        self.webcam_resume_restart = bool(self.webcam_device)
+        self.webcam_resume_restart = (self.webcam_device_no, self.webcam_device)
         self.stop_sending_webcam()
 
     def resume_webcam(self, _client) -> None:
-        if self.webcam_resume_restart:
-            self.webcam_resume_restart = False
-            self.start_sending_webcam()
+        restart = self.webcam_resume_restart
+        if restart:
+            self.webcam_resume_restart = ()
+            self.start_sending_webcam(*restart)
 
     def webcam_state_changed(self) -> None:
         self.idle_add(self.emit, "webcam-changed")
 
     ######################################################################
-    def start_sending_webcam(self) -> None:
+    def start_sending_webcam(self, device_no: int, device: str) -> None:
         if not self.webcam_forwarding:
             return
         with self.webcam_lock:
@@ -171,17 +177,17 @@ class WebcamForwarder(StubClientMixin):
                 return
             if not self.webcam_send_timer:
                 start_thread(self.do_start_sending_webcam, "start-sending-webcam",
-                             daemon=True, args=(self.webcam_option, ))
+                             daemon=True, args=(device_no, device, ))
 
-    def do_start_sending_webcam(self, device_str: str) -> None:
-        log("do_start_sending_webcam(%s)", device_str)
+    def do_start_sending_webcam(self, device_no: int, device: str) -> None:
+        log("do_start_sending_webcam(%s, %s)", device_no, device)
         assert self.server_webcam
         from xpra.webcam import open_camera
         try:
-            webcam_device = open_camera(device_str)
+            webcam_device = open_camera(device)
         except Exception as e:
-            log("open_camera(%s)", device_str, exc_info=True)
-            log.warn("Warning: failed to open webcam device %r: %s", device_str, e)
+            log("open_camera(%s)", device, exc_info=True)
+            log.error("Error: failed to open webcam device %r: %s", device, e)
             return
         if webcam_device is None:
             return
@@ -221,7 +227,7 @@ class WebcamForwarder(StubClientMixin):
                 self.webcam_encoding = common[0]
             log("webcam encoding: %s", self.webcam_encoding)
 
-            self.webcam_device_no = getattr(webcam_device, "_device_no", 0)
+            self.webcam_device_no = device_no
             self.webcam_device = webcam_device
             self.send("webcam-start", self.webcam_device_no, w, h)
             self.webcam_state_changed()

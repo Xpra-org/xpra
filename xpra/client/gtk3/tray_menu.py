@@ -1087,7 +1087,7 @@ class GTKTrayMenu(GTKMenuHelper):
         # so we can toggle the menu items without causing yet more events and infinite loops:
         menu.ignore_events = False
 
-        def deviceitem(label, cb, device_no=0) -> Gtk.CheckMenuItem:
+        def deviceitem(label, cb, device_no=0, device="/dev/video0") -> Gtk.CheckMenuItem:
             c = Gtk.CheckMenuItem(label=label)
             c.set_draw_as_radio(True)
             c.set_active(get_active_device_no() == device_no)
@@ -1099,19 +1099,19 @@ class GTKTrayMenu(GTKMenuHelper):
                     try:
                         menu.ignore_events = True
                         ensure_item_selected(menu, item)
-                        cb(device_no)
+                        cb(device_no, device)
                     finally:
                         menu.ignore_events = False
 
             c.connect("toggled", activate_cb, menu)
             return c
 
-        def start_webcam(device_no=0) -> None:
-            webcamlog("start_webcam(%s)", device_no)
-            self.client.do_start_sending_webcam(device_no)
+        def start_webcam(device_no=0, device="") -> None:
+            webcamlog("start_webcam(%s, %s)", device_no, device)
+            self.client.start_sending_webcam(device_no, device)
 
-        def stop_webcam(device_no=0) -> None:
-            webcamlog("stop_webcam(%s)", device_no)
+        def stop_webcam(*args) -> None:
+            webcamlog("stop_webcam%s", args)
             self.client.stop_sending_webcam()
 
         def get_active_device_no() -> int:
@@ -1134,13 +1134,15 @@ class GTKTrayMenu(GTKMenuHelper):
             else:
                 virt_devices = get_virtual_video_devices()
                 non_virtual = {k: v for k, v in all_video_devices.items() if k not in virt_devices}
+                webcamlog("non-virtual webcam devices=%s", non_virtual)
                 for device_no, info in non_virtual.items():
-                    label = str(info.get("card", info.get("device", str(device_no))))
-                    item = deviceitem(label, start_webcam, device_no)
+                    device = info.get("device", str(device_no))
+                    label = str(info.get("card", device))
+                    item = deviceitem(label, start_webcam, device_no, device)
                     menu.append(item)
                 if not non_virtual:
                     off_label = "No devices found"
-            off = deviceitem(off_label, stop_webcam, -1)
+            off = deviceitem(off_label, stop_webcam)
             set_sensitive(off, off_label == "Off")
             menu.append(off)
             menu.show_all()
