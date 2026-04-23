@@ -227,6 +227,7 @@ class WebcamForwarder(StubClientMixin):
                     log.error(" client supports: %s", csv(client_encodings))
                     webcam_device.release()
                     return
+                log("webcam common encodings=%s", common)
                 self.webcam_encoding = common[0]
             log("webcam encoding: %s", self.webcam_encoding)
 

@@ -5,14 +5,16 @@
 
 """
 Webcam client window: receives and displays compressed webcam frames forwarded
-by an xpra server when v4l2 is unavailable.  Connects back to the server over
-the unix socket and authenticates with a one-time token embedded in the URI.
+by an xpra server when v4l2 is unavailable.  Connects back to the server as a
+regular client with only the `webcam-client` capability set so that the server
+creates a minimal `ClientConnection` for it.
 """
 
+import uuid
 from typing import Any
 
+from xpra.net.common import Packet
 from xpra.os_util import gi_import
-from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.client import XpraClientBase
@@ -61,6 +63,9 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
     def __init__(self, display_desc: dict[str, Any]) -> None:
         GObjectClientAdapter.__init__(self)
         XpraClientBase.__init__(self)
+        # use a unique uuid so the sharing subsystem doesn't treat us
+        # as a reconnection of the regular client (which would kick it off):
+        self.uuid = uuid.uuid4().hex
         self._device_no: int = int(display_desc.get("device", 0))
         self._pixbuf = None
 
@@ -82,20 +87,15 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
 
     def make_hello(self) -> dict[str, Any]:
         caps = super().make_hello()
-        caps["request"] = "webcam-client"
         caps["webcam-client"] = {"device": self._device_no}
         return caps
 
-    def server_connection_established(self, caps: typedict) -> bool:
-        # The server hello only contains {"webcam": True}; skip the full
-        # capability parse chain used by regular clients.
-        self.init_authenticated_packet_handlers()
-        self.connection_established = True
-        return True
-
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packet_handler("webcam-frame", self._process_webcam_frame)
-        self.add_packet_handler("webcam-stop", self._process_webcam_stop)
+        super().init_authenticated_packet_handlers()
+        self.add_packets("webcam-frame", "webcam-stop", "startup-complete")
+
+    def _process_startup_complete(self, _packet: Packet) -> None:
+        log("startup-complete")
 
     # ------------------------------------------------------------------
     # Packet handlers — dispatched on the GLib main loop by XpraClientBase

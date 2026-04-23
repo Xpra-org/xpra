@@ -91,8 +91,6 @@ class WebcamServer(StubServerMixin):
 
     def setup(self) -> None:
         self.init_webcam()
-        if self.webcam_client_mode:
-            self.hello_request_handlers["webcam-client"] = self._handle_hello_webcam_client
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {
@@ -156,32 +154,40 @@ class WebcamServer(StubServerMixin):
             self.webcam_virtual, self.webcam_virtual_video_devices, self.webcam_client_mode)
 
     # ------------------------------------------------------------------
-    # Hello handler for the webcam-client subprocess
+    # Webcam-client connection attach (regular client flow)
 
-    def _handle_hello_webcam_client(self, proto, caps: typedict) -> bool:
-        wc = caps.dictget("webcam-client") or {}
-        device_id = typedict(wc).intget("device", -1)
-        log("_handle_hello_webcam_client: device_id=%i", device_id)
-        webcam_clients = get_sources_by_type(self, WebcamConnection)
-        for ss in webcam_clients:
-            devices = getattr(ss, "webcam_forwarding_devices", {})
-            if not devices:
+    def add_new_client(self, ss, c: typedict) -> None:
+        wc = c.dictget("webcam-client")
+        if wc:
+            device_id = typedict(wc).intget("device", -1)
+            self.add_new_webcam_client(ss, device_id)
+
+    def add_new_webcam_client(self, ss, device_id: int) -> None:
+        proto = ss.protocol
+        log("webcam-client connection (device_id=%i) from %s", device_id, proto)
+        for other_ss in get_sources_by_type(self, WebcamConnection, ss):
+            pending = other_ss.webcam_pending_clients
+            if not pending:
                 continue
             if device_id >= 0:
-                if device_id not in devices:
+                if device_id not in pending:
                     continue
                 matched = device_id
             else:
-                matched = next(iter(devices))
+                matched = next(iter(pending))
+            if not other_ss.attach_webcam_client(matched, ss):
+                continue
             self.webcam_client_connections[matched] = proto
-            ss.set_webcam_client_proto(matched, proto)
             proto.large_packets.append("webcam-frame")
-            proto.send_now(Packet("hello", {"webcam": True}))
             log("webcam-client connection accepted for device %i", matched)
-            return True
+            return
         log.warn("Warning: no webcam device available (requested device_id=%i)", device_id)
         self.disconnect_client(proto, "no webcam device available")
-        return True
+
+    def cleanup_protocol(self, protocol) -> None:
+        for device_id, proto in tuple(self.webcam_client_connections.items()):
+            if proto is protocol:
+                self.webcam_client_connections.pop(device_id, None)
 
     # ------------------------------------------------------------------
     # Packet handlers
@@ -198,7 +204,7 @@ class WebcamServer(StubServerMixin):
         w = packet.get_u16(2)
         h = packet.get_u16(3)
         if self.webcam_client_mode:
-            ss.setup_webcam_client_forwarder(device_id, w, h)
+            ss.request_webcam_client_forwarder(device_id, w, h)
             self._spawn_webcam_client(ss, device_id, w, h)
         else:
             ss.start_virtual_webcam(device_id, w, h)
