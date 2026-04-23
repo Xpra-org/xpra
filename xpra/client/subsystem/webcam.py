@@ -27,12 +27,12 @@ from xpra.log import Logger
 log = Logger("webcam")
 
 WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
-PIL_FORMATS = ("RGB", "RGBX", "RGBA")
+PIL_FORMATS = ("RGB", "RGBX", "RGBA", "BGRX")
 
 
 def save_to_buffer(image: ImageWrapper, encoding: str) -> bytes:
     # Encode via Pillow.
-    # webcam_csc guarantees pixel_format is "RGB", "RGBX", or "RGBA".
+    # webcam_csc guarantees pixel_format is one of PIL_FORMATS.
     pixel_format = image.get_pixel_format()
     w = image.get_width()
     h = image.get_height()
@@ -45,6 +45,9 @@ def save_to_buffer(image: ImageWrapper, encoding: str) -> bytes:
         pil_image = Image.frombytes("RGB", (w, h), pixels)
     elif pixel_format in ("RGBX", "RGBA"):
         pil_image = Image.frombytes("RGBA", (w, h), pixels).convert("RGB")
+    elif pixel_format == "BGRX":
+        # Pillow can decode BGRX natively via the raw decoder (mode="RGB", rawmode="BGRX")
+        pil_image = Image.frombuffer("RGB", (w, h), pixels, "raw", "BGRX", 0, 1)
     else:
         raise ValueError(f"unsupported pixel format for Pillow encoding: {pixel_format!r}")
     start = monotonic()
