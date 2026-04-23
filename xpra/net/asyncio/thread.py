@@ -50,6 +50,7 @@ def install_uvloop() -> None:
     except ImportError:
         log("install_uvloop()", exc_info=True)
         log.warn("Warning: uvloop not found")
+        log.warn(" install python uvloop module for better performance")
         return
     log("installing uvloop")
     # there's nothing we can do about this deprecation warning, so silence it:
