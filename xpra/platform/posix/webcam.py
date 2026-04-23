@@ -38,15 +38,8 @@ def _can_capture_video(dev_file, dev_info) -> bool:
 v4l2_virtual_dir = "/sys/devices/virtual/video4linux"
 
 
-def check_virtual_dir(warn=True) -> bool:
-    if not os.path.exists(v4l2_virtual_dir) or not os.path.isdir(v4l2_virtual_dir):
-        if warn:
-            log.warn("Warning: webcam forwarding is disabled")
-            log.warn(" the virtual video directory '%s' was not found", v4l2_virtual_dir)
-            log.warn(" make sure that the 'v4l2loopback' kernel module is installed and loaded")
-            log.warn(" or use the 'webcam=no' option")
-        return False
-    return True
+def check_virtual_dir() -> bool:
+    return os.path.exists(v4l2_virtual_dir) and os.path.isdir(v4l2_virtual_dir)
 
 
 def query_video_device(device) -> dict[str, Any]:
@@ -61,7 +54,7 @@ def query_video_device(device) -> dict[str, Any]:
 
 def get_virtual_video_devices(capture_only=True) -> dict[int, dict]:
     log(f"get_virtual_video_devices({capture_only}) CHECK_VIRTUAL_CAPTURE={CHECK_VIRTUAL_CAPTURE}")
-    if not check_virtual_dir(False):
+    if not check_virtual_dir():
         return {}
     contents = os.listdir(v4l2_virtual_dir)
     devices = {}
@@ -128,7 +121,7 @@ def get_all_video_devices(capture_only=True) -> dict[int, dict[str, Any]]:
     return devices
 
 
-device_timetamps = {}
+device_timetamps: dict[str, float] = {}
 device_monitor = None
 
 
