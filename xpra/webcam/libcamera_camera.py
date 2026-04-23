@@ -3,7 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import threading
+import os
+import mmap
+import time
+import selectors
 from typing import Any
 
 from xpra.codecs.image import ImageWrapper
@@ -13,7 +16,7 @@ from xpra.log import Logger
 log = Logger("webcam")
 
 # Timeout (seconds) to wait for a libcamera frame request to complete
-LIBCAMERA_READ_TIMEOUT = 1
+LIBCAMERA_READ_TIMEOUT = 3
 
 LIBCAMERA_PIXEL_FORMATS = {
     "NV12": "NV12",
@@ -34,8 +37,10 @@ def _get_pixel_format(stream_config) -> str:
 class LibcameraCamera(CameraDevice):
     """
     Webcam capture backend using libcamera Python bindings.
-    Uses a threading.Event to bridge the asynchronous request-completed
-    callback into a synchronous read() call.
+
+    The bindings deliver completed requests through ``CameraManager.event_fd``
+    (an eventfd) and ``CameraManager.get_ready_requests()``; ``read()`` polls
+    that fd with a timeout and drains any ready requests.
 
     Typical pixel formats delivered are NV12 or YUYV
     """
@@ -44,16 +49,33 @@ class LibcameraCamera(CameraDevice):
         import libcamera
         self._camera_id = camera_id
         self._cm = libcamera.CameraManager.singleton()
-        self._camera = self._cm.find(camera_id)
+        self._camera = next((c for c in self._cm.cameras if c.id == camera_id), None)
         if self._camera is None:
             raise RuntimeError(f"libcamera: camera {camera_id!r} not found")
         self._camera.acquire()
         log("libcamera acquired camera_id=%s", camera_id)
 
-        # Choose a configuration for video recording
-        self._config = self._camera.generate_configuration([libcamera.StreamRole.VideoRecording])
+        self._config = self._camera.generate_configuration([libcamera.StreamRole.Viewfinder])
         log("camera config=%s", self._config)
         stream_config = self._config.at(0)
+
+        # libcamera often picks MJPEG on UVC cameras, which this backend does not
+        # decode and which is unreliable through the uvcvideo pipeline. Try to
+        # force an uncompressed format we know how to handle.
+        preferred = ("YUYV", "NV12", "RGB888", "BGR888", "BGRA8888", "RGBA8888")
+        try:
+            available = [str(f) for f in stream_config.formats.pixel_formats]
+            log(" available pixel formats: %s", available)
+            chosen = next((p for p in preferred if p in available), "")
+            if chosen and str(stream_config.pixel_format) != chosen:
+                match = next(f for f in stream_config.formats.pixel_formats if str(f) == chosen)
+                stream_config.pixel_format = match
+                log(" forcing pixel format to %s", chosen)
+        except Exception as e:
+            log(" could not override pixel format: %s", e)
+
+        status = self._config.validate()
+        log("camera config validate=%s", status)
         self._pixel_format: str = _get_pixel_format(stream_config)
         self._width: int = stream_config.size.width
         self._height: int = stream_config.size.height
@@ -70,6 +92,22 @@ class LibcameraCamera(CameraDevice):
         self._buffers = alloc.buffers(self._stream)
         log("allocated buffers=%s", self._buffers)
 
+        # Map each FrameBuffer once; reuse across frames.
+        # plane.fd is a raw dmabuf fd in this binding version, so we mmap it ourselves.
+        self._buffer_maps: dict[int, tuple[mmap.mmap, int, int]] = {}
+        for buf in self._buffers:
+            plane = buf.planes[0]
+            fd = int(plane.fd)
+            offset = int(getattr(plane, "offset", 0))
+            length = int(plane.length)
+            try:
+                mm = mmap.mmap(fd, offset + length, mmap.MAP_SHARED, mmap.PROT_READ)
+            except Exception as e:
+                log.error("Error: mmap(fd=%s, len=%s) failed: %s", fd, offset + length, e)
+                raise
+            self._buffer_maps[id(buf)] = (mm, offset, length)
+        log("mmapped %i buffers", len(self._buffer_maps))
+
         # Create and queue requests
         self._requests: list[Any] = []
         for buf in self._buffers:
@@ -78,43 +116,68 @@ class LibcameraCamera(CameraDevice):
             self._requests.append(req)
         log("requests=%s", self._requests)
 
-        # Synchronisation primitives: libcamera runs its own thread
-        self._event = threading.Event()
-        self._completed_request: Any = None
-        self._lock = threading.Lock()
+        # Set up selector on the CameraManager's event fd (delivered when
+        # completed requests are available via get_ready_requests()).
+        self._selector = selectors.DefaultSelector()
+        event_fd = getattr(self._cm, "event_fd", None)
+        log("camera manager event_fd=%s", event_fd)
+        if event_fd is None:
+            raise RuntimeError("libcamera: CameraManager has no event_fd")
+        self._selector.register(event_fd, selectors.EVENT_READ)
 
-        # Wire up the callback and start the camera
         log("starting camera!")
-        self._camera.request_completed.connect(self._on_request_completed)
-        self._camera.start()
+        ret = self._camera.start()
+        log("camera.start() returned %r", ret)
+        if ret:
+            raise RuntimeError(f"libcamera: camera.start() failed with {ret}")
 
-        # Queue the first request
-        self._camera.queue_request(self._requests[0])
-        self._next_request_index = 1 % len(self._requests)
+        # Queue every pre-allocated request so the camera can fill them.
+        for i, req in enumerate(self._requests):
+            ret = self._camera.queue_request(req)
+            log("queue_request[%i] returned %r", i, ret)
+            if ret:
+                log.warn("Warning: queue_request[%i] failed with %r", i, ret)
 
-    def _on_request_completed(self, request) -> None:
-        with self._lock:
-            self._completed_request = request
-        self._event.set()
+    def _wait_ready_request(self) -> Any:
+        """Block until one completed request is available, or return None on timeout."""
+        deadline = time.monotonic() + LIBCAMERA_READ_TIMEOUT
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                log("libcamera read deadline reached")
+                return None
+            events = self._selector.select(timeout=remaining)
+            log("selector.select() -> %s (remaining=%.2fs)", events, remaining)
+            if not events:
+                return None
+            # get_ready_requests() internally drains the eventfd and pops
+            # completed requests from the camera manager's queue.
+            reqs = self._cm.get_ready_requests()
+            log("get_ready_requests() -> %i requests", len(reqs) if reqs else 0)
+            if not reqs:
+                # drain anyway so we don't spin on a stuck-readable fd
+                try:
+                    os.read(self._cm.event_fd, 8)
+                except OSError:
+                    pass
+                continue
+            # Prefer the most recent frame; reuse+requeue the rest immediately.
+            latest = reqs[-1]
+            for req in reqs[:-1]:
+                req.reuse()
+                self._camera.queue_request(req)
+            return latest
 
     def read(self) -> ImageWrapper | None:
-        self._event.clear()
-        if not self._event.wait(timeout=LIBCAMERA_READ_TIMEOUT):
-            log.warn("Warning: libcamera frame timeout for %s", self._camera_id)
-            return None
-
-        with self._lock:
-            req = self._completed_request
-            self._completed_request = None
-
+        req = self._wait_ready_request()
         if req is None:
+            log.warn("Warning: libcamera frame timeout for %s", self._camera_id)
             return None
 
         try:
             buf = req.buffers[self._stream]
-            plane = buf.planes[0]
-            with plane.fd as mmap_obj:
-                raw = bytes(mmap_obj[:plane.length])
+            mm, offset, length = self._buffer_maps[id(buf)]
+            raw = bytes(mm[offset:offset + length])
         except Exception as e:
             log.warn("Warning: failed to read libcamera buffer: %s", e)
             # Re-queue the request for reuse
@@ -130,24 +193,24 @@ class LibcameraCamera(CameraDevice):
         req.reuse()
         self._camera.queue_request(req)
 
-        # Queue the next pre-allocated request if available
-        if len(self._requests) > 1:
-            next_req = self._requests[self._next_request_index]
-            self._next_request_index = (self._next_request_index + 1) % len(self._requests)
-            try:
-                self._camera.queue_request(next_req)
-            except Exception:
-                pass  # already queued
-
         return image
 
     def release(self) -> None:
         try:
             self._camera.stop()
-            self._camera.request_completed.disconnect(self._on_request_completed)
             self._camera.release()
         except Exception as e:
             log("LibcameraCamera.release() error: %s", e)
+        for mm, _, _ in self._buffer_maps.values():
+            try:
+                mm.close()
+            except Exception:
+                pass
+        self._buffer_maps.clear()
+        try:
+            self._selector.close()
+        except Exception:
+            pass
 
     @property
     def pixel_format(self) -> str:
