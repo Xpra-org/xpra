@@ -50,6 +50,27 @@ def _get_libcamera_devices() -> dict[str, dict[str, Any]]:
         return {}
 
 
+def _find_libcamera_id(device_str: str, lc_devices: dict[str, dict[str, Any]]) -> str:
+    """
+    Return the libcamera camera_id matching *device_str*, or "".
+
+    Matches against:
+    - the camera_id itself (exact match)
+    - any /dev/videoN path exposed via the camera's SystemDevices
+    - a bare video-device number (e.g. "0" -> "/dev/video0")
+    """
+    if device_str in lc_devices:
+        return device_str
+    path = device_str
+    if path.isdigit():
+        path = f"/dev/video{path}"
+    for cid, info in lc_devices.items():
+        paths = info.get("devices") or ([info["device"]] if info.get("device") else [])
+        if path in paths:
+            return cid
+    return ""
+
+
 def _parse_device_no(device_str: str, non_virtual: dict[int, Any]) -> int:
     """
     Convert a device string such as "auto", "0", or "/dev/video2"
@@ -86,14 +107,15 @@ def open_camera(device_str: str) -> CameraDevice | None:
     When a CV2Camera lands on a virtual v4l2 device number, a warning is
     logged and None is returned unless XPRA_WEBCAM_ALLOW_VIRTUAL is set.
     """
+    log("open_camera(%s)", device_str)
     lc_devices = _get_libcamera_devices()
+    log("libcamera_devices=%s", lc_devices)
     if lc_devices:
-        camera_id: str | None = None
-        if device_str in lc_devices:
-            camera_id = device_str
-        elif device_str in AUTO_OPTIONS:
+        if device_str in AUTO_OPTIONS:
             camera_id = next(iter(lc_devices))
-        if camera_id is not None:
+        else:
+            camera_id = _find_libcamera_id(device_str, lc_devices)
+        if camera_id:
             log("using libcamera backend for %r (camera_id=%r)", device_str, camera_id)
             from xpra.webcam.libcamera_camera import LibcameraCamera
             return LibcameraCamera(camera_id)
