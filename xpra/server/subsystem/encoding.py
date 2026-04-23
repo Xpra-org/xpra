@@ -7,6 +7,8 @@
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.server.common import get_sources_by_type
+from xpra.server.source.encoding import EncodingsConnection
 from xpra.util.env import envint
 from xpra.os_util import OSX, gi_import
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
@@ -110,12 +112,11 @@ class EncodingServer(StubServerMixin):
         # any window mapped before the threaded init completed
         # may need to re-initialize its list of encodings:
         log("reinit_encodings()", args)
-        for ss in self._server_sources.values():
-            if is_windows_source(ss):
-                ss.reinit_encodings(self)
-                ss.reinit_encoders()
-            if hasattr(ss, "threaded_init_complete"):
-                ss.threaded_init_complete(self)
+        encoding_sources = get_sources_by_type(self, EncodingsConnection)
+        for ss in encoding_sources:
+            ss.reinit_encodings(self)
+            ss.reinit_encoders()
+            ss.threaded_init_complete(self)
 
     def add_new_client(self, ss, *_args) -> None:
         # If the background encoding setup finished before this client connected,

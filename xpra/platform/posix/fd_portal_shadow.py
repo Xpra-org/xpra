@@ -11,6 +11,8 @@ from dbus.types import Dictionary
 from typing import Any
 
 from xpra.exit_codes import ExitCode
+from xpra.server.common import get_sources_by_type
+from xpra.server.source.window import WindowsConnection
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.common import may_notify_client
@@ -301,10 +303,8 @@ class PortalShadow(GTKShadowServerBase):
             return
         # this is a frame from a compressed stream,
         # send it to all the window sources for this window:
-        for ss in tuple(self._server_sources.values()):
-            if not hasattr(ss, "get_window_source"):
-                # client is not showing any windows
-                continue
+        window_sources = get_sources_by_type(self, WindowsConnection)
+        for ss in window_sources:
             ws = ss.get_window_source(wid)
             if not ws:
                 # client not showing this window
@@ -318,7 +318,7 @@ class PortalShadow(GTKShadowServerBase):
         log.estr(message)
         if model := self.get_window(wid):
             self._remove_window(model)
-        for ss in tuple(self._server_sources.values()):
+        for ss in get_sources_by_type(self):
             may_notify_client(ss, NotificationID.FAILURE, "Session Capture Failed", str(message))
 
     def capture_state_changed(self, capture, state) -> None:

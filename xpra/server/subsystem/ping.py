@@ -6,6 +6,7 @@
 
 from typing import Any
 
+from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.net.common import Packet
 from xpra.os_util import gi_import
@@ -52,11 +53,11 @@ class PingServer(StubServerMixin):
 
     def send_ping(self) -> bool:
         from xpra.server.source.ping import PingConnection
-        for ss in self._server_sources.values():
+        ping_sources = get_sources_by_type(self, PingConnection)
+        for ss in ping_sources:
             if ss.suspended or ss.is_closed():
                 continue
-            if isinstance(ss, PingConnection):
-                ss.ping()
+            ss.ping()
         return True
 
     def _process_ping_echo(self, proto, packet: Packet) -> None:

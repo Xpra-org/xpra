@@ -9,6 +9,8 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX, gi_import
+from xpra.server.common import get_sources_by_type
+from xpra.server.source.notification import NotificationConnection
 from xpra.util.str_fn import Ellipsizer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.thread import start_thread
@@ -87,8 +89,9 @@ class NotificationForwarder(StubServerMixin):
 
     def notify_new_user(self, ss) -> None:
         # tell other users:
-        log("notify_new_user(%s) sources=%s", ss, self._server_sources)
-        if not self._server_sources:
+        notification_sources = get_sources_by_type(self, NotificationConnection, ss)
+        log("notify_new_user(%s) sources=%s", ss, notification_sources)
+        if not notification_sources:
             return
         try:
             # pylint: disable=import-outside-toplevel
@@ -99,9 +102,8 @@ class NotificationForwarder(StubServerMixin):
             name = ss.name or ss.username or ss.uuid
             title = f"User {name!r} connected to the session"
             body = "\n".join(ss.get_connect_info())
-            for s in self._server_sources.values():
-                if s != ss:
-                    s.notify("", NotificationID.NEW_USER, "Xpra", 0, "", title, body, [], {}, 10 * 1000, icon)
+            for s in notification_sources:
+                s.notify("", NotificationID.NEW_USER, "Xpra", 0, "", title, body, [], {}, 10 * 1000, icon)
         except Exception as e:
             log("%s(%s)", self.notify_new_user, ss, exc_info=True)
             log.error("Error: failed to show notification of user login:")
@@ -128,7 +130,8 @@ class NotificationForwarder(StubServerMixin):
             log("notify_callback%s icon=%s",
                 (dbus_id, nid, app_name, replaces_nid, app_icon,
                  summary, body, actions, hints, expire_timeout), Ellipsizer(icon))
-            for ss in self._server_sources.values():
+            notification_sources = get_sources_by_type(self, NotificationConnection)
+            for ss in notification_sources:
                 ss.notify(dbus_id, nid, app_name, replaces_nid, app_icon,
                           summary, body, actions, hints, expire_timeout, icon)
         except Exception as e:
@@ -146,7 +149,8 @@ class NotificationForwarder(StubServerMixin):
     def notify_close_callback(self, nid: int) -> None:
         assert self.notifications_forwarder
         log("notify_close_callback(%s)", nid)
-        for ss in self._server_sources.values():
+        notification_sources = get_sources_by_type(self, NotificationConnection)
+        for ss in notification_sources:
             ss.notify_close(int(nid))
 
     def _process_notification_status(self, proto, packet: Packet) -> None:

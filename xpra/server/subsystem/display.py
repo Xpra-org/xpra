@@ -10,6 +10,8 @@ from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import DISPLAY_CONFIGURE
 from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.rectangle import rectangle
+
+from xpra.server.source.display import DisplayConnection
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.env import SilenceWarningsContext
@@ -308,7 +310,8 @@ class DisplayManager(StubServerMixin):
         root_w = min(root_w, max_w)
         root_h = min(root_h, max_h)
         count = 0
-        for ss in self._server_sources.values():
+        display_sources = get_sources_by_type(self, DisplayConnection)
+        for ss in display_sources:
             if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
                 count += 1
         if count > 0:
@@ -452,7 +455,8 @@ class DisplayManager(StubServerMixin):
     def calculate_workarea(self, maxw: int, maxh: int) -> None:
         log("calculate_workarea(%s, %s)", maxw, maxh)
         workarea = rectangle(0, 0, maxw, maxh)
-        for ss in self._server_sources.values():
+        display_sources = get_sources_by_type(self, DisplayConnection)
+        for ss in display_sources:
             screen_sizes = ss.screen_sizes
             log("calculate_workarea() screen_sizes(%s)=%s", ss, screen_sizes)
             if not screen_sizes:

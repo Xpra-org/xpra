@@ -201,7 +201,7 @@ class ShadowServer(GTKShadowServerBase):
             self.refresh_registered = False
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        if proto not in self._server_sources:
+        if not self.get_server_source(proto):
             return False
         assert wid in self._id_to_window
         x, y = pointer[:2]

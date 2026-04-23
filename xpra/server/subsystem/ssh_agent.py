@@ -6,6 +6,7 @@
 
 import os
 
+from xpra.server.common import get_sources_by_type
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict
 from xpra.util.parsing import FALSE_OPTIONS
@@ -76,7 +77,7 @@ class SshAgent(StubServerMixin):
         source = self.get_server_source(protocol)
         if source and source.uuid:
             clean_agent_socket(source.uuid)
-        remaining_sources = tuple(ss for ss in self._server_sources.values() if ss != source)
+        remaining_sources = get_sources_by_type(self, exclude=source)
         for ss in remaining_sources:
             ssh_auth_sock = getattr(ss, "ssh_auth_sock", "")
             if ss.uuid and ssh_auth_sock:

@@ -8,6 +8,7 @@
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.server.source.pointer import PointerConnection
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
@@ -194,8 +195,9 @@ class PointerServer(StubServerMixin):
         return None
 
     def may_record_pointer_event(self, packet_type: str, *data: PacketElement) -> None:
-        for ss in self._server_sources.values():
-            if getattr(ss, "pointer_record", False):
+        pointer_sources = get_sources_by_type(self, PointerConnection)
+        for ss in pointer_sources:
+            if ss.pointer_record:
                 ss.send_async(packet_type, *data)
 
     def _process_pointer_button(self, proto, packet: Packet) -> None:
@@ -252,10 +254,10 @@ class PointerServer(StubServerMixin):
         wid = self._window_to_id.get(model)
         if not wid:
             return
-        for ss in self._server_sources.values():
+        pointer_sources = get_sources_by_type(self, PointerConnection)
+        for ss in pointer_sources:
             if ALWAYS_NOTIFY_MOTION or self.last_mouse_user is None or self.last_mouse_user != ss.uuid:
-                if hasattr(ss, "update_mouse"):
-                    ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
+                ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
 
     def get_pointer_device(self, deviceid: int):
         # log("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)

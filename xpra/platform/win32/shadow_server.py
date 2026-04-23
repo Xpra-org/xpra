@@ -354,7 +354,7 @@ class ShadowServer(GTKShadowServerBase):
         move_pointer(x, y)
 
     def do_process_mouse_common(self, proto, device_id, wid: int, pointer, props) -> bool:
-        ss = self._server_sources.get(proto)
+        ss = self.get_server_source(proto)
         if not ss:
             return False
         # adjust pointer position for offset in client:

@@ -73,9 +73,9 @@ class IdleTimeoutServer(StubServerMixin):
 
     def control_command_server_idle_timeout(self, t: int) -> str:
         self.server_idle_timeout = t
-        reschedule = len(self._server_sources) == 0
+        all_sources = get_sources_by_type(self)
         # weak dependency on IdleTimeoutServer:
-        if reschedule:
+        if not all_sources:
             schedule_server_timeout = getattr(self, "schedule_server_timeout", noop)
             schedule_server_timeout()
         return f"server-idle-timeout set to {t}"

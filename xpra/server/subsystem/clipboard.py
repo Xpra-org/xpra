@@ -12,6 +12,8 @@ from importlib import import_module
 from xpra.clipboard.common import get_local_selections
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import
+from xpra.server.common import get_sources_by_type
+from xpra.server.source.clipboard import ClipboardConnection
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
@@ -277,8 +279,8 @@ class ClipboardServer(StubServerMixin):
             self.may_record("client", packet_type, *parts)
 
     def may_record(self, direction, packet_type: str, *parts: PacketElement) -> None:
-        sources = tuple(self._server_sources.values())
-        for ss in sources:
+        clipboard_sources = get_sources_by_type(self, ClipboardConnection)
+        for ss in clipboard_sources:
             if ss.clipboard_record:
                 rec_packet = ("clipboard-record", direction, packet_type, *parts)
                 ss.send_clipboard(rec_packet)

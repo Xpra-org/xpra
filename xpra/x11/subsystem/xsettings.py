@@ -8,6 +8,7 @@ from typing import Any
 
 from xpra.net.common import Packet
 from xpra.common import noop
+from xpra.server.common import get_sources_by_type
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr, strtobytes
 from xpra.util.parsing import str_to_bool
@@ -189,13 +190,18 @@ class XSettingsServer(StubServerMixin):
                 if antialias:
                     ad = typedict(antialias)
                     subpixel_order = "none"
-                    sss = tuple(self._server_sources.values())
+                    try:
+                        from xpra.server.source.display import DisplayConnection
+                    except ImportError:
+                        sss = ()
+                    else:
+                        sss = get_sources_by_type(self, DisplayConnection)
                     if len(sss) == 1:
                         # only honour sub-pixel hinting if a single client is connected
                         # and only when it is not using any scaling (or overridden with SCALED_FONT_ANTIALIAS):
                         ss = sss[0]
-                        ds_unscaled = getattr(ss, "desktop_size_unscaled", None)
-                        ds_scaled = getattr(ss, "desktop_size", None)
+                        ds_unscaled = ss.desktop_size_unscaled
+                        ds_scaled = ss.desktop_size
                         if SCALED_FONT_ANTIALIAS or (not ds_unscaled or ds_unscaled == ds_scaled):
                             subpixel_order = ad.strget("orientation", "none").lower()
                     values |= {

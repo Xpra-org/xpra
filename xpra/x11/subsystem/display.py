@@ -10,6 +10,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX
 from xpra.server.common import get_sources_by_type
+from xpra.server.source.display import DisplayConnection
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import XPRA_VERSION
 from xpra.x11.error import xlog, xsync, xswallow, XError
@@ -445,7 +446,7 @@ class X11DisplayManager(DisplayManager):
             # find the "physical" screen dimensions, so we can calculate the required dpi
             # (and do this before changing the resolution)
             client_w, client_h = 0, 0
-            sss = self._server_sources.values()
+            sss = get_sources_by_type(self, DisplayConnection)
             for ss in sss:
                 screen_sizes = getattr(ss, "screen_sizes", ())
                 for s in screen_sizes:
@@ -569,9 +570,9 @@ class X11DisplayManager(DisplayManager):
         return mdef
 
     def notify_dpi_warning(self, body: str) -> None:
-        sources = tuple(self._server_sources.values())
-        if len(sources) == 1:
-            ss = sources[0]
+        display_sources = get_sources_by_type(self, DisplayConnection)
+        if len(display_sources) == 1:
+            ss = display_sources[0]
             if first_time("DPI-warning-%s" % ss.uuid):
                 may_notify_client(ss, NotificationID.DPI, "DPI Issue", body, icon_name="font")
 

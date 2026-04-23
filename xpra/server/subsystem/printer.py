@@ -12,6 +12,8 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.exit_codes import ExitCode
+from xpra.server.common import get_sources_by_type
+from xpra.server.source.file import FileConnection
 from xpra.util.stats import to_std_unit
 from xpra.os_util import WIN32, POSIX
 from xpra.util.str_fn import repr_ellipsized, csv
@@ -223,9 +225,9 @@ class PrinterServer(StubServerMixin):
             _save_print_job(filename, file_data)
 
         sent = 0
-        sources = tuple(self._server_sources.values())
-        log("will try to send to %i clients: %s", len(sources), sources)
-        for ss in sources:
+        file_sources = get_sources_by_type(self, FileConnection)
+        log("will try to send to %i clients: %s", len(file_sources), file_sources)
+        for ss in file_sources:
             if source_uuid not in ("*", ss.uuid):
                 log("not sending to %s (uuid=%s, wanted uuid=%s)", ss, ss.uuid, source_uuid)
                 continue

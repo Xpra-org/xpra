@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.platform.events import add_handler, remove_handler
 from xpra.common import may_notify_client
@@ -36,7 +37,12 @@ class PowerEventServer(StubServerMixin):
         log("suspend_event%s", args)
         log.info("suspending")
         if NOTIFY_SUSPEND_EVENTS:
-            for source in self._server_sources.values():
+            try:
+                from xpra.server.source.notification import NotificationConnection
+            except ImportError:
+                return
+            notify_sources = get_sources_by_type(self, NotificationConnection)
+            for source in notify_sources:
                 may_notify_client(source, NotificationID.IDLE, NOTIFY_MESSAGE_TITLE, NOTIFY_MESSAGE_BODY,
                                   expire_timeout=10 * 1000, icon_name="shutdown")
 

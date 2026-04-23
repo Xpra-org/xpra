@@ -74,15 +74,13 @@ class ServerBase(ServerBaseClass):
     def suspend_event(self, *_args) -> None:
         # if we get a `suspend_event`, we can assume that `PowerEventServer` is a superclass:
         self.server_event("suspend")
-        for s in self._server_sources.values():
-            if hasattr(s, "go_idle"):
-                s.go_idle()
+        for s in self.window_sources():
+            s.go_idle()
 
     def resume_event(self, *_args) -> None:
         self.server_event("resume")
-        for s in self._server_sources.values():
-            if hasattr(s, "no_idle"):
-                s.no_idle()
+        for s in self.window_sources():
+            s.no_idle()
 
     def server_event(self, event_type: str, *args: PacketElement) -> None:
         eventslog("server_event%s", (event_type, *args))
@@ -224,8 +222,8 @@ class ServerBase(ServerBaseClass):
         # process ui half in ui thread:
         GLib.idle_add(self.process_hello_ui, ss, c, auth_caps)
 
-    def get_sources_by_type(self, atype, notsource=None) -> Sequence:
-        return tuple(ss for ss in self._server_sources.values() if isinstance(ss, atype) and (notsource is None or ss.uuid != notsource.uuid))
+    def get_sources_by_type(self, atype=object, exclude=None) -> Sequence:
+        return tuple(ss for ss in self._server_sources.values() if isinstance(ss, atype) and (exclude is None or ss.uuid != exclude.uuid))
 
     @staticmethod
     def get_client_connection_class(caps: typedict) -> type:
@@ -339,9 +337,9 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # utility method:
-    def window_sources(self) -> tuple:
+    def window_sources(self, exclude=None) -> tuple:
         from xpra.server.source.window import WindowsConnection  # pylint: disable=import-outside-toplevel
-        return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsConnection))
+        return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsConnection) and x != exclude)
 
     ######################################################################
     # info:

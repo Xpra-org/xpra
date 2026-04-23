@@ -16,6 +16,7 @@ from collections.abc import Sequence, Callable
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitExit
 from xpra.server.common import get_sources_by_type
+from xpra.server.source.display import DisplayConnection
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
@@ -356,7 +357,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         if not wm:
             return
         count = 1
-        sources = tuple(self._server_sources.values())
+        sources = get_sources_by_type(self, DisplayConnection)
         for ss in sources:
             if ss.desktops:
                 count = max(count, ss.desktops)
@@ -481,13 +482,14 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self._send_new_window_packet(window)
         if PRE_MAP:
             # pre-map the window if any client will be showing it
-            sources = tuple(self._server_sources.values())
-            if sources:
-                log("pre-mapping window %#x for %s at %s", wid, sources, geometry)
+            from xpra.server.source.window import WindowsConnection
+            window_sources = get_sources_by_type(self, WindowsConnection)
+            if window_sources:
+                log("pre-mapping window %#x for %s at %s", wid, window_sources, geometry)
                 geometry = clamp_window(*geometry)[1]
                 self.client_configure_window(window, geometry)
                 window.show()
-                for s in sources:
+                for s in window_sources:
                     s.map_window(wid, window, geometry)
                 self.schedule_configure_damage(wid, 0)
 
@@ -515,8 +517,10 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
     def get_window_configure_time_time(self) -> float:
         lcce = 0.0
-        for source in self._server_sources.values():
-            lcce = max(lcce, getattr(source, "window_configure_time", 0.0))
+        from xpra.server.source.window import WindowsConnection
+        window_sources = get_sources_by_type(self, WindowsConnection)
+        for source in window_sources:
+            lcce = max(lcce, source.window_configure_time)
         return lcce
 
     def size_notify_clients(self, window, last_lcce=-1) -> None:

@@ -12,7 +12,7 @@ from xpra.common import noop
 GET_SOURCES_BY_TYPE: Final[str] = "get_sources_by_type"
 
 
-def get_sources_by_type(server, subsystem_type: type, exclude=None) -> Sequence:
+def get_sources_by_type(server, subsystem_type=object, exclude=None) -> Sequence:
     fn = getattr(server, GET_SOURCES_BY_TYPE, noop)
     if fn == noop:
         from xpra.log import Logger

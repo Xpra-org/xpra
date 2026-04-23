@@ -345,10 +345,13 @@ class ShadowServerBase(ServerBase):
             pointerlog("poll_pointer_position() model not found for position=%s", (x, y))
             return
         pointerlog("poll_pointer_position() wid=%#x, position=%s, relative=%s", wid, (x, y), (rx, ry))
-        for ss in self._server_sources.values():
-            um = getattr(ss, "update_mouse", None)
-            if um:
-                um(wid, x, y, rx, ry)
+        try:
+            from xpra.server.source.pointer import PointerConnection
+        except ImportError:
+            return
+        pointer_sources = get_sources_by_type(self, PointerConnection)
+        for ss in pointer_sources:
+            ss.update_mouse(wid, x, y, rx, ry)
 
     def poll_cursor(self) -> None:
         prev = self.last_cursor_data
@@ -490,7 +493,8 @@ class ShadowServerBase(ServerBase):
         self._window_mapped_at(proto, wid, window)
         # TODO: deal with more than one window / more than one client
         # and stop refresh if all the windows are unmapped everywhere
-        if len(self._server_sources) <= 1 and len(self._id_to_window) <= 1:
+        window_sources = self.window_sources()
+        if len(window_sources) <= 1 and len(self._id_to_window) <= 1:
             self.stop_refresh(wid)
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:

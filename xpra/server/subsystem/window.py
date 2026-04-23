@@ -160,12 +160,13 @@ class WindowServer(StubServerMixin):
         this method is overriden by the `seamless` server to set frame extents
         """
 
+    def window_sources(self, exclude=None) -> tuple:
+        return get_sources_by_type(self, WindowsConnection, exclude=exclude)
+
     def add_new_client(self, *_args) -> None:
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
-        for ss in tuple(self._server_sources.values()):
-            if not isinstance(ss, WindowsConnection):
-                continue
+        for ss in self.window_sources():
             cminw, cminh = ss.window_min_size
             cmaxw, cmaxh = ss.window_max_size
             minw = max(minw, cminw)
@@ -214,7 +215,7 @@ class WindowServer(StubServerMixin):
     def send_initial_data(self, ss) -> None:
         iswc = isinstance(ss, WindowsConnection)
         if iswc:
-            windows_clients = get_sources_by_type(self, WindowsConnection, ss)
+            windows_clients = self.window_sources(ss)
             self.send_initial_windows(ss, len(windows_clients) > 0)
 
     def is_shown(self, _window) -> bool:
@@ -265,9 +266,8 @@ class WindowServer(StubServerMixin):
         wid = self._window_to_id.get(window)
         if not wid:
             return  # window is already gone
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsConnection):
-                ss.window_metadata(wid, window, pspec.name)
+        for ss in self.window_sources():
+            ss.window_metadata(wid, window, pspec.name)
 
     def _remove_window(self, window) -> int:
         wid = self._window_to_id[window]
@@ -280,14 +280,12 @@ class WindowServer(StubServerMixin):
 
     def do_remove_window(self, wid: int, window) -> int:
         log("remove_window: %#x - %s", wid, window)
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsConnection):
-                ss.lost_window(wid, window)
+        for ss in self.window_sources():
+            ss.lost_window(wid, window)
         del self._window_to_id[window]
         del self._id_to_window[wid]
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsConnection):
-                ss.remove_window(wid, window)
+        for ss in self.window_sources():
+            ss.remove_window(wid, window)
         self.client_properties.pop(wid, None)
         return wid
 
@@ -314,9 +312,7 @@ class WindowServer(StubServerMixin):
 
     def _do_send_new_window_packet(self, ptype: str, window, geometry: Sequence[int]) -> None:
         wid = self._window_to_id[window]
-        for ss in tuple(self._server_sources.values()):
-            if not isinstance(ss, WindowsConnection):
-                continue
+        for ss in self.window_sources():
             wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
             x, y, w, h = geometry
             # adjust if the transient-for window is not mapped in the same place by the client we send to:
@@ -359,10 +355,8 @@ class WindowServer(StubServerMixin):
 
     def refresh_window_area(self, window, x, y, width, height, options=None) -> None:
         wid = self._window_to_id[window]
-        for ss in tuple(self._server_sources.values()):
-            damage = getattr(ss, "damage", None)
-            if damage:
-                damage(wid, window, x, y, width, height, options)
+        for ss in self.window_sources():
+            ss.damage(wid, window, x, y, width, height, options)
 
     def _process_buffer_refresh(self, proto, packet: Packet) -> None:
         self._process_window_refresh(proto, packet)
@@ -426,9 +420,8 @@ class WindowServer(StubServerMixin):
         GLib.idle_add(self._refresh_windows, proto, self._id_to_window, {})
 
     def refresh_all_windows(self) -> None:
-        for ss in tuple(self._server_sources.values()):
-            if not isinstance(ss, WindowsConnection):
-                self.do_refresh_windows(ss, self._id_to_window)
+        for ss in self.window_sources():
+            self.do_refresh_windows(ss, self._id_to_window)
 
     def get_window_position(self, _window) -> tuple[int, int] | None:
         # where the window is actually mapped on the server screen:
@@ -643,22 +636,22 @@ class WindowServer(StubServerMixin):
         return f"unmapped window {wid:#x}"
 
     def control_command_suspend(self) -> str:
-        for csource in tuple(self._server_sources.values()):
+        wss = self.window_sources()
+        for csource in wss:
             csource.suspend(True, self._id_to_window)
-        count = len(self._server_sources)
-        return f"suspended {count} clients"
+        return f"suspended {len(wss)} clients"
 
     def control_command_resume(self) -> str:
-        for csource in tuple(self._server_sources.values()):
+        wss = self.window_sources()
+        for csource in wss:
             csource.resume(True, self._id_to_window)
-        count = len(self._server_sources)
-        return f"resumed {count} clients"
+        return f"resumed {len(wss)} clients"
 
     def control_command_ungrab(self) -> str:
-        for csource in tuple(self._server_sources.values()):
+        wss = self.window_sources()
+        for csource in wss:
             csource.pointer_ungrab(-1)
-        count = len(self._server_sources)
-        return f"ungrabbed {count} clients"
+        return f"ungrabbed {len(wss)} clients"
 
     def control_command_workspace(self, wid: int, workspace: int) -> str:
         window = self.get_window(wid)
@@ -691,11 +684,9 @@ class WindowServer(StubServerMixin):
             control_error(f"window {wid:#x} does not exist")
         ww, wh = window.get_dimensions()
         count = 0
-        for source in tuple(self._server_sources.values()):
-            move_resize_window = getattr(source, "move_resize_window", None)
-            if move_resize_window:
-                move_resize_window(wid, window, x, y, ww, wh)
-                count += 1
+        for source in self.window_sources():
+            source.move_resize_window(wid, window, x, y, ww, wh)
+            count += 1
         return f"window {wid:#x} moved to {x},{y} for {count} clients"
 
     def control_command_resize(self, wid: int, w: int, h: int) -> str:
@@ -703,11 +694,9 @@ class WindowServer(StubServerMixin):
         if not window:
             control_error(f"window {wid:#x} does not exist")
         count = 0
-        for source in tuple(self._server_sources.values()):
-            resize_window = getattr(source, "resize_window", None)
-            if resize_window:
-                resize_window(wid, window, w, h)
-                count += 1
+        for source in self.window_sources():
+            source.resize_window(wid, window, w, h)
+            count += 1
         return f"window {wid:#x} resized to {w}x{h} for {count} clients"
 
     def control_command_moveresize(self, wid: int, x: int, y: int, w: int, h: int) -> str:
@@ -715,11 +704,10 @@ class WindowServer(StubServerMixin):
         if not window:
             control_error(f"window {wid:#x} does not exist")
         count = 0
-        for source in tuple(self._server_sources.values()):
-            move_resize_window = getattr(source, "move_resize_window", None)
-            if move_resize_window:
-                move_resize_window(wid, window, x, y, w, h)
-                count += 1
+        window_sources = self.window_sources()
+        for source in window_sources:
+            source.move_resize_window(wid, window, x, y, w, h)
+            count += 1
         return f"window {wid:#x} moved to {x},{y} and resized to {w}x{h} for {count} clients"
 
     def _ws_from_args(self, *args):
@@ -754,7 +742,8 @@ class WindowServer(StubServerMixin):
             fn = getattr(ws, "set_" + name.replace("-", "_"))  # ie: "set_quality"
             fn(value)
         # now also update the defaults:
-        for csource in tuple(self._server_sources.values()):
+        window_sources = self.window_sources()
+        for csource in window_sources:
             csource.default_encoding_options[name] = value
         return f"{name} set to {value}"
 

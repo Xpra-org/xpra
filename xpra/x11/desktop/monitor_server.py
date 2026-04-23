@@ -376,9 +376,8 @@ class XpraMonitorServer(DesktopServerBase):
             model = self.add_monitor_model(wid, monitor)
         self.reconfigure_monitors()
         # send it to the clients:
-        for ss in self._server_sources.values():
-            if not isinstance(ss, WindowsConnection):
-                continue
+        window_sources = get_sources_by_type(self, WindowsConnection)
+        for ss in window_sources:
             self.send_new_desktop_model(model, ss)
 
     def _process_configure_monitor(self, _proto, packet: Packet) -> None:

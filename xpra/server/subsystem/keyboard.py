@@ -10,6 +10,7 @@ from time import monotonic
 
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import
+from xpra.server.source.keyboard import KeyboardConnection
 from xpra.util.str_fn import Ellipsizer, csv
 from xpra.util.objects import typedict
 from xpra.keyboard.common import DELAY_KEYBOARD_DATA
@@ -314,7 +315,8 @@ class KeyboardServer(StubServerMixin):
             del self.keys_timedout[keycode]
 
         from xpra.server.source.keyboard import KeyboardConnection  # pylint: disable=import-outside-toplevel
-        record_connections = tuple(x for x in self._server_sources.values() if isinstance(x, KeyboardConnection) and x.keyboard_record)
+        keyboard_sources = get_sources_by_type(self, KeyboardConnection)
+        record_connections = tuple(x for x in keyboard_sources if x.keyboard_record)
 
         def record(press: bool) -> None:
             for ss in record_connections:
@@ -393,9 +395,9 @@ class KeyboardServer(StubServerMixin):
     def _keys_changed(self) -> None:
         log("input server: the keymap has been changed, keymap_changing_timer=%s", self.keymap_changing_timer)
         if not self.keymap_changing_timer:
-            for ss in self._server_sources.values():
-                if hasattr(ss, "keys_changed"):
-                    ss.keys_changed()
+            keyboard_sources = get_sources_by_type(self, KeyboardConnection)
+            for ss in keyboard_sources:
+                ss.keys_changed()
 
     def clear_keys_pressed(self, *args) -> None:
         log("clear_keys_pressed%s", args)

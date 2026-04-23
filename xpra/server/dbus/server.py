@@ -10,6 +10,7 @@ import dbus.types  # @UnresolvedImport
 
 from xpra.dbus.helper import dbus_to_native, native_to_dbus
 from xpra.dbus.common import init_session_bus
+from xpra.server.common import get_sources_by_type
 from xpra.server.dbus.server_base import DBUS_Server_Base, INTERFACE, BUS_NAME
 from xpra.util.parsing import parse_scaling_value, from0to100
 from xpra.net.constants import ConnectionMessage
@@ -305,7 +306,8 @@ class DBUS_Server(DBUS_Server_Base):
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{ss}')
     def ListClients(self):
         d = {}
-        for p, source in self.server._server_sources.items():
+        for source in get_sources_by_type(self.server):
+            p = source.protocol
             try:
                 d[source.uuid] = str(p)
             except KeyError:
@@ -317,16 +319,16 @@ class DBUS_Server(DBUS_Server_Base):
     def DetachClient(self, uuid):
         s = ns(uuid)
         self.log(".DetachClient(%s)", s)
-        for p, source in self.server._server_sources.items():
+        for source in get_sources_by_type(self.server):
             if source.uuid == s:
                 self.log("matched %s", source)
-                self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
+                self.server.disconnect_client(source.protocol, ConnectionMessage.DETACH_REQUEST)
 
     @dbus.service.method(INTERFACE)
     def DetachAllClients(self):
         self.log(".DetachAllClients() will detach: %s", self.server._server_sources)
-        for p in self.server._server_sources.keys():
-            self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
+        for source in get_sources_by_type(self.server):
+            self.server.disconnect_client(source.protocol, ConnectionMessage.DETACH_REQUEST)
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetAllInfo(self, callback, errback):
