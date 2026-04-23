@@ -192,18 +192,20 @@ def get_client_connection_class(caps: typedict):
             return info
 
         def parse_hello(self, c: typedict) -> None:
+            def wants(v: str) -> None:
+                if v not in self.wants:
+                    self.wants.append(v)
             if BACKWARDS_COMPATIBLE:
                 self.wants = list(c.strtupleget("wants", self.wants))
                 if c.boolget("ui_client"):
                     for x in ("encodings", "display", "versions", "features"):
-                        if x not in self.wants:
-                            self.wants.append(x)
+                        wants(x)
             else:
                 self.wants = []
-                if c.boolget("versions"):
-                    self.wants.append("versions")
-                if c.boolget("server-features"):
-                    self.wants.append("features")
+            if c.boolget("versions"):
+                wants("versions")
+            if c.boolget("server-features"):
+                wants("features")
             for bc in CC_BASES:
                 log("%s.parse_client_caps(..)", bc)
                 bc.parse_client_caps(self, c)

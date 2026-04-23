@@ -49,8 +49,8 @@ class BandwidthServer(StubServerMixin):
         }
         return {BandwidthServer.PREFIX: info}
 
-    def get_server_features(self, _source) -> dict[str, Any]:
-        caps = self.get_info()
+    def get_server_features(self, source=None) -> dict[str, Any]:
+        caps = BandwidthServer.get_info(self, source)
         if BACKWARDS_COMPATIBLE:
             caps["network"] = {
                 "bandwidth-limit": self.bandwidth_limit or 0,
