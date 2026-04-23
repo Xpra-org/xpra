@@ -11,6 +11,8 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX
+from xpra.server.common import get_sources_by_type
+from xpra.server.source.webcam import WebcamConnection
 from xpra.util.objects import typedict
 from xpra.net.common import Packet
 from xpra.util.parsing import FALSE_OPTIONS
@@ -33,13 +35,12 @@ def init_virtual_video_devices() -> int:
         log.info("webcam forwarding requires the v4l2 virtual video module")
         return 0
     try:
-        from xpra.platform.posix.webcam import get_virtual_video_devices, check_virtual_dir
+        from xpra.platform.posix.webcam import get_virtual_video_devices
     except ImportError as e:
         log.warn("Warning: cannot load webcam components")
         log.warn(" %s", e)
         log.warn(" webcam forwarding disabled")
         return 0
-    check_virtual_dir()
     devices = get_virtual_video_devices()
     log.info("found %i virtual video devices for webcam forwarding", len(devices))
     return len(devices)
@@ -82,6 +83,7 @@ class WebcamServer(StubServerMixin):
             self.webcam_virtual = False
         elif opts.webcam.lower() in ("v4l2", "virtual"):
             self.webcam_client_mode = False
+        log("init(..) webcam=%s, virtual=%s, client-mode=%s", opts.webcam, self.webcam_virtual, self.webcam_client_mode)
 
     def init_state(self) -> None:
         # duplicated
@@ -150,6 +152,8 @@ class WebcamServer(StubServerMixin):
             if not self.webcam_virtual_video_devices:
                 log.info("no v4l2 virtual devices found")
         self.webcam_enabled = self.webcam_virtual or self.webcam_client_mode
+        log("init_webcam() virtual=%s (%i devices), client-mode=%s",
+            self.webcam_virtual, self.webcam_virtual_video_devices, self.webcam_client_mode)
 
     # ------------------------------------------------------------------
     # Hello handler for the webcam-client subprocess
@@ -158,7 +162,8 @@ class WebcamServer(StubServerMixin):
         wc = caps.dictget("webcam-client") or {}
         device_id = typedict(wc).intget("device", -1)
         log("_handle_hello_webcam_client: device_id=%i", device_id)
-        for ss in self._server_sources.values():
+        webcam_clients = get_sources_by_type(self, WebcamConnection)
+        for ss in webcam_clients:
             devices = getattr(ss, "webcam_forwarding_devices", {})
             if not devices:
                 continue
