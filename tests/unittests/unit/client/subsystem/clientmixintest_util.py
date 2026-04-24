@@ -114,6 +114,7 @@ class ClientMixinTest(unittest.TestCase):
         fake_protocol.get_info = lambda: {}
         fake_protocol.set_compression_level = lambda _x: None
         fake_protocol.TYPE = protocol_type
+        fake_protocol.enable_encoder_from_caps = noop
         x._protocol = fake_protocol   # pylint: disable=protected-access
         x.add_legacy_alias = self.add_legacy_alias
         x.add_packets = self.add_packets
