@@ -17,6 +17,7 @@ class MixinsTest(ClientMixinTest):
     def test_networkclient(self):
         opts = AdHocStruct()
         opts.pings = True
+        opts.compression_level = 0
         opts.bandwidth_limit = 0
         opts.bandwidth_detection = True
         self._test_mixin_class(NetworkClient, opts, {"start_time": time.time()})
