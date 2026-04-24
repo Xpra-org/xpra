@@ -549,7 +549,7 @@ def verify_hostkey(host: str, host_key, verifyhostkeydns: bool, stricthostkeyche
             # TODO: show alert with no option to accept key
             qinfo += [
                 "Please contact your system administrator.",
-                "Add correct host key in %s to get rid of this message.",
+                "Add correct host key to get rid of this message.",
                 f"Offending {keyname()} key in {host_keys_filename}",
                 f"ECDSA host key for {keyname()} has changed and you have requested strict checking.",
             ]
