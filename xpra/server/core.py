@@ -743,6 +743,13 @@ class ServerCore(ServerBaseClass):
             ssl_conn = self.ssl_wrap(conn, socket_options)
             if not ssl_conn:
                 return
+            # complete the TLS handshake on the connection-handler thread
+            # before peeking or handing off: the lazy handshake inside recv()
+            # would otherwise eat into the peek timeout budget (and with
+            # TLS 1.3 can race with post-handshake writes like NewSessionTickets
+            # and block the read thread):
+            from xpra.net.tls.socket import ssl_handshake
+            ssl_handshake(ssl_conn._socket)
             http = socktype == "wss"
             can_peek = SSL_PEEK and (self.ssl_mode.lower() in TRUE_OPTIONS or self.ssl_mode == "auto")
             if can_peek and socktype == "ssl" and can_upgrade_to("wss"):
@@ -763,12 +770,6 @@ class ServerCore(ServerBaseClass):
                 self.start_http_socket(socktype, ssl_conn, socket_options, True, peek_data)
                 return
             ssl_conn._socket.settimeout(self._socket_timeout)
-            # complete the TLS handshake on the connection-handler thread
-            # before handing off to the read thread; with TLS 1.3 the lazy
-            # handshake inside recv() can race with post-handshake writes
-            # (NewSessionTickets) and cause the read thread to block:
-            from xpra.net.tls.socket import ssl_handshake
-            ssl_handshake(ssl_conn._socket)
             log_new_connection(ssl_conn, address)
             self.make_protocol(socktype, ssl_conn, socket_options)
             return
