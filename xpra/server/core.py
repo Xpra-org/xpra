@@ -791,7 +791,7 @@ class ServerCore(ServerBaseClass):
             # before handing off to the read thread; with TLS 1.3 the lazy
             # handshake inside recv() can race with post-handshake writes
             # (NewSessionTickets) and cause the read thread to block:
-            from xpra.net.tls.socket import ssl_handshake
+            from xpra.net.ssl.socket import ssl_handshake
             ssl_handshake(ssl_conn._socket)
             log_new_connection(ssl_conn, address)
             self.make_protocol(socktype, ssl_conn, socket_options)
