@@ -48,6 +48,7 @@
   * [snap window resize to increment grid](https://github.com/Xpra-org/xpra/pull/4831)
   * [support free-threaded builds](https://github.com/Xpra-org/xpra/issues/4782)
   * [better unit test coverage](https://github.com/Xpra-org/xpra/issues/2873)
+  * [`xpra top` GUI](https://github.com/Xpra-org/xpra/issues/4874)
 * Webcam:
   * [window mode](https://github.com/Xpra-org/xpra/issues/4867)
   * [libcamera backend](https://github.com/Xpra-org/xpra/issues/3657)
