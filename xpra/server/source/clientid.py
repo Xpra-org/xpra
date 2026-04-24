@@ -9,29 +9,28 @@ from xpra.util.objects import typedict
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
-log = Logger("server", "auth")
+log = Logger("server")
 
 
-class SharingConnection(StubClientConnection):
+class ClientIDConnection(StubClientConnection):
     """
-    Tracks the client's sharing and lock preferences.
+    Every client should provide these
     """
-    PREFIX = "sharing"
 
-    @classmethod
-    def is_needed(cls, caps: typedict) -> bool:
-        return any(x in caps for x in ("share", "lock"))
+    def cleanup(self) -> None:
+        self.init_state()
 
     def init_state(self) -> None:
-        self.share: bool = False
-        self.lock: bool = False
+        self.uuid = ""
+        self.session_id = ""
 
     def parse_client_caps(self, c: typedict) -> None:
-        self.share = c.boolget("share")
-        self.lock = c.boolget("lock")
+        self.uuid = c.strget("uuid")
+        self.session_id = c.strget("session-id")
+        log(f"client uuid {self.uuid!r}")
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "lock": bool(self.lock),
-            "share": bool(self.share),
+            "uuid": self.uuid,
+            "session-id": self.session_id,
         }

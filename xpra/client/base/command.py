@@ -118,10 +118,6 @@ class SendCommandConnectClient(CommandConnectClient):
         So unlike CommandConnectClient, we do need the network and encryption to be setup.
     """
 
-    def server_connection_established(self, caps: typedict) -> bool:
-        assert self.parse_network_capabilities(caps), "network capabilities failure"
-        return super().server_connection_established(caps)
-
     def do_command(self, caps: typedict) -> None:
         raise NotImplementedError()
 

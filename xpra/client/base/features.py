@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.net.common import FULL_INFO
+from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
@@ -37,6 +39,12 @@ ssh_agent = True
 encoding = True
 native = True
 power = True
+progress = True
+encryption = True
+server_info = True
+server_events = True
+challenge = True
+info = True
 
 
 def set_client_features(opts) -> None:
@@ -91,12 +99,17 @@ def set_client_features(opts) -> None:
     features.encoding = opts.windows
     features.native = envbool("XPRA_CLIENT_NATIVE_BINDINGS", True)
     features.power = envbool("XPRA_POWER_EVENTS", True)
+    features.progress = b(opts.splash)
+    features.encryption = bool(opts.encryption) and b(opts.encryption)
+    features.server_info = envbool("XPRA_SERVER_INFO", True)
+    features.server_events = envbool("XPRA_SERVER_EVENTS", True)
+    features.challenge = b(opts.challenge_handlers) and csv(opts.challenge_handlers) != "none"
+    features.info = FULL_INFO > 0
 
     if impwarn:
         import sys
-        from xpra.util.str_fn import csv
         from xpra.log import Logger
-        log = Logger("util")
+        log = Logger("util", "subsystems")
         log.warn("Warning missing modules: %s", csv(impwarn))
         log.warn(f" for Python {sys.version}")
 
@@ -136,5 +149,9 @@ def enforce_client_features() -> None:
         "encoding": "xpra.client.subsystem.encodings",
         "native": "xpra.platform.client",
         "power": "xpra.client.subsystem.power",
+        "progress": "xpra.client.base.progress",
+        "encryption": "xpra.client.base.aes",
+        "server_info": "xpra.client.base.server_info",
+        "server_events": "xpra.client.base.events",
     })
     may_block_numpy()

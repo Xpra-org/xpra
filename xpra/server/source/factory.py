@@ -8,20 +8,21 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.server import features
-from xpra.util.str_fn import print_nested_dict
+from xpra.util.str_fn import print_nested_dict, csv
 from xpra.util.objects import typedict, merge_dicts
 from xpra.net.common import LOG_HELLO, BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
-log = Logger("server")
+log = Logger("subsystems")
 
 
 def get_enabled_mixins() -> Sequence[type]:
     # pylint: disable=import-outside-toplevel
+    from xpra.server.source.clientid import ClientIDConnection
     from xpra.server.source.clientinfo import ClientInfoConnection
     from xpra.server.source.events import EventConnection
     from xpra.server.source.sharing import SharingConnection
-    mixins: list[type] = [ClientInfoConnection, EventConnection, SharingConnection]
+    mixins: list[type] = [ClientIDConnection, ClientInfoConnection, EventConnection, SharingConnection]
     if features.ssh:
         from xpra.server.source.ssh_agent import SSHAgentConnection
         mixins.append(SSHAgentConnection)
@@ -104,6 +105,7 @@ def get_needed_based_classes(caps: typedict) -> tuple[type, ...]:
         log("get_needed_based_classes(..) %s enabled=%s", c.__name__.split(".")[-1], r)
         if r:
             classes.append(c)
+    log("get_needed_based_classes(..)=%s", csv(classes))
     return tuple(classes)
 
 
@@ -137,13 +139,12 @@ def get_client_connection_class(caps: typedict):
         def requires_sharing(self) -> bool:
             for cc in CC_BASES:
                 if cc.requires_sharing(self):
-                    authlog = Logger("auth")
-                    authlog("%s.requires_sharing()=True", cc)
+                    log("%s.requires_sharing()=True", cc)
                     return True
             return False
 
         def close(self) -> None:
-            log("%s.close()", self)
+            log("%s.close() %s", self, csv(CC_BASES))
             for bc in reversed(CC_BASES):
                 log("%s.cleanup()", bc)
                 try:
@@ -209,10 +210,6 @@ def get_client_connection_class(caps: typedict):
             for bc in CC_BASES:
                 log("%s.parse_client_caps(..)", bc)
                 bc.parse_client_caps(self, c)
-            # log client info:
-            cinfo = self.get_connect_info()
-            for i, ci in enumerate(cinfo):
-                log.info("%s%s", ["", " "][int(i > 0)], ci)
             if self.client_proxy:
                 from xpra.util.version import version_compat_check
                 msg = version_compat_check(self.proxy_version)

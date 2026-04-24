@@ -36,20 +36,20 @@ class ClientInfoConnection(StubClientConnection):
     """
     Store information about the client.
     """
+    @classmethod
+    def is_needed(cls, caps: typedict) -> bool:
+        return any(x in caps for x in ("user", "name", "client_type"))
 
     def cleanup(self) -> None:
         self.init_state()
 
     def init_state(self) -> None:
-        self.uuid = ""
-        self.session_id = ""
         self.machine_id = ""
         self.hostname = ""
         self.username = ""
         self.user = ""
         self.name = ""
         self.argv: Sequence[str] = ()
-        self.sharing = False
         # client capabilities/options:
         self.client_type = ""
         self.client_version = ""
@@ -72,15 +72,12 @@ class ClientInfoConnection(StubClientConnection):
         self.proxy_version = ""
 
     def parse_client_caps(self, c: typedict) -> None:
-        self.uuid = c.strget("uuid")
-        self.session_id = c.strget("session-id")
         self.machine_id = c.strget("machine_id")
         self.hostname = c.strget("hostname")
         self.username = c.strget("username")
         self.user = c.strget("user")
         self.name = c.strget("name")
         self.argv = c.strtupleget("argv")
-        self.sharing = c.boolget("share")
         self.client_type = c.strget("client_type")
         self.client_platform = c.strget("platform")
         self.client_machine = c.strget("platform.machine")
@@ -100,7 +97,13 @@ class ClientInfoConnection(StubClientConnection):
         self.proxy_release = c.strget("proxy.platform.sysrelease")
         self.proxy_version = c.strget("proxy.version")
         self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
-        log(f"client uuid {self.uuid!r}")
+        self.log_client_info()
+
+    def log_client_info(self):
+        # log client info:
+        cinfo = self.get_connect_info()
+        for i, ci in enumerate(cinfo):
+            log.info("%s%s", ["", " "][int(i > 0)], ci)
 
     def get_connect_info(self) -> list[str]:
         # client platform / version info:
@@ -148,7 +151,6 @@ class ClientInfoConnection(StubClientConnection):
 
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {
-            "sharing": bool(self.sharing),
         }
         if self.client_version:
             info["version"] = vparts(self.client_version, FULL_INFO + 1)
@@ -159,8 +161,6 @@ class ClientInfoConnection(StubClientConnection):
             if v:
                 info[key.replace("_", "-")] = v
 
-        for k in ("session-id", "uuid"):
-            addattr(k)
         if FULL_INFO > 1:
             for k in ("user", "name", "argv"):
                 addattr(k)

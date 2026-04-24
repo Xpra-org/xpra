@@ -82,7 +82,7 @@ class SharingServer(StubServerMixin):
             return f"{ConnectionMessage.SESSION_BUSY}:this session is already active"
 
         # If we accept this connection, we may disconnect previous one(s)
-        sharing = source.sharing
+        sharing = getattr(source, "share", True)
         uuid = source.uuid
 
         def drop_older_client() -> None:
@@ -106,13 +106,13 @@ class SharingServer(StubServerMixin):
         # there are other clients connected,
         # figure out if we can share or take the session
 
-        all_sharing = all((ss.share or not ss.requires_sharing()) for ss in existing_sources)
+        all_sharing = all((getattr(ss, "share", True) or not ss.requires_sharing()) for ss in existing_sources)
         if self.sharing is True or (self.sharing is None and sharing and all_sharing):
             log("sharing=%s, all_sharing=%s", self.sharing, all_sharing)
             drop_older_client()
             return ""
 
-        locked = tuple(ss for ss in existing_sources if ss.lock)
+        locked = tuple(ss for ss in existing_sources if getattr(ss, "lock", False))
         if self.lock is True or (self.lock is None and locked):
             log("session is locked (lock=%s, locked=%s", self.lock, locked)
             return f"{ConnectionMessage.SESSION_BUSY}:this session is locked"
@@ -124,7 +124,7 @@ class SharingServer(StubServerMixin):
         share_count = 0
         disconnected = []
         req_sharing = source.requires_sharing()
-        log("%s.requires_sharing()=%s", source, req_sharing)
+        log("new client: %s.requires_sharing()=%s", source, req_sharing)
         for p, ss in tuple(self._server_sources.items()):
             log("sharing, checking %s:", ss)
             if ss == source or uuid and ss.uuid == uuid:
@@ -143,11 +143,11 @@ class SharingServer(StubServerMixin):
             else:
                 # `None` means "auto"
                 assert self.sharing is None
-                if ss.requires_sharing() and req_sharing and not source.sharing:
-                    log("auto-sharing %s.sharing=%s, %s.sharing=%s", source, req_sharing, source, source.sharing)
+                if ss.requires_sharing() and req_sharing and not sharing:
+                    log("auto-sharing %s.sharing=%s, %s.sharing=%s", source, req_sharing, source, sharing)
                     self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "the new client does not wish to share")
                     disconnected.append(ss)
-                elif not ss.share and req_sharing:
+                elif not getattr(ss, "share", True) and req_sharing:
                     log("auto-sharing sharing required but not enabled for %s", ss)
                     self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this client had not enabled sharing")
                     disconnected.append(ss)

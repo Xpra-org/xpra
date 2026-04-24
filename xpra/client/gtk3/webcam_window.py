@@ -13,7 +13,7 @@ creates a minimal `ClientConnection` for it.
 import uuid
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitCode
 from xpra.client.base.gobject import GObjectClientAdapter
@@ -63,6 +63,7 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
     def __init__(self, display_desc: dict[str, Any]) -> None:
         GObjectClientAdapter.__init__(self)
         XpraClientBase.__init__(self)
+        self.client_type = "webcam"
         # use a unique uuid so the sharing subsystem doesn't treat us
         # as a reconnection of the regular client (which would kick it off):
         self.uuid = uuid.uuid4().hex
@@ -88,6 +89,9 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
     def make_hello(self) -> dict[str, Any]:
         caps = super().make_hello()
         caps["webcam-client"] = {"device": self._device_no}
+        if BACKWARDS_COMPATIBLE:
+            # for older versions, we need to turn this subsystem off explicitly
+            caps["bandwidth"] = False
         return caps
 
     def init_authenticated_packet_handlers(self) -> None:

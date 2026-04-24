@@ -32,7 +32,8 @@ CLIENT_BASES = get_client_base_classes()
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 log = Logger("client")
-log("UIXpraClient base classes: %s", CLIENT_BASES)
+sublog = Logger("subsystems")
+sublog("UIXpraClient base classes: %s", CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
@@ -64,7 +65,7 @@ class UIXpraClient(ClientBaseClass):
         # same for tray:
         self.tray = None
         for c in CLIENT_BASES:
-            log("calling %s.__init__()", c)
+            sublog("calling %s.__init__()", c)
             c.__init__(self)  # pylint: disable=non-parent-init-called
         self._ui_events: int = 0
         self.title: str = ""
@@ -95,7 +96,7 @@ class UIXpraClient(ClientBaseClass):
     def init(self, opts) -> None:
         """ initialize variables from configuration """
         for c in CLIENT_BASES:
-            log(f"init: {c}")
+            sublog(f"init: {c}")
             c.init(self, opts)
 
         self.title = opts.title
@@ -111,12 +112,12 @@ class UIXpraClient(ClientBaseClass):
     def init_ui(self, opts) -> None:
         """ initialize user interface """
         for c in CLIENT_BASES:
-            log(f"init: {c}")
+            sublog(f"init: {c}")
             c.init_ui(self, opts)
 
     def load(self):
         for c in CLIENT_BASES:
-            log(f"load: {c}")
+            sublog(f"load: {c}")
             c.load(self)
 
     def run(self) -> ExitValue:
@@ -132,6 +133,7 @@ class UIXpraClient(ClientBaseClass):
     def cleanup(self) -> None:
         log("UIXpraClient.cleanup()")
         for c in CLIENT_BASES:
+            sublog("%s.cleanup()", c)
             c.cleanup(self)
         # the protocol has been closed, it is now safe to close all the windows:
         # (cleaner and needed when we run embedded in the client launcher)
@@ -149,7 +151,7 @@ class UIXpraClient(ClientBaseClass):
         if FULL_INFO > 0:
             info["session-name"] = self.session_name
         for c in CLIENT_BASES:
-            with log.trap_error("Error collection information from %s", c):
+            with sublog.trap_error("Error collection information from %s", c):
                 info.update(c.get_info(self))
         return info
 
@@ -229,7 +231,7 @@ class UIXpraClient(ClientBaseClass):
         }
         for c in CLIENT_BASES:
             ccaps = c.get_caps(self)
-            log("%s.get_caps()=%s", c, ccaps)
+            sublog("%s.get_caps()=%s", c, ccaps)
             caps.update(ccaps)
         if FULL_INFO > 0:
             caps["session-type"] = get_session_type()
@@ -243,14 +245,14 @@ class UIXpraClient(ClientBaseClass):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         for cb in CLIENT_BASES:
-            log("%s.parse_server_capabilities(..)", cb)
+            sublog("%s.parse_server_capabilities(..)", cb)
             try:
                 if not cb.parse_server_capabilities(self, c):
-                    log.info(f"failed to parse server capabilities in {cb}")
+                    sublog.info(f"failed to parse server capabilities in {cb}")
                     return False
             except Exception:
-                log("%s.parse_server_capabilities(%s)", cb, Ellipsizer(c))
-                log.error("Error parsing server capabilities using %s", cb, exc_info=True)
+                sublog("%s.parse_server_capabilities(%s)", cb, Ellipsizer(c))
+                sublog.error("Error parsing server capabilities using %s", cb, exc_info=True)
                 return False
         self.server_session_name = c.strget("session_name")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")

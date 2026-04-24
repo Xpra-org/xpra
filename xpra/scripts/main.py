@@ -846,6 +846,9 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         check_gtk("webcam-client")
         if not args:
             error_cb("webcam-client requires a server URI")
+        from xpra.client.base.features import set_client_features
+        set_client_features(options)
+        basic_client_features()
         display_desc = parse_display_name(error_cb, options, args[0], cmdline)
         from xpra.client.gtk3.webcam_window import WebcamClient
         app = WebcamClient(display_desc)
@@ -1219,15 +1222,19 @@ class FakeClientApp:
         """ this fake client does not need to cleanup anything """
 
 
+def basic_client_features():
+    from xpra.client.base import features
+    features.bandwidth = features.progress = features.file = features.printer = features.control = False
+    features.info = features.server_info = features.server_events = features.debug = False
+    return features
+
+
 def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: list[str], mode: str):
     validate_encryption(opts)
     if not find_spec("xpra.client"):
         error_cb("`xpra-client` is not installed")
 
-    def basic():
-        from xpra.client.base import features
-        features.file = features.printer = features.control = features.debug = False
-        return features
+    basic = basic_client_features
 
     request_mode = mode.replace("request-", "") if mode.startswith("request-") else ""
     run_args = []

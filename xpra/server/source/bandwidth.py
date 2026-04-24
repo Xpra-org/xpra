@@ -5,6 +5,7 @@
 
 from typing import Any
 
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.server.source.stub import StubClientConnection
@@ -35,7 +36,9 @@ class BandwidthConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("network-state")
+        if "bandwidth" not in caps and BACKWARDS_COMPATIBLE and caps.boolget("network-state"):
+            return True
+        return caps.boolget("bandwidth")
 
     def init_state(self) -> None:
         self.jitter = 0

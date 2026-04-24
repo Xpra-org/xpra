@@ -135,7 +135,7 @@ def set_server_features(opts, mode: str) -> None:
         import sys
         from xpra.util.str_fn import csv
         from xpra.log import Logger
-        log = Logger("util")
+        log = Logger("util", "subsystems")
         log.warn("Warning: missing modules: %s", csv(missing))
         log.warn(f" for Python {sys.version}")
 

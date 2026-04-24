@@ -6,9 +6,7 @@
 
 import os
 import sys
-import uuid
 import signal
-import socket
 import string
 from time import time
 from typing import Any, NoReturn
@@ -27,11 +25,9 @@ from xpra.net.common import (
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID
-from xpra.util.version import get_version_info, vparts, XPRA_VERSION
+from xpra.util.version import get_version_info
 from xpra.net.digest import get_salt
-from xpra.platform.info import get_name, get_username
 from xpra.client.base.factory import get_client_base_classes
-from xpra.os_util import get_machine_id, get_user_uuid, BITS
 from xpra.util.child_reaper import get_child_reaper, reaper_cleanup
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals
 from xpra.util.io import stderr_print
@@ -49,11 +45,12 @@ ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 log = Logger("client")
 netlog = Logger("network")
+sublog = Logger("subsystems")
 
 EXTRA_TIMEOUT = 10
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 
-log("Client base classes: %s", CLIENT_BASES)
+sublog("Client base classes: %s", CLIENT_BASES)
 
 
 class XpraClientBase(PacketDispatcher, ClientBaseClass):
@@ -71,6 +68,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.defaults_init()
         PacketDispatcher.__init__(self)
         for bc in CLIENT_BASES:
+            sublog("%s.__init__()", bc)
             bc.__init__(self)
         self.init_packet_handlers()
         self.exit_code: ExitValue | None = None
@@ -93,7 +91,6 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         log("XpraClientBase.defaults_init() os.environ:")
         for k, v in os.environ.items():
             log(f" {k}={v!r}")
-        self.client_type = "python"
         # client state:
         self.exit_code: ExitValue | None = None
         self.exit_on_signal = False
@@ -102,27 +99,21 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         # connection attributes:
         self.hello_extra = {}
         self.has_password = False
-        self.compression_level = 0
         self.display = None
         self.server_client_shutdown = True
-        self.server_compressors = []
         self.verify_connected_timer = 0
         # protocol stuff:
         self._protocol = None
         self._priority_packets: list[Packet] = []
         self._ordinary_packets: list[Packet] = []
         # server state and caps:
-        self.server_packet_types = ()
         self.connection_established = False
         self.completed_startup = False
-        self.uuid: str = get_user_uuid()
-        self.session_id: str = uuid.uuid4().hex
         self.have_more = noop
 
     def init(self, opts) -> None:
         for bc in CLIENT_BASES:
             bc.init(self, opts)
-        self.compression_level = opts.compression_level
         self.display = opts.display
         self.install_signal_handlers()
 
@@ -267,7 +258,8 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
                 hello["challenge"] = True
             else:
                 hello.update(self.make_hello())
-            hello.setdefault("wants", []).append("packet-types")
+            if BACKWARDS_COMPATIBLE:
+                hello.setdefault("wants", []).append("packet-types")
         except InitExit as e:
             log.error("error preparing connection:")
             log.estr(e)
@@ -302,32 +294,9 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         for bc in CLIENT_BASES:
             # FIXME: digests should be added to!
             capabilities.update(bc.get_caps(self))
-        capabilities |= {
-            "uuid": self.uuid,
-            "compression_level": self.compression_level,
-            "version": vparts(XPRA_VERSION, FULL_INFO + 1),
-        }
+        # difficult to move this attribute:
         if self.display:
             capabilities["display"] = self.display
-        if FULL_INFO > 0:
-            capabilities |= {
-                "client_type": self.client_type,
-                "session-id": self.session_id,
-            }
-        if FULL_INFO > 1:
-            capabilities |= {
-                "python.version": sys.version_info[:3],
-                "python.bits": BITS,
-                "hostname": socket.gethostname(),
-                "user": get_username(),
-                "name": get_name(),
-                "argv": sys.argv,
-            }
-        vi = self.get_version_info()
-        capabilities["build"] = vi
-        mid = get_machine_id()
-        if mid:
-            capabilities["machine_id"] = mid
         capabilities.update(self.hello_extra)
         return capabilities
 
@@ -391,7 +360,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     def cleanup(self) -> None:
         reaper_cleanup()
         for bc in CLIENT_BASES:
-            with log.trap_error(f"Error cleaning {bc!r} handler"):
+            with sublog.trap_error(f"Error cleaning {bc!r} handler"):
                 bc.cleanup(self)
         self.cancel_verify_connected_timer()
         p = self._protocol
@@ -506,9 +475,6 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         if not self.parse_server_capabilities(caps):
             netlog("server_connection_established(..) failed server capabilities")
             return False
-        if not self.parse_network_capabilities(caps):
-            netlog("server_connection_established(..) failed network capabilities")
-            return False
         netlog("server_connection_established(..) adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True
@@ -536,29 +502,10 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         netlog("parse_server_capabilities(..)")
         for bc in CLIENT_BASES:
             if not bc.parse_server_capabilities(self, c):
-                log.info(f"server capabilities rejected by {bc}")
+                sublog.info(f"server capabilities rejected by {bc}")
                 return False
         self.server_client_shutdown = c.boolget("client-shutdown", True)
-        self.server_compressors = c.strtupleget("compressors", )
         netlog("parse_server_capabilities(..) done")
-        return True
-
-    def parse_network_capabilities(self, caps: typedict) -> bool:
-        netlog("parse_network_capabilities(..)")
-        p = self._protocol
-        if not p:
-            log.warn("Warning: cannot parse network capabilities, no connection!")
-            return False
-        if p.TYPE == "rfb":
-            return True
-        if not p.enable_encoder_from_caps(caps):
-            return False
-        p.set_compression_level(self.compression_level)
-        p.enable_compressor_from_caps(caps)
-        p.parse_remote_caps(caps)
-        if BACKWARDS_COMPATIBLE:
-            self.server_packet_types = caps.strtupleget("packet-types")
-            netlog(f"parse_network_capabilities(..) server_packet_types={self.server_packet_types}")
         return True
 
     def _process_startup_complete(self, packet: Packet) -> None:

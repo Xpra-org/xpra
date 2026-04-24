@@ -275,6 +275,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "menu"          : "Menus",
         "events"        : "System and window events",
         "splash"        : "Splash screen",
+        "subsystems"    : "Module subsystems",
     },
     "Window": {
         "window"        : "All window code",
