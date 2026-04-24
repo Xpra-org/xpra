@@ -1225,6 +1225,9 @@ class ServerCore:
             ssl_conn = ssl_wrap()
             if not ssl_conn:
                 return
+            if envbool("XPRA_SSL_EARLY_HANDSHAKE", True):
+                from xpra.net.socket_util import ssl_handshake
+                ssl_handshake(ssl_conn._socket)
             if socktype=="wss":
                 http = True
             else:
