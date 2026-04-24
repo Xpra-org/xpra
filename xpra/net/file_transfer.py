@@ -936,6 +936,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.pending_send_data.pop(send_id, None)
             return
         if accept not in (ACCEPT, OPEN):
+            self.pending_send_data.pop(send_id, None)
             raise ValueError(f"unknown value for send-data response: {accept!r}")
         if spd.datatype == "file":
             if accept == ACCEPT:
