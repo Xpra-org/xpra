@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.5] 2026-04-01
+## [5.1.5] 2026-04-25
 * Platforms, build and packaging:
     * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
     * [Python compatibility regression](https://github.com/Xpra-org/xpra/commit/1282fa77ee948c459e69538095a96d08310e18d7) [and again](https://github.com/Xpra-org/xpra/commit/bc1aa0da761a9d611c56bb4e2fa42d3481886be6)
@@ -36,6 +36,9 @@
     * [override-redirect windows using outdated dimensions](https://github.com/Xpra-org/xpra/commit/3d4a7e3cb896b621caf577fa677ad12d18202a8e)
     * [sub-image use after free](https://github.com/Xpra-org/xpra/commit/e8ff043812714bf278e1210e6dcf540c6a04a4c9)
     * [video downscaling becomes sticky](https://github.com/Xpra-org/xpra/commit/4239a441f2db21a820c859c459a63769c1dee8e5)
+    * [audio source could buffer to much](https://github.com/Xpra-org/xpra/commit/29a69d521eb82a696940e4d227ec171d33359339)
+    * [saved ssh key fingerprint never matched](https://github.com/Xpra-org/xpra/commit/ab96520e436198fb21f2cc1bfe1295ce1d449d63)
+    * [explicit ssl handshake](https://github.com/Xpra-org/xpra/commit/2510fdb3e11a85224573647b8478ff989be4fd75)
 * Printing:
     * [incorrect cups backend exit codes could cause DoS](https://github.com/Xpra-org/xpra/commit/6127a6d704ab71b6043a4a3a3b7a173e51626c16), [ie: `FILE_TOO_BIG`](https://github.com/Xpra-org/xpra/commit/194f2cb38f3d4d62c2664ef3b90297575f7a5c79)
     * [use more widely compatible socket syntax](https://github.com/Xpra-org/xpra/commit/01a91109d6a69aae2f741a9ff92b68986d2674f8)
@@ -46,7 +49,7 @@
     * [help clients figure out modifier mappings](https://github.com/Xpra-org/xpra/commit/eef78cba394471ff1fccac708304cf4843ad55f0)
     * [client keyboard 'options' attribute was not forwarded](https://github.com/Xpra-org/xpra/commit/639cf8c4c445c0b389b66e316ca65f64afacdf93)
     * [honour layout and variant overrides](https://github.com/Xpra-org/xpra/commit/7978abb0fd1dc4900dfb07875c14289064143308)
-    * [keyboard repeat rate lost after client sets new keymap](https://github.com/Xpra-org/xpra/commit/f05436dafb93910c8fbd8e8a706dc20d19f6d445)
+    * [keyboard repeat rate lost after client sets new keymap](https://github.com/Xpra-org/xpra/commit/f05436dafb93910c8fbd8e8a706dc20d19f6d445) + [fixup](https://github.com/Xpra-org/xpra/commit/d3c87a62eec2fb0897454b22f905e5a71e285727)
 * Minor:
     * [try harder to locate the notification icons](https://github.com/Xpra-org/xpra/commit/b3beb4544f3805202d8747140c6f617ade34ac34) [but not `SVG`s](https://github.com/Xpra-org/xpra/commit/7225fe9f8180116d572fbc5cc19624d4e41f2916)
     * [honour the `XPRA_MONITOR_CHANGE_REINIT` environment variable](https://github.com/Xpra-org/xpra/commit/1b81940da7c6529a70a988ba67c27060c1b9740d)
@@ -64,6 +67,13 @@
     * [add guard against threading issues](https://github.com/Xpra-org/xpra/commit/5ffb040dfe63191141393e50ca9461d4706a39f0)
     * [move-resize could miss the last event](https://github.com/Xpra-org/xpra/commit/b1858b399ff167b614e9273de20f1ff0ef019f07)
     * [NVENC's `hevc` does support lossless mode](https://github.com/Xpra-org/xpra/commit/f59ac826b9a75a0ea0a322abe27c3945e465af5f)
+    * [about dialog cannot be shown again](https://github.com/Xpra-org/xpra/commit/2792f27241ed7f1f4fd91430a92993165b6716f5)
+    * [honour move-resize in read-only mode](https://github.com/Xpra-org/xpra/commit/95f620b41633598c3a379bf080172a6b48d6c032)
+    * [revert: do honour `USPosition` / `PPosition` and `USSize` / `PSize`](https://github.com/Xpra-org/xpra/commit/7ef1dedab3613ccd96f43cacf849a59005bdffa2)
+    * [always interact with Gtk from the main thread](https://github.com/Xpra-org/xpra/commit/487559c3b4317f27db8807c9983dd6b0ff1fbd19)
+    * [file transfer data not freed on error](https://github.com/Xpra-org/xpra/commit/ae2e63e1566bdbb15a21c9391fb457729d25a95d)
+    * [exclude `nvjpeg` from video fallback](https://github.com/Xpra-org/xpra/commit/a3beabc2340dadc9f3e66cce951f38b6b6747c31)
+    * [cairo missing hint](https://github.com/Xpra-org/xpra/commit/cd4ed755eb8ea1fb6dc2ffee05c2fa82c3dde424)
 * Cosmetic:
     * [make socket eof detection less spammy](https://github.com/Xpra-org/xpra/commit/a7a00921edc54294b37c49622d3f63f548555091)
     * [invalid syntax used in man page](https://github.com/Xpra-org/xpra/commit/2291f9bb214d245b56340e8e20b61f2ca6d27787)
@@ -79,6 +89,10 @@
     * [log line wrapping](https://github.com/Xpra-org/xpra/commit/da456cc4198b0e16813692c2651b698c608d6ae6)
     * [correct type for XI2 cython bindings](https://github.com/Xpra-org/xpra/commit/0c74c0a4825afa9cf505be05eb422bc7b87de899)
     * [file descriptor leak warning](https://github.com/Xpra-org/xpra/commit/d19291bc1bbd02aaa838ffde4504b1f5212d5e6c)
+    * [paramiko ssh errors on close](https://github.com/Xpra-org/xpra/commit/e2bdc5283b6bef83e669ecc093a6469db3882290)
+    * [unnecessary timer](https://github.com/Xpra-org/xpra/commit/51d86afc14383cf065674161ddf1768f5c77416d)
+    * [potential race condition](https://github.com/Xpra-org/xpra/commit/5862fff817d12196d08e5070bdc328261e5325a8)
+    * [only free valid timers](https://github.com/Xpra-org/xpra/commit/dcd2ff3d8f6c08790dc1d0437ba6ddde2ae01caf)
 
 ## [5.1.4] 2025-12-04
 * Platforms, build and packaging:

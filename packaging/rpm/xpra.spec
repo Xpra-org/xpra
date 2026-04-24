@@ -816,7 +816,7 @@ fi
 
 
 %changelog
-* Wed Apr 01 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
+* Sat Apr 25 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install
    Python compatibility regression
@@ -852,6 +852,9 @@ fi
    override-redirect windows using outdated dimensions
    sub-image use after free
    video downscaling becomes sticky
+   audio source could buffer to much
+   saved ssh key fingerprint never matched
+   explicit ssl handshake
 - Printing:
    incorrect cups backend exit codes could cause DoS, ie: FILE_TOO_BIG
    use more widely compatible socket syntax
@@ -880,6 +883,13 @@ fi
    add guard against threading issues
    move-resize could miss the last event
    NVENC's `hevc` does support lossless mode
+   about dialog cannot be shown again
+   honour move-resize in read-only mode
+   revert: do honour `USPosition` / `PPosition` and `USSize` / `PSize`
+   always interact with Gtk from the main thread
+   file transfer data not freed on error
+   exclude `nvjpeg` from video fallback
+   cairo missing hint
 - Cosmetic:
    make socket eof detection less spammy
    invalid syntax used in man page
@@ -895,6 +905,10 @@ fi
    log line wrapping
    correct type for XI2 cython bindings
    file descriptor leak warning
+   paramiko ssh errors on close
+   unnecessary timer
+   potential race condition
+   only free valid timers
 
 * Thu Dec 04 2025 Antoine Martin <antoine@xpra.org> 5.1.4-10
 - Platforms, build and packaging:
