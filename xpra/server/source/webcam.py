@@ -241,12 +241,21 @@ class WebcamConnection(StubClientConnection):
 
     def process_webcam_frame(self, device_id, frame_no: int, encoding: str, w: int, h: int, data, options: dict) -> bool:
         webcam = self.webcam_forwarding_devices.get(device_id)
-        log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, options=%s, webcam=%s",
-            device_id, frame_no, encoding, w, h, len(data), options, webcam)
+        pending = self.webcam_pending_clients.get(device_id)
+        log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, options=%s, webcam=%s, pending=%s",
+            device_id, frame_no, encoding, w, h, len(data), options, webcam, pending)
         if not (encoding and w and h and (data or (encoding == "mmap" and options))):
             log.error("Error: webcam frame data is incomplete")
             self.send_webcam_stop(device_id, "incomplete frame data")
             return False
+
+        def ack() -> None:
+            self.send_webcam_ack(device_id, frame_no)
+
+        if pending and frame_no < 100:
+            ack()
+            return True
+
         if not webcam:
             log.error("Error: webcam forwarding is not active, dropping frame")
             self.send_webcam_stop(device_id, "not started")
@@ -297,7 +306,7 @@ class WebcamConnection(StubClientConnection):
             image = csc.convert_image(bgrx_image)
             webcam.push_image(image)
             # tell the client all is good:
-            self.send_webcam_ack(device_id, frame_no)
+            ack()
             return True
         except Exception as e:
             log("error on %ix%i frame %i using encoding %s", w, h, frame_no, encoding, exc_info=True)

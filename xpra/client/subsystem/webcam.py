@@ -372,6 +372,7 @@ class WebcamForwarder(StubClientMixin):
     # packet handlers
     def _process_webcam_stop(self, packet: Packet) -> None:
         device_no = packet.get_u64(1)
+        log("webcam-stop for device %i", device_no)
         if device_no != self.webcam_device_no:
             return
         self.stop_sending_webcam()
