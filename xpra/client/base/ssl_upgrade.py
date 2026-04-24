@@ -18,6 +18,10 @@ class SSLUpgradeClient(StubClientMixin):
     Adds ability to upgrade connections to ssl
     """
 
+    def parse_server_capabilities(self, c: typedict) -> bool:  # pylint: disable=unused-argument
+        self.remove_packet_handlers("ssl-upgrade")
+        return True
+
     def _process_ssl_upgrade(self, packet: Packet) -> None:
         ssl_attrs = typedict(packet.get_dict(1))
         start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs,))

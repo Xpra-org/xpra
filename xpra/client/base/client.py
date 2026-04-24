@@ -455,7 +455,6 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             netlog.info("received hello:")
             print_nested_dict(hello_data, print_fn=netlog.info)
         self.remove_packet_handlers("challenge")
-        self.remove_packet_handlers("ssl-upgrade")
         try:
             caps = typedict(hello_data)
             netlog("processing hello from server: %s", Ellipsizer(caps))
