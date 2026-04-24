@@ -75,6 +75,7 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
         self._window.connect("delete-event", self._on_close)
         self._area = Gtk.DrawingArea()
         self._area.connect("draw", self._on_draw)
+        self._area.set_app_paintable(True)
         self._window.add(self._area)
         self._window.show_all()
 
