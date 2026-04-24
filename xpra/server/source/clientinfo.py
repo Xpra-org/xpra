@@ -38,7 +38,7 @@ class ClientInfoConnection(StubClientConnection):
     """
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return any(x in caps for x in ("user", "name", "client_type"))
+        return any(x in caps for x in ("user", "name", "username"))
 
     def cleanup(self) -> None:
         self.init_state()

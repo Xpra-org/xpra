@@ -23,10 +23,12 @@ class ClientIDConnection(StubClientConnection):
     def init_state(self) -> None:
         self.uuid = ""
         self.session_id = ""
+        self.client_type = ""
 
     def parse_client_caps(self, c: typedict) -> None:
         self.uuid = c.strget("uuid")
         self.session_id = c.strget("session-id")
+        self.client_type = c.strget("client_type")
         log(f"client uuid {self.uuid!r}")
 
     def get_info(self) -> dict[str, Any]:
