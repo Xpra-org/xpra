@@ -588,6 +588,20 @@ class SocketPeekWrapper:
 class SSLSocketConnection(SocketConnection):
     SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
 
+    def read(self, n: int) -> bytes:
+        buf = self._read(self._socket.recv, n)
+        if not buf:
+            return buf
+        # TLS 1.3 may have more decrypted data already in the SSL buffer
+        # that won't make the socket fd readable again (pending() > 0).
+        # Drain it now to avoid blocking on the next recv() call.
+        pending = getattr(self._socket, "pending", None)
+        if pending:
+            extra = pending()
+            if extra > 0:
+                buf += self._read(self._socket.recv, extra)
+        return buf
+
     def can_retry(self, e) -> Union[bool,str]:
         if getattr(e, "library", None)=="SSL":
             reason = getattr(e, "reason", None)
