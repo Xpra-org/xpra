@@ -18,7 +18,7 @@ log = Logger("webcam")
 # Timeout (seconds) to wait for a libcamera frame request to complete
 LIBCAMERA_READ_TIMEOUT = 3
 
-LIBCAMERA_PIXEL_FORMATS = {
+LIBCAMERA_PIXEL_FORMATS: dict[str, str] = {
     "NV12": "NV12",
     "YUYV": "YUYV",
     "BGR888": "BGR",
@@ -73,6 +73,16 @@ class LibcameraCamera(CameraDevice):
                 log(" forcing pixel format to %s", chosen)
         except Exception as e:
             log(" could not override pixel format: %s", e)
+
+        from xpra.util.parsing import parse_resolution
+        parsed = parse_resolution(os.environ.get("XPRA_LIBCAMERA_SIZE", "320x240"))
+        if parsed:
+            w, h = parsed[:2]
+            try:
+                stream_config.size = libcamera.Size(w, h)
+                log(" requested size %ix%i from XPRA_LIBCAMERA_SIZE", w, h)
+            except Exception as e:
+                log.warn("Warning: could not set libcamera size to %ix%i: %s", w, h, e)
 
         status = self._config.validate()
         log("camera config validate=%s", status)
