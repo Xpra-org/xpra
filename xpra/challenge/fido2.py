@@ -10,8 +10,8 @@ import binascii
 import base64
 from hashlib import sha256
 
-from xpra.challenge.handler import AuthenticationHandler
-from xpra.util.env import osexpand
+from xpra.challenge.handler import AuthenticationHandler, notify
+from xpra.util.env import osexpand, envint
 from xpra.util.io import load_binary_file
 from xpra.util.str_fn import strtobytes
 from xpra.log import Logger
@@ -19,6 +19,7 @@ from xpra.log import Logger
 log = Logger("auth")
 
 APP_ID = os.environ.get("XPRA_FIDO_APP_ID", "Xpra")
+POLLING_TIME = envint("XPRA_FIDO2_POLLING_TIME", 10)
 
 
 class Handler(AuthenticationHandler):
@@ -61,11 +62,10 @@ class Handler(AuthenticationHandler):
         }
         client_data_hash = sha256(json.dumps(client_data, sort_keys=True).encode("utf-8")).digest()
         app_param = sha256(self.app_id.encode("utf-8")).digest()
-        log.info("activate your FIDO2 device for authentication")
-        log.info(f"prompt: {prompt!r}")
+        notify("activate your FIDO2 device for authentication")
         # CTAP1/U2F devices return APDU.USE_NOT_SATISFIED until the user
         # touches the device — poll each one for up to 10 seconds.
-        deadline = time.monotonic() + 10
+        deadline = time.monotonic() + POLLING_TIME
         while time.monotonic() < deadline:
             for dev in devices:
                 try:
@@ -87,7 +87,7 @@ class Handler(AuthenticationHandler):
         return None
 
     def get_key_handle(self) -> bytes:
-        key_handle_str = os.environ.get("XPRA_FIDO2_KEY_HANDLE")
+        key_handle_str = os.environ.get("XPRA_FIDO2_KEY_HANDLE", "")
         log("get_key_handle XPRA_FIDO2_KEY_HANDLE=%s", key_handle_str)
         if not key_handle_str:
             from xpra.platform.paths import get_user_conf_dirs

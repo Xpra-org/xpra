@@ -12,7 +12,7 @@ import os.path
 from hashlib import sha256
 
 from xpra.exit_codes import ExitCode
-from xpra.util.env import osexpand
+from xpra.util.env import osexpand, envint
 from xpra.util.io import load_binary_file, use_gui_prompt
 from xpra.util.str_fn import hexstr
 from xpra.platform.paths import get_user_conf_dirs
@@ -21,6 +21,7 @@ from xpra.log import Logger, consume_verbose_argv
 log = Logger("auth", "util")
 
 APP_ID = os.environ.get("XPRA_FIDO_APP_ID", "Xpra")
+POLLING_TIME = envint("XPRA_FIDO2_POLLING_TIME", 60)
 
 
 def printmsgs(*msgs: str) -> None:
@@ -101,7 +102,7 @@ def main(argv: list[str]) -> int:
         ctap1 = Ctap1(devices[0])
         # CTAP1/U2F devices return APDU.USE_NOT_SATISFIED (0x6985) until the
         # user touches the device — poll until that goes away or we time out.
-        deadline = time.monotonic() + 60
+        deadline = time.monotonic() + POLLING_TIME
         b = None
         while True:
             try:

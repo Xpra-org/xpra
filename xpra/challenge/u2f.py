@@ -7,7 +7,7 @@ import os
 import logging
 import binascii
 
-from xpra.challenge.handler import AuthenticationHandler
+from xpra.challenge.handler import AuthenticationHandler, notify
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
 from xpra.util.str_fn import strtobytes
@@ -50,8 +50,7 @@ class Handler(AuthenticationHandler):
             return None
         key = model.RegisteredKey(key_handle)
         # use server salt as challenge directly
-        log.info("activate your U2F device for authentication")
-        log.info(f"prompt: {prompt!r}")
+        notify("activate your U2F device for authentication")
         response = dev.Authenticate(self.app_id, challenge, [key])
         sig = response.signature_data
         client_data = response.client_data

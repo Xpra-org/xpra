@@ -24,6 +24,9 @@ NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 THREADED_NOTIFICATIONS = envbool("XPRA_THREADED_NOTIFICATIONS", True)
 
 
+notifier = None
+
+
 class NotificationClient(StubClientMixin):
     """
     Mixin for clients that handle notifications
@@ -56,6 +59,8 @@ class NotificationClient(StubClientMixin):
         log("using notifier=%s", self.notifier)
         self.notifications_enabled = self.notifier is not None
         self.client_supports_notifications = self.notifier is not None
+        global notifier
+        notifier = self.notifier
 
     def cleanup(self) -> None:
         n = self.notifier
@@ -64,6 +69,8 @@ class NotificationClient(StubClientMixin):
             self.notifier = None
             with log.trap_error(f"Error on notifier {n!r} cleanup"):
                 n.cleanup()
+            global notifier
+            notifier = None
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_notifications = ("notifications" if BACKWARDS_COMPATIBLE else "notification") in c
