@@ -3,9 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-import tempfile
-import threading
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 from time import monotonic
@@ -15,6 +12,7 @@ from xpra.util.version import caps_to_version, full_version_str
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr, std
 from xpra.util.env import envint
+from xpra.util.thread import start_thread
 from xpra.util.stats import std_unit
 from xpra.util.system import platform_name
 from xpra.common import gravity_str
@@ -82,7 +80,7 @@ class TopGUI(BaseGUIWindow):
         self.psprocess: dict[int, object] = {}
         self._refresh_timer = 0
         self._last_display_items: frozenset = frozenset()
-        self._screenshots: dict[str, str] = {}         # session_key -> temp png path
+        self._screenshots: dict[str, bytes] = {}       # session_key -> png bytes
         self._screenshot_pending: set[str] = set()     # session_keys being captured
         self._screenshot_times: dict[str, float] = {}  # session_key -> capture time
         self._screenshot_widgets: dict[str, Gtk.Image] = {}  # session_key -> live Gtk.Image
@@ -241,40 +239,38 @@ class TopGUI(BaseGUIWindow):
 
     def _request_screenshot(self, session_key: str, path: str, img: Gtk.Image) -> None:
         self._screenshot_pending.add(session_key)
-        old_tmppath = self._screenshots.get(session_key)
-        tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-        tmp.close()
-        tmppath = tmp.name
 
-        def _take():
-            cmd = get_nodock_command() + ["screenshot", tmppath, f"socket://{path}"]
+        def _take() -> None:
+            # `xpra screenshot - <socket>` writes PNG data to stdout
+            cmd = get_nodock_command() + ["screenshot", "-", f"socket://{path}"]
+            data = b""
             try:
-                proc = Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
-                proc.wait(timeout=10)
-            except Exception:
-                pass
-            GLib.idle_add(_done)
+                proc = Popen(cmd, stdout=PIPE, stderr=DEVNULL)
+                out, _ = proc.communicate(timeout=10)
+                if proc.returncode == 0:
+                    data = out or b""
+            except Exception as e:
+                log("screenshot failed for %s: %s", path, e)
+            GLib.idle_add(_done, data)
 
-        def _done() -> None:
+        def _done(data: bytes) -> None:
             self._screenshot_pending.discard(session_key)
-            self._screenshots[session_key] = tmppath
             self._screenshot_times[session_key] = monotonic()
-            if old_tmppath:
-                try:
-                    os.unlink(old_tmppath)
-                except OSError:
-                    pass
-            self._load_screenshot_into(session_key, img)
+            if data:
+                self._screenshots[session_key] = data
+                self._load_screenshot_into(session_key, img)
 
-        threading.Thread(target=_take, daemon=True).start()
+        start_thread(_take, f"screenshot-{session_key}", daemon=True)
 
     def _load_screenshot_into(self, session_key: str, img: Gtk.Image) -> None:
-        tmppath = self._screenshots.get(session_key)
-        if not tmppath or not os.path.exists(tmppath):
+        data = self._screenshots.get(session_key)
+        if not data:
             return
         try:
-            from gi.repository import GdkPixbuf
-            pb = GdkPixbuf.Pixbuf.new_from_file(tmppath)
+            GdkPixbuf = gi_import("GdkPixbuf")
+            Gio = gi_import("Gio")
+            stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(data))
+            pb = GdkPixbuf.Pixbuf.new_from_stream(stream, None)
             w, h = pb.get_width(), pb.get_height()
             max_w, max_h = 320, 180
             scale = min(max_w / max(w, 1), max_h / max(h, 1), 1.0)
@@ -282,7 +278,7 @@ class TopGUI(BaseGUIWindow):
                 pb = pb.scale_simple(int(w * scale), int(h * scale), GdkPixbuf.InterpType.BILINEAR)
             img.set_from_pixbuf(pb)
         except Exception as e:
-            log("failed to load screenshot %s: %s", tmppath, e)
+            log("failed to load screenshot for %s: %s", session_key, e)
 
     def _cpu_str(self, pid: int) -> str:
         try:
@@ -328,11 +324,6 @@ class TopGUI(BaseGUIWindow):
         if self._refresh_timer:
             GLib.source_remove(self._refresh_timer)
             self._refresh_timer = 0
-        for tmppath in self._screenshots.values():
-            try:
-                os.unlink(tmppath)
-            except OSError:
-                pass
         self._screenshots.clear()
         super().quit(*args)
 
