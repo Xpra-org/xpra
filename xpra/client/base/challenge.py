@@ -267,7 +267,9 @@ class ChallengeClient(StubClientMixin):
             self.auth_error(ExitCode.PASSWORD_REQUIRED,
                             "this server requires authentication and no password is available")
             return
-        if self.get_encryption():
+        # soft dependency on aes client:
+        getenc = getattr(self, "get_encryption", noop)
+        if getenc():
             assert len(packet) >= 3, "challenge does not contain encryption details to use for the response"
             server_cipher = typedict(packet.get_dict(2))
             key = self.get_encryption_key()
