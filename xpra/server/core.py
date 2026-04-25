@@ -24,8 +24,9 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
-    is_request_allowed, Packet, has_websocket_handler, HttpResponse, FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
-    pretty_socket, )
+    is_request_allowed, pretty_socket, has_websocket_handler, HttpResponse, Packet,
+    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
+)
 from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
