@@ -85,6 +85,7 @@ class DisplayManager(StubServerMixin):
     def __init__(self):
         StubServerMixin.__init__(self)
         self.hello_request_handlers["screenshot"] = self._handle_hello_request_screenshot
+        self.hello_request_handlers["icon"] = self._handle_hello_request_icon
         self.display = os.environ.get("DISPLAY", "")
         self.display_options = ""
         self.screen_size_changed_timer = 0
@@ -493,8 +494,19 @@ class DisplayManager(StubServerMixin):
         proto.send_now(packet)
         return True
 
+    def _handle_hello_request_icon(self, proto, _caps: typedict) -> bool:
+        packet = self.make_icon_packet()
+        proto.send_now(packet)
+        return True
+
     def _process_display_request_screenshot(self, proto, _packet: Packet) -> None:
         packet = self.make_screenshot_packet()
+        ss = self.get_server_source(proto)
+        if packet and ss:
+            ss.send(*packet)
+
+    def _process_display_request_icon(self, proto, _packet: Packet) -> None:
+        packet = self.make_icon_packet()
         ss = self.get_server_source(proto)
         if packet and ss:
             ss.send(*packet)
@@ -505,6 +517,13 @@ class DisplayManager(StubServerMixin):
 
     def do_make_screenshot_packet(self) -> Packet:
         raise NotImplementedError("no screenshot capability in %s" % type(self))
+
+    def make_icon_packet(self) -> Packet:
+        with log.trap_error("Error making icon packet"):
+            return self.do_make_icon_packet()
+
+    def do_make_icon_packet(self) -> Packet:
+        raise NotImplementedError("no icon capability in %s" % type(self))
 
     def send_screenshot(self, proto) -> None:
         # this is a screenshot request, handle it and disconnect
@@ -520,7 +539,7 @@ class DisplayManager(StubServerMixin):
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("display-configure", "display-request-screenshot", main_thread=True)
+        self.add_packets("display-configure", "display-request-screenshot", "display-request-icon", main_thread=True)
         if BACKWARDS_COMPATIBLE:
             self.add_legacy_alias("configure-display", "display-configure")
             self.add_legacy_alias("screenshot", "display-request-screenshot")

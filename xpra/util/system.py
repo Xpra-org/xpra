@@ -97,6 +97,18 @@ def is_VirtualBox() -> bool:
     return False
 
 
+def get_platform_icon_name(platform: str) -> str:
+    for p, i in {
+        "win32": "win32",
+        "darwin": "osx",
+        "linux": "linux",
+        "freebsd": "freebsd",
+    }.items():
+        if platform.startswith(p):
+            return i
+    return ""
+
+
 def is_Wayland() -> bool:
     return _is_Wayland(_saved_env)
 

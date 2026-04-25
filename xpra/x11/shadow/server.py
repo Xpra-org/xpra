@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 from typing import Any
 
 from xpra.net.packet_type import DISPLAY_SCREENSHOT
@@ -13,9 +14,10 @@ from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.os_util import gi_import
 from xpra.server.common import get_sources_by_type
-from xpra.util.system import is_Wayland, get_loaded_kernel_modules
+from xpra.util.system import is_Wayland, get_loaded_kernel_modules, get_platform_icon_name
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
+from xpra.server.common import make_icon_packet
 from xpra.x11.shadow.filter import window_matches
 from xpra.x11.shadow.model import X11ShadowModel
 from xpra.log import Logger
@@ -148,3 +150,7 @@ class ShadowX11Server(GTKShadowServerBase):
         assert encoding == "png"  # use fixed encoding for now
         # pylint: disable=import-outside-toplevel
         return DISPLAY_SCREENSHOT, w, h, encoding, rowstride, Compressed(encoding, data)
+
+    @staticmethod
+    def do_make_icon_packet() -> tuple[str, int, int, str, int, Compressed]:
+        return make_icon_packet(get_platform_icon_name(sys.platform), "shadow.png", "server.png", "xpra.png")

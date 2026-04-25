@@ -62,7 +62,9 @@ COMMAND_START: Final[str] = "start-command" if BACKWARDS_COMPATIBLE else "comman
 
 DISPLAY_CONFIGURE: Final[str] = "configure-display" if BACKWARDS_COMPATIBLE else "display-configure"
 DISPLAY_REQUEST_SCREENSHOT: Final[str] = "screenshot" if BACKWARDS_COMPATIBLE else "display-request-screenshot"
+DISPLAY_REQUEST_ICON: Final[str] = "display-request-icon"
 DISPLAY_SCREENSHOT: Final[str] = "screenshot" if BACKWARDS_COMPATIBLE else "display-screenshot"
+DISPLAY_ICON: Final[str] = "display-icon"
 
 INFO_REQUEST: Final[str] = "info-request"
 INFO_RESPONSE: Final[str] = "info-response"

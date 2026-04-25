@@ -6,10 +6,12 @@
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
+from xpra.server.common import make_icon_packet
 from xpra.x11.shadow.server import ShadowX11Server
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.evdi.capture import EvdiDevice, find_evdi_devices, add_evdi_device  # pylint: disable=no-name-in-module
+from xpra.net.compression import Compressed
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -160,6 +162,10 @@ class ExpandServer(ShadowX11Server):
 
     def do_make_screenshot_packet(self):
         raise NotImplementedError()
+
+    @staticmethod
+    def do_make_icon_packet() -> tuple[str, int, int, str, int, Compressed]:
+        return make_icon_packet("scaling.png", "shadow.png", "server.png", "xpra.png")
 
 
 GObject.type_register(ExpandServer)

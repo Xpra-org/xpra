@@ -140,7 +140,7 @@ STDOUT_SUBCOMMANDS = (
 )
 CLIENT_SUBCOMMANDS = (
     "attach", "listen", "detach",
-    "screenshot", "version", "info", "id",
+    "screenshot", "icon", "version", "info", "id",
     "control", "run", "_monitor", "shell", "print",
     "qrcode",
     "show-menu", "show-about", "show-session-info",
@@ -1243,14 +1243,17 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
             "show-menu", "show-about", "show-session-info",
     ) and extra_args:
         opts.socket_dirs += opts.client_socket_dirs or []
-    if mode == "screenshot":
+    if mode in ("screenshot", "icon"):
         basic()
-        from xpra.client.base.command import ScreenshotXpraClient
         if not extra_args:
-            error_cb("invalid number of arguments for screenshot mode")
-        screenshot_filename = extra_args[0]
+            error_cb("invalid number of arguments for %s mode" % mode)
+        if mode == "screenshot":
+            from xpra.client.base.command import ScreenshotXpraClient as ImageClient
+        else:
+            from xpra.client.base.command import IconXpraClient as ImageClient
+        filename = extra_args[0]
         extra_args = extra_args[1:]
-        app = ScreenshotXpraClient(opts, screenshot_filename)
+        app = ImageClient(opts, filename)
     elif mode == "info":
         basic()
         from xpra.client.base.command import InfoXpraClient

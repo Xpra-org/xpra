@@ -52,7 +52,7 @@ from xpra.os_util import (
 from xpra.util.system import register_SIGUSR_signals, get_run_info
 from xpra.util.io import load_binary_file, find_libexec_command
 from xpra.util.background_worker import quit_worker
-from xpra.util.thread import start_thread
+from xpra.util.thread import start_thread, check_main_thread
 from xpra.common import noop, noerr, subsystem_name
 from xpra.constants import DEFAULT_XDG_DATA_DIRS
 from xpra.util.pysystem import dump_all_frames
@@ -1426,6 +1426,7 @@ class ServerCore(ServerBaseClass):
         ssllog.info("upgraded %s to %s", conn, new_socktype)
 
     def call_hello_oked(self, proto: SocketProtocol, c: typedict, auth_caps: dict) -> None:
+        check_main_thread()
         try:
             if SIMULATE_SERVER_HELLO_ERROR:
                 raise RuntimeError("Simulating a server error")

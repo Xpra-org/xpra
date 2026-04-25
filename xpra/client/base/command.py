@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.net.packet_type import PRINT_FILE, DISPLAY_REQUEST_SCREENSHOT, INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE
+from xpra.net.packet_type import PRINT_FILE, INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
@@ -155,51 +155,76 @@ class HelloRequestClient(SendCommandConnectClient):
             self.server_disconnect(*info)
 
 
-class ScreenshotXpraClient(HelloRequestClient):
+class AbstractImageXpraClient(HelloRequestClient):
     """ This client does one thing only:
-        it sends the hello packet with a screenshot request
+        it sends the hello packet with a screenshot or icon request
         and exits when the resulting image is received (or timedout)
     """
 
-    def __init__(self, opts, screenshot_filename):
-        self.screenshot_filename = screenshot_filename
+    def __init__(self, opts, image_filename: str, request="screenshot"):
+        self.image_filename = image_filename
+        self.image_request = request
         super().__init__(opts)
 
     def hello_request(self) -> dict[str, Any]:
         return {
-            "request": "screenshot",
+            "request": self.image_request,
         }
 
     def do_command(self, caps: typedict) -> None:
-        self.send(DISPLAY_REQUEST_SCREENSHOT)
+        raise NotImplementedError()
 
     def timeout(self, *_args) -> None:
-        self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the screenshot")
+        self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the %s" % self.image_request)
 
-    def _process_display_screenshot(self, packet: Packet) -> None:
+    def _process_image(self, packet: Packet) -> None:
         w = packet.get_u16(1)
         h = packet.get_u16(2)
         encoding = packet.get_str(3)
         img_data = packet.get_buffer(5)
-        assert encoding == "png", "expected png screenshot data but got %s" % encoding
+        if encoding not in ("png", "jpeg", "webp"):
+            raise ValueError("expected png data but got %s" % encoding)
         if not img_data:
             self.warn_and_quit(ExitCode.OK,
-                               "screenshot is empty and has not been saved"
+                               "image data is empty and has not been saved"
                                " (maybe there are no windows or they are not currently shown)")
             return
-        if self.screenshot_filename == "-":
+        if self.image_filename == "-":
             output = os.fdopen(sys.stdout.fileno(), "wb", closefd=False)
         else:
-            output = open(self.screenshot_filename, "wb")
+            output = open(self.image_filename, "wb")
         with output:
             output.write(img_data)
             output.flush()
-        self.warn_and_quit(ExitCode.OK, f"screenshot {w}x{h} saved to: {self.screenshot_filename!r}")
+        self.warn_and_quit(ExitCode.OK, f"image {w}x{h} saved to: {self.image_filename!r}")
+
+
+class ScreenshotXpraClient(AbstractImageXpraClient):
+    """
+        Request a screenshot and save it.
+    """
+    def _process_display_screenshot(self, packet: Packet) -> None:
+        self._process_image(packet)
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_legacy_alias("screenshot", "display-screenshot")
         self.add_packets("display-screenshot")
+
+
+class IconXpraClient(AbstractImageXpraClient):
+    """
+        Request the session's icon and save it
+    """
+    def __init__(self, opts, image_filename: str):
+        super().__init__(opts, image_filename, "icon")
+
+    def _process_display_icon(self, packet: Packet) -> None:
+        self._process_image(packet)
+
+    def init_packet_handlers(self) -> None:
+        super().init_packet_handlers()
+        self.add_packets("display-icon")
 
 
 class InfoXpraClient(CommandConnectClient):

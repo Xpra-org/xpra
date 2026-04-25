@@ -4,9 +4,12 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 from typing import Any, Sequence
 
+from xpra.net.compression import Compressed
 from xpra.os_util import gi_import
+from xpra.server.common import make_icon_packet
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
@@ -17,6 +20,7 @@ from xpra.net.packet_type import WINDOW_CREATE
 from xpra.server import features
 from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.server.base import ServerBase
+from xpra.util.system import get_platform_icon_name
 from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.error import xsync, xlog
@@ -359,3 +363,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
             offset_y += 0
         from xpra.codecs.screenshot import make_screenshot_packet_from_regions
         return Packet(*make_screenshot_packet_from_regions(regions))
+
+    @staticmethod
+    def do_make_icon_packet() -> tuple[str, int, int, str, int, Compressed]:
+        return make_icon_packet(get_platform_icon_name(sys.platform), "display.png", "server.png", "xpra.png")

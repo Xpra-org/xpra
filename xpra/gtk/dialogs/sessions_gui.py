@@ -23,7 +23,7 @@ from xpra.gtk.dialogs.util import hb_button
 from xpra.net.constants import DEFAULT_PORTS, SocketState
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.objects import typedict
-from xpra.util.system import stop_proc
+from xpra.util.system import stop_proc, get_platform_icon_name
 from xpra.os_util import gi_import, WIN32, getuid, getgid
 from xpra.util.env import IgnoreWarningsContext
 from xpra.log import Logger
@@ -104,18 +104,6 @@ def get_uri(password: str, interface, protocol, name: str, stype: str, domain, h
         if dstr:
             uri += "%s" % dstr
     return uri
-
-
-def get_platform_icon_name(platform: str) -> str:
-    for p, i in {
-        "win32": "win32",
-        "darwin": "osx",
-        "linux": "linux",
-        "freebsd": "freebsd",
-    }.items():
-        if platform.startswith(p):
-            return i
-    return ""
 
 
 class SessionsGUI(Gtk.Window):
