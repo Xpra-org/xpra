@@ -10,7 +10,7 @@ import glob
 import os.path
 from hashlib import sha256
 
-from xpra.os_util import gi_import
+from xpra.exit_codes import ExitCode
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file, use_gui_prompt
 from xpra.util.str_fn import hexstr
@@ -32,6 +32,7 @@ def main(argv: list[str]) -> int:
     with program_context("FIDO2-Register", "Xpra FIDO2 Registration Tool"):
         consume_verbose_argv(argv, "fido2")
         if use_gui_prompt():
+            from xpra.os_util import gi_import
             Gtk = gi_import("Gtk")
             GLib = gi_import("GLib")
 
@@ -40,21 +41,20 @@ def main(argv: list[str]) -> int:
                                            message_type=message_type, buttons=Gtk.ButtonsType.CLOSE,
                                            text="\n".join(msgs))
                 dialog.set_title("Xpra FIDO2 Registration Tool")
-                v = dialog.run()
+                dialog.run()
                 dialog.destroy()
                 # run the main loop long enough to destroy the dialog:
                 GLib.idle_add(Gtk.main_quit)
                 Gtk.main()
-                return v
+                return ExitCode.OK
 
-            def error(*msgs):
+            def error(*msgs: str) -> int:
                 return show_dialog(Gtk.MessageType.ERROR, *msgs)
 
-            def info(*msgs):
+            def info(*msgs: str) -> int:
                 return show_dialog(Gtk.MessageType.INFO, *msgs)
         else:
             print("FIDO2 Registration Tool")
-
             error = info = printmsgs
 
         key_handle_filenames = [os.path.join(d, "fido2-keyhandle.hex") for d in get_user_conf_dirs()]
@@ -66,7 +66,7 @@ def main(argv: list[str]) -> int:
                 error(" found an existing key handle in file '%s':" % p,
                       " skipping FIDO2 registration",
                       " delete this file if you want to register again")
-                return 1
+                return ExitCode.IO_ERROR
         public_key_filenames = []
         for d in get_user_conf_dirs():
             public_key_filenames += glob.glob(os.path.join(d, "fido2*-pub.hex"))
@@ -84,12 +84,12 @@ def main(argv: list[str]) -> int:
             from fido2.ctap1 import Ctap1
         except ImportError as e:
             error("Failed to import fido2 library:", "%s" % e)
-            return 1
+            return ExitCode.COMPONENT_MISSING
 
         devices = list(CtapHidDevice.list_devices())
         if not devices:
             error("No FIDO2 HID device found")
-            return 1
+            return ExitCode.DEVICE_NOT_FOUND
 
         info("Please activate your FIDO2 device now to generate a new key")
 
@@ -102,7 +102,7 @@ def main(argv: list[str]) -> int:
             b = ctap1.register(client_data_hash, app_param)
         except Exception as e:
             error("Failed to register FIDO2 device:", "%s" % (str(e) or type(e)))
-            return 1
+            return ExitCode.AUTHENTICATION_FAILED
 
         assert b[0] == 5
         pubkey = bytes(b[1:66])
@@ -131,8 +131,8 @@ def main(argv: list[str]) -> int:
             "public key saved to file:",
             f"{public_key_filename!r}",
         )
-        return 0
+        return ExitCode.OK
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(int(main(sys.argv)))
