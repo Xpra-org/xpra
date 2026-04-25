@@ -122,7 +122,6 @@ per-file-ignores = """
     xpra/server/source/source_stats.py:E116,E501
     xpra/server/window/compress.py:E501
     xpra/server/mixins/fileprint.py:E241
-    xpra/server/mixins/controlcommands.py:E501,E241
     xpra/platform/gui.py:E241
     xpra/platform/paths.py:E302
     xpra/platform/posix/gui.py:E241

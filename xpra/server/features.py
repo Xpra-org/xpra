@@ -155,7 +155,7 @@ def enforce_server_features() -> None:
         "power": "xpra.server.subsystem.power",
         "suspend": "xpra.server.subsystem.suspend",
         "idle": "xpra.server.subsystem.idle",
-        "control": "xpra.net.control,xpra.server.subsystem.controlcommands",
+        "control": "xpra.net.control",
         "mdns": "xpra.net.mdns,xpra.xpra.server.subsystem.mdns",
         "command": "xpra.server.subsystem.child_command",
         "notification": "xpra.notification,xpra.server.subsystem.notification,xpra.server.source.notification",
