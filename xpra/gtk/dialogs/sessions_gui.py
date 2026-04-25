@@ -40,7 +40,18 @@ except OSError:
     local_host_name = "localhost"
 
 
-def get_session_info(sockpath: str) -> dict[str, str]:
+def pil_image_to_pixbuf(img):
+    from io import BytesIO
+    from xpra.gtk.pixbuf import GdkPixbuf
+    buf = BytesIO()
+    img.convert("RGBA").save(buf, "PNG")
+    loader = GdkPixbuf.PixbufLoader()
+    loader.write(buf.getvalue())
+    loader.close()
+    return loader.get_pixbuf()
+
+
+def get_session_info(sockpath: str) -> dict:
     # the lazy way using a subprocess
     if WIN32:
         socktype = "named-pipe"
@@ -52,13 +63,33 @@ def get_session_info(sockpath: str) -> dict[str, str]:
     log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
     if p.returncode != 0:
         return {}
-    info: dict[str, str] = {}
+    info: dict = {}
     for line in stdout.splitlines():
         parts = line.split("=", 1)
         if len(parts) == 2:
             info[parts[0]] = parts[1]
+    icon = get_session_icon(sockpath, socktype)
+    if icon is not None:
+        info["icon"] = icon
     log("get_sessions_info(%s)=%s", sockpath, info)
     return info
+
+
+def get_session_icon(sockpath: str, socktype: str):
+    cmd = get_nodock_command() + ["icon", "-", f"{socktype}:{sockpath}"]
+    try:
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        blob, _ = p.communicate()
+        log("get_session_icon(%s) returncode(%s)=%s, %i bytes", sockpath, cmd, p.returncode, len(blob or b""))
+        if p.returncode != 0 or not blob:
+            return None
+        from io import BytesIO
+        from PIL import Image
+        return Image.open(BytesIO(blob))
+    except Exception as e:
+        log("get_session_icon(%s)", sockpath, exc_info=True)
+        log.warn("Warning: failed to load session icon for %s: %s", sockpath, e)
+        return None
 
 
 def get_uri(password: str, interface, protocol, name: str, stype: str, domain, host: str, address, port: int, text) -> str:
@@ -260,6 +291,7 @@ class SessionsGUI(Gtk.Window):
                 "display": "display",
                 "session-type": "type",
                 "session-name": "name",
+                "icon": "icon",
             }.items():
                 v = info.get(k)
                 if v is not None:
@@ -305,7 +337,7 @@ class SessionsGUI(Gtk.Window):
             widget.set_margin_end(5)
             return widget
 
-        for i, text in enumerate(("Host", "Display", "Name", "Platform", "Type", "URI", "Connect", "Open in Browser")):
+        for i, text in enumerate(("Host", "Display", "Name", "Icon", "Type", "URI", "Connect", "Open in Browser")):
             grid.attach(l(text), i, 1, 1, 1)
         # group them by uuid
         d = {}
@@ -346,6 +378,7 @@ class SessionsGUI(Gtk.Window):
                 host = hosts[0]
                 title = str(host)
             platform, dtype = None, None
+            session_icon = None
             for rec in recs:
                 td = typedict(rec[-1])
                 if not platform:
@@ -354,18 +387,23 @@ class SessionsGUI(Gtk.Window):
                     dtype = td.strget("type")
                 if not display:
                     display = td.strget("display")
+                if session_icon is None:
+                    session_icon = rec[-1].get("icon")
             if title in ("localhost", "localhost.localdomain", "127.0.0.1", "::1", local_host_name):
                 title = "local"
             host_label = l(title)
             if uuid != title:
                 host_label.set_tooltip_text(uuid)
-            # try to use an icon for the platform:
-            platform_icon_name = get_platform_icon_name(platform)
             pwidget = None
-            if platform_icon_name:
-                pwidget = scaled_image(get_icon_pixbuf("%s.png" % platform_icon_name), 28)
-                if pwidget:
-                    pwidget.set_tooltip_text(platform_icon_name)
+            if session_icon is not None:
+                pwidget = scaled_image(pil_image_to_pixbuf(session_icon), 28)
+            if not pwidget:
+                # try to use an icon for the platform:
+                platform_icon_name = get_platform_icon_name(platform)
+                if platform_icon_name:
+                    pwidget = scaled_image(get_icon_pixbuf("%s.png" % platform_icon_name), 28)
+                    if pwidget:
+                        pwidget.set_tooltip_text(platform_icon_name)
             if not pwidget:
                 pwidget = l(platform)
             w, c, b = self.make_connect_widgets(key, recs, address, port, display)
