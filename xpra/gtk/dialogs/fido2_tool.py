@@ -7,6 +7,7 @@
 import os
 import sys
 import glob
+import time
 import os.path
 from hashlib import sha256
 
@@ -81,7 +82,7 @@ def main(argv: list[str]) -> int:
 
         try:
             from fido2.hid import CtapHidDevice
-            from fido2.ctap1 import Ctap1
+            from fido2.ctap1 import Ctap1, ApduError, APDU
         except ImportError as e:
             error("Failed to import fido2 library:", "%s" % e)
             return ExitCode.COMPONENT_MISSING
@@ -91,18 +92,31 @@ def main(argv: list[str]) -> int:
             error("No FIDO2 HID device found")
             return ExitCode.DEVICE_NOT_FOUND
 
-        info("Please activate your FIDO2 device now to generate a new key")
+        print("Please activate your FIDO2 device now to generate a new key")
+        print("(touch your security key — waiting up to 60 seconds)")
 
         app_param = sha256(APP_ID.encode("utf-8")).digest()
         client_data_hash = os.urandom(32)
 
-        try:
-            ctap1 = Ctap1(devices[0])
-            # RegistrationData layout: [0x05][pubkey 65B][khl 1B][key_handle khl B][cert][sig]
-            b = ctap1.register(client_data_hash, app_param)
-        except Exception as e:
-            error("Failed to register FIDO2 device:", "%s" % (str(e) or type(e)))
-            return ExitCode.AUTHENTICATION_FAILED
+        ctap1 = Ctap1(devices[0])
+        # CTAP1/U2F devices return APDU.USE_NOT_SATISFIED (0x6985) until the
+        # user touches the device — poll until that goes away or we time out.
+        deadline = time.monotonic() + 60
+        b = None
+        while True:
+            try:
+                # RegistrationData layout: [0x05][pubkey 65B][khl 1B][key_handle khl B][cert][sig]
+                b = ctap1.register(client_data_hash, app_param)
+                break
+            except ApduError as e:
+                if e.code == APDU.USE_NOT_SATISFIED and time.monotonic() < deadline:
+                    time.sleep(0.25)
+                    continue
+                error("Failed to register FIDO2 device:", "%s" % (str(e) or type(e)))
+                return ExitCode.AUTHENTICATION_FAILED
+            except Exception as e:
+                error("Failed to register FIDO2 device:", "%s" % (str(e) or type(e)))
+                return ExitCode.AUTHENTICATION_FAILED
 
         assert b[0] == 5
         pubkey = bytes(b[1:66])

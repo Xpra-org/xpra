@@ -5,6 +5,7 @@
 
 import os
 import json
+import time
 import binascii
 import base64
 from hashlib import sha256
@@ -38,7 +39,7 @@ class Handler(AuthenticationHandler):
             return None
         try:
             from fido2.hid import CtapHidDevice
-            from fido2.ctap1 import Ctap1
+            from fido2.ctap1 import Ctap1, ApduError, APDU
         except ImportError as e:
             log.warn("Warning: cannot use fido2 authentication handler")
             log.warn(" %s", e)
@@ -55,24 +56,33 @@ class Handler(AuthenticationHandler):
         challenge_b64 = base64.urlsafe_b64encode(challenge).decode().rstrip("=")
         client_data = {
             "challenge": challenge_b64,
-            "origin":    origin,
-            "typ":       "navigator.id.getAssertion",
+            "origin": origin,
+            "typ": "navigator.id.getAssertion",
         }
         client_data_hash = sha256(json.dumps(client_data, sort_keys=True).encode("utf-8")).digest()
         app_param = sha256(self.app_id.encode("utf-8")).digest()
         log.info("activate your FIDO2 device for authentication")
         log.info(f"prompt: {prompt!r}")
-        for dev in devices:
-            try:
-                ctap1 = Ctap1(dev)
-                # SignatureData is a bytes subclass: [user_presence 1B][counter 4B BE][sig]
-                # that layout is exactly what the server's fido2_check parses
-                response = ctap1.authenticate(client_data_hash, app_param, key_handle)
-                log("fido2 authenticate response: user_presence=%s, counter=%s",
-                    response.user_presence, response.counter)
-                return bytes(response), strtobytes(origin)
-            except Exception as e:
-                log("fido2 authenticate failed on %s: %s", dev, e)
+        # CTAP1/U2F devices return APDU.USE_NOT_SATISFIED until the user
+        # touches the device — poll each one for up to 10 seconds.
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            for dev in devices:
+                try:
+                    ctap1 = Ctap1(dev)
+                    # SignatureData is a bytes subclass: [user_presence 1B][counter 4B BE][sig]
+                    # that layout is exactly what the server's fido2_check parses
+                    response = ctap1.authenticate(client_data_hash, app_param, key_handle)
+                    log("fido2 authenticate response: user_presence=%s, counter=%s",
+                        response.user_presence, response.counter)
+                    return bytes(response), strtobytes(origin)
+                except ApduError as e:
+                    if e.code == APDU.USE_NOT_SATISFIED:
+                        continue
+                    log("fido2 authenticate failed on %s: %s", dev, e)
+                except Exception as e:
+                    log("fido2 authenticate failed on %s: %s", dev, e)
+            time.sleep(0.25)
         log.warn("Warning: fido2 authentication failed on all devices")
         return None
 

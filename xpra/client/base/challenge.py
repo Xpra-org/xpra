@@ -31,7 +31,7 @@ ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
 ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 
 ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
-                                        "uri,file,env,kerberos,gss,u2f,prompt,prompt,prompt,prompt").split(",")
+                                        "uri,file,env,kerberos,gss,fido2,u2f,prompt,prompt,prompt,prompt").split(",")
 
 
 class ChallengeClient(StubClientMixin):
