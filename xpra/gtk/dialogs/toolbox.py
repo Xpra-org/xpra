@@ -16,7 +16,7 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.dialogs.util import hb_button
-from xpra.scripts.main import run_example
+from xpra.gtk.examples.run import run_example
 from xpra.platform.paths import get_xpra_command
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.env import IgnoreWarningsContext
