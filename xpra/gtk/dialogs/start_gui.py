@@ -1184,11 +1184,12 @@ def main(options=None) -> int:  # pragma: no cover
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
-    from xpra.gtk.util import init_display_source
+    from xpra.gtk.util import init_display_source, quit_on_signals, gtk_main
     with program_context("xpra-start-gui", "Xpra Start GUI"):
         enable_color()
         init_display_source(False)
         init()
+        quit_on_signals("start-gui")
         gui = StartSession(options)
         register_os_signals(gui.app_signal)
         ready()
@@ -1197,7 +1198,7 @@ def main(options=None) -> int:  # pragma: no cover
             gui.remote_btn.set_active(True)
         gui.show()
         gui.present()
-        Gtk.main()
+        gtk_main()
         log("do_main() gui.exit_code=%s", gui.exit_code)
         return gui.exit_code
 

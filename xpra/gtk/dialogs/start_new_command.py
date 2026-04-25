@@ -11,6 +11,7 @@ from collections.abc import Callable
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.util.glib import register_os_signals
 from xpra.util.objects import typedict
 from xpra.util.config import parse_user_config_file, update_config_attribute
@@ -175,7 +176,7 @@ class StartNewCommand:
 
     def run(self) -> ExitValue:
         log("run()")
-        Gtk.main()
+        gtk_main()
         log("run() Gtk.main done")
         return 0
 
@@ -210,6 +211,8 @@ def main() -> int:  # pragma: no cover
     with program_context("Start-New-Command", "Start New Command"):
         if "-v" in sys.argv:
             enable_debug_for("util")
+
+        quit_on_signals("start-new-command")
 
         app = StartNewCommand()
         app.hide = app.quit

@@ -10,6 +10,7 @@ from typing import Any
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.widget import label, setfont
+from xpra.gtk.util import gtk_main
 from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
@@ -154,7 +155,7 @@ class DebugConfig:
     @staticmethod
     def run() -> ExitValue:
         log("run()")
-        Gtk.main()
+        gtk_main()
         log("run() Gtk.main done")
         return 0
 

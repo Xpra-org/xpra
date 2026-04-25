@@ -21,6 +21,7 @@ from xpra.util.stats import std_unit, std_unit_dec
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.platform.gui import set_window_progress
 from xpra.platform.paths import get_download_dir
 from xpra.log import Logger
@@ -346,7 +347,7 @@ class OpenRequestsWindow:
 
     def run(self) -> ExitValue:
         log("run()")
-        Gtk.main()
+        gtk_main()
         log("run() Gtk.main done")
         return 0
 
@@ -364,6 +365,7 @@ def main() -> int:  # pragma: no cover
         if "-v" in sys.argv:
             from xpra.log import enable_debug_for
             enable_debug_for("util")
+        quit_on_signals("start-new-command")
 
         app = OpenRequestsWindow()
 

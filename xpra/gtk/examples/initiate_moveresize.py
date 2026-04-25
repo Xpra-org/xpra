@@ -111,14 +111,14 @@ def make_window() -> Gtk.Window:
 
 
 def main(argv: list[str]) -> int:
-    from xpra.gtk.util import quit_on_signals
     with program_context("initiate-moveresize", "Initiate Move-Resize"):
         consume_verbose_argv(argv, "all")
         w = make_window()
         w.show_all()
         add_close_accel(w, Gtk.main_quit)
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("move resize test window")
-        Gtk.main()
+        gtk_main()
         return 0
 
 

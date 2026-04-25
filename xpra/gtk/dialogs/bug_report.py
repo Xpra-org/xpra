@@ -11,7 +11,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noop
-from xpra.gtk.util import get_default_root_window
+from xpra.gtk.util import get_default_root_window, gtk_main
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.info import get_display_info
 from xpra.gtk.widget import scaled_image, label, choose_file
@@ -295,7 +295,7 @@ class BugReport:
     @staticmethod
     def run() -> ExitValue:
         log("run()")
-        Gtk.main()
+        gtk_main()
         log("run() Gtk.main done")
         return 0
 

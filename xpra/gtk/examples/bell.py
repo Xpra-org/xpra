@@ -39,7 +39,7 @@ class BellWindow(Gtk.Window):
 
 
 def main(argv: list[str]) -> int:
-    from xpra.gtk.util import quit_on_signals, init_display_source
+    from xpra.gtk.util import quit_on_signals, init_display_source, gtk_main
     with program_context("bell", "Bell"):
         consume_verbose_argv(argv, "all")
         init_display_source()
@@ -47,7 +47,7 @@ def main(argv: list[str]) -> int:
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)
         quit_on_signals("bell test window")
-        Gtk.main()
+        gtk_main()
         return 0
 
 

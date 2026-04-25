@@ -52,10 +52,10 @@ def main(argv: list[str]) -> int:
             w.present()
 
         add_close_accel(w, Gtk.main_quit)
-        from xpra.gtk.util import quit_on_signals
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("window opacity test window")
         GLib.idle_add(show_with_focus)
-        Gtk.main()
+        gtk_main()
         return 0
 
 

@@ -9,6 +9,7 @@ import sys
 from xpra.exit_codes import ExitCode
 from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.window import add_close_accel
+from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.os_util import gi_import
 from xpra.log import Logger
 from xpra.util.env import envbool
@@ -183,10 +184,11 @@ def main(args: list[str]) -> int:
     except (ValueError, IndexError):
         lifetime = 30
 
+    quit_on_signals("otp")
     win = OTPDialog(otp=otp, lifetime=lifetime)
     win.set_position(Gtk.WindowPosition.CENTER)
     win.show_all()
-    Gtk.main()
+    gtk_main()
     return ExitCode.OK
 
 

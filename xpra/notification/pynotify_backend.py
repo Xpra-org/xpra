@@ -53,6 +53,7 @@ class PyNotifyNotifier(NotifierBase):
 
 def main(args):
     from xpra.os_util import gi_import
+    from xpra.gtk.util import gtk_main
     Gtk = gi_import("Gtk")
     GLib = gi_import("GLib")
     summary = "Summary"
@@ -72,7 +73,7 @@ def main(args):
 
     GLib.idle_add(show)
     GLib.timeout_add(20000, Gtk.main_quit)
-    Gtk.main()
+    gtk_main()
 
 
 if __name__ == "__main__":

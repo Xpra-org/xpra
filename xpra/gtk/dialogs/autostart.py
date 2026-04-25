@@ -10,6 +10,7 @@ import signal
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
 from xpra.platform.gui import init as gui_init, force_focus
+from xpra.gtk.util import gtk_main
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -118,7 +119,7 @@ class AutostartWindow:
 
     @staticmethod
     def run() -> ExitValue:
-        Gtk.main()
+        gtk_main()
         return 0
 
     def quit(self, *_args) -> None:

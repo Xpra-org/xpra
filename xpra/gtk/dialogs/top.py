@@ -699,10 +699,12 @@ class TopSessionClient(InfoTimerClient):
 
 def main(opts=None) -> None:
     from xpra.gtk.util import init_display_source
+    from xpra.gtk.util import quit_on_signals, gtk_main
     init_display_source()
+    quit_on_signals("top gui")
     w = TopGUI(opts)
     w.show_all()
-    Gtk.main()
+    gtk_main()
 
 
 if __name__ == "__main__":

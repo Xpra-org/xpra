@@ -139,6 +139,15 @@ def close_gtk_display() -> None:
             d.close()
 
 
+def gtk_main():
+    Gtk = gi_import("Gtk")
+    # with Python >= 3.14, gi will spew out warnings we can do nothing about,
+    # the best we can do is to silence them:
+    from xpra.util.env import SilenceWarningsContext
+    with SilenceWarningsContext(DeprecationWarning):
+        return Gtk.main()
+
+
 def main() -> None:
     from xpra.platform import program_context
     from xpra.util.str_fn import print_nested_dict

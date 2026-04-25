@@ -149,6 +149,7 @@ def main() -> None:  # pragma: no cover
             enable_debug_for("tray")
 
         from xpra.util.glib import register_os_signals
+        from xpra.gtk.util import gtk_main
         Gtk = gi_import("Gtk")
         menu = Gtk.Menu()
         item = Gtk.MenuItem(label="Top Menu Item 1")
@@ -169,7 +170,7 @@ def main() -> None:  # pragma: no cover
         a = AppindicatorTray(None, None, menu, "test", icon_filename="xpra.png", exit_cb=Gtk.main_quit)
         a.show()
         register_os_signals(Gtk.main_quit)
-        Gtk.main()
+        gtk_main()
 
 
 if __name__ == "__main__":  # pragma: no cover

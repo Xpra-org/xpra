@@ -173,13 +173,13 @@ def main(argv: list[str]) -> int:
         set_default_icon("keyboard.png")
         init()
 
-        from xpra.gtk.util import quit_on_signals
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("keyboard test window")
 
         init_display_source(False)
         w = KeyboardStateInfoWindow()
         GLib.idle_add(w.show_with_focus)
-        Gtk.main()
+        gtk_main()
     return 0
 
 

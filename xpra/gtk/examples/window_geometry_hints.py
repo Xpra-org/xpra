@@ -176,7 +176,7 @@ def main(argv: list[str]) -> int:
         consume_verbose_argv(argv, "all")
         w = OptionWindow(sys.argv[1:])
         add_close_accel(w, Gtk.main_quit)
-        from xpra.gtk.util import quit_on_signals
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("geometry hints test window")
 
         def show_with_focus() -> None:
@@ -186,7 +186,7 @@ def main(argv: list[str]) -> int:
             w.present()
 
         GLib.idle_add(show_with_focus)
-        Gtk.main()
+        gtk_main()
 
 
 if __name__ == "__main__":

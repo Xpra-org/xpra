@@ -88,14 +88,14 @@ class TestForm:
 
 
 def main(argv: list[str]) -> int:
-    from xpra.gtk.util import quit_on_signals
     with program_context("clicks", "Clicks"):
         consume_verbose_argv(argv, "all")
         w = TestForm()
         add_close_accel(w.window, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("clicks test window")
-        Gtk.main()
+        gtk_main()
         return 0
 
 

@@ -209,11 +209,12 @@ def test_gl_client_window(gl_client_window_class: Callable,
             def window_close_event(*_args) -> None:
                 Gtk.main_quit()
 
+            from xpra.gtk.util import gtk_main
             from xpra.gtk.window import add_close_accel
             add_close_accel(window, window_close_event)
             noclient.window_close_event = window_close_event
             GLib.timeout_add(REPAINT_DELAY, draw)
-            Gtk.main()
+            gtk_main()
         else:
             draw()
             # ugly workaround for calling the paint handler

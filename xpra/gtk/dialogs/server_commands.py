@@ -17,6 +17,7 @@ from xpra.util.objects import typedict, AdHocStruct
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
+from xpra.gtk.util import gtk_main
 from xpra.log import Logger, enable_debug_for
 from xpra.util.thread import check_main_thread
 
@@ -208,7 +209,7 @@ class ServerCommandsWindow:
 
     def run(self) -> ExitValue:
         log("run()")
-        Gtk.main()
+        gtk_main()
         log("run() Gtk.main done")
         return 0
 

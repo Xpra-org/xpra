@@ -19,8 +19,9 @@ from xpra.scripts.main import SPLASH_EXIT_DELAY
 from xpra.gtk.widget import label
 from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.util.glib import install_signal_handlers, uninstall_signal_handlers
+from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.gtk.css_overrides import inject_css_overrides
+from xpra.util.glib import install_signal_handlers, uninstall_signal_handlers
 from xpra.platform.gui import force_focus, set_window_progress
 from xpra.log import Logger
 
@@ -216,7 +217,7 @@ class SplashScreen(Gtk.Window):
             from xpra.os_util import crash
             GLib.timeout_add(scrash, crash)
         self.start_time = monotonic()
-        Gtk.main()
+        gtk_main()
         return self.exit_code or 0
 
     def _focus_change(self, *args) -> None:
@@ -376,6 +377,7 @@ def main(args: list[str]) -> ExitValue:
     from xpra.platform import program_context
     with program_context("splash", "Splash"):
         Gtk.Window.set_auto_startup_notification(setting=False)
+        quit_on_signals("splash")
         w = SplashScreen(title, icon)
         from xpra.gtk.window import add_close_accel
         add_close_accel(w, Gtk.main_quit)

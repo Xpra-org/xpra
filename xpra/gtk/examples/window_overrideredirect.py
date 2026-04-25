@@ -37,7 +37,7 @@ def main(argv: list[str]) -> int:
     with program_context("window-overrideredirect", "Window Override Redirect"):
         consume_verbose_argv(argv, "all")
         w = make_win()
-        from xpra.gtk.util import quit_on_signals
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("override-redirect test window")
         add_close_accel(w, Gtk.main_quit)
 
@@ -47,7 +47,7 @@ def main(argv: list[str]) -> int:
             w.present()
 
         GLib.idle_add(show_with_focus)
-        Gtk.main()
+        gtk_main()
         return 0
 
 

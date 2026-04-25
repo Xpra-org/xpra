@@ -11,7 +11,6 @@ from xpra.dbus.notifications import validated_hints
 from xpra.notification.common import IconData, decompress_image_data
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer
-from xpra.os_util import gi_import
 from xpra.dbus.helper import native_to_dbus, dbus_to_native
 from xpra.notification.base import NotifierBase, log, NID
 import dbus
@@ -236,6 +235,8 @@ def DBUS_Notifier_factory(*args) -> DBUSNotifier | None:
 
 def main():
     # pylint: disable=import-outside-toplevel
+    from xpra.gtk.util import gtk_main
+    from xpra.os_util import gi_import
     Gtk = gi_import("Gtk")
     GLib = gi_import("GLib")
 
@@ -250,7 +251,7 @@ def main():
 
     GLib.idle_add(show)
     GLib.timeout_add(20000, Gtk.main_quit)
-    Gtk.main()
+    gtk_main()
 
 
 if __name__ == "__main__":

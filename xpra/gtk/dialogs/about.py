@@ -93,10 +93,11 @@ def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
+    from xpra.gtk.util import gtk_main
     with program_context("About"):
         gui_init()
     about(on_close=Gtk.main_quit)
-    Gtk.main()
+    gtk_main()
     return 0
 
 

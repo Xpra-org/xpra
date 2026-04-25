@@ -27,6 +27,7 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.graph import make_graph_imagesurface
 from xpra.gtk.widget import imagebutton, title_box, slabel, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.util import gtk_main
 from xpra.log import Logger
 
 log = Logger("info")
@@ -1437,7 +1438,7 @@ class SessionInfoClient(InfoTimerClient):
         self.window = None
 
     def run_loop(self) -> None:
-        Gtk.main()
+        gtk_main()
 
     def exit_loop(self) -> None:
         Gtk.main_quit()

@@ -88,6 +88,7 @@ def do_main(opts: XpraConfig) -> ExitValue:
     from xpra.platform import program_context, command_error
     from xpra.log import enable_color
     from xpra.platform.gui import init, set_default_icon
+    from xpra.gtk.util import gtk_main
     with program_context("xpra-session-browser", "Xpra Session Browser"):
         enable_color()
 
@@ -102,7 +103,7 @@ def do_main(opts: XpraConfig) -> ExitValue:
             gui = mdns_sessions(opts)
         else:
             gui = SessionsGUI(opts)
-        Gtk.main()
+        gtk_main()
         return gui.exit_code
 
 

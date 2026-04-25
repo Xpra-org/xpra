@@ -35,6 +35,7 @@ def main(argv: list[str]) -> int:
         consume_verbose_argv(argv, "fido2")
         if use_gui_prompt():
             from xpra.os_util import gi_import
+            from xpra.gtk.util import gtk_main
             Gtk = gi_import("Gtk")
             GLib = gi_import("GLib")
 
@@ -47,7 +48,7 @@ def main(argv: list[str]) -> int:
                 dialog.destroy()
                 # run the main loop long enough to destroy the dialog:
                 GLib.idle_add(Gtk.main_quit)
-                Gtk.main()
+                gtk_main()
                 return ExitCode.OK
 
             def error(*msgs: str) -> int:

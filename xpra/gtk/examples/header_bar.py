@@ -57,13 +57,13 @@ class HeaderBarWindow(Gtk.Window):
 def main(argv: list[str]) -> int:
     with program_context("header-bar", "Header Bar"):
         consume_verbose_argv(argv, "all")
-        from xpra.gtk.util import quit_on_signals
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("header bar test window")
         w = HeaderBarWindow()
         w.connect("delete-event", Gtk.main_quit)
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)
-        Gtk.main()
+        gtk_main()
 
 
 if __name__ == "__main__":

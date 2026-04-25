@@ -8,7 +8,6 @@ import sys
 import glob
 import os.path
 
-from xpra.os_util import gi_import
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file, use_gui_prompt
 from xpra.util.str_fn import hexstr
@@ -30,8 +29,12 @@ def main(argv: list[str]) -> int:
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
         consume_verbose_argv(argv, "u2f")
         if use_gui_prompt():
+            from xpra.os_util import gi_import
+            from xpra.gtk.util import quit_on_signals, gtk_main
             Gtk = gi_import("Gtk")
             GLib = gi_import("GLib")
+
+            quit_on_signals("U2F Tool")
 
             def show_dialog(message_type: Gtk.MessageType, *msgs: str):
                 dialog = Gtk.MessageDialog(transient_for=None, flags=0,
@@ -42,7 +45,7 @@ def main(argv: list[str]) -> int:
                 dialog.destroy()
                 # run the main loop long enough to destroy the dialog:
                 GLib.idle_add(Gtk.main_quit)
-                Gtk.main()
+                gtk_main()
                 return v
 
             def error(*msgs):

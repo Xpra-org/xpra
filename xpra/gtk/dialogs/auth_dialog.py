@@ -8,6 +8,7 @@ import sys
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.util import gtk_main
 from xpra.util.glib import register_os_signals
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -128,7 +129,7 @@ def main(argv: list[str]) -> int:
         else:
             timeout = 600
         w = AuthDialog(info=info, timeout=timeout)
-        Gtk.main()
+        gtk_main()
         return w.exit_code
 
 

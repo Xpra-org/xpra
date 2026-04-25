@@ -168,6 +168,7 @@ def main(_options=None):  # pragma: no cover
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
+    from xpra.gtk.util import gtk_main
     with program_context("xpra-start-gui", "Xpra Start GUI"):
         enable_color()
         init()
@@ -176,7 +177,7 @@ def main(_options=None):  # pragma: no cover
         ready()
         gui.show()
         gui.present()
-        Gtk.main()
+        gtk_main()
         log("do_main() gui.exit_code=%s", gui.exit_code)
         return gui.exit_code
 

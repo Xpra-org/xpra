@@ -16,8 +16,9 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.util.glib import install_signal_handlers
+from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.gtk.css_overrides import inject_css_overrides
+from xpra.util.glib import install_signal_handlers
 from xpra.client.base.client import XpraClientBase
 from xpra.client.base.command import InfoXpraClient
 from xpra.platform.gui import force_focus
@@ -108,7 +109,7 @@ class QRCodeClient(InfoXpraClient):
     def run(self) -> ExitValue:
         # override so we can use a GTK main loop instead
         XpraClientBase.run(self)
-        Gtk.main()
+        gtk_main()
         return self.exit_code
 
 
@@ -148,7 +149,7 @@ class QRCodeWindow(Gtk.Window):
         force_focus()
         self.present()
         if Gtk.main_level() == 0:
-            Gtk.main()
+            gtk_main()
         return self.exit_code or 0
 
     def exit(self, *args):
@@ -165,6 +166,7 @@ def do_main(opts):
     from xpra.platform import program_context
     with program_context("qrcode", "QRCode"):
         Gtk.Window.set_auto_startup_notification(setting=False)
+        quit_on_signals("qrcode")
         c = QRCodeClient(opts)
         # add_close_accel(w, Gtk.main_quit)
         return c.run()

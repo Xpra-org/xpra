@@ -255,12 +255,12 @@ def main(argv: list[str]) -> int:
         set_default_icon("clipboard.png")
         init()
 
-        from xpra.gtk.util import quit_on_signals
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("clipboard test window")
 
         w = ClipboardStateInfoWindow()
         GLib.idle_add(w.show_with_focus)
-        Gtk.main()
+        gtk_main()
         return 0
 
 

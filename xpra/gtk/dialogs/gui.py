@@ -144,6 +144,7 @@ def main(argv):  # pragma: no cover
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
     from xpra.util.glib import register_os_signals
+    from xpra.gtk.util import gtk_main
     with program_context("xpra-gui", "Xpra GUI"):
         enable_color()
         init()
@@ -155,7 +156,7 @@ def main(argv):  # pragma: no cover
             wait_for_open_handlers(gui.show, gui.open_file, gui.open_url)
         else:
             gui.show()
-        Gtk.main()
+        gtk_main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return 0
 

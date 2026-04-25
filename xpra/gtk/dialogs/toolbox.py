@@ -178,11 +178,14 @@ def main(args) -> int:
         set_default_icon("toolbox.png")
         init()
 
+        from xpra.gtk.util import quit_on_signals, gtk_main
+        quit_on_signals("toolbox")
+
         gui = ToolboxGUI()
         register_os_signals(gui.app_signal, TITLE)
         ready()
         gui.show()
-        Gtk.main()
+        gtk_main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return gui.exit_code
 

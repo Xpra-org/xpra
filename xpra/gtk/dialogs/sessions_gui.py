@@ -528,11 +528,13 @@ class SessionsGUI(Gtk.Window):
 def do_main(opts) -> ExitValue:
     from xpra.platform import program_context
     from xpra.log import enable_color
+    from xpra.gtk.util import quit_on_signals, gtk_main
     with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
         enable_color()
+        quit_on_signals("session-browser")
         gui = SessionsGUI(opts)
         register_os_signals(gui.app_signal)
-        Gtk.main()
+        gtk_main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return gui.exit_code
 

@@ -384,10 +384,11 @@ def main() -> None:
         print("quitting")
         Gtk.main_quit()
 
+    from xpra.gtk.util import gtk_main
     notifier = GTKNotifier(timeout=6)
     GLib.timeout_add(4000, notify_factory)
     GLib.timeout_add(30000, gtk_main_quit)
-    Gtk.main()
+    gtk_main()
 
 
 if __name__ == "__main__":

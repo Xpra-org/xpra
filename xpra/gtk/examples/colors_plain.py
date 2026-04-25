@@ -72,14 +72,14 @@ class ColorPlainWindow(Gtk.Window):
 
 
 def main(argv: list[str]) -> int:
-    from xpra.gtk.util import quit_on_signals
     with program_context("colors-plain", "Colors Plain"):
         consume_verbose_argv(argv, "all")
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("colors test window")
         w = ColorPlainWindow()
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)
-        Gtk.main()
+        gtk_main()
         return 0
 
 

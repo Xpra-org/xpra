@@ -32,6 +32,7 @@ from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.env import IgnoreWarningsContext
 from xpra.net.constants import DEFAULT_PORT
 from xpra.util.thread import start_thread
+from xpra.gtk.util import gtk_main
 from xpra.gtk.dialogs.about import about
 from xpra.gtk.dialogs.util import hb_button
 from xpra.scripts.common import bypass_no_gtk
@@ -577,7 +578,7 @@ class ApplicationWindow:
         self.connect_btn.grab_focus()
 
     def run(self) -> ExitValue:
-        Gtk.main()
+        gtk_main()
         return self.exit_code or 0
 
     def mode_changed(self, *_args) -> None:
@@ -1158,7 +1159,7 @@ def exception_dialog(title: str) -> None:
 
     md.connect("response", close_dialog)
     md.connect("close", close_dialog)
-    Gtk.main()
+    gtk_main()
 
 
 def main(argv: list[str]) -> int:

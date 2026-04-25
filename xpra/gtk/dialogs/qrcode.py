@@ -6,6 +6,7 @@
 from xpra.os_util import gi_import
 from xpra.net.qrcode import qrencode
 from xpra.gtk.window import add_close_accel
+from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.log import Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
@@ -47,7 +48,7 @@ def show_qr(uri: str, width: int = 640, height: int = 640):
             Gtk.main_quit()
 
         window.connect("delete-event", gtk_quit)
-        Gtk.main()
+        gtk_main()
 
 
 def qr_pixbuf(uri: str, width: int = 640, height: int = 640):
@@ -71,6 +72,7 @@ def qr_pixbuf(uri: str, width: int = 640, height: int = 640):
 
 def main(args: list[str]) -> int:
     consume_verbose_argv(args, "menu")
+    quit_on_signals("show-qr")
     uri = sys.argv[1]
     show_qr(uri)
     return 0

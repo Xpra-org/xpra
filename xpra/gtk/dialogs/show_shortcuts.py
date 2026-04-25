@@ -11,7 +11,7 @@ from xpra.util.str_fn import sorted_nicely
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.util import quit_on_signals
+from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.log import Logger
 
@@ -137,7 +137,7 @@ def main(_args):
         add_close_accel(w, Gtk.main_quit)
         force_focus()
         w.show_all()
-        Gtk.main()
+        gtk_main()
 
 
 if __name__ == "__main__":  # pragma: no cover

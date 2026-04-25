@@ -6,7 +6,7 @@
 from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk.util import GRAB_STATUS_STRING, quit_on_signals
+from xpra.gtk.util import GRAB_STATUS_STRING
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -126,9 +126,10 @@ def main(argv: list[str]) -> int:
             w.present()
 
         add_close_accel(w, Gtk.main_quit)
+        from xpra.gtk.util import quit_on_signals, gtk_main
         quit_on_signals("grabs test window")
         GLib.idle_add(show_with_focus)
-        Gtk.main()
+        gtk_main()
         return 0
 
 
