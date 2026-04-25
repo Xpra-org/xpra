@@ -7,7 +7,7 @@ import os
 
 from xpra.log import Logger
 
-log = Logger("win32", "autostart")
+log = Logger("win32", "util")
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 VALUE_NAME = "Xpra"
