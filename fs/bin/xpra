@@ -4,7 +4,7 @@ import sys
 
 try:
     import xpra
-    assert xpra, "xpra package not found!"
+    assert xpra
 except ImportError as e:
     stderr = sys.stderr
     if stderr:
@@ -18,4 +18,4 @@ set_default_name("Xpra")
 init()
 
 from xpra.scripts.main import main
-sys.exit(main(sys.argv))
+sys.exit(main(sys.argv[0], sys.argv))

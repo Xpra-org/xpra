@@ -199,11 +199,7 @@ def get_logger() -> Logger:
     return Logger("util")
 
 
-def main(cmdline: list[str]) -> int:
-    return int(do_main(cmdline[0], cmdline))
-
-
-def do_main(script_file: str, cmdline: list[str]) -> ExitValue:
+def main(script_file: str, cmdline: list[str]) -> ExitValue:
     save_env()
     ml = envint("XPRA_MEM_USAGE_LOGGER")
     if ml > 0:
@@ -3160,7 +3156,7 @@ def run_sbom(args: list[str]) -> ExitValue:
 
 
 if __name__ == "__main__":  # pragma: no cover
-    code = do_main("xpra.exe", sys.argv)
+    code = main("xpra.exe", sys.argv)
     if not code:
         code = 0
     sys.exit(code)
