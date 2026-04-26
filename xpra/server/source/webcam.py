@@ -261,10 +261,7 @@ class WebcamConnection(StubClientConnection):
             self.send_webcam_stop(device_id, "not started")
             return False
         # client_mode: forward the compressed packet directly, no decode/re-encode
-        if isinstance(webcam, WebcamClientForwarder):
-            webcam.forward(frame_no, encoding, w, h, data, options)
-            ack()
-            return True
+        forward = isinstance(webcam, WebcamClientForwarder)
         free = noop
         try:
             if encoding == "mmap":
@@ -279,6 +276,11 @@ class WebcamConnection(StubClientConnection):
                 from xpra.codecs.pillow.decoder import open_only
                 if encoding not in self.webcam_encodings:
                     raise ValueError(f"invalid encoding specified: {encoding} (must be one of {self.webcam_encodings})")
+                if forward:
+                    # shortcut: just forward the compressed data:
+                    webcam.forward(frame_no, encoding, w, h, data, options)
+                    ack()
+                    return True
                 img = open_only(data, (encoding,))
                 if img.mode != "RGBA":
                     img = img.convert("RGBA")
@@ -287,6 +289,14 @@ class WebcamConnection(StubClientConnection):
 
             from xpra.codecs.image import ImageWrapper
             bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w * 4, planes=ImageWrapper.PACKED)
+            if forward:
+                # re-compress because the webcam-client doesn't set up mmap:
+                from xpra.codecs.image import to_pil_encoding
+                data = to_pil_encoding(bgrx_image, "webp")
+                webcam.forward(frame_no, encoding, w, h, data, options)
+                ack()
+                return True
+
             src_format = webcam.get_src_format()
             if not src_format:
                 log("no webcam src format")

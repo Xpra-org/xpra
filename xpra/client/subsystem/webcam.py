@@ -10,7 +10,6 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
-from xpra.codecs.image import ImageWrapper
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -28,36 +27,6 @@ log = Logger("webcam")
 
 WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
 PIL_FORMATS = ("RGB", "RGBX", "RGBA", "BGRX")
-
-
-def save_to_buffer(image: ImageWrapper, encoding: str) -> bytes:
-    # Encode via Pillow.
-    # webcam_csc guarantees pixel_format is one of PIL_FORMATS.
-    pixel_format = image.get_pixel_format()
-    w = image.get_width()
-    h = image.get_height()
-    pixels = image.get_pixels()
-    if not isinstance(pixels, bytes):
-        pixels = bytes(pixels)
-    from PIL import Image
-    from io import BytesIO
-    if pixel_format == "RGB":
-        pil_image = Image.frombytes("RGB", (w, h), pixels)
-    elif pixel_format in ("RGBX", "RGBA"):
-        pil_image = Image.frombytes("RGBA", (w, h), pixels).convert("RGB")
-    elif pixel_format == "BGRX":
-        # Pillow can decode BGRX natively via the raw decoder (mode="RGB", rawmode="BGRX")
-        pil_image = Image.frombuffer("RGB", (w, h), pixels, "raw", "BGRX", 0, 1)
-    else:
-        raise ValueError(f"unsupported pixel format for Pillow encoding: {pixel_format!r}")
-    start = monotonic()
-    buf = BytesIO()
-    pil_image.save(buf, format=encoding)
-    data = buf.getvalue()
-    buf.close()
-    end = monotonic()
-    log("webcam frame compression to %s took %ims", encoding, (end - start) * 1000)
-    return data
 
 
 def is_available() -> bool:
@@ -345,7 +314,11 @@ class WebcamForwarder(StubClientMixin):
                 img_data = b""
                 options["chunks"] = mmap_data
             else:
-                data = save_to_buffer(image, encoding)
+                from xpra.codecs.image import to_pil_encoding
+                start = monotonic()
+                data = to_pil_encoding(image, encoding)
+                end = monotonic()
+                log("webcam frame compression to %s took %ims", encoding, (end - start) * 1000)
                 img_data = compression.Compressed(encoding, data)
 
             frame_no = self.webcam_frame_no

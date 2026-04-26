@@ -269,3 +269,40 @@ class ImageWrapper:
             self.planes = PlanarFormat.INVALID
             self.pixels = ()
             self.pixel_format = ""
+
+
+def to_pil_image(image: ImageWrapper):
+    pixel_format = image.get_pixel_format()
+    w = image.get_width()
+    h = image.get_height()
+    pixels = image.get_pixels()
+    from PIL import Image
+    from PIL import __version__ as pil_version
+    # older versions of PIL cannot use the memoryview directly:
+    try:
+        major = int(pil_version.split(".")[0])
+    except ValueError:
+        major = 0
+    if not isinstance(pixels, (bytes, memoryview)) or major < 10:
+        pixels = memoryview_to_bytes(pixels)
+    if pixel_format == "RGB":
+        return Image.frombuffer("RGB", (w, h), pixels)
+    elif pixel_format in ("RGBX", "RGBA"):
+        return Image.frombuffer("RGBA", (w, h), pixels)
+    elif pixel_format == "BGRX":
+        return Image.frombuffer("RGB", (w, h), pixels, "raw", "BGRX", 0, 1)
+    else:
+        raise ValueError(f"unsupported pixel format for Pillow encoding: {pixel_format!r}")
+
+
+def to_pil_encoding(image: ImageWrapper, encoding: str, strip_alpha=True) -> bytes:
+    # Encode via Pillow.
+    pil_image = to_pil_image(image)
+    if strip_alpha and pil_image.mode.find("A") > 0:
+        pil_image = pil_image.convert("RGB")
+    from io import BytesIO
+    buf = BytesIO()
+    pil_image.save(buf, format=encoding)
+    data = buf.getvalue()
+    buf.close()
+    return data
