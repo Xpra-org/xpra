@@ -210,11 +210,5 @@ def get_client_connection_class(caps: typedict):
             for bc in CC_BASES:
                 log("%s.parse_client_caps(..)", bc)
                 bc.parse_client_caps(self, c)
-            if self.client_proxy:
-                from xpra.util.version import version_compat_check
-                msg = version_compat_check(self.proxy_version)
-                if msg:
-                    proxylog = Logger("proxy")
-                    proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
 
     return ClientConnectionMuxer

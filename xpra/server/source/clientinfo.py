@@ -104,6 +104,12 @@ class ClientInfoConnection(StubClientConnection):
         cinfo = self.get_connect_info()
         for i, ci in enumerate(cinfo):
             log.info("%s%s", ["", " "][int(i > 0)], ci)
+        if self.client_proxy:
+            from xpra.util.version import version_compat_check
+            msg = version_compat_check(self.proxy_version)
+            if msg:
+                proxylog = Logger("proxy")
+                proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
 
     def get_connect_info(self) -> list[str]:
         # client platform / version info:
