@@ -29,7 +29,7 @@ if SAVE_BUFFERS not in ("png", "jpeg", ""):
     SAVE_BUFFERS = ""
 pillow_major = 0
 if SAVE_BUFFERS:
-    from PIL import Image, ImageOps, __version__ as pil_version
+    from PIL import ImageOps, __version__ as pil_version
     try:
         pillow_major = int(pil_version.split(".")[0])
     except ValueError:
@@ -126,11 +126,8 @@ def save_fbo(wid: int, fbo, texture, width: int, height: int, alpha=False, prefi
     size = width * height * 4
     membuf = get_membuf(size)
     GL.glGetTexImage(target, 0, GL.GL_BGRA, GL.GL_UNSIGNED_BYTE, membuf.get_mem_ptr())
-    if pillow_major < 10:
-        pixels = memoryview(membuf)
-    else:
-        pixels = memoryview(membuf).tobytes()
-    img = Image.frombuffer("RGBA", (width, height), pixels, "raw", "BGRA", width * 4)
+    from xpra.codecs.image import to_pil
+    img = to_pil(width, height, memoryview(membuf), "BGRA")
     img = ImageOps.flip(img)
     kwargs = {}
     if alpha or SAVE_BUFFERS == "jpeg":

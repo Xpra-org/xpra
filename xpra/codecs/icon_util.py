@@ -58,14 +58,11 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
     if filename.endswith("xpm"):
         img = None
         try:
+            from xpra.codecs.image import to_png
             from PIL import Image  # pylint: disable=import-outside-toplevel
             img = Image.open(filename)
             img.load()
-            buf = BytesIO()
-            img.save(buf, "PNG")
-            pngicondata = buf.getvalue()
-            buf.close()
-            return pngicondata, "png"
+            return to_png(img), "png"
         except (ValueError, ImportError, KeyError) as e:
             log(f"Image.open({filename}) {e}", exc_info=True)
         except Exception as e:

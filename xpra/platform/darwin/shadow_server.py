@@ -236,19 +236,20 @@ class ShadowServer(GTKShadowServerBase):
 def main() -> None:
     import sys
     from xpra.platform import program_context
+    from xpra.codecs.image import to_pil_encoding
     with program_context("MacOS Shadow Capture"):
         log.enable_debug()
         c = OSXRootCapture()
         x, y, w, h = list(int(sys.argv[x]) for x in range(1, 5))
-        img = c.get_image(x, y, w, h)
-        from PIL import Image
-        i = Image.frombuffer("RGBA", (w, h), img.get_pixels(), "raw", "BGRA", img.get_rowstride())
+        image = c.get_image(x, y, w, h)
+        data = to_pil_encoding(image, "png")
         import time
         t = time.time()
         tstr = time.strftime("%H-%M-%S", time.localtime(t))
         filename = "./Capture-{}-{}.png".format((x, y, w, h), tstr)
-        i.save(filename, "png")
-        print("saved to {}".format(filename))
+        with open(filename, "wb") as f:
+            f.write(data)
+        print(f"saved to {filename!r}")
 
 
 if __name__ == "__main__":

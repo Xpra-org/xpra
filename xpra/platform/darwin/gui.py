@@ -457,17 +457,10 @@ def get_CG_imagewrapper(rect=None):
 
 def take_screenshot() -> tuple[int, int, str, int, bytes]:
     log("grabbing screenshot")
-    from PIL import Image
-    from io import BytesIO
     image = get_CG_imagewrapper()
-    w = image.get_width()
-    h = image.get_height()
-    img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", image.get_pixel_format(), image.get_rowstride())
-    buf = BytesIO()
-    img.save(buf, "PNG")
-    data = buf.getvalue()
-    buf.close()
-    return w, h, "png", image.get_rowstride(), data
+    from xpra.codecs.image import to_pil_encoding
+    data = to_pil_encoding(image, "png")
+    return image.get_width(), image.get_height(), "png", image.get_rowstride(), data
 
 
 def force_focus(duration=2000) -> None:

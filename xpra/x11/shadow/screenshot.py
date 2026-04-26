@@ -4,10 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from io import BytesIO
-
 from xpra.util.objects import AdHocStruct
-from xpra.util.str_fn import memoryview_to_bytes
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -25,21 +22,8 @@ def screenshot(filename: str) -> int:
     w, h = get_root_size()
     image = capture.get_image(0, 0, w, h)
     log(f"snapshot: {capture.get_image}(0, 0, {w}, {h})={image}")
-    from PIL import Image
-    fmt = image.get_pixel_format().replace("X", "A")
-    pixels = memoryview_to_bytes(image.get_pixels())
-    log(f"converting {len(pixels)} bytes in format {fmt} to RGBA")
-    if len(fmt) == 3:
-        target = "RGB"
-    else:
-        target = "RGBA"
-    pil_image = Image.frombuffer(target, (w, h), pixels, "raw", fmt, image.get_rowstride())
-    if target != "RGB":
-        pil_image = pil_image.convert("RGB")
-    buf = BytesIO()
-    pil_image.save(buf, "png")
-    data = buf.getvalue()
-    buf.close()
+    from xpra.codecs.image import to_pil_encoding
+    data = to_pil_encoding(image, "png", True)
     with open(filename, "wb") as f:
         f.write(data)
     return 0

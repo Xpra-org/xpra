@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.compression import Compressed
-from xpra.codecs.image import ImageWrapper
+from xpra.codecs.image import ImageWrapper, to_png
 from xpra.log import Logger
 from xpra.net.packet_type import DISPLAY_SCREENSHOT
 
@@ -20,6 +20,7 @@ def make_screenshot_packet_from_regions(regions: Sequence[tuple[int, int, int, I
     if not regions:
         log("screenshot: no regions found, returning empty 0x0 image!")
         return "screenshot", 0, 0, "png", 0, b""
+    from xpra.codecs.image import to_pil_image
     # in theory, we could run the rest in a non-UI thread since we're done with GTK..
     minx: int = min(x for (_, x, _, _) in regions)
     miny: int = min(y for (_, _, y, _) in regions)
@@ -31,31 +32,15 @@ def make_screenshot_packet_from_regions(regions: Sequence[tuple[int, int, int, I
     from PIL import Image  # pylint: disable=import-outside-toplevel
     screenshot = Image.new("RGBA", (width, height))
     for wid, x, y, img in reversed(regions):
-        pixel_format = img.get_pixel_format()
-        target_format = {
-            "XRGB": "RGB",
-            "BGRX": "RGB",
-            "BGRA": "RGBA",
-        }.get(pixel_format, pixel_format)
-        pixels = img.get_pixels()
-        w = img.get_width()
-        h = img.get_height()
-        # PIL cannot use the memoryview directly:
-        if isinstance(pixels, memoryview):
-            pixels = pixels.tobytes()
         try:
-            window_image = Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, img.get_rowstride())
+            window_image = to_pil_image(img)
         except (ValueError, TypeError):
-            log.error("Error parsing window pixels in %s format for window %i", pixel_format, wid, exc_info=True)
+            log.error("Error parsing window pixels in %s format for window %i", img.get_pixel_format(), wid, exc_info=True)
             continue
         tx = x - minx
         ty = y - miny
         screenshot.paste(window_image, (tx, ty))
-    from io import BytesIO
-    buf = BytesIO()
-    screenshot.save(buf, "png")
-    data = buf.getvalue()
-    buf.close()
+    data = to_png(screenshot)
     compressed = Compressed("png", data)
     packet = (DISPLAY_SCREENSHOT, width, height, "png", width * 4, compressed)
     log("screenshot: %sx%s %s", width, height, compressed)

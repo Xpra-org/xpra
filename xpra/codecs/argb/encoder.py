@@ -119,16 +119,11 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
         bpp = 24
     log("rgb_encode using level=%s for %5i bytes at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s",
         level, size, speed, algo, width, height, coding, pixel_format, len(pixels), len(cwrapper.data))
-    if SAVE_TO_FILE and pixel_format in ("BGRX", "BGRA", ):
+    if SAVE_TO_FILE and pixel_format in ("RGB", "RGBX", "RGBA", "BGRX", "BGRA", ):
+        from xpra.codecs.image import to_pil, to_png
         may_save_image(coding, pixels)
-        from io import BytesIO
-        from PIL import Image
-        img = Image.frombuffer("RGB" if pixel_format == "BGRX" else "BGRA",
-                               (width, height), pixels, "raw", pixel_format, stride)
-        buf = BytesIO()
-        img.save(buf, "png")
-        data = buf.getvalue()
-        may_save_image("png", data)
+        img = to_pil(width, height, pixels, pixel_format)
+        may_save_image("png", to_png(img))
 
     # wrap it using "Compressed" so the network layer receiving it
     # won't decompress it (leave it to the client's draw thread)

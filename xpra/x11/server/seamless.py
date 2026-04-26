@@ -1208,7 +1208,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         return Packet(*make_screenshot_packet_from_regions(OR_regions + regions))
 
     def do_make_icon_packet(self) -> tuple[str, int, int, str, int, Compressed]:
-        from io import BytesIO
         from PIL import Image
         from xpra.util.str_fn import memoryview_to_bytes
         from xpra.net.packet_type import DISPLAY_ICON
@@ -1257,10 +1256,8 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 y = offset * stack_pos + (tile - fh) // 2
                 canvas.paste(fitted, (x, y), fitted)
 
-        buf = BytesIO()
-        canvas.save(buf, "PNG")
-        data = buf.getvalue()
-        buf.close()
+        from xpra.codecs.image import to_png
+        data = to_png(canvas)
         return DISPLAY_ICON, SIZE, SIZE, "png", SIZE * 4, Compressed("png", data)
 
     def make_dbus_server(self):

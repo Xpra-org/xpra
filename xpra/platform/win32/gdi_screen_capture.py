@@ -9,9 +9,7 @@ from ctypes import (
     get_last_error, windll,  # @UnresolvedImport
     Structure, byref, c_ubyte, c_char,
 )
-from io import BytesIO
 from typing import Any
-from PIL import Image
 
 from xpra.log import Logger, consume_verbose_argv
 from xpra.common import roundup
@@ -250,13 +248,9 @@ class GDICapture:
         if not image:
             return None
         assert image.get_width() == w and image.get_height() == h
-        assert image.get_pixel_format() == "BGRX"
-        img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", "BGRX", 0, 1)
-        out = BytesIO()
-        img.save(out, format="PNG")
-        screenshot = (img.width, img.height, "png", img.width * 3, out.getvalue())
-        out.close()
-        return screenshot
+        from xpra.codecs.image import to_pil_encoding
+        data = to_pil_encoding(image, "png")
+        return w, h, "png", 0, data
 
 
 def main(argv) -> int:

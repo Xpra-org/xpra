@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from io import BytesIO
 from math import cos, sin
 from typing import Any
 from collections.abc import Callable, Sequence
@@ -110,11 +109,9 @@ def get_test_gl_icon() -> tuple[str, int, int, int, bytes]:
             stride = w * 4
             noalpha = Image.new("RGB", img.size, (255, 255, 255))
             noalpha.paste(img, mask=img.split()[3])  # 3 is the alpha channel
-            buf = BytesIO()
             try:
-                noalpha.save(buf, format="jpeg")
-                data = buf.getvalue()
-                buf.close()
+                from xpra.codecs.image import to_bytesbuffer
+                data = to_bytesbuffer(img, "jpeg")
                 encoding = "jpeg"
             except KeyError as e:
                 log("save()", exc_info=True)

@@ -2599,11 +2599,12 @@ class WindowSource(WindowIconSource):
         ww, wh = self.window_dimensions
         image = self.window.get_image(0, 0, ww, wh)
         rgb_format = image.get_pixel_format()
-        if image and rgb_format in ("BGRX", "BGRA"):
-            from PIL import Image
-            img = Image.frombuffer("RGB", (ww, wh), image.get_pixels(), "raw", rgb_format, 0, 1)
+        if image and rgb_format in ("RGB", "RGBX", "RGBA", "BGRX", "BGRA"):
+            from xpra.codecs.image import to_pil_encoding
+            data = to_pil_encoding(image, "png")
             screenshort_file = os.path.join(self.screen_updates_directory, "screenshot.png")
-            img.save(screenshort_file, format="PNG")
+            with open(screenshort_file, "wb") as f:
+                f.write(data)
 
     def networksend_congestion_event(self, source, late_pct: int, cur_send_speed: int = 0) -> None:
         gs = self.global_statistics

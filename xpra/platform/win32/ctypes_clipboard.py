@@ -470,10 +470,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 img = Image.frombytes(save_format, (w, h), rgb_data, "raw", rgb_format, stride, 1)
                 if header.bV5Height > 0:
                     img = ImageOps.flip(img)
-                buf = BytesIO()
-                img.save(buf, format=save_format)
-                data = buf.getvalue()
-                buf.close()
+                from xpra.codecs.image import to_bytesbuffer
+                data = to_bytesbuffer(img, save_format)
                 got_image(data, True)
                 return True
             finally:

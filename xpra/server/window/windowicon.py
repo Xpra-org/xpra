@@ -9,8 +9,6 @@ from io import BytesIO
 from time import monotonic
 from typing import Any
 
-from xpra.util.thread import check_main_thread
-
 try:
     from PIL import Image
 except ImportError:
@@ -20,7 +18,9 @@ from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.io import load_binary_file
 from xpra.net import compression
 from xpra.net.packet_type import WINDOW_ICON
-from xpra.util.str_fn import csv, memoryview_to_bytes
+from xpra.codecs.image import to_png
+from xpra.util.thread import check_main_thread
+from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
@@ -56,11 +56,7 @@ def do_get_default_window_icon(size: int, name: str):
                     except AttributeError:
                         NEAREST = Image.NEAREST
                     img = img.resize((w, h), NEAREST)
-                from io import BytesIO
-                buf = BytesIO()
-                img.save(buf, "png")
-                data = buf.getvalue()
-                buf.close()
+                data = to_png(img)
                 img.close()
                 return size, size, "png", data
         except (OSError, ValueError, TypeError, ImportError) as e:
@@ -278,7 +274,8 @@ class WindowIconSource:
             if pixel_format == "png":
                 image = Image.open(BytesIO(pixel_data))
             else:
-                image = Image.frombuffer("RGBA", (w, h), memoryview_to_bytes(pixel_data), "raw", pixel_format, 0, 1)
+                from xpra.codecs.image import to_pil
+                image = to_pil(w, h, pixel_data, pixel_format)
             if must_scale:
                 # scale the icon down to the size the client wants
                 # (we should scale + paste to preserve the aspect ratio, meh)
@@ -302,10 +299,7 @@ class WindowIconSource:
 
         if image:
             # image got converted or scaled, get the new pixel data:
-            output = BytesIO()
-            image.save(output, "png")
-            pixel_data = output.getvalue()
-            output.close()
+            pixel_data = to_png(image)
             w, h = image.size
         wrapper = compression.Compressed("png", pixel_data)
         packet = (WINDOW_ICON, self.wid, w, h, wrapper.datatype, wrapper)

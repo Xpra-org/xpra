@@ -37,18 +37,14 @@ STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
 def get_pillow_imagegrab_fn() -> Callable:
     try:
         from PIL import ImageGrab
-        from io import BytesIO
     except ImportError as e:
         log("cannot use Pillow's ImageGrab: %s", e)
         return noop
 
     def pillow_imagegrab() -> ScreenshotData:
         img = ImageGrab.grab()
-        out = BytesIO()
-        img.save(out, format="PNG")
-        pixels = out.getvalue()
-        out.close()
-        return img.width, img.height, "png", img.width * 3, pixels
+        from xpra.codecs.image import to_png
+        return img.width, img.height, "png", img.width * 3, to_png(img)
 
     return pillow_imagegrab
 

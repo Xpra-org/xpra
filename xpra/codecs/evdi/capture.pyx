@@ -313,18 +313,8 @@ cdef class EvdiDevice:
         cdef int rowstride = self.mode.width*4
         if SAVE_TO_FILE:
             try:
-                from PIL import Image
-                from PIL import __version__ as pil_version
-                # older versions of PIL cannot use the memoryview directly:
-                try:
-                    major = int(pil_version.split(".")[0])
-                except ValueError:
-                    major = 0
-                if major < 10:
-                    pixels = memoryview(buf)
-                else:
-                    pixels = memoryview_to_bytes(memoryview(buf))
-                pil_image = Image.frombuffer("RGBA", (self.mode.width, self.mode.height), pixels, "raw", "BGRA", rowstride)
+                from xpra.codecs.image import to_pil, to_bytesbuffer
+                pil_image = to_pil(self.mode.width, self.mode.height, pixels, "BGRA")
                 pil_image = pil_image.convert("RGB")
                 filename = f"{monotonic()}.jpg"
                 pil_image.save(filename, "JPEG")

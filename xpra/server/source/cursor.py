@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from io import BytesIO
 from typing import Any
 from collections.abc import Sequence, Callable
 
@@ -165,11 +164,9 @@ class CursorsConnection(StubClientConnection):
         except ImportError:
             Image = None
         if "png" in self.cursor_encodings and Image:
+            from xpra.codecs.image import to_png
             img = Image.frombytes("RGBA", (w, h), bin_pixels, "raw", "BGRA", w * 4, 1)
-            buf = BytesIO()
-            img.save(buf, "PNG")
-            pngdata = buf.getvalue()
-            buf.close()
+            pngdata = to_png(img)
             cpixels = Compressed("png cursor", pngdata)
             if SAVE_CURSORS:
                 filename = f"raw-cursor-{serial:x}.png"

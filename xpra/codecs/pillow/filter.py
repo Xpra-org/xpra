@@ -136,11 +136,8 @@ class Filter:
         if pixel_format == "BGRX":
             img.putalpha(255)
         if SAVE_TO_FILE:
-            from io import BytesIO
-            buf = BytesIO()
-            img.save(buf, format="png")
-            png_data = buf.getvalue()
-            buf.close()
+            from xpra.codecs.image import to_png
+            png_data = to_png(img)
             may_save_image("png", png_data)
         modified = img.filter(self.transform)
         bgrx = modified.tobytes("raw", "BGRA", 0, 1)

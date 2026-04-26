@@ -316,7 +316,7 @@ class WebcamForwarder(StubClientMixin):
             else:
                 from xpra.codecs.image import to_pil_encoding
                 start = monotonic()
-                data = to_pil_encoding(image, encoding)
+                data = to_pil_encoding(image, encoding, True)
                 end = monotonic()
                 log("webcam frame compression to %s took %ims", encoding, (end - start) * 1000)
                 img_data = compression.Compressed(encoding, data)

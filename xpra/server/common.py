@@ -29,7 +29,7 @@ def may_update_bandwidth_limits(server) -> None:
 
 def make_icon_packet(*names: str) -> tuple[str, int, int, str, int, Compressed]:
     import os
-    from io import BytesIO
+    from xpra.codecs.image import to_png
     from xpra.platform.paths import get_icon_filename
     from xpra.util.io import load_binary_file
     from xpra.codecs.pillow.decoder import open_only
@@ -43,9 +43,6 @@ def make_icon_packet(*names: str) -> tuple[str, int, int, str, int, Compressed]:
             continue
         img = open_only(fdata)
         w, h = img.size
-        buf = BytesIO()
-        img.save(buf, "png")
-        data = buf.getvalue()
-        buf.close()
+        data = to_png(img)
         return DISPLAY_ICON, w, h, "png", w*4, Compressed("png", data)
     raise RuntimeError("failed to locate any icons")

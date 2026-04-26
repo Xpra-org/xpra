@@ -112,12 +112,9 @@ def parse_image_path(path: str) -> IconData | None:
 
 
 def image_data(img) -> IconData:
-    buf = BytesIO()
-    img.save(buf, "png")
-    data = buf.getvalue()
-    buf.close()
+    from xpra.codecs.image import to_png
     w, h = img.size
-    return "png", w, h, data
+    return "png", w, h, to_png(img)
 
 
 def get_notification_icon(icon_string: str) -> IconData | None:
@@ -166,11 +163,8 @@ def get_notification_icon(icon_string: str) -> IconData | None:
             LANCZOS = Image.LANCZOS
         img = img.resize((MAX_SIZE, MAX_SIZE), LANCZOS)
         w = h = MAX_SIZE
-    buf = BytesIO()
-    img.save(buf, "PNG")
-    cpixels = buf.getvalue()
-    buf.close()
-    return "png", w, h, cpixels
+    from xpra.codecs.image import to_png
+    return "png", w, h, to_png(img)
 
 
 def get_gtk_theme_icon(icon_string: str):

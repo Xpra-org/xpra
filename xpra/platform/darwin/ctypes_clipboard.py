@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from io import BytesIO
 from collections.abc import Sequence
 
 from AppKit import (
@@ -205,13 +204,8 @@ class OSXClipboardProxy(ClipboardProxyCore):
             "jpeg": ["public.jpeg", "image/jpeg"],
         }.items():
             try:
-                save_img = img
-                if img_type == "jpeg" and img.mode == "RGBA":
-                    save_img = img.convert("RGB")
-                buf = BytesIO()
-                save_img.save(buf, img_type)
-                data = buf.getvalue()
-                buf.close()
+                from xpra.codecs.image import to_bytesbuffer
+                data = to_bytesbuffer(img, img_type)
                 self.pasteboard.clearContents()
                 nsdata = NSData.dataWithData_(data)
                 for t in macos_types:

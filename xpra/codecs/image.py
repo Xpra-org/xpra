@@ -272,10 +272,14 @@ class ImageWrapper:
 
 
 def to_pil_image(image: ImageWrapper):
-    pixel_format = image.get_pixel_format()
     w = image.get_width()
     h = image.get_height()
     pixels = image.get_pixels()
+    pixel_format = image.get_pixel_format()
+    return to_pil(w, h, pixels, pixel_format)
+
+
+def to_pil(w: int, h: int, pixels, pixel_format: str):
     from PIL import Image
     from PIL import __version__ as pil_version
     # older versions of PIL cannot use the memoryview directly:
@@ -291,18 +295,30 @@ def to_pil_image(image: ImageWrapper):
         return Image.frombuffer("RGBA", (w, h), pixels)
     elif pixel_format == "BGRX":
         return Image.frombuffer("RGB", (w, h), pixels, "raw", "BGRX", 0, 1)
+    elif pixel_format == "BGRA":
+        return Image.frombuffer("RGBA", (w, h), pixels, "raw", "BGRA", 0, 1)
     else:
         raise ValueError(f"unsupported pixel format for Pillow encoding: {pixel_format!r}")
 
 
-def to_pil_encoding(image: ImageWrapper, encoding: str, strip_alpha=True) -> bytes:
+def to_pil_encoding(image: ImageWrapper, encoding: str, strip_alpha=False) -> bytes:
     # Encode via Pillow.
     pil_image = to_pil_image(image)
     if strip_alpha and pil_image.mode.find("A") > 0:
         pil_image = pil_image.convert("RGB")
+    return to_bytesbuffer(pil_image, encoding)
+
+
+def to_bytesbuffer(img, encoding="png") -> bytes:
     from io import BytesIO
     buf = BytesIO()
-    pil_image.save(buf, format=encoding)
+    if encoding == "jpeg" and img.mode == "RGBA":
+        img = img.convert("RGB")
+    img.save(buf, encoding)
     data = buf.getvalue()
     buf.close()
     return data
+
+
+def to_png(img) -> bytes:
+    return to_bytesbuffer(img, "png")

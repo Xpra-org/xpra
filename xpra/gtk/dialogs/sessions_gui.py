@@ -41,12 +41,11 @@ except OSError:
 
 
 def pil_image_to_pixbuf(img):
-    from io import BytesIO
+    from xpra.codecs.image import to_png
     from xpra.gtk.pixbuf import GdkPixbuf
-    buf = BytesIO()
-    img.convert("RGBA").save(buf, "PNG")
+    data = to_png(img.convert("RGBA"))
     loader = GdkPixbuf.PixbufLoader()
-    loader.write(buf.getvalue())
+    loader.write(data)
     loader.close()
     return loader.get_pixbuf()
 
