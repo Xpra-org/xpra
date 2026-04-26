@@ -263,7 +263,7 @@ class WebcamConnection(StubClientConnection):
         # client_mode: forward the compressed packet directly, no decode/re-encode
         if isinstance(webcam, WebcamClientForwarder):
             webcam.forward(frame_no, encoding, w, h, data, options)
-            self.send_webcam_ack(device_id, frame_no)
+            ack()
             return True
         free = noop
         try:
