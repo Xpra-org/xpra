@@ -97,7 +97,7 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
 
     def init_authenticated_packet_handlers(self) -> None:
         super().init_authenticated_packet_handlers()
-        self.add_packets("webcam-frame", "webcam-stop", "startup-complete")
+        self.add_packets("webcam-frame", "webcam-stop", "startup-complete", main_thread=True)
 
     def _process_startup_complete(self, _packet: Packet) -> None:
         log("startup-complete")
@@ -107,7 +107,7 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
 
     def _process_webcam_frame(self, packet) -> None:
         try:
-            encoding = str(packet[3])
+            encoding = packet[3]
             data = packet[6]
             if hasattr(data, "data"):
                 data = data.data
