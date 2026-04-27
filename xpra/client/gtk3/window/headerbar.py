@@ -25,6 +25,43 @@ WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", True)
 WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
+def make_header_bar(title: str, image, show_window_menu=noop, show_xpra_menu=noop) -> None:
+    hb = Gtk.HeaderBar()
+    hb.set_has_subtitle(False)
+    hb.set_show_close_button(True)
+    hb.props.title = title
+    if WINDOW_MENU and show_window_menu != noop:
+        button = Gtk.Button()
+        if image:
+            button.add(image)
+        button.connect("clicked", show_window_menu)
+        hb.pack_start(button)
+    elif WINDOW_ICON and image:
+        # just the icon, no menu:
+        hb.pack_start(image)
+    if WINDOW_XPRA_MENU and show_xpra_menu != noop:
+        # defined in window:
+        icon = Gio.ThemedIcon(name="open-menu-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        button = Gtk.Button()
+        button.add(image)
+        button.connect("clicked", show_xpra_menu)
+        hb.pack_end(button)
+    return hb
+
+
+def get_header_bar_image(size=Gtk.IconSize.BUTTON):
+    if WINDOW_MENU:
+        # the icon 'open-menu-symbolic' will be replaced with the window icon
+        # when we receive it
+        icon = Gio.ThemedIcon(name="preferences-system-windows")
+        return Gtk.Image.new_from_gicon(icon, size)
+    if WINDOW_ICON:
+        pixbuf = get_icon_pixbuf("transparent.png")
+        return scaled_image(pixbuf, size)
+    return None
+
+
 class HeaderBarWindow(GtkStubWindow):
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
@@ -57,35 +94,11 @@ class HeaderBarWindow(GtkStubWindow):
 
     def add_header_bar(self) -> None:
         log("add_header_bar()")
-        hb = Gtk.HeaderBar()
-        hb.set_has_subtitle(False)
-        hb.set_show_close_button(True)
-        hb.props.title = self.get_title()
-        if WINDOW_MENU:
-            # defined in window:
-            show_window_menu = getattr(self, "show_window_menu", noop)
-            # the icon 'open-menu-symbolic' will be replaced with the window icon
-            # when we receive it
-            icon = Gio.ThemedIcon(name="preferences-system-windows")
-            self.header_bar_image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-            button = Gtk.Button()
-            button.add(self.header_bar_image)
-            button.connect("clicked", show_window_menu)
-            hb.pack_start(button)
-        elif WINDOW_ICON:
-            # just the icon, no menu:
-            pixbuf = get_icon_pixbuf("transparent.png")
-            self.header_bar_image = scaled_image(pixbuf, self._icon_size())
-            hb.pack_start(self.header_bar_image)
+        self.header_bar_image = get_header_bar_image(self._icon_size())
+        # soft dependency on window methods:
+        show_window_menu = getattr(self, "show_window_menu", noop)
         show_xpra_menu = getattr(self, "show_xpra_menu", noop)
-        if WINDOW_XPRA_MENU and show_xpra_menu != noop:
-            # defined in window:
-            icon = Gio.ThemedIcon(name="open-menu-symbolic")
-            image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-            button = Gtk.Button()
-            button.add(image)
-            button.connect("clicked", show_xpra_menu)
-            hb.pack_end(button)
+        hb = make_header_bar(self.get_title(), self.header_bar_image, show_window_menu, show_xpra_menu)
         self.set_titlebar(hb)
 
     def _icon_size(self) -> int:
@@ -93,7 +106,7 @@ class HeaderBarWindow(GtkStubWindow):
         try:
             h = tb.get_preferred_size()[-1] - 8
         except Exception:
-            h = 24
+            h = Gtk.IconSize.BUTTON
         return min(128, max(h, 24))
 
     def set_icon(self, pixbuf: GdkPixbuf.Pixbuf) -> None:
