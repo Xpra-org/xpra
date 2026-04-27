@@ -122,8 +122,8 @@ def _hide_window(win) -> None:
     win.freeze()
 
 
-def later(fn: Callable[[], None]):
-    GLib.timeout_add(100, fn)
+def later(fn: Callable[[], None], delay=100):
+    GLib.timeout_add(delay, fn)
 
 
 class GTKTrayMenu(GTKMenuHelper):
@@ -1790,28 +1790,36 @@ class GTKTrayMenu(GTKMenuHelper):
         execlog("build_start_menu() %i menu items: %s", len(self.client.server_menu), Ellipsizer(self.client.server_menu))
         for category, category_props in sorted(self.client.server_menu.items()):
             execlog(" * category: %s", category)
-            # log("category_props(%s)=%s", category, category_props)
             if not isinstance(category_props, dict):
                 execlog("category properties is not a dict: %s", type(category_props))
                 continue
-            cp = typedict(category_props)
-            execlog("  category_props(%s)=%s", category, Ellipsizer(category_props))
-            entries = cp.dictget("Entries")
-            if not entries:
-                execlog("  no entries for category '%s'", category)
-                continue
-            icondata = cp.bytesget("IconData")
-            category_menu_item = self.start_menuitem(category, icondata)
-            cat_menu = Gtk.Menu()
-            category_menu_item.set_submenu(cat_menu)
-            menu.append(category_menu_item)
+            category_menu_item = self.start_category_menuitem(category, category_props)
+            if category_menu_item:
+                menu.append(category_menu_item)
+        menu.show_all()
+        return menu
+
+    def start_category_menuitem(self, category: str, category_props: dict) -> Gtk.MenuItem | None:
+        cp = typedict(category_props)
+        execlog("  category_props(%s)=%s", category, Ellipsizer(category_props))
+        entries = cp.dictget("Entries")
+        if not entries:
+            execlog("  no entries for category '%s'", category)
+            return None
+        icondata = cp.bytesget("IconData")
+        category_menu_item = self.start_menuitem(category, icondata)
+        cat_menu = Gtk.Menu()
+        category_menu_item.set_submenu(cat_menu)
+
+        def populate_category_menu() -> None:
             for app_name, cp in sorted(entries.items()):
                 command_props = typedict(cp)
                 execlog("  - app_name=%s", app_name)
                 app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
                 cat_menu.append(app_menu_item)
-        menu.show_all()
-        return menu
+            cat_menu.show_all()
+        later(populate_category_menu, 1000)
+        return category_menu_item
 
     def start_menuitem(self, title: str, icondata=b"") -> Gtk.ImageMenuItem:
         smi = self.handshake_menuitem(title)
