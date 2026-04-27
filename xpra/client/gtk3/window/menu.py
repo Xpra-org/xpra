@@ -6,13 +6,13 @@
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.client.gtk3.menu_helper import GTKMenuHelper
+from xpra.client.gtk3.menu_helper import GTKMenuHelper, gen_non_none_menu_items
 from xpra.gtk.widget import checkitem
 from xpra.constants import RESOLUTION_ALIASES
 from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 
-log = Logger("gtk", "window")
+log = Logger("gtk", "menu")
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -28,31 +28,25 @@ class WindowMenuHelper(GTKMenuHelper):
         super().__init__(client)
         self.window = window
 
-    def get_menu_items(self) -> list[Gtk.ImageMenuItem | Gtk.MenuItem]:
-        items = [
-            # menu.append(self.make_aboutmenuitem())
-            self.make_infomenuitem(),
+    def get_menu_items(self) -> Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]:
+        log("get_menu_items()")
+        return gen_non_none_menu_items(
+            # menu.append(self.make_aboutmenuitem)
+            self.make_infomenuitem,
             # if self.client.client_supports_opengl:
             #    menu.append(self.make_openglmenuitem())
-            self.make_minimizemenuitem(),
-            self.make_maximizemenuitem(),
-            self.make_fullscreenmenuitem(),
-        ]
-        metadata = getattr(self.window, "_metadata", {})
-        if metadata.get("content-type", "") == "desktop" and not metadata.get("size-constraints", {}):
-            items.append(self.make_resizemenuitem())
-        items += [
-            self.make_abovenmenuitem(),
-            self.make_grabmenuitem(),
-            self.make_bordermenuitem(),
-            self.make_refreshmenuitem(),
-            self.make_reinitmenuitem(),
-            self.make_closemenuitem(),
-        ]
-        actions: Sequence[str] = self.window._actions
-        if actions:
-            items.append(self.make_actionsmenu(actions))
-        return items
+            self.make_minimizemenuitem,
+            self.make_maximizemenuitem,
+            self.make_fullscreenmenuitem,
+            self.make_resizemenuitem,
+            self.make_abovenmenuitem,
+            self.make_grabmenuitem,
+            self.make_bordermenuitem,
+            self.make_refreshmenuitem,
+            self.make_reinitmenuitem,
+            self.make_closemenuitem,
+            self.make_actionsmenu,
+        )
 
     def make_infomenuitem(self) -> Gtk.ImageMenuItem:
         def show_info(*_args) -> None:
@@ -61,7 +55,7 @@ class WindowMenuHelper(GTKMenuHelper):
             wi.show()
 
         gl = self.menuitem("Window Information", "information.png", "Window state and details", show_info)
-        gl.set_tooltip_text()
+        log.warn("make_infomenuitem()=%s", gl)
         return gl
 
     def make_openglmenuitem(self) -> Gtk.ImageMenuItem:
@@ -101,7 +95,12 @@ class WindowMenuHelper(GTKMenuHelper):
         self.window.connect("window-state-event", window_state_updated)
         return self.maximize_menuitem
 
-    def make_resizemenuitem(self) -> Gtk.ImageMenuItem:
+    def make_resizemenuitem(self) -> Gtk.ImageMenuItem | None:
+        metadata = getattr(self.window, "_metadata", {})
+        log("make_resizemenuitem() metadata=%s", metadata)
+        if metadata.get("content-type", "") != "desktop" or metadata.get("size-constraints", {}):
+            return None
+
         from threading import Event
         switching = Event()
 
@@ -221,7 +220,11 @@ class WindowMenuHelper(GTKMenuHelper):
 
         return self.menuitem("Close", "close.png", cb=close)
 
-    def make_actionsmenu(self, actions: Sequence[str]) -> Gtk.ImageMenuItem:
+    def make_actionsmenu(self) -> Gtk.ImageMenuItem | None:
+        actions: Sequence[str] = self.window._actions
+        log("make_actionsmenu() actions=%s", actions)
+        if not actions:
+            return None
 
         def action_menuitem(action: str, icon_name="") -> Gtk.ImageMenuItem:
 

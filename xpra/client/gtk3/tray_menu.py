@@ -17,7 +17,7 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import RESOLUTION_ALIASES
 from xpra.client.gtk3.menu_helper import (
-    GTKMenuHelper,
+    GTKMenuHelper, gen_non_none_menu_items,
     BANDWIDTH_MENU_OPTIONS,
     QUALITY_OPTIONS, MIN_QUALITY_OPTIONS,
     SPEED_OPTIONS, MIN_SPEED_OPTIONS,
@@ -136,40 +136,24 @@ class GTKTrayMenu(GTKMenuHelper):
         menu.show_all()
         return menu
 
-    def get_menu_items(self) -> list[Gtk.ImageMenuItem | Gtk.MenuItem]:
+    def get_menu_items(self) -> Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]:
         log("get_menu_items()")
-        items: list[Gtk.ImageMenuItem | Gtk.MenuItem] = []
-
-        def add(item) -> None:
-            if item:
-                items.append(item)
-
-        if SHOW_TITLE_ITEM:
-            add(self.make_titlemenuitem())
-        add(self.make_infomenuitem())
-        add(self.make_featuresmenuitem())
-        if features.window and self.client.keyboard_helper:
-            add(self.make_keyboardmenuitem())
-        if features.clipboard and SHOW_CLIPBOARD_MENU:
-            add(self.make_clipboardmenuitem())
-        if features.window:
-            add(self.make_picturemenuitem())
-        if features.audio and STARTSTOP_SOUND_MENU:
-            add(self.make_audiomenuitem())
-        if features.webcam and WEBCAM_MENU:
-            add(self.make_webcammenuitem())
-        if features.display and MONITORS_MENU:
-            add(self.make_monitorsmenuitem())
-        if features.window and WINDOWS_MENU:
-            add(self.make_windowsmenuitem())
-        if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
-            add(self.make_servermenuitem())
-        if features.window and START_MENU:
-            add(self.make_startmenuitem())
-        add(self.make_disconnectmenuitem())
-        if SHOW_CLOSE:
-            add(self.make_closemenuitem())
-        return items
+        return gen_non_none_menu_items(
+            self.make_titlemenuitem,
+            self.make_infomenuitem,
+            self.make_featuresmenuitem,
+            self.make_keyboardmenuitem,
+            self.make_clipboardmenuitem,
+            self.make_picturemenuitem,
+            self.make_audiomenuitem,
+            self.make_webcammenuitem,
+            self.make_monitorsmenuitem,
+            self.make_windowsmenuitem,
+            self.make_servermenuitem,
+            self.make_startmenuitem,
+            self.make_disconnectmenuitem,
+            self.make_closemenuitem,
+        )
 
     def is_mmap_enabled(self) -> bool:
         if not getattr(self.client, "", False):
@@ -178,6 +162,8 @@ class GTKTrayMenu(GTKMenuHelper):
         return mra and mra.enabled and mra.size > 0
 
     def make_titlemenuitem(self) -> Gtk.MenuItem:
+        if not SHOW_TITLE_ITEM:
+            return None
         title_item = Gtk.MenuItem()
         title_item.set_label(self.client.session_name or "Xpra")
         set_sensitive(title_item, False)
@@ -463,7 +449,10 @@ class GTKTrayMenu(GTKMenuHelper):
             # will send new tokens and may help reset things:
             self.client.emit("clipboard-toggled")
 
-    def make_clipboardmenuitem(self) -> Gtk.ImageMenuItem:
+    def make_clipboardmenuitem(self) -> Gtk.ImageMenuItem | None:
+        if not features.clipboard or not SHOW_CLIPBOARD_MENU:
+            return None
+
         clipboardlog("make_clipboardmenuitem()")
         clipboard = self.menuitem("Clipboard", "clipboard.png")
         set_sensitive(clipboard, False)
@@ -597,6 +586,8 @@ class GTKTrayMenu(GTKMenuHelper):
         return modal
 
     def make_picturemenuitem(self) -> Gtk.ImageMenuItem:
+        if not features.window:
+            return
         picture_menu_item = self.handshake_menuitem("Picture", "picture.png")
         menu = Gtk.Menu()
         picture_menu_item.set_submenu(menu)
@@ -896,7 +887,9 @@ class GTKTrayMenu(GTKMenuHelper):
             else:
                 self.speed.set_tooltip_text("Encoding latency vs size")
 
-    def make_audiomenuitem(self) -> Gtk.ImageMenuItem:
+    def make_audiomenuitem(self) -> Gtk.ImageMenuItem | None:
+        if not features.audio or not STARTSTOP_SOUND_MENU:
+            return None
         audio_menu_item = self.handshake_menuitem("Audio", "audio.png")
         menu = Gtk.Menu()
         audio_menu_item.set_submenu(menu)
@@ -1071,7 +1064,9 @@ class GTKTrayMenu(GTKMenuHelper):
         sync.show_all()
         return sync
 
-    def make_webcammenuitem(self) -> Gtk.ImageMenuItem:
+    def make_webcammenuitem(self) -> Gtk.ImageMenuItem | None:
+        if not features.webcam or not WEBCAM_MENU:
+            return None
         webcam = self.menuitem("Webcam", "webcam.png")
         if not self.client.webcam_forwarding:
             webcam.set_tooltip_text("Webcam forwarding is disabled")
@@ -1188,7 +1183,9 @@ class GTKTrayMenu(GTKMenuHelper):
         self.client.on_server_setting_changed("webcam", webcam_changed)
         return webcam
 
-    def make_keyboardmenuitem(self) -> Gtk.Menu:
+    def make_keyboardmenuitem(self) -> Gtk.Menu | None:
+        if not features.window or not self.client.keyboard_helper:
+            return None
         keyboard_menu_item = self.handshake_menuitem("Keyboard", "keyboard.png")
         menu = Gtk.Menu()
         keyboard_menu_item.set_submenu(menu)
@@ -1411,7 +1408,9 @@ class GTKTrayMenu(GTKMenuHelper):
                 # no variants:
                 self.layout_submenu.append(self.kbitem(name, layout, ""))
 
-    def make_monitorsmenuitem(self) -> Gtk.ImageMenuItem:
+    def make_monitorsmenuitem(self) -> Gtk.ImageMenuItem | None:
+        if not features.display or not MONITORS_MENU:
+            return None
         monitors_menu_item = self.handshake_menuitem("Monitors", "display.png")
         menu = Gtk.Menu()
         monitors_menu_item.set_submenu(menu)
@@ -1460,7 +1459,9 @@ class GTKTrayMenu(GTKMenuHelper):
         monitors_menu_item.show_all()
         return monitors_menu_item
 
-    def make_windowsmenuitem(self) -> Gtk.ImageMenuItem:
+    def make_windowsmenuitem(self) -> Gtk.ImageMenuItem | None:
+        if not features.window or not WINDOWS_MENU:
+            return None
         windows_menu_item = self.handshake_menuitem("Windows", "windows.png")
         menu = Gtk.Menu()
         windows_menu_item.set_submenu(menu)
@@ -1540,7 +1541,9 @@ class GTKTrayMenu(GTKMenuHelper):
         showhide = self.handshake_menuitem("Hide Windows", "eye-off.png", None, showhide_windows)
         return showhide
 
-    def make_servermenuitem(self) -> Gtk.ImageMenuItem:
+    def make_servermenuitem(self) -> Gtk.ImageMenuItem | None:
+        if not (RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN):
+            return None
         server_menu_item = self.handshake_menuitem("Server", "server.png")
         menu = Gtk.Menu()
         server_menu_item.set_submenu(menu)
@@ -1699,7 +1702,9 @@ class GTKTrayMenu(GTKMenuHelper):
         self.client.on_server_setting_changed("client-shutdown", enable_shutdown)
         return shutdown
 
-    def make_startmenuitem(self) -> Gtk.ImageMenuItem:
+    def make_startmenuitem(self) -> Gtk.ImageMenuItem | None:
+        if not features.window and not START_MENU:
+            return None
         start_menu_item = self.handshake_menuitem("Start", "start.png")
         start_menu_item.show()
 
@@ -1791,5 +1796,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
         return self.handshake_menuitem("Disconnect", "quit.png", None, menu_quit)
 
-    def make_closemenuitem(self) -> Gtk.ImageMenuItem:
+    def make_closemenuitem(self) -> Gtk.ImageMenuItem | None:
+        if not SHOW_CLOSE:
+            return None
         return self.menuitem("Close Menu", "close.png", cb=self.close_menu)

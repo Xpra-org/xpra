@@ -374,6 +374,17 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding: Callable, se
 # pylint: disable=import-outside-toplevel
 
 
+def gen_non_none_menu_items(*gen: Callable[[], Gtk.ImageMenuItem | Gtk.MenuItem | None]) -> Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]:
+    log("get_menu_items(%s)", gen)
+    items: list[Gtk.ImageMenuItem | Gtk.MenuItem] = []
+    for gen in gen:
+        item = gen()
+        if item:
+            items.append(item)
+    log("get_menu_items()=%s", items)
+    return items
+
+
 class GTKMenuHelper(MenuHelper):
 
     def setup_menu(self):
