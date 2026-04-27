@@ -55,7 +55,7 @@ class WindowMenuHelper(GTKMenuHelper):
             wi.show()
 
         gl = self.menuitem("Window Information", "information.png", "Window state and details", show_info)
-        log.warn("make_infomenuitem()=%s", gl)
+        log("make_infomenuitem()=%s", gl)
         return gl
 
     def make_openglmenuitem(self) -> Gtk.ImageMenuItem:
