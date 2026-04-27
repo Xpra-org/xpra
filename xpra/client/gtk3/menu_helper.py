@@ -16,7 +16,6 @@ from xpra.codecs.icon_util import INKSCAPE_RE
 from xpra.gtk.widget import scaled_image, menuitem
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.dialogs.about import close_about
-from xpra.platform.gui import get_icon_size
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
 
@@ -412,7 +411,7 @@ class GTKMenuHelper(MenuHelper):
         if MENU_ICONS:
             image = kwargs.get("image")
             if icon_name and not image:
-                icon_size = self.menu_icon_size or get_icon_size()
+                icon_size = self.menu_icon_size or 24
                 image = self.get_image(icon_name, icon_size)
 
         # Gtk adds ImageMenuItem as arguments to the callback, but we don't want any:
