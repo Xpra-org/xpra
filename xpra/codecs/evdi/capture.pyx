@@ -314,7 +314,7 @@ cdef class EvdiDevice:
         if SAVE_TO_FILE:
             try:
                 from xpra.codecs.image import to_pil, to_bytesbuffer
-                pil_image = to_pil(self.mode.width, self.mode.height, pixels, "BGRA")
+                pil_image = to_pil(self.mode.width, self.mode.height, memoryview(buf), "BGRA")
                 pil_image = pil_image.convert("RGB")
                 filename = f"{monotonic()}.jpg"
                 pil_image.save(filename, "JPEG")
