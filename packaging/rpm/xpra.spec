@@ -1084,7 +1084,7 @@ fi
 
 
 %changelog
-* Sat Apr 25 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
+* Mon Apr 27 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
 - Platforms, build and packaging:
    `pycuda` 2026.1
    add Fedora 44, remove Fedora 41
@@ -1142,7 +1142,7 @@ fi
    honour info `full` flag
    `expand` subcommand needs `x11` bindings, server hierarchy error
    webcam client sanity checks
-   cairo client backend padding transparency issues
+   header bar transparency issues
    cairo missing hint
    cancelled file transfers cause logging error
    file transfer errors in deny / error paths

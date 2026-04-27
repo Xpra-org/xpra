@@ -56,7 +56,7 @@ xpra (6.4.4-1) UNRELEASED; urgency=low
     honour info `full` flag
     `expand` subcommand needs `x11` bindings, server hierarchy error
     webcam client sanity checks
-    cairo client backend padding transparency issues
+    header bar transparency issues
     cairo missing hint
     cancelled file transfers cause logging error
     file transfer errors in deny / error paths
@@ -89,7 +89,7 @@ xpra (6.4.4-1) UNRELEASED; urgency=low
     improve warning usefulness
     incomplete warning message
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 25 Apr 2026 00:23:30 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 27 Apr 2026 12:24:24 +0700
 
 xpra (6.4.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

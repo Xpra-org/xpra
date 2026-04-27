@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.4.4] 2026-04-25
+## [6.4.4] 2026-04-27
 * Platforms, build and packaging:
   * [`pycuda` 2026.1](https://github.com/Xpra-org/xpra/commit/dab23526cd93784ee9b0afbdfa927de4a584505a)
   * [add Fedora 44, remove Fedora 41](https://github.com/Xpra-org/xpra/commit/eac8640c24bd67c74f2da5f22c5508a76be2d6f7)
@@ -60,7 +60,7 @@
   * [honour info `full` flag](https://github.com/Xpra-org/xpra/commit/46c57756d7aef07af8627ddd150d0cecd844b11d)
   * [`expand` subcommand needs `x11` bindings](https://github.com/Xpra-org/xpra/commit/198282dc8a5c8931f21305e68796b35d77853539), [server hierarchy error](https://github.com/Xpra-org/xpra/commit/04822ed252d8b53164cd92bd78b94c175436d110)
   * [webcam client sanity checks](https://github.com/Xpra-org/xpra/commit/92bfc1d6cfdbe97da5a6313b9a610f2cedec8074)
-  * [cairo client backend padding transparency issues](https://github.com/Xpra-org/xpra/commit/d8f55136de18b1e7bf81ad30f3b35df4ad668e65)
+  * [header bar transparency issues](https://github.com/Xpra-org/xpra/commit/dd8a378ec84d2a3ca74c7226b3d3b0746c7b0fca)
   * [cairo missing hint](https://github.com/Xpra-org/xpra/commit/af726f2b67772855a63a6243e87438c385009e77)
   * [cancelled file transfers cause logging error](https://github.com/Xpra-org/xpra/commit/6011e6eab18c6756b711abd00a049a802e0cab1d)
   * [file transfer errors in deny / error paths](https://github.com/Xpra-org/xpra/commit/87c6be0b42979b92c81bcff4a15ae0dc8b469489)
