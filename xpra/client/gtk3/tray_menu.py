@@ -1739,7 +1739,25 @@ class GTKTrayMenu(GTKMenuHelper):
         start_menu_item = self.handshake_menuitem("Start", "start.png")
         start_menu_item.show()
 
+        def server_menu_checksum() -> str:
+            import hashlib
+            h = hashlib.sha256()
+            for category, category_props in sorted((self.client.server_menu or {}).items()):
+                if not isinstance(category_props, dict):
+                    continue
+                entries = category_props.get("Entries") or {}
+                for app_name, command_props in sorted(entries.items()):
+                    command = (command_props or {}).get("command", "")
+                    h.update(f"{app_name}\0{command}\0".encode("utf-8"))
+            return h.hexdigest()
+
+        menu_checksum = [""]
+
         def update_menu_data(*_args) -> None:
+            new_checksum = server_menu_checksum()
+            if menu_checksum[0] == new_checksum:
+                log("start menu data has not changed")
+                return
             if not self.client.start_new_commands:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("Starting new commands is disabled")
@@ -1756,6 +1774,7 @@ class GTKTrayMenu(GTKMenuHelper):
             menu = self.build_start_menu()
             start_menu_item.set_submenu(menu)
             start_menu_item.set_tooltip_text(None)
+            menu_checksum[0] = new_checksum
 
         if BACKWARDS_COMPATIBLE:
             # legacy pre v6.4 name:
