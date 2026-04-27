@@ -8,8 +8,6 @@
 
 from typing import Any
 
-from cairo import OPERATOR_CLEAR
-
 from xpra.client.gtk3.window.base import HAS_X11_BINDINGS
 from xpra.client.gtk3.window.factory import get_window_base_classes
 from xpra.gtk.util import event_mask_strs
@@ -198,22 +196,6 @@ class ClientWindow(WindowBaseClass):
         dw, dh = geom[2], geom[3]
         return dw < maxw and dh < maxh
 
-    def do_draw(self, context) -> bool:
-        # set_app_paintable(True) on the window suppresses GTK's automatic
-        # background clear before the draw signal.  With CSD active the window
-        # surface is larger than the drawing_area (resize-handle gutters on
-        # left/right/bottom, shadow padding) and those areas would never be
-        # initialised, leaving old screen content ("garbage") visible.
-        # Clear the whole surface to transparent first so the compositor sees
-        # empty alpha, then let the GTK vfunc paint the CSD frame and propagate
-        # the draw to children (headerbar + drawing_area).
-        context.save()
-        context.set_operator(OPERATOR_CLEAR)
-        context.paint()
-        context.restore()
-        Gtk.Window.do_draw(self, context)
-        return False
-
     def draw_widget(self, widget, context) -> bool:
         paintlog("draw_widget(%s, %s)", widget, context)
         if not self.get_mapped():
@@ -227,6 +209,31 @@ class ClientWindow(WindowBaseClass):
         # to clip and scale against the wrong dimensions.
         w = widget.get_allocated_width()
         h = widget.get_allocated_height()
+        if paintlog.is_debug_enabled():
+            # debug: where does GTK think the drawing area lives, and what
+            # transform / clip does the cairo context already have?
+            alloc = widget.get_allocation()
+            ctm = context.get_matrix()
+            clip = context.clip_extents()
+            try:
+                ctx_target = context.get_target()
+                target_size = (ctx_target.get_width(), ctx_target.get_height())
+                target_type = type(ctx_target).__name__
+                # for an xlib surface, get_device_offset() may show a sub-surface origin
+                target_dev_offset = ctx_target.get_device_offset()
+            except Exception:
+                target_size = None
+                target_type = None
+                target_dev_offset = None
+            paintlog("draw_widget: alloc=(%i,%i %ix%i) "
+                     "context.matrix=(%s,%s,%s,%s,%s,%s) clip_extents=%s "
+                     "target=%s size=%s device_offset=%s "
+                     "widget has_window=%s widget gdkwin=%s window gdkwin=%s",
+                     233 - alloc.x, alloc.y, alloc.width, alloc.height,
+                     ctm.xx, ctm.yx, ctm.xy, ctm.yy, ctm.x0, ctm.y0,
+                     clip,
+                     target_type, target_size, target_dev_offset,
+                     widget.get_has_window(), widget.get_window(), self.get_window())
         backing.cairo_draw(context, w, h)
         return True
 
