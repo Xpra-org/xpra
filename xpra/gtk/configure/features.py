@@ -19,7 +19,7 @@ log = Logger("util")
 FEATURES = (
     ("Audio", "Audio forwarding: speaker and microphone", "xpra.audio"),
     ("Video", "Video codecs: h264, vpx, etc", "xpra.codecs.vpx"),
-    # ("Webcam", "Webcam forwarding", "xpra.codecs.v4l2"),
+    # ("Webcam", "Webcam forwarding", "xpra.webcam"),
     ("System Tray", "System tray forwarding", "xpra.client"),
     ("File transfer", "Upload and download of files to and from the server", "xpra.net"),
     ("Printing", "Printer forwarding to the client's printer", "xpra.net"),
