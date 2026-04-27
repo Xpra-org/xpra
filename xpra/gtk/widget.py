@@ -65,15 +65,24 @@ def modify_fg(widget, color, state=Gtk.StateType.NORMAL) -> None:
         widget.modify_fg(state, color)
 
 
+# this function is no longer used!
+def force_images(widget, *args) -> None:
+    # override gtk defaults: we *want* icons:
+    settings = widget.get_settings()
+    settings.set_property("gtk-menu-images", True)
+    log("force_images(%s, %s)", widget, args)
+    # this would do the same thing but globally:
+    # Gtk.Settings.get_default().set_property("gtk-menu-images", True)
+    # but `set_always_show_image` should be enough anyway
+
+
 def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
     """ Utility method for easily creating an ImageMenuItem """
     menu_item = Gtk.ImageMenuItem()
     menu_item.set_label(title)
     if image:
         ignorewarnings(menu_item.set_image, image)
-        # override gtk defaults: we *want* icons:
-        settings = menu_item.get_settings()
-        settings.set_property('gtk-menu-images', True)
+        # force_images(menu_item)
         ignorewarnings(menu_item.set_always_show_image, True)
     if tooltip:
         menu_item.set_tooltip_text(tooltip)
