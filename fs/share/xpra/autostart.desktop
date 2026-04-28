@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Xpra
 Comment=Pre-start an Xpra session
-Exec=xpra start --attach=yes --splash=no --opengl=nowarn
+Exec=xpra shadow --splash=no
 Icon=xpra
 NoDisplay=false
 Type=Application
