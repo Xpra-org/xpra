@@ -868,6 +868,7 @@ CLIENT_OPTIONS: list[str] = [
     "file-transfer", "file-size-limit", "download-path",
     "open-command", "open-files", "printing", "open-url",
     "headerbar",
+    "splash",
     "challenge-handlers",
     "remote-logging",
     "lpadmin", "lpinfo",
