@@ -7,7 +7,7 @@
 
 import os
 import re
-from typing import Any
+from typing import Any, Final
 from collections.abc import Callable, MutableSequence
 
 from xpra.os_util import OSX, WIN32, gi_import
@@ -44,6 +44,8 @@ FORCE_FLUSH = envbool("XPRA_FORCE_FLUSH", False)
 
 SHOW_SPINNER_WINDOW_TYPES = set(os.environ.get("XPRA_SHOW_SPINNER_WINDOW_TYPES", "DIALOG,NORMAL,SPLASH").split(","))
 
+UNKNOWN_MACHINE: Final[str] = "<unknown machine>"
+
 
 def is_wm_property(name: str) -> bool:
     return any(name.startswith(prefix) for prefix in ("_MOTIF", "WM_", "_NET_WM", "_GTK_"))
@@ -58,6 +60,75 @@ def validhostname(value):
     ):
         return None
     return value
+
+
+def do_get_window_title(client, wid: int, metadata: dict) -> str:
+    title = client.title.replace("\0", "")
+    if title.find("@") < 0:
+        return title
+    # perform metadata variable substitutions:
+    remote_hostname = getattr(client, "_remote_hostname", None)
+    remote_display = getattr(client, "_remote_display", None)
+    if remote_display:
+        # ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
+        remote_display = remote_display.replace("\\", "-")
+    default_values: dict[str, str] = {
+        "title": "<untitled window>",
+        "client-machine": UNKNOWN_MACHINE,
+        "windowid": str(wid),
+        "server-machine": std(remote_hostname) or UNKNOWN_MACHINE,
+        "server-display": std(remote_display) or "<unknown display>",
+    }
+    metalog(f"default values: {default_values}")
+
+    def getvar(var) -> str:
+        # "hostname" is magic:
+        # we try harder to find a useful value to show:
+        if var in ("hostname", "hostinfo"):
+            server_display = getattr(client, "server_display", None)
+            if var == "hostinfo" and getattr(client, "mmap_enabled", False) and server_display:
+                # this is a local connection for sure and we can specify the display directly:
+                return server_display
+            import socket
+            local_hostname = validhostname(socket.gethostname())
+            # try to find the hostname:
+            proto = getattr(client, "_protocol", None)
+            target = None
+            if proto:
+                conn = getattr(proto, "_conn", None)
+                if conn:
+                    hostname = conn.info.get("host")
+                    target = str(conn.target)
+                    if hostname:
+                        if local_hostname == hostname and server_display:
+                            return server_display
+                        return hostname
+            for m in ("client-machine", "server-machine"):
+                value = validhostname(getvar(m))
+                if value and value != local_hostname:
+                    return value
+            if server_display:
+                return server_display
+            if target:
+                return target
+            return UNKNOWN_MACHINE
+        value = metadata.get(var)
+        if value is None:
+            return default_values.get(var, "<unknown %s>" % var)
+        return str(value)
+
+    def metadata_replace(match) -> str:
+        atvar = match.group(0)  # ie: '@title@'
+        var = atvar[1:len(atvar) - 1]  # ie: 'title'
+        if not var:
+            # atvar = "@@"
+            return "@"
+        return getvar(var)
+
+    sub = r"@[\w\-]*@"
+    replaced = re.sub(sub, metadata_replace, title)
+    metalog("re.sub%s=%s", (sub, metadata_replace, title), replaced)
+    return replaced
 
 
 class ClientWindowBase(ClientWidgetBase, GLibScheduler):
@@ -285,80 +356,11 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
 
     def _get_window_title(self, metadata: typedict) -> str:
         try:
-            return self.do_get_window_title(metadata)
+            return do_get_window_title(self._client, self.wid, dict(self._metadata) | dict(metadata))
         except Exception as e:
             log.error("Error parsing window title:")
             log.estr(e)
             return self._client.title.replace("\0", "")
-
-    def do_get_window_title(self, metadata: typedict) -> str:
-        title = self._client.title.replace("\0", "")
-        if title.find("@") < 0:
-            return title
-        # perform metadata variable substitutions:
-        UNKNOWN_MACHINE = "<unknown machine>"
-        remote_hostname = getattr(self._client, "_remote_hostname", None)
-        remote_display = getattr(self._client, "_remote_display", None)
-        if remote_display:
-            # ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
-            remote_display = remote_display.replace("\\", "-")
-        default_values: dict[str, str] = {
-            "title": "<untitled window>",
-            "client-machine": UNKNOWN_MACHINE,
-            "windowid": str(self.wid),
-            "server-machine": std(remote_hostname) or UNKNOWN_MACHINE,
-            "server-display": std(remote_display) or "<unknown display>",
-        }
-        metalog(f"default values: {default_values}")
-
-        def getvar(var) -> str:
-            # "hostname" is magic:
-            # we try harder to find a useful value to show:
-            if var in ("hostname", "hostinfo"):
-                server_display = getattr(self._client, "server_display", None)
-                if var == "hostinfo" and getattr(self._client, "mmap_enabled", False) and server_display:
-                    # this is a local connection for sure and we can specify the display directly:
-                    return server_display
-                import socket
-                local_hostname = validhostname(socket.gethostname())
-                # try to find the hostname:
-                proto = getattr(self._client, "_protocol", None)
-                target = None
-                if proto:
-                    conn = getattr(proto, "_conn", None)
-                    if conn:
-                        hostname = conn.info.get("host")
-                        target = str(conn.target)
-                        if hostname:
-                            if local_hostname == hostname and server_display:
-                                return server_display
-                            return hostname
-                for m in ("client-machine", "server-machine"):
-                    value = validhostname(getvar(m))
-                    if value and value != local_hostname:
-                        return value
-                if server_display:
-                    return server_display
-                if target:
-                    return target
-                return UNKNOWN_MACHINE
-            value = metadata.get(var) or self._metadata.get(var)
-            if value is None:
-                return default_values.get(var, "<unknown %s>" % var)
-            return str(value)
-
-        def metadata_replace(match) -> str:
-            atvar = match.group(0)  # ie: '@title@'
-            var = atvar[1:len(atvar) - 1]  # ie: 'title'
-            if not var:
-                # atvar = "@@"
-                return "@"
-            return getvar(var)
-
-        sub = r"@[\w\-]*@"
-        replaced = re.sub(sub, metadata_replace, title)
-        metalog("re.sub%s=%s", (sub, metadata_replace, title), replaced)
-        return replaced
 
     def set_metadata(self, metadata: typedict):
         metalog("set_metadata(%s)", metadata)
