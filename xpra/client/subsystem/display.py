@@ -325,7 +325,7 @@ class DisplayClient(StubClientMixin):
                 log.warn(" please see https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Xdummy.md")
 
     def send_icc_data(self) -> None:
-        if SYNC_ICC and ("configure-display" in self.server_packet_types or not BACKWARDS_COMPATIBLE):
+        if SYNC_ICC and (not BACKWARDS_COMPATIBLE or "configure-display" in self.server_packet_types):
             # it is now safe to send the colourspace data if we have any:
             icc = self.get_icc_info()
             dicc = self.get_display_icc_info()
