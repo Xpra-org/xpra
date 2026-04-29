@@ -53,6 +53,7 @@ cdef extern from "glib.h":
     guint            g_source_attach(GSource *source, GMainContext *context) nogil
     void             g_source_unref(GSource *source) nogil
     GMainContext    *g_main_context_default() nogil
+    guint            g_timeout_add(guint interval, GSourceFunc function, gpointer data) nogil
 
     int G_IO_IN
     int G_IO_PRI
@@ -65,6 +66,7 @@ from xpra.x11.bindings.events import get_x_event_type_name, get_x_event_signals
 from xpra.x11.dispatch import route_event
 from xpra.x11.error import XError, xsync
 from xpra.x11.common import X11Event
+from xpra.util.env import envint
 from xpra.util.str_fn import csv
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -72,6 +74,8 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("x11", "bindings", "events")
+
+POLL_DELAY = envint("XPRA_X11_POLL_DELAY", 100)
 
 
 cdef int x11_io_error_handler(Display *display) except 0:
@@ -124,6 +128,14 @@ cdef class EventLoop:
             count += 1
         log("process_events() done %i events", count)
         return count
+
+    cdef gboolean poll(self) noexcept nogil:
+        # called without the GIL: only acquire it if there is work to do
+        if XPending(self.display) <= 0:
+            return G_SOURCE_CONTINUE
+        with gil:
+            self.process_events()
+        return G_SOURCE_CONTINUE
 
     cdef void process_event(self, XEvent *event) noexcept:
         cdef int etype = event.type
@@ -206,8 +218,6 @@ cdef gboolean x11_source_dispatch(GSource *source, GSourceFunc callback, gpointe
 cdef void x11_source_finalize(GSource *source) noexcept nogil:
     cdef X11GSource *s = <X11GSource *> source
     if s.loop:
-        with gil:
-            Py_DECREF(<object> s.loop)
         s.loop = NULL
 
 x11_source_funcs.prepare  = x11_source_prepare
@@ -216,7 +226,15 @@ x11_source_funcs.dispatch = x11_source_dispatch
 x11_source_funcs.finalize = x11_source_finalize
 
 
+loop = None
+
+
+cdef gboolean x11_poll_timeout(gpointer user_data) noexcept nogil:
+    return (<EventLoop> user_data).poll()
+
+
 def register_glib_source(context) -> None:
+    global loop
     from xpra.x11.bindings.display_source import get_display_ptr
     if not get_display_ptr():
         raise RuntimeError("no display!")
@@ -246,8 +264,10 @@ def register_glib_source(context) -> None:
     source.poll_fd.fd = fd
     source.poll_fd.events = G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR | G_IO_NVAL
     source.loop = <PyObject *> loop
-    Py_INCREF(loop)
     g_source_add_poll(<GSource *> source, &source.poll_fd)
     g_source_attach(<GSource *> source, g_main_context_default())
     g_source_unref(<GSource *> source)
+    # fallback: poll periodically in case events still go missing
+    if POLL_DELAY > 0:
+        g_timeout_add(POLL_DELAY, x11_poll_timeout, <gpointer> loop)
     log("register_glib_source() done, source attached")
