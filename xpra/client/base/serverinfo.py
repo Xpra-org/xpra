@@ -101,6 +101,10 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_machine_id = c.strget("machine_id")
         self._remote_hostname = c.strget("hostname")
         self._remote_display = c.strget("display")
+        display = c.get("display")
+        if isinstance(display, dict):
+            td = typedict(display)
+            self._remote_display = td.strget("name", "") or td.get("address", "")
         self._remote_platform = c.strget("platform")
         self._remote_uuid = c.strget("uuid")
 

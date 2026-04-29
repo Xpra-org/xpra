@@ -203,6 +203,8 @@ class DisplayManager(StubServerMixin):
             caps["max_desktop_size"] = max_size
         if name := get_display_name():
             caps["name"] = name
+        if self.display:
+            caps["address"] = self.display
         return caps
 
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
@@ -221,7 +223,10 @@ class DisplayManager(StubServerMixin):
             "antialias": self.antialias,
             "depth": self.bit_depth,
             "refresh-rate": self.refresh_rate,
+            "name": self.get_display_name(),
         }
+        if self.display:
+            i["address"] = self.display
         if self.original_desktop_display:
             i["original-desktop-display"] = self.original_desktop_display
         return {
