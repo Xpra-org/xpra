@@ -120,15 +120,15 @@ class OpenGLInfo(StubServerMixin):
         self.opengl = opts.opengl
 
     def setup(self) -> None:
+        if self.opengl.lower() == "noprobe" or self.opengl.lower() in FALSE_OPTIONS:
+            log("setup() query_opengl skipped because opengl=%s", self.opengl)
+            return
+
         def query() -> None:
             self.opengl_props = self.query_opengl()
         start_thread(query, "query-opengl", daemon=True)
 
     def query_opengl(self) -> dict[str, Any]:
-        props: dict[str, Any] = {}
-        if self.opengl.lower() == "noprobe" or self.opengl.lower() in FALSE_OPTIONS:
-            log("query_opengl() skipped because opengl=%s", self.opengl)
-            return props
         err = load_opengl()
         if err:
             return err
