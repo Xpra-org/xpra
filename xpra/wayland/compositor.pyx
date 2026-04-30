@@ -344,15 +344,15 @@ cdef class Surface:
     cdef void destroy(self) noexcept:
         log("XDG surface DESTROYED, toplevel=%s", bool(self.wlr_xdg_surface.toplevel != NULL))
         # Detach all listeners while wlr_surface event lists are still valid.
+        # We MUST do this here rather than rely on __dealloc__: surface_dispatch
+        # holds a strong reference for the duration of the dispatch call, so the
+        # dict-pop below would not drop refcount to zero until after this event
+        # handler returns — by then wlroots' event lists are gone.
         self._detach_all()
-
-        cdef unsigned long surface_wid = self.wid
-        cdef uintptr_t key = <uintptr_t>self.wlr_xdg_surface
-        global surfaces
-        surfaces.pop(key, None)
+        emit("destroy", self.wid)
         if debug:
             log("xdg surface dropped")
-        emit("destroy", surface_wid)
+        surfaces.pop(<uintptr_t>self.wlr_xdg_surface, None)
 
     cdef void request_move(self, serial: int) noexcept:
         log("Surface REQUEST MOVE")
