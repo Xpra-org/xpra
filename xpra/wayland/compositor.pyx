@@ -277,8 +277,15 @@ cdef class Surface:
     def __repr__(self):
         return "Surface(%i)" % self.wid
 
-    cdef add_listener(self, int slot, wl_notify_func_t notify, wl_signal *signal) noexcept:
-        attach_listener(self.listeners, slot, <void*> self, notify, signal)
+    cdef inline void add_listener(self, int slot, wl_signal *signal) noexcept:
+        attach_listener(self.listeners, slot, <void*>self, surface_dispatch, signal)
+
+    cdef inline int slot_of(self, wl_listener *l) noexcept nogil:
+        # Pointer arithmetic recovers the slot index from the wl_listener address.
+        # Works because xpra_listener.listener is the first field of each entry.
+        cdef char *base = <char*>self.listeners
+        cdef char *here = <char*>l
+        return <int>((here - base) / sizeof(xpra_listener))
 
     cdef inline void _detach_slot(self, int slot) noexcept nogil:
         if self.listeners[slot].listener.link.next != NULL:
@@ -292,11 +299,11 @@ cdef class Surface:
 
     cdef add_main_listeners(self):
         cdef wlr_surface *s = self.wlr_xdg_surface.surface
-        self.add_listener(L_COMMIT, xdg_surface_commit, &s.events.commit)
-        self.add_listener(L_MAP, xdg_surface_map, &s.events.map)
-        self.add_listener(L_UNMAP, xdg_surface_unmap, &s.events.unmap)
-        self.add_listener(L_NEW_SUBSURFACE, handle_new_subsurface, &s.events.new_subsurface)
-        self.add_listener(L_DESTROY, xdg_surface_destroy_handler, &s.events.destroy)
+        self.add_listener(L_COMMIT, &s.events.commit)
+        self.add_listener(L_MAP, &s.events.map)
+        self.add_listener(L_UNMAP, &s.events.unmap)
+        self.add_listener(L_NEW_SUBSURFACE, &s.events.new_subsurface)
+        self.add_listener(L_DESTROY, &s.events.destroy)
 
     cdef void register_toplevel_handlers(self) noexcept:
         cdef wlr_xdg_toplevel *t = self.wlr_xdg_surface.toplevel
@@ -308,15 +315,15 @@ cdef class Surface:
             return
 
         log("Surface has toplevel, attaching toplevel handlers")
-        self.add_listener(L_REQUEST_MAXIMIZE, xdg_toplevel_request_maximize, &t.events.request_maximize)
-        self.add_listener(L_REQUEST_FULLSCREEN, xdg_toplevel_request_fullscreen, &t.events.request_fullscreen)
-        self.add_listener(L_REQUEST_MINIMIZE, xdg_toplevel_request_minimize, &t.events.request_minimize)
-        self.add_listener(L_REQUEST_MOVE, xdg_toplevel_request_move, &t.events.request_move)
-        self.add_listener(L_REQUEST_RESIZE, xdg_toplevel_request_resize, &t.events.request_resize)
+        self.add_listener(L_REQUEST_MAXIMIZE, &t.events.request_maximize)
+        self.add_listener(L_REQUEST_FULLSCREEN, &t.events.request_fullscreen)
+        self.add_listener(L_REQUEST_MINIMIZE, &t.events.request_minimize)
+        self.add_listener(L_REQUEST_MOVE, &t.events.request_move)
+        self.add_listener(L_REQUEST_RESIZE, &t.events.request_resize)
         # show window menu!
         # set parent!
-        self.add_listener(L_SET_TITLE, xdg_toplevel_set_title_handler, &t.events.set_title)
-        self.add_listener(L_SET_APP_ID, xdg_toplevel_set_app_id_handler, &t.events.set_app_id)
+        self.add_listener(L_SET_TITLE, &t.events.set_title)
+        self.add_listener(L_SET_APP_ID, &t.events.set_app_id)
 
     cdef void map(self) noexcept:
         toplevel = self.wlr_xdg_surface.toplevel
@@ -601,61 +608,40 @@ cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept no
         emit("ssd", <uintptr_t> toplevel, bool(ssd))
 
 
-cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept:
+# Single C shim for every Surface-level listener. The slot is recovered by
+# pointer arithmetic on the listeners[] array, then dispatched to the matching
+# Surface method. This replaces 12 individual one-line callback wrappers.
+cdef void surface_dispatch(wl_listener *listener, void *data) noexcept:
     cdef Surface surface = <Surface>owner_of(listener)
-    surface.map()
-
-
-cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept:
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.unmap()
-
-
-cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcept:
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.destroy()
-
-
-cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept:
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.commit()
-
-
-cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept:
-    cdef wlr_xdg_toplevel_move_event *event = <wlr_xdg_toplevel_move_event*> data
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.request_move(event.serial)
-
-
-cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept:
-    cdef wlr_xdg_toplevel_resize_event *event = <wlr_xdg_toplevel_resize_event*>data
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.request_resize(event.edges, event.serial)
-
-
-cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept:
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.request_maximize()
-
-
-cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noexcept:
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.request_fullscreen()
-
-
-cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexcept:
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.request_minimize()
-
-
-cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noexcept:
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.set_title()
-
-
-cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept:
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.set_app_id()
+    cdef int slot = surface.slot_of(listener)
+    cdef wlr_xdg_toplevel_move_event *move_event
+    cdef wlr_xdg_toplevel_resize_event *resize_event
+    if slot == L_MAP:
+        surface.map()
+    elif slot == L_UNMAP:
+        surface.unmap()
+    elif slot == L_DESTROY:
+        surface.destroy()
+    elif slot == L_COMMIT:
+        surface.commit()
+    elif slot == L_NEW_SUBSURFACE:
+        surface.new_subsurface(<wlr_subsurface*>data)
+    elif slot == L_REQUEST_MOVE:
+        move_event = <wlr_xdg_toplevel_move_event*>data
+        surface.request_move(move_event.serial)
+    elif slot == L_REQUEST_RESIZE:
+        resize_event = <wlr_xdg_toplevel_resize_event*>data
+        surface.request_resize(resize_event.edges, resize_event.serial)
+    elif slot == L_REQUEST_MAXIMIZE:
+        surface.request_maximize()
+    elif slot == L_REQUEST_FULLSCREEN:
+        surface.request_fullscreen()
+    elif slot == L_REQUEST_MINIMIZE:
+        surface.request_minimize()
+    elif slot == L_SET_TITLE:
+        surface.set_title()
+    elif slot == L_SET_APP_ID:
+        surface.set_app_id()
 
 
 cdef list get_damage_areas(pixman_region32_t *damage):
@@ -702,12 +688,6 @@ cdef list collect_surfaces(wlr_surface *surface):
     surfaces = []
     wlr_surface_for_each_surface(surface, collect_surface_callback, <void*>surfaces)
     return surfaces
-
-
-cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept:
-    cdef wlr_subsurface *subsurface = <wlr_subsurface*> data
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.new_subsurface(subsurface)
 
 
 cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
