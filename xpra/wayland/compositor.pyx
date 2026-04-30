@@ -34,7 +34,7 @@ cdef extern from "time.h":
 from xpra.wayland.wlroots cimport (
     wl_display, wlr_xdg_shell,
     wl_display_create, wl_display_destroy_clients, wl_display_destroy, wl_display_run,
-    wl_listener, wl_signal_add, wl_signal,
+    wl_listener, wl_signal_add, wl_signal, wl_notify_func_t,
     wlr_xdg_surface_events,
     wlr_backend, wlr_backend_start, wlr_backend_destroy,
     wlr_seat, wlr_cursor, wlr_output_layout,
@@ -131,6 +131,13 @@ cdef inline void *owner_of(wl_listener *l) noexcept nogil:
     return (<xpra_listener*>(<char*>l - offset)).owner
 
 
+cdef inline void attach_listener(xpra_listener *listeners, int slot, void *owner,
+        wl_notify_func_t notify, wl_signal *signal) noexcept nogil:
+    listeners[slot].owner = owner
+    listeners[slot].listener.notify = notify
+    wl_signal_add(signal, &listeners[slot].listener)
+
+
 # Internal structures
 cdef struct server:
     wl_display *display
@@ -193,6 +200,9 @@ cdef class Surface:
     cdef int width
     cdef int height
     cdef unsigned long wid
+
+    cdef add_listener(self, int slot, wl_notify_func_t notify, wl_signal *signal) noexcept:
+        attach_listener(self.listeners, slot, <void*> self, notify, signal)
 
     def __dealloc__(self):
         # Idempotent listener detach; safe because xdg_surface_destroy_handler
@@ -652,25 +662,11 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
 
     surface.scene_tree = wlr_scene_xdg_surface_create(&srv.scene.tree, xdg_surf)
 
-    surface.listeners[L_MAP].owner = <void*>surface
-    surface.listeners[L_MAP].listener.notify = xdg_surface_map
-    wl_signal_add(&xdg_surf.surface.events.map, &surface.listeners[L_MAP].listener)
-
-    surface.listeners[L_UNMAP].owner = <void*>surface
-    surface.listeners[L_UNMAP].listener.notify = xdg_surface_unmap
-    wl_signal_add(&xdg_surf.surface.events.unmap, &surface.listeners[L_UNMAP].listener)
-
-    surface.listeners[L_DESTROY].owner = <void*>surface
-    surface.listeners[L_DESTROY].listener.notify = xdg_surface_destroy_handler
-    wl_signal_add(&xdg_surf.surface.events.destroy, &surface.listeners[L_DESTROY].listener)
-
-    surface.listeners[L_COMMIT].owner = <void*>surface
-    surface.listeners[L_COMMIT].listener.notify = xdg_surface_commit
-    wl_signal_add(&xdg_surf.surface.events.commit, &surface.listeners[L_COMMIT].listener)
-
-    surface.listeners[L_NEW_SUBSURFACE].owner = <void*>surface
-    surface.listeners[L_NEW_SUBSURFACE].listener.notify = handle_new_subsurface
-    wl_signal_add(&xdg_surf.surface.events.new_subsurface, &surface.listeners[L_NEW_SUBSURFACE].listener)
+    surface.add_listener(L_MAP, xdg_surface_map, &xdg_surf.surface.events.map)
+    surface.add_listener(L_UNMAP, xdg_surface_unmap, &xdg_surf.surface.events.unmap)
+    surface.add_listener(L_DESTROY, xdg_surface_destroy_handler, &xdg_surf.surface.events.destroy)
+    surface.add_listener(L_COMMIT, xdg_surface_commit, &xdg_surf.surface.events.commit)
+    surface.add_listener(L_NEW_SUBSURFACE, handle_new_subsurface, &xdg_surf.surface.events.new_subsurface)
 
     cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
     log("toplevel=%#x", <uintptr_t> toplevel)
@@ -704,34 +700,13 @@ cdef void register_toplevel_handlers(Surface surface) noexcept:
         return
 
     log("Surface has toplevel, attaching toplevel handlers")
-
-    surface.listeners[L_REQUEST_MOVE].owner = <void*>surface
-    surface.listeners[L_REQUEST_MOVE].listener.notify = xdg_toplevel_request_move
-    wl_signal_add(&toplevel.events.request_move, &surface.listeners[L_REQUEST_MOVE].listener)
-
-    surface.listeners[L_REQUEST_RESIZE].owner = <void*>surface
-    surface.listeners[L_REQUEST_RESIZE].listener.notify = xdg_toplevel_request_resize
-    wl_signal_add(&toplevel.events.request_resize, &surface.listeners[L_REQUEST_RESIZE].listener)
-
-    surface.listeners[L_REQUEST_MAXIMIZE].owner = <void*>surface
-    surface.listeners[L_REQUEST_MAXIMIZE].listener.notify = xdg_toplevel_request_maximize
-    wl_signal_add(&toplevel.events.request_maximize, &surface.listeners[L_REQUEST_MAXIMIZE].listener)
-
-    surface.listeners[L_REQUEST_FULLSCREEN].owner = <void*>surface
-    surface.listeners[L_REQUEST_FULLSCREEN].listener.notify = xdg_toplevel_request_fullscreen
-    wl_signal_add(&toplevel.events.request_fullscreen, &surface.listeners[L_REQUEST_FULLSCREEN].listener)
-
-    surface.listeners[L_REQUEST_MINIMIZE].owner = <void*>surface
-    surface.listeners[L_REQUEST_MINIMIZE].listener.notify = xdg_toplevel_request_minimize
-    wl_signal_add(&toplevel.events.request_minimize, &surface.listeners[L_REQUEST_MINIMIZE].listener)
-
-    surface.listeners[L_SET_TITLE].owner = <void*>surface
-    surface.listeners[L_SET_TITLE].listener.notify = xdg_toplevel_set_title_handler
-    wl_signal_add(&toplevel.events.set_title, &surface.listeners[L_SET_TITLE].listener)
-
-    surface.listeners[L_SET_APP_ID].owner = <void*>surface
-    surface.listeners[L_SET_APP_ID].listener.notify = xdg_toplevel_set_app_id_handler
-    wl_signal_add(&toplevel.events.set_app_id, &surface.listeners[L_SET_APP_ID].listener)
+    surface.add_listener(L_REQUEST_MOVE, xdg_toplevel_request_move, &toplevel.events.request_move)
+    surface.add_listener(L_REQUEST_RESIZE, xdg_toplevel_request_resize, &toplevel.events.request_resize)
+    surface.add_listener(L_REQUEST_MAXIMIZE, xdg_toplevel_request_maximize, &toplevel.events.request_maximize)
+    surface.add_listener(L_REQUEST_FULLSCREEN, xdg_toplevel_request_fullscreen, &toplevel.events.request_fullscreen)
+    surface.add_listener(L_REQUEST_MINIMIZE, xdg_toplevel_request_minimize, &toplevel.events.request_minimize)
+    surface.add_listener(L_SET_TITLE, xdg_toplevel_set_title_handler, &toplevel.events.set_title)
+    surface.add_listener(L_SET_APP_ID, xdg_toplevel_set_app_id_handler, &toplevel.events.set_app_id)
 
 
 cdef void unregister_toplevel_handlers(Surface surface) noexcept:

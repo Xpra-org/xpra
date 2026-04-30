@@ -154,6 +154,8 @@ cdef extern from "wayland-server-core.h":
         pass
     cdef struct wl_resource:
         pass
+    cdef struct wl_signal:
+        wl_list listener_list
 
     ctypedef struct wl_interface:
         const char *name
@@ -169,8 +171,6 @@ cdef extern from "wayland-server-core.h":
     cdef struct wl_listener:
         wl_notify_func_t notify
         wl_list link
-    ctypedef struct wl_signal:
-        wl_list listener_list
 
     wl_display *wl_display_create()
     void wl_display_destroy(wl_display *display)
