@@ -12,7 +12,7 @@ from collections.abc import Callable
 from xpra.log import Logger
 from xpra.util.str_fn import Ellipsizer
 from xpra.codecs.image import ImageWrapper
-from xpra.common import MoveResize
+from xpra.constants import MoveResize
 
 from libc.stdlib cimport malloc, free, calloc
 from libc.string cimport memset
