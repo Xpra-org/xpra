@@ -118,6 +118,19 @@ def emit(event_name: str, *args) -> None:
         callback(*args)
 
 
+# A wl_listener wrapped with a back-pointer to the struct it belongs to.
+# `listener` MUST be the first field so &xl.listener and &xl share the same
+# address; owner_of() recovers the owner regardless of which event fired.
+cdef struct xpra_listener:
+    wl_listener listener
+    void *owner
+
+
+cdef inline void *owner_of(wl_listener *l) noexcept nogil:
+    cdef size_t offset = <size_t>(<char*>&(<xpra_listener*>0).listener - <char*>0)
+    return (<xpra_listener*>(<char*>l - offset)).owner
+
+
 # Internal structures
 cdef struct server:
     wl_display *display
@@ -131,13 +144,13 @@ cdef struct server:
     wlr_scene *scene
     wlr_seat *seat
     wlr_xdg_decoration_manager_v1 *decoration_manager
-    wl_listener new_toplevel_decoration
+    xpra_listener new_toplevel_decoration
 
     wlr_cursor *cursor
     wlr_output_layout *output_layout
     char *seat_name
-    wl_listener new_output
-    wl_listener new_xdg_surface
+    xpra_listener new_output
+    xpra_listener new_xdg_surface
 
 cdef struct output:
     wl_list link
@@ -145,26 +158,26 @@ cdef struct output:
     wlr_output *wlr_output
     wlr_scene_output *scene_output
 
-    wl_listener frame
-    wl_listener destroy
+    xpra_listener frame
+    xpra_listener destroy
 
 cdef struct xpra_surface:
     server *srv
     wlr_xdg_surface *wlr_xdg_surface
     wlr_scene_tree *scene_tree
 
-    wl_listener map
-    wl_listener unmap
-    wl_listener destroy
-    wl_listener commit
-    wl_listener new_subsurface
-    wl_listener request_move
-    wl_listener request_resize
-    wl_listener request_maximize
-    wl_listener request_fullscreen
-    wl_listener request_minimize
-    wl_listener set_title
-    wl_listener set_app_id
+    xpra_listener map
+    xpra_listener unmap
+    xpra_listener destroy
+    xpra_listener commit
+    xpra_listener new_subsurface
+    xpra_listener request_move
+    xpra_listener request_resize
+    xpra_listener request_maximize
+    xpra_listener request_fullscreen
+    xpra_listener request_minimize
+    xpra_listener set_title
+    xpra_listener set_app_id
 
     int width
     int height
@@ -172,76 +185,6 @@ cdef struct xpra_surface:
 
 
 cdef unsigned long wid = 0
-
-
-# Helper macros as inline functions with compile-time offset calculation
-cdef inline output* output_from_frame(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<output*>0).frame - <char*>0)
-    return <output*>(<char*>listener - offset)
-
-cdef inline output* output_from_destroy(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<output*>0).destroy - <char*>0)
-    return <output*>(<char*>listener - offset)
-
-cdef inline server* server_from_new_output(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<server*>0).new_output - <char*>0)
-    return <server*>(<char*>listener - offset)
-
-cdef inline server* server_from_new_toplevel_decoration(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<server*>0).new_toplevel_decoration - <char*>0)
-    return <server*>(<char*>listener - offset)
-
-cdef inline server* server_from_new_xdg_surface(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<server*>0).new_xdg_surface - <char*>0)
-    return <server*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_map(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).map - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_unmap(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).unmap - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_destroy(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).destroy - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_commit(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).commit - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_new_subsurface(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).new_subsurface - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_request_move(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_move - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_request_resize(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_resize - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_request_maximize(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_maximize - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_request_fullscreen(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_fullscreen - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_request_minimize(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).request_minimize - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_set_title(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).set_title - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
-
-cdef inline xpra_surface* xpra_surface_from_set_app_id(wl_listener *listener) noexcept nogil:
-    cdef size_t offset = <size_t>(<char*>&(<xpra_surface*>0).set_app_id - <char*>0)
-    return <xpra_surface*>(<char*>listener - offset)
 
 
 log = Logger("wayland")
@@ -302,7 +245,7 @@ cdef void output_frame(wl_listener *listener, void *data) noexcept nogil:
     if debug:
         with gil:
             log("output_frame(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
-    cdef output *out = output_from_frame(listener)
+    cdef output *out = <output*>owner_of(listener)
     wlr_scene_output_commit(out.scene_output, NULL)
     wlr_output_schedule_frame(out.wlr_output)
 
@@ -311,16 +254,16 @@ cdef void output_destroy_handler(wl_listener *listener, void *data) noexcept nog
     if debug:
         with gil:
             log("output_destroy_handler(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
-    cdef output *out = output_from_destroy(listener)
-    wl_list_remove(&out.frame.link)
-    wl_list_remove(&out.destroy.link)
+    cdef output *out = <output*>owner_of(listener)
+    wl_list_remove(&out.frame.listener.link)
+    wl_list_remove(&out.destroy.listener.link)
     # out.link is for a list we don't manage:
     # wl_list_remove(&out.link)
     free(out)
 
 
 cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
-    cdef server *srv = server_from_new_output(listener)
+    cdef server *srv = <server*>owner_of(listener)
     cdef wlr_output *wlr_out = <wlr_output*>data
 
     wlr_output_init_render(wlr_out, srv.allocator, srv.renderer)
@@ -329,11 +272,13 @@ cdef void new_output(wl_listener *listener, void *data) noexcept nogil:
     out.srv = srv
     out.wlr_output = wlr_out
 
-    out.frame.notify = output_frame
-    wl_signal_add(&wlr_out.events.frame, &out.frame)
+    out.frame.owner = out
+    out.frame.listener.notify = output_frame
+    wl_signal_add(&wlr_out.events.frame, &out.frame.listener)
 
-    out.destroy.notify = output_destroy_handler
-    wl_signal_add(&wlr_out.events.destroy, &out.destroy)
+    out.destroy.owner = out
+    out.destroy.listener.notify = output_destroy_handler
+    wl_signal_add(&wlr_out.events.destroy, &out.destroy.listener)
 
     out.scene_output = wlr_scene_output_create(srv.scene, wlr_out)
 
@@ -446,7 +391,7 @@ cdef str get_render_format(uint32_t fmt):
 
 
 cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept nogil:
-    cdef server *srv = server_from_new_toplevel_decoration(listener)
+    cdef server *srv = <server*>owner_of(listener)
     cdef wlr_xdg_toplevel_decoration_v1 *decoration = <wlr_xdg_toplevel_decoration_v1*>data
     cdef wlr_xdg_toplevel *toplevel = decoration.toplevel
     cdef bint ssd = decoration.requested_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
@@ -455,7 +400,7 @@ cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept no
         emit("ssd", <uintptr_t> toplevel, bool(ssd))
 
 cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
-    cdef xpra_surface *surface = xpra_surface_from_map(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     cdef wlr_xdg_toplevel *toplevel = surface.wlr_xdg_surface.toplevel
     cdef wlr_box *geometry = &surface.wlr_xdg_surface.geometry
     register_toplevel_handlers(surface)
@@ -469,7 +414,7 @@ cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
 
 cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept nogil:
     # cdef wlr_xdg_surface wx_surface = <wlr_xdg_surface*> data
-    cdef xpra_surface *surface = xpra_surface_from_unmap(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     unregister_toplevel_handlers(surface)
     with gil:
         log("XDG surface UNMAPPED")
@@ -477,14 +422,14 @@ cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept nogil:
 
 
 cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcept:
-    cdef xpra_surface *surface = xpra_surface_from_destroy(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     toplevel = surface.wlr_xdg_surface.toplevel != NULL
     log("XDG surface DESTROYED, toplevel=%s", bool(toplevel))
 
-    wl_list_remove(&surface.map.link)
-    wl_list_remove(&surface.unmap.link)
-    wl_list_remove(&surface.destroy.link)
-    wl_list_remove(&surface.commit.link)
+    wl_list_remove(&surface.map.listener.link)
+    wl_list_remove(&surface.unmap.listener.link)
+    wl_list_remove(&surface.destroy.listener.link)
+    wl_list_remove(&surface.commit.listener.link)
 
     unregister_toplevel_handlers(surface)
 
@@ -499,7 +444,7 @@ cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
     if debug:
         with gil:
             log("xdg_surface_commit(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
-    cdef xpra_surface *surface = xpra_surface_from_commit(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     cdef wlr_xdg_surface *xdg_surface = surface.wlr_xdg_surface
 
     if xdg_surface.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL and xdg_surface.toplevel != NULL:
@@ -571,7 +516,7 @@ cdef list collect_surfaces(wlr_surface *surface):
 
 
 cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept nogil:
-    cdef xpra_surface *parent_surface = xpra_surface_from_new_subsurface(listener)
+    cdef xpra_surface *parent_surface = <xpra_surface*>owner_of(listener)
     cdef wlr_subsurface *subsurface = <wlr_subsurface*> data
 
     with gil:
@@ -591,7 +536,7 @@ cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept nogi
 
 
 cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept nogil:
-    cdef xpra_surface *surface = xpra_surface_from_request_move(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     cdef wlr_xdg_toplevel_move_event *event = <wlr_xdg_toplevel_move_event*> data
     with gil:
         log("Surface REQUEST MOVE")
@@ -618,7 +563,7 @@ EDGES_MAP: dict[int, MoveResize] = {
 
 
 cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept nogil:
-    cdef xpra_surface *surface = xpra_surface_from_request_resize(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     cdef wlr_xdg_toplevel_resize_event *event = <wlr_xdg_toplevel_resize_event*>data
     with gil:
         if debug:
@@ -629,7 +574,7 @@ cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcep
 
 
 cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept nogil:
-    cdef xpra_surface *surface = xpra_surface_from_request_maximize(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     if debug:
         with gil:
             log("Surface REQUEST MAXIMIZE")
@@ -638,7 +583,7 @@ cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexc
 
 
 cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noexcept nogil:
-    cdef xpra_surface *surface = xpra_surface_from_request_fullscreen(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     if debug:
         with gil:
             log("Surface REQUEST FULLSCREEN")
@@ -647,7 +592,7 @@ cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noe
 
 
 cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexcept nogil:
-    cdef xpra_surface *surface = xpra_surface_from_request_minimize(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     if debug:
         with gil:
             log("Surface REQUEST MINIMIZE")
@@ -656,7 +601,7 @@ cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexc
 
 
 cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noexcept nogil:
-    cdef xpra_surface *surface = xpra_surface_from_set_title(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     if surface.wlr_xdg_surface.toplevel.title:
         with gil:
             title = surface.wlr_xdg_surface.toplevel.title.decode("utf8")
@@ -665,14 +610,14 @@ cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noex
 
 
 cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept nogil:
-    cdef xpra_surface *surface = xpra_surface_from_set_app_id(listener)
+    cdef xpra_surface *surface = <xpra_surface*>owner_of(listener)
     if surface.wlr_xdg_surface.toplevel.app_id:
         with gil:
             log.info("Surface SET APP_ID: %s", surface.wlr_xdg_surface.toplevel.app_id)
 
 
 cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
-    cdef server *srv = server_from_new_xdg_surface(listener)
+    cdef server *srv = <server*>owner_of(listener)
     cdef wlr_xdg_surface *xdg_surf = <wlr_xdg_surface*>data
     log("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
     if xdg_surf.role != WLR_XDG_SURFACE_ROLE_NONE and xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
@@ -691,21 +636,26 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
 
     surface.scene_tree = wlr_scene_xdg_surface_create(&srv.scene.tree, xdg_surf)
 
-    surface.map.notify = xdg_surface_map
-    wl_signal_add(&xdg_surf.surface.events.map, &surface.map)
+    surface.map.owner = surface
+    surface.map.listener.notify = xdg_surface_map
+    wl_signal_add(&xdg_surf.surface.events.map, &surface.map.listener)
 
-    surface.unmap.notify = xdg_surface_unmap
-    wl_signal_add(&xdg_surf.surface.events.unmap, &surface.unmap)
+    surface.unmap.owner = surface
+    surface.unmap.listener.notify = xdg_surface_unmap
+    wl_signal_add(&xdg_surf.surface.events.unmap, &surface.unmap.listener)
 
-    surface.destroy.notify = xdg_surface_destroy_handler
-    wl_signal_add(&xdg_surf.surface.events.destroy, &surface.destroy)
+    surface.destroy.owner = surface
+    surface.destroy.listener.notify = xdg_surface_destroy_handler
+    wl_signal_add(&xdg_surf.surface.events.destroy, &surface.destroy.listener)
 
-    surface.commit.notify = xdg_surface_commit
-    wl_signal_add(&xdg_surf.surface.events.commit, &surface.commit)
+    surface.commit.owner = surface
+    surface.commit.listener.notify = xdg_surface_commit
+    wl_signal_add(&xdg_surf.surface.events.commit, &surface.commit.listener)
 
     # Listen for subsurfaces created on this surface
-    surface.new_subsurface.notify = handle_new_subsurface
-    wl_signal_add(&xdg_surf.surface.events.new_subsurface, &surface.new_subsurface)
+    surface.new_subsurface.owner = surface
+    surface.new_subsurface.listener.notify = handle_new_subsurface
+    wl_signal_add(&xdg_surf.surface.events.new_subsurface, &surface.new_subsurface.listener)
 
     cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
     log("toplevel=%#x", <uintptr_t> toplevel)
@@ -731,55 +681,62 @@ cdef void register_toplevel_handlers(xpra_surface *surface) noexcept nogil:
     if toplevel == NULL:
         # no toplevel yet
         return
-    if surface.request_move.link.next != NULL:
+    if surface.request_move.listener.link.next != NULL:
         # already done
         return
 
     with gil:
         log("Surface has toplevel, attaching toplevel handlers")
 
-    surface.request_move.notify = xdg_toplevel_request_move
-    wl_signal_add(&toplevel.events.request_move, &surface.request_move)
+    surface.request_move.owner = surface
+    surface.request_move.listener.notify = xdg_toplevel_request_move
+    wl_signal_add(&toplevel.events.request_move, &surface.request_move.listener)
 
-    surface.request_resize.notify = xdg_toplevel_request_resize
-    wl_signal_add(&toplevel.events.request_resize, &surface.request_resize)
+    surface.request_resize.owner = surface
+    surface.request_resize.listener.notify = xdg_toplevel_request_resize
+    wl_signal_add(&toplevel.events.request_resize, &surface.request_resize.listener)
 
-    surface.request_maximize.notify = xdg_toplevel_request_maximize
-    wl_signal_add(&toplevel.events.request_maximize, &surface.request_maximize)
+    surface.request_maximize.owner = surface
+    surface.request_maximize.listener.notify = xdg_toplevel_request_maximize
+    wl_signal_add(&toplevel.events.request_maximize, &surface.request_maximize.listener)
 
-    surface.request_fullscreen.notify = xdg_toplevel_request_fullscreen
-    wl_signal_add(&toplevel.events.request_fullscreen, &surface.request_fullscreen)
+    surface.request_fullscreen.owner = surface
+    surface.request_fullscreen.listener.notify = xdg_toplevel_request_fullscreen
+    wl_signal_add(&toplevel.events.request_fullscreen, &surface.request_fullscreen.listener)
 
-    surface.request_minimize.notify = xdg_toplevel_request_minimize
-    wl_signal_add(&toplevel.events.request_minimize, &surface.request_minimize)
+    surface.request_minimize.owner = surface
+    surface.request_minimize.listener.notify = xdg_toplevel_request_minimize
+    wl_signal_add(&toplevel.events.request_minimize, &surface.request_minimize.listener)
 
-    surface.set_title.notify = xdg_toplevel_set_title_handler
-    wl_signal_add(&toplevel.events.set_title, &surface.set_title)
+    surface.set_title.owner = surface
+    surface.set_title.listener.notify = xdg_toplevel_set_title_handler
+    wl_signal_add(&toplevel.events.set_title, &surface.set_title.listener)
 
-    surface.set_app_id.notify = xdg_toplevel_set_app_id_handler
-    wl_signal_add(&toplevel.events.set_app_id, &surface.set_app_id)
+    surface.set_app_id.owner = surface
+    surface.set_app_id.listener.notify = xdg_toplevel_set_app_id_handler
+    wl_signal_add(&toplevel.events.set_app_id, &surface.set_app_id.listener)
 
 
 cdef void unregister_toplevel_handlers(xpra_surface *surface) noexcept nogil:
     cdef wlr_xdg_surface *xdg_surf = surface.wlr_xdg_surface
     cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
 
-    if surface.new_subsurface.link.next != NULL:
-        wl_list_remove(&surface.new_subsurface.link)
-    if surface.request_move.link.next != NULL:
-        wl_list_remove(&surface.request_move.link)
-    if surface.request_resize.link.next != NULL:
-        wl_list_remove(&surface.request_resize.link)
-    if surface.request_maximize.link.next != NULL:
-        wl_list_remove(&surface.request_maximize.link)
-    if surface.request_fullscreen.link.next != NULL:
-        wl_list_remove(&surface.request_fullscreen.link)
-    if surface.request_minimize.link.next != NULL:
-        wl_list_remove(&surface.request_minimize.link)
-    if surface.set_title.link.next != NULL:
-        wl_list_remove(&surface.set_title.link)
-    if surface.set_app_id.link.next != NULL:
-        wl_list_remove(&surface.set_app_id.link)
+    if surface.new_subsurface.listener.link.next != NULL:
+        wl_list_remove(&surface.new_subsurface.listener.link)
+    if surface.request_move.listener.link.next != NULL:
+        wl_list_remove(&surface.request_move.listener.link)
+    if surface.request_resize.listener.link.next != NULL:
+        wl_list_remove(&surface.request_resize.listener.link)
+    if surface.request_maximize.listener.link.next != NULL:
+        wl_list_remove(&surface.request_maximize.listener.link)
+    if surface.request_fullscreen.listener.link.next != NULL:
+        wl_list_remove(&surface.request_fullscreen.listener.link)
+    if surface.request_minimize.listener.link.next != NULL:
+        wl_list_remove(&surface.request_minimize.listener.link)
+    if surface.set_title.listener.link.next != NULL:
+        wl_list_remove(&surface.set_title.listener.link)
+    if surface.set_app_id.listener.link.next != NULL:
+        wl_list_remove(&surface.set_app_id.listener.link)
 
 
 def frame_done(surf: int) -> None:
@@ -833,8 +790,9 @@ cdef class WaylandCompositor:
         wlr_data_device_manager_create(self.srv.display)
 
         self.srv.xdg_shell = wlr_xdg_shell_create(self.srv.display, 3)
-        self.srv.new_xdg_surface.notify = new_xdg_surface
-        wl_signal_add(&self.srv.xdg_shell.events.new_surface, &self.srv.new_xdg_surface)
+        self.srv.new_xdg_surface.owner = &self.srv
+        self.srv.new_xdg_surface.listener.notify = new_xdg_surface
+        wl_signal_add(&self.srv.xdg_shell.events.new_surface, &self.srv.new_xdg_surface.listener)
 
         self.srv.scene = wlr_scene_create()
 
@@ -847,8 +805,9 @@ cdef class WaylandCompositor:
         if not self.srv.decoration_manager:
             log.warn("Warning: unable to create the decoration manager")
         else:
-            self.srv.new_toplevel_decoration.notify = new_toplevel_decoration
-            wl_signal_add(&self.srv.decoration_manager.events.new_toplevel_decoration, &self.srv.new_toplevel_decoration)
+            self.srv.new_toplevel_decoration.owner = &self.srv
+            self.srv.new_toplevel_decoration.listener.notify = new_toplevel_decoration
+            wl_signal_add(&self.srv.decoration_manager.events.new_toplevel_decoration, &self.srv.new_toplevel_decoration.listener)
 
         # Create cursor
         self.srv.cursor = wlr_cursor_create()
@@ -862,8 +821,9 @@ cdef class WaylandCompositor:
         cdef int caps = WL_SEAT_CAPABILITY_POINTER | WL_SEAT_CAPABILITY_KEYBOARD | WL_SEAT_CAPABILITY_TOUCH
         wlr_seat_set_capabilities(self.srv.seat, caps)
 
-        self.srv.new_output.notify = new_output
-        wl_signal_add(&self.srv.backend.events.new_output, &self.srv.new_output)
+        self.srv.new_output.owner = &self.srv
+        self.srv.new_output.listener.notify = new_output
+        wl_signal_add(&self.srv.backend.events.new_output, &self.srv.new_output.listener)
 
         bname = wl_display_add_socket_auto(self.srv.display)
         if not bname:
@@ -905,14 +865,14 @@ cdef class WaylandCompositor:
             return
         wl_display_destroy_clients(self.srv.display)
 
-        if self.srv.new_xdg_surface.link.next != NULL:
-            wl_list_remove(&self.srv.new_xdg_surface.link)
+        if self.srv.new_xdg_surface.listener.link.next != NULL:
+            wl_list_remove(&self.srv.new_xdg_surface.listener.link)
 
-        if self.srv.new_output.link.next != NULL:
-            wl_list_remove(&self.srv.new_output.link)
+        if self.srv.new_output.listener.link.next != NULL:
+            wl_list_remove(&self.srv.new_output.listener.link)
 
-        if self.srv.new_toplevel_decoration.link.next != NULL:
-            wl_list_remove(&self.srv.new_toplevel_decoration.link)
+        if self.srv.new_toplevel_decoration.listener.link.next != NULL:
+            wl_list_remove(&self.srv.new_toplevel_decoration.listener.link)
 
         if self.srv.scene:
             wlr_scene_node_destroy(&self.srv.scene.tree.node)
