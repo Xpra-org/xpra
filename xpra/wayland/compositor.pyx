@@ -55,8 +55,8 @@ from xpra.wayland.wlroots cimport (
     wl_display_flush_clients,
     wlr_renderer, wlr_renderer_autocreate, wlr_renderer_destroy, wlr_renderer_init_wl_display,
     wlr_headless_backend_create,
-    wlr_surface, wlr_texture, wlr_client_buffer, wlr_box, wlr_output, wlr_output_state,
-    wlr_xdg_toplevel, wlr_xdg_surface,
+    wlr_surface, wlr_surface_events, wlr_texture, wlr_client_buffer, wlr_box, wlr_output, wlr_output_state,
+    wlr_xdg_toplevel, wlr_xdg_toplevel_events, wlr_xdg_surface,
     wlr_texture_read_pixels_options, wlr_texture_read_pixels,
     wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event,
     wlr_xdg_toplevel_set_size, wlr_xdg_toplevel_set_activated,
@@ -88,6 +88,79 @@ from xpra.wayland.wlroots cimport (
     WLR_EDGE_TOP, WLR_EDGE_BOTTOM, WLR_EDGE_LEFT, WLR_EDGE_RIGHT
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
+
+
+SUBPIXEL_STR: Dict[int, str] = {
+    WL_OUTPUT_SUBPIXEL_UNKNOWN: "",
+    WL_OUTPUT_SUBPIXEL_NONE: "none",
+    WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB: "RGB",
+    WL_OUTPUT_SUBPIXEL_HORIZONTAL_BGR: "BGR",
+    WL_OUTPUT_SUBPIXEL_VERTICAL_RGB: "VRGB",
+    WL_OUTPUT_SUBPIXEL_VERTICAL_BGR: "VBGR",
+}
+
+TRANSFORM_STR: Dict[int, str] = {
+    WL_OUTPUT_TRANSFORM_NORMAL: "",
+    WL_OUTPUT_TRANSFORM_90: "90",
+    WL_OUTPUT_TRANSFORM_180: "180",
+    WL_OUTPUT_TRANSFORM_270: "270",
+    WL_OUTPUT_TRANSFORM_FLIPPED: "flipped",
+    WL_OUTPUT_TRANSFORM_FLIPPED_90: "flipped-90",
+    WL_OUTPUT_TRANSFORM_FLIPPED_180: "flipped-180",
+    WL_OUTPUT_TRANSFORM_FLIPPED_270: "flipped-270",
+}
+
+
+RENDER_FORMAT_STR: Dict[int, str] = {
+    DRM_FORMAT_BGRX5551: "BGRX5551",
+    DRM_FORMAT_ARGB1555: "ARGB1555",
+    DRM_FORMAT_ABGR1555: "ABGR1555",
+    DRM_FORMAT_RGBA5551: "RGBA5551",
+    DRM_FORMAT_BGRA5551: "BGRA5551",
+    DRM_FORMAT_RGB565: "RGB565",
+    DRM_FORMAT_BGR565: "BGR565",
+    DRM_FORMAT_RGB888: "RGB888",
+    DRM_FORMAT_BGR888: "BGR888",
+    DRM_FORMAT_XRGB8888: "XRGB8888",
+    DRM_FORMAT_XBGR8888: "XBGR8888",
+    DRM_FORMAT_RGBX8888: "RGBX8888",
+    DRM_FORMAT_BGRX8888: "BGRX8888",
+    DRM_FORMAT_ARGB8888: "ARGB8888",
+    DRM_FORMAT_ABGR8888: "ABGR8888",
+    DRM_FORMAT_RGBA8888: "RGBA8888",
+    DRM_FORMAT_BGRA8888: "BGRA8888",
+    DRM_FORMAT_XRGB2101010: "XRGB2101010",
+    DRM_FORMAT_XBGR2101010: "XBGR2101010",
+    DRM_FORMAT_RGBX1010102: "RGBX1010102",
+    DRM_FORMAT_BGRX1010102: "BGRX1010102",
+    DRM_FORMAT_ARGB2101010: "ARGB2101010",
+    DRM_FORMAT_ABGR2101010: "ABGR2101010",
+    DRM_FORMAT_RGBA1010102: "RGBA1010102",
+    DRM_FORMAT_BGRA1010102: "BGRA1010102",
+    DRM_FORMAT_XRGB16161616: "XRGB16161616",
+    DRM_FORMAT_XBGR16161616: "XBGR16161616",
+    DRM_FORMAT_ARGB16161616: "ARGB16161616",
+    DRM_FORMAT_ABGR16161616: "ABGR16161616",
+}
+
+EDGES: Dict[int, str] = {
+    WLR_EDGE_TOP: "TOP",
+    WLR_EDGE_BOTTOM: "BOTTOM",
+    WLR_EDGE_LEFT: "LEFT",
+    WLR_EDGE_RIGHT: "RIGHT",
+}
+
+EDGES_MAP: Dict[int, MoveResize] = {
+    WLR_EDGE_TOP: MoveResize.SIZE_TOP,
+    WLR_EDGE_TOP | WLR_EDGE_LEFT: MoveResize.SIZE_TOPLEFT,
+    WLR_EDGE_TOP | WLR_EDGE_RIGHT: MoveResize.SIZE_TOPRIGHT,
+    WLR_EDGE_BOTTOM: MoveResize.SIZE_BOTTOM,
+    WLR_EDGE_BOTTOM | WLR_EDGE_LEFT: MoveResize.SIZE_BOTTOMLEFT,
+    WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT: MoveResize.SIZE_BOTTOMRIGHT,
+    WLR_EDGE_LEFT: MoveResize.SIZE_LEFT,
+    WLR_EDGE_RIGHT: MoveResize.SIZE_RIGHT,
+}
+
 
 # generic event listeners:
 event_listeners: Dict[str, List[Callable]] = {}
@@ -201,8 +274,213 @@ cdef class Surface:
     cdef int height
     cdef unsigned long wid
 
+    def __repr__(self):
+        return "Surface(%i)" % self.wid
+
     cdef add_listener(self, int slot, wl_notify_func_t notify, wl_signal *signal) noexcept:
         attach_listener(self.listeners, slot, <void*> self, notify, signal)
+
+    cdef add_main_listeners(self):
+        cdef wlr_surface *s = self.wlr_xdg_surface.surface
+        self.add_listener(L_COMMIT, xdg_surface_commit, &s.events.commit)
+        self.add_listener(L_MAP, xdg_surface_map, &s.events.map)
+        self.add_listener(L_UNMAP, xdg_surface_unmap, &s.events.unmap)
+        self.add_listener(L_NEW_SUBSURFACE, handle_new_subsurface, &s.events.new_subsurface)
+        self.add_listener(L_DESTROY, xdg_surface_destroy_handler, &s.events.destroy)
+
+    cdef void register_toplevel_handlers(self) noexcept:
+        cdef wlr_xdg_toplevel *t = self.wlr_xdg_surface.toplevel
+        if t == NULL:
+            # no toplevel yet
+            return
+        if self.listeners[L_REQUEST_MOVE].listener.link.next != NULL:
+            # already done
+            return
+
+        log("Surface has toplevel, attaching toplevel handlers")
+        self.add_listener(L_REQUEST_MAXIMIZE, xdg_toplevel_request_maximize, &t.events.request_maximize)
+        self.add_listener(L_REQUEST_FULLSCREEN, xdg_toplevel_request_fullscreen, &t.events.request_fullscreen)
+        self.add_listener(L_REQUEST_MINIMIZE, xdg_toplevel_request_minimize, &t.events.request_minimize)
+        self.add_listener(L_REQUEST_MOVE, xdg_toplevel_request_move, &t.events.request_move)
+        self.add_listener(L_REQUEST_RESIZE, xdg_toplevel_request_resize, &t.events.request_resize)
+        # show window menu!
+        # set parent!
+        self.add_listener(L_SET_TITLE, xdg_toplevel_set_title_handler, &t.events.set_title)
+        self.add_listener(L_SET_APP_ID, xdg_toplevel_set_app_id_handler, &t.events.set_app_id)
+
+    cdef void map(self) noexcept:
+        toplevel = self.wlr_xdg_surface.toplevel
+        geometry = &self.wlr_xdg_surface.geometry
+        self.register_toplevel_handlers()
+        title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
+        app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
+        size = (geometry.width, geometry.height)
+        if debug:
+            log("XDG surface MAPPED: %r, size=%s", title, size)
+        emit("map", self.wid, title, app_id, size)
+
+    cdef void unmap(self) noexcept:
+        self.unregister_toplevel_handlers()
+        log("XDG surface UNMAPPED")
+        emit("unmap", self.wid)
+
+    cdef void destroy(self) noexcept:
+        log("XDG surface DESTROYED, toplevel=%s", bool(self.wlr_xdg_surface.toplevel != NULL))
+        # Detach all listeners while wlr_surface event lists are still valid.
+        cdef int i
+        for i in range(N_LISTENERS):
+            if self.listeners[i].listener.link.next != NULL:
+                wl_list_remove(&self.listeners[i].listener.link)
+                self.listeners[i].listener.link.next = NULL
+
+        cdef unsigned long surface_wid = self.wid
+        cdef uintptr_t key = <uintptr_t>self.wlr_xdg_surface
+        global surfaces
+        surfaces.pop(key, None)
+        if debug:
+            log("xdg surface dropped")
+        emit("destroy", surface_wid)
+
+    cdef void request_move(self, serial: int) noexcept:
+        log("Surface REQUEST MOVE")
+        emit("move", self.wid, serial)
+
+    cdef void request_resize(self, edges: int, serial: int) noexcept:
+        if debug:
+            edge_names = tuple(edge_name for edge_val, edge_name in EDGES.items() if edges & edge_val)
+            log("Surface REQUEST RESIZE edges: %d - %r", edges, edge_names)
+        enumval = EDGES_MAP.get(edges, MoveResize.CANCEL)
+        emit("resize", self.wid, serial, enumval)
+
+    cdef void request_maximize(self) noexcept:
+        if debug:
+            log("Surface REQUEST MAXIMIZE")
+        emit("maximize", self.wid)
+
+    cdef void request_fullscreen(self) noexcept:
+        if debug:
+            log("Surface REQUEST FULLSCREEN")
+        emit("fullscreen", self.wid)
+
+    cdef void request_minimize(self) noexcept:
+        if debug:
+            log("Surface REQUEST MINIMIZE")
+        emit("minimize", self.wid)
+
+    cdef void set_title(self) noexcept:
+        if self.wlr_xdg_surface.toplevel.title:
+            title = self.wlr_xdg_surface.toplevel.title.decode("utf8")
+            log("Surface SET TITLE: %s", title)
+            emit("title", title)
+
+    cdef void set_app_id(self) noexcept:
+        if self.wlr_xdg_surface.toplevel.app_id:
+            log.info("Surface SET APP_ID: %s", self.wlr_xdg_surface.toplevel.app_id)
+
+    cdef void commit(self) noexcept:
+        if debug:
+            log("xdg_surface_commit")
+        xdg_surface = self.wlr_xdg_surface
+
+        if xdg_surface.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL and xdg_surface.toplevel != NULL:
+            self.register_toplevel_handlers()
+            # Fallback: If configure wasn't sent yet (toplevel wasn't ready), send it now
+            if xdg_surface.initialized and not xdg_surface.configured:
+                log("Surface initialized, sending first configure")
+                wlr_xdg_toplevel_set_size(xdg_surface.toplevel, 0, 0)
+                wlr_xdg_surface_schedule_configure(xdg_surface)
+
+        size = (xdg_surface.geometry.width, xdg_surface.geometry.height)
+        wlr_surf = xdg_surface.surface
+        rects = []
+        if wlr_surf.mapped:
+            rects = get_damage_areas(&wlr_surf.buffer_damage)
+            self.capture_surface_pixels()
+
+        subsurfaces = collect_surfaces(wlr_surf)
+        emit("commit", self.wid, bool(wlr_surf.mapped), size, rects, subsurfaces)
+
+    cdef void capture_surface_pixels(self) noexcept:
+        cdef wlr_surface *wlr_surface = self.wlr_xdg_surface.surface
+        cdef wlr_client_buffer *client_buffer = wlr_surface.buffer
+        if not client_buffer:
+            return
+        cdef wlr_texture *texture = client_buffer.texture
+        if not texture:
+            return
+
+        cdef uint32_t width = texture.width
+        cdef uint32_t height = texture.height
+        cdef uint32_t stride = width * 4
+        cdef uint32_t texture_size = stride * height
+        cdef MemBuf texture_buffer = getbuf(texture_size, 0)
+        if debug:
+            log("Allocated pixel buffer: %dx%d (%d bytes)", width, height, texture_size)
+
+        cdef wlr_texture_read_pixels_options opts
+        opts.data = <void*> texture_buffer.get_mem()
+        opts.format = DRM_FORMAT_ABGR8888
+        opts.stride = stride
+        opts.dst_x = 0
+        opts.dst_y = 0
+        # we can't modify src_box because it is declared as const,
+        # but since we also cannot initialize the struct with the value we need,
+        # let's patch it up by hand afterwards - yes this is safe
+        cdef wlr_box src_box
+        memset(<void *> &opts.src_box, 0, sizeof(wlr_box))
+        cdef int *iptr
+        iptr = <int*> &opts.src_box.x
+        iptr[0] = self.wlr_xdg_surface.geometry.x
+        iptr = <int*> &opts.src_box.y
+        iptr[0] = self.wlr_xdg_surface.geometry.y
+        iptr = <int*> &opts.src_box.width
+        iptr[0] = width
+        iptr = <int*> &opts.src_box.height
+        iptr[0] = height
+
+        cdef bint success
+        with nogil:
+            success = wlr_texture_read_pixels(texture, &opts)
+        if not success:
+            log.error("Error: failed to read texture pixels")
+            return
+
+        pixels = memoryview(texture_buffer)
+        image = ImageWrapper(0, 0, width, height, pixels, "BGRA", 32, stride)
+        emit("surface-image", self.wid, image)
+
+    cdef void new_subsurface(self, wlr_subsurface *subsurface) noexcept:
+        log("New SUBSURFACE created, parent wid=%#x", self.wid)
+        log(" subsurface wlr_surface=%#x, parent wlr_surface=%#x",
+            <uintptr_t>subsurface.surface, <uintptr_t>subsurface.parent)
+
+        # Get dimensions if available
+        width = subsurface.surface.current.width if subsurface.surface else 0
+        height = subsurface.surface.current.height if subsurface.surface else 0
+
+        global wid
+        wid += 1
+        log("allocated wid=%#x", wid)
+        # TODO: allocate Surface and populate it
+        emit("new-subsurface", self.wid, wid, <uintptr_t> subsurface.surface, width, height)
+
+    cdef void unregister_toplevel_handlers(self) noexcept:
+        cdef int slot
+        cdef int toplevel_slots[8]
+        toplevel_slots[0] = L_NEW_SUBSURFACE
+        toplevel_slots[1] = L_REQUEST_MOVE
+        toplevel_slots[2] = L_REQUEST_RESIZE
+        toplevel_slots[3] = L_REQUEST_MAXIMIZE
+        toplevel_slots[4] = L_REQUEST_FULLSCREEN
+        toplevel_slots[5] = L_REQUEST_MINIMIZE
+        toplevel_slots[6] = L_SET_TITLE
+        toplevel_slots[7] = L_SET_APP_ID
+        cdef int i
+        for i in range(8):
+            slot = toplevel_slots[i]
+            if self.listeners[slot].listener.link.next != NULL:
+                wl_list_remove(&self.listeners[slot].listener.link)
+                self.listeners[slot].listener.link.next = NULL
 
     def __dealloc__(self):
         # Idempotent listener detach; safe because xdg_surface_destroy_handler
@@ -219,56 +497,6 @@ cdef class Surface:
 # Registry that keeps Surface objects alive while wlroots holds listener refs.
 # Removed in xdg_surface_destroy_handler so __dealloc__ runs deterministically.
 surfaces: Dict[int, Surface] = {}
-
-
-# Callback implementations
-cdef void capture_surface_pixels(Surface surface) noexcept:
-    cdef wlr_surface *wlr_surface = surface.wlr_xdg_surface.surface
-    cdef wlr_client_buffer *client_buffer = wlr_surface.buffer
-    if not client_buffer:
-        return
-    cdef wlr_texture *texture = client_buffer.texture
-    if not texture:
-        return
-
-    cdef uint32_t width = texture.width
-    cdef uint32_t height = texture.height
-    cdef uint32_t stride = width * 4
-    cdef uint32_t texture_size = stride * height
-    cdef MemBuf texture_buffer = getbuf(texture_size, 0)
-    log("Allocated pixel buffer: %dx%d (%d bytes)", width, height, texture_size)
-
-    cdef wlr_texture_read_pixels_options opts
-    opts.data = <void*> texture_buffer.get_mem()
-    opts.format = DRM_FORMAT_ABGR8888
-    opts.stride = stride
-    opts.dst_x = 0
-    opts.dst_y = 0
-    # we can't modify src_box because it is declared as const,
-    # but since we also cannot initialize the struct with the value we need,
-    # let's patch it up by hand afterwards - yes this is safe
-    cdef wlr_box src_box
-    memset(<void *> &opts.src_box, 0, sizeof(wlr_box))
-    cdef int *iptr
-    iptr = <int*> &opts.src_box.x
-    iptr[0] = surface.wlr_xdg_surface.geometry.x
-    iptr = <int*> &opts.src_box.y
-    iptr[0] = surface.wlr_xdg_surface.geometry.y
-    iptr = <int*> &opts.src_box.width
-    iptr[0] = width
-    iptr = <int*> &opts.src_box.height
-    iptr[0] = height
-
-    cdef bint success
-    with nogil:
-        success = wlr_texture_read_pixels(texture, &opts)
-    if not success:
-        log.error("Error: failed to read texture pixels")
-        return
-
-    pixels = memoryview(texture_buffer)
-    image = ImageWrapper(0, 0, width, height, pixels, "BGRA", 32, stride)
-    emit("surface-image", surface.wid, image)
 
 
 cdef void output_frame(wl_listener *listener, void *data) noexcept nogil:
@@ -351,26 +579,10 @@ cdef Dict get_output_info(wlr_output *output):
     if output.refresh:
         info["vertical-refresh"] = round(output.refresh / 1000)
         info["refresh"] = output.refresh        # MHz
-    subpixel = {
-        WL_OUTPUT_SUBPIXEL_UNKNOWN: "",
-        WL_OUTPUT_SUBPIXEL_NONE: "none",
-        WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB: "RGB",
-        WL_OUTPUT_SUBPIXEL_HORIZONTAL_BGR: "BGR",
-        WL_OUTPUT_SUBPIXEL_VERTICAL_RGB: "VRGB",
-        WL_OUTPUT_SUBPIXEL_VERTICAL_BGR: "VBGR",
-    }.get(output.subpixel)
+    subpixel = SUBPIXEL_STR.get(output.subpixel, "")
     if subpixel:
         info["subpixel"] = subpixel
-    transform = {
-        WL_OUTPUT_TRANSFORM_NORMAL: "",
-        WL_OUTPUT_TRANSFORM_90: "90",
-        WL_OUTPUT_TRANSFORM_180: "180",
-        WL_OUTPUT_TRANSFORM_270: "270",
-        WL_OUTPUT_TRANSFORM_FLIPPED: "flipped",
-        WL_OUTPUT_TRANSFORM_FLIPPED_90: "flipped-90",
-        WL_OUTPUT_TRANSFORM_FLIPPED_180: "flipped-180",
-        WL_OUTPUT_TRANSFORM_FLIPPED_270: "flipped-270",
-    }.get(output.transform)
+    transform = TRANSFORM_STR.get(output.transform, "")
     if transform:
         info["transform"] = transform
     if output.adaptive_sync_supported:
@@ -382,44 +594,10 @@ cdef Dict get_output_info(wlr_output *output):
     if output.non_desktop:
         info["non-desktop"] = True
     info["commit-sequence"] = output.commit_seq
-    info["render-format"] = get_render_format(output.render_format)
+    info["render-format"] = RENDER_FORMAT_STR.get(output.render_format, "")
     # wl_list modes
     # wlr_output_mode *current_mode
     return info
-
-
-cdef str get_render_format(uint32_t fmt):
-    return {
-        DRM_FORMAT_BGRX5551: "BGRX5551",
-        DRM_FORMAT_ARGB1555: "ARGB1555",
-        DRM_FORMAT_ABGR1555: "ABGR1555",
-        DRM_FORMAT_RGBA5551: "RGBA5551",
-        DRM_FORMAT_BGRA5551: "BGRA5551",
-        DRM_FORMAT_RGB565: "RGB565",
-        DRM_FORMAT_BGR565: "BGR565",
-        DRM_FORMAT_RGB888: "RGB888",
-        DRM_FORMAT_BGR888: "BGR888",
-        DRM_FORMAT_XRGB8888: "XRGB8888",
-        DRM_FORMAT_XBGR8888: "XBGR8888",
-        DRM_FORMAT_RGBX8888: "RGBX8888",
-        DRM_FORMAT_BGRX8888: "BGRX8888",
-        DRM_FORMAT_ARGB8888: "ARGB8888",
-        DRM_FORMAT_ABGR8888: "ABGR8888",
-        DRM_FORMAT_RGBA8888: "RGBA8888",
-        DRM_FORMAT_BGRA8888: "BGRA8888",
-        DRM_FORMAT_XRGB2101010: "XRGB2101010",
-        DRM_FORMAT_XBGR2101010: "XBGR2101010",
-        DRM_FORMAT_RGBX1010102: "RGBX1010102",
-        DRM_FORMAT_BGRX1010102: "BGRX1010102",
-        DRM_FORMAT_ARGB2101010: "ARGB2101010",
-        DRM_FORMAT_ABGR2101010: "ABGR2101010",
-        DRM_FORMAT_RGBA1010102: "RGBA1010102",
-        DRM_FORMAT_BGRA1010102: "BGRA1010102",
-        DRM_FORMAT_XRGB16161616: "XRGB16161616",
-        DRM_FORMAT_XBGR16161616: "XBGR16161616",
-        DRM_FORMAT_ARGB16161616: "ARGB16161616",
-        DRM_FORMAT_ABGR16161616: "ABGR16161616",
-    }.get(fmt, "")
 
 
 cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept nogil:
@@ -432,70 +610,61 @@ cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept no
         emit("ssd", <uintptr_t> toplevel, bool(ssd))
 
 
-cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept nogil:
-    with gil:
-        surface = <Surface>owner_of(listener)
-        toplevel = surface.wlr_xdg_surface.toplevel
-        geometry = &surface.wlr_xdg_surface.geometry
-        register_toplevel_handlers(surface)
-        title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
-        app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
-        size = (geometry.width, geometry.height)
-        log("XDG surface MAPPED: %r, size=%s", title, size)
-        emit("map", surface.wid, title, app_id, size)
+cdef void xdg_surface_map(wl_listener *listener, void *data) noexcept:
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.map()
 
 
-cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept nogil:
-    with gil:
-        surface = <Surface>owner_of(listener)
-        unregister_toplevel_handlers(surface)
-        log("XDG surface UNMAPPED")
-        emit("unmap", surface.wid)
+cdef void xdg_surface_unmap(wl_listener *listener, void *data) noexcept:
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.unmap()
 
 
 cdef void xdg_surface_destroy_handler(wl_listener *listener, void *data) noexcept:
     cdef Surface surface = <Surface>owner_of(listener)
-    log("XDG surface DESTROYED, toplevel=%s", bool(surface.wlr_xdg_surface.toplevel != NULL))
-
-    # Detach all listeners while wlr_surface event lists are still valid.
-    cdef int i
-    for i in range(N_LISTENERS):
-        if surface.listeners[i].listener.link.next != NULL:
-            wl_list_remove(&surface.listeners[i].listener.link)
-            surface.listeners[i].listener.link.next = NULL
-
-    cdef unsigned long surface_wid = surface.wid
-    cdef uintptr_t key = <uintptr_t>surface.wlr_xdg_surface
-    surfaces.pop(key, None)
-    if debug:
-        log("xdg surface dropped")
-        emit("destroy", surface_wid)
+    surface.destroy()
 
 
-cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept nogil:
-    with gil:
-        if debug:
-            log("xdg_surface_commit(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
-        surface = <Surface>owner_of(listener)
-        xdg_surface = surface.wlr_xdg_surface
+cdef void xdg_surface_commit(wl_listener *listener, void *data) noexcept:
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.commit()
 
-        if xdg_surface.role == WLR_XDG_SURFACE_ROLE_TOPLEVEL and xdg_surface.toplevel != NULL:
-            register_toplevel_handlers(surface)
-            # Fallback: If configure wasn't sent yet (toplevel wasn't ready), send it now
-            if xdg_surface.initialized and not xdg_surface.configured:
-                log("Surface initialized, sending first configure")
-                wlr_xdg_toplevel_set_size(xdg_surface.toplevel, 0, 0)
-                wlr_xdg_surface_schedule_configure(xdg_surface)
 
-        size = (xdg_surface.geometry.width, xdg_surface.geometry.height)
-        wlr_surf = xdg_surface.surface
-        rects = []
-        if wlr_surf.mapped:
-            rects = get_damage_areas(&wlr_surf.buffer_damage)
-            capture_surface_pixels(surface)
+cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept:
+    cdef wlr_xdg_toplevel_move_event *event = <wlr_xdg_toplevel_move_event*> data
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.request_move(event.serial)
 
-        subsurfaces = collect_surfaces(wlr_surf)
-        emit("commit", surface.wid, bool(wlr_surf.mapped), size, rects, subsurfaces)
+
+cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept:
+    cdef wlr_xdg_toplevel_resize_event *event = <wlr_xdg_toplevel_resize_event*>data
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.request_resize(event.edges, event.serial)
+
+
+cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept:
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.request_maximize()
+
+
+cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noexcept:
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.request_fullscreen()
+
+
+cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexcept:
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.request_minimize()
+
+
+cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noexcept:
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.set_title()
+
+
+cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept:
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.set_app_id()
 
 
 cdef list get_damage_areas(pixman_region32_t *damage):
@@ -544,102 +713,10 @@ cdef list collect_surfaces(wlr_surface *surface):
     return surfaces
 
 
-cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept nogil:
+cdef void handle_new_subsurface(wl_listener *listener, void *data) noexcept:
     cdef wlr_subsurface *subsurface = <wlr_subsurface*> data
-
-    with gil:
-        parent_surface = <Surface>owner_of(listener)
-        log("New SUBSURFACE created, parent wid=%#x", parent_surface.wid)
-        log(" subsurface wlr_surface=%#x, parent wlr_surface=%#x",
-            <uintptr_t>subsurface.surface, <uintptr_t>subsurface.parent)
-
-        # Get dimensions if available
-        width = subsurface.surface.current.width if subsurface.surface else 0
-        height = subsurface.surface.current.height if subsurface.surface else 0
-
-        global wid
-        wid += 1
-        log("allocated wid=%#x", wid)
-        # TODO: allocate Surface and populate it
-        emit("new-subsurface", parent_surface.wid, wid, <uintptr_t> subsurface.surface, width, height)
-
-
-cdef void xdg_toplevel_request_move(wl_listener *listener, void *data) noexcept nogil:
-    cdef wlr_xdg_toplevel_move_event *event = <wlr_xdg_toplevel_move_event*> data
-    with gil:
-        surface = <Surface>owner_of(listener)
-        log("Surface REQUEST MOVE")
-        emit("move", surface.wid, event.serial)
-
-
-EDGES: Dict[int, str] = {
-    WLR_EDGE_TOP: "TOP",
-    WLR_EDGE_BOTTOM: "BOTTOM",
-    WLR_EDGE_LEFT: "LEFT",
-    WLR_EDGE_RIGHT: "RIGHT",
-}
-
-EDGES_MAP: Dict[int, MoveResize] = {
-    WLR_EDGE_TOP: MoveResize.SIZE_TOP,
-    WLR_EDGE_TOP | WLR_EDGE_LEFT: MoveResize.SIZE_TOPLEFT,
-    WLR_EDGE_TOP | WLR_EDGE_RIGHT: MoveResize.SIZE_TOPRIGHT,
-    WLR_EDGE_BOTTOM: MoveResize.SIZE_BOTTOM,
-    WLR_EDGE_BOTTOM | WLR_EDGE_LEFT: MoveResize.SIZE_BOTTOMLEFT,
-    WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT: MoveResize.SIZE_BOTTOMRIGHT,
-    WLR_EDGE_LEFT: MoveResize.SIZE_LEFT,
-    WLR_EDGE_RIGHT: MoveResize.SIZE_RIGHT,
-}
-
-
-cdef void xdg_toplevel_request_resize(wl_listener *listener, void *data) noexcept nogil:
-    cdef wlr_xdg_toplevel_resize_event *event = <wlr_xdg_toplevel_resize_event*>data
-    with gil:
-        surface = <Surface>owner_of(listener)
-        if debug:
-            edges = tuple(edge_name for edge_val, edge_name in EDGES.items() if event.edges & edge_val)
-            log("Surface REQUEST RESIZE edges: %d - %r", event.edges, edges)
-        enumval = EDGES_MAP.get(event.edges, MoveResize.CANCEL)
-        emit("resize", surface.wid, event.serial, enumval)
-
-
-cdef void xdg_toplevel_request_maximize(wl_listener *listener, void *data) noexcept nogil:
-    with gil:
-        surface = <Surface>owner_of(listener)
-        if debug:
-            log("Surface REQUEST MAXIMIZE")
-        emit("maximize", surface.wid)
-
-
-cdef void xdg_toplevel_request_fullscreen(wl_listener *listener, void *data) noexcept nogil:
-    with gil:
-        surface = <Surface>owner_of(listener)
-        if debug:
-            log("Surface REQUEST FULLSCREEN")
-        emit("fullscreen", surface.wid)
-
-
-cdef void xdg_toplevel_request_minimize(wl_listener *listener, void *data) noexcept nogil:
-    with gil:
-        surface = <Surface>owner_of(listener)
-        if debug:
-            log("Surface REQUEST MINIMIZE")
-        emit("minimize", surface.wid)
-
-
-cdef void xdg_toplevel_set_title_handler(wl_listener *listener, void *data) noexcept nogil:
-    with gil:
-        surface = <Surface>owner_of(listener)
-        if surface.wlr_xdg_surface.toplevel.title:
-            title = surface.wlr_xdg_surface.toplevel.title.decode("utf8")
-            log("Surface SET TITLE: %s", title)
-            emit("title", title)
-
-
-cdef void xdg_toplevel_set_app_id_handler(wl_listener *listener, void *data) noexcept nogil:
-    with gil:
-        surface = <Surface>owner_of(listener)
-        if surface.wlr_xdg_surface.toplevel.app_id:
-            log.info("Surface SET APP_ID: %s", surface.wlr_xdg_surface.toplevel.app_id)
+    cdef Surface surface = <Surface>owner_of(listener)
+    surface.new_subsurface(subsurface)
 
 
 cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
@@ -661,17 +738,12 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     log("allocated wid=%#x", wid)
 
     surface.scene_tree = wlr_scene_xdg_surface_create(&srv.scene.tree, xdg_surf)
-
-    surface.add_listener(L_MAP, xdg_surface_map, &xdg_surf.surface.events.map)
-    surface.add_listener(L_UNMAP, xdg_surface_unmap, &xdg_surf.surface.events.unmap)
-    surface.add_listener(L_DESTROY, xdg_surface_destroy_handler, &xdg_surf.surface.events.destroy)
-    surface.add_listener(L_COMMIT, xdg_surface_commit, &xdg_surf.surface.events.commit)
-    surface.add_listener(L_NEW_SUBSURFACE, handle_new_subsurface, &xdg_surf.surface.events.new_subsurface)
+    surface.add_main_listeners()
 
     cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
     log("toplevel=%#x", <uintptr_t> toplevel)
     if toplevel:
-        register_toplevel_handlers(surface)
+        surface.register_toplevel_handlers()
         # Send initial configure for the toplevel
         log("Sending initial configure for toplevel")
         wlr_xdg_toplevel_set_size(toplevel, 0, 0)  # 0, 0 = let client choose initial size
@@ -687,45 +759,6 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
     log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
     emit("new-surface", <uintptr_t> xdg_surf, wid, title, app_id, size)
-
-
-cdef void register_toplevel_handlers(Surface surface) noexcept:
-    cdef wlr_xdg_surface *xdg_surf = surface.wlr_xdg_surface
-    cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
-    if toplevel == NULL:
-        # no toplevel yet
-        return
-    if surface.listeners[L_REQUEST_MOVE].listener.link.next != NULL:
-        # already done
-        return
-
-    log("Surface has toplevel, attaching toplevel handlers")
-    surface.add_listener(L_REQUEST_MOVE, xdg_toplevel_request_move, &toplevel.events.request_move)
-    surface.add_listener(L_REQUEST_RESIZE, xdg_toplevel_request_resize, &toplevel.events.request_resize)
-    surface.add_listener(L_REQUEST_MAXIMIZE, xdg_toplevel_request_maximize, &toplevel.events.request_maximize)
-    surface.add_listener(L_REQUEST_FULLSCREEN, xdg_toplevel_request_fullscreen, &toplevel.events.request_fullscreen)
-    surface.add_listener(L_REQUEST_MINIMIZE, xdg_toplevel_request_minimize, &toplevel.events.request_minimize)
-    surface.add_listener(L_SET_TITLE, xdg_toplevel_set_title_handler, &toplevel.events.set_title)
-    surface.add_listener(L_SET_APP_ID, xdg_toplevel_set_app_id_handler, &toplevel.events.set_app_id)
-
-
-cdef void unregister_toplevel_handlers(Surface surface) noexcept:
-    cdef int slot
-    cdef int toplevel_slots[8]
-    toplevel_slots[0] = L_NEW_SUBSURFACE
-    toplevel_slots[1] = L_REQUEST_MOVE
-    toplevel_slots[2] = L_REQUEST_RESIZE
-    toplevel_slots[3] = L_REQUEST_MAXIMIZE
-    toplevel_slots[4] = L_REQUEST_FULLSCREEN
-    toplevel_slots[5] = L_REQUEST_MINIMIZE
-    toplevel_slots[6] = L_SET_TITLE
-    toplevel_slots[7] = L_SET_APP_ID
-    cdef int i
-    for i in range(8):
-        slot = toplevel_slots[i]
-        if surface.listeners[slot].listener.link.next != NULL:
-            wl_list_remove(&surface.listeners[slot].listener.link)
-            surface.listeners[slot].listener.link.next = NULL
 
 
 def frame_done(surf: int) -> None:
