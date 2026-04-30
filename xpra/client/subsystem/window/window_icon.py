@@ -6,6 +6,7 @@
 import os
 from time import time
 
+from xpra.common import noop
 from xpra.net.common import Packet
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.os_util import OSX
@@ -148,7 +149,8 @@ class WindowIcon(StubClientMixin):
             wid, w, h, coding, len(data), img, window)
         if window and img:
             window.update_icon(img)
-            self.set_tray_icon()
+            set_tray_icon = getattr(self, "set_tray_icon", noop)
+            set_tray_icon()
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets("window-icon", main_thread=True)
