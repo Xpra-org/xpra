@@ -273,9 +273,33 @@ cdef class Surface:
     cdef int width
     cdef int height
     cdef unsigned long wid
+    cdef dict _callbacks  # {event_name: [callable, ...]}
+
+    def __cinit__(self):
+        self._callbacks = {}
 
     def __repr__(self):
         return "Surface(%i)" % self.wid
+
+    def connect(self, event: str, callback) -> None:
+        self._callbacks.setdefault(event, []).append(callback)
+
+    def disconnect(self, event: str, callback) -> None:
+        cbs = self._callbacks.get(event)
+        if not cbs or callback not in cbs:
+            return
+        cbs.remove(callback)
+        if not cbs:
+            self._callbacks.pop(event, None)
+
+    cdef _emit(self, str event, tuple args):
+        cdef list cbs = self._callbacks.get(event)
+        if not cbs:
+            return
+        if debug:
+            log("Surface(%i)._emit(%r, %s) callbacks=%s", self.wid, event, Ellipsizer(args), cbs)
+        for cb in cbs:
+            cb(*args)
 
     cdef inline void add_listener(self, int slot, wl_signal *signal) noexcept:
         attach_listener(self.listeners, slot, <void*>self, surface_dispatch, signal)
@@ -334,12 +358,12 @@ cdef class Surface:
         size = (geometry.width, geometry.height)
         if debug:
             log("XDG surface MAPPED: %r, size=%s", title, size)
-        emit("map", self.wid, title, app_id, size)
+        self._emit("map", (self.wid, title, app_id, size))
 
     cdef void unmap(self) noexcept:
         self.unregister_toplevel_handlers()
         log("XDG surface UNMAPPED")
-        emit("unmap", self.wid)
+        self._emit("unmap", (self.wid,))
 
     cdef void destroy(self) noexcept:
         log("XDG surface DESTROYED, toplevel=%s", bool(self.wlr_xdg_surface.toplevel != NULL))
@@ -349,42 +373,42 @@ cdef class Surface:
         # dict-pop below would not drop refcount to zero until after this event
         # handler returns — by then wlroots' event lists are gone.
         self._detach_all()
-        emit("destroy", self.wid)
+        self._emit("destroy", (self.wid,))
         if debug:
             log("xdg surface dropped")
         surfaces.pop(<uintptr_t>self.wlr_xdg_surface, None)
 
     cdef void request_move(self, serial: int) noexcept:
         log("Surface REQUEST MOVE")
-        emit("move", self.wid, serial)
+        self._emit("move", (self.wid, serial))
 
     cdef void request_resize(self, edges: int, serial: int) noexcept:
         if debug:
             edge_names = tuple(edge_name for edge_val, edge_name in EDGES.items() if edges & edge_val)
             log("Surface REQUEST RESIZE edges: %d - %r", edges, edge_names)
         enumval = EDGES_MAP.get(edges, MoveResize.CANCEL)
-        emit("resize", self.wid, serial, enumval)
+        self._emit("resize", (self.wid, serial, enumval))
 
     cdef void request_maximize(self) noexcept:
         if debug:
             log("Surface REQUEST MAXIMIZE")
-        emit("maximize", self.wid)
+        self._emit("maximize", (self.wid,))
 
     cdef void request_fullscreen(self) noexcept:
         if debug:
             log("Surface REQUEST FULLSCREEN")
-        emit("fullscreen", self.wid)
+        self._emit("fullscreen", (self.wid,))
 
     cdef void request_minimize(self) noexcept:
         if debug:
             log("Surface REQUEST MINIMIZE")
-        emit("minimize", self.wid)
+        self._emit("minimize", (self.wid,))
 
     cdef void set_title(self) noexcept:
         if self.wlr_xdg_surface.toplevel.title:
             title = self.wlr_xdg_surface.toplevel.title.decode("utf8")
             log("Surface SET TITLE: %s", title)
-            emit("title", title)
+            self._emit("title", (self.wid, title))
 
     cdef void set_app_id(self) noexcept:
         if self.wlr_xdg_surface.toplevel.app_id:
@@ -411,7 +435,7 @@ cdef class Surface:
             self.capture_surface_pixels()
 
         subsurfaces = collect_surfaces(wlr_surf)
-        emit("commit", self.wid, bool(wlr_surf.mapped), size, rects, subsurfaces)
+        self._emit("commit", (self.wid, bool(wlr_surf.mapped), size, rects, subsurfaces))
 
     cdef void capture_surface_pixels(self) noexcept:
         cdef wlr_surface *wlr_surface = self.wlr_xdg_surface.surface
@@ -460,7 +484,7 @@ cdef class Surface:
 
         pixels = memoryview(texture_buffer)
         image = ImageWrapper(0, 0, width, height, pixels, "BGRA", 32, stride)
-        emit("surface-image", self.wid, image)
+        self._emit("surface-image", (self.wid, image))
 
     cdef void new_subsurface(self, wlr_subsurface *subsurface) noexcept:
         log("New SUBSURFACE created, parent wid=%#x", self.wid)
@@ -729,7 +753,8 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     size = (xdg_surf.geometry.width, xdg_surf.geometry.height)
     log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
     log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
-    emit("new-surface", <uintptr_t> xdg_surf, wid, title, app_id, size)
+    # Pass the Surface instance so consumers can connect per-surface signals.
+    emit("new-surface", surface, <uintptr_t> xdg_surf, wid, title, app_id, size)
 
 
 def frame_done(surf: int) -> None:

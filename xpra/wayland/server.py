@@ -48,20 +48,20 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             env["NO_AT_BRIDGE"] = "1"
         return env
 
+    # Per-surface signals connected on each new Surface in _new_surface().
+    # Each entry is the event name; the handler is `self._<name with dashes -> _>`.
+    PER_SURFACE_EVENTS = (
+        "map", "unmap", "commit", "destroy",
+        "minimize", "maximize", "fullscreen",
+        "move", "resize",
+        "surface-image",
+    )
+
     def register_events(self) -> None:
+        # Compositor-wide events; per-surface events are connected per-instance
+        # in _new_surface() once we receive the Surface object.
         add_event_listener("new-surface", self._new_surface)
         add_event_listener("new-subsurface", self._new_subsurface)
-        add_event_listener("metadata", self._metadata)
-        add_event_listener("surface-image", self._surface_image)
-        add_event_listener("map", self._map)
-        add_event_listener("unmap", self._unmap)
-        add_event_listener("minimize", self._minimize)
-        add_event_listener("maximize", self._maximize)
-        add_event_listener("fullscreen", self._fullscreen)
-        add_event_listener("commit", self._commit)
-        add_event_listener("destroy", self._destroy)
-        add_event_listener("move", self._move)
-        add_event_listener("resize", self._resize)
         add_event_listener("new-output", self._new_output)
 
     def make_keyboard_device(self):
@@ -168,7 +168,12 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             self.compositor.flush()
             self.refresh_window(window)
 
-    def _new_surface(self, surface: int, wid: int, title: str, app_id: str, size: tuple[int, int]) -> None:
+    def _new_surface(self, surface_obj, surface: int, wid: int,
+                     title: str, app_id: str, size: tuple[int, int]) -> None:
+        # Subscribe per-surface signals on the Surface instance.
+        for event in self.PER_SURFACE_EVENTS:
+            handler = getattr(self, "_" + event.replace("-", "_"))
+            surface_obj.connect(event, handler)
         geom = (0, 0, size[0], size[1])
         window = Window()
         window.setup()
