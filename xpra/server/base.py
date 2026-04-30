@@ -117,6 +117,12 @@ class ServerBase(ServerBaseClass):
             end = monotonic()
             log("%3ims in %s.setup", 1000 * (end - start), c)
 
+    def get_child_env(self) -> dict[str, str]:
+        env = {}
+        for c in SERVER_BASES:
+            env.update(c.get_child_env(self))
+        return env
+
     def server_is_ready(self) -> None:
         super().server_is_ready()
         self.server_event("ready")
