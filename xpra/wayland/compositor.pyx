@@ -14,7 +14,7 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.codecs.image import ImageWrapper
 from xpra.constants import MoveResize
 
-from libc.stdlib cimport malloc, free, calloc
+from libc.stdlib cimport free, calloc
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t, uint64_t, uint32_t, uint8_t
 from libc.time cimport timespec
@@ -280,6 +280,16 @@ cdef class Surface:
     cdef add_listener(self, int slot, wl_notify_func_t notify, wl_signal *signal) noexcept:
         attach_listener(self.listeners, slot, <void*> self, notify, signal)
 
+    cdef inline void _detach_slot(self, int slot) noexcept nogil:
+        if self.listeners[slot].listener.link.next != NULL:
+            wl_list_remove(&self.listeners[slot].listener.link)
+            self.listeners[slot].listener.link.next = NULL
+
+    cdef inline void _detach_all(self) noexcept nogil:
+        cdef int i
+        for i in range(N_LISTENERS):
+            self._detach_slot(i)
+
     cdef add_main_listeners(self):
         cdef wlr_surface *s = self.wlr_xdg_surface.surface
         self.add_listener(L_COMMIT, xdg_surface_commit, &s.events.commit)
@@ -327,11 +337,7 @@ cdef class Surface:
     cdef void destroy(self) noexcept:
         log("XDG surface DESTROYED, toplevel=%s", bool(self.wlr_xdg_surface.toplevel != NULL))
         # Detach all listeners while wlr_surface event lists are still valid.
-        cdef int i
-        for i in range(N_LISTENERS):
-            if self.listeners[i].listener.link.next != NULL:
-                wl_list_remove(&self.listeners[i].listener.link)
-                self.listeners[i].listener.link.next = NULL
+        self._detach_all()
 
         cdef unsigned long surface_wid = self.wid
         cdef uintptr_t key = <uintptr_t>self.wlr_xdg_surface
@@ -464,34 +470,19 @@ cdef class Surface:
         # TODO: allocate Surface and populate it
         emit("new-subsurface", self.wid, wid, <uintptr_t> subsurface.surface, width, height)
 
-    cdef void unregister_toplevel_handlers(self) noexcept:
-        cdef int slot
-        cdef int toplevel_slots[8]
-        toplevel_slots[0] = L_NEW_SUBSURFACE
-        toplevel_slots[1] = L_REQUEST_MOVE
-        toplevel_slots[2] = L_REQUEST_RESIZE
-        toplevel_slots[3] = L_REQUEST_MAXIMIZE
-        toplevel_slots[4] = L_REQUEST_FULLSCREEN
-        toplevel_slots[5] = L_REQUEST_MINIMIZE
-        toplevel_slots[6] = L_SET_TITLE
-        toplevel_slots[7] = L_SET_APP_ID
+    cdef void unregister_toplevel_handlers(self) noexcept nogil:
+        # Toplevel slots are contiguous: L_REQUEST_MOVE..L_SET_APP_ID.
+        # L_NEW_SUBSURFACE is technically a main-listener slot but the prior
+        # implementation also detached it on unmap; preserved for behaviour.
+        self._detach_slot(L_NEW_SUBSURFACE)
         cdef int i
-        for i in range(8):
-            slot = toplevel_slots[i]
-            if self.listeners[slot].listener.link.next != NULL:
-                wl_list_remove(&self.listeners[slot].listener.link)
-                self.listeners[slot].listener.link.next = NULL
+        for i in range(L_REQUEST_MOVE, L_SET_APP_ID + 1):
+            self._detach_slot(i)
 
     def __dealloc__(self):
-        # Idempotent listener detach; safe because xdg_surface_destroy_handler
-        # already detaches before dropping the registry reference, so link.next
-        # is NULL by the time we get here in the normal path. This guards the
-        # case where a Python caller held an extra reference past destroy.
-        cdef int i
-        for i in range(N_LISTENERS):
-            if self.listeners[i].listener.link.next != NULL:
-                wl_list_remove(&self.listeners[i].listener.link)
-                self.listeners[i].listener.link.next = NULL
+        # Idempotent: xdg_surface_destroy_handler already detached in the normal
+        # path. Guards the case where a Python caller held a reference past destroy.
+        self._detach_all()
 
 
 # Registry that keeps Surface objects alive while wlroots holds listener refs.
