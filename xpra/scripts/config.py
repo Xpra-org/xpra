@@ -1034,8 +1034,6 @@ def get_default_start_env() -> Sequence[str]:
         "MWNOCAPTURE=true",
         "MWNO_RIT=true",
         "MWWM=allwm",
-        "#force GTK3 applications to use X11 so we can intercept them:",
-        "GDK_BACKEND=x11",
         "#tell GTK4 applications to use the software Gsk renderer to avoid freezes and crashes:",
         "#(if using a real GPU, you may want to switch to `vulkan` or `opengl` instead)",
         "GSK_RENDERER=cairo",

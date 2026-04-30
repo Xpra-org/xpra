@@ -39,7 +39,14 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.pointer_focus = 0
         self.outputs: list[dict] = []
         self.register_events()
-        os.environ["GDK_BACKEND"] = "wayland"
+
+    def get_child_env(self) -> dict[str, str]:
+        env: dict[str, str] = super().get_child_env()
+        if "GDK_BACKEND" not in env:
+            env["GDK_BACKEND"] = "wayland"
+        if os.environ.get("NO_AT_BRIDGE") is None:
+            env["NO_AT_BRIDGE"] = "1"
+        return env
 
     def register_events(self) -> None:
         add_event_listener("new-surface", self._new_surface)

@@ -137,8 +137,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.connect("server-event", log_server_event)
 
     def setup(self) -> None:
-        if os.environ.get("NO_AT_BRIDGE") is None:
-            os.environ["NO_AT_BRIDGE"] = "1"
         super().setup()
         self.validate_display()
         # TODO: this needs moving to a module
@@ -150,6 +148,14 @@ class SeamlessServer(GObject.GObject, ServerBase):
         if self.sync_xvfb > 0:
             self.init_root_overlay()
         self.init_wm()
+
+    def get_child_env(self) -> dict[str, str]:
+        env: dict[str, str] = super().get_child_env()
+        if "GDK_BACKEND" not in env:
+            env["GDK_BACKEND"] = "x11"
+        if os.environ.get("NO_AT_BRIDGE") is None:
+            env["NO_AT_BRIDGE"] = "1"
+        return env
 
     def validate_display(self) -> None:
         try:
