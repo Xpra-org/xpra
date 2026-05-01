@@ -163,13 +163,6 @@ cdef void new_output(wl_listener *listener, void *data) noexcept:
     emit("new-output", name, get_output_info(wlr_out))
 
 
-cdef void add(info: dict, key: str, char* value):
-    if value != NULL:
-        info[key] = value.decode()
-
-
-
-
 cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept nogil:
     cdef wlr_xdg_toplevel_decoration_v1 *decoration = <wlr_xdg_toplevel_decoration_v1*>data
     cdef wlr_xdg_toplevel *toplevel = decoration.toplevel
