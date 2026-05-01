@@ -12,13 +12,12 @@ from xpra.wayland.wlroots cimport (
     wl_listener,
     wlr_subsurface,
 )
-from xpra.wayland.events cimport xpra_listener
+from xpra.wayland.events cimport ListenerObject
 
 
-cdef class Surface:
+cdef class Surface(ListenerObject):
     cdef wlr_xdg_surface *wlr_xdg_surface
     cdef wlr_scene_tree *scene_tree
-    cdef xpra_listener listeners[12]  # must equal N_LISTENERS
     cdef int width
     cdef int height
     cdef str title
@@ -26,10 +25,6 @@ cdef class Surface:
     cdef readonly unsigned long wid
     cdef dict _callbacks  # {event_name: [callable, ...]}
 
-    cdef inline void add_listener(self, int slot, wl_signal *signal) noexcept
-    cdef inline int slot_of(self, wl_listener *l) noexcept nogil
-    cdef inline void _detach_slot(self, int slot) noexcept nogil
-    cdef inline void _detach_all(self) noexcept nogil
     cdef void add_main_listeners(self)
     cdef void dispatch(self, wl_listener *listener, void *data) noexcept
     cdef void register_toplevel_handlers(self) noexcept

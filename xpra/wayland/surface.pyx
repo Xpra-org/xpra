@@ -18,7 +18,7 @@ from libc.stdint cimport uintptr_t, uint32_t
 from libc.time cimport timespec
 
 from xpra.buffers.membuf cimport getbuf, MemBuf
-from xpra.wayland.events cimport xpra_listener, owner_of, attach_listener
+from xpra.wayland.events cimport ListenerObject, owner_listener, owner_of
 
 cdef extern from "time.h":
     int clock_gettime(int clk_id, timespec *tp)
@@ -49,7 +49,6 @@ from xpra.wayland.wlroots cimport (
     WLR_EDGE_TOP, WLR_EDGE_BOTTOM, WLR_EDGE_LEFT, WLR_EDGE_RIGHT
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
-from xpra.wayland.events cimport xpra_listener
 
 
 EDGES: Dict[int, str] = {
@@ -97,12 +96,15 @@ cdef bint debug = log.is_debug_enabled()
 surfaces: Dict[int, Surface] = {}
 
 
-cdef class Surface:
+cdef class Surface(ListenerObject):
 
     def __cinit__(self):
         self._callbacks = {}
         self.title = ""
         self.app_id = ""
+
+    def __init__(self):
+        super().__init__(N_LISTENERS)
 
     def __repr__(self):
         return "Surface(%i : %s)" % (self.wid, self.title)
@@ -138,26 +140,6 @@ cdef class Surface:
             log("%s._emit(%r, %s) callbacks=%s", self, self.wid, event, Ellipsizer(args), cbs)
         for cb in cbs:
             cb(*args)
-
-    cdef inline void add_listener(self, int slot, wl_signal *signal) noexcept:
-        attach_listener(self.listeners, slot, <void*>self, surface_dispatch, signal)
-
-    cdef inline int slot_of(self, wl_listener *l) noexcept nogil:
-        # Pointer arithmetic recovers the slot index from the wl_listener address.
-        # Works because xpra_listener.listener is the first field of each entry.
-        cdef char *base = <char*>self.listeners
-        cdef char *here = <char*>l
-        return <int>((here - base) / sizeof(xpra_listener))
-
-    cdef inline void _detach_slot(self, int slot) noexcept nogil:
-        if self.listeners[slot].listener.link.next != NULL:
-            wl_list_remove(&self.listeners[slot].listener.link)
-            self.listeners[slot].listener.link.next = NULL
-
-    cdef inline void _detach_all(self) noexcept nogil:
-        cdef int i
-        for i in range(N_LISTENERS):
-            self._detach_slot(i)
 
     cdef void add_main_listeners(self):
         cdef wlr_surface *s = self.wlr_xdg_surface.surface
@@ -414,15 +396,7 @@ cdef class Surface:
         log("wlr_xdg_toplevel_set_activated(%#x, %s)", <uintptr_t> toplevel, focused)
         wlr_xdg_toplevel_set_activated(toplevel, focused)
 
-    def __dealloc__(self):
-        # Idempotent: xdg_surface_destroy_handler already detached in the normal
-        # path. Guards the case where a Python caller held a reference past destroy.
-        self._detach_all()
-
-
-cdef void surface_dispatch(wl_listener *listener, void *data) noexcept:
-    cdef Surface surface = <Surface>owner_of(listener)
-    surface.dispatch(listener, data)
+    # __dealloc__ inherited from ListenerObject: detach + free the listeners array.
 
 
 cdef list get_damage_areas(pixman_region32_t *damage):

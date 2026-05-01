@@ -12,7 +12,7 @@ from collections.abc import Callable
 from xpra.log import Logger
 from xpra.util.str_fn import Ellipsizer
 
-from libc.stdlib cimport free, calloc
+from libc.stdlib cimport free
 from libc.stdint cimport uintptr_t
 
 from xpra.wayland.pointer import WaylandPointer
@@ -20,7 +20,7 @@ from xpra.wayland.keyboard import WaylandKeyboard
 from xpra.wayland.surface cimport Surface
 from xpra.wayland.display cimport Display
 from xpra.wayland.output cimport Output
-from xpra.wayland.events cimport xpra_listener, owner_of, attach_listener
+from xpra.wayland.events cimport ListenerObject
 
 
 # Import definitions from .pxd file
@@ -53,8 +53,7 @@ from xpra.wayland.wlroots cimport (
     wlr_output_init_render, wlr_output_layout,
     wlr_headless_add_output,
     wlr_data_device_manager_create,
-    wl_list, wl_list_remove,
-    DRM_FORMAT_ABGR8888, WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
+    WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
 
@@ -80,15 +79,8 @@ cdef enum:
     N_LISTENERS
 
 
-# Single C shim for every WaylandCompositor-level listener. The slot is recovered by
-# pointer arithmetic on the listeners[] array, then dispatched to the matching method.
-cdef void compositor_dispatch(wl_listener *listener, void *data) noexcept:
-    cdef WaylandCompositor compositor = <WaylandCompositor> owner_of(listener)
-    compositor.dispatch(listener, data)
-
-
 # Python interface
-cdef class WaylandCompositor:
+cdef class WaylandCompositor(ListenerObject):
     # ---- C-level pointers (formerly the `server` struct, now folded in) ----
     # Accessed in C callbacks via `<WaylandCompositor>owner_of(listener)`.
     cdef wl_display *display_ptr
@@ -107,36 +99,17 @@ cdef class WaylandCompositor:
     cdef Display display
     cdef str socket_name
     cdef wl_event_loop *event_loop
-    cdef xpra_listener listeners[4]  # must equal N_LISTENERS
     cdef dict event_listeners
 
     def __cinit__(self):
-        # All cdef pointer/struct fields are zero-initialised by Cython's tp_alloc.
+        # All cdef pointer fields are zero-initialised by Cython's tp_alloc.
         self.socket_name = ""
         self.event_listeners = {}
 
-    cdef inline void add_listener(self, int slot, wl_signal *signal) noexcept:
-        attach_listener(self.listeners, slot, <void*>self, compositor_dispatch, signal)
+    def __init__(self):
+        super().__init__(N_LISTENERS)
 
-    cdef inline int slot_of(self, wl_listener *l) noexcept nogil:
-        # Pointer arithmetic recovers the slot index from the wl_listener address.
-        # Works because xpra_listener.listener is the first field of each entry.
-        cdef char *base = <char*>self.listeners
-        cdef char *here = <char*>l
-        return <int>((here - base) / sizeof(xpra_listener))
-
-    cdef inline void _detach_slot(self, int slot) noexcept nogil:
-        if self.listeners[slot].listener.link.next != NULL:
-            wl_list_remove(&self.listeners[slot].listener.link)
-            self.listeners[slot].listener.link.next = NULL
-
-    cdef inline void _detach_all(self) noexcept nogil:
-        cdef int i
-        for i in range(N_LISTENERS):
-            self._detach_slot(i)
-
-    # Single C shim for every WaylandCompositor-level listener. The slot is recovered by
-    # pointer arithmetic on the listeners[] array, then dispatched to the matching method.
+    # Routes each compositor-level listener slot to its handler method.
     cdef void dispatch(self, wl_listener *listener, void *data) noexcept:
         cdef int slot = self.slot_of(listener)
         if slot == L_NEW_TOPLEVEL_DECORATION:
