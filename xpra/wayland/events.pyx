@@ -4,8 +4,3 @@
 # later version. See the file COPYING for details.
 
 # cython: language_level=3
-
-
-from xpra.wayland.wlroots cimport (
-    wl_listener, wl_signal_add, wl_signal, wl_notify_func_t,
-)

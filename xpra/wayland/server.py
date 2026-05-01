@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from xpra.codecs.image import ImageWrapper
 from xpra.util.gobject import to_gsignals
 from xpra.util.objects import typedict
-from xpra.wayland.compositor import WaylandCompositor, add_event_listener
+from xpra.wayland.compositor import WaylandCompositor
 from xpra.wayland.surface import Surface
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
@@ -34,12 +34,16 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         GObject.GObject.__init__(self)
         ServerBase.__init__(self)
         self.session_type: str = "wayland"
-        self.compositor = WaylandCompositor()
-        self.wayland_fd_source = 0
         self.focused = 0
         self.pointer_focus = 0
         self.outputs: list[dict] = []
-        self.register_events()
+        self.compositor = WaylandCompositor()
+        # Compositor-wide events; per-surface events are connected per-instance
+        # in _new_surface() once we receive the Surface object.
+        self.compositor.connect("new-surface", self._new_surface)
+        self.compositor.connect("new-subsurface", self._new_subsurface)
+        self.compositor.connect("new-output", self._new_output)
+        self.wayland_fd_source = 0
 
     def get_child_env(self) -> dict[str, str]:
         env: dict[str, str] = super().get_child_env()
@@ -57,13 +61,6 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         "move", "resize",
         "surface-image",
     )
-
-    def register_events(self) -> None:
-        # Compositor-wide events; per-surface events are connected per-instance
-        # in _new_surface() once we receive the Surface object.
-        add_event_listener("new-surface", self._new_surface)
-        add_event_listener("new-subsurface", self._new_subsurface)
-        add_event_listener("new-output", self._new_output)
 
     def make_keyboard_device(self):
         return self.compositor.get_keyboard_device()

@@ -20,7 +20,7 @@ from xpra.wayland.keyboard import WaylandKeyboard
 from xpra.wayland.surface cimport Surface
 from xpra.wayland.display cimport Display
 from xpra.wayland.output cimport get_output_info
-from xpra.wayland.events cimport xpra_listener, owner_of
+from xpra.wayland.events cimport xpra_listener, owner_of, attach_listener
 
 
 # Import definitions from .pxd file
@@ -61,33 +61,8 @@ from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_regio
 
 
 
-# generic event listeners:
-event_listeners: Dict[str, List[Callable]] = {}
-
-
 def add_event_listener(event_name: str, callback: Callable) -> None:
     global event_listeners
-    event_listeners.setdefault(event_name, []).append(callback)
-
-
-def remove_event_listener(event_name: str, callback: Callable) -> None:
-    global event_listeners
-    callbacks = event_listeners.get(event_name)
-    if not callbacks:
-        return
-    if callback not in callbacks:
-        return
-    callbacks.remove(callback)
-    if not callbacks:
-        event_listeners.pop(event_name)
-
-
-def emit(event_name: str, *args) -> None:
-    global event_listeners
-    callbacks = event_listeners.get(event_name, ())
-    log("emit%s callbacks=%s", Ellipsizer(tuple([event_name] + list(args))), callbacks)
-    for callback in callbacks:
-        callback(*args)
 
 
 # Per-output bookkeeping; calloc'd in new_output(), freed in
@@ -128,84 +103,29 @@ cdef void output_destroy_handler(wl_listener *listener, void *data) noexcept nog
     free(out)
 
 
-cdef void new_output(wl_listener *listener, void *data) noexcept:
-    # Called by wlroots from within wl_event_loop_dispatch, which is invoked
-    # from Python-side WaylandCompositor.process_events() — so the GIL is held.
-    cdef WaylandCompositor compositor = <WaylandCompositor>owner_of(listener)
-    cdef wlr_output *wlr_out = <wlr_output*>data
-
-    wlr_output_init_render(wlr_out, compositor.allocator, compositor.renderer)
-
-    cdef output *out = <output*>calloc(1, sizeof(output))
-    out.wlr_output = wlr_out
-
-    out.frame.owner = out
-    out.frame.listener.notify = output_frame
-    wl_signal_add(&wlr_out.events.frame, &out.frame.listener)
-
-    out.destroy.owner = out
-    out.destroy.listener.notify = output_destroy_handler
-    wl_signal_add(&wlr_out.events.destroy, &out.destroy.listener)
-
-    out.scene_output = wlr_scene_output_create(compositor.scene, wlr_out)
-    wlr_output_layout_add_auto(compositor.output_layout, wlr_out)
-
-    cdef wlr_output_state state
-    wlr_output_state_init(&state)
-    wlr_output_commit_state(wlr_out, &state)
-    wlr_output_state_finish(&state)
-
-    name = wlr_out.name.decode()
-    log("new output: %r", name)
-    log(" virtual output %r initialized", name)
-    emit("new-output", name, get_output_info(wlr_out))
+# Listener slot indices for WaylandCompositor; N_LISTENERS sizes the listeners array.
+cdef enum:
+    L_NEW_TOPLEVEL_DECORATION
+    L_NEW_SURFACE
+    L_NEW_OUTPUT
+    N_LISTENERS
 
 
-cdef void new_toplevel_decoration(wl_listener *listener, void *data) noexcept nogil:
-    cdef wlr_xdg_toplevel_decoration_v1 *decoration = <wlr_xdg_toplevel_decoration_v1*>data
-    cdef wlr_xdg_toplevel *toplevel = decoration.toplevel
-    cdef bint ssd = decoration.requested_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
-    wlr_xdg_toplevel_decoration_v1_set_mode(decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
-    with gil:
-        emit("ssd", <uintptr_t> toplevel, bool(ssd))
-
-
-cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
-    cdef WaylandCompositor compositor = <WaylandCompositor>owner_of(listener)
-    cdef wlr_xdg_surface *xdg_surf = <wlr_xdg_surface*>data
-    log("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
-    if xdg_surf.role != WLR_XDG_SURFACE_ROLE_NONE and xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-        return
-
-    log(" wlr_surface(%#x)=%#x", <uintptr_t> xdg_surf, <uintptr_t> xdg_surf.surface)
-    cdef Surface surface = Surface()
-    surface.wlr_xdg_surface = xdg_surf
-    surface.width = 0
-    surface.height = 0
-    global wid
-    wid += 1
-    surface.wid = wid
-    log("allocated wid=%#x", wid)
-
-    surface.scene_tree = wlr_scene_xdg_surface_create(&compositor.scene.tree, xdg_surf)
-    surface.add_main_listeners()
-
-    cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
-    if toplevel:
-        surface.register_toplevel_handlers()
-        # Send initial configure for the toplevel
-        log("Sending initial configure for toplevel")
-        wlr_xdg_toplevel_set_size(toplevel, 0, 0)  # 0, 0 = let client choose initial size
-        wlr_xdg_surface_schedule_configure(xdg_surf)
-
-    log("All listeners attached")
-    title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
-    app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
-    size = (xdg_surf.geometry.width, xdg_surf.geometry.height)
-    log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
-    log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
-    # Pass the Surface instance so consumers can connect per-surface signals.
-    emit("new-surface", surface, wid, title, app_id, size)
+# Single C shim for every WaylandCompositor-level listener. The slot is recovered by
+# pointer arithmetic on the listeners[] array, then dispatched to the matching method.
+cdef void compositor_dispatch(wl_listener *listener, void *data) noexcept:
+    cdef WaylandCompositor compositor = <WaylandCompositor> owner_of(listener)
+    cdef int slot = compositor.slot_of(listener)
+    if slot == L_NEW_TOPLEVEL_DECORATION:
+        compositor.new_toplevel_decoration(<wlr_xdg_toplevel_decoration_v1*> data)
+    elif slot == L_NEW_SURFACE:
+        compositor.new_surface(<wlr_xdg_surface*> data)
+    elif slot == L_NEW_OUTPUT:
+        # Called by wlroots from within wl_event_loop_dispatch, which is invoked
+        # from Python-side WaylandCompositor.process_events() — so the GIL is held.
+        compositor.new_output(<wlr_output*>data)
+    else:
+        log.error("Error: unexpected compositor event slot %i", slot)
 
 
 # Python interface
@@ -225,20 +145,38 @@ cdef class WaylandCompositor:
     cdef wlr_cursor *cursor
     cdef wlr_output_layout *output_layout
     cdef char *seat_name
-    # listeners owned by the compositor (back-pointer is `self`)
-    cdef xpra_listener new_toplevel_decoration_listener
-    cdef xpra_listener new_output_listener
-    cdef xpra_listener new_xdg_surface_listener
-    # ---- Python-level wrappers / state ----
     cdef Display display
     cdef str socket_name
     cdef wl_event_loop *event_loop
+    cdef xpra_listener listeners[4]  # must equal N_LISTENERS
+    cdef dict event_listeners
 
     def __cinit__(self):
         # All cdef pointer/struct fields are zero-initialised by Cython's tp_alloc.
         self.socket_name = ""
+        self.event_listeners = {}
 
-    def initialize(self) -> None:
+    cdef inline void add_listener(self, int slot, wl_signal *signal) noexcept:
+        attach_listener(self.listeners, slot, <void*>self, compositor_dispatch, signal)
+
+    cdef inline int slot_of(self, wl_listener *l) noexcept nogil:
+        # Pointer arithmetic recovers the slot index from the wl_listener address.
+        # Works because xpra_listener.listener is the first field of each entry.
+        cdef char *base = <char*>self.listeners
+        cdef char *here = <char*>l
+        return <int>((here - base) / sizeof(xpra_listener))
+
+    cdef inline void _detach_slot(self, int slot) noexcept nogil:
+        if self.listeners[slot].listener.link.next != NULL:
+            wl_list_remove(&self.listeners[slot].listener.link)
+            self.listeners[slot].listener.link.next = NULL
+
+    cdef inline void _detach_all(self) noexcept nogil:
+        cdef int i
+        for i in range(N_LISTENERS):
+            self._detach_slot(i)
+
+    def initialize(self) -> str:
         log("starting headless wayland compositor")
 
         self.display_ptr = wl_display_create()
@@ -270,9 +208,7 @@ cdef class WaylandCompositor:
         wlr_data_device_manager_create(self.display_ptr)
 
         self.xdg_shell = wlr_xdg_shell_create(self.display_ptr, 3)
-        self.new_xdg_surface_listener.owner = <void*>self
-        self.new_xdg_surface_listener.listener.notify = new_xdg_surface
-        wl_signal_add(&self.xdg_shell.events.new_surface, &self.new_xdg_surface_listener.listener)
+        self.add_listener(L_NEW_SURFACE, &self.xdg_shell.events.new_surface)
 
         self.scene = wlr_scene_create()
 
@@ -285,10 +221,7 @@ cdef class WaylandCompositor:
         if not self.decoration_manager:
             log.warn("Warning: unable to create the decoration manager")
         else:
-            self.new_toplevel_decoration_listener.owner = <void*>self
-            self.new_toplevel_decoration_listener.listener.notify = new_toplevel_decoration
-            wl_signal_add(&self.decoration_manager.events.new_toplevel_decoration,
-                          &self.new_toplevel_decoration_listener.listener)
+            self.add_listener(L_NEW_TOPLEVEL_DECORATION, &self.decoration_manager.events.new_toplevel_decoration)
 
         # Create cursor
         self.cursor = wlr_cursor_create()
@@ -302,9 +235,7 @@ cdef class WaylandCompositor:
         cdef int caps = WL_SEAT_CAPABILITY_POINTER | WL_SEAT_CAPABILITY_KEYBOARD | WL_SEAT_CAPABILITY_TOUCH
         wlr_seat_set_capabilities(self.seat, caps)
 
-        self.new_output_listener.owner = <void*>self
-        self.new_output_listener.listener.notify = new_output
-        wl_signal_add(&self.backend.events.new_output, &self.new_output_listener.listener)
+        self.add_listener(L_NEW_OUTPUT, &self.backend.events.new_output)
 
         bname = wl_display_add_socket_auto(self.display_ptr)
         if not bname:
@@ -321,6 +252,87 @@ cdef class WaylandCompositor:
 
     def get_event_loop_fd(self) -> int:
         return wl_event_loop_get_fd(self.event_loop)
+
+    def connect(self, event_name: str, handler: Callable) -> None:
+        self.event_listeners.setdefault(event_name, []).append(handler)
+
+    cdef void new_toplevel_decoration(self, wlr_xdg_toplevel_decoration_v1 *decoration) noexcept nogil:
+        cdef wlr_xdg_toplevel *toplevel = decoration.toplevel
+        cdef bint ssd = decoration.requested_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
+        wlr_xdg_toplevel_decoration_v1_set_mode(decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+        with gil:
+            self.emit("ssd", <uintptr_t> toplevel, bool(ssd))
+
+    cdef void new_surface(self, wlr_xdg_surface *xdg_surf) noexcept:
+        if debug:
+            log("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
+        if xdg_surf.role != WLR_XDG_SURFACE_ROLE_NONE and xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
+            return
+
+        cdef Surface surface = Surface()
+        surface.wlr_xdg_surface = xdg_surf
+        surface.width = 0
+        surface.height = 0
+        global wid
+        wid += 1
+        surface.wid = wid
+
+        surface.scene_tree = wlr_scene_xdg_surface_create(&self.scene.tree, xdg_surf)
+        surface.add_main_listeners()
+
+        cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
+        if toplevel:
+            surface.register_toplevel_handlers()
+            # Send initial configure for the toplevel
+            if debug:
+                log("Sending initial configure for toplevel")
+            wlr_xdg_toplevel_set_size(toplevel, 0, 0)  # 0, 0 = let client choose initial size
+            wlr_xdg_surface_schedule_configure(xdg_surf)
+
+        title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
+        app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
+        size = (xdg_surf.geometry.width, xdg_surf.geometry.height)
+        log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
+        log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
+        # Pass the Surface instance so consumers can connect per-surface signals.
+        self.emit("new-surface", surface, wid, title, app_id, size)
+
+    cdef void new_output(self, wlr_output *wlr_out) noexcept:
+        wlr_output_init_render(wlr_out, self.allocator, self.renderer)
+
+        cdef output *out = <output*>calloc(1, sizeof(output))
+        out.wlr_output = wlr_out
+
+        out.frame.owner = out
+        out.frame.listener.notify = output_frame
+        wl_signal_add(&wlr_out.events.frame, &out.frame.listener)
+
+        out.destroy.owner = out
+        out.destroy.listener.notify = output_destroy_handler
+        wl_signal_add(&wlr_out.events.destroy, &out.destroy.listener)
+
+        out.scene_output = wlr_scene_output_create(self.scene, wlr_out)
+        wlr_output_layout_add_auto(self.output_layout, wlr_out)
+
+        cdef wlr_output_state state
+        wlr_output_state_init(&state)
+        wlr_output_commit_state(wlr_out, &state)
+        wlr_output_state_finish(&state)
+
+        name = wlr_out.name.decode()
+        log("new output: %r", name)
+        log(" virtual output %r initialized", name)
+        self.emit("new-output", name, get_output_info(wlr_out))
+
+
+    def emit(self, event_name: str, *args) -> None:
+        callbacks = self.event_listeners.get(event_name, ())
+        log("emit%s callbacks=%s", Ellipsizer(tuple([event_name] + list(args))), callbacks)
+        for callback in callbacks:
+            try:
+                callback(*args)
+            except Exception:
+                log.error("Error on %r event handler %s", event_name, callback, exc_info=True)
 
     def get_display(self) -> Display:
         return self.display
@@ -347,12 +359,7 @@ cdef class WaylandCompositor:
             return
         wl_display_destroy_clients(self.display_ptr)
 
-        if self.new_xdg_surface_listener.listener.link.next != NULL:
-            wl_list_remove(&self.new_xdg_surface_listener.listener.link)
-        if self.new_output_listener.listener.link.next != NULL:
-            wl_list_remove(&self.new_output_listener.listener.link)
-        if self.new_toplevel_decoration_listener.listener.link.next != NULL:
-            wl_list_remove(&self.new_toplevel_decoration_listener.listener.link)
+        self._detach_all()
 
         if self.scene:
             wlr_scene_node_destroy(&self.scene.tree.node)
