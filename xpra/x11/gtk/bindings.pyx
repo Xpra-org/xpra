@@ -204,7 +204,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
             signal, parent_signal = event_args
             route_event(etype, pyev, signal, parent_signal)
         ename = get_x_event_type_name(etype) or etype
-        log("x_event_filter event=%s/%s took %.1fms", event_args, ename, 1000.0*(monotonic()-start))
+        log("gdk x_event_filter event=%s/%s took %.1fms", event_args, ename, 1000.0*(monotonic()-start))
     except (KeyboardInterrupt, SystemExit):
         log("exiting on KeyboardInterrupt/SystemExit")
         Gtk.main_quit()
