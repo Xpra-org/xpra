@@ -30,7 +30,8 @@ cdef class Surface:
     cdef inline int slot_of(self, wl_listener *l) noexcept nogil
     cdef inline void _detach_slot(self, int slot) noexcept nogil
     cdef inline void _detach_all(self) noexcept nogil
-    cdef add_main_listeners(self)
+    cdef void add_main_listeners(self)
+    cdef void dispatch(self, wl_listener *listener, void *data) noexcept
     cdef void register_toplevel_handlers(self) noexcept
     cdef void map(self) noexcept
     cdef void unmap(self) noexcept

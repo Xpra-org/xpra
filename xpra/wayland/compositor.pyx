@@ -19,7 +19,7 @@ from xpra.wayland.pointer import WaylandPointer
 from xpra.wayland.keyboard import WaylandKeyboard
 from xpra.wayland.surface cimport Surface
 from xpra.wayland.display cimport Display
-from xpra.wayland.output cimport get_output_info
+from xpra.wayland.output cimport Output
 from xpra.wayland.events cimport xpra_listener, owner_of, attach_listener
 
 
@@ -31,7 +31,7 @@ from xpra.wayland.wlroots cimport (
     wlr_xdg_surface, wlr_xdg_surface_events,
     WLR_XDG_SURFACE_ROLE_NONE, WLR_XDG_SURFACE_ROLE_TOPLEVEL,
     wlr_backend, wlr_backend_start, wlr_backend_destroy,
-    wlr_seat, wlr_cursor, wlr_output_layout,
+    wlr_seat, wlr_cursor,
     wlr_seat_create, wlr_seat_set_capabilities, wlr_seat_destroy,
     WL_SEAT_CAPABILITY_POINTER, WL_SEAT_CAPABILITY_KEYBOARD, WL_SEAT_CAPABILITY_TOUCH,
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
@@ -48,10 +48,9 @@ from xpra.wayland.wlroots cimport (
     wl_event_loop, wl_display_get_event_loop, wl_event_loop_get_fd, wl_event_loop_dispatch,
     wlr_renderer, wlr_renderer_autocreate, wlr_renderer_destroy, wlr_renderer_init_wl_display,
     wlr_headless_backend_create,
-    wlr_texture, wlr_client_buffer, wlr_box, wlr_output, wlr_output_state,
+    wlr_texture, wlr_client_buffer, wlr_box, wlr_output,
     wlr_output_layout_add_auto, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
-    wlr_output_commit_state, wlr_output_state_finish,
-    wlr_output_state_init, wlr_output_schedule_frame, wlr_output_init_render,
+    wlr_output_init_render, wlr_output_layout,
     wlr_headless_add_output,
     wlr_data_device_manager_create,
     wl_list, wl_list_remove,
@@ -65,42 +64,12 @@ def add_event_listener(event_name: str, callback: Callable) -> None:
     global event_listeners
 
 
-# Per-output bookkeeping; calloc'd in new_output(), freed in
-# output_destroy_handler(). Held only by wlroots via the embedded listeners.
-cdef struct output:
-    wl_list link
-    wlr_output *wlr_output
-    wlr_scene_output *scene_output
-    xpra_listener frame
-    xpra_listener destroy
-
-
 cdef unsigned long wid = 0
 
 
 log = Logger("wayland")
 cdef bint debug = log.is_debug_enabled()
 
-
-cdef void output_frame(wl_listener *listener, void *data) noexcept nogil:
-    if debug:
-        with gil:
-            log("output_frame(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
-    cdef output *out = <output*>owner_of(listener)
-    wlr_scene_output_commit(out.scene_output, NULL)
-    wlr_output_schedule_frame(out.wlr_output)
-
-
-cdef void output_destroy_handler(wl_listener *listener, void *data) noexcept nogil:
-    if debug:
-        with gil:
-            log("output_destroy_handler(%#x, %#x)", <uintptr_t> listener, <uintptr_t> data)
-    cdef output *out = <output*>owner_of(listener)
-    wl_list_remove(&out.frame.listener.link)
-    wl_list_remove(&out.destroy.listener.link)
-    # out.link is for a list we don't manage:
-    # wl_list_remove(&out.link)
-    free(out)
 
 
 # Listener slot indices for WaylandCompositor; N_LISTENERS sizes the listeners array.
@@ -115,17 +84,7 @@ cdef enum:
 # pointer arithmetic on the listeners[] array, then dispatched to the matching method.
 cdef void compositor_dispatch(wl_listener *listener, void *data) noexcept:
     cdef WaylandCompositor compositor = <WaylandCompositor> owner_of(listener)
-    cdef int slot = compositor.slot_of(listener)
-    if slot == L_NEW_TOPLEVEL_DECORATION:
-        compositor.new_toplevel_decoration(<wlr_xdg_toplevel_decoration_v1*> data)
-    elif slot == L_NEW_SURFACE:
-        compositor.new_surface(<wlr_xdg_surface*> data)
-    elif slot == L_NEW_OUTPUT:
-        # Called by wlroots from within wl_event_loop_dispatch, which is invoked
-        # from Python-side WaylandCompositor.process_events() — so the GIL is held.
-        compositor.new_output(<wlr_output*>data)
-    else:
-        log.error("Error: unexpected compositor event slot %i", slot)
+    compositor.dispatch(listener, data)
 
 
 # Python interface
@@ -175,6 +134,21 @@ cdef class WaylandCompositor:
         cdef int i
         for i in range(N_LISTENERS):
             self._detach_slot(i)
+
+    # Single C shim for every WaylandCompositor-level listener. The slot is recovered by
+    # pointer arithmetic on the listeners[] array, then dispatched to the matching method.
+    cdef void dispatch(self, wl_listener *listener, void *data) noexcept:
+        cdef int slot = self.slot_of(listener)
+        if slot == L_NEW_TOPLEVEL_DECORATION:
+            self.new_toplevel_decoration(<wlr_xdg_toplevel_decoration_v1*> data)
+        elif slot == L_NEW_SURFACE:
+            self.new_surface(<wlr_xdg_surface*> data)
+        elif slot == L_NEW_OUTPUT:
+            # Called by wlroots from within wl_event_loop_dispatch, which is invoked
+            # from Python-side WaylandCompositor.process_events() — so the GIL is held.
+            self.new_output(<wlr_output*> data)
+        else:
+            log.error("Error: unexpected compositor event slot %i", slot)
 
     def initialize(self) -> str:
         log("starting headless wayland compositor")
@@ -300,30 +274,15 @@ cdef class WaylandCompositor:
     cdef void new_output(self, wlr_output *wlr_out) noexcept:
         wlr_output_init_render(wlr_out, self.allocator, self.renderer)
 
-        cdef output *out = <output*>calloc(1, sizeof(output))
+        cdef Output out = Output()
         out.wlr_output = wlr_out
-
-        out.frame.owner = out
-        out.frame.listener.notify = output_frame
-        wl_signal_add(&wlr_out.events.frame, &out.frame.listener)
-
-        out.destroy.owner = out
-        out.destroy.listener.notify = output_destroy_handler
-        wl_signal_add(&wlr_out.events.destroy, &out.destroy.listener)
+        out.add_main_listeners()
 
         out.scene_output = wlr_scene_output_create(self.scene, wlr_out)
         wlr_output_layout_add_auto(self.output_layout, wlr_out)
 
-        cdef wlr_output_state state
-        wlr_output_state_init(&state)
-        wlr_output_commit_state(wlr_out, &state)
-        wlr_output_state_finish(&state)
-
-        name = wlr_out.name.decode()
-        log("new output: %r", name)
-        log(" virtual output %r initialized", name)
-        self.emit("new-output", name, get_output_info(wlr_out))
-
+        out.initialize()
+        self.emit("new-output", out)
 
     def emit(self, event_name: str, *args) -> None:
         callbacks = self.event_listeners.get(event_name, ())

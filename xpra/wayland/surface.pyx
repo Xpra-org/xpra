@@ -72,7 +72,7 @@ EDGES_MAP: Dict[int, MoveResize] = {
 
 
 # Listener slot indices for Surface; N_LISTENERS sizes the listeners array.
-cdef enum:
+cdef enum SurfaceListener:
     L_MAP
     L_UNMAP
     L_DESTROY
@@ -159,7 +159,7 @@ cdef class Surface:
         for i in range(N_LISTENERS):
             self._detach_slot(i)
 
-    cdef add_main_listeners(self):
+    cdef void add_main_listeners(self):
         cdef wlr_surface *s = self.wlr_xdg_surface.surface
         self.add_listener(L_COMMIT, &s.events.commit)
         self.add_listener(L_MAP, &s.events.map)
@@ -169,13 +169,49 @@ cdef class Surface:
         # Keep the Surface alive while wlroots holds listener pointers into it.
         surfaces[<uintptr_t> self.wlr_xdg_surface] = self
 
+    # Single C shim for every Surface-level listener. The slot is recovered by
+    # pointer arithmetic on the listeners[] array, then dispatched to the matching
+    # Surface method. This replaces 12 individual one-line callback wrappers.
+    cdef void dispatch(self, wl_listener *listener, void *data) noexcept:
+        cdef int slot = self.slot_of(listener)
+        cdef wlr_xdg_toplevel_move_event *move_event
+        cdef wlr_xdg_toplevel_resize_event *resize_event
+        if slot == L_MAP:
+            self.map()
+        elif slot == L_UNMAP:
+            self.unmap()
+        elif slot == L_DESTROY:
+            self.destroy()
+        elif slot == L_COMMIT:
+            self.commit()
+        elif slot == L_NEW_SUBSURFACE:
+            self.new_subsurface(<wlr_subsurface*>data)
+        elif slot == L_REQUEST_MOVE:
+            move_event = <wlr_xdg_toplevel_move_event*>data
+            self.request_move(move_event.serial)
+        elif slot == L_REQUEST_RESIZE:
+            resize_event = <wlr_xdg_toplevel_resize_event*>data
+            self.request_resize(resize_event.edges, resize_event.serial)
+        elif slot == L_REQUEST_MAXIMIZE:
+            self.request_maximize()
+        elif slot == L_REQUEST_FULLSCREEN:
+            self.request_fullscreen()
+        elif slot == L_REQUEST_MINIMIZE:
+            self.request_minimize()
+        elif slot == L_SET_TITLE:
+            self.set_title()
+        elif slot == L_SET_APP_ID:
+            self.set_app_id()
+        else:
+            log.error("Error: unknown surface listener slot %i", slot)
+
     cdef void register_toplevel_handlers(self) noexcept:
         cdef wlr_xdg_toplevel *t = self.wlr_xdg_surface.toplevel
         log("register_toplevel_handlers() toplevel=%#x", <uintptr_t> t)
         if t == NULL:
             # no toplevel yet
             return
-        if self.listeners[L_REQUEST_MOVE].listener.link.next != NULL:
+        if self.listeners[0].listener.link.next != NULL:
             # already done
             return
 
@@ -384,40 +420,9 @@ cdef class Surface:
         self._detach_all()
 
 
-# Single C shim for every Surface-level listener. The slot is recovered by
-# pointer arithmetic on the listeners[] array, then dispatched to the matching
-# Surface method. This replaces 12 individual one-line callback wrappers.
 cdef void surface_dispatch(wl_listener *listener, void *data) noexcept:
     cdef Surface surface = <Surface>owner_of(listener)
-    cdef int slot = surface.slot_of(listener)
-    cdef wlr_xdg_toplevel_move_event *move_event
-    cdef wlr_xdg_toplevel_resize_event *resize_event
-    if slot == L_MAP:
-        surface.map()
-    elif slot == L_UNMAP:
-        surface.unmap()
-    elif slot == L_DESTROY:
-        surface.destroy()
-    elif slot == L_COMMIT:
-        surface.commit()
-    elif slot == L_NEW_SUBSURFACE:
-        surface.new_subsurface(<wlr_subsurface*>data)
-    elif slot == L_REQUEST_MOVE:
-        move_event = <wlr_xdg_toplevel_move_event*>data
-        surface.request_move(move_event.serial)
-    elif slot == L_REQUEST_RESIZE:
-        resize_event = <wlr_xdg_toplevel_resize_event*>data
-        surface.request_resize(resize_event.edges, resize_event.serial)
-    elif slot == L_REQUEST_MAXIMIZE:
-        surface.request_maximize()
-    elif slot == L_REQUEST_FULLSCREEN:
-        surface.request_fullscreen()
-    elif slot == L_REQUEST_MINIMIZE:
-        surface.request_minimize()
-    elif slot == L_SET_TITLE:
-        surface.set_title()
-    elif slot == L_SET_APP_ID:
-        surface.set_app_id()
+    surface.dispatch(listener, data)
 
 
 cdef list get_damage_areas(pixman_region32_t *damage):

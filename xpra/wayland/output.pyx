@@ -7,9 +7,13 @@
 
 from libc.stdint cimport uintptr_t
 
-# Import definitions from .pxd file
+from xpra.wayland.events cimport xpra_listener, owner_of, attach_listener
+
 from xpra.wayland.wlroots cimport (
-    wlr_output,
+    wlr_output, wl_signal,
+    wl_list_remove,
+    wlr_scene_output_commit, wlr_output_schedule_frame,
+    wlr_output_state, wlr_output_state_init, wlr_output_commit_state, wlr_output_state_finish,
     WL_OUTPUT_TRANSFORM_NORMAL, WL_OUTPUT_TRANSFORM_90, WL_OUTPUT_TRANSFORM_180, WL_OUTPUT_TRANSFORM_270,
     WL_OUTPUT_TRANSFORM_FLIPPED, WL_OUTPUT_TRANSFORM_FLIPPED_90, WL_OUTPUT_TRANSFORM_FLIPPED_180, WL_OUTPUT_TRANSFORM_FLIPPED_270,
     WL_OUTPUT_SUBPIXEL_UNKNOWN, WL_OUTPUT_SUBPIXEL_NONE,
@@ -25,6 +29,11 @@ from xpra.wayland.wlroots cimport (
     DRM_FORMAT_RGBA1010102, DRM_FORMAT_BGRA1010102, DRM_FORMAT_XRGB16161616,
     DRM_FORMAT_XBGR16161616, DRM_FORMAT_ARGB16161616, DRM_FORMAT_ABGR16161616,
 )
+
+from xpra.log import Logger
+
+log = Logger("wayland")
+cdef bint debug = log.is_debug_enabled()
 
 
 SUBPIXEL_STR: Dict[int, str] = {
@@ -80,55 +89,127 @@ RENDER_FORMAT_STR: Dict[int, str] = {
     DRM_FORMAT_ABGR16161616: "ABGR16161616",
 }
 
+# Listener slot indices for Surface; N_LISTENERS sizes the listeners array.
+cdef enum SurfaceListener:
+    L_OUTPUT_FRAME
+    L_DESTROY
+    N_LISTENERS
+
+
+cdef void output_dispatch(wl_listener *listener, void *data) noexcept:
+    cdef Output output = <Output> owner_of(listener)
+    output.dispatch(listener, data)
+
 
 cdef class Output:
-    pass
+
+    def __repr__(self):
+        return "Output(%s)" % (self.name)
+
+    cdef inline void add_listener(self, int slot, wl_signal *signal) noexcept:
+        attach_listener(self.listeners, slot, <void*>self, output_dispatch, signal)
+
+    cdef inline int slot_of(self, wl_listener *l) noexcept nogil:
+        # Pointer arithmetic recovers the slot index from the wl_listener address.
+        # Works because xpra_listener.listener is the first field of each entry.
+        cdef char *base = <char*>self.listeners
+        cdef char *here = <char*>l
+        return <int>((here - base) / sizeof(xpra_listener))
+
+    cdef inline void _detach_slot(self, int slot) noexcept nogil:
+        if self.listeners[slot].listener.link.next != NULL:
+            wl_list_remove(&self.listeners[slot].listener.link)
+            self.listeners[slot].listener.link.next = NULL
+
+    cdef inline void _detach_all(self) noexcept nogil:
+        cdef int i
+        for i in range(N_LISTENERS):
+            self._detach_slot(i)
+
+    cdef void add_main_listeners(self):
+        self.add_listener(L_OUTPUT_FRAME, &self.wlr_output.events.frame)
+        self.add_listener(L_DESTROY, &self.wlr_output.events.destroy)
+
+    cdef void initialize(self):
+        cdef wlr_output_state state
+        wlr_output_state_init(&state)
+        wlr_output_commit_state(self.wlr_output, &state)
+        wlr_output_state_finish(&state)
+
+        name = self.wlr_output.name.decode()
+        log("new output: %r", name)
+        log(" virtual output %r initialized", name)
+
+    # Single C shim for every Output-level listener. The slot is recovered by
+    # pointer arithmetic on the listeners[] array, then dispatched to the matching Output method.
+    cdef void dispatch(self, wl_listener *listener, void *data) noexcept:
+        cdef int slot = self.slot_of(listener)
+        if slot == L_OUTPUT_FRAME:
+            self.output_frame()
+        elif slot == L_DESTROY:
+            self.destroy()
+        else:
+            log.error("Error: unknown output listener slot %i", slot)
+
+    cdef void output_frame(self) noexcept nogil:
+        if debug:
+            with gil:
+                log("output_frame()")
+        wlr_scene_output_commit(self.scene_output, NULL)
+        wlr_output_schedule_frame(self.wlr_output)
+
+    cdef void destroy(self) noexcept nogil:
+        if debug:
+            with gil:
+                log("output_destroy_handler()")
+        self._detach_all()
+
+    def get_info(self) -> Dict[str, str | int | bool]:
+        cdef wlr_output *output = self.wlr_output
+        info = {}
+        def add(key: str, value: str):
+            if value:
+                info[key] = value
+        add("name", istr(output.name))
+        add("description", istr(output.description))
+        add("make", istr(output.make))
+        add("model", istr(output.model))
+        add("serial", istr(output.serial))
+        info.update({
+            "physical-width": output.phys_width,
+            "physical-height": output.phys_height,
+            "width": output.width,
+            "height": output.height,
+            "enabled": bool(output.enabled),
+            # float:
+            #"scale": output.scale,
+        })
+        if output.refresh:
+            info["vertical-refresh"] = round(output.refresh / 1000)
+            info["refresh"] = output.refresh        # MHz
+        subpixel = SUBPIXEL_STR.get(output.subpixel, "")
+        if subpixel:
+            info["subpixel"] = subpixel
+        transform = TRANSFORM_STR.get(output.transform, "")
+        if transform:
+            info["transform"] = transform
+        if output.adaptive_sync_supported:
+            info["adaptive-sync"] = output.adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED
+        if output.needs_frame:
+            info["needs-frame"] = True
+        if output.frame_pending:
+            info["frame-pending"] = True
+        if output.non_desktop:
+            info["non-desktop"] = True
+        info["commit-sequence"] = output.commit_seq
+        info["render-format"] = RENDER_FORMAT_STR.get(output.render_format, "")
+        # wl_list modes
+        # wlr_output_mode *current_mode
+        return info
+
 
 
 cdef str istr(char* value):
     if value == NULL:
         return ""
     return value.decode("utf8")
-
-
-cdef object get_output_info(wlr_output *output):
-    info = {}
-    def add(key: str, value: str):
-        if value:
-            info[key] = value
-    add("name", istr(output.name))
-    add("description", istr(output.description))
-    add("make", istr(output.make))
-    add("model", istr(output.model))
-    add("serial", istr(output.serial))
-    info.update({
-        "physical-width": output.phys_width,
-        "physical-height": output.phys_height,
-        "width": output.width,
-        "height": output.height,
-        "enabled": bool(output.enabled),
-        # float:
-        #"scale": output.scale,
-    })
-    if output.refresh:
-        info["vertical-refresh"] = round(output.refresh / 1000)
-        info["refresh"] = output.refresh        # MHz
-    subpixel = SUBPIXEL_STR.get(output.subpixel, "")
-    if subpixel:
-        info["subpixel"] = subpixel
-    transform = TRANSFORM_STR.get(output.transform, "")
-    if transform:
-        info["transform"] = transform
-    if output.adaptive_sync_supported:
-        info["adaptive-sync"] = output.adaptive_sync_status == WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED
-    if output.needs_frame:
-        info["needs-frame"] = True
-    if output.frame_pending:
-        info["frame-pending"] = True
-    if output.non_desktop:
-        info["non-desktop"] = True
-    info["commit-sequence"] = output.commit_seq
-    info["render-format"] = RENDER_FORMAT_STR.get(output.render_format, "")
-    # wl_list modes
-    # wlr_output_mode *current_mode
-    return info

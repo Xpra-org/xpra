@@ -12,6 +12,7 @@ from xpra.util.gobject import to_gsignals
 from xpra.util.objects import typedict
 from xpra.wayland.compositor import WaylandCompositor
 from xpra.wayland.surface import Surface
+from xpra.wayland.output import Output
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
 from xpra.net.common import Packet
@@ -305,7 +306,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def _resize(self, wid: int, serial: int, moveresize: int) -> None:
         log.info(f"resize wid {wid:#x}, serial={serial:#x}, moveresize={moveresize}")
 
-    def _new_output(self, name: str, props: dict):
+    def _new_output(self, output: Output) -> None:
+        name = output.name
+        props = output.get_info()
         log("new output %r=%r", name, props)
         self.outputs.append(props)
 
