@@ -355,6 +355,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         super().do_run()
 
     def cleanup(self):
+        super().cleanup()
         if fd := self.wayland_fd_source:
             self.wayland_fd_source = 0
             GLib.source_remove(fd)
