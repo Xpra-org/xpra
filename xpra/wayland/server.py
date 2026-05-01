@@ -105,8 +105,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             log("focus: wid=%#x, state=%s, window=%s, surface=%s", window_id, state, window, surface)
             if window and surface:
                 surface.focus(state)
-                if state:
-                    self.keyboard_device.focus(surface.xdg_surface_ptr)
+                # Skip the keyboard if the surface has already been destroyed —
+                # xdg_surface_ptr returns 0 after Surface.destroy().
+                if state and (ptr := surface.xdg_surface_ptr):
+                    self.keyboard_device.focus(ptr)
         self.focused = wid
         self.compositor.flush()
 
@@ -129,9 +131,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             return
         surface = self.get_surface(wid)
         log("surface(%i)=%s", wid, surface)
-        if surface and len(pointer) >= 4:
+        if surface and len(pointer) >= 4 and (ptr := surface.xdg_surface_ptr):
             x, y = pointer[2:4]
-            if self.pointer_device.enter_surface(surface.xdg_surface_ptr, x, y):
+            if self.pointer_device.enter_surface(ptr, x, y):
                 self.pointer_focus = wid
         self.compositor.flush()
 
@@ -277,6 +279,19 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
     def _destroy(self, wid: int) -> None:
+        # The wlroots wlr_xdg_surface is about to be (or has just been) freed.
+        # We must drop every server-side reference that could later dereference
+        # the dead surface from another thread.
+        # encoder pipelines call window.acknowledge_changes() -> surface.frame_done())
+        # or from a delayed event (focus packet for the dead wid).
+        window = self.get_window(wid)
+        if window is not None:
+            window._internal_set_property("surface", None)
+            window.unmanage()
+        if self.focused == wid:
+            self.focused = 0
+        if self.pointer_focus == wid:
+            self.pointer_focus = 0
         self._remove_wid(wid)
 
     def _move(self, wid: int, serial: int) -> None:

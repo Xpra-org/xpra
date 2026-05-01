@@ -120,11 +120,15 @@ cdef class Surface(ListenerObject):
     @property
     def xdg_surface_ptr(self) -> int:
         """Raw wlr_xdg_surface pointer; for callers (e.g. WaylandPointer/Keyboard)
-        that still take a plain integer."""
+        that still take a plain integer. Returns 0 once the surface has been
+        destroyed by wlroots — callers must treat 0 as 'gone'."""
         return <uintptr_t> self.wlr_xdg_surface
 
     def frame_done(self) -> None:
-        """Tell the client we finished rendering this frame."""
+        """Tell the client we finished rendering this frame.
+        No-op once the underlying wlr_xdg_surface has been destroyed."""
+        if self.wlr_xdg_surface == NULL:
+            return
         cdef timespec now
         clock_gettime(CLOCK_MONOTONIC, &now)
         wlr_surface_send_frame_done(self.wlr_xdg_surface.surface, &now)
@@ -232,6 +236,10 @@ cdef class Surface(ListenerObject):
         self._emit("unmap", self.wid)
 
     cdef void destroy(self) noexcept:
+        if self.wlr_xdg_surface == NULL:
+            # idempotent: destroy already ran (e.g. registry pop triggered it).
+            return
+        cdef uintptr_t key = <uintptr_t> self.wlr_xdg_surface
         log("XDG surface DESTROYED, toplevel=%s", bool(self.wlr_xdg_surface.toplevel != NULL))
         # Detach all listeners while wlr_surface event lists are still valid.
         # We MUST do this here rather than rely on __dealloc__: surface_dispatch
@@ -242,7 +250,13 @@ cdef class Surface(ListenerObject):
         self._emit("destroy", self.wid)
         if debug:
             log("xdg surface dropped")
-        surfaces.pop(<uintptr_t>self.wlr_xdg_surface, None)
+        surfaces.pop(key, None)
+        # wlroots will free the wlr_xdg_surface struct as soon as we return from
+        # this destroy event. Mark our pointer dead so any later Python-side
+        # method calls (frame_done, resize, focus, ...) become safe no-ops
+        # instead of UAFs. Other strong refs to this Surface (e.g. xpra Window
+        # _gproperties["surface"], pending packets) outlive wlroots' free.
+        self.wlr_xdg_surface = NULL
 
     cdef void request_move(self, uint32_t serial) noexcept:
         log("Surface REQUEST MOVE")
@@ -377,6 +391,9 @@ cdef class Surface(ListenerObject):
 
     def resize(self, width: int, height: int) -> None:
         cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> self.wlr_xdg_surface
+        if surface == NULL:
+            log("%s.resize(%i, %i): surface destroyed; skipping", self, width, height)
+            return
         # `surface.toplevel` is a union slot shared with `popup` — only safe to
         # treat as wlr_xdg_toplevel* when role is TOPLEVEL. Otherwise we'd be
         # passing a popup pointer to set_size and crash inside wlroots.
@@ -392,12 +409,15 @@ cdef class Surface(ListenerObject):
 
     def focus(self, focused: bool) -> None:
         cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> self.wlr_xdg_surface
+        if surface == NULL:
+            log("%s.focus(%s): surface destroyed; skipping", self, focused)
+            return
         if surface.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-            log.warn("Warning: %s.focus(%s, %s): role=%d, not a toplevel; skipping", self, focused, surface.role)
+            log.warn("Warning: %s.focus(%s): role=%d, not a toplevel; skipping", self, focused, surface.role)
             return
         cdef wlr_xdg_toplevel *toplevel = surface.toplevel
         if toplevel == NULL:
-            log("%s.focus(%s): no toplevel yet, skipping", focused)
+            log("%s.focus(%s): no toplevel yet, skipping", self, focused)
             return
         log("wlr_xdg_toplevel_set_activated(%#x, %s)", <uintptr_t> toplevel, focused)
         wlr_xdg_toplevel_set_activated(toplevel, focused)
