@@ -322,7 +322,6 @@ cdef class Surface(ListenerObject):
         # we can't modify src_box because it is declared as const,
         # but since we also cannot initialize the struct with the value we need,
         # let's patch it up by hand afterwards - yes this is safe
-        cdef wlr_box src_box
         memset(<void *> &opts.src_box, 0, sizeof(wlr_box))
         cdef int *iptr
         iptr = <int*> &opts.src_box.x
