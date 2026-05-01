@@ -155,11 +155,11 @@ cdef class EventLoop:
         if not pyev:
             return
 
-        cdef float start = monotonic()
+        cdef double start = monotonic()
         try:
             signal, parent_signal = event_args
             route_event(etype, pyev, signal, parent_signal)
-            log("x_event_filter event=%s/%s took %.1fms", event_args, ename, 1000.0*(monotonic() - start))
+            log("x_event_filter event=%s/%s took %.1fms", event_args, ename, 1000.0 * (monotonic() - start))
         # except (KeyboardInterrupt, SystemExit):
         #    log("exiting on KeyboardInterrupt/SystemExit")
         except:
@@ -170,7 +170,7 @@ cdef class EventLoop:
 
     def Xexit(self, flush=True):
         global last_error
-        # log.info("Xexit(%s) last_error=%s", flush, last_error)
+        log("Xexit(%s) last_error=%s", flush, last_error)
         if flush:
             XSync(self.display, False)
             # check for new events in next GLib loop iteration:
