@@ -1205,7 +1205,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                 mode = new_modes.get(mode_name, 0)
                                 if not mode:
                                     mode = self.do_add_screen_size(mode_name, width, height, vrefresh)
-                                    new_modes[mode_name] = mode
+                                    if not mode:
+                                        log.error("Error: failed to add mode %r to output %i", mode_name, i)
+                                        continue
+                                    else:
+                                        new_modes[mode_name] = mode
                             assert mode!=0, f"mode {width}x{height}@{hz} not found"
                             XRRAddOutputMode(self.display, output, mode)
                             log(f"mode {mode_name!r} ({mode:#x}) added to output {i} ({output})")
