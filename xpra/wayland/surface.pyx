@@ -205,7 +205,7 @@ cdef class Surface(ListenerObject):
         if t == NULL:
             # no toplevel yet
             return
-        if self.listeners[0].listener.link.next != NULL:
+        if self.listeners[int(L_REQUEST_MOVE)].listener.link.next != NULL:
             # already done
             return
 
