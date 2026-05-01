@@ -8,7 +8,6 @@ from socket import gethostname
 from xpra.util.gobject import one_arg_signal
 from xpra.codecs.image import ImageWrapper
 from xpra.server.window.model import WindowModelStub
-from xpra.wayland.compositor import frame_done, flush_clients
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -20,13 +19,13 @@ GObject = gi_import("GObject")
 class Window(WindowModelStub):
     __gproperties__ = {
         "display": (
-            GObject.TYPE_POINTER,
-            "The wayland display pointer", "",
+            GObject.TYPE_PYOBJECT,
+            "The wayland Display object", "",
             GObject.ParamFlags.READABLE,
         ),
         "surface": (
-            GObject.TYPE_POINTER,
-            "The wayland surface pointer", "",
+            GObject.TYPE_PYOBJECT,
+            "The wayland Surface object", "",
             GObject.ParamFlags.READABLE,
         ),
         "geometry": (
@@ -141,8 +140,9 @@ class Window(WindowModelStub):
         self._internal_set_property("client-machine", gethostname())
 
     def __repr__(self) -> str:  # pylint: disable=arguments-differ
-        surface = self._gproperties.get("surface", 0)
-        return "WaylandWindow(%#x)" % surface
+        surface = self._gproperties.get("surface", None)
+        wid = getattr(surface, "wid", 0)
+        return "WaylandWindow(%#x)" % wid
 
     def setup(self) -> None:
         self._managed = True
@@ -161,10 +161,10 @@ class Window(WindowModelStub):
     def acknowledge_changes(self) -> None:
         if not self._managed:
             return
-        if surface := self._gproperties.get("surface", 0):
-            frame_done(surface)
-        if display := self._gproperties.get("display", 0):
-            flush_clients(display)
+        if surface := self._gproperties.get("surface"):
+            surface.frame_done()
+        if display := self._gproperties.get("display"):
+            display.flush_clients()
 
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper:
         image = self._gproperties["image"]

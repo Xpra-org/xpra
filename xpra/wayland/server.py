@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from xpra.codecs.image import ImageWrapper
 from xpra.util.gobject import to_gsignals
 from xpra.util.objects import typedict
-from xpra.wayland.compositor import WaylandCompositor, add_event_listener
+from xpra.wayland.compositor import Surface, WaylandCompositor, add_event_listener
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
 from xpra.net.common import Packet
@@ -82,11 +82,11 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def get_clipboard_class():
         return None  # TODO: WaylandClipboard
 
-    def get_surface(self, wid: int) -> int:
+    def get_surface(self, wid: int) -> Surface | None:
         window = self.get_window(wid)
         if not window:
-            return 0
-        return window._gproperties.get("surface", 0)
+            return None
+        return window._gproperties.get("surface")
 
     def _focus(self, _server_source, wid: int, modifiers) -> None:
         log("_focus(%s, %s) current focus=%i", wid, modifiers, self.focused)
@@ -103,11 +103,11 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
                 continue
             window = self._id_to_window.get(window_id)
             surface = self.get_surface(window_id)
-            log("focus: wid=%#x, state=%s, window=%s, surface=%#x", window_id, state, window, surface)
+            log("focus: wid=%#x, state=%s, window=%s, surface=%s", window_id, state, window, surface)
             if window and surface:
-                self.compositor.focus(surface, state)
+                surface.focus(state)
                 if state:
-                    self.keyboard_device.focus(surface)
+                    self.keyboard_device.focus(surface.xdg_surface_ptr)
         self.focused = wid
         self.compositor.flush()
 
@@ -129,10 +129,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             self.pointer_focus = 0
             return
         surface = self.get_surface(wid)
-        log("surface(%i)=%#x", wid, surface)
+        log("surface(%i)=%s", wid, surface)
         if surface and len(pointer) >= 4:
             x, y = pointer[2:4]
-            if self.pointer_device.enter_surface(surface, x, y):
+            if self.pointer_device.enter_surface(surface.xdg_surface_ptr, x, y):
                 self.pointer_focus = wid
         self.compositor.flush()
 
@@ -152,7 +152,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             return
         w = packet.get_i16(4)
         h = packet.get_i16(5)
-        self.compositor.resize(surface, w, h)
+        surface.resize(w, h)
         self.compositor.flush()
         self.refresh_window(window)
 
@@ -164,20 +164,19 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         geometry = config.inttupleget("geometry")
         if geometry:
             w, h = geometry[2:4]
-            self.compositor.resize(surface, w, h)
+            surface.resize(w, h)
             self.compositor.flush()
             self.refresh_window(window)
 
-    def _new_surface(self, surface_obj, surface: int, wid: int,
-                     title: str, app_id: str, size: tuple[int, int]) -> None:
+    def _new_surface(self, surface: Surface, wid: int, title: str, app_id: str, size: tuple[int, int]) -> None:
         # Subscribe per-surface signals on the Surface instance.
         for event in self.PER_SURFACE_EVENTS:
             handler = getattr(self, "_" + event.replace("-", "_"))
-            surface_obj.connect(event, handler)
+            surface.connect(event, handler)
         geom = (0, 0, size[0], size[1])
         window = Window()
         window.setup()
-        display = self.compositor.get_display_ptr()
+        display = self.compositor.get_display()
         window._internal_set_property("display", display)
         window._internal_set_property("surface", surface)
         window._internal_set_property("title", title)

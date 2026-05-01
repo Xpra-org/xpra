@@ -272,14 +272,30 @@ cdef class Surface:
     cdef xpra_listener listeners[12]  # must equal N_LISTENERS
     cdef int width
     cdef int height
-    cdef unsigned long wid
+    cdef str title
+    cdef str app_id
+    cdef readonly unsigned long wid
     cdef dict _callbacks  # {event_name: [callable, ...]}
 
     def __cinit__(self):
         self._callbacks = {}
+        self.title = ""
+        self.app_id = ""
 
     def __repr__(self):
-        return "Surface(%i)" % self.wid
+        return "Surface(%i : %s)" % (self.wid, self.title)
+
+    @property
+    def xdg_surface_ptr(self) -> int:
+        """Raw wlr_xdg_surface pointer; for callers (e.g. WaylandPointer/Keyboard)
+        that still take a plain integer."""
+        return <uintptr_t> self.wlr_xdg_surface
+
+    def frame_done(self) -> None:
+        """Tell the client we finished rendering this frame."""
+        cdef timespec now
+        clock_gettime(CLOCK_MONOTONIC, &now)
+        wlr_surface_send_frame_done(self.wlr_xdg_surface.surface, &now)
 
     def connect(self, event: str, callback) -> None:
         self._callbacks.setdefault(event, []).append(callback)
@@ -297,7 +313,7 @@ cdef class Surface:
         if not cbs:
             return
         if debug:
-            log("Surface(%i)._emit(%r, %s) callbacks=%s", self.wid, event, Ellipsizer(args), cbs)
+            log("%s._emit(%r, %s) callbacks=%s", self, self.wid, event, Ellipsizer(args), cbs)
         for cb in cbs:
             cb(*args)
 
@@ -331,6 +347,7 @@ cdef class Surface:
 
     cdef void register_toplevel_handlers(self) noexcept:
         cdef wlr_xdg_toplevel *t = self.wlr_xdg_surface.toplevel
+        log("register_toplevel_handlers() toplevel=%#x", <uintptr_t> t)
         if t == NULL:
             # no toplevel yet
             return
@@ -344,8 +361,7 @@ cdef class Surface:
         self.add_listener(L_REQUEST_MINIMIZE, &t.events.request_minimize)
         self.add_listener(L_REQUEST_MOVE, &t.events.request_move)
         self.add_listener(L_REQUEST_RESIZE, &t.events.request_resize)
-        # show window menu!
-        # set parent!
+        # TODO: handle "show window menu" and "set parent"
         self.add_listener(L_SET_TITLE, &t.events.set_title)
         self.add_listener(L_SET_APP_ID, &t.events.set_app_id)
 
@@ -406,13 +422,14 @@ cdef class Surface:
 
     cdef void set_title(self) noexcept:
         if self.wlr_xdg_surface.toplevel.title:
-            title = self.wlr_xdg_surface.toplevel.title.decode("utf8")
-            log("Surface SET TITLE: %s", title)
-            self._emit("title", (self.wid, title))
+            self.title = self.wlr_xdg_surface.toplevel.title.decode("utf8")
+            log("Surface %i SET TITLE: %s", self.wid, self.title)
+            self._emit("title", (self.wid, self.title))
 
     cdef void set_app_id(self) noexcept:
         if self.wlr_xdg_surface.toplevel.app_id:
-            log.info("Surface SET APP_ID: %s", self.wlr_xdg_surface.toplevel.app_id)
+            self.app_id = self.wlr_xdg_surface.toplevel.app_id.decode("utf8")
+            log.info("Surface %i SET APP_ID: %s", self.wid, self.app_id)
 
     cdef void commit(self) noexcept:
         if debug:
@@ -509,6 +526,33 @@ cdef class Surface:
         cdef int i
         for i in range(L_REQUEST_MOVE, L_SET_APP_ID + 1):
             self._detach_slot(i)
+
+    def resize(self, width: int, height: int) -> None:
+        cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> self.wlr_xdg_surface
+        # `surface.toplevel` is a union slot shared with `popup` — only safe to
+        # treat as wlr_xdg_toplevel* when role is TOPLEVEL. Otherwise we'd be
+        # passing a popup pointer to set_size and crash inside wlroots.
+        if surface.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
+            log.warn("Warning: %s.resize(%i, %i) role=%d, not a toplevel; skipping", self, width, height, surface.role)
+            return
+        cdef wlr_xdg_toplevel *toplevel = surface.toplevel
+        if toplevel == NULL:
+            log("%s.resize(%i, %i): no toplevel yet, skipping", self, width, height)
+            return
+        log("wlr_xdg_toplevel_set_size(%#x, %i, %i)", <uintptr_t> toplevel, width, height)
+        wlr_xdg_toplevel_set_size(toplevel, width, height)
+
+    def focus(self, focused: bool) -> None:
+        cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> self.wlr_xdg_surface
+        if surface.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
+            log.warn("Warning: %s.focus(%s, %s): role=%d, not a toplevel; skipping", self, focused, surface.role)
+            return
+        cdef wlr_xdg_toplevel *toplevel = surface.toplevel
+        if toplevel == NULL:
+            log("%s.focus(%s): no toplevel yet, skipping", focused)
+            return
+        log("wlr_xdg_toplevel_set_activated(%#x, %s)", <uintptr_t> toplevel, focused)
+        wlr_xdg_toplevel_set_activated(toplevel, focused)
 
     def __dealloc__(self):
         # Idempotent: xdg_surface_destroy_handler already detached in the normal
@@ -736,7 +780,6 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     surface.add_main_listeners()
 
     cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
-    log("toplevel=%#x", <uintptr_t> toplevel)
     if toplevel:
         surface.register_toplevel_handlers()
         # Send initial configure for the toplevel
@@ -754,14 +797,7 @@ cdef void new_xdg_surface(wl_listener *listener, void *data) noexcept:
     log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
     log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
     # Pass the Surface instance so consumers can connect per-surface signals.
-    emit("new-surface", surface, <uintptr_t> xdg_surf, wid, title, app_id, size)
-
-
-def frame_done(surf: int) -> None:
-    cdef timespec now
-    clock_gettime(CLOCK_MONOTONIC, &now)
-    cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)
-    wlr_surface_send_frame_done(surface.surface, &now)
+    emit("new-surface", surface, wid, title, app_id, size)
 
 
 def flush_clients(disp: int) -> None:
@@ -769,11 +805,27 @@ def flush_clients(disp: int) -> None:
     wl_display_flush_clients(display)
 
 
+cdef class Display:
+    cdef wl_display *display
+
+    def __cinit__(self):
+        self.display = NULL
+
+    def __repr__(self):
+        return "Display(%#x)" % (<uintptr_t> self.display)
+
+    def flush_clients(self) -> None:
+        if display := self.display:
+            wl_display_flush_clients(display)
+
+
+
 # Python interface
 cdef class WaylandCompositor:
     cdef server srv
     cdef str socket_name
     cdef wl_event_loop *event_loop
+    cdef Display display
 
     def __cinit__(self):
         memset(&self.srv, 0, sizeof(server))
@@ -785,6 +837,9 @@ cdef class WaylandCompositor:
         self.srv.display = wl_display_create()
         if not self.srv.display:
             raise RuntimeError("Failed to create display")
+
+        self.display = Display()
+        self.display.display = self.srv.display
 
         self.event_loop = wl_display_get_event_loop(self.srv.display)
         self.srv.backend = wlr_headless_backend_create(self.event_loop)
@@ -859,15 +914,16 @@ cdef class WaylandCompositor:
     def get_event_loop_fd(self) -> int:
         return wl_event_loop_get_fd(self.event_loop)
 
-    def get_display_ptr(self) -> int:
-        return <uintptr_t> self.srv.display
+    def get_display(self) -> Display:
+        return self.display
 
     def process_events(self) -> None:
         wl_event_loop_dispatch(self.event_loop, 0)
         self.flush()
 
     def flush(self) -> None:
-        wl_display_flush_clients(self.srv.display)
+        if display := self.display:
+            display.flush_clients()
 
     def run(self) -> None:
         """Run the compositor event loop"""
@@ -921,15 +977,3 @@ cdef class WaylandCompositor:
 
     def get_keyboard_device(self):
         return WaylandKeyboard(<uintptr_t> self.srv.seat)
-
-    def resize(self, surf: int, width: int, height: int) -> None:
-        cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)
-        cdef wlr_xdg_toplevel *toplevel = surface.toplevel
-        log("wlr_xdg_toplevel_set_size(%#x, %i, %i)", <uintptr_t> toplevel, width, height)
-        wlr_xdg_toplevel_set_size(toplevel, width, height)
-
-    def focus(self, surf: int, focused: bool) -> None:
-        cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> (<uintptr_t> surf)
-        cdef wlr_xdg_toplevel *toplevel = surface.toplevel
-        log("wlr_xdg_toplevel_set_activated(%#x, %s)", <uintptr_t> toplevel, focused)
-        wlr_xdg_toplevel_set_activated(toplevel, focused)
