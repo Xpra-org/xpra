@@ -8,6 +8,7 @@
 from typing import Tuple, Dict, Type
 from gi.repository import Gdk, Gtk, Gio, GdkPixbuf  # @UnresolvedImport
 
+from xpra.common import noop
 from xpra.client.gtk3.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import scaled_image, get_icon_pixbuf
@@ -24,6 +25,44 @@ geomlog = Logger("geometry")
 WINDOW_ICON = envbool("XPRA_WINDOW_ICON", True)
 WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
 WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
+
+
+def make_header_bar(title: str, image, show_window_menu, show_xpra_menu) -> None:
+    hb = Gtk.HeaderBar()
+    hb.set_has_subtitle(False)
+    hb.set_show_close_button(True)
+    hb.props.title = title
+    if WINDOW_MENU and show_window_menu != noop:
+        button = Gtk.Button()
+        if image:
+            button.add(image)
+        button.connect("clicked", show_window_menu)
+        hb.pack_start(button)
+    elif WINDOW_ICON and image:
+        # just the icon, no menu:
+        hb.pack_start(image)
+    if WINDOW_XPRA_MENU and show_xpra_menu != noop:
+        # defined in window:
+        icon = Gio.ThemedIcon(name="open-menu-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        button = Gtk.Button()
+        button.add(image)
+        button.connect("clicked", show_xpra_menu)
+        hb.pack_end(button)
+    return hb
+
+
+def get_header_bar_image(size=Gtk.IconSize.BUTTON):
+    if WINDOW_MENU:
+        # the icon 'open-menu-symbolic' will be replaced with the window icon
+        # when we receive it
+        icon = Gio.ThemedIcon(name="preferences-system-windows")
+        return Gtk.Image.new_from_gicon(icon, size)
+    if WINDOW_ICON:
+        pixbuf = get_icon_pixbuf("transparent.png")
+        return scaled_image(pixbuf, size)
+    return None
+
 
 
 """
@@ -76,6 +115,12 @@ class GTK3ClientWindow(GTKClientWindowBase):
         if hbl=="force":
             return True
         return False
+
+    def add_header_bar(self) -> None:
+        log("add_header_bar()")
+        self.header_bar_image = get_header_bar_image(self._icon_size())
+        hb = make_header_bar(self.get_title(), self.header_bar_image, self.show_window_menu, self.show_xpra_menu)
+        self.set_titlebar(hb)
 
     def add_header_bar(self) -> None:
         self.menu_helper = WindowMenuHelper(self._client, self)
