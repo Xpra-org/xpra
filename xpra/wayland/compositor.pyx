@@ -23,7 +23,6 @@ from xpra.wayland.output cimport get_output_info
 from xpra.wayland.events cimport xpra_listener, owner_of
 
 
-
 # Import definitions from .pxd file
 from xpra.wayland.wlroots cimport (
     wl_display, wlr_xdg_shell,
@@ -56,7 +55,6 @@ from xpra.wayland.wlroots cimport (
     wlr_headless_add_output,
     wlr_data_device_manager_create,
     wl_list, wl_list_remove,
-    WLR_ERROR, WLR_INFO, WLR_DEBUG,
     DRM_FORMAT_ABGR8888, WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
