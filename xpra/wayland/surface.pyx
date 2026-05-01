@@ -95,6 +95,13 @@ cdef bint debug = log.is_debug_enabled()
 # Removed in xdg_surface_destroy_handler so __dealloc__ runs deterministically.
 surfaces: Dict[int, Surface] = {}
 
+cdef unsigned long wid = 0
+
+cdef inline unsigned long next_wid():
+    global wid
+    wid += 1
+    return wid
+
 
 cdef class Surface(ListenerObject):
 
@@ -105,6 +112,7 @@ cdef class Surface(ListenerObject):
 
     def __init__(self):
         super().__init__(N_LISTENERS)
+        self.wid = next_wid()
 
     def __repr__(self):
         return "Surface(%i : %s)" % (self.wid, self.title)
@@ -137,7 +145,7 @@ cdef class Surface(ListenerObject):
         if not cbs:
             return
         if debug:
-            log("%s._emit(%r, %s) callbacks=%s", self, self.wid, event, Ellipsizer(args), cbs)
+            log("%s._emit(%s, %s) callbacks=%s", self, event, Ellipsizer(args), cbs)
         for cb in cbs:
             cb(*args)
 
@@ -353,8 +361,7 @@ cdef class Surface(ListenerObject):
         width = subsurface.surface.current.width if subsurface.surface else 0
         height = subsurface.surface.current.height if subsurface.surface else 0
 
-        global wid
-        wid += 1
+        wid = next_wid()
         log("allocated wid=%#x", wid)
         # TODO: allocate Surface and populate it
         self._emit("new-subsurface", self.wid, wid, <uintptr_t> subsurface.surface, width, height)

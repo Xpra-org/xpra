@@ -63,12 +63,8 @@ def add_event_listener(event_name: str, callback: Callable) -> None:
     global event_listeners
 
 
-cdef unsigned long wid = 0
-
-
 log = Logger("wayland")
 cdef bint debug = log.is_debug_enabled()
-
 
 
 # Listener slot indices for WaylandCompositor; N_LISTENERS sizes the listeners array.
@@ -220,9 +216,6 @@ cdef class WaylandCompositor(ListenerObject):
         surface.wlr_xdg_surface = xdg_surf
         surface.width = 0
         surface.height = 0
-        global wid
-        wid += 1
-        surface.wid = wid
 
         surface.scene_tree = wlr_scene_xdg_surface_create(&self.scene.tree, xdg_surf)
         surface.add_main_listeners()
@@ -242,7 +235,7 @@ cdef class WaylandCompositor(ListenerObject):
         log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
         log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
         # Pass the Surface instance so consumers can connect per-surface signals.
-        self.emit("new-surface", surface, wid, title, app_id, size)
+        self.emit("new-surface", surface, title, app_id, size)
 
     cdef void new_output(self, wlr_output *wlr_out) noexcept:
         wlr_output_init_render(wlr_out, self.allocator, self.renderer)

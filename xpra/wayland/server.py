@@ -167,7 +167,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             self.compositor.flush()
             self.refresh_window(window)
 
-    def _new_surface(self, surface: Surface, wid: int, title: str, app_id: str, size: tuple[int, int]) -> None:
+    def _new_surface(self, surface: Surface, title: str, app_id: str, size: tuple[int, int]) -> None:
         # Subscribe per-surface signals on the Surface instance.
         for event in self.PER_SURFACE_EVENTS:
             handler = getattr(self, "_" + event.replace("-", "_"))
@@ -185,7 +185,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._internal_set_property("image", None)
         window._internal_set_property("depth", 32)
         window._internal_set_property("decorations", False)
-        self.do_add_new_window_common(wid, window)
+        self.do_add_new_window_common(surface.wid, window)
         if size != (0, 0):
             self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
