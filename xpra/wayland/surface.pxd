@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-from libc.stdint cimport uint32_t
+from libc.stdint cimport uint32_t, int32_t
 from xpra.wayland.wlroots cimport (
     wlr_xdg_surface,
     wlr_scene_tree,
@@ -36,6 +36,7 @@ cdef class Surface(ListenerObject):
     cdef void request_maximize(self) noexcept
     cdef void request_fullscreen(self) noexcept
     cdef void request_minimize(self) noexcept
+    cdef void request_show_window_menu(self, uint32_t serial, int32_t x, int32_t y) noexcept
     cdef void set_title(self) noexcept
     cdef void set_app_id(self) noexcept
     cdef void set_parent(self) noexcept

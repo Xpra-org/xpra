@@ -14,7 +14,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.constants import MoveResize
 
 from libc.string cimport memset
-from libc.stdint cimport uintptr_t, uint32_t
+from libc.stdint cimport uintptr_t, uint32_t, int32_t
 from libc.time cimport timespec
 
 from xpra.buffers.membuf cimport getbuf, MemBuf
@@ -37,7 +37,7 @@ from xpra.wayland.wlroots cimport (
     wlr_surface, wlr_surface_events, wlr_texture, wlr_client_buffer, wlr_box,
     wlr_xdg_toplevel, wlr_xdg_toplevel_events, wlr_xdg_surface,
     wlr_texture_read_pixels_options, wlr_texture_read_pixels,
-    wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event,
+    wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event, wlr_xdg_toplevel_show_window_menu_event,
     wlr_xdg_toplevel_set_size, wlr_xdg_toplevel_set_activated,
     wlr_xdg_surface_schedule_configure,
     wlr_surface_send_frame_done,
@@ -88,6 +88,7 @@ cdef enum SurfaceListener:
     L_SET_TITLE
     L_SET_APP_ID
     L_SET_PARENT
+    L_REQUEST_SHOW_WINDOW_MENU
     N_LISTENERS
 
 
@@ -174,6 +175,7 @@ cdef class Surface(ListenerObject):
         cdef int slot = self.slot_of(listener)
         cdef wlr_xdg_toplevel_move_event *move_event
         cdef wlr_xdg_toplevel_resize_event *resize_event
+        cdef wlr_xdg_toplevel_show_window_menu_event *show_menu_event
         if slot == L_MAP:
             self.map()
         elif slot == L_UNMAP:
@@ -202,6 +204,10 @@ cdef class Surface(ListenerObject):
             self.set_app_id()
         elif slot == L_SET_PARENT:
             self.set_parent()
+        elif slot == L_REQUEST_SHOW_WINDOW_MENU:
+            show_menu_event = <wlr_xdg_toplevel_show_window_menu_event*>data
+            self.request_show_window_menu(show_menu_event.serial,
+                                          show_menu_event.x, show_menu_event.y)
         else:
             log.error("Error: unknown surface listener slot %i", slot)
 
@@ -221,10 +227,10 @@ cdef class Surface(ListenerObject):
         self.add_listener(L_REQUEST_MINIMIZE, &t.events.request_minimize)
         self.add_listener(L_REQUEST_MOVE, &t.events.request_move)
         self.add_listener(L_REQUEST_RESIZE, &t.events.request_resize)
-        # TODO: handle "show window menu"
         self.add_listener(L_SET_TITLE, &t.events.set_title)
         self.add_listener(L_SET_APP_ID, &t.events.set_app_id)
         self.add_listener(L_SET_PARENT, &t.events.set_parent)
+        self.add_listener(L_REQUEST_SHOW_WINDOW_MENU, &t.events.request_show_window_menu)
 
     cdef void map(self) noexcept:
         toplevel = self.wlr_xdg_surface.toplevel
@@ -301,6 +307,16 @@ cdef class Surface(ListenerObject):
         if self.wlr_xdg_surface.toplevel.app_id:
             self.app_id = self.wlr_xdg_surface.toplevel.app_id.decode("utf8")
             log.info("Surface %i SET APP_ID: %s", self.wid, self.app_id)
+
+    cdef void request_show_window_menu(self, uint32_t serial, int32_t x, int32_t y) noexcept:
+        # Client asked the compositor to pop up a window-management context
+        # menu (move/resize/close). xpra is a remote display: we don't render
+        # the menu ourselves — relay to consumers so the server can decide.
+        # No consumer today; left as an emit-only no-op.
+        if debug:
+            log("Surface %i REQUEST SHOW WINDOW MENU at (%i, %i) serial=%#x",
+                self.wid, x, y, serial)
+        self._emit("show-window-menu", self.wid, serial, x, y)
 
     cdef void set_parent(self) noexcept:
         # Fired after wlroots has updated wlr_xdg_toplevel.parent. NULL means
@@ -405,12 +421,12 @@ cdef class Surface(ListenerObject):
         self._emit("new-subsurface", self.wid, wid, <uintptr_t> subsurface.surface, width, height)
 
     cdef void unregister_toplevel_handlers(self) noexcept nogil:
-        # Toplevel slots are contiguous: L_REQUEST_MOVE..L_SET_PARENT.
+        # Toplevel slots are contiguous: L_REQUEST_MOVE..L_REQUEST_SHOW_WINDOW_MENU.
         # L_NEW_SUBSURFACE is technically a main-listener slot but the prior
         # implementation also detached it on unmap; preserved for behaviour.
         self._detach_slot(L_NEW_SUBSURFACE)
         cdef int i
-        for i in range(L_REQUEST_MOVE, L_SET_PARENT + 1):
+        for i in range(L_REQUEST_MOVE, L_REQUEST_SHOW_WINDOW_MENU + 1):
             self._detach_slot(i)
 
     def resize(self, width: int, height: int) -> None:
