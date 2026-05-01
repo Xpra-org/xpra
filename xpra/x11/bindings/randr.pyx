@@ -857,9 +857,12 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return self._set_screen_size(width, height)
 
     def add_screen_size(self, unsigned int w, unsigned int h, unsigned int vrefresh=DEFAULT_REFRESH_RATE) -> RRMode:
-        hz = round(vrefresh/1000)
-        name = f"{w}x{h}@{hz}"
-        mode = self.do_add_screen_size(name, w, h, vrefresh)
+        hz = vrefresh / 1000
+        hzstr = str(hz)
+        if hzstr.find(".") > 0:
+            hzstr = hzstr.rstrip("0").rstrip(".")
+        name = f"{w}x{h}@{hzstr}"
+        mode = self.add_screen_mode(name, w, h, hz)
         #now add it to the output:
         cdef RROutput output
         if mode:
@@ -868,10 +871,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRAddOutputMode(self.display, output, mode)
         return mode
 
-    cdef RRMode do_add_screen_size(self, name, unsigned int w, unsigned int h, unsigned int vrefresh):
-        self.context_check("do_add_screen_size")
-        log("do_add_screen_size(%s, %i, %i, %i)", name, w, h, vrefresh)
-        cdef XRRModeInfo *new_mode = self.calculate_mode(name, w, h, vrefresh)
+    cdef RRMode add_screen_mode(self, name, unsigned int w, unsigned int h, double hz):
+        self.context_check("add_screen_mode")
+        log("add_screen_mode(%s, %i, %i, %i)", name, w, h, hz)
+        cdef XRRModeInfo *new_mode = self.calculate_mode(name, w, h, hz)
         assert new_mode!=NULL
         cdef RRMode mode = self._added_modes.get(name, 0)
         if mode:
@@ -897,14 +900,16 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 log("failed to remove older mode", exc_info=True)
         return mode
 
-    cdef XRRModeInfo *calculate_mode(self, name, unsigned int w, unsigned int h, unsigned int vrefresh) noexcept:
-        log("calculate_mode(%s, %i, %i, %i)", name, w, h, vrefresh)
+    cdef XRRModeInfo *calculate_mode(self, name, unsigned int w, unsigned int h, double vrefresh) noexcept:
+        log("calculate_mode(%s, %i, %i, %f)", name, w, h, vrefresh)
+        if vrefresh <= 0 or vrefresh > 500:
+            log.warn("Warning: invalid vertical refresh rate specified: %i", vrefresh)
         #monitor settings as set in xorg.conf...
         cdef unsigned int minHSync = 1*1000                     #1KHz
         cdef unsigned int maxHSync = 300*1000                   #300KHz
         cdef unsigned int minVSync = 1                          #1Hz
         cdef unsigned int maxVSync = 300                        #240Hz
-        cdef double idealVSync = vrefresh/1000
+        cdef double idealVSync = vrefresh
         cdef double timeHFront = 0.07           #0.074219; 0.075; Width of the black border on right edge of the screen
         cdef double timeHSync = 0.1             #0.107422; 0.1125; Sync pulse duration
         cdef double timeHBack = 0.15            #0.183594; 0.1875; Width of the black border on left edge of the screen
@@ -939,7 +944,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
         idealClock = idealVSync * xTotal * yTotal * yFactor
         cdef unsigned long clock = min(modeMaxClock, max(modeMinClock, idealClock))
-        log("Modeline %ix%i@%i %s %s %s %s %s %s %s %s %s", w, h, round(vrefresh/1000),
+        hzstr = str(vrefresh)
+        if hzstr.find(".") > 0:
+            hzstr = hzstr.rstrip("0").rstrip(".")
+        log("Modeline %ix%i@%s %s %s %s %s %s %s %s %s %s", w, h, hzstr,
                         clock/1000/1000,
                         w, w+xFront, w+xFront+xSync, xTotal,
                         h, h+yFront, h+yFront+ySync, yTotal)
@@ -1156,7 +1164,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     noutput = 1
                     mode = 0
                     vrefresh = 0
-                    hz = 60
+                    hz = 60.0
                     x, y, width, height = 0, 0, 1024, 768
                     if m:
                         if m.get("primary", False):
@@ -1168,8 +1176,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         if vrefresh < 1000:
                             hz = vrefresh
                         else:
-                            hz = round(vrefresh/1000)
-                        mode_name = f"{width}x{height}@{hz}"
+                            hz = vrefresh / 1000
+                        hzstr = str(hz)
+                        if hzstr.find(".") > 0:
+                            hzstr = hzstr.rstrip("0").rstrip(".")
+                        mode_name = f"{width}x{height}@{hzstr}"
                         log("calculating mode %r", mode_name)
                         match_mode = self.calculate_mode(mode_name, width, height, hz)
                         assert match_mode, "no mode to match"
@@ -1206,7 +1217,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                 #may have already been added:
                                 mode = new_modes.get(mode_name, 0)
                                 if not mode:
-                                    mode = self.do_add_screen_size(mode_name, width, height, vrefresh)
+                                    mode = self.add_screen_mode(mode_name, width, height, hz)
                                     if not mode:
                                         log.error("Error: failed to add mode %r to output %i", mode_name, i)
                                         continue
