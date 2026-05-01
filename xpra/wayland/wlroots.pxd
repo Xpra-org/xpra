@@ -857,6 +857,8 @@ cdef extern from "wlr/types/wlr_xdg_shell.h":
         wl_signal set_title
         wl_signal set_app_id
     cdef struct wlr_xdg_toplevel:
+        wlr_xdg_surface *base       # back-pointer to the owning xdg_surface
+        wlr_xdg_toplevel *parent    # set via xdg_toplevel.set_parent; NULL clears
         char *title
         char *app_id
         wlr_xdg_toplevel_events events

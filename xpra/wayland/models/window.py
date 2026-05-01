@@ -72,6 +72,16 @@ class Window(WindowModelStub):
             "Window app id", "",
             GObject.ParamFlags.READABLE,
         ),
+        "parent": (
+            GObject.TYPE_PYOBJECT,
+            "wid of the parent toplevel (xdg_toplevel.set_parent), 0 if none", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        "transient-for": (
+            GObject.TYPE_PYOBJECT,
+            "Parent Window object set via xdg_toplevel.set_parent", "",
+            GObject.ParamFlags.READABLE,
+        ),
         "role": (
             GObject.TYPE_PYOBJECT,
             "The window's role (ICCCM session management)", "",

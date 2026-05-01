@@ -71,6 +71,9 @@ EDGES_MAP: Dict[int, MoveResize] = {
 
 
 # Listener slot indices for Surface; N_LISTENERS sizes the listeners array.
+# Toplevel slots are kept contiguous so unregister_toplevel_handlers can use
+# a simple range loop — when adding a new toplevel-only slot, place it in the
+# block bounded by L_REQUEST_MOVE..L_SET_PARENT (inclusive).
 cdef enum SurfaceListener:
     L_MAP
     L_UNMAP
@@ -84,6 +87,7 @@ cdef enum SurfaceListener:
     L_REQUEST_MINIMIZE
     L_SET_TITLE
     L_SET_APP_ID
+    L_SET_PARENT
     N_LISTENERS
 
 
@@ -196,6 +200,8 @@ cdef class Surface(ListenerObject):
             self.set_title()
         elif slot == L_SET_APP_ID:
             self.set_app_id()
+        elif slot == L_SET_PARENT:
+            self.set_parent()
         else:
             log.error("Error: unknown surface listener slot %i", slot)
 
@@ -215,9 +221,10 @@ cdef class Surface(ListenerObject):
         self.add_listener(L_REQUEST_MINIMIZE, &t.events.request_minimize)
         self.add_listener(L_REQUEST_MOVE, &t.events.request_move)
         self.add_listener(L_REQUEST_RESIZE, &t.events.request_resize)
-        # TODO: handle "show window menu" and "set parent"
+        # TODO: handle "show window menu"
         self.add_listener(L_SET_TITLE, &t.events.set_title)
         self.add_listener(L_SET_APP_ID, &t.events.set_app_id)
+        self.add_listener(L_SET_PARENT, &t.events.set_parent)
 
     cdef void map(self) noexcept:
         toplevel = self.wlr_xdg_surface.toplevel
@@ -294,6 +301,23 @@ cdef class Surface(ListenerObject):
         if self.wlr_xdg_surface.toplevel.app_id:
             self.app_id = self.wlr_xdg_surface.toplevel.app_id.decode("utf8")
             log.info("Surface %i SET APP_ID: %s", self.wid, self.app_id)
+
+    cdef void set_parent(self) noexcept:
+        # Fired after wlroots has updated wlr_xdg_toplevel.parent. NULL means
+        # "no parent" (cleared). The parent itself is a wlr_xdg_toplevel*; we
+        # map it to our Surface via its .base wlr_xdg_surface, which is what
+        # we keyed the `surfaces` registry with.
+        if self.wlr_xdg_surface == NULL or self.wlr_xdg_surface.toplevel == NULL:
+            return
+        cdef wlr_xdg_toplevel *parent = self.wlr_xdg_surface.toplevel.parent
+        cdef unsigned long parent_wid = 0
+        cdef Surface parent_surface
+        if parent != NULL and parent.base != NULL:
+            parent_surface = surfaces.get(<uintptr_t> parent.base)
+            if parent_surface is not None:
+                parent_wid = parent_surface.wid
+        log("Surface %i SET PARENT: parent_wid=%i", self.wid, parent_wid)
+        self._emit("set-parent", self.wid, parent_wid)
 
     cdef void commit(self) noexcept:
         if debug:
@@ -381,12 +405,12 @@ cdef class Surface(ListenerObject):
         self._emit("new-subsurface", self.wid, wid, <uintptr_t> subsurface.surface, width, height)
 
     cdef void unregister_toplevel_handlers(self) noexcept nogil:
-        # Toplevel slots are contiguous: L_REQUEST_MOVE..L_SET_APP_ID.
+        # Toplevel slots are contiguous: L_REQUEST_MOVE..L_SET_PARENT.
         # L_NEW_SUBSURFACE is technically a main-listener slot but the prior
         # implementation also detached it on unmap; preserved for behaviour.
         self._detach_slot(L_NEW_SUBSURFACE)
         cdef int i
-        for i in range(L_REQUEST_MOVE, L_SET_APP_ID + 1):
+        for i in range(L_REQUEST_MOVE, L_SET_PARENT + 1):
             self._detach_slot(i)
 
     def resize(self, width: int, height: int) -> None:

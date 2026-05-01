@@ -38,6 +38,7 @@ cdef class Surface(ListenerObject):
     cdef void request_minimize(self) noexcept
     cdef void set_title(self) noexcept
     cdef void set_app_id(self) noexcept
+    cdef void set_parent(self) noexcept
     cdef void commit(self) noexcept
     cdef void capture_surface_pixels(self) noexcept
     cdef void new_subsurface(self, wlr_subsurface *subsurface) noexcept

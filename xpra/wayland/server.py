@@ -61,6 +61,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         "minimize", "maximize", "fullscreen",
         "move", "resize",
         "surface-image",
+        "set-parent",
     )
 
     def make_keyboard_device(self):
@@ -293,6 +294,19 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if self.pointer_focus == wid:
             self.pointer_focus = 0
         self._remove_wid(wid)
+
+    def _set_parent(self, wid: int, parent_wid: int) -> None:
+        # The wayland client called xdg_toplevel.set_parent. parent_wid==0 means
+        # "no parent" (the relationship was cleared, or the parent is unknown to us).
+        log("set_parent: wid=%i, parent_wid=%i", wid, parent_wid)
+        window = self.get_window(wid)
+        if not window:
+            return
+        # Look up the parent Window so the model carries an object reference,
+        # not just an opaque id; consumers can use either via _gproperties.
+        parent = self.get_window(parent_wid) if parent_wid else None
+        window._updateprop("parent", parent_wid)
+        window._updateprop("transient-for", parent)
 
     def _move(self, wid: int, serial: int) -> None:
         log(f"move wid {wid}, serial={serial:#x}")
