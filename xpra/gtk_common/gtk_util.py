@@ -663,8 +663,8 @@ def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
     if image:
         menu_item.set_image(image)
         #override gtk defaults: we *want* icons:
-        settings = menu_item.get_settings()
-        settings.set_property('gtk-menu-images', True)
+        #settings = menu_item.get_settings()
+        #settings.set_property('gtk-menu-images', True)
         if hasattr(menu_item, "set_always_show_image"):
             menu_item.set_always_show_image(True)
     if tooltip:
