@@ -3097,18 +3097,21 @@ tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 toggle_packages(wayland_client_ENABLED or wayland_server_ENABLED, "xpra.wayland")
 tace(wayland_client_ENABLED, "xpra.wayland.wait_for_display", "wayland-client")
 XDG_SHELL_PROTOCOL_HEADER = "./xpra/wayland/xdg-shell-protocol.h"
-if wayland_server_ENABLED and not os.path.exists(XDG_SHELL_PROTOCOL_HEADER):
-    print("generating %r" % XDG_SHELL_PROTOCOL_HEADER)
-    subprocess.run(["wayland-scanner", "server-header",
-                    "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml",
-                    XDG_SHELL_PROTOCOL_HEADER])
-tace(wayland_server_ENABLED, "xpra.wayland.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1",
-     extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
-tace(wayland_server_ENABLED, "xpra.wayland.pointer", "wlroots-0.19,wayland-server",
-     extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
-tace(wayland_server_ENABLED, "xpra.wayland.keyboard", "wlroots-0.19,wayland-server",
-     extra_compile_args=["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"])
-toggle_packages(wayland_server_ENABLED, "xpra.wayland.models")
+if wayland_server_ENABLED:
+    if not os.path.exists(XDG_SHELL_PROTOCOL_HEADER):
+        print("generating %r" % XDG_SHELL_PROTOCOL_HEADER)
+        subprocess.run(["wayland-scanner", "server-header",
+                        "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml",
+                        XDG_SHELL_PROTOCOL_HEADER])
+    wlr_args = ["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"]
+    ace("xpra.wayland.events", "wlroots-0.19", extra_compile_args=wlr_args)
+    ace("xpra.wayland.display", "wlroots-0.19", extra_compile_args=wlr_args)
+    ace("xpra.wayland.output", "wlroots-0.19,libdrm,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.pointer","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.keyboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1", extra_compile_args=wlr_args)
+    toggle_packages(wayland_server_ENABLED, "xpra.wayland.models")
 
 if cythonize_more_ENABLED:
     def ax(base):

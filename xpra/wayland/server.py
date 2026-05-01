@@ -10,7 +10,8 @@ from collections.abc import Sequence
 from xpra.codecs.image import ImageWrapper
 from xpra.util.gobject import to_gsignals
 from xpra.util.objects import typedict
-from xpra.wayland.compositor import Surface, WaylandCompositor, add_event_listener
+from xpra.wayland.compositor import WaylandCompositor, add_event_listener
+from xpra.wayland.surface import Surface
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
 from xpra.net.common import Packet
