@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from socket import gethostname
+from typing import Any
 
 from xpra.util.gobject import one_arg_signal
 from xpra.codecs.image import ImageWrapper
@@ -145,9 +145,10 @@ class Window(WindowModelStub):
     _internal_property_names = []
     _MODELTYPE = "Wayland"
 
-    def __init__(self):
+    def __init__(self, props: dict[str, Any]):
         super().__init__()
-        self._internal_set_property("client-machine", gethostname())
+        for key, prop in props.items():
+            self._internal_set_property(key, prop)
 
     def __repr__(self) -> str:  # pylint: disable=arguments-differ
         surface = self._gproperties.get("surface", None)

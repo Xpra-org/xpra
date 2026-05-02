@@ -257,13 +257,13 @@ cdef class Surface(WaylandSurface):
     cdef void set_title(self) noexcept:
         if self.wlr_xdg_surface.toplevel.title:
             self.title = self.wlr_xdg_surface.toplevel.title.decode("utf8")
-            log("Surface %i SET TITLE: %s", self.wid, self.title)
+            log("Surface %i SET TITLE: %r", self.wid, self.title)
             self._emit("title", self.wid, self.title)
 
     cdef void set_app_id(self) noexcept:
         if self.wlr_xdg_surface.toplevel.app_id:
             self.app_id = self.wlr_xdg_surface.toplevel.app_id.decode("utf8")
-            log.info("Surface %i SET APP_ID: %s", self.wid, self.app_id)
+            log("Surface %i SET APP_ID: %s", self.wid, self.app_id)
 
     cdef void request_show_window_menu(self, uint32_t serial, int32_t x, int32_t y) noexcept:
         # Client asked the compositor to pop up a window-management context

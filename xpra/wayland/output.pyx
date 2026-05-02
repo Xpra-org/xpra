@@ -167,6 +167,12 @@ cdef class Output(ListenerObject):
         log("new output: %r", name)
         log(" virtual output %r initialized", name)
 
+    def get_description(self):
+        name = istr(self.wlr_output.name)
+        width = self.wlr_output.width
+        height = self.wlr_output.height
+        return f"{name!r} : {width}x{height}"
+
     # Single C shim for every Output-level listener. The slot is recovered by
     # pointer arithmetic on the listeners[] array, then dispatched to the matching Output method.
     cdef void dispatch(self, wl_listener *listener, void *data) noexcept:

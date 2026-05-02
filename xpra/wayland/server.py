@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from socket import gethostname
 from collections.abc import Sequence
 
 from xpra.codecs.image import ImageWrapper
@@ -37,7 +38,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.session_type: str = "wayland"
         self.focused = 0
         self.pointer_focus = 0
-        self.outputs: list[dict] = []
+        self.outputs: list[Output] = []
         self.compositor = WaylandCompositor()
         # Compositor-wide events; per-surface events are connected per-instance
         # in _new_surface() once we receive the Surface object.
@@ -176,18 +177,19 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             handler = getattr(self, "_" + event.replace("-", "_"))
             surface.connect(event, handler)
         geom = (0, 0, size[0], size[1])
-        window = Window()
+        window = Window({
+            "client-machine": gethostname(),
+            "display": self.compositor.get_display(),
+            "surface": surface,
+            "title": title,
+            "app-id": app_id,
+            "iconic": False,
+            "geometry": geom,
+            "image": None,
+            "depth": 32,
+            "decorations": False,
+        })
         window.setup()
-        display = self.compositor.get_display()
-        window._internal_set_property("display", display)
-        window._internal_set_property("surface", surface)
-        window._internal_set_property("title", title)
-        window._internal_set_property("app-id", app_id)
-        window._internal_set_property("iconic", False)
-        window._internal_set_property("geometry", geom)
-        window._internal_set_property("image", None)
-        window._internal_set_property("depth", 32)
-        window._internal_set_property("decorations", False)
         self.do_add_new_window_common(surface.wid, window)
         if size != (0, 0):
             self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
@@ -336,10 +338,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         log.info(f"resize wid {wid:#x}, serial={serial:#x}, moveresize={moveresize}")
 
     def _new_output(self, output: Output) -> None:
-        name = output.name
-        props = output.get_info()
-        log("new output %r=%r", name, props)
-        self.outputs.append(props)
+        log("new output %r=%r", output.name, output.get_info())
+        self.outputs.append(output)
 
     @staticmethod
     def get_cursor_data() -> None:
@@ -355,12 +355,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def get_display_description(self) -> str:
         details = ""
-        if len(self.outputs) == 1:
-            info = self.outputs[0]
-            name = info.get("name", "")
-            width = info.get("width", 0)
-            height = info.get("height", 0)
-            details = f" {name!r} : {width}x{height}"
+        if (outputs := list(self.outputs)) and (len(outputs) == 1):
+            details = " " + outputs[0].get_description()
         return f"Wayland Display{details}"
 
     def wayland_io_callback(self, fd: int, condition):
@@ -389,8 +385,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             self.wayland_fd_source = 0
             GLib.source_remove(fd)
         if c := self.compositor:
-            c.cleanup()
             self.compositor = None
+            c.cleanup()
 
 
 GObject.type_register(WaylandSeamlessServer)
