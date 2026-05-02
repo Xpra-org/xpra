@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.4.4] 2026-05-01
+## [6.4.4] 2026-05-02
 * Platforms, build and packaging:
   * [`pycuda` 2026.1](https://github.com/Xpra-org/xpra/commit/dab23526cd93784ee9b0afbdfa927de4a584505a)
   * [add Fedora 44, remove Fedora 41](https://github.com/Xpra-org/xpra/commit/eac8640c24bd67c74f2da5f22c5508a76be2d6f7)
@@ -20,6 +20,8 @@
   * [support newer `GdkPixbuf` versions](https://github.com/Xpra-org/xpra/commit/6e8bf2ce69a5c38cfbf72a2b40c44004d1798636)
   * [avoid Gtk critical warning](https://github.com/Xpra-org/xpra/commit/59b89fb6276142d97bc9c060e988b019f3561637) and [remove corresponding logging workaround](https://github.com/Xpra-org/xpra/commit/c397fbf7acd77d1c2c4dcdc494853283f1e1aa4f)
 * Major:
+  * [virtual display refresh rate confusion](https://github.com/Xpra-org/xpra/commit/464130c7d0fd362f4f643aef2f751cef6541a619)
+  * [handle virtual resolution failures more gracefully](https://github.com/Xpra-org/xpra/commit/db2cb9ddb82ee1ee420c7af3e112e58163a2098d)
   * [missing CUDA context causing NVENC failures](https://github.com/Xpra-org/xpra/commit/5a1896ad0efc3705fbdfd979ea66ba001aff4a15)
   * [CUDA context leak](https://github.com/Xpra-org/xpra/commit/2975a058bb8782780a6b72d43ac588f0aad41b32)
   * [clients connecting quickly may miss some server encodings](https://github.com/Xpra-org/xpra/commit/3dd1c18da4f6e99d8a816d4ec631e703181b04ee) + [cleanup](https://github.com/Xpra-org/xpra/commit/869951db8fd6724b286d808579cadbc47f1be86c) + [fixup](https://github.com/Xpra-org/xpra/commit/6da25080556a523fea3b424ebf78b2acd3bd963b) + [another](https://github.com/Xpra-org/xpra/commit/c82b43b5d0b4e9e4922cc6d8a01a1787ee703f59)

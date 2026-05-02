@@ -1084,7 +1084,7 @@ fi
 
 
 %changelog
-* Fri May 01 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
+* Sat May 02 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
 - Platforms, build and packaging:
    `pycuda` 2026.1
    add Fedora 44, remove Fedora 41
@@ -1104,6 +1104,8 @@ fi
    support newer GdkPixbuf versions
    avoid Gtk critical warning
 - Major:
+   virtual display refresh rate confusion
+   handle virtual resolution failures more gracefully
    missing CUDA context causing NVENC failures
    CUDA context leak
    clients connecting quickly may miss some server encodings
