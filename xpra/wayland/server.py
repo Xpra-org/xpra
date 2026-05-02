@@ -13,6 +13,7 @@ from xpra.util.gobject import to_gsignals
 from xpra.util.objects import typedict
 from xpra.wayland.compositor import WaylandCompositor
 from xpra.wayland.surface import Surface
+from xpra.wayland.subsurface import Subsurface
 from xpra.wayland.output import Output
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
@@ -38,13 +39,14 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.session_type: str = "wayland"
         self.focused = 0
         self.pointer_focus = 0
+        self.toplevel_wid: dict[int, int] = {}
         self.outputs: list[Output] = []
         self.compositor = WaylandCompositor()
         # Compositor-wide events; per-surface events are connected per-instance
         # in _new_surface() once we receive the Surface object.
         self.compositor.connect("new-surface", self._new_surface)
-        self.compositor.connect("new-subsurface", self._new_subsurface)
         self.compositor.connect("new-output", self._new_output)
+        self.compositor.connect("ssd", self._ssd)
         self.wayland_fd_source = 0
 
     def get_child_env(self) -> dict[str, str]:
@@ -63,6 +65,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         "move", "resize",
         "surface-image",
         "set-parent",
+        "new-subsurface",
     )
 
     def make_keyboard_device(self):
@@ -190,12 +193,21 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             "decorations": False,
         })
         window.setup()
+        self.track_toplevel(surface)
         self.do_add_new_window_common(surface.wid, window)
         if size != (0, 0):
             self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
-    def _new_subsurface(self, *args):
-        log.warn("new-subsurface: %s", args)
+    def track_toplevel(self, surface) -> None:
+        if not surface:
+            return
+        log.warn("toplevel=%#x", surface.toplevel_ptr)
+        if toplevel_ptr := surface.toplevel_ptr:
+            self.toplevel_wid[toplevel_ptr] = surface.wid
+
+    def _ssd(self, toplevel_ptr: int, ssd: bool) -> None:
+        wid = self.toplevel_wid.get(toplevel_ptr, 0)
+        log.info("ssd(%#x)=%s (wid=%i)", toplevel_ptr, ssd, wid)
 
     def _metadata(self, wid: int, prop: str, value) -> None:
         window = self.get_window(wid)
@@ -262,6 +274,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window = self.get_window(wid)
         if not window:
             return
+        self.track_toplevel(self.get_surface(wid))
         self.update_size(window, size)
         options = {
             "damage": True,
@@ -289,6 +302,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         # or from a delayed event (focus packet for the dead wid).
         window = self.get_window(wid)
         if window is not None:
+            surface = window.get_property("surface")
+            if surface:
+                self.toplevel_wid.pop(surface.toplevel_ptr, 0)
             window._internal_set_property("surface", None)
             window.unmanage()
         if self.focused == wid:
@@ -309,6 +325,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         parent = self.get_window(parent_wid) if parent_wid else None
         window._updateprop("parent", parent_wid)
         window._updateprop("transient-for", parent)
+
+    def _new_subsurface(self, wid: int, sub_wid: Subsurface, width: int, height: int) -> None:
+        log.info("new subsurface of %i: %s %ix%i", wid, sub_wid, width, height)
 
     def _move(self, wid: int, serial: int) -> None:
         log(f"move wid {wid}, serial={serial:#x}")

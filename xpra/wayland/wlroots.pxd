@@ -930,7 +930,6 @@ cdef extern from "wlr/types/wlr_xdg_decoration_v1.h":
 
     cdef struct wlr_xdg_toplevel_decoration_v1:
         void *resource  # wl_resource
-        wlr_xdg_surface *surface
         wlr_xdg_toplevel *toplevel
         wlr_xdg_decoration_manager_v1 *manager
 

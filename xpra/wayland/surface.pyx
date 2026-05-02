@@ -107,6 +107,15 @@ cdef class Surface(WaylandSurface):
         wl_surface pointer.)"""
         return <uintptr_t> self.wlr_xdg_surface
 
+    @property
+    def toplevel_ptr(self) -> int:
+        cdef wlr_xdg_surface *surface = <wlr_xdg_surface*> self.wlr_xdg_surface
+        if surface == NULL:
+            return 0
+        if surface.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
+            return 0
+        return <uintptr_t> surface.toplevel
+
     # frame_done, capture_pixels, connect, disconnect, _emit are inherited
     # from WaylandSurface — they all key off self.wlr_surface (the wl_surface).
 
@@ -339,7 +348,7 @@ cdef class Surface(WaylandSurface):
         sub.attach(self, subsurface)
         cdef int width = subsurface.surface.current.width
         cdef int height = subsurface.surface.current.height
-        self._emit("new-subsurface", self.wid, sub.wid, sub, width, height)
+        self._emit("new-subsurface", self.wid, sub, width, height)
 
     cdef void unregister_toplevel_handlers(self) noexcept nogil:
         # Toplevel slots are contiguous: L_REQUEST_MOVE..L_REQUEST_SHOW_WINDOW_MENU.
