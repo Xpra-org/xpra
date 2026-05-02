@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Final
 from socket import gethostname
 from collections.abc import Sequence
 
@@ -28,6 +29,20 @@ log = Logger("server", "wayland")
 
 GObject = gi_import("GObject")
 GLib = gi_import("GLib")
+
+# Per-surface signals connected on each new Surface in _new_surface().
+# Each entry is the event name; the handler is `self._<name with dashes -> _>`.
+PER_SURFACE_EVENTS: Final[Sequence[str]] = (
+    "map", "unmap", "commit", "destroy",
+    "minimize", "maximize", "fullscreen",
+    "move", "resize",
+    "surface-image",
+    "set-parent",
+    "new-subsurface",
+)
+PER_SUBSURFACE_EVENTS: Final[Sequence[str]] = (
+    "commit", "destroy",
+)
 
 
 class WaylandSeamlessServer(GObject.GObject, ServerBase):
@@ -56,17 +71,6 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if os.environ.get("NO_AT_BRIDGE") is None:
             env["NO_AT_BRIDGE"] = "1"
         return env
-
-    # Per-surface signals connected on each new Surface in _new_surface().
-    # Each entry is the event name; the handler is `self._<name with dashes -> _>`.
-    PER_SURFACE_EVENTS = (
-        "map", "unmap", "commit", "destroy",
-        "minimize", "maximize", "fullscreen",
-        "move", "resize",
-        "surface-image",
-        "set-parent",
-        "new-subsurface",
-    )
 
     def make_keyboard_device(self):
         return self.compositor.get_keyboard_device()
@@ -174,11 +178,14 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             self.compositor.flush()
             self.refresh_window(window)
 
-    def _new_surface(self, surface: Surface, title: str, app_id: str, size: tuple[int, int]) -> None:
-        # Subscribe per-surface signals on the Surface instance.
-        for event in self.PER_SURFACE_EVENTS:
+    def _register_surface_events(self, surface, events: Sequence[str]) -> None:
+        for event in events:
             handler = getattr(self, "_" + event.replace("-", "_"))
             surface.connect(event, handler)
+
+    def _new_surface(self, surface: Surface, title: str, app_id: str, size: tuple[int, int]) -> None:
+        # Subscribe per-surface signals on the Surface instance.
+        self._register_surface_events(surface, PER_SURFACE_EVENTS)
         geom = (0, 0, size[0], size[1])
         window = Window({
             "client-machine": gethostname(),
@@ -201,7 +208,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def track_toplevel(self, surface) -> None:
         if not surface:
             return
-        log.warn("toplevel=%#x", surface.toplevel_ptr)
+        log("toplevel(%s)=%#x", surface, surface.toplevel_ptr)
         if toplevel_ptr := surface.toplevel_ptr:
             self.toplevel_wid[toplevel_ptr] = surface.wid
 
@@ -307,11 +314,13 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
                 self.toplevel_wid.pop(surface.toplevel_ptr, 0)
             window._internal_set_property("surface", None)
             window.unmanage()
+            if not isinstance(surface, Subsurface):
+                # sub-surfaces have a wid, but not a window!
+                self._remove_wid(wid)
         if self.focused == wid:
             self.focused = 0
         if self.pointer_focus == wid:
             self.pointer_focus = 0
-        self._remove_wid(wid)
 
     def _set_parent(self, wid: int, parent_wid: int) -> None:
         # The wayland client called xdg_toplevel.set_parent. parent_wid==0 means
@@ -326,8 +335,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window._updateprop("parent", parent_wid)
         window._updateprop("transient-for", parent)
 
-    def _new_subsurface(self, wid: int, sub_wid: Subsurface, width: int, height: int) -> None:
-        log.info("new subsurface of %i: %s %ix%i", wid, sub_wid, width, height)
+    def _new_subsurface(self, wid: int, subsurface: Subsurface, width: int, height: int) -> None:
+        log.info("new subsurface of %i: %s %ix%i", wid, subsurface, width, height)
+        self._register_surface_events(subsurface, PER_SUBSURFACE_EVENTS)
 
     def _move(self, wid: int, serial: int) -> None:
         log(f"move wid {wid}, serial={serial:#x}")
