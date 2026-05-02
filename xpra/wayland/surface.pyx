@@ -6,47 +6,31 @@
 # cython: language_level=3
 
 from typing import Dict
-from collections.abc import Callable
 
 from xpra.log import Logger
-from xpra.util.str_fn import Ellipsizer
-from xpra.codecs.image import ImageWrapper
 from xpra.constants import MoveResize
 
-from libc.string cimport memset
 from libc.stdint cimport uintptr_t, uint32_t, int32_t
-from libc.time cimport timespec
 
-from xpra.buffers.membuf cimport getbuf, MemBuf
-from xpra.wayland.events cimport ListenerObject, owner_listener, owner_of
-
-cdef extern from "time.h":
-    int clock_gettime(int clk_id, timespec *tp)
-    cdef int CLOCK_MONOTONIC
+from xpra.wayland.events cimport ListenerObject
+from xpra.wayland.wayland_surface cimport WaylandSurface, next_wid
+from xpra.wayland.subsurface cimport Subsurface
+# `surfaces` is the shared registry (Python dict) defined in wayland_surface.pyx
+from xpra.wayland.wayland_surface import surfaces
 
 
 # Import definitions from .pxd file
 from xpra.wayland.wlroots cimport (
-    wl_listener, wl_signal_add, wl_signal, wl_notify_func_t,
-    wlr_xdg_surface_events,
-    wlr_cursor,
+    wl_listener, wl_signal,
     wlr_subsurface, wlr_surface_for_each_surface,
-    wlr_cursor_create, wlr_cursor_destroy,
-    wlr_xdg_shell_create,
     wlr_scene_tree,
-    wlr_surface, wlr_surface_events, wlr_texture, wlr_client_buffer, wlr_box,
-    wlr_xdg_toplevel, wlr_xdg_toplevel_events, wlr_xdg_surface,
-    wlr_texture_read_pixels_options, wlr_texture_read_pixels,
+    wlr_surface,
+    wlr_xdg_toplevel, wlr_xdg_surface,
     wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event, wlr_xdg_toplevel_show_window_menu_event,
     wlr_xdg_toplevel_set_size, wlr_xdg_toplevel_set_activated,
     wlr_xdg_surface_schedule_configure,
-    wlr_surface_send_frame_done,
-    wl_list, wl_list_remove,
-    DRM_FORMAT_ABGR8888,
-    WLR_XDG_SURFACE_ROLE_NONE,
-    WLR_XDG_SURFACE_ROLE_POPUP,
     WLR_XDG_SURFACE_ROLE_TOPLEVEL,
-    WLR_EDGE_TOP, WLR_EDGE_BOTTOM, WLR_EDGE_LEFT, WLR_EDGE_RIGHT
+    WLR_EDGE_TOP, WLR_EDGE_BOTTOM, WLR_EDGE_LEFT, WLR_EDGE_RIGHT,
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
 
@@ -96,22 +80,14 @@ log = Logger("wayland")
 cdef bint debug = log.is_debug_enabled()
 
 
-# Registry that keeps Surface objects alive while wlroots holds listener refs.
-# Removed in xdg_surface_destroy_handler so __dealloc__ runs deterministically.
-surfaces: Dict[int, Surface] = {}
-
-cdef unsigned long wid = 0
-
-cdef inline unsigned long next_wid():
-    global wid
-    wid += 1
-    return wid
+# `surfaces` registry and `next_wid` are imported from wayland_surface — the
+# base class shares them across every WaylandSurface subclass (xdg, subsurface…).
 
 
-cdef class Surface(ListenerObject):
+cdef class Surface(WaylandSurface):
 
     def __cinit__(self):
-        self._callbacks = {}
+        # base class __cinit__ initialises self._callbacks
         self.title = ""
         self.app_id = ""
 
@@ -126,47 +102,27 @@ cdef class Surface(ListenerObject):
     def xdg_surface_ptr(self) -> int:
         """Raw wlr_xdg_surface pointer; for callers (e.g. WaylandPointer/Keyboard)
         that still take a plain integer. Returns 0 once the surface has been
-        destroyed by wlroots — callers must treat 0 as 'gone'."""
+        destroyed by wlroots — callers must treat 0 as 'gone'.
+        (`wl_surface_ptr` is inherited from WaylandSurface for the underlying
+        wl_surface pointer.)"""
         return <uintptr_t> self.wlr_xdg_surface
 
-    def frame_done(self) -> None:
-        """Tell the client we finished rendering this frame.
-        No-op once the underlying wlr_xdg_surface has been destroyed."""
-        if self.wlr_xdg_surface == NULL:
-            return
-        cdef timespec now
-        clock_gettime(CLOCK_MONOTONIC, &now)
-        wlr_surface_send_frame_done(self.wlr_xdg_surface.surface, &now)
-
-    def connect(self, event: str, callback) -> None:
-        self._callbacks.setdefault(event, []).append(callback)
-
-    def disconnect(self, event: str, callback) -> None:
-        cbs = self._callbacks.get(event)
-        if not cbs or callback not in cbs:
-            return
-        cbs.remove(callback)
-        if not cbs:
-            self._callbacks.pop(event, None)
-
-    def _emit(self, str event, *args):
-        cdef list cbs = self._callbacks.get(event)
-        if not cbs:
-            return
-        if debug:
-            log("%s._emit(%s, %s) callbacks=%s", self, event, Ellipsizer(args), cbs)
-        for cb in cbs:
-            cb(*args)
+    # frame_done, capture_pixels, connect, disconnect, _emit are inherited
+    # from WaylandSurface — they all key off self.wlr_surface (the wl_surface).
 
     cdef void add_main_listeners(self):
         cdef wlr_surface *s = self.wlr_xdg_surface.surface
+        # Pull the wl_surface up onto the base so frame_done / capture_pixels
+        # work uniformly across every WaylandSurface subclass.
+        self.wlr_surface = s
         self.add_listener(L_COMMIT, &s.events.commit)
         self.add_listener(L_MAP, &s.events.map)
         self.add_listener(L_UNMAP, &s.events.unmap)
         self.add_listener(L_NEW_SUBSURFACE, &s.events.new_subsurface)
         self.add_listener(L_DESTROY, &s.events.destroy)
         # Keep the Surface alive while wlroots holds listener pointers into it.
-        surfaces[<uintptr_t> self.wlr_xdg_surface] = self
+        # The shared registry is keyed by wl_surface so any role can share it.
+        self.register()
 
     # Single C shim for every Surface-level listener. The slot is recovered by
     # pointer arithmetic on the listeners[] array, then dispatched to the matching
@@ -252,24 +208,25 @@ cdef class Surface(ListenerObject):
         if self.wlr_xdg_surface == NULL:
             # idempotent: destroy already ran (e.g. registry pop triggered it).
             return
-        cdef uintptr_t key = <uintptr_t> self.wlr_xdg_surface
         log("XDG surface DESTROYED, toplevel=%s", bool(self.wlr_xdg_surface.toplevel != NULL))
-        # Detach all listeners while wlr_surface event lists are still valid.
-        # We MUST do this here rather than rely on __dealloc__: surface_dispatch
-        # holds a strong reference for the duration of the dispatch call, so the
-        # dict-pop below would not drop refcount to zero until after this event
-        # handler returns — by then wlroots' event lists are gone.
+        # Detach all listeners while wlroots' event lists are still valid.
+        # We MUST do this here rather than rely on __dealloc__: the dispatch
+        # shim holds a strong reference for the duration of the call, so the
+        # registry-drop below cannot bring the refcount to zero until after
+        # this event handler returns — by then wlroots' event lists are gone.
         self._detach_all()
         self._emit("destroy", self.wid)
         if debug:
             log("xdg surface dropped")
-        surfaces.pop(key, None)
-        # wlroots will free the wlr_xdg_surface struct as soon as we return from
-        # this destroy event. Mark our pointer dead so any later Python-side
-        # method calls (frame_done, resize, focus, ...) become safe no-ops
-        # instead of UAFs. Other strong refs to this Surface (e.g. xpra Window
-        # _gproperties["surface"], pending packets) outlive wlroots' free.
+        self.unregister()
+        # wlroots will free the wlr_xdg_surface (and the wl_surface inside it)
+        # as soon as we return from this destroy event. Null both pointers so
+        # any later Python-side method calls (frame_done, resize, focus, ...)
+        # become safe no-ops instead of UAFs. Other strong refs to this Surface
+        # (xpra Window _gproperties["surface"], pending packets) outlive the
+        # wlroots free.
         self.wlr_xdg_surface = NULL
+        self.wlr_surface = NULL
 
     cdef void request_move(self, uint32_t serial) noexcept:
         log("Surface REQUEST MOVE")
@@ -359,66 +316,30 @@ cdef class Surface(ListenerObject):
         self._emit("commit", self.wid, bool(wlr_surf.mapped), size, rects, subsurfaces)
 
     cdef void capture_surface_pixels(self) noexcept:
-        cdef wlr_surface *wlr_surface = self.wlr_xdg_surface.surface
-        cdef wlr_client_buffer *client_buffer = wlr_surface.buffer
-        if not client_buffer:
+        # xdg-surfaces have a `geometry` rect that's the visible area inside
+        # the wl_surface's buffer (excludes shadows/CSD margins). Use that as
+        # the source origin for the pixel read; base capture_pixels handles
+        # the rest. Cdef methods can't call cpdef Python attrs cleanly so we
+        # go through a Python-style call here.
+        if self.wlr_xdg_surface == NULL:
             return
-        cdef wlr_texture *texture = client_buffer.texture
-        if not texture:
+        image = self.capture_pixels(self.wlr_xdg_surface.geometry.x,
+                                    self.wlr_xdg_surface.geometry.y)
+        if image is None:
             return
-
-        cdef uint32_t width = texture.width
-        cdef uint32_t height = texture.height
-        cdef uint32_t stride = width * 4
-        cdef uint32_t texture_size = stride * height
-        cdef MemBuf texture_buffer = getbuf(texture_size, 0)
-        if debug:
-            log("Allocated pixel buffer: %dx%d (%d bytes)", width, height, texture_size)
-
-        cdef wlr_texture_read_pixels_options opts
-        opts.data = <void*> texture_buffer.get_mem()
-        opts.format = DRM_FORMAT_ABGR8888
-        opts.stride = stride
-        opts.dst_x = 0
-        opts.dst_y = 0
-        # we can't modify src_box because it is declared as const,
-        # but since we also cannot initialize the struct with the value we need,
-        # let's patch it up by hand afterwards - yes this is safe
-        memset(<void *> &opts.src_box, 0, sizeof(wlr_box))
-        cdef int *iptr
-        iptr = <int*> &opts.src_box.x
-        iptr[0] = self.wlr_xdg_surface.geometry.x
-        iptr = <int*> &opts.src_box.y
-        iptr[0] = self.wlr_xdg_surface.geometry.y
-        iptr = <int*> &opts.src_box.width
-        iptr[0] = width
-        iptr = <int*> &opts.src_box.height
-        iptr[0] = height
-
-        cdef bint success
-        with nogil:
-            success = wlr_texture_read_pixels(texture, &opts)
-        if not success:
-            log.error("Error: failed to read texture pixels")
-            return
-
-        pixels = memoryview(texture_buffer)
-        image = ImageWrapper(0, 0, width, height, pixels, "BGRA", 32, stride)
         self._emit("surface-image", self.wid, image)
 
     cdef void new_subsurface(self, wlr_subsurface *subsurface) noexcept:
-        log("New SUBSURFACE created, parent wid=%#x", self.wid)
+        if subsurface == NULL or subsurface.surface == NULL:
+            return
+        log("New SUBSURFACE created, parent wid=%i", self.wid)
         log(" subsurface wlr_surface=%#x, parent wlr_surface=%#x",
-            <uintptr_t>subsurface.surface, <uintptr_t>subsurface.parent)
-
-        # Get dimensions if available
-        width = subsurface.surface.current.width if subsurface.surface else 0
-        height = subsurface.surface.current.height if subsurface.surface else 0
-
-        wid = next_wid()
-        log("allocated wid=%#x", wid)
-        # TODO: allocate Surface and populate it
-        self._emit("new-subsurface", self.wid, wid, <uintptr_t> subsurface.surface, width, height)
+            <uintptr_t> subsurface.surface, <uintptr_t> subsurface.parent)
+        cdef Subsurface sub = Subsurface()
+        sub.attach(self, subsurface)
+        cdef int width = subsurface.surface.current.width
+        cdef int height = subsurface.surface.current.height
+        self._emit("new-subsurface", self.wid, sub.wid, sub, width, height)
 
     cdef void unregister_toplevel_handlers(self) noexcept nogil:
         # Toplevel slots are contiguous: L_REQUEST_MOVE..L_REQUEST_SHOW_WINDOW_MENU.

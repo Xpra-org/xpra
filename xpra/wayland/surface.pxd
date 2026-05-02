@@ -12,18 +12,17 @@ from xpra.wayland.wlroots cimport (
     wl_listener,
     wlr_subsurface,
 )
-from xpra.wayland.events cimport ListenerObject
+from xpra.wayland.wayland_surface cimport WaylandSurface
 
 
-cdef class Surface(ListenerObject):
+cdef class Surface(WaylandSurface):
     cdef wlr_xdg_surface *wlr_xdg_surface
     cdef wlr_scene_tree *scene_tree
     cdef int width
     cdef int height
     cdef str title
     cdef str app_id
-    cdef readonly unsigned long wid
-    cdef dict _callbacks  # {event_name: [callable, ...]}
+    # `wlr_surface`, `wid`, `_callbacks` are inherited from WaylandSurface.
 
     cdef void add_main_listeners(self)
     cdef void dispatch(self, wl_listener *listener, void *data) noexcept
