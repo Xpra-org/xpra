@@ -86,6 +86,7 @@ cdef class WaylandPointer:
         cdef uint32_t relx = x + self.offset_x
         cdef uint32_t rely = y + self.offset_y
         wlr_seat_pointer_notify_enter(self.seat, surface, relx, rely)
+        wlr_seat_pointer_notify_frame(self.seat)
         return True
 
     def leave_surface(self):

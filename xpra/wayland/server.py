@@ -153,7 +153,15 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.set_pointer_focus(wid, pointer)
         log("pointer: %r",pointer)
         try:
-            return super().do_process_mouse_common(proto, device_id, wid, pointer, props)
+            if self.readonly:
+                return False
+            if pointer:
+                if len(pointer) >= 4:
+                    x, y = pointer[2:4]
+                else:
+                    x, y = pointer[:2]
+                self.get_pointer_device(device_id).move_pointer(x, y, props or {})
+            return True
         finally:
             self.compositor.flush()
 
