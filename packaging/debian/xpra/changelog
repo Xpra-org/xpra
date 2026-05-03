@@ -9,6 +9,7 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     `pycuda` 2026.1
     remove EOL Ubuntu releases: Lunar, Mantic, Plucky and Oracular
     add packaging for Ubuntu Questing and Resolute
+    avoid gi warnings on MS Windows
   * MacOS:
     verify signing key is available
     log $ARCH in build log
@@ -23,6 +24,7 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     directsound device queries
   * Major:
     virtual monitor geometry synchronization + fixup
+    virtual display refresh rate confusion
     handle notify2 backend failures gracefully
     initial "fast" socket read could spin until the connection failed
     DND errors under Wayland
@@ -35,6 +37,9 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     audio source could buffer to much
     saved ssh key fingerprint never matched
     explicit ssl handshake
+    generating image menu items is excruciatingly slow
+    header bar transparency issues
+    handle failure to add screen size more gracefully
   * Printing:
     incorrect cups backend exit codes could cause DoS, ie: FILE_TOO_BIG
     use more widely compatible socket syntax
@@ -92,7 +97,7 @@ xpra (5.1.5-1) UNRELEASED; urgency=low
     potential race condition
     only free valid timers
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 25 Apr 2026 00:23:30 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 03 May 2026 22:24:27 +0700
 
 xpra (5.1.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

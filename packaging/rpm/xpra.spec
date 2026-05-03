@@ -816,7 +816,7 @@ fi
 
 
 %changelog
-* Sat Apr 25 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
+* Sun May 03 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install
    Python compatibility regression
@@ -828,6 +828,7 @@ fi
    `cx_Freeze` compatibility update
    remove EOL Ubuntu releases: Lunar, Mantic, Plucky and Oracular
    add packaging for Ubuntu Questing and Resolute
+   avoid gi warnings on MS Windows
 - MacOS:
    verify signing key is available
    log $ARCH in MacOS builds
@@ -842,6 +843,7 @@ fi
    directsound device queries
 - Major:
    virtual monitor geometry synchronization + fixup
+   virtual display refresh rate confusion
    handle notify2 backend failures gracefully
    initial "fast" socket read could spin until the connection failed
    DND errors under Wayland
@@ -855,6 +857,9 @@ fi
    audio source could buffer to much
    saved ssh key fingerprint never matched
    explicit ssl handshake
+   generating image menu items is excruciatingly slow
+   header bar transparency issues
+   handle failure to add screen size more gracefully
 - Printing:
    incorrect cups backend exit codes could cause DoS, ie: FILE_TOO_BIG
    use more widely compatible socket syntax

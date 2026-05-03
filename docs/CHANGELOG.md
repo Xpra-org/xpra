@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.5] 2026-04-25
+## [5.1.5] 2026-05-03
 * Platforms, build and packaging:
     * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
     * [Python compatibility regression](https://github.com/Xpra-org/xpra/commit/1282fa77ee948c459e69538095a96d08310e18d7) [and again](https://github.com/Xpra-org/xpra/commit/bc1aa0da761a9d611c56bb4e2fa42d3481886be6)
@@ -12,6 +12,7 @@
     * [`cx_Freeze` compatibility update](https://github.com/Xpra-org/xpra/commit/adcbef97111b0798556d9cc9d93208b905ac7ed9)
     * [remove EOL Ubuntu releases: Lunar, Mantic, Plucky and Oracular](https://github.com/Xpra-org/xpra/commit/b90bb750c2573517db1a1bb71ff9942bb6e23f42)
     * [add packaging for Ubuntu Questing and Resolute](https://github.com/Xpra-org/xpra/commit/9101cfff6a8d1b99f2412deeaf9d9c36eb432dc6)
+    * [avoid gi warnings on MS Windows](https://github.com/Xpra-org/xpra/commit/d088ad9ec6ea75fab10af14a22c3069ad483bcf6)
 * MacOS:
     * [verify signing key is available](https://github.com/Xpra-org/xpra/commit/ac431a96b7aa8d91e2a5c060cdbdca5501309d49)
     * [enable `avif`](https://github.com/Xpra-org/xpra/commit/4f057fa9bdf28e22f57d318f0e145b238205b780) [but not GStreamer video](https://github.com/Xpra-org/xpra/commit/e539bf12dfaf0d77a706876df1bbfea0262d0a1a)
@@ -26,6 +27,7 @@
     * [directsound device queries](https://github.com/Xpra-org/xpra/commit/045a23e94e58bd93612ac1333bf29b9243ad44db)
 * Major:
     * [virtual monitor geometry synchronization](https://github.com/Xpra-org/xpra/commit/18344cff9a1aab0d2f323aa7f1b557f80314f50a) + [fixup](https://github.com/Xpra-org/xpra/commit/bc8b7d1493790ee307e33961c50d41d80efb278a) + [another](https://github.com/Xpra-org/xpra/commit/ef512c6ecda9ab1587a8cda83efa76502060d715)
+    * [virtual display refresh rate confusion](https://github.com/Xpra-org/xpra/commit/69198dc21a47b15464f6aa41766addc7e1d4e946)
     * [handle notify2 backend failures gracefully](https://github.com/Xpra-org/xpra/commit/715f4c5bb6189697c0fd207e8140d5c59944204b)
     * [initial "fast" socket read could spin until the connection failed](https://github.com/Xpra-org/xpra/commit/332fb57b108865ff672b5277d66fefb3b1e23c88) + [fixup](https://github.com/Xpra-org/xpra/commit/30f7a939cd8ea8b2159adb0bb243adbac325a6b5)
     * [DND errors under Wayland](https://github.com/Xpra-org/xpra/commit/50f2c82d2881df0bb1b478a28aa1ab186b7843e7)
@@ -39,6 +41,9 @@
     * [audio source could buffer to much](https://github.com/Xpra-org/xpra/commit/29a69d521eb82a696940e4d227ec171d33359339)
     * [saved ssh key fingerprint never matched](https://github.com/Xpra-org/xpra/commit/ab96520e436198fb21f2cc1bfe1295ce1d449d63)
     * [explicit ssl handshake](https://github.com/Xpra-org/xpra/commit/2510fdb3e11a85224573647b8478ff989be4fd75)
+    * [generating image menu items is excruciatingly slow](https://github.com/Xpra-org/xpra/commit/5260680f69281ad82b45c41b3375074e300cbad6)
+    * [header bar transparency issues](https://github.com/Xpra-org/xpra/commit/3ad5874dc2fdc4c7c4a5dd4859dc4280011bccb1)
+    * [handle failure to add screen size more gracefully](https://github.com/Xpra-org/xpra/commit/8898443b00422560b1747277e74486301a389e5b)
 * Printing:
     * [incorrect cups backend exit codes could cause DoS](https://github.com/Xpra-org/xpra/commit/6127a6d704ab71b6043a4a3a3b7a173e51626c16), [ie: `FILE_TOO_BIG`](https://github.com/Xpra-org/xpra/commit/194f2cb38f3d4d62c2664ef3b90297575f7a5c79)
     * [use more widely compatible socket syntax](https://github.com/Xpra-org/xpra/commit/01a91109d6a69aae2f741a9ff92b68986d2674f8)
@@ -74,6 +79,8 @@
     * [file transfer data not freed on error](https://github.com/Xpra-org/xpra/commit/ae2e63e1566bdbb15a21c9391fb457729d25a95d)
     * [exclude `nvjpeg` from video fallback](https://github.com/Xpra-org/xpra/commit/a3beabc2340dadc9f3e66cce951f38b6b6747c31)
     * [cairo missing hint](https://github.com/Xpra-org/xpra/commit/cd4ed755eb8ea1fb6dc2ffee05c2fa82c3dde424)
+    * [better forwards compatibility](https://github.com/Xpra-org/xpra/commit/9682cdf2b0f3644f41add17e76ac8a8a84b7b15b)
+    * [splash toggle not honoured with server start and attach](https://github.com/Xpra-org/xpra/commit/299596e290314958efb9c0ba2887afc240098a3a)
 * Cosmetic:
     * [make socket eof detection less spammy](https://github.com/Xpra-org/xpra/commit/a7a00921edc54294b37c49622d3f63f548555091)
     * [invalid syntax used in man page](https://github.com/Xpra-org/xpra/commit/2291f9bb214d245b56340e8e20b61f2ca6d27787)
