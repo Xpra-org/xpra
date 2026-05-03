@@ -56,6 +56,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.focused = 0
         self.pointer_focus = 0
         self.toplevel_wid: dict[int, int] = {}
+        self.pending_popups: dict[int, tuple[int, Popup]] = {}
         self.outputs: list[Output] = []
         self.compositor = WaylandCompositor()
         # Compositor-wide events; per-surface events are connected per-instance
@@ -215,15 +216,27 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def _new_popup(self, parent_wid: int, popup: Popup,
                    position: tuple[int, int], size: tuple[int, int]) -> None:
-        parent_wid = self._popup_parent_window_wid(popup, parent_wid)
         popup.connect("map", self._popup_map)
         popup.connect("unmap", self._unmap)
         popup.connect("commit", self._popup_commit)
         popup.connect("surface-image", self._surface_image)
         popup.connect("reposition", self._popup_reposition)
-        popup.connect("destroy", self._destroy)
+        popup.connect("destroy", self._popup_destroy)
+        self.pending_popups[popup.wid] = (parent_wid, popup)
+        self._ensure_popup_window(parent_wid, popup, position, size)
+
+    def _ensure_popup_window(self, parent_wid: int, popup: Popup,
+                             position: tuple[int, int], size: tuple[int, int]):
+        window = self.get_window(popup.wid)
+        if window:
+            return window
         x, y = position
         w, h = size
+        if w <= 0 or h <= 0:
+            log("not creating popup window %i yet: invalid size %ix%i", popup.wid, w, h)
+            return None
+        parent_wid = self._popup_parent_window_wid(popup, parent_wid)
+        x, y = position
         geom = (x, y, w, h)
         window = Window({
             "client-machine": gethostname(),
@@ -246,8 +259,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         })
         window.setup()
         self.do_add_new_window_common(popup.wid, window)
-        if size != (0, 0):
-            self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
+        self.pending_popups.pop(popup.wid, None)
+        self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
+        return window
 
     def _popup_parent_window_wid(self, popup: Popup, fallback: int) -> int:
         parent = popup.get_parent()
@@ -281,6 +295,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def _surface_image(self, wid: int, image: ImageWrapper) -> None:
         window = self.get_window(wid)
         if not window:
+            if wid in self.pending_popups:
+                return
             log.warn("Warning: cannot update window %i: not found!", wid)
             return
         log("new surface image for window %i: %s", wid, image)
@@ -358,19 +374,25 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         old_geom = window.get_property("geometry")
         x, y = position
         w, h = size
+        if w <= 0 or h <= 0:
+            return
         geom = (x, y, w, h)
         if old_geom == geom:
             return
         window._updateprop("geometry", geom)
         window._updateprop("relative-position", position)
-        if (old_geom[2] == old_geom[3] == 0) and w and h:
-            self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
     def _popup_map(self, wid: int, position: tuple[int, int], size: tuple[int, int]) -> None:
         window = self.get_window(wid)
         if not window:
-            log.warn("Warning: cannot map popup window %i: not found!", wid)
-            return
+            popup_info = self.pending_popups.get(wid)
+            if not popup_info:
+                log.warn("Warning: cannot map popup window %i: not found!", wid)
+                return
+            parent_wid, popup = popup_info
+            window = self._ensure_popup_window(parent_wid, popup, position, size)
+            if not window:
+                return
         window._updateprop("iconic", False)
         self.update_geometry(window, position, size)
 
@@ -380,11 +402,18 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         log(f"popup commit wid {wid} {mapped=}, {position=}, {size=}, {has_image=}")
         window = self.get_window(wid)
         if not window:
-            return
+            popup_info = self.pending_popups.get(wid)
+            if not popup_info:
+                return
+            parent_wid, popup = popup_info
+            window = self._ensure_popup_window(parent_wid, popup, position, size)
+            if not window:
+                return
         self.update_geometry(window, position, size)
         if mapped and has_image:
             w, h = size
-            self.refresh_window_area(window, 0, 0, w, h, options={"damage": True})
+            if w > 0 and h > 0:
+                self.refresh_window_area(window, 0, 0, w, h, options={"damage": True})
 
     def _popup_reposition(self, wid: int, position: tuple[int, int]) -> None:
         window = self.get_window(wid)
@@ -392,6 +421,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             return
         old_geom = window.get_property("geometry")
         self.update_geometry(window, position, old_geom[2:4])
+
+    def _popup_destroy(self, wid: int) -> None:
+        self.pending_popups.pop(wid, None)
+        self._destroy(wid)
 
     def _destroy(self, wid: int) -> None:
         # The wlroots wlr_xdg_surface is about to be (or has just been) freed.
