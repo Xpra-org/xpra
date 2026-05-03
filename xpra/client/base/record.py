@@ -254,7 +254,8 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         # newer versions use metadata only:
         override_redirect |= metadata.boolget("override-redirect", False)
         metadata["override_redirect"] = override_redirect
-        assert wid not in self._id_to_window, "we already have a window {}: {}".format(wid, self.get_window(wid))
+        if wid in self._id_to_window:
+            raise ValueError("we already have a window %#x: %s" % (wid, self.get_window(wid)))
         if w < 1 or h < 1:
             log.error("Error: window %#x dimensions %ix%i are invalid", wid, w, h)
             w, h = 1, 1

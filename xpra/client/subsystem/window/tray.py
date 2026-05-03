@@ -59,7 +59,8 @@ class WindowTray(StubClientMixin):
         if len(packet) >= 5:
             metadata = typedict(packet.get_dict(4))
         log("tray %#x metadata=%s", wid, metadata)
-        assert wid not in self._id_to_window, "we already have a window %#x: %s" % (wid, self.get_window(wid))
+        if wid in self._id_to_window:
+            raise ValueError("we already have a window %#x: %s" % (wid, self.get_window(wid)))
         app_id = wid
         tray = self.setup_system_tray(self, app_id, wid, w, h, metadata)
         log("process_new_tray(%s) tray=%s", packet, tray)
