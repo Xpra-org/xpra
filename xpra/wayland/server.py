@@ -101,6 +101,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def _focus(self, _server_source, wid: int, modifiers) -> None:
         log("_focus(%s, %s) current focus=%i", wid, modifiers, self.focused)
+        if modifiers is not None:
+            self.update_keyboard_modifiers(modifiers)
         if self.focused == wid:
             return
         for window_id, state in {
@@ -129,6 +131,21 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         super().fake_key(keycode, press)
         self.compositor.flush()
 
+    def update_keyboard_modifiers(self, modifiers: Sequence[str], group: int = 0) -> None:
+        keyboard = getattr(self, "keyboard_device", None)
+        if keyboard:
+            keyboard.update_modifiers(modifiers, group)
+
+    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, kattrs: dict) -> None:
+        attrs = typedict(kattrs)
+        if "modifiers" in kattrs:
+            self.update_keyboard_modifiers(attrs.strtupleget("modifiers", ()), attrs.intget("group", 0))
+        super().do_process_keyboard_event(proto, wid, keyname, pressed, kattrs)
+
+    def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
+        self.update_keyboard_modifiers(modifiers)
+        super()._update_modifiers(proto, wid, modifiers)
+
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
         log("set_pointer_focus(%i, %s)", wid, pointer)
         if self.pointer_focus == wid:
@@ -150,6 +167,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.flush()
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
+        if "modifiers" in props:
+            self.update_keyboard_modifiers(props.get("modifiers", ()))
         self.set_pointer_focus(wid, pointer)
         log("pointer: %r",pointer)
         try:

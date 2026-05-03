@@ -15,7 +15,7 @@ from xpra.wayland.wlroots cimport (
     wlr_seat, wlr_surface, wlr_xdg_surface, wlr_keyboard, wlr_keyboard_impl, wlr_keyboard_init, wlr_keyboard_finish,
     wlr_seat_set_keyboard, wlr_seat_keyboard_notify_key, wlr_seat_keyboard_notify_modifiers,
     wlr_seat_keyboard_notify_enter, wlr_seat_keyboard_clear_focus,
-    wlr_keyboard_modifiers, wlr_keyboard_set_repeat_info,
+    wlr_keyboard_modifiers, wlr_keyboard_set_repeat_info, wlr_keyboard_notify_modifiers,
     WL_KEYBOARD_KEY_STATE_PRESSED, WL_KEYBOARD_KEY_STATE_RELEASED,
     xkb_context, xkb_context_new, xkb_context_unref,
     xkb_keymap, xkb_keymap_unref, wlr_keyboard_set_keymap, xkb_rule_names, xkb_keymap_new_from_names,
@@ -25,6 +25,18 @@ from xpra.wayland.wlroots cimport (
 log = Logger("wayland", "keyboard")
 
 base_time = monotonic()
+
+MOD_INDEX = {
+    "shift": 0,
+    "lock": 1,
+    "control": 2,
+    "mod1": 3,
+    "mod2": 4,
+    "mod3": 5,
+    "mod4": 6,
+    "mod5": 7,
+}
+LOCKED_MODIFIERS = frozenset(("lock", "mod2"))
 
 
 cdef inline uint32_t get_time_msec() noexcept:
@@ -120,20 +132,34 @@ cdef class WaylandKeyboard:
     def get_layout_group(self) -> int:
         return 0
 
-    def _update_modifiers(self, uint32_t depressed=0, uint32_t latched=0,
-                         uint32_t locked=0, uint32_t group=0):
-        """
-            depressed: Currently pressed modifiers
-            latched: Latched modifiers
-            locked: Locked modifiers (Caps Lock, etc.)
-            group: Keyboard layout group
-        """
-        cdef wlr_keyboard_modifiers mods
-        mods.depressed = depressed
-        mods.latched = latched
-        mods.locked = locked
-        mods.group = group
-        wlr_seat_keyboard_notify_modifiers(self.seat, &mods)
+    def update_modifiers(self, modifiers=(), group: int = 0) -> None:
+        cdef uint32_t depressed = 0
+        cdef uint32_t locked = 0
+        cdef uint32_t bit = 0
+        cdef str modifier
+        if self.keyboard == NULL:
+            return
+        for modifier in modifiers or ():
+            bit = self.modifier_bit(modifier)
+            if not bit:
+                continue
+            if modifier in LOCKED_MODIFIERS:
+                locked |= bit
+            else:
+                depressed |= bit
+        log("update_modifiers(%s, group=%i) depressed=%#x locked=%#x",
+            modifiers, group, depressed, locked)
+        wlr_keyboard_notify_modifiers(self.keyboard, depressed, 0, locked, group)
+        wlr_seat_keyboard_notify_modifiers(self.seat, &self.keyboard.modifiers)
+
+    cdef uint32_t modifier_bit(self, str modifier):
+        cdef int index = MOD_INDEX.get(modifier, -1)
+        if index < 0 or index >= 8:
+            return 0
+        cdef uint32_t mod_index = self.keyboard.mod_indexes[index]
+        if mod_index == <uint32_t> -1:
+            return 0
+        return 1 << mod_index
 
     def focus(self, uintptr_t xdg_surface_ptr) -> None:
         if not xdg_surface_ptr:
