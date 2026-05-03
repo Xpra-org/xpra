@@ -3111,6 +3111,7 @@ if wayland_server_ENABLED:
     ace("xpra.wayland.keyboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.wayland_surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.subsurface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.popup","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1", extra_compile_args=wlr_args)
     toggle_packages(wayland_server_ENABLED, "xpra.wayland.models")

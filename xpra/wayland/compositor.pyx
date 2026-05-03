@@ -18,9 +18,11 @@ from libc.stdint cimport uintptr_t
 from xpra.wayland.pointer import WaylandPointer
 from xpra.wayland.keyboard import WaylandKeyboard
 from xpra.wayland.surface cimport Surface
+from xpra.wayland.popup cimport Popup
 from xpra.wayland.display cimport Display
 from xpra.wayland.output cimport Output
 from xpra.wayland.events cimport ListenerObject
+from xpra.wayland.wayland_surface import surfaces
 
 
 # Import definitions from .pxd file
@@ -28,8 +30,8 @@ from xpra.wayland.wlroots cimport (
     wl_display, wlr_xdg_shell,
     wl_display_create, wl_display_destroy_clients, wl_display_destroy, wl_display_run,
     wl_listener, wl_signal_add, wl_signal, wl_notify_func_t,
-    wlr_xdg_surface, wlr_xdg_surface_events,
-    WLR_XDG_SURFACE_ROLE_NONE, WLR_XDG_SURFACE_ROLE_TOPLEVEL,
+    wlr_xdg_surface, wlr_xdg_popup, wlr_xdg_surface_events,
+    WLR_XDG_SURFACE_ROLE_TOPLEVEL,
     wlr_backend, wlr_backend_start, wlr_backend_destroy,
     wlr_seat, wlr_cursor,
     wlr_seat_create, wlr_seat_set_capabilities, wlr_seat_destroy,
@@ -37,7 +39,7 @@ from xpra.wayland.wlroots cimport (
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
     wlr_compositor, wlr_compositor_create,
     wlr_subcompositor, wlr_subcompositor_create,
-    wlr_xdg_toplevel, wlr_xdg_toplevel_set_size, wlr_xdg_surface_schedule_configure,
+    wlr_xdg_toplevel,
     wlr_xdg_decoration_manager_v1, wlr_xdg_toplevel_decoration_v1, wlr_xdg_decoration_manager_v1_create,
     wlr_xdg_toplevel_decoration_v1_set_mode, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
     wlr_cursor_create, wlr_cursor_destroy,
@@ -70,7 +72,8 @@ cdef bint debug = log.is_debug_enabled()
 # Listener slot indices for WaylandCompositor; N_LISTENERS sizes the listeners array.
 cdef enum:
     L_NEW_TOPLEVEL_DECORATION
-    L_NEW_SURFACE
+    L_NEW_TOPLEVEL
+    L_NEW_POPUP
     L_NEW_OUTPUT
     N_LISTENERS
 
@@ -110,8 +113,10 @@ cdef class WaylandCompositor(ListenerObject):
         cdef int slot = self.slot_of(listener)
         if slot == L_NEW_TOPLEVEL_DECORATION:
             self.new_toplevel_decoration(<wlr_xdg_toplevel_decoration_v1*> data)
-        elif slot == L_NEW_SURFACE:
-            self.new_surface(<wlr_xdg_surface*> data)
+        elif slot == L_NEW_TOPLEVEL:
+            self.new_toplevel(<wlr_xdg_toplevel*> data)
+        elif slot == L_NEW_POPUP:
+            self.new_popup(<wlr_xdg_popup*> data)
         elif slot == L_NEW_OUTPUT:
             # Called by wlroots from within wl_event_loop_dispatch, which is invoked
             # from Python-side WaylandCompositor.process_events() — so the GIL is held.
@@ -151,7 +156,8 @@ cdef class WaylandCompositor(ListenerObject):
         wlr_data_device_manager_create(self.display_ptr)
 
         self.xdg_shell = wlr_xdg_shell_create(self.display_ptr, 3)
-        self.add_listener(L_NEW_SURFACE, &self.xdg_shell.events.new_surface)
+        self.add_listener(L_NEW_TOPLEVEL, &self.xdg_shell.events.new_toplevel)
+        self.add_listener(L_NEW_POPUP, &self.xdg_shell.events.new_popup)
 
         self.scene = wlr_scene_create()
 
@@ -206,10 +212,16 @@ cdef class WaylandCompositor(ListenerObject):
         with gil:
             self.emit("ssd", <uintptr_t> toplevel, bool(ssd))
 
-    cdef void new_surface(self, wlr_xdg_surface *xdg_surf) noexcept:
+    cdef void new_toplevel(self, wlr_xdg_toplevel *toplevel) noexcept:
+        cdef wlr_xdg_surface *xdg_surf = NULL
+        if toplevel == NULL:
+            return
+        xdg_surf = toplevel.base
+        if xdg_surf == NULL:
+            return
         if debug:
             log("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
-        if xdg_surf.role != WLR_XDG_SURFACE_ROLE_NONE and xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
+        if xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
             return
 
         cdef Surface surface = Surface()
@@ -220,14 +232,11 @@ cdef class WaylandCompositor(ListenerObject):
         surface.scene_tree = wlr_scene_xdg_surface_create(&self.scene.tree, xdg_surf)
         surface.add_main_listeners()
 
-        cdef wlr_xdg_toplevel *toplevel = xdg_surf.toplevel
-        if toplevel:
-            surface.register_toplevel_handlers()
-            # Send initial configure for the toplevel
-            if debug:
-                log("Sending initial configure for toplevel")
-            wlr_xdg_toplevel_set_size(toplevel, 0, 0)  # 0, 0 = let client choose initial size
-            wlr_xdg_surface_schedule_configure(xdg_surf)
+        surface.register_toplevel_handlers()
+        # Do not configure from the new_toplevel signal. wlroots can emit it
+        # before the xdg_surface is initialized, and schedule_configure asserts
+        # in that state. Surface.commit() sends the initial configure once the
+        # surface is initialized and still unconfigured.
 
         title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
         app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
@@ -236,6 +245,24 @@ cdef class WaylandCompositor(ListenerObject):
         log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
         # Pass the Surface instance so consumers can connect per-surface signals.
         self.emit("new-surface", surface, title, app_id, size)
+
+    cdef void new_popup(self, wlr_xdg_popup *popup) noexcept:
+        if popup == NULL or popup.base == NULL or popup.base.surface == NULL:
+            return
+        parent = surfaces.get(<uintptr_t> popup.parent)
+        if parent is None:
+            log.warn("Warning: cannot create popup without tracked parent surface %#x",
+                     <uintptr_t> popup.parent)
+            return
+        cdef Popup popup_surface = Popup()
+        popup_surface.attach(parent, popup)
+        size = (popup.base.geometry.width, popup.base.geometry.height)
+        position = popup_surface.get_position()
+        log("new popup: popup=%#x, parent=%s, position=%s, size=%s",
+            <uintptr_t> popup, parent, position, size)
+        # As with toplevels, wait until the popup's first commit before sending
+        # configure; new_popup may arrive before the xdg_surface is initialized.
+        self.emit("new-popup", parent.wid, popup_surface, position, size)
 
     cdef void new_output(self, wlr_output *wlr_out) noexcept:
         wlr_output_init_render(wlr_out, self.allocator, self.renderer)

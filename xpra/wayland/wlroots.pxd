@@ -816,6 +816,28 @@ cdef extern from "wlr/types/wlr_xdg_shell.h":
         uint32_t committed
         wlr_box geometry
         uint32_t configure_serial
+    cdef struct wlr_xdg_popup_state:
+        wlr_box geometry
+        bint reactive
+    cdef struct wlr_xdg_popup_configure:
+        uint32_t fields
+        wlr_box geometry
+        # struct wlr_xdg_positioner_rules rules
+        uint32_t reposition_token
+    cdef struct wlr_xdg_popup_events:
+        wl_signal destroy
+        wl_signal reposition
+    cdef struct wlr_xdg_popup:
+        wlr_xdg_surface *base
+        wl_list link
+        # wl_resource *resource
+        wlr_surface *parent
+        wlr_seat *seat
+        wlr_xdg_popup_configure scheduled
+        wlr_xdg_popup_state current
+        wlr_xdg_popup_state pending
+        wlr_xdg_popup_events events
+        wl_list grab_link
     ctypedef struct wlr_xdg_surface_events:
         wl_signal destroy
         wl_signal ping_timeout
@@ -902,6 +924,10 @@ cdef extern from "wlr/types/wlr_xdg_shell.h":
     uint32_t wlr_xdg_toplevel_set_resizing(wlr_xdg_toplevel *toplevel, bint resizing) nogil
     uint32_t wlr_xdg_toplevel_set_tiled(wlr_xdg_toplevel *toplevel, uint32_t tiled_edges) nogil
     uint32_t wlr_xdg_surface_schedule_configure(wlr_xdg_surface *surface) nogil
+    void wlr_xdg_popup_get_position(wlr_xdg_popup *popup, double *popup_sx, double *popup_sy) nogil
+    void wlr_xdg_popup_get_toplevel_coords(wlr_xdg_popup *popup, int popup_sx, int popup_sy,
+                                           int *toplevel_sx, int *toplevel_sy) nogil
+    void wlr_xdg_popup_unconstrain_from_box(wlr_xdg_popup *popup, const wlr_box *toplevel_space_box) nogil
 
     void wlr_xdg_surface_get_geometry(wlr_xdg_surface *surface, wlr_box *box)
 

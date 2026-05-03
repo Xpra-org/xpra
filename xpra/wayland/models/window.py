@@ -79,7 +79,23 @@ class Window(WindowModelStub):
         ),
         "transient-for": (
             GObject.TYPE_PYOBJECT,
-            "Parent Window object set via xdg_toplevel.set_parent", "",
+            "wid of the transient parent window, 0 if none", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        "relative-position": (
+            GObject.TYPE_PYOBJECT,
+            "current coordinates relative to the parent window", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        "override-redirect": (
+            GObject.TYPE_BOOLEAN,
+            "Is this an unmanaged override-redirect style window", "",
+            False,
+            GObject.ParamFlags.READABLE,
+        ),
+        "window-type": (
+            GObject.TYPE_PYOBJECT,
+            "Window type hints", "",
             GObject.ParamFlags.READABLE,
         ),
         "role": (
@@ -134,11 +150,14 @@ class Window(WindowModelStub):
         "client-machine", "pid",
         "title", "role", "app-id",
         "command",
+        "parent", "transient-for", "relative-position",
+        "override-redirect", "window-type",
         "iconic", "maximized", "fullscreen",
     ]
     # exposed and changing (should be watched for notify signals):
     _dynamic_property_names = [
         "title", "command",
+        "parent", "transient-for", "relative-position",
         "iconic", "maximized", "fullscreen",
     ]
     # should not be exported to the clients:

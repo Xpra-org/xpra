@@ -36,6 +36,9 @@ cdef class Subsurface(WaylandSurface):
         super().__init__(N_LISTENERS)
         self.wid = next_wid()
 
+    def get_parent(self):
+        return self.parent
+
     cdef void attach(self, WaylandSurface parent, wlr_subsurface *subsurface):
         """Wire up listeners to the subsurface and its underlying wl_surface,
         and stash a back-pointer to the parent wrapper. The caller is

@@ -15,6 +15,7 @@ from xpra.util.objects import typedict
 from xpra.wayland.compositor import WaylandCompositor
 from xpra.wayland.surface import Surface
 from xpra.wayland.subsurface import Subsurface
+from xpra.wayland.popup import Popup
 from xpra.wayland.output import Output
 from xpra.wayland.models.window import Window
 from xpra.server.base import ServerBase
@@ -60,6 +61,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         # Compositor-wide events; per-surface events are connected per-instance
         # in _new_surface() once we receive the Surface object.
         self.compositor.connect("new-surface", self._new_surface)
+        self.compositor.connect("new-popup", self._new_popup)
         self.compositor.connect("new-output", self._new_output)
         self.compositor.connect("ssd", self._ssd)
         self.wayland_fd_source = 0
@@ -90,7 +92,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def get_clipboard_class():
         return None  # TODO: WaylandClipboard
 
-    def get_surface(self, wid: int) -> Surface | None:
+    def get_surface(self, wid: int):
         window = self.get_window(wid)
         if not window:
             return None
@@ -193,6 +195,12 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             "surface": surface,
             "title": title,
             "app-id": app_id,
+            "parent": 0,
+            "transient-for": 0,
+            "relative-position": (),
+            "override-redirect": False,
+            "window-type": ("NORMAL",),
+            "role": "",
             "iconic": False,
             "geometry": geom,
             "image": None,
@@ -204,6 +212,51 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.do_add_new_window_common(surface.wid, window)
         if size != (0, 0):
             self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
+
+    def _new_popup(self, parent_wid: int, popup: Popup,
+                   position: tuple[int, int], size: tuple[int, int]) -> None:
+        parent_wid = self._popup_parent_window_wid(popup, parent_wid)
+        popup.connect("map", self._popup_map)
+        popup.connect("unmap", self._unmap)
+        popup.connect("commit", self._popup_commit)
+        popup.connect("surface-image", self._surface_image)
+        popup.connect("reposition", self._popup_reposition)
+        popup.connect("destroy", self._destroy)
+        x, y = position
+        w, h = size
+        geom = (x, y, w, h)
+        window = Window({
+            "client-machine": gethostname(),
+            "display": self.compositor.get_display(),
+            "surface": popup,
+            "title": "",
+            "app-id": "",
+            "parent": parent_wid,
+            "transient-for": parent_wid,
+            "relative-position": position,
+            "override-redirect": True,
+            "window-type": ("DROPDOWN_MENU", "POPUP_MENU"),
+            "role": "popup",
+            "iconic": False,
+            "geometry": geom,
+            "image": None,
+            "depth": 32,
+            "has-alpha": True,
+            "decorations": False,
+        })
+        window.setup()
+        self.do_add_new_window_common(popup.wid, window)
+        if size != (0, 0):
+            self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
+
+    def _popup_parent_window_wid(self, popup: Popup, fallback: int) -> int:
+        parent = popup.get_parent()
+        while parent:
+            wid = getattr(parent, "wid", 0)
+            if wid and self.get_window(wid):
+                return wid
+            parent = parent.get_parent() if hasattr(parent, "get_parent") else None
+        return fallback if self.get_window(fallback) else 0
 
     def track_toplevel(self, surface) -> None:
         if not surface:
@@ -301,6 +354,45 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if (old_geom[2] == old_geom[3] == 0) and size[0] and size[1]:
             self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
+    def update_geometry(self, window, position: tuple[int, int], size: tuple[int, int]) -> None:
+        old_geom = window.get_property("geometry")
+        x, y = position
+        w, h = size
+        geom = (x, y, w, h)
+        if old_geom == geom:
+            return
+        window._updateprop("geometry", geom)
+        window._updateprop("relative-position", position)
+        if (old_geom[2] == old_geom[3] == 0) and w and h:
+            self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
+
+    def _popup_map(self, wid: int, position: tuple[int, int], size: tuple[int, int]) -> None:
+        window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: cannot map popup window %i: not found!", wid)
+            return
+        window._updateprop("iconic", False)
+        self.update_geometry(window, position, size)
+
+    def _popup_commit(self, wid: int, mapped: bool,
+                      position: tuple[int, int], size: tuple[int, int],
+                      has_image: bool) -> None:
+        log(f"popup commit wid {wid} {mapped=}, {position=}, {size=}, {has_image=}")
+        window = self.get_window(wid)
+        if not window:
+            return
+        self.update_geometry(window, position, size)
+        if mapped and has_image:
+            w, h = size
+            self.refresh_window_area(window, 0, 0, w, h, options={"damage": True})
+
+    def _popup_reposition(self, wid: int, position: tuple[int, int]) -> None:
+        window = self.get_window(wid)
+        if not window:
+            return
+        old_geom = window.get_property("geometry")
+        self.update_geometry(window, position, old_geom[2:4])
+
     def _destroy(self, wid: int) -> None:
         # The wlroots wlr_xdg_surface is about to be (or has just been) freed.
         # We must drop every server-side reference that could later dereference
@@ -311,7 +403,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if window is not None:
             surface = window.get_property("surface")
             if surface:
-                self.toplevel_wid.pop(surface.toplevel_ptr, 0)
+                self.toplevel_wid.pop(getattr(surface, "toplevel_ptr", 0), 0)
             window._internal_set_property("surface", None)
             window.unmanage()
             if not isinstance(surface, Subsurface):
@@ -329,11 +421,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window = self.get_window(wid)
         if not window:
             return
-        # Look up the parent Window so the model carries an object reference,
-        # not just an opaque id; consumers can use either via _gproperties.
-        parent = self.get_window(parent_wid) if parent_wid else None
         window._updateprop("parent", parent_wid)
-        window._updateprop("transient-for", parent)
+        window._updateprop("transient-for", parent_wid)
 
     def _new_subsurface(self, wid: int, subsurface: Subsurface, width: int, height: int) -> None:
         log.info("new subsurface of %i: %s %ix%i", wid, subsurface, width, height)
