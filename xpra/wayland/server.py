@@ -197,6 +197,18 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         finally:
             self.compositor.flush()
 
+    def button_action(self, device_id: int, wid: int, button: int, pressed: bool, props: dict) -> None:
+        try:
+            super().button_action(device_id, wid, button, pressed, props)
+        finally:
+            self.compositor.flush()
+
+    def _process_pointer_wheel(self, proto, packet: Packet) -> None:
+        try:
+            super()._process_pointer_wheel(proto, packet)
+        finally:
+            self.compositor.flush()
+
     def _process_window_map(self, _proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)

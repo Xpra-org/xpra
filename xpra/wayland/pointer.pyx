@@ -12,14 +12,14 @@ from xpra.log import Logger
 from libc.stdint cimport uintptr_t, uint64_t, uint32_t, int32_t
 from xpra.wayland.wlroots cimport (
     wlr_cursor, wlr_seat, wlr_surface, wlr_xdg_surface,
-    wlr_axis_orientation, wlr_button_state,
+    wl_pointer_axis, wlr_button_state,
     wlr_cursor_warp, wlr_cursor_move,
     wlr_seat_pointer_notify_motion, wlr_seat_pointer_notify_button, wlr_seat_pointer_notify_axis,
     wlr_seat_pointer_notify_enter, wlr_seat_pointer_notify_frame,
     wlr_seat_pointer_notify_clear_focus,
-    wlr_button_state, wlr_axis_orientation,
+    wlr_button_state,
     WLR_BUTTON_PRESSED, WLR_BUTTON_RELEASED,
-    WL_POINTER_AXIS_VERTICAL_SCROLL,
+    WL_POINTER_AXIS_VERTICAL_SCROLL, WL_POINTER_AXIS_HORIZONTAL_SCROLL,
     WL_POINTER_AXIS_SOURCE_WHEEL, WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL,
     BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA, BTN_FORWARD, BTN_BACK,
 )
@@ -28,6 +28,8 @@ from xpra.wayland.wlroots cimport (
 log = Logger("wayland", "pointer")
 
 base_time = monotonic()
+WHEEL_AXIS_STEP = 15.0
+WHEEL_DISCRETE_STEP = 120
 
 
 BUTTON_MAP: Dict[int, int] = {
@@ -38,6 +40,12 @@ BUTTON_MAP: Dict[int, int] = {
     9: BTN_EXTRA,
     10: BTN_FORWARD,
     11: BTN_BACK,
+}
+WHEEL_BUTTONS: Dict[int, Tuple[wl_pointer_axis, float]] = {
+    4: (WL_POINTER_AXIS_VERTICAL_SCROLL, -WHEEL_AXIS_STEP),
+    5: (WL_POINTER_AXIS_VERTICAL_SCROLL, WHEEL_AXIS_STEP),
+    6: (WL_POINTER_AXIS_HORIZONTAL_SCROLL, -WHEEL_AXIS_STEP),
+    7: (WL_POINTER_AXIS_HORIZONTAL_SCROLL, WHEEL_AXIS_STEP),
 }
 
 
@@ -107,9 +115,16 @@ cdef class WaylandPointer:
         self.offset_y = 0
 
     def click(self, button: int, pressed: bool, props: dict) -> None:
+        log("click%s", (button, pressed, props))
         cdef uint32_t time = get_time_msec()
         cdef uint32_t code
         cdef wlr_button_state state = WLR_BUTTON_PRESSED if pressed else WLR_BUTTON_RELEASED
+        wheel = WHEEL_BUTTONS.get(button)
+        if wheel:
+            if pressed:
+                self.do_wheel_motion(time, wheel[0], wheel[1],
+                                     round(wheel[1] / WHEEL_AXIS_STEP * WHEEL_DISCRETE_STEP))
+            return
         mapped = BUTTON_MAP.get(button, -1)
         if mapped < 0:
             log.warn("Warning: unsupported pointer button %i", button)
@@ -120,7 +135,15 @@ cdef class WaylandPointer:
 
     def wheel_motion(self, button: int, distance: float) -> None:
         cdef uint32_t time = get_time_msec()
-        wlr_seat_pointer_notify_axis(self.seat, time, WL_POINTER_AXIS_VERTICAL_SCROLL,
-                                     distance, round(distance),
+        cdef wl_pointer_axis orientation = WL_POINTER_AXIS_VERTICAL_SCROLL
+        if button in (6, 7):
+            orientation = WL_POINTER_AXIS_HORIZONTAL_SCROLL
+        self.do_wheel_motion(time, orientation, distance, round(distance * WHEEL_DISCRETE_STEP))
+
+    cdef void do_wheel_motion(self, uint32_t time, wl_pointer_axis orientation, double distance,
+                              int32_t discrete) noexcept:
+        log("do_wheel_motion%s", (time, orientation, distance, discrete))
+        wlr_seat_pointer_notify_axis(self.seat, time, orientation,
+                                     distance, discrete,
                                      WL_POINTER_AXIS_SOURCE_WHEEL, WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL)
         wlr_seat_pointer_notify_frame(self.seat)
