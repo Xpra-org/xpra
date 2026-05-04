@@ -42,7 +42,6 @@ def init_virtual_video_devices() -> int:
         log.warn(" webcam forwarding disabled")
         return 0
     devices = get_virtual_video_devices()
-    log.info("found %i virtual video devices for webcam forwarding", len(devices))
     return len(devices)
 
 
@@ -147,8 +146,10 @@ class WebcamServer(StubServerMixin):
         if self.webcam_virtual:
             self.webcam_virtual_video_devices = init_virtual_video_devices()
             self.webcam_virtual = bool(self.webcam_virtual_video_devices)
-            if not self.webcam_virtual_video_devices:
+            if not self.webcam_virtual_video_devices and not self.webcam_client_mode:
                 log.info("no v4l2 virtual devices found")
+            else:
+                log.info("found %i virtual video devices for webcam forwarding", self.webcam_virtual_video_devices)
         self.webcam_enabled = self.webcam_virtual or self.webcam_client_mode
         log("init_webcam() virtual=%s (%i devices), client-mode=%s",
             self.webcam_virtual, self.webcam_virtual_video_devices, self.webcam_client_mode)
