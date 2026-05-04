@@ -50,8 +50,12 @@ def get_server_base_classes() -> tuple[type, ...]:
         classes.append(WebcamServer)
 
     if features.gtk:
-        from xpra.server.subsystem.gtk import GTKServer
-        classes.append(GTKServer)
+        if features.x11:
+            from xpra.x11.subsystem.gtk import GtkX11Server
+            classes.append(GtkX11Server)
+        else:
+            from xpra.server.subsystem.gtk import GTKServer
+            classes.append(GTKServer)
     elif features.x11:
         from xpra.x11.subsystem.x11init import X11Init
         classes.append(X11Init)

@@ -4,12 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from typing import Any
-from subprocess import Popen
 
 from xpra.os_util import gi_import
-from xpra.util.system import is_X11
 from xpra.util.version import dict_version_trim
 from xpra.util.screen import prettify_plug_name
 from xpra.common import noop
@@ -25,23 +22,20 @@ log = Logger("server", "gtk")
 get_default_window_icon_fallback = noop
 
 
-def gdk_init() -> None:
-    log("gdk_init()")
-    try:
-        from xpra.x11.gtk.display_source import init_gdk_display_source
-    except ImportError as e:
-        log.warn(f"Warning: unable to initialize gdk display source: {e}")
-        return
-    init_gdk_display_source()
+def inject_gtk_window_icon_lookup() -> None:
+    """
+    Replace the default window-icon lookup with one that consults the
+    current GTK icon theme. Safe to call on any GDK backend (X11, Wayland, ...).
+    """
     global get_default_window_icon_fallback
-    if get_default_window_icon_fallback == noop:
-        # inject Gtk into the windowicon lookup:
-        try:
-            from xpra.server.window import windowicon
-            get_default_window_icon_fallback = windowicon.do_get_default_window_icon
-            windowicon.get_default_window_icon = get_default_window_icon
-        except ImportError:
-            pass
+    if get_default_window_icon_fallback != noop:
+        return
+    try:
+        from xpra.server.window import windowicon
+    except ImportError:
+        return
+    get_default_window_icon_fallback = windowicon.do_get_default_window_icon
+    windowicon.get_default_window_icon = get_default_window_icon
 
 
 def get_default_window_icon(size: int, wmclass_name: str):
@@ -73,12 +67,13 @@ def get_default_window_icon(size: int, wmclass_name: str):
 
 
 class GTKServer(StubServerMixin):
+    """
+    Abstract base for GTK-based servers.
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
-        self.xvfb: Popen | None = None
-        self.display = os.environ.get("DISPLAY", "")
-        self.x11_filter = False
+    Provides display-name resolution, keymap-change watching and screen-size
+    reporting on top of a running GTK display.
+    Backend-specific setup (X11, Wayland, ...) is performed by subclasses.
+    """
 
     def init(self, opts) -> None:
         log("GTKServer.init(..)")
@@ -98,16 +93,7 @@ class GTKServer(StubServerMixin):
         keymap.connect("keys-changed", self.keymap_changed)
 
     def setup(self) -> None:
-        if is_X11():
-            from xpra.scripts.server import verify_display
-            if not verify_display(xvfb=self.xvfb, display_name=self.display):
-                from xpra.scripts.config import InitExit
-                from xpra.exit_codes import ExitCode
-                raise InitExit(ExitCode.NO_DISPLAY, f"unable to access display {self.display!r}")
-            gdk_init()
-            from xpra.x11.gtk.bindings import init_x11_filter
-            self.x11_filter = init_x11_filter()
-            assert self.x11_filter
+        inject_gtk_window_icon_lookup()
         if features.display:
             Gdk = gi_import("Gdk")
             screen = Gdk.Screen.get_default()
@@ -123,19 +109,9 @@ class GTKServer(StubServerMixin):
         log(f"_monitors_changed({screen})")
         self.schedule_screen_changed(screen)
 
-    def cleanup(self) -> None:
-        if not self.x11_filter:
-            return
-        self.x11_filter = False
-        from xpra.x11.gtk.bindings import cleanup_x11_filter
-        cleanup_x11_filter()
-
     def late_cleanup(self, stop=True) -> None:
         from xpra.gtk.util import close_gtk_display
         close_gtk_display()
-        if is_X11():
-            from xpra.x11.gtk.display_source import close_gdk_display_source
-            close_gdk_display_source()
 
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
