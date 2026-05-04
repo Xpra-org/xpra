@@ -58,9 +58,13 @@ cdef class WaylandKeyboard:
     cdef wlr_seat *seat
     cdef wlr_keyboard *keyboard
     cdef wlr_keyboard_impl keyboard_impl
+    cdef object modifiers
+    cdef int group
 
     def __init__(self, uintptr_t seat_ptr):
         self.seat = <wlr_seat*>seat_ptr
+        self.modifiers = ()
+        self.group = 0
         if not seat_ptr:
             raise ValueError("seat pointer is NULL")
         self.keyboard = <wlr_keyboard*> calloc(1, sizeof(wlr_keyboard))
@@ -130,16 +134,24 @@ cdef class WaylandKeyboard:
         return ()
 
     def get_layout_group(self) -> int:
-        return 0
+        return self.group
+
+    def set_layout_group(self, group: int) -> None:
+        self.update_modifiers(self.modifiers, group)
+
+    def reapply_modifiers(self) -> None:
+        self.update_modifiers(self.modifiers, self.group)
 
     def update_modifiers(self, modifiers=(), group: int = 0) -> None:
         cdef uint32_t depressed = 0
         cdef uint32_t locked = 0
         cdef uint32_t bit = 0
         cdef str modifier
+        self.modifiers = tuple(x for x in (modifiers or ()) if x)
+        self.group = group
         if self.keyboard == NULL:
             return
-        for modifier in modifiers or ():
+        for modifier in self.modifiers:
             bit = self.modifier_bit(modifier)
             if not bit:
                 continue
@@ -148,7 +160,7 @@ cdef class WaylandKeyboard:
             else:
                 depressed |= bit
         log("update_modifiers(%s, group=%i) depressed=%#x locked=%#x",
-            modifiers, group, depressed, locked)
+            self.modifiers, self.group, depressed, locked)
         wlr_keyboard_notify_modifiers(self.keyboard, depressed, 0, locked, group)
         wlr_seat_keyboard_notify_modifiers(self.seat, &self.keyboard.modifiers)
 

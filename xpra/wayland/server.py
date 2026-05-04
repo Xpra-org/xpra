@@ -128,13 +128,16 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def fake_key(self, keycode: int, press: bool) -> None:
         log("fake_key(%i, %s)", keycode, press)
+        if kd := self.keyboard_device:
+            kd.reapply_modifiers()
         super().fake_key(keycode, press)
         self.compositor.flush()
 
-    def update_keyboard_modifiers(self, modifiers: Sequence[str], group: int = 0) -> None:
-        keyboard = getattr(self, "keyboard_device", None)
-        if keyboard:
-            keyboard.update_modifiers(modifiers, group)
+    def update_keyboard_modifiers(self, modifiers: Sequence[str], group: int = -1) -> None:
+        if group < 0 and (kd := self.keyboard_device):
+            group = kd.get_layout_group()
+        if kd := self.keyboard_device:
+            kd.update_modifiers(modifiers, group)
 
     def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, kattrs: dict) -> None:
         attrs = typedict(kattrs)
@@ -145,6 +148,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
         self.update_keyboard_modifiers(modifiers)
         super()._update_modifiers(proto, wid, modifiers)
+
+    def set_keyboard_layout_group(self, grp: int) -> None:
+        if kd := self.keyboard_device:
+            kd.set_layout_group(grp)
 
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
         log("set_pointer_focus(%i, %s)", wid, pointer)
@@ -167,7 +174,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.flush()
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        if "modifiers" in props:
+        if props and "modifiers" in props:
             self.update_keyboard_modifiers(props.get("modifiers", ()))
         self.set_pointer_focus(wid, pointer)
         log("pointer: %r",pointer)
