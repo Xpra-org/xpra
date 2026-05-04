@@ -5,7 +5,7 @@
 
 from time import monotonic
 from collections.abc import Sequence
-from typing import Tuple
+from typing import Dict, Tuple
 
 from xpra.log import Logger
 
@@ -21,13 +21,24 @@ from xpra.wayland.wlroots cimport (
     WLR_BUTTON_PRESSED, WLR_BUTTON_RELEASED,
     WL_POINTER_AXIS_VERTICAL_SCROLL,
     WL_POINTER_AXIS_SOURCE_WHEEL, WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL,
-    BTN_MOUSE,
+    BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA, BTN_FORWARD, BTN_BACK,
 )
 
 
 log = Logger("wayland", "pointer")
 
 base_time = monotonic()
+
+
+BUTTON_MAP: Dict[int, int] = {
+    1: BTN_LEFT,
+    2: BTN_MIDDLE,
+    3: BTN_RIGHT,
+    8: BTN_SIDE,
+    9: BTN_EXTRA,
+    10: BTN_FORWARD,
+    11: BTN_BACK,
+}
 
 
 cdef inline uint32_t get_time_msec() noexcept:
@@ -97,8 +108,13 @@ cdef class WaylandPointer:
 
     def click(self, button: int, pressed: bool, props: dict) -> None:
         cdef uint32_t time = get_time_msec()
-        cdef uint32_t code = BTN_MOUSE + (button - 1)
+        cdef uint32_t code
         cdef wlr_button_state state = WLR_BUTTON_PRESSED if pressed else WLR_BUTTON_RELEASED
+        mapped = BUTTON_MAP.get(button, -1)
+        if mapped < 0:
+            log.warn("Warning: unsupported pointer button %i", button)
+            return
+        code = <uint32_t> mapped
         wlr_seat_pointer_notify_button(self.seat, time, code, state)
         wlr_seat_pointer_notify_frame(self.seat)
 
