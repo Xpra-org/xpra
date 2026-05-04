@@ -10,6 +10,8 @@ from socket import gethostname
 from collections.abc import Sequence
 
 from xpra.codecs.image import ImageWrapper
+from xpra.server.common import get_sources_by_type
+from xpra.server.source.window import WindowsConnection
 from xpra.util.gobject import to_gsignals
 from xpra.util.objects import typedict
 from xpra.wayland.compositor import WaylandCompositor
@@ -347,7 +349,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             focuslog("activate-request: no window for wid=%s", wid)
             return
         self._focus(None, wid, None)
-        # should forward to the client!
+        window_sources = get_sources_by_type(self, WindowsConnection)
+        for ss in window_sources:
+            ss.raise_window(wid)
 
     def _surface_image(self, wid: int, image: ImageWrapper) -> None:
         window = self.get_window(wid)
