@@ -415,8 +415,18 @@ cdef extern from "wlr/render/pass.h":
         WLR_SCALE_FILTER_BILINEAR
         WLR_SCALE_FILTER_NEAREST
 
-    cdef struct pixman_region32_t:
+    cdef struct pixman_box32_t:
+        int32_t x1
+        int32_t y1
+        int32_t x2
+        int32_t y2
+
+    cdef struct pixman_region32_data_t:
         pass
+
+    cdef struct pixman_region32_t:
+        pixman_box32_t extents
+        pixman_region32_data_t *data
 
     cdef struct wlr_render_texture_options:
         wlr_texture *texture

@@ -63,6 +63,10 @@ from xpra.wayland.wlroots cimport (
     wlr_xdg_activation_v1_create, wlr_xdg_activation_token_v1_get_name,
     WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
 )
+from xpra.wayland.pointer_protocols cimport (
+    wlr_relative_pointer_manager_v1, wlr_relative_pointer_manager_v1_create,
+    wlr_pointer_constraints_v1, wlr_pointer_constraints_v1_create,
+)
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
 
 
@@ -107,6 +111,8 @@ cdef class WaylandCompositor(ListenerObject):
     cdef wlr_xdg_output_manager_v1 *xdg_output_manager
     cdef wlr_primary_selection_v1_device_manager *primary_selection_manager
     cdef wlr_data_control_manager_v1 *data_control_manager
+    cdef wlr_relative_pointer_manager_v1 *relative_pointer_manager
+    cdef wlr_pointer_constraints_v1 *pointer_constraints
     cdef wlr_xdg_activation_v1 *activation_manager
     cdef char *seat_name
     cdef Display display
@@ -203,6 +209,13 @@ cdef class WaylandCompositor(ListenerObject):
         else:
             self.add_listener(L_REQUEST_ACTIVATE, &self.activation_manager.events.request_activate)
             self.add_listener(L_NEW_ACTIVATION_TOKEN, &self.activation_manager.events.new_token)
+
+        self.relative_pointer_manager = wlr_relative_pointer_manager_v1_create(self.display_ptr)
+        if not self.relative_pointer_manager:
+            log.warn("Warning: unable to create the relative pointer manager")
+        self.pointer_constraints = wlr_pointer_constraints_v1_create(self.display_ptr)
+        if not self.pointer_constraints:
+            log.warn("Warning: unable to create the pointer constraints manager")
 
         # Create cursor
         self.cursor = wlr_cursor_create()
@@ -420,7 +433,9 @@ cdef class WaylandCompositor(ListenerObject):
         self.display_ptr = NULL
 
     def get_pointer_device(self):
-        return WaylandPointer(<uintptr_t> self.seat, <uintptr_t> self.cursor)
+        return WaylandPointer(<uintptr_t> self.seat, <uintptr_t> self.cursor,
+                              <uintptr_t> self.relative_pointer_manager,
+                              <uintptr_t> self.pointer_constraints)
 
     def get_keyboard_device(self):
         return WaylandKeyboard(<uintptr_t> self.seat)

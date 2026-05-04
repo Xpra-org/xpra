@@ -7,11 +7,13 @@
  *   wayland-scanner private-code /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml /tmp/xdg-shell-protocol.c
  *   wayland-scanner client-header /usr/share/wayland-protocols/staging/xdg-activation/xdg-activation-v1.xml /tmp/xdg-activation-v1-client-protocol.h
  *   wayland-scanner private-code /usr/share/wayland-protocols/staging/xdg-activation/xdg-activation-v1.xml /tmp/xdg-activation-v1-protocol.c
- *   cc -Wall -Wextra -I/tmp -o /tmp/test-xdg-activation ./test_xdg_activation.c /tmp/xdg-shell-protocol.c /tmp/xdg-activation-v1-protocol.c $(pkg-config --cflags --libs wayland-client)
+ *   cc -Wall -Wextra -I/tmp -o /tmp/test-xdg-activation tests/xpra/wayland/test_xdg_activation.c /tmp/xdg-shell-protocol.c /tmp/xdg-activation-v1-protocol.c $(pkg-config --cflags --libs wayland-client)
  *
  * Run inside the Wayland session:
  *
  *   /tmp/test-xdg-activation
+ *
+ * This test also fails to clean on exit, which can trigger compositor cleanup / error handling bugs.
  */
 
 #include <stdbool.h>
