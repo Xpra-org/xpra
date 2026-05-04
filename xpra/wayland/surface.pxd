@@ -29,6 +29,7 @@ cdef class Surface(WaylandSurface):
     cdef void register_toplevel_handlers(self) noexcept
     cdef void map(self) noexcept
     cdef void unmap(self) noexcept
+    cdef void toplevel_destroy(self) noexcept
     cdef void destroy(self) noexcept
     cdef void request_move(self, uint32_t serial) noexcept
     cdef void request_resize(self, uint32_t edges, uint32_t serial) noexcept

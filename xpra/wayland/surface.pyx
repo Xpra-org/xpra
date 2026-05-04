@@ -57,13 +57,14 @@ EDGES_MAP: Dict[int, MoveResize] = {
 # Listener slot indices for Surface; N_LISTENERS sizes the listeners array.
 # Toplevel slots are kept contiguous so unregister_toplevel_handlers can use
 # a simple range loop — when adding a new toplevel-only slot, place it in the
-# block bounded by L_REQUEST_MOVE..L_SET_PARENT (inclusive).
+# block bounded by L_TOPLEVEL_DESTROY..L_REQUEST_SHOW_WINDOW_MENU (inclusive).
 cdef enum SurfaceListener:
     L_MAP
     L_UNMAP
     L_DESTROY
     L_COMMIT
     L_NEW_SUBSURFACE
+    L_TOPLEVEL_DESTROY
     L_REQUEST_MOVE
     L_REQUEST_RESIZE
     L_REQUEST_MAXIMIZE
@@ -128,7 +129,7 @@ cdef class Surface(WaylandSurface):
         self.add_listener(L_MAP, &s.events.map)
         self.add_listener(L_UNMAP, &s.events.unmap)
         self.add_listener(L_NEW_SUBSURFACE, &s.events.new_subsurface)
-        self.add_listener(L_DESTROY, &s.events.destroy)
+        self.add_listener(L_DESTROY, &self.wlr_xdg_surface.events.destroy)
         # Keep the Surface alive while wlroots holds listener pointers into it.
         # The shared registry is keyed by wl_surface so any role can share it.
         self.register()
@@ -151,6 +152,8 @@ cdef class Surface(WaylandSurface):
             self.commit()
         elif slot == L_NEW_SUBSURFACE:
             self.new_subsurface(<wlr_subsurface*>data)
+        elif slot == L_TOPLEVEL_DESTROY:
+            self.toplevel_destroy()
         elif slot == L_REQUEST_MOVE:
             move_event = <wlr_xdg_toplevel_move_event*>data
             self.request_move(move_event.serial)
@@ -187,6 +190,7 @@ cdef class Surface(WaylandSurface):
             return
 
         log("Surface has toplevel, attaching toplevel handlers")
+        self.add_listener(L_TOPLEVEL_DESTROY, &t.events.destroy)
         self.add_listener(L_REQUEST_MAXIMIZE, &t.events.request_maximize)
         self.add_listener(L_REQUEST_FULLSCREEN, &t.events.request_fullscreen)
         self.add_listener(L_REQUEST_MINIMIZE, &t.events.request_minimize)
@@ -212,6 +216,10 @@ cdef class Surface(WaylandSurface):
         self.unregister_toplevel_handlers()
         log("XDG surface UNMAPPED")
         self._emit("unmap", self.wid)
+
+    cdef void toplevel_destroy(self) noexcept:
+        log("XDG toplevel DESTROYED")
+        self.unregister_toplevel_handlers()
 
     cdef void destroy(self) noexcept:
         if self.wlr_xdg_surface == NULL:
@@ -356,7 +364,7 @@ cdef class Surface(WaylandSurface):
         # implementation also detached it on unmap; preserved for behaviour.
         self._detach_slot(L_NEW_SUBSURFACE)
         cdef int i
-        for i in range(L_REQUEST_MOVE, L_REQUEST_SHOW_WINDOW_MENU + 1):
+        for i in range(L_TOPLEVEL_DESTROY, L_REQUEST_SHOW_WINDOW_MENU + 1):
             self._detach_slot(i)
 
     def resize(self, width: int, height: int) -> None:

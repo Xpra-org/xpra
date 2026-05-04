@@ -347,6 +347,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             focuslog("activate-request: no window for wid=%s", wid)
             return
         self._focus(None, wid, None)
+        # should forward to the client!
 
     def _surface_image(self, wid: int, image: ImageWrapper) -> None:
         window = self.get_window(wid)

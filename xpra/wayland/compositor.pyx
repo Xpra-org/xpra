@@ -59,7 +59,7 @@ from xpra.wayland.wlroots cimport (
     wlr_headless_add_output,
     wlr_data_device_manager_create,
     wlr_data_control_manager_v1, wlr_data_control_manager_v1_create,
-    wlr_xdg_activation_v1, wlr_xdg_activation_v1_request_activate_event,
+    wlr_xdg_activation_v1, wlr_xdg_activation_token_v1, wlr_xdg_activation_v1_request_activate_event,
     wlr_xdg_activation_v1_create, wlr_xdg_activation_token_v1_get_name,
     WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
 )
@@ -84,6 +84,7 @@ cdef enum:
     L_REQUEST_SET_PRIMARY_SELECTION
     L_SET_PRIMARY_SELECTION
     L_REQUEST_ACTIVATE
+    L_NEW_ACTIVATION_TOKEN
     N_LISTENERS
 
 
@@ -140,6 +141,8 @@ cdef class WaylandCompositor(ListenerObject):
             self.set_primary_selection()
         elif slot == L_REQUEST_ACTIVATE:
             self.request_activate(<wlr_xdg_activation_v1_request_activate_event*> data)
+        elif slot == L_NEW_ACTIVATION_TOKEN:
+            self.new_activation_token(<wlr_xdg_activation_token_v1*> data)
         else:
             log.error("Error: unexpected compositor event slot %i", slot)
 
@@ -199,6 +202,7 @@ cdef class WaylandCompositor(ListenerObject):
             log.warn("Warning: unable to create the xdg-activation manager")
         else:
             self.add_listener(L_REQUEST_ACTIVATE, &self.activation_manager.events.request_activate)
+            self.add_listener(L_NEW_ACTIVATION_TOKEN, &self.activation_manager.events.new_token)
 
         # Create cursor
         self.cursor = wlr_cursor_create()
@@ -260,6 +264,7 @@ cdef class WaylandCompositor(ListenerObject):
         self.emit("primary-selection", <uintptr_t> self.seat.primary_selection_source)
 
     cdef void request_activate(self, wlr_xdg_activation_v1_request_activate_event *event) noexcept:
+        log("request_activate(%#x)", <uintptr_t> event)
         if event == NULL or event.surface == NULL:
             return
         cdef uintptr_t surface_ptr = <uintptr_t> event.surface
@@ -268,6 +273,13 @@ cdef class WaylandCompositor(ListenerObject):
             name = wlr_xdg_activation_token_v1_get_name(event.token)
         token = name.decode("utf8") if name != NULL else ""
         self.emit("activate-request", surface_ptr, token)
+
+    cdef void new_activation_token(self, wlr_xdg_activation_token_v1 *token) noexcept:
+        cdef const char *name = NULL
+        if token != NULL:
+            name = wlr_xdg_activation_token_v1_get_name(token)
+        token_name = name.decode("utf8") if name != NULL else ""
+        log("new_activation_token(%#x)=%s", <uintptr_t> token, token_name)
 
     def get_display_ptr(self) -> int:
         return <uintptr_t> self.display_ptr

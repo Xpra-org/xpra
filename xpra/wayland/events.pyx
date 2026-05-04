@@ -62,6 +62,7 @@ cdef class ListenerObject:
         if listeners[slot].listener.link.next != NULL:
             wl_list_remove(&listeners[slot].listener.link)
             listeners[slot].listener.link.next = NULL
+            listeners[slot].listener.link.prev = NULL
 
     cdef inline void _detach_all(self) noexcept nogil:
         cdef int i

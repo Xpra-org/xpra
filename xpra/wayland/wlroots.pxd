@@ -927,6 +927,7 @@ cdef extern from "wlr/types/wlr_xdg_shell.h":
         int maximized
         int fullscreen
     cdef struct wlr_xdg_toplevel_events:
+        wl_signal destroy
         wl_signal request_maximize
         wl_signal request_fullscreen
         wl_signal request_minimize
