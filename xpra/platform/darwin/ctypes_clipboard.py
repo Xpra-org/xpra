@@ -237,7 +237,7 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
         kwargs["clipboards.local"] = ["CLIPBOARD"]
         super().__init__(*args, **kwargs)
         self.local_greedy = True
-        self.local_want_targets = True
+        self.local_want_targets = ("CLIPBOARD",)
 
     def __repr__(self):
         return "OSXClipboardProtocolHelper"

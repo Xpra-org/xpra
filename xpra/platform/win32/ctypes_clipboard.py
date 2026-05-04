@@ -785,7 +785,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
     def make_proxy(self, selection: str) -> Win32ClipboardProxy:
         proxy = Win32ClipboardProxy(self.window, selection,
                                     self._send_clipboard_request_handler, self._send_clipboard_token_handler)
-        proxy.set_want_targets(self._want_targets)
+        proxy.set_want_targets(self.proxy_want_targets(selection))
         proxy.set_direction(self.can_send, self.can_receive)
         return proxy
 

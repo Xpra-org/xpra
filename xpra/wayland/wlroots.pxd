@@ -173,6 +173,7 @@ cdef extern from "wayland-server-core.h":
         wl_list link
 
     wl_display *wl_display_create()
+    uint32_t wl_display_next_serial(wl_display *display)
     void wl_display_destroy(wl_display *display)
     void wl_display_destroy_clients(wl_display *display)
     void wl_display_run(wl_display *display)
@@ -616,6 +617,8 @@ cdef extern from "wlr/types/wlr_input_device.h":
 
 
 cdef extern from "wlr/types/wlr_seat.h":
+    cdef struct wlr_primary_selection_source
+
     cdef struct wlr_seat_client:
         wl_client *client
         wl_resource *seat_resource
@@ -625,9 +628,20 @@ cdef extern from "wlr/types/wlr_seat.h":
         wl_list pointers
         wl_list touches
 
+    cdef struct wlr_seat_events:
+        wl_signal request_set_primary_selection
+        wl_signal set_primary_selection
+
     cdef struct wlr_seat:
         wl_list clients  # wlr_seat_client list
         char *name
+        wlr_primary_selection_source *primary_selection_source
+        uint32_t primary_selection_serial
+        wlr_seat_events events
+
+    cdef struct wlr_seat_request_set_primary_selection_event:
+        wlr_primary_selection_source *source
+        uint32_t serial
 
     cdef enum wlr_button_state:
         WLR_BUTTON_RELEASED
@@ -659,6 +673,36 @@ cdef extern from "wlr/types/wlr_seat.h":
 
     wlr_keyboard* wlr_seat_get_keyboard(wlr_seat *seat)
     wlr_seat_client* wlr_seat_client_for_wl_client(wlr_seat *seat, wl_client *client)
+
+
+cdef extern from "wlr/types/wlr_primary_selection.h":
+    cdef struct wlr_primary_selection_source_impl:
+        void (*send)(wlr_primary_selection_source *source, const char *mime_type, int fd) noexcept
+        void (*destroy)(wlr_primary_selection_source *source) noexcept
+
+    cdef struct wlr_primary_selection_source_events:
+        wl_signal destroy
+
+    cdef struct wlr_primary_selection_source:
+        const wlr_primary_selection_source_impl *impl
+        wl_array mime_types
+        wlr_primary_selection_source_events events
+        void *data
+
+    void wlr_primary_selection_source_init(wlr_primary_selection_source *source,
+                                           const wlr_primary_selection_source_impl *impl)
+    void wlr_primary_selection_source_destroy(wlr_primary_selection_source *source)
+    void wlr_primary_selection_source_send(wlr_primary_selection_source *source,
+                                           const char *mime_type, int fd)
+    void wlr_seat_set_primary_selection(wlr_seat *seat, wlr_primary_selection_source *source,
+                                        uint32_t serial)
+
+
+cdef extern from "wlr/types/wlr_primary_selection_v1.h":
+    cdef struct wlr_primary_selection_v1_device_manager:
+        pass
+
+    wlr_primary_selection_v1_device_manager* wlr_primary_selection_v1_device_manager_create(wl_display *display)
 
 
 cdef extern from "wlr/types/wlr_keyboard.h":
@@ -1241,3 +1285,9 @@ cdef extern from "wlr/types/wlr_data_device.h":
     ctypedef struct wlr_data_device_manager:
         pass
     wlr_data_device_manager *wlr_data_device_manager_create(wl_display *display)
+
+
+cdef extern from "wlr/types/wlr_data_control_v1.h":
+    cdef struct wlr_data_control_manager_v1:
+        pass
+    wlr_data_control_manager_v1 *wlr_data_control_manager_v1_create(wl_display *display)

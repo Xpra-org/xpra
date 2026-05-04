@@ -16,7 +16,10 @@ from xpra.os_util import POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
 from xpra.util.env import envint, envbool
-from xpra.clipboard.common import get_format_size, sizeof_long, sizeof_short, compile_filters, get_local_selections
+from xpra.clipboard.common import (
+    ALL_CLIPBOARDS,
+    get_format_size, sizeof_long, sizeof_short, compile_filters, get_local_selections,
+)
 from xpra.clipboard.targets import _filter_targets, must_discard, DISCARD_EXTRA_TARGETS, DISCARD_TARGETS
 from xpra.log import Logger, is_debug_enabled
 
@@ -27,7 +30,7 @@ MAX_CLIPBOARD_PACKET_SIZE: Final[int] = 16 * 1024 * 1024
 MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
-DEFAULT_PREFERRED_TARGETS = "UTF8_STRING,TEXT,STRING,text/plain"
+DEFAULT_PREFERRED_TARGETS = "UTF8_STRING,TEXT,STRING,text/plain;charset=utf-8,text/plain"
 if POSIX:
     DEFAULT_PREFERRED_TARGETS += "image/png"
 PREFERRED_TARGETS = tuple(os.environ.get("XPRA_CLIPBOARD_PREFERRED_TARGETS", DEFAULT_PREFERRED_TARGETS).split(","))
@@ -59,12 +62,12 @@ class ClipboardProtocolHelperCore:
         self._local_to_remote: dict[str, str] = {}
         self._remote_to_local: dict[str, str] = {}
         self.init_translation(kwargs)
-        self._want_targets: bool = False
+        self._want_targets: tuple[str, ...] = ()
         self.init_packet_handlers()
         selections = get_local_selections()
         self.init_proxies(d.strtupleget("clipboards.local", selections))
         self.remote_clipboards = d.strtupleget("clipboards.remote", selections)
-        self.local_want_targets = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
+        self.local_want_targets = tuple(selections) if envbool("XPRA_CLIPBOARD_WANT_TARGETS") else ()
         self.local_greedy = envbool("XPRA_CLIPBOARD_GREEDY")
         self.local_preferred_targets = PREFERRED_TARGETS
         self.local_selections = selections
@@ -76,7 +79,7 @@ class ClipboardProtocolHelperCore:
         }
         # some implementations must set the targets when claiming the clipboard:
         if self.local_want_targets:
-            caps["want_targets"] = True
+            caps["want_targets"] = self.local_want_targets
         # some implementation must set a value to claim the clipboard (ie: win32 and osx)
         if self.local_greedy:
             caps["greedy"] = True
@@ -98,12 +101,15 @@ class ClipboardProtocolHelperCore:
             log.warn("Warning: no clipboard proxy for '%s'", selection)
         return proxy
 
-    def set_want_targets_client(self, want_targets: bool) -> None:
+    def proxy_want_targets(self, selection: str) -> bool:
+        return self.local_to_remote(selection) in self._want_targets
+
+    def set_want_targets_client(self, want_targets: Sequence[str] | bool) -> None:
         log("set_want_targets_client(%s)", want_targets)
-        self._want_targets = want_targets
+        self._want_targets = tuple(ALL_CLIPBOARDS if want_targets is True else (want_targets or ()))
         # pass it on to the ClipboardProxy instances:
-        for proxy in self._clipboard_proxies.values():
-            proxy.set_want_targets(want_targets)
+        for selection, proxy in self._clipboard_proxies.items():
+            proxy.set_want_targets(self.proxy_want_targets(selection))
 
     def init_translation(self, kwargs: dict) -> None:
         def getselection(name: str) -> str:

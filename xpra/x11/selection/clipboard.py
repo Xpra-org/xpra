@@ -92,7 +92,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         from xpra.x11.selection.proxy import ClipboardProxy
         xid = self.event_window_xid
         proxy = ClipboardProxy(xid, selection)
-        proxy.set_want_targets(self._want_targets)
+        proxy.set_want_targets(self.proxy_want_targets(selection))
         proxy.set_direction(self.can_send, self.can_receive)
         proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
         proxy.connect("send-clipboard-request", self._send_clipboard_request_handler)

@@ -66,11 +66,11 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.connect("new-output", self._new_output)
         self.compositor.connect("ssd", self._ssd)
         self.wayland_fd_source = 0
+        os.environ.pop("DISPLAY", None)
+        os.environ["GDK_BACKEND"] = "wayland"
 
     def get_child_env(self) -> dict[str, str]:
         env: dict[str, str] = super().get_child_env()
-        if "GDK_BACKEND" not in env:
-            env["GDK_BACKEND"] = "wayland"
         if os.environ.get("NO_AT_BRIDGE") is None:
             env["NO_AT_BRIDGE"] = "1"
         return env
@@ -89,9 +89,13 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def make_pointer_device(self):
         return self.compositor.get_pointer_device()
 
-    @staticmethod
-    def get_clipboard_class():
-        return None  # TODO: WaylandClipboard
+    def get_clipboard_class(self):
+        from xpra.wayland.clipboard import WaylandClipboard
+
+        def make_wayland_clipboard(*args, **kwargs) -> WaylandClipboard:
+            return WaylandClipboard(*args, compositor=self.compositor, **kwargs)
+
+        return make_wayland_clipboard
 
     def get_surface(self, wid: int):
         window = self.get_window(wid)

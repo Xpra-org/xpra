@@ -60,5 +60,5 @@ DISCARD_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets(
 ))
 TEXT_TARGETS: Sequence[str] = tuple(
     os.environ.get("XPRA_CLIPBOARD_TEXT_TARGETS",
-                   "UTF8_STRING,TEXT,STRING,text/plain,text/html").split(",")
+                   "UTF8_STRING,TEXT,STRING,text/plain;charset=utf-8,text/plain,text/html").split(",")
 )

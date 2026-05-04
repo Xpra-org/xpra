@@ -9,7 +9,7 @@ from typing import Any
 from collections import deque
 from collections.abc import Sequence
 
-from xpra.clipboard.common import get_local_selections, ALL_CLIPBOARDS
+from xpra.clipboard.common import get_local_selections, ALL_CLIPBOARDS, parse_want_targets
 from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
@@ -41,7 +41,7 @@ class ClipboardConnection(StubClientConnection):
         self.clipboard_progress_timer: int = 0
         self.clipboard_stats: deque[float] = deque(maxlen=MAX_CLIPBOARD_LIMIT * MAX_CLIPBOARD_LIMIT_DURATION)
         self.clipboard_greedy = False
-        self.clipboard_want_targets = False
+        self.clipboard_want_targets: tuple[str, ...] = ()
         self.clipboard_selections = get_local_selections()
         self.clipboard_preferred_targets: Sequence[str] = ()
         self.clipboard_record = False
@@ -59,7 +59,7 @@ class ClipboardConnection(StubClientConnection):
             self.clipboard_enabled = ccaps.boolget("enabled", True)
             self.clipboard_notifications = ccaps.boolget("notifications")
             self.clipboard_greedy = ccaps.boolget("greedy")
-            self.clipboard_want_targets = ccaps.boolget("want_targets")
+            self.clipboard_want_targets = parse_want_targets(ccaps)
             self.clipboard_selections = ccaps.strtupleget("selections", ALL_CLIPBOARDS)
             self.clipboard_preferred_targets = ccaps.strtupleget("preferred-targets", ())
             self.clipboard_record = ccaps.boolget("record") and is_recording_allowed(self, "clipboard")

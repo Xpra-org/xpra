@@ -10,6 +10,7 @@ from typing import TypeAlias, Callable, Any, Final, Iterable, Sequence
 
 from xpra.os_util import WIN32, OSX
 from xpra.util.env import envint
+from xpra.util.objects import typedict
 from xpra.util.system import is_Wayland
 
 sizeof_long: Final[int] = struct.calcsize(b'@L')
@@ -31,6 +32,15 @@ def get_local_selections() -> Sequence[str]:
     if is_Wayland():
         return "CLIPBOARD", "PRIMARY"
     return "CLIPBOARD", "PRIMARY", "SECONDARY"
+
+
+def parse_want_targets(caps: typedict, selections: Sequence[str] = ALL_CLIPBOARDS) -> tuple[str, ...]:
+    v = caps.get("want_targets")
+    if isinstance(v, (list, tuple)) or (isinstance(v, dict) and isinstance(v.get(""), (list, tuple))):
+        return caps.strtupleget("want_targets")
+    if caps.boolget("want_targets"):
+        return tuple(selections)
+    return ()
 
 
 def get_format_size(dformat: int) -> int:

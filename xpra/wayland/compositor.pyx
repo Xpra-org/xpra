@@ -9,6 +9,7 @@ from typing import Dict, List
 from collections.abc import Callable
 
 from xpra.log import Logger
+from xpra.server import features
 from xpra.util.str_fn import Ellipsizer
 
 from libc.stdint cimport uintptr_t
@@ -52,8 +53,12 @@ from xpra.wayland.wlroots cimport (
     wlr_output_layout_add, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
     wlr_output_init_render, wlr_output_layout,
     wlr_xdg_output_manager_v1, wlr_xdg_output_manager_v1_create,
+    wlr_primary_selection_v1_device_manager, wlr_primary_selection_v1_device_manager_create,
+    wlr_primary_selection_source, wlr_seat_request_set_primary_selection_event,
+    wlr_seat_set_primary_selection,
     wlr_headless_add_output,
     wlr_data_device_manager_create,
+    wlr_data_control_manager_v1, wlr_data_control_manager_v1_create,
     WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
@@ -74,6 +79,8 @@ cdef enum:
     L_NEW_TOPLEVEL
     L_NEW_POPUP
     L_NEW_OUTPUT
+    L_REQUEST_SET_PRIMARY_SELECTION
+    L_SET_PRIMARY_SELECTION
     N_LISTENERS
 
 
@@ -94,6 +101,8 @@ cdef class WaylandCompositor(ListenerObject):
     cdef wlr_cursor *cursor
     cdef wlr_output_layout *output_layout
     cdef wlr_xdg_output_manager_v1 *xdg_output_manager
+    cdef wlr_primary_selection_v1_device_manager *primary_selection_manager
+    cdef wlr_data_control_manager_v1 *data_control_manager
     cdef char *seat_name
     cdef Display display
     cdef str socket_name
@@ -121,6 +130,10 @@ cdef class WaylandCompositor(ListenerObject):
             # Called by wlroots from within wl_event_loop_dispatch, which is invoked
             # from Python-side WaylandCompositor.process_events() — so the GIL is held.
             self.new_output(<wlr_output*> data)
+        elif slot == L_REQUEST_SET_PRIMARY_SELECTION:
+            self.request_set_primary_selection(<wlr_seat_request_set_primary_selection_event*> data)
+        elif slot == L_SET_PRIMARY_SELECTION:
+            self.set_primary_selection()
         else:
             log.error("Error: unexpected compositor event slot %i", slot)
 
@@ -187,6 +200,16 @@ cdef class WaylandCompositor(ListenerObject):
         cdef int caps = WL_SEAT_CAPABILITY_POINTER | WL_SEAT_CAPABILITY_KEYBOARD | WL_SEAT_CAPABILITY_TOUCH
         wlr_seat_set_capabilities(self.seat, caps)
 
+        if features.clipboard:
+            self.data_control_manager = wlr_data_control_manager_v1_create(self.display_ptr)
+            if not self.data_control_manager:
+                raise RuntimeError("Failed to create data control manager")
+            self.primary_selection_manager = wlr_primary_selection_v1_device_manager_create(self.display_ptr)
+            if not self.primary_selection_manager:
+                raise RuntimeError("Failed to create primary selection manager")
+            self.add_listener(L_REQUEST_SET_PRIMARY_SELECTION, &self.seat.events.request_set_primary_selection)
+            self.add_listener(L_SET_PRIMARY_SELECTION, &self.seat.events.set_primary_selection)
+
         self.add_listener(L_NEW_OUTPUT, &self.backend.events.new_output)
 
         bname = wl_display_add_socket_auto(self.display_ptr)
@@ -212,6 +235,28 @@ cdef class WaylandCompositor(ListenerObject):
         wlr_xdg_toplevel_decoration_v1_set_mode(decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
         with gil:
             self.emit("ssd", <uintptr_t> toplevel, bool(ssd))
+
+    cdef void request_set_primary_selection(self, wlr_seat_request_set_primary_selection_event *event) noexcept:
+        if event == NULL:
+            return
+        wlr_seat_set_primary_selection(self.seat, event.source, event.serial)
+
+    cdef void set_primary_selection(self) noexcept:
+        if self.seat == NULL:
+            self.emit("primary-selection", 0)
+            return
+        self.emit("primary-selection", <uintptr_t> self.seat.primary_selection_source)
+
+    def get_display_ptr(self) -> int:
+        return <uintptr_t> self.display_ptr
+
+    def get_seat_ptr(self) -> int:
+        return <uintptr_t> self.seat
+
+    def get_primary_selection_source_ptr(self) -> int:
+        if self.seat == NULL:
+            return 0
+        return <uintptr_t> self.seat.primary_selection_source
 
     cdef void new_toplevel(self, wlr_xdg_toplevel *toplevel) noexcept:
         cdef wlr_xdg_surface *xdg_surf = NULL
