@@ -51,8 +51,9 @@ from xpra.wayland.wlroots cimport (
     wlr_renderer, wlr_renderer_autocreate, wlr_renderer_destroy, wlr_renderer_init_wl_display,
     wlr_headless_backend_create,
     wlr_texture, wlr_client_buffer, wlr_box, wlr_output,
-    wlr_output_layout_add_auto, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
+    wlr_output_layout_add, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
     wlr_output_init_render, wlr_output_layout,
+    wlr_xdg_output_manager_v1, wlr_xdg_output_manager_v1_create,
     wlr_headless_add_output,
     wlr_data_device_manager_create,
     WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
@@ -94,6 +95,7 @@ cdef class WaylandCompositor(ListenerObject):
     cdef wlr_xdg_decoration_manager_v1 *decoration_manager
     cdef wlr_cursor *cursor
     cdef wlr_output_layout *output_layout
+    cdef wlr_xdg_output_manager_v1 *xdg_output_manager
     cdef char *seat_name
     cdef Display display
     cdef str socket_name
@@ -165,6 +167,9 @@ cdef class WaylandCompositor(ListenerObject):
         self.output_layout = wlr_output_layout_create(self.display_ptr)
         if not self.output_layout:
             raise RuntimeError("Failed to create output layout")
+        self.xdg_output_manager = wlr_xdg_output_manager_v1_create(self.display_ptr, self.output_layout)
+        if not self.xdg_output_manager:
+            raise RuntimeError("Failed to create xdg-output manager")
 
         self.decoration_manager = wlr_xdg_decoration_manager_v1_create(self.display_ptr)
         if not self.decoration_manager:
@@ -269,12 +274,14 @@ cdef class WaylandCompositor(ListenerObject):
 
         cdef Output out = Output()
         out.wlr_output = wlr_out
+        out.output_layout = self.output_layout
         out.add_main_listeners()
+        out.initialize()
 
         out.scene_output = wlr_scene_output_create(self.scene, wlr_out)
-        wlr_output_layout_add_auto(self.output_layout, wlr_out)
+        if not wlr_output_layout_add(self.output_layout, wlr_out, 0, 0):
+            log.warn("Warning: failed to add output %s to layout", out)
 
-        out.initialize()
         self.emit("new-output", out)
 
     def emit(self, event_name: str, *args) -> None:

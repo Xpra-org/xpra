@@ -544,6 +544,16 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             details = " " + outputs[0].get_description()
         return f"Wayland Display{details}"
 
+    def get_ui_info(self, proto, **kwargs) -> dict:
+        info = super().get_ui_info(proto, **kwargs)
+        outputs = {
+            i: output.get_info()
+            for i, output in enumerate(self.outputs)
+        }
+        if outputs:
+            info.setdefault("wayland", {})["outputs"] = outputs
+        return info
+
     def wayland_io_callback(self, fd: int, condition):
         log("wayland_io_callback%s", (fd, condition))
         if condition & GLib.IO_IN:

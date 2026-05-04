@@ -571,15 +571,29 @@ cdef extern from "wlr/types/wlr_output.h":
     void wlr_output_state_init(wlr_output_state *state) nogil
     int wlr_output_commit_state(wlr_output *output, const wlr_output_state *state) nogil
     void wlr_output_state_finish(wlr_output_state *state) nogil
+    void wlr_output_state_set_scale(wlr_output_state *state, float scale) nogil
 
 
 cdef extern from "wlr/types/wlr_output_layout.h":
+    ctypedef void wlr_output_layout_output
     cdef struct wlr_output_layout:
         pass
 
     wlr_output_layout* wlr_output_layout_create(wl_display *display)
     void wlr_output_layout_destroy(wlr_output_layout *layout)
-    void wlr_output_layout_add_auto(wlr_output_layout *layout, wlr_output *output) nogil
+    wlr_output_layout_output* wlr_output_layout_add(wlr_output_layout *layout, wlr_output *output,
+                                                    int lx, int ly) nogil
+    wlr_output_layout_output* wlr_output_layout_add_auto(wlr_output_layout *layout, wlr_output *output) nogil
+    void wlr_output_layout_get_box(wlr_output_layout *layout, wlr_output *reference,
+                                   wlr_box *dest_box) nogil
+
+
+cdef extern from "wlr/types/wlr_xdg_output_v1.h":
+    cdef struct wlr_xdg_output_manager_v1:
+        pass
+
+    wlr_xdg_output_manager_v1* wlr_xdg_output_manager_v1_create(wl_display *display,
+                                                                 wlr_output_layout *layout)
 
 
 cdef extern from "wlr/types/wlr_input_device.h":
