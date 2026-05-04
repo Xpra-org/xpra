@@ -27,6 +27,7 @@ from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("server", "wayland")
+focuslog = Logger("server", "wayland", "focus")
 
 GObject = gi_import("GObject")
 GLib = gi_import("GLib")
@@ -65,6 +66,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.connect("new-popup", self._new_popup)
         self.compositor.connect("new-output", self._new_output)
         self.compositor.connect("ssd", self._ssd)
+        self.compositor.connect("activate-request", self._activate_request)
         self.wayland_fd_source = 0
         os.environ.pop("DISPLAY", None)
         os.environ["GDK_BACKEND"] = "wayland"
@@ -321,14 +323,18 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         wid = self.toplevel_wid.get(toplevel_ptr, 0)
         log.info("ssd(%#x)=%s (wid=%i)", toplevel_ptr, ssd, wid)
 
-    def _metadata(self, wid: int, prop: str, value) -> None:
-        window = self.get_window(wid)
-        if not window:
-            log.warn("Warning: cannot set metadata %s=%r", prop, value)
-            log.warn(" window %i not found!", wid)
+    def _activate_request(self, surface_ptr: int, token: str) -> None:
+        focuslog("activate-request(%#x, %r)", surface_ptr, token)
+        from xpra.wayland.wayland_surface import surfaces
+        wsurface = surfaces.get(surface_ptr)
+        if not wsurface:
+            focuslog("activate-request: no surface for %#x", surface_ptr)
             return
-        assert prop in ("title", "role")
-        window._internal_set_property(prop, value)
+        wid = getattr(wsurface, "wid", 0)
+        if not wid or not self.get_window(wid):
+            focuslog("activate-request: no window for wid=%s", wid)
+            return
+        self._focus(None, wid, None)
 
     def _surface_image(self, wid: int, image: ImageWrapper) -> None:
         window = self.get_window(wid)

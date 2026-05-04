@@ -1291,3 +1291,24 @@ cdef extern from "wlr/types/wlr_data_control_v1.h":
     cdef struct wlr_data_control_manager_v1:
         pass
     wlr_data_control_manager_v1 *wlr_data_control_manager_v1_create(wl_display *display)
+
+
+cdef extern from "wlr/types/wlr_xdg_activation_v1.h":
+    cdef struct wlr_xdg_activation_token_v1:
+        pass
+
+    cdef struct wlr_xdg_activation_v1_events:
+        wl_signal destroy
+        wl_signal request_activate
+        wl_signal new_token
+
+    cdef struct wlr_xdg_activation_v1:
+        wlr_xdg_activation_v1_events events
+
+    cdef struct wlr_xdg_activation_v1_request_activate_event:
+        wlr_xdg_activation_v1 *activation
+        wlr_xdg_activation_token_v1 *token
+        wlr_surface *surface
+
+    wlr_xdg_activation_v1 *wlr_xdg_activation_v1_create(wl_display *display)
+    const char *wlr_xdg_activation_token_v1_get_name(wlr_xdg_activation_token_v1 *token)

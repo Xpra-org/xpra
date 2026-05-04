@@ -59,6 +59,8 @@ from xpra.wayland.wlroots cimport (
     wlr_headless_add_output,
     wlr_data_device_manager_create,
     wlr_data_control_manager_v1, wlr_data_control_manager_v1_create,
+    wlr_xdg_activation_v1, wlr_xdg_activation_v1_request_activate_event,
+    wlr_xdg_activation_v1_create, wlr_xdg_activation_token_v1_get_name,
     WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
 )
 from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
@@ -81,6 +83,7 @@ cdef enum:
     L_NEW_OUTPUT
     L_REQUEST_SET_PRIMARY_SELECTION
     L_SET_PRIMARY_SELECTION
+    L_REQUEST_ACTIVATE
     N_LISTENERS
 
 
@@ -103,6 +106,7 @@ cdef class WaylandCompositor(ListenerObject):
     cdef wlr_xdg_output_manager_v1 *xdg_output_manager
     cdef wlr_primary_selection_v1_device_manager *primary_selection_manager
     cdef wlr_data_control_manager_v1 *data_control_manager
+    cdef wlr_xdg_activation_v1 *activation_manager
     cdef char *seat_name
     cdef Display display
     cdef str socket_name
@@ -134,6 +138,8 @@ cdef class WaylandCompositor(ListenerObject):
             self.request_set_primary_selection(<wlr_seat_request_set_primary_selection_event*> data)
         elif slot == L_SET_PRIMARY_SELECTION:
             self.set_primary_selection()
+        elif slot == L_REQUEST_ACTIVATE:
+            self.request_activate(<wlr_xdg_activation_v1_request_activate_event*> data)
         else:
             log.error("Error: unexpected compositor event slot %i", slot)
 
@@ -187,6 +193,12 @@ cdef class WaylandCompositor(ListenerObject):
             log.warn("Warning: unable to create the decoration manager")
         else:
             self.add_listener(L_NEW_TOPLEVEL_DECORATION, &self.decoration_manager.events.new_toplevel_decoration)
+
+        self.activation_manager = wlr_xdg_activation_v1_create(self.display_ptr)
+        if not self.activation_manager:
+            log.warn("Warning: unable to create the xdg-activation manager")
+        else:
+            self.add_listener(L_REQUEST_ACTIVATE, &self.activation_manager.events.request_activate)
 
         # Create cursor
         self.cursor = wlr_cursor_create()
@@ -246,6 +258,16 @@ cdef class WaylandCompositor(ListenerObject):
             self.emit("primary-selection", 0)
             return
         self.emit("primary-selection", <uintptr_t> self.seat.primary_selection_source)
+
+    cdef void request_activate(self, wlr_xdg_activation_v1_request_activate_event *event) noexcept:
+        if event == NULL or event.surface == NULL:
+            return
+        cdef uintptr_t surface_ptr = <uintptr_t> event.surface
+        cdef const char *name = NULL
+        if event.token != NULL:
+            name = wlr_xdg_activation_token_v1_get_name(event.token)
+        token = name.decode("utf8") if name != NULL else ""
+        self.emit("activate-request", surface_ptr, token)
 
     def get_display_ptr(self) -> int:
         return <uintptr_t> self.display_ptr
