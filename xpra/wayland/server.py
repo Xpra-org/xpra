@@ -406,7 +406,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def _commit(self, wid: int, mapped: bool,
                 size: tuple[int, int],
                 rects: Sequence[tuple[int, int, int, int]],
-                subsurfaces: list[tuple[int, int, int]]) -> None:
+                subsurfaces: list[dict[str, int]]) -> None:
         log(f"commit wid {wid} {mapped=}, {size=}, {rects=}, {subsurfaces=}")
         window = self.get_window(wid)
         if not window:
