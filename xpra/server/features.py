@@ -28,6 +28,7 @@ pointer = True
 command = True
 gstreamer = True
 x11 = True
+wayland = True
 dbus = True
 encoding = True
 logging = True
@@ -82,7 +83,7 @@ def set_server_features(opts, mode: str) -> None:
         opts.start_new_commands = mode == "runner"
         features.command = mode == "runner"
         features.notification = features.webcam = features.clipboard = False
-        features.gstreamer = features.x11 = features.pulseaudio = features.audio = features.av_sync = False
+        features.gstreamer = features.x11 = features.wayland = features.pulseaudio = features.audio = features.av_sync = False
         features.file = features.printer = features.mdns = False
         features.keyboard = features.pointer = False
         features.logging = features.display = features.window = False
@@ -107,6 +108,7 @@ def set_server_features(opts, mode: str) -> None:
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
         features.x11 = x11 and impcheck("x11")
+        features.wayland = opts.backend == "wayland" and impcheck("wayland")
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
         features.pulseaudio = features.audio and b(opts.pulseaudio) and impcheck("audio.pulseaudio")
         features.av_sync = features.audio and b(opts.av_sync)
@@ -125,7 +127,7 @@ def set_server_features(opts, mode: str) -> None:
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0 or opts.idle_timeout > 0
-        features.gtk = mode not in ("desktop", "monitor", "seamless") or opts.backend.lower() == "gtk"
+        features.gtk = mode not in ("desktop", "monitor", "seamless") or opts.backend.lower() in ("gtk", "wayland")
         features.tray = features.gtk and b(opts.tray) and mode == "shadow"
         features.opengl = features.display and b(opts.opengl) and impcheck("opengl")
         features.bell = features.display and b(opts.bell)
@@ -173,6 +175,7 @@ def enforce_server_features() -> None:
         "pointer": "xpra.server.subsystem.pointer,xpra.server.source.pointer",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
+        "wayland": "xpra.wayland",
         "dbus": "xpra.dbus,xpra.server.dbus,xpra.server.source.dbus",
         "encoding": "xpra.server.subsystem.encoding,xpra.server.source.encodings",
         "logging": "xpra.server.subsystem.logging",
