@@ -5,14 +5,12 @@
 
 # cython: language_level=3
 
-import os
 from typing import Dict, List
 from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.util.str_fn import Ellipsizer
 
-from libc.stdlib cimport free
 from libc.stdint cimport uintptr_t
 
 from xpra.wayland.pointer import WaylandPointer
@@ -200,8 +198,6 @@ cdef class WaylandCompositor(ListenerObject):
             raise RuntimeError("Failed to start backend")
 
         log.info("compositor running on WAYLAND_DISPLAY=%s", self.socket_name)
-        os.environ["WAYLAND_DISPLAY"] = self.socket_name
-
         return self.socket_name
 
     def get_event_loop_fd(self) -> int:

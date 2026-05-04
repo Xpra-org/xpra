@@ -563,7 +563,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return GLib.SOURCE_CONTINUE
 
     def setup(self) -> None:
-        self.compositor.initialize()
+        socket_name = self.compositor.initialize()
+        os.environ["WAYLAND_DISPLAY"] = socket_name
         super().setup()
 
     def do_run(self) -> None:
