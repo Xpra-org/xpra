@@ -26,8 +26,10 @@ from xpra.wayland.wlroots cimport (
     wlr_scene_tree,
     wlr_surface,
     wlr_xdg_toplevel, wlr_xdg_surface,
+    wlr_xdg_toplevel_decoration_v1,
     wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event, wlr_xdg_toplevel_show_window_menu_event,
     wlr_xdg_toplevel_set_size, wlr_xdg_toplevel_set_activated,
+    wlr_xdg_toplevel_decoration_v1_set_mode, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
     wlr_xdg_surface_schedule_configure,
     WLR_XDG_SURFACE_ROLE_TOPLEVEL,
     WLR_EDGE_TOP, WLR_EDGE_BOTTOM, WLR_EDGE_LEFT, WLR_EDGE_RIGHT,
@@ -201,6 +203,21 @@ cdef class Surface(WaylandSurface):
         self.add_listener(L_SET_PARENT, &t.events.set_parent)
         self.add_listener(L_REQUEST_SHOW_WINDOW_MENU, &t.events.request_show_window_menu)
 
+    cdef void set_decoration(self, wlr_xdg_toplevel_decoration_v1 *decoration) noexcept:
+        self.decoration = decoration
+        self.apply_decoration_mode()
+
+    cdef void apply_decoration_mode(self) noexcept:
+        cdef wlr_xdg_toplevel_decoration_v1 *decoration = self.decoration
+        if decoration == NULL or self.wlr_xdg_surface == NULL:
+            return
+        if not self.wlr_xdg_surface.initialized:
+            log("deferring toplevel decoration mode until surface is initialized")
+            return
+        log("setting server-side decoration mode for surface %i", self.wid)
+        wlr_xdg_toplevel_decoration_v1_set_mode(decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+        self.decoration = NULL
+
     cdef void map(self) noexcept:
         toplevel = self.wlr_xdg_surface.toplevel
         geometry = &self.wlr_xdg_surface.geometry
@@ -318,9 +335,14 @@ cdef class Surface(WaylandSurface):
             self.register_toplevel_handlers()
             # Fallback: If configure wasn't sent yet (toplevel wasn't ready), send it now
             if xdg_surface.initialized and not xdg_surface.configured:
-                log("Surface initialized, sending first configure")
-                wlr_xdg_toplevel_set_size(xdg_surface.toplevel, 0, 0)
-                wlr_xdg_surface_schedule_configure(xdg_surface)
+                if self.decoration != NULL:
+                    self.apply_decoration_mode()
+                else:
+                    log("Surface initialized, sending first configure")
+                    wlr_xdg_toplevel_set_size(xdg_surface.toplevel, 0, 0)
+                    wlr_xdg_surface_schedule_configure(xdg_surface)
+            else:
+                self.apply_decoration_mode()
 
         size = (xdg_surface.geometry.width, xdg_surface.geometry.height)
         wlr_surf = xdg_surface.surface

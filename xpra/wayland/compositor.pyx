@@ -259,10 +259,18 @@ cdef class WaylandCompositor(ListenerObject):
         self.event_listeners.setdefault(event_name, []).append(handler)
 
     cdef void new_toplevel_decoration(self, wlr_xdg_toplevel_decoration_v1 *decoration) noexcept nogil:
+        if decoration == NULL or decoration.toplevel == NULL or decoration.toplevel.base == NULL:
+            return
         cdef wlr_xdg_toplevel *toplevel = decoration.toplevel
         cdef bint ssd = decoration.requested_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
-        wlr_xdg_toplevel_decoration_v1_set_mode(decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
         with gil:
+            surface = surfaces.get(<uintptr_t> toplevel.base.surface)
+            if surface is not None:
+                (<Surface> surface).set_decoration(decoration)
+            elif toplevel.base.initialized:
+                wlr_xdg_toplevel_decoration_v1_set_mode(decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+            else:
+                log.warn("Warning: cannot apply decoration mode before xdg surface is initialized")
             self.emit("ssd", <uintptr_t> toplevel, bool(ssd))
 
     cdef void request_set_primary_selection(self, wlr_seat_request_set_primary_selection_event *event) noexcept:

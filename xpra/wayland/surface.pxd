@@ -7,6 +7,7 @@
 from libc.stdint cimport uint32_t, int32_t
 from xpra.wayland.wlroots cimport (
     wlr_xdg_surface,
+    wlr_xdg_toplevel_decoration_v1,
     wlr_scene_tree,
     wl_signal,
     wl_listener,
@@ -22,11 +23,14 @@ cdef class Surface(WaylandSurface):
     cdef int height
     cdef str title
     cdef str app_id
+    cdef wlr_xdg_toplevel_decoration_v1 *decoration
     # `wlr_surface`, `wid`, `_callbacks` are inherited from WaylandSurface.
 
     cdef void add_main_listeners(self)
     cdef void dispatch(self, wl_listener *listener, void *data) noexcept
     cdef void register_toplevel_handlers(self) noexcept
+    cdef void set_decoration(self, wlr_xdg_toplevel_decoration_v1 *decoration) noexcept
+    cdef void apply_decoration_mode(self) noexcept
     cdef void map(self) noexcept
     cdef void unmap(self) noexcept
     cdef void toplevel_destroy(self) noexcept
