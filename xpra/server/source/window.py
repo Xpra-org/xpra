@@ -79,6 +79,9 @@ class WindowsConnection(StubClientConnection):
     def init_state(self) -> None:
         # WindowSource for each Window ID
         self.window_sources: dict[int, Any] = {}
+        # Per-subsurface WindowSource, kept separate so they're not treated
+        # as toplevels by bandwidth/cancel/info logic.
+        self.subsurface_sources: dict[int, Any] = {}
         self.window_frame_sizes: dict = {}
         self.window_bell = False
         self.window_enabled = True
@@ -96,6 +99,9 @@ class WindowsConnection(StubClientConnection):
         for window_source in self.all_window_sources():
             window_source.cleanup()
         self.window_sources = {}
+        for ws in tuple(self.subsurface_sources.values()):
+            ws.cleanup()
+        self.subsurface_sources = {}
 
     def all_window_sources(self) -> tuple:
         return tuple(self.window_sources.values())
@@ -201,9 +207,20 @@ class WindowsConnection(StubClientConnection):
             total_time = 0.0
             in_latencies, out_latencies = [], []
             winfo: dict[int, Any] = {}
+            # group subsurface sources by parent wid for the parent's "subsurfaces" entry
+            subs_by_parent: dict[int, list[dict[str, Any]]] = {}
+            for sub_wid, sub_ws in self.subsurface_sources.items():
+                entry: dict[str, Any] = {
+                    "wid": sub_wid,
+                    "offset": (sub_ws.offset_x, sub_ws.offset_y),
+                    "info": sub_ws.get_info(),
+                }
+                subs_by_parent.setdefault(sub_ws.parent_wid, []).append(entry)
             for wid, ws in list(self.window_sources.items()):
                 # per-window source stats:
                 winfo[wid] = ws.get_info()
+                if subs := subs_by_parent.get(wid):
+                    winfo[wid]["subsurfaces"] = subs
                 # collect stats for global averages:
                 for _, _, pixels, _, _, encoding_time in tuple(ws.statistics.encoding_stats):
                     total_pixels += pixels
@@ -492,6 +509,52 @@ class WindowsConnection(StubClientConnection):
         ws.init_encoders()
         self.emit("new-window-source", ws)
         return ws
+
+    def make_subsurface_source(self, wid: int, parent_wid: int,
+                               offset_x: int, offset_y: int, window):
+        if ws := self.subsurface_sources.get(wid):
+            ws.update_geometry(parent_wid, offset_x, offset_y)
+            return ws
+        batch_config = self.make_batch_config(wid, window)
+        ww, wh = window.get_dimensions()
+        mmap_write_area = getattr(self, "mmap_write_area", None)
+        if mmap_write_area and mmap_write_area.enabled:
+            bandwidth_limit = 0
+        else:
+            mmap_write_area = None
+            bandwidth_limit = getattr(self, "bandwidth_limit", 0)
+        av_sync = getattr(self, "av_sync", False)
+        av_sync_delay = getattr(self, "av_sync_delay", 0)
+        conn = getattr(self.protocol, "_conn", None)
+        socktype = getattr(conn, "socktype_wrapped", "")
+        jitter = getattr(conn, "jitter", 0)
+        datagram = 1350 if socktype == "quic" else 0
+        # pylint: disable=import-outside-toplevel
+        from xpra.server.window.subsurface_source import SubsurfaceWindowSource
+        ws = SubsurfaceWindowSource(
+            ww, wh,
+            self.record_congestion_event, self.encode_queue_size,
+            self.call_in_encode_thread, self.queue_packet,
+            self.statistics,
+            wid, window, batch_config, self.auto_refresh_delay,
+            av_sync, av_sync_delay,
+            self.video_helper,
+            self.cuda_device_context,
+            self.server_core_encodings, self.server_encodings,
+            self.encoding, self.encodings, self.core_encodings,
+            self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
+            self.rgb_formats,
+            self.default_encoding_options,
+            mmap_write_area, bandwidth_limit, jitter, datagram,
+            parent_wid=parent_wid, offset_x=offset_x, offset_y=offset_y,
+        )
+        self.subsurface_sources[wid] = ws
+        ws.init_encoders()
+        return ws
+
+    def cleanup_subsurface_source(self, wid: int) -> None:
+        if ws := self.subsurface_sources.pop(wid, None):
+            ws.cleanup()
 
     def damage(self, wid: int, window, x: int, y: int, w: int, h: int, options=None) -> None:
         """

@@ -2860,6 +2860,11 @@ class WindowSource(WindowIconSource):
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
+    def _draw_packet_target(self, x: int, y: int) -> tuple[int, int, int]:
+        # (wid, x, y) used in the outbound draw packet.
+        # Subclasses may shift to retarget into a parent window.
+        return self.wid, x, y
+
     def make_draw_packet(self, x: int, y: int, outw: int, outh: int,
                          coding: str, data, outstride: int, client_options, options) -> Packet:
         if not isinstance(coding, str):
@@ -2870,7 +2875,8 @@ class WindowSource(WindowIconSource):
         ws = options.get("window-size")
         if ws:
             client_options["window-size"] = ws
-        packet = Packet(WINDOW_DRAW, self.wid, x, y, outw, outh, coding, data,
+        pwid, px, py = self._draw_packet_target(x, y)
+        packet = Packet(WINDOW_DRAW, pwid, px, py, outw, outh, coding, data,
                         self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1

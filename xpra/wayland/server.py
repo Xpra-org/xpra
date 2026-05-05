@@ -20,6 +20,7 @@ from xpra.wayland.subsurface import Subsurface
 from xpra.wayland.popup import Popup
 from xpra.wayland.output import Output
 from xpra.wayland.models.window import Window
+from xpra.wayland.models.subsurface_window import SubsurfaceWindow
 from xpra.server.base import ServerBase
 from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_CREATE
@@ -45,7 +46,7 @@ PER_SURFACE_EVENTS: Final[Sequence[str]] = (
     "new-subsurface",
 )
 PER_SUBSURFACE_EVENTS: Final[Sequence[str]] = (
-    "commit", "destroy",
+    "commit", "destroy", "subsurface-image",
 )
 
 
@@ -60,6 +61,11 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.pointer_focus = 0
         self.toplevel_wid: dict[int, int] = {}
         self.pending_popups: dict[int, tuple[int, Popup]] = {}
+        # subsurface wid -> (parent_wid, offset_x, offset_y), updated on each parent commit
+        self.subsurface_info: dict[int, tuple[int, int, int]] = {}
+        # subsurface wid -> SubsurfaceWindow facade (kept alive across the
+        # subsurface's lifetime so each WindowSource has a stable model object)
+        self.subsurface_facades: dict[int, SubsurfaceWindow] = {}
         self.outputs: list[Output] = []
         self.compositor = WaylandCompositor()
         # Compositor-wide events; per-surface events are connected per-instance
@@ -406,13 +412,21 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def _commit(self, wid: int, mapped: bool,
                 size: tuple[int, int],
                 rects: Sequence[tuple[int, int, int, int]],
-                subsurfaces: list[dict[str, int]]) -> None:
+                subsurfaces: list[tuple[int, int, int]]) -> None:
         log(f"commit wid {wid} {mapped=}, {size=}, {rects=}, {subsurfaces=}")
         window = self.get_window(wid)
         if not window:
             return
         self.track_toplevel(self.get_surface(wid))
         self.update_size(window, size)
+        # Update subsurface positions; each entry is (sub_wid, sx, sy)
+        # relative to the toplevel.
+        for sub_wid, sx, sy in subsurfaces:
+            self.subsurface_info[sub_wid] = (wid, sx, sy)
+            for ss in self.window_sources():
+                sub_ws = ss.subsurface_sources.get(sub_wid)
+                if sub_ws:
+                    sub_ws.update_geometry(wid, sx, sy)
         options = {
             "damage": True,
         }
@@ -420,6 +434,32 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         for i, (x, y, w, h) in enumerate(rects):
             options["more"] = i != last
             self.refresh_window_area(window, x, y, w, h, options=options)
+
+    def _subsurface_image(self, wid: int, image: ImageWrapper) -> None:
+        info = self.subsurface_info.get(wid)
+        if not info:
+            log("subsurface-image: no parent info for wid=%i, dropping", wid)
+            return
+        parent_wid, ox, oy = info
+        if not self.get_window(parent_wid):
+            log("subsurface-image: no parent window for wid=%i (parent=%i)", wid, parent_wid)
+            return
+        w, h = image.get_width(), image.get_height()
+        facade = self.subsurface_facades.get(wid)
+        if facade is None:
+            facade = SubsurfaceWindow(w, h, has_alpha=True, depth=32)
+            self.subsurface_facades[wid] = facade
+        facade.set_image(image)
+        # Synthesize damage into each client's per-subsurface source.
+        # NOTE: future optimization — defer the buffer read so the encoder
+        # pulls pixels lazily from the wlr_surface buffer (or skip entirely
+        # if the source is suspended / the client has back-pressure). Today
+        # `Subsurface.commit()` (subsurface.pyx) eagerly captures the buffer
+        # which costs a memcpy per child commit even when nothing will be
+        # encoded.
+        for ss in self.window_sources():
+            sub_ws = ss.make_subsurface_source(wid, parent_wid, ox, oy, facade)
+            sub_ws.damage(0, 0, w, h, {})
 
     def update_size(self, window, size: tuple[int, int]) -> None:
         old_geom = window.get_property("geometry")
@@ -493,6 +533,12 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         # the dead surface from another thread.
         # encoder pipelines call window.acknowledge_changes() -> surface.frame_done())
         # or from a delayed event (focus packet for the dead wid).
+        # Drop any subsurface state for this wid (no-op if it was a toplevel).
+        if wid in self.subsurface_info:
+            self.subsurface_info.pop(wid, None)
+            self.subsurface_facades.pop(wid, None)
+            for ss in self.window_sources():
+                ss.cleanup_subsurface_source(wid)
         window = self.get_window(wid)
         if window is not None:
             surface = window.get_property("surface")

@@ -440,32 +440,37 @@ cdef list get_damage_areas(pixman_region32_t *damage):
     return rectangles
 
 
+cdef struct collect_ctx:
+    wlr_surface *root
+    void *result_list
+
+
 cdef void collect_surface_callback(wlr_surface *surface, int sx, int sy, void *user_data) noexcept:
-    """
-    Callback that gets called for each surface in the tree.
-    user_data is expected to be a Python list.
-    """
-    # Cast user_data back to a Python list
-    surfaces = <object> user_data
-    # Store the surface pointer as an integer (or you could wrap it)
-    surfaces.append({
-        "surface": <uintptr_t> surface,
-        "x": sx,
-        "y": sy
-    })
+    """Callback for each surface in the tree. Resolves the wl_surface
+    pointer to the registered WaylandSurface wid and skips the root
+    (which is the parent toplevel itself, not a child)."""
+    cdef collect_ctx *ctx = <collect_ctx*> user_data
+    if surface == ctx.root:
+        return
+    result = <object> ctx.result_list
+    sub = surfaces.get(<uintptr_t> surface)
+    if sub is None:
+        # subsurface not yet registered (shouldn't happen in steady state)
+        return
+    result.append((sub.wid, sx, sy))
 
 
 cdef list collect_surfaces(wlr_surface *surface):
     """
-    Collect all surfaces in the subsurface tree.
+    Collect all subsurfaces of the given root surface (excluding the root).
 
-    Args:
-        root_surface_ptr: Pointer to the root wlr_surface (as integer)
-
-    Returns:
-        List of dicts containing surface pointers and their positions
-        [{"surface": ptr, "x": int, "y": int}, ...]
+    Returns a list of `(wid, sx, sy)` tuples — `wid` is the registered
+    `WaylandSurface` wid for the subsurface, `(sx, sy)` is its offset
+    relative to `surface`.
     """
-    surfaces = []
-    wlr_surface_for_each_surface(surface, collect_surface_callback, <void*>surfaces)
-    return surfaces
+    result = []
+    cdef collect_ctx ctx
+    ctx.root = surface
+    ctx.result_list = <void*> result
+    wlr_surface_for_each_surface(surface, collect_surface_callback, <void*> &ctx)
+    return result
