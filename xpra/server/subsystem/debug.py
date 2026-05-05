@@ -32,6 +32,8 @@ class DebugServer(StubServerMixin):
             return getattr(self, "_closing", False)
 
         init_leak_detection(is_closed)
+        from xpra.util.meminfo import maybe_start_memory_debug
+        maybe_start_memory_debug()
 
     def get_info(self, _source=None) -> dict[str, Any]:
         info = {}

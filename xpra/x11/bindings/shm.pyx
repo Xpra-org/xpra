@@ -29,6 +29,18 @@ log = Logger("x11", "bindings", "ximage", "xshm")
 xshmdebug = Logger("x11", "bindings", "ximage", "xshm", "verbose")
 
 
+cdef size_t _shm_attached_bytes = 0
+cdef unsigned int _shm_attached_segments = 0
+
+
+def get_shm_info() -> dict:
+    """Total XShm SysV segments currently attached by this process."""
+    return {
+        "segments": _shm_attached_segments,
+        "bytes": _shm_attached_bytes,
+    }
+
+
 cdef extern from "sys/ipc.h":
     ctypedef struct key_t:
         pass
@@ -99,6 +111,7 @@ cdef class XShmWrapper:
     cdef unsigned int depth
     cdef XShmSegmentInfo shminfo
     cdef XImage *image
+    cdef size_t shm_bytes
     cdef unsigned int ref_count
     cdef Bool got_image
     cdef Bool closed
@@ -162,7 +175,14 @@ cdef class XShmWrapper:
             #we may try again with this window, or any other window:
             #(as this really shouldn't happen at all)
             return False, True, False
+        global _shm_attached_bytes, _shm_attached_segments
+        self.shm_bytes = size
+        _shm_attached_bytes += size
+        _shm_attached_segments += 1
         return True, True, False
+
+    def get_shm_bytes(self) -> int:
+        return self.shm_bytes
 
     def get_size(self) -> Tuple[int, int]:
         return self.width, self.height
@@ -283,6 +303,11 @@ cdef class XShmWrapper:
             shmdt(self.shminfo.shmaddr)
             self.shminfo.shmaddr = <char *> -1
             self.shminfo.shmid = -1
+            global _shm_attached_bytes, _shm_attached_segments
+            if self.shm_bytes:
+                _shm_attached_bytes -= self.shm_bytes
+                _shm_attached_segments -= 1
+                self.shm_bytes = 0
         if has_shm or has_image:
             call_context_check("XShmWrapper.free")
 

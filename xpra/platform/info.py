@@ -44,11 +44,32 @@ def get_posix_sys_info() -> dict[str, dict[str, dict[str, int]]]:
     }
 
 
+def get_proc_sys_info() -> dict[str, dict[str, dict[str, int]]]:
+    """`/proc`-derived memory accounting that's safe to expose at any
+    `FULL_INFO` level — values are per-user readable."""
+    from xpra.util.meminfo import get_mem_info
+    return {
+        "memory": {
+            "server": get_mem_info(),
+        },
+    }
+
+
 def get_sys_info() -> dict:
+    if os.name != "posix":
+        return {}  # pragma: no cover
     from xpra.net.common import FULL_INFO
-    if os.name == "posix" and FULL_INFO > 1:
-        return get_posix_sys_info()
-    return {}  # pragma: no cover
+    info: dict = get_proc_sys_info()
+    if FULL_INFO > 1:
+        # merge `getrusage` block into the same `memory.server.*` namespace
+        rusage = get_posix_sys_info().get("memory", {})
+        server = info.setdefault("memory", {}).setdefault("server", {})
+        if "server" in rusage:
+            server["rusage"] = rusage["server"]
+        for k in ("children", "total"):
+            if k in rusage:
+                info["memory"][k] = {"rusage": rusage[k]}
+    return info
 
 
 def get_version_info() -> dict:

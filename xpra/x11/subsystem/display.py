@@ -290,8 +290,18 @@ class X11DisplayManager(DisplayManager):
             dinfo["xshm"] = CompositeHelper.XShmEnabled
         except (ImportError, ValueError) as e:
             log("no composite: %s", e)
+        try:
+            from xpra.x11.bindings.shm import get_shm_info
+            dinfo["xshm-attached"] = get_shm_info()
+        except ImportError:
+            pass
         if self.display_pid:
             dinfo["pid"] = self.display_pid
+            try:
+                from xpra.util.meminfo import get_mem_info
+                dinfo["memory"] = get_mem_info(self.display_pid)
+            except Exception as e:
+                log("failed to collect vfb memory info: %s", e)
         return info
 
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
