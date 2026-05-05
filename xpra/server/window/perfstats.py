@@ -184,6 +184,8 @@ class WindowPerformanceStatistics:
                 "events": self.damage_events_count,
                 "packets_sent": self.packet_count,
                 "target-latency": int(1000 * self.target_latency),
+                "ack-pending": len(self.damage_ack_pending),
+                "encoding-pending": len(self.encoding_pending),
             }
         }
         # encoding stats:
