@@ -466,6 +466,18 @@ class CoreX11WindowModel(WindowModelStub):
         c = self._composite
         return bool(c) and c.has_xshm()
 
+    def get_xshm_bytes(self) -> int:
+        c = self._composite
+        if not c:
+            return 0
+        sh = getattr(c, "_xshm_handle", None)
+        if sh is None:
+            return 0
+        try:
+            return int(sh.get_shm_bytes())
+        except AttributeError:
+            return 0
+
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper | None:
         c = self._composite
         if not c:

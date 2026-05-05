@@ -627,6 +627,14 @@ class WindowSource(WindowIconSource):
         })
         if ma := self.mapped_at:
             info["mapped-at"] = ma
+        get_xshm_bytes = getattr(self.window, "get_xshm_bytes", None)
+        if get_xshm_bytes:
+            try:
+                xshm_bytes = int(get_xshm_bytes())
+            except (TypeError, ValueError):
+                xshm_bytes = 0
+            if xshm_bytes:
+                info["xshm"] = {"bytes": xshm_bytes}
         if crs := self.client_render_size:
             info["render-size"] = crs
         info["damage.fps"] = int(self.get_damage_fps())
