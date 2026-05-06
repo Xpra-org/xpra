@@ -5,7 +5,6 @@
 
 import os
 import sys
-import socket
 import struct
 import threading
 from typing import Any, TypeAlias
@@ -49,8 +48,7 @@ PacketElementTypes: tuple[type, ...] = (
     Compressible, Compressed, LargeStructure,
 )
 PacketElement: TypeAlias = (
-    tuple | list | dict | int | bool | str | bytes | memoryview |
-    Compressible | Compressed | LargeStructure
+    tuple | list | dict | int | bool | str | bytes | memoryview | Compressible | Compressed | LargeStructure
 )
 
 
@@ -229,6 +227,7 @@ may_log_packet: Callable = noop
 def get_peercred(sock) -> tuple[int, int, int] | None:
     log = get_logger()
     if LINUX:
+        import socket
         SO_PEERCRED = 17
         try:
             creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize(b'3i'))

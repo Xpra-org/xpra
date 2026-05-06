@@ -8,8 +8,6 @@ import os
 import re
 import stat
 import sys
-from subprocess import PIPE, Popen
-from tempfile import NamedTemporaryFile
 from typing import Any
 from collections.abc import Sequence
 
@@ -157,6 +155,7 @@ class CaptureStdErr:
     def __enter__(self):
         noerr(sys.stderr.flush)  # <--- important when redirecting to files
         self.savedstderr = os.dup(2)
+        from tempfile import NamedTemporaryFile
         self.tmp = NamedTemporaryFile(prefix="stderr")
         fd = self.tmp.fileno()
         os.dup2(fd, 2)
@@ -347,6 +346,7 @@ def which(command: str) -> str:
 
 
 def get_status_output(*args, **kwargs) -> tuple[int, Any, Any]:
+    from subprocess import Popen, PIPE
     kwargs |= {
         "stdout": PIPE,
         "stderr": PIPE,

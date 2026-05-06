@@ -6,7 +6,6 @@
 
 import sys
 import os
-import socket
 import platform
 from typing import Any, Final
 
@@ -157,6 +156,7 @@ def get_host_info(full_info: int = 1) -> dict[str, Any]:
         }
     if full_info > 0:
         try:
+            import socket
             hostname = socket.gethostname()
             if hostname:
                 info["hostname"] = hostname

@@ -6,8 +6,6 @@
 
 import sys
 import os
-import glob
-import shlex
 from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
@@ -214,6 +212,7 @@ def get_weston_Xwayland_command(depth=24, dpi=96, fps=0) -> list[str]:
 
 
 def xvfb_command(cmd: str, depth=24, dpi=0, fps=0) -> list[str]:
+    import shlex
     parts = shlex.split(cmd)
     if len(parts) > 1:
         return parts
@@ -509,6 +508,7 @@ def read_xpra_conf(conf_dir: str) -> dict[str, Any]:
     if not os.path.exists(cdir) or not os.path.isdir(cdir):
         debug(f"invalid config directory: {cdir!r}")
         return {}
+    import glob
     files = glob.glob(f"{cdir}/{DEFAULT_XPRA_CONF_FILENAME}") + glob.glob(f"{cdir}/conf.d/*.conf")
     debug(f"read_xpra_conf({conf_dir}) found conf files: {files}")
     d = {}
@@ -1649,6 +1649,7 @@ def fixup_clipboard(options) -> None:
 def abs_paths(options) -> None:
     ew = options.exec_wrapper
     if ew:
+        import shlex
         ewp = shlex.split(ew)
         if ewp and not os.path.isabs(ewp[0]):
             abscmd = which(ewp[0])

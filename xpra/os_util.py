@@ -6,7 +6,6 @@
 
 import os
 import sys
-import uuid
 import struct
 from types import ModuleType
 from typing import NoReturn
@@ -160,10 +159,12 @@ def find_group(uid: int) -> int:
 
 
 def get_hex_uuid() -> str:
+    import uuid
     return uuid.uuid4().hex
 
 
 def get_int_uuid() -> int:
+    import uuid
     return uuid.uuid4().int
 
 
@@ -182,6 +183,7 @@ def get_machine_id() -> str:
                 v = b.decode("latin1")
                 break
     elif WIN32:
+        import uuid
         v = str(uuid.getnode())
     return v.strip("\n\r")
 

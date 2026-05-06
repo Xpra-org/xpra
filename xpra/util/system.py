@@ -8,10 +8,11 @@ import os
 import re
 import sys
 import signal
-from typing import Any, Sequence
-from subprocess import Popen, PIPE
+from typing import Any, Sequence, TYPE_CHECKING
 
 from xpra.os_util import POSIX, LINUX, OSX, WIN32
+if TYPE_CHECKING:
+    from subprocess import Popen
 from xpra.util.env import _saved_env, envbool
 from xpra.util.io import load_binary_file, get_util_logger
 
@@ -32,7 +33,7 @@ def set_proc_title(title: str) -> None:
         get_util_logger().debug("setproctitle is not installed: %s", e)
 
 
-def stop_proc(proc: Popen, what="subprocess") -> None:
+def stop_proc(proc: "Popen", what="subprocess") -> None:
     if not proc:
         return
     r = proc.poll()
@@ -223,6 +224,7 @@ def get_linux_distribution() -> tuple[str, str, str]:
         # so we use our own code first:
         cmd = ["lsb_release", "-a"]
         try:
+            from subprocess import Popen, PIPE
             p = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
             out = p.communicate()[0]
             assert p.returncode == 0 and out
