@@ -3,13 +3,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from typing import Final
 from collections.abc import Sequence
 from xpra.net.compression import Compressed
 
 from xpra.common import noop
+from xpra.util.env import envbool
 
 GET_SOURCES_BY_TYPE: Final[str] = "get_sources_by_type"
+
+SSH_AGENT_DISPATCH: bool = envbool("XPRA_SSH_AGENT_DISPATCH", os.name == "posix")
 
 
 def get_sources_by_type(server, subsystem_type=object, exclude=None) -> Sequence:

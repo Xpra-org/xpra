@@ -6,11 +6,10 @@
 
 import os
 
-from xpra.server.common import get_sources_by_type
+from xpra.server.common import get_sources_by_type, SSH_AGENT_DISPATCH
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict
 from xpra.util.parsing import FALSE_OPTIONS
-from xpra.server.ssh import SSH_AGENT_DISPATCH
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.net.ssh.agent import setup_ssh_auth_sock, set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket
 from xpra.log import Logger
