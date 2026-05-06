@@ -81,19 +81,36 @@ already log warnings when they grow — but they're now also surfaced in
 
 ## Baseline numbers
 
-> *Numbers below are placeholders — to be filled in once the Phase A
-> measurement run is complete on a known reference machine. They are
-> indicative; absolute values vary substantially with distribution,
-> kernel, GLIBC malloc tuning, and codec set installed.*
-
-Test rig: X11 seamless server, packaged `xorg.conf`, GTK3 Python
-client on the same host, single `xterm` open, idle 30 s.
+Test rig: X11 seamless server (Fedora 43, Python 3.14, glibc malloc),
+packaged `xorg.conf`, GTK3 Python client on the same host, single
+`xterm` open, idle 30 s after connect, with
+`XPRA_XDG=0 XPRA_IBUS=0` set on the server (see *Environment
+variables* below). Absolute values vary substantially with
+distribution, kernel, GLIBC malloc tuning, and the codec set
+installed; treat these as indicative, not absolute.
 
 | Process | RSS | VSZ | PSS |
 | --- | --- | --- | --- |
-| `Xorg` (Xdummy) | _TBD_ | _TBD_ | _TBD_ |
-| `xpra` server | _TBD_ | _TBD_ | _TBD_ |
-| Python GTK3 client | _TBD_ | _TBD_ | _TBD_ |
+| `Xorg` (Xdummy) | 107 MB | 998 MB | 79 MB |
+| `xpra` server (idle, client connected) | **104 MB** | 2.3 GB | **78 MB** |
+| `xpra` server (after `malloc_trim`) | 97 MB | 2.3 GB | — |
+| Python GTK3 client | 220 MB | 4.2 GB | 138 MB |
+| `xterm` | 13 MB | 241 MB | 7 MB |
+| `pulseaudio` | 4 MB | 227 MB | <1 MB |
+| `dbus` | 3 MB | 8 MB | <1 MB |
+| `ibus-daemon` (only if `XPRA_IBUS!=0`) | 14 MB | 678 MB | 6 MB |
+
+Notes:
+- `xpra` server `rss_anon` is 60 MB (heap), `rss_file` 41 MB
+  (shared library code mostly attributable elsewhere — `pss` is
+  78 MB).
+- The 220 MB client RSS is dominated by GTK + Pango + Cairo + Mesa
+  shared libraries; `pss` of 138 MB is the more honest figure.
+- If you compare `xpra` + `Xorg` `rss` naively (211 MB) you over-count
+  XShm — see [XShm accounting](#xshm-accounting).
+- Without `XPRA_XDG=0 XPRA_IBUS=0` the server-side `rss` rises by
+  ~6 MB (freedesktop menu cache + IBus keymap), with no functional
+  impact on a basic `xterm` session.
 
 ## Tunables
 
@@ -138,6 +155,21 @@ the encoding set skips imports.
 
 `XPRA_TARGET_LATENCY_TOLERANCE` and similar performance tuning knobs
 do **not** affect RSS — don't chase phantom savings there.
+
+### Environment variables
+
+A few server-side env vars trim memory before any subsystem
+loads — useful when you want a minimal session without changing
+config files:
+
+| Variable | Effect | ΔRSS server (measured) |
+| --- | --- | --- |
+| `XPRA_XDG=0` | Skips freedesktop menu generation: no `xdg.IniFile` / `xdg.IconTheme` parsing, no per-app icon byte cache (~270 icons × ~10 KB held resident on default-config systems). | ~5 MB |
+| `XPRA_IBUS=0` | Skips IBus keyboard mapping import + the `ibus-daemon` child process (which itself takes ~14 MB RSS) | ~1 MB server + ~14 MB child |
+
+Both are safe to set when the client doesn't need the application
+menu and isn't using complex IME (CJK) input. They were used to
+collect the [baseline numbers](#baseline-numbers) above.
 
 ### VirtualGL / `vglrun`
 
