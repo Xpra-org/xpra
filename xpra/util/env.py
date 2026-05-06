@@ -8,7 +8,6 @@ import os
 import shlex
 import sys
 import warnings
-import traceback
 from contextlib import AbstractContextManager, nullcontext
 from collections.abc import Sequence, Callable
 from subprocess import Popen, PIPE
@@ -329,6 +328,7 @@ class NumpyImportContext(AbstractContextManager):
     def __init__(self, info: str, blocking=False):
         self.blocking = blocking
         self.info = info
+        import traceback
         self.backtrace: list[str] = traceback.format_stack()
 
     def __enter__(self):
@@ -345,6 +345,7 @@ class NumpyImportContext(AbstractContextManager):
             log.warn("numpy lock was already acquired from:")
             log_backtrace(self.backtrace)
             log.warn("failed to acquire it again from:")
+            import traceback
             log_backtrace(traceback.format_stack())
             raise RuntimeError(f"the numpy import lock is already held by {self.info!r}!")
         os.environ["XPRA_NUMPY_IMPORT"] = "1"
