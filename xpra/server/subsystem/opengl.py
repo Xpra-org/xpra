@@ -8,7 +8,6 @@ from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
-from xpra.util.env import OSEnvContext
 from xpra.util.thread import start_thread
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
@@ -80,30 +79,21 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
     return props
 
 
-def load_opengl() -> dict[str, Any]:
-    with OSEnvContext(XPRA_VERIFY_MAIN_THREAD="0"):
-        try:
-            # import OpenGL directly
-            import OpenGL
-            assert OpenGL
-            log("found pyopengl version %s", OpenGL.__version__)
-            # this may trigger an `AttributeError` if libGLX / libOpenGL are not installed:
-            from OpenGL import GL
-            assert GL
-            log("loaded `GL` bindings: %s", GL)
-        except (ImportError, AttributeError) as e:
-            return {
-                'error': f'OpenGL is not available: {e}',
-                'success': False,
-            }
-        try:
-            from xpra.opengl import backing
-            assert backing
-        except ImportError:
-            return {
-                'error': '`xpra.opengl` is not available',
-                'success': False,
-            }
+def probe_opengl_module() -> dict[str, Any]:
+    """Check that `OpenGL` and `xpra.opengl` are installable, *without*
+    importing them. Importing PyOpenGL would drag in the IntConstant
+    tables, baseplatform.py and the wrapper machinery (~6 MB and
+    thousands of objects) — none of which the parent server process
+    needs, since the actual probe runs in an `xpra opengl` subprocess.
+    """
+    from importlib.util import find_spec
+    try:
+        if find_spec("OpenGL") is None:
+            return {"error": "OpenGL is not available: PyOpenGL not installed", "success": False}
+        if find_spec("xpra.opengl") is None:
+            return {"error": "`xpra.opengl` is not available", "success": False}
+    except (ImportError, ValueError) as e:
+        return {"error": f"OpenGL is not available: {e}", "success": False}
     return {}
 
 
@@ -129,9 +119,12 @@ class OpenGLInfo(StubServerMixin):
         start_thread(query, "query-opengl", daemon=True)
 
     def query_opengl(self) -> dict[str, Any]:
-        err = load_opengl()
-        if err:
-            return err
+        # PyOpenGL is intentionally NOT imported here: it's only needed
+        # to probe the server's display, and the probe runs in a
+        # subprocess (`xpra opengl --opengl=force`). Importing it in the
+        # parent loads the IntConstant tables, baseplatform.py and the
+        # GL wrapper machinery (~6 MB of allocations + thousands of
+        # objects) that the long-running server never uses.
         from xpra.platform.paths import get_xpra_command
         cmd = self.get_full_child_command(get_xpra_command() + ["opengl", "--opengl=force"])
         return run_opengl_probe(cmd, self.get_child_env(), self.display)
