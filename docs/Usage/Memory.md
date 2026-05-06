@@ -123,21 +123,27 @@ Most of these default to `yes` (or `auto`). Disabling a subsystem
 removes its mixin from the assembled server class
 (`xpra/server/features.py`, `xpra/server/factory.py`).
 
-| Option | Default | ΔRSS server | ΔRSS client | Notes |
-| --- | --- | --- | --- | --- |
-| `--audio=no` | yes | _TBD_ | _TBD_ | Skips GStreamer initialization |
-| `--gstreamer=no` | yes | _TBD_ | — | Implies `--audio=no` and disables webcam GStreamer pipelines |
-| `--clipboard=no` | yes | _TBD_ | _TBD_ | |
-| `--notifications=no` | yes | _TBD_ | — | |
-| `--bell=no` | yes | _TBD_ | — | |
-| `--cursors=no` | yes | _TBD_ | — | |
-| `--dbus=no` | yes (POSIX) | _TBD_ | — | Also disables power, idle-timeout, suspend glue |
-| `--mdns=no` | yes (POSIX) | _TBD_ | — | |
-| `--http=no` | yes | _TBD_ | — | |
-| `--webcam=no` | yes | _TBD_ | — | |
-| `--printing=no` | yes | _TBD_ | — | |
-| `--file-transfer=no` | yes | _TBD_ | — | |
-| `--readonly` | no | _TBD_ | — | Disables keyboard *and* pointer subsystems |
+Measured against an idle no-client baseline of **96 MB** server RSS
+(with `XPRA_XDG=0 XPRA_IBUS=0`). Each flag is toggled in isolation;
+deltas are not strictly additive (some subsystems share imports). One
+sweep, ±0.5 MB noise floor on this host.
+
+| Option                              | Default     | ΔRSS server | Notes                                                                |
+|-------------------------------------|-------------|-------------|----------------------------------------------------------------------|
+| `--audio=no`                        | yes         | −2 MB       | Skips GStreamer audio probe                                          |
+| `--gstreamer=no`                    | yes         | −2 MB       | Implies `--audio=no`; also disables GStreamer video codecs           |
+| `--clipboard=no`                    | yes         | ~0 MB       | Noise — the clipboard server itself is tiny at idle                  |
+| `--notifications=no`                | yes         | −1 MB       |                                                                      |
+| `--bell=no`                         | yes         | −4 MB       | Skips XFixes bell listener + dbus glue                               |
+| `--cursors=no`                      | yes         | −1 MB       |                                                                      |
+| `--dbus-control=no --dbus-launch=`  | yes (POSIX) | −6 MB       | Disables D-Bus control bus and the `--dbus-launch` daemon spawn      |
+| `--mdns=no`                         | yes (POSIX) | −4 MB       | Skips Avahi/zeroconf service registration                            |
+| `--http=no`                         | yes         | −6 MB       | Skips the embedded HTTP server (websocket upgrade path)              |
+| `--webcam=no`                       | yes         | −6 MB       |                                                                      |
+| `--printing=no`                     | yes         | −1 MB       |                                                                      |
+| `--file-transfer=no`                | yes         | ~0 MB       | Noise                                                                |
+| `--readonly`                        | no          | −7 MB       | Disables keyboard *and* pointer subsystems (skips IBus probing etc.) |
+| **all of the above combined**       | —           | **−28 MB**  | "minimal-stack" — about a 30 % cut on top of the env-var savings     |
 
 ### Encodings and codecs
 
@@ -145,13 +151,15 @@ Codecs eagerly imported by `xpra/server/subsystem/encoding.py` are the
 biggest *constant-cost* memory contributors after GStreamer. Restricting
 the encoding set skips imports.
 
-| Option | Default | ΔRSS server | Notes |
-| --- | --- | --- | --- |
-| `--encoding=rgb` | auto | _TBD_ | Forces lossless; skips JPEG/WebP/AVIF and video codecs |
-| `--encodings=rgb,png` | all | _TBD_ | Same as above but allows PNG fallbacks |
-| `--video=no` | yes | _TBD_ | Disables the video pipeline; skips x264/vpx/NVENC |
-| `--video-encoders=none` | all | _TBD_ | Finer-grained version of the above |
-| `--csc-modules=none` | all | _TBD_ | Skips colorspace conversion modules |
+Same baseline conditions as the subsystems table above.
+
+| Option                  | Default | ΔRSS server | Notes                                                                                  |
+|-------------------------|---------|-------------|----------------------------------------------------------------------------------------|
+| `--encoding=rgb`        | auto    | −2 MB       | Forces lossless; runtime selection only. The codec modules are still loaded.           |
+| `--encodings=rgb,png`   | all     | −3 MB       | Restricts the encoder set; saves a little vs. defaults.                                |
+| `--video=no`            | yes     | **−17 MB**  | Disables the video pipeline; skips x264/vpx/NVENC/AV1 imports entirely. Biggest win.   |
+| `--video-encoders=none` | all     | −16 MB     | Finer-grained version of `--video=no` — almost identical effect.                       |
+| `--csc-modules=none`    | all     | −6 MB      | Skips libyuv / swscale colorspace conversion modules. Useful with `--video-encoders=`. |
 
 `XPRA_TARGET_LATENCY_TOLERANCE` and similar performance tuning knobs
 do **not** affect RSS — don't chase phantom savings there.
@@ -162,10 +170,10 @@ A few server-side env vars trim memory before any subsystem
 loads — useful when you want a minimal session without changing
 config files:
 
-| Variable | Effect | ΔRSS server (measured) |
-| --- | --- | --- |
-| `XPRA_XDG=0` | Skips freedesktop menu generation: no `xdg.IniFile` / `xdg.IconTheme` parsing, no per-app icon byte cache (~270 icons × ~10 KB held resident on default-config systems). | ~5 MB |
-| `XPRA_IBUS=0` | Skips IBus keyboard mapping import + the `ibus-daemon` child process (which itself takes ~14 MB RSS) | ~1 MB server + ~14 MB child |
+| Variable      | Effect                                                                                                                                                                   | ΔRSS server (measured)      |
+|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|
+| `XPRA_XDG=0`  | Skips freedesktop menu generation: no `xdg.IniFile` / `xdg.IconTheme` parsing, no per-app icon byte cache (~270 icons × ~10 KB held resident on default-config systems). | ~5 MB                       |
+| `XPRA_IBUS=0` | Skips IBus keyboard mapping import + the `ibus-daemon` child process (which itself takes ~14 MB RSS)                                                                     | ~1 MB server + ~14 MB child |
 
 Both are safe to set when the client doesn't need the application
 menu and isn't using complex IME (CJK) input. They were used to
@@ -188,9 +196,9 @@ xpra recognizes `vglrun` as a command wrapper
 (`xpra/server/subsystem/command.py:97`) so child-pid bookkeeping still
 works.
 
-| Test | ΔRSS Xorg | ΔRSS client app | Notes |
-| --- | --- | --- | --- |
-| `glxgears` (software GL) vs. `vglrun glxgears` | _TBD_ | _TBD_ | VirtualGL adds its own per-app overhead but moves the bulk off Xdummy |
+| Test                                           | ΔRSS Xorg | ΔRSS client app | Notes                                                                 |
+|------------------------------------------------|-----------|-----------------|-----------------------------------------------------------------------|
+| `glxgears` (software GL) vs. `vglrun glxgears` | _TBD_     | _TBD_           | VirtualGL adds its own per-app overhead but moves the bulk off Xdummy |
 
 See [OpenGL](OpenGL.md) for VirtualGL setup and caveats.
 
