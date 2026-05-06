@@ -119,12 +119,14 @@ class OpenGLInfo(StubServerMixin):
         start_thread(query, "query-opengl", daemon=True)
 
     def query_opengl(self) -> dict[str, Any]:
-        # PyOpenGL is intentionally NOT imported here: it's only needed
-        # to probe the server's display, and the probe runs in a
-        # subprocess (`xpra opengl --opengl=force`). Importing it in the
-        # parent loads the IntConstant tables, baseplatform.py and the
-        # GL wrapper machinery (~6 MB of allocations + thousands of
-        # objects) that the long-running server never uses.
+        # `probe_opengl_module` only checks that the modules are
+        # installable; the actual import + display probe runs in an
+        # `xpra opengl --opengl=force` subprocess so the parent server
+        # never pays the ~6 MB / thousands-of-objects PyOpenGL import
+        # cost.
+        err = probe_opengl_module()
+        if err:
+            return err
         from xpra.platform.paths import get_xpra_command
         cmd = self.get_full_child_command(get_xpra_command() + ["opengl", "--opengl=force"])
         return run_opengl_probe(cmd, self.get_child_env(), self.display)
