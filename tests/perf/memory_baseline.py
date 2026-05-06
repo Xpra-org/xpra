@@ -98,6 +98,45 @@ def find_vfb_pid(info: dict[str, Any]) -> int:
     return 0
 
 
+def find_child_pids(info: dict[str, Any]) -> dict[str, int]:
+    """Return {label: pid} for every `child.N.pid` / `command.N.pid` and
+    standalone `<service>.pid` (dbus, ibus, ...) reported by the server.
+    Labels are derived from the matching `<prefix>.command` (basename
+    of argv[0]) when available, otherwise from the key prefix."""
+    out: dict[str, int] = {}
+    seen: set[int] = set()
+    standalone = {"dbus", "ibus", "pulseaudio"}
+    for key, value in info.items():
+        if not key.endswith(".pid"):
+            continue
+        prefix = key[:-len(".pid")]
+        is_child = key.startswith("child.") or key.startswith("command.")
+        is_standalone = "." not in prefix and prefix in standalone
+        if not (is_child or is_standalone):
+            continue
+        try:
+            pid = int(value)
+        except ValueError:
+            continue
+        if pid <= 0 or pid in seen:
+            continue
+        seen.add(pid)
+        cmd = info.get(f"{prefix}.command", "")
+        label = prefix
+        if cmd:
+            # `command` values are tuple-ish strings: '/usr/bin/foo', '...'
+            first = cmd.split(",", 1)[0].strip().strip("'\"")
+            if first:
+                base = first.rsplit("/", 1)[-1]
+                if base.startswith("python") and "," in cmd:
+                    second = cmd.split(",", 2)[1].strip().strip(" '\"")
+                    if second:
+                        base = second.rsplit("/", 1)[-1]
+                label = f"{prefix}:{base}"
+        out[label] = pid
+    return out
+
+
 def print_row(label: str, mem: dict[str, int]) -> None:
     cells = [label.ljust(20)]
     for col in COLUMNS:
@@ -122,6 +161,8 @@ def main() -> int:
     p.add_argument("--label", default="", help="annotate the run (printed first)")
     p.add_argument("--json", action="store_true",
                    help="emit raw JSON instead of the table")
+    p.add_argument("--no-children", action="store_true",
+                   help="skip server-spawned child processes (xterm, dbus, ibus, ...)")
     args = p.parse_args()
 
     info = get_xpra_info(args.display)
@@ -129,12 +170,25 @@ def main() -> int:
     vfb_pid = find_vfb_pid(info)
 
     samples: dict[str, dict[str, int]] = {}
+    seen: set[int] = set()
     if server_pid:
         samples["xpra-server"] = get_mem_info(server_pid)["proc"]
+        seen.add(server_pid)
     if vfb_pid:
         samples["xorg-vfb"] = get_mem_info(vfb_pid)["proc"]
+        seen.add(vfb_pid)
     if args.client_pid:
         samples["python-client"] = get_mem_info(args.client_pid)["proc"]
+        seen.add(args.client_pid)
+    if not args.no_children:
+        for label, pid in find_child_pids(info).items():
+            if pid in seen:
+                continue
+            seen.add(pid)
+            try:
+                samples[label] = get_mem_info(pid)["proc"]
+            except Exception:
+                continue
 
     if args.json:
         out = {
