@@ -188,6 +188,25 @@ that ~8 MB will appear in **both** Xorg's and xpra's `RSS`. A naive
 xpra info :100 | grep -E '\.(pss|sysv_shm\.bytes)$'
 ```
 
+## X11 server (`Xorg` / Xdummy) memory behaviour
+
+- **The vfb's RSS stays high even after a client application
+  terminates.** When an X11 client (Firefox, a game, …) exits, its
+  pixmaps are freed back to the dummy driver's *internal* pool — not
+  to the kernel. Subsequent clients reuse that pool, but the
+  process's RSS does not shrink until you restart the X server.
+  Plan `VideoRam` for *peak* observed pixmap usage, not steady-state.
+- **That inflated RSS is swappable.** The dummy driver does not
+  `mlock`/`mlock2` anything (verify with
+  `cat /proc/<vfb-pid>/status | grep VmLck` — should be `0 kB`), and
+  the kernel will page out idle Xdummy pages under memory pressure
+  exactly like any other anonymous allocation. So if you're sizing
+  `VideoRam` for a host without much physical RAM, the cost of the
+  inflated steady-state is mostly *swap + latency on reconnect*, not
+  RAM. A first damage event after a long idle may be slow as the
+  kernel pages pixmaps back in, but capacity-wise the host doesn't
+  need to keep all of `VideoRam` resident.
+
 ## References / further reading
 
 - The Linux `proc(5)` manual page documents
