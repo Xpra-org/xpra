@@ -51,18 +51,37 @@ def _load_dict_file(filename: str, parser: ConfParser) -> ConfDict:
     return parser(lines)
 
 
+def _merge_defs(target: ConfDict, source: ConfDict) -> None:
+    # merge source into target, recursing one level for nested dicts.
+    # parsers like parse_content_types return {prop_name: {regex: ...}};
+    # a plain dict.update() at the top level would discard target[prop_name]
+    # whenever source defines the same prop_name in another file or dir
+    # (e.g. 90_fallback.conf's role rule wiping all role rules from 10_role.conf).
+    for k, v in source.items():
+        existing = target.get(k)
+        if isinstance(v, dict) and isinstance(existing, dict):
+            existing.update(v)
+        else:
+            target[k] = v
+
+
 def _load_dict_dir(d: str, parser: ConfParser) -> ConfDict:
-    # load all the .conf files from the directory
+    # load all the .conf files from the directory.
+    # do_get_user_conf_dirs returns paths with literal '~' so they can be expanded
+    # against the target user when osexpand is called (e.g. xpra/scripts/config.py
+    # for multi-user proxies). This loader is server-side, called as the user the
+    # rules belong to, so a plain expanduser is the right resolution here.
+    d = os.path.expanduser(d)
     if not os.path.exists(d) or not os.path.isdir(d):
         log("load_content_categories_dir(%s) directory not found", d)
         return {}
-    v = {}
+    v: ConfDict = {}
     for f in sorted(os.listdir(d)):
         if f.endswith(".conf"):
             cc_file = os.path.join(d, f)
             if os.path.isfile(cc_file):
                 try:
-                    v.update(_load_dict_file(cc_file, parser))
+                    _merge_defs(v, _load_dict_file(cc_file, parser))
                 except Exception as e:
                     log("_load_dict_dir(%s)", cc_file, exc_info=True)
                     log.error("Error loading file data from '%s'", cc_file)
@@ -76,15 +95,36 @@ def _load_dict_dirs(dirname: str, parser: ConfParser) -> ConfDict:
         return {}
     # finds all the ".conf" files from the dirname specified
     # and calls `load` on them.
-    # looks for system and user conf dirs
-    values = {}
+    # build system and user tiers separately so we can combine them with the
+    # right precedence semantics for guess_content_type_from_defs, which iterates
+    # by property in dict order and stops at the first regex match.
+    system: ConfDict = {}
     for d in get_system_conf_dirs():
-        v = _load_dict_dir(os.path.join(d, dirname), parser)
-        values.update(v)
+        _merge_defs(system, _load_dict_dir(os.path.join(d, dirname), parser))
+    user: ConfDict = {}
     if not POSIX or getuid() > 0:
         for d in get_user_conf_dirs():
-            v = _load_dict_dir(os.path.join(d, dirname), parser)
-            values.update(v)
+            _merge_defs(user, _load_dict_dir(os.path.join(d, dirname), parser))
+    # combine: keep system's prop_name iteration order (so unrelated system rules
+    # like title/role aren't pushed behind class-instance just because the user
+    # added a class-instance rule); within each property, user regexes iterate
+    # before system regexes so a user override beats a broader system regex like
+    # '.*terminal.*'. User-only properties are appended at the end.
+    values: ConfDict = {}
+    for prop_name, sys_v in system.items():
+        user_v = user.get(prop_name)
+        if isinstance(sys_v, dict) and isinstance(user_v, dict):
+            inner = dict(user_v)
+            for ik, iv in sys_v.items():
+                inner.setdefault(ik, iv)
+            values[prop_name] = inner
+        elif user_v is not None:
+            values[prop_name] = user_v
+        else:
+            values[prop_name] = sys_v
+    for prop_name, user_v in user.items():
+        if prop_name not in values:
+            values[prop_name] = user_v
     return values
 
 
