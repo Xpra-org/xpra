@@ -1,7 +1,7 @@
 # Changelog
 
-## [6.5] 2026-04-10
-* Platforms, build and packaging:
+## [6.5] 2026-05-06
+* 🔧 Platforms, build and packaging:
   * [use `wasapi2` on MS Windows](https://github.com/Xpra-org/xpra/issues/4735)
   * [support for Linux Mint in install scripts](https://github.com/Xpra-org/xpra/issues/4727)
   * [fix cursor scaling on MS Windows](https://github.com/Xpra-org/xpra/pull/4857)
@@ -10,7 +10,7 @@
   * [add `printing` build option on MS Windows](https://github.com/Xpra-org/xpra/pull/4809)
   * [`ArchLinux` setup support](https://github.com/Xpra-org/xpra/pull/4737/)
   * [remove `libspng` codecs](https://github.com/Xpra-org/xpra/issues/4791)
-* Network:
+* 🖧 Network:
   * [re-enable `ssl-protocol=TLS_CLIENT` by default](https://github.com/Xpra-org/xpra/issues/4660)
   * [per authentication module options](https://github.com/Xpra-org/xpra/issues/3791)
   * [re-connect fails for seamless remote ssh start](https://github.com/Xpra-org/xpra/pull/4738)
@@ -18,22 +18,24 @@
   * [expose http headers to authentication modules](https://github.com/Xpra-org/xpra/issues/4755)
   * [client support for WebTransport connections](https://github.com/Xpra-org/xpra/issues/4306)
   * [handle X11 buffered reads without timers](https://github.com/Xpra-org/xpra/issues/4655)
-* OpenGL:
+* ⚡ OpenGL:
   * [Catmull-Rom bicubic scaling shader](https://github.com/Xpra-org/xpra/pull/4819)
   * [sigmoid upscaling and anti-ringing upscale shader](https://github.com/Xpra-org/xpra/pull/4826)
   * [MS Windows can use OpenGL for opaque-region-covered alpha windows](https://github.com/Xpra-org/xpra/pull/4821)
   * [fix `NV12` shader](https://github.com/Xpra-org/xpra/pull/4835)
   * [support `YUV420P16` natively](https://github.com/Xpra-org/xpra/issues/4621)
   * [faster client startup with `opengl=nocheck`](https://github.com/Xpra-org/xpra/issues/4768)
-* Encodings:
+* 🌈 Encodings:
   * [`MediaFoundation` hardware video decoder for MS Windows](https://github.com/Xpra-org/xpra/pull/4860)
   * [pre-process screen updates with filters (ie: `pytorch`)](https://github.com/Xpra-org/xpra/issues/4776)
   * [prefer AV1](https://github.com/Xpra-org/xpra/pull/4854)
   * [NVENC supports lossless mode with `hevc`](https://github.com/Xpra-org/xpra/pull/4850)
-* Documentation:
+* 🕮 Documentation:
   * [network diagnostics](https://github.com/Xpra-org/xpra/issues/4740)
   * [subsystems](https://github.com/Xpra-org/xpra/issues/3981)
-* Features:
+* ✨ Features:
+  * [wayland backend](https://github.com/Xpra-org/xpra/issues/387)
+  * [memory savings and optimizations](https://github.com/Xpra-org/xpra/issues/4880)
   * [wireshark dissector](https://github.com/Xpra-org/xpra/issues/1188)
   * [multiple content-types per window](https://github.com/Xpra-org/xpra/issues/4765)
   * [faster content-type detection](https://github.com/Xpra-org/xpra/issues/4818)
@@ -49,10 +51,10 @@
   * [support free-threaded builds](https://github.com/Xpra-org/xpra/issues/4782)
   * [better unit test coverage](https://github.com/Xpra-org/xpra/issues/2873)
   * [`xpra top` GUI](https://github.com/Xpra-org/xpra/issues/4874)
-* Webcam:
+* 📷 Webcam:
   * [window mode](https://github.com/Xpra-org/xpra/issues/4867)
   * [libcamera backend](https://github.com/Xpra-org/xpra/issues/3657)
-* Cosmetic:
+* 💄 Cosmetic:
   * [honour MS Windows dark / light theme](https://github.com/Xpra-org/xpra/pull/4792)
   * [session info graph labels for HiDPI displays](https://github.com/Xpra-org/xpra/pull/4856)
   * [window encoders details in session info](https://github.com/Xpra-org/xpra/pull/4797)

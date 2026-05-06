@@ -1097,8 +1097,65 @@ fi
 
 
 %changelog
-* Wed Nov 19 2025 Antoine Martin <antoine@xpra.org> 6.5-10
-- TODO
+* Wed May 06 2025 Antoine Martin <antoine@xpra.org> 6.5-10
+- Platforms, build and packaging:
+   use `wasapi2` on MS Windows
+   support for Linux Mint in install scripts
+   fix cursor scaling on MS Windows
+   macOS notarization preparation
+   PoC native MS Windows client backend
+   add `printing` build option on MS Windows
+   `ArchLinux` setup support
+   remove `libspng` codecs
+- Network:
+   re-enable `ssl-protocol=TLS_CLIENT` by default
+   per authentication module options
+   re-connect fails for seamless remote ssh start
+   http error pages overrides
+   expose http headers to authentication modules
+   client support for WebTransport connections
+   handle X11 buffered reads without timers
+- OpenGL:
+   Catmull-Rom bicubic scaling shader
+   sigmoid upscaling and anti-ringing upscale shader
+   MS Windows can use OpenGL for opaque-region-covered alpha windows
+   fix `NV12` shader
+   support `YUV420P16` natively
+   faster client startup with `opengl=nocheck`
+- Encodings:
+   `MediaFoundation` hardware video decoder for MS Windows
+   pre-process screen updates with filters (ie: `pytorch`)
+   prefer AV1
+   NVENC supports lossless mode with `hevc`
+- Documentation:
+   network diagnostics
+   subsystems
+- Features:
+   wayland backend
+   memory savings and optimizations
+   wireshark dissector
+   multiple content-types per window
+   faster content-type detection
+   content aware cairo upscaling filter
+   session recording client and replay tool
+   asynchronous initialization
+   more specific content types
+   notification forwarding fixes and improvements
+   fido2 authentication module
+   support `image/png` with Gtk clipboard backend (Wayland)
+   monitor geometry syncing tools
+   snap window resize to increment grid
+   support free-threaded builds
+   better unit test coverage
+   `xpra top` GUI
+- Webcam:
+   window mode
+   libcamera backend
+- Cosmetic:
+   honour MS Windows dark / light theme
+   session info graph labels for HiDPI displays
+   window encoders details in session info
+
 * Sun Sep 14 2025 Antoine Martin <antoine@xpra.org> 6.4-10
 - Platforms, build and packaging:
    major modularization
