@@ -29,9 +29,10 @@ ibuslog = Logger("keyboard", "ibus")
 
 GLib = gi_import("GLib")
 
+IBUS = envbool("XPRA_IBUS", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
                                      "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra")
-EXPOSE_IBUS_LAYOUTS = envbool("XPRA_EXPOSE_IBUS_LAYOUTS", True)
+EXPOSE_IBUS_LAYOUTS = envbool("XPRA_EXPOSE_IBUS_LAYOUTS", IBUS)
 
 
 def configure_imsettings_env(input_method: str) -> str:
@@ -205,9 +206,13 @@ class X11KeyboardServer(KeyboardServer):
                     log.error("Error: limited keyboard support without XKB")
             self.input_method = configure_imsettings_env(self.input_method)
             if self.input_method == "ibus":
-                get_env: Callable[[], dict[str, str]] = getattr(self, "get_child_env", os.environ.copy)
-                env = get_env()
-                may_start_ibus(env)
+                if IBUS:
+                    get_env: Callable[[], dict[str, str]] = getattr(self, "get_child_env", os.environ.copy)
+                    env = get_env()
+                    may_start_ibus(env)
+                else:
+                    log.warn("Warning: ibus is disabled, but input-method uses it")
+                    log.warn(" either use another input method or start the daemon manually")
 
         super().setup()
 
@@ -243,7 +248,7 @@ class X11KeyboardServer(KeyboardServer):
                 clean_keyboard_state()
 
     def late_cleanup(self, stop=True) -> None:
-        if not stop:
+        if not stop or not IBUS:
             return
         pidfile = ibus_pid_file()
         pid = load_pid(pidfile)
