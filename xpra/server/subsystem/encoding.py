@@ -100,8 +100,10 @@ class EncodingServer(StubServerMixin):
         if "jpeg" in ae or "jpega" in ae:
             # try to load the fast jpeg encoders:
             load_codec("enc_jpeg")
-        if "avif" in ae:
-            load_codec("enc_avif")
+        # enc_avif is loaded lazily in `threaded_encoding_setup` below —
+        # the AVIF encoder pulls in `libavif` + ~6 MB of allocations and
+        # is rarely used as the default, so we don't pay the cost on
+        # the startup path.
         self.connect("init-thread-ended", self.reinit_encodings)
         self.init_encodings()
         start_thread(self.threaded_encoding_setup, "threaded-encoding-setup", daemon=True)
@@ -132,6 +134,8 @@ class EncodingServer(StubServerMixin):
         # load the slower codecs
         if "jpeg" in self.allowed_encodings and not OSX:
             load_codec("enc_nvjpeg")
+        if "avif" in self.allowed_encodings:
+            load_codec("enc_avif")
         if self.video:
             # load video codecs:
             getVideoHelper().init()
