@@ -1144,7 +1144,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     legacy_bool_parse("html")
     group.add_option("--html", action="store",
                      dest="html", default=defaults.html,
-                     metavar="on|off|[HOST:]PORT",
+                     metavar="on|off|auto|webrootpath",
                      help="Enable the web server and the html5 client. Default: '%default'.")
     legacy_bool_parse("daemon")
     legacy_bool_parse("attach")
