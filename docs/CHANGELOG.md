@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.4.5] 2026-05-08
+* TODO
+
 ## [6.4.4] 2026-05-02
 * Platforms, build and packaging:
   * [`pycuda` 2026.1](https://github.com/Xpra-org/xpra/commit/dab23526cd93784ee9b0afbdfa927de4a584505a)

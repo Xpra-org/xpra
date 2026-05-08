@@ -77,7 +77,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.4.4
+Version:			6.4.5
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1084,6 +1084,8 @@ fi
 
 
 %changelog
+* Fri May 08 2026 Antoine Martin <antoine@xpra.org> 6.4.5-10
+- TODO
 * Sat May 02 2026 Antoine Martin <antoine@xpra.org> 6.4.4-10
 - Platforms, build and packaging:
    `pycuda` 2026.1
