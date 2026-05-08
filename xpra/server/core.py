@@ -425,7 +425,9 @@ class ServerCore(ServerBaseClass):
             self.websocket_upgrade = False
         # make sure we have the web root:
         from xpra.platform.paths import get_resources_dir
-        if www_dir:
+        if self._html is False:
+            self._www_dir = ""
+        elif www_dir:
             self._www_dir = str(www_dir)
         else:
             # this is the default value which will be shown in the warning if we don't find a valid one:

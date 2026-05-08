@@ -79,6 +79,8 @@ def may_reload_headers(http_headers_dirs: Iterable[str]) -> dict[str, str]:
 
 
 def translate_path(path: str, web_root: str = "/usr/share/xpra/www") -> str:
+    if not web_root:
+        return ""
     # code duplicated from superclass since we can't easily inject the web_root..
     s = path
     # abandon query parameters
