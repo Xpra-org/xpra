@@ -56,7 +56,14 @@ def register_os_signal(callback: Callable[[int], None],
             GLib.idle_add(do_handle_signal)
             return True
 
-        source_id = GLib.unix_signal_add(GLib.PRIORITY_HIGH, i_signum, handle_signal, signum)
+        # Prefer GLibUnix.signal_add (GLib >= 2.80 / Ubuntu 24.04+), fall back
+        # to the deprecated GLib.unix_signal_add on older distros
+        # (Ubuntu 22.04, Debian 12, RHEL 9 — the GLibUnix namespace doesn't exist there yet).
+        try:
+            GLibUnix = gi_import("GLibUnix")
+            source_id = GLibUnix.signal_add(GLib.PRIORITY_HIGH, i_signum, handle_signal, signum)
+        except (ImportError, AttributeError):
+            source_id = GLib.unix_signal_add(GLib.PRIORITY_HIGH, i_signum, handle_signal, signum)
         _glib_unix_signals[signum] = source_id
     else:
         def os_signal(_signum, _frame) -> None:
