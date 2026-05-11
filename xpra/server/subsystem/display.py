@@ -360,18 +360,25 @@ class DisplayManager(StubServerMixin):
         return rrate
 
     def _process_desktop_size(self, proto, packet: Packet) -> None:
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
         log("new desktop size from %s: %s", proto, packet)
         assert BACKWARDS_COMPATIBLE
         root_w = packet.get_u16(1)
         root_h = packet.get_u16(2)
-        ndesktops = packet.get_u8(3)
-        desktop_names = packet.get_strs(4)
-        u_root_w = packet.get_u16(5)
-        u_root_h = packet.get_u16(6)
-        xdpi = packet.get_u16(7)
-        ydpi = packet.get_u16(8)
-        rrate = packet.get_u16(9)
-        monitors = packet.get_dict(10)
+        screens = packet[3]
+        ss.set_screen_sizes(screens)
+        if len(packet) <= 4:
+            return
+        ndesktops = packet.get_u8(4)
+        desktop_names = packet.get_strs(5)
+        u_root_w = packet.get_u16(6)
+        u_root_h = packet.get_u16(7)
+        xdpi = packet.get_u16(8)
+        ydpi = packet.get_u16(9)
+        rrate = packet.get_u16(10)
+        monitors = packet.get_dict(11)
         attrs: dict[str, Any] = {
             "desktop-size": (root_w, root_h),
             "desktop-size-unscaled": (u_root_w, u_root_h),
