@@ -21,6 +21,12 @@
 %define _lto_cflags %{nil}
 %global __requires_exclude ^lib(cudart|cublas|cublasLt|cufft|cufile|cupti|curand|cusolver|cusparse|nvrtc)\\.so\\..*
 
+%global GCC_VERSION %{nil}
+%if 0%{?fedora} >= 44
+# pytorch errors with gcc >= 16, so force gcc-15:
+%global GCC_VERSION 15
+%endif
+
 Name:           %{python3}-torch-cuda
 Version:        2.11.0
 Release:        1
@@ -36,8 +42,8 @@ Provides:       %{python3}-torch
 BuildRequires:	coreutils
 BuildRequires:  make
 BuildRequires:  cmake
-BuildRequires:  gcc
-BuildRequires:  gcc-c++
+BuildRequires:  gcc%{GCC_VERSION}
+BuildRequires:  gcc-c++%{GCC_VERSION}
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-pip
 BuildRequires:  %{python3}-setuptools
@@ -82,6 +88,11 @@ export CUDACXX=${CUDA}/bin/nvcc
 # Force GCC instead of clang
 export CC=gcc
 export CXX=g++
+%if 0%{GCC_VERSION}
+export CC=gcc-%{GCC_VERSION}
+export CXX=g++-%{GCC_VERSION}
+%endif
+export CUDAHOSTCXX=$CXX
 
 export TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0;12.0"
 export USE_NCCL=0
