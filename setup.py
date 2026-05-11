@@ -31,9 +31,13 @@ try:
     from distutils.command.install_data import install_data
 except ImportError as e:
     print(f"no distutils: {e}, trying setuptools")
-    from setuptools import setup
-    from setuptools.command.build import build
-    from setuptools.command.install import install as install_data
+    try:
+        from setuptools import setup
+        from setuptools.command.build import build
+        from setuptools.command.install import install as install_data
+    except ImportError:
+        print("you must install setuptools to run this script")
+        sys.exit(1)
 
 import xpra
 from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
