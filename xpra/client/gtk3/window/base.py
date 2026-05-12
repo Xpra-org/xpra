@@ -1384,7 +1384,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # nearest rounding keeps the cx→snap→sx round-trip stable at any scale
         # (skip for maximized/fullscreen — the small border is expected)
         if not self._fullscreen and not self._maximized:
-            sw, sh = self.snap_to_server_grid(sw, sh, nearest=True)
+            sw, sh = self.snap_to_server_grid(sw, sh, nearest=sw != w or sh != h)
 
         if BACKWARDS_COMPATIBLE:
             packet: Sequence[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state,
