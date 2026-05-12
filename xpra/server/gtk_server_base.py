@@ -166,7 +166,6 @@ class GTKServerBase(ServerBase):
                 })
             info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
         vi = dict_version_trim(get_gtk_version_info())
-        vi["type"] = "Python/gtk"
         info.setdefault("server", {}).update(vi)
         return info
 
