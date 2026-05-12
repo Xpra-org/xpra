@@ -63,7 +63,7 @@ def is_X11_Display(display=None) -> bool:
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "gtk-3.0/gdk/gdk.h":
+cdef extern from "gdk/gdk.h":
     ctypedef void* GdkAtom  # @UndefinedVariable
     GdkAtom GDK_NONE
     ctypedef struct GdkWindow:
@@ -72,16 +72,16 @@ cdef extern from "gtk-3.0/gdk/gdk.h":
     void gdk_x11_display_error_trap_push(GdkDisplay *display)
     int gdk_x11_display_error_trap_pop(GdkDisplay *display)
 
-cdef extern from "gtk-3.0/gdk/gdkx.h":
+cdef extern from "gdk/gdkx.h":
     pass
 
-cdef extern from "gtk-3.0/gdk/gdkproperty.h":
+cdef extern from "gdk/gdkproperty.h":
     ctypedef int gint
     ctypedef gint gboolean
     char* gdk_atom_name(GdkAtom atom)
     GdkAtom gdk_atom_intern(const char *atom_name, gboolean only_if_exists)
 
-cdef extern from "glib-2.0/glib-object.h":
+cdef extern from "glib-object.h":
     ctypedef struct cGObject "GObject":
         pass
 
@@ -101,7 +101,7 @@ cdef extern from "pygobject-3.0/pygobject.h":
 ######
 
 # gdk_region_get_rectangles (pygtk bug #517099)
-cdef extern from "gtk-3.0/gdk/gdktypes.h":
+cdef extern from "gdk/gdktypes.h":
     ctypedef struct cGdkVisual "GdkVisual":
         pass
     Visual * GDK_VISUAL_XVISUAL(cGdkVisual   *visual)
@@ -221,7 +221,7 @@ cdef _get_pyatom(display, int xatom):
 #      and selectFocusChange.
 #   -- Receive interesting signals on 'obj'.
 
-cdef extern from "gtk-3.0/gdk/gdkevents.h":
+cdef extern from "gdk/gdkevents.h":
     ctypedef enum GdkFilterReturn:
         GDK_FILTER_CONTINUE   # If we ignore the event
         GDK_FILTER_TRANSLATE  # If we converted the event to a GdkEvent

@@ -18,13 +18,13 @@ assert Gdk and Gtk and GObject
 log(f"Gdk={Gdk}, Gtk={Gtk}, GObject={GObject}")
 
 
-cdef extern from "gtk-3.0/gdk/gdk.h":  #pylint: disable=syntax-error
+cdef extern from "gdk/gdk.h":  #pylint: disable=syntax-error
     ctypedef struct GdkWindow:
         pass
     ctypedef struct GdkDisplay:
         pass
 
-cdef extern from "glib-2.0/glib-object.h":
+cdef extern from "glib-object.h":
     ctypedef struct cGObject "GObject":
         pass
 

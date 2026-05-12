@@ -6,13 +6,13 @@
 
 #cython: language_level=3
 
-cdef extern from "gtk-3.0/gdk/gdk.h":
+cdef extern from "gdk/gdk.h":
     ctypedef struct GdkDisplay:
         pass
     ctypedef struct GdkWindow:
         pass
 
-cdef extern from "glib-2.0/glib-object.h":
+cdef extern from "glib-object.h":
     ctypedef struct cGObject "GObject":
         pass
 
