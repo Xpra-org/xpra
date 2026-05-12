@@ -100,11 +100,12 @@ class GLClientWindowBase(ClientWindow):
         set_visual(widget, self._has_alpha)
         widget.show()
         self.init_widget_events(widget)
-        if self.drawing_area and self.size_constraints:
+        if self.size_constraints:
             # apply min size to the drawing_area:
             thints = typedict(self.size_constraints)
             minsize = thints.intpair("minimum-size", (0, 0))
-            self.drawing_area.set_size_request(*minsize)
+            if minsize != (0, 0):
+                widget.set_size_request(*minsize)
         self.add(widget)
         self.drawing_area = widget
         # maybe redundant?:
