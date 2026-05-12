@@ -50,12 +50,13 @@ def make_header_bar(title: str, image, show_window_menu=noop, show_xpra_menu=noo
     return hb
 
 
-def get_header_bar_image(size=Gtk.IconSize.BUTTON):
+def get_header_bar_image(size: int = 24):
     if WINDOW_MENU:
         # the icon 'open-menu-symbolic' will be replaced with the window icon
         # when we receive it
         icon = Gio.ThemedIcon(name="preferences-system-windows")
-        return Gtk.Image.new_from_gicon(icon, size)
+        from xpra.gtk.dialogs.util import nearest_icon_enum
+        return Gtk.Image.new_from_gicon(icon, nearest_icon_enum(size))
     if WINDOW_ICON:
         pixbuf = get_icon_pixbuf("transparent.png")
         return scaled_image(pixbuf, size)
