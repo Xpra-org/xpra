@@ -570,7 +570,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def may_autograb(self) -> bool:
         server_mode = self._client._remote_server_mode
-        autograb = AUTOGRAB_MODES and any(x=="*" or server_mode.find(x)>=0 for x in AUTOGRAB_MODES)
+        autograb = bool(AUTOGRAB_MODES) and any(x=="*" or server_mode.find(x)>=0 for x in AUTOGRAB_MODES)
         focuslog("may_autograb() server-mode=%s, autograb(%s)=%s", server_mode, AUTOGRAB_MODES, autograb)
         if autograb:
             self.keyboard_grab()
