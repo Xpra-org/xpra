@@ -13,6 +13,7 @@ ALL_EXAMPLES = (
     "bell", "clicks",
     "colors-gradient", "colors-plain", "colors",
     "cursors",
+    "fake-client-window",
     "file-chooser",
     "fontrendering",
     "grabs",
