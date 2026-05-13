@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.1.5
+%define version 5.1.6
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -816,6 +816,8 @@ fi
 
 
 %changelog
+* Wed May 13 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
+- TODO
 * Sun May 03 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install

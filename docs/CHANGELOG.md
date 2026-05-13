@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.1.6] 2026-05-13
+* TODO
+
 ## [5.1.5] 2026-05-03
 * Platforms, build and packaging:
     * [Ubuntu Noble and earlier fails to install](https://github.com/Xpra-org/xpra/commit/18c8c65050fc5b4749417546d297b712ee760ec9)
