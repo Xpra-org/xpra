@@ -1555,6 +1555,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def keyboard_ungrab(self, *args) -> None:
         grablog("keyboard_ungrab%s", args)
+        if not self._client.keyboard_grabbed:
+            log("keyboard_ungrab: keyboard is not grabbed")
+            return
         gdkwin = self.get_window()
         if gdkwin:
             d = gdkwin.get_display()
