@@ -170,6 +170,9 @@ class WindowMenuHelper(MenuHelper):
         return self.above_menuitem
 
     def make_grabmenuitem(self) -> Gtk.ImageMenuItem:
+        if not hasattr(self.client, "_window_with_grab"):
+            return None
+
         def is_grabbed() -> bool:
             return self.client._window_with_grab == self.window.wid
 
