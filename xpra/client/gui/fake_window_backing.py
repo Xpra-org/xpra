@@ -27,6 +27,8 @@ class FakeBacking:
         self.border = None
         self.content_type = ""
         self.default_cursor_data = ()
+        self.pointer_overlay = ()
+        self.cursor_data = ()
         self.gravity = 0
         self.fake_delay = FAKE_BACKING_DELAY
         self._video_encoder = None
