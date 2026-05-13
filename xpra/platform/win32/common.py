@@ -9,7 +9,7 @@ from typing import Any
 from ctypes import (
     WinDLL, WINFUNCTYPE, GetLastError,  # @UnresolvedImport
     POINTER, Structure,
-    c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char,
+    c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_ssize_t, c_char,
     byref, sizeof,
 )
 from ctypes.wintypes import (
@@ -373,6 +373,21 @@ GetWindowLongA.argtypes = [HWND, INT]
 GetWindowLongW = user32.GetWindowLongW
 GetWindowLongW.restype = LONG
 GetWindowLongW.argtypes = [HWND, INT]
+# Pointer-sized variants required on 64-bit Windows to install a wndproc subclass.
+# SetWindowLongW with GWL_WNDPROC silently fails on Win64 because the wndproc
+# pointer is 64-bit but the function only stores 32-bit values.
+LONG_PTR = c_ssize_t
+try:
+    SetWindowLongPtrW = user32.SetWindowLongPtrW
+    SetWindowLongPtrW.restype = LONG_PTR
+    SetWindowLongPtrW.argtypes = [HWND, INT, WNDPROC]
+    GetWindowLongPtrW = user32.GetWindowLongPtrW
+    GetWindowLongPtrW.restype = LONG_PTR
+    GetWindowLongPtrW.argtypes = [HWND, INT]
+except AttributeError:
+    # 32-bit Windows fallback: SetWindowLongPtrW doesn't exist, use the 32-bit variants
+    SetWindowLongPtrW = SetWindowLongW
+    GetWindowLongPtrW = GetWindowLongW
 SetWindowPos = user32.SetWindowPos
 SetWindowPos.argtypes = [HWND, HWND, INT, INT, INT, INT, UINT]
 SetWindowPos.restype = BOOL

@@ -6,14 +6,17 @@
 # later version. See the file COPYING for details.
 
 from collections.abc import Callable
-from ctypes import Structure, cast, POINTER
+from ctypes import Structure, cast, POINTER, c_void_p
 from ctypes.wintypes import POINT
 
 from xpra.util.env import envbool
 from xpra.common import noop
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import WNDPROC, GetWindowLongW, SetWindowLongW, GetSystemMetrics, CallWindowProcW
+from xpra.platform.win32.common import (
+    WNDPROC, GetWindowLongW, SetWindowLongPtrW, GetSystemMetrics, CallWindowProcW,
+)
+from ctypes import GetLastError
 from xpra.log import Logger
 
 
@@ -72,10 +75,25 @@ class Win32Hooks:
     def setup(self) -> None:
         assert self._oldwndproc is None
         self._newwndproc = WNDPROC(self._wndproc)
+        # GWL_WNDPROC and GWLP_WNDPROC have the same numeric value (-4).
+        # Use SetWindowLongPtrW so this works on 64-bit Windows where the
+        # wndproc pointer is 64 bits wide.
         try:
-            self._oldwndproc = SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
+            old_ptr = SetWindowLongPtrW(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
         except Exception:
             log.error(f"Error setting up window hook for {self._hwnd}", exc_info=True)
+            return
+        if not old_ptr:
+            err = GetLastError()
+            log.error("Error: SetWindowLongPtrW(%#x, GWL_WNDPROC, ...) returned 0", self._hwnd)
+            log.error(" GetLastError=%i - wndproc subclass NOT installed", err)
+            self._oldwndproc = None
+            return
+        # CallWindowProcW expects a WNDPROC ctypes callable, not an int pointer.
+        # Cast the returned LONG_PTR to a WNDPROC function pointer:
+        self._oldwndproc = cast(c_void_p(old_ptr), WNDPROC)
+        log("SetWindowLongPtrW installed wndproc subclass for hwnd=%#x (old wndproc=%#x)",
+            self._hwnd, old_ptr)
 
     def on_getminmaxinfo(self, hwnd: int, msg, wparam: int, lparam: int) -> int:
         if (self.min_size > (0, 0) or self.max_size > (0, 0)) and lparam:
@@ -139,7 +157,7 @@ class Win32Hooks:
         if not self._oldwndproc or not self._hwnd:
             return
         with log.trap_error("Error: window hooks cleanup failure"):
-            SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
+            SetWindowLongPtrW(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
             self._oldwndproc = None
             self._hwnd = None
 
