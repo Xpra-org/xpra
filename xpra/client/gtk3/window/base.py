@@ -1393,7 +1393,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if self.is_OR():
                 pwid = -1 if BACKWARDS_COMPATIBLE else 0
             packet.append(pwid)
-            packet.append(self.get_mouse_position())
+            if hasattr(self, "get_mouse_position"):
+                packet.append(self.get_mouse_position())
+            else:
+                packet.append((-1, -1))
             packet.append(self._client.get_current_modifiers())
             self.send("configure-window", *packet)
             geomlog("%s", packet)
