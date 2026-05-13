@@ -1440,10 +1440,27 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._metadata.update(sc)
             self.set_metadata(sc)
 
+    def _chrome_size(self) -> tuple[int, int]:
+        """
+        Size delta between the toplevel window and the drawing area:
+        space taken by CSD chrome (titlebar, borders, padding).
+        Returns (0, 0) before allocations are valid.
+        """
+        da = self.drawing_area
+        if da is None:
+            return 0, 0
+        daw = da.get_allocated_width()
+        dah = da.get_allocated_height()
+        if daw <= 1 or dah <= 1:
+            return 0, 0
+        return max(0, self.get_allocated_width() - daw), max(0, self.get_allocated_height() - dah)
+
     def resize(self, w: int, h: int, resize_counter: int = 0, force: bool = False) -> None:
-        ww, wh = self.get_size()
-        geomlog("resize(%s, %s, %s) current size=%s, fullscreen=%s, maximized=%s",
-                w, h, resize_counter, (ww, wh), self._fullscreen, self._maximized)
+        # w, h are drawing-area (server-side) dimensions:
+        ww, wh = self.get_drawing_area_geometry()[2:]
+        cw, ch = self._chrome_size()
+        geomlog("resize(%s, %s, %s) drawing area=%s, chrome=%s, fullscreen=%s, maximized=%s",
+                w, h, resize_counter, (ww, wh), (cw, ch), self._fullscreen, self._maximized)
         self._resize_counter = resize_counter
         if (w, h) == (ww, wh):
             self._backing.offsets = 0, 0, 0, 0
@@ -1451,15 +1468,21 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         if not self._fullscreen and not self._maximized:
             self.may_update_metadata(w, h)
-            if force:
-                # use GDK directly to bypass WM geometry hint enforcement
+            # add chrome so the toplevel ends up at the right size for the drawing area:
+            tw, th = w + cw, h + ch
+            has_csd = self.get_titlebar() is not None
+            if force and not has_csd:
+                # use GDK directly to bypass WM geometry hint enforcement;
+                # only safe without CSD - with CSD, gdkwin.resize bypasses
+                # GTK's titlebar/content relayout and leaves the widgets inconsistent
                 if gdkwin := self.get_window():
-                    geomlog("resize(%i, %i) using GDK (bypass WM hints)", w, h)
-                    gdkwin.resize(w, h)
+                    geomlog("resize: drawing(%i, %i) toplevel(%i, %i) using GDK (bypass WM hints)", w, h, tw, th)
+                    gdkwin.resize(tw, th)
                 else:
-                    Gtk.Window.resize(self, w, h)
+                    Gtk.Window.resize(self, tw, th)
             else:
-                Gtk.Window.resize(self, w, h)
+                geomlog("resize: drawing(%i, %i) toplevel(%i, %i) via Gtk.Window.resize", w, h, tw, th)
+                Gtk.Window.resize(self, tw, th)
             ww, wh = w, h
             self._backing.offsets = 0, 0, 0, 0
         else:
@@ -1536,8 +1559,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         # resize:
         self._size = (w, h)
-        geomlog("%s.move_resize%s", window, (ax, ay, w, h))
-        window.move_resize(ax, ay, w, h)
+        # add chrome so the toplevel ends up at the right size for the drawing area:
+        cw, ch = self._chrome_size()
+        tw, th = w + cw, h + ch
+        geomlog("%s.move_resize%s drawing=(%i, %i) chrome=(%i, %i)", window, (ax, ay, tw, th), w, h, cw, ch)
+        window.move_resize(ax, ay, tw, th)
         # re-init the backing with the new size
         self._set_backing_size(w, h)
         self.repaint(0, 0, w, h)
