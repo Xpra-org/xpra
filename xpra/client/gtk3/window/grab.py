@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
+from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -19,6 +20,10 @@ log = Logger("window", "grab")
 
 AUTOGRAB_MODES = os.environ.get("XPRA_AUTOGRAB_MODES", "shadow,desktop,monitors").split(",")
 AUTOGRAB_WITH_POINTER = envbool("XPRA_AUTOGRAB_WITH_POINTER", True)
+GRAB_TOPLEVEL_FOCUS_EVENT = envbool("XPRA_GRAB_TOPLEVEL_FOCUS_EVENT", True)
+GRAB_ENTER_NOTIFY = envbool("XPRA_GRAB_ENTER_NOTIFY", True)
+GRAB_LEAVE_NOTIFY = envbool("XPRA_GRAB_LEAVE_NOTIFY", True)
+GRAB_BROKEN_EVENT = envbool("XPRA_GRAB_BROKEN_EVENT", True)
 
 GRAB_EVENT_MASK: Gdk.EventMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
 GRAB_EVENT_MASK |= Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK
@@ -32,15 +37,27 @@ class GrabWindow(GtkStubWindow):
         self.init_grab()
 
     def get_window_event_mask(self) -> Gdk.EventMask:
+        if not GRAB_TOPLEVEL_FOCUS_EVENT:
+            log("get_window_event_mask: skipping toplevel focus-change mask")
+            return 0
         return Gdk.EventMask.FOCUS_CHANGE_MASK
 
     def init_grab(self) -> None:
         self.when_realized("init-grab", self.do_init_grab)
 
     def do_init_grab(self) -> None:
-        self.connect("enter-notify-event", self.on_enter_notify_event)
-        self.connect("leave-notify-event", self.on_leave_notify_event)
-        self.connect("grab-broken-event", self.grab_broken)
+        if GRAB_ENTER_NOTIFY:
+            self.connect("enter-notify-event", self.on_enter_notify_event)
+        else:
+            log("do_init_grab: skipping enter-notify-event handler")
+        if GRAB_LEAVE_NOTIFY:
+            self.connect("leave-notify-event", self.on_leave_notify_event)
+        else:
+            log("do_init_grab: skipping leave-notify-event handler")
+        if GRAB_BROKEN_EVENT:
+            self.connect("grab-broken-event", self.grab_broken)
+        else:
+            log("do_init_grab: skipping grab-broken-event handler")
 
     def grab_broken(self, win, event) -> None:
         log("grab_broken%s", (win, event))
@@ -60,7 +77,7 @@ class GrabWindow(GtkStubWindow):
             self.may_autograb()
 
     def on_leave_notify_event(self, window, event) -> None:
-        info = {}
+        info: dict[str, Any] = {}
         for attr in ("detail", "focus", "mode", "subwindow", "type", "window"):
             info[attr] = getattr(event, attr, None)
         log("on_leave_notify_event(%s, %s) crossing event fields: %s", window, event, info)
