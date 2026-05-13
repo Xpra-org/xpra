@@ -20,11 +20,23 @@ class FakeBacking:
 
     def __init__(self, wid: int, *_args):
         self.wid = wid
+        self.size = 0, 0
+        self.render_size = 0, 0
+        self.offsets = 0, 0, 0, 0
+        self._backing = None
+        self.border = None
+        self.content_type = ""
+        self.default_cursor_data = ()
+        self.gravity = 0
         self.fake_delay = FAKE_BACKING_DELAY
         self._video_encoder = None
         self._video_encoder_lock = None
         self._video_encoder_speed = []
         self._video_encoder_quality = []
+
+    def init(self, ww: int, wh: int, bw: int, bh: int) -> None:
+        self.size = bw, bh
+        self.render_size = ww, wh
 
     def close(self) -> None:
         self.wid = 0
