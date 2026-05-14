@@ -17,8 +17,8 @@ log = Logger("server")
 class DaemonServer(StubServerMixin):
     PREFIX = "daemon"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.pidfile = ""
         self.pidinode: int = 0
 

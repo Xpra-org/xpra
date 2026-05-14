@@ -100,8 +100,8 @@ def probe_opengl_module() -> dict[str, Any]:
 class OpenGLInfo(StubServerMixin):
     PREFIX = "opengl"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.display = os.environ.get("DISPLAY", "")
         self.opengl = "no"
         self.opengl_props: dict[str, Any] = {}

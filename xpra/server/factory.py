@@ -15,15 +15,11 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.sharing import SharingServer
     classes.append(SharingServer)
     # `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
-    if features.ping:
-        from xpra.server.subsystem.ping import PingServer
-        classes.append(PingServer)
+    # (Ping has been migrated to a standalone instance — see
+    # `get_instance_subsystem_classes` below.)
     if features.bandwidth:
         from xpra.server.subsystem.bandwidth import BandwidthServer
         classes.append(BandwidthServer)
-    if features.debug:
-        from xpra.server.subsystem.debug import DebugServer
-        classes.append(DebugServer)
     if features.file:
         from xpra.server.subsystem.file import FileServer
         classes.append(FileServer)
@@ -39,9 +35,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.http:
         from xpra.server.subsystem.http import HttpServer
         classes.append(HttpServer)
-    if features.shell:
-        from xpra.server.subsystem.shell import ShellServer
-        classes.append(ShellServer)
     if features.ssh:
         from xpra.server.subsystem.ssh_agent import SshAgent
         classes.append(SshAgent)
@@ -67,17 +60,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.dbus:
         from xpra.server.subsystem.dbus import DbusServer
         classes.append(DbusServer)
-    if features.power:
-        # this one is for server-side system power events:
-        from xpra.server.subsystem.power import PowerEventServer
-        classes.append(PowerEventServer)
-    if features.watcher:
-        from xpra.server.subsystem.watcher import UIWatcher
-        classes.append(UIWatcher)
-    if features.suspend:
-        # and this one for processing power event messages from the client:
-        from xpra.server.subsystem.suspend import SuspendServer
-        classes.append(SuspendServer)
     if features.idle:
         from xpra.server.subsystem.idle import IdleTimeoutServer
         classes.append(IdleTimeoutServer)
@@ -91,9 +73,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.opengl:
         from xpra.server.subsystem.opengl import OpenGLInfo
         classes.append(OpenGLInfo)
-    if POSIX and FULL_INFO >= 1:
-        from xpra.server.subsystem.drm import DRMInfo
-        classes.append(DRMInfo)
     if features.x11 and features.display:
         from xpra.x11.subsystem.icc import ICCServer
         classes.append(ICCServer)
@@ -155,4 +134,38 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.rfb:
         from xpra.server.rfb.server import RFBServer
         classes.append(RFBServer)
+    return tuple(classes)
+
+
+def get_instance_subsystem_classes() -> tuple[type, ...]:
+    """
+    Subsystems that have been migrated to standalone instance composition.
+    They are NOT inherited into the dynamic ServerBaseClass MRO; instead,
+    each is constructed as an instance and stored in `self.subsystems`.
+    """
+    from xpra.server import features
+    classes: list[type] = []
+    if features.ping:
+        from xpra.server.subsystem.ping import PingServer
+        classes.append(PingServer)
+    if features.debug:
+        from xpra.server.subsystem.debug import DebugServer
+        classes.append(DebugServer)
+    if features.shell:
+        from xpra.server.subsystem.shell import ShellServer
+        classes.append(ShellServer)
+    if features.power:
+        # server-side system power events
+        from xpra.server.subsystem.power import PowerEventServer
+        classes.append(PowerEventServer)
+    if features.watcher:
+        from xpra.server.subsystem.watcher import UIWatcher
+        classes.append(UIWatcher)
+    if features.suspend:
+        # processes power event messages from the client
+        from xpra.server.subsystem.suspend import SuspendServer
+        classes.append(SuspendServer)
+    if POSIX and FULL_INFO >= 1:
+        from xpra.server.subsystem.drm import DRMInfo
+        classes.append(DRMInfo)
     return tuple(classes)

@@ -19,8 +19,8 @@ log = Logger("command")
 class ControlHandler(StubServerMixin):
     PREFIX = "control"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.control_commands: dict[str, Any] = {}
         self.control_enabled = False
 

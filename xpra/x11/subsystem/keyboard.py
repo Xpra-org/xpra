@@ -153,8 +153,8 @@ def may_start_ibus(env: dict[str, str]):
 
 class X11KeyboardServer(KeyboardServer):
 
-    def __init__(self):
-        KeyboardServer.__init__(self)
+    def __init__(self, server=None):
+        KeyboardServer.__init__(self, server)
         self.readonly = False
         self.xkb = False
         self.input_method = "keep"

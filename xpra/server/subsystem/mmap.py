@@ -16,8 +16,8 @@ class MMAP_Server(StubServerMixin):
     """
     PREFIX = "mmap"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.mmap_supported = False
         self.mmap_filename = ""
         self.mmap_min_size = 64 * 1024 * 1024

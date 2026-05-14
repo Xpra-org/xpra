@@ -83,20 +83,42 @@ class ServerMixinTest(unittest.TestCase):
         return {}
 
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubClientConnection):
-        x = self.mixin = mclass()
-        x._socket_info = ()
-        x._server_sources = {}   # pylint: disable=protected-access
-        x.add_packets = self.add_packets
-        x.add_legacy_alias = self.add_legacy_alias
-        x.add_packet_handler = self.add_packet_handler
-        x.get_server_source = self.get_server_source
-        x.get_sources_by_type = lambda st, exclude=None: [
-            ss for ss in x._server_sources.values() if isinstance(ss, st) and ss != exclude
+        # Helper attributes / methods that subsystems expect to find on the
+        # owning server. Set on `self` (the test class, acting as the mock
+        # server) so instance-based subsystems reach them via `self.server.X`.
+        self._socket_info = ()
+        self._server_sources = {}   # pylint: disable=protected-access
+        self.auth_classes = {}
+        self.sockets = self.create_test_sockets()
+        self.get_sources_by_type = lambda st, exclude=None: [
+            ss for ss in self._server_sources.values() if isinstance(ss, st) and ss != exclude
         ]
+        # Instance-based subsystems take `server` in their constructor;
+        # legacy mixin-style subsystems do not. Inspect the callable's
+        # signature directly (works for both classes and factory functions).
+        import inspect
+        try:
+            takes_server = len(inspect.signature(mclass).parameters) >= 1
+        except (TypeError, ValueError):
+            takes_server = False
+        if takes_server:
+            x = self.mixin = mclass(self)
+        else:
+            x = self.mixin = mclass()
+            # legacy wiring: subsystems resolve these names via the dynamic
+            # MRO, but in the test there is no enclosing server class:
+            x._socket_info = self._socket_info
+            x._server_sources = self._server_sources
+            x.add_packets = self.add_packets
+            x.add_legacy_alias = self.add_legacy_alias
+            x.add_packet_handler = self.add_packet_handler
+            x.get_server_source = self.get_server_source
+            x.get_sources_by_type = self.get_sources_by_type
         x.init_state()
         x.init(opts)
-        x.auth_classes = {}
-        x.sockets = self.create_test_sockets()
+        if not takes_server:
+            x.auth_classes = self.auth_classes
+            x.sockets = self.sockets
         x.setup()
         x.init_packet_handlers()
         caps = typedict(caps or {})

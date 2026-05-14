@@ -23,8 +23,8 @@ class SplashServer(StubServerMixin):
     """
     PREFIX = "splash"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         log("SplashServer()")
         self.splash_process: Popen | None = None
 

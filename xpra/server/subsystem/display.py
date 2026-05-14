@@ -82,8 +82,8 @@ class DisplayManager(StubServerMixin):
         "display-geometry-changed": 0,
     }
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.hello_request_handlers["screenshot"] = self._handle_hello_request_screenshot
         self.hello_request_handlers["icon"] = self._handle_hello_request_icon
         self.display = os.environ.get("DISPLAY", "")

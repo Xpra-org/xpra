@@ -23,8 +23,8 @@ class PingServer(StubServerMixin):
     """
     PREFIX = "ping"
 
-    def __init__(self):
-        log("ServerBase.__init__()")
+    def __init__(self, server):
+        super().__init__(server)
         self.pings = False
         self.ping_timer: int = 0
 
@@ -48,12 +48,9 @@ class PingServer(StubServerMixin):
             PingServer.PREFIX: self.pings,
         }
 
-    def get_server_features(self, _source) -> dict[str, Any]:
-        return {}
-
     def send_ping(self) -> bool:
         from xpra.server.source.ping import PingConnection
-        ping_sources = get_sources_by_type(self, PingConnection)
+        ping_sources = get_sources_by_type(self.server, PingConnection)
         for ss in ping_sources:
             if ss.suspended or ss.is_closed():
                 continue

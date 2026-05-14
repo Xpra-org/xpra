@@ -21,8 +21,8 @@ class DebugServer(StubServerMixin):
     """
     PREFIX = "debug"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.mem_bytes = 0
         self.cpu_info: dict = {}
 
@@ -31,7 +31,7 @@ class DebugServer(StubServerMixin):
 
     def setup(self) -> None:
         def is_closed() -> bool:
-            return getattr(self, "_closing", False)
+            return getattr(self.server, "_closing", False)
 
         init_leak_detection(is_closed)
         from xpra.util.meminfo import maybe_start_memory_debug

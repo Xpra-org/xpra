@@ -22,8 +22,8 @@ class CursorManager(StubServerMixin):
     PREFIX = "cursor"
     toggle_features = ("cursors",)
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.cursors = False
         self.cursor_size = 0
         self.cursor_suspended: bool = False

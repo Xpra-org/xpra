@@ -42,6 +42,45 @@ class StubServerMixin(superclass):
     # dynamic ServerBaseClass MRO and explicitly set PREFIX = "" to opt out:
     PREFIX: str = ""
 
+    def __init__(self, server=None):
+        # Every subsystem holds a reference to its owning server.
+        # For legacy mixin subsystems that are part of the dynamic
+        # ServerBaseClass MRO, `self` IS the server, so `self.server` ends up
+        # pointing at the same instance. Standalone instance-based subsystems
+        # receive a distinct `server` argument from their constructor.
+        self.server = server if server is not None else self
+
+    def emit(self, signal: str, *args):
+        """ delegate signal emission to the owning server """
+        return self.server.emit(signal, *args)
+
+    def get_server_source(self, proto):
+        """ delegate to the server's per-protocol client source lookup """
+        return self.server.get_server_source(proto)
+
+    def get_subsystem(self, name: str):
+        """ look up a peer subsystem on the owning server """
+        return self.server.subsystems.get(name)
+
+    def get_sources_by_type(self, subsystem_type=object, exclude=None):
+        """ delegate to the server's typed source iterator """
+        from xpra.server.common import get_sources_by_type
+        return get_sources_by_type(self.server, subsystem_type, exclude)
+
+    def add_packets(self, *packet_types: str, main_thread: bool = False) -> None:
+        """
+        Register packet handlers for this subsystem.
+        Handlers (`_process_<packet_type>`) are looked up on the subsystem
+        instance (i.e. `self`), then registered against the server's
+        packet dispatcher (`self.server`). This differs from the
+        `PacketDispatcher.add_packets` baked into the server class, which
+        looks up handlers on the dispatcher itself - for instance-based
+        subsystems, the handlers no longer live there.
+        """
+        for packet_type in packet_types:
+            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
+            self.server.add_packet_handler(packet_type, handler, main_thread)
+
     def init(self, opts) -> None:
         """
         Initialize this instance with the options given.
@@ -140,11 +179,6 @@ class StubServerMixin(superclass):
         if WIN32:  # pragma: no cover
             return [cmd]
         return shlex.split(str(cmd))
-
-    @staticmethod
-    def get_server_source(_proto):
-        """ returns the client connection source object for the given protocol """
-        return None
 
     def args_control(self, name: str, descr: str, **kwargs) -> None:
         from xpra.net.control.common import add_args_control_command

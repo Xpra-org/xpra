@@ -32,8 +32,8 @@ class PointerServer(StubServerMixin):
     """
     PREFIX = "pointer"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.input_devices = "auto"
         self.input_devices_data = {}
         self.pointer_sequence = {}

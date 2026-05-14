@@ -17,8 +17,8 @@ FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
 class X11Init(StubServerMixin):
     PREFIX = "x11"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.display = os.environ.get("DISPLAY", "")
         assert not envbool("XPRA_GTK", False)
 

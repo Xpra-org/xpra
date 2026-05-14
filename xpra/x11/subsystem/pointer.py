@@ -13,8 +13,8 @@ log = Logger("pointer")
 
 class X11PointerServer(PointerServer):
 
-    def __init__(self):
-        PointerServer.__init__(self)
+    def __init__(self, server=None):
+        PointerServer.__init__(self, server)
         self.input_devices_format = ""
 
     def init(self, opts) -> None:

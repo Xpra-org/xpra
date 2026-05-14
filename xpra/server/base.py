@@ -22,7 +22,7 @@ from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envbool
 from xpra.server import ServerExitMode
-from xpra.server.factory import get_server_base_classes
+from xpra.server.factory import get_server_base_classes, get_instance_subsystem_classes
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -33,8 +33,11 @@ authlog = Logger("auth")
 eventslog = Logger("events")
 
 SERVER_BASES = get_server_base_classes()
+INSTANCE_SUBSYSTEM_CLASSES = get_instance_subsystem_classes()
 SIGNALS: dict[str, int] = {}
 for base_class in SERVER_BASES:
+    SIGNALS.update(getattr(base_class, "__signals__", {}))
+for base_class in INSTANCE_SUBSYSTEM_CLASSES:
     SIGNALS.update(getattr(base_class, "__signals__", {}))
 ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
 log("ServerBaseClass%s", SERVER_BASES)
@@ -70,10 +73,15 @@ class ServerBase(ServerBaseClass):
         if not hasattr(self, "subsystems"):
             self.subsystems: dict = {}
         for c in SERVER_BASES:
-            c.__init__(self)
+            # legacy mixin subsystems share `self` with the server, so we
+            # pass `self` as both the bound instance and as the server arg:
+            c.__init__(self, self)
             prefix = getattr(c, "PREFIX", "")
             if prefix:
                 self.subsystems[prefix] = c
+        # construct standalone instance-based subsystems and register them:
+        for cls in INSTANCE_SUBSYSTEM_CLASSES:
+            self.subsystems[cls.PREFIX] = cls(self)
         log("ServerBase.__init__()")
         self.hello_request_handlers.update({
             "exit": self._handle_hello_request_exit,

@@ -17,8 +17,8 @@ class ShellServer(StubServerMixin):
     """
     PREFIX = "shell"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.counter = 0
         self.commands: deque[str] = deque(maxlen=10)
 

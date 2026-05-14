@@ -25,8 +25,8 @@ class BellServer(StubServerMixin):
         "x11-xkb-event": 1,
     }
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.bell = False
 
     def init(self, opts) -> None:

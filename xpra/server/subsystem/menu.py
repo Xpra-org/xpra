@@ -41,8 +41,8 @@ class MenuServer(StubServerMixin):
 
     PREFIX = "menu"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.menu_provider = None
         self.menu_enabled: bool = False
 

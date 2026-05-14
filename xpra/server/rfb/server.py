@@ -31,8 +31,8 @@ class RFBServer(StubServerMixin):
     """
     PREFIX = "rfb"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self._window_to_id = {}
         self._rfb_upgrade = 0
         self.readonly = False

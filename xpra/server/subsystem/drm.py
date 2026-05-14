@@ -13,8 +13,8 @@ from xpra.util.thread import start_thread
 class DRMInfo(StubServerMixin):
     PREFIX = "drm"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.display = os.environ.get("DISPLAY", "")
         self.drm_info = {}
 

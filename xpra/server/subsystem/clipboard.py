@@ -33,8 +33,8 @@ class ClipboardServer(StubServerMixin):
     PREFIX = "clipboard"
     toggle_features = ("clipboard",)
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.clipboard = False
         self.clipboard_direction = "none"
         self.clipboard_filter_file = None

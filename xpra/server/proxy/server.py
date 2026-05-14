@@ -167,7 +167,9 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
         if not hasattr(self, "subsystems"):
             self.subsystems: dict = {}
         for bc in SERVER_BASES:
-            bc.__init__(self)
+            # legacy mixin subsystems share `self` with the server, so we
+            # pass `self` as both the bound instance and as the server arg:
+            bc.__init__(self, self)
             prefix = getattr(bc, "PREFIX", "")
             if prefix:
                 self.subsystems[prefix] = bc

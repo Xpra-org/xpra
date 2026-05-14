@@ -48,8 +48,8 @@ class TrayMenu(StubServerMixin):
     """
     PREFIX = "tray"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.tray_menu = None
         self.tray_menu_shown = False
         self.tray_widget = None

@@ -55,7 +55,6 @@ from xpra.util.background_worker import quit_worker
 from xpra.util.thread import start_thread, check_main_thread
 from xpra.common import noop, noerr
 from xpra.util.objects import merge_dicts
-from xpra.server.subsystem.stub import StubServerMixin
 from xpra.constants import DEFAULT_XDG_DATA_DIRS
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
@@ -113,11 +112,10 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.splash import SplashServer
     from xpra.server.subsystem.id import IDServer
     from xpra.server.subsystem.info import InfoServer
-    from xpra.server.subsystem.version import VersionServer
     classes: list[type] = [
         GLibServer, PlatformServer, DaemonServer, SessionFilesServer,
         AuthenticatedServer, SplashServer,
-        IDServer, InfoServer, VersionServer,
+        IDServer, InfoServer,
     ]
     from xpra.server import features
     if features.control:
@@ -129,11 +127,24 @@ def get_server_base_classes() -> tuple[type, ...]:
     return tuple(classes)
 
 
+def get_instance_subsystem_classes() -> tuple[type, ...]:
+    """
+    Subsystems that have been migrated to standalone instance composition.
+    They are NOT inherited into the dynamic ServerBaseClass MRO; instead,
+    each is constructed as an instance and stored in `self.subsystems`.
+    """
+    from xpra.server.subsystem.version import VersionServer
+    return (VersionServer, )
+
+
 SERVER_BASES = get_server_base_classes()
+INSTANCE_SUBSYSTEM_CLASSES = get_instance_subsystem_classes()
 ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
 log("ServerBaseClass%s", SERVER_BASES)
 SIGNALS: dict[str, int] = {}
 for base_class in SERVER_BASES:
+    SIGNALS.update(getattr(base_class, "__signals__", {}))
+for base_class in INSTANCE_SUBSYSTEM_CLASSES:
     SIGNALS.update(getattr(base_class, "__signals__", {}))
 SIGNALS.update({
     "init-thread-ended": 0,
@@ -154,17 +165,24 @@ class ServerCore(ServerBaseClass):
     # dynamic ServerBaseClass MRO (which inherits PREFIX from its subsystems):
     PREFIX = ""
 
-    def __init__(self):
+    def __init__(self, server=None):
+        # `server` is accepted (and ignored) so ServerCore can sit in the
+        # subsystem-style construction loops, which now pass `(self, self)`.
         log("ServerCore.__init__()")
         # subsystems dict (keyed by PREFIX) is populated as each base's __init__ runs.
         # Subclasses (ServerBase, ProxyServer, ...) extend this dict with their own bases.
         if not hasattr(self, "subsystems"):
-            self.subsystems: dict[str, type[StubServerMixin]] = {}
+            self.subsystems: dict[str, Any] = {}
         for bc in SERVER_BASES:
-            bc.__init__(self)
+            # legacy mixin subsystems share `self` with the server, so we
+            # pass `self` as both the bound instance and as the server arg:
+            bc.__init__(self, self)
             prefix = getattr(bc, "PREFIX", "")
             if prefix:
                 self.subsystems[prefix] = bc
+        # construct standalone instance-based subsystems and register them:
+        for cls in INSTANCE_SUBSYSTEM_CLASSES:
+            self.subsystems[cls.PREFIX] = cls(self)
         self.start_time = time()
         self.hello_request_handlers.update({
             "connect_test": self._handle_hello_request_connect_test,

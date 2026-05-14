@@ -38,8 +38,8 @@ class WindowServer(StubServerMixin):
     """
     PREFIX = "window"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
         self._window_to_id: dict[Any, int] = {}

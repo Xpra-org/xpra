@@ -22,8 +22,8 @@ class XCursorServer(CursorManager):
         "x11-cursor-event": 1,
     }
 
-    def __init__(self):
-        CursorManager.__init__(self)
+    def __init__(self, server=None):
+        CursorManager.__init__(self, server)
         self.last_cursor_serial = 0
 
     def setup(self) -> None:

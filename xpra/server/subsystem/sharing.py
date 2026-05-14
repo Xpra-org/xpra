@@ -22,8 +22,8 @@ class SharingServer(StubServerMixin):
     """
     PREFIX = "sharing"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.sharing: bool | None = None
         self.lock: bool | None = None
         self.exit_with_client = False

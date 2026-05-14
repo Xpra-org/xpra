@@ -32,8 +32,8 @@ class BandwidthServer(StubServerMixin):
             return True
         return caps.boolget("bandwidth")
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.bandwidth_limit = 0
         self.bandwidth_detection = False
 

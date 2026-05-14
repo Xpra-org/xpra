@@ -31,8 +31,8 @@ class GtkX11Server(GTKServer):
     the X11 event filter.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, server=None):
+        super().__init__(server)
         self.xvfb: Popen | None = None
         self.display = os.environ.get("DISPLAY", "")
         self.x11_filter = False

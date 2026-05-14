@@ -13,8 +13,8 @@ class UIWatcher(StubServerMixin):
     """
     PREFIX = "watcher"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.ui_watcher = None
 
     def run(self) -> None:

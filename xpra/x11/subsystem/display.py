@@ -118,8 +118,8 @@ class X11DisplayManager(DisplayManager):
     Mixin for servers that handle displays.
     """
 
-    def __init__(self):
-        DisplayManager.__init__(self)
+    def __init__(self, server=None):
+        DisplayManager.__init__(self, server)
         self.xvfb: Popen | None = None
         self.display_pid: int = 0
         self.randr_sizes_added: list[tuple[int, int]] = []

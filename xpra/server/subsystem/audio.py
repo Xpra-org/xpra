@@ -33,8 +33,8 @@ class AudioServer(StubServerMixin):
     PREFIX = "audio"
     __signals__ = {"audio-initialized": 0}
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.audio_source_plugin = ""
         self.supports_speaker = False
         self.supports_microphone = False

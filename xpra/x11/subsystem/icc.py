@@ -21,8 +21,8 @@ SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", True)
 class ICCServer(StubServerMixin):
     PREFIX = "icc"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.icc_profile = b""
 
     def add_new_client(self, ss, caps: typedict) -> None:

@@ -98,8 +98,8 @@ class DbusServer(StubServerMixin):
     """
     PREFIX = "dbus"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.dbus = False
         self.dbus_launch = "dbus-launch --sh-syntax --close-stderr"
         self.dbus_pid: int = 0

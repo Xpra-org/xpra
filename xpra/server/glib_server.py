@@ -20,8 +20,8 @@ log = Logger("server", "glib")
 class GLibServer(StubServerMixin, PacketDispatcher):
     PREFIX = "glib"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         PacketDispatcher.__init__(self)
         self.main_loop = GLib.MainLoop()
 

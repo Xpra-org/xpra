@@ -29,8 +29,8 @@ class FileServer(StubServerMixin):
     """
     PREFIX = "file"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.file_transfer = FileTransferAttributes()
 
     def init(self, opts) -> None:

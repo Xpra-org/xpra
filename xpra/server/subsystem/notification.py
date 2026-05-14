@@ -29,8 +29,8 @@ class NotificationForwarder(StubServerMixin):
     PREFIX = "notifications" if BACKWARDS_COMPATIBLE else "notification"
     toggle_features = ("notifications",)
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.notifications_forwarder = None
         self.notifications = False
 

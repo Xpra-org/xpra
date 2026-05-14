@@ -38,8 +38,8 @@ class AuthenticatedServer(StubServerMixin):
     """
     PREFIX = "auth"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         log("AuthenticatedServer.__init__()")
         self.auth_classes: dict[str, Sequence[AuthDef]] = {}
         self.password_file: Iterable[str] = ()

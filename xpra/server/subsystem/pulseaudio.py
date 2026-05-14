@@ -163,8 +163,8 @@ class PulseaudioServer(StubServerMixin):
     """
     PREFIX = "pulseaudio"
 
-    def __init__(self):
-        StubServerMixin.__init__(self)
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.pulseaudio_init_done = Event()
         self.pulseaudio_init_done.set()
         self.pulseaudio = False

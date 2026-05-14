@@ -29,7 +29,8 @@ class IDServer(StubServerMixin):
     """
     PREFIX = "id"
 
-    def __init__(self):
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.hello_request_handlers["id"] = self._handle_hello_request_id
         self.uuid = ""
 

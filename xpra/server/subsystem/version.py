@@ -20,15 +20,19 @@ class VersionServer(StubServerMixin):
     """
     PREFIX = "version"
 
-    def __init__(self):
-        self.hello_request_handlers["version"] = self._handle_hello_request_version
+    def __init__(self, server):
+        super().__init__(server)
+        self.server.hello_request_handlers["version"] = self._handle_hello_request_version
 
     def get_caps(self, source) -> dict[str, Any]:
         caps = {
             VersionServer.PREFIX: vparts(XPRA_VERSION, FULL_INFO + 1),
         }
         if source is None or "versions" in source.wants:
-            caps |= self.get_minimal_server_info()
+            # InfoServer is still a class-based mixin on the server.
+            # When it is migrated, replace with
+            # `self.get_subsystem("info").get_minimal_server_info()`.
+            caps |= self.server.get_minimal_server_info()
         return caps
 
     def get_info(self, proto) -> dict[str, Any]:
@@ -46,4 +50,4 @@ class VersionServer(StubServerMixin):
         proto.send_now(Packet("hello", {"version": version}))
         # client is meant to close the connection itself, but just in case:
         GLib = gi_import("GLib")
-        GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
+        GLib.timeout_add(5 * 1000, self.server.send_disconnect, proto, ConnectionMessage.DONE, "version sent")

@@ -84,7 +84,8 @@ class InfoServer(StubServerMixin):
     """
     PREFIX = "info"
 
-    def __init__(self):
+    def __init__(self, server=None):
+        StubServerMixin.__init__(self, server)
         self.hello_request_handlers["info"] = self._handle_hello_request_info
         self.session_name = ""
 
