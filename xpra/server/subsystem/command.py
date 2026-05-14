@@ -432,9 +432,8 @@ class ChildCommandServer(StubServerMixin):
         new_name = guess_session_name(procs, self.exec_wrapper)
         if new_name and self.session_name != new_name:
             self.session_name = new_name
-            # weak dependency:
-            mdns_update = getattr(self, "mdns_update", noop)
-            mdns_update()
+            if mdns := self.get_subsystem("mdns"):
+                mdns.mdns_update()
 
     def _handle_hello_request_run(self, proto, caps: typedict) -> bool:
         command = caps.strtupleget("run")

@@ -17,7 +17,6 @@ from xpra.util.version import (
     XPRA_VERSION, version_str, get_version_info,
     get_build_info, get_host_info, parse_version,
 )
-from xpra.common import noop
 from xpra.net.common import is_request_allowed, Packet, FULL_INFO
 from xpra.net.net_util import get_info as get_net_info
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -271,6 +270,6 @@ class InfoServer(StubServerMixin):
         self.session_name = name
         log.info(f"changed session name: {self.session_name!r}")
         self.setting_changed("session_name", name)
-        mdns_update = getattr(self, "mdns_update", noop)
-        mdns_update()
+        if mdns := self.get_subsystem("mdns"):
+            mdns.mdns_update()
         return f"session name set to {name}"

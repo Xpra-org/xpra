@@ -49,8 +49,11 @@ class BandwidthConnection(StubClientConnection):
         self.bandwidth_warning_time = 0
 
     def init_from(self, _protocol, server) -> None:
-        self.bandwidth_server_limit = server.bandwidth_limit
-        self.bandwidth_detection = server.bandwidth_detection
+        # `BandwidthConnection` and `BandwidthServer` are paired by the same
+        # feature flag; the subsystem is guaranteed to be present.
+        bandwidth = server.subsystems["bandwidth"]
+        self.bandwidth_server_limit = bandwidth.bandwidth_limit
+        self.bandwidth_detection = bandwidth.bandwidth_detection
 
     def parse_client_caps(self, c: typedict) -> None:
         self.client_connection_data = c.dictget("connection-data", {})

@@ -111,10 +111,10 @@ class ServerBase(ServerBaseClass):
         else:
             for s in event_sources:
                 s.send_server_event(event_type, *args)
-        # the bus mixin is optional:
-        dbus_server = getattr(self, "dbus_server", None)
-        if dbus_server:
-            dbus_server.Event(event_type, [str(x) for x in args[1:]])
+        # the dbus subsystem is optional:
+        dbus = self.subsystems.get("dbus")
+        if dbus and dbus.dbus_server:
+            dbus.dbus_server.Event(event_type, [str(x) for x in args[1:]])
 
     def get_server_source(self, proto):
         return self._server_sources.get(proto)
@@ -300,7 +300,7 @@ class ServerBase(ServerBaseClass):
     def sanity_checks(self, proto, c: typedict) -> bool:
         server_uuid = c.strget("server_uuid")
         if server_uuid:
-            if server_uuid == self.uuid:
+            if server_uuid == self.subsystems["id"].uuid:
                 self.send_disconnect(proto, "cannot connect a client running on the same display"
                                             " that the server it connects to is managing - this would create a loop!")
                 return False
@@ -459,8 +459,8 @@ class ServerBase(ServerBaseClass):
             pass
         if source := self._server_sources.pop(protocol, None):
             self.cleanup_source(source)
-            mdns_update = getattr(self, "mdns_update", noop)
-            add_work_item(mdns_update)
+            if mdns := self.subsystems.get("mdns"):
+                add_work_item(mdns.mdns_update)
         self._dispatch_fire("cleanup_protocol", protocol)
         return source
 

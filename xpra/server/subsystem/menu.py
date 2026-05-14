@@ -7,7 +7,6 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.server.common import get_sources_by_type
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import Ellipsizer
 from xpra.server.source.menu import MenuConnection
@@ -92,7 +91,7 @@ class MenuServer(StubServerMixin):
 
     def send_updated_menu(self, menu) -> None:
         log("send_updated_menu(%s)", Ellipsizer(menu))
-        menu_sources = get_sources_by_type(self, MenuConnection)
+        menu_sources = self.get_sources_by_type(MenuConnection)
         for source in menu_sources:
             do_send_menu_data(source, menu)
 

@@ -17,9 +17,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     # `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
     # (Ping has been migrated to a standalone instance — see
     # `get_instance_subsystem_classes` below.)
-    if features.bandwidth:
-        from xpra.server.subsystem.bandwidth import BandwidthServer
-        classes.append(BandwidthServer)
     if features.file:
         from xpra.server.subsystem.file import FileServer
         classes.append(FileServer)
@@ -32,12 +29,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.logging:
         from xpra.server.subsystem.logging import LoggingServer
         classes.append(LoggingServer)
-    if features.http:
-        from xpra.server.subsystem.http import HttpServer
-        classes.append(HttpServer)
-    if features.ssh:
-        from xpra.server.subsystem.ssh_agent import SshAgent
-        classes.append(SshAgent)
     if features.webcam:
         from xpra.server.subsystem.webcam import WebcamServer
         classes.append(WebcamServer)
@@ -56,13 +47,6 @@ def get_server_base_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.tray import TrayMenu
         classes.append(TrayMenu)
 
-    # `Dbus` must be placed before `Power`, `DisplayServer` and `NotificationForwarder`
-    if features.dbus:
-        from xpra.server.subsystem.dbus import DbusServer
-        classes.append(DbusServer)
-    if features.idle:
-        from xpra.server.subsystem.idle import IdleTimeoutServer
-        classes.append(IdleTimeoutServer)
     if features.display:
         if features.x11:
             from xpra.x11.subsystem.display import X11DisplayManager
@@ -127,9 +111,7 @@ def get_server_base_classes() -> tuple[type, ...]:
     # this should be last so that the environment is fully prepared:
     if features.command:
         from xpra.server.subsystem.command import ChildCommandServer
-        from xpra.server.subsystem.menu import MenuServer
         classes.append(ChildCommandServer)
-        classes.append(MenuServer)
     # this should only be enabled for desktop and shadow servers:
     if features.rfb:
         from xpra.server.rfb.server import RFBServer
@@ -148,6 +130,9 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     if features.ping:
         from xpra.server.subsystem.ping import PingServer
         classes.append(PingServer)
+    if features.bandwidth:
+        from xpra.server.subsystem.bandwidth import BandwidthServer
+        classes.append(BandwidthServer)
     if features.debug:
         from xpra.server.subsystem.debug import DebugServer
         classes.append(DebugServer)
@@ -165,7 +150,27 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
         # processes power event messages from the client
         from xpra.server.subsystem.suspend import SuspendServer
         classes.append(SuspendServer)
+    if features.idle:
+        from xpra.server.subsystem.idle import IdleTimeoutServer
+        classes.append(IdleTimeoutServer)
     if POSIX and FULL_INFO >= 1:
         from xpra.server.subsystem.drm import DRMInfo
         classes.append(DRMInfo)
+    if features.http:
+        from xpra.server.subsystem.http import HttpServer
+        classes.append(HttpServer)
+    if features.ssh:
+        from xpra.server.subsystem.ssh_agent import SshAgent
+        classes.append(SshAgent)
+    if features.dbus:
+        from xpra.server.subsystem.dbus import DbusServer
+        classes.append(DbusServer)
+    # EncryptionServer is unconditional - it gracefully no-ops when no
+    # encryption is configured on a given socket. `core.make_protocol`
+    # calls `enc.parse_encryption(...)` only if the subsystem is present.
+    from xpra.server.subsystem.encryption import EncryptionServer
+    classes.append(EncryptionServer)
+    if features.command:
+        from xpra.server.subsystem.menu import MenuServer
+        classes.append(MenuServer)
     return tuple(classes)

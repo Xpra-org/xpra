@@ -106,7 +106,6 @@ class DbusServer(StubServerMixin):
         self.dbus_env: dict[str, str] = {}
         self.dbus_control: bool = False
         self.dbus_server = None
-        self.session_files: list[str] = []
 
     def init(self, opts) -> None:
         self.dbus = opts.dbus
@@ -137,16 +136,20 @@ class DbusServer(StubServerMixin):
         save_session_file("dbus.pid", f"{self.dbus_pid}", self.uid, self.gid)
         dbus_env_data = "\n".join(f"{k}={v}" for k, v in self.dbus_env.items()) + "\n"
         save_session_file("dbus.env", dbus_env_data.encode("utf8"), self.uid, self.gid)
-        self.session_files += ["dbus.pid", "dbus.env"]
+        if sf := self.get_subsystem("session-files"):
+            sf.session_files.extend(("dbus.pid", "dbus.env"))
         os.environ.update(self.dbus_env)
         if features.x11:
             save_dbus_x11_properties(self.dbus_env)
 
     def init_dbus_server(self) -> None:
         log("init_dbus_server() env: %s", {k: v for k, v in os.environ.items() if k.startswith("DBUS_")})
+        # variant servers (e.g. ProxyServer) may override `make_dbus_server`
+        # to return a server-specific DBus instance:
+        make = getattr(self.server, "make_dbus_server", self.make_dbus_server)
         try:
             from xpra.server.dbus.common import dbus_exception_wrap
-            self.dbus_server = dbus_exception_wrap(self.make_dbus_server, "setting up server dbus instance")
+            self.dbus_server = dbus_exception_wrap(make, "setting up server dbus instance")
         except Exception as e:
             log("init_dbus_server()", exc_info=True)
             log.error("Error: cannot load dbus server:")

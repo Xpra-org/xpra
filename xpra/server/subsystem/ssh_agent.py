@@ -6,7 +6,7 @@
 
 import os
 
-from xpra.server.common import get_sources_by_type, SSH_AGENT_DISPATCH
+from xpra.server.common import SSH_AGENT_DISPATCH
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict
 from xpra.util.parsing import FALSE_OPTIONS
@@ -37,7 +37,6 @@ class SshAgent(StubServerMixin):
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
         self.ssh_agent = False
-        self.session_files: list[str] = []
 
     def init(self, opts) -> None:
         self.ssh_agent = SSH_AGENT_DISPATCH and opts.ssh.lower() not in FALSE_OPTIONS
@@ -46,11 +45,14 @@ class SshAgent(StubServerMixin):
             log.warn(f"Warning: unable to configure {SSH_AUTH_SOCK} without a valid session directory")
             return
         if self.ssh_agent:
-            self.session_files.append("ssh/agent")
-            self.session_files.append("ssh/agent.default")
-            # glob that matches agent uuid symlinks:
-            self.session_files.append("ssh/????????????????????????????????????????????????????????????????")
-            self.session_files.append("ssh")
+            if sf := self.get_subsystem("session-files"):
+                sf.session_files.extend((
+                    "ssh/agent",
+                    "ssh/agent.default",
+                    # glob that matches agent uuid symlinks:
+                    "ssh/????????????????????????????????????????????????????????????????",
+                    "ssh",
+                ))
             try:
                 ssh_auth_sock = setup_ssh_auth_sock(session_dir)
             except OSError:
@@ -76,7 +78,7 @@ class SshAgent(StubServerMixin):
         source = self.get_server_source(protocol)
         if source and source.uuid:
             clean_agent_socket(source.uuid)
-        remaining_sources = get_sources_by_type(self, exclude=source)
+        remaining_sources = self.get_sources_by_type(exclude=source)
         for ss in remaining_sources:
             ssh_auth_sock = getattr(ss, "ssh_auth_sock", "")
             if ss.uuid and ssh_auth_sock:

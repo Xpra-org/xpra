@@ -34,12 +34,12 @@ class ShadowX11Server(GTKShadowServerBase):
         self.session_type = "X11 shadow"
         self.modify_keymap = False
         self.backend = attrs.get("backend", "x11")
-        self.session_files: list[str] = []
 
     def init(self, opts) -> None:
         GTKShadowServerBase.init(self, opts)
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
-        self.session_files.append("xauthority")
+        if sf := self.get_subsystem("session-files"):
+            sf.session_files.append("xauthority")
 
     def set_initial_resolution(self) -> None:
         # shadow servers must not change the host display resolution

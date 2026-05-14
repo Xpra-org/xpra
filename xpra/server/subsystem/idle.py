@@ -6,9 +6,7 @@
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.common import noop
 from xpra.server import ServerExitMode
-from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -57,7 +55,7 @@ class IdleTimeoutServer(StubServerMixin):
 
     def server_idle_timedout(self) -> None:
         log.info("No valid client connections for %s seconds, exiting the server", self.server_idle_timeout)
-        self.clean_quit(ServerExitMode.NORMAL)
+        self.server.clean_quit(ServerExitMode.NORMAL)
 
     def cleanup(self) -> None:
         self.cancel_server_timeout()
@@ -74,11 +72,9 @@ class IdleTimeoutServer(StubServerMixin):
 
     def control_command_server_idle_timeout(self, t: int) -> str:
         self.server_idle_timeout = t
-        all_sources = get_sources_by_type(self)
-        # weak dependency on IdleTimeoutServer:
+        all_sources = self.get_sources_by_type()
         if not all_sources:
-            schedule_server_timeout = getattr(self, "schedule_server_timeout", noop)
-            schedule_server_timeout()
+            self.schedule_server_timeout()
         return f"server-idle-timeout set to {t}"
 
     def control_command_idle_timeout(self, t: int) -> str:
@@ -87,7 +83,7 @@ class IdleTimeoutServer(StubServerMixin):
             from xpra.server.source.idle_mixin import IdleConnection
         except ImportError:
             return "no idle connection support"
-        idle_connections = get_sources_by_type(self, IdleConnection)
+        idle_connections = self.get_sources_by_type(IdleConnection)
         for csource in idle_connections:
             csource.idle_timeout = t
             csource.schedule_idle_timeout()

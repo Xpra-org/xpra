@@ -406,7 +406,7 @@ class ShadowServerBase(ServerBase):
     def sanity_checks(self, _proto, c) -> bool:
         server_uuid = c.strget("server_uuid")
         if server_uuid:
-            if server_uuid == self.uuid:
+            if server_uuid == self.subsystems["id"].uuid:
                 log.warn("Warning: shadowing your own display can be quite confusing")
                 if self._clipboard_helper and c.boolget("clipboard", True):
                     log.warn("Warning: clipboard sharing cannot be enabled!")

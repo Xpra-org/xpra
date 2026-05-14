@@ -31,7 +31,8 @@ class IDServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.hello_request_handlers["id"] = self._handle_hello_request_id
+        self.server.hello_request_handlers["id"] = self._handle_hello_request_id
+        # populated by `ServerCore.init_uuid` during setup:
         self.uuid = ""
 
     def get_caps(self, source):
@@ -55,8 +56,8 @@ class IDServer(StubServerMixin):
     def get_session_id_info(self) -> dict[str, Any]:
         # minimal information for identifying the session
         id_info = {
-            "session-type": self.session_type,
-            "session-name": self.session_name,
+            "session-type": self.server.session_type,
+            "session-name": self.server.session_name,
             "uuid": self.uuid,
             "platform": sys.platform,
             "pid": os.getpid(),

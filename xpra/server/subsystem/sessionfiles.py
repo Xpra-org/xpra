@@ -17,7 +17,13 @@ class SessionFilesServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.session_files: list[str] = []
+        # canonical list of per-session files / glob patterns to clean up
+        # at shutdown. Other subsystems append to this via `get_subsystem`.
+        self.session_files: list[str] = [
+            "cmdline", "server.env", "config", "server.log*",
+            # notifications may use a TMP dir:
+            "tmp/*", "tmp",
+        ]
 
     def late_cleanup(self, stop=True) -> None:
         if stop:

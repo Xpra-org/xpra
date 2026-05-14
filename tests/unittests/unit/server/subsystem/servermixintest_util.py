@@ -90,6 +90,7 @@ class ServerMixinTest(unittest.TestCase):
         self._server_sources = {}   # pylint: disable=protected-access
         self.auth_classes = {}
         self.sockets = self.create_test_sockets()
+        self.subsystems: dict = {}
         self.get_sources_by_type = lambda st, exclude=None: [
             ss for ss in self._server_sources.values() if isinstance(ss, st) and ss != exclude
         ]
@@ -103,6 +104,9 @@ class ServerMixinTest(unittest.TestCase):
             takes_server = False
         if takes_server:
             x = self.mixin = mclass(self)
+            prefix = getattr(x, "PREFIX", "") or getattr(mclass, "PREFIX", "")
+            if prefix:
+                self.subsystems[prefix] = x
         else:
             x = self.mixin = mclass()
             # legacy wiring: subsystems resolve these names via the dynamic
@@ -129,7 +133,10 @@ class ServerMixinTest(unittest.TestCase):
             self.protocol.TYPE = "xpra"
             self.source.wants = ("display", "foo")
             self.source.protocol = self.protocol
-            self.source.init_from(self.protocol, x)
+            # For instance-based subsystems, `self` (the test class) is the
+            # mock server and exposes `subsystems`. For legacy mixin subsystems,
+            # passing `x` keeps the original behaviour.
+            self.source.init_from(self.protocol, self if takes_server else x)
             self.source.init_state()
             self.source.hello_sent = 0.0
             self.source.parse_client_caps(caps)

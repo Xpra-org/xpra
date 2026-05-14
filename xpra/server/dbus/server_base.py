@@ -44,22 +44,46 @@ class DBUS_Server_Base(dbus.service.Object):
     def Event(self, event, args):
         self.log(".Event(%s, %s)", event, args)
 
+    def _resolve_property(self, server_property_name: str):
+        """
+        Resolve a property mapping target.
+        A bare name (e.g. "session_name") refers to an attribute on the
+        server; a dotted name (e.g. "idle.idle_timeout") routes to an
+        attribute on a subsystem instance via `server.subsystems[prefix]`.
+        Returns `(target, attr_name)` or `(None, None)` if the subsystem
+        is not available.
+        """
+        if "." in server_property_name:
+            prefix, attr = server_property_name.split(".", 1)
+            target = self.server.subsystems.get(prefix)
+            if target is None:
+                return None, None
+            return target, attr
+        return self.server, server_property_name
+
     @dbus.service.method(PROPERTIES_IFACE, in_signature='ss', out_signature='v')
     def Get(self, interface_name, property_name):
         conv = self._properties.get(property_name)
         if conv is None:
             raise DBusException("invalid property")
         server_property_name, _ = conv
-        v = getattr(self.server, server_property_name)
+        target, attr = self._resolve_property(server_property_name)
+        if target is None:
+            raise DBusException(f"subsystem not available for property {property_name!r}")
+        v = getattr(target, attr)
         self.log(".Get(%s, %s)=%s", interface_name, property_name, v)
         return v
 
     @dbus.service.method(PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
     def GetAll(self, interface_name):
+        v = {}
         if interface_name == PROPERTIES_IFACE:
-            v = {x: self.Get(interface_name, x) for x in self._properties.keys()}
-        else:
-            v = {}
+            for x, conv in self._properties.items():
+                target, attr = self._resolve_property(conv[0])
+                if target is None:
+                    # skip attributes whose subsystem is not available:
+                    continue
+                v[x] = getattr(target, attr)
         self.log(".GetAll(%s)=%s", interface_name, v)
         return v
 
@@ -70,8 +94,11 @@ class DBUS_Server_Base(dbus.service.Object):
         if conv is None:
             raise DBusException("invalid property")
         server_property_name, validator = conv
-        assert hasattr(self.server, server_property_name)
-        setattr(self.server, server_property_name, validator(new_value))
+        target, attr = self._resolve_property(server_property_name)
+        if target is None:
+            raise DBusException(f"subsystem not available for property {property_name!r}")
+        assert hasattr(target, attr)
+        setattr(target, attr, validator(new_value))
 
     @dbus.service.signal(PROPERTIES_IFACE, signature='sa{sv}as')
     def PropertiesChanged(self, interface_name, changed_properties, invalidated_properties):

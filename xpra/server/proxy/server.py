@@ -138,16 +138,27 @@ def get_proxy_env() -> dict[str, str]:
 
 def get_proxy_server_base_classes() -> tuple[type, ...]:
     classes: list[type] = [ServerCore]
-    if features.dbus:
-        from xpra.server.subsystem.dbus import DbusServer
-        classes.append(DbusServer)
+    return tuple(classes)
+
+
+def get_proxy_instance_subsystem_classes() -> tuple[type, ...]:
+    """
+    Standalone instance-based subsystems for ProxyServer (in addition to
+    the ones registered by ServerCore via its own
+    `INSTANCE_SUBSYSTEM_CLASSES`).
+    """
+    classes: list[type] = []
     if features.http:
         from xpra.server.subsystem.http import HttpServer
         classes.append(HttpServer)
+    if features.dbus:
+        from xpra.server.subsystem.dbus import DbusServer
+        classes.append(DbusServer)
     return tuple(classes)
 
 
 SERVER_BASES = get_proxy_server_base_classes()
+INSTANCE_SUBSYSTEM_CLASSES = get_proxy_instance_subsystem_classes()
 ProxyServerBaseClass = type("ProxyServerBaseClass", SERVER_BASES, {})
 
 
@@ -173,6 +184,9 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
             prefix = getattr(bc, "PREFIX", "")
             if prefix:
                 self.subsystems[prefix] = bc
+        # construct standalone instance-based subsystems specific to the proxy:
+        for cls in INSTANCE_SUBSYSTEM_CLASSES:
+            self.subsystems[cls.PREFIX] = cls(self)
         self.hello_request_handlers["stop"] = self._handle_hello_request_stop
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False

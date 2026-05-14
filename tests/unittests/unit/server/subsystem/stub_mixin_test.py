@@ -22,7 +22,8 @@ class EncodingMixinTest(unittest.TestCase):
         x.init_state()
         x.setup()
         x.init_packet_handlers()
-        x.get_server_source(None)
+        # `get_server_source` is a delegate to `self.server`; calling it on a
+        # bare stub (whose `self.server is self`) would recurse - skip here.
 
         assert isinstance(x.get_caps(None), dict)
         assert isinstance(x.get_server_features(None), dict)

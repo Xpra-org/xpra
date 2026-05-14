@@ -176,14 +176,15 @@ class X11DisplayManager(DisplayManager):
         from xpra.scripts.server import verify_display
         if not verify_display(xvfb=self.xvfb, display_name=self.display):
             raise InitExit(ExitCode.NO_DISPLAY, f"unable to access display {self.display!r}")
-        self.session_files += [
-            "xvfb.pid",
-            "xauthority",
-            "Xorg.log",
-            "Xorg.log.old",
-            "xorg.conf.d/*",
-            "xorg.conf.d",
-        ]
+        if sf := self.get_subsystem("session-files"):
+            sf.session_files.extend((
+                "xvfb.pid",
+                "xauthority",
+                "Xorg.log",
+                "Xorg.log.old",
+                "xorg.conf.d/*",
+                "xorg.conf.d",
+            ))
         DisplayManager.setup(self)
         if not self.display_pid:
             self.display_pid = get_display_pid()

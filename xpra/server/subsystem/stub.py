@@ -54,6 +54,10 @@ class StubServerMixin(superclass):
         """ delegate signal emission to the owning server """
         return self.server.emit(signal, *args)
 
+    def connect(self, signal: str, cb, *args):
+        """ delegate signal connection to the owning server """
+        return self.server.connect(signal, cb, *args)
+
     def get_server_source(self, proto):
         """ delegate to the server's per-protocol client source lookup """
         return self.server.get_server_source(proto)

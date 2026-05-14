@@ -39,11 +39,8 @@ class MdnsServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.uuid = ""
         self.mdns = False
         self.mdns_publishers = {}
-        # relies on these attributes duplicated from ServerCore:
-        self.sockets: dict = {}
         self.display = os.environ.get("DISPLAY", "")
 
     def init(self, opts) -> None:
@@ -62,16 +59,12 @@ class MdnsServer(StubServerMixin):
     def add_new_client(self, *_args) -> None:
         idle_work(self.mdns_update)
 
-    def can_upgrade(self, socktype: str, tosocktype: str, options: dict[str, str]) -> bool:
-        # `ServerCore` actually implements this method properly
-        return False
-
     def mdns_publish(self) -> None:
         if not self.mdns:
             return
         # find all the records we want to publish:
         mdns_recs: dict[str, list[tuple[str, int]]] = {}
-        for sock in self.sockets:
+        for sock in self.server.sockets:
             socktype = sock.socktype
             address = sock.address
             options = sock.options
@@ -129,13 +122,14 @@ class MdnsServer(StubServerMixin):
         if socktype == "quic":
             return "quic", "webtransport"
         socktypes = [socktype]
+        server = self.server
         if socktype == "tcp":
             for tosocktype in ("ssl", "ws", "wss", "ssh", "rfb", "rdp"):
-                if self.can_upgrade(socktype, tosocktype, options):
+                if server.can_upgrade(socktype, tosocktype, options):
                     socktypes.append(tosocktype)
-        elif socktype in ("ws", "ssl") and self.can_upgrade(socktype, "wss", options):
+        elif socktype in ("ws", "ssl") and server.can_upgrade(socktype, "wss", options):
             socktypes.append("wss")
-        elif socktype == "socket" and self.ssh_upgrade and get_ssh_port() > 0:
+        elif socktype == "socket" and server.ssh_upgrade and get_ssh_port() > 0:
             socktypes = ["ssh"]
         return tuple(socktypes)
 
@@ -143,13 +137,13 @@ class MdnsServer(StubServerMixin):
         mdns_info = {
             "display": self.display,
             "username": get_username(),
-            "uuid": self.uuid,
+            "uuid": self.get_subsystem("id").uuid,
             "platform": sys.platform,
-            "type": self.session_type,
+            "type": self.server.session_type,
         }
         MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
-        if MDNS_EXPOSE_NAME and self.session_name:
-            mdns_info["name"] = self.session_name
+        if MDNS_EXPOSE_NAME and self.server.session_name:
+            mdns_info["name"] = self.server.session_name
         return mdns_info
 
     def mdns_cleanup(self) -> None:

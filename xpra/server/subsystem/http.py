@@ -71,7 +71,6 @@ class HttpServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.menu_provider = None
         self._http_scripts = {}
 
     def init(self, opts) -> None:
@@ -84,8 +83,9 @@ class HttpServer(StubServerMixin):
             "/Sessions": self.http_sessions_request,
             "/Displays": self.http_displays_request,
         }
-        if self.menu_provider:
-            # we have menu data we can expose:
+        # menu data is owned by the MenuServer subsystem:
+        menu = self.get_subsystem("menu")
+        if menu and menu.menu_provider:
             script_options |= {
                 "/Menu": self.http_menu_request,
                 "/MenuIcon": self.http_menu_icon_request,
@@ -114,11 +114,11 @@ class HttpServer(StubServerMixin):
         }
 
     def http_menu_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
-        menu = self.menu_provider.get_menu_data(remove_icons=True)
+        menu = self.get_subsystem("menu").menu_provider.get_menu_data(remove_icons=True)
         return json_response(menu or "not available")
 
     def http_desktop_menu_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
-        xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
+        xsessions = self.get_subsystem("menu").menu_provider.get_desktop_sessions(remove_icons=True)
         return json_response(xsessions or "not available")
 
     def http_menu_icon_request(self, uri: str, _post_data: bytes) -> HttpResponse:
@@ -135,7 +135,7 @@ class HttpServer(StubServerMixin):
         else:
             app_name = path[1]
         log("http_menu_icon_request: category_name=%s, app_name=%s", category_name, app_name)
-        icon_type, icon_data = self.menu_provider.get_menu_icon(category_name, app_name)
+        icon_type, icon_data = self.get_subsystem("menu").menu_provider.get_menu_icon(category_name, app_name)
         return http_icon_response(icon_type, icon_data)
 
     def http_desktop_menu_icon_request(self, uri: str, _post_data: bytes) -> HttpResponse:
@@ -146,7 +146,7 @@ class HttpServer(StubServerMixin):
         # in case the sessionname is followed by a slash:
         sessionname = parts[1].split("/")[0]
         log(f"http_desktop_menu_icon_request: {sessionname=}")
-        icon_type, icon_data = self.menu_provider.get_desktop_menu_icon(sessionname)
+        icon_type, icon_data = self.get_subsystem("menu").menu_provider.get_desktop_menu_icon(sessionname)
         return http_icon_response(icon_type, icon_data)
 
     def http_displays_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
@@ -156,7 +156,7 @@ class HttpServer(StubServerMixin):
 
     def get_displays(self) -> dict[str, Any]:
         from xpra.scripts.display import get_displays_info  # pylint: disable=import-outside-toplevel
-        return get_displays_info(self.dotxpra)
+        return get_displays_info(self.server.dotxpra)
 
     def http_sessions_request(self, _uri, _post_data: bytes) -> HttpResponse:
         sessions = self.get_xpra_sessions()
@@ -165,14 +165,14 @@ class HttpServer(StubServerMixin):
 
     def get_xpra_sessions(self) -> dict[str, Any]:
         from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
-        return get_xpra_sessions(self.dotxpra)
+        return get_xpra_sessions(self.server.dotxpra)
 
     def http_info_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         return json_response(self.get_http_info())
 
     def get_http_info(self) -> dict[str, Any]:
         return {
-            "mode": self.session_type,
+            "mode": self.server.session_type,
             "type": "Python",
-            "uuid": self.uuid,
+            "uuid": self.get_subsystem("id").uuid,
         }

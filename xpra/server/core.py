@@ -107,23 +107,17 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.glib_server import GLibServer
     from xpra.server.auth import AuthenticatedServer
     from xpra.server.subsystem.platform import PlatformServer
-    from xpra.server.subsystem.daemon import DaemonServer
-    from xpra.server.subsystem.sessionfiles import SessionFilesServer
     from xpra.server.subsystem.splash import SplashServer
-    from xpra.server.subsystem.id import IDServer
     from xpra.server.subsystem.info import InfoServer
     classes: list[type] = [
-        GLibServer, PlatformServer, DaemonServer, SessionFilesServer,
+        GLibServer, PlatformServer,
         AuthenticatedServer, SplashServer,
-        IDServer, InfoServer,
+        InfoServer,
     ]
     from xpra.server import features
     if features.control:
         from xpra.server.subsystem.control import ControlHandler
         classes.append(ControlHandler)
-    if features.mdns:
-        from xpra.server.subsystem.mdns import MdnsServer
-        classes.append(MdnsServer)
     return tuple(classes)
 
 
@@ -133,8 +127,20 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     They are NOT inherited into the dynamic ServerBaseClass MRO; instead,
     each is constructed as an instance and stored in `self.subsystems`.
     """
+    from xpra.server.subsystem.daemon import DaemonServer
+    from xpra.server.subsystem.id import IDServer
+    from xpra.server.subsystem.sessionfiles import SessionFilesServer
     from xpra.server.subsystem.version import VersionServer
-    return (VersionServer, )
+    from xpra.server import features
+    classes: list[type] = []
+    # IDServer must come before any subsystem that reads `self.uuid`.
+    # SessionFilesServer must come before any subsystem that appends to
+    # its `session_files` list during init().
+    classes.extend((IDServer, SessionFilesServer, DaemonServer, VersionServer))
+    if features.mdns:
+        from xpra.server.subsystem.mdns import MdnsServer
+        classes.append(MdnsServer)
+    return tuple(classes)
 
 
 SERVER_BASES = get_server_base_classes()
@@ -187,7 +193,6 @@ class ServerCore(ServerBaseClass):
         self.hello_request_handlers.update({
             "connect_test": self._handle_hello_request_connect_test,
         })
-        self.uuid = ""
         self.session_type: str = "unknown"
         self._closing: bool = False
         self._exit_mode = ServerExitMode.UNSET
@@ -217,11 +222,6 @@ class ServerCore(ServerBaseClass):
         self.dotxpra: DotXpra | None = None
         self.unix_socket_paths: list[str] = []
         self.touch_timer: int = 0
-        self.session_files: list[str] = [
-            "cmdline", "server.env", "config", "server.log*",
-            # notifications may use a TMP dir:
-            "tmp/*", "tmp",
-        ]
         self.session_name = ""
 
         # Features:
@@ -446,9 +446,10 @@ class ServerCore(ServerBaseClass):
         close_sockets(sockets)
 
     def init_uuid(self) -> None:
-        # Define a server UUID if needed:
-        self.uuid = os.environ.get("XPRA_PROXY_START_UUID", "") or self.get_server_uuid() or get_hex_uuid()
-        log(f"server uuid is {self.uuid}")
+        # `IDServer` owns the server uuid.
+        uuid = os.environ.get("XPRA_PROXY_START_UUID", "") or self.get_server_uuid() or get_hex_uuid()
+        self.subsystems["id"].uuid = uuid
+        log(f"server uuid is {uuid}")
 
     def get_server_uuid(self) -> str:
         return ""
@@ -1085,9 +1086,8 @@ class ServerCore(ServerBaseClass):
         self._potential_protocols.append(protocol)
         protocol.authenticators = ()
         protocol.invalid_header = self.invalid_header
-        # weak dependency on EncryptionServer:
-        parse_encryption = getattr(self, "parse_encryption", noop)
-        parse_encryption(protocol, socket_options)
+        if enc := self.subsystems.get("encryption"):
+            enc.parse_encryption(protocol, socket_options)
         netlog(f"starting {socktype} protocol")
         protocol.start()
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
