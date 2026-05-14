@@ -169,6 +169,7 @@ def parse_encryption(protocol, socket_options: dict[str, Any], tcp_encryption: s
 
 
 class EncryptionServer(StubServerMixin):
+    PREFIX = "encryption"
 
     def __init__(self):
         StubServerMixin.__init__(self)

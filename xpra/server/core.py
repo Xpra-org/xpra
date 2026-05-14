@@ -53,7 +53,9 @@ from xpra.util.system import register_SIGUSR_signals, get_run_info
 from xpra.util.io import load_binary_file, find_libexec_command
 from xpra.util.background_worker import quit_worker
 from xpra.util.thread import start_thread, check_main_thread
-from xpra.common import noop, noerr, subsystem_name
+from xpra.common import noop, noerr
+from xpra.util.objects import merge_dicts
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.constants import DEFAULT_XDG_DATA_DIRS
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
@@ -147,11 +149,22 @@ class ServerCore(ServerBaseClass):
         authentication and the initial handshake.
     """
     __signals__ = SIGNALS
+    # ServerCore is the framework, not a subsystem.
+    # Explicitly clear PREFIX so it isn't picked up by getattr() through the
+    # dynamic ServerBaseClass MRO (which inherits PREFIX from its subsystems):
+    PREFIX = ""
 
     def __init__(self):
         log("ServerCore.__init__()")
+        # subsystems dict (keyed by PREFIX) is populated as each base's __init__ runs.
+        # Subclasses (ServerBase, ProxyServer, ...) extend this dict with their own bases.
+        if not hasattr(self, "subsystems"):
+            self.subsystems: dict[str, type[StubServerMixin]] = {}
         for bc in SERVER_BASES:
             bc.__init__(self)
+            prefix = getattr(bc, "PREFIX", "")
+            if prefix:
+                self.subsystems[prefix] = bc
         self.start_time = time()
         self.hello_request_handlers.update({
             "connect_test": self._handle_hello_request_connect_test,
@@ -217,8 +230,7 @@ class ServerCore(ServerBaseClass):
         self.rdp_upgrade = opts.rdp_upgrade
         if self.http:
             self.init_html_proxy(opts)
-        for bc in SERVER_BASES:
-            bc.init(self, opts)
+        self._dispatch_fire("init", opts)
         self.init_ssl(opts)
 
     def init_ssl(self, opts) -> None:
@@ -236,8 +248,7 @@ class ServerCore(ServerBaseClass):
 
     def setup(self) -> None:
         self.init_uuid()
-        for bc in SERVER_BASES:
-            bc.setup(self)
+        self._dispatch_fire("setup")
         self.start_listen_sockets()
         self.init_packet_handlers()
         self.add_core_control_commands()
@@ -307,7 +318,77 @@ class ServerCore(ServerBaseClass):
         self.emit("init-thread-ended")
 
     def get_subsystems(self) -> list[str]:
-        return [subsystem_name(c) for c in SERVER_BASES]
+        return list(self.subsystems.keys())
+
+    # --------------------------------------------------------------------
+    # subsystem lookup and dispatch helpers
+    # During this transitional phase, `self.subsystems` stores subsystem
+    # *classes* (not instances). The helpers below transparently support
+    # both classes (call with `self` as first arg) and instances (bound
+    # method call), so per-subsystem migration to standalone instances
+    # can happen incrementally without touching these helpers.
+    # --------------------------------------------------------------------
+
+    def get_subsystem(self, prefix: str):
+        return self.subsystems.get(prefix)
+
+    def call_subsystem(self, prefix: str, method: str, *args, default=None):
+        sub = self.subsystems.get(prefix)
+        if sub is None:
+            return default
+        fn = getattr(sub, method, None)
+        if fn is None:
+            return default
+        if isinstance(sub, type):
+            return fn(self, *args)
+        return fn(*args)
+
+    def _dispatch_fire(self, method: str, *args, reverse: bool = False) -> None:
+        subs = list(self.subsystems.values())
+        if reverse:
+            subs.reverse()
+        for sub in subs:
+            fn = getattr(sub, method, None)
+            if fn is None:
+                continue
+            try:
+                if isinstance(sub, type):
+                    fn(self, *args)
+                else:
+                    fn(*args)
+            except Exception:
+                log.warn(f"Error: in {sub}.{method}", exc_info=True)
+
+    def _dispatch_merge(self, method: str, *args) -> dict:
+        info: dict = {}
+        for sub in self.subsystems.values():
+            fn = getattr(sub, method, None)
+            if fn is None:
+                continue
+            try:
+                if isinstance(sub, type):
+                    d = fn(self, *args)
+                else:
+                    d = fn(*args)
+            except Exception:
+                log.warn(f"Error: in {sub}.{method}", exc_info=True)
+                continue
+            if d:
+                merge_dicts(info, d)
+        return info
+
+    def _dispatch_first_truthy(self, method: str, *args):
+        for sub in self.subsystems.values():
+            fn = getattr(sub, method, None)
+            if fn is None:
+                continue
+            if isinstance(sub, type):
+                r = fn(self, *args)
+            else:
+                r = fn(*args)
+            if r:
+                return r
+        return None
 
     def run(self) -> ExitValue:
         self.print_run_info()
@@ -323,8 +404,7 @@ class ServerCore(ServerBaseClass):
         noerr(sys.stdout.flush)
 
     def cleanup(self) -> None:
-        for bc in SERVER_BASES:
-            bc.cleanup(self)
+        self._dispatch_fire("cleanup", reverse=True)
         self.cancel_touch_timer()
         self.cleanup_all_protocols()
         self.do_cleanup()
@@ -336,8 +416,7 @@ class ServerCore(ServerBaseClass):
         sleep(0.1)
 
     def late_cleanup(self, stop=True) -> None:
-        for bc in SERVER_BASES:
-            bc.late_cleanup(self, stop)
+        self._dispatch_fire("late_cleanup", stop, reverse=True)
         self.cleanup_all_protocols(force=True)
         self._potential_protocols = []
         from xpra.util.child_reaper import reaper_cleanup
@@ -579,9 +658,8 @@ class ServerCore(ServerBaseClass):
             INVALID: self._process_invalid,
         }
         self.add_legacy_alias("disconnect", "connection-close")
-        netlog("initializing packet handlers for %s", SERVER_BASES)
-        for c in SERVER_BASES:
-            c.init_packet_handlers(self)
+        netlog("initializing packet handlers for %s", list(self.subsystems))
+        self._dispatch_fire("init_packet_handlers")
 
     def cleanup_all_protocols(self, reason: str | ConnectionMessage = "", force=False) -> None:
         protocols = self.get_all_protocols()
@@ -1491,8 +1569,7 @@ class ServerCore(ServerBaseClass):
     def make_hello(self, source) -> dict[str, Any]:
         now = time()
         capabilities = get_network_caps(FULL_INFO)
-        for bc in SERVER_BASES:
-            capabilities |= bc.get_caps(self, source)
+        capabilities |= self._dispatch_merge("get_caps", source)
         capabilities |= get_digest_caps()
         capabilities |= {
             "start_time": int(self.start_time),
@@ -1537,10 +1614,13 @@ class ServerCore(ServerBaseClass):
         # this function is for non UI thread info, see also: `get_ui_info`
         info = {}
         subsystems = kwargs.get("subsystems", ())
-        for bc in SERVER_BASES:
-            if subsystems and subsystem_name(bc) not in subsystems:
+        for prefix, sub in self.subsystems.items():
+            if subsystems and prefix not in subsystems:
                 continue
-            info.update(bc.get_info(self, proto))
+            if isinstance(sub, type):
+                info.update(sub.get_info(self, proto))
+            else:
+                info.update(sub.get_info(proto))
 
         # soft dependency on Info subsystem:
         if hasattr(self, "get_server_info"):

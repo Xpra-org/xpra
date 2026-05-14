@@ -19,6 +19,7 @@ class DebugServer(StubServerMixin):
     """
     Mixin for system state debugging, leak detection (file descriptors, memory)
     """
+    PREFIX = "debug"
 
     def __init__(self):
         StubServerMixin.__init__(self)

@@ -29,6 +29,7 @@ class RFBServer(StubServerMixin):
     """
         Adds RFB packet handler to a server.
     """
+    PREFIX = "rfb"
 
     def __init__(self):
         StubServerMixin.__init__(self)

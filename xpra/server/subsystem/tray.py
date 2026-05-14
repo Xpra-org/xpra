@@ -46,6 +46,7 @@ class TrayMenu(StubServerMixin):
     This server module adds a system tray menu,
     typically used with shadow servers to be able to exit the server.
     """
+    PREFIX = "tray"
 
     def __init__(self):
         StubServerMixin.__init__(self)

@@ -21,6 +21,7 @@ class SplashServer(StubServerMixin):
     """
         Manages the splash screen
     """
+    PREFIX = "splash"
 
     def __init__(self):
         StubServerMixin.__init__(self)

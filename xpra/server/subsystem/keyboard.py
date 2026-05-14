@@ -29,6 +29,7 @@ class KeyboardServer(StubServerMixin):
     """
     Mixin for servers that handle keyboards
     """
+    PREFIX = "keyboard"
 
     def __init__(self):
         StubServerMixin.__init__(self)

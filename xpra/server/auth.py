@@ -36,6 +36,7 @@ class AuthenticatedServer(StubServerMixin):
         self.hello_oked
         The entry point is self.verify_auth
     """
+    PREFIX = "auth"
 
     def __init__(self):
         StubServerMixin.__init__(self)

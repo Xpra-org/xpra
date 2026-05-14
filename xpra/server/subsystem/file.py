@@ -27,6 +27,7 @@ class FileServer(StubServerMixin):
     Mixin for servers that can handle file transfers.
     This is also required for printer forwarding.
     """
+    PREFIX = "file"
 
     def __init__(self):
         StubServerMixin.__init__(self)

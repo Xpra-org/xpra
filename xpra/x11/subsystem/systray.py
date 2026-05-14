@@ -11,6 +11,7 @@ log = Logger("server", "tray")
 
 
 class SystemTrayServer(StubServerMixin):
+    PREFIX = "systray"
 
     def __init__(self):
         StubServerMixin.__init__(self)

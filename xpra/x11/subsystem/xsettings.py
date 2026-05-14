@@ -45,6 +45,7 @@ def _get_antialias_hintstyle(antialias: typedict) -> str:
 
 
 class XSettingsServer(StubServerMixin):
+    PREFIX = "xsettings"
 
     def __init__(self):
         StubServerMixin.__init__(self)

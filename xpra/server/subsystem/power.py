@@ -24,6 +24,7 @@ class PowerEventServer(StubServerMixin):
     """
     Adds power events callbacks
     """
+    PREFIX = "power"
 
     def setup(self) -> None:
         add_handler("suspend", self.suspend_event)

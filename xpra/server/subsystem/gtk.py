@@ -74,6 +74,7 @@ class GTKServer(StubServerMixin):
     reporting on top of a running GTK display.
     Backend-specific setup (X11, Wayland, ...) is performed by subclasses.
     """
+    PREFIX = "gtk"
 
     def init(self, opts) -> None:
         log("GTKServer.init(..)")

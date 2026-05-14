@@ -18,6 +18,7 @@ log = Logger("server", "glib")
 
 
 class GLibServer(StubServerMixin, PacketDispatcher):
+    PREFIX = "glib"
 
     def __init__(self):
         StubServerMixin.__init__(self)

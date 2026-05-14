@@ -20,6 +20,7 @@ class SharingServer(StubServerMixin):
     """
     Adds management of sharing and locking of sessions
     """
+    PREFIX = "sharing"
 
     def __init__(self):
         StubServerMixin.__init__(self)

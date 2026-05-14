@@ -15,6 +15,7 @@ log = Logger("server")
 
 
 class DaemonServer(StubServerMixin):
+    PREFIX = "daemon"
 
     def __init__(self):
         StubServerMixin.__init__(self)

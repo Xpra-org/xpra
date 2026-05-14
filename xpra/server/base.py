@@ -14,7 +14,7 @@ from xpra.server.common import get_sources_by_type
 from xpra.server.core import ServerCore
 from xpra.server.source.events import EventConnection
 from xpra.util.background_worker import add_work_item
-from xpra.common import noop, subsystem_name
+from xpra.common import noop
 from xpra.net.constants import ConnectionMessage
 from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
@@ -53,6 +53,10 @@ class ServerBase(ServerBaseClass):
     """
     toggle_features = ("client-shutdown",)
     __signals__ = SIGNALS
+    # ServerBase is the framework, not a subsystem.
+    # Explicitly clear PREFIX so it isn't picked up by getattr() through the
+    # dynamic ServerBaseClass MRO (which inherits PREFIX from its subsystems):
+    PREFIX = ""
     __signals__.update({
         "last-client-exited": 0,
         "client-exited": 1,
@@ -60,8 +64,16 @@ class ServerBase(ServerBaseClass):
     })
 
     def __init__(self):
+        # subsystems dict (keyed by PREFIX) is built up across the inheritance
+        # hierarchy: ServerCore.__init__ adds its own bases, and this loop adds
+        # all the extra subsystems from factory.SERVER_BASES on top.
+        if not hasattr(self, "subsystems"):
+            self.subsystems: dict = {}
         for c in SERVER_BASES:
             c.__init__(self)
+            prefix = getattr(c, "PREFIX", "")
+            if prefix:
+                self.subsystems[prefix] = c
         log("ServerBase.__init__()")
         self.hello_request_handlers.update({
             "exit": self._handle_hello_request_exit,
@@ -103,45 +115,33 @@ class ServerBase(ServerBaseClass):
         # from now on, use the logger for parsing errors:
         from xpra.scripts import config  # pylint: disable=import-outside-toplevel
         config.warn = log.warn
-        for c in SERVER_BASES:
-            start = monotonic()
-            c.init(self, opts)
-            end = monotonic()
-            log("%3ims in %s.init", 1000 * (end - start), c)
+        # ServerCore.init handles connection-layer setup and dispatches `init`
+        # to every entry in self.subsystems (which includes both core's bases
+        # and the extra subsystems registered by ServerBase.__init__):
+        super().init(opts)
 
     def setup(self) -> None:
         log("starting component init")
-        for c in SERVER_BASES:
-            start = monotonic()
-            c.setup(self)
-            end = monotonic()
-            log("%3ims in %s.setup", 1000 * (end - start), c)
+        # ServerCore.setup dispatches `setup` to all subsystems:
+        super().setup()
 
     def get_child_env(self) -> dict[str, str]:
-        env = {}
-        for c in SERVER_BASES:
-            env.update(c.get_child_env(self))
-        return env
+        return self._dispatch_merge("get_child_env")
 
     def server_is_ready(self) -> None:
         super().server_is_ready()
         self.server_event("ready")
 
     def do_cleanup(self) -> None:
+        # ServerCore.cleanup has already dispatched `cleanup` to all subsystems
+        # before invoking do_cleanup; we just emit the server event here.
         self.server_event("exit")
-        log("do_cleanup() calling on %s", SERVER_BASES)
-        for c in reversed(SERVER_BASES):
-            if c != ServerCore:
-                log("%s", c.cleanup)
-                try:
-                    c.cleanup(self)
-                except Exception:
-                    log.warn(f"Error: in {c} cleanup", exc_info=True)
+        log("do_cleanup()")
 
     def late_cleanup(self, stop=True) -> None:
-        for c in reversed(SERVER_BASES):
-            log("%s", c.late_cleanup)
-            c.late_cleanup(self, stop)
+        # ServerCore.late_cleanup dispatches `late_cleanup` to all subsystems
+        # then cleans up potential protocols and the child reaper:
+        super().late_cleanup(stop)
 
     ######################################################################
     # override http scripts to expose just the current session / display
@@ -277,21 +277,13 @@ class ServerBase(ServerBaseClass):
             reject("error accepting new connection")
 
     def parse_hello(self, ss, c: typedict) -> str | ConnectionMessage:
-        for bc in SERVER_BASES:
-            if bc != ServerCore:
-                if err := bc.parse_hello(self, ss, c):
-                    return err
-        return ""
+        return self._dispatch_first_truthy("parse_hello", ss, c) or ""
 
     def add_new_client(self, ss, c: typedict) -> None:
-        for bc in SERVER_BASES:
-            if bc != ServerCore:
-                bc.add_new_client(self, ss, c)
+        self._dispatch_fire("add_new_client", ss, c)
 
     def send_initial_data(self, ss) -> None:
-        for bc in SERVER_BASES:
-            if bc != ServerCore:
-                bc.send_initial_data(self, ss)
+        self._dispatch_fire("send_initial_data", ss)
 
     def client_startup_complete(self, ss) -> None:
         ss.startup_complete()
@@ -319,19 +311,13 @@ class ServerBase(ServerBaseClass):
         f: dict[str, Any] = {
             "client-shutdown": self.client_shutdown,
         }
-        for c in SERVER_BASES:
-            bf = c.get_server_features(self, server_source)
-            log(f"get_server_features({c})={bf}")
-            merge_dicts(f, bf)
+        merge_dicts(f, self._dispatch_merge("get_server_features", server_source))
         return f
 
     def make_hello(self, source) -> dict[str, Any]:
+        # super().make_hello already merges get_caps() across subsystems,
+        # so the result is complete:
         capabilities = super().make_hello(source)
-        for c in SERVER_BASES:
-            if c != ServerCore:
-                caps = c.get_caps(self, source)
-                log("%s.get_caps(%s)=%s", c, source, caps)
-                merge_dicts(capabilities, caps)
         capabilities["server_type"] = "base"
         return capabilities
 
@@ -356,12 +342,15 @@ class ServerBase(ServerBaseClass):
         info: dict[str, Any] = {}
         subsystems = kwargs.get("subsystems", ())
         log("ServerBase.get_ui_info(%s, %s) subsystems=%s", proto, kwargs, subsystems)
-        for c in SERVER_BASES:
-            if subsystems and subsystem_name(c) not in subsystems:
+        for prefix, sub in self.subsystems.items():
+            if subsystems and prefix not in subsystems:
                 continue
-            with log.trap_error("Error collecting UI info from %s", c):
-                mixin_info = c.get_ui_info(self, proto, **kwargs)
-                log("%s.get_ui_info(%s, ..)=%r", c, proto, Ellipsizer(mixin_info))
+            with log.trap_error("Error collecting UI info from %s", prefix):
+                if isinstance(sub, type):
+                    mixin_info = sub.get_ui_info(self, proto, **kwargs)
+                else:
+                    mixin_info = sub.get_ui_info(proto, **kwargs)
+                log("%s.get_ui_info(%s, ..)=%r", prefix, proto, Ellipsizer(mixin_info))
                 merge_dicts(info, mixin_info)
         return info
 
@@ -374,16 +363,19 @@ class ServerBase(ServerBaseClass):
         def up(prefix, d) -> None:
             merge_dicts(info, {prefix: d})
 
-        for c in SERVER_BASES:
-            if subsystems and subsystem_name(c) not in subsystems:
+        for prefix, sub in self.subsystems.items():
+            if subsystems and prefix not in subsystems:
                 continue
-            with log.trap_error(f"Error collecting information from {c}"):
+            with log.trap_error(f"Error collecting information from {prefix}"):
                 cstart = monotonic()
-                mixin_info = c.get_info(self, proto)
-                log("%s.get_info(%s)=%r", c, proto, Ellipsizer(mixin_info))
+                if isinstance(sub, type):
+                    mixin_info = sub.get_info(self, proto)
+                else:
+                    mixin_info = sub.get_info(proto)
+                log("%s.get_info(%s)=%r", prefix, proto, Ellipsizer(mixin_info))
                 merge_dicts(info, mixin_info)
                 cend = monotonic()
-                log("%s.get_info(%s) took %ims", c, proto, int(1000 * (cend - cstart)))
+                log("%s.get_info(%s) took %ims", prefix, proto, int(1000 * (cend - cstart)))
 
         if not subsystems or "features" in subsystems:
             up("features", self.get_features_info())
@@ -402,7 +394,7 @@ class ServerBase(ServerBaseClass):
         return {}
 
     def get_subsystems(self) -> list[str]:
-        return super().get_subsystems() + [subsystem_name(c) for c in SERVER_BASES]
+        return list(self.subsystems.keys())
 
     def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
         log("ServerBase.get_source_info%s", (proto, server_sources))
@@ -461,8 +453,7 @@ class ServerBase(ServerBaseClass):
             self.cleanup_source(source)
             mdns_update = getattr(self, "mdns_update", noop)
             add_work_item(mdns_update)
-        for c in SERVER_BASES:
-            c.cleanup_protocol(self, protocol)
+        self._dispatch_fire("cleanup_protocol", protocol)
         return source
 
     def cleanup_source(self, source) -> None:
@@ -518,8 +509,9 @@ class ServerBase(ServerBaseClass):
         return ""
 
     def init_packet_handlers(self) -> None:
-        for c in SERVER_BASES:
-            c.init_packet_handlers(self)
+        # ServerCore.init_packet_handlers registers core handlers and dispatches
+        # `init_packet_handlers` to all subsystems:
+        super().init_packet_handlers()
         if BACKWARDS_COMPATIBLE:
             # no need for main thread:
             self.add_packet_handler("set_deflate", noop)  # removed in v6

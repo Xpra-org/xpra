@@ -82,6 +82,7 @@ class InfoServer(StubServerMixin):
     """
     Servers that expose info data via info request.
     """
+    PREFIX = "info"
 
     def __init__(self):
         self.hello_request_handlers["info"] = self._handle_hello_request_info
@@ -197,9 +198,11 @@ class InfoServer(StubServerMixin):
         return info
 
     def get_minimal_server_info(self) -> dict[str, Any]:
+        # `uuid` belongs to the IDServer subsystem (see id.py) and is intentionally
+        # excluded here so callers that compose `get_minimal_server_info` into
+        # capabilities don't collide with IDServer.get_caps.
         return {
             "session-type": self.session_type,
-            "uuid": self.uuid,
             "machine-id": get_machine_id(),
         }
 

@@ -36,6 +36,11 @@ class StubServerMixin(superclass):
     uid = getuid()
     gid = getgid()
     hello_request_handlers: dict[str, Callable[[Any, typedict], bool]] = {}
+    # every concrete subsystem should declare a non-empty PREFIX,
+    # used as the key in `Server.subsystems`. Framework classes (ServerCore,
+    # ServerBase, ProxyServer, ...) also inherit from StubServerMixin via the
+    # dynamic ServerBaseClass MRO and explicitly set PREFIX = "" to opt out:
+    PREFIX: str = ""
 
     def init(self, opts) -> None:
         """

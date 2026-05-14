@@ -11,6 +11,7 @@ class UIWatcher(StubServerMixin):
     """
     Monitors the UI thread
     """
+    PREFIX = "watcher"
 
     def __init__(self):
         StubServerMixin.__init__(self)

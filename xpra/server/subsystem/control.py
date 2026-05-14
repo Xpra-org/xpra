@@ -17,6 +17,7 @@ log = Logger("command")
 
 
 class ControlHandler(StubServerMixin):
+    PREFIX = "control"
 
     def __init__(self):
         StubServerMixin.__init__(self)

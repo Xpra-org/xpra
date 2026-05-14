@@ -158,12 +158,19 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
         to the session found using the authenticator's
         get_sessions() function.
     """
+    # ProxyServer is the framework, not a subsystem (same as ServerCore).
+    PREFIX = ""
 
     def __init__(self):
         log("ProxyServer.__init__()")
         SignalEmitter.__init__(self)
+        if not hasattr(self, "subsystems"):
+            self.subsystems: dict = {}
         for bc in SERVER_BASES:
             bc.__init__(self)
+            prefix = getattr(bc, "PREFIX", "")
+            if prefix:
+                self.subsystems[prefix] = bc
         self.hello_request_handlers["stop"] = self._handle_hello_request_stop
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False
@@ -186,8 +193,9 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
         log("ProxyServer.init(%s)", opts)
         self.pings = int(opts.pings)
         self._start_sessions = opts.proxy_start_sessions
-        for bc in SERVER_BASES:
-            bc.init(self, opts)
+        # super().init runs ServerCore.init which handles connection setup and
+        # dispatches `init` to every subsystem registered in self.subsystems:
+        super().init(opts)
         # ensure we cache the platform info before intercepting SIGCHLD
         # as this will cause a fork and SIGCHLD to be emitted:
         from xpra.util.version import get_platform_info
@@ -266,8 +274,9 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
 
     def cleanup(self) -> None:
         self.stop_all_proxies()
-        for bc in SERVER_BASES:
-            bc.cleanup(self)
+        # super().cleanup runs ServerCore.cleanup which dispatches `cleanup` to
+        # every subsystem and then closes protocols and sockets:
+        super().cleanup()
         start = monotonic()
         live = True
         log("cleanup() proxy instances: %s", self.instances)
