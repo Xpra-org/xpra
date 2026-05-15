@@ -9,7 +9,6 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX, gi_import
-from xpra.server.common import get_sources_by_type
 from xpra.server.source.notification import NotificationConnection
 from xpra.util.str_fn import Ellipsizer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
@@ -89,7 +88,7 @@ class NotificationForwarder(StubServerMixin):
 
     def notify_new_user(self, ss) -> None:
         # tell other users:
-        notification_sources = get_sources_by_type(self, NotificationConnection, ss)
+        notification_sources = self.get_sources_by_type(NotificationConnection, ss)
         log("notify_new_user(%s) sources=%s", ss, notification_sources)
         if not notification_sources:
             return
@@ -130,7 +129,7 @@ class NotificationForwarder(StubServerMixin):
             log("notify_callback%s icon=%s",
                 (dbus_id, nid, app_name, replaces_nid, app_icon,
                  summary, body, actions, hints, expire_timeout), Ellipsizer(icon))
-            notification_sources = get_sources_by_type(self, NotificationConnection)
+            notification_sources = self.get_sources_by_type(NotificationConnection)
             for ss in notification_sources:
                 ss.notify(dbus_id, nid, app_name, replaces_nid, app_icon,
                           summary, body, actions, hints, expire_timeout, icon)
@@ -149,7 +148,7 @@ class NotificationForwarder(StubServerMixin):
     def notify_close_callback(self, nid: int) -> None:
         assert self.notifications_forwarder
         log("notify_close_callback(%s)", nid)
-        notification_sources = get_sources_by_type(self, NotificationConnection)
+        notification_sources = self.get_sources_by_type(NotificationConnection)
         for ss in notification_sources:
             ss.notify_close(int(nid))
 
@@ -204,7 +203,7 @@ class NotificationForwarder(StubServerMixin):
     def init_packet_handlers(self) -> None:
         if self.notifications:
             self.add_packets("notification-close", "notification-action", "notification-status", main_thread=True)
-            self.add_legacy_alias("set-notify", "notification-status")
+            self.server.add_legacy_alias("set-notify", "notification-status")
 
     #########################################
     # Control Commands
@@ -216,7 +215,7 @@ class NotificationForwarder(StubServerMixin):
             log(msg)
             return msg
         from xpra.net.control.common import control_get_sources
-        sources = control_get_sources(self, client_uuids)
+        sources = control_get_sources(self.server, client_uuids)
         log("control_command_send_notification(%i, %s, %s, %s) will send to sources %s (matching %s)",
             nid, title, message, client_uuids, sources, client_uuids)
         count = 0
@@ -233,7 +232,7 @@ class NotificationForwarder(StubServerMixin):
             log(msg)
             return msg
         from xpra.net.control.common import control_get_sources
-        sources = control_get_sources(self, client_uuids)
+        sources = control_get_sources(self.server, client_uuids)
         log("control_command_close_notification(%s, %s) will send to %s", nid, client_uuids, sources)
         for source in sources:
             source.notify_close(nid)

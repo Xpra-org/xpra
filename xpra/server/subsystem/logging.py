@@ -112,7 +112,7 @@ class LoggingServer(StubServerMixin):
 
     def local_err(self, message: str, exc, level: int, msg: str, args, kwargs) -> None:
         ll = self.local_logging
-        if self._closing or ll == noop:
+        if self.server._closing or ll == noop:
             return
 
         def local_warn(*args) -> None:
@@ -191,7 +191,7 @@ class LoggingServer(StubServerMixin):
                             etypeinfo = str(exc_info[0])
                         source.send(LOGGING_EVENT, level, "%s: %s" % (etypeinfo, exc_info[1]), dtime)
                 except Exception as e:
-                    if self._closing:
+                    if self.server._closing:
                         return
                     if ll:
                         local_warn("Warning: failed to send log message to %s: %s", source, e)
@@ -252,6 +252,6 @@ class LoggingServer(StubServerMixin):
     def init_packet_handlers(self) -> None:
         if self.remote_logging_receive:
             self.add_packets("logging-event")
-            self.add_legacy_alias("logging", "logging-event")
+            self.server.add_legacy_alias("logging", "logging-event")
         if self.remote_logging_send:
             self.add_packets("logging-control")

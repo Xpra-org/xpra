@@ -40,28 +40,28 @@ class SharingServer(StubServerMixin):
         ac = self.args_control
         ac("set-lock", "modify the lock attribute", min_args=1, max_args=1)
         ac("set-sharing", "modify the sharing attribute", min_args=1, max_args=1)
-        self.hello_request_handlers["detach"] = self._handle_hello_request_detach
+        self.server.hello_request_handlers["detach"] = self._handle_hello_request_detach
 
     def _handle_hello_request_detach(self, proto, _caps: typedict) -> bool:
         # noinspection PySimplifyBooleanCheck
         if self.lock is True:
             log("cannot detach: session is locked")
-            self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
+            self.server.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
             return False
         count = locked = 0
-        for p, ss in tuple(self._server_sources.items()):
+        for p, ss in tuple(self.server._server_sources.items()):
             if p != proto:
                 # weak dependency on `SharingConnection` mixin:
                 if getattr(ss, "lock", False):
                     locked += 1
                 else:
                     log("handle_sharing: detaching %s", ss)
-                    self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
+                    self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
                     count += 1
         message = f"{count} clients have been disconnected"
         if locked:
             message += f", {locked} still have it locked"
-        self.disconnect_client(proto, ConnectionMessage.DONE, message)
+        self.server.disconnect_client(proto, ConnectionMessage.DONE, message)
         return True
 
     def get_sharing_info(self) -> dict[str, Any]:
@@ -79,7 +79,7 @@ class SharingServer(StubServerMixin):
         return self.get_sharing_info()
 
     def parse_hello(self, source, c: typedict) -> str | ConnectionMessage:
-        if not c.boolget("steal", True) and self._server_sources:
+        if not c.boolget("steal", True) and self.server._server_sources:
             return f"{ConnectionMessage.SESSION_BUSY}:this session is already active"
 
         # If we accept this connection, we may disconnect previous one(s)
@@ -88,13 +88,13 @@ class SharingServer(StubServerMixin):
 
         def drop_older_client() -> None:
             if uuid:
-                for p, ss in tuple(self._server_sources.items()):
+                for p, ss in tuple(self.server._server_sources.items()):
                     if ss != source and ss.uuid == uuid and not p.is_closed():
                         log("uuid %s is the same as %s", uuid, ss)
                         log("existing sources: %s", existing_sources)
-                        self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "new connection from the same uuid")
+                        self.server.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "new connection from the same uuid")
 
-        existing_sources = set(ss for ss in self._server_sources.values() if (ss != source and (uuid == "" or ss.uuid != uuid)))
+        existing_sources = set(ss for ss in self.server._server_sources.values() if (ss != source and (uuid == "" or ss.uuid != uuid)))
         is_existing_client = uuid and any(ss.uuid == uuid for ss in existing_sources)
 
         log("checking sharing lock=%s, sharing=%s, existing sources=%s, is existing client=%s",
@@ -126,7 +126,7 @@ class SharingServer(StubServerMixin):
         disconnected = []
         req_sharing = source.requires_sharing()
         log("new client: %s.requires_sharing()=%s", source, req_sharing)
-        for p, ss in tuple(self._server_sources.items()):
+        for p, ss in tuple(self.server._server_sources.items()):
             log("sharing, checking %s:", ss)
             if ss == source or uuid and ss.uuid == uuid:
                 log("same source: %s", ss)
@@ -137,7 +137,7 @@ class SharingServer(StubServerMixin):
             elif self.sharing is False:
                 log("not sharing, required by source %s: %s", source, req_sharing)
                 if req_sharing:
-                    self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this session does not allow sharing")
+                    self.server.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this session does not allow sharing")
                     disconnected.append(ss)
                 else:
                     share_count += 1
@@ -146,11 +146,11 @@ class SharingServer(StubServerMixin):
                 assert self.sharing is None
                 if ss.requires_sharing() and req_sharing and not sharing:
                     log("auto-sharing %s.sharing=%s, %s.sharing=%s", source, req_sharing, source, sharing)
-                    self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "the new client does not wish to share")
+                    self.server.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "the new client does not wish to share")
                     disconnected.append(ss)
                 elif not getattr(ss, "share", True) and req_sharing:
                     log("auto-sharing sharing required but not enabled for %s", ss)
-                    self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this client had not enabled sharing")
+                    self.server.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this client had not enabled sharing")
                     disconnected.append(ss)
                 else:
                     log("auto-sharing for %s", ss)
@@ -158,7 +158,7 @@ class SharingServer(StubServerMixin):
 
         # don't accept this connection if we're going to exit-with-client:
         if disconnected and self.exit_with_client:
-            live = tuple(ss for ss in self._server_sources.values() if ss != source and ss not in disconnected)
+            live = tuple(ss for ss in self.server._server_sources.values() if ss != source and ss not in disconnected)
             if not live:
                 return f"{ConnectionMessage.SERVER_SHUTDOWN}:last client has exited"
         return ""
@@ -172,10 +172,10 @@ class SharingServer(StubServerMixin):
         ss.share = sharing
         if not sharing:
             # disconnect other users:
-            for p, ss in tuple(self._server_sources.items()):
+            for p, ss in tuple(self.server._server_sources.items()):
                 if p != proto:
-                    self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
-                                           f"client {ss.counter} no longer wishes to share the session")
+                    self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
+                                                  f"client {ss.counter} no longer wishes to share the session")
 
     def _process_lock_toggle(self, proto, packet: Packet) -> None:
         assert self.lock is None
@@ -193,15 +193,15 @@ class SharingServer(StubServerMixin):
 
     def control_command_set_lock(self, lock) -> str:
         self.lock = str_to_bool(lock)
-        self.setting_changed("lock", lock is not False)
-        self.setting_changed("lock-toggle", lock is None)
+        self.server.setting_changed("lock", lock is not False)
+        self.server.setting_changed("lock-toggle", lock is None)
         return f"lock set to {self.lock}"
 
     def _sharing_clients(self, exclude=None) -> dict[int, Any]:
         """Returns {counter: proto} for all connected clients that require sharing, excluding `exclude`."""
         return {
             getattr(ss, "counter", 0): proto
-            for proto, ss in tuple(self._server_sources.items())
+            for proto, ss in tuple(self.server._server_sources.items())
             if ss is not exclude and ss.requires_sharing()
         }
 
@@ -211,15 +211,15 @@ class SharingServer(StubServerMixin):
         if sharing == self.sharing:
             return message
         self.sharing = sharing
-        self.setting_changed("sharing", sharing is not False)
-        self.setting_changed("sharing-toggle", sharing is None)
+        self.server.setting_changed("sharing", sharing is not False)
+        self.server.setting_changed("sharing-toggle", sharing is None)
         if not sharing:
             # keep only the first-connected client that requires sharing
             sharing_clients = self._sharing_clients()
             n = len(sharing_clients)
             if n > 1:
                 for c in sorted(sharing_clients)[1:]:
-                    self.disconnect_client(sharing_clients[c], ConnectionMessage.SESSION_BUSY,
-                                           "this session is no longer shared")
+                    self.server.disconnect_client(sharing_clients[c], ConnectionMessage.SESSION_BUSY,
+                                                  "this session is no longer shared")
                 message += f", disconnected {n - 1} clients"
         return message

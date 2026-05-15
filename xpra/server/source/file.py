@@ -30,6 +30,8 @@ class FileConnection(FileTransferHandler, StubClientConnection):
 
     def init_from(self, _protocol, server) -> None:
         self.init_attributes()
+        # `FileServer` is the standalone subsystem instance:
+        file_transfer = server.subsystems["file"].file_transfer
         # copy attributes
         for x in (
                 "file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",
@@ -37,4 +39,4 @@ class FileConnection(FileTransferHandler, StubClientConnection):
                 "open_url", "open_url_ask",
                 "file_ask_timeout", "open_command",
         ):
-            setattr(self, x, getattr(server.file_transfer, x))
+            setattr(self, x, getattr(file_transfer, x))

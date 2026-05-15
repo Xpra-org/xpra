@@ -77,7 +77,7 @@ class ControlHandler(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         self.add_packets("control-request")
-        self.add_legacy_alias("command_request", "control-request")
+        self.server.add_legacy_alias("command_request", "control-request")
 
     #########################################
     # Control Commands

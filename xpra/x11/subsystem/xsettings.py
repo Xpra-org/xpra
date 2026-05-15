@@ -8,7 +8,6 @@ from typing import Any
 
 from xpra.net.common import Packet
 from xpra.common import noop
-from xpra.server.common import get_sources_by_type
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr, strtobytes
 from xpra.util.parsing import str_to_bool
@@ -104,17 +103,19 @@ class XSettingsServer(StubServerMixin):
     def init_all_server_settings(self) -> None:
         if not features.display:
             return
-        log("init_all_server_settings() dpi=%i, default_dpi=%i", self.dpi, self.default_dpi)
+        # `DisplayManager` is still class-based; its state lives on `self.server`.
+        # When it migrates, replace these with `self.get_subsystem("display").X`.
+        log("init_all_server_settings() dpi=%i, default_dpi=%i", self.server.dpi, self.server.default_dpi)
         # almost like update_all, except we use the default_dpi,
         # since this is called before the first client connects
         self.do_update_server_settings(
             {
                 "resource-manager": b"",
                 "xsettings-blob": (0, [])
-            }, reset=True, dpi=self.default_dpi, cursor_size=24)
+            }, reset=True, dpi=self.server.default_dpi, cursor_size=24)
 
     def add_new_client(self, ss, c: typedict) -> None:
-        share_count = getattr(self, "get_ui_sharing_count", noop)(ss) or 0
+        share_count = getattr(self.server, "get_ui_sharing_count", noop)(ss) or 0
         self.update_all_server_settings(share_count == 0)  # if we're not sharing, reset all the settings
 
     def update_all_server_settings(self, reset=False) -> None:
@@ -127,11 +128,15 @@ class XSettingsServer(StubServerMixin):
     def update_server_settings(self, settings=None, reset=False) -> None:
         if not features.display:
             return
-        cursor_size = getattr(self, "cursor_size", 0)
-        dpi = getattr(self, "dpi", 0)
-        antialias = getattr(self, "antialias", {})
-        double_click_time = getattr(self, "double_click_time", 0)
-        double_click_distance = getattr(self, "double_click_distance", (-1, -1))
+        # `cursor_size` is owned by `CursorManager` (now a standalone subsystem).
+        # `dpi`/`antialias`/`double_click_*` live on `DisplayManager` (still
+        # class-based, reachable via `self.server.X` until it migrates).
+        cursor = self.get_subsystem("cursor")
+        cursor_size = getattr(cursor, "cursor_size", 0) if cursor else 0
+        dpi = getattr(self.server, "dpi", 0)
+        antialias = getattr(self.server, "antialias", {})
+        double_click_time = getattr(self.server, "double_click_time", 0)
+        double_click_distance = getattr(self.server, "double_click_distance", (-1, -1))
         self.do_update_server_settings(settings or self._settings, reset,
                                        dpi, double_click_time, double_click_distance,
                                        antialias, cursor_size)
@@ -196,7 +201,7 @@ class XSettingsServer(StubServerMixin):
                     except ImportError:
                         sss = ()
                     else:
-                        sss = get_sources_by_type(self, DisplayConnection)
+                        sss = self.get_sources_by_type(DisplayConnection)
                     if len(sss) == 1:
                         # only honour sub-pixel hinting if a single client is connected
                         # and only when it is not using any scaling (or overridden with SCALED_FONT_ANTIALIAS):
@@ -222,8 +227,8 @@ class XSettingsServer(StubServerMixin):
 
             # cook xsettings to add various settings:
             # (as those may not be present in xsettings on some platforms… like win32 and osx)
-            dc_time = getattr(self, "double_click_time", 0)
-            dc_distance = getattr(self, "double_click_distance", (-1, -1))
+            dc_time = getattr(self.server, "double_click_time", 0)
+            dc_distance = getattr(self.server, "double_click_distance", (-1, -1))
             have_override = dc_time > 0 or dc_distance != (-1, -1) or antialias or dpi > 0
             if k == "xsettings-blob" and have_override:
                 # start by removing blocklisted options:

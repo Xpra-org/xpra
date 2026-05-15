@@ -119,17 +119,26 @@ class OpenGLInfo(StubServerMixin):
         start_thread(query, "query-opengl", daemon=True)
 
     def query_opengl(self) -> dict[str, Any]:
-        # `probe_opengl_module` only checks that the modules are
-        # installable; the actual import + display probe runs in an
-        # `xpra opengl --opengl=force` subprocess so the parent server
-        # never pays the ~6 MB / thousands-of-objects PyOpenGL import
-        # cost.
+        """
+        Run an `xpra opengl --opengl=force` subprocess to probe the OpenGL
+        capabilities, so the parent server never pays the ~6 MB /
+        thousands-of-objects PyOpenGL import cost.
+
+        Note on child-command plumbing: `ChildCommandServer` (when present)
+        provides an *enhanced* `get_full_child_command` that prepends the
+        configured `exec_wrapper`; we route through it via `get_subsystem`
+        so the wrapper is honoured here too. The environment is gathered
+        from the server's `get_child_env`, which on `ServerBase` aggregates
+        contributions from every subsystem.
+        """
         err = probe_opengl_module()
         if err:
             return err
         from xpra.platform.paths import get_xpra_command
-        cmd = self.get_full_child_command(get_xpra_command() + ["opengl", "--opengl=force"])
-        return run_opengl_probe(cmd, self.get_child_env(), self.display)
+        cmd = get_xpra_command() + ["opengl", "--opengl=force"]
+        cmd_helper = self.get_subsystem("command") or self
+        cmd = cmd_helper.get_full_child_command(cmd)
+        return run_opengl_probe(cmd, self.server.get_child_env(), self.display)
 
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}

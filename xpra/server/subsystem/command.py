@@ -516,7 +516,7 @@ class ChildCommandServer(StubServerMixin):
             self.add_packets("command-signal")
         if self.start_new_commands:
             self.add_packets(f"{ChildCommandServer.PREFIX}-start")
-            self.add_legacy_alias("start-command", f"{ChildCommandServer.PREFIX}-start")
+            self.server.add_legacy_alias("start-command", f"{ChildCommandServer.PREFIX}-start")
 
     #########################################
     # Control Commands

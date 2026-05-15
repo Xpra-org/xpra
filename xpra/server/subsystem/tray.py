@@ -201,7 +201,7 @@ class TrayMenu(StubServerMixin):
 
     def tray_exit_callback(self, *_args) -> None:
         self.close_tray_menu()
-        GLib.idle_add(self.clean_quit, False)
+        GLib.idle_add(self.server.clean_quit, False)
 
     def close_tray_menu(self, *_args) -> None:
         if self.tray_menu_shown:

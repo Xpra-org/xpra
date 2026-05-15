@@ -47,7 +47,8 @@ class CursorsConnection(StubClientConnection):
         self.last_cursor_sent: tuple = ()
 
     def init_from(self, _protocol, server) -> None:
-        self.get_cursor_data_cb = server.get_cursor_data
+        # `CursorManager` is the standalone subsystem instance:
+        self.get_cursor_data_cb = server.subsystems["cursor"].get_cursor_data
 
     def init_state(self) -> None:
         # WindowSource for each Window ID

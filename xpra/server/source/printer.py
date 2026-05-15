@@ -74,11 +74,14 @@ class PrinterConnection(FileTransferHandler, StubClientConnection):
     def init_from(self, _protocol, server) -> None:
         self.init_attributes()
         self.unix_socket_paths: list[str] = server.unix_socket_paths
+        # `PrinterServer` owns its own copy of the file-transfer attrs
+        # (init_printing may disable `printing` based on local sockets/auth):
+        file_transfer = server.subsystems["printer"].file_transfer
         # copy attributes
         for x in (
                 "printing", "printing_ask",
         ):
-            setattr(self, x, getattr(server.file_transfer, x))
+            setattr(self, x, getattr(file_transfer, x))
 
     ######################################################################
     # printing:

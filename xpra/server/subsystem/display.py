@@ -553,6 +553,6 @@ class DisplayManager(StubServerMixin):
     def init_packet_handlers(self) -> None:
         self.add_packets("display-configure", "display-request-screenshot", "display-request-icon", main_thread=True)
         if BACKWARDS_COMPATIBLE:
-            self.add_legacy_alias("configure-display", "display-configure")
-            self.add_legacy_alias("screenshot", "display-request-screenshot")
+            self.server.add_legacy_alias("configure-display", "display-configure")
+            self.server.add_legacy_alias("screenshot", "display-request-screenshot")
             self.add_packets("desktop_size", main_thread=True)

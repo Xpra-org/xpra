@@ -10,10 +10,11 @@ from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AdHocStruct
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.server.source.stub import StubClientConnection
 
 
-class ServerMixinTest(unittest.TestCase):
+class ServerMixinTest(unittest.TestCase, SignalEmitter):
 
     @classmethod
     def setUpClass(cls):
@@ -24,6 +25,9 @@ class ServerMixinTest(unittest.TestCase):
         os.environ["XPRA_NOX11"] = "1"
 
     def setUp(self):
+        # SignalEmitter holds per-instance state in `_signal_callbacks`;
+        # initialize it so subsystems can `connect` / `emit` against us:
+        SignalEmitter.__init__(self)
         self.mixin = None
         self.source = None
         self.protocol = None
@@ -82,6 +86,17 @@ class ServerMixinTest(unittest.TestCase):
     def create_test_sockets(self):
         return {}
 
+    # Server-side helpers that subsystems may delegate to via StubServerMixin.
+    # `connect` / `emit` come from `SignalEmitter`. The rest are no-ops:
+
+    def disconnect_client(self, *_args, **_kwargs) -> None:
+        pass
+
+    def clean_quit(self, *_args, **_kwargs) -> None:
+        pass
+
+    _closing = False
+
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubClientConnection):
         # Helper attributes / methods that subsystems expect to find on the
         # owning server. Set on `self` (the test class, acting as the mock
@@ -104,13 +119,18 @@ class ServerMixinTest(unittest.TestCase):
             takes_server = False
         if takes_server:
             x = self.mixin = mclass(self)
-            prefix = getattr(x, "PREFIX", "") or getattr(mclass, "PREFIX", "")
-            if prefix:
-                self.subsystems[prefix] = x
+            # mirror `_server_sources` on the mixin for tests that write
+            # directly to it (e.g. encoding_test): instance-based subsystems
+            # reach the same dict via `self.server._server_sources`.
+            x._server_sources = self._server_sources
         else:
             x = self.mixin = mclass()
             # legacy wiring: subsystems resolve these names via the dynamic
-            # MRO, but in the test there is no enclosing server class:
+            # MRO, but in the test there is no enclosing server class. Also
+            # override `x.server` (which `StubServerMixin.__init__` set to
+            # `x` itself) so delegating helpers like `self.connect` route
+            # to this test class's mocks instead of recursing into `x`:
+            x.server = self
             x._socket_info = self._socket_info
             x._server_sources = self._server_sources
             x.add_packets = self.add_packets
@@ -118,6 +138,13 @@ class ServerMixinTest(unittest.TestCase):
             x.add_packet_handler = self.add_packet_handler
             x.get_server_source = self.get_server_source
             x.get_sources_by_type = self.get_sources_by_type
+        # Register the subsystem under its PREFIX so source classes that look
+        # up via `server.subsystems[prefix].attr` (instance-based pattern)
+        # can find it - and so peer-subsystem lookups via `self.get_subsystem`
+        # also work in test contexts:
+        prefix = getattr(x, "PREFIX", "") or getattr(mclass, "PREFIX", "")
+        if prefix:
+            self.subsystems[prefix] = x
         x.init_state()
         x.init(opts)
         if not takes_server:
@@ -133,10 +160,14 @@ class ServerMixinTest(unittest.TestCase):
             self.protocol.TYPE = "xpra"
             self.source.wants = ("display", "foo")
             self.source.protocol = self.protocol
-            # For instance-based subsystems, `self` (the test class) is the
-            # mock server and exposes `subsystems`. For legacy mixin subsystems,
-            # passing `x` keeps the original behaviour.
-            self.source.init_from(self.protocol, self if takes_server else x)
+            # Pass `x` (the subsystem instance) as the server. Source classes
+            # that read `server.attr` directly (legacy class-based pattern)
+            # find the attr on `x`; source classes that look up
+            # `server.subsystems["prefix"].attr` (instance-based pattern)
+            # also work because we mirror the test's `subsystems` dict onto
+            # `x` here:
+            x.subsystems = self.subsystems
+            self.source.init_from(self.protocol, x)
             self.source.init_state()
             self.source.hello_sent = 0.0
             self.source.parse_client_caps(caps)

@@ -67,11 +67,13 @@ class MMAP_Connection(StubClientConnection):
         self.mmap_filenames: Sequence[str] = ()
 
     def init_from(self, _protocol, server) -> None:
-        self.mmap_supported = server.mmap_supported
-        if server.mmap_filename:
-            sep = "," if (server.mmap_filename.count(",") == 1 or server.mmap_filename.count(":") > 1) else os.path.pathsep
-            self.mmap_filenames = server.mmap_filename.split(sep)
-        self.mmap_min_size = server.mmap_min_size
+        # `MMAP_Server` is the standalone subsystem instance:
+        mmap_sub = server.subsystems["mmap"]
+        self.mmap_supported = mmap_sub.mmap_supported
+        if mmap_sub.mmap_filename:
+            sep = "," if (mmap_sub.mmap_filename.count(",") == 1 or mmap_sub.mmap_filename.count(":") > 1) else os.path.pathsep
+            self.mmap_filenames = mmap_sub.mmap_filename.split(sep)
+        self.mmap_min_size = mmap_sub.mmap_min_size
 
     def init_state(self) -> None:
         self.mmap_read_area = None

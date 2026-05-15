@@ -48,7 +48,14 @@ class XCursorServer(CursorManager):
             log("get_default_cursor=%s", Ellipsizer(self.default_cursor_image))
             from xpra.x11.bindings.core import get_root_xid
             rxid = get_root_xid()
-            add_event_receiver(rxid, self)
+            # register the GObject server as the receiver (X11 dispatch
+            # requires a GObject type, see BellServer.setup for context)
+            # and route the signal to our subsystem method:
+            add_event_receiver(rxid, self.server)
+            self.server.connect("x11-cursor-event", self._on_x11_cursor_event)
+
+    def _on_x11_cursor_event(self, _emitter, event: X11Event) -> None:
+        self.do_x11_cursor_event(event)
 
     # noinspection PyMethodMayBeStatic
     def get_cursor_image(self) -> Sequence:
@@ -85,7 +92,7 @@ class XCursorServer(CursorManager):
             return
         log("cursor_event: %s", event)
         self.last_cursor_serial = event.cursor_serial
-        for ss in self.window_sources():
+        for ss in self.server.window_sources():
             # not all client connections support `send_cursor`:
             send_cursor: Callable = getattr(ss, "send_cursor", noop)
             send_cursor()

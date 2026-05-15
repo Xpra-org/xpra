@@ -292,8 +292,8 @@ class ClipboardServer(StubServerMixin):
                     "pending-requests", "enable-selections", "loop-uuids",
                     "status",
             ):
-                self.add_packet_handler(f"{ClipboardServer.PREFIX}-%s" % x, self._process_clipboard_packet)
-            self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardServer.PREFIX}-status")
+                self.server.add_packet_handler(f"{ClipboardServer.PREFIX}-%s" % x, self._process_clipboard_packet)
+            self.server.add_legacy_alias("set-clipboard-enabled", f"{ClipboardServer.PREFIX}-status")
 
     #########################################
     # Control Commands

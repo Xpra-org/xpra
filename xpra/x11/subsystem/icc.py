@@ -5,7 +5,6 @@
 
 from typing import Any
 
-from xpra.server.common import get_sources_by_type
 from xpra.server.source.display import DisplayConnection
 from xpra.util.env import envbool
 from xpra.util.str_fn import hexstr
@@ -54,7 +53,7 @@ class ICCServer(StubServerMixin):
         if not SYNC_ICC:
             return
         from xpra.x11.xroot_props import root_set, root_array_set
-        display_clients = get_sources_by_type(self, DisplayConnection)
+        display_clients = self.get_sources_by_type(DisplayConnection)
         if len(display_clients) != 1:
             log("%i display clients, resetting ICC profile to default", len(display_clients))
             self.reset_icc_profile()

@@ -486,9 +486,12 @@ class ServerBase(ServerBaseClass):
 
     def last_client_exited(self) -> None:
         # must run from the UI thread (modifies focus and keys)
-        netlog("last_client_exited() exit_with_client=%s", self.exit_with_client)
+        # `exit_with_client` is owned by `SharingServer`:
+        sharing = self.subsystems.get("sharing")
+        exit_with_client = bool(sharing and sharing.exit_with_client)
+        netlog("last_client_exited() exit_with_client=%s", exit_with_client)
         self.emit("last-client-exited")
-        if self.exit_with_client and not self._closing:
+        if exit_with_client and not self._closing:
             netlog.info("Last client has disconnected, terminating")
             self.clean_quit(False)
 

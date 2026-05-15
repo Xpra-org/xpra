@@ -52,10 +52,18 @@ class StubServerMixin(superclass):
 
     def emit(self, signal: str, *args):
         """ delegate signal emission to the owning server """
+        if self.server is self:
+            # bare-stub fallback (e.g. unit tests without a real server) -
+            # avoid infinite recursion by no-oping
+            return None
         return self.server.emit(signal, *args)
 
     def connect(self, signal: str, cb, *args):
         """ delegate signal connection to the owning server """
+        if self.server is self:
+            # bare-stub fallback (e.g. unit tests without a real server) -
+            # avoid infinite recursion by no-oping
+            return None
         return self.server.connect(signal, cb, *args)
 
     def get_server_source(self, proto):
@@ -80,6 +88,13 @@ class StubServerMixin(superclass):
         `PacketDispatcher.add_packets` baked into the server class, which
         looks up handlers on the dispatcher itself - for instance-based
         subsystems, the handlers no longer live there.
+
+        Note: `add_packet_handler` and `add_legacy_alias` are deliberately
+        NOT mirrored on this stub - they would shadow `PacketDispatcher`'s
+        versions (which sit later in `GLibServer`'s MRO) on the actual
+        server class, causing infinite recursion. Subsystems that need
+        either should call `self.server.add_packet_handler(...)` or
+        `self.server.add_legacy_alias(...)` explicitly.
         """
         for packet_type in packet_types:
             handler = getattr(self, "_process_" + packet_type.replace("-", "_"))

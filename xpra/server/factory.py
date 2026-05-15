@@ -12,23 +12,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server import features
     from xpra.server.core import ServerCore
     classes: list[type] = [ServerCore]
-    from xpra.server.subsystem.sharing import SharingServer
-    classes.append(SharingServer)
     # `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
     # (Ping has been migrated to a standalone instance — see
     # `get_instance_subsystem_classes` below.)
-    if features.file:
-        from xpra.server.subsystem.file import FileServer
-        classes.append(FileServer)
-    if features.printer:
-        from xpra.server.subsystem.printer import PrinterServer
-        classes.append(PrinterServer)
-    if features.mmap:
-        from xpra.server.subsystem.mmap import MMAP_Server
-        classes.append(MMAP_Server)
-    if features.logging:
-        from xpra.server.subsystem.logging import LoggingServer
-        classes.append(LoggingServer)
     if features.webcam:
         from xpra.server.subsystem.webcam import WebcamServer
         classes.append(WebcamServer)
@@ -43,10 +29,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     elif features.x11:
         from xpra.x11.subsystem.x11init import X11Init
         classes.append(X11Init)
-    if features.tray:
-        from xpra.server.subsystem.tray import TrayMenu
-        classes.append(TrayMenu)
-
     if features.display:
         if features.x11:
             from xpra.x11.subsystem.display import X11DisplayManager
@@ -54,21 +36,6 @@ def get_server_base_classes() -> tuple[type, ...]:
         else:
             from xpra.server.subsystem.display import DisplayManager
             classes.append(DisplayManager)
-    if features.opengl:
-        from xpra.server.subsystem.opengl import OpenGLInfo
-        classes.append(OpenGLInfo)
-    if features.x11 and features.display:
-        from xpra.x11.subsystem.icc import ICCServer
-        classes.append(ICCServer)
-    if features.x11 and features.bell:
-        from xpra.x11.subsystem.bell import BellServer
-        classes.append(BellServer)
-    if features.x11 and features.systray:
-        from xpra.x11.subsystem.systray import SystemTrayServer
-        classes.append(SystemTrayServer)
-    if features.notification:
-        from xpra.server.subsystem.notification import NotificationForwarder
-        classes.append(NotificationForwarder)
     if features.clipboard:
         from xpra.server.subsystem.clipboard import ClipboardServer
         classes.append(ClipboardServer)
@@ -95,19 +62,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.encoding:
         from xpra.server.subsystem.encoding import EncodingServer
         classes.append(EncodingServer)
-    if features.cursor:
-        if features.x11:
-            from xpra.x11.subsystem.cursor import XCursorServer
-            classes.append(XCursorServer)
-        else:
-            from xpra.server.subsystem.cursor import CursorManager
-            classes.append(CursorManager)
     if features.window:
         from xpra.server.subsystem.window import WindowServer
         classes.append(WindowServer)
-    if features.x11 and features.display:
-        from xpra.x11.subsystem.xsettings import XSettingsServer
-        classes.append(XSettingsServer)
     # this should be last so that the environment is fully prepared:
     if features.command:
         from xpra.server.subsystem.command import ChildCommandServer
@@ -173,4 +130,46 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     if features.command:
         from xpra.server.subsystem.menu import MenuServer
         classes.append(MenuServer)
+    if features.logging:
+        from xpra.server.subsystem.logging import LoggingServer
+        classes.append(LoggingServer)
+    if features.tray:
+        from xpra.server.subsystem.tray import TrayMenu
+        classes.append(TrayMenu)
+    if features.opengl:
+        from xpra.server.subsystem.opengl import OpenGLInfo
+        classes.append(OpenGLInfo)
+    if features.mmap:
+        from xpra.server.subsystem.mmap import MMAP_Server
+        classes.append(MMAP_Server)
+    if features.notification:
+        from xpra.server.subsystem.notification import NotificationForwarder
+        classes.append(NotificationForwarder)
+    if features.file:
+        from xpra.server.subsystem.file import FileServer
+        classes.append(FileServer)
+    if features.printer:
+        from xpra.server.subsystem.printer import PrinterServer
+        classes.append(PrinterServer)
+    if features.x11 and features.display:
+        from xpra.x11.subsystem.icc import ICCServer
+        classes.append(ICCServer)
+    if features.x11 and features.bell:
+        from xpra.x11.subsystem.bell import BellServer
+        classes.append(BellServer)
+    if features.x11 and features.systray:
+        from xpra.x11.subsystem.systray import SystemTrayServer
+        classes.append(SystemTrayServer)
+    from xpra.server.subsystem.sharing import SharingServer
+    classes.append(SharingServer)
+    if features.cursor:
+        if features.x11:
+            from xpra.x11.subsystem.cursor import XCursorServer
+            classes.append(XCursorServer)
+        else:
+            from xpra.server.subsystem.cursor import CursorManager
+            classes.append(CursorManager)
+    if features.x11 and features.display:
+        from xpra.x11.subsystem.xsettings import XSettingsServer
+        classes.append(XSettingsServer)
     return tuple(classes)

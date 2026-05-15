@@ -12,7 +12,6 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.exit_codes import ExitCode
-from xpra.server.common import get_sources_by_type
 from xpra.server.source.file import FileConnection
 from xpra.util.stats import to_std_unit
 from xpra.os_util import WIN32, POSIX
@@ -54,10 +53,13 @@ class PrinterServer(StubServerMixin):
         self.lpadmin: str = ""
         self.lpinfo: str = ""
         self.add_printer_options = []
-        # self.file_transfer is already initialized by FileServer,
-        # so this is redundant except for subsystem unit tests:
+        # PrinterServer maintains its own FileTransferAttributes so that
+        # `init_printing` can disable `printing` based on local conditions
+        # (available sockets, configured auth) without affecting FileServer's
+        # copy. Source classes look it up via the subsystem (see
+        # source/printer.py).
         self.file_transfer = FileTransferAttributes()
-        self.hello_request_handlers["print"] = self._handle_hello_request_print
+        self.server.hello_request_handlers["print"] = self._handle_hello_request_print
 
     def init(self, opts) -> None:
         self.file_transfer.init_opts(opts, can_ask=False)
@@ -70,7 +72,7 @@ class PrinterServer(StubServerMixin):
 
     def setup(self) -> None:
         # verify we have a local socket for printing:
-        sockets = getattr(self, "sockets", ())
+        sockets = getattr(self.server, "sockets", ())
         unixsockets = [sock.address for sock in sockets if sock.socktype == "socket"]
         log("local unix domain sockets we can use for printing: %s", unixsockets)
         if not unixsockets and self.file_transfer.printing:
@@ -128,7 +130,7 @@ class PrinterServer(StubServerMixin):
             printing = False
         # verify that we can talk to the socket
         # (weak dependency on `auth_classes`)
-        auth_classes: dict[str, Sequence[AuthDef]] = getattr(self, "auth_classes", {})
+        auth_classes: dict[str, Sequence[AuthDef]] = getattr(self.server, "auth_classes", {})
         socket_auth_classes: Sequence[AuthDef] = auth_classes.get("socket", ())
         if printing and socket_auth_classes:
             fail: list[str] = []
@@ -161,7 +163,7 @@ class PrinterServer(StubServerMixin):
             "info": message,
         }
         proto.send_now(Packet("hello", hello))
-        self.send_disconnect(proto, ConnectionMessage.DONE)
+        self.server.send_disconnect(proto, ConnectionMessage.DONE)
         return True
 
     def _process_print_file(self, _proto, packet: Packet) -> None:
@@ -225,7 +227,7 @@ class PrinterServer(StubServerMixin):
             _save_print_job(filename, file_data)
 
         sent = 0
-        file_sources = get_sources_by_type(self, FileConnection)
+        file_sources = self.get_sources_by_type(FileConnection)
         log("will try to send to %i clients: %s", len(file_sources), file_sources)
         for ss in file_sources:
             if source_uuid not in ("*", ss.uuid):
@@ -261,15 +263,15 @@ class PrinterServer(StubServerMixin):
         if ss is None:
             return
         printers = packet.get_dict(1)
-        auth_class: Sequence[AuthDef] = self.auth_classes.get("socket", ())
-        # optional dependency on `self.password_file` from AuthServer:
-        password_file: Sequence[str] = getattr(self, "password_file", ())
+        auth_class: Sequence[AuthDef] = self.server.auth_classes.get("socket", ())
+        # optional dependency on `password_file` from AuthServer (still on the server):
+        password_file: Sequence[str] = getattr(self.server, "password_file", ())
         ss.set_printers(printers, password_file, auth_class)
 
     def init_packet_handlers(self) -> None:
         # noqa: E241
         if self.file_transfer.printing:
-            self.add_legacy_alias("printers", "print-devices")
-            self.add_legacy_alias("print", "print-file")
+            self.server.add_legacy_alias("printers", "print-devices")
+            self.server.add_legacy_alias("print", "print-file")
             self.add_packets("print-devices",
                              "print-file")

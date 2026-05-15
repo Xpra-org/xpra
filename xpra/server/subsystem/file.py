@@ -132,17 +132,17 @@ class FileServer(StubServerMixin):
     def init_packet_handlers(self) -> None:
         # noqa: E241
         if self.file_transfer.printing or self.file_transfer.file_transfer:
-            self.add_legacy_alias("send-file", "file-send")
-            self.add_legacy_alias("ack-file-chunk", "file-ack-chunk")
-            self.add_legacy_alias("send-file-chunk", "file-send-chunk")
-            self.add_legacy_alias("send-data-request", "file-date-request")
-            self.add_legacy_alias("send-data-response", "file-date-response")
+            self.server.add_legacy_alias("send-file", "file-send")
+            self.server.add_legacy_alias("ack-file-chunk", "file-ack-chunk")
+            self.server.add_legacy_alias("send-file-chunk", "file-send-chunk")
+            self.server.add_legacy_alias("send-data-request", "file-date-request")
+            self.server.add_legacy_alias("send-data-response", "file-date-response")
 
             self.add_packets("file-send", "file-ack-chunk", "file-send-chunk",
                              "file-data-request", "file-data-response")
 
         if self.file_transfer.file_transfer:
-            self.add_legacy_alias("request-file", "file-request")
+            self.server.add_legacy_alias("request-file", "file-request")
             self.add_packets("file-request")
 
     #########################################
@@ -152,7 +152,7 @@ class FileServer(StubServerMixin):
     def control_command_open_url(self, url: str, client_uuids="*") -> str:
         # find the clients:
         from xpra.net.control.common import control_get_sources, ControlError
-        sources = control_get_sources(self, client_uuids)
+        sources = control_get_sources(self.server, client_uuids)
         if not sources:
             raise ControlError(f"no clients found matching: {client_uuids!r}")
         clients = 0
@@ -182,7 +182,7 @@ class FileServer(StubServerMixin):
     def do_control_file_command(self, command_type: str, client_uuids, filename: str, source_flag_name, send_file_args) -> str:
         # find the clients:
         from xpra.net.control.common import control_get_sources, ControlError
-        sources = control_get_sources(self, client_uuids)
+        sources = control_get_sources(self.server, client_uuids)
         if not sources:
             raise ControlError(f"no clients found matching: {client_uuids!r}")
 

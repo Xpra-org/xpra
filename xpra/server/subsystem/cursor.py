@@ -9,7 +9,6 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
-from xpra.server.common import get_sources_by_type
 from xpra.log import Logger
 
 log = Logger("cursor")
@@ -41,7 +40,7 @@ class CursorManager(StubServerMixin):
         except ImportError:
             windows_clients = ()
         else:
-            windows_clients = len(get_sources_by_type(self, WindowsConnection, ss))
+            windows_clients = len(self.get_sources_by_type(WindowsConnection, ss))
         if windows_clients > 0:
             self.cursor_size = 24
         else:
@@ -158,4 +157,4 @@ class CursorManager(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         self.add_packets(f"{CursorManager.PREFIX}-set")
-        self.add_legacy_alias("set-cursors", f"{CursorManager.PREFIX}-set")
+        self.server.add_legacy_alias("set-cursors", f"{CursorManager.PREFIX}-set")

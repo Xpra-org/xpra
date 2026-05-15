@@ -59,9 +59,17 @@ class BellServer(StubServerMixin):
             from xpra.x11.error import xlog
             with xlog:
                 X11Keyboard.selectBellNotification(True)
-                # somewhat redundant, but doing it more than once does not hurt:
+                # The X11 dispatch (`x11.dispatch._maybe_send_event`) calls
+                # `GObject.signal_list_names(handler)` on each receiver and
+                # requires a GObject type. Register the server (which IS
+                # GObject-registered with `x11-xkb-event` aggregated from
+                # `BellServer.__signals__`) and connect our handler.
                 rxid = get_root_xid()
-                add_event_receiver(rxid, self)
+                add_event_receiver(rxid, self.server)
+                self.server.connect("x11-xkb-event", self._on_x11_xkb_event)
+
+    def _on_x11_xkb_event(self, _emitter, event: X11Event) -> None:
+        self.do_x11_xkb_event(event)
 
     def _process_bell_set(self, proto, packet: Packet) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
@@ -81,7 +89,7 @@ class BellServer(StubServerMixin):
         # this method is a catch-all for events on windows we don't manage,
         # so we use wid=0 for that:
         wid = 0
-        for ss in self.window_sources():
+        for ss in self.server.window_sources():
             ss.bell(wid, event.device, event.percent,
                     event.pitch, event.duration, event.bell_class, event.bell_id, event.name)
 
@@ -92,13 +100,13 @@ class BellServer(StubServerMixin):
         wid = 0
         rxid = get_root_xid()
         if event.window != rxid and event.window_model is not None:
-            wid = self._window_to_id.get(event.window_model, 0)
+            wid = self.server._window_to_id.get(event.window_model, 0)
         log("_bell_signaled(%s,%r) wid=%#x", wm, event, wid)
-        for ss in self.window_sources():
+        for ss in self.server.window_sources():
             ss.bell(wid, event.device, event.percent,
                     event.pitch, event.duration, event.bell_class, event.bell_id, event.name)
 
     def init_packet_handlers(self) -> None:
         if self.bell:
             self.add_packets("bell-set", main_thread=True)
-            self.add_legacy_alias("set-bell", "bell-set")
+            self.server.add_legacy_alias("set-bell", "bell-set")
