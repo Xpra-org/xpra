@@ -9,7 +9,6 @@ from subprocess import Popen
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX
-from xpra.server.common import get_sources_by_type
 from xpra.server.source.display import DisplayConnection
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import XPRA_VERSION
@@ -128,9 +127,6 @@ class X11DisplayManager(DisplayManager):
         self.randr_exact_size = False
         self.antialias: dict[str, Any] = {}
         self.original_desktop_display = None
-        # the actual values are defined in subclasses:
-        self.session_type = ""
-        self.uuid = ""
 
     def init(self, opts) -> None:
         self.init_display_pid()
@@ -192,8 +188,9 @@ class X11DisplayManager(DisplayManager):
             self.set_initial_resolution()
         with xsync:
             save_server_pid()
-            save_server_mode(self.session_type)
-            save_server_uuid(self.uuid)
+            save_server_mode(self.server.session_type)
+            id_subsystem = self.get_subsystem("id")
+            save_server_uuid(id_subsystem.uuid if id_subsystem else "")
             save_server_version()
 
     def init_randr(self) -> bool:
@@ -361,7 +358,7 @@ class X11DisplayManager(DisplayManager):
         if not self.randr:
             return root_w, root_h
         from xpra.server.source.display import DisplayConnection
-        display_clients = get_sources_by_type(self, DisplayConnection)
+        display_clients = self.get_sources_by_type(DisplayConnection)
         max_w, max_h = 0, 0
         min_w, min_h = 16384, 16384
         client_sizes = {}
@@ -457,7 +454,7 @@ class X11DisplayManager(DisplayManager):
             # find the "physical" screen dimensions, so we can calculate the required dpi
             # (and do this before changing the resolution)
             client_w, client_h = 0, 0
-            sss = get_sources_by_type(self, DisplayConnection)
+            sss = self.get_sources_by_type(DisplayConnection)
             for ss in sss:
                 screen_sizes = getattr(ss, "screen_sizes", ())
                 for s in screen_sizes:
@@ -565,7 +562,7 @@ class X11DisplayManager(DisplayManager):
         # if we have a single display client,
         # see if we can emulate its monitor geometry exactly
         from xpra.server.source.display import DisplayConnection
-        display_clients = get_sources_by_type(self, DisplayConnection)
+        display_clients = self.get_sources_by_type(DisplayConnection)
         log("%i display clients: %s", len(display_clients), display_clients)
         if len(display_clients) != 1:
             return {}
@@ -581,7 +578,7 @@ class X11DisplayManager(DisplayManager):
         return mdef
 
     def notify_dpi_warning(self, body: str) -> None:
-        display_sources = get_sources_by_type(self, DisplayConnection)
+        display_sources = self.get_sources_by_type(DisplayConnection)
         if len(display_sources) == 1:
             ss = display_sources[0]
             if first_time("DPI-warning-%s" % ss.uuid):

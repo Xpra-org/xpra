@@ -16,7 +16,6 @@ from xpra.util.objects import typedict
 from xpra.keyboard.common import DELAY_KEYBOARD_DATA
 from xpra.common import noerr
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -97,7 +96,7 @@ class KeyboardServer(StubServerMixin):
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         info = self.get_keyboard_info()
         device = self.keyboard_device
-        if not self.readonly and device:
+        if not self.server.readonly and device:
             info["state"] = {
                 "keys_pressed": tuple(self.keys_pressed.keys()),
                 "keycodes-down": device.get_keycodes_down(),
@@ -132,7 +131,7 @@ class KeyboardServer(StubServerMixin):
 
     def parse_hello_ui_keyboard(self, ss, c: typedict) -> None:
         from xpra.server.source.keyboard import KeyboardConnection
-        keyboard_clients = get_sources_by_type(self, KeyboardConnection, ss)
+        keyboard_clients = self.get_sources_by_type(KeyboardConnection, ss)
         kb_client = hasattr(ss, "keyboard_config")
         if not kb_client:
             return
@@ -166,7 +165,7 @@ class KeyboardServer(StubServerMixin):
     def _process_layout_changed(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
         log(f"layout-changed: {packet}")
-        if self.readonly:
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not ss:
@@ -188,7 +187,7 @@ class KeyboardServer(StubServerMixin):
 
     def _process_keymap_changed(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        if self.readonly:
+        if self.server.readonly:
             return
         props = typedict(packet.get_dict(1))
         force = True
@@ -208,7 +207,7 @@ class KeyboardServer(StubServerMixin):
             ss.make_keymask_match(props.strtupleget("modifiers"))
 
     def _process_keyboard_config(self, proto, packet: Packet) -> None:
-        if self.readonly:
+        if self.server.readonly:
             return
         props = typedict(packet.get_dict(1))
         ss = self.get_server_source(proto)
@@ -255,7 +254,7 @@ class KeyboardServer(StubServerMixin):
         self.do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
 
     def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, kattrs: dict) -> None:
-        if self.readonly:
+        if self.server.readonly:
             return
         attrs = typedict(kattrs)
         # `get_keycode` may have to change modifiers to match the key, so we need a mutable list:
@@ -269,13 +268,13 @@ class KeyboardServer(StubServerMixin):
         log(f"keyboard event: {wid=}, {keyname=!r}, {pressed}, {attrs}, {keyboard_config=}")
         if not keyboard_config:
             return
-        self.set_ui_driver(ss)
+        self.server.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
         log("do_process_keyboard_event%s server keycode=%s, group=%i",
             (proto, wid, keyname, pressed, attrs), keycode, group)
         if group >= 0 and keycode >= 0:
             self.set_keyboard_layout_group(group)
-        self._focus(ss, wid, None)
+        self.server.call_subsystem("window", "_focus", ss, wid, None)
         ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
         # negative keycodes are used for key events without a real keypress/unpress
         # for example, used by win32 to send Caps_Lock/Num_Lock changes
@@ -306,9 +305,14 @@ class KeyboardServer(StubServerMixin):
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
         log("handle_key(%s)", (wid, pressed, name, keyval, keycode, modifiers, is_mod, sync))
-        if pressed and wid and wid not in self._id_to_window:
-            log("window %s is gone, ignoring key press", wid)
-            return
+        if pressed and wid:
+            window_sub = self.get_subsystem("window")
+            if window_sub is not None:
+                # `window_sub` is a class (legacy MRO) or instance; resolve binding:
+                target = window_sub if not isinstance(window_sub, type) else self.server
+                if not target.get_window(wid):
+                    log("window %s is gone, ignoring key press", wid)
+                    return
         if keycode < 0:
             log.warn("ignoring invalid keycode=%s", keycode)
             return
@@ -316,7 +320,7 @@ class KeyboardServer(StubServerMixin):
             del self.keys_timedout[keycode]
 
         from xpra.server.source.keyboard import KeyboardConnection  # pylint: disable=import-outside-toplevel
-        keyboard_sources = get_sources_by_type(self, KeyboardConnection)
+        keyboard_sources = self.get_sources_by_type(KeyboardConnection)
         record_connections = tuple(x for x in keyboard_sources if x.keyboard_record)
 
         def record(press: bool) -> None:
@@ -383,7 +387,7 @@ class KeyboardServer(StubServerMixin):
         assert BACKWARDS_COMPATIBLE
 
     def _process_keyboard_sync(self, proto, packet: Packet) -> None:
-        if self.readonly:
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "keyboard_config"):
@@ -396,13 +400,13 @@ class KeyboardServer(StubServerMixin):
     def _keys_changed(self) -> None:
         log("input server: the keymap has been changed, keymap_changing_timer=%s", self.keymap_changing_timer)
         if not self.keymap_changing_timer:
-            keyboard_sources = get_sources_by_type(self, KeyboardConnection)
+            keyboard_sources = self.get_sources_by_type(KeyboardConnection)
             for ss in keyboard_sources:
                 ss.keys_changed()
 
     def clear_keys_pressed(self, *args) -> None:
         log("clear_keys_pressed%s", args)
-        if self.readonly:
+        if self.server.readonly:
             return
         # make sure the timer doesn't fire and interfere:
         self.cancel_key_repeat_timer()
@@ -448,7 +452,7 @@ class KeyboardServer(StubServerMixin):
     #########################################
 
     def control_command_key(self, keycode_str: str, press) -> str:
-        if self.readonly:
+        if self.server.readonly:
             return "command key denied by readonly mode"
         from xpra.net.control.common import ControlError
         try:

@@ -16,10 +16,8 @@ from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.env import SilenceWarningsContext
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.common import noop
 from xpra.util.parsing import get_refresh_rate_for_value, DEFAULT_REFRESH_RATE
 from xpra.platform.gui import get_display_name, get_display_size
-from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -154,7 +152,7 @@ class DisplayManager(StubServerMixin):
         if not is_display_connection(ss):
             return
         from xpra.server.source.display import DisplayConnection
-        display_clients = get_sources_by_type(self, DisplayConnection, ss)
+        display_clients = self.get_sources_by_type(DisplayConnection, ss)
         # a bit of explanation:
         # normally these things are synchronized using xsettings, which we handle already,
         # but non-posix clients have no such thing,
@@ -316,7 +314,7 @@ class DisplayManager(StubServerMixin):
         root_w = min(root_w, max_w)
         root_h = min(root_h, max_h)
         count = 0
-        display_sources = get_sources_by_type(self, DisplayConnection)
+        display_sources = self.get_sources_by_type(DisplayConnection)
         for ss in display_sources:
             if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
                 count += 1
@@ -446,14 +444,12 @@ class DisplayManager(StubServerMixin):
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)
             self.calculate_desktops()
         # soft dependency on ICC:
-        process_icc = getattr(self, "process_icc", noop)
         iccdata = attrs.dictget("icc")
         if iccdata:
-            process_icc(ss, iccdata)
+            self.server.call_subsystem("icc", "process_icc", ss, iccdata)
         self.apply_refresh_rate(ss)
         # ensures that DPI and antialias information gets reset:
-        update_all_server_settings = getattr(self, "update_all_server_settings", noop)
-        update_all_server_settings()
+        self.server.call_subsystem("xsettings", "update_all_server_settings")
 
     def dpi_changed(self) -> None:
         """
@@ -468,7 +464,7 @@ class DisplayManager(StubServerMixin):
     def calculate_workarea(self, maxw: int, maxh: int) -> None:
         log("calculate_workarea(%s, %s)", maxw, maxh)
         workarea = rectangle(0, 0, maxw, maxh)
-        display_sources = get_sources_by_type(self, DisplayConnection)
+        display_sources = self.get_sources_by_type(DisplayConnection)
         for ss in display_sources:
             screen_sizes = ss.screen_sizes
             log("calculate_workarea() screen_sizes(%s)=%s", ss, screen_sizes)
@@ -542,13 +538,13 @@ class DisplayManager(StubServerMixin):
         try:
             packet = self.make_screenshot_packet()
             if not packet:
-                self.send_disconnect(proto, "screenshot failed")
+                self.server.send_disconnect(proto, "screenshot failed")
                 return
             proto.send_now(packet)
-            GLib.timeout_add(5 * 1000, self.send_disconnect, proto, "screenshot sent")
+            GLib.timeout_add(5 * 1000, self.server.send_disconnect, proto, "screenshot sent")
         except Exception as e:
             log.error("failed to capture screenshot", exc_info=True)
-            self.send_disconnect(proto, "screenshot failed: %s" % e)
+            self.server.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
         self.add_packets("display-configure", "display-request-screenshot", "display-request-icon", main_thread=True)
