@@ -7,7 +7,6 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.server.common import get_sources_by_type
 from xpra.server.source.encoding import EncodingsConnection
 from xpra.util.env import envint
 from xpra.os_util import OSX, gi_import
@@ -114,7 +113,7 @@ class EncodingServer(StubServerMixin):
         # any window mapped before the threaded init completed
         # may need to re-initialize its list of encodings:
         log("reinit_encodings()", args)
-        encoding_sources = get_sources_by_type(self, EncodingsConnection)
+        encoding_sources = self.get_sources_by_type(EncodingsConnection)
         for ss in encoding_sources:
             ss.reinit_encodings(self)
             ss.reinit_encoders()
@@ -124,7 +123,7 @@ class EncodingServer(StubServerMixin):
         # If the background encoding setup finished before this client connected,
         # reinit_encodings() already ran with no sources and this client missed
         # threaded_init_complete(). Schedule it after the hello is delivered.
-        if getattr(self, "threaded_encoding_done", False) and hasattr(ss, "threaded_init_complete"):
+        if self.threaded_encoding_done and hasattr(ss, "threaded_init_complete"):
             ss.threaded_init_complete(self)
 
     def threaded_encoding_setup(self) -> None:
@@ -277,22 +276,29 @@ class EncodingServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss is None:
             return
+        window = self.get_subsystem("window")
+        if window is None:
+            return
+        # `WindowServer` is still class-based in the MRO, so subsystems
+        # lookup may return the class; bind via `self.server` to get a
+        # working `_id_to_window` / `get_window` / `_refresh_windows`.
+        win_target = window if not isinstance(window, type) else self.server
         if len(packet) >= 3:
             # client specified which windows this is for:
             in_wids = packet[2]
             wids = []
             wid_windows = {}
             for wid in in_wids:
-                if wid not in self._id_to_window:
+                if wid not in win_target._id_to_window:
                     continue
                 wids.append(wid)
-                wid_windows[wid] = self.get_window(wid)
+                wid_windows[wid] = win_target.get_window(wid)
         else:
             # apply to all windows:
             wids = None
-            wid_windows = self._id_to_window
+            wid_windows = win_target._id_to_window
         ss.set_encoding(encoding, wids)
-        self._refresh_windows(proto, wid_windows, {})
+        win_target._refresh_windows(proto, wid_windows, {})
 
     def _process_quality(self, proto, packet) -> None:
         self._modify_sq(proto, "quality", packet[1])
@@ -324,10 +330,9 @@ class EncodingServer(StubServerMixin):
         self.call_idle_refresh_all_windows(proto)
 
     def call_idle_refresh_all_windows(self, proto) -> None:
-        # we can't assume that the window server mixin is loaded:
-        refresh = getattr(self, "_idle_refresh_all_windows", None)
-        if refresh:
-            refresh(proto)  # pylint: disable=not-callable
+        # WindowServer may not be loaded (e.g. proxy server); `call_subsystem`
+        # returns `None` when absent and handles class-vs-instance binding.
+        self.server.call_subsystem("window", "_idle_refresh_all_windows", proto)
 
     def _process_encoding_options(self, proto, packet) -> None:
         ss = self.get_server_source(proto)

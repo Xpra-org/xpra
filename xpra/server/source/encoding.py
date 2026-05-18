@@ -83,14 +83,16 @@ class EncodingsConnection(StubClientConnection):
         self.cuda_device_context = None
 
     def init_from(self, _protocol, server) -> None:
-        self.server_core_encodings = server.core_encodings
-        self.server_encodings = server.encodings
-        self.default_encoding = server.default_encoding
-        self.scaling_control = server.scaling_control
-        self.default_quality = server.default_quality
-        self.default_min_quality = server.default_min_quality
-        self.default_speed = server.default_speed
-        self.default_min_speed = server.default_min_speed
+        # `EncodingServer` is the standalone subsystem instance:
+        enc = server.subsystems["encoding"]
+        self.server_core_encodings = enc.core_encodings
+        self.server_encodings = enc.encodings
+        self.default_encoding = enc.default_encoding
+        self.scaling_control = enc.scaling_control
+        self.default_quality = enc.default_quality
+        self.default_min_quality = enc.default_min_quality
+        self.default_speed = enc.default_speed
+        self.default_min_speed = enc.default_min_speed
 
     def reinit_encodings(self, server) -> None:
         self.server_core_encodings = server.core_encodings

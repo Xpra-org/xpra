@@ -47,9 +47,6 @@ def get_server_base_classes() -> tuple[type, ...]:
         else:
             from xpra.server.subsystem.pointer import PointerServer
             classes.append(PointerServer)
-    if features.encoding:
-        from xpra.server.subsystem.encoding import EncodingServer
-        classes.append(EncodingServer)
     if features.window:
         from xpra.server.subsystem.window import WindowServer
         classes.append(WindowServer)
@@ -141,6 +138,9 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     if features.audio:
         from xpra.server.subsystem.audio import AudioServer
         classes.append(AudioServer)
+    if features.encoding:
+        from xpra.server.subsystem.encoding import EncodingServer
+        classes.append(EncodingServer)
     # ChildCommandServer should be last so that the environment is fully prepared:
     if features.command:
         from xpra.server.subsystem.command import ChildCommandServer
