@@ -59,7 +59,7 @@ from xpra.constants import DEFAULT_XDG_DATA_DIRS
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, nicestr, strtobytes, hexstr
-from xpra.util.env import envint, envbool, envfloat, first_time
+from xpra.util.env import envint, envbool, envfloat, first_time, restore_script_env
 from xpra.log import Logger
 
 # pylint: disable=import-outside-toplevel
@@ -337,6 +337,12 @@ class ServerCore(ServerBaseClass):
 
     def get_subsystems(self) -> list[str]:
         return list(self.subsystems.keys())
+
+    def get_child_env(self) -> dict[str, str]:
+        # base child env: filtered os.environ with script-launcher overrides reverted.
+        # `ServerBase.get_child_env` merges subsystem contributions on top of this.
+        env = {k: v for k, v in os.environ.items() if k != "LS_COLORS"}
+        return restore_script_env(env)
 
     # --------------------------------------------------------------------
     # subsystem lookup and dispatch helpers

@@ -61,13 +61,14 @@ class XSettingsServer(StubServerMixin):
         log("xsettings_enabled(%s)=%s", opts.xsettings, self._xsettings_enabled)
 
     def setup(self) -> None:
+        self.connect("last-client-exited", self._on_last_client_exited)
         if self._xsettings_enabled:
             from xpra.x11.subsystem.xsettings_manager import XSettingsHelper
             self._default_xsettings = XSettingsHelper().get_settings()
             log("_default_xsettings=%s", self._default_xsettings)
             self.init_all_server_settings()
 
-    def last_client_exited(self) -> None:
+    def _on_last_client_exited(self, *_args) -> None:
         self.reset_settings()
 
     def get_caps(self, _source) -> dict[str, Any]:

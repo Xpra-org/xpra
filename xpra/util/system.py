@@ -48,6 +48,10 @@ def stop_proc(proc: "Popen", what="subprocess") -> None:
         log("failed to stop %s %s", what, proc, exc_info=True)
 
 
+def is_child_alive(proc: "Popen | None") -> bool:
+    return proc is not None and proc.poll() is None
+
+
 def no_idle(fn, *args, **kwargs) -> None:
     fn(*args, **kwargs)
 

@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import shlex
 from typing import Any
 from collections.abc import Callable
@@ -193,7 +192,11 @@ class StubServerMixin(superclass):
         """
 
     def get_child_env(self) -> dict[str, str]:
-        return dict((k, v) for k,v in os.environ.items() if k not in ENV_BLOCKLIST)
+        # Subsystems contribute *additions* to the child env. The base
+        # implementation in `ServerCore` seeds the result with a filtered
+        # `os.environ`; `ServerBase.get_child_env` then merges subsystem
+        # contributions on top via `_dispatch_merge`.
+        return {}
 
     def get_full_child_command(self, cmd, _use_wrapper: bool = True) -> list[str]:
         # make sure we have it as a list:

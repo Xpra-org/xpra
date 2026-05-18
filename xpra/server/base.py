@@ -134,7 +134,9 @@ class ServerBase(ServerBaseClass):
         super().setup()
 
     def get_child_env(self) -> dict[str, str]:
-        return self._dispatch_merge("get_child_env")
+        env = super().get_child_env()
+        env.update(self._dispatch_merge("get_child_env"))
+        return env
 
     def server_is_ready(self) -> None:
         super().server_is_ready()

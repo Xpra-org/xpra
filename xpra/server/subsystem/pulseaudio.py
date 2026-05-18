@@ -14,11 +14,12 @@ from collections.abc import Sequence
 
 from xpra.os_util import OSX, WIN32, POSIX, gi_import, is_container, getuid, getgid
 from xpra.platform.paths import get_system_conf_dirs
+from xpra.util.child_reaper import get_child_reaper
 from xpra.util.io import pollwait, is_writable, which
 from xpra.util.env import envbool, osexpand
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import csv
-from xpra.util.system import is_X11, stop_proc
+from xpra.util.system import is_X11, is_child_alive, stop_proc
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import enabled_or_auto
 from xpra.scripts.session import clean_session_files, session_file_path, pidexists
@@ -299,16 +300,6 @@ class PulseaudioServer(StubServerMixin):
             env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
         return env
 
-    def get_child_env(self) -> dict[str, str]:
-        """
-        Returns the environment variables that should be passed to child processes.
-        """
-        env = super().get_child_env()
-        # PULSE_SINK and PULSE_SOURCE are intentionally NOT set here: they would
-        # override routing for user applications. The audio pipeline uses
-        # XPRA_PULSE_SINK_DEVICE_NAME / XPRA_PULSE_SOURCE_DEVICE_NAME instead.
-        return env
-
     def do_init_pulseaudio(self) -> None:
         pidfile = session_file_path("pulseaudio.pid")
         pid = load_pid(pidfile)
@@ -358,7 +349,7 @@ class PulseaudioServer(StubServerMixin):
             log.estr(e)
             self.clean_pulseaudio_private_dir()
             return
-        self.server.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=self.pulseaudio_ended)
+        get_child_reaper().add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=self.pulseaudio_ended)
         if self.pulseaudio_proc:
             from xpra.scripts.session import save_session_file
             save_session_file("pulseaudio.pid", "%s" % self.pulseaudio_proc.pid)
@@ -376,7 +367,7 @@ class PulseaudioServer(StubServerMixin):
             return
         for i, x in enumerate(self.pulseaudio_configure_commands):
             proc = Popen(x, env=env, shell=True)
-            self.server.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
+            get_child_reaper().add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
 
     def pulseaudio_ended(self, proc: Popen) -> None:
         log("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
@@ -404,11 +395,11 @@ class PulseaudioServer(StubServerMixin):
             kill_pid(pid, "pulseaudio")
         else:
             return
-        if self.pulseaudio_server_socket and self.server.is_child_alive(proc):
+        if self.pulseaudio_server_socket and is_child_alive(proc):
             # wait for the pulseaudio process to exit,
             # it will delete the socket:
             log("pollwait()=%s", pollwait(proc))
-        if self.pulseaudio_server_socket and not self.server.is_child_alive(proc):
+        if self.pulseaudio_server_socket and not is_child_alive(proc):
             # wait for the socket to get cleaned up
             # (it should be removed by the pulseaudio server as it exits)
             import time
@@ -422,7 +413,7 @@ class PulseaudioServer(StubServerMixin):
         if not proc:
             return
         log("exit_pulseaudio() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
-        if not self.server.is_child_alive(proc):
+        if not is_child_alive(proc):
             return
         self.pulseaudio_proc = None
         log.info("stopping pulseaudio with pid %s", proc.pid)
@@ -430,17 +421,17 @@ class PulseaudioServer(StubServerMixin):
             # first we try pactl (required on Ubuntu):
             cmd = ["pactl", "exit"]
             pactl_proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            self.server.add_process(pactl_proc, "pactl exit", cmd, True)
+            get_child_reaper().add_process(pactl_proc, "pactl exit", cmd, True)
             r = pollwait(pactl_proc)
             # warning: pactl will return 0 whether it succeeds or not...
             # but we can't kill the process because Ubuntu starts a new one
-            if r != 0 and self.server.is_child_alive(proc):
+            if r != 0 and is_child_alive(proc):
                 # fallback to using SIGINT:
                 stop_proc(proc, "pulseaudio")
         except Exception as e:
             log("exit_pulseaudio() error stopping %s", proc, exc_info=True)
             # only log the full stacktrace if the process failed to terminate:
-            if self.server.is_child_alive(proc):
+            if is_child_alive(proc):
                 log.error("Error: stopping pulseaudio: %s", e, exc_info=True)
 
     def clean_pulseaudio_private_dir(self) -> None:

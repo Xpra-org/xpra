@@ -24,6 +24,9 @@ class ICCServer(StubServerMixin):
         StubServerMixin.__init__(self, server)
         self.icc_profile = b""
 
+    def setup(self) -> None:
+        self.connect("last-client-exited", self._on_last_client_exited)
+
     def add_new_client(self, ss, caps: typedict) -> None:
         self.set_icc_profile()
 
@@ -35,7 +38,7 @@ class ICCServer(StubServerMixin):
             ss.display_icc = iccd.get("display", ss.display_icc)
             self.set_icc_profile()
 
-    def last_client_exited(self) -> None:
+    def _on_last_client_exited(self, *_args) -> None:
         self.reset_icc_profile()
 
     def get_info(self, _proto) -> dict[str, Any]:

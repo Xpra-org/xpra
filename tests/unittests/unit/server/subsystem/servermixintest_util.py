@@ -95,7 +95,13 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
     def clean_quit(self, *_args, **_kwargs) -> None:
         pass
 
+    def get_child_env(self) -> dict[str, str]:
+        return dict(os.environ)
+
     _closing = False
+    session_name = ""
+    readonly = False
+    unix_socket_paths: list[str] = []
 
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubClientConnection):
         # Helper attributes / methods that subsystems expect to find on the

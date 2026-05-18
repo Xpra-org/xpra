@@ -18,9 +18,9 @@ from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.util.env import envint, restore_script_env, source_env
+from xpra.util.env import envint, source_env
 from xpra.net.common import Packet
-from xpra.util.system import stop_proc
+from xpra.util.system import stop_proc, is_child_alive
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.scripts.parsing import parse_env
@@ -188,7 +188,6 @@ class ChildCommandServer(StubServerMixin):
         self.terminate_children: bool = False
         self.children_started: list[ProcInfo] = []
         self.reaper_exit: Callable = self.reaper_exit_check
-        self.session_name = ""
 
         def server_is_running(*args) -> None:
             log("server_is_running%s", args)
@@ -289,8 +288,10 @@ class ChildCommandServer(StubServerMixin):
         return cinfo
 
     def get_child_env(self) -> dict[str, str]:
-        # subclasses may add more
-        env = restore_script_env(super().get_child_env())
+        # subsystem contribution only; the base env (with `restore_script_env`
+        # applied) is seeded by `ServerCore.get_child_env`, then merged in
+        # `ServerBase.get_child_env`.
+        env: dict[str, str] = {}
         env.update(self.source_env)
         env.update(self.start_env)
         if self.child_display:
@@ -341,12 +342,12 @@ class ChildCommandServer(StubServerMixin):
                 if proc := self.start_command(x, x, ignore=False, source=source):
                     started.append(proc)
         procs = tuple(x for x in started if x)
-        if not self.session_name:
+        if not self.server.session_name:
             GLib.idle_add(self.guess_session_name, procs)
 
     def start_command(self, name: str, child_cmd, ignore: bool = False, callback: Callable | None = None,
                       use_wrapper: bool = True, shell: bool = False, source=None, **kwargs):
-        env = self.get_child_env()
+        env = self.server.get_child_env()
         log("start_command%s exec_wrapper=%s, exec_cwd=%s",
             (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper, self.exec_cwd)
         real_cmd = []
@@ -359,7 +360,7 @@ class ChildCommandServer(StubServerMixin):
             cmd_str = " ".join(real_cmd)
             # pylint: disable=consider-using-with
             proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, **kwargs)
-            procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
+            procinfo = get_child_reaper().add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             is_ibus_daemon = real_cmd[0].endswith("daemonizer") and "ibus-daemon" in real_cmd
             cmd_info = "ibus-daemon" if is_ibus_daemon else cmd_str
             log.info(f"started command `{cmd_info}` with pid {proc.pid}")
@@ -386,19 +387,11 @@ class ChildCommandServer(StubServerMixin):
             log.error(f" {e}")
             return None
 
-    def add_process(self, process, name: str, command, ignore: bool = False,
-                    callback: Callable | None = None) -> ProcInfo:
-        return get_child_reaper().add_process(process, name, command, ignore, callback=callback)
-
-    @staticmethod
-    def is_child_alive(proc) -> bool:
-        return proc is not None and proc.poll() is None
-
     def reaper_exit_check(self) -> None:
         log(f"reaper_exit_check() exit_with_children={self.exit_with_children}")
         if self.exit_with_children and self.children_count:
             log.info("all children have exited and --exit-with-children was specified, exiting")
-            GLib.idle_add(self.clean_quit)
+            GLib.idle_add(self.server.clean_quit)
 
     def terminate_children_processes(self) -> None:
         cl = tuple(self.children_started)
@@ -412,7 +405,7 @@ class ChildCommandServer(StubServerMixin):
         for procinfo in cl:
             proc = procinfo.process
             name = procinfo.name
-            if self.is_child_alive(proc):
+            if is_child_alive(proc):
                 wait_for.append(procinfo)
                 log(f"child command {name!r} is still alive, calling terminate on {proc}")
                 stop_proc(proc, "child %s" % name)
@@ -424,14 +417,14 @@ class ChildCommandServer(StubServerMixin):
             child_reaper.poll()
             # this is called from the UI thread, we cannot sleep
             # sleep(1)
-            wait_for = [procinfo for procinfo in wait_for if self.is_child_alive(procinfo.process)]
+            wait_for = [procinfo for procinfo in wait_for if is_child_alive(procinfo.process)]
             log(f"still not terminated: {wait_for}")
         log("done waiting for child commands")
 
     def guess_session_name(self, procs=()) -> None:
         new_name = guess_session_name(procs, self.exec_wrapper)
-        if new_name and self.session_name != new_name:
-            self.session_name = new_name
+        if new_name and self.server.session_name != new_name:
+            self.server.session_name = new_name
             if mdns := self.get_subsystem("mdns"):
                 mdns.mdns_update()
 
@@ -550,7 +543,7 @@ class ChildCommandServer(StubServerMixin):
             self.start_env[var_name] = value
             return f"{var_name}={value}"
         if action == "get":
-            env = self.get_child_env()
+            env = self.server.get_child_env()
             if var_name:
                 if var_name not in env:
                     return f"# {var_name!r} is not defined"
