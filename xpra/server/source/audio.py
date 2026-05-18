@@ -91,29 +91,30 @@ class AudioConnection(StubClientConnection):
         self.wants_audio_capabilities = False            # flag indicating that the client wants 'audio-capabilities'
 
     def init_from(self, _protocol, server) -> None:
-        # server may not have initialized the audio subsystem yet:
+        # AudioServer is the standalone subsystem instance:
+        audio = server.subsystems["audio"]
         if BACKWARDS_COMPATIBLE:
             # synchronous initialization: wait for audio
             until = monotonic() + 5
-            while not server.audio_properties and monotonic() < until:
+            while not audio.audio_properties and monotonic() < until:
                 log("audio init waiting for audio properties")
                 sleep(0.01)
-            if not server.audio_properties:
+            if not audio.audio_properties:
                 log.warn("Warning: timeout waiting for audio initialization")
-        self.init_audio_from(server)
+        self.init_audio_from(audio)
         server.connect("audio-initialized", self.server_audio_initialized)
 
-    def init_audio_from(self, server) -> None:
-        self.audio_properties = server.audio_properties
-        self.audio_source_plugin = server.audio_source_plugin
-        self.supports_speaker = server.supports_speaker
-        self.supports_microphone = server.supports_microphone
-        self.speaker_codecs = server.speaker_codecs
-        self.microphone_codecs = server.microphone_codecs
-        log("init_audio_from(%s) audio_properties=%s", server, self.audio_properties)
+    def init_audio_from(self, audio) -> None:
+        self.audio_properties = audio.audio_properties
+        self.audio_source_plugin = audio.audio_source_plugin
+        self.supports_speaker = audio.supports_speaker
+        self.supports_microphone = audio.supports_microphone
+        self.speaker_codecs = audio.speaker_codecs
+        self.microphone_codecs = audio.microphone_codecs
+        log("init_audio_from(%s) audio_properties=%s", audio, self.audio_properties)
 
     def server_audio_initialized(self, server):
-        self.init_audio_from(server)
+        self.init_audio_from(server.subsystems["audio"])
         if self.wants_audio_capabilities:
             self.send_audio_capabilities()
 

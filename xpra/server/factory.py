@@ -33,9 +33,6 @@ def get_server_base_classes() -> tuple[type, ...]:
         else:
             from xpra.server.subsystem.display import DisplayManager
             classes.append(DisplayManager)
-    if features.audio:
-        from xpra.server.subsystem.audio import AudioServer
-        classes.append(AudioServer)
     if features.keyboard:
         if features.x11:
             from xpra.x11.subsystem.keyboard import X11KeyboardServer
@@ -145,6 +142,9 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     if features.pulseaudio:
         from xpra.server.subsystem.pulseaudio import PulseaudioServer
         classes.append(PulseaudioServer)
+    if features.audio:
+        from xpra.server.subsystem.audio import AudioServer
+        classes.append(AudioServer)
     if features.file:
         from xpra.server.subsystem.file import FileServer
         classes.append(FileServer)

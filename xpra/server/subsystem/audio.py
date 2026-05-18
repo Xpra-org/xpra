@@ -8,7 +8,6 @@ from time import sleep
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
@@ -130,10 +129,13 @@ class AudioServer(StubServerMixin):
         GLib.idle_add(self.init_ui_audio_options, audio_properties)
 
     def init_ui_audio_options(self, audio_properties: typedict):
-        # query_pulseaudio_properties may access X11
-        query_pulseaudio = getattr(self, "query_pulseaudio_properties", noop)
-        if bool(audio_properties) and query_pulseaudio != noop:
-            audio_properties |= query_pulseaudio()
+        # query_pulseaudio_properties may access X11. PulseaudioServer is a
+        # standalone subsystem, so reach into it via self.server.subsystems
+        # rather than relying on inheritance.
+        pulse = self.get_subsystem("pulseaudio")
+        if bool(audio_properties) and pulse is not None:
+            from xpra.server.subsystem.pulseaudio import query_pulseaudio_properties
+            audio_properties |= query_pulseaudio_properties()
         audio_properties["initialized"] = True
         self.audio_properties = audio_properties
         self.log_audio_properties()
@@ -189,6 +191,6 @@ class AudioServer(StubServerMixin):
     def control_command_audio_output(self, *args) -> str:
         msg = []
         from xpra.net.control.common import control_get_sources
-        for csource in tuple(control_get_sources(self)):
+        for csource in tuple(control_get_sources(self.server)):
             msg.append(f"{csource} : " + str(csource.audio_control(*args)))
         return csv(msg)
