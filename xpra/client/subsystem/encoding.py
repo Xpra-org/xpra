@@ -265,6 +265,11 @@ class Encodings(StubClientMixin):
         # we can send different values as part of the map event
         # these are the RGB modes we want (the ones we are expected to be able to paint with):
         rgb_formats = ["RGB", "RGBX", "RGBA"]
+        # opengl_enabled lives on the Display mixin; guard for test
+        # harnesses that instantiate Encodings without Display.
+        if getattr(self, "opengl_enabled", False):
+            # GL shaders can render packed YUV formats directly (no CSC needed)
+            rgb_formats += ["AYUV"]
         caps["rgb_formats"] = rgb_formats
         # figure out which CSC modes (usually YUV) can give us those RGB modes:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)

@@ -152,6 +152,82 @@ void main()
 """
 
 
+def gen_AYUV_to_RGB(cs="bt601", full_range=True) -> str:
+    """Packed AYUV → RGB conversion.
+    AYUV memory order is V,U,Y,A which maps to R,G,B,A in GL_RGBA8."""
+    if cs not in CS_MULTIPLIERS:
+        raise ValueError(f"unsupported colorspace {cs}")
+    a, b, c, d, e = CS_MULTIPLIERS[cs]
+    f = - c * d / b
+    g = - a * e / b
+    ymult = "" if full_range else " * 1.1643835616438356"
+    uvmult = "" if full_range else " * 1.1383928571428572"
+    yoffset = "" if full_range else " - 0.062745098"
+    return f"""
+#version {GLSL_VERSION}
+layout(origin_upper_left) in vec4 gl_FragCoord;
+uniform vec2 viewport_pos;
+uniform vec2 scaling;
+uniform sampler2DRect AYUV;
+layout(location = 0) out vec4 frag_color;
+
+void main()
+{{
+    vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
+    vec4 t = texture(AYUV, pos);
+    highp float y = (t.b{yoffset}){ymult};
+    highp float u = (t.g - 0.5){uvmult};
+    highp float v = (t.r - 0.5){uvmult};
+
+    highp float r = y +           {e} * v;
+    highp float g = y + {f} * u + {g} * v;
+    highp float b = y + {d} * u;
+
+    frag_color = vec4(r, g, b, 1.0);
+}}
+"""
+
+
+def gen_Y410_to_RGB(cs="bt601", full_range=True) -> str:
+    """Packed Y410 (10-bit 4:4:4) → RGB conversion.
+    Y410 bit layout: U10:Y10:V10:A2. Uploaded as GL_UNSIGNED_INT_2_10_10_10_REV
+    into GL_RGB10_A2 texture, which maps bits [9:0]→R, [19:10]→G, [29:20]→B,
+    [31:30]→A. So R=U, G=Y, B=V."""
+    if cs not in CS_MULTIPLIERS:
+        raise ValueError(f"unsupported colorspace {cs}")
+    a, b, c, d, e = CS_MULTIPLIERS[cs]
+    f = - c * d / b
+    g = - a * e / b
+    # 10-bit narrow range: Y 64-940, UV 64-960 out of 0-1023
+    # (different from 8-bit's 16-235/16-240 out of 0-255)
+    ymult = "" if full_range else " * 1.1678082191780821"
+    uvmult = "" if full_range else " * 1.1417410714285714"
+    yoffset = "" if full_range else " - 0.0625610948191593"
+    return f"""
+#version {GLSL_VERSION}
+layout(origin_upper_left) in vec4 gl_FragCoord;
+uniform vec2 viewport_pos;
+uniform vec2 scaling;
+uniform sampler2DRect Y410;
+layout(location = 0) out vec4 frag_color;
+
+void main()
+{{
+    vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
+    vec4 t = texture(Y410, pos);
+    highp float y = (t.g{yoffset}){ymult};
+    highp float u = (t.r - 0.5){uvmult};
+    highp float v = (t.b - 0.5){uvmult};
+
+    highp float r = y +           {e} * v;
+    highp float g = y + {f} * u + {g} * v;
+    highp float b = y + {d} * u;
+
+    frag_color = vec4(r, g, b, 1.0);
+}}
+"""
+
+
 VERTEX_SHADER = f"""
 #version {GLSL_VERSION}
 layout(location=0) in vec4 position;
@@ -314,6 +390,8 @@ SOURCE: dict[str, str] = {
 for full in (False, True):
     suffix = "_FULL" if full else ""
     SOURCE[f"NV12_to_RGB{suffix}"] = gen_NV12_to_RGB(full_range=full)
+    SOURCE[f"AYUV_to_RGB{suffix}"] = gen_AYUV_to_RGB(full_range=full)
+    SOURCE[f"Y410_to_RGB{suffix}"] = gen_Y410_to_RGB(full_range=full)
 
     for fmt in (
         "YUV420P", "YUV422P", "YUV444P",

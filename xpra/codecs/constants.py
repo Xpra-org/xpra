@@ -82,6 +82,8 @@ CSC_ALIAS: dict[str, str] = {"NV12": "YUV420P"}
 def get_plane_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
     return ({
         "NV12": ("Y", "UV"),
+        "AYUV": ("AYUV", ),
+        "Y410": ("Y410", ),
     }.get(pixel_format, list(pixel_format))[index])
 
 
@@ -99,6 +101,8 @@ PIXEL_SUBSAMPLING : dict[str, Sequence[tuple[int, int]]] = {
     "YUV400P"   : ((1, 1), ),
     "GBRP"      : ((1, 1), (1, 1), (1, 1)),
     "GBRP9LE"   : ((1, 1), (1, 1), (1, 1)),
+    "AYUV"      : ((1, 1), ),
+    "Y410"      : ((1, 1), ),
 }
 
 

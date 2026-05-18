@@ -15,6 +15,8 @@ PACMAN=${PACMAN:-"pacman --noconfirm --needed -S"}
 $PACMAN ${XPKG}python ${XPKG}libnotify ${XPKG}gtk3
 #media libraries (more than we actually need):
 $PACMAN ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
+#Intel oneVPL: HEVC 4:4:4 hardware decode on Intel GPUs:
+$PACMAN ${XPKG}libvpl
 #network layer libraries:
 $PACMAN ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium
 #pinentry is not available for aarch64 yet:
