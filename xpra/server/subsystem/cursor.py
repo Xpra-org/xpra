@@ -23,16 +23,16 @@ class CursorManager(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.cursors = False
-        self.cursor_size = 0
-        self.cursor_suspended: bool = False
+        self.enabled = False
+        self.size = 0
+        self.suspended: bool = False
         # x11:
-        self.default_cursor_image = None
-        self.last_cursor_image = ()
+        self.default_image = None
+        self.last_image = ()
 
     def init(self, opts) -> None:
         log("init(..) cursors=%s", opts.cursors)
-        self.cursors = opts.cursors
+        self.enabled = opts.cursors
 
     def add_new_client(self, ss, c: typedict) -> None:
         try:
@@ -42,14 +42,14 @@ class CursorManager(StubServerMixin):
         else:
             windows_clients = len(self.get_sources_by_type(WindowsConnection, ss))
         if windows_clients > 0:
-            self.cursor_size = 24
+            self.size = 24
         else:
             caps = typedict(c.dictget("cursor") or {})
             if caps:
                 default_cursor_size = caps.inttupleget("default", (0, 0))
-                self.cursor_size = max(0, default_cursor_size[0], default_cursor_size[1])
-                if not self.cursor_size and BACKWARDS_COMPATIBLE:
-                    self.cursor_size = c.intget("cursor.size", 0)
+                self.size = max(0, default_cursor_size[0], default_cursor_size[1])
+                if not self.size and BACKWARDS_COMPATIBLE:
+                    self.size = c.intget("cursor.size", 0)
 
     def send_initial_data(self, ss) -> None:
         from xpra.server.source.cursor import CursorsConnection
@@ -70,25 +70,25 @@ class CursorManager(StubServerMixin):
             sizes["max"] = max_size
             if BACKWARDS_COMPATIBLE:
                 cursor_caps["max_size"] = max_size
-        if self.default_cursor_image:
+        if self.default_image:
             ce = getattr(source, "cursor_encodings", ())
             if "default" not in ce:
                 # we have to send it this way
                 # instead of using send_initial_cursors()
                 if BACKWARDS_COMPATIBLE:
-                    cursor_caps["cursor.default"] = self.default_cursor_image
-                cursor_caps["default"] = self.default_cursor_image
+                    cursor_caps["cursor.default"] = self.default_image
+                cursor_caps["default"] = self.default_image
         caps: dict[str, Any] = {"cursor": cursor_caps}
         if BACKWARDS_COMPATIBLE:
-            caps["cursors"] = self.cursors
+            caps["cursors"] = self.enabled
         log("cursor caps=%s", caps)
         return caps
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
             CursorManager.PREFIX: {
-                "": self.cursors,
-                "size": self.cursor_size,
+                "": self.enabled,
+                "size": self.size,
                 "current": self.get_cursor_info(),
             },
         }
@@ -96,10 +96,10 @@ class CursorManager(StubServerMixin):
     def get_cursor_info(self) -> dict[str, Any]:
         # (NOT from UI thread)
         # copy to prevent race:
-        cd = self.last_cursor_image
+        cd = self.last_image
         if not cd:
             return {}
-        dci = self.default_cursor_image
+        dci = self.default_image
         cinfo = {
             "is-default": bool(dci) and len(dci) >= 8 and len(cd) >= 8 and cd[7] == dci[7],
         }
@@ -130,7 +130,7 @@ class CursorManager(StubServerMixin):
         self._process_cursor_set(proto, packet)
 
     def _process_cursor_set(self, proto, packet: Packet) -> None:
-        assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
+        assert self.enabled, "cannot toggle send_cursors: the feature is disabled"
         if ss := self.get_server_source(proto):
             ss.send_cursors = packet.get_bool(1)
 
@@ -139,18 +139,18 @@ class CursorManager(StubServerMixin):
         # when we're receiving pointer events but the pointer
         # is no longer over the active window area,
         # so we have to tell the client to switch back to the default cursor
-        if self.cursor_suspended:
+        if self.suspended:
             return
-        self.cursor_suspended = True
+        self.suspended = True
         if ss := self.get_server_source(proto):
             ss.cancel_cursor_timer()
             ss.send_empty_cursor()
 
     def restore_cursor(self, proto) -> None:
         # see suspend_cursor
-        if not self.cursor_suspended:
+        if not self.suspended:
             return
-        self.cursor_suspended = False
+        self.suspended = False
         ss = self.get_server_source(proto)
         if ss and hasattr(ss, "send_cursor"):
             ss.send_cursor()

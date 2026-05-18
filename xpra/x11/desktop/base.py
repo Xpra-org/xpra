@@ -323,9 +323,9 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         so we don't need to apply any changes here
         """
 
-    def make_dbus_server(self) -> None:
+    def make_dbus_server(self):
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
-        self.dbus_server = X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
+        return X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
     def show_all_windows(self) -> None:
         log.warn("Warning: show_all_windows not implemented for desktop server")

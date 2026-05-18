@@ -37,20 +37,20 @@ class LoggingServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.remote_logging_send: bool = False
-        self.remote_logging_receive: bool = False
-        self.logging_lock: Lock = Lock()
-        self.log_both: bool = False
-        self.in_remote_logging: bool = False
-        self.local_logging: Callable = noop
-        self.logging_clients: dict[Any, float] = {}
+        self.send: bool = False
+        self.receive: bool = False
+        self.lock: Lock = Lock()
+        self.both: bool = False
+        self.in_handler: bool = False
+        self.local_handler: Callable = noop
+        self.clients: dict[Any, float] = {}
 
     def init(self, opts) -> None:
-        self.log_both = (opts.remote_logging or "").lower() == "both"
+        self.both = (opts.remote_logging or "").lower() == "both"
         if opts.remote_logging.lower() not in FALSE_OPTIONS:
-            self.remote_logging_send = opts.remote_logging.lower() in ("allow", "send", "both")
+            self.send = opts.remote_logging.lower() in ("allow", "send", "both")
             # "yes" is here for backwards compatibility:
-            self.remote_logging_receive = opts.remote_logging.lower() in ["allow", "receive", "both"] + list(
+            self.receive = opts.remote_logging.lower() in ["allow", "receive", "both"] + list(
                 TRUE_OPTIONS)
 
     def setup(self) -> None:
@@ -69,8 +69,8 @@ class LoggingServer(StubServerMixin):
 
     def _features(self) -> dict[str, Any]:
         return {
-            "receive": self.remote_logging_receive,
-            "send": self.remote_logging_send,
+            "receive": self.receive,
+            "send": self.send,
         }
 
     def get_info(self, _proto) -> dict[str, Any]:
@@ -81,37 +81,37 @@ class LoggingServer(StubServerMixin):
         }
 
     def cleanup_protocol(self, protocol) -> None:
-        if protocol in self.logging_clients:
-            del self.logging_clients[protocol]
+        if protocol in self.clients:
+            del self.clients[protocol]
 
     def remove_logging_client(self, protocol) -> None:
-        if self.logging_clients.pop(protocol, None) is None:
+        if self.clients.pop(protocol, None) is None:
             log.warn("Warning: logging was not enabled for '%r'", protocol)
-        if not self.logging_clients:
+        if not self.clients:
             self.stop_capturing_logging()
 
     def add_logging_client(self, protocol) -> None:
-        n = len(self.logging_clients)
-        if protocol in self.logging_clients:
+        n = len(self.clients)
+        if protocol in self.clients:
             log.warn("Warning: logging already enabled for client %s", protocol)
             return
         log.info("sending log output to %s", protocol)
-        self.logging_clients[protocol] = monotonic()
+        self.clients[protocol] = monotonic()
         if n == 0:
             self.start_capturing_logging()
 
     def start_capturing_logging(self) -> None:
-        if self.local_logging == noop:
-            self.local_logging = set_global_logging_handler(self.remote_logging_handler)
+        if self.local_handler == noop:
+            self.local_handler = set_global_logging_handler(self.remote_logging_handler)
 
     def stop_capturing_logging(self) -> None:
-        ll = self.local_logging
+        ll = self.local_handler
         if ll != noop:
-            self.local_logging = noop
+            self.local_handler = noop
             set_global_logging_handler(ll)
 
     def local_err(self, message: str, exc, level: int, msg: str, args, kwargs) -> None:
-        ll = self.local_logging
+        ll = self.local_handler
         if self.server._closing or ll == noop:
             return
 
@@ -140,10 +140,10 @@ class LoggingServer(StubServerMixin):
 
     def remote_logging_handler(self, log, level: int, msg, *args, **kwargs) -> None:
         # prevent loops (if our send call ends up firing another logging call):
-        if self.in_remote_logging:
+        if self.in_handler:
             return
-        ll = self.local_logging
-        self.in_remote_logging = True
+        ll = self.local_handler
+        self.in_handler = True
 
         def local_warn(message: str, *args) -> None:
             ll(log, logging.WARNING, message, *args)
@@ -166,7 +166,7 @@ class LoggingServer(StubServerMixin):
             except Exception as e:
                 self.local_err("failed to format log message", e, level, msg, args, kwargs)
                 return
-            for proto, start_time in self.logging_clients.items():
+            for proto, start_time in self.clients.items():
                 source = self.get_server_source(proto)
                 if not source:
                     continue
@@ -184,7 +184,7 @@ class LoggingServer(StubServerMixin):
                         exc_info = sys.exc_info()
                     if exc_info and exc_info[0]:
                         for x in traceback.format_tb(exc_info[2]):
-                            self.send(LOGGING_EVENT, level, x, dtime)
+                            source.send(LOGGING_EVENT, level, x, dtime)
                         try:
                             etypeinfo = exc_info[0].__name__
                         except AttributeError:
@@ -195,13 +195,13 @@ class LoggingServer(StubServerMixin):
                         return
                     if ll:
                         local_warn("Warning: failed to send log message to %s: %s", source, e)
-            if self.log_both and ll:
+            if self.both and ll:
                 try:
                     ll(log, level, msg, *args, **kwargs)
                 except Exception:
                     pass
         finally:
-            self.in_remote_logging = False
+            self.in_handler = False
 
     def _process_logging_control(self, proto, packet: Packet) -> None:
         action = packet.get_str(1)
@@ -216,7 +216,7 @@ class LoggingServer(StubServerMixin):
         self._process_logging_event(proto, packet)
 
     def _process_logging_event(self, proto, packet: Packet) -> None:
-        assert self.remote_logging_receive
+        assert self.receive
         ss = self.get_server_source(proto)
         if ss is None:
             return
@@ -246,12 +246,12 @@ class LoggingServer(StubServerMixin):
             log.estr(e)
 
     def do_log(self, level, line) -> None:
-        with self.logging_lock:
+        with self.lock:
             log.log(level, line)
 
     def init_packet_handlers(self) -> None:
-        if self.remote_logging_receive:
+        if self.receive:
             self.add_packets("logging-event")
             self.server.add_legacy_alias("logging", "logging-event")
-        if self.remote_logging_send:
+        if self.send:
             self.add_packets("logging-control")

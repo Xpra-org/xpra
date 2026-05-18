@@ -50,8 +50,8 @@ class DBUS_Server(DBUS_Server_Base):
             name += extra.replace(".", "_").replace(":", "_")
         super().__init__(bus, server, name)
         self._properties |= {
-            "idle-timeout": ("idle.idle_timeout", ni),
-            "server-idle-timeout": ("idle.server_idle_timeout", ni),
+            "idle-timeout": ("idle.timeout", ni),
+            "server-idle-timeout": ("idle.server_timeout", ni),
             "name": ("session_name", ns),
         }
 
@@ -216,7 +216,9 @@ class DBUS_Server(DBUS_Server_Base):
     def SetIdleTimeout(self, value):
         nvalue = ni(value)
         self.log(".SetIdleTimeout(%s)", nvalue)
-        self.server.control_command_idle_timeout(nvalue)
+        idle = self.server.get_subsystem("idle")
+        if idle:
+            idle.control_command_idle_timeout(nvalue)
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def MoveWindowToWorkspace(self, wid, workspace):
@@ -299,9 +301,12 @@ class DBUS_Server(DBUS_Server_Base):
     def SetClipboardProperties(self, direction, max_copyin, max_copyout):
         # keep direction unchanged if not specified
         max_copyin, max_copyout = ni(max_copyin), ni(max_copyout)
-        direction = ns(direction) or self.server.clipboard_direction
+        clipboard = self.server.get_subsystem("clipboard")
+        if not clipboard:
+            return
+        direction = ns(direction) or clipboard.direction
         self.log(".SetClipboardProperties%s", (direction, max_copyin, max_copyout))
-        self.server.control_command_clipboard_direction(direction, max_copyin, max_copyout)
+        clipboard.control_command_clipboard_direction(direction, max_copyin, max_copyout)
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{ss}')
     def ListClients(self):

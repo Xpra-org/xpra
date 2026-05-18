@@ -408,7 +408,8 @@ class ShadowServerBase(ServerBase):
         if server_uuid:
             if server_uuid == self.subsystems["id"].uuid:
                 log.warn("Warning: shadowing your own display can be quite confusing")
-                if self._clipboard_helper and c.boolget("clipboard", True):
+                clipboard = self.get_subsystem("clipboard")
+                if clipboard and clipboard.helper and c.boolget("clipboard", True):
                     log.warn("Warning: clipboard sharing cannot be enabled!")
                     log.warn(" consider using the --no-clipboard option")
                     c["clipboard"] = False
@@ -440,13 +441,16 @@ class ShadowServerBase(ServerBase):
         self.keyboard_config = server_source.set_default_keymap()
 
     def load_existing_windows(self) -> None:
-        self.mmap_min_size = 1024 * 1024 * 4 * 2
+        mmap_sub = self.get_subsystem("mmap")
+        if mmap_sub:
+            mmap_sub.min_size = 1024 * 1024 * 4 * 2
         for i, model in enumerate(self.make_capture_window_models()):
             log(f"load_existing_windows() root window model {i} : {model}")
             self._add_new_window(model)
             # at least big enough for 2 frames of BGRX pixel data:
             w, h = model.get_dimensions()
-            self.mmap_min_size = max(self.mmap_min_size, w * h * 4 * 2)
+            if mmap_sub:
+                mmap_sub.min_size = max(mmap_sub.min_size, w * h * 4 * 2)
 
     def make_capture_window_models(self) -> list:
         from xpra.server.shadow.root_window_model import CaptureWindowModel

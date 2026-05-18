@@ -42,32 +42,32 @@ class MenuServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.menu_provider = None
-        self.menu_enabled: bool = False
+        self.provider = None
+        self.enabled: bool = False
 
     def init(self, opts) -> None:
-        self.menu_enabled = opts.start_new_commands
-        if self.menu_enabled:
+        self.enabled = opts.start_new_commands
+        if self.enabled:
             from xpra.server.menu_provider import get_menu_provider
-            self.menu_provider = get_menu_provider()
-            self.menu_provider.on_reload.append(self.send_updated_menu)
+            self.provider = get_menu_provider()
+            self.provider.on_reload.append(self.send_updated_menu)
 
     def setup(self) -> None:
-        if self.menu_provider:
+        if self.provider:
             start_thread(self._threaded_menu_setup, "menu-setup", daemon=True)
 
     def _threaded_menu_setup(self) -> None:
-        self.menu_provider.setup()
+        self.provider.setup()
 
     def cleanup(self) -> None:
-        if mp := self.menu_provider:
-            self.menu_provider = None
+        if mp := self.provider:
+            self.provider = None
             mp.cleanup()
 
     def _get_menu_data(self) -> dict[str, Any] | None:
-        if not self.menu_enabled or not self.menu_provider:
+        if not self.enabled or not self.provider:
             return None
-        return self.menu_provider.get_menu_data()
+        return self.provider.get_menu_data()
 
     def get_caps(self, source) -> dict[str, Any]:
         if not source or not BACKWARDS_COMPATIBLE:
@@ -96,7 +96,7 @@ class MenuServer(StubServerMixin):
             do_send_menu_data(source, menu)
 
     def get_info(self, _proto) -> dict[str, Any]:
-        mp = self.menu_provider
+        mp = self.provider
         if not mp or not FULL_INFO:
             return {}
         return {

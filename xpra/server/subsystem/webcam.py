@@ -56,32 +56,32 @@ class WebcamServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.webcam_device = ""
-        self.webcam_encodings: Sequence[str] = ()
-        self.webcam_enabled = False
-        self.webcam_virtual = False
-        self.webcam_virtual_video_devices: int = 0
-        self.webcam_client_mode: bool = False
-        self.webcam_rgb_formats = "RGB", "BGR", "BGRX"
+        self.device = ""
+        self.encodings: Sequence[str] = ()
+        self.enabled = False
+        self.virtual = False
+        self.virtual_video_devices: int = 0
+        self.client_mode: bool = False
+        self.rgb_formats = "RGB", "BGR", "BGRX"
         # device_id → proto — populated when webcam-client connects
-        self.webcam_client_connections: dict[int, Any] = {}
+        self.client_connections: dict[int, Any] = {}
         # device_id → Popen
-        self.webcam_client_processes: dict[int, Popen] = {}
+        self.client_processes: dict[int, Popen] = {}
 
     def init(self, opts) -> None:
-        self.webcam_enabled = opts.webcam.lower() not in FALSE_OPTIONS
-        if not self.webcam_enabled:
+        self.enabled = opts.webcam.lower() not in FALSE_OPTIONS
+        if not self.enabled:
             return
-        self.webcam_virtual = True
-        self.webcam_client_mode = True
+        self.virtual = True
+        self.client_mode = True
         if os.path.isabs(opts.webcam):
-            self.webcam_device = opts.webcam
-            self.webcam_client_mode = False
+            self.device = opts.webcam
+            self.client_mode = False
         elif opts.webcam.lower() == "window":
-            self.webcam_virtual = False
+            self.virtual = False
         elif opts.webcam.lower() in ("v4l2", "virtual"):
-            self.webcam_client_mode = False
-        log("init(..) webcam=%s, virtual=%s, client-mode=%s", opts.webcam, self.webcam_virtual, self.webcam_client_mode)
+            self.client_mode = False
+        log("init(..) webcam=%s, virtual=%s, client-mode=%s", opts.webcam, self.virtual, self.client_mode)
 
     def setup(self) -> None:
         self.init_webcam()
@@ -89,33 +89,33 @@ class WebcamServer(StubServerMixin):
     def get_server_features(self, _source) -> dict[str, Any]:
         return {
             WebcamServer.PREFIX: {
-                "enabled": self.webcam_enabled,
-                "encodings": self.webcam_encodings,
-                "rgb-formats": self.webcam_rgb_formats,
-                "virtual": self.webcam_virtual,
-                "devices": self.webcam_virtual_video_devices,
-                "client_mode": self.webcam_client_mode,
+                "enabled": self.enabled,
+                "encodings": self.encodings,
+                "rgb-formats": self.rgb_formats,
+                "virtual": self.virtual,
+                "devices": self.virtual_video_devices,
+                "client_mode": self.client_mode,
             },
         }
 
     def get_info(self, _proto) -> dict[str, Any]:
         info: dict[str, Any] = {
-            "enabled": self.webcam_enabled,
+            "enabled": self.enabled,
         }
-        if self.webcam_enabled:
+        if self.enabled:
             info.update({
-                "encodings": self.webcam_encodings,
-                "rgb-formats": self.webcam_rgb_formats,
-                "virtual": self.webcam_virtual,
-                "devices": self.webcam_virtual_video_devices,
-                "client_mode": self.webcam_client_mode,
+                "encodings": self.encodings,
+                "rgb-formats": self.rgb_formats,
+                "virtual": self.virtual,
+                "devices": self.virtual_video_devices,
+                "client_mode": self.client_mode,
             })
-        if self.webcam_device:
-            info["device"] = self.webcam_device
+        if self.device:
+            info["device"] = self.device
         return {WebcamServer.PREFIX: info}
 
     def init_webcam(self) -> None:
-        if not self.webcam_enabled:
+        if not self.enabled:
             return
         try:
             # pylint: disable=import-outside-toplevel
@@ -123,31 +123,31 @@ class WebcamServer(StubServerMixin):
         except ImportError:
             log("init_webcam()", exc_info=True)
             log.info("webcam forwarding cannot be enabled without the pillow decoder")
-            self.webcam_enabled = False
+            self.enabled = False
             return
         try:
-            self.webcam_encodings = tuple(x for x in ("png", "jpeg", "webp") if x in get_encodings())
+            self.encodings = tuple(x for x in ("png", "jpeg", "webp") if x in get_encodings())
         except Exception as e:
             log("init_webcam()", exc_info=True)
             log.error("Error: webcam forwarding disabled:")
             log.estr(e)
-            self.webcam_enabled = False
+            self.enabled = False
             return
-        if self.webcam_device:
-            self.webcam_virtual_video_devices = 1
+        if self.device:
+            self.virtual_video_devices = 1
             return
-        if self.webcam_client_mode:
+        if self.client_mode:
             log.info("webcam window mode enabled")
-        if self.webcam_virtual:
-            self.webcam_virtual_video_devices = init_virtual_video_devices()
-            self.webcam_virtual = bool(self.webcam_virtual_video_devices)
-            if not self.webcam_virtual_video_devices and not self.webcam_client_mode:
+        if self.virtual:
+            self.virtual_video_devices = init_virtual_video_devices()
+            self.virtual = bool(self.virtual_video_devices)
+            if not self.virtual_video_devices and not self.client_mode:
                 log.info("no v4l2 virtual devices found")
             else:
-                log.info("found %i virtual video devices for webcam forwarding", self.webcam_virtual_video_devices)
-        self.webcam_enabled = self.webcam_virtual or self.webcam_client_mode
+                log.info("found %i virtual video devices for webcam forwarding", self.virtual_video_devices)
+        self.enabled = self.virtual or self.client_mode
         log("init_webcam() virtual=%s (%i devices), client-mode=%s",
-            self.webcam_virtual, self.webcam_virtual_video_devices, self.webcam_client_mode)
+            self.virtual, self.virtual_video_devices, self.client_mode)
 
     # ------------------------------------------------------------------
     # Webcam-client connection attach (regular client flow)
@@ -173,7 +173,7 @@ class WebcamServer(StubServerMixin):
                 matched = next(iter(pending))
             if not other_ss.attach_webcam_client(matched, ss):
                 continue
-            self.webcam_client_connections[matched] = proto
+            self.client_connections[matched] = proto
             proto.large_packets.append("webcam-frame")
             log("webcam-client connection accepted for device %i", matched)
             return
@@ -181,9 +181,9 @@ class WebcamServer(StubServerMixin):
         self.server.disconnect_client(proto, "no webcam device available")
 
     def cleanup_protocol(self, protocol) -> None:
-        for device_id, proto in tuple(self.webcam_client_connections.items()):
+        for device_id, proto in tuple(self.client_connections.items()):
             if proto is protocol:
-                self.webcam_client_connections.pop(device_id, None)
+                self.client_connections.pop(device_id, None)
 
     # ------------------------------------------------------------------
     # Packet handlers
@@ -191,7 +191,7 @@ class WebcamServer(StubServerMixin):
     def _process_webcam_start(self, proto, packet: Packet) -> None:
         if self.server.readonly:
             return
-        assert self.webcam_enabled
+        assert self.enabled
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
@@ -199,7 +199,7 @@ class WebcamServer(StubServerMixin):
         device_id = packet.get_i64(1)
         w = packet.get_u16(2)
         h = packet.get_u16(3)
-        if self.webcam_client_mode:
+        if self.client_mode:
             ss.request_webcam_client_forwarder(device_id, w, h)
             self._spawn_webcam_client(ss, device_id, w, h)
         else:
@@ -224,7 +224,7 @@ class WebcamServer(StubServerMixin):
         log(" with env=%s", env)
         try:
             proc = Popen(cmd, env=env, close_fds=True)
-            self.webcam_client_processes[device_id] = proc
+            self.client_processes[device_id] = proc
             log("webcam-client process spawned: pid=%i", proc.pid)
 
             def on_webcam_client_exit(_proc_info) -> None:
@@ -254,9 +254,9 @@ class WebcamServer(StubServerMixin):
         self._cleanup_webcam_client(device_id, "stop")
 
     def _cleanup_webcam_client(self, device_id: int, reason: str) -> None:
-        if proto := self.webcam_client_connections.pop(device_id, None):
+        if proto := self.client_connections.pop(device_id, None):
             proto.close(reason)
-        if proc := self.webcam_client_processes.pop(device_id, None):
+        if proc := self.client_processes.pop(device_id, None):
             try:
                 proc.terminate()
             except OSError:
@@ -281,5 +281,5 @@ class WebcamServer(StubServerMixin):
         ss.process_webcam_frame(device_id, frame_no, encoding, w, h, data, options)
 
     def init_packet_handlers(self) -> None:
-        if self.webcam_enabled:
+        if self.enabled:
             self.add_packets("webcam-start", "webcam-stop", "webcam-frame")

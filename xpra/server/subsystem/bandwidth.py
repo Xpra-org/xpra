@@ -34,18 +34,18 @@ class BandwidthServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.bandwidth_limit = 0
-        self.bandwidth_detection = False
+        self.limit = 0
+        self.detection = False
 
     def init(self, opts) -> None:
-        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
-        self.bandwidth_detection = opts.bandwidth_detection
-        log("bandwidth-limit(%s)=%s", opts.bandwidth_limit, self.bandwidth_limit)
+        self.limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
+        self.detection = opts.bandwidth_detection
+        log("bandwidth-limit(%s)=%s", opts.bandwidth_limit, self.limit)
 
     def get_info(self, _source=None) -> dict[str, Any]:
         info = {
-            "limit": self.bandwidth_limit or 0,
-            "detection": self.bandwidth_detection,
+            "limit": self.limit or 0,
+            "detection": self.detection,
         }
         return {BandwidthServer.PREFIX: info}
 
@@ -53,8 +53,8 @@ class BandwidthServer(StubServerMixin):
         caps = BandwidthServer.get_info(self, source)
         if BACKWARDS_COMPATIBLE:
             caps["network"] = {
-                "bandwidth-limit": self.bandwidth_limit or 0,
-                "bandwidth-detection": self.bandwidth_detection
+                "bandwidth-limit": self.limit or 0,
+                "bandwidth-detection": self.detection
             }
         return caps
 
@@ -68,8 +68,8 @@ class BandwidthServer(StubServerMixin):
         if not ss:
             return
         bandwidth_limit = packet.get_u64(1)
-        if (self.bandwidth_limit and bandwidth_limit >= self.bandwidth_limit) or bandwidth_limit <= 0:
-            bandwidth_limit = self.bandwidth_limit or 0
+        if (self.limit and bandwidth_limit >= self.limit) or bandwidth_limit <= 0:
+            bandwidth_limit = self.limit or 0
         if ss.bandwidth_limit == bandwidth_limit:
             # unchanged
             log("bandwidth limit unchanged: %s", std_unit(bandwidth_limit))

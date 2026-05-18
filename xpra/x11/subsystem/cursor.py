@@ -27,8 +27,8 @@ class XCursorServer(CursorManager):
         self.last_cursor_serial = 0
 
     def setup(self) -> None:
-        log("setup() cursors=%s", self.cursors)
-        if not self.cursors:
+        log("setup() cursors=%s", self.enabled)
+        if not self.enabled:
             return
         with xlog:
             try:
@@ -39,13 +39,13 @@ class XCursorServer(CursorManager):
             except ImportError:
                 fixes = False
             log("setup() fixes=%s", fixes)
-            if not fixes and self.cursors:
+            if not fixes and self.enabled:
                 log.error("Error: cursor forwarding support is not available")
-                self.cursors = False
+                self.enabled = False
                 return
             XFixes.selectCursorChange(True)
-            self.default_cursor_image = XFixes.get_cursor_image()
-            log("get_default_cursor=%s", Ellipsizer(self.default_cursor_image))
+            self.default_image = XFixes.get_cursor_image()
+            log("get_default_cursor=%s", Ellipsizer(self.default_image))
             from xpra.x11.bindings.core import get_root_xid
             rxid = get_root_xid()
             # register the GObject server as the receiver (X11 dispatch
@@ -59,7 +59,7 @@ class XCursorServer(CursorManager):
 
     # noinspection PyMethodMayBeStatic
     def get_cursor_image(self) -> Sequence:
-        if not self.cursors:
+        if not self.enabled:
             return ()
         # must be called from the UI thread!
         with xlog:
@@ -68,16 +68,16 @@ class XCursorServer(CursorManager):
 
     def get_cursor_data(self, skip_default=True) -> tuple[Any, Any]:
         # must be called from the UI thread!
-        if not self.cursors:
+        if not self.enabled:
             return None, []
         cursor_image = self.get_cursor_image()
         if cursor_image is None:
             log("get_cursor_data() failed to get cursor image")
             return None, []
-        self.last_cursor_image = list(cursor_image)
-        pixels = self.last_cursor_image[7]
+        self.last_image = list(cursor_image)
+        pixels = self.last_image[7]
         log("get_cursor_image() cursor=%s", cursor_image[:7] + ["%s bytes" % len(pixels)] + cursor_image[8:])
-        is_default = self.default_cursor_image is not None and str(pixels) == str(self.default_cursor_image[7])
+        is_default = self.default_image is not None and str(pixels) == str(self.default_image[7])
         if skip_default and is_default:
             log("get_cursor_data(): default cursor - clearing it")
             cursor_image = None
@@ -85,7 +85,7 @@ class XCursorServer(CursorManager):
         return cursor_image, (size, (32767, 32767))
 
     def do_x11_cursor_event(self, event: X11Event) -> None:
-        if not self.cursors:
+        if not self.enabled:
             return
         if self.last_cursor_serial == event.cursor_serial:
             log("ignoring cursor event %s with the same serial number %s", event, self.last_cursor_serial)

@@ -36,15 +36,15 @@ class SshAgent(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.ssh_agent = False
+        self.enabled = False
 
     def init(self, opts) -> None:
-        self.ssh_agent = SSH_AGENT_DISPATCH and opts.ssh.lower() not in FALSE_OPTIONS
+        self.enabled = SSH_AGENT_DISPATCH and opts.ssh.lower() not in FALSE_OPTIONS
         session_dir = os.environ.get("XPRA_SESSION_DIR", "")
         if not session_dir:
             log.warn(f"Warning: unable to configure {SSH_AUTH_SOCK} without a valid session directory")
             return
-        if self.ssh_agent:
+        if self.enabled:
             if sf := self.get_subsystem("session-files"):
                 sf.session_files.extend((
                     "ssh/agent",
@@ -66,14 +66,14 @@ class SshAgent(StubServerMixin):
         self.connect("new-ui-driver", self.set_agent)
 
     def set_agent(self, server, source) -> None:
-        log("set_agent(%s, %s) ssh-agent=%s", server, source, self.ssh_agent)
-        if not self.ssh_agent:
+        log("set_agent(%s, %s) ssh-agent=%s", server, source, self.enabled)
+        if not self.enabled:
             return
         ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
         set_ssh_agent(ssh_auth_sock)
 
     def cleanup_protocol(self, protocol) -> None:
-        if not self.ssh_agent:
+        if not self.enabled:
             return
         source = self.get_server_source(protocol)
         if source and source.uuid:
@@ -87,7 +87,7 @@ class SshAgent(StubServerMixin):
         set_ssh_agent("")
 
     def add_new_client(self, ss, _c: typedict) -> None:
-        if not self.ssh_agent:
+        if not self.enabled:
             return
         assert ss
         if ss.uuid:

@@ -294,7 +294,7 @@ class X11KeyboardServer(KeyboardServer):
             ss.apply_backend()
 
     def set_keyboard_layout_group(self, grp: int) -> None:
-        kc = self.keyboard_config
+        kc = self.config
         if not kc:
             log(f"set_keyboard_layout_group({grp}) ignored, no config")
             return
@@ -312,7 +312,7 @@ class X11KeyboardServer(KeyboardServer):
         if self.current_keyboard_group == grp:
             log(f"set_keyboard_layout_group({grp}) ignored, value unchanged")
             return
-        log(f"set_keyboard_layout_group({grp}) config={self.keyboard_config}, {self.current_keyboard_group=}")
+        log(f"set_keyboard_layout_group({grp}) config={self.config}, {self.current_keyboard_group=}")
         from xpra.x11.error import xsync, XError
         try:
             with xsync:
@@ -346,8 +346,8 @@ class X11KeyboardServer(KeyboardServer):
         log("set_keymap(%s, %s) translate_only=%s", server_source, force, translate_only)
         with xsync:
             # pylint: disable=access-member-before-definition
-            server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
-            self.keyboard_config = server_source.keyboard_config
+            server_source.set_keymap(self.config, self.keys_pressed, force, translate_only)
+            self.config = server_source.keyboard_config
         # setxkbmap resets X11 autorepeat to defaults, so re-apply:
         if self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
             self.set_keyboard_repeat(self.key_repeat_delay, self.key_repeat_interval)

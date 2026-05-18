@@ -100,47 +100,47 @@ class DbusServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.dbus = False
-        self.dbus_launch = "dbus-launch --sh-syntax --close-stderr"
-        self.dbus_pid: int = 0
-        self.dbus_env: dict[str, str] = {}
-        self.dbus_control: bool = False
-        self.dbus_server = None
+        self.enabled = False
+        self.launch = "dbus-launch --sh-syntax --close-stderr"
+        self.pid: int = 0
+        self.env: dict[str, str] = {}
+        self.control: bool = False
+        self.service = None
 
     def init(self, opts) -> None:
-        self.dbus = opts.dbus
-        self.dbus_launch = opts.dbus_launch
-        self.dbus_control = opts.dbus_control
+        self.enabled = opts.dbus
+        self.launch = opts.dbus_launch
+        self.control = opts.dbus_control
 
     def setup(self) -> None:
-        if self.dbus:
+        if self.enabled:
             self.init_dbus_env()
-            if self.dbus_control:
+            if self.control:
                 self.init_dbus_server()
 
     def init_dbus_env(self) -> None:
         log("init_dbus_env()")
         display_name = os.environ.get("DISPLAY", "")
-        self.dbus_pid, self.dbus_env = reload_dbus_attributes(display_name)
-        if self.dbus_pid and self.dbus_env:
+        self.pid, self.env = reload_dbus_attributes(display_name)
+        if self.pid and self.env:
             return
         try:
             from xpra.server.dbus.start import start_dbus
         except ImportError as e:
             log("dbus components are not installed: %s", e)
             return
-        self.dbus_pid, self.dbus_env = start_dbus(self.dbus_launch)
-        if not self.dbus_env:
+        self.pid, self.env = start_dbus(self.launch)
+        if not self.env:
             return
-        log(f"started new dbus instance: {self.dbus_env}")
-        save_session_file("dbus.pid", f"{self.dbus_pid}", self.uid, self.gid)
-        dbus_env_data = "\n".join(f"{k}={v}" for k, v in self.dbus_env.items()) + "\n"
+        log(f"started new dbus instance: {self.env}")
+        save_session_file("dbus.pid", f"{self.pid}", self.uid, self.gid)
+        dbus_env_data = "\n".join(f"{k}={v}" for k, v in self.env.items()) + "\n"
         save_session_file("dbus.env", dbus_env_data.encode("utf8"), self.uid, self.gid)
         if sf := self.get_subsystem("session-files"):
             sf.session_files.extend(("dbus.pid", "dbus.env"))
-        os.environ.update(self.dbus_env)
+        os.environ.update(self.env)
         if features.x11:
-            save_dbus_x11_properties(self.dbus_env)
+            save_dbus_x11_properties(self.env)
 
     def init_dbus_server(self) -> None:
         log("init_dbus_server() env: %s", {k: v for k, v in os.environ.items() if k.startswith("DBUS_")})
@@ -149,18 +149,18 @@ class DbusServer(StubServerMixin):
         make = getattr(self.server, "make_dbus_server", self.make_dbus_server)
         try:
             from xpra.server.dbus.common import dbus_exception_wrap
-            self.dbus_server = dbus_exception_wrap(make, "setting up server dbus instance")
+            self.service = dbus_exception_wrap(make, "setting up server dbus instance")
         except Exception as e:
             log("init_dbus_server()", exc_info=True)
             log.error("Error: cannot load dbus server:")
             log.estr(e)
-            self.dbus_server = None
+            self.service = None
 
     def cleanup(self) -> None:
-        ds = self.dbus_server
+        ds = self.service
         log(f"cleanup() dbus_server={ds}")
         if ds:
-            self.dbus_server = None
+            self.service = None
             ds.cleanup()
 
     def late_cleanup(self, stop=True) -> None:
@@ -168,17 +168,17 @@ class DbusServer(StubServerMixin):
             self.stop_dbus_server()
 
     def stop_dbus_server(self) -> None:
-        log("stop_dbus_server() dbus_pid=%s", self.dbus_pid)
-        if not self.dbus_pid:
+        log("stop_dbus_server() dbus_pid=%s", self.pid)
+        if not self.pid:
             return
         try:
-            os.kill(self.dbus_pid, signal.SIGINT)
+            os.kill(self.pid, signal.SIGINT)
         except ProcessLookupError:
-            log("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
-            log.warn(f"Warning: dbus process not found (pid={self.dbus_pid})")
+            log("os.kill(%i, SIGINT)", self.pid, exc_info=True)
+            log.warn(f"Warning: dbus process not found (pid={self.pid})")
         except Exception as e:
-            log("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
-            log.warn(f"Warning: error trying to stop dbus with pid {self.dbus_pid}:")
+            log("os.kill(%i, SIGINT)", self.pid, exc_info=True)
+            log.warn(f"Warning: error trying to stop dbus with pid {self.pid}:")
             log.warn(" %s", e)
 
     def make_dbus_server(self):  # pylint: disable=useless-return
@@ -186,11 +186,11 @@ class DbusServer(StubServerMixin):
         return None
 
     def get_info(self, _proto) -> dict[str, Any]:
-        if not self.dbus_pid or not self.dbus_env:
+        if not self.pid or not self.env:
             return {}
         return {
             DbusServer.PREFIX: {
-                "pid": self.dbus_pid,
-                "env": self.dbus_env,
+                "pid": self.pid,
+                "env": self.env,
             }
         }

@@ -34,8 +34,8 @@ class KeyboardServer(StubServerMixin):
         StubServerMixin.__init__(self, server)
         self.keymap_options: dict[str, Any] = {}
         self.mod_meanings = {}
-        self.keyboard_device = None
-        self.keyboard_config = None
+        self.device = None
+        self.config = None
         self.keymap_changing_timer = 0  # to ignore events when we know we are changing the configuration
         # ugly: we're duplicating the value pair from "key_repeat" here:
         self.key_repeat_delay = -1
@@ -55,15 +55,15 @@ class KeyboardServer(StubServerMixin):
                 self.keymap_options[option] = v
 
     def setup(self) -> None:
-        self.keyboard_device = self.make_keyboard_device()
-        if not self.keyboard_device:
+        self.device = self.make_keyboard_device()
+        if not self.device:
             log.warn("Warning: keyboard device not available, using NoKeyboardDevice")
             from xpra.keyboard.nokeyboard import NoKeyboardDevice
-            self.keyboard_device = NoKeyboardDevice()
-        log("keyboard_device=%s", self.keyboard_device)
+            self.device = NoKeyboardDevice()
+        log("keyboard_device=%s", self.device)
 
         self.watch_keymap_changes()
-        self.keyboard_config = self.get_keyboard_config({"keymap": self.keymap_options})
+        self.config = self.get_keyboard_config({"keymap": self.keymap_options})
         self.connect("last-client-exited", self.clear_keys_pressed)
         self.add_keyboard_control_commands()
 
@@ -77,7 +77,7 @@ class KeyboardServer(StubServerMixin):
     def cleanup(self) -> None:
         self.stop_keymap_timer()
         noerr(self.clear_keys_pressed)
-        self.keyboard_config = None
+        self.config = None
 
     def keymap_changed(self, *_args) -> None:
         if self.keymap_changing_timer:
@@ -95,7 +95,7 @@ class KeyboardServer(StubServerMixin):
 
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         info = self.get_keyboard_info()
-        device = self.keyboard_device
+        device = self.device
         if not self.server.readonly and device:
             info["state"] = {
                 "keys_pressed": tuple(self.keys_pressed.keys()),
@@ -157,7 +157,7 @@ class KeyboardServer(StubServerMixin):
             "keys_pressed": tuple(self.keys_pressed.values()),
             "modifiers": self.mod_meanings,
         }
-        if kc := self.keyboard_config:
+        if kc := self.config:
             info.update(kc.get_info())
         log("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
@@ -295,8 +295,8 @@ class KeyboardServer(StubServerMixin):
 
     def fake_key(self, keycode: int, press: bool) -> None:
         log("fake_key(%s, %s)", keycode, press)
-        if self.keyboard_device:
-            self.keyboard_device.press_key(keycode, press)
+        if self.device:
+            self.device.press_key(keycode, press)
 
     def _handle_key(self, wid: int, pressed: bool, name: str, keyval: int, keycode: int,
                     modifiers: list, is_mod: bool = False, sync: bool = True):
@@ -411,7 +411,7 @@ class KeyboardServer(StubServerMixin):
         # make sure the timer doesn't fire and interfere:
         self.cancel_key_repeat_timer()
         keycodes = tuple(self.keys_pressed.keys())
-        self.keyboard_device.clear_keys_pressed(keycodes)
+        self.device.clear_keys_pressed(keycodes)
         self.keys_pressed = {}
 
     def set_keyboard_layout_group(self, grp: int) -> None:
@@ -420,7 +420,7 @@ class KeyboardServer(StubServerMixin):
     def set_keyboard_repeat(self, delay: int, interval: int) -> None:
         self.key_repeat_delay = delay
         self.key_repeat_interval = interval
-        device = self.keyboard_device
+        device = self.device
         if not device:
             return
         device.set_repeat_rate(delay, interval)

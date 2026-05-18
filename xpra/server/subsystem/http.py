@@ -71,7 +71,7 @@ class HttpServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self._http_scripts = {}
+        self.scripts = {}
 
     def init(self, opts) -> None:
         http_scripts = opts.http_scripts
@@ -85,7 +85,7 @@ class HttpServer(StubServerMixin):
         }
         # menu data is owned by the MenuServer subsystem:
         menu = self.get_subsystem("menu")
-        if menu and menu.menu_provider:
+        if menu and menu.provider:
             script_options |= {
                 "/Menu": self.http_menu_request,
                 "/MenuIcon": self.http_menu_icon_request,
@@ -93,7 +93,7 @@ class HttpServer(StubServerMixin):
                 "/DesktopMenuIcon": self.http_desktop_menu_icon_request,
             }
         if http_scripts.lower() in ("all", "*"):
-            self._http_scripts = script_options
+            self.scripts = script_options
         else:
             for script in http_scripts.split(","):
                 if not script.startswith("/"):
@@ -102,23 +102,23 @@ class HttpServer(StubServerMixin):
                 if not handler:
                     log.warn(f"Warning: unknown script {script!r}")
                 else:
-                    self._http_scripts[script] = handler
-        log("init_http_scripts(%s)=%s", http_scripts, self._http_scripts)
+                    self.scripts[script] = handler
+        log("init_http_scripts(%s)=%s", http_scripts, self.scripts)
 
     def cleanup(self) -> None:
-        self._http_scripts = {}
+        self.scripts = {}
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
-            HttpServer.PREFIX: {"scripts": tuple(self._http_scripts.keys())},
+            HttpServer.PREFIX: {"scripts": tuple(self.scripts.keys())},
         }
 
     def http_menu_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
-        menu = self.get_subsystem("menu").menu_provider.get_menu_data(remove_icons=True)
+        menu = self.get_subsystem("menu").provider.get_menu_data(remove_icons=True)
         return json_response(menu or "not available")
 
     def http_desktop_menu_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
-        xsessions = self.get_subsystem("menu").menu_provider.get_desktop_sessions(remove_icons=True)
+        xsessions = self.get_subsystem("menu").provider.get_desktop_sessions(remove_icons=True)
         return json_response(xsessions or "not available")
 
     def http_menu_icon_request(self, uri: str, _post_data: bytes) -> HttpResponse:
@@ -135,7 +135,7 @@ class HttpServer(StubServerMixin):
         else:
             app_name = path[1]
         log("http_menu_icon_request: category_name=%s, app_name=%s", category_name, app_name)
-        icon_type, icon_data = self.get_subsystem("menu").menu_provider.get_menu_icon(category_name, app_name)
+        icon_type, icon_data = self.get_subsystem("menu").provider.get_menu_icon(category_name, app_name)
         return http_icon_response(icon_type, icon_data)
 
     def http_desktop_menu_icon_request(self, uri: str, _post_data: bytes) -> HttpResponse:
@@ -146,7 +146,7 @@ class HttpServer(StubServerMixin):
         # in case the sessionname is followed by a slash:
         sessionname = parts[1].split("/")[0]
         log(f"http_desktop_menu_icon_request: {sessionname=}")
-        icon_type, icon_data = self.get_subsystem("menu").menu_provider.get_desktop_menu_icon(sessionname)
+        icon_type, icon_data = self.get_subsystem("menu").provider.get_desktop_menu_icon(sessionname)
         return http_icon_response(icon_type, icon_data)
 
     def http_displays_request(self, _uri: str, _post_data: bytes) -> HttpResponse:

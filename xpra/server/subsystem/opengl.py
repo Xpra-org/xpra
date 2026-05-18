@@ -103,19 +103,19 @@ class OpenGLInfo(StubServerMixin):
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
         self.display = os.environ.get("DISPLAY", "")
-        self.opengl = "no"
-        self.opengl_props: dict[str, Any] = {}
+        self.option = "no"
+        self.props: dict[str, Any] = {}
 
     def init(self, opts) -> None:
-        self.opengl = opts.opengl
+        self.option = opts.opengl
 
     def setup(self) -> None:
-        if self.opengl.lower() == "noprobe" or self.opengl.lower() in FALSE_OPTIONS:
-            log("setup() query_opengl skipped because opengl=%s", self.opengl)
+        if self.option.lower() == "noprobe" or self.option.lower() in FALSE_OPTIONS:
+            log("setup() query_opengl skipped because opengl=%s", self.option)
             return
 
         def query() -> None:
-            self.opengl_props = self.query_opengl()
+            self.props = self.query_opengl()
         start_thread(query, "query-opengl", daemon=True)
 
     def query_opengl(self) -> dict[str, Any]:
@@ -142,12 +142,12 @@ class OpenGLInfo(StubServerMixin):
 
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
-        if FULL_INFO and self.opengl_props:
-            caps[OpenGLInfo.PREFIX] = dict_version_trim(self.opengl_props)
+        if FULL_INFO and self.props:
+            caps[OpenGLInfo.PREFIX] = dict_version_trim(self.props)
         return caps
 
     def get_info(self, _proto) -> dict[str, Any]:
         info: dict[str, Any] = {}
-        if self.opengl_props:
-            info = dict(self.opengl_props)
+        if self.props:
+            info = dict(self.props)
         return {OpenGLInfo.PREFIX: info}

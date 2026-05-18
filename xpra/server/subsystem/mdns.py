@@ -39,16 +39,16 @@ class MdnsServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.mdns = False
-        self.mdns_publishers = {}
+        self.enabled = False
+        self.publishers = {}
         self.display = os.environ.get("DISPLAY", "")
 
     def init(self, opts) -> None:
-        self.mdns = opts.mdns
-        log("ServerCore.init(..) mdns=%s", self.mdns)
+        self.enabled = opts.mdns
+        log("ServerCore.init(..) mdns=%s", self.enabled)
 
     def setup(self) -> None:
-        if self.mdns:
+        if self.enabled:
             # ugly: `idle_work` uses GLib.idle_add to wait for run()
             # which is where the server uuid is set:
             idle_work(self.mdns_publish)
@@ -60,7 +60,7 @@ class MdnsServer(StubServerMixin):
         idle_work(self.mdns_update)
 
     def mdns_publish(self) -> None:
-        if not self.mdns:
+        if not self.enabled:
             return
         # find all the records we want to publish:
         mdns_recs: dict[str, list[tuple[str, int]]] = {}
@@ -102,7 +102,7 @@ class MdnsServer(StubServerMixin):
         if not mdns_recs:
             return
         mdns_info = self.get_mdns_info()
-        self.mdns_publishers = {}
+        self.publishers = {}
         log(f"mdns_publish() will publish: {mdns_recs=}")
         from xpra.net.mdns.util import mdns_publish
         for mdns_mode, listen_on in mdns_recs.items():
@@ -111,7 +111,7 @@ class MdnsServer(StubServerMixin):
             aps = mdns_publish(self.display, listen_on, info)
             for ap in aps:
                 ap.start()
-                self.mdns_publishers[ap] = mdns_mode
+                self.publishers[ap] = mdns_mode
 
     def get_mdns_socktypes(self, socktype: str, options: dict[str, str]) -> Sequence[str]:
         # for a given socket type,
@@ -147,21 +147,21 @@ class MdnsServer(StubServerMixin):
         return mdns_info
 
     def mdns_cleanup(self) -> None:
-        if self.mdns_publishers:
+        if self.publishers:
             from xpra.util.thread import start_thread
             start_thread(self.do_mdns_cleanup, "mdns-cleanup", daemon=True)
 
     def do_mdns_cleanup(self) -> None:
-        mp = dict(self.mdns_publishers)
-        self.mdns_publishers = {}
+        mp = dict(self.publishers)
+        self.publishers = {}
         for ap in tuple(mp.keys()):
             ap.stop()
 
     def mdns_update(self) -> None:
-        if not self.mdns:
+        if not self.enabled:
             return
         txt = self.get_mdns_info()
-        for mdns_publisher, mode in dict(self.mdns_publishers).items():
+        for mdns_publisher, mode in dict(self.publishers).items():
             info = dict(txt)
             info["mode"] = mode
             try:
@@ -175,5 +175,5 @@ class MdnsServer(StubServerMixin):
         authenticated = bool(proto and proto.authenticators)
         full = FULL_INFO > 0 or authenticated
         if full:
-            return {MdnsServer.PREFIX: self.mdns}
+            return {MdnsServer.PREFIX: self.enabled}
         return {}

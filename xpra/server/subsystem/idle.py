@@ -20,13 +20,13 @@ class IdleTimeoutServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.server_idle_timeout = 0
-        self.idle_timeout = 0
-        self.server_idle_timer = 0
+        self.server_timeout = 0
+        self.timeout = 0
+        self.server_timer = 0
 
     def init(self, opts) -> None:
-        self.server_idle_timeout = opts.server_idle_timeout
-        self.idle_timeout = opts.idle_timeout
+        self.server_timeout = opts.server_idle_timeout
+        self.timeout = opts.idle_timeout
 
     def setup(self) -> None:
         self.schedule_server_timeout()
@@ -41,20 +41,20 @@ class IdleTimeoutServer(StubServerMixin):
         self.cancel_server_timeout()
 
     def cancel_server_timeout(self) -> None:
-        log("cancel_server_timeout() timer=%s", self.server_idle_timer)
-        if self.server_idle_timeout <= 0:
+        log("cancel_server_timeout() timer=%s", self.server_timer)
+        if self.server_timeout <= 0:
             return
-        if self.server_idle_timer:
-            GLib.source_remove(self.server_idle_timer)
-            self.server_idle_timer = 0
+        if self.server_timer:
+            GLib.source_remove(self.server_timer)
+            self.server_timer = 0
 
     def schedule_server_timeout(self, *args) -> None:
-        log("schedule_server_timeout%s server_idle_timeout=%s", args, self.server_idle_timeout)
+        log("schedule_server_timeout%s server_idle_timeout=%s", args, self.server_timeout)
         self.cancel_server_timeout()
-        self.server_idle_timer = GLib.timeout_add(self.server_idle_timeout * 1000, self.server_idle_timedout)
+        self.server_timer = GLib.timeout_add(self.server_timeout * 1000, self.server_idle_timedout)
 
     def server_idle_timedout(self) -> None:
-        log.info("No valid client connections for %s seconds, exiting the server", self.server_idle_timeout)
+        log.info("No valid client connections for %s seconds, exiting the server", self.server_timeout)
         self.server.clean_quit(ServerExitMode.NORMAL)
 
     def cleanup(self) -> None:
@@ -62,8 +62,8 @@ class IdleTimeoutServer(StubServerMixin):
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
-            "server-idle-timeout": int(self.server_idle_timeout),
-            "idle-timeout": self.idle_timeout,
+            "server-idle-timeout": int(self.server_timeout),
+            "idle-timeout": self.timeout,
         }
 
     #########################################
@@ -71,14 +71,14 @@ class IdleTimeoutServer(StubServerMixin):
     #########################################
 
     def control_command_server_idle_timeout(self, t: int) -> str:
-        self.server_idle_timeout = t
+        self.server_timeout = t
         all_sources = self.get_sources_by_type()
         if not all_sources:
             self.schedule_server_timeout()
         return f"server-idle-timeout set to {t}"
 
     def control_command_idle_timeout(self, t: int) -> str:
-        self.idle_timeout = t
+        self.timeout = t
         try:
             from xpra.server.source.idle_mixin import IdleConnection
         except ImportError:

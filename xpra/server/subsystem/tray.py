@@ -50,39 +50,39 @@ class TrayMenu(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.tray_menu = None
-        self.tray_menu_shown = False
-        self.tray_widget = None
-        self.tray = False
-        self.tray_icon = None
+        self.menu = None
+        self.menu_shown = False
+        self.widget = None
+        self.enabled = False
+        self.icon = None
 
     def init(self, opts) -> None:
-        self.tray = opts.tray
-        self.tray_icon = opts.tray_icon
+        self.enabled = opts.tray
+        self.icon = opts.tray_icon
 
     def setup(self) -> None:
-        if self.tray:
+        if self.enabled:
             self.setup_tray()
             self.connect("last-client-exited", self.tray_not_connected)
 
     def tray_not_connected(self, *args) -> None:
         log("tray_not_connected%s", args)
         # revert to default icon:
-        if not self.tray_icon:
+        if not self.icon:
             self.set_tray_icon("server-notconnected")
 
     def cleanup(self) -> None:
         self.cleanup_tray()
 
     def add_new_client(self, *_args) -> None:
-        if not self.tray_icon:
+        if not self.icon:
             self.set_tray_icon("server-connected")
 
     def cleanup_tray(self) -> None:
-        tw = self.tray_widget
+        tw = self.widget
         log("cleanup_tray() tray_widget=%s", tw)
         if tw:
-            self.tray_widget = None
+            self.widget = None
             tw.cleanup()
 
     def setup_tray(self) -> None:
@@ -95,15 +95,15 @@ class TrayMenu(StubServerMixin):
             log("no access to the display, cannot setup tray")
             return
         try:
-            self.tray_menu = self.make_tray_menu()
-            self.tray_widget = self.make_tray_widget()
-            self.set_tray_icon(self.tray_icon or "server-notconnected")
+            self.menu = self.make_tray_menu()
+            self.widget = self.make_tray_widget()
+            self.set_tray_icon(self.icon or "server-notconnected")
         except ImportError as e:
             log("setup_tray()", exc_info=True)
             log.warn("Warning: failed to load systemtray:")
             log.warn(" %s", e)
         except Exception as e:
-            log("error setting up %s", self.tray_widget, exc_info=True)
+            log("error setting up %s", self.widget, exc_info=True)
             log.error("Error setting up system tray:")
             log.estr(e)
 
@@ -154,7 +154,7 @@ class TrayMenu(StubServerMixin):
         errs = []
         for c in classes:
             try:
-                w = c(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server",
+                w = c(self, XPRA_APP_ID, self.menu, "Xpra Shadow Server",
                       icon_filename="server-notconnected.png",
                       click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
                 if w:
@@ -171,39 +171,39 @@ class TrayMenu(StubServerMixin):
         return None
 
     def set_tray_icon(self, filename: str) -> None:
-        if not self.tray_widget:
+        if not self.widget:
             return
         try:
-            self.tray_widget.set_icon(filename)
+            self.widget.set_icon(filename)
         except Exception as e:
             log.warn("Warning: failed to set tray icon to %s", filename)
             log.warn(" %s", e)
 
     def tray_menu_deactivated(self, *_args) -> None:
-        self.tray_menu_shown = False
+        self.menu_shown = False
 
     def tray_click_callback(self, button: int, pressed: int, time=0) -> None:
         log("tray_click_callback(%s, %s, %i) tray menu=%s, shown=%s",
-            button, pressed, time, self.tray_menu, self.tray_menu_shown)
+            button, pressed, time, self.menu, self.menu_shown)
         if pressed:
             self.close_tray_menu()
         else:
             # status icon can give us a position function:
             # except this doesn't work and nothing happens!
-            # position_menu = self.tray_widget.tray_widget.position_menu
-            # pos = position_menu(self.tray_menu, x, y, self.tray_widget.tray_widget)
+            # position_menu = self.widget.tray_widget.position_menu
+            # pos = position_menu(self.menu, x, y, self.widget.tray_widget)
             if POSIX and not OSX:
-                self.tray_menu.popup_at_pointer()
+                self.menu.popup_at_pointer()
             else:
                 with SilenceWarningsContext(DeprecationWarning):
-                    self.tray_menu.popup(None, None, None, None, button, time)
-            self.tray_menu_shown = True
+                    self.menu.popup(None, None, None, None, button, time)
+            self.menu_shown = True
 
     def tray_exit_callback(self, *_args) -> None:
         self.close_tray_menu()
         GLib.idle_add(self.server.clean_quit, False)
 
     def close_tray_menu(self, *_args) -> None:
-        if self.tray_menu_shown:
-            self.tray_menu.popdown()
-            self.tray_menu_shown = False
+        if self.menu_shown:
+            self.menu.popdown()
+            self.menu_shown = False

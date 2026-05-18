@@ -47,11 +47,21 @@ class SourceMixinsTest(unittest.TestCase):
         server = SignalEmitter()
         server.session_name = "foo"
         server.unix_socket_paths = ["/some/path"]
-        server.bandwidth_limit = 0
-        server.bandwidth_detection = False
+        server.limit = 0
+        server.detection = False
         if server_props:
             for k,v in server_props.items():
                 setattr(server, k, v)
+        server.subsystems = {
+            "audio": server,
+            "bandwidth": server,
+            "dbus": server,
+            "encoding": server,
+            "file": server,
+            "idle": server,
+            "mmap": server,
+            "webcam": server,
+        }
         #fake client caps object (as a typedict):
         d = typedict()
         if client_caps:
@@ -129,7 +139,7 @@ class SourceMixinsTest(unittest.TestCase):
             pass
         else:
             self._test_mixin_class(DBUS_Connection, {
-                "dbus_control"  : True,
+                "control"  : True,
             })
 
     def test_encodings(self):
@@ -164,7 +174,7 @@ class SourceMixinsTest(unittest.TestCase):
             m.idle_notification_action(20, "other")
             m.idle_timedout()
         self._test_mixin_class(IdleConnection, {
-            "idle_timeout": 1000,
+            "timeout": 1000,
         }, test_fn=idle_test)
 
     def test_input(self):
@@ -188,9 +198,9 @@ class SourceMixinsTest(unittest.TestCase):
                         caps["mmap_file"] = tmp.name
                     with LoggerSilencer(mmap):
                         self._test_mixin_class(mmap.MMAP_Connection, {
-                            "mmap_filename": server_mmap_filename,
-                            "mmap_supported": mmap_supported,
-                            "mmap_min_size": 10000,
+                            "filename": server_mmap_filename,
+                            "supported": mmap_supported,
+                            "min_size": 10000,
                         }, caps)
 
     def test_ping(self):
@@ -283,9 +293,10 @@ class SourceMixinsTest(unittest.TestCase):
             for enabled in (False, True):
                 wm = self._test_mixin_class(webcam.WebcamConnection, {
                     "webcam"            : need,
-                    "webcam_enabled"    : enabled,
-                    "webcam_device"     : None,
-                    "webcam_encodings"  : ("png", "jpeg"),
+                    "enabled"           : enabled,
+                    "device"            : None,
+                    "encodings"         : ("png", "jpeg"),
+                    "client_mode"       : False,
                 })
         wm.init_state()
         wm.hello_sent = monotonic()

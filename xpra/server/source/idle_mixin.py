@@ -42,9 +42,9 @@ class IdleConnection(StubClientConnection):
         self.connect("user-event", self.do_user_event)
 
     def init_from(self, _protocol, server) -> None:
-        # `IdleTimeoutServer` owns `idle_timeout`:
+        # `IdleTimeoutServer` owns `timeout`:
         idle = server.subsystems.get("idle")
-        self.idle_timeout = idle.idle_timeout if idle else 0
+        self.idle_timeout = idle.timeout if idle else 0
         self.session_name = server.session_name
 
     def init_state(self) -> None:

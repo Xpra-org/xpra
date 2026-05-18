@@ -30,11 +30,11 @@ class NotificationForwarder(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.notifications_forwarder = None
-        self.notifications = False
+        self.forwarder = None
+        self.enabled = False
 
     def init(self, opts) -> None:
-        self.notifications = opts.notifications
+        self.enabled = opts.notifications
 
     def setup(self) -> None:
         self.init_notification_forwarder()
@@ -46,31 +46,31 @@ class NotificationForwarder(StubServerMixin):
         ac("close-notification", "send the request to close an existing notification to the client(s)", min_args=1, max_args=2, validation=[int])
 
     def cleanup(self) -> None:
-        if nf := self.notifications_forwarder:
-            self.notifications_forwarder = None
+        if nf := self.forwarder:
+            self.forwarder = None
             start_thread(nf.release, "notifier-release", daemon=True)
 
     def get_info(self, _source=None) -> dict[str, Any]:
-        if not self.notifications_forwarder:
+        if not self.forwarder:
             return {}
-        return {NotificationForwarder.PREFIX: self.notifications_forwarder.get_info()}
+        return {NotificationForwarder.PREFIX: self.forwarder.get_info()}
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {
             NotificationForwarder.PREFIX: {
-                "enabled": self.notifications,
+                "enabled": self.enabled,
             },
         }
 
     def init_notification_forwarder(self) -> None:
-        log("init_notification_forwarder() enabled=%s", self.notifications)
-        if self.notifications and POSIX and not OSX:
+        log("init_notification_forwarder() enabled=%s", self.enabled)
+        if self.enabled and POSIX and not OSX:
             try:
                 from xpra.dbus.notifications import register
-                self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
-                if self.notifications_forwarder:
+                self.forwarder = register(self.notify_callback, self.notify_close_callback)
+                if self.forwarder:
                     log.info("D-Bus notification forwarding is available")
-                    log("%s", self.notifications_forwarder)
+                    log("%s", self.forwarder)
             except Exception as e:
                 log("init_notification_forwarder()", exc_info=True)
                 self.notify_setup_error(e)
@@ -111,7 +111,7 @@ class NotificationForwarder(StubServerMixin):
     def notify_callback(self, dbus_id: str, nid: int, app_name: str, replaces_nid: int, app_icon: str,
                         summary: str, body: str,
                         actions: Sequence[str], hints: dict, expire_timeout: int) -> None:
-        assert self.notifications_forwarder and self.notifications
+        assert self.forwarder and self.enabled
         # make sure that we run in the main thread:
         glib.idle_add(self.do_notify_callback, dbus_id, nid,
                       app_name, replaces_nid, app_icon,
@@ -146,19 +146,19 @@ class NotificationForwarder(StubServerMixin):
         return get_notification_icon(icon_string)
 
     def notify_close_callback(self, nid: int) -> None:
-        assert self.notifications_forwarder
+        assert self.forwarder
         log("notify_close_callback(%s)", nid)
         notification_sources = self.get_sources_by_type(NotificationConnection)
         for ss in notification_sources:
             ss.notify_close(int(nid))
 
     def _process_notification_status(self, proto, packet: Packet) -> None:
-        assert self.notifications, "cannot toggle notifications: the feature is disabled"
+        assert self.enabled, "cannot toggle notifications: the feature is disabled"
         if ss := self.get_server_source(proto):
             ss.send_notifications = bool(packet[1])
 
     def _process_notification_close(self, proto, packet: Packet) -> None:
-        assert self.notifications
+        assert self.enabled
         nid = packet.get_u64(1)
         reason = packet.get_str(2)
         text = packet.get_str(3)
@@ -169,18 +169,18 @@ class NotificationForwarder(StubServerMixin):
             # remove client callback if we have one:
             ss.notification_callbacks.pop(nid)
         except KeyError:
-            if self.notifications_forwarder:
+            if self.forwarder:
                 # regular notification forwarding:
-                active = self.notifications_forwarder.is_notification_active(nid)
+                active = self.forwarder.is_notification_active(nid)
                 log("notification-close nid=%s, reason=%s, text=%s, active=%s", nid, reason, text, active)
                 if active:
                     # an invalid type of the arguments can crash dbus!
                     assert int(nid) >= 0
                     assert int(reason) >= 0
-                    self.notifications_forwarder.NotificationClosed(nid, reason)
+                    self.forwarder.NotificationClosed(nid, reason)
 
     def _process_notification_action(self, proto, packet: Packet) -> None:
-        assert self.notifications
+        assert self.enabled
         nid = packet.get_u64(1)
         action_key = packet.get_str(2)
         ss = self.get_server_source(proto)
@@ -190,18 +190,18 @@ class NotificationForwarder(StubServerMixin):
             # special client callback notification:
             client_callback = ss.notification_callbacks.pop(nid)
         except KeyError:
-            if self.notifications_forwarder:
+            if self.forwarder:
                 # regular notification forwarding:
-                active = self.notifications_forwarder.is_notification_active(nid)
+                active = self.forwarder.is_notification_active(nid)
                 log("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
                 if active:
-                    self.notifications_forwarder.ActionInvoked(nid, action_key)
+                    self.forwarder.ActionInvoked(nid, action_key)
         else:
             log("notification callback for %s: %s", (nid, action_key), client_callback)
             client_callback(nid, action_key)
 
     def init_packet_handlers(self) -> None:
-        if self.notifications:
+        if self.enabled:
             self.add_packets("notification-close", "notification-action", "notification-status", main_thread=True)
             self.server.add_legacy_alias("set-notify", "notification-status")
 
@@ -210,7 +210,7 @@ class NotificationForwarder(StubServerMixin):
     #########################################
 
     def control_command_send_notification(self, nid: int, title: str, message: str, client_uuids) -> str:
-        if not self.notifications:
+        if not self.enabled:
             msg = "notification are disabled"
             log(msg)
             return msg
@@ -227,7 +227,7 @@ class NotificationForwarder(StubServerMixin):
         return msg
 
     def control_command_close_notification(self, nid: int, client_uuids) -> str:
-        if not self.notifications:
+        if not self.enabled:
             msg = "notification are disabled"
             log(msg)
             return msg

@@ -48,7 +48,7 @@ class DBUS_Server_Base(dbus.service.Object):
         """
         Resolve a property mapping target.
         A bare name (e.g. "session_name") refers to an attribute on the
-        server; a dotted name (e.g. "idle.idle_timeout") routes to an
+        server; a dotted name (e.g. "idle.timeout") routes to an
         attribute on a subsystem instance via `server.subsystems[prefix]`.
         Returns `(target, attr_name)` or `(None, None)` if the subsystem
         is not available.

@@ -272,7 +272,8 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         return [ax, ay] + list(pointer[2:])
 
     def get_notification_tray(self):
-        return self.tray_widget
+        tray = self.get_subsystem("tray")
+        return getattr(tray, "widget", None)
 
     def get_notifier_classes(self) -> list[Callable]:
         ncs: list[Callable] = list(super().get_notifier_classes())

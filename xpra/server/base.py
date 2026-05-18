@@ -113,8 +113,8 @@ class ServerBase(ServerBaseClass):
                 s.send_server_event(event_type, *args)
         # the dbus subsystem is optional:
         dbus = self.subsystems.get("dbus")
-        if dbus and dbus.dbus_server:
-            dbus.dbus_server.Event(event_type, [str(x) for x in args[1:]])
+        if dbus and dbus.service:
+            dbus.service.Event(event_type, [str(x) for x in args[1:]])
 
     def get_server_source(self, proto):
         return self._server_sources.get(proto)

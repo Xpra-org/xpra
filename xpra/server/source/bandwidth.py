@@ -52,8 +52,8 @@ class BandwidthConnection(StubClientConnection):
         # `BandwidthConnection` and `BandwidthServer` are paired by the same
         # feature flag; the subsystem is guaranteed to be present.
         bandwidth = server.subsystems["bandwidth"]
-        self.bandwidth_server_limit = bandwidth.bandwidth_limit
-        self.bandwidth_detection = bandwidth.bandwidth_detection
+        self.bandwidth_server_limit = bandwidth.limit
+        self.bandwidth_detection = bandwidth.detection
 
     def parse_client_caps(self, c: typedict) -> None:
         self.client_connection_data = c.dictget("connection-data", {})

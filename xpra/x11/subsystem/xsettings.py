@@ -129,11 +129,11 @@ class XSettingsServer(StubServerMixin):
     def update_server_settings(self, settings=None, reset=False) -> None:
         if not features.display:
             return
-        # `cursor_size` is owned by `CursorManager` (now a standalone subsystem).
+        # `size` is owned by `CursorManager` (now a standalone subsystem).
         # `dpi`/`antialias`/`double_click_*` live on `DisplayManager` (still
         # class-based, reachable via `self.server.X` until it migrates).
         cursor = self.get_subsystem("cursor")
-        cursor_size = getattr(cursor, "cursor_size", 0) if cursor else 0
+        cursor_size = getattr(cursor, "size", 0)
         dpi = getattr(self.server, "dpi", 0)
         antialias = getattr(self.server, "antialias", {})
         double_click_time = getattr(self.server, "double_click_time", 0)

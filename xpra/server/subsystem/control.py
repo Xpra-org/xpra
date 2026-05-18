@@ -21,11 +21,11 @@ class ControlHandler(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.control_commands: dict[str, Any] = {}
-        self.control_enabled = False
+        self.commands: dict[str, Any] = {}
+        self.enabled = False
 
     def init(self, opts) -> None:
-        self.control_enabled = opts.control
+        self.enabled = opts.control
 
     def setup(self) -> None:
         self.add_default_control_commands()
@@ -36,11 +36,11 @@ class ControlHandler(StubServerMixin):
             from xpra.net.control.common import HelloCommand, HelpCommand, DisabledCommand
         except ImportError:
             return
-        self.control_commands = {
+        self.commands = {
             "hello": HelloCommand(),
         }
-        if self.control_enabled:
-            self.do_add_control_command("help", HelpCommand(self.control_commands))
+        if self.enabled:
+            self.do_add_control_command("help", HelpCommand(self.commands))
             self.args_control("client", "forwards a control command to the client(s)", min_args=1)
             self.args_control("toggle-feature", "toggle a server feature on or off",
                               min_args=1, max_args=2, validation=[str, parse_boolean_value])
@@ -48,22 +48,22 @@ class ControlHandler(StubServerMixin):
             self.do_add_control_command("*", DisabledCommand())
 
     def add_control_command(self, name: str, control) -> None:
-        if self.control_enabled:
+        if self.enabled:
             self.do_add_control_command(name, control)
 
     def do_add_control_command(self, name: str, control) -> None:
-        self.control_commands[name] = control
+        self.commands[name] = control
 
     def process_control_command(self, proto, *args) -> tuple[ControlCode | int, str]:
         from xpra.net.control.common import process_control_command
-        return process_control_command(proto, self.control_commands, *args)
+        return process_control_command(proto, self.commands, *args)
 
     def handle_command_request(self, proto, *args) -> None:
         """ client sent a command request as part of the hello packet """
         if not args:
             raise ValueError("no arguments supplied")
         from xpra.net.control.common import process_control_command
-        code, response = process_control_command(proto, self.control_commands, *args)
+        code, response = process_control_command(proto, self.commands, *args)
         hello = {"command_response": (int(code), response)}
         proto.send_now(Packet("hello", hello))
 

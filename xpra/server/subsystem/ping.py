@@ -25,19 +25,19 @@ class PingServer(StubServerMixin):
 
     def __init__(self, server):
         super().__init__(server)
-        self.pings = False
-        self.ping_timer: int = 0
+        self.delay = False
+        self.timer: int = 0
 
     def init(self, opts) -> None:
-        self.pings = opts.pings
+        self.delay = opts.pings
 
     def setup(self) -> None:
-        if self.pings > 0:
-            self.ping_timer = GLib.timeout_add(1000 * self.pings, self.send_ping)
+        if self.delay > 0:
+            self.timer = GLib.timeout_add(1000 * self.delay, self.send_ping)
 
     def cleanup(self) -> None:
-        if pt := self.ping_timer:
-            self.ping_timer = 0
+        if pt := self.timer:
+            self.timer = 0
             GLib.source_remove(pt)
 
     def get_info(self, _proto) -> dict[str, Any]:
@@ -45,7 +45,7 @@ class PingServer(StubServerMixin):
 
     def get_caps(self, _source) -> dict[str, Any]:
         return {
-            PingServer.PREFIX: self.pings,
+            PingServer.PREFIX: self.delay,
         }
 
     def send_ping(self) -> bool:

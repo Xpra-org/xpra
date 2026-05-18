@@ -218,7 +218,9 @@ class ShadowServer(GTKShadowServerBase):
 
     def make_tray_widget(self):
         from xpra.platform.win32.tray import Win32Tray
-        return Win32Tray(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server", "server-notconnected",
+        tray = self.get_subsystem("tray")
+        menu = getattr(tray, "menu", None)
+        return Win32Tray(self, XPRA_APP_ID, menu, "Xpra Shadow Server", "server-notconnected",
                          click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
 
     def setup_capture(self):
@@ -409,11 +411,12 @@ class ShadowServer(GTKShadowServerBase):
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         info = super().get_threaded_info(proto, **kwargs)
         info.setdefault("features", {})["shadow"] = True
+        tray = self.get_subsystem("tray")
         info.setdefault("server", {
             "pixel-depth": self.pixel_depth,
             "type": "Python/Win32-Shadow",
-            "tray": self.tray,
-            "tray-icon": self.tray_icon or ""
+            "tray": bool(tray and tray.enabled),
+            "tray-icon": (tray and tray.icon) or ""
         })
         return info
 
