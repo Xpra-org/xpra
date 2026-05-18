@@ -12,7 +12,6 @@ from importlib import import_module
 from xpra.clipboard.common import get_local_selections
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import
-from xpra.server.common import get_sources_by_type
 from xpra.server.source.clipboard import ClipboardConnection
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -213,7 +212,7 @@ class ClipboardServer(StubServerMixin):
 
     def _process_clipboard_packet(self, proto, packet: Packet) -> None:
         assert self.clipboard
-        if self.readonly:
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not ss:
@@ -240,7 +239,7 @@ class ClipboardServer(StubServerMixin):
 
     def _process_clipboard_status(self, proto, packet: Packet) -> None:
         assert self.clipboard
-        if self.readonly:
+        if self.server.readonly:
             return
         clipboard_enabled = packet.get_bool(1)
         if ss := self.get_server_source(proto):
@@ -279,7 +278,7 @@ class ClipboardServer(StubServerMixin):
             self.may_record("client", packet_type, *parts)
 
     def may_record(self, direction, packet_type: str, *parts: PacketElement) -> None:
-        clipboard_sources = get_sources_by_type(self, ClipboardConnection)
+        clipboard_sources = self.get_sources_by_type(ClipboardConnection)
         for ss in clipboard_sources:
             if ss.clipboard_record:
                 rec_packet = ("clipboard-record", direction, packet_type, *parts)
@@ -312,7 +311,7 @@ class ClipboardServer(StubServerMixin):
         ch.set_direction(can_send, can_receive)
         msg = f"clipboard direction set to {direction!r}"
         log(msg)
-        self.setting_changed("clipboard-direction", direction)
+        self.server.setting_changed("clipboard-direction", direction)
         return msg
 
     def control_command_clipboard_limits(self, max_send: int, max_recv: int, *_args) -> str:
@@ -321,5 +320,5 @@ class ClipboardServer(StubServerMixin):
         ch.set_limits(max_send, max_recv)
         msg = f"clipboard send limit set to {max_send}, recv limit set to {max_recv} (single copy/paste)"
         log(msg)
-        self.setting_changed("clipboard-limits", {'send': max_send, 'recv': max_recv})
+        self.server.setting_changed("clipboard-limits", {'send': max_send, 'recv': max_recv})
         return msg

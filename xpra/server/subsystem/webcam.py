@@ -11,7 +11,6 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX
-from xpra.server.common import get_sources_by_type
 from xpra.server.source.webcam import WebcamConnection
 from xpra.util.objects import typedict
 from xpra.net.common import Packet
@@ -83,10 +82,6 @@ class WebcamServer(StubServerMixin):
         elif opts.webcam.lower() in ("v4l2", "virtual"):
             self.webcam_client_mode = False
         log("init(..) webcam=%s, virtual=%s, client-mode=%s", opts.webcam, self.webcam_virtual, self.webcam_client_mode)
-
-    def init_state(self) -> None:
-        # duplicated
-        self.readonly = False
 
     def setup(self) -> None:
         self.init_webcam()
@@ -166,7 +161,7 @@ class WebcamServer(StubServerMixin):
     def add_new_webcam_client(self, ss, device_id: int) -> None:
         proto = ss.protocol
         log("webcam-client connection (device_id=%i) from %s", device_id, proto)
-        for other_ss in get_sources_by_type(self, WebcamConnection, ss):
+        for other_ss in self.get_sources_by_type(WebcamConnection, ss):
             pending = other_ss.webcam_pending_clients
             if not pending:
                 continue
@@ -183,7 +178,7 @@ class WebcamServer(StubServerMixin):
             log("webcam-client connection accepted for device %i", matched)
             return
         log.warn("Warning: no webcam device available (requested device_id=%i)", device_id)
-        self.disconnect_client(proto, "no webcam device available")
+        self.server.disconnect_client(proto, "no webcam device available")
 
     def cleanup_protocol(self, protocol) -> None:
         for device_id, proto in tuple(self.webcam_client_connections.items()):
@@ -194,7 +189,7 @@ class WebcamServer(StubServerMixin):
     # Packet handlers
 
     def _process_webcam_start(self, proto, packet: Packet) -> None:
-        if self.readonly:
+        if self.server.readonly:
             return
         assert self.webcam_enabled
         ss = self.get_server_source(proto)
@@ -212,8 +207,8 @@ class WebcamServer(StubServerMixin):
 
     def _spawn_webcam_client(self, ss, device_id: int, w: int, h: int) -> None:
         socket_path = ""
-        if self.unix_socket_paths:
-            socket_path = self.unix_socket_paths[0]
+        if self.server.unix_socket_paths:
+            socket_path = self.server.unix_socket_paths[0]
         if not socket_path:
             log.warn("Warning: cannot spawn webcam-client: no unix socket path available")
             ss.send_webcam_stop(device_id, "no server socket available")
@@ -224,7 +219,7 @@ class WebcamServer(StubServerMixin):
         cmd = get_xpra_command() + ["webcam-client", uri]
         if is_debug_enabled("webcam"):
             cmd.append("--debug=webcam")
-        env = self.get_child_env()
+        env = self.server.get_child_env()
         log("spawning webcam-client: %s", cmd)
         log(" with env=%s", env)
         try:
@@ -245,7 +240,7 @@ class WebcamServer(StubServerMixin):
             ss.send_webcam_stop(device_id, f"spawn failed: {e}")
 
     def _process_webcam_stop(self, proto, packet: Packet) -> None:
-        if self.readonly:
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not ss:
@@ -268,7 +263,7 @@ class WebcamServer(StubServerMixin):
                 pass
 
     def _process_webcam_frame(self, proto, packet: Packet) -> None:
-        if self.readonly:
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not ss:

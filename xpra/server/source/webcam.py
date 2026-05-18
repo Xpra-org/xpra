@@ -107,10 +107,11 @@ class WebcamConnection(StubClientConnection):
         self.webcam_pending_clients: dict[int, tuple[int, int]] = {}
 
     def init_from(self, _protocol, server) -> None:
-        self.webcam_enabled = server.webcam_enabled
-        self.webcam_device = server.webcam_device
-        self.webcam_encodings = valid_encodings(server.webcam_encodings)
-        self.webcam_client_mode = server.webcam_client_mode
+        webcam = server.subsystems["webcam"]
+        self.webcam_enabled = webcam.webcam_enabled
+        self.webcam_device = webcam.webcam_device
+        self.webcam_encodings = valid_encodings(webcam.webcam_encodings)
+        self.webcam_client_mode = webcam.webcam_client_mode
         log("WebcamMixin: enabled=%s, device=%s, encodings=%s, client_mode=%s",
             self.webcam_enabled, self.webcam_device, self.webcam_encodings, self.webcam_client_mode)
 

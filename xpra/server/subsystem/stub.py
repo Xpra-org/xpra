@@ -68,6 +68,10 @@ class StubServerMixin(superclass):
 
     def get_server_source(self, proto):
         """ delegate to the server's per-protocol client source lookup """
+        if self.server is self:
+            # bare-stub fallback (e.g. unit tests without a real server) -
+            # avoid infinite recursion by returning None
+            return None
         return self.server.get_server_source(proto)
 
     def get_subsystem(self, name: str):

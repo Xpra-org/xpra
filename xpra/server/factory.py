@@ -15,9 +15,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     # `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
     # (Ping has been migrated to a standalone instance — see
     # `get_instance_subsystem_classes` below.)
-    if features.webcam:
-        from xpra.server.subsystem.webcam import WebcamServer
-        classes.append(WebcamServer)
 
     if features.gtk:
         if features.x11:
@@ -36,12 +33,6 @@ def get_server_base_classes() -> tuple[type, ...]:
         else:
             from xpra.server.subsystem.display import DisplayManager
             classes.append(DisplayManager)
-    if features.clipboard:
-        from xpra.server.subsystem.clipboard import ClipboardServer
-        classes.append(ClipboardServer)
-    if features.pulseaudio:
-        from xpra.server.subsystem.pulseaudio import PulseaudioServer
-        classes.append(PulseaudioServer)
     if features.audio:
         from xpra.server.subsystem.audio import AudioServer
         classes.append(AudioServer)
@@ -145,6 +136,15 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     if features.notification:
         from xpra.server.subsystem.notification import NotificationForwarder
         classes.append(NotificationForwarder)
+    if features.webcam:
+        from xpra.server.subsystem.webcam import WebcamServer
+        classes.append(WebcamServer)
+    if features.clipboard:
+        from xpra.server.subsystem.clipboard import ClipboardServer
+        classes.append(ClipboardServer)
+    if features.pulseaudio:
+        from xpra.server.subsystem.pulseaudio import PulseaudioServer
+        classes.append(PulseaudioServer)
     if features.file:
         from xpra.server.subsystem.file import FileServer
         classes.append(FileServer)

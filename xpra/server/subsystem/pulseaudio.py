@@ -358,11 +358,12 @@ class PulseaudioServer(StubServerMixin):
             log.estr(e)
             self.clean_pulseaudio_private_dir()
             return
-        self.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=self.pulseaudio_ended)
+        self.server.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=self.pulseaudio_ended)
         if self.pulseaudio_proc:
             from xpra.scripts.session import save_session_file
             save_session_file("pulseaudio.pid", "%s" % self.pulseaudio_proc.pid)
-            self.session_files.append("pulseaudio.pid")
+            if sf := self.get_subsystem("session-files"):
+                sf.session_files.append("pulseaudio.pid")
             log.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
             if self.pulseaudio_server_socket:
                 log.info(" %r", self.pulseaudio_server_socket)
@@ -375,13 +376,13 @@ class PulseaudioServer(StubServerMixin):
             return
         for i, x in enumerate(self.pulseaudio_configure_commands):
             proc = Popen(x, env=env, shell=True)
-            self.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
+            self.server.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
 
     def pulseaudio_ended(self, proc: Popen) -> None:
         log("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
-            proc, self.pulseaudio_proc, proc.returncode, self._closing)
+            proc, self.pulseaudio_proc, proc.returncode, self.server._closing)
         self.pulseaudio_pid = 0
-        if self.pulseaudio_proc is None or self._closing:
+        if self.pulseaudio_proc is None or self.server._closing:
             # cleared by cleanup already, ignore
             return
         elapsed = monotonic() - self.pulseaudio_started_at
@@ -403,11 +404,11 @@ class PulseaudioServer(StubServerMixin):
             kill_pid(pid, "pulseaudio")
         else:
             return
-        if self.pulseaudio_server_socket and self.is_child_alive(proc):
+        if self.pulseaudio_server_socket and self.server.is_child_alive(proc):
             # wait for the pulseaudio process to exit,
             # it will delete the socket:
             log("pollwait()=%s", pollwait(proc))
-        if self.pulseaudio_server_socket and not self.is_child_alive(proc):
+        if self.pulseaudio_server_socket and not self.server.is_child_alive(proc):
             # wait for the socket to get cleaned up
             # (it should be removed by the pulseaudio server as it exits)
             import time
@@ -421,7 +422,7 @@ class PulseaudioServer(StubServerMixin):
         if not proc:
             return
         log("exit_pulseaudio() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
-        if not self.is_child_alive(proc):
+        if not self.server.is_child_alive(proc):
             return
         self.pulseaudio_proc = None
         log.info("stopping pulseaudio with pid %s", proc.pid)
@@ -429,17 +430,17 @@ class PulseaudioServer(StubServerMixin):
             # first we try pactl (required on Ubuntu):
             cmd = ["pactl", "exit"]
             pactl_proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            self.add_process(pactl_proc, "pactl exit", cmd, True)
+            self.server.add_process(pactl_proc, "pactl exit", cmd, True)
             r = pollwait(pactl_proc)
             # warning: pactl will return 0 whether it succeeds or not...
             # but we can't kill the process because Ubuntu starts a new one
-            if r != 0 and self.is_child_alive(proc):
+            if r != 0 and self.server.is_child_alive(proc):
                 # fallback to using SIGINT:
                 stop_proc(proc, "pulseaudio")
         except Exception as e:
             log("exit_pulseaudio() error stopping %s", proc, exc_info=True)
             # only log the full stacktrace if the process failed to terminate:
-            if self.is_child_alive(proc):
+            if self.server.is_child_alive(proc):
                 log.error("Error: stopping pulseaudio: %s", e, exc_info=True)
 
     def clean_pulseaudio_private_dir(self) -> None:
