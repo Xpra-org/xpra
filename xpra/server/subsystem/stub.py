@@ -23,8 +23,6 @@ if envbool("XPRA_UNIT_TEST"):
 else:
     superclass = object
 
-ENV_BLOCKLIST = ("LS_COLORS", )
-
 
 class StubServerMixin(superclass):
     """

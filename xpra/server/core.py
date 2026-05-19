@@ -88,6 +88,8 @@ INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
 SSL_PEEK = envbool("XPRA_SSL_PEEK", True)
 
+ENV_BLOCKLIST = ("LS_COLORS", )
+
 
 # class used to distinguish internal errors
 # which should not be shown to the client,
@@ -341,7 +343,7 @@ class ServerCore(ServerBaseClass):
     def get_child_env(self) -> dict[str, str]:
         # base child env: filtered os.environ with script-launcher overrides reverted.
         # `ServerBase.get_child_env` merges subsystem contributions on top of this.
-        env = {k: v for k, v in os.environ.items() if k != "LS_COLORS"}
+        env = {k: v for k, v in os.environ.items() if k not in ENV_BLOCKLIST}
         return restore_script_env(env)
 
     # --------------------------------------------------------------------
