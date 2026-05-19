@@ -95,6 +95,9 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
     def clean_quit(self, *_args, **_kwargs) -> None:
         pass
 
+    def notify_setup_error(self, _exception) -> None:
+        pass
+
     def get_child_env(self) -> dict[str, str]:
         return dict(os.environ)
 

@@ -340,6 +340,17 @@ class ServerBase(ServerBaseClass):
         if notifications := self.subsystems.get("notifications"):
             notifications.notify_new_user(ss)
 
+    def notify_setup_error(self, exception) -> None:
+        log.warn("Warning: cannot forward notifications,")
+        if str(exception).endswith("is already claimed on the session bus"):
+            log.warn(" the interface is already claimed")
+        else:
+            log.warn(" failed to load or register our dbus notifications forwarder:")
+            for msg in str(exception).split(": "):
+                log.warn(" %s", msg)
+        log.warn(" if you do not have a dedicated dbus session for this xpra instance,")
+        log.warn(" use the 'notifications=no' option")
+
     def send_initial_data(self, ss) -> None:
         self._dispatch_fire("send_initial_data", ss)
 

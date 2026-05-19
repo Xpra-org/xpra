@@ -73,18 +73,7 @@ class NotificationForwarder(StubServerMixin):
                     log("%s", self.forwarder)
             except Exception as e:
                 log("init_notification_forwarder()", exc_info=True)
-                self.notify_setup_error(e)
-
-    def notify_setup_error(self, exception) -> None:
-        log.warn("Warning: cannot forward notifications,")
-        if str(exception).endswith("is already claimed on the session bus"):
-            log.warn(" the interface is already claimed")
-        else:
-            log.warn(" failed to load or register our dbus notifications forwarder:")
-            for msg in str(exception).split(": "):
-                log.warn(" %s", msg)
-        log.warn(" if you do not have a dedicated dbus session for this xpra instance,")
-        log.warn(" use the 'notifications=no' option")
+                self.server.notify_setup_error(e)
 
     def notify_new_user(self, ss) -> None:
         # tell other users:
