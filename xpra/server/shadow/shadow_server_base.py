@@ -132,13 +132,13 @@ class ShadowServerBase(ServerBase):
         if self.window_matches:
             return descr
         try:
-            count = len(self._id_to_window)
-        except AttributeError as e:
+            models = self.subsystems["window"].models()
+        except (AttributeError, KeyError) as e:
             log(f"no screen info: {e}")
             return descr
-        if count > 1:
-            descr += f"\n with {count} monitors:"
-            for window in self._id_to_window.values():
+        if len(models) > 1:
+            descr += f"\n with {len(models)} monitors:"
+            for window in models:
                 title = window.get_property("title")
                 x, y, w, h = window.geometry
                 descr += "\n  %-16s %4ix%-4i at %4i,%-4i" % (title, w, h, x, y)
@@ -334,7 +334,8 @@ class ShadowServerBase(ServerBase):
         wid = None
         rx, ry = 0, 0
         # find the window model containing the pointer:
-        for wid, window in self._id_to_window.items():
+        window_sub = self.subsystems["window"]
+        for wid, window in window_sub._id_to_window.items():
             wx, wy, ww, wh = window.geometry
             if wx <= x < (wx + ww) and wy <= y < (wy + wh):
                 rwm = window
@@ -457,11 +458,11 @@ class ShadowServerBase(ServerBase):
         return [CaptureWindowModel()]
 
     def send_initial_windows(self, ss, sharing: bool = False) -> None:
-        log("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
-        for wid in sorted(self._id_to_window.keys()):
-            window = self._id_to_window[wid]
+        window_sub = self.subsystems["window"]
+        log("send_initial_windows(%s, %s) will send: %s", ss, sharing, window_sub._id_to_window)
+        for wid, window in window_sub._id_to_window.items():
             w, h = window.get_dimensions()
-            client_props = self.client_properties.get(wid, {}).get(ss.uuid, {})
+            client_props = window_sub.client_properties.get(wid, {}).get(ss.uuid, {})
             ss.new_window(WINDOW_CREATE, wid, window, 0, 0, w, h, client_props)
 
     def _add_new_window(self, window) -> None:
@@ -498,7 +499,7 @@ class ShadowServerBase(ServerBase):
         # TODO: deal with more than one window / more than one client
         # and stop refresh if all the windows are unmapped everywhere
         window_sources = self.window_sources()
-        if len(window_sources) <= 1 and len(self._id_to_window) <= 1:
+        if len(window_sources) <= 1 and len(self.subsystems["window"].models()) <= 1:
             self.stop_refresh(wid)
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
@@ -524,7 +525,7 @@ class ShadowServerBase(ServerBase):
             return
         # FIXME: with multiple windows / clients,
         # we have to keep track of mappings!
-        if len(self._window_to_id) == 1:
+        if len(self.subsystems["window"].models()) == 1:
             self.disconnect_client(proto, ConnectionMessage.DONE, "closed the only window")
 
     def do_make_screenshot_packet(self):

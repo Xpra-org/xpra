@@ -346,11 +346,11 @@ class ServerCore(ServerBaseClass):
 
     # --------------------------------------------------------------------
     # subsystem lookup and dispatch helpers
-    # During this transitional phase, `self.subsystems` stores subsystem
-    # *classes* (not instances). The helpers below transparently support
-    # both classes (call with `self` as first arg) and instances (bound
-    # method call), so per-subsystem migration to standalone instances
-    # can happen incrementally without touching these helpers.
+    # `self.subsystems` stores subsystem instances - except for a few
+    # framework-bound classes that ship a PREFIX (currently `rfb` and
+    # `x11`) which are still entries-as-classes. The helpers below cope
+    # with both: class entries are called with `self` as first arg,
+    # instances are called as bound methods.
     # --------------------------------------------------------------------
 
     def get_subsystem(self, prefix: str):

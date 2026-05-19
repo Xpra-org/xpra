@@ -98,6 +98,35 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
     def get_child_env(self) -> dict[str, str]:
         return dict(os.environ)
 
+    # Variant-overridable display hooks (defaults on `ServerBase` in production):
+    def set_desktop_geometry(self, *_args, **_kwargs) -> None:
+        pass
+
+    def set_workarea(self, *_args, **_kwargs) -> None:
+        pass
+
+    def calculate_desktops(self, *_args, **_kwargs) -> None:
+        pass
+
+    def set_dpi(self, *_args, **_kwargs) -> None:
+        pass
+
+    def set_screen_size(self, width: int, height: int):
+        return width, height
+
+    # Variant-overridable window hooks (defaults on `ServerBase` in production):
+    def update_size_constraints(self, *_args, **_kwargs) -> None:
+        pass
+
+    def load_existing_windows(self, *_args, **_kwargs) -> None:
+        pass
+
+    def send_initial_windows(self, *_args, **_kwargs) -> None:
+        pass
+
+    def parse_hello_ui_window_settings(self, *_args, **_kwargs) -> None:
+        pass
+
     def call_subsystem(self, prefix: str, method: str, *args, default=None):
         sub = self.subsystems.get(prefix)
         if sub is None:

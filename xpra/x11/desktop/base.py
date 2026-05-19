@@ -5,7 +5,7 @@
 
 import os
 import sys
-from typing import Any, Sequence
+from typing import Any
 
 from xpra.net.compression import Compressed
 from xpra.os_util import gi_import
@@ -14,7 +14,6 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.common import noop
-from xpra.util.parsing import parse_env_resolutions
 from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_CREATE
 from xpra.server import features
@@ -89,6 +88,14 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
         self.session_type = "X11 desktop"
+        # Desktop servers expose a fixed virtual monitor meant to match a
+        # real display, so a single sensible default beats the 8K seamless
+        # default. The display subsystem reads this in `get_default_initial_res`.
+        display = self.subsystems["display"]
+        display.default_resolution = "1920x1080"
+        # Desktop variants present a fixed virtual monitor; never reshape
+        # the screen layout to match the client's monitors.
+        display.mirror_client_layout = False
 
     def setup(self) -> None:
         super().setup()
@@ -104,13 +111,9 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"])
         self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
 
-    def get_default_initial_res(self) -> Sequence[tuple[int, int, int]]:
-        return parse_env_resolutions(default_res="1920x1080",
-                                     default_refresh_rate=self.refresh_rate)
-
     def root_prop_changed(self, watcher, prop: str) -> None:
         iconlog("root_prop_changed(%s, %s)", watcher, prop)
-        for window in self._id_to_window.values():
+        for window in self.subsystems["window"].models():
             window.update_wm_name()
             window.update_icon()
 
@@ -165,16 +168,16 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         raise NotImplementedError
 
     def send_initial_windows(self, ss, sharing: bool = False) -> None:
-        windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
-        for model in self._id_to_window.values():
+        models = self.subsystems["window"].models()
+        windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, models)
+        for model in models:
             self.send_new_desktop_model(model, ss, sharing)
 
     def send_new_desktop_model(self, model, ss, _sharing: bool = False) -> None:
         x, y, w, h = model.get_geometry()
-        wid = self._window_to_id[model]
+        wid = model.get_xid()
         wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
         ss.new_window(WINDOW_CREATE, wid, model, x, y, w, h, wprops)
-        wid = self._window_to_id[model]
         ss.damage(wid, model, 0, 0, w, h)
 
     def _lost_window(self, window, wm_exiting=False) -> None:
@@ -327,18 +330,13 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
         return X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
-    def show_all_windows(self) -> None:
-        log.warn("Warning: show_all_windows not implemented for desktop server")
-
     def do_make_screenshot_packet(self) -> Packet:
         log("grabbing screenshot")
         regions = []
         offset_x, offset_y = 0, 0
-        for wid in reversed(sorted(self._id_to_window.keys())):
-            window = self.get_window(wid)
+        for window in sorted(self.subsystems["window"].models(), key=lambda w: w.get_xid(), reverse=True):
+            wid = window.get_xid()
             log("screenshot: window(%s)=%s", wid, window)
-            if window is None:
-                continue
             if not window.is_managed():
                 log("screenshot: window %s is not/no longer managed", wid)
                 continue

@@ -90,7 +90,7 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         return True
 
     def refresh_windows(self) -> None:
-        for window in self._id_to_window.values():
+        for window in self.subsystems["window"].models():
             self.refresh_window(window)
 
     ############################################################################
@@ -104,7 +104,7 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
 
     def recreate_window_models(self) -> None:
         # remove all existing models and re-create them:
-        for model in tuple(self._window_to_id.keys()):
+        for model in self.subsystems["window"].models():
             self._remove_window(model)
         self.cleanup_capture()
         for model in self.make_capture_window_models():
@@ -225,7 +225,8 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         xid_to_window = {window.get_id(): window for window in windows}
         log("xid_to_window(%s)=%s", windows, xid_to_window)
         sources = self.window_sources()
-        for wid, window in tuple(self._id_to_window.items()):
+        window_sub = self.subsystems["window"]
+        for wid, window in tuple(window_sub._id_to_window.items()):
             xid = window.get_id()
             new_model = xid_to_window.pop(xid, None)
             if new_model is None:
@@ -288,8 +289,9 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         return ncs
 
     def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
-        assert len(self._id_to_window) == 1, "multi root window screenshot not implemented yet"
-        rwm = self._id_to_window.values()[0]
+        models = self.subsystems["window"].models()
+        assert len(models) == 1, "multi root window screenshot not implemented yet"
+        rwm = models[0]
         w, h, encoding, rowstride, data = rwm.take_screenshot()
         assert encoding == "png"  # use fixed encoding for now
         return DISPLAY_SCREENSHOT, w, h, encoding, rowstride, Compressed(encoding, data)

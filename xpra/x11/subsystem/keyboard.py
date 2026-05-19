@@ -12,7 +12,6 @@ from subprocess import Popen
 from xpra.common import noop
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
-from xpra.server.common import get_sources_by_type
 from xpra.server.source.keyboard import KeyboardConnection
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.env import envbool
@@ -154,7 +153,6 @@ class X11KeyboardServer(KeyboardServer):
 
     def __init__(self, server=None):
         KeyboardServer.__init__(self, server)
-        self.readonly = False
         self.xkb = False
         self.input_method = "keep"
         self.ibus_layouts: dict[str, Any] = {}
@@ -323,7 +321,7 @@ class X11KeyboardServer(KeyboardServer):
             log.estr(e)
 
     def set_keymap(self, server_source, force=False) -> None:
-        if self.readonly:
+        if self.server.readonly:
             return
 
         def reenable_keymap_changes(*args) -> bool:
@@ -341,7 +339,7 @@ class X11KeyboardServer(KeyboardServer):
             GLib = gi_import("GLib")
             self.keymap_changing_timer = GLib.timeout_add(100, reenable_keymap_changes)
         # if sharing, don't set the keymap, translate the existing one:
-        other_kb_clients = get_sources_by_type(self, KeyboardConnection, server_source)
+        other_kb_clients = self.get_sources_by_type(KeyboardConnection, server_source)
         translate_only = len(other_kb_clients) > 0
         log("set_keymap(%s, %s) translate_only=%s", server_source, force, translate_only)
         with xsync:

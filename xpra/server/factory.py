@@ -26,30 +26,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     elif features.x11:
         from xpra.x11.subsystem.x11init import X11Init
         classes.append(X11Init)
-    if features.display:
-        if features.x11:
-            from xpra.x11.subsystem.display import X11DisplayManager
-            classes.append(X11DisplayManager)
-        else:
-            from xpra.server.subsystem.display import DisplayManager
-            classes.append(DisplayManager)
-    if features.keyboard:
-        if features.x11:
-            from xpra.x11.subsystem.keyboard import X11KeyboardServer
-            classes.append(X11KeyboardServer)
-        else:
-            from xpra.server.subsystem.keyboard import KeyboardServer
-            classes.append(KeyboardServer)
-    if features.pointer:
-        if features.x11:
-            from xpra.x11.subsystem.pointer import X11PointerServer
-            classes.append(X11PointerServer)
-        else:
-            from xpra.server.subsystem.pointer import PointerServer
-            classes.append(PointerServer)
-    if features.window:
-        from xpra.server.subsystem.window import WindowServer
-        classes.append(WindowServer)
     # this should only be enabled for desktop and shadow servers:
     if features.rfb:
         from xpra.server.rfb.server import RFBServer
@@ -57,11 +33,17 @@ def get_server_base_classes() -> tuple[type, ...]:
     return tuple(classes)
 
 
-def get_instance_subsystem_classes() -> tuple[type, ...]:
+def get_instance_subsystem_classes(mode: str = "") -> tuple[type, ...]:
     """
     Subsystems that have been migrated to standalone instance composition.
     They are NOT inherited into the dynamic ServerBaseClass MRO; instead,
     each is constructed as an instance and stored in `self.subsystems`.
+
+    `mode` allows variants to swap subsystem classes for their own
+    subclasses (e.g. seamless uses `SeamlessWindowServer` instead of
+    the plain `WindowServer`). This is the per-variant override hook
+    that will eventually be replaced by variant classes returning their
+    own subsystem class list.
     """
     from xpra.server import features
     classes: list[type] = []
@@ -141,6 +123,34 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     if features.encoding:
         from xpra.server.subsystem.encoding import EncodingServer
         classes.append(EncodingServer)
+    if features.display:
+        if features.x11:
+            from xpra.x11.subsystem.display import X11DisplayManager
+            classes.append(X11DisplayManager)
+        else:
+            from xpra.server.subsystem.display import DisplayManager
+            classes.append(DisplayManager)
+    if features.window:
+        if mode == "seamless" and features.x11:
+            from xpra.x11.subsystem.window import SeamlessWindowServer
+            classes.append(SeamlessWindowServer)
+        else:
+            from xpra.server.subsystem.window import WindowServer
+            classes.append(WindowServer)
+    if features.keyboard:
+        if features.x11:
+            from xpra.x11.subsystem.keyboard import X11KeyboardServer
+            classes.append(X11KeyboardServer)
+        else:
+            from xpra.server.subsystem.keyboard import KeyboardServer
+            classes.append(KeyboardServer)
+    if features.pointer:
+        if features.x11:
+            from xpra.x11.subsystem.pointer import X11PointerServer
+            classes.append(X11PointerServer)
+        else:
+            from xpra.server.subsystem.pointer import PointerServer
+            classes.append(PointerServer)
     # ChildCommandServer should be last so that the environment is fully prepared:
     if features.command:
         from xpra.server.subsystem.command import ChildCommandServer

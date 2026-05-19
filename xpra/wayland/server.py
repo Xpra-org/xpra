@@ -128,7 +128,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
                     # focus now goes nowhere:
                     self.keyboard_device.focus(0)
                 continue
-            window = self._id_to_window.get(window_id)
+            window = self.get_window(window_id)
             surface = self.get_surface(window_id)
             log("focus: wid=%#x, state=%s, window=%s, surface=%s", window_id, state, window, surface)
             if window and surface:

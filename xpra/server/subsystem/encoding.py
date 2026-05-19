@@ -279,26 +279,22 @@ class EncodingServer(StubServerMixin):
         window = self.get_subsystem("window")
         if window is None:
             return
-        # `WindowServer` is still class-based in the MRO, so subsystems
-        # lookup may return the class; bind via `self.server` to get a
-        # working `_id_to_window` / `get_window` / `_refresh_windows`.
-        win_target = window if not isinstance(window, type) else self.server
         if len(packet) >= 3:
             # client specified which windows this is for:
             in_wids = packet[2]
             wids = []
             wid_windows = {}
             for wid in in_wids:
-                if wid not in win_target._id_to_window:
+                if wid not in window._id_to_window:
                     continue
                 wids.append(wid)
-                wid_windows[wid] = win_target.get_window(wid)
+                wid_windows[wid] = window.get_window(wid)
         else:
             # apply to all windows:
             wids = None
-            wid_windows = win_target._id_to_window
+            wid_windows = window._id_to_window
         ss.set_encoding(encoding, wids)
-        win_target._refresh_windows(proto, wid_windows, {})
+        window._refresh_windows(proto, wid_windows, {})
 
     def _process_quality(self, proto, packet) -> None:
         self._modify_sq(proto, "quality", packet[1])

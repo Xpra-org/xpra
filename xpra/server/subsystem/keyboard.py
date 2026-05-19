@@ -306,13 +306,10 @@ class KeyboardServer(StubServerMixin):
         """
         log("handle_key(%s)", (wid, pressed, name, keyval, keycode, modifiers, is_mod, sync))
         if pressed and wid:
-            window_sub = self.get_subsystem("window")
-            if window_sub is not None:
-                # `window_sub` is a class (legacy MRO) or instance; resolve binding:
-                target = window_sub if not isinstance(window_sub, type) else self.server
-                if not target.get_window(wid):
-                    log("window %s is gone, ignoring key press", wid)
-                    return
+            window = self.get_subsystem("window")
+            if window is not None and not window.get_window(wid):
+                log("window %s is gone, ignoring key press", wid)
+                return
         if keycode < 0:
             log.warn("ignoring invalid keycode=%s", keycode)
             return

@@ -321,7 +321,7 @@ class ShadowServer(GTKShadowServerBase):
     def refresh(self) -> bool:
         v = super().refresh()
         if v and SEAMLESS:
-            for rwm in self._id_to_window.values():
+            for rwm in self.subsystems["window"].models():
                 rwm.refresh_shape()
         log("refresh()=%s", v)
         return v

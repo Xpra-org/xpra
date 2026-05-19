@@ -158,7 +158,7 @@ class ShadowServer(GTKShadowServerBase):
         # TODO: improve damage method to handle lists directly:
         from xpra.util.rectangle import rectangle
         model_rects = {}
-        for model in self._id_to_window.values():
+        for model in self.subsystems["window"].models():
             model_rects[model] = rectangle(*model.geometry)
         for x, y, w, h in rlist:
             for model, rect in model_rects.items():
@@ -203,7 +203,6 @@ class ShadowServer(GTKShadowServerBase):
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
         if not self.get_server_source(proto):
             return False
-        assert wid in self._id_to_window
         x, y = pointer[:2]
         move_pointer(x, y)
         return True

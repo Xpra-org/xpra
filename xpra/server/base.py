@@ -33,6 +33,9 @@ authlog = Logger("auth")
 eventslog = Logger("events")
 
 SERVER_BASES = get_server_base_classes()
+# default (no-mode) subsystem class list - used for the class-level SIGNALS
+# aggregation. Variants may pick a different list at __init__ time by
+# passing `mode` to `ServerBase.__init__`.
 INSTANCE_SUBSYSTEM_CLASSES = get_instance_subsystem_classes()
 SIGNALS: dict[str, int] = {}
 for base_class in SERVER_BASES:
@@ -66,7 +69,7 @@ class ServerBase(ServerBaseClass):
         "new-ui-driver": 1,
     })
 
-    def __init__(self):
+    def __init__(self, mode: str = ""):
         # subsystems dict (keyed by PREFIX) is built up across the inheritance
         # hierarchy: ServerCore.__init__ adds its own bases, and this loop adds
         # all the extra subsystems from factory.SERVER_BASES on top.
@@ -79,8 +82,10 @@ class ServerBase(ServerBaseClass):
             prefix = getattr(c, "PREFIX", "")
             if prefix:
                 self.subsystems[prefix] = c
-        # construct standalone instance-based subsystems and register them:
-        for cls in INSTANCE_SUBSYSTEM_CLASSES:
+        # construct standalone instance-based subsystems and register them.
+        # `mode` lets variants pick subclasses of certain subsystems (e.g.
+        # `SeamlessWindowServer` instead of `WindowServer`).
+        for cls in get_instance_subsystem_classes(mode):
             self.subsystems[cls.PREFIX] = cls(self)
         log("ServerBase.__init__()")
         self.hello_request_handlers.update({
@@ -152,6 +157,103 @@ class ServerBase(ServerBaseClass):
         # ServerCore.late_cleanup dispatches `late_cleanup` to all subsystems
         # then cleans up potential protocols and the child reaper:
         super().late_cleanup(stop)
+
+    # Display-subsystem hooks that variant servers may override. The
+    # DisplayManager subsystem calls these via `self.server.X(...)` so
+    # that the variant override fires; the defaults here delegate back
+    # to the subsystem (where applicable) or no-op.
+    def set_desktop_geometry(self, width: int, height: int) -> None:
+        """ optionally overridden by server variants """
+
+    def set_workarea(self, workarea) -> None:
+        """ optionally overridden by server variants """
+
+    def calculate_desktops(self) -> None:
+        """ optionally overridden by server variants """
+
+    def set_dpi(self, xdpi: int, ydpi: int) -> None:
+        """ optionally overridden by server variants """
+
+    def set_screen_size(self, width: int, height: int):
+        # default: delegate to the display subsystem's implementation.
+        # Variants (e.g. SeamlessServer) override this to add wrapping
+        # logic and call `super().set_screen_size(...)` to reach here.
+        display = self.subsystems.get("display")
+        if display is None:
+            return width, height
+        return display.set_screen_size(width, height)
+
+    def get_window(self, wid: int):
+        # convenience delegate to the window subsystem; returns None when
+        # there is no window subsystem (e.g. proxy server) or when no
+        # window matches the given id.
+        window = self.subsystems.get("window")
+        if window is None:
+            return None
+        return window.get_window(wid)
+
+    def window_sources(self, exclude=None) -> tuple:
+        # convenience delegate to the window subsystem; returns an empty
+        # tuple when there is no window subsystem.
+        window = self.subsystems.get("window")
+        if window is None:
+            return ()
+        return window.window_sources(exclude=exclude)
+
+    # Window-subsystem hooks that variant servers may override. The
+    # WindowServer subsystem invokes these via `self.server.X(...)` so
+    # variant-specific behaviour fires when the variant defines an
+    # override on the server class (currently desktop / shadow until
+    # they are migrated to variant subsystem subclasses). For seamless,
+    # `SeamlessWindowServer` overrides the methods on the subsystem
+    # directly and these delegates simply route back into it.
+    def load_existing_windows(self) -> None:
+        window = self.subsystems.get("window")
+        if window is not None:
+            window.load_existing_windows()
+
+    def send_initial_windows(self, ss, sharing: bool = False) -> None:
+        window = self.subsystems.get("window")
+        if window is not None:
+            window.send_initial_windows(ss, sharing)
+
+    def update_size_constraints(self, minw: int, minh: int, maxw: int, maxh: int) -> None:
+        window = self.subsystems.get("window")
+        if window is not None:
+            window.update_size_constraints(minw, minh, maxw, maxh)
+
+    def parse_hello_ui_window_settings(self, ss, caps) -> None:
+        window = self.subsystems.get("window")
+        if window is not None:
+            window.parse_hello_ui_window_settings(ss, caps)
+
+    # Window-subsystem primitives that desktop / shadow variants call as
+    # building blocks (wrapping then chaining via super()). The delegates
+    # below route those calls into the window subsystem. Seamless calls
+    # these directly on its subsystem subclass and doesn't need them.
+    def allocate_wid(self, window) -> int:
+        return self.subsystems["window"].allocate_wid(window)
+
+    def _add_new_window_common(self, window) -> int:
+        return self.subsystems["window"]._add_new_window_common(window)
+
+    def _do_send_new_window_packet(self, ptype: str, window, geometry) -> None:
+        self.subsystems["window"]._do_send_new_window_packet(ptype, window, geometry)
+
+    def _remove_window(self, window) -> int:
+        return self.subsystems["window"]._remove_window(window)
+
+    def _remove_wid(self, wid: int) -> None:
+        self.subsystems["window"]._remove_wid(wid)
+
+    def _set_client_properties(self, proto, wid: int, window, new_client_properties) -> None:
+        self.subsystems["window"]._set_client_properties(proto, wid, window, new_client_properties)
+
+    def refresh_window(self, window) -> None:
+        self.subsystems["window"].refresh_window(window)
+
+    def refresh_window_area(self, window, x, y, width, height, options=None) -> None:
+        self.subsystems["window"].refresh_window_area(window, x, y, width, height, options)
 
     ######################################################################
     # override http scripts to expose just the current session / display
@@ -336,12 +438,6 @@ class ServerBase(ServerBaseClass):
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.send_hello(capabilities)
-
-    ######################################################################
-    # utility method:
-    def window_sources(self, exclude=None) -> tuple:
-        from xpra.server.source.window import WindowsConnection  # pylint: disable=import-outside-toplevel
-        return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsConnection) and x != exclude)
 
     ######################################################################
     # info:

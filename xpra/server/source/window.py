@@ -72,8 +72,10 @@ class WindowsConnection(StubClientConnection):
         self.connect("resume", self.resume_window_sources)
 
     def init_from(self, _protocol, server) -> None:
-        self.get_focus = server.get_focus
-        self.window_filters = server.window_filters
+        # `WindowServer` is the standalone subsystem instance:
+        window = server.subsystems["window"]
+        self.get_focus = window.get_focus
+        self.window_filters = window.window_filters
         self.readonly = server.readonly
 
     def init_state(self) -> None:

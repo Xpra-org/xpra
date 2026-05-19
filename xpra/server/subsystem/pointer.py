@@ -13,7 +13,6 @@ from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
-from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -43,8 +42,6 @@ class PointerServer(StubServerMixin):
         self.touchpad_device = None
         self.double_click_time = -1
         self.double_click_distance = -1, -1
-        # duplicated:
-        self.readonly = False
 
     def init(self, opts) -> None:
         self.input_devices = opts.input_devices
@@ -72,7 +69,7 @@ class PointerServer(StubServerMixin):
 
     def add_new_client(self, ss, c: typedict) -> None:
         from xpra.server.source.pointer import PointerConnection
-        pointer_clients = get_sources_by_type(self, PointerConnection, ss)
+        pointer_clients = self.get_sources_by_type(PointerConnection, ss)
         if pointer_clients:
             self.double_click_time = -1
             self.double_click_distance = -1, -1
@@ -85,7 +82,8 @@ class PointerServer(StubServerMixin):
         # pylint: disable=import-outside-toplevel
         # (this runs in the main thread - before the main loop starts)
         # for the time being, we only use the pointer if there is one:
-        if not hasattr(self, "get_display_size"):
+        display = self.get_subsystem("display")
+        if display is None:
             log.warn("cannot enable virtual devices without a display")
             return
         pointer = devices.get("pointer")
@@ -104,11 +102,10 @@ class PointerServer(StubServerMixin):
             device_path = touchpad.get("device")
             if uinput_device:
                 from xpra.x11.uinput.device import UInputTouchpadDevice
-                root_w, root_h = self.get_display_size()
+                root_w, root_h = display.get_display_size()
                 self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path, root_w, root_h)
-                # this signal should always be defined,
-                # since I can't imagine how we can have a touchpad device without a display!
-                if "display-geometry-changed" in self.__signals__:
+                # `display-geometry-changed` is declared on `DisplayManager.__signals__`:
+                if "display-geometry-changed" in self.server.__signals__:
                     self.connect("display-geometry-changed", self.update_touchpad_size)
         if self.pointer_device:
             try:
@@ -116,11 +113,13 @@ class PointerServer(StubServerMixin):
             except Exception as e:
                 log("cannot get pointer device class from %s: %s", self.pointer_device, e)
 
-    def update_touchpad_size(self) -> None:
+    def update_touchpad_size(self, *_args) -> None:
         if td := self.touchpad_device:
-            # this handler only runs when the DisplayManager emits the signal,
-            # so we can assume that the `get_display_size()` method is available:
-            root_w, root_h = self.get_display_size()
+            # the DisplayManager subsystem is what emits this signal:
+            display = self.get_subsystem("display")
+            if display is None:
+                return
+            root_w, root_h = display.get_display_size()
             td.root_w = root_w
             td.root_h = root_h
 
@@ -163,12 +162,15 @@ class PointerServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return pointer
-        window = self.get_window(wid)
+        window_sub = self.get_subsystem("window")
+        if window_sub is None:
+            return pointer
+        window = window_sub.get_window(wid)
         if ss and window:
             ws = ss.get_window_source(wid)
             if ws:
                 mapped_at = ws.mapped_at
-                pos = self.get_window_position(window)
+                pos = window_sub.get_window_position(window)
                 if mapped_at and pos:
                     wx, wy = pos
                     cx, cy = mapped_at[:2]
@@ -195,21 +197,21 @@ class PointerServer(StubServerMixin):
         return None
 
     def may_record_pointer_event(self, packet_type: str, *data: PacketElement) -> None:
-        pointer_sources = get_sources_by_type(self, PointerConnection)
+        pointer_sources = self.get_sources_by_type(PointerConnection)
         for ss in pointer_sources:
             if ss.pointer_record:
                 ss.send_async(packet_type, *data)
 
     def _process_pointer_button(self, proto, packet: Packet) -> None:
         log("process_pointer_button(%s, %s)", proto, packet)
-        if self.readonly:
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return
         ss.emit("user-event", "pointer-button")
         self.last_mouse_user = ss.uuid
-        self.set_ui_driver(ss)
+        self.server.set_ui_driver(ss)
         device_id = packet.get_i64(1)
         seq = packet.get_u64(2)
         wid = packet.get_wid(3)
@@ -227,14 +229,14 @@ class PointerServer(StubServerMixin):
 
     def _process_button_action(self, proto, packet: Packet) -> None:
         log("process_button_action(%s, %s)", proto, packet)
-        if self.readonly:
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return
         ss.emit("user-event", "button-action")
         self.last_mouse_user = ss.uuid
-        self.set_ui_driver(ss)
+        self.server.set_ui_driver(ss)
         wid = packet.get_wid(1)
         button = packet.get_u8(2)
         pressed = packet.get_bool(3)
@@ -251,10 +253,13 @@ class PointerServer(StubServerMixin):
     def _motion_signaled(self, model, event) -> None:
         log("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
         # find the window model for this gdk window:
-        wid = self._window_to_id.get(model)
+        window_sub = self.get_subsystem("window")
+        if window_sub is None:
+            return
+        wid = window_sub._window_to_id.get(model)
         if not wid:
             return
-        pointer_sources = get_sources_by_type(self, PointerConnection)
+        pointer_sources = self.get_sources_by_type(PointerConnection)
         for ss in pointer_sources:
             if ALWAYS_NOTIFY_MOTION or self.last_mouse_user is None or self.last_mouse_user != ss.uuid:
                 ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
@@ -270,15 +275,16 @@ class PointerServer(StubServerMixin):
     def _get_pointer_abs_coordinates(self, wid: int, pos) -> tuple[int, int]:
         # simple absolute coordinates
         x, y = pos[:2]
-        from xpra.server.subsystem.window import WindowServer
-        if len(pos) >= 4 and isinstance(self, WindowServer):
-            # relative coordinates
-            if model := self.get_window(wid):
-                rx, ry = pos[2:4]
-                geom = model.get_geometry()
-                x = geom[0] + rx
-                y = geom[1] + ry
-                log("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
+        if len(pos) >= 4:
+            window_sub = self.get_subsystem("window")
+            if window_sub is not None:
+                # relative coordinates
+                if model := window_sub.get_window(wid):
+                    rx, ry = pos[2:4]
+                    geom = model.get_geometry()
+                    x = geom[0] + rx
+                    y = geom[1] + ry
+                    log("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
         return x, y
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
@@ -298,7 +304,7 @@ class PointerServer(StubServerMixin):
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
         log("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
-        if self.readonly:
+        if self.server.readonly:
             return False
         pos = self.get_pointer_device(device_id).get_position()
         if (pointer and pos != pointer[:2]) or self.input_devices == "xi":
@@ -306,15 +312,16 @@ class PointerServer(StubServerMixin):
         return True
 
     def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
-        if self.readonly:
+        if self.server.readonly:
             return
         if ss := self.get_server_source(proto):
-            if self.ui_driver and self.ui_driver != ss.uuid:
+            if self.server.ui_driver and self.server.ui_driver != ss.uuid:
                 return
             if hasattr(ss, "keyboard_config"):
                 modifiers = [x for x in modifiers if x]
                 ss.make_keymask_match(modifiers)
-            if wid == self.get_focus():
+            window_sub = self.get_subsystem("window")
+            if window_sub is not None and wid == window_sub.get_focus():
                 ss.emit("user-event", "focus-changed")
 
     def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool,
@@ -337,8 +344,9 @@ class PointerServer(StubServerMixin):
 
     def _process_pointer_motion(self, proto, packet: Packet) -> None:
         # v5 packet format
-        log("_process_pointer_motion(%s, %s) readonly=%s, ui_driver=%s", proto, packet, self.readonly, self.ui_driver)
-        if self.readonly:
+        log("_process_pointer_motion(%s, %s) readonly=%s, ui_driver=%s",
+            proto, packet, self.server.readonly, self.server.ui_driver)
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
@@ -357,7 +365,7 @@ class PointerServer(StubServerMixin):
         pointer = pdata[:2]
         ss.mouse_last_relative_position = pdata[2:4] if len(pdata) >= 4 else (-1, -1)
         ss.mouse_last_position = pointer
-        if self.ui_driver and self.ui_driver != ss.uuid:
+        if self.server.ui_driver and self.server.ui_driver != ss.uuid:
             return
         ss.emit("user-event", "pointer")
         self.last_mouse_user = ss.uuid
@@ -368,8 +376,8 @@ class PointerServer(StubServerMixin):
 
     def _process_pointer_position(self, proto, packet: Packet) -> None:
         log("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
-            proto, packet, self.readonly, self.ui_driver)
-        if self.readonly:
+            proto, packet, self.server.readonly, self.server.ui_driver)
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
@@ -380,7 +388,7 @@ class PointerServer(StubServerMixin):
         pointer = pdata[:2]
         ss.mouse_last_relative_position = pdata[2:4] if len(pdata) >= 4 else (-1, -1)
         ss.mouse_last_position = pointer
-        if self.ui_driver and self.ui_driver != ss.uuid:
+        if self.server.ui_driver and self.server.ui_driver != ss.uuid:
             return
         ss.emit("user-event", "pointer-position")
         self.last_mouse_user = ss.uuid
@@ -414,7 +422,10 @@ class PointerServer(StubServerMixin):
     def record_wheel_event(self, wid: int, button: int) -> None:
         """ this may be used as a compression hint """
         log("recording scroll event for button %i", button)
-        for ss in self.window_sources():
+        window_sub = self.get_subsystem("window")
+        if window_sub is None:
+            return
+        for ss in window_sub.window_sources():
             ss.record_scroll_event(wid)
 
     def init_packet_handlers(self) -> None:

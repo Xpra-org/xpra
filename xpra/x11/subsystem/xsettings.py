@@ -104,16 +104,17 @@ class XSettingsServer(StubServerMixin):
     def init_all_server_settings(self) -> None:
         if not features.display:
             return
-        # `DisplayManager` is still class-based; its state lives on `self.server`.
-        # When it migrates, replace these with `self.get_subsystem("display").X`.
-        log("init_all_server_settings() dpi=%i, default_dpi=%i", self.server.dpi, self.server.default_dpi)
+        display = self.get_subsystem("display")
+        if display is None:
+            return
+        log("init_all_server_settings() dpi=%i, default_dpi=%i", display.dpi, display.default_dpi)
         # almost like update_all, except we use the default_dpi,
         # since this is called before the first client connects
         self.do_update_server_settings(
             {
                 "resource-manager": b"",
                 "xsettings-blob": (0, [])
-            }, reset=True, dpi=self.server.default_dpi, cursor_size=24)
+            }, reset=True, dpi=display.default_dpi, cursor_size=24)
 
     def add_new_client(self, ss, c: typedict) -> None:
         share_count = getattr(self.server, "get_ui_sharing_count", noop)(ss) or 0
@@ -129,15 +130,17 @@ class XSettingsServer(StubServerMixin):
     def update_server_settings(self, settings=None, reset=False) -> None:
         if not features.display:
             return
-        # `size` is owned by `CursorManager` (now a standalone subsystem).
-        # `dpi`/`antialias`/`double_click_*` live on `DisplayManager` (still
-        # class-based, reachable via `self.server.X` until it migrates).
+        # `cursor.size` lives on `CursorManager`.
+        # `dpi`/`antialias` live on `DisplayManager`.
+        # `double_click_*` live on `PointerServer`.
         cursor = self.get_subsystem("cursor")
         cursor_size = getattr(cursor, "size", 0)
-        dpi = getattr(self.server, "dpi", 0)
-        antialias = getattr(self.server, "antialias", {})
-        double_click_time = getattr(self.server, "double_click_time", 0)
-        double_click_distance = getattr(self.server, "double_click_distance", (-1, -1))
+        display = self.get_subsystem("display")
+        dpi = getattr(display, "dpi", 0)
+        antialias = getattr(display, "antialias", {})
+        pointer = self.get_subsystem("pointer")
+        double_click_time = getattr(pointer, "double_click_time", 0)
+        double_click_distance = getattr(pointer, "double_click_distance", (-1, -1))
         self.do_update_server_settings(settings or self._settings, reset,
                                        dpi, double_click_time, double_click_distance,
                                        antialias, cursor_size)
@@ -228,8 +231,9 @@ class XSettingsServer(StubServerMixin):
 
             # cook xsettings to add various settings:
             # (as those may not be present in xsettings on some platforms… like win32 and osx)
-            dc_time = getattr(self.server, "double_click_time", 0)
-            dc_distance = getattr(self.server, "double_click_distance", (-1, -1))
+            pointer = self.get_subsystem("pointer")
+            dc_time = getattr(pointer, "double_click_time", 0)
+            dc_distance = getattr(pointer, "double_click_distance", (-1, -1))
             have_override = dc_time > 0 or dc_distance != (-1, -1) or antialias or dpi > 0
             if k == "xsettings-blob" and have_override:
                 # start by removing blocklisted options:

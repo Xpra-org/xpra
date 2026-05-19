@@ -242,9 +242,11 @@ class DisplayManager(StubServerMixin):
         self.set_desktop_geometry_attributes(w, h)
 
     def set_desktop_geometry_attributes(self, w: int, h: int) -> None:
-        self.calculate_desktops()
+        # `calculate_desktops` / `set_desktop_geometry` are variant-overridable
+        # on the server (e.g. `SeamlessServer`), so we route through self.server:
+        self.server.calculate_desktops()
         self.calculate_workarea(w, h)
-        self.set_desktop_geometry(w, h)
+        self.server.set_desktop_geometry(w, h)
 
     def parse_screen_info(self, ss) -> tuple[int, int]:
         return self.do_parse_screen_info(ss, ss.desktop_size)
@@ -415,7 +417,9 @@ class DisplayManager(StubServerMixin):
         if desktop_size:
             width, height = desktop_size
             log("client requesting new size: %sx%s", width, height)
-            self.set_screen_size(width, height)
+            # variant servers wrap `set_screen_size` (see SeamlessServer); route
+            # through self.server so the wrapper fires:
+            self.server.set_screen_size(width, height)
             log.info("received updated display dimensions")
             log.info(f"client display size is {width}x{height}")
             log_screen_sizes(width, height, ss.screen_sizes)
@@ -442,7 +446,7 @@ class DisplayManager(StubServerMixin):
         desktop_names = attrs.strtupleget("desktop-names")
         if desktop_names:
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)
-            self.calculate_desktops()
+            self.server.calculate_desktops()
         # soft dependency on ICC:
         iccdata = attrs.dictget("icc")
         if iccdata:
@@ -490,10 +494,8 @@ class DisplayManager(StubServerMixin):
             log.warn("Warning: failed to calculate a common workarea")
             log.warn(f" using the full display area: {maxw}x{maxh}")
             workarea = rectangle(0, 0, maxw, maxh)
-        self.set_workarea(workarea)
-
-    def set_workarea(self, workarea) -> None:
-        """ overridden by seamless servers """
+        # variant-overridable on the server:
+        self.server.set_workarea(workarea)
 
     ######################################################################
     # screenshots:

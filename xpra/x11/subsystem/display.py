@@ -33,6 +33,7 @@ log = Logger("screen")
 grablog = Logger("server", "grab")
 
 DUMMY_WIDTH_HEIGHT_MM = envbool("XPRA_DUMMY_WIDTH_HEIGHT_MM", True)
+DUMMY_MONITORS = envbool("XPRA_DUMMY_MONITORS", True)
 
 
 def x11_ungrab() -> None:
@@ -127,6 +128,20 @@ class X11DisplayManager(DisplayManager):
         self.randr_exact_size = False
         self.antialias: dict[str, Any] = {}
         self.original_desktop_display = None
+        # Default screen resolution for `get_default_initial_res`. The empty
+        # string means "fall back to whatever `parse_env_resolutions` picks"
+        # (currently 7680x4320, the 8K seamless default). Desktop-style
+        # variants override this in their `__init__` to a more modest size
+        # (e.g. 1920x1080) because a fixed virtual monitor is intended to
+        # match a real display rather than serve as a giant canvas that
+        # the client can sub-rect into.
+        self.default_resolution: str = ""
+        # When True, `set_screen_size` first tries to mirror the connected
+        # client's monitor layout via RandR 1.6 instead of resizing the
+        # screen. Seamless servers want this; desktop / monitor servers
+        # explicitly disable it because their virtual monitors are sized
+        # by the user, not by the client's hardware.
+        self.mirror_client_layout: bool = True
 
     def init(self, opts) -> None:
         self.init_display_pid()
@@ -146,9 +161,11 @@ class X11DisplayManager(DisplayManager):
         self.check_xvfb()
 
     def get_default_initial_res(self) -> Sequence[tuple[int, int, int]]:
-        # desktop servers override this to use 1080p
-        # seamless servers should start with the larger default (8K)
-        return parse_env_resolutions(default_refresh_rate=self.refresh_rate)
+        # `default_resolution` is set by the variant (empty = seamless 8K default).
+        kwargs = {"default_refresh_rate": self.refresh_rate}
+        if self.default_resolution:
+            kwargs["default_res"] = self.default_resolution
+        return parse_env_resolutions(**kwargs)
 
     def get_server_features(self, source) -> dict[str, Any]:
         caps = DisplayManager.get_server_features(self, source)
@@ -386,7 +403,8 @@ class X11DisplayManager(DisplayManager):
         if w <= 0 or h <= 0:
             # invalid - use fallback
             return root_w, root_h
-        return self.set_screen_size(w, h)
+        # variant-overridable on the server (e.g. SeamlessServer.set_screen_size wraps this):
+        return self.server.set_screen_size(w, h)
 
     def get_best_screen_size(self, desired_w: int, desired_h: int):
         r = self.do_get_best_screen_size(desired_w, desired_h)
@@ -434,6 +452,22 @@ class X11DisplayManager(DisplayManager):
 
     def set_screen_size(self, desired_w: int, desired_h: int):
         log("set_screen_size%s", (desired_w, desired_h))
+        # clamp any pre-existing windows to the new screen bounds:
+        window_sub = self.get_subsystem("window")
+        if window_sub:
+            window_sub.clamp_windows_to_screen(desired_w, desired_h)
+        # RandR 1.6 fast-path: mirror the client's monitor layout exactly
+        # when the dummy driver supports it (seamless servers only - see
+        # `mirror_client_layout`). Falls through to standard screen-size
+        # resize if the conditions aren't met.
+        if self.mirror_client_layout and DUMMY_MONITORS and self.randr and self.randr_exact_size:
+            with xlog:
+                from xpra.x11.bindings.randr import RandRBindings
+                d16 = RandRBindings().is_dummy16()
+            log("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
+                (desired_w, desired_h), self.randr, self.randr_exact_size, d16)
+            if d16 and self.mirror_client_monitor_layout():
+                return desired_w, desired_h
         root_w, root_h = get_root_size()
         if not self.randr:
             return root_w, root_h
@@ -483,7 +517,8 @@ class X11DisplayManager(DisplayManager):
                 RandRBindings().set_output_int_property(output, "WIDTH_MM", wmm)
                 RandRBindings().set_output_int_property(output, "HEIGHT_MM", hmm)
         log("set_dpi(%i, %i)", xdpi, ydpi)
-        self.set_dpi(xdpi, ydpi)
+        # variant-overridable on the server (e.g. SeamlessServer.set_dpi):
+        self.server.set_dpi(xdpi, ydpi)
 
         # try to find the best screen size to resize to:
         w, h = self.get_best_screen_size(desired_w, desired_h)

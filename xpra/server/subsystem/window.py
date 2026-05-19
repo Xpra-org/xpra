@@ -8,11 +8,11 @@ from time import monotonic
 from typing import Any, NoReturn
 from collections.abc import Sequence
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.server.source.window import WindowsConnection
-from xpra.server.common import get_sources_by_type
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import WINDOW_CREATE
@@ -71,9 +71,13 @@ class WindowServer(StubServerMixin):
     def setup(self) -> None:
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
-        self.update_size_constraints(minw, minh, maxw, maxh)
+        # `update_size_constraints` / `load_existing_windows` are variant-
+        # overridable on the server (seamless wires the X11 WM, desktop
+        # has its own monitor model, shadow has the root capture window).
+        # Route through self.server so the variant override fires.
+        self.server.update_size_constraints(minw, minh, maxw, maxh)
         # when the main loop runs, load the windows:
-        GLib.idle_add(self.load_existing_windows)
+        GLib.idle_add(self.server.load_existing_windows)
         self.connect("last-client-exited", self.reset_focus)
         self.add_window_control_commands()
 
@@ -84,6 +88,7 @@ class WindowServer(StubServerMixin):
         ac("focus", "give focus to the window id", validation=[int])
         ac("map", "maps the window id", validation=[int])
         ac("unmap", "unmaps the window id", validation=[int])
+        ac("show-all-windows", "make all the windows visible", max_args=0)
         ac("suspend", "suspend screen updates", max_args=0)
         ac("resume", "resume screen updates", max_args=0)
         ac("ungrab", "cancels any grabs", max_args=0)
@@ -152,7 +157,9 @@ class WindowServer(StubServerMixin):
         return {"windows": self.get_windows_info(wids)}
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
-        self.parse_hello_ui_window_settings(ss, caps)
+        # `parse_hello_ui_window_settings` is variant-overridable (seamless
+        # sets frame extents). Route through self.server so the variant fires.
+        self.server.parse_hello_ui_window_settings(ss, caps)
         return ""
 
     def parse_hello_ui_window_settings(self, ss, c: typedict) -> None:
@@ -161,7 +168,7 @@ class WindowServer(StubServerMixin):
         """
 
     def window_sources(self, exclude=None) -> tuple:
-        return get_sources_by_type(self, WindowsConnection, exclude=exclude)
+        return self.get_sources_by_type(WindowsConnection, exclude=exclude)
 
     def add_new_client(self, *_args) -> None:
         minw, minh = self.window_min_size
@@ -181,7 +188,7 @@ class WindowServer(StubServerMixin):
             maxw = minw
         if minh > 0 and minh > maxh:
             maxh = minh
-        self.update_size_constraints(minw, minh, maxw, maxh)
+        self.server.update_size_constraints(minw, minh, maxw, maxh)
 
     def _set_client_properties(self, proto, wid: int, window, new_client_properties: dict) -> None:
         """
@@ -216,7 +223,10 @@ class WindowServer(StubServerMixin):
         iswc = isinstance(ss, WindowsConnection)
         if iswc:
             windows_clients = self.window_sources(ss)
-            self.send_initial_windows(ss, len(windows_clients) > 0)
+            # `send_initial_windows` is variant-overridable (desktop sends
+            # monitor models, shadow sends the root capture window).
+            # Route through self.server so the variant override fires.
+            self.server.send_initial_windows(ss, len(windows_clients) > 0)
 
     def is_shown(self, _window) -> bool:
         return True
@@ -224,8 +234,36 @@ class WindowServer(StubServerMixin):
     def reset_window_filters(self) -> None:
         self.window_filters = []
 
+    def models(self):
+        return tuple(self._id_to_window.values())
+
     def get_window(self, wid: int):
         return self._id_to_window.get(wid)
+
+    def show_all_windows(self) -> None:
+        for w in self._id_to_window.values():
+            show = getattr(w, "show", None)
+            if show:
+                show()
+
+    def clamp_windows_to_screen(self, screen_w: int, screen_h: int) -> None:
+        """
+        Clamp every non-tray, non-override-redirect window so that its
+        `client-geometry` lies within the screen bounds. Used by variants
+        that change the screen resolution (e.g. SeamlessServer.set_screen_size).
+        """
+        for window in self._id_to_window.values():
+            if getattr(window, "is_tray", noop)() or getattr(window, "is_OR", noop)():
+                continue
+            cg = window.get_property("client-geometry")
+            if not cg:
+                continue
+            x, y, w, h = cg
+            if x >= screen_w or y >= screen_h:
+                x = min(x, screen_w - 64)
+                y = min(y, screen_h - 64)
+                geomlog("clamped window %s", window)
+                window.set_property("client-geometry", (x, y, w, h))
 
     def get_windows_info(self, window_ids=()) -> dict[int, dict[str, Any]]:
         copy = self._id_to_window.copy()
@@ -543,7 +581,7 @@ class WindowServer(StubServerMixin):
         self._focus(None, 0, [])
 
     def _process_window_focus(self, proto, packet: Packet) -> None:
-        if self.readonly:
+        if self.server.readonly:
             return
         ss = self.get_server_source(proto)
         if not ss:
@@ -592,15 +630,19 @@ class WindowServer(StubServerMixin):
     #########################################
 
     def control_command_focus(self, wid: int) -> str:
-        if self.readonly:
+        if self.server.readonly:
             return "focus request denied by readonly mode"
         if not isinstance(wid, int):
             raise ValueError(f"argument should have been an int, but found {type(wid)}")
         self._focus(None, wid, None)
         return f"gave focus to window {wid:#x}"
 
+    def control_command_show_all_windows(self) -> str:
+        self.show_all_windows()
+        return "%i windows shown" % len(self._id_to_window)
+
     def control_command_map(self, wid: int) -> str:
-        if self.readonly:
+        if self.server.readonly:
             return "map request denied by readonly mode"
         if not isinstance(wid, int):
             raise ValueError(f"argument should have been an int, but found {type(wid)}")
@@ -617,11 +659,11 @@ class WindowServer(StubServerMixin):
         #    window.set_property("iconic", False)
         # w, h = window.get_geometry()[2:4]
         # self.refresh_window_area(window, 0, 0, w, h)
-        self.repaint_root_overlay()
+        self.server.repaint_root_overlay()
         return "mapped window %s" % wid
 
     def control_command_unmap(self, wid: int) -> str:
-        if self.readonly:
+        if self.server.readonly:
             return "unmap request denied by readonly mode"
         if not isinstance(wid, int):
             raise ValueError(f"argument should have been an int, but found {type(wid)}")
@@ -632,7 +674,7 @@ class WindowServer(StubServerMixin):
         if window.is_OR():
             return f"cannot unmap override redirect window {wid:#x}"
         window.hide()
-        self.repaint_root_overlay()
+        self.server.repaint_root_overlay()
         return f"unmapped window {wid:#x}"
 
     def control_command_suspend(self) -> str:
@@ -729,7 +771,7 @@ class WindowServer(StubServerMixin):
                 else:
                     log(f"window id {wid:#x} does not exist")
         wss = []
-        for csource in tuple(control_get_sources(self)):
+        for csource in tuple(control_get_sources(self.server)):
             for wid in wids:
                 ws = csource.window_sources.get(wid)
                 window = self.get_window(wid)
