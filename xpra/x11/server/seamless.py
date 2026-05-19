@@ -78,9 +78,17 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.repaint_root_overlay_timer = 0
         self.sync_xvfb = 0
         GObject.GObject.__init__(self)
-        ServerBase.__init__(self, mode="seamless")
+        ServerBase.__init__(self)
         self.session_type = "seamless"
         self._xsettings_enabled = True
+
+    def get_display_subsystem_class(self) -> type:
+        from xpra.x11.server.display import X11SeamlessDisplayManager
+        return X11SeamlessDisplayManager
+
+    def get_window_subsystem_class(self) -> type:
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+        return SeamlessWindowServer
 
     def init(self, opts) -> None:
         self.sync_xvfb = int(opts.sync_xvfb or 0)

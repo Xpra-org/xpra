@@ -21,7 +21,8 @@ from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envbool
 from xpra.server import ServerExitMode
-from xpra.server.factory import get_server_base_classes, get_instance_subsystem_classes
+from xpra.os_util import POSIX
+from xpra.server.factory import get_server_base_classes
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -59,7 +60,7 @@ class ServerBase(ServerBaseClass):
     # dynamic ServerBaseClass MRO (which inherits PREFIX from its subsystems):
     PREFIX = ""
 
-    def __init__(self, mode: str = ""):
+    def __init__(self):
         # subsystems dict (keyed by PREFIX) is built up across the inheritance
         # hierarchy: ServerCore.__init__ adds its own bases, and this loop adds
         # all the extra subsystems from factory.SERVER_BASES on top.
@@ -72,10 +73,10 @@ class ServerBase(ServerBaseClass):
             prefix = getattr(c, "PREFIX", "")
             if prefix:
                 self.subsystems[prefix] = c
-        # construct standalone instance-based subsystems and register them.
-        # `mode` lets variants pick subclasses of certain subsystems (e.g.
-        # `SeamlessWindowServer` instead of `WindowServer`).
-        for cls in get_instance_subsystem_classes(mode):
+        # Instantiate the standalone instance-based subsystems. Variant
+        # servers (seamless, desktop, monitor, shadow, ...) override the
+        # `get_*_subsystem_class()` hooks to swap in their own subclasses.
+        for cls in self.get_subsystem_classes():
             self.subsystems[cls.PREFIX] = cls(self)
         log("ServerBase.__init__()")
         self.hello_request_handlers.update({
@@ -85,6 +86,157 @@ class ServerBase(ServerBaseClass):
         self._server_sources: dict = {}
         self.ui_driver = None
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
+
+    def get_subsystem_classes(self) -> tuple[type, ...]:
+        """
+        Return the ordered tuple of instance-based subsystem classes to
+        construct for this server. Variants (seamless, desktop, monitor,
+        shadow, ...) override the per-subsystem hooks below (display,
+        window, keyboard, pointer) to swap in their own subclasses.
+        """
+        from xpra.server import features
+        classes: list[type] = []
+        if features.ping:
+            from xpra.server.subsystem.ping import PingServer
+            classes.append(PingServer)
+        if features.bandwidth:
+            from xpra.server.subsystem.bandwidth import BandwidthServer
+            classes.append(BandwidthServer)
+        if features.debug:
+            from xpra.server.subsystem.debug import DebugServer
+            classes.append(DebugServer)
+        if features.shell:
+            from xpra.server.subsystem.shell import ShellServer
+            classes.append(ShellServer)
+        if features.power:
+            from xpra.server.subsystem.power import PowerEventServer
+            classes.append(PowerEventServer)
+        if features.watcher:
+            from xpra.server.subsystem.watcher import UIWatcher
+            classes.append(UIWatcher)
+        if features.suspend:
+            from xpra.server.subsystem.suspend import SuspendServer
+            classes.append(SuspendServer)
+        if features.idle:
+            from xpra.server.subsystem.idle import IdleTimeoutServer
+            classes.append(IdleTimeoutServer)
+        if POSIX and FULL_INFO >= 1:
+            from xpra.server.subsystem.drm import DRMInfo
+            classes.append(DRMInfo)
+        if features.http:
+            from xpra.server.subsystem.http import HttpServer
+            classes.append(HttpServer)
+        if features.ssh:
+            from xpra.server.subsystem.ssh_agent import SshAgent
+            classes.append(SshAgent)
+        if features.dbus:
+            from xpra.server.subsystem.dbus import DbusServer
+            classes.append(DbusServer)
+        # EncryptionServer is unconditional - it gracefully no-ops when no
+        # encryption is configured on a given socket.
+        from xpra.server.subsystem.encryption import EncryptionServer
+        classes.append(EncryptionServer)
+        if features.command:
+            from xpra.server.subsystem.menu import MenuServer
+            classes.append(MenuServer)
+        if features.logging:
+            from xpra.server.subsystem.logging import LoggingServer
+            classes.append(LoggingServer)
+        if features.tray:
+            from xpra.server.subsystem.tray import TrayMenu
+            classes.append(TrayMenu)
+        if features.opengl:
+            from xpra.server.subsystem.opengl import OpenGLInfo
+            classes.append(OpenGLInfo)
+        if features.mmap:
+            from xpra.server.subsystem.mmap import MMAP_Server
+            classes.append(MMAP_Server)
+        if features.notification:
+            from xpra.server.subsystem.notification import NotificationForwarder
+            classes.append(NotificationForwarder)
+        if features.webcam:
+            from xpra.server.subsystem.webcam import WebcamServer
+            classes.append(WebcamServer)
+        if features.clipboard:
+            from xpra.server.subsystem.clipboard import ClipboardServer
+            classes.append(ClipboardServer)
+        if features.pulseaudio:
+            from xpra.server.subsystem.pulseaudio import PulseaudioServer
+            classes.append(PulseaudioServer)
+        if features.audio:
+            from xpra.server.subsystem.audio import AudioServer
+            classes.append(AudioServer)
+        if features.encoding:
+            from xpra.server.subsystem.encoding import EncodingServer
+            classes.append(EncodingServer)
+        if features.display:
+            classes.append(self.get_display_subsystem_class())
+        if features.window:
+            classes.append(self.get_window_subsystem_class())
+        if features.keyboard:
+            classes.append(self.get_keyboard_subsystem_class())
+        if features.pointer:
+            classes.append(self.get_pointer_subsystem_class())
+        # ChildCommandServer should be last so that the environment is fully prepared:
+        if features.command:
+            from xpra.server.subsystem.command import ChildCommandServer
+            classes.append(ChildCommandServer)
+        if features.file:
+            from xpra.server.subsystem.file import FileServer
+            classes.append(FileServer)
+        if features.printer:
+            from xpra.server.subsystem.printer import PrinterServer
+            classes.append(PrinterServer)
+        if features.x11 and features.display:
+            from xpra.x11.subsystem.icc import ICCServer
+            classes.append(ICCServer)
+        if features.x11 and features.bell:
+            from xpra.x11.subsystem.bell import BellServer
+            classes.append(BellServer)
+        if features.x11 and features.systray:
+            from xpra.x11.subsystem.systray import SystemTrayServer
+            classes.append(SystemTrayServer)
+        from xpra.server.subsystem.sharing import SharingServer
+        classes.append(SharingServer)
+        if features.cursor:
+            if features.x11:
+                from xpra.x11.subsystem.cursor import XCursorServer
+                classes.append(XCursorServer)
+            else:
+                from xpra.server.subsystem.cursor import CursorManager
+                classes.append(CursorManager)
+        if features.x11 and features.display:
+            from xpra.x11.subsystem.xsettings import XSettingsServer
+            classes.append(XSettingsServer)
+        return tuple(classes)
+
+    def get_display_subsystem_class(self) -> type:
+        from xpra.server import features
+        if features.x11:
+            from xpra.x11.subsystem.display import X11DisplayManager
+            return X11DisplayManager
+        from xpra.server.subsystem.display import DisplayManager
+        return DisplayManager
+
+    def get_window_subsystem_class(self) -> type:
+        from xpra.server.subsystem.window import WindowServer
+        return WindowServer
+
+    def get_keyboard_subsystem_class(self) -> type:
+        from xpra.server import features
+        if features.x11:
+            from xpra.x11.subsystem.keyboard import X11KeyboardManager
+            return X11KeyboardManager
+        from xpra.server.subsystem.keyboard import KeyboardManager
+        return KeyboardManager
+
+    def get_pointer_subsystem_class(self) -> type:
+        from xpra.server import features
+        if features.x11:
+            from xpra.x11.subsystem.pointer import X11PointerManager
+            return X11PointerManager
+        from xpra.server.subsystem.pointer import PointerManager
+        return PointerManager
 
     def suspend_event(self, *_args) -> None:
         # if we get a `suspend_event`, we can assume that `PowerEventServer` is a superclass:

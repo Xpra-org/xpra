@@ -35,6 +35,10 @@ class XpraDesktopServer(DesktopServerBase):
         self.root_prop_watcher = None
         self.resize_value = -1, -1
 
+    def get_window_subsystem_class(self) -> type:
+        from xpra.x11.desktop.window import XpraDesktopWindowServer
+        return XpraDesktopWindowServer
+
     def init_randr(self) -> None:
         super().init_randr()
         from xpra.x11.vfb_util import set_initial_resolution

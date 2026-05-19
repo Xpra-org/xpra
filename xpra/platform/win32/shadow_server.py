@@ -182,6 +182,14 @@ class ShadowServer(GTKShadowServerBase):
         self.cursor_handle = None
         self.cursor_data = None
         self.backend = attrs.get("backend", "auto")
+
+    def get_keyboard_subsystem_class(self) -> type:
+        from xpra.platform.win32.shadow_keyboard import Win32ShadowKeyboardManager
+        return Win32ShadowKeyboardManager
+
+    def get_pointer_subsystem_class(self) -> type:
+        from xpra.platform.win32.shadow_pointer import Win32ShadowPointerManager
+        return Win32ShadowPointerManager
         if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT) == 0:
             raise InitException("all the monitors must use the same display format")
         # TODO: deal with those messages?

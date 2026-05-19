@@ -122,6 +122,14 @@ class ShadowServer(GTKShadowServerBase):
         self.refresh_registered = False
         super().__init__(attrs)
 
+    def get_keyboard_subsystem_class(self) -> type:
+        from xpra.platform.darwin.shadow_keyboard import DarwinShadowKeyboardManager
+        return DarwinShadowKeyboardManager
+
+    def get_pointer_subsystem_class(self) -> type:
+        from xpra.platform.darwin.shadow_pointer import DarwinShadowPointerManager
+        return DarwinShadowPointerManager
+
     def init(self, opts) -> None:
         super().init(opts)
         # printing fails silently on OSX

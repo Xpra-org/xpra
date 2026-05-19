@@ -70,7 +70,7 @@ class ShadowServerBase(ServerBase):
 
     def __init__(self, attrs: dict[str, str], capture=None):
         # noinspection PyArgumentList
-        ServerBase.__init__(self, mode="shadow")
+        ServerBase.__init__(self)
         self.capture = capture
         self.window_matches: list[str] = []
         self.mapped = []
@@ -88,6 +88,22 @@ class ShadowServerBase(ServerBase):
         self.keyboard_config = None
         self.multi_window = str_to_bool(attrs.get("multi-window", True))
         batch_config.ALWAYS = True  # always batch
+
+    def get_display_subsystem_class(self) -> type:
+        from xpra.server.shadow.display import ShadowDisplayManager
+        return ShadowDisplayManager
+
+    def get_window_subsystem_class(self) -> type:
+        from xpra.server.shadow.window import ShadowWindowServer
+        return ShadowWindowServer
+
+    def get_keyboard_subsystem_class(self) -> type:
+        from xpra.server.shadow.keyboard import ShadowKeyboardManager
+        return ShadowKeyboardManager
+
+    def get_pointer_subsystem_class(self) -> type:
+        from xpra.server.shadow.pointer import ShadowPointerManager
+        return ShadowPointerManager
 
     def init(self, opts) -> None:
         super().init(opts)

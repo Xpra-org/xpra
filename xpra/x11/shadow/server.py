@@ -38,6 +38,18 @@ class ShadowX11Server(GTKShadowServerBase):
         self.session_type = "X11 shadow"
         self.backend = attrs.get("backend", "x11")
 
+    def get_display_subsystem_class(self) -> type:
+        from xpra.x11.shadow.display import X11ShadowDisplayManager
+        return X11ShadowDisplayManager
+
+    def get_keyboard_subsystem_class(self) -> type:
+        from xpra.x11.shadow.keyboard import X11ShadowKeyboardManager
+        return X11ShadowKeyboardManager
+
+    def get_pointer_subsystem_class(self) -> type:
+        from xpra.x11.shadow.pointer import X11ShadowPointerManager
+        return X11ShadowPointerManager
+
     def init(self, opts) -> None:
         GTKShadowServerBase.init(self, opts)
         if sf := self.get_subsystem("session-files"):

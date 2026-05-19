@@ -73,9 +73,9 @@ class DesktopServerBase(GObject.GObject, ServerBase):
     """
     __common_gsignals__ = SIGNALS
 
-    def __init__(self, mode: str = "desktop"):
+    def __init__(self):
         GObject.GObject.__init__(self)
-        ServerBase.__init__(self, mode=mode)
+        ServerBase.__init__(self)
         self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
         self.session_type = "X11 desktop"
@@ -87,6 +87,14 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         # Desktop variants present a fixed virtual monitor; never reshape
         # the screen layout to match the client's monitors.
         display.mirror_client_layout = False
+
+    def get_display_subsystem_class(self) -> type:
+        from xpra.x11.desktop.display import XpraDesktopDisplayManager
+        return XpraDesktopDisplayManager
+
+    def get_pointer_subsystem_class(self) -> type:
+        from xpra.x11.desktop.pointer import XpraDesktopPointerManager
+        return XpraDesktopPointerManager
 
     def setup(self) -> None:
         super().setup()

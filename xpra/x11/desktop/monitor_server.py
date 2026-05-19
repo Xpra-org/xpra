@@ -74,10 +74,14 @@ class XpraMonitorServer(DesktopServerBase):
     __gsignals__ = DesktopServerBase.__common_gsignals__
 
     def __init__(self):
-        super().__init__(mode="monitor")
+        super().__init__()
         self.session_type: str = "X11 monitor"
         self.reconfigure_timer: int = 0
         self.reconfigure_locked: bool = False
+
+    def get_window_subsystem_class(self) -> type:
+        from xpra.x11.desktop.window import MonitorWindowServer
+        return MonitorWindowServer
 
     def setup(self):
         super().setup()
