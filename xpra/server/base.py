@@ -46,7 +46,6 @@ log("ServerBaseClass%s", SERVER_BASES)
 log("signals: %s", SIGNALS)
 
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
-MDNS_CLIENT_COUNT = envbool("XPRA_MDNS_CLIENT_COUNT", True)
 
 
 class ServerBase(ServerBaseClass):
@@ -250,12 +249,6 @@ class ServerBase(ServerBaseClass):
         self.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
         GLib.timeout_add(500, self.clean_quit)
         return True
-
-    def get_mdns_info(self) -> dict[str, Any]:
-        mdns_info = super().get_mdns_info()
-        if MDNS_CLIENT_COUNT:
-            mdns_info["clients"] = len(self._server_sources)
-        return mdns_info
 
     ######################################################################
     # handle new connections:

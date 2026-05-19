@@ -144,6 +144,9 @@ class MdnsServer(StubServerMixin):
         MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
         if MDNS_EXPOSE_NAME and self.server.session_name:
             mdns_info["name"] = self.server.session_name
+        MDNS_CLIENT_COUNT = envbool("XPRA_MDNS_CLIENT_COUNT", True)
+        if MDNS_CLIENT_COUNT and hasattr(self.server, self._server_sources):
+            mdns_info["clients"] = len(self.server._server_sources)
         return mdns_info
 
     def mdns_cleanup(self) -> None:
