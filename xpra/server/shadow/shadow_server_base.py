@@ -160,13 +160,6 @@ class ShadowServerBase(ServerBase):
             info["pointer-last-position"] = self.pointer_last_position
         return info
 
-    def _keys_changed(self) -> None:
-        from xpra.server.subsystem.keyboard import KeyboardServer
-        if isinstance(self, KeyboardServer):
-            KeyboardServer._keys_changed(self)
-            from xpra.platform.keyboard import Keyboard
-            log.info("the keymap has been changed: %s", Keyboard().get_layout_spec()[0])
-
     ############################################################################
     # notification
     def cleanup_notifier(self) -> None:
@@ -410,14 +403,6 @@ class ShadowServerBase(ServerBase):
         ss = self.get_server_source(proto)
         if ss and len(packet) >= 4:
             ss.set_screen_sizes(packet[3])
-
-    def set_keyboard_repeat(self, *_args) -> None:
-        """ don't override the existing desktop """
-
-    def set_keymap(self, server_source, force=False) -> None:
-        log("set_keymap%s", (server_source, force))
-        log.info("shadow server: setting default keymap translation")
-        self.keyboard_config = server_source.set_default_keymap()
 
     def make_capture_window_models(self) -> list:
         from xpra.server.shadow.root_window_model import CaptureWindowModel

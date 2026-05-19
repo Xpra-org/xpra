@@ -115,7 +115,8 @@ class DBUS_Server(DBUS_Server_Base):
     def SetKeyboardRepeat(self, repeat_delay, repeat_interval):
         d, i = ni(repeat_delay), ni(repeat_interval)
         self.log(".SetKeyboardRepeat(%i, %i)", d, i)
-        self.server.set_keyboard_repeat(d, i)
+        if keyboard := self.server.get_subsystem("keyboard"):
+            keyboard.set_keyboard_repeat(d, i)
 
     @dbus.service.method(INTERFACE, in_signature='iii')
     def MovePointer(self, wid, x, y):

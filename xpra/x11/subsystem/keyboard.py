@@ -17,7 +17,7 @@ from xpra.util.pid import load_pid, kill_pid
 from xpra.util.env import envbool
 from xpra.util.io import find_libexec_command, which
 from xpra.util.objects import typedict
-from xpra.server.subsystem.keyboard import KeyboardServer
+from xpra.server.subsystem.keyboard import KeyboardManager
 from xpra.util.system import stop_proc
 from xpra.x11.error import xsync, xswallow, xlog
 from xpra.log import Logger
@@ -149,10 +149,10 @@ def may_start_ibus(env: dict[str, str]):
     GLib.idle_add(late_start)
 
 
-class X11KeyboardServer(KeyboardServer):
+class X11KeyboardManager(KeyboardManager):
 
     def __init__(self, server=None):
-        KeyboardServer.__init__(self, server)
+        KeyboardManager.__init__(self, server)
         self.xkb = False
         self.input_method = "keep"
         self.ibus_layouts: dict[str, Any] = {}

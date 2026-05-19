@@ -6,14 +6,13 @@
 
 from typing import Any
 
-from xpra.server.base import ServerBase
 from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.os_util import gi_import
 from xpra.server.common import get_sources_by_type
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
-from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
+from xpra.server.shadow.shadow_server_base import try_setup_capture
 from xpra.x11.shadow.filter import window_matches
 from xpra.x11.shadow.model import X11ShadowModel
 from xpra.log import Logger
@@ -28,26 +27,16 @@ class ShadowX11Server(GTKShadowServerBase):
     def __init__(self, attrs: dict[str, str]):
         GTKShadowServerBase.__init__(self, attrs)
         self.session_type = "X11 shadow"
-        self.modify_keymap = False
         self.backend = attrs.get("backend", "x11")
 
     def init(self, opts) -> None:
         GTKShadowServerBase.init(self, opts)
-        self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
         if sf := self.get_subsystem("session-files"):
             sf.session_files.append("xauthority")
 
     def set_initial_resolution(self) -> None:
         # shadow servers must not change the host display resolution
         pass
-
-    def set_keymap(self, server_source, force=False) -> None:
-        if self.readonly:
-            return
-        if self.modify_keymap:
-            ServerBase.set_keymap(self, server_source, force)
-        else:
-            ShadowServerBase.set_keymap(self, server_source, force)
 
     def cleanup(self) -> None:
         GTKShadowServerBase.cleanup(self)

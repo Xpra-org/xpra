@@ -141,8 +141,10 @@ class RFBServer(StubServerMixin):
 
     def _accept_rfb_source(self, source):
         if features.keyboard:
-            source.keyboard_config = self.get_keyboard_config()
-            self.set_keymap(source)
+            keyboard = self.get_subsystem("keyboard")
+            if keyboard:
+                source.keyboard_config = keyboard.get_keyboard_config()
+                keyboard.set_keymap(source)
         model = self._get_rfb_desktop_model()
         w, h = model.get_dimensions()
         source.damage(self._window_to_id[model], model, 0, 0, w, h)
@@ -205,7 +207,8 @@ class RFBServer(StubServerMixin):
         keylog("RFB keycode(%s)=%s, %s", keyname, keycode, group)
         if keycode:
             is_mod = source.keyboard_config.is_modifier(keycode)
-            self._handle_key(wid, bool(pressed), keyname, keyval, keycode, modifiers, is_mod, True)
+            if keyboard := self.get_subsystem("keyboard"):
+                keyboard._handle_key(wid, bool(pressed), keyname, keyval, keycode, modifiers, is_mod, True)
 
     def _process_rfb_SetEncodings(self, proto, packet):
         encodings = packet[3]

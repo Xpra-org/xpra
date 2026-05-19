@@ -24,7 +24,7 @@ GLib = gi_import("GLib")
 log = Logger("keyboard")
 
 
-class KeyboardServer(StubServerMixin):
+class KeyboardManager(StubServerMixin):
     """
     Mixin for servers that handle keyboards
     """

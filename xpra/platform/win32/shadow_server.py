@@ -11,7 +11,6 @@ from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT
 
 from xpra.util.env import envbool
-from xpra.util.objects import typedict
 from xpra.constants import XPRA_APP_ID
 from xpra.scripts.config import InitException
 from xpra.server.shadow.shadow_server_base import try_setup_capture
@@ -19,7 +18,6 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size, get_display_size
-from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow.common import get_monitors
 from xpra.platform.win32.shadow.cursor import get_cursor_data
@@ -347,16 +345,6 @@ class ShadowServer(GTKShadowServerBase):
             cd,
             ((w, h), [(w, h), ]),
         )
-
-    def get_keyboard_config(self, _props=None) -> KeyboardConfig:
-        return KeyboardConfig()
-
-    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, attrs: dict) -> None:
-        # try to match using the vk_code for native clients
-        vk_code = typedict(attrs).intget("vk-code", 0)
-        if vk_code:
-            pass  # todo!
-        super().do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)

@@ -156,12 +156,24 @@ def get_instance_subsystem_classes(mode: str = "") -> tuple[type, ...]:
             from xpra.server.subsystem.window import WindowServer
             classes.append(WindowServer)
     if features.keyboard:
-        if features.x11:
-            from xpra.x11.subsystem.keyboard import X11KeyboardServer
-            classes.append(X11KeyboardServer)
+        if mode == "shadow" and WIN32:
+            from xpra.platform.win32.shadow_keyboard import Win32ShadowKeyboardManager
+            classes.append(Win32ShadowKeyboardManager)
+        elif mode == "shadow" and OSX:
+            from xpra.platform.darwin.shadow_keyboard import DarwinShadowKeyboardManager
+            classes.append(DarwinShadowKeyboardManager)
+        elif mode == "shadow" and features.x11:
+            from xpra.x11.shadow.keyboard import X11ShadowKeyboardManager
+            classes.append(X11ShadowKeyboardManager)
+        elif mode == "shadow":
+            from xpra.server.shadow.keyboard import ShadowKeyboardManager
+            classes.append(ShadowKeyboardManager)
+        elif features.x11:
+            from xpra.x11.subsystem.keyboard import X11KeyboardManager
+            classes.append(X11KeyboardManager)
         else:
-            from xpra.server.subsystem.keyboard import KeyboardServer
-            classes.append(KeyboardServer)
+            from xpra.server.subsystem.keyboard import KeyboardManager
+            classes.append(KeyboardManager)
     if features.pointer:
         if mode in ("desktop", "monitor") and features.x11:
             from xpra.x11.desktop.pointer import XpraDesktopPointerManager
