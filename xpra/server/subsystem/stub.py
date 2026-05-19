@@ -61,6 +61,12 @@ class StubServerMixin(superclass):
         Free up any resources.
         """
 
+    def last_client_exited(self) -> None:
+        """
+        Called when the last client has exited,
+        so we can reset things to their original state.
+        """
+
     def late_cleanup(self, stop=True) -> None:
         """
         Free up any resources, after main cleanup.

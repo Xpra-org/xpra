@@ -488,6 +488,8 @@ class ServerBase(ServerBaseClass):
     def last_client_exited(self) -> None:
         # must run from the UI thread (modifies focus and keys)
         netlog("last_client_exited() exit_with_client=%s", self.exit_with_client)
+        for c in SERVER_BASES:
+            c.last_client_exited(self)
         self.emit("last-client-exited")
         if self.exit_with_client and not self._closing:
             netlog.info("Last client has disconnected, terminating")
