@@ -484,13 +484,6 @@ class ServerBase(ServerBaseClass):
             ss.send_setting_change(setting, value)
 
     ######################################################################
-    # add clients to http server info:
-    def get_http_info(self) -> dict[str, Any]:
-        info = super().get_http_info()
-        info["clients"] = len(self._server_sources)
-        return info
-
-    ######################################################################
     # client connections:
     def cleanup_protocol(self, protocol):
         netlog("cleanup_protocol(%s)", protocol)

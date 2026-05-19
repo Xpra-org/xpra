@@ -171,8 +171,11 @@ class HttpServer(StubServerMixin):
         return json_response(self.get_http_info())
 
     def get_http_info(self) -> dict[str, Any]:
-        return {
+        info = {
             "mode": self.server.session_type,
             "type": "Python",
             "uuid": self.get_subsystem("id").uuid,
         }
+        if hasattr(self.server, "_server_sources"):
+            info["clients"] = len(self.server._server_sources)
+        return info
