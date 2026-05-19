@@ -174,7 +174,6 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         wid = self._window_to_id[model]
         wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
         ss.new_window(WINDOW_CREATE, wid, model, x, y, w, h, wprops)
-        wid = self._window_to_id[model]
         ss.damage(wid, model, 0, 0, w, h)
 
     def _lost_window(self, window, wm_exiting=False) -> None:
