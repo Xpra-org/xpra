@@ -288,7 +288,7 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
 
     def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
         assert len(self._id_to_window) == 1, "multi root window screenshot not implemented yet"
-        rwm = self._id_to_window.values()[0]
+        rwm = tuple(self._id_to_window.values())[0]
         w, h, encoding, rowstride, data = rwm.take_screenshot()
         assert encoding == "png"  # use fixed encoding for now
         return DISPLAY_SCREENSHOT, w, h, encoding, rowstride, Compressed(encoding, data)
