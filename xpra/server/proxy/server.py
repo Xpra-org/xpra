@@ -240,6 +240,16 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
         # add shutdown handler
         self._default_packet_handlers["shutdown-server"] = self._process_proxy_shutdown_server
 
+    def get_displays(self) -> dict[str, Any]:
+        # override the default implementation to expose ALL displays
+        from xpra.scripts.display import get_displays_info  # pylint: disable=import-outside-toplevel
+        return get_displays_info(self.dotxpra)
+
+    def get_xpra_sessions(self) -> dict[str, Any]:
+        # override the default implementation to expose sessions for ALL displays
+        from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
+        return get_xpra_sessions(self.dotxpra)
+
     def _process_proxy_shutdown_server(self, proto, _packet: Packet) -> None:
         assert proto in self._requests
         self.clean_quit(False)

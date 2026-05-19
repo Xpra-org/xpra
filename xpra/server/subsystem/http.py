@@ -150,22 +150,14 @@ class HttpServer(StubServerMixin):
         return http_icon_response(icon_type, icon_data)
 
     def http_displays_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
-        displays = self.get_displays()
+        displays = self.server.get_displays()
         displays_info = _filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
         return json_response(displays_info)
 
-    def get_displays(self) -> dict[str, Any]:
-        from xpra.scripts.display import get_displays_info  # pylint: disable=import-outside-toplevel
-        return get_displays_info(self.server.dotxpra)
-
     def http_sessions_request(self, _uri, _post_data: bytes) -> HttpResponse:
-        sessions = self.get_xpra_sessions()
+        sessions = self.server.get_xpra_sessions()
         sessions_info = _filter_display_dict(sessions, "state", "username", "session-type", "session-name", "uuid")
         return json_response(sessions_info)
-
-    def get_xpra_sessions(self) -> dict[str, Any]:
-        from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
-        return get_xpra_sessions(self.server.dotxpra)
 
     def http_info_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         return json_response(self.get_http_info())
