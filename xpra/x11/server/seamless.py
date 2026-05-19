@@ -54,6 +54,11 @@ GSIGNALS = to_gsignals(ServerBase.__signals__)
 GSIGNALS.update({
     "x11-child-map-event": one_arg_signal,
     "server-event": n_arg_signal(2),
+    # X11 dispatch signals consumed by the bell / cursor subsystems.
+    # Declared here (not on the subsystems) because X11 dispatch requires
+    # a GObject receiver - see `BellServer` / `XCursorServer` docstrings.
+    "x11-xkb-event": one_arg_signal,
+    "x11-cursor-event": one_arg_signal,
 })
 
 

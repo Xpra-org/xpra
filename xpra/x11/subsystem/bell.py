@@ -18,12 +18,16 @@ log = Logger("bell")
 class BellServer(StubServerMixin):
     """
     Servers that forward bell events.
+
+    The `x11-xkb-event` signal that drives bell forwarding is declared on
+    each X11 server class's `__gsignals__` (seamless, desktop, monitor,
+    X11 shadow). It is *not* declared on this subsystem because the X11
+    dispatch (`xpra.x11.dispatch._maybe_send_event`) calls `signal_list_names`
+    on each receiver and only accepts a GObject — `BellServer` is a plain
+    Python object. Subsystems consume the signal via `self.server.connect`.
     """
     PREFIX = "bell"
     toggle_features = ("bell",)
-    __signals__ = {
-        "x11-xkb-event": 1,
-    }
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
@@ -62,8 +66,8 @@ class BellServer(StubServerMixin):
                 # The X11 dispatch (`x11.dispatch._maybe_send_event`) calls
                 # `GObject.signal_list_names(handler)` on each receiver and
                 # requires a GObject type. Register the server (which IS
-                # GObject-registered with `x11-xkb-event` aggregated from
-                # `BellServer.__signals__`) and connect our handler.
+                # GObject-registered with `x11-xkb-event` in its `__gsignals__`)
+                # and connect our handler.
                 rxid = get_root_xid()
                 add_event_receiver(rxid, self.server)
                 self.server.connect("x11-xkb-event", self._on_x11_xkb_event)

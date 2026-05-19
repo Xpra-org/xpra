@@ -18,9 +18,17 @@ log = Logger("x11", "server", "cursor")
 
 
 class XCursorServer(CursorManager):
-    __signals__ = {
-        "x11-cursor-event": 1,
-    }
+    """
+    X11 cursor subsystem - forwards cursor changes via XFixes.
+
+    The `x11-cursor-event` signal is declared on each X11 server class's
+    `__gsignals__` (seamless, desktop, monitor, X11 shadow). It is *not*
+    declared on this subsystem because the X11 dispatch
+    (`xpra.x11.dispatch._maybe_send_event`) calls `signal_list_names` on
+    each receiver and only accepts a GObject - `XCursorServer` is a plain
+    Python object. This subsystem consumes the signal via
+    `self.server.connect("x11-cursor-event", ...)`.
+    """
 
     def __init__(self, server=None):
         CursorManager.__init__(self, server)
