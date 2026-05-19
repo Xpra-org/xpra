@@ -24,7 +24,7 @@ INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 
 
-class PointerServer(StubServerMixin):
+class PointerManager(StubServerMixin):
     """
     Mixin for servers that handle pointer devices
     (mouse, etc)
@@ -65,7 +65,7 @@ class PointerServer(StubServerMixin):
                 "distance": self.double_click_distance,
             },
         }
-        return {PointerServer.PREFIX: info}
+        return {PointerManager.PREFIX: info}
 
     def add_new_client(self, ss, c: typedict) -> None:
         from xpra.server.source.pointer import PointerConnection

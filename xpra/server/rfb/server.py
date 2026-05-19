@@ -161,8 +161,11 @@ class RFBServer(StubServerMixin):
 
         def process_pointer_event() -> None:
             pointerlog("RFB PointerEvent(%#x, %s, %s) desktop wid=%#x", buttons, x, y, wid)
+            pointer = self.get_subsystem("pointer")
+            if not pointer:
+                return
             device_id = -1
-            self._move_pointer(device_id, wid, (x, y))
+            pointer._move_pointer(device_id, wid, (x, y))
             if buttons != self.rfb_buttons:
                 # figure out which buttons have changed:
                 for button in range(8):
@@ -170,7 +173,7 @@ class RFBServer(StubServerMixin):
                     if buttons & mask != self.rfb_buttons & mask:
                         pressed = bool(buttons & mask)
                         pointerlog(" %spressing button %i", ["un", ""][pressed], 1 + button)
-                        self.button_action(device_id, 0, 1 + button, pressed)
+                        pointer.button_action(device_id, 0, 1 + button, pressed, {})
                 self.rfb_buttons = buttons
 
         GLib.idle_add(process_pointer_event)

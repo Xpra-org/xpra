@@ -61,6 +61,7 @@ class SourceMixinsTest(unittest.TestCase):
             "idle": server,
             "mmap": server,
             "webcam": server,
+            "window": server,
         }
         #fake client caps object (as a typedict):
         d = typedict()

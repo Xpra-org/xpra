@@ -5,7 +5,6 @@
 
 import os
 import re
-from time import monotonic
 from typing import Any
 from collections.abc import Sequence, Callable
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
@@ -20,7 +19,6 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size, get_display_size
-from xpra.platform.win32.pointer import move_pointer
 from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow.common import get_monitors
@@ -34,7 +32,7 @@ from xpra.platform.win32.common import (
     GetWindowRect,
     GetWindowThreadProcessId,
     GetSystemMetrics,
-    SetPhysicalCursorPos, GetCursorInfo, CURSORINFO,
+    GetCursorInfo, CURSORINFO,
 )
 
 log = Logger("shadow", "win32")
@@ -185,7 +183,6 @@ class ShadowServer(GTKShadowServerBase):
         self.pixel_depth = 32
         self.cursor_handle = None
         self.cursor_data = None
-        self.cursor_errors = [0.0, 0]
         self.backend = attrs.get("backend", "auto")
         if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT) == 0:
             raise InitException("all the monitors must use the same display format")
@@ -351,35 +348,6 @@ class ShadowServer(GTKShadowServerBase):
             ((w, h), [(w, h), ]),
         )
 
-    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
-        x, y = pos[:2]
-        move_pointer(x, y)
-
-    def do_process_mouse_common(self, proto, device_id, wid: int, pointer, props) -> bool:
-        ss = self.get_server_source(proto)
-        if not ss:
-            return False
-        # adjust pointer position for offset in client:
-        try:
-            x, y = pointer[:2]
-            if SetPhysicalCursorPos(x, y):
-                return True
-            # rate limit the warnings:
-            start, count = self.cursor_errors
-            now = monotonic()
-            elapsed = now - start
-            if count == 0 or (count > 1 and elapsed > 10):
-                log.warn("Warning: cannot move cursor")
-                log.warn(" (%i events)", count + 1)
-                self.cursor_errors = [now, 1]
-            else:
-                self.cursor_errors[1] = count + 1
-        except Exception as e:
-            log("SetPhysicalCursorPos%s failed", pointer, exc_info=True)
-            log.error("Error: failed to move the cursor:")
-            log.estr(e)
-        return False
-
     def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()
 
@@ -389,18 +357,6 @@ class ShadowServer(GTKShadowServerBase):
         if vk_code:
             pass  # todo!
         super().do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
-
-    def do_process_button_action(self, proto, device_id, wid: int, button: int, pressed: bool, pointer, props) -> None:
-        if "modifiers" in props:
-            self._update_modifiers(proto, wid, props.get("modifiers"))
-        # ignore device_id on win32:
-        did = -1
-        if pointer := self.process_mouse_common(proto, did, wid, pointer):
-            self.get_server_source(proto).emit("user-event", "button-action")
-            self.button_action(did, wid, button, pressed, props)
-
-    def button_action(self, device_id, wid: int, button: int, pressed: bool, props: dict) -> None:
-        self.pointer_device.click(button, pressed, props)
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)

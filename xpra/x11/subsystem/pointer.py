@@ -5,16 +5,16 @@
 # pylint: disable-msg=E1101
 
 from xpra.net.common import Packet
-from xpra.server.subsystem.pointer import PointerServer
+from xpra.server.subsystem.pointer import PointerManager
 from xpra.log import Logger
 
 log = Logger("pointer")
 
 
-class X11PointerServer(PointerServer):
+class X11PointerManager(PointerManager):
 
     def __init__(self, server=None):
-        PointerServer.__init__(self, server)
+        PointerManager.__init__(self, server)
         self.input_devices_format = ""
 
     def init(self, opts) -> None:

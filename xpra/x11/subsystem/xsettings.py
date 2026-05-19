@@ -132,7 +132,7 @@ class XSettingsServer(StubServerMixin):
             return
         # `cursor.size` lives on `CursorManager`.
         # `dpi`/`antialias` live on `DisplayManager`.
-        # `double_click_*` live on `PointerServer`.
+        # `double_click_*` live on `PointerManager`.
         cursor = self.get_subsystem("cursor")
         cursor_size = getattr(cursor, "size", 0)
         display = self.get_subsystem("display")

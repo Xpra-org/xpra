@@ -9,13 +9,12 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
-from xpra.common import noop
 from xpra.net.common import Packet
 from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.server.base import ServerBase
 from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
 from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.error import xsync, xlog
+from xpra.x11.error import xlog
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -23,7 +22,6 @@ Gio = gi_import("Gio")
 
 log = Logger("server")
 windowlog = Logger("server", "window")
-pointerlog = Logger("server", "pointer")
 geomlog = Logger("server", "window", "geometry")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
@@ -150,35 +148,6 @@ class DesktopServerBase(GObject.GObject, ServerBase):
             "states": ["iconified", "focused"],
         })
         return capabilities
-
-    def _adjust_pointer(self, proto, device_id: int, wid: int, pointer):
-        pointerlog("_adjust_pointer%s", (proto, device_id, wid, pointer))
-        window = self.get_window(wid)
-        # soft dependency on cursor subsystem:
-        suspend_cursor = getattr(self, "suspend_cursor", noop)
-        if not window:
-            pointerlog("adjust pointer: no window, suspending cursor")
-            suspend_cursor(proto)
-            return None
-        pointer = super()._adjust_pointer(proto, device_id, wid, pointer)
-        # maybe the pointer is off-screen:
-        ww, wh = window.get_dimensions()
-        x, y = pointer[:2]
-        if x < 0 or x >= ww or y < 0 or y >= wh:
-            pointerlog("adjust pointer: pointer outside desktop, suspending cursor")
-            suspend_cursor(proto)
-            return None
-        self.restore_cursor(proto)
-        return pointer
-
-    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
-        if wid >= 0:
-            window = self.get_window(wid)
-            if not window:
-                pointerlog("_move_pointer(%s, %s) invalid window id", wid, pos)
-                return
-        with xsync:
-            super()._move_pointer(device_id, wid, pos, props)
 
     def _process_desktop_size(self, proto, packet: Packet) -> None:
         """

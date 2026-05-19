@@ -9,7 +9,6 @@ from collections.abc import Callable
 from xpra.server.shadow.common import parse_geometries
 from xpra.util.str_fn import csv
 from xpra.util.gobject import to_gsignals
-from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.server import features
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
@@ -243,32 +242,6 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         for window in xid_to_window.values():
             self._add_new_window(window)
             self.refresh_window(window)
-
-    def _adjust_pointer(self, proto, device_id, wid: int, opointer) -> list[int] | None:
-        window = self.get_window(wid)
-        # soft dependency on cursor subsystem:
-        suspend_cursor = getattr(self, "suspend_cursor", noop)
-        if wid > 0 and not window:
-            suspend_cursor(proto)
-            return None
-        pointer = super()._adjust_pointer(proto, device_id, wid, opointer)
-        ax = x = int(pointer[0])
-        ay = y = int(pointer[1])
-        if window:
-            # the window may be at an offset (multi-window for multi-monitor):
-            wx, wy, ww, wh = window.get_geometry()
-            # or maybe the pointer is off-screen:
-            if x < 0 or x >= ww or y < 0 or y >= wh:
-                suspend_cursor(proto)
-                return None
-            # note: with x11 shadow servers,
-            # _get_pointer_abs_coordinates() will recalculate
-            # the absolute coordinates from the relative ones,
-            # and it should end up with the same values we calculated here
-            ax = x + wx
-            ay = y + wy
-        self.restore_cursor(proto)
-        return [ax, ay] + list(pointer[2:])
 
     def get_notification_tray(self):
         tray = self.get_subsystem("tray")

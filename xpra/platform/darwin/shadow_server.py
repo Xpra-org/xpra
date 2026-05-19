@@ -17,7 +17,6 @@ from xpra.exit_codes import ExitCode
 from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
-from xpra.platform.darwin.pointer import move_pointer
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 from xpra.log import Logger
 
@@ -199,19 +198,6 @@ class ShadowServer(GTKShadowServerBase):
                 log.warn("Error unregistering screen refresh callback:")
                 log.warn(" %s", e)
             self.refresh_registered = False
-
-    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        if not self.get_server_source(proto):
-            return False
-        x, y = pointer[:2]
-        move_pointer(x, y)
-        return True
-
-    def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool, pointer, props):
-        if "modifiers" in props:
-            self._update_modifiers(proto, wid, props.get("modifiers"))
-        if pointer := self.process_mouse_common(proto, device_id, wid, pointer):
-            self.button_action(device_id, wid, button, pressed, props)
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)

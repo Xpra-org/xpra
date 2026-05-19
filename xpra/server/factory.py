@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, OSX, WIN32
 from xpra.net.common import FULL_INFO
 
 
@@ -163,12 +163,27 @@ def get_instance_subsystem_classes(mode: str = "") -> tuple[type, ...]:
             from xpra.server.subsystem.keyboard import KeyboardServer
             classes.append(KeyboardServer)
     if features.pointer:
-        if features.x11:
-            from xpra.x11.subsystem.pointer import X11PointerServer
-            classes.append(X11PointerServer)
+        if mode in ("desktop", "monitor") and features.x11:
+            from xpra.x11.desktop.pointer import XpraDesktopPointerManager
+            classes.append(XpraDesktopPointerManager)
+        elif mode == "shadow" and WIN32:
+            from xpra.platform.win32.shadow_pointer import Win32ShadowPointerManager
+            classes.append(Win32ShadowPointerManager)
+        elif mode == "shadow" and OSX:
+            from xpra.platform.darwin.shadow_pointer import DarwinShadowPointerManager
+            classes.append(DarwinShadowPointerManager)
+        elif mode == "shadow" and features.x11:
+            from xpra.x11.shadow.pointer import X11ShadowPointerManager
+            classes.append(X11ShadowPointerManager)
+        elif mode == "shadow":
+            from xpra.server.shadow.pointer import ShadowPointerManager
+            classes.append(ShadowPointerManager)
+        elif features.x11:
+            from xpra.x11.subsystem.pointer import X11PointerManager
+            classes.append(X11PointerManager)
         else:
-            from xpra.server.subsystem.pointer import PointerServer
-            classes.append(PointerServer)
+            from xpra.server.subsystem.pointer import PointerManager
+            classes.append(PointerManager)
     # ChildCommandServer should be last so that the environment is fully prepared:
     if features.command:
         from xpra.server.subsystem.command import ChildCommandServer
