@@ -30,7 +30,9 @@ class AudioServer(StubServerMixin):
     Mixin for servers that handle audio forwarding.
     """
     PREFIX = "audio"
-    __signals__ = {"audio-initialized": 0}
+    # `audio-initialized` is emitted on this subsystem (via `SignalEmitter`)
+    # once `query_audio()` completes. The audio source class subscribes
+    # with `server.subsystems["audio"].connect(...)`.
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)

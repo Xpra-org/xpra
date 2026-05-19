@@ -77,7 +77,7 @@ class WindowServer(StubServerMixin):
         self.update_size_constraints(minw, minh, maxw, maxh)
         # when the main loop runs, load the windows:
         GLib.idle_add(self.load_existing_windows)
-        self.connect("last-client-exited", self.reset_focus)
+        self.server.connect("last-client-exited", self.reset_focus)
         self.add_window_control_commands()
 
     def add_window_control_commands(self) -> None:

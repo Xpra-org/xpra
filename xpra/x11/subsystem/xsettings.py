@@ -61,7 +61,7 @@ class XSettingsServer(StubServerMixin):
         log("xsettings_enabled(%s)=%s", opts.xsettings, self._xsettings_enabled)
 
     def setup(self) -> None:
-        self.connect("last-client-exited", self._on_last_client_exited)
+        self.server.connect("last-client-exited", self._on_last_client_exited)
         if self._xsettings_enabled:
             from xpra.x11.subsystem.xsettings_manager import XSettingsHelper
             self._default_xsettings = XSettingsHelper().get_settings()

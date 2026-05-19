@@ -76,9 +76,9 @@ class DisplayManager(StubServerMixin):
     DEFAULT_REFRESH_RATE = DEFAULT_REFRESH_RATE
     PREFIX = "display"
 
-    __signals__ = {
-        "display-geometry-changed": 0,
-    }
+    # `display-geometry-changed` is emitted on this subsystem (via
+    # `SignalEmitter`) when the display geometry changes. Peer subsystems
+    # subscribe with `self.get_subsystem("display").connect(...)`.
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)

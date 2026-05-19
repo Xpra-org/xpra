@@ -30,7 +30,7 @@ class IdleTimeoutServer(StubServerMixin):
 
     def setup(self) -> None:
         self.schedule_server_timeout()
-        self.connect("last-client-exited", self.schedule_server_timeout)
+        self.server.connect("last-client-exited", self.schedule_server_timeout)
         self.add_idle_control_commands()
 
     def add_idle_control_commands(self) -> None:

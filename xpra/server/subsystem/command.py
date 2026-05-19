@@ -192,7 +192,7 @@ class ChildCommandServer(StubServerMixin):
         def server_is_running(*args) -> None:
             log("server_is_running%s", args)
             self.exec_start_late_commands()
-        self.connect("running", server_is_running)
+        self.server.connect("running", server_is_running)
 
     def init(self, opts) -> None:
         self.exit_with_children = opts.exit_with_children
@@ -217,8 +217,8 @@ class ChildCommandServer(StubServerMixin):
 
     def setup(self) -> None:
         start_thread(self.threaded_command_setup, "threaded-command-setup", daemon=True)
-        self.connect("last-client-exited", self.exec_on_last_client_exit)
-        self.connect("client-exited", self.remove_client)
+        self.server.connect("last-client-exited", self.exec_on_last_client_exit)
+        self.server.connect("client-exited", self.remove_client)
         self.add_command_control_commands()
 
     def add_command_control_commands(self) -> None:

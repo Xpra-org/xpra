@@ -104,9 +104,10 @@ class PointerManager(StubServerMixin):
                 from xpra.x11.uinput.device import UInputTouchpadDevice
                 root_w, root_h = display.get_display_size()
                 self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path, root_w, root_h)
-                # `display-geometry-changed` is declared on `DisplayManager.__signals__`:
-                if "display-geometry-changed" in self.server.__signals__:
-                    self.connect("display-geometry-changed", self.update_touchpad_size)
+                # `display-geometry-changed` is a subsystem-local signal
+                # owned by `DisplayManager` (via `SignalEmitter`):
+                if display := self.get_subsystem("display"):
+                    display.connect("display-geometry-changed", self.update_touchpad_size)
         if self.pointer_device:
             try:
                 log.info("pointer device emulation using %r", str(self.pointer_device).replace("PointerDevice", ""))

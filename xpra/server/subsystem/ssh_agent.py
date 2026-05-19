@@ -63,7 +63,7 @@ class SshAgent(StubServerMixin):
                 os.environ[SSH_AUTH_SOCK] = ssh_auth_sock
 
     def setup(self) -> None:
-        self.connect("new-ui-driver", self.set_agent)
+        self.server.connect("new-ui-driver", self.set_agent)
 
     def set_agent(self, server, source) -> None:
         log("set_agent(%s, %s) ssh-agent=%s", server, source, self.enabled)

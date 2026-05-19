@@ -64,7 +64,7 @@ class KeyboardManager(StubServerMixin):
 
         self.watch_keymap_changes()
         self.config = self.get_keyboard_config({"keymap": self.keymap_options})
-        self.connect("last-client-exited", self.clear_keys_pressed)
+        self.server.connect("last-client-exited", self.clear_keys_pressed)
         self.add_keyboard_control_commands()
 
     def add_keyboard_control_commands(self) -> None:

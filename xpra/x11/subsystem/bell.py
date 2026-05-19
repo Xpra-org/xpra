@@ -104,7 +104,8 @@ class BellServer(StubServerMixin):
         wid = 0
         rxid = get_root_xid()
         if event.window != rxid and event.window_model is not None:
-            wid = self.server._window_to_id.get(event.window_model, 0)
+            if window_manager := self.get_subsystem("window"):
+                wid = max(0, window_manager.get_wid(event.window_model))
         log("_bell_signaled(%s,%r) wid=%#x", wm, event, wid)
         for ss in self.server.window_sources():
             ss.bell(wid, event.device, event.percent,

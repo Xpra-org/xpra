@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 
 from xpra.server.common import get_sources_by_type
-from xpra.server.core import ServerCore
+from xpra.server.core import ServerCore, SIGNALS as CORE_SIGNALS
 from xpra.server.source.events import EventConnection
 from xpra.util.background_worker import add_work_item
 from xpra.common import noop
@@ -32,15 +32,12 @@ authlog = Logger("auth")
 eventslog = Logger("events")
 
 SERVER_BASES = get_server_base_classes()
-# default (no-mode) subsystem class list - used for the class-level SIGNALS
-# aggregation. Variants may pick a different list at __init__ time by
-# passing `mode` to `ServerBase.__init__`.
-INSTANCE_SUBSYSTEM_CLASSES = get_instance_subsystem_classes()
-SIGNALS: dict[str, int] = {}
-for base_class in SERVER_BASES:
-    SIGNALS.update(getattr(base_class, "__signals__", {}))
-for base_class in INSTANCE_SUBSYSTEM_CLASSES:
-    SIGNALS.update(getattr(base_class, "__signals__", {}))
+SIGNALS: dict[str, int] = {
+    **CORE_SIGNALS,
+    "last-client-exited": 0,
+    "client-exited": 1,
+    "new-ui-driver": 1,
+}
 ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
 log("ServerBaseClass%s", SERVER_BASES)
 log("signals: %s", SIGNALS)
@@ -61,11 +58,6 @@ class ServerBase(ServerBaseClass):
     # Explicitly clear PREFIX so it isn't picked up by getattr() through the
     # dynamic ServerBaseClass MRO (which inherits PREFIX from its subsystems):
     PREFIX = ""
-    __signals__.update({
-        "last-client-exited": 0,
-        "client-exited": 1,
-        "new-ui-driver": 1,
-    })
 
     def __init__(self, mode: str = ""):
         # subsystems dict (keyed by PREFIX) is built up across the inheritance

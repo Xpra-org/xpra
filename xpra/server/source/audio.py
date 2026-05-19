@@ -102,7 +102,7 @@ class AudioConnection(StubClientConnection):
             if not audio.audio_properties:
                 log.warn("Warning: timeout waiting for audio initialization")
         self.init_audio_from(audio)
-        server.connect("audio-initialized", self.server_audio_initialized)
+        audio.connect("audio-initialized", self.server_audio_initialized)
 
     def init_audio_from(self, audio) -> None:
         self.audio_properties = audio.audio_properties
@@ -113,8 +113,8 @@ class AudioConnection(StubClientConnection):
         self.microphone_codecs = audio.microphone_codecs
         log("init_audio_from(%s) audio_properties=%s", audio, self.audio_properties)
 
-    def server_audio_initialized(self, server):
-        self.init_audio_from(server.subsystems["audio"])
+    def server_audio_initialized(self, audio):
+        self.init_audio_from(audio)
         if self.wants_audio_capabilities:
             self.send_audio_capabilities()
 

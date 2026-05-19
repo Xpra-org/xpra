@@ -8,28 +8,18 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.net.constants import ConnectionMessage
-from xpra.util.env import envbool
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.os_util import getuid, getgid
 from xpra.util.objects import typedict
 from xpra.common import noop
 from xpra.os_util import WIN32
 
-# when running the unit tests,
-# we inject the signal emitter into the signal hierarchy,
-# whereas regular server classes inherit the signal methods from GLibScheduler
-if envbool("XPRA_UNIT_TEST"):
-    from xpra.util.signal_emitter import SignalEmitter
-    superclass = SignalEmitter
-else:
-    superclass = object
 
-
-class StubServerMixin(superclass):
+class StubServerMixin(SignalEmitter):
     """
     Base class for server subsystem.
     Defines the default interface methods that each mixin may override.
     """
-    __signals__: dict[str, int] = {}
     uid = getuid()
     gid = getgid()
     hello_request_handlers: dict[str, Callable[[Any, typedict], bool]] = {}
@@ -46,22 +36,15 @@ class StubServerMixin(superclass):
         # pointing at the same instance. Standalone instance-based subsystems
         # receive a distinct `server` argument from their constructor.
         self.server = server if server is not None else self
-
-    def emit(self, signal: str, *args):
-        """ delegate signal emission to the owning server """
-        if self.server is self:
-            # bare-stub fallback (e.g. unit tests without a real server) -
-            # avoid infinite recursion by no-oping
-            return None
-        return self.server.emit(signal, *args)
-
-    def connect(self, signal: str, cb, *args):
-        """ delegate signal connection to the owning server """
-        if self.server is self:
-            # bare-stub fallback (e.g. unit tests without a real server) -
-            # avoid infinite recursion by no-oping
-            return None
-        return self.server.connect(signal, cb, *args)
+        # SignalEmitter holds per-instance state in `_signal_callbacks`.
+        # Subsystems use their own `emit` / `connect` for subsystem-local
+        # signals (e.g. `audio-initialized`, `display-geometry-changed`).
+        # Server-wide signals (`last-client-exited`, `init-thread-ended`,
+        # `running`, `client-exited`, `new-ui-driver`, `x11-xkb-event`,
+        # `x11-cursor-event`, ...) are GObject signals on the server itself
+        # and must be accessed via `self.server.connect(...)` /
+        # `self.server.emit(...)`.
+        SignalEmitter.__init__(self)
 
     def get_server_source(self, proto):
         """ delegate to the server's per-protocol client source lookup """

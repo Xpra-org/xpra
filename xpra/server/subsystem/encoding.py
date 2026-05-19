@@ -103,7 +103,7 @@ class EncodingServer(StubServerMixin):
         # the AVIF encoder pulls in `libavif` + ~6 MB of allocations and
         # is rarely used as the default, so we don't pay the cost on
         # the startup path.
-        self.connect("init-thread-ended", self.reinit_encodings)
+        self.server.connect("init-thread-ended", self.reinit_encodings)
         self.init_encodings()
         start_thread(self.threaded_encoding_setup, "threaded-encoding-setup", daemon=True)
 

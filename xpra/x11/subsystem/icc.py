@@ -25,7 +25,7 @@ class ICCServer(StubServerMixin):
         self.icc_profile = b""
 
     def setup(self) -> None:
-        self.connect("last-client-exited", self._on_last_client_exited)
+        self.server.connect("last-client-exited", self._on_last_client_exited)
 
     def add_new_client(self, ss, caps: typedict) -> None:
         self.set_icc_profile()

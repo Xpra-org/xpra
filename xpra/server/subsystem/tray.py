@@ -63,7 +63,7 @@ class TrayMenu(StubServerMixin):
     def setup(self) -> None:
         if self.enabled:
             self.setup_tray()
-            self.connect("last-client-exited", self.tray_not_connected)
+            self.server.connect("last-client-exited", self.tray_not_connected)
 
     def tray_not_connected(self, *args) -> None:
         log("tray_not_connected%s", args)

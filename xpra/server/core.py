@@ -149,15 +149,10 @@ SERVER_BASES = get_server_base_classes()
 INSTANCE_SUBSYSTEM_CLASSES = get_instance_subsystem_classes()
 ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
 log("ServerBaseClass%s", SERVER_BASES)
-SIGNALS: dict[str, int] = {}
-for base_class in SERVER_BASES:
-    SIGNALS.update(getattr(base_class, "__signals__", {}))
-for base_class in INSTANCE_SUBSYSTEM_CLASSES:
-    SIGNALS.update(getattr(base_class, "__signals__", {}))
-SIGNALS.update({
+SIGNALS: dict[str, int] = {
     "init-thread-ended": 0,
     "running": 0,
-})
+}
 
 
 # noinspection PyMethodMayBeStatic

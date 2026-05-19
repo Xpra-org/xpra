@@ -50,11 +50,11 @@ class ClipboardServer(StubServerMixin):
 
     def setup(self) -> None:
         self.init_clipboard()
-        self.connect("last-client-exited", self.reset_clipboard)
+        self.server.connect("last-client-exited", self.reset_clipboard)
 
         def new_ui_driver(_server, source) -> None:
             self.set_clipboard_source(source)
-        self.connect("new-ui-driver", new_ui_driver)
+        self.server.connect("new-ui-driver", new_ui_driver)
         self.add_clipboard_control_commands()
 
     def add_clipboard_control_commands(self) -> None:
