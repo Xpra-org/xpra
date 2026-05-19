@@ -145,7 +145,7 @@ class MdnsServer(StubServerMixin):
         if MDNS_EXPOSE_NAME and self.server.session_name:
             mdns_info["name"] = self.server.session_name
         MDNS_CLIENT_COUNT = envbool("XPRA_MDNS_CLIENT_COUNT", True)
-        if MDNS_CLIENT_COUNT and hasattr(self.server, self._server_sources):
+        if MDNS_CLIENT_COUNT and hasattr(self.server, "_server_sources"):
             mdns_info["clients"] = len(self.server._server_sources)
         return mdns_info
 

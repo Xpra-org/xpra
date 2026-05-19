@@ -6,7 +6,6 @@
 from typing import Any
 from collections.abc import Callable
 
-from xpra.net.packet_type import DISPLAY_SCREENSHOT
 from xpra.server.shadow.common import parse_geometries
 from xpra.util.str_fn import csv
 from xpra.util.gobject import to_gsignals
@@ -15,7 +14,6 @@ from xpra.os_util import gi_import
 from xpra.server import features
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException
-from xpra.net.compression import Compressed
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -287,14 +285,6 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
             notifylog.warn("Warning: cannot load GTK notifier:")
             notifylog.warn(" %s", e)
         return ncs
-
-    def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
-        models = self.subsystems["window"].models()
-        assert len(models) == 1, "multi root window screenshot not implemented yet"
-        rwm = models[0]
-        w, h, encoding, rowstride, data = rwm.take_screenshot()
-        assert encoding == "png"  # use fixed encoding for now
-        return DISPLAY_SCREENSHOT, w, h, encoding, rowstride, Compressed(encoding, data)
 
 
 GObject.type_register(GTKShadowServerBase)

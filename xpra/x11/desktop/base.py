@@ -4,19 +4,15 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
 from typing import Any
 
-from xpra.net.compression import Compressed
 from xpra.os_util import gi_import
-from xpra.server.common import make_icon_packet
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.common import noop
 from xpra.net.common import Packet
 from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.server.base import ServerBase
-from xpra.util.system import get_platform_icon_name
 from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.error import xsync, xlog
@@ -134,12 +130,6 @@ class DesktopServerBase(GObject.GObject, ServerBase):
     def restore_gsettings(self) -> None:
         do_modify_gsettings(self.gsettings_modified, True)
 
-    def notify_dpi_warning(self, body) -> None:
-        """ ignore DPI warnings in desktop mode """
-
-    def parse_screen_info(self, ss) -> None:
-        return self.do_parse_screen_info(ss, ss.desktop_mode_size)
-
     def notify_screen_changed(self, screen) -> None:
         """
         Screen changes are normally managed by requests or user actions,
@@ -198,39 +188,3 @@ class DesktopServerBase(GObject.GObject, ServerBase):
     def make_dbus_server(self):
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
         return X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
-
-    def do_make_screenshot_packet(self) -> Packet:
-        log("grabbing screenshot")
-        regions = []
-        offset_x, offset_y = 0, 0
-        for window in sorted(self.subsystems["window"].models(), key=lambda w: w.get_xid(), reverse=True):
-            wid = window.get_xid()
-            log("screenshot: window(%s)=%s", wid, window)
-            if not window.is_managed():
-                log("screenshot: window %s is not/no longer managed", wid)
-                continue
-            x, y, w, h = window.get_geometry()
-            log("screenshot: geometry(%s)=%s", window, (x, y, w, h))
-            try:
-                with xsync:
-                    img = window.get_image(0, 0, w, h)
-            except Exception:
-                log.warn("screenshot: window %s could not be captured", wid)
-                continue
-            if img is None:
-                log.warn("screenshot: no pixels for window %s", wid)
-                continue
-            log("screenshot: image=%s, size=%s", img, img.get_size())
-            if img.get_pixel_format() not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
-                log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_pixel_format())
-                continue
-            regions.append((wid, offset_x + x, offset_y + y, img))
-            # tile them horizontally:
-            offset_x += w
-            offset_y += 0
-        from xpra.codecs.screenshot import make_screenshot_packet_from_regions
-        return Packet(*make_screenshot_packet_from_regions(regions))
-
-    @staticmethod
-    def do_make_icon_packet() -> tuple[str, int, int, str, int, Compressed]:
-        return make_icon_packet(get_platform_icon_name(sys.platform), "display.png", "server.png", "xpra.png")

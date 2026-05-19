@@ -145,12 +145,6 @@ class ShadowServerBase(ServerBase):
     def set_desktop_geometry(w: int, h: int) -> None:
         """ shadow servers don't modify the existing resolution """
 
-    def apply_refresh_rate(self, ss) -> None:
-        rrate = super().apply_refresh_rate(ss)
-        if rrate > 0:
-            # adjust refresh delay to try to match:
-            self.set_refresh_delay(max(10, 1000 // rrate))
-
     def make_hello(self, source) -> dict[str, Any]:
         hello = super().make_hello(source)
         hello["shadow"] = True
@@ -410,14 +404,6 @@ class ShadowServerBase(ServerBase):
                 log.warn("This client is running within the Xpra server %s", server_uuid)
         return True
 
-    def parse_screen_info(self, ss):
-        try:
-            log.info(" client root window size is %sx%s", *ss.desktop_size)
-        except Exception:
-            log.info(" unknown client desktop size")
-        self.apply_refresh_rate(ss)
-        return self.get_display_size()
-
     def _process_desktop_size(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
         # just record the screen size info in the source
@@ -436,9 +422,6 @@ class ShadowServerBase(ServerBase):
     def make_capture_window_models(self) -> list:
         from xpra.server.shadow.root_window_model import CaptureWindowModel
         return [CaptureWindowModel()]
-
-    def do_make_screenshot_packet(self):
-        raise NotImplementedError()
 
     def make_dbus_server(self):
         from xpra.server.dbus.shadow_server import Shadow_DBUS_Server
