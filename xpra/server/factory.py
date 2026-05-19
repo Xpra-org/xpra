@@ -124,7 +124,13 @@ def get_instance_subsystem_classes(mode: str = "") -> tuple[type, ...]:
         from xpra.server.subsystem.encoding import EncodingServer
         classes.append(EncodingServer)
     if features.display:
-        if mode in ("desktop", "monitor") and features.x11:
+        if mode == "seamless" and features.x11:
+            from xpra.x11.server.display import X11SeamlessDisplayManager
+            classes.append(X11SeamlessDisplayManager)
+        elif mode == "expand" and features.x11:
+            from xpra.x11.server.expand_display import ExpandDisplayManager
+            classes.append(ExpandDisplayManager)
+        elif mode in ("desktop", "monitor") and features.x11:
             from xpra.x11.desktop.display import XpraDesktopDisplayManager
             classes.append(XpraDesktopDisplayManager)
         elif mode == "shadow" and features.x11:
