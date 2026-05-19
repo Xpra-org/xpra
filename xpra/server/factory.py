@@ -134,6 +134,15 @@ def get_instance_subsystem_classes(mode: str = "") -> tuple[type, ...]:
         if mode == "seamless" and features.x11:
             from xpra.x11.subsystem.window import SeamlessWindowServer
             classes.append(SeamlessWindowServer)
+        elif mode == "desktop" and features.x11:
+            from xpra.x11.desktop.window import XpraDesktopWindowServer
+            classes.append(XpraDesktopWindowServer)
+        elif mode == "monitor" and features.x11:
+            from xpra.x11.desktop.window import MonitorWindowServer
+            classes.append(MonitorWindowServer)
+        elif mode == "shadow":
+            from xpra.server.shadow.window import ShadowWindowServer
+            classes.append(ShadowWindowServer)
         else:
             from xpra.server.subsystem.window import WindowServer
             classes.append(WindowServer)

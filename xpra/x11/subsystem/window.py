@@ -111,6 +111,26 @@ class SeamlessWindowServer(WindowServer):
         super().init_packet_handlers()
         self.add_packets("window-signal", main_thread=True)
 
+    def clamp_windows_to_screen(self, screen_w: int, screen_h: int) -> None:
+        """
+        Clamp every non-tray, non-OR window so its `client-geometry`
+        stays within the screen bounds after a resize. Only relevant in
+        seamless mode: desktop/monitor/shadow window models don't carry
+        a `client-geometry` property.
+        """
+        for window in self._id_to_window.values():
+            if window.is_tray() or window.is_OR():
+                continue
+            cg = window.get_property("client-geometry")
+            if not cg:
+                continue
+            x, y, w, h = cg
+            if x >= screen_w or y >= screen_h:
+                x = min(x, screen_w - 64)
+                y = min(y, screen_h - 64)
+                geomlog("clamped window %s", window)
+                window.set_property("client-geometry", (x, y, w, h))
+
     # --------------------------------------------------------------------
     # WM lifecycle - the seamless server creates the `Wm` instance, calls
     # `init_wm` once it has the X11 connection ready (see SeamlessServer.setup)

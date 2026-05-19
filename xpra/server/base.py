@@ -200,61 +200,6 @@ class ServerBase(ServerBaseClass):
             return ()
         return window.window_sources(exclude=exclude)
 
-    # Window-subsystem hooks that variant servers may override. The
-    # WindowServer subsystem invokes these via `self.server.X(...)` so
-    # variant-specific behaviour fires when the variant defines an
-    # override on the server class (currently desktop / shadow until
-    # they are migrated to variant subsystem subclasses). For seamless,
-    # `SeamlessWindowServer` overrides the methods on the subsystem
-    # directly and these delegates simply route back into it.
-    def load_existing_windows(self) -> None:
-        window = self.subsystems.get("window")
-        if window is not None:
-            window.load_existing_windows()
-
-    def send_initial_windows(self, ss, sharing: bool = False) -> None:
-        window = self.subsystems.get("window")
-        if window is not None:
-            window.send_initial_windows(ss, sharing)
-
-    def update_size_constraints(self, minw: int, minh: int, maxw: int, maxh: int) -> None:
-        window = self.subsystems.get("window")
-        if window is not None:
-            window.update_size_constraints(minw, minh, maxw, maxh)
-
-    def parse_hello_ui_window_settings(self, ss, caps) -> None:
-        window = self.subsystems.get("window")
-        if window is not None:
-            window.parse_hello_ui_window_settings(ss, caps)
-
-    # Window-subsystem primitives that desktop / shadow variants call as
-    # building blocks (wrapping then chaining via super()). The delegates
-    # below route those calls into the window subsystem. Seamless calls
-    # these directly on its subsystem subclass and doesn't need them.
-    def allocate_wid(self, window) -> int:
-        return self.subsystems["window"].allocate_wid(window)
-
-    def _add_new_window_common(self, window) -> int:
-        return self.subsystems["window"]._add_new_window_common(window)
-
-    def _do_send_new_window_packet(self, ptype: str, window, geometry) -> None:
-        self.subsystems["window"]._do_send_new_window_packet(ptype, window, geometry)
-
-    def _remove_window(self, window) -> int:
-        return self.subsystems["window"]._remove_window(window)
-
-    def _remove_wid(self, wid: int) -> None:
-        self.subsystems["window"]._remove_wid(wid)
-
-    def _set_client_properties(self, proto, wid: int, window, new_client_properties) -> None:
-        self.subsystems["window"]._set_client_properties(proto, wid, window, new_client_properties)
-
-    def refresh_window(self, window) -> None:
-        self.subsystems["window"].refresh_window(window)
-
-    def refresh_window_area(self, window, x, y, width, height, options=None) -> None:
-        self.subsystems["window"].refresh_window_area(window, x, y, width, height, options)
-
     ######################################################################
     # override http scripts to expose just the current session / display
     def get_displays(self) -> dict[str, Any]:

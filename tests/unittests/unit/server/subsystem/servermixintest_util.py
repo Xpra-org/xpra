@@ -114,19 +114,6 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
     def set_screen_size(self, width: int, height: int):
         return width, height
 
-    # Variant-overridable window hooks (defaults on `ServerBase` in production):
-    def update_size_constraints(self, *_args, **_kwargs) -> None:
-        pass
-
-    def load_existing_windows(self, *_args, **_kwargs) -> None:
-        pass
-
-    def send_initial_windows(self, *_args, **_kwargs) -> None:
-        pass
-
-    def parse_hello_ui_window_settings(self, *_args, **_kwargs) -> None:
-        pass
-
     def call_subsystem(self, prefix: str, method: str, *args, default=None):
         sub = self.subsystems.get(prefix)
         if sub is None:

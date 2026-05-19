@@ -10,7 +10,7 @@ from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.server.common import get_sources_by_type
 from xpra.server import features
-from xpra.x11.error import xsync, xlog
+from xpra.x11.error import xlog
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -83,7 +83,7 @@ class XpraDesktopServer(DesktopServerBase):
             return
         # find the model:
         from xpra.x11.desktop.desktop_model import ScreenDesktopModel
-        desktop_models = [window for window in self._id_to_window.values() if isinstance(window, ScreenDesktopModel)]
+        desktop_models = [w for w in self.subsystems["window"].models() if isinstance(w, ScreenDesktopModel)]
         if len(desktop_models) != 1:
             raise RuntimeError(f"found {desktop_models}, expected 1")
         geomlog(f"will resize {desktop_models}")
@@ -93,26 +93,6 @@ class XpraDesktopServer(DesktopServerBase):
         caps = super().get_server_features(source)
         caps["desktop"] = True
         return caps
-
-    def load_existing_windows(self) -> None:
-        from xpra.x11.desktop.desktop_model import ScreenDesktopModel
-        with xsync:
-            model = ScreenDesktopModel(self.randr, self.randr_exact_size)
-            model.setup()
-            screenlog("adding root window model %s", model)
-            super().do_add_new_window_common(1, model)
-            model.managed_connect("client-contents-changed", self._contents_changed)
-            model.managed_connect("resized", self.send_updated_screen_size)
-            model.managed_connect("motion", self._motion_signaled)
-
-    def send_updated_screen_size(self, model) -> None:
-        # the vfb has been resized
-        wid = self._window_to_id[model]
-        x, y, w, h = model.get_geometry()
-        geomlog("send_updated_screen_size(%s) geometry=%s", model, (x, y, w, h))
-        for ss in self.window_sources():
-            ss.resize_window(wid, model, w, h)
-            ss.damage(wid, model, 0, 0, w, h)
 
 
 GObject.type_register(XpraDesktopServer)

@@ -8,7 +8,6 @@ from time import monotonic
 from typing import Any, NoReturn
 from collections.abc import Sequence
 
-from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubServerMixin
@@ -71,13 +70,13 @@ class WindowServer(StubServerMixin):
     def setup(self) -> None:
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
-        # `update_size_constraints` / `load_existing_windows` are variant-
-        # overridable on the server (seamless wires the X11 WM, desktop
-        # has its own monitor model, shadow has the root capture window).
-        # Route through self.server so the variant override fires.
-        self.server.update_size_constraints(minw, minh, maxw, maxh)
+        # `update_size_constraints` / `load_existing_windows` may be
+        # overridden by variant subsystem subclasses (SeamlessWindowServer,
+        # DesktopWindowServer, ShadowWindowServer); standard MRO will pick
+        # the right one.
+        self.update_size_constraints(minw, minh, maxw, maxh)
         # when the main loop runs, load the windows:
-        GLib.idle_add(self.server.load_existing_windows)
+        GLib.idle_add(self.load_existing_windows)
         self.connect("last-client-exited", self.reset_focus)
         self.add_window_control_commands()
 
@@ -157,9 +156,7 @@ class WindowServer(StubServerMixin):
         return {"windows": self.get_windows_info(wids)}
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
-        # `parse_hello_ui_window_settings` is variant-overridable (seamless
-        # sets frame extents). Route through self.server so the variant fires.
-        self.server.parse_hello_ui_window_settings(ss, caps)
+        self.parse_hello_ui_window_settings(ss, caps)
         return ""
 
     def parse_hello_ui_window_settings(self, ss, c: typedict) -> None:
@@ -188,7 +185,7 @@ class WindowServer(StubServerMixin):
             maxw = minw
         if minh > 0 and minh > maxh:
             maxh = minh
-        self.server.update_size_constraints(minw, minh, maxw, maxh)
+        self.update_size_constraints(minw, minh, maxw, maxh)
 
     def _set_client_properties(self, proto, wid: int, window, new_client_properties: dict) -> None:
         """
@@ -223,10 +220,7 @@ class WindowServer(StubServerMixin):
         iswc = isinstance(ss, WindowsConnection)
         if iswc:
             windows_clients = self.window_sources(ss)
-            # `send_initial_windows` is variant-overridable (desktop sends
-            # monitor models, shadow sends the root capture window).
-            # Route through self.server so the variant override fires.
-            self.server.send_initial_windows(ss, len(windows_clients) > 0)
+            self.send_initial_windows(ss, len(windows_clients) > 0)
 
     def is_shown(self, _window) -> bool:
         return True
@@ -248,22 +242,12 @@ class WindowServer(StubServerMixin):
 
     def clamp_windows_to_screen(self, screen_w: int, screen_h: int) -> None:
         """
-        Clamp every non-tray, non-override-redirect window so that its
-        `client-geometry` lies within the screen bounds. Used by variants
-        that change the screen resolution (e.g. SeamlessServer.set_screen_size).
+        No-op by default. Variants whose window models carry a
+        `client-geometry` property (currently only seamless via
+        `SeamlessWindowServer`) override this to clamp existing windows
+        to a new screen size. Desktop / monitor / shadow models don't
+        have that property, so the base does nothing.
         """
-        for window in self._id_to_window.values():
-            if getattr(window, "is_tray", noop)() or getattr(window, "is_OR", noop)():
-                continue
-            cg = window.get_property("client-geometry")
-            if not cg:
-                continue
-            x, y, w, h = cg
-            if x >= screen_w or y >= screen_h:
-                x = min(x, screen_w - 64)
-                y = min(y, screen_h - 64)
-                geomlog("clamped window %s", window)
-                window.set_property("client-geometry", (x, y, w, h))
 
     def get_windows_info(self, window_ids=()) -> dict[int, dict[str, Any]]:
         copy = self._id_to_window.copy()

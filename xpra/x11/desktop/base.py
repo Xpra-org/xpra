@@ -12,11 +12,8 @@ from xpra.os_util import gi_import
 from xpra.server.common import make_icon_packet
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
-from xpra.util.objects import typedict
 from xpra.common import noop
 from xpra.net.common import Packet
-from xpra.net.packet_type import WINDOW_CREATE
-from xpra.server import features
 from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.server.base import ServerBase
 from xpra.util.system import get_platform_icon_name
@@ -82,9 +79,9 @@ class DesktopServerBase(GObject.GObject, ServerBase):
     """
     __common_gsignals__ = SIGNALS
 
-    def __init__(self):
+    def __init__(self, mode: str = "desktop"):
         GObject.GObject.__init__(self)
-        ServerBase.__init__(self)
+        ServerBase.__init__(self, mode=mode)
         self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
         self.session_type = "X11 desktop"
@@ -164,124 +161,6 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         })
         return capabilities
 
-    def load_existing_windows(self) -> None:
-        raise NotImplementedError
-
-    def send_initial_windows(self, ss, sharing: bool = False) -> None:
-        models = self.subsystems["window"].models()
-        windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, models)
-        for model in models:
-            self.send_new_desktop_model(model, ss, sharing)
-
-    def send_new_desktop_model(self, model, ss, _sharing: bool = False) -> None:
-        x, y, w, h = model.get_geometry()
-        wid = model.get_xid()
-        wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
-        ss.new_window(WINDOW_CREATE, wid, model, x, y, w, h, wprops)
-        ss.damage(wid, model, 0, 0, w, h)
-
-    def _lost_window(self, window, wm_exiting=False) -> None:
-        """ could be used to slow down the refresh rate? """
-
-    def _contents_changed(self, window, event) -> None:
-        log("contents changed on %s: %s", window, event)
-        self.refresh_window_area(window, event.x, event.y, event.width, event.height)
-
-    def _set_window_state(self, proto, wid: int, window, new_window_state: dict) -> list[str]:
-        if not new_window_state:
-            return []
-        metadatalog("set_window_state%s", (proto, wid, window, new_window_state))
-        changes = []
-        # boolean: but not a wm_state and renamed in the model... (iconic vs iconified!)
-        iconified = new_window_state.get("iconified")
-        if iconified is not None and window._updateprop("iconic", iconified):
-            changes.append("iconified")
-        focused = new_window_state.get("focused")
-        if focused is not None and window._updateprop("focused", focused):
-            changes.append("focused")
-        return changes
-
-    @staticmethod
-    def get_window_position(_window) -> tuple[int, int]:
-        # we export the whole desktop as a window:
-        return 0, 0
-
-    def _process_window_map(self, proto, packet: Packet) -> None:
-        wid = packet.get_wid()
-        x = packet.get_i16(2)
-        y = packet.get_i16(3)
-        w = packet.get_u16(4)
-        h = packet.get_u16(5)
-        window = self.get_window(wid)
-        if not window:
-            windowlog("cannot map window %s: already removed!", wid)
-            return
-        geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, w, h))
-        self._window_mapped_at(proto, wid, window, (x, y, w, h))
-        if len(packet) >= 8:
-            state = packet.get_dict(7)
-            self._set_window_state(proto, wid, window, state)
-        if len(packet) >= 7:
-            props = packet.get_dict(6)
-            self._set_client_properties(proto, wid, window, props)
-        self.refresh_window_area(window, 0, 0, w, h)
-
-    def _process_window_unmap(self, proto, packet: Packet) -> None:
-        wid = packet.get_wid()
-        window = self.get_window(wid)
-        if not window:
-            log("cannot map window %s: already removed!", wid)
-            return
-        if len(packet) >= 4:
-            # optional window_state added in 0.15 to update flags
-            # during iconification events:
-            state = packet.get_dict(3)
-            self._set_window_state(proto, wid, window, state)
-        assert not window.is_OR()
-        self._window_mapped_at(proto, wid, window)
-        # TODO: handle inconification?
-        # iconified = len(packet)>=3 and bool(packet[2])
-
-    def do_process_window_configure(self, proto, wid, config: typedict) -> None:
-        window = self.get_window(wid)
-        if not window:
-            geomlog("cannot configure window %s: already removed!", wid)
-            return
-
-        if "pointer" in config and features.pointer and not self.readonly:
-            pointer_data = typedict(config.dictget("pointer"))
-            pointerlog("configure pointer data: %s", pointer_data)
-            pwid = pointer_data.intget("wid", 0)
-            position = pointer_data.inttupleget("position")
-            device_id = pointer_data.intget("device-id")
-            if self.process_mouse_common(proto, device_id, pwid, position):
-                if "modifiers" in pointer_data:
-                    modifiers = pointer_data.strtupleget("modifiers")
-                    self._update_modifiers(proto, pwid, modifiers)
-
-        if "state" in config:
-            state = config.dictget("state")
-            self._set_window_state(proto, wid, window, state)
-
-        geometry = config.inttupleget("geometry")
-        if geometry:
-            self._window_mapped_at(proto, wid, window, geometry)
-            if not self.readonly:
-                w, h = geometry[2:4]
-                oww, owh = window.get_geometry()[2:4]
-                geomlog("do_process_window_configure size was: %s, now %s", (oww, owh), (w, h))
-                if oww != w or owh != h:
-                    window.resize(w, h)
-
-        properties = config.dictget("properties")
-        if properties:
-            metadatalog("window client properties updates: %s", properties)
-            self._set_client_properties(proto, wid, window, properties)
-
-        if "state" in config:
-            w, h = window.get_geometry()[2:4]
-            self.refresh_window_area(window, 0, 0, w, h)
-
     def _adjust_pointer(self, proto, device_id: int, wid: int, pointer):
         pointerlog("_adjust_pointer%s", (proto, device_id, wid, pointer))
         window = self.get_window(wid)
@@ -311,19 +190,9 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         with xsync:
             super()._move_pointer(device_id, wid, pos, props)
 
-    def _process_window_close(self, proto, packet: Packet) -> None:
-        # disconnect?
-        pass
-
     def _process_desktop_size(self, proto, packet: Packet) -> None:
         """
         Usually, desktop servers don't need to do anything when the client's geometry changes.
-        """
-
-    def calculate_workarea(self, w: int, h: int):
-        """
-        The workarea is managed server side by the window manager,
-        so we don't need to apply any changes here
         """
 
     def make_dbus_server(self):

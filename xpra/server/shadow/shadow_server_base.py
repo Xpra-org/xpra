@@ -9,7 +9,6 @@ from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.server.common import get_sources_by_type
-from xpra.util.objects import typedict
 from xpra.server.window import batch_config
 from xpra.server.base import ServerBase
 from xpra.scripts.config import InitExit
@@ -18,12 +17,10 @@ from xpra.platform.paths import get_icon_dir
 from xpra.server import features
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import WINDOW_CREATE
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
 from xpra.util.parsing import DEFAULT_REFRESH_RATE, str_to_bool
-from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
 from xpra.log import Logger
 
@@ -73,7 +70,7 @@ class ShadowServerBase(ServerBase):
 
     def __init__(self, attrs: dict[str, str], capture=None):
         # noinspection PyArgumentList
-        ServerBase.__init__(self)
+        ServerBase.__init__(self, mode="shadow")
         self.capture = capture
         self.window_matches: list[str] = []
         self.mapped = []
@@ -168,11 +165,6 @@ class ShadowServerBase(ServerBase):
         if self.pointer_last_position:
             info["pointer-last-position"] = self.pointer_last_position
         return info
-
-    @staticmethod
-    def get_window_position(_window) -> tuple[int, int]:
-        # we export the whole desktop as a window:
-        return 0, 0
 
     def _keys_changed(self) -> None:
         from xpra.server.subsystem.keyboard import KeyboardServer
@@ -441,92 +433,9 @@ class ShadowServerBase(ServerBase):
         log.info("shadow server: setting default keymap translation")
         self.keyboard_config = server_source.set_default_keymap()
 
-    def load_existing_windows(self) -> None:
-        mmap_sub = self.get_subsystem("mmap")
-        if mmap_sub:
-            mmap_sub.min_size = 1024 * 1024 * 4 * 2
-        for i, model in enumerate(self.make_capture_window_models()):
-            log(f"load_existing_windows() root window model {i} : {model}")
-            self._add_new_window(model)
-            # at least big enough for 2 frames of BGRX pixel data:
-            w, h = model.get_dimensions()
-            if mmap_sub:
-                mmap_sub.min_size = max(mmap_sub.min_size, w * h * 4 * 2)
-
     def make_capture_window_models(self) -> list:
         from xpra.server.shadow.root_window_model import CaptureWindowModel
         return [CaptureWindowModel()]
-
-    def send_initial_windows(self, ss, sharing: bool = False) -> None:
-        window_sub = self.subsystems["window"]
-        log("send_initial_windows(%s, %s) will send: %s", ss, sharing, window_sub._id_to_window)
-        for wid, window in window_sub._id_to_window.items():
-            w, h = window.get_dimensions()
-            client_props = window_sub.client_properties.get(wid, {}).get(ss.uuid, {})
-            ss.new_window(WINDOW_CREATE, wid, window, 0, 0, w, h, client_props)
-
-    def _add_new_window(self, window) -> None:
-        self._add_new_window_common(window)
-        self._send_new_window_packet(window)
-
-    def _send_new_window_packet(self, window) -> None:
-        geometry = window.get_geometry()
-        self._do_send_new_window_packet(WINDOW_CREATE, window, geometry)
-
-    def _process_window_map(self, proto, packet: Packet) -> None:
-        wid = packet.get_wid()
-        x = packet.get_i16(2)
-        y = packet.get_i16(3)
-        w = packet.get_i16(4)
-        h = packet.get_i16(5)
-        window = self.get_window(wid)
-        if not window:
-            # already gone
-            return
-        self._window_mapped_at(proto, wid, window, (x, y, w, h))
-        self.refresh_window_area(window, 0, 0, w, h)
-        if len(packet) >= 7:
-            self._set_client_properties(proto, wid, window, packet[6])
-        self.start_refresh(wid)
-
-    def _process_window_unmap(self, proto, packet: Packet) -> None:
-        wid = packet.get_wid()
-        window = self.get_window(wid)
-        if not window:
-            # already gone
-            return
-        self._window_mapped_at(proto, wid, window)
-        # TODO: deal with more than one window / more than one client
-        # and stop refresh if all the windows are unmapped everywhere
-        window_sources = self.window_sources()
-        if len(window_sources) <= 1 and len(self.subsystems["window"].models()) <= 1:
-            self.stop_refresh(wid)
-
-    def do_process_window_configure(self, proto, wid, config: typedict) -> None:
-        window = self.get_window(wid)
-        if not window:
-            # already gone
-            return
-        geometry = config.inttupleget("geometry")
-        if geometry:
-            self._window_mapped_at(proto, wid, window, geometry)
-            w, h = geometry[2:4]
-            self.refresh_window_area(window, 0, 0, w, h)
-
-        properties = config.dictget("properties")
-        if properties:
-            self._set_client_properties(proto, wid, window, properties)
-
-    def _process_window_close(self, proto, packet: Packet) -> None:
-        wid = packet.get_wid()
-        window = self.get_window(wid)
-        if not window:
-            # already gone
-            return
-        # FIXME: with multiple windows / clients,
-        # we have to keep track of mappings!
-        if len(self.subsystems["window"].models()) == 1:
-            self.disconnect_client(proto, ConnectionMessage.DONE, "closed the only window")
 
     def do_make_screenshot_packet(self):
         raise NotImplementedError()

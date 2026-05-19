@@ -74,7 +74,7 @@ class XpraMonitorServer(DesktopServerBase):
     __gsignals__ = DesktopServerBase.__common_gsignals__
 
     def __init__(self):
-        super().__init__()
+        super().__init__(mode="monitor")
         self.session_type: str = "X11 monitor"
         self.reconfigure_timer: int = 0
         self.reconfigure_locked: bool = False
@@ -134,17 +134,6 @@ class XpraMonitorServer(DesktopServerBase):
 
         GLib.timeout_add(1000, unlock)
         return get_screen_size()
-
-    def load_existing_windows(self) -> None:
-        with xlog:
-            monitors = RandRBindings().get_monitor_properties()
-            screenlog("load_existing_windows() found monitors=%r", monitors)
-            for i, monitor in monitors.items():
-                self.add_monitor_model(i + 1, monitor)
-        # does not fire: (because of GTK?)
-        # RandR.select_crtc_output_changes()
-        # screen = gdk.Screen.get_default()
-        # screen.connect("monitors-changed", self.monitors_changed)
 
     def do_x11_configure_event(self, event: X11Event) -> None:
         # the root window changed,
@@ -222,7 +211,7 @@ class XpraMonitorServer(DesktopServerBase):
             if not model:
                 # found a new monitor!
                 screenlog("found a new monitor: %s", monitor)
-                self.add_monitor_model(wid, monitor)
+                self.subsystems["window"].add_monitor_model(wid, monitor)
                 continue
             mdef = model.get_definition()
             diff = [k for k in ("x", "y", "width", "height") if monitor.get(k) != mdef.get(k)]
@@ -241,21 +230,9 @@ class XpraMonitorServer(DesktopServerBase):
                 model.notify("title")
         return mods
 
-    def add_monitor_model(self, wid: int, monitor: dict[str, Any]):
-        screenlog("add_monitor_model(%i, %r)", wid, monitor)
-        from xpra.x11.desktop.monitor_model import MonitorDesktopModel
-        model = MonitorDesktopModel(monitor)
-        model.setup()
-        screenlog("adding monitor model %s", model)
-        super().do_add_new_window_common(wid, model)
-        model.managed_connect("client-contents-changed", self._contents_changed)
-        model.managed_connect("resized", self.monitor_resized)
-        model.managed_connect("motion", self._motion_signaled)
-        return model
-
     def monitor_resized(self, model) -> None:
         delta_x, delta_y = model.resize_delta
-        wid = self._window_to_id[model]
+        wid = self.subsystems["window"]._window_to_id[model]
         w, h = model.get_dimensions()
         screenlog("monitor_resized(%s) size=%s, delta=%s, wid=%#x",
                   model, (w, h), (delta_x, delta_y), wid)
@@ -279,7 +256,7 @@ class XpraMonitorServer(DesktopServerBase):
         self.setting_changed("monitors", defs)
 
     def validate_monitors(self) -> None:
-        for model in self._id_to_window.values():
+        for model in self.subsystems["window"]._id_to_window.values():
             x, y, width, height = model.get_geometry()
             if x + width >= MAX_SIZE[0] or y + height >= MAX_SIZE[1]:
                 new_x, new_y = 0, 0
@@ -291,7 +268,7 @@ class XpraMonitorServer(DesktopServerBase):
                 model.init(mdef)
 
     def _adjust_monitors(self, after_wid: int, delta_x: int, delta_y: int) -> None:
-        models = {wid: model for wid, model in self._id_to_window.items() if wid > after_wid}
+        models = {wid: model for wid, model in self.subsystems["window"]._id_to_window.items() if wid > after_wid}
         screenlog("adjust_monitors(%i, %i, %i) models=%s", after_wid, delta_x, delta_y, models)
         if (delta_x == 0 and delta_y == 0) or not models:
             return
@@ -300,7 +277,7 @@ class XpraMonitorServer(DesktopServerBase):
 
     def get_monitor_config(self) -> dict[int, dict]:
         monitor_defs = {}
-        for wid, model in self._id_to_window.items():
+        for wid, model in self.subsystems["window"]._id_to_window.items():
             monitor = model.get_definition()
             i = wid - 1
             monitor["index"] = i
@@ -312,7 +289,7 @@ class XpraMonitorServer(DesktopServerBase):
         screenlog("removing monitor for wid %i : %s", wid, model)
         if not model:
             raise ValueError(f"monitor {wid:#x} not found")
-        if len(self._id_to_window) <= 1:
+        if len(self.subsystems["window"]._id_to_window) <= 1:
             raise RuntimeError("cannot remove the last monitor")
         delta_x = -model.get_definition().get("width", 0)
         delta_y = 0  # model.monitor.get("width", 0)
@@ -324,7 +301,7 @@ class XpraMonitorServer(DesktopServerBase):
 
     def add_monitor(self, width: int, height: int) -> None:
         screenlog("add_monitor(%i, %i)", width, height)
-        count = len(self._id_to_window)
+        count = len(self.subsystems["window"]._id_to_window)
         if count >= 16:
             raise RuntimeError(f"already too many monitors: {count}")
         if not (isinstance(width, int) and isinstance(height, int)):
@@ -338,7 +315,7 @@ class XpraMonitorServer(DesktopServerBase):
         # prefer just incrementing the wid, but we cannot go higher than 16
 
         def rightof(other_wid: int) -> tuple[int, int]:
-            mdef = self._id_to_window[other_wid].get_definition()
+            mdef = self.subsystems["window"]._id_to_window[other_wid].get_definition()
             ox = mdef.get("x", 0) + mdef.get("width", 0)
             oy = mdef.get("y", 0)  # +monitor.get("height", 0)
             return ox, oy
@@ -346,7 +323,7 @@ class XpraMonitorServer(DesktopServerBase):
         # find a gap we can use in the window ids before 16:
         wid = 1
         for wid in range(1, 16):
-            if wid not in self._id_to_window:
+            if wid not in self.subsystems["window"]._id_to_window:
                 break
         screenlog(f"using {wid=}")
         x = y = 0
@@ -373,7 +350,7 @@ class XpraMonitorServer(DesktopServerBase):
             "mm-height": hmm,
         }
         with xsync:
-            model = self.add_monitor_model(wid, monitor)
+            model = self.subsystems["window"].add_monitor_model(wid, monitor)
         self.reconfigure_monitors()
         # send it to the clients:
         window_sources = get_sources_by_type(self, WindowsConnection)
