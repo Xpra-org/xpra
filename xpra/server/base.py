@@ -336,6 +336,10 @@ class ServerBase(ServerBaseClass):
     def add_new_client(self, ss, c: typedict) -> None:
         self._dispatch_fire("add_new_client", ss, c)
 
+    def notify_new_user(self, ss) -> None:
+        if notifications := self.subsystems.get("notifications"):
+            notifications.notify_new_user(ss)
+
     def send_initial_data(self, ss) -> None:
         self._dispatch_fire("send_initial_data", ss)
 
