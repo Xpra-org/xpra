@@ -9,14 +9,15 @@ from unittest.mock import MagicMock
 
 
 def make_server():
-    """Return an AuthenticatedServer instance wired up with minimal stubs."""
-    from xpra.server.auth import AuthenticatedServer
+    """Return an AuthenticationManager instance wired up with minimal server stubs."""
+    from xpra.server.auth import AuthenticationManager
 
-    class ConcreteServer(AuthenticatedServer):
+    class FakeServer:
+        subsystems: dict = {}
+
         def call_hello_oked(self, proto, c, auth_caps):
             pass
 
-        # stubs required by StubServerMixin / ServerCore interface
         def disconnect_client(self, proto, msg):
             pass
 
@@ -29,11 +30,9 @@ def make_server():
         def handle_command_request(self, proto, *args):
             pass
 
-        @property
-        def _socket_dirs(self):
-            return []
-
-    s = ConcreteServer()
+    server = FakeServer()
+    s = AuthenticationManager(server)
+    server.subsystems = {"auth": s}
     return s
 
 
@@ -140,6 +139,8 @@ def _make_fake_opts(**extra):
     class FakeOpts:
         # used for 'socket' and 'named-pipe'
         auth = ["none"]
+        password_file = []
+        socket_dirs = []
         # one attribute per non-skipped, non-local socket type
         tcp_auth = ["none"]
         ws_auth = ["none"]

@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.common import noop
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement
 from xpra.net.control.common import ControlCode, parse_boolean_value
@@ -23,6 +24,7 @@ class ControlHandler(StubServerMixin):
         StubServerMixin.__init__(self, server)
         self.commands: dict[str, Any] = {}
         self.enabled = False
+        self.server.hello_request_handlers["command"] = self._handle_hello_request_command
 
     def init(self, opts) -> None:
         self.enabled = opts.control
@@ -64,6 +66,13 @@ class ControlHandler(StubServerMixin):
         code, response = process_control_command(proto, self.commands, *args)
         hello = {"command_response": (int(code), response)}
         proto.send_now(Packet("hello", hello))
+
+    def _handle_hello_request_command(self, proto, caps: typedict) -> bool:
+        command_req = tuple(str(x) for x in caps.tupleget("command_request"))
+        if not command_req:
+            return False
+        self.handle_command_request(proto, *command_req)
+        return True
 
     def _process_control_request(self, protocol, packet: Packet) -> None:
         """ client sent a command request through its normal channel """

@@ -121,6 +121,7 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
     session_name = ""
     readonly = False
     unix_socket_paths: list[str] = []
+    hello_request_handlers: dict = {}
 
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubClientConnection):
         # Helper attributes / methods that subsystems expect to find on the

@@ -22,6 +22,7 @@ from xpra.util.version import XPRA_VERSION, version_str, version_compat_check
 from xpra.scripts.server import deadly_signal
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
+from xpra.server.glib_server import GLibServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     is_request_allowed, pretty_socket, has_websocket_handler, HttpResponse, Packet,
@@ -105,14 +106,6 @@ def force_close_connection(conn) -> None:
         netlog("close_connection()", exc_info=True)
 
 
-def get_server_base_classes() -> tuple[type, ...]:
-    from xpra.server.glib_server import GLibServer
-    classes: list[type] = [
-        GLibServer,
-    ]
-    return tuple(classes)
-
-
 def get_instance_subsystem_classes() -> tuple[type, ...]:
     """
     Subsystems that have been migrated to standalone instance composition.
@@ -151,10 +144,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     return tuple(classes)
 
 
-SERVER_BASES = get_server_base_classes()
 INSTANCE_SUBSYSTEM_CLASSES = get_instance_subsystem_classes()
-ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
-log("ServerBaseClass%s", SERVER_BASES)
 SIGNALS: dict[str, int] = {
     "init-thread-ended": 0,
     "running": 0,
@@ -162,7 +152,7 @@ SIGNALS: dict[str, int] = {
 
 
 # noinspection PyMethodMayBeStatic
-class ServerCore(ServerBaseClass):
+class ServerCore(GLibServer):
     """
         This is the simplest base class for servers.
         It only handles the connection layer:
@@ -182,13 +172,7 @@ class ServerCore(ServerBaseClass):
         # Subclasses (ServerBase, ProxyServer, ...) extend this dict with their own bases.
         if not hasattr(self, "subsystems"):
             self.subsystems: dict[str, Any] = {}
-        for bc in SERVER_BASES:
-            # legacy mixin subsystems share `self` with the server, so we
-            # pass `self` as both the bound instance and as the server arg:
-            bc.__init__(self, self)
-            prefix = getattr(bc, "PREFIX", "")
-            if prefix:
-                self.subsystems[prefix] = bc
+        GLibServer.__init__(self, server)
         # construct standalone instance-based subsystems and register them:
         for cls in INSTANCE_SUBSYSTEM_CLASSES:
             self.subsystems[cls.PREFIX] = cls(self)
@@ -219,7 +203,7 @@ class ServerCore(ServerBaseClass):
         self.socket_rfb_upgrade_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
         self._max_connections: int = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout: float = SERVER_SOCKET_TIMEOUT
-        self._ws_timeout: int = 5
+        self._ws_timeout: float = 5.0
         self._socket_dir: str = ""
         self.dotxpra: DotXpra | None = None
         self.unix_socket_paths: list[str] = []
@@ -1550,12 +1534,6 @@ class ServerCore(ServerBaseClass):
     def hello_oked(self, proto: SocketProtocol, c: typedict, _auth_caps: dict) -> bool:
         if self._closing:
             self.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
-            return True
-        command_req = tuple(str(x) for x in c.tupleget("command_request"))
-        if command_req:
-            log(f"hello_oked(..) command request={command_req}")
-            if control := self.get_subsystem("control"):
-                control.handle_command_request(proto, *command_req)
             return True
         request = c.strget("request")
         if request and self.handle_hello_request(request, proto, c):
