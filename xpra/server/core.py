@@ -108,9 +108,8 @@ def force_close_connection(conn) -> None:
 
 def get_instance_subsystem_classes() -> tuple[type, ...]:
     """
-    Subsystems that have been migrated to standalone instance composition.
-    They are NOT inherited into the dynamic ServerBaseClass MRO; instead,
-    each is constructed as an instance and stored in `self.subsystems`.
+    Subsystem classes for ServerCore. Each is instantiated and stored in
+    `self.subsystems` keyed by `cls.PREFIX`.
     """
     from xpra.server.auth import AuthenticationManager
     from xpra.server.subsystem.platform import PlatformServer
@@ -162,19 +161,14 @@ class ServerCore(GLibServer):
         authentication and the initial handshake.
     """
     __signals__ = SIGNALS
-    # ServerCore is the framework, not a subsystem.
-    # Explicitly clear PREFIX so it isn't picked up by getattr() through the
-    # dynamic ServerBaseClass MRO (which inherits PREFIX from its subsystems):
-    PREFIX = ""
 
-    def __init__(self, server=None):
-        # `server` is accepted (and ignored) so ServerCore can sit in the
-        # subsystem-style construction loops, which now pass `(self, self)`.
+    def __init__(self):
         log("ServerCore.__init__()")
-        # subsystems dict (keyed by PREFIX) is populated as each base's __init__ runs.
-        # Subclasses (ServerBase, ProxyServer, ...) extend this dict with their own bases.
+        # subsystems dict (keyed by PREFIX) is populated by subclass __init__
+        # methods (ServerBase, ProxyServer, ...) as they instantiate their
+        # subsystem classes.
         self.subsystems: dict[str, Any] = {}
-        GLibServer.__init__(self, server)
+        GLibServer.__init__(self)
         # construct standalone instance-based subsystems and register them:
         for cls in INSTANCE_SUBSYSTEM_CLASSES:
             self.subsystems[cls.PREFIX] = cls(self)
@@ -331,11 +325,7 @@ class ServerCore(GLibServer):
 
     # --------------------------------------------------------------------
     # subsystem lookup and dispatch helpers
-    # `self.subsystems` stores subsystem instances - except for a few
-    # framework-bound classes that ship a PREFIX (currently `rfb` and
-    # `x11`) which are still entries-as-classes. The helpers below cope
-    # with both: class entries are called with `self` as first arg,
-    # instances are called as bound methods.
+    # `self.subsystems` stores subsystem instances, keyed by PREFIX.
     # --------------------------------------------------------------------
 
     def get_subsystem(self, prefix: str):
@@ -350,10 +340,7 @@ class ServerCore(GLibServer):
             if fn is None:
                 continue
             try:
-                if isinstance(sub, type):
-                    fn(self, *args)
-                else:
-                    fn(*args)
+                fn(*args)
             except Exception:
                 log.warn(f"Error: in {sub}.{method}", exc_info=True)
 
@@ -364,10 +351,7 @@ class ServerCore(GLibServer):
             if fn is None:
                 continue
             try:
-                if isinstance(sub, type):
-                    d = fn(self, *args)
-                else:
-                    d = fn(*args)
+                d = fn(*args)
             except Exception:
                 log.warn(f"Error: in {sub}.{method}", exc_info=True)
                 continue
@@ -380,10 +364,7 @@ class ServerCore(GLibServer):
             fn = getattr(sub, method, None)
             if fn is None:
                 continue
-            if isinstance(sub, type):
-                r = fn(self, *args)
-            else:
-                r = fn(*args)
+            r = fn(*args)
             if r:
                 return r
         return None

@@ -86,7 +86,7 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
     def create_test_sockets(self):
         return {}
 
-    # Server-side helpers that subsystems may delegate to via StubServerMixin.
+    # Server-side helpers that subsystems may delegate to via StubSubsystem.
     # `connect` / `emit` come from `SignalEmitter`. The rest are no-ops:
 
     def disconnect_client(self, *_args, **_kwargs) -> None:
@@ -153,7 +153,7 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
             x = self.mixin = mclass()
             # legacy wiring: subsystems resolve these names via the dynamic
             # MRO, but in the test there is no enclosing server class. Also
-            # override `x.server` (which `StubServerMixin.__init__` set to
+            # override `x.server` (which `StubSubsystem.__init__` set to
             # `x` itself) so delegating helpers like `self.connect` route
             # to this test class's mocks instead of recursing into `x`:
             x.server = self

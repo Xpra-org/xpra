@@ -161,9 +161,6 @@ class ProxyServer(ServerCore):
         to the session found using the authenticator's
         get_sessions() function.
     """
-    # ProxyServer is the framework, not a subsystem (same as ServerCore).
-    PREFIX = ""
-
     def __init__(self):
         log("ProxyServer.__init__()")
         if not hasattr(self, "subsystems"):

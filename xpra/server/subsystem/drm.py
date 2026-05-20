@@ -6,15 +6,15 @@
 import os
 from typing import Any
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.thread import start_thread
 
 
-class DRMInfo(StubServerMixin):
+class DRMInfo(StubSubsystem):
     PREFIX = "drm"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.display = os.environ.get("DISPLAY", "")
         self.drm_info = {}
 

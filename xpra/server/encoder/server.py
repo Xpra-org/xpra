@@ -20,7 +20,7 @@ from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.constants import COMPRESS_RATIO, COMPRESS_FMT_SUFFIX
-from xpra.server.base import ServerBase, SERVER_BASES
+from xpra.server.base import ServerBase
 from xpra.codecs.video import getVideoHelper
 from xpra.log import Logger
 
@@ -89,7 +89,7 @@ def csc_image(image: ImageWrapper, format_options: Sequence[str]) -> ImageWrappe
 class EncoderServer(ServerBase):
 
     def __init__(self):
-        log(f"EncoderServer.__init__() {SERVER_BASES=}")
+        log("EncoderServer.__init__()")
         ServerBase.__init__(self)
         self.session_type = "encoder"
         self.encoders: dict[str, dict[int, Any]] = {}

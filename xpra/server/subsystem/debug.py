@@ -7,7 +7,7 @@
 import os
 from typing import Any
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.debug import CPUINFO, init_leak_detection
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -15,14 +15,14 @@ from xpra.log import Logger
 log = Logger("network")
 
 
-class DebugServer(StubServerMixin):
+class DebugServer(StubSubsystem):
     """
     Mixin for system state debugging, leak detection (file descriptors, memory)
     """
     PREFIX = "debug"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.mem_bytes = 0
         self.cpu_info: dict = {}
 

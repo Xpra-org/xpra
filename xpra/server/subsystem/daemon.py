@@ -8,17 +8,17 @@ from typing import Any
 
 from xpra.util.pid import write_pidfile, rm_pidfile
 from xpra.util.env import osexpand
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("server")
 
 
-class DaemonServer(StubServerMixin):
+class DaemonServer(StubSubsystem):
     PREFIX = "daemon"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.pidfile = ""
         self.pidinode: int = 0
 

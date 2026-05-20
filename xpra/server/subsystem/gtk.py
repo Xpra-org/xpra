@@ -14,7 +14,7 @@ from xpra.common import noop
 from xpra.net.common import FULL_INFO
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.gtk.info import get_screen_sizes
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("server", "gtk")
@@ -68,7 +68,7 @@ def get_default_window_icon(size: int, wmclass_name: str):
     return get_default_window_icon_fallback(size, wmclass_name)
 
 
-class GTKServer(StubServerMixin):
+class GTKServer(StubSubsystem):
     """
     Abstract base for GTK-based servers.
 

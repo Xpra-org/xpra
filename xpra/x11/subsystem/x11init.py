@@ -6,7 +6,7 @@
 import os
 
 from xpra.util.env import envbool
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("screen")
@@ -14,11 +14,11 @@ log = Logger("screen")
 FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
 
 
-class X11Init(StubServerMixin):
+class X11Init(StubSubsystem):
     PREFIX = "x11"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.display = os.environ.get("DISPLAY", "")
         assert not envbool("XPRA_GTK", False)
 

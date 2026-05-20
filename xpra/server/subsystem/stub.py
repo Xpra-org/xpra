@@ -15,42 +15,35 @@ from xpra.common import noop
 from xpra.os_util import WIN32
 
 
-class StubServerMixin(SignalEmitter):
+class StubSubsystem(SignalEmitter):
     """
     Base class for server subsystem.
-    Defines the default interface methods that each mixin may override.
+    Defines the default interface methods that each subsystem may override.
     """
     uid = getuid()
     gid = getgid()
     hello_request_handlers: dict[str, Callable[[Any, typedict], bool]] = {}
     # every concrete subsystem should declare a non-empty PREFIX,
-    # used as the key in `Server.subsystems`. Framework classes (ServerCore,
-    # ServerBase, ProxyServer, ...) also inherit from StubServerMixin via the
-    # dynamic ServerBaseClass MRO and explicitly set PREFIX = "" to opt out:
+    # used as the key in `Server.subsystems`. Framework classes
+    # (ServerCore, ServerBase, ProxyServer) inherit from StubSubsystem
+    # via GLibServer and set PREFIX = "" (they are not subsystems):
     PREFIX: str = ""
 
     def __init__(self, server=None):
         # Every subsystem holds a reference to its owning server.
-        # For legacy mixin subsystems that are part of the dynamic
-        # ServerBaseClass MRO, `self` IS the server, so `self.server` ends up
-        # pointing at the same instance. Standalone instance-based subsystems
-        # receive a distinct `server` argument from their constructor.
+        # Subsystem-local signals (e.g. `audio-initialized`,
+        # `display-geometry-changed`) use this instance's SignalEmitter;
+        # server-wide GObject signals are accessed via `self.server`.
+        # When constructed without a `server` arg, this instance IS the
+        # server (framework classes); in that case `self.server is self`
+        # and method delegations must short-circuit to avoid recursion.
         self.server = server if server is not None else self
-        # SignalEmitter holds per-instance state in `_signal_callbacks`.
-        # Subsystems use their own `emit` / `connect` for subsystem-local
-        # signals (e.g. `audio-initialized`, `display-geometry-changed`).
-        # Server-wide signals (`last-client-exited`, `init-thread-ended`,
-        # `running`, `client-exited`, `new-ui-driver`, `x11-xkb-event`,
-        # `x11-cursor-event`, ...) are GObject signals on the server itself
-        # and must be accessed via `self.server.connect(...)` /
-        # `self.server.emit(...)`.
         SignalEmitter.__init__(self)
 
     def get_server_source(self, proto):
         """ delegate to the server's per-protocol client source lookup """
         if self.server is self:
-            # bare-stub fallback (e.g. unit tests without a real server) -
-            # avoid infinite recursion by returning None
+            # framework-class fallback (e.g. ServerCore with no real source map)
             return None
         return self.server.get_server_source(proto)
 
@@ -65,13 +58,9 @@ class StubServerMixin(SignalEmitter):
 
     def add_packets(self, *packet_types: str, main_thread: bool = False) -> None:
         """
-        Register packet handlers for this subsystem.
-        Handlers (`_process_<packet_type>`) are looked up on the subsystem
-        instance (i.e. `self`), then registered against the server's
-        packet dispatcher (`self.server`). This differs from the
-        `PacketDispatcher.add_packets` baked into the server class, which
-        looks up handlers on the dispatcher itself - for instance-based
-        subsystems, the handlers no longer live there.
+        Register packet handlers for this subsystem. Handlers
+        (`_process_<packet_type>`) are looked up on the subsystem
+        instance and registered against the server's packet dispatcher.
         """
         for packet_type in packet_types:
             handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
@@ -80,10 +69,9 @@ class StubServerMixin(SignalEmitter):
     def add_packet_handler(self, packet_type: str, handler: Callable, main_thread: bool = False) -> None:
         """ register a single packet handler on the owning server """
         if self.server is self:
-            # Framework-mixin case (StubServerMixin is in the server's MRO):
-            # going through self.server.add_packet_handler would recurse,
-            # because this method shadows PacketDispatcher's. Call the
-            # PacketDispatcher implementation directly.
+            # framework-class case: this method shadows PacketDispatcher's
+            # via MRO, so calling self.server.add_packet_handler would
+            # recurse. Reach PacketDispatcher's implementation directly.
             from xpra.net.dispatch import PacketDispatcher
             PacketDispatcher.add_packet_handler(self, packet_type, handler, main_thread)
             return
@@ -134,13 +122,13 @@ class StubServerMixin(SignalEmitter):
 
     def get_caps(self, _source) -> dict[str, Any]:
         """
-        Capabilities provided by this mixin.
+        Capabilities provided by this subsystem.
         """
         return {}
 
     def get_server_features(self, _source) -> dict[str, Any]:
         """
-        Features provided by this mixin.
+        Features provided by this subsystem.
         (the difference with capabilities is that those will only
         be returned if the client requests 'features')
         """
@@ -148,7 +136,7 @@ class StubServerMixin(SignalEmitter):
 
     def get_info(self, _proto) -> dict[str, Any]:
         """
-        Runtime information on this mixin, includes state and settings.
+        Runtime information on this subsystem, includes state and settings.
         Somewhat overlaps with the capabilities and features,
         but the data is returned in a structured format. (ie: nested dictionaries)
         """
@@ -156,7 +144,7 @@ class StubServerMixin(SignalEmitter):
 
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         """
-        Runtime information on this mixin,
+        Runtime information on this subsystem,
         unlike get_info() this method will be called
         from the UI thread.
         """
@@ -164,7 +152,7 @@ class StubServerMixin(SignalEmitter):
 
     def init_packet_handlers(self) -> None:
         """
-        Register the packet types that this mixin can handle.
+        Register the packet types that this subsystem can handle.
         """
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:

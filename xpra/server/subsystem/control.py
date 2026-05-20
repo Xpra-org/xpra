@@ -11,17 +11,17 @@ from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement
 from xpra.net.control.common import ControlCode, parse_boolean_value
 from xpra.server.common import get_sources_by_type
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("command")
 
 
-class ControlHandler(StubServerMixin):
+class ControlHandler(StubSubsystem):
     PREFIX = "control"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.commands: dict[str, Any] = {}
         self.enabled = False
         self.server.hello_request_handlers["command"] = self._handle_hello_request_command

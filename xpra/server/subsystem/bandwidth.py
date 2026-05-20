@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.objects import typedict
 from xpra.util.parsing import parse_with_unit
 from xpra.util.stats import std_unit
@@ -20,7 +20,7 @@ MIN_BANDWIDTH_LIMIT = envint("XPRA_MIN_BANDWIDTH_LIMIT", 1024 * 1024)
 MAX_BANDWIDTH_LIMIT = envint("XPRA_MAX_BANDWIDTH_LIMIT", 10 * 1024 * 1024 * 1024)
 
 
-class BandwidthServer(StubServerMixin):
+class BandwidthServer(StubSubsystem):
     """
     Adds bandwidth management
     """
@@ -33,7 +33,7 @@ class BandwidthServer(StubServerMixin):
         return caps.boolget("bandwidth")
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.limit = 0
         self.detection = False
 

@@ -21,7 +21,7 @@ from xpra.util.objects import typedict
 from xpra.net.common import Packet
 from xpra.net.constants import ConnectionMessage
 from xpra.net.file_transfer import FileTransferAttributes
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 from xpra.util.thread import start_thread
 
@@ -41,7 +41,7 @@ def _save_print_job(filename, file_data) -> None:
         log.estr(e)
 
 
-class PrinterServer(StubServerMixin):
+class PrinterServer(StubSubsystem):
     """
     Mixin for servers that can handle forwarded printers.
     Printer forwarding is only supported on Posix servers with the cups backend script.
@@ -49,7 +49,7 @@ class PrinterServer(StubServerMixin):
     PREFIX = "printer"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.lpadmin: str = ""
         self.lpinfo: str = ""
         self.add_printer_options = []

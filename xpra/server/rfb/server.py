@@ -15,7 +15,7 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.rfb.const import RFB_KEYNAMES
 from xpra.server.rfb.protocol import RFBServerProtocol
 from xpra.server.rfb.source import RFBSource
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.server import features
 from xpra.util.parsing import str_to_bool, parse_number
 from xpra.log import Logger
@@ -28,14 +28,14 @@ pointerlog = Logger("rfb", "pointer")
 keylog = Logger("rfb", "keyboard")
 
 
-class RFBServer(StubServerMixin):
+class RFBServer(StubSubsystem):
     """
         Adds RFB packet handling and the RFB upgrade timer to a server.
     """
     PREFIX = "rfb"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self._rfb_upgrade = 0
         self.rfb_buttons = 0
         self.X11Keyboard = None

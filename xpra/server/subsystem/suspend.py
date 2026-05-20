@@ -4,14 +4,14 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.common import Packet
 from xpra.log import Logger
 
 log = Logger("events")
 
 
-class SuspendServer(StubServerMixin):
+class SuspendServer(StubSubsystem):
     """
     Handle suspend and resume event messages from the client
     """

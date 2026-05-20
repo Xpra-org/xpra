@@ -7,17 +7,17 @@ import os.path
 from typing import Any
 
 from xpra.util.parsing import str_to_bool
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 
 
-class MMAP_Server(StubServerMixin):
+class MMAP_Server(StubSubsystem):
     """
     Mixin for servers that can handle mmap transfers
     """
     PREFIX = "mmap"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.supported = False
         self.filename = ""
         self.min_size = 64 * 1024 * 1024

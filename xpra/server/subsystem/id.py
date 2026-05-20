@@ -9,7 +9,7 @@ from typing import Any
 
 from xpra.net.common import Packet, FULL_INFO
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.os_util import get_machine_id, gi_import
 from xpra.util.version import XPRA_NUMERIC_VERSION
 from xpra.util.objects import typedict
@@ -23,14 +23,14 @@ log = Logger("server")
 
 
 # noinspection PyMethodMayBeStatic
-class IDServer(StubServerMixin):
+class IDServer(StubSubsystem):
     """
     Servers that expose info data via info request.
     """
     PREFIX = "id"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.server.hello_request_handlers["id"] = self._handle_hello_request_id
         # populated by `ServerCore.init_uuid` during setup:
         self.uuid = ""

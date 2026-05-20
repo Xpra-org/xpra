@@ -11,7 +11,7 @@ from xpra.common import noop
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr, strtobytes
 from xpra.util.parsing import str_to_bool
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.x11.error import xsync
 from xpra.x11.subsystem.xsettings_prop import XSettingsType
 from xpra.server import features
@@ -43,11 +43,11 @@ def _get_antialias_hintstyle(antialias: typedict) -> str:
     return "hintnone"
 
 
-class XSettingsServer(StubServerMixin):
+class XSettingsServer(StubSubsystem):
     PREFIX = "xsettings"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self._default_xsettings: tuple[int, list[tuple]] = (0, [])
         self._settings: dict[str, Any] = {}
         self._xsettings_enabled = False

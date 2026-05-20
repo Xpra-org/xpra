@@ -6,7 +6,7 @@
 from typing import Any
 
 from xpra.net.common import Packet
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.dispatch import add_event_receiver
 from xpra.x11.common import X11Event
@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("bell")
 
 
-class BellServer(StubServerMixin):
+class BellServer(StubSubsystem):
     """
     Servers that forward bell events.
 
@@ -30,7 +30,7 @@ class BellServer(StubServerMixin):
     toggle_features = ("bell",)
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.bell = False
 
     def init(self, opts) -> None:

@@ -7,18 +7,18 @@
 from collections import deque
 from typing import Any
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.common import Packet
 
 
-class ShellServer(StubServerMixin):
+class ShellServer(StubSubsystem):
     """
     Mixin for adding `shell` support
     """
     PREFIX = "shell"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.counter = 0
         self.commands: deque[str] = deque(maxlen=10)
 

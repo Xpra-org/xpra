@@ -8,13 +8,13 @@ from typing import Any
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("cursor")
 
 
-class CursorManager(StubServerMixin):
+class CursorManager(StubSubsystem):
     """
     Servers that send cursor bitmaps.
     """
@@ -22,7 +22,7 @@ class CursorManager(StubServerMixin):
     toggle_features = ("cursors",)
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.enabled = False
         self.size = 0
         self.suspended: bool = False

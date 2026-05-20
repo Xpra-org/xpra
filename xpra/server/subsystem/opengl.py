@@ -12,7 +12,7 @@ from xpra.util.thread import start_thread
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import FULL_INFO
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("opengl")
@@ -97,11 +97,11 @@ def probe_opengl_module() -> dict[str, Any]:
     return {}
 
 
-class OpenGLInfo(StubServerMixin):
+class OpenGLInfo(StubSubsystem):
     PREFIX = "opengl"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.display = os.environ.get("DISPLAY", "")
         self.option = "no"
         self.props: dict[str, Any] = {}

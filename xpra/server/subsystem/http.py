@@ -13,7 +13,7 @@ from xpra.util.io import load_binary_file
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.net.common import HttpResponse
 from xpra.platform.paths import get_icon_filename
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("http")
@@ -63,14 +63,14 @@ def _filter_display_dict(display_dict: dict[str, Any], *whitelist: str) -> dict[
     return displays_info
 
 
-class HttpServer(StubServerMixin):
+class HttpServer(StubSubsystem):
     """
     Mixin for servers that can handle http requests
     """
     PREFIX = "http"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.scripts = {}
 
     def init(self, opts) -> None:

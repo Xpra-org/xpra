@@ -7,7 +7,7 @@
 from typing import Any
 
 from xpra.util.objects import typedict
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.common import Packet
 from xpra.util.parsing import str_to_bool
 from xpra.net.constants import ConnectionMessage
@@ -16,14 +16,14 @@ from xpra.log import Logger
 log = Logger("server", "auth")
 
 
-class SharingServer(StubServerMixin):
+class SharingServer(StubSubsystem):
     """
     Adds management of sharing and locking of sessions
     """
     PREFIX = "sharing"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.sharing: bool | None = None
         self.lock: bool | None = None
         self.exit_with_client = False

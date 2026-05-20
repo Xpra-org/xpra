@@ -9,7 +9,7 @@ from xpra.common import noop
 from xpra.scripts.main import SPLASH_EXIT_DELAY
 from xpra.log import Logger
 from xpra.os_util import gi_import
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 
 log = Logger("server")
 
@@ -17,14 +17,14 @@ GLib = gi_import("GLib")
 
 
 # noinspection PyMethodMayBeStatic
-class SplashServer(StubServerMixin):
+class SplashServer(StubSubsystem):
     """
         Manages the splash screen
     """
     PREFIX = "splash"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         log("SplashServer()")
         self.splash_process: Popen | None = None
 

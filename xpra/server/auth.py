@@ -11,7 +11,7 @@ from xpra.net.constants import SOCKET_TYPES, ConnectionMessage
 from xpra.net.packet_type import CHALLENGE
 from xpra.net.digest import get_salt, choose_digest
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.objects import typedict
 from xpra.util.env import envint
@@ -26,7 +26,7 @@ GLib = gi_import("GLib")
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
 
-class AuthenticationManager(StubServerMixin):
+class AuthenticationManager(StubSubsystem):
     """
         Manages authentication for ServerCore.
         This subsystem calls server-owned connection methods for disconnects,
@@ -35,7 +35,7 @@ class AuthenticationManager(StubServerMixin):
     PREFIX = "auth"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         log("AuthenticationManager.__init__()")
         self.auth_classes: dict[str, Sequence[AuthDef]] = {}
         self.password_file: Iterable[str] = ()

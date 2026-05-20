@@ -12,7 +12,7 @@ from xpra.util.str_fn import strtobytes, csv, repr_ellipsized
 from xpra.util.objects import typedict
 from xpra.util.parsing import parse_encoded_bin_data, str_to_bool
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("crypto")
@@ -168,11 +168,11 @@ def parse_encryption(protocol, socket_options: dict[str, Any], tcp_encryption: s
     log(f"encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
 
 
-class EncryptionServer(StubServerMixin):
+class EncryptionServer(StubSubsystem):
     PREFIX = "encryption"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.encryption = ""
         self.encryption_keyfile = ""
         self.tcp_encryption = ""

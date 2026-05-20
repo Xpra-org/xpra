@@ -6,17 +6,17 @@
 from typing import Any
 
 from xpra.scripts.session import clean_session_files, rm_session_dir
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("server")
 
 
-class SessionFilesServer(StubServerMixin):
+class SessionFilesServer(StubSubsystem):
     PREFIX = "session-files"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         # canonical list of per-session files / glob patterns to clean up
         # at shutdown. Other subsystems append to this via `get_subsystem`.
         self.session_files: list[str] = [

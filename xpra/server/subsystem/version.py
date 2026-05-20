@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.constants import ConnectionMessage
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
@@ -14,7 +14,7 @@ from xpra.util.objects import typedict
 from xpra.util.version import XPRA_VERSION, vparts
 
 
-class VersionServer(StubServerMixin):
+class VersionServer(StubSubsystem):
     """
     Servers that expose version data via hello requests.
     """

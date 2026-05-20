@@ -51,10 +51,6 @@ class ServerBase(ServerCore):
     """
     toggle_features = ("client-shutdown",)
     __signals__ = SIGNALS
-    # ServerBase is the framework, not a subsystem.
-    # Explicitly clear PREFIX so it isn't picked up by getattr() through the
-    # dynamic ServerBaseClass MRO (which inherits PREFIX from its subsystems):
-    PREFIX = ""
 
     def __init__(self):
         ServerCore.__init__(self)
@@ -266,8 +262,7 @@ class ServerBase(ServerCore):
         from xpra.scripts import config  # pylint: disable=import-outside-toplevel
         config.warn = log.warn
         # ServerCore.init handles connection-layer setup and dispatches `init`
-        # to every entry in self.subsystems (which includes both core's bases
-        # and the extra subsystems registered by ServerBase.__init__):
+        # to every entry in self.subsystems
         super().init(opts)
 
     def setup(self) -> None:

@@ -3,18 +3,18 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.x11.error import xsync
 from xpra.log import Logger
 
 log = Logger("server", "tray")
 
 
-class SystemTrayServer(StubServerMixin):
+class SystemTrayServer(StubSubsystem):
     PREFIX = "systray"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.system_tray = False
         self._tray = None
 

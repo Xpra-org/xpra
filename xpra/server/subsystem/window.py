@@ -10,7 +10,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.server.source.window import WindowsConnection
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
@@ -31,14 +31,14 @@ def control_error(*args, **kwargs) -> NoReturn:
     raise ControlError(*args, **kwargs)
 
 
-class WindowServer(StubServerMixin):
+class WindowServer(StubSubsystem):
     """
     Mixin for servers that forward windows.
     """
     PREFIX = "window"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
         self._window_to_id: dict[Any, int] = {}

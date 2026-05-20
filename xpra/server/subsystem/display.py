@@ -17,7 +17,7 @@ from xpra.util.screen import log_screen_sizes
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import get_refresh_rate_for_value, DEFAULT_REFRESH_RATE
 from xpra.platform.gui import get_display_name, get_display_size
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -68,7 +68,7 @@ def set_window_refresh_rate(ss, rrate: int):
                 bc.match_vrefresh(rrate)
 
 
-class DisplayManager(StubServerMixin):
+class DisplayManager(StubSubsystem):
     """
     Mixin for servers that handle displays.
     """
@@ -80,7 +80,7 @@ class DisplayManager(StubServerMixin):
     # subscribe with `self.get_subsystem("display").connect(...)`.
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.hello_request_handlers["screenshot"] = self._handle_hello_request_screenshot
         self.hello_request_handlers["icon"] = self._handle_hello_request_icon
         self.display = os.environ.get("DISPLAY", "")

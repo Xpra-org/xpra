@@ -13,7 +13,7 @@ from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("pointer")
@@ -24,7 +24,7 @@ INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 
 
-class PointerManager(StubServerMixin):
+class PointerManager(StubSubsystem):
     """
     Mixin for servers that handle pointer devices
     (mouse, etc)
@@ -32,7 +32,7 @@ class PointerManager(StubServerMixin):
     PREFIX = "pointer"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.input_devices = "auto"
         self.input_devices_data = {}
         self.pointer_sequence = {}

@@ -6,7 +6,7 @@
 import os
 from collections.abc import Callable
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.env import SilenceWarningsContext
 from xpra.common import noop
 from xpra.constants import XPRA_APP_ID
@@ -41,7 +41,7 @@ def traymenuitem(title: str, icon_name="", tooltip="", cb: Callable = noop):  # 
     return menuitem(title, image, tooltip, cb)
 
 
-class TrayMenu(StubServerMixin):
+class TrayMenu(StubSubsystem):
     """
     This server module adds a system tray menu,
     typically used with shadow servers to be able to exit the server.
@@ -49,7 +49,7 @@ class TrayMenu(StubServerMixin):
     PREFIX = "tray"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.menu = None
         self.menu_shown = False
         self.widget = None

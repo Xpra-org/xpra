@@ -16,13 +16,13 @@ from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.net.common import Packet
 from xpra.net.file_transfer import FileTransferAttributes
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("file")
 
 
-class FileServer(StubServerMixin):
+class FileServer(StubSubsystem):
     """
     Mixin for servers that can handle file transfers.
     This is also required for printer forwarding.
@@ -30,7 +30,7 @@ class FileServer(StubServerMixin):
     PREFIX = "file"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.file_transfer = FileTransferAttributes()
 
     def init(self, opts) -> None:

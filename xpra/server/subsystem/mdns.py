@@ -14,7 +14,7 @@ from xpra.util.env import envbool
 from xpra.net.common import get_ssh_port, FULL_INFO
 from xpra.util.parsing import str_to_bool
 from xpra.platform.info import get_username
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("server", "mdns")
@@ -31,14 +31,14 @@ def idle_work(fn: Callable[[], None]) -> None:
     GLib.idle_add(add_work_item, fn)
 
 
-class MdnsServer(StubServerMixin):
+class MdnsServer(StubSubsystem):
     """
         Publishes sockets using mDNS
     """
     PREFIX = "mdns"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.enabled = False
         self.publishers = {}
         self.display = os.environ.get("DISPLAY", "")

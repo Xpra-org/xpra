@@ -8,7 +8,7 @@ import unittest
 
 from xpra.os_util import getuid, getgid
 from xpra.util.objects import typedict, AdHocStruct
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 
 
 class EncodingMixinTest(unittest.TestCase):
@@ -17,7 +17,7 @@ class EncodingMixinTest(unittest.TestCase):
         opts = AdHocStruct()
         opts.uid = getuid()
         opts.gid = getgid()
-        x = StubServerMixin()
+        x = StubSubsystem()
         x.init(opts)
         x.init_state()
         x.setup()

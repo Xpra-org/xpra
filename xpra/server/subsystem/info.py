@@ -20,7 +20,7 @@ from xpra.util.version import (
 from xpra.net.common import is_request_allowed, Packet, FULL_INFO
 from xpra.net.net_util import get_info as get_net_info
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.constants import ConnectionMessage
 from xpra.common import noop
 from xpra.util.parsing import str_to_bool
@@ -78,14 +78,14 @@ def get_thread_info(proto=None) -> dict[Any, Any]:
 
 
 # noinspection PyMethodMayBeStatic
-class InfoServer(StubServerMixin):
+class InfoServer(StubSubsystem):
     """
     Servers that expose info data via info request.
     """
     PREFIX = "info"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.server.hello_request_handlers["info"] = self._handle_hello_request_info
 
     def setup(self) -> None:

@@ -15,7 +15,7 @@ from xpra.util.env import first_time, envint
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import audio_option
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -25,7 +25,7 @@ log = Logger("audio")
 QUERY_SLEEP = envint("XPRA_AUDIO_QUERY_SLEEP", 0)
 
 
-class AudioServer(StubServerMixin):
+class AudioServer(StubSubsystem):
     """
     Mixin for servers that handle audio forwarding.
     """
@@ -35,7 +35,7 @@ class AudioServer(StubServerMixin):
     # with `server.subsystems["audio"].connect(...)`.
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.audio_source_plugin = ""
         self.supports_speaker = False
         self.supports_microphone = False

@@ -4,17 +4,17 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 
 
-class UIWatcher(StubServerMixin):
+class UIWatcher(StubSubsystem):
     """
     Monitors the UI thread
     """
     PREFIX = "watcher"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.ui_watcher = None
 
     def run(self) -> None:

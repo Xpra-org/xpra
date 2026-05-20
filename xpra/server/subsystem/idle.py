@@ -7,7 +7,7 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.server import ServerExitMode
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("timeout")
@@ -15,11 +15,11 @@ log = Logger("timeout")
 GLib = gi_import("GLib")
 
 
-class IdleTimeoutServer(StubServerMixin):
+class IdleTimeoutServer(StubSubsystem):
     PREFIX = "idle"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.server_timeout = 0
         self.timeout = 0
         self.server_timer = 0

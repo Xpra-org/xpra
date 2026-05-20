@@ -17,7 +17,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import FALSE_OPTIONS
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -25,7 +25,7 @@ GLib = gi_import("GLib")
 log = Logger("clipboard")
 
 
-class ClipboardServer(StubServerMixin):
+class ClipboardServer(StubSubsystem):
     """
     Mixin for servers that handle clipboard synchronization.
     """
@@ -33,7 +33,7 @@ class ClipboardServer(StubServerMixin):
     toggle_features = ("clipboard",)
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.enabled = False
         self.direction = "none"
         self.filter_file = None

@@ -5,12 +5,12 @@
 
 from typing import Any
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.thread import start_thread
 from xpra.util.version import get_platform_info
 
 
-class PlatformServer(StubServerMixin):
+class PlatformServer(StubSubsystem):
     """
     Exposes platform info, populates the cache during threaded initialization.
     """

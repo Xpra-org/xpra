@@ -18,7 +18,7 @@ from xpra.util.parsing import parse_bool_or_int
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENCODINGS
 from xpra.codecs.loader import get_codec, codec_versions, load_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -52,14 +52,14 @@ def is_windows_source(ss) -> bool:
     return isinstance(ss, WindowsConnection)
 
 
-class EncodingServer(StubServerMixin):
+class EncodingServer(StubSubsystem):
     """
     Mixin for adding encodings to a server
     """
     PREFIX = "encoding"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.default_quality = -1
         self.default_min_quality = 0
         self.default_speed = -1

@@ -7,7 +7,7 @@
 from typing import Any
 
 from xpra.server.common import get_sources_by_type
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.common import Packet
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -17,7 +17,7 @@ log = Logger("network", "ping")
 GLib = gi_import("GLib")
 
 
-class PingServer(StubServerMixin):
+class PingServer(StubSubsystem):
     """
     Adds ping handling
     """

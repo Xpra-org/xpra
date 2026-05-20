@@ -13,7 +13,7 @@ from xpra.server.source.notification import NotificationConnection
 from xpra.util.str_fn import Ellipsizer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.thread import start_thread
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("notify")
@@ -21,7 +21,7 @@ log = Logger("notify")
 glib = gi_import("GLib")
 
 
-class NotificationForwarder(StubServerMixin):
+class NotificationForwarder(StubSubsystem):
     """
     Mixin for servers that forward notifications.
     """
@@ -29,7 +29,7 @@ class NotificationForwarder(StubServerMixin):
     toggle_features = ("notifications",)
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.forwarder = None
         self.enabled = False
 

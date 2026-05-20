@@ -9,7 +9,7 @@ from xpra.server.source.display import DisplayConnection
 from xpra.util.env import envbool
 from xpra.util.str_fn import hexstr
 from xpra.util.objects import typedict
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("screen")
@@ -17,11 +17,11 @@ log = Logger("screen")
 SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", True)
 
 
-class ICCServer(StubServerMixin):
+class ICCServer(StubSubsystem):
     PREFIX = "icc"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.icc_profile = b""
 
     def setup(self) -> None:

@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.server.subsystem.pulseaudio import PulseaudioServer, get_default_pulseaudio_command
 
 
@@ -43,7 +43,7 @@ class TestPulseaudioServerGetChildEnv(unittest.TestCase):
         # get_child_env must not add PULSE_SINK or PULSE_SOURCE - those would
         # override PA routing for user applications
         pulse_env = self.server.get_pulse_env()
-        base_env = StubServerMixin.get_child_env(self.server)
+        base_env = StubSubsystem.get_child_env(self.server)
         child_env = self.server.get_child_env()
         for key in pulse_env:
             if key not in base_env:

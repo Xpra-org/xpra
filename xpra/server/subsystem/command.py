@@ -25,7 +25,7 @@ from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.scripts.parsing import parse_env
 from xpra.util.pid import write_pid
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -151,7 +151,7 @@ def get_attrs(source) -> dict[str, Any]:
     return {"client": source.get_info()}
 
 
-class ChildCommandServer(StubServerMixin):
+class ChildCommandServer(StubSubsystem):
     toggle_features = ("start-new-commands",)
     """
     Mixin for servers that start subcommands,
@@ -161,7 +161,7 @@ class ChildCommandServer(StubServerMixin):
     PREFIX = "command"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.hello_request_handlers["run"] = self._handle_hello_request_run
         self.child_display: str = ""
         self.start_commands: Sequence[str] = []

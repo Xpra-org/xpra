@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.platform.events import add_handler, remove_handler
 from xpra.common import may_notify_client
 from xpra.util.env import envbool
@@ -19,7 +19,7 @@ NOTIFY_MESSAGE_TITLE = "Server Suspending"
 NOTIFY_MESSAGE_BODY = "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon."
 
 
-class PowerEventServer(StubServerMixin):
+class PowerEventServer(StubSubsystem):
     """
     Adds power events callbacks
     """

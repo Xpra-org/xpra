@@ -11,7 +11,7 @@ from collections.abc import Callable
 from xpra.server import features
 from xpra.util.pid import load_pid
 from xpra.scripts.session import load_session_file, save_session_file
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("dbus")
@@ -92,14 +92,14 @@ def save_dbus_x11_properties(dbus_env: dict):
             log.estr(e)
 
 
-class DbusServer(StubServerMixin):
+class DbusServer(StubSubsystem):
     """
     Mixin for servers that have a dbus server associated with them
     """
     PREFIX = "dbus"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.enabled = False
         self.launch = "dbus-launch --sh-syntax --close-stderr"
         self.pid: int = 0

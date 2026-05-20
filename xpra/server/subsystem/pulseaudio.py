@@ -24,7 +24,7 @@ from xpra.util.thread import start_thread
 from xpra.scripts.parsing import enabled_or_auto
 from xpra.scripts.session import clean_session_files, session_file_path, pidexists
 from xpra.server import features
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -158,14 +158,14 @@ def query_pulseaudio_properties() -> dict:
     return {}
 
 
-class PulseaudioServer(StubServerMixin):
+class PulseaudioServer(StubSubsystem):
     """
     Handles starting and configuring pulseaudio
     """
     PREFIX = "pulseaudio"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.init_done = Event()
         self.init_done.set()
         self.enabled = False

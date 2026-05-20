@@ -10,7 +10,7 @@ from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import Ellipsizer
 from xpra.server.source.menu import MenuConnection
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -33,7 +33,7 @@ def do_send_menu_data(ss, menu) -> None:
     GLib.idle_add(do_send)
 
 
-class MenuServer(StubServerMixin):
+class MenuServer(StubSubsystem):
     """
     Manages application menu data and sends it to connected clients.
     """
@@ -41,7 +41,7 @@ class MenuServer(StubServerMixin):
     PREFIX = "menu"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.provider = None
         self.enabled: bool = False
 

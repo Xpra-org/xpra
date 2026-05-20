@@ -10,7 +10,7 @@ from xpra.server.common import SSH_AGENT_DISPATCH
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict
 from xpra.util.parsing import FALSE_OPTIONS
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.ssh.agent import setup_ssh_auth_sock, set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket
 from xpra.log import Logger
 
@@ -26,7 +26,7 @@ def accept_client_ssh_agent(uuid: str, ssh_auth_sock: str) -> None:
 SSH_AUTH_SOCK = "SSH_AUTH_SOCK"
 
 
-class SshAgent(StubServerMixin):
+class SshAgent(StubSubsystem):
     """
     Mixin for setting up ssh agent forwarding,
     ensures that the symlinks point to the active client,
@@ -35,7 +35,7 @@ class SshAgent(StubServerMixin):
     PREFIX = "ssh-agent"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.enabled = False
 
     def init(self, opts) -> None:

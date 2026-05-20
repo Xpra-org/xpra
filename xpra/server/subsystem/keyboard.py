@@ -16,7 +16,7 @@ from xpra.util.objects import typedict
 from xpra.keyboard.common import DELAY_KEYBOARD_DATA
 from xpra.common import noerr
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -24,14 +24,14 @@ GLib = gi_import("GLib")
 log = Logger("keyboard")
 
 
-class KeyboardManager(StubServerMixin):
+class KeyboardManager(StubSubsystem):
     """
     Mixin for servers that handle keyboards
     """
     PREFIX = "keyboard"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.keymap_options: dict[str, Any] = {}
         self.mod_meanings = {}
         self.device = None

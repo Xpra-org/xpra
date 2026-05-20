@@ -15,7 +15,7 @@ from xpra.server.source.webcam import WebcamConnection
 from xpra.util.objects import typedict
 from xpra.net.common import Packet
 from xpra.util.parsing import FALSE_OPTIONS
-from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("webcam")
@@ -44,7 +44,7 @@ def init_virtual_video_devices() -> int:
     return len(devices)
 
 
-class WebcamServer(StubServerMixin):
+class WebcamServer(StubSubsystem):
     toggle_features = ("webcam",)
     """
     Mixin for servers that handle webcam forwarding.
@@ -55,7 +55,7 @@ class WebcamServer(StubServerMixin):
     PREFIX = "webcam"
 
     def __init__(self, server=None):
-        StubServerMixin.__init__(self, server)
+        StubSubsystem.__init__(self, server)
         self.device = ""
         self.encodings: Sequence[str] = ()
         self.enabled = False
