@@ -339,6 +339,10 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
             return
         self.proxy_auth(proto, c, auth_caps)
 
+    def disconnect_all(self):
+        # can be called by dbus handler DetachAllClients
+        self.stop_all_proxies(True)
+
     # override the default hello info request handler:
     def _handle_hello_request_info(self, proto, _caps: typedict) -> bool:
         info = self.get_session_id_info()

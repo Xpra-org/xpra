@@ -398,7 +398,7 @@ class ServerBase(ServerBaseClass):
     # handle new connections:
 
     def hello_oked(self, proto, c: typedict, auth_caps: dict) -> None:
-        if self._server_sources.get(proto):
+        if self.get_server_source(proto):
             log.warn("Warning: received another 'hello' packet")
             log.warn(" from an existing connection: %s", proto)
             return
@@ -634,6 +634,12 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # client connections:
+    def disconnect_all(self) -> None:
+        protocols = self.get_all_protocols()
+        log("disconnect_all() all protocols=%s", protocols)
+        for protocol in protocols:
+            self.server.disconnect_client(protocol, ConnectionMessage.DETACH_REQUEST)
+
     def cleanup_protocol(self, protocol):
         netlog("cleanup_protocol(%s)", protocol)
         # this ensures that from now on we ignore any incoming packets coming

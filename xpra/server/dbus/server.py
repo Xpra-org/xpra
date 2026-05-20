@@ -333,10 +333,8 @@ class DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE)
     def DetachAllClients(self):
-        sources = self.server._server_sources
-        self.log(".DetachAllClients() will detach: %s", sources)
-        for source in sources:
-            self.server.disconnect_client(source.protocol, ConnectionMessage.DETACH_REQUEST)
+        self.log(".DetachAllClients()")
+        self.server.disconnect_all()
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetAllInfo(self, callback, errback):
