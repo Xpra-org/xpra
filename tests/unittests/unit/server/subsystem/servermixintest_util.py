@@ -50,11 +50,6 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
     def stop(self) -> None:
         self.glib.timeout_add(1000, self.main_loop.quit)
 
-    def add_packets(self, *packet_types: str, main_thread=False) -> None:
-        for packet_type in packet_types:
-            handler = getattr(self.mixin, "_process_" + packet_type.replace("-", "_"))
-            self.add_packet_handler(packet_type, handler, main_thread)
-
     def add_legacy_alias(self, legacy_name: str, name: str) -> None:
         if BACKWARDS_COMPATIBLE:
             self.legacy_alias[legacy_name] = name
@@ -129,41 +124,12 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
         # server) so instance-based subsystems reach them via `self.server.X`.
         self._socket_info = ()
         self._server_sources = {}   # pylint: disable=protected-access
-        self.auth_classes = {}
         self.sockets = self.create_test_sockets()
         self.subsystems: dict = {}
         self.get_sources_by_type = lambda st, exclude=None: [
             ss for ss in self._server_sources.values() if isinstance(ss, st) and ss != exclude
         ]
-        # Instance-based subsystems take `server` in their constructor;
-        # legacy mixin-style subsystems do not. Inspect the callable's
-        # signature directly (works for both classes and factory functions).
-        import inspect
-        try:
-            takes_server = len(inspect.signature(mclass).parameters) >= 1
-        except (TypeError, ValueError):
-            takes_server = False
-        if takes_server:
-            x = self.mixin = mclass(self)
-            # mirror `_server_sources` on the mixin for tests that write
-            # directly to it (e.g. encoding_test): instance-based subsystems
-            # reach the same dict via `self.server._server_sources`.
-            x._server_sources = self._server_sources
-        else:
-            x = self.mixin = mclass()
-            # legacy wiring: subsystems resolve these names via the dynamic
-            # MRO, but in the test there is no enclosing server class. Also
-            # override `x.server` (which `StubSubsystem.__init__` set to
-            # `x` itself) so delegating helpers like `self.connect` route
-            # to this test class's mocks instead of recursing into `x`:
-            x.server = self
-            x._socket_info = self._socket_info
-            x._server_sources = self._server_sources
-            x.add_packets = self.add_packets
-            x.add_legacy_alias = self.add_legacy_alias
-            x.add_packet_handler = self.add_packet_handler
-            x.get_server_source = self.get_server_source
-            x.get_sources_by_type = self.get_sources_by_type
+        x = self.mixin = mclass(self)
         # Register the subsystem under its PREFIX so source classes that look
         # up via `server.subsystems[prefix].attr` (instance-based pattern)
         # can find it - and so peer-subsystem lookups via `self.get_subsystem`
@@ -173,9 +139,6 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
             self.subsystems[prefix] = x
         x.init_state()
         x.init(opts)
-        if not takes_server:
-            x.auth_classes = self.auth_classes
-            x.sockets = self.sockets
         x.setup()
         x.init_packet_handlers()
         caps = typedict(caps or {})
@@ -186,14 +149,7 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
             self.protocol.TYPE = "xpra"
             self.source.wants = ("display", "foo")
             self.source.protocol = self.protocol
-            # Pass `x` (the subsystem instance) as the server. Source classes
-            # that read `server.attr` directly (legacy class-based pattern)
-            # find the attr on `x`; source classes that look up
-            # `server.subsystems["prefix"].attr` (instance-based pattern)
-            # also work because we mirror the test's `subsystems` dict onto
-            # `x` here:
-            x.subsystems = self.subsystems
-            self.source.init_from(self.protocol, x)
+            self.source.init_from(self.protocol, self)
             self.source.init_state()
             self.source.hello_sent = 0.0
             self.source.parse_client_caps(caps)

@@ -19,13 +19,13 @@ class ClipboardMixinTest(ServerMixinTest):
             if POSIX and not OSX:
                 from xpra.x11.gtk.display_source import init_gdk_display_source
                 init_gdk_display_source()
-            from xpra.server.subsystem.clipboard import ClipboardServer
+            from xpra.server.subsystem.clipboard import ClipboardManager
             from xpra.server.source.clipboard import ClipboardConnection
             opts = AdHocStruct()
             opts.clipboard = "yes"
             opts.clipboard_direction = "both"
             opts.clipboard_filter_file = None
-            self._test_mixin_class(ClipboardServer, opts, {}, ClipboardConnection)
+            self._test_mixin_class(ClipboardManager, opts, {}, ClipboardConnection)
 
 
 def main():

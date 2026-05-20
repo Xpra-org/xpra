@@ -29,7 +29,7 @@ def decode(v) -> str:
     return memoryview_to_bytes(v).decode("utf8")
 
 
-class LoggingServer(StubSubsystem):
+class LoggingManager(StubSubsystem):
     """
     Mixin for servers that can receive and send logging packets
     """
@@ -77,7 +77,7 @@ class LoggingServer(StubSubsystem):
         info = get_log_info()
         info.update(self._features())
         return {
-            LoggingServer.PREFIX: info,
+            LoggingManager.PREFIX: info,
         }
 
     def cleanup_protocol(self, protocol) -> None:

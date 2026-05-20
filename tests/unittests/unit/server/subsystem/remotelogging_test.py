@@ -14,23 +14,23 @@ from unit.server.subsystem.servermixintest_util import ServerMixinTest
 class ServerMixinsTest(ServerMixinTest):
 
     def test_remotelogging(self):
-        from xpra.server.subsystem.logging import LoggingServer
+        from xpra.server.subsystem.logging import LoggingManager
         messages = []
 
         def newlogfn(*args):
             messages.append(args)
 
-        def _LoggingServer():
-            ls = LoggingServer()
-            ls.do_log = newlogfn
-            return ls
+        class TestLoggingManager(LoggingManager):
+            def __init__(self, server):
+                super().__init__(server)
+                self.do_log = newlogfn
 
         opts = AdHocStruct()
         opts.remote_logging = "on"
         level = 20
         msg = "foo"
         packet = Packet("logging", level, msg)
-        self._test_mixin_class(_LoggingServer, opts)
+        self._test_mixin_class(TestLoggingManager, opts)
         self.handle_packet(packet)
         assert len(messages) == 1
 

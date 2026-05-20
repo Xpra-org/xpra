@@ -92,7 +92,7 @@ def save_dbus_x11_properties(dbus_env: dict):
             log.estr(e)
 
 
-class DbusServer(StubSubsystem):
+class DbusManager(StubSubsystem):
     """
     Mixin for servers that have a dbus server associated with them
     """
@@ -189,7 +189,7 @@ class DbusServer(StubSubsystem):
         if not self.pid or not self.env:
             return {}
         return {
-            DbusServer.PREFIX: {
+            DbusManager.PREFIX: {
                 "pid": self.pid,
                 "env": self.env,
             }

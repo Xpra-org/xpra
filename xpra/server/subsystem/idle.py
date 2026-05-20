@@ -15,7 +15,7 @@ log = Logger("timeout")
 GLib = gi_import("GLib")
 
 
-class IdleTimeoutServer(StubSubsystem):
+class IdleTimeoutManager(StubSubsystem):
     PREFIX = "idle"
 
     def __init__(self, server=None):

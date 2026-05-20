@@ -146,8 +146,8 @@ def get_proxy_instance_subsystem_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.http import HttpServer
         classes.append(HttpServer)
     if features.dbus:
-        from xpra.server.subsystem.dbus import DbusServer
-        classes.append(DbusServer)
+        from xpra.server.subsystem.dbus import DbusManager
+        classes.append(DbusManager)
     return tuple(classes)
 
 

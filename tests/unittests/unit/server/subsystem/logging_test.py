@@ -34,12 +34,12 @@ class InputMixinTest(ServerMixinTest):
         def do_log(level, line):
             log_messages.append((level, line))
 
-        def _LoggingServer():
-            ls = logging.LoggingServer()
-            ls.do_log = do_log
-            return ls
+        class TestLoggingManager(logging.LoggingManager):
+            def __init__(self, server):
+                super().__init__(server)
+                self.do_log = do_log
 
-        self._test_mixin_class(_LoggingServer, opts, {}, FakeSource)
+        self._test_mixin_class(TestLoggingManager, opts, {}, FakeSource)
         self.handle_packet(Packet("logging", 10, "hello", int(monotonic())))
         message = log_messages[0]
         assert message[0] == 10
@@ -55,7 +55,7 @@ class InputMixinTest(ServerMixinTest):
             raise Exception("invalid type was allowed: %s" % (nostr, ))
 
     def test_invalid(self) -> None:
-        l = logging.LoggingServer()
+        l = logging.LoggingManager()
         opts = AdHocStruct()
         opts.remote_logging = "on"
         l.init(opts)

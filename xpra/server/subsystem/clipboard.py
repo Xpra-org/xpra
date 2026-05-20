@@ -25,7 +25,7 @@ GLib = gi_import("GLib")
 log = Logger("clipboard")
 
 
-class ClipboardServer(StubSubsystem):
+class ClipboardManager(StubSubsystem):
     """
     Mixin for servers that handle clipboard synchronization.
     """
@@ -90,7 +90,7 @@ class ClipboardServer(StubSubsystem):
         ci = self.helper.get_info()
         if cc := self.client:
             ci["client"] = cc.uuid
-        return {ClipboardServer.PREFIX: ci}
+        return {ClipboardManager.PREFIX: ci}
 
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         ch = self.helper
@@ -106,7 +106,7 @@ class ClipboardServer(StubSubsystem):
         }
         ccaps.update(ch.get_caps())
         log("clipboard server caps=%s", ccaps)
-        return {ClipboardServer.PREFIX: ccaps}
+        return {ClipboardManager.PREFIX: ccaps}
 
     def init_clipboard(self) -> None:
         log("init_clipboard() enabled=%s, filter file=%s", self.enabled, self.filter_file)
@@ -291,8 +291,8 @@ class ClipboardServer(StubSubsystem):
                     "pending-requests", "enable-selections", "loop-uuids",
                     "status",
             ):
-                self.add_packet_handler(f"{ClipboardServer.PREFIX}-%s" % x, self._process_clipboard_packet)
-            self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardServer.PREFIX}-status")
+                self.add_packet_handler(f"{ClipboardManager.PREFIX}-%s" % x, self._process_clipboard_packet)
+            self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardManager.PREFIX}-status")
 
     #########################################
     # Control Commands

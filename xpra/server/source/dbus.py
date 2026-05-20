@@ -28,7 +28,7 @@ class DBUS_Connection(StubClientConnection):
         self.dbus_server = None
 
     def init_from(self, _protocol, server) -> None:
-        # `DbusServer` is the standalone subsystem instance:
+        # `DbusManager` is the standalone subsystem instance:
         self.dbus_control = server.subsystems["dbus"].control
 
     def init_state(self) -> None:

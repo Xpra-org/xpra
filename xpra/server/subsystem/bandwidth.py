@@ -20,7 +20,7 @@ MIN_BANDWIDTH_LIMIT = envint("XPRA_MIN_BANDWIDTH_LIMIT", 1024 * 1024)
 MAX_BANDWIDTH_LIMIT = envint("XPRA_MAX_BANDWIDTH_LIMIT", 10 * 1024 * 1024 * 1024)
 
 
-class BandwidthServer(StubSubsystem):
+class BandwidthManager(StubSubsystem):
     """
     Adds bandwidth management
     """
@@ -47,10 +47,10 @@ class BandwidthServer(StubSubsystem):
             "limit": self.limit or 0,
             "detection": self.detection,
         }
-        return {BandwidthServer.PREFIX: info}
+        return {BandwidthManager.PREFIX: info}
 
     def get_server_features(self, source=None) -> dict[str, Any]:
-        caps = BandwidthServer.get_info(self, source)
+        caps = BandwidthManager.get_info(self, source)
         if BACKWARDS_COMPATIBLE:
             caps["network"] = {
                 "bandwidth-limit": self.limit or 0,

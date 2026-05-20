@@ -49,7 +49,7 @@ class BandwidthConnection(StubClientConnection):
         self.bandwidth_warning_time = 0
 
     def init_from(self, _protocol, server) -> None:
-        # `BandwidthConnection` and `BandwidthServer` are paired by the same
+        # `BandwidthConnection` and `BandwidthManager` are paired by the same
         # feature flag; the subsystem is guaranteed to be present.
         bandwidth = server.subsystems["bandwidth"]
         self.bandwidth_server_limit = bandwidth.limit

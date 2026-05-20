@@ -91,8 +91,8 @@ class ServerBase(ServerCore):
             from xpra.server.subsystem.ping import PingServer
             classes.append(PingServer)
         if features.bandwidth:
-            from xpra.server.subsystem.bandwidth import BandwidthServer
-            classes.append(BandwidthServer)
+            from xpra.server.subsystem.bandwidth import BandwidthManager
+            classes.append(BandwidthManager)
         if features.debug:
             from xpra.server.subsystem.debug import DebugServer
             classes.append(DebugServer)
@@ -109,8 +109,8 @@ class ServerBase(ServerCore):
             from xpra.server.subsystem.suspend import SuspendServer
             classes.append(SuspendServer)
         if features.idle:
-            from xpra.server.subsystem.idle import IdleTimeoutServer
-            classes.append(IdleTimeoutServer)
+            from xpra.server.subsystem.idle import IdleTimeoutManager
+            classes.append(IdleTimeoutManager)
         if POSIX and FULL_INFO >= 1:
             from xpra.server.subsystem.drm import DRMInfo
             classes.append(DRMInfo)
@@ -121,8 +121,8 @@ class ServerBase(ServerCore):
             from xpra.server.subsystem.ssh_agent import SshAgent
             classes.append(SshAgent)
         if features.dbus:
-            from xpra.server.subsystem.dbus import DbusServer
-            classes.append(DbusServer)
+            from xpra.server.subsystem.dbus import DbusManager
+            classes.append(DbusManager)
         # EncryptionServer is unconditional - it gracefully no-ops when no
         # encryption is configured on a given socket.
         from xpra.server.subsystem.encryption import EncryptionServer
@@ -131,8 +131,8 @@ class ServerBase(ServerCore):
             from xpra.server.subsystem.menu import MenuServer
             classes.append(MenuServer)
         if features.logging:
-            from xpra.server.subsystem.logging import LoggingServer
-            classes.append(LoggingServer)
+            from xpra.server.subsystem.logging import LoggingManager
+            classes.append(LoggingManager)
         if features.tray:
             from xpra.server.subsystem.tray import TrayMenu
             classes.append(TrayMenu)
@@ -149,8 +149,8 @@ class ServerBase(ServerCore):
             from xpra.server.subsystem.webcam import WebcamServer
             classes.append(WebcamServer)
         if features.clipboard:
-            from xpra.server.subsystem.clipboard import ClipboardServer
-            classes.append(ClipboardServer)
+            from xpra.server.subsystem.clipboard import ClipboardManager
+            classes.append(ClipboardManager)
         if features.pulseaudio:
             from xpra.server.subsystem.pulseaudio import PulseaudioServer
             classes.append(PulseaudioServer)
