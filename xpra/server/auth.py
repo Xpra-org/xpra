@@ -26,27 +26,25 @@ GLib = gi_import("GLib")
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
 
-# noinspection PyMethodMayBeStatic
-class AuthenticatedServer(StubServerMixin):
+class AuthenticationManager(StubServerMixin):
     """
-        Adds authentication methods to ServerCore.
-        Unlike other server subsystems,
-        this one requires some functions only present in ServerCore and not in the stub:
-        self.disconnect_client
-        self.hello_oked
-        The entry point is self.verify_auth
+        Manages authentication for ServerCore.
+        This subsystem calls server-owned connection methods for disconnects,
+        challenge timeouts, and successful hello processing.
     """
     PREFIX = "auth"
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        log("AuthenticatedServer.__init__()")
+        log("AuthenticationManager.__init__()")
         self.auth_classes: dict[str, Sequence[AuthDef]] = {}
         self.password_file: Iterable[str] = ()
+        self.socket_dirs: Sequence[str] = ()
 
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)
         self.password_file = opts.password_file
+        self.socket_dirs = opts.socket_dirs
         self.init_auth(opts)
 
     def init_auth(self, opts) -> None:
@@ -100,7 +98,7 @@ class AuthenticatedServer(StubServerMixin):
                         return v
                     return str(v).split(",")
 
-                opts["socket-dirs"] = parse_socket_dirs(opts.get("socket-dirs", self._socket_dirs))
+                opts["socket-dirs"] = parse_socket_dirs(opts.get("socket-dirs", self.socket_dirs))
                 try:
                     for o in ("self",):
                         if o in opts:
@@ -118,7 +116,7 @@ class AuthenticatedServer(StubServerMixin):
     def send_challenge(self, proto: SocketProtocol, salt: bytes, auth_caps: dict, digest: str, salt_digest: str,
                        prompt: str = "password") -> None:
         proto.send_now(Packet(CHALLENGE, salt, auth_caps, digest, salt_digest, prompt))
-        self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
+        self.server.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
     def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage, authenticator=None) -> None:
         log.warn("Warning: authentication failed")
@@ -126,7 +124,7 @@ class AuthenticatedServer(StubServerMixin):
         if authenticator:
             wmsg = f"{authenticator!r}: "+wmsg
         log.warn(f" {wmsg}")
-        GLib.timeout_add(1000, self.disconnect_client, proto, msg)
+        GLib.timeout_add(1000, self.server.disconnect_client, proto, msg)
 
     def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
         remote = {}
@@ -200,7 +198,7 @@ class AuthenticatedServer(StubServerMixin):
             if not csent:
                 # we'll re-schedule this when we call send_challenge()
                 # as the authentication module is free to take its time
-                self.cancel_verify_connection_accepted(proto)
+                self.server.cancel_verify_connection_accepted(proto)
                 # note: we may have received a challenge_response from a previous auth module's challenge
                 try:
                     salt, digest = authenticator.get_challenge(digest_modes)
@@ -249,22 +247,13 @@ class AuthenticatedServer(StubServerMixin):
         log(f"all {len(proto.authenticators)} authentication modules passed")
         capabilities = packet.get_dict(1)
         c = typedict(capabilities)
-        self.auth_verified(proto, c, auth_caps)
-
-    def auth_verified(self, proto: SocketProtocol, caps: typedict, auth_caps: dict) -> None:
-        command_req = tuple(str(x) for x in caps.tupleget("command_request"))
-        if command_req:
-            # call from UI thread:
-            log(f"auth_verified(..) command request={command_req}")
-            get_subsystem = getattr(self, "get_subsystem", lambda _prefix: None)
-            control = get_subsystem("control")
-            handler = control.handle_command_request if control else getattr(self, "handle_command_request", None)
-            if handler:
-                GLib.idle_add(handler, proto, *command_req)
-            return
         proto.clean_authenticators()
         # continue processing hello packet in UI thread:
-        GLib.idle_add(self.call_hello_oked, proto, caps, auth_caps)
+        GLib.idle_add(self.server.call_hello_oked, proto, c, auth_caps)
 
-    def call_hello_oked(self, proto: SocketProtocol, c: typedict, auth_caps: dict) -> None:
-        raise NotImplementedError()
+    def get_authenticator_info(self, si: dict) -> None:
+        for socktype, auth_classes in self.auth_classes.items():
+            if auth_classes:
+                authenticators = si.setdefault(socktype, {}).setdefault("authenticator", {})
+                for i, auth_class in enumerate(auth_classes):
+                    authenticators[i] = auth_class[0], auth_class[3]

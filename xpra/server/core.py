@@ -107,10 +107,8 @@ def force_close_connection(conn) -> None:
 
 def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.glib_server import GLibServer
-    from xpra.server.auth import AuthenticatedServer
     classes: list[type] = [
         GLibServer,
-        AuthenticatedServer,
     ]
     return tuple(classes)
 
@@ -121,6 +119,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     They are NOT inherited into the dynamic ServerBaseClass MRO; instead,
     each is constructed as an instance and stored in `self.subsystems`.
     """
+    from xpra.server.auth import AuthenticationManager
     from xpra.server.subsystem.platform import PlatformServer
     from xpra.server.subsystem.splash import SplashServer
     from xpra.server.subsystem.info import InfoServer
@@ -134,7 +133,16 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     # IDServer must come before any subsystem that reads `self.uuid`.
     # SessionFilesServer must come before any subsystem that appends to
     # its `session_files` list during init().
-    classes.extend((PlatformServer, SplashServer, IDServer, SessionFilesServer, DaemonServer, InfoServer, VersionServer))
+    classes.extend((
+        AuthenticationManager,
+        PlatformServer,
+        SplashServer,
+        IDServer,
+        SessionFilesServer,
+        DaemonServer,
+        InfoServer,
+        VersionServer,
+    ))
     if features.control:
         classes.append(ControlHandler)
     if features.mdns:
@@ -213,7 +221,6 @@ class ServerCore(ServerBaseClass):
         self._socket_timeout: float = SERVER_SOCKET_TIMEOUT
         self._ws_timeout: int = 5
         self._socket_dir: str = ""
-        self._socket_dirs: list = []
         self.dotxpra: DotXpra | None = None
         self.unix_socket_paths: list[str] = []
         self.touch_timer: int = 0
@@ -233,7 +240,6 @@ class ServerCore(ServerBaseClass):
         self._socket_dir = opts.socket_dir or ""
         if not self._socket_dir and opts.socket_dirs:
             self._socket_dir = opts.socket_dirs[0]
-        self._socket_dirs = opts.socket_dirs
         self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
         self.compression_level = opts.compression_level
         self.readonly = opts.readonly
@@ -984,7 +990,9 @@ class ServerCore(ServerBaseClass):
     def handle_ssh_connection(self, conn, socket_options: dict[str, Any]):
         from xpra.server.ssh import make_ssh_server_connection, log as sshlog
         socktype = conn.socktype_wrapped
-        none_auth = not self.auth_classes[socktype]
+        auth_module = self.get_subsystem("auth")
+        auth_classes = auth_module.auth_classes if auth_module else {}
+        none_auth = not auth_classes.get(socktype)
         sshlog("handle_ssh_connection(%s, %s) socktype wrapped=%s", conn, socket_options, socktype)
 
         def ssh_password_authenticate(username, password) -> bool:
@@ -996,7 +1004,9 @@ class ServerCore(ServerBaseClass):
                     sshlog.warn(" username does not match:")
                     sshlog.warn(" expected '%s', got '%s'", sysusername, username)
                     return False
-            auth_modules = self.make_authenticators(socktype, {"username": username}, conn)
+            if not auth_module:
+                return False
+            auth_modules = auth_module.make_authenticators(socktype, {"username": username}, conn)
             sshlog("ssh_password_authenticate auth_modules(%s, %s)=%s", username, "*" * len(password), auth_modules)
             for auth in auth_modules:
                 # mimic a client challenge:
@@ -1477,10 +1487,17 @@ class ServerCore(ServerBaseClass):
         disable_peek = getattr(conn, "disable_peek", noop)
         disable_peek()
 
-        # this will call auth_verified if successful
+        # this will call call_hello_oked if successful
         # it may also just send challenge packets,
         # in which case we'll end up here parsing the hello again
         start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
+
+    def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
+        if auth := self.get_subsystem("auth"):
+            auth.verify_auth(proto, packet, c)
+            return
+        capabilities = packet.get_dict(1)
+        self.call_hello_oked(proto, typedict(capabilities), {})
 
     def _process_ssl_upgrade(self, proto: SocketProtocol, packet: Packet) -> None:
         socktype = proto._conn.socktype
@@ -1533,6 +1550,12 @@ class ServerCore(ServerBaseClass):
     def hello_oked(self, proto: SocketProtocol, c: typedict, _auth_caps: dict) -> bool:
         if self._closing:
             self.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
+            return True
+        command_req = tuple(str(x) for x in c.tupleget("command_request"))
+        if command_req:
+            log(f"hello_oked(..) command request={command_req}")
+            if control := self.get_subsystem("control"):
+                control.handle_command_request(proto, *command_req)
             return True
         request = c.strget("request")
         if request and self.handle_hello_request(request, proto, c):
@@ -1729,11 +1752,8 @@ class ServerCore(ServerBaseClass):
                 for ip in get_all_ips():
                     add_address(socktype, ip, port)
 
-        for socktype, auth_classes in self.auth_classes.items():
-            if auth_classes:
-                authenticators = si.setdefault(socktype, {}).setdefault("authenticator", {})
-                for i, auth_class in enumerate(auth_classes):
-                    authenticators[i] = auth_class[0], auth_class[3]
+        if auth := self.get_subsystem("auth"):
+            auth.get_authenticator_info(si)
         return si
 
     ######################################################################

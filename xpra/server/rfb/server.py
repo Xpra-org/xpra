@@ -84,9 +84,10 @@ class RFBServer(StubServerMixin):
             log("no desktop model, closing RFB connection")
             conn.close()
             return
+        auth_subsystem = self.get_subsystem("auth")
 
         def rfb_protocol_class(conn):
-            auths = self.make_authenticators("rfb", {}, conn)
+            auths = auth_subsystem.make_authenticators("rfb", {}, conn) if auth_subsystem else ()
             assert len(auths) <= 1, "rfb does not support multiple authentication modules"
             auth = None
             if len(auths) == 1:
