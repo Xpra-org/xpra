@@ -157,4 +157,4 @@ class CursorManager(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         self.add_packets(f"{CursorManager.PREFIX}-set")
-        self.server.add_legacy_alias("set-cursors", f"{CursorManager.PREFIX}-set")
+        self.add_legacy_alias("set-cursors", f"{CursorManager.PREFIX}-set")

@@ -436,8 +436,8 @@ class KeyboardManager(StubServerMixin):
                 "key-action", "key-repeat", "layout-changed", "keymap-changed",
                 main_thread=True
             )
-            self.server.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync, True)
-            self.server.add_packet_handler("keyboard-sync-enabled-status", self._process_keyboard_sync, True)
+            self.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync, True)
+            self.add_packet_handler("keyboard-sync-enabled-status", self._process_keyboard_sync, True)
 
         self.add_packets(
             "keyboard-event", "keyboard-config", "keyboard-sync",

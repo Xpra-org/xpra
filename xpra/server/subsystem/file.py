@@ -132,17 +132,17 @@ class FileServer(StubServerMixin):
     def init_packet_handlers(self) -> None:
         # noqa: E241
         if self.file_transfer.printing or self.file_transfer.file_transfer:
-            self.server.add_legacy_alias("send-file", "file-send")
-            self.server.add_legacy_alias("ack-file-chunk", "file-ack-chunk")
-            self.server.add_legacy_alias("send-file-chunk", "file-send-chunk")
-            self.server.add_legacy_alias("send-data-request", "file-date-request")
-            self.server.add_legacy_alias("send-data-response", "file-date-response")
+            self.add_legacy_alias("send-file", "file-send")
+            self.add_legacy_alias("ack-file-chunk", "file-ack-chunk")
+            self.add_legacy_alias("send-file-chunk", "file-send-chunk")
+            self.add_legacy_alias("send-data-request", "file-date-request")
+            self.add_legacy_alias("send-data-response", "file-date-response")
 
             self.add_packets("file-send", "file-ack-chunk", "file-send-chunk",
                              "file-data-request", "file-data-response")
 
         if self.file_transfer.file_transfer:
-            self.server.add_legacy_alias("request-file", "file-request")
+            self.add_legacy_alias("request-file", "file-request")
             self.add_packets("file-request")
 
     #########################################

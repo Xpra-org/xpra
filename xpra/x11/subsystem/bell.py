@@ -114,4 +114,4 @@ class BellServer(StubServerMixin):
     def init_packet_handlers(self) -> None:
         if self.bell:
             self.add_packets("bell-set", main_thread=True)
-            self.server.add_legacy_alias("set-bell", "bell-set")
+            self.add_legacy_alias("set-bell", "bell-set")

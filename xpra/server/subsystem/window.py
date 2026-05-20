@@ -591,11 +591,11 @@ class WindowServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         if BACKWARDS_COMPATIBLE:
-            self.server.add_legacy_alias("map-window", "window-map")
-            self.server.add_legacy_alias("unmap-window", "window-unmap")
-            self.server.add_legacy_alias("close-window", "window-close")
-            self.server.add_legacy_alias("focus", "window-focus")
-            self.server.add_legacy_alias("damage-sequence", "window-draw-ack")
+            self.add_legacy_alias("map-window", "window-map")
+            self.add_legacy_alias("unmap-window", "window-unmap")
+            self.add_legacy_alias("close-window", "window-close")
+            self.add_legacy_alias("focus", "window-focus")
+            self.add_legacy_alias("damage-sequence", "window-draw-ack")
             # some packet mangling needed:
             self.add_packets("buffer-refresh", "configure-window", main_thread=True)
         self.add_packets(

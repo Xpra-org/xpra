@@ -72,17 +72,30 @@ class StubServerMixin(SignalEmitter):
         `PacketDispatcher.add_packets` baked into the server class, which
         looks up handlers on the dispatcher itself - for instance-based
         subsystems, the handlers no longer live there.
-
-        Note: `add_packet_handler` and `add_legacy_alias` are deliberately
-        NOT mirrored on this stub - they would shadow `PacketDispatcher`'s
-        versions (which sit later in `GLibServer`'s MRO) on the actual
-        server class, causing infinite recursion. Subsystems that need
-        either should call `self.server.add_packet_handler(...)` or
-        `self.server.add_legacy_alias(...)` explicitly.
         """
         for packet_type in packet_types:
             handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
-            self.server.add_packet_handler(packet_type, handler, main_thread)
+            self.add_packet_handler(packet_type, handler, main_thread)
+
+    def add_packet_handler(self, packet_type: str, handler: Callable, main_thread: bool = False) -> None:
+        """ register a single packet handler on the owning server """
+        if self.server is self:
+            # Framework-mixin case (StubServerMixin is in the server's MRO):
+            # going through self.server.add_packet_handler would recurse,
+            # because this method shadows PacketDispatcher's. Call the
+            # PacketDispatcher implementation directly.
+            from xpra.net.dispatch import PacketDispatcher
+            PacketDispatcher.add_packet_handler(self, packet_type, handler, main_thread)
+            return
+        self.server.add_packet_handler(packet_type, handler, main_thread)
+
+    def add_legacy_alias(self, legacy_name: str, new_name: str) -> None:
+        """ register a backwards-compat packet name alias on the owning server """
+        if self.server is self:
+            from xpra.net.dispatch import PacketDispatcher
+            PacketDispatcher.add_legacy_alias(self, legacy_name, new_name)
+            return
+        self.server.add_legacy_alias(legacy_name, new_name)
 
     def init(self, opts) -> None:
         """

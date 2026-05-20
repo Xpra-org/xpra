@@ -353,4 +353,4 @@ class EncodingServer(StubServerMixin):
                 "quality", "min-quality", "max-quality",
                 "speed", "min-speed", "max-speed",
             )
-            self.server.add_legacy_alias("encodings", f"{EncodingServer.PREFIX}-set")
+            self.add_legacy_alias("encodings", f"{EncodingServer.PREFIX}-set")

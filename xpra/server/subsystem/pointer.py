@@ -432,9 +432,9 @@ class PointerManager(StubServerMixin):
     def init_packet_handlers(self) -> None:
         if BACKWARDS_COMPATIBLE:
             self.add_packets("pointer-position", main_thread=True)  # pre v5
-            self.server.add_legacy_alias("wheel-motion", "pointer-wheel")
-            self.server.add_legacy_alias("pointer", "pointer-motion")
-            self.server.add_packet_handler("button-action", self._process_button_action, True)  # pre v5
+            self.add_legacy_alias("wheel-motion", "pointer-wheel")
+            self.add_legacy_alias("pointer", "pointer-motion")
+            self.add_packet_handler("button-action", self._process_button_action, True)  # pre v5
         self.add_packets(
             "pointer-button",
             "pointer-motion",

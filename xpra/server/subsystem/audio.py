@@ -183,8 +183,8 @@ class AudioServer(StubServerMixin):
             self.add_packets(f"{AudioServer.PREFIX}-control", main_thread=True)
             self.add_packets(f"{AudioServer.PREFIX}-data")
             self.add_packets(f"{AudioServer.PREFIX}-capabilities", main_thread=True)
-            self.server.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")
-            self.server.add_legacy_alias("sound-data", f"{AudioServer.PREFIX}-data")
+            self.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")
+            self.add_legacy_alias("sound-data", f"{AudioServer.PREFIX}-data")
 
     #########################################
     # Control Commands
