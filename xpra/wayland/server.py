@@ -13,6 +13,8 @@ from xpra.codecs.image import ImageWrapper
 from xpra.server.common import get_sources_by_type
 from xpra.server.source.window import WindowsConnection
 from xpra.server.subsystem.clipboard import ClipboardManager
+from xpra.server.subsystem.keyboard import KeyboardManager
+from xpra.server.subsystem.pointer import PointerManager
 from xpra.util.gobject import to_gsignals
 from xpra.util.objects import typedict
 from xpra.wayland.compositor import WaylandCompositor
@@ -62,6 +64,24 @@ class WaylandClipboardManager(ClipboardManager):
         return make_wayland_clipboard
 
 
+class WaylandKeyboardManager(KeyboardManager):
+
+    def make_keyboard_device(self):
+        return self.server.compositor.get_keyboard_device()
+
+    def get_keyboard_config(self, props=None):
+        from xpra.wayland.keyboard_config import KeyboardConfig
+        keyboard_config = KeyboardConfig()
+        log("get_keyboard_config(%s)=%s", props, keyboard_config)
+        return keyboard_config
+
+
+class WaylandPointerManager(PointerManager):
+
+    def make_pointer_device(self):
+        return self.server.compositor.get_pointer_device()
+
+
 class WaylandSeamlessServer(GObject.GObject, ServerBase):
     __gsignals__ = to_gsignals(ServerBase.__signals__)
 
@@ -98,22 +118,14 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             env["NO_AT_BRIDGE"] = "1"
         return env
 
-    def make_keyboard_device(self):
-        return self.compositor.get_keyboard_device()
-
-    @staticmethod
-    def get_keyboard_config(_props=None):
-        # p = typedict(props or {})
-        from xpra.wayland.keyboard_config import KeyboardConfig
-        keyboard_config = KeyboardConfig()
-        log("get_keyboard_config(..)=%s", keyboard_config)
-        return keyboard_config
-
-    def make_pointer_device(self):
-        return self.compositor.get_pointer_device()
-
     def get_clipboard_subsystem_class(self) -> type:
         return WaylandClipboardManager
+
+    def get_keyboard_subsystem_class(self) -> type:
+        return WaylandKeyboardManager
+
+    def get_pointer_subsystem_class(self) -> type:
+        return WaylandPointerManager
 
     def get_surface(self, wid: int):
         window = self.get_window(wid)
@@ -643,6 +655,14 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             log.error("Error: IO_ERR on wayland compositor fd %i", fd)
         return GLib.SOURCE_CONTINUE
 
+    def start_wayland_event_source(self) -> None:
+        if self.wayland_fd_source:
+            return
+        fd = self.compositor.get_event_loop_fd()
+        conditions = GLib.IO_IN | GLib.IO_ERR
+        log("wayland compositor event loop fd=%i", fd)
+        self.wayland_fd_source = GLib.unix_fd_add_full(GLib.PRIORITY_DEFAULT, fd, conditions, self.wayland_io_callback)
+
     def setup(self) -> None:
         socket_name = self.compositor.initialize()
         os.environ["WAYLAND_DISPLAY"] = socket_name
@@ -650,10 +670,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def do_run(self) -> None:
         log("WaylandSeamlessServer.do_run()")
-        fd = self.compositor.get_event_loop_fd()
-        conditions = GLib.IO_IN | GLib.IO_ERR
-        log("wayland compositor event loop fd=%i", fd)
-        self.wayland_fd_source = GLib.unix_fd_add_full(GLib.PRIORITY_DEFAULT, fd, conditions, self.wayland_io_callback)
+        self.start_wayland_event_source()
         super().do_run()
 
     def cleanup(self):
