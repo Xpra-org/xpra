@@ -53,7 +53,7 @@ These subsystems involve communication between client and server.
 | [SSH Agent](SSH_Agent.md)       | [ssh_agent](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/ssh_agent.py)       | [ssh_agent](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/ssh_agent.py)       | none                                                                                         | n/a                                                   |
 | [Tray](Tray.md)                 | [tray](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/tray.py)                 | [tray](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/tray.py)                 | none                                                                                         | n/a                                                   |
 | [Webcam](Webcam.md)             | [webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/webcam.py)             | [webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/webcam.py)             | [webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/webcam.py)         | [webcam usage](../Features/Webcam.md)                 |
-| [Window](Window.md)             | [windows](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/windows.py)           | [window](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/window.py)             | [window](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/windows.py)        |                                                       |
+| [Window](Window.md)             | [window](https://github.com/Xpra-org/xpra/tree/master/xpra/client/subsystem/window)                | [window](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/window.py)             | [window](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/window.py)         |                                                       |
 
 
 ## Server-Only Subsystems
@@ -62,7 +62,8 @@ These subsystems handle server-side infrastructure and have no corresponding cli
 
 | Subsystem      | [Server Module](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem)                | User Documentation                               |
 |----------------|----------------------------------------------------------------------------------------------------|--------------------------------------------------|
-| Control        | [control](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/control.py)           | n/a |
+| Auth           | [auth](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth.py)                           | [authentication](../Usage/Authentication.md)     |
+| Control        | [control](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/control.py)           | n/a                                              |
 | Daemon         | [daemon](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/daemon.py)             | n/a                                              |
 | DBUS           | [dbus](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/dbus.py)                 | n/a                                              |
 | Debug          | [debug](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/debug.py)               | n/a                                              |
@@ -75,7 +76,8 @@ These subsystems handle server-side infrastructure and have no corresponding cli
 | OpenGL         | [opengl](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/opengl.py)             | [OpenGL usage](../Usage/OpenGL.md)               |
 | Platform       | [platform](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/platform.py)         | n/a                                              |
 | PulseAudio     | [pulseaudio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/pulseaudio.py)     | [audio feature](../Features/Audio.md)            |
-| SessionFiles   | [sessionfiles](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/sessionfiles.py) | n/a                                          |
+| RFB            | [rfb](https://github.com/Xpra-org/xpra/blob/master/xpra/server/rfb/server.py)                      | n/a                                              |
+| SessionFiles   | [sessionfiles](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/sessionfiles.py) | n/a                                              |
 | Splash         | [splash](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/splash.py)             | n/a                                              |
 | Suspend        | [suspend](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/suspend.py)           | n/a                                              |
 | Version        | [version](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/version.py)           | n/a                                              |
