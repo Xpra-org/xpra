@@ -22,6 +22,7 @@ from xpra.net.net_util import get_info as get_net_info
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.net.constants import ConnectionMessage
+from xpra.common import noop
 from xpra.util.parsing import str_to_bool
 from xpra.os_util import get_machine_id, POSIX, gi_import
 from xpra.util.child_reaper import get_child_reaper
@@ -85,8 +86,7 @@ class InfoServer(StubServerMixin):
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self.hello_request_handlers["info"] = self._handle_hello_request_info
-        self.session_name = ""
+        self.server.hello_request_handlers["info"] = self._handle_hello_request_info
 
     def setup(self) -> None:
         self.add_info_control_commands()
@@ -134,7 +134,7 @@ class InfoServer(StubServerMixin):
         version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
         proto.send_now(Packet("hello", {"version": version}))
         # client is meant to close the connection itself, but just in case:
-        GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
+        GLib.timeout_add(5 * 1000, self.server.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
     ######################################################################
     # info:
@@ -163,7 +163,7 @@ class InfoServer(StubServerMixin):
                      **kwargs,
                      ) -> None:
         start = monotonic()
-        ui_info: dict[str, Any] = self.get_ui_info(proto, **kwargs)
+        ui_info: dict[str, Any] = self.server.get_ui_info(proto, **kwargs)
         end = monotonic()
         log("get_all_info: ui info collected in %ims", (end - start) * 1000)
         start_thread(self._get_info_in_thread, "Info", daemon=True, args=(callback, ui_info, proto, kwargs))
@@ -173,15 +173,15 @@ class InfoServer(StubServerMixin):
         start = monotonic()
         # this runs in a non-UI thread
         with log.trap_error("Error during info collection"):
-            info = self.get_threaded_info(proto, **kwargs)
+            info = self.server.get_threaded_info(proto, **kwargs)
             merge_dicts(ui_info, info)
         end = monotonic()
         log("get_all_info: non ui info collected in %ims", (end - start) * 1000)
         callback(proto, ui_info)
 
     def get_info(self, _proto) -> dict[str, Any]:
-        if self.session_name:
-            return {"name": self.session_name}
+        if self.server.session_name:
+            return {"name": self.server.session_name}
         return {}
 
     def get_ui_info(self, _proto: SocketProtocol, **kwargs) -> dict[str, Any]:
@@ -202,7 +202,7 @@ class InfoServer(StubServerMixin):
         # excluded here so callers that compose `get_minimal_server_info` into
         # capabilities don't collide with IDServer.get_caps.
         return {
-            "session-type": self.session_type,
+            "session-type": self.server.session_type,
             "machine-id": get_machine_id(),
         }
 
@@ -214,13 +214,13 @@ class InfoServer(StubServerMixin):
             info["sysconfig"] = get_sysconfig_info()
         ni = get_net_info()
         ni |= {
-            "sockets": self.get_socket_info(),
+            "sockets": self.server.get_socket_info(),
             # "packet-handlers": GLibPacketHandler.get_info(self),
             "www": {
-                "": self._html,
-                "websocket-upgrade": self.websocket_upgrade,
-                "dir": self._www_dir or "",
-                "http-headers-dirs": self._http_headers_dirs or "",
+                "": self.server._html,
+                "websocket-upgrade": self.server.websocket_upgrade,
+                "dir": self.server._www_dir or "",
+                "http-headers-dirs": self.server._http_headers_dirs or "",
             },
         }
         info["network"] = ni
@@ -237,9 +237,9 @@ class InfoServer(StubServerMixin):
         info = {
             "type": "Python",
             "python": {"version": parse_version(platform.python_version())[:FULL_INFO + 1]},
-            "start_time": int(self.start_time),
+            "start_time": int(self.server.start_time),
             "current_time": int(now),
-            "elapsed_time": int(now - self.start_time),
+            "elapsed_time": int(now - self.server.start_time),
             "build": self.get_build_info(),
         }
         return info
@@ -253,7 +253,7 @@ class InfoServer(StubServerMixin):
 
     def get_packet_handlers_info(self) -> dict[str, Any]:
         return {
-            "default": sorted(self._default_packet_handlers.keys()),
+            "default": sorted(self.server._default_packet_handlers.keys()),
         }
 
     def get_socket_info(self) -> dict[str, Any]:
@@ -267,9 +267,10 @@ class InfoServer(StubServerMixin):
     #########################################
 
     def control_command_name(self, name: str) -> str:
-        self.session_name = name
-        log.info(f"changed session name: {self.session_name!r}")
-        self.setting_changed("session_name", name)
+        self.server.session_name = name
+        log.info(f"changed session name: {self.server.session_name!r}")
+        setting_changed = getattr(self.server, "setting_changed", noop)
+        setting_changed("session_name", name)
         if mdns := self.get_subsystem("mdns"):
             mdns.mdns_update()
         return f"session name set to {name}"

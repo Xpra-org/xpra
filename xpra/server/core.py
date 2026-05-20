@@ -108,11 +108,9 @@ def force_close_connection(conn) -> None:
 def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.glib_server import GLibServer
     from xpra.server.auth import AuthenticatedServer
-    from xpra.server.subsystem.info import InfoServer
     classes: list[type] = [
         GLibServer,
         AuthenticatedServer,
-        InfoServer,
     ]
     return tuple(classes)
 
@@ -125,6 +123,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     """
     from xpra.server.subsystem.platform import PlatformServer
     from xpra.server.subsystem.splash import SplashServer
+    from xpra.server.subsystem.info import InfoServer
     from xpra.server.subsystem.control import ControlHandler
     from xpra.server.subsystem.daemon import DaemonServer
     from xpra.server.subsystem.id import IDServer
@@ -135,7 +134,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     # IDServer must come before any subsystem that reads `self.uuid`.
     # SessionFilesServer must come before any subsystem that appends to
     # its `session_files` list during init().
-    classes.extend((PlatformServer, SplashServer, IDServer, SessionFilesServer, DaemonServer, VersionServer))
+    classes.extend((PlatformServer, SplashServer, IDServer, SessionFilesServer, DaemonServer, InfoServer, VersionServer))
     if features.control:
         classes.append(ControlHandler)
     if features.mdns:
@@ -1604,6 +1603,26 @@ class ServerCore(ServerBaseClass):
             capabilities.update(self.get_server_features(source))
         return capabilities
 
+    def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
+        info: dict[str, Any] = {}
+        subsystems = kwargs.get("subsystems", ())
+        for prefix, sub in self.subsystems.items():
+            if subsystems and prefix not in subsystems:
+                continue
+            fn = getattr(sub, "get_ui_info", None)
+            if not fn:
+                continue
+            try:
+                if isinstance(sub, type):
+                    mixin_info = fn(self, proto, **kwargs)
+                else:
+                    mixin_info = fn(proto, **kwargs)
+            except Exception:
+                log.warn(f"Error: in {sub}.get_ui_info", exc_info=True)
+                continue
+            merge_dicts(info, mixin_info)
+        return info
+
     def get_server_features(self, _source=None) -> dict[str, Any]:
         caps: dict[str, Any] = {
             "readonly-server": True,
@@ -1647,6 +1666,16 @@ class ServerCore(ServerBaseClass):
         end = monotonic()
         log("ServerCore.get_info took %ims", (end - start) * 1000)
         return info
+
+    def get_server_info(self, full=False) -> dict[str, Any]:
+        if info := self.get_subsystem("info"):
+            return info.get_server_info(full)
+        return {}
+
+    def get_minimal_server_info(self) -> dict[str, Any]:
+        if info := self.get_subsystem("info"):
+            return info.get_minimal_server_info()
+        return {}
 
     def get_socket_info(self) -> dict[str, Any]:
         si: dict[str, Any] = {}

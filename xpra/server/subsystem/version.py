@@ -29,9 +29,6 @@ class VersionServer(StubServerMixin):
             VersionServer.PREFIX: vparts(XPRA_VERSION, FULL_INFO + 1),
         }
         if source is None or "versions" in source.wants:
-            # InfoServer is still a class-based mixin on the server.
-            # When it is migrated, replace with
-            # `self.get_subsystem("info").get_minimal_server_info()`.
             caps |= self.server.get_minimal_server_info()
         return caps
 
