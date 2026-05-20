@@ -141,6 +141,9 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     if features.mdns:
         from xpra.server.subsystem.mdns import MdnsServer
         classes.append(MdnsServer)
+    if features.rfb:
+        from xpra.server.rfb.server import RFBServer
+        classes.append(RFBServer)
     return tuple(classes)
 
 
@@ -186,7 +189,6 @@ class ServerCore(GLibServer):
         # networking bits:
         self.sockets: list[SocketListener] = []
         self._potential_protocols: list[SocketProtocol] = []
-        self._rfb_upgrade: int = 0
         self._ssl_attributes: dict = {}
         self._accept_timeout: int = SOCKET_TIMEOUT + 1
         self.ssl_mode: str = ""
@@ -200,7 +202,6 @@ class ServerCore(GLibServer):
         self._http_headers_dirs: list[str] = []
         self.socket_cleanup: list[Callable] = []
         self.socket_verify_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
-        self.socket_rfb_upgrade_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
         self._max_connections: int = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout: float = SERVER_SOCKET_TIMEOUT
         self._ws_timeout: float = 5.0
@@ -574,8 +575,8 @@ class ServerCore(GLibServer):
         if tosocktype in ("ws", "wss") and not has_websocket_handler():
             return False
         if tosocktype == "rfb":
-            # only available with the RFBServer
-            return getattr(self, "_rfb_upgrade", False)
+            # only available with the RFBServer subsystem
+            return getattr(self.subsystems.get("rfb"), "_rfb_upgrade", 0) > 0
         if tosocktype == "rdp":
             return self.rdp_upgrade
         if socktype in ("tcp", "socket", "vsock", "named-pipe"):
@@ -902,9 +903,11 @@ class ServerCore(GLibServer):
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, address)
         proto = self.make_protocol(socktype, conn, socket_options, pre_read=pre_read)
-        if socktype == "tcp" and not peek_data and self._rfb_upgrade > 0:
-            t = GLib.timeout_add(self._rfb_upgrade * 1000, self.try_upgrade_to_rfb, proto)
-            self.socket_rfb_upgrade_timer[proto] = t
+        rfb = self.subsystems.get("rfb")
+        rfb_upgrade = getattr(rfb, "_rfb_upgrade", 0)
+        if socktype == "tcp" and not peek_data and rfb_upgrade > 0:
+            t = GLib.timeout_add(rfb_upgrade * 1000, rfb.try_upgrade_to_rfb, proto)
+            rfb.socket_rfb_upgrade_timer[proto] = t
 
     def ssl_wrap(self, conn, socket_options: dict[str, Any]) -> SSLSocketConnection | None:
         sock = conn._socket
@@ -1024,28 +1027,9 @@ class ServerCore(GLibServer):
             display_name=self.display,
         )
 
-    def try_upgrade_to_rfb(self, proto) -> bool:
-        self.cancel_upgrade_to_rfb_timer(proto)
-        if proto.is_closed():
-            netlog("try_upgrade_to_rfb() protocol is already closed")
-            return False
-        conn = proto._conn
-        netlog("try_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
-        if conn.input_bytecount == 0:
-            self.upgrade_protocol_to_rfb(proto)
-        return False
-
-    def upgrade_protocol_to_rfb(self, proto: SocketProtocol, data: bytes = b"") -> None:
-        conn = proto.steal_connection()
-        netlog("upgrade_protocol_to_rfb(%s) connection=%s", proto, conn)
-        self._potential_protocols.remove(proto)
-        proto.wait_for_io_threads_exit(1)
-        conn.set_active(True)
-        self.handle_rfb_connection(conn, data)
-
     def cancel_upgrade_to_rfb_timer(self, protocol) -> None:
-        if t := self.socket_rfb_upgrade_timer.pop(protocol, None):
-            GLib.source_remove(t)
+        if rfb := self.subsystems.get("rfb"):
+            rfb.cancel_upgrade_to_rfb_timer(protocol)
 
     def make_protocol(self, socktype: str, conn, socket_options, protocol_class=SocketProtocol, pre_read=()):
         """ create a new xpra Protocol instance and start it """
@@ -1160,10 +1144,11 @@ class ServerCore(GLibServer):
     def invalid_header(self, proto: SocketProtocol, data: bytes, msg="") -> None:
         netlog("invalid header: %s, input_packetcount=%s, websocket_upgrade=%s, ssl=%s",
                Ellipsizer(data), proto.input_packetcount, self.websocket_upgrade, bool(self._ssl_attributes))
-        if data == b"RFB " and self._rfb_upgrade > 0:
+        rfb = self.subsystems.get("rfb")
+        if data == b"RFB " and getattr(rfb, "_rfb_upgrade", 0) > 0:
             netlog("RFB header, trying to upgrade protocol")
-            self.cancel_upgrade_to_rfb_timer(proto)
-            self.upgrade_protocol_to_rfb(proto, data)
+            rfb.cancel_upgrade_to_rfb_timer(proto)
+            rfb.upgrade_protocol_to_rfb(proto, data)
             return
         packet_type = self.guess_packet_type(data)
         # RFBServerProtocol doesn't support `steal_connection`:
@@ -1740,6 +1725,9 @@ class ServerCore(GLibServer):
         return super().dispatch_packet(proto, packet)
 
     def handle_rfb_connection(self, conn, data: bytes = b"") -> None:
+        if rfb := self.subsystems.get("rfb"):
+            rfb.handle_rfb_connection(conn, data)
+            return
         log.error("Error: RFB protocol is not supported by this server")
         log("handle_rfb_connection%s", (conn, data))
         force_close_connection(conn)

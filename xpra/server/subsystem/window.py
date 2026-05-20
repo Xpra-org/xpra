@@ -51,6 +51,18 @@ class WindowServer(StubServerMixin):
         # so they will survive a re-connection:
         self.client_properties: dict[int, dict] = {}
 
+    def get_models(self) -> dict[Any, int]:
+        """
+        Live mapping of window model -> window id for every window the server
+        currently manages. Callers must not mutate the returned dict.
+        Prefer `get_wid(model)` for single-lookup callers.
+        """
+        return self._window_to_id
+
+    def get_wid(self, model) -> int | None:
+        """ window id for `model`, or None if it is not managed """
+        return self._window_to_id.get(model)
+
     def init(self, opts) -> None:
         def parse_window_size(v, default_value=(0, 0)):
             try:

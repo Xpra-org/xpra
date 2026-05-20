@@ -4,11 +4,14 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+from weakref import WeakKeyDictionary
+
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.util.system import is_X11
 from xpra.net.bytestreams import set_socket_timeout
+from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.rfb.const import RFB_KEYNAMES
 from xpra.server.rfb.protocol import RFBServerProtocol
 from xpra.server.rfb.source import RFBSource
@@ -27,20 +30,18 @@ keylog = Logger("rfb", "keyboard")
 
 class RFBServer(StubServerMixin):
     """
-        Adds RFB packet handler to a server.
+        Adds RFB packet handling and the RFB upgrade timer to a server.
     """
     PREFIX = "rfb"
 
     def __init__(self, server=None):
         StubServerMixin.__init__(self, server)
-        self._window_to_id = {}
         self._rfb_upgrade = 0
-        self.readonly = False
         self.rfb_buttons = 0
-        self.x11_keycodes_for_keysym = {}
         self.X11Keyboard = None
+        self.socket_rfb_upgrade_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         if not str_to_bool(opts.rfb_upgrade):
             self._rfb_upgrade = 0
         else:
@@ -57,20 +58,27 @@ class RFBServer(StubServerMixin):
                 log.warn("Warning: no x11 bindings")
                 log.warn(" some RFB keyboard events may be missing")
 
+    def cleanup_protocol(self, protocol) -> None:
+        self.cancel_upgrade_to_rfb_timer(protocol)
+
+    def _get_window_models(self) -> dict:
+        window = self.server.get_subsystem("window")
+        return window.get_models() if window else {}
+
     def _get_rfb_desktop_model(self):
-        models = tuple(self._window_to_id.keys())
+        models = tuple(self._get_window_models().keys())
         if not models:
             log.error("RFB: no window models to export, dropping connection")
             return None
         if len(models) != 1:
-            log.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
+            log.error("RFB can only handle a single desktop window, found %i", len(models))
             return None
         return models[0]
 
     def _get_rfb_desktop_wid(self):
-        ids = tuple(self._window_to_id.values())
+        ids = tuple(self._get_window_models().values())
         if len(ids) != 1:
-            log.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
+            log.error("RFB can only handle a single desktop window, found %i", len(ids))
             return None
         return ids[0]
 
@@ -95,12 +103,35 @@ class RFBServer(StubServerMixin):
             log("creating RFB protocol with authentication=%s", auth)
             return RFBServerProtocol(conn, auth,
                                      self.process_rfb_packet, self.get_rfb_pixelformat,
-                                     self.session_name or "Xpra Server",
+                                     self.server.session_name or "Xpra Server",
                                      data)
 
-        p = self.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
+        p = self.server.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
         log("handle_rfb_connection(%s) protocol=%s", conn, p)
         p.send_protocol_handshake()
+
+    def try_upgrade_to_rfb(self, proto) -> bool:
+        self.cancel_upgrade_to_rfb_timer(proto)
+        if proto.is_closed():
+            log("try_upgrade_to_rfb() protocol is already closed")
+            return False
+        conn = proto._conn
+        log("try_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
+        if conn.input_bytecount == 0:
+            self.upgrade_protocol_to_rfb(proto)
+        return False
+
+    def upgrade_protocol_to_rfb(self, proto: SocketProtocol, data: bytes = b"") -> None:
+        conn = proto.steal_connection()
+        log("upgrade_protocol_to_rfb(%s) connection=%s", proto, conn)
+        self.server._potential_protocols.remove(proto)
+        proto.wait_for_io_threads_exit(1)
+        conn.set_active(True)
+        self.handle_rfb_connection(conn, data)
+
+    def cancel_upgrade_to_rfb_timer(self, protocol) -> None:
+        if t := self.socket_rfb_upgrade_timer.pop(protocol, None):
+            GLib.source_remove(t)
 
     def process_rfb_packet(self, proto, packet):
         # log("RFB packet: '%s'", packet)
@@ -118,25 +149,25 @@ class RFBServer(StubServerMixin):
         return w, h, 32, 24, False, True, 255, 255, 255, 16, 8, 0
 
     def _process_rfb_invalid(self, proto, packet):
-        self.disconnect_protocol(proto, "invalid packet: %s" % repr_ellipsized(packet[1:]))
+        self.server.disconnect_protocol(proto, "invalid packet: %s" % repr_ellipsized(packet[1:]))
 
     def _process_rfb_connection_lost(self, proto, packet):
-        self._process_connection_lost(proto, packet)
+        self.server._process_connection_lost(proto, packet)
 
     def _process_rfb_authenticated(self, proto, _packet):
         model = self._get_rfb_desktop_model()
         if not model:
             proto.close()
             return
-        self.accept_protocol(proto, typedict())
+        self.server.accept_protocol(proto, typedict())
         # use blocking sockets from now on:
         set_socket_timeout(proto._conn, None)
-        accepted, share_count, disconnected = self.handle_sharing(proto, share=proto.share)
+        accepted, share_count, disconnected = self.server.handle_sharing(proto, share=proto.share)
         log("RFB handle sharing: accepted=%s, share count=%s, disconnected=%s", accepted, share_count, disconnected)
         if not accepted:
             return
         source = RFBSource(proto, proto.share)
-        self._server_sources[proto] = source
+        self.server._server_sources[proto] = source
         # continue in the UI thread:
         GLib.idle_add(self._accept_rfb_source, source)
 
@@ -147,17 +178,18 @@ class RFBServer(StubServerMixin):
                 source.keyboard_config = keyboard.get_keyboard_config()
                 keyboard.set_keymap(source)
         model = self._get_rfb_desktop_model()
+        window = self.server.get_subsystem("window")
         w, h = model.get_dimensions()
-        source.damage(self._window_to_id[model], model, 0, 0, w, h)
+        source.damage(window.get_wid(model), model, 0, 0, w, h)
         # ugly weak dependency,
         # shadow servers need to be told to start the refresh timer:
-        start_refresh = getattr(self, "start_refresh", None)
+        start_refresh = getattr(self.server, "start_refresh", None)
         if start_refresh:
-            for wid in tuple(self._window_to_id.values()):
+            for wid in tuple(window.get_models().values()):
                 start_refresh(wid)  # pylint: disable=not-callable
 
     def _process_rfb_PointerEvent(self, _proto, packet):
-        if not features.pointer or self.readonly:
+        if not features.pointer or self.server.readonly:
             return
         buttons, x, y = packet[1:4]
         wid = self._get_rfb_desktop_wid()
@@ -182,9 +214,9 @@ class RFBServer(StubServerMixin):
         GLib.idle_add(process_pointer_event)
 
     def _process_rfb_KeyEvent(self, proto, packet):
-        if not features.keyboard or self.readonly:
+        if not features.keyboard or self.server.readonly:
             return
-        source = self.get_server_source(proto)
+        source = self.server.get_server_source(proto)
         if not source:
             return
         pressed, p1, p2, key = packet[1:5]
@@ -213,11 +245,11 @@ class RFBServer(StubServerMixin):
 
     def _process_rfb_SetEncodings(self, proto, packet):
         encodings = packet[3]
-        self._server_sources[proto].set_encodings(encodings)
+        self.server._server_sources[proto].set_encodings(encodings)
 
     def _process_rfb_SetPixelFormat(self, proto, packet):
         pixel_format = packet[4:14]
-        self._server_sources[proto].set_pixel_format(pixel_format)
+        self.server._server_sources[proto].set_pixel_format(pixel_format)
 
     def _process_rfb_FramebufferUpdateRequest(self, _proto, packet):
         # pressed, _, _, keycode = packet[1:5]
@@ -225,7 +257,9 @@ class RFBServer(StubServerMixin):
         log("RFB: FramebufferUpdateRequest inc=%s, geometry=%s", inc, (x, y, w, h))
         if not inc:
             model = self._get_rfb_desktop_model()
-            GLib.idle_add(self.refresh_window_area, model, x, y, w, h)
+            window = self.server.get_subsystem("window")
+            if window:
+                GLib.idle_add(window.refresh_window_area, model, x, y, w, h)
 
     def _process_rfb_ClientCutText(self, _proto, packet):
         # l = packet[4]

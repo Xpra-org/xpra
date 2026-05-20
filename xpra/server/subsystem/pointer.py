@@ -257,7 +257,7 @@ class PointerManager(StubServerMixin):
         window_sub = self.get_subsystem("window")
         if window_sub is None:
             return
-        wid = window_sub._window_to_id.get(model)
+        wid = window_sub.get_wid(model)
         if not wid:
             return
         pointer_sources = self.get_sources_by_type(PointerConnection)
