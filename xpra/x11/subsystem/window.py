@@ -493,8 +493,6 @@ class SeamlessWindowServer(WindowServer):
             ss.restack_window(wid, window, detail, sibling)
 
     def _set_window_state(self, proto, wid: int, window, new_window_state: dict) -> Sequence[str]:
-        if proto not in self.server._server_sources:
-            return ()
         if not new_window_state:
             return ()
         nws = typedict(new_window_state)
@@ -571,6 +569,8 @@ class SeamlessWindowServer(WindowServer):
     # --------------------------------------------------------------------
 
     def _process_window_map(self, proto, packet: Packet) -> None:
+        if not (ss := self.get_server_source(proto)):
+            return  # should not happen
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -582,9 +582,6 @@ class SeamlessWindowServer(WindowServer):
             return
         if window.is_OR():
             windowlog.warn("Warning: received map event on OR window %s", wid)
-            return
-        ss = self.get_server_source(proto)
-        if ss is None:
             return
         geomlog("client %s mapped window %#x - %s, at: %s", ss, wid, window, (x, y, w, h))
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
@@ -768,8 +765,6 @@ class SeamlessWindowServer(WindowServer):
             pointer._move_pointer(device_id, wid, pos, props)
 
     def _process_window_close(self, proto, packet: Packet) -> None:
-        if proto not in self.server._server_sources:
-            return
         wid = packet.get_wid()
         window = self.get_window(wid)
         windowlog("client closed window %s - %s", wid, window)
@@ -780,8 +775,6 @@ class SeamlessWindowServer(WindowServer):
         getattr(self.server, "repaint_root_overlay", noop)()
 
     def _process_window_signal(self, proto, packet: Packet) -> None:
-        if proto not in self.server._server_sources:
-            return
         wid = packet.get_wid()
         sig = packet.get_str(2)
         if sig not in WINDOW_SIGNALS:
