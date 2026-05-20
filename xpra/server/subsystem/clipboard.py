@@ -311,7 +311,7 @@ class ClipboardServer(StubServerMixin):
         ch.set_direction(can_send, can_receive)
         msg = f"clipboard direction set to {direction!r}"
         log(msg)
-        self.server.setting_changed("clipboard-direction", direction)
+        self.setting_changed("clipboard-direction", direction)
         return msg
 
     def control_command_clipboard_limits(self, max_send: int, max_recv: int, *_args) -> str:
@@ -320,5 +320,5 @@ class ClipboardServer(StubServerMixin):
         ch.set_limits(max_send, max_recv)
         msg = f"clipboard send limit set to {max_send}, recv limit set to {max_recv} (single copy/paste)"
         log(msg)
-        self.server.setting_changed("clipboard-limits", {'send': max_send, 'recv': max_recv})
+        self.setting_changed("clipboard-limits", {'send': max_send, 'recv': max_recv})
         return msg

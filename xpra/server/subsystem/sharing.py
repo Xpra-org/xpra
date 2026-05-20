@@ -193,8 +193,8 @@ class SharingServer(StubServerMixin):
 
     def control_command_set_lock(self, lock) -> str:
         self.lock = str_to_bool(lock)
-        self.server.setting_changed("lock", lock is not False)
-        self.server.setting_changed("lock-toggle", lock is None)
+        self.setting_changed("lock", lock is not False)
+        self.setting_changed("lock-toggle", lock is None)
         return f"lock set to {self.lock}"
 
     def _sharing_clients(self, exclude=None) -> dict[int, Any]:
@@ -211,8 +211,8 @@ class SharingServer(StubServerMixin):
         if sharing == self.sharing:
             return message
         self.sharing = sharing
-        self.server.setting_changed("sharing", sharing is not False)
-        self.server.setting_changed("sharing-toggle", sharing is None)
+        self.setting_changed("sharing", sharing is not False)
+        self.setting_changed("sharing-toggle", sharing is None)
         if not sharing:
             # keep only the first-connected client that requires sharing
             sharing_clients = self._sharing_clients()

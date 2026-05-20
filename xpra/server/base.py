@@ -633,13 +633,6 @@ class ServerBase(ServerBaseClass):
         pass
 
     ######################################################################
-    # settings toggle:
-    def setting_changed(self, setting: str, value: Any) -> None:
-        # tell all the clients (that can) about the new value for this setting
-        for ss in tuple(self._server_sources.values()):
-            ss.send_setting_change(setting, value)
-
-    ######################################################################
     # client connections:
     def cleanup_protocol(self, protocol):
         netlog("cleanup_protocol(%s)", protocol)

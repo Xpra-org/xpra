@@ -97,6 +97,11 @@ class StubServerMixin(SignalEmitter):
             return
         self.server.add_legacy_alias(legacy_name, new_name)
 
+    def setting_changed(self, setting: str, value: Any) -> None:
+        """ broadcast a server setting change to all connected clients """
+        for ss in tuple(self.server._server_sources.values()):
+            ss.send_setting_change(setting, value)
+
     def init(self, opts) -> None:
         """
         Initialize this instance with the options given.
