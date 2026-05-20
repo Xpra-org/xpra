@@ -2159,7 +2159,7 @@ class WindowSource(WindowIconSource):
         def process_damage_image(img: ImageWrapper) -> None:
             self.process_damage_image(damage_time, rgb_request_time, img, coding, sequence, options, flush)
 
-        self.image_filter.process_image(image, process_damage_image)
+        self.image_filter.process_image(image, process_damage_image, last_scroll_event=self.last_scroll_event)
 
     def process_damage_image(self, damage_time: float, rgb_request_time: float,
                              image: ImageWrapper,

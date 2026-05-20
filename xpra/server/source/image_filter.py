@@ -35,7 +35,7 @@ class NoFilter:
         return "NoFilter"
 
     @staticmethod
-    def process_image(image: ImageWrapper, callback: Callable[[ImageWrapper], None]) -> None:
+    def process_image(image: ImageWrapper, callback: Callable[[ImageWrapper], None], last_scroll_event: float = 0) -> None:
         callback(image)
 
     def clean(self) -> None:
@@ -52,24 +52,24 @@ class ImageFilter:
         self.thread = None
         log("ImageFilter(%#x, %s) filter_type=%s, threaded=%s", wid, imagefilter, filter_type, self.threaded)
 
-    def process_image(self, image: ImageWrapper, callback: Callable[[ImageWrapper], None]) -> None:
+    def process_image(self, image: ImageWrapper, callback: Callable[[ImageWrapper], None], last_scroll_event: float = 0) -> None:
         log("%s.process_image(%s, %s) enabled=%s", self, image, callback, self.enabled)
         if not self.enabled:
             callback(image)
             return
         if not self.threaded:
-            self.do_process_image(image, callback)
+            self.do_process_image(image, callback, last_scroll_event)
             return
         if not self.wait_for_thread():
             free_image_wrapper(image)
             return
         self.thread = start_thread(self.do_process_image, "image-filter-process-image-%#x" % self.wid,
-                                   daemon=True, args=(image, callback))
+                                   daemon=True, args=(image, callback, last_scroll_event))
 
-    def do_process_image(self, image: ImageWrapper, callback: Callable[[ImageWrapper], None]) -> None:
+    def do_process_image(self, image: ImageWrapper, callback: Callable[[ImageWrapper], None], last_scroll_event: float = 0) -> None:
         if DELAY > 0:
             sleep(DELAY / 1000)
-        filtered = self.filter.convert_image(image)
+        filtered = self.filter.convert_image(image, last_scroll_event=last_scroll_event)
         free_image_wrapper(image)
         callback(filtered)
 
