@@ -24,7 +24,7 @@ def get_default_keymap():
     Gdk = gi_import("Gdk")
     display = Gdk.Display.get_default()
     if not display:
-        return Gdk.Keymap.get_default()
+        return None
     return Gdk.Keymap.get_for_display(display)
 
 
