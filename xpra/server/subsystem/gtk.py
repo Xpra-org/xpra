@@ -99,8 +99,9 @@ class GTKServer(StubSubsystem):
         if not keyboard:
             return
         from xpra.gtk.keymap import get_default_keymap
-        keymap = get_default_keymap()
-        keymap.connect("keys-changed", keyboard.keymap_changed)
+        # wayland may return None:
+        if keymap := get_default_keymap():
+            keymap.connect("keys-changed", keyboard.keymap_changed)
 
     def setup(self) -> None:
         inject_gtk_window_icon_lookup()
