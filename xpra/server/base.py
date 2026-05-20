@@ -96,7 +96,14 @@ class ServerBase(ServerBaseClass):
         """
         from xpra.server import features
         classes: list[type] = []
-        if features.x11 and not features.gtk:
+        if features.gtk:
+            if features.x11:
+                from xpra.x11.subsystem.gtk import GtkX11Server
+                classes.append(GtkX11Server)
+            else:
+                from xpra.server.subsystem.gtk import GTKServer
+                classes.append(GTKServer)
+        elif features.x11:
             from xpra.x11.subsystem.x11init import X11Init
             classes.append(X11Init)
         if features.ping:

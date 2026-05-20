@@ -62,7 +62,6 @@ class KeyboardManager(StubServerMixin):
             self.device = NoKeyboardDevice()
         log("keyboard_device=%s", self.device)
 
-        self.watch_keymap_changes()
         self.config = self.get_keyboard_config({"keymap": self.keymap_options})
         self.server.connect("last-client-exited", self.clear_keys_pressed)
         self.add_keyboard_control_commands()

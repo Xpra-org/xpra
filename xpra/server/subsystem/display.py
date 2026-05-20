@@ -14,7 +14,6 @@ from xpra.util.rectangle import rectangle
 from xpra.server.source.display import DisplayConnection
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.env import SilenceWarningsContext
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import get_refresh_rate_for_value, DEFAULT_REFRESH_RATE
 from xpra.platform.gui import get_display_name, get_display_size
@@ -86,7 +85,6 @@ class DisplayManager(StubServerMixin):
         self.hello_request_handlers["icon"] = self._handle_hello_request_icon
         self.display = os.environ.get("DISPLAY", "")
         self.display_options = ""
-        self.screen_size_changed_timer = 0
         self.default_dpi = 96
         self.bit_depth = 24
         self.dpi = 0
@@ -106,14 +104,6 @@ class DisplayManager(StubServerMixin):
         gui_init()
         self.bit_depth = self.get_display_bit_depth()
         GLib.idle_add(self.print_screen_info)
-
-    def cleanup(self) -> None:
-        self.cancel_screen_size_changed_timer()
-
-    def cancel_screen_size_changed_timer(self):
-        if ssct := self.screen_size_changed_timer:
-            self.screen_size_changed_timer = 0
-            GLib.source_remove(ssct)
 
     def print_screen_info(self) -> None:
         for x in self.get_display_description().split("\n"):
@@ -282,25 +272,8 @@ class DisplayManager(StubServerMixin):
         log("do_parse_screen_info(..)=%s", (w, h))
         return w, h
 
-    def schedule_screen_changed(self, screen):
-        self.cancel_screen_size_changed_timer()
-        self.screen_size_changed_timer = GLib.timeout_add(10, self.screen_size_changed, screen)
-
-    def screen_size_changed(self, screen) -> bool:
-        self.screen_size_changed_timer = 0
-        self.do_screen_changed(screen)
-        self.notify_screen_changed(screen)
-        return False
-
-    def do_screen_changed(self, screen) -> None:
-        log("do_screen_changed(%s)", screen)
-        with SilenceWarningsContext(DeprecationWarning):
-            w, h = screen.get_width(), screen.get_height()
-        log("new screen dimensions: %ix%i", w, h)
-        self.set_screen_geometry_attributes(w, h)
-
-    def notify_screen_changed(self, screen) -> None:
-        log("notify_screen_changed(%s)", screen)
+    def notify_screen_changed(self) -> None:
+        log("notify_screen_changed()")
         self.emit("display-geometry-changed")
         GLib.idle_add(self.send_updated_screen_size)
 

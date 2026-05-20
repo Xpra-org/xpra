@@ -136,13 +136,6 @@ class DesktopServerBase(GObject.GObject, ServerBase):
     def restore_gsettings(self) -> None:
         do_modify_gsettings(self.gsettings_modified, True)
 
-    def notify_screen_changed(self, screen) -> None:
-        """
-        Screen changes are normally managed by requests or user actions,
-        we do not need to send any messages to the client here,
-        the monitor window model(s) will take care of it.
-        """
-
     def set_desktop_geometry_attributes(self, w: int, h: int):
         # geometry is not synced with the client's for desktop servers
         pass

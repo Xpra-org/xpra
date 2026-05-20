@@ -7,17 +7,19 @@
 from typing import Any
 
 from xpra.os_util import gi_import
+from xpra.util.env import SilenceWarningsContext
 from xpra.util.version import dict_version_trim
 from xpra.util.screen import prettify_plug_name
 from xpra.common import noop
 from xpra.net.common import FULL_INFO
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.gtk.info import get_screen_sizes
-from xpra.server import features
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("server", "gtk")
+
+GLib = gi_import("GLib")
 
 get_default_window_icon_fallback = noop
 
@@ -76,6 +78,10 @@ class GTKServer(StubServerMixin):
     """
     PREFIX = "gtk"
 
+    def __init__(self, server=None):
+        super().__init__(server)
+        self.screen_size_changed_timer = 0
+
     def init(self, opts) -> None:
         log("GTKServer.init(..)")
         from xpra.scripts.common import no_gtk
@@ -89,26 +95,57 @@ class GTKServer(StubServerMixin):
 
     def watch_keymap_changes(self) -> None:
         # Set up keymap change notification:
+        keyboard = self.get_subsystem("keyboard")
+        if not keyboard:
+            return
         from xpra.gtk.keymap import get_default_keymap
         keymap = get_default_keymap()
-        keymap.connect("keys-changed", self.keymap_changed)
+        keymap.connect("keys-changed", keyboard.keymap_changed)
 
     def setup(self) -> None:
         inject_gtk_window_icon_lookup()
-        if features.display:
+        self.watch_keymap_changes()
+        if self.get_subsystem("display"):
             Gdk = gi_import("Gdk")
             screen = Gdk.Screen.get_default()
             if screen:
                 screen.connect("size-changed", self._screen_size_changed)
                 screen.connect("monitors-changed", self._monitors_changed)
 
+    def cleanup(self) -> None:
+        self.cancel_screen_size_changed_timer()
+
+    def cancel_screen_size_changed_timer(self):
+        if ssct := self.screen_size_changed_timer:
+            self.screen_size_changed_timer = 0
+            GLib.source_remove(ssct)
+
     def _screen_size_changed(self, screen) -> None:
         log(f"_screen_size_changed({screen})")
-        self.schedule_screen_changed(screen)
+        if display := self.get_subsystem("display"):
+            display.schedule_screen_changed(screen)
 
     def _monitors_changed(self, screen) -> None:
         log(f"_monitors_changed({screen})")
-        self.schedule_screen_changed(screen)
+        if display := self.get_subsystem("display"):
+            display.schedule_screen_changed(screen)
+
+    def schedule_screen_changed(self, screen) -> None:
+        self.cancel_screen_size_changed_timer()
+        self.screen_size_changed_timer = GLib.timeout_add(10, self.screen_size_changed, screen)
+
+    def screen_size_changed(self, screen) -> bool:
+        self.screen_size_changed_timer = 0
+        self.do_screen_changed(screen)
+        self.get_subsystem("display").notify_screen_changed(screen)
+        return False
+
+    def do_screen_changed(self, screen) -> None:
+        log("do_screen_changed(%s)", screen)
+        with SilenceWarningsContext(DeprecationWarning):
+            w, h = screen.get_width(), screen.get_height()
+        log("new screen dimensions: %ix%i", w, h)
+        self.set_screen_geometry_attributes(w, h)
 
     def late_cleanup(self, stop=True) -> None:
         from xpra.gtk.util import close_gtk_display

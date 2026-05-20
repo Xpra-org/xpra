@@ -8,13 +8,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server import features
     from xpra.server.core import ServerCore
     classes: list[type] = [ServerCore]
-    if features.gtk:
-        if features.x11:
-            from xpra.x11.subsystem.gtk import GtkX11Server
-            classes.append(GtkX11Server)
-        else:
-            from xpra.server.subsystem.gtk import GTKServer
-            classes.append(GTKServer)
     # this should only be enabled for desktop and shadow servers:
     if features.rfb:
         from xpra.server.rfb.server import RFBServer
