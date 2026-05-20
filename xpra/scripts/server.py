@@ -1272,7 +1272,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     try:
         app.exec_cwd = opts.chdir or cwd
         app.xvfb = xvfb
-        app.splash_process = splash_process
+        if splash := app.get_subsystem("splash"):
+            splash.splash_process = splash_process
         app.display_options = display_options
         app.original_desktop_display = desktop_display
         app.init(opts)

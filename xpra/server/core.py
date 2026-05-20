@@ -108,11 +108,10 @@ def force_close_connection(conn) -> None:
 def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.glib_server import GLibServer
     from xpra.server.auth import AuthenticatedServer
-    from xpra.server.subsystem.splash import SplashServer
     from xpra.server.subsystem.info import InfoServer
     classes: list[type] = [
         GLibServer,
-        AuthenticatedServer, SplashServer,
+        AuthenticatedServer,
         InfoServer,
     ]
     from xpra.server import features
@@ -129,6 +128,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     each is constructed as an instance and stored in `self.subsystems`.
     """
     from xpra.server.subsystem.platform import PlatformServer
+    from xpra.server.subsystem.splash import SplashServer
     from xpra.server.subsystem.daemon import DaemonServer
     from xpra.server.subsystem.id import IDServer
     from xpra.server.subsystem.sessionfiles import SessionFilesServer
@@ -138,7 +138,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     # IDServer must come before any subsystem that reads `self.uuid`.
     # SessionFilesServer must come before any subsystem that appends to
     # its `session_files` list during init().
-    classes.extend((PlatformServer, IDServer, SessionFilesServer, DaemonServer, VersionServer))
+    classes.extend((PlatformServer, SplashServer, IDServer, SessionFilesServer, DaemonServer, VersionServer))
     if features.mdns:
         from xpra.server.subsystem.mdns import MdnsServer
         classes.append(MdnsServer)
