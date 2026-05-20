@@ -54,6 +54,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     __gsignals__ = to_gsignals(ServerBase.__signals__)
 
     def __init__(self):
+        os.environ.pop("DISPLAY", None)
+        os.environ["GDK_BACKEND"] = "wayland"
         GObject.GObject.__init__(self)
         ServerBase.__init__(self)
         self.session_type: str = "wayland"
@@ -76,8 +78,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.connect("ssd", self._ssd)
         self.compositor.connect("activate-request", self._activate_request)
         self.wayland_fd_source = 0
-        os.environ.pop("DISPLAY", None)
-        os.environ["GDK_BACKEND"] = "wayland"
+        self.window_subsystem = self.get_subsystem("window")
 
     def get_child_env(self) -> dict[str, str]:
         env: dict[str, str] = super().get_child_env()
@@ -270,10 +271,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         })
         window.setup()
         self.track_toplevel(surface)
-        wsub = self.get_subsystem("window")
-        wsub.do_add_new_window_common(surface.wid, window)
+        self.window_subsystem.do_add_new_window_common(surface.wid, window)
         if size != (0, 0):
-            wsub._do_send_new_window_packet(WINDOW_CREATE, window, geom)
+            self.window_subsystem._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
     def _new_popup(self, parent_wid: int, popup: Popup,
                    position: tuple[int, int], size: tuple[int, int]) -> None:
@@ -321,8 +321,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         window.setup()
         self.get_subsystem("window").do_add_new_window_common(popup.wid, window)
         self.pending_popups.pop(popup.wid, None)
-        wsub = self.get_subsystem("window")
-        wsub._do_send_new_window_packet(WINDOW_CREATE, window, geom)
+        self.window_subsystem._do_send_new_window_packet(WINDOW_CREATE, window, geom)
         return window
 
     def _popup_parent_window_wid(self, popup: Popup, fallback: int) -> int:
@@ -435,7 +434,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         last = len(rects) - 1
         for i, (x, y, w, h) in enumerate(rects):
             options["more"] = i != last
-            self.refresh_window_area(window, x, y, w, h, options=options)
+            self.window_subsystem.refresh_window_area(window, x, y, w, h, options=options)
 
     def _subsurface_image(self, wid: int, image: ImageWrapper) -> None:
         info = self.subsurface_info.get(wid)
@@ -471,8 +470,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         geom = (old_geom[0], old_geom[1], w, h)
         window._updateprop("geometry", geom)
         if (old_geom[2] == old_geom[3] == 0) and size[0] and size[1]:
-            wsub = self.get_subsystem("window")
-            wsub._do_send_new_window_packet(WINDOW_CREATE, window, geom)
+            self.window_subsystem._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
     def update_geometry(self, window, position: tuple[int, int], size: tuple[int, int]) -> None:
         old_geom = window.get_property("geometry")
@@ -517,7 +515,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if mapped and has_image:
             w, h = size
             if w > 0 and h > 0:
-                self.refresh_window_area(window, 0, 0, w, h, options={"damage": True})
+                self.window_subsystem.refresh_window_area(window, 0, 0, w, h, options={"damage": True})
 
     def _popup_reposition(self, wid: int, position: tuple[int, int]) -> None:
         window = self.get_window(wid)
@@ -551,8 +549,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             window.unmanage()
             if not isinstance(surface, Subsurface):
                 # sub-surfaces have a wid, but not a window!
-                wsub = self.get_subsystem("window")
-                wsub._remove_wid(wid)
+                self.window_subsystem._remove_wid(wid)
         if self.focused == wid:
             self.focused = 0
         if self.pointer_focus == wid:
