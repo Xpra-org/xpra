@@ -72,8 +72,8 @@ class ServerBase(ServerCore):
         """
         Return the ordered tuple of instance-based subsystem classes to
         construct for this server. Variants (seamless, desktop, monitor,
-        shadow, ...) override the per-subsystem hooks below (display,
-        window, keyboard, pointer) to swap in their own subclasses.
+        shadow, ...) override the per-subsystem hooks below to swap in their
+        own subclasses.
         """
         from xpra.server import features
         classes: list[type] = []
@@ -149,8 +149,7 @@ class ServerBase(ServerCore):
             from xpra.server.subsystem.webcam import WebcamServer
             classes.append(WebcamServer)
         if features.clipboard:
-            from xpra.server.subsystem.clipboard import ClipboardManager
-            classes.append(ClipboardManager)
+            classes.append(self.get_clipboard_subsystem_class())
         if features.pulseaudio:
             from xpra.server.subsystem.pulseaudio import PulseaudioServer
             classes.append(PulseaudioServer)
@@ -228,6 +227,10 @@ class ServerBase(ServerCore):
             return X11PointerManager
         from xpra.server.subsystem.pointer import PointerManager
         return PointerManager
+
+    def get_clipboard_subsystem_class(self) -> type:
+        from xpra.server.subsystem.clipboard import ClipboardManager
+        return ClipboardManager
 
     def suspend_event(self, *_args) -> None:
         # if we get a `suspend_event`, we can assume that `PowerEventServer` is a superclass:

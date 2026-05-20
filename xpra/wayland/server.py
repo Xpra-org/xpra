@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from xpra.codecs.image import ImageWrapper
 from xpra.server.common import get_sources_by_type
 from xpra.server.source.window import WindowsConnection
+from xpra.server.subsystem.clipboard import ClipboardManager
 from xpra.util.gobject import to_gsignals
 from xpra.util.objects import typedict
 from xpra.wayland.compositor import WaylandCompositor
@@ -48,6 +49,17 @@ PER_SURFACE_EVENTS: Final[Sequence[str]] = (
 PER_SUBSURFACE_EVENTS: Final[Sequence[str]] = (
     "commit", "destroy", "subsurface-image",
 )
+
+
+class WaylandClipboardManager(ClipboardManager):
+
+    def get_clipboard_class(self):
+        from xpra.wayland.clipboard import WaylandClipboard
+
+        def make_wayland_clipboard(*args, **kwargs) -> WaylandClipboard:
+            return WaylandClipboard(*args, compositor=self.server.compositor, **kwargs)
+
+        return make_wayland_clipboard
 
 
 class WaylandSeamlessServer(GObject.GObject, ServerBase):
@@ -100,13 +112,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     def make_pointer_device(self):
         return self.compositor.get_pointer_device()
 
-    def get_clipboard_class(self):
-        from xpra.wayland.clipboard import WaylandClipboard
-
-        def make_wayland_clipboard(*args, **kwargs) -> WaylandClipboard:
-            return WaylandClipboard(*args, compositor=self.compositor, **kwargs)
-
-        return make_wayland_clipboard
+    def get_clipboard_subsystem_class(self) -> type:
+        return WaylandClipboardManager
 
     def get_surface(self, wid: int):
         window = self.get_window(wid)
