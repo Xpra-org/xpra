@@ -122,13 +122,11 @@ class GTKServer(StubServerMixin):
 
     def _screen_size_changed(self, screen) -> None:
         log(f"_screen_size_changed({screen})")
-        if display := self.get_subsystem("display"):
-            display.schedule_screen_changed(screen)
+        self.schedule_screen_changed(screen)
 
     def _monitors_changed(self, screen) -> None:
         log(f"_monitors_changed({screen})")
-        if display := self.get_subsystem("display"):
-            display.schedule_screen_changed(screen)
+        self.schedule_screen_changed(screen)
 
     def schedule_screen_changed(self, screen) -> None:
         self.cancel_screen_size_changed_timer()
@@ -137,7 +135,7 @@ class GTKServer(StubServerMixin):
     def screen_size_changed(self, screen) -> bool:
         self.screen_size_changed_timer = 0
         self.do_screen_changed(screen)
-        self.get_subsystem("display").notify_screen_changed(screen)
+        self.get_subsystem("display").notify_screen_changed()
         return False
 
     def do_screen_changed(self, screen) -> None:
@@ -145,7 +143,8 @@ class GTKServer(StubServerMixin):
         with SilenceWarningsContext(DeprecationWarning):
             w, h = screen.get_width(), screen.get_height()
         log("new screen dimensions: %ix%i", w, h)
-        self.set_screen_geometry_attributes(w, h)
+        fn = getattr(self.server, "set_screen_geometry_attributes", noop)
+        fn(w, h)
 
     def late_cleanup(self, stop=True) -> None:
         from xpra.gtk.util import close_gtk_display

@@ -97,7 +97,7 @@ def set_server_features(opts, mode: str) -> None:
         elif mode == "shadow":
             x11 = POSIX
         elif mode == "seamless":
-            x11 = opts.backend == "auto"
+            x11 = opts.backend in ("auto", "gtk")
         else:
             x11 = False
         features.debug = features.debug or b(opts.debug)
