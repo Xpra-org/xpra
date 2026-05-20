@@ -14,7 +14,6 @@ from collections.abc import Callable
 
 from xpra.util.system import stop_proc
 from xpra.util.objects import typedict
-from xpra.util.signal_emitter import SignalEmitter
 from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.net.constants import ConnectionMessage
@@ -136,11 +135,6 @@ def get_proxy_env() -> dict[str, str]:
     return env
 
 
-def get_proxy_server_base_classes() -> tuple[type, ...]:
-    classes: list[type] = [ServerCore]
-    return tuple(classes)
-
-
 def get_proxy_instance_subsystem_classes() -> tuple[type, ...]:
     """
     Standalone instance-based subsystems for ProxyServer (in addition to
@@ -157,12 +151,10 @@ def get_proxy_instance_subsystem_classes() -> tuple[type, ...]:
     return tuple(classes)
 
 
-SERVER_BASES = get_proxy_server_base_classes()
 INSTANCE_SUBSYSTEM_CLASSES = get_proxy_instance_subsystem_classes()
-ProxyServerBaseClass = type("ProxyServerBaseClass", SERVER_BASES, {})
 
 
-class ProxyServer(ProxyServerBaseClass, SignalEmitter):
+class ProxyServer(ServerCore):
     """
         This is the proxy server you can launch with "xpra proxy",
         once authenticated, it will dispatch the connection
@@ -174,16 +166,9 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
 
     def __init__(self):
         log("ProxyServer.__init__()")
-        SignalEmitter.__init__(self)
         if not hasattr(self, "subsystems"):
             self.subsystems: dict = {}
-        for bc in SERVER_BASES:
-            # legacy mixin subsystems share `self` with the server, so we
-            # pass `self` as both the bound instance and as the server arg:
-            bc.__init__(self, self)
-            prefix = getattr(bc, "PREFIX", "")
-            if prefix:
-                self.subsystems[prefix] = bc
+        ServerCore.__init__(self)
         # construct standalone instance-based subsystems specific to the proxy:
         for cls in INSTANCE_SUBSYSTEM_CLASSES:
             self.subsystems[cls.PREFIX] = cls(self)
