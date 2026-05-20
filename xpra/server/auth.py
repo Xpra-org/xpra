@@ -256,7 +256,11 @@ class AuthenticatedServer(StubServerMixin):
         if command_req:
             # call from UI thread:
             log(f"auth_verified(..) command request={command_req}")
-            GLib.idle_add(self.handle_command_request, proto, *command_req)
+            get_subsystem = getattr(self, "get_subsystem", lambda _prefix: None)
+            control = get_subsystem("control")
+            handler = control.handle_command_request if control else getattr(self, "handle_command_request", None)
+            if handler:
+                GLib.idle_add(handler, proto, *command_req)
             return
         proto.clean_authenticators()
         # continue processing hello packet in UI thread:

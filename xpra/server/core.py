@@ -114,10 +114,6 @@ def get_server_base_classes() -> tuple[type, ...]:
         AuthenticatedServer,
         InfoServer,
     ]
-    from xpra.server import features
-    if features.control:
-        from xpra.server.subsystem.control import ControlHandler
-        classes.append(ControlHandler)
     return tuple(classes)
 
 
@@ -129,6 +125,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     """
     from xpra.server.subsystem.platform import PlatformServer
     from xpra.server.subsystem.splash import SplashServer
+    from xpra.server.subsystem.control import ControlHandler
     from xpra.server.subsystem.daemon import DaemonServer
     from xpra.server.subsystem.id import IDServer
     from xpra.server.subsystem.sessionfiles import SessionFilesServer
@@ -139,6 +136,8 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     # SessionFilesServer must come before any subsystem that appends to
     # its `session_files` list during init().
     classes.extend((PlatformServer, SplashServer, IDServer, SessionFilesServer, DaemonServer, VersionServer))
+    if features.control:
+        classes.append(ControlHandler)
     if features.mdns:
         from xpra.server.subsystem.mdns import MdnsServer
         classes.append(MdnsServer)

@@ -36,9 +36,7 @@ class ControlHandler(StubServerMixin):
             from xpra.net.control.common import HelloCommand, HelpCommand, DisabledCommand
         except ImportError:
             return
-        self.commands = {
-            "hello": HelloCommand(),
-        }
+        self.commands.setdefault("hello", HelloCommand())
         if self.enabled:
             self.do_add_control_command("help", HelpCommand(self.commands))
             self.args_control("client", "forwards a control command to the client(s)", min_args=1)
@@ -88,7 +86,7 @@ class ControlHandler(StubServerMixin):
             from xpra.server.source.control import ControlConnection
         except ImportError:
             return "no control support available"
-        control_connections = get_sources_by_type(self, ControlConnection)
+        control_connections = get_sources_by_type(self.server, ControlConnection)
         if command == "help":
             all_control_commands = []
             for source in control_connections:
@@ -108,10 +106,13 @@ class ControlHandler(StubServerMixin):
 
     def control_command_toggle_feature(self, feature: str, state: str="") -> str:
         log("control_command_toggle_feature(%s, %s)", feature, state)
-        features: set[str] = set()
-        for cls in type(self).__mro__:
-            for f in cls.__dict__.get("toggle_features", ()):
-                features.add(f)
+        targets = [self.server] + list(self.server.subsystems.values())
+        feature_targets: dict[str, object] = {}
+        for target in targets:
+            for cls in type(target).__mro__:
+                for f in cls.__dict__.get("toggle_features", ()):
+                    feature_targets.setdefault(f, target)
+        features = set(feature_targets)
         if feature == "help":
             return "found the following features: %s" % csv(features)
         if feature not in features:
@@ -119,12 +120,13 @@ class ControlHandler(StubServerMixin):
             log.warn(msg)
             return msg
         fn = feature.replace("-", "_")
-        if not hasattr(self, feature):
+        target = feature_targets[feature]
+        if not hasattr(target, fn):
             msg = f"attribute {feature!r} not found - bug?"
             log.warn(msg)
             return msg
-        cur = getattr(self, fn, None)
-        setattr(self, fn, state)
-        setting_changed = getattr(self, "setting_changed", noop)
+        cur = getattr(target, fn, None)
+        setattr(target, fn, state)
+        setting_changed = getattr(target, "setting_changed", getattr(self.server, "setting_changed", noop))
         setting_changed(feature, state)
         return f"{feature} set to {state} (was {cur!r}"

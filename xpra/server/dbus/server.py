@@ -92,7 +92,8 @@ class DBUS_Server(DBUS_Server_Base):
     def ToggleFeature(self, feature, state):
         f, s = ns(feature), ns(state)
         self.log(".ToggleFeature(%s, %s)", f, s)
-        self.server.control_command_toggle_feature(f, s)
+        if control := self.server.get_subsystem("control"):
+            control.control_command_toggle_feature(f, s)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def KeyPress(self, keycode):

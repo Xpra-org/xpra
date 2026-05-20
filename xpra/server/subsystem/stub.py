@@ -205,11 +205,19 @@ class StubServerMixin(SignalEmitter):
         return shlex.split(str(cmd))
 
     def args_control(self, name: str, descr: str, **kwargs) -> None:
-        from xpra.net.control.common import add_args_control_command
+        control = self.get_subsystem("control")
+        if not control:
+            return
         run = getattr(self, "control_command_%s" % name.replace("-", "_"), noop)
         if run == noop:
             from xpra.log import Logger
             Logger("util").warn("Warning: control command %r not found on %s", name, self)
             return
         kwargs["run"] = run
-        add_args_control_command(self, name, descr, **kwargs)
+        from xpra.net.control.common import add_args_control_command
+        add_args_control_command(control, name, descr, **kwargs)
+
+    def add_control_command(self, name: str, control) -> None:
+        control_subsystem = self.get_subsystem("control")
+        if control_subsystem:
+            control_subsystem.add_control_command(name, control)
