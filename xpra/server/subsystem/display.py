@@ -450,10 +450,12 @@ class DisplayManager(StubServerMixin):
         # soft dependency on ICC:
         iccdata = attrs.dictget("icc")
         if iccdata:
-            self.server.call_subsystem("icc", "process_icc", ss, iccdata)
+            if icc := self.get_subsystem("icc"):
+                icc.process_icc(ss, iccdata)
         self.apply_refresh_rate(ss)
         # ensures that DPI and antialias information gets reset:
-        self.server.call_subsystem("xsettings", "update_all_server_settings")
+        if xsettings := self.get_subsystem("xsettings"):
+            xsettings.update_all_server_settings()
 
     def dpi_changed(self) -> None:
         """

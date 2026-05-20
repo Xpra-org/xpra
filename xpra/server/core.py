@@ -353,17 +353,6 @@ class ServerCore(ServerBaseClass):
     def get_subsystem(self, prefix: str):
         return self.subsystems.get(prefix)
 
-    def call_subsystem(self, prefix: str, method: str, *args, default=None):
-        sub = self.subsystems.get(prefix)
-        if sub is None:
-            return default
-        fn = getattr(sub, method, None)
-        if fn is None:
-            return default
-        if isinstance(sub, type):
-            return fn(self, *args)
-        return fn(*args)
-
     def _dispatch_fire(self, method: str, *args, reverse: bool = False) -> None:
         subs = list(self.subsystems.values())
         if reverse:

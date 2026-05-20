@@ -274,7 +274,8 @@ class KeyboardManager(StubServerMixin):
             (proto, wid, keyname, pressed, attrs), keycode, group)
         if group >= 0 and keycode >= 0:
             self.set_keyboard_layout_group(group)
-        self.server.call_subsystem("window", "_focus", ss, wid, None)
+        if window := self.get_subsystem("window"):
+            window._focus(ss, wid, None)
         ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
         # negative keycodes are used for key events without a real keypress/unpress
         # for example, used by win32 to send Caps_Lock/Num_Lock changes

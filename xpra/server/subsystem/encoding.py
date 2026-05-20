@@ -326,9 +326,9 @@ class EncodingServer(StubServerMixin):
         self.call_idle_refresh_all_windows(proto)
 
     def call_idle_refresh_all_windows(self, proto) -> None:
-        # WindowServer may not be loaded (e.g. proxy server); `call_subsystem`
-        # returns `None` when absent and handles class-vs-instance binding.
-        self.server.call_subsystem("window", "_idle_refresh_all_windows", proto)
+        # WindowServer may not be loaded (e.g. proxy server).
+        if window := self.get_subsystem("window"):
+            window._idle_refresh_all_windows(proto)
 
     def _process_encoding_options(self, proto, packet) -> None:
         ss = self.get_server_source(proto)

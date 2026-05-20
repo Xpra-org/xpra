@@ -117,17 +117,6 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
     def set_screen_size(self, width: int, height: int):
         return width, height
 
-    def call_subsystem(self, prefix: str, method: str, *args, default=None):
-        sub = self.subsystems.get(prefix)
-        if sub is None:
-            return default
-        fn = getattr(sub, method, None)
-        if fn is None:
-            return default
-        if isinstance(sub, type):
-            return fn(self, *args)
-        return fn(*args)
-
     _closing = False
     session_name = ""
     readonly = False
