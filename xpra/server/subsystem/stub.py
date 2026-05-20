@@ -99,8 +99,7 @@ class StubServerMixin(SignalEmitter):
 
     def setting_changed(self, setting: str, value: Any) -> None:
         """ broadcast a server setting change to all connected clients """
-        for ss in tuple(self.server._server_sources.values()):
-            ss.send_setting_change(setting, value)
+        self.server.setting_changed(setting, value)
 
     def init(self, opts) -> None:
         """

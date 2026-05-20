@@ -632,6 +632,11 @@ class ServerBase(ServerBaseClass):
         # only used by x11 servers
         pass
 
+    def setting_changed(self, setting: str, value: Any) -> None:
+        """ broadcast a server setting change to all connected clients """
+        for ss in tuple(self._server_sources.values()):
+            ss.send_setting_change(setting, value)
+
     ######################################################################
     # client connections:
     def disconnect_all(self) -> None:
