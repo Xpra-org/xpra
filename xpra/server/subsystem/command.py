@@ -162,7 +162,6 @@ class ChildCommandServer(StubSubsystem):
 
     def __init__(self, server=None):
         StubSubsystem.__init__(self, server)
-        self.hello_request_handlers["run"] = self._handle_hello_request_run
         self.child_display: str = ""
         self.start_commands: Sequence[str] = []
         self.start_late_commands: Sequence[str] = []
@@ -217,6 +216,7 @@ class ChildCommandServer(StubSubsystem):
 
     def setup(self) -> None:
         start_thread(self.threaded_command_setup, "threaded-command-setup", daemon=True)
+        self.server.hello_request_handlers["run"] = self._handle_hello_request_run
         self.server.connect("last-client-exited", self.exec_on_last_client_exit)
         self.server.connect("client-exited", self.remove_client)
         self.add_command_control_commands()

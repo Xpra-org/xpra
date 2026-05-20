@@ -57,6 +57,12 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
     def add_packet_handler(self, packet_type: str, handler=None, main_thread=True) -> None:
         self.packet_handlers[packet_type] = handler
 
+    def args_control(self, *_args, **_kwargs) -> None:
+        """ no-op: control subsystem is not exercised in subsystem unit tests """
+
+    def add_control_command(self, *_args, **_kwargs) -> None:
+        """ no-op: control subsystem is not exercised in subsystem unit tests """
+
     def handle_packet(self, packet: Packet | tuple):
         if isinstance(packet, tuple):
             packet = Packet(*packet)

@@ -17,34 +17,25 @@ from xpra.os_util import WIN32
 
 class StubSubsystem(SignalEmitter):
     """
-    Base class for server subsystem.
+    Base class for server subsystems.
     Defines the default interface methods that each subsystem may override.
     """
     uid = getuid()
     gid = getgid()
-    hello_request_handlers: dict[str, Callable[[Any, typedict], bool]] = {}
     # every concrete subsystem should declare a non-empty PREFIX,
-    # used as the key in `Server.subsystems`. Framework classes
-    # (ServerCore, ServerBase, ProxyServer) inherit from StubSubsystem
-    # via GLibServer and set PREFIX = "" (they are not subsystems):
+    # used as the key in `Server.subsystems`:
     PREFIX: str = ""
 
-    def __init__(self, server=None):
+    def __init__(self, server):
         # Every subsystem holds a reference to its owning server.
         # Subsystem-local signals (e.g. `audio-initialized`,
         # `display-geometry-changed`) use this instance's SignalEmitter;
         # server-wide GObject signals are accessed via `self.server`.
-        # When constructed without a `server` arg, this instance IS the
-        # server (framework classes); in that case `self.server is self`
-        # and method delegations must short-circuit to avoid recursion.
-        self.server = server if server is not None else self
+        self.server = server
         SignalEmitter.__init__(self)
 
     def get_server_source(self, proto):
         """ delegate to the server's per-protocol client source lookup """
-        if self.server is self:
-            # framework-class fallback (e.g. ServerCore with no real source map)
-            return None
         return self.server.get_server_source(proto)
 
     def get_subsystem(self, name: str):
@@ -64,25 +55,14 @@ class StubSubsystem(SignalEmitter):
         """
         for packet_type in packet_types:
             handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
-            self.add_packet_handler(packet_type, handler, main_thread)
+            self.server.add_packet_handler(packet_type, handler, main_thread)
 
     def add_packet_handler(self, packet_type: str, handler: Callable, main_thread: bool = False) -> None:
         """ register a single packet handler on the owning server """
-        if self.server is self:
-            # framework-class case: this method shadows PacketDispatcher's
-            # via MRO, so calling self.server.add_packet_handler would
-            # recurse. Reach PacketDispatcher's implementation directly.
-            from xpra.net.dispatch import PacketDispatcher
-            PacketDispatcher.add_packet_handler(self, packet_type, handler, main_thread)
-            return
         self.server.add_packet_handler(packet_type, handler, main_thread)
 
     def add_legacy_alias(self, legacy_name: str, new_name: str) -> None:
         """ register a backwards-compat packet name alias on the owning server """
-        if self.server is self:
-            from xpra.net.dispatch import PacketDispatcher
-            PacketDispatcher.add_legacy_alias(self, legacy_name, new_name)
-            return
         self.server.add_legacy_alias(legacy_name, new_name)
 
     def setting_changed(self, setting: str, value: Any) -> None:
@@ -193,6 +173,11 @@ class StubSubsystem(SignalEmitter):
         return shlex.split(str(cmd))
 
     def args_control(self, name: str, descr: str, **kwargs) -> None:
+        """
+        Register an args-style control command on the `control` subsystem.
+        The `control_command_X` implementation is looked up on `self` (the
+        subsystem that owns the command), not on the server.
+        """
         control = self.get_subsystem("control")
         if not control:
             return
@@ -206,6 +191,7 @@ class StubSubsystem(SignalEmitter):
         add_args_control_command(control, name, descr, **kwargs)
 
     def add_control_command(self, name: str, control) -> None:
+        """ register a control command on the `control` subsystem """
         control_subsystem = self.get_subsystem("control")
         if control_subsystem:
             control_subsystem.add_control_command(name, control)

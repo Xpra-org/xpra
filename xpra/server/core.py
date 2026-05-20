@@ -168,14 +168,14 @@ class ServerCore(GLibServer):
         # methods (ServerBase, ProxyServer, ...) as they instantiate their
         # subsystem classes.
         self.subsystems: dict[str, Any] = {}
+        self.hello_request_handlers: dict[str, Callable[[Any, typedict], bool]] = {
+            "connect_test": self._handle_hello_request_connect_test,
+        }
         GLibServer.__init__(self)
         # construct standalone instance-based subsystems and register them:
         for cls in INSTANCE_SUBSYSTEM_CLASSES:
             self.subsystems[cls.PREFIX] = cls(self)
         self.start_time = time()
-        self.hello_request_handlers.update({
-            "connect_test": self._handle_hello_request_connect_test,
-        })
         self.session_type: str = "unknown"
         self._closing: bool = False
         self._exit_mode = ServerExitMode.UNSET
@@ -254,6 +254,23 @@ class ServerCore(GLibServer):
         from xpra.net.control.common import parse_boolean_value
         self.args_control("readonly", "set readonly state for client(s)", min_args=1, max_args=1,
                           validation=[parse_boolean_value]),
+
+    def args_control(self, name: str, descr: str, **kwargs) -> None:
+        control = self.subsystems.get("control")
+        if not control:
+            return
+        run = getattr(self, "control_command_%s" % name.replace("-", "_"), noop)
+        if run == noop:
+            log.warn("Warning: control command %r not found on %s", name, self)
+            return
+        kwargs["run"] = run
+        from xpra.net.control.common import add_args_control_command
+        add_args_control_command(control, name, descr, **kwargs)
+
+    def add_control_command(self, name: str, control) -> None:
+        control_subsystem = self.subsystems.get("control")
+        if control_subsystem:
+            control_subsystem.add_control_command(name, control)
 
     ######################################################################
     # run / stop:

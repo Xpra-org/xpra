@@ -55,7 +55,13 @@ class InputMixinTest(ServerMixinTest):
             raise Exception("invalid type was allowed: %s" % (nostr, ))
 
     def test_invalid(self) -> None:
-        l = logging.LoggingManager()
+        class FakeServer:
+            subsystems: dict = {}
+
+            @staticmethod
+            def get_server_source(_proto):
+                return None
+        l = logging.LoggingManager(FakeServer())
         opts = AdHocStruct()
         opts.remote_logging = "on"
         l.init(opts)

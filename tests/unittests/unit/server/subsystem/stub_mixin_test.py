@@ -11,19 +11,24 @@ from xpra.util.objects import typedict, AdHocStruct
 from xpra.server.subsystem.stub import StubSubsystem
 
 
-class EncodingMixinTest(unittest.TestCase):
+class FakeServer:
+    """ minimal server stand-in so StubSubsystem delegators have a target """
 
-    def test_mixin_methods(self):
+    def __init__(self):
+        self.subsystems: dict = {}
+
+
+class StubSubsystemTest(unittest.TestCase):
+
+    def test_subsystem_methods(self):
         opts = AdHocStruct()
         opts.uid = getuid()
         opts.gid = getgid()
-        x = StubSubsystem()
+        x = StubSubsystem(FakeServer())
         x.init(opts)
         x.init_state()
         x.setup()
         x.init_packet_handlers()
-        # `get_server_source` is a delegate to `self.server`; calling it on a
-        # bare stub (whose `self.server is self`) would recurse - skip here.
 
         assert isinstance(x.get_caps(None), dict)
         assert isinstance(x.get_server_features(None), dict)

@@ -17,13 +17,16 @@ class WebcamMixinTest(ServerMixinTest):
         opts = AdHocStruct()
         opts.min_size = "10x10"
         opts.max_size = "16384x8192"
+
         def load_existing_windows():
             pass
-        def _WindowServer():
-            ws = WindowServer()
+
+        def _WindowServer(server):
+            ws = WindowServer(server)
             ws.load_existing_windows = load_existing_windows
             return ws
         self._test_mixin_class(_WindowServer, opts)
+
 
 def main():
     unittest.main()

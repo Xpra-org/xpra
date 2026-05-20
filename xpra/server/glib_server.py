@@ -9,7 +9,7 @@ from xpra.os_util import gi_import
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.common import Packet, PacketHandlerType
 from xpra.util.glib import register_os_signals, register_SIGUSR_signals
-from xpra.server.subsystem.stub import StubSubsystem
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -17,10 +17,10 @@ GLib = gi_import("GLib")
 log = Logger("server", "glib")
 
 
-class GLibServer(StubSubsystem, PacketDispatcher):
+class GLibServer(SignalEmitter, PacketDispatcher):
 
     def __init__(self):
-        StubSubsystem.__init__(self)
+        SignalEmitter.__init__(self)
         PacketDispatcher.__init__(self)
         self.main_loop = GLib.MainLoop()
 

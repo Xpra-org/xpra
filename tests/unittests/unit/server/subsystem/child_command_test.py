@@ -57,8 +57,8 @@ class ChildCommandMixinTest(ServerMixinTest):
         def noop():
             pass
 
-        def _ChildCommandServer():
-            ccs = command.ChildCommandServer()
+        def _ChildCommandServer(server):
+            ccs = command.ChildCommandServer(server)
             ccs.setup_menu_watcher = noop
             return ccs
 
