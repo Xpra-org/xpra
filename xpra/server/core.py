@@ -173,8 +173,7 @@ class ServerCore(GLibServer):
         log("ServerCore.__init__()")
         # subsystems dict (keyed by PREFIX) is populated as each base's __init__ runs.
         # Subclasses (ServerBase, ProxyServer, ...) extend this dict with their own bases.
-        if not hasattr(self, "subsystems"):
-            self.subsystems: dict[str, Any] = {}
+        self.subsystems: dict[str, Any] = {}
         GLibServer.__init__(self, server)
         # construct standalone instance-based subsystems and register them:
         for cls in INSTANCE_SUBSYSTEM_CLASSES:

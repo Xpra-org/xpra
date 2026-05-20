@@ -7,7 +7,6 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.net.constants import ConnectionMessage
 from xpra.net.common import Packet
-from xpra.util.signal_emitter import SignalEmitter
 from xpra.server.runner.factory import get_server_base_class
 from xpra.log import Logger
 
@@ -19,11 +18,10 @@ SERVER_BASE: type = get_server_base_class()
 log("SERVER_BASE=%s", SERVER_BASE)
 
 
-class RunnerServer(SignalEmitter, SERVER_BASE):
+class RunnerServer(SERVER_BASE):
 
     def __init__(self):
         log("RunnerServer.__init__()")
-        SignalEmitter.__init__(self)
         SERVER_BASE.__init__(self)
         self.session_type = "runner"
 

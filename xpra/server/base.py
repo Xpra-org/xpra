@@ -22,7 +22,6 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envbool
 from xpra.server import ServerExitMode
 from xpra.os_util import POSIX
-from xpra.server.factory import get_server_base_classes
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -32,21 +31,18 @@ netlog = Logger("network")
 authlog = Logger("auth")
 eventslog = Logger("events")
 
-SERVER_BASES = get_server_base_classes()
 SIGNALS: dict[str, int] = {
     **CORE_SIGNALS,
     "last-client-exited": 0,
     "client-exited": 1,
     "new-ui-driver": 1,
 }
-ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
-log("ServerBaseClass%s", SERVER_BASES)
 log("signals: %s", SIGNALS)
 
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 
 
-class ServerBase(ServerBaseClass):
+class ServerBase(ServerCore):
     """
     This is the base class for seamless and desktop servers. (not proxy servers)
     It provides all the generic functions but is not tied
@@ -61,20 +57,9 @@ class ServerBase(ServerBaseClass):
     PREFIX = ""
 
     def __init__(self):
-        # subsystems dict (keyed by PREFIX) is built up across the inheritance
-        # hierarchy: ServerCore.__init__ adds its own bases, and this loop adds
-        # all the extra subsystems from factory.SERVER_BASES on top.
-        if not hasattr(self, "subsystems"):
-            self.subsystems: dict = {}
-        for c in SERVER_BASES:
-            # legacy mixin subsystems share `self` with the server, so we
-            # pass `self` as both the bound instance and as the server arg:
-            c.__init__(self, self)
-            prefix = getattr(c, "PREFIX", "")
-            if prefix:
-                self.subsystems[prefix] = c
-        # Instantiate the standalone instance-based subsystems. Variant
-        # servers (seamless, desktop, monitor, shadow, ...) override the
+        ServerCore.__init__(self)
+        # Instantiate the standalone instance-based subsystems.
+        # Variant servers (seamless, desktop, monitor, shadow, ...) override the
         # `get_*_subsystem_class()` hooks to swap in their own subclasses.
         for cls in self.get_subsystem_classes():
             self.subsystems[cls.PREFIX] = cls(self)
