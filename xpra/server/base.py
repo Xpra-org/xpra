@@ -96,6 +96,9 @@ class ServerBase(ServerBaseClass):
         """
         from xpra.server import features
         classes: list[type] = []
+        if features.x11 and not features.gtk:
+            from xpra.x11.subsystem.x11init import X11Init
+            classes.append(X11Init)
         if features.ping:
             from xpra.server.subsystem.ping import PingServer
             classes.append(PingServer)

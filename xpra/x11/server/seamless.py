@@ -221,7 +221,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             self.x11_ungrab()
 
     def __repr__(self):
-        return "X11-Seamless-Server(%s)" % self.display
+        return "X11-Seamless-Server"
 
     # GObject signal handler - delegates to the window subsystem.
     # GObject looks up default handlers as `do_<signal-name>` on the

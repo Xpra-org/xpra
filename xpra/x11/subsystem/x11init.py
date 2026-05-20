@@ -33,7 +33,7 @@ class X11Init(StubServerMixin):
                 from xpra.scripts.config import InitExit
                 from xpra.exit_codes import ExitCode
                 raise InitExit(ExitCode.VFB_ERROR, str(e)) from None
-        main_loop = getattr(self, "main_loop", None)
+        main_loop = getattr(self.server, "main_loop", None)
         if not main_loop:
             raise RuntimeError("no main loop!")
         context = main_loop.get_context()
