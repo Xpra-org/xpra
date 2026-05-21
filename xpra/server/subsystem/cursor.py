@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.util.env import first_time
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
@@ -55,6 +56,11 @@ class CursorManager(StubSubsystem):
         from xpra.server.source.cursor import CursorsConnection
         if isinstance(ss, CursorsConnection):
             ss.send_cursor()
+
+    def get_cursor_data(self, skip_default=True):
+        if first_time(f"no-cursor-data-{type(self).__name__}"):
+            log.warn("Warning: get_cursor_data() not implemented by %s", type(self).__name__)
+        return None
 
     def get_caps(self, source) -> dict[str, Any]:
         from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size
