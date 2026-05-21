@@ -89,8 +89,9 @@ class GTKServer(StubServerMixin):
     def watch_keymap_changes(self) -> None:
         # Set up keymap change notification:
         from xpra.gtk.keymap import get_default_keymap
-        keymap = get_default_keymap()
-        keymap.connect("keys-changed", self.keymap_changed)
+        # wayland may return None:
+        if keymap := get_default_keymap():
+            keymap.connect("keys-changed", self.keymap_changed)
 
     def setup(self) -> None:
         inject_gtk_window_icon_lookup()
