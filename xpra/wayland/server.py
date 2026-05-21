@@ -13,7 +13,6 @@ from xpra.codecs.image import ImageWrapper
 from xpra.server.common import get_sources_by_type
 from xpra.server.source.window import WindowsConnection
 from xpra.util.gobject import to_gsignals
-from xpra.util.objects import typedict
 from xpra.wayland.compositor import WaylandCompositor
 from xpra.wayland.surface import Surface
 from xpra.wayland.subsurface import Subsurface
@@ -22,7 +21,6 @@ from xpra.wayland.output import Output
 from xpra.wayland.models.window import Window
 from xpra.wayland.models.subsurface_window import SubsurfaceWindow
 from xpra.server.base import ServerBase
-from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_CREATE
 from xpra.common import noop
 from xpra.constants import MoveResize, SOURCE_INDICATION_NORMAL
@@ -111,30 +109,6 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if not window:
             return None
         return window._gproperties.get("surface")
-
-    def _process_window_map(self, _proto, packet: Packet) -> None:
-        wid = packet.get_wid()
-        window = self.get_window(wid)
-        surface = self.get_surface(wid)
-        if not (window and surface):
-            return
-        w = packet.get_i16(4)
-        h = packet.get_i16(5)
-        surface.resize(w, h)
-        self.compositor.flush()
-        self.refresh_window(window)
-
-    def do_process_window_configure(self, _proto, wid, config: typedict) -> None:
-        window = self.get_window(wid)
-        surface = self.get_surface(wid)
-        if not (window and surface):
-            return
-        geometry = config.inttupleget("geometry")
-        if geometry:
-            w, h = geometry[2:4]
-            surface.resize(w, h)
-            self.compositor.flush()
-            self.refresh_window(window)
 
     def _register_surface_events(self, surface, events: Sequence[str]) -> None:
         for event in events:
@@ -495,16 +469,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.outputs.append(output)
 
     @staticmethod
-    def get_cursor_data() -> None:
-        return None
-
-    @staticmethod
     def set_desktop_geometry(w: int, h: int) -> None:
         """ not implemented yet """
-
-    @staticmethod
-    def get_display_size():
-        return 3840, 2160
 
     def get_ui_info(self, proto, **kwargs) -> dict:
         info = super().get_ui_info(proto, **kwargs)

@@ -3,13 +3,39 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.net.common import Packet
 from xpra.server.subsystem.window import WindowServer
+from xpra.util.objects import typedict
 from xpra.log import Logger
 
 focuslog = Logger("server", "wayland", "focus")
 
 
 class WaylandWindowServer(WindowServer):
+
+    def _process_window_map(self, _proto, packet: Packet) -> None:
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        surface = self.server.get_surface(wid)
+        if not (window and surface):
+            return
+        w = packet.get_i16(4)
+        h = packet.get_i16(5)
+        surface.resize(w, h)
+        self.server.compositor.flush()
+        self.refresh_window(window)
+
+    def do_process_window_configure(self, _proto, wid, config: typedict) -> None:
+        window = self.get_window(wid)
+        surface = self.server.get_surface(wid)
+        if not (window and surface):
+            return
+        geometry = config.inttupleget("geometry")
+        if geometry:
+            w, h = geometry[2:4]
+            surface.resize(w, h)
+            self.server.compositor.flush()
+            self.refresh_window(window)
 
     def _focus(self, _server_source, wid: int, modifiers) -> None:
         server = self.server
