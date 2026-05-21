@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.server.subsystem.display import DisplayManager
 
 
@@ -10,6 +12,13 @@ class WaylandDisplayManager(DisplayManager):
 
     def get_display_size(self) -> tuple[int, int]:
         return self.server.get_display_size()
+
+    def get_display_name(self) -> str:
+        wd = os.environ.get("WAYLAND_DISPLAY", "")
+        parts = wd.split("-", 1)
+        if len(parts) == 2:
+            return parts[1]
+        return wd
 
     def get_display_description(self) -> str:
         details = ""

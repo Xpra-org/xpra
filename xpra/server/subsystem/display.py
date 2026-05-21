@@ -16,7 +16,7 @@ from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import get_refresh_rate_for_value, DEFAULT_REFRESH_RATE
-from xpra.platform.gui import get_display_name, get_display_size
+from xpra.platform.gui import get_display_size
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -110,9 +110,7 @@ class DisplayManager(StubSubsystem):
             log.info(x)
 
     def get_display_description(self) -> str:
-        # try the `get_display_name()` platform function first,
-        # then the instance method, which may be overriden (see `GTKServer`)
-        dinfo = get_display_name() or self.get_display_name()
+        dinfo = self.get_display_name()
         dtype = get_display_type()
         dinfo = f"{dtype} display {dinfo}"      #ie: "X11 display :0"
         if size := self.get_display_size():
@@ -122,9 +120,11 @@ class DisplayManager(StubSubsystem):
             dinfo += f"\n with {bit_depth} bit colors"
         return dinfo
 
-    @staticmethod
-    def get_display_name() -> str:
-        return get_display_name() or os.environ.get("DISPLAY", "")
+    def get_display_name(self) -> str:
+        return os.environ.get("DISPLAY", "")
+
+    def get_wm_name(self) -> str:
+        return ""
 
     @staticmethod
     def get_display_bit_depth() -> int:
@@ -189,7 +189,7 @@ class DisplayManager(StubSubsystem):
             }
         if max_size := self.get_max_screen_size():
             caps["max_desktop_size"] = max_size
-        if name := get_display_name():
+        if name := self.get_display_name():
             caps["name"] = name
         if self.display:
             caps["address"] = self.display

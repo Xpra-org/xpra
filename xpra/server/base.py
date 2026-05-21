@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from collections.abc import Sequence
 from time import monotonic
 from typing import Any
@@ -341,10 +342,9 @@ class ServerBase(ServerCore):
         from xpra.scripts.display import get_displays  # pylint: disable=import-outside-toplevel
         return get_displays(self.dotxpra, display_names=(self.get_display_name(), ))
 
-    @staticmethod
-    def get_display_name() -> str:
-        from xpra.platform.gui import get_display_name
-        return get_display_name()
+    def get_display_name(self) -> str:
+        display = self.subsystems.get("display")
+        return display.get_display_name() if display else os.environ.get("DISPLAY", "")
 
     def get_xpra_sessions(self) -> dict[str, Any]:
         from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
