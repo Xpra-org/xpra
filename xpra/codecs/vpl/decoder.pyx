@@ -32,7 +32,6 @@ VPL_POOL_ENABLED = os.environ.get("XPRA_VPL_POOL", "1") != "0"
 _reap_source_id = 0
 
 from libc.stdint cimport uint8_t, uintptr_t
-from libc.string cimport memcpy
 from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
 
 
@@ -237,7 +236,7 @@ def get_type() -> str:
 def get_info() -> Dict[str, Any]:
     return {
         "version": get_version(),
-        "type": "oneVPL",
+        "type": "vpl",
     }
 
 
@@ -278,6 +277,12 @@ def get_specs() -> Sequence[VideoSpec]:
             min_w=64, min_h=64,
             width_mask=0xFFFE, height_mask=0xFFFE,
             max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
+            # gpu_cost hardcoded since the session is pinned to
+            # MFX_IMPL_TYPE_HARDWARE at create time. When adding more
+            # codecs (av1/vp9/h264), restructure the startup probe to
+            # record per-(codec, profile) hardware status and have this
+            # value reflect the actual probe result, since older iGPUs
+            # may support some codecs in software only.
             cpu_cost=10, gpu_cost=50,
         ),
     )
@@ -418,8 +423,6 @@ cdef class Decoder:
         cdef const uint8_t *src
         cdef int src_len
         cdef int new_w, new_h
-        cdef uint8_t *dst
-        cdef int y_row
 
         assert self.context != NULL, "decoder is closed"
 
@@ -455,21 +458,9 @@ cdef class Decoder:
         cdef int w = frame.width
         cdef int h = frame.height
         cdef int bpp = 4  # both AYUV and Y410 are 32 bits per pixel
-        cdef int row_bytes = w * bpp
 
         copy_start = monotonic()
-        if frame.stride == row_bytes:
-            pixels = frame.data[:row_bytes * h]
-        else:
-            # stride != width*bpp due to padding; must compact rows
-            buf = bytearray(row_bytes * h)
-            dst = <uint8_t *> buf
-            with nogil:
-                for y_row in range(h):
-                    memcpy(dst + y_row * row_bytes,
-                           frame.data + y_row * frame.stride,
-                           row_bytes)
-            pixels = bytes(buf)
+        pixels = frame.data[:frame.stride * h]
         copy_end = monotonic()
 
         pixel_format = "Y410" if frame.format == VPL_FMT_Y410 else "AYUV"
@@ -480,12 +471,12 @@ cdef class Decoder:
         log("vpl decoded %8d bytes %dx%d %s in %dms: submit=%dus sync=%dus map=%dus copy=%dus (%.1fMB)",
             src_len, w, h, pixel_format, (us_total + 500) // 1000,
             frame.us_submit, frame.us_sync, frame.us_map, us_copy,
-            (row_bytes * h) / 1048576.0)
+            (frame.stride * h) / 1048576.0)
 
         full_range = options.boolget("full-range")
-        # Wrap as single-plane tuple so the GL planar texture upload path works
+        # ImageWrapper handles non-tight rowstrides natively; GL upload uses GL_UNPACK_ROW_LENGTH.
         return ImageWrapper(0, 0, self.width, self.height,
-                            (pixels, ), pixel_format, 32, (row_bytes, ), 4,
+                            (pixels, ), pixel_format, 32, (frame.stride, ), 4,
                             ImageWrapper.PACKED,
                             full_range=full_range)
 
