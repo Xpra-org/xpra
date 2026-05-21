@@ -132,12 +132,12 @@ class EncodingsConnection(StubClientConnection):
             "encoding": self.encoding,
         }
 
-    def threaded_init_complete(self, server) -> None:
+    def threaded_init_complete(self, encoding) -> None:
         if not self.hello_sent:
             # hello has not been sent yet; the source will be picked up by add_new_client once it is
             return
         # by now, all the codecs have been initialized
-        d = server.subsystems["encoding"].get_encoding_info()
+        d = encoding.get_encoding_info()
         if FULL_INFO > 1:
             from xpra.codecs.loader import codec_versions
             # codec_versions: dict[str, tuple[Any, ...]] = {}
