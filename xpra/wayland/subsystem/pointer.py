@@ -17,6 +17,12 @@ class WaylandPointerManager(PointerManager):
     def make_pointer_device(self):
         return self.server.compositor.get_pointer_device()
 
+    def cleanup(self) -> None:
+        if device := self.pointer_device:
+            device.cleanup()
+        self.pointer_device = None
+        self.pointer_device_map = {}
+
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
         server = self.server
         log("set_pointer_focus(%i, %s)", wid, pointer)
