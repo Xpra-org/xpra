@@ -20,8 +20,6 @@ from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIB
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import Ellipsizer
-from xpra.util.env import envbool
-from xpra.server import ServerExitMode
 from xpra.os_util import POSIX
 from xpra.log import Logger
 
@@ -40,8 +38,6 @@ SIGNALS: dict[str, int] = {
 }
 log("signals: %s", SIGNALS)
 
-CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
-
 
 class ServerBase(ServerCore):
     """
@@ -50,7 +46,6 @@ class ServerBase(ServerCore):
     to a specific backend (X11 or otherwise).
     See X11ServerBase and other platform specific subclasses.
     """
-    toggle_features = ("client-shutdown",)
     __signals__ = SIGNALS
 
     def __init__(self):
@@ -61,13 +56,8 @@ class ServerBase(ServerCore):
         for cls in self.get_subsystem_classes():
             self.subsystems[cls.PREFIX] = cls(self)
         log("ServerBase.__init__()")
-        self.hello_request_handlers.update({
-            "exit": self._handle_hello_request_exit,
-            "stop": self._handle_hello_request_stop,
-        })
         self._server_sources: dict = {}
         self.ui_driver = None
-        self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
 
     def get_subsystem_classes(self) -> tuple[type, ...]:
         """
@@ -185,6 +175,8 @@ class ServerBase(ServerCore):
             classes.append(SystemTrayServer)
         from xpra.server.subsystem.sharing import SharingServer
         classes.append(SharingServer)
+        from xpra.server.subsystem.shutdown import ShutdownServer
+        classes.append(ShutdownServer)
         if features.cursor:
             if features.x11:
                 from xpra.x11.subsystem.cursor import XCursorServer
@@ -356,43 +348,6 @@ class ServerBase(ServerCore):
         return get_xpra_sessions(self.dotxpra, matching_display=self.get_display_name())
 
     ######################################################################
-    # shutdown / exit commands:
-    def _process_exit_server(self, _proto, packet: Packet = Packet("exit-server")) -> None:
-        # packet from a client
-        reason = ""
-        if len(packet) > 1:
-            reason = packet.get_str(1)
-        self._request_exit(reason)
-
-    def _handle_hello_request_exit(self, _proto, _caps: typedict) -> bool:
-        # handle "xpra exit" hello request
-        self._request_exit()
-        return True
-
-    def _request_exit(self, reason: ConnectionMessage | str = "") -> None:
-        message = "Exiting in response to client request"
-        if reason:
-            message += f": {reason}"
-        log.info(message)
-        self.cleanup_all_protocols(reason=reason)
-        GLib.timeout_add(500, self.clean_quit, ServerExitMode.EXIT)
-
-    def _process_shutdown_server(self, _proto, _packet: Packet = Packet("shutdown-server")) -> None:
-        self._request_stop()
-
-    def _handle_hello_request_stop(self, _proto, _caps: typedict) -> bool:
-        return self._request_stop()
-
-    def _request_stop(self) -> bool:
-        if not self.client_shutdown:
-            log.warn("Warning: ignoring shutdown request")
-            return False
-        log.info("Shutting down in response to client request")
-        self.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
-        GLib.timeout_add(500, self.clean_quit)
-        return True
-
-    ######################################################################
     # handle new connections:
 
     def hello_oked(self, proto, c: typedict, auth_caps: dict) -> None:
@@ -519,9 +474,7 @@ class ServerBase(ServerCore):
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         # these are flags that have been added over time with new versions
         # to expose new server features:
-        f: dict[str, Any] = {
-            "client-shutdown": self.client_shutdown,
-        }
+        f: dict[str, Any] = {}
         merge_dicts(f, self._dispatch_merge("get_server_features", server_source))
         return f
 
@@ -719,7 +672,6 @@ class ServerBase(ServerCore):
             self.add_packet_handler("set_deflate", noop)  # removed in v6
             # now moved to XSettingsServer
             self.add_packets("server-settings", main_thread=True)
-        self.add_packets("shutdown-server", "exit-server")
 
     # override so we can set the 'authenticated' flag:
     def process_packet(self, proto, packet: Packet) -> None:

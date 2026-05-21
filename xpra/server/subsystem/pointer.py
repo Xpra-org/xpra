@@ -59,7 +59,11 @@ class PointerManager(StubSubsystem):
         return get_pointer_device()
 
     def get_pointer_position(self) -> tuple[int, int]:
-        return 0, 0
+        from xpra.platform.pointer import get_position
+        try:
+            return get_position()
+        except NotImplementedError:
+            return 0, 0
 
     def get_info(self, _proto) -> dict[str, Any]:
         info = {
