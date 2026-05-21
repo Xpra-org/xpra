@@ -90,6 +90,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         from xpra.wayland.subsystem.clipboard import WaylandClipboardManager
         return WaylandClipboardManager
 
+    def get_display_subsystem_class(self) -> type:
+        from xpra.wayland.subsystem.display import WaylandDisplayManager
+        return WaylandDisplayManager
+
     def get_keyboard_subsystem_class(self) -> type:
         from xpra.wayland.subsystem.keyboard import WaylandKeyboardManager
         return WaylandKeyboardManager
@@ -601,12 +605,6 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
     @staticmethod
     def get_display_size():
         return 3840, 2160
-
-    def get_display_description(self) -> str:
-        details = ""
-        if (outputs := list(self.outputs)) and (len(outputs) == 1):
-            details = " " + outputs[0].get_description()
-        return f"Wayland Display{details}"
 
     def get_ui_info(self, proto, **kwargs) -> dict:
         info = super().get_ui_info(proto, **kwargs)
