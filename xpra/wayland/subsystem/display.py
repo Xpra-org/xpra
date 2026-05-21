@@ -11,7 +11,16 @@ from xpra.server.subsystem.display import DisplayManager
 class WaylandDisplayManager(DisplayManager):
 
     def get_display_size(self) -> tuple[int, int]:
-        return self.server.get_display_size()
+        width = height = 0
+        for output in self.server.outputs:
+            info = output.get_info()
+            lx = info.get("logical-x", 0)
+            ly = info.get("logical-y", 0)
+            lw = info.get("logical-width", info.get("width", 0))
+            lh = info.get("logical-height", info.get("height", 0))
+            width = max(width, lx + lw)
+            height = max(height, ly + lh)
+        return width, height
 
     def get_display_name(self) -> str:
         wd = os.environ.get("WAYLAND_DISPLAY", "")

@@ -16,7 +16,6 @@ from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import get_refresh_rate_for_value, DEFAULT_REFRESH_RATE
-from xpra.platform.gui import get_display_size
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -223,9 +222,8 @@ class DisplayManager(StubSubsystem):
 
     ######################################################################
     # display / screen / root window:
-    @staticmethod
-    def get_display_size() -> tuple[int, int]:
-        return get_display_size()
+    def get_display_size(self) -> tuple[int, int]:
+        return 0, 0
 
     def set_screen_geometry_attributes(self, w: int, h: int) -> None:
         # by default, use the screen as desktop area:
