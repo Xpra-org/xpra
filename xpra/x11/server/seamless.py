@@ -776,8 +776,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
             ss.restack_window(wid, window, detail, sibling)
 
     def _set_window_state(self, proto, wid: int, window, new_window_state: dict) -> Sequence[str]:
-        if proto not in self._server_sources:
-            return ()
         if not new_window_state:
             return ()
         nws = typedict(new_window_state)
@@ -858,8 +856,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
             windowlog.warn("Warning: received map event on OR window %s", wid)
             return
         ss = self.get_server_source(proto)
-        if ss is None:
-            return
         geomlog("client %s mapped window %#x - %s, at: %s", ss, wid, window, (x, y, w, h))
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         cp = {}
@@ -1054,8 +1050,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         super()._move_pointer(device_id, wid, pos, props)
 
     def _process_window_close(self, proto, packet: Packet) -> None:
-        if proto not in self._server_sources:
-            return
         wid = packet.get_wid()
         window = self.get_window(wid)
         windowlog("client closed window %s - %s", wid, window)
@@ -1066,8 +1060,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.repaint_root_overlay()
 
     def _process_window_signal(self, proto, packet: Packet) -> None:
-        if proto not in self._server_sources:
-            return
         wid = packet.get_wid()
         sig = packet.get_str(2)
         if sig not in WINDOW_SIGNALS:

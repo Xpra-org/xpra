@@ -75,7 +75,7 @@ class PacketDispatcher:
                 log.error(f"Error processing {packet_type!r}", exc_info=True)
 
         try:
-            if authenticated:
+            if authenticated and not proto.is_closed():
                 if handler := self._authenticated_ui_packet_handlers.get(packet_type):
                     log("process ui packet %s", packet_type)
                     call_handler(True)
