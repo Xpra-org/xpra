@@ -102,115 +102,15 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         from xpra.wayland.subsystem.pointer import WaylandPointerManager
         return WaylandPointerManager
 
+    def get_window_subsystem_class(self) -> type:
+        from xpra.wayland.subsystem.window import WaylandWindowServer
+        return WaylandWindowServer
+
     def get_surface(self, wid: int):
         window = self.get_window(wid)
         if not window:
             return None
         return window._gproperties.get("surface")
-
-    def _focus(self, _server_source, wid: int, modifiers) -> None:
-        log("_focus(%s, %s) current focus=%i", wid, modifiers, self.focused)
-        if modifiers is not None:
-            self.update_keyboard_modifiers(modifiers)
-        if self.focused == wid:
-            return
-        for window_id, state in {
-            self.focused: False,        # unfocus
-            wid: True,                  # focus
-        }.items():
-            if not window_id:
-                if state:
-                    # focus now goes nowhere:
-                    self.keyboard_device.focus(0)
-                continue
-            window = self.get_window(window_id)
-            surface = self.get_surface(window_id)
-            log("focus: wid=%#x, state=%s, window=%s, surface=%s", window_id, state, window, surface)
-            if window and surface:
-                surface.focus(state)
-                # Skip the keyboard if the surface has already been destroyed —
-                # xdg_surface_ptr returns 0 after Surface.destroy().
-                if state and (ptr := surface.xdg_surface_ptr):
-                    self.keyboard_device.focus(ptr)
-        self.focused = wid
-        self.compositor.flush()
-
-    def fake_key(self, keycode: int, press: bool) -> None:
-        log("fake_key(%i, %s)", keycode, press)
-        if kd := self.keyboard_device:
-            kd.reapply_modifiers()
-        super().fake_key(keycode, press)
-        self.compositor.flush()
-
-    def update_keyboard_modifiers(self, modifiers: Sequence[str], group: int = -1) -> None:
-        if group < 0 and (kd := self.keyboard_device):
-            group = kd.get_layout_group()
-        if kd := self.keyboard_device:
-            kd.update_modifiers(modifiers, group)
-
-    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, kattrs: dict) -> None:
-        attrs = typedict(kattrs)
-        if "modifiers" in kattrs:
-            self.update_keyboard_modifiers(attrs.strtupleget("modifiers", ()), attrs.intget("group", 0))
-        super().do_process_keyboard_event(proto, wid, keyname, pressed, kattrs)
-
-    def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
-        self.update_keyboard_modifiers(modifiers)
-        super()._update_modifiers(proto, wid, modifiers)
-
-    def set_keyboard_layout_group(self, grp: int) -> None:
-        if kd := self.keyboard_device:
-            kd.set_layout_group(grp)
-
-    def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
-        log("set_pointer_focus(%i, %s)", wid, pointer)
-        if self.pointer_focus == wid:
-            log(" focus unchanged")
-            # no change
-            return
-        log(" current focus=%i", self.pointer_focus)
-        if self.pointer_focus and wid == 0:
-            # no window has the focus:
-            self.pointer_device.leave_surface()
-            self.pointer_focus = 0
-            return
-        surface = self.get_surface(wid)
-        log("surface(%i)=%s", wid, surface)
-        if surface and len(pointer) >= 4 and (ptr := surface.xdg_surface_ptr):
-            x, y = pointer[2:4]
-            if self.pointer_device.enter_surface(ptr, x, y):
-                self.pointer_focus = wid
-        self.compositor.flush()
-
-    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        if props and "modifiers" in props:
-            self.update_keyboard_modifiers(props.get("modifiers", ()))
-        self.set_pointer_focus(wid, pointer)
-        log("pointer: %r",pointer)
-        try:
-            if self.readonly:
-                return False
-            if pointer:
-                if len(pointer) >= 4:
-                    x, y = pointer[2:4]
-                else:
-                    x, y = pointer[:2]
-                self.get_pointer_device(device_id).move_pointer(x, y, props or {})
-            return True
-        finally:
-            self.compositor.flush()
-
-    def button_action(self, device_id: int, wid: int, button: int, pressed: bool, props: dict) -> None:
-        try:
-            super().button_action(device_id, wid, button, pressed, props)
-        finally:
-            self.compositor.flush()
-
-    def _process_pointer_wheel(self, proto, packet: Packet) -> None:
-        try:
-            super()._process_pointer_wheel(proto, packet)
-        finally:
-            self.compositor.flush()
 
     def _process_window_map(self, _proto, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -581,7 +481,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         else:
             source = wsources[0]
         # must use relative position!
-        x_root, y_root = self.pointer_device.get_position()
+        x_root, y_root = self.subsystems["pointer"].pointer_device.get_position()
         direction = int(MoveResize.MOVE)
         button = 1
         source_indication = SOURCE_INDICATION_NORMAL
@@ -620,15 +520,18 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         log("wayland_io_callback%s", (fd, condition))
         if condition & GLib.IO_IN:
             self.compositor.process_events()
-        elif condition & GLib.IO_ERR:
-            log.error("Error: IO_ERR on wayland compositor fd %i", fd)
+            return GLib.SOURCE_CONTINUE
+        if condition & (GLib.IO_ERR | GLib.IO_HUP | GLib.IO_NVAL):
+            log.error("Error: wayland compositor fd %i condition %#x", fd, condition)
+            self.wayland_fd_source = 0
+            return GLib.SOURCE_REMOVE
         return GLib.SOURCE_CONTINUE
 
     def start_wayland_event_source(self) -> None:
         if self.wayland_fd_source:
             return
         fd = self.compositor.get_event_loop_fd()
-        conditions = GLib.IO_IN | GLib.IO_ERR
+        conditions = GLib.IO_IN | GLib.IO_ERR | GLib.IO_HUP | GLib.IO_NVAL
         log("wayland compositor event loop fd=%i", fd)
         self.wayland_fd_source = GLib.unix_fd_add_full(GLib.PRIORITY_DEFAULT, fd, conditions, self.wayland_io_callback)
 

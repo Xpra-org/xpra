@@ -11,7 +11,7 @@ from xpra.wayland.events cimport ListenerObject
 
 from xpra.wayland.wlroots cimport (
     wlr_output, wlr_output_layout, wlr_box, wl_signal,
-    wlr_scene_output_commit, wlr_output_schedule_frame,
+    wlr_scene_output_commit,
     wlr_output_state, wlr_output_state_init, wlr_output_commit_state, wlr_output_state_finish,
     wlr_output_state_set_scale,
     wlr_output_layout_get_box,
@@ -200,7 +200,6 @@ cdef class Output(ListenerObject):
             with gil:
                 log("output_frame()")
         wlr_scene_output_commit(self.scene_output, NULL)
-        wlr_output_schedule_frame(self.wlr_output)
 
     cdef void destroy(self) noexcept nogil:
         if debug:
