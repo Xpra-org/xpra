@@ -303,9 +303,9 @@ class SeamlessWindowServer(WindowServer):
 
     def _add_new_or_window(self, xid: int) -> None:
         log("_add_new_or_window(%#x)", xid)
-        root_overlay = getattr(self.server, "root_overlay", 0)
-        if root_overlay and root_overlay == xid:
-            windowlog("ignoring root overlay window %#x", root_overlay)
+        root_overlay = self.get_subsystem("root-overlay")
+        if root_overlay and root_overlay.is_overlay_window(xid):
+            windowlog("ignoring root overlay window %#x", xid)
             return
         Gdk = sys.modules.get("gi.repository.Gdk")
         if Gdk:
@@ -442,7 +442,7 @@ class SeamlessWindowServer(WindowServer):
             log.info("no more windows to manage, exiting")
             self.server.clean_quit()
         elif not wm_exiting:
-            getattr(self.server, "repaint_root_overlay", noop)()
+            self.repaint_root_overlay()
 
     def _contents_changed(self, window, event) -> None:
         if window.is_OR() or window.is_tray() or window.get_property("shown"):
@@ -623,7 +623,7 @@ class SeamlessWindowServer(WindowServer):
             if iconified and not window.get_property("iconic"):
                 window.set_property("iconic", True)
             window.hide()
-            getattr(self.server, "repaint_root_overlay", noop)()
+            self.repaint_root_overlay()
 
     def client_clamp_window(self, proto, wid: int, window, x: int, y: int, w: int, h: int, resize_counter: int = 0):
         if not CLAMP_WINDOW_TO_ROOT:
@@ -697,7 +697,7 @@ class SeamlessWindowServer(WindowServer):
             ncg = window.get_property("client-geometry") or ()
             if ocg != ncg:
                 ss.window_configure_time = monotonic()
-                getattr(self.server, "repaint_root_overlay", noop)()
+                self.repaint_root_overlay()
                 if ocg[2:4] != ncg[2:4] and SHARING_SYNC_SIZE:
                     counter = max(0, resize_counter - 1)
                     nw, nh = ncg[2:4]
@@ -772,7 +772,7 @@ class SeamlessWindowServer(WindowServer):
             window.request_close()
         else:
             windowlog("cannot close window %s: it is already gone!", wid)
-        getattr(self.server, "repaint_root_overlay", noop)()
+        self.repaint_root_overlay()
 
     def _process_window_signal(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -800,9 +800,6 @@ class SeamlessWindowServer(WindowServer):
 
     def refresh_window_area(self, window, x: int, y: int, width: int, height: int, options=None) -> None:
         super().refresh_window_area(window, x, y, width, height, options)
-        root_overlay = getattr(self.server, "root_overlay", 0)
+        root_overlay = self.get_subsystem("root-overlay")
         if root_overlay:
-            image = window.get_image(x, y, width, height)
-            if image:
-                from xpra.x11.server.root_overlay import update_root_overlay
-                update_root_overlay(root_overlay, window, x, y, image)
+            root_overlay.update_window(window, x, y, width, height)

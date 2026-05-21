@@ -16,7 +16,8 @@ class X11_DBUS_Server(DBUS_Server):
 
     @dbus.service.method(INTERFACE)
     def SyncXvfb(self):
-        self.server.do_repaint_root_overlay()
+        if root_overlay := self.server.subsystems.get("root-overlay"):
+            root_overlay.do_repaint()
 
     @dbus.service.method(INTERFACE)
     def ResetXSettings(self):

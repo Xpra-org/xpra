@@ -25,7 +25,6 @@ from xpra.server.base import ServerBase
 from xpra.x11.error import xsync, XError
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
 GObject = gi_import("GObject")
 
 log = Logger("server")
@@ -44,10 +43,6 @@ screenlog = Logger("x11", "screen")
 SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 
 DUMMY_DPI = envbool("XPRA_DUMMY_DPI", True)
-
-
-def rindex(alist: list | tuple, avalue: Any) -> int:
-    return len(alist) - alist[::-1].index(avalue) - 1
 
 
 GSIGNALS = to_gsignals(ServerBase.__signals__)
@@ -74,9 +69,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
     def __init__(self, clobber):
         self.clobber = clobber
-        self.root_overlay = 0
-        self.repaint_root_overlay_timer = 0
-        self.sync_xvfb = 0
         GObject.GObject.__init__(self)
         ServerBase.__init__(self)
         self.session_type = "seamless"
@@ -91,7 +83,9 @@ class SeamlessServer(GObject.GObject, ServerBase):
         return SeamlessWindowServer
 
     def init(self, opts) -> None:
-        self.sync_xvfb = int(opts.sync_xvfb or 0)
+        if int(opts.sync_xvfb or 0) > 0:
+            from xpra.x11.subsystem.root_overlay import RootOverlay
+            self.subsystems[RootOverlay.PREFIX] = RootOverlay(self)
         super().init(opts)
 
         def log_server_event(_, event, *_args):
@@ -111,8 +105,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         window_sub._wm = Wm(window_sub.wm_name)
         window_sub._wm.init_atoms()
         self.receive_root_events()
-        if self.sync_xvfb > 0:
-            self.init_root_overlay()
         self.init_wm()
 
     def get_child_env(self) -> dict[str, str]:
@@ -146,21 +138,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
             X11Window.setEventMask(xid, event_mask)
         from xpra.x11.dispatch import add_event_receiver
         add_event_receiver(xid, self)
-
-    def init_root_overlay(self) -> None:
-        try:
-            from xpra.x11.server.root_overlay import init_root_overlay
-            self.root_overlay = init_root_overlay()
-        except ImportError as e:
-            log("init_root_overlay()", exc_info=True)
-            log.error("Error setting up xvfb synchronization:")
-            log.estr(e)
-
-    def release_root_overlay(self) -> None:
-        if ro := self.root_overlay:
-            self.root_overlay = 0
-            from xpra.x11.server.root_overlay import release_root_overlay
-            release_root_overlay(ro)
 
     def init_wm(self) -> None:
         from xpra.x11.selection.common import AlreadyOwned
@@ -197,8 +174,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         window_sub._wm.connect("show-desktop", window_sub._show_desktop)
 
     def do_cleanup(self) -> None:
-        self.cancel_repaint_root_overlay()
-        self.release_root_overlay()
         window_sub = self.subsystems.get("window")
         if window_sub:
             window_sub.cancel_all_configure_damage()
@@ -328,82 +303,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
             root_set("dummy-constant-xdpi", "u32", xdpi)
             root_set("dummy-constant-ydpi", "u32", ydpi)
             screenlog("set_dpi(%i, %i)", xdpi, ydpi)
-
-    def repaint_root_overlay(self) -> None:
-        if not self.root_overlay:
-            return
-        log("repaint_root_overlay() root_overlay=%s, due=%s, sync-xvfb=%ims",
-            self.root_overlay, self.repaint_root_overlay_timer, self.sync_xvfb)
-        if self.repaint_root_overlay_timer:
-            return
-        self.repaint_root_overlay_timer = GLib.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
-
-    def cancel_repaint_root_overlay(self) -> None:
-        if rrot := self.repaint_root_overlay_timer:
-            self.repaint_root_overlay_timer = 0
-            GLib.source_remove(rrot)
-
-    def do_repaint_root_overlay(self) -> None:
-        self.repaint_root_overlay_timer = 0
-        with xsync:
-            root_width, root_height = X11WindowBindings().get_root_size()
-        import cairo
-        from xpra.cairo.context import xlib_surface_create
-        from xpra.x11.server.root_overlay import fill_rect
-        surface = xlib_surface_create(self.root_overlay)
-        cr = cairo.Context(surface)
-        # clear to black
-        fill_rect(cr, (0, 0, 0), 0, 0, root_width, root_height)
-        self.paint_overlay_monitors(cr)
-        self.paint_overlay_windows(cr)
-
-    def paint_overlay_monitors(self, cr) -> None:
-        # only draw the monitors if we have a single UI user connected:
-        try:
-            from xpra.server.source.display import DisplayConnection
-        except ImportError:
-            return
-        display_sources = get_sources_by_type(self, DisplayConnection)
-        if len(display_sources) != 1:
-            return
-        ss = display_sources[0]
-        if ss.screen_sizes and len(ss.screen_sizes) == 1:
-            screen1 = ss.screen_sizes[0]
-            from xpra.x11.server.root_overlay import paint_overlay_monitors
-            paint_overlay_monitors(cr, screen1)
-
-    def paint_overlay_windows(self, cr):
-        # now paint all the windows on top:
-        order = {}
-        window_sub = self.subsystems["window"]
-        focus_history = tuple(window_sub._focus_history)
-        for window in window_sub.models():
-            wid = window_sub.get_wid(window)
-            prio = int(window_sub._has_focus == wid) * 32768 + int(window_sub._has_grab == wid) * 65536
-            if prio == 0:
-                try:
-                    prio = rindex(focus_history, wid)
-                except ValueError:
-                    pass  # not in focus history!
-            order[(prio, wid)] = window
-        windows = []
-        for key in sorted(order):
-            windows.append(order[key])
-        from xpra.x11.server.root_overlay import paint_root_overlay_windows, paint_overlay_pointer
-        paint_root_overlay_windows(cr, windows)
-        # FIXME: use server mouse position, and use current cursor shape
-        try:
-            from xpra.server.source.pointer import PointerConnection
-        except ImportError:
-            sources = ()
-        else:
-            sources = get_sources_by_type(self, PointerConnection)
-        if len(sources) == 1:
-            ss = sources[0]
-            mlp = getattr(ss, "mouse_last_position", (0, 0))
-            if mlp != (0, 0):
-                paint_overlay_pointer(cr, *mlp[:2])
-        return False
 
     def make_dbus_server(self):
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server

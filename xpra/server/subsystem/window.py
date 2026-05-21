@@ -655,7 +655,7 @@ class WindowServer(StubSubsystem):
         #    window.set_property("iconic", False)
         # w, h = window.get_geometry()[2:4]
         # self.refresh_window_area(window, 0, 0, w, h)
-        self.server.repaint_root_overlay()
+        self.repaint_root_overlay()
         return "mapped window %s" % wid
 
     def control_command_unmap(self, wid: int) -> str:
@@ -670,7 +670,7 @@ class WindowServer(StubSubsystem):
         if window.is_OR():
             return f"cannot unmap override redirect window {wid:#x}"
         window.hide()
-        self.server.repaint_root_overlay()
+        self.repaint_root_overlay()
         return f"unmapped window {wid:#x}"
 
     def control_command_suspend(self) -> str:
@@ -678,6 +678,10 @@ class WindowServer(StubSubsystem):
         for csource in wss:
             csource.suspend(True, self._id_to_window)
         return f"suspended {len(wss)} clients"
+
+    def repaint_root_overlay(self) -> None:
+        if root_overlay := self.get_subsystem("root-overlay"):
+            root_overlay.repaint()
 
     def control_command_resume(self) -> str:
         wss = self.window_sources()
