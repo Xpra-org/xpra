@@ -826,6 +826,7 @@ def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, lis
     options, args = parse_command_line(cmdline[1:], defaults)
     if options.minimal:
         # change the defaults and parse again:
+        defaults.splash = False
         # network:
         defaults.pings = 0
         # defaults.compressors = ["none", "lz4"]
