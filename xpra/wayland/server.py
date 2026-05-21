@@ -518,13 +518,14 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def wayland_io_callback(self, fd: int, condition):
         log("wayland_io_callback%s", (fd, condition))
-        if condition & GLib.IO_IN:
-            self.compositor.process_events()
-            return GLib.SOURCE_CONTINUE
         if condition & (GLib.IO_ERR | GLib.IO_HUP | GLib.IO_NVAL):
             log.error("Error: wayland compositor fd %i condition %#x", fd, condition)
             self.wayland_fd_source = 0
             return GLib.SOURCE_REMOVE
+        if condition & GLib.IO_IN:
+            self.compositor.process_events()
+        return GLib.SOURCE_CONTINUE
+
         return GLib.SOURCE_CONTINUE
 
     def start_wayland_event_source(self) -> None:
@@ -546,10 +547,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         super().do_run()
 
     def cleanup(self):
-        super().cleanup()
         if fd := self.wayland_fd_source:
             self.wayland_fd_source = 0
             GLib.source_remove(fd)
+        super().cleanup()
         if c := self.compositor:
             self.compositor = None
             c.cleanup()
