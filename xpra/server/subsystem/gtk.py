@@ -13,7 +13,6 @@ from xpra.util.screen import prettify_plug_name
 from xpra.common import noop
 from xpra.net.common import FULL_INFO
 from xpra.gtk.versions import get_gtk_version_info
-from xpra.gtk.info import get_screen_sizes
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -158,11 +157,13 @@ class GTKServer(StubSubsystem):
         return caps
 
     def get_server_features(self, _source) -> dict[str, Any]:
+        from xpra.gtk.info import get_screen_sizes
         return {
             "screen_sizes": get_screen_sizes(),
         }
 
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
+        from xpra.gtk.info import get_screen_sizes
         return {
             "versions": dict_version_trim(get_gtk_version_info()),
             "screen_sizes": get_screen_sizes(),

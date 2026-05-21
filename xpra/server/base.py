@@ -79,12 +79,8 @@ class ServerBase(ServerCore):
         from xpra.server import features
         classes: list[type] = []
         if features.gtk:
-            if features.x11:
-                from xpra.x11.subsystem.gtk import GtkX11Server
-                classes.append(GtkX11Server)
-            else:
-                from xpra.server.subsystem.gtk import GTKServer
-                classes.append(GTKServer)
+            if gtk_class := self.get_gtk_subsystem_class():
+                classes.append(gtk_class)
         elif features.x11:
             from xpra.x11.subsystem.x11init import X11Init
             classes.append(X11Init)
@@ -200,6 +196,15 @@ class ServerBase(ServerCore):
             from xpra.x11.subsystem.xsettings import XSettingsServer
             classes.append(XSettingsServer)
         return tuple(classes)
+
+    @staticmethod
+    def get_gtk_subsystem_class() -> type | None:
+        from xpra.server import features
+        if features.x11:
+            from xpra.x11.subsystem.gtk import GtkX11Server
+            return GtkX11Server
+        from xpra.server.subsystem.gtk import GTKServer
+        return GTKServer
 
     def get_display_subsystem_class(self) -> type:
         from xpra.server import features
