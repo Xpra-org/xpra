@@ -1792,6 +1792,10 @@ def get_start_new_session_dict(opts, mode: str, extra_args) -> dict[str, Any]:
 def match_client_display_size(options, display_is_remote=True) -> None:
     if options.resize_display.lower() != "auto":
         return
+    # Disable the local display-size probe until the Wayland backend can
+    # safely use it without connecting Gdk to an Xpra Wayland display.
+    if options.backend.lower() == "wayland":
+        return
     # if possible, use the current display size as initial vfb size
     root_w, root_h = get_current_root_size(display_is_remote)
     if 0 < root_w < 16384 and 0 < root_h < 16384:
