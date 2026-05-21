@@ -10,7 +10,7 @@ from xpra.server.subsystem.cursor import CursorManager
 from xpra.util.str_fn import Ellipsizer
 from xpra.x11.dispatch import add_event_receiver
 from xpra.x11.common import X11Event, get_default_cursor_size
-from xpra.x11.error import xlog
+from xpra.x11.error import xlog, xswallow
 from xpra.common import noop
 from xpra.log import Logger
 
@@ -33,6 +33,17 @@ class XCursorServer(CursorManager):
     def __init__(self, server=None):
         CursorManager.__init__(self, server)
         self.last_cursor_serial = 0
+
+    def get_default_cursor_size(self) -> tuple[int, int]:
+        with xlog:
+            return get_default_cursor_size()
+
+    def get_ui_info(self, proto, **kwargs):
+        info = super().get_ui_info(proto, **kwargs)
+        with xswallow:
+            from xpra.x11.bindings.core import X11CoreBindings
+            info.setdefault(CursorManager.PREFIX, {})["position"] = X11CoreBindings().query_pointer()
+        return info
 
     def setup(self) -> None:
         log("setup() cursors=%s", self.enabled)

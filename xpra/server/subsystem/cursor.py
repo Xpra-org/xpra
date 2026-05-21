@@ -7,7 +7,6 @@ from typing import Any
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.env import first_time
-from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
@@ -62,16 +61,21 @@ class CursorManager(StubSubsystem):
             log.warn("Warning: get_cursor_data() not implemented by %s", type(self).__name__)
         return None
 
+    def get_default_cursor_size(self) -> tuple[int, int]:
+        return -1, -1
+
+    def get_max_cursor_size(self) -> tuple[int, int]:
+        return -1, -1
+
     def get_caps(self, source) -> dict[str, Any]:
-        from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size
         cursor_caps = {}
         sizes = cursor_caps.setdefault("sizes", {})
-        dsize = get_default_cursor_size()
+        dsize = self.get_default_cursor_size()
         if min(dsize) > 0:
             sizes["default"] = dsize
             if BACKWARDS_COMPATIBLE:
                 cursor_caps["default_size"] = round(sum(dsize) / len(dsize))
-        max_size = get_max_cursor_size()
+        max_size = self.get_max_cursor_size()
         if min(max_size) > 0:
             sizes["max"] = max_size
             if BACKWARDS_COMPATIBLE:
@@ -119,17 +123,11 @@ class CursorManager(StubSubsystem):
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         # (from UI thread)
         info: dict[str, Any] = {}
-        from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size
         for name, size in {
-            "default": get_default_cursor_size(),
-            "max": get_max_cursor_size(),
+            "default": self.get_default_cursor_size(),
+            "max": self.get_max_cursor_size(),
         }.items():
             info.setdefault("sizes", {})[name] = size
-        if is_X11():
-            from xpra.x11.error import xswallow
-            with xswallow:
-                from xpra.x11.bindings.core import X11CoreBindings
-                info["position"] = X11CoreBindings().query_pointer()
         return {CursorManager.PREFIX: info}
 
     def _process_set_cursors(self, proto, packet: Packet) -> None:
