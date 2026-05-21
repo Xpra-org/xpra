@@ -12,9 +12,6 @@ from collections.abc import Sequence
 from xpra.codecs.image import ImageWrapper
 from xpra.server.common import get_sources_by_type
 from xpra.server.source.window import WindowsConnection
-from xpra.server.subsystem.clipboard import ClipboardManager
-from xpra.server.subsystem.keyboard import KeyboardManager
-from xpra.server.subsystem.pointer import PointerManager
 from xpra.util.gobject import to_gsignals
 from xpra.util.objects import typedict
 from xpra.wayland.compositor import WaylandCompositor
@@ -51,35 +48,6 @@ PER_SURFACE_EVENTS: Final[Sequence[str]] = (
 PER_SUBSURFACE_EVENTS: Final[Sequence[str]] = (
     "commit", "destroy", "subsurface-image",
 )
-
-
-class WaylandClipboardManager(ClipboardManager):
-
-    def get_clipboard_class(self):
-        from xpra.wayland.clipboard import WaylandClipboard
-
-        def make_wayland_clipboard(*args, **kwargs) -> WaylandClipboard:
-            return WaylandClipboard(*args, compositor=self.server.compositor, **kwargs)
-
-        return make_wayland_clipboard
-
-
-class WaylandKeyboardManager(KeyboardManager):
-
-    def make_keyboard_device(self):
-        return self.server.compositor.get_keyboard_device()
-
-    def get_keyboard_config(self, props=None):
-        from xpra.wayland.keyboard_config import KeyboardConfig
-        keyboard_config = KeyboardConfig()
-        log("get_keyboard_config(%s)=%s", props, keyboard_config)
-        return keyboard_config
-
-
-class WaylandPointerManager(PointerManager):
-
-    def make_pointer_device(self):
-        return self.server.compositor.get_pointer_device()
 
 
 class WaylandSeamlessServer(GObject.GObject, ServerBase):
@@ -119,12 +87,15 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return env
 
     def get_clipboard_subsystem_class(self) -> type:
+        from xpra.wayland.subsystem.clipboard import WaylandClipboardManager
         return WaylandClipboardManager
 
     def get_keyboard_subsystem_class(self) -> type:
+        from xpra.wayland.subsystem.keyboard import WaylandKeyboardManager
         return WaylandKeyboardManager
 
     def get_pointer_subsystem_class(self) -> type:
+        from xpra.wayland.subsystem.pointer import WaylandPointerManager
         return WaylandPointerManager
 
     def get_surface(self, wid: int):

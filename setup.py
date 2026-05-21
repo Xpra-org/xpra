@@ -3119,7 +3119,7 @@ if wayland_server_ENABLED:
     ace("xpra.wayland.popup","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1", extra_compile_args=wlr_args)
-    toggle_packages(wayland_server_ENABLED, "xpra.wayland.models")
+    toggle_packages(wayland_server_ENABLED, "xpra.wayland.models", "xpra.wayland.subsystem")
 
 if cythonize_more_ENABLED:
     def ax(base):
