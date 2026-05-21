@@ -125,6 +125,19 @@ cdef class WaylandPointer(ListenerObject):
         if self.pointer_constraints != NULL:
             self.add_listener(L_NEW_CONSTRAINT, &self.pointer_constraints.events.new_constraint)
 
+    def cleanup(self) -> None:
+        self._detach_all()
+        for constraint in tuple(self.constraints.values()):
+            constraint.cleanup()
+        self.constraints.clear()
+        self.active_constraint = NULL
+        self.focused_surface = NULL
+        self.focused_xdg_surface = NULL
+        self.pointer_constraints = NULL
+        self.relative_pointer_manager = NULL
+        self.cursor = NULL
+        self.seat = NULL
+
     cdef void dispatch(self, wl_listener *listener, void *data) noexcept:
         cdef int slot = self.slot_of(listener)
         if slot == L_NEW_CONSTRAINT:
@@ -331,6 +344,10 @@ cdef class PointerConstraint(ListenerObject):
             raise ValueError("pointer constraint is NULL")
         self.add_listener(L_CONSTRAINT_SET_REGION, &self.constraint.events.set_region)
         self.add_listener(L_CONSTRAINT_DESTROY, &self.constraint.events.destroy)
+
+    def cleanup(self) -> None:
+        self._detach_all()
+        self.constraint = NULL
 
     cdef void dispatch(self, wl_listener *listener, void *data) noexcept:
         cdef int slot = self.slot_of(listener)

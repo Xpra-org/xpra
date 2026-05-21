@@ -650,6 +650,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def cleanup(self):
         super().cleanup()
+        if device := self.pointer_device:
+            device.cleanup()
+            self.pointer_device = None
         if fd := self.wayland_fd_source:
             self.wayland_fd_source = 0
             GLib.source_remove(fd)
