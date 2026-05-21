@@ -36,7 +36,8 @@ class AVSyncConnection(StubClientConnection):
         self.av_sync = False
 
     def init_from(self, _protocol, server) -> None:
-        self.av_sync = server.av_sync
+        audio = server.subsystems.get("audio")
+        self.av_sync = bool(audio and audio.av_sync)
 
     def cleanup(self) -> None:
         self.init_state()
