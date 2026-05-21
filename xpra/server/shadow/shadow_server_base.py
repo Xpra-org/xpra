@@ -12,7 +12,6 @@ from xpra.server.common import get_sources_by_type
 from xpra.server.window import batch_config
 from xpra.server.base import ServerBase
 from xpra.scripts.config import InitExit
-from xpra.platform.gui import get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import features
 from xpra.exit_codes import ExitCode
@@ -137,7 +136,8 @@ class ShadowServerBase(ServerBase):
 
     def guess_session_name(self, procs=()) -> None:
         log("guess_session_name(%s)", procs)
-        self.session_name = get_wm_name()  # pylint: disable=assignment-from-none
+        display = self.subsystems.get("display")
+        self.session_name = display.get_wm_name() if display else ""
         log("get_wm_name()=%s", self.session_name)
 
     def get_display_description(self) -> None:

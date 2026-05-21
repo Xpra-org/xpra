@@ -160,6 +160,11 @@ class X11DisplayManager(DisplayManager):
         self.randr_exact_size = False
         self.check_xvfb()
 
+    def get_wm_name(self) -> str:
+        from xpra.x11.common import get_wm_name as x11_get_wm_name
+        with xsync:
+            return x11_get_wm_name() or ""
+
     def get_default_initial_res(self) -> Sequence[tuple[int, int, int]]:
         # `default_resolution` is set by the variant (empty = seamless 8K default).
         kwargs = {"default_refresh_rate": self.refresh_rate}

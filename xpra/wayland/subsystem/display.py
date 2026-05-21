@@ -17,3 +17,6 @@ class WaylandDisplayManager(DisplayManager):
         if len(outputs) == 1:
             details = " " + outputs[0].get_description()
         return f"Wayland Display{details}"
+
+    def get_wm_name(self) -> str:
+        return "xpra on wayland"
