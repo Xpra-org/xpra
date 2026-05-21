@@ -34,8 +34,8 @@ class DisplayMixinTest(ServerMixinTest):
         def set_desktop_geometry(*_args) -> None:
             pass
 
-        def make_display_manager():
-            dm = DisplayManager()
+        def make_display_manager(server):
+            dm = DisplayManager(server)
             dm.calculate_workarea = calculate_workarea
             dm.set_desktop_geometry = set_desktop_geometry
             return dm
