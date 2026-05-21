@@ -598,9 +598,6 @@ class ServerBase(ServerCore):
     def get_features_info(self) -> dict[str, Any]:
         return {}
 
-    def get_subsystems(self) -> list[str]:
-        return list(self.subsystems.keys())
-
     def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
         log("ServerBase.get_source_info%s", (proto, server_sources))
         start = monotonic()
