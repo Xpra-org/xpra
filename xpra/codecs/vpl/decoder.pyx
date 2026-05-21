@@ -459,8 +459,15 @@ cdef class Decoder:
         cdef int h = frame.height
         cdef int bpp = 4  # both AYUV and Y410 are 32 bits per pixel
 
+        # extract_frame() advances frame.data to the crop origin, so the
+        # mapped surface beyond the last visible pixel is not guaranteed
+        # to be readable. Slice exactly through the last row's visible
+        # pixels and let ImageWrapper / GL_UNPACK_ROW_LENGTH handle the
+        # non-tight stride for upload.
+        cdef int payload_bytes = (h - 1) * frame.stride + w * bpp
+
         copy_start = monotonic()
-        pixels = frame.data[:frame.stride * h]
+        pixels = frame.data[:payload_bytes]
         copy_end = monotonic()
 
         pixel_format = "Y410" if frame.format == VPL_FMT_Y410 else "AYUV"
@@ -471,7 +478,7 @@ cdef class Decoder:
         log("vpl decoded %8d bytes %dx%d %s in %dms: submit=%dus sync=%dus map=%dus copy=%dus (%.1fMB)",
             src_len, w, h, pixel_format, (us_total + 500) // 1000,
             frame.us_submit, frame.us_sync, frame.us_map, us_copy,
-            (frame.stride * h) / 1048576.0)
+            payload_bytes / 1048576.0)
 
         full_range = options.boolget("full-range")
         # ImageWrapper handles non-tight rowstrides natively; GL upload uses GL_UNPACK_ROW_LENGTH.
