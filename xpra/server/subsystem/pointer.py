@@ -58,6 +58,9 @@ class PointerManager(StubSubsystem):
         from xpra.platform.pointer import get_pointer_device
         return get_pointer_device()
 
+    def get_pointer_position(self) -> tuple[int, int]:
+        return 0, 0
+
     def get_info(self, _proto) -> dict[str, Any]:
         info = {
             "double-click": {

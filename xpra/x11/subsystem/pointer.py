@@ -31,6 +31,13 @@ class X11PointerManager(PointerManager):
             log.warn(" %s", e)
         return None
 
+    def get_pointer_position(self) -> tuple[int, int]:
+        from xpra.x11.bindings.core import X11CoreBindings
+        from xpra.x11.error import xswallow
+        with xswallow:
+            return X11CoreBindings().query_pointer()
+        return 0, 0
+
     def _process_input_devices(self, _proto, packet: Packet) -> None:
         self.input_devices_format = packet.get_str(1)
         self.input_devices_data = packet.get_dict(2)

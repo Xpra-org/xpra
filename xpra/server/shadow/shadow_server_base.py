@@ -293,10 +293,9 @@ class ShadowServerBase(ServerBase):
     ############################################################################
     # pointer polling
 
-    @staticmethod
-    def get_pointer_position() -> tuple[int, int]:
-        from xpra.platform.pointer import get_position
-        return get_position()
+    def get_pointer_position(self) -> tuple[int, int]:
+        pointer = self.subsystems.get("pointer")
+        return pointer.get_pointer_position() if pointer else (0, 0)
 
     def start_poll_pointer(self) -> None:
         log("start_poll_pointer() pointer_poll_timer=%s, pointer=%s, POLL_POINTER=%s",
