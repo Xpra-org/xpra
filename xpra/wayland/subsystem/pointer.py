@@ -25,21 +25,22 @@ class WaylandPointerManager(PointerManager):
 
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
         server = self.server
+        window = server.subsystems["window"]
         log("set_pointer_focus(%i, %s)", wid, pointer)
-        if server.pointer_focus == wid:
+        if window.pointer_focus == wid:
             log(" focus unchanged")
             return
-        log(" current focus=%i", server.pointer_focus)
-        if server.pointer_focus and wid == 0:
+        log(" current focus=%i", window.pointer_focus)
+        if window.pointer_focus and wid == 0:
             self.pointer_device.leave_surface()
-            server.pointer_focus = 0
+            window.pointer_focus = 0
             return
-        surface = server.get_surface(wid)
+        surface = window.get_surface(wid)
         log("surface(%i)=%s", wid, surface)
         if surface and len(pointer) >= 4 and (ptr := surface.xdg_surface_ptr):
             x, y = pointer[2:4]
             if self.pointer_device.enter_surface(ptr, x, y):
-                server.pointer_focus = wid
+                window.pointer_focus = wid
         server.compositor.flush()
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
