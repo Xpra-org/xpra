@@ -27,6 +27,7 @@ from xpra.server.window.compress import (
     STRICT_MODE, LOSSLESS_WINDOW_TYPES,
     DOWNSCALE_THRESHOLD, DOWNSCALE, TEXT_QUALITY,
     LOG_ENCODERS,
+    MAX_SEQUENCE,
 )
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.rectangle import rectangle, merge_all
@@ -370,8 +371,19 @@ class WindowVideoSource(WindowSource):
         self.cleanup_codecs()
 
     def cleanup(self) -> None:
+        # cancel_damage() in this class already calls cleanup_codecs(),
+        # which captures the encoder refs and schedules explicit clean()
+        # in the encode thread. It must run before super().cleanup()
+        # because the base class's cleanup() calls init_vars() —
+        # resolved (via Python method lookup) to our subclass override,
+        # which nulls _video_encoder and _csc_encoder. If init_vars
+        # runs first, video_context_clean() inside cleanup_codecs sees
+        # None refs and skips the explicit clean(); the encoder is then
+        # GC'd without closed=True, exposing the nvenc __dealloc__
+        # use-after-free path (defended by the companion commit, but
+        # better not to reach it at all).
+        self.cancel_damage(MAX_SEQUENCE)
         super().cleanup()
-        self.cleanup_codecs()
         self.stop_gstreamer_pipeline()
 
     def cleanup_codecs(self) -> None:
