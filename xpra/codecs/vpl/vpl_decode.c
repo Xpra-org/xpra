@@ -20,13 +20,13 @@
 static vpl_log_fn g_log_fn = NULL;
 
 /* XPRA_VPL_RESET_FAST: 0 disables the MFXVideoDECODE_Reset fast path in
-   vpl_decoder_reset(), reverting to Close + fresh Init on every pool
-   reset. Populated by vpl_decode_startup() on every module init (not
-   just the first) so the flag tracks the current env across xpra
-   client reconnects. Reader is vpl_decoder_reset on a decoder worker
-   thread; unsynchronized-read is defensible because an aligned `int`
-   store/load is atomic on x86/ARM (our only targets — oneVPL is
-   Intel-only HW), so a torn read is not possible. */
+   vpl_decoder_reset(), reverting to Close + fresh Init on every reuse.
+   Populated by vpl_decode_startup() on every module init (not just the
+   first) so the flag tracks the current env across xpra client
+   reconnects. Reader is vpl_decoder_reset on a decoder worker thread;
+   unsynchronized-read is defensible because an aligned `int` store/load
+   is atomic on x86/ARM (our only targets — oneVPL is Intel-only HW), so
+   a torn read is not possible. */
 static int reset_fast_enabled = 1;
 
 void vpl_decode_set_log(vpl_log_fn fn) {
@@ -85,9 +85,10 @@ struct VPLDecoder {
        new bitstream's Profile/Level/PicStruct/aspect/framerate etc.),
        then tries MFXVideoDECODE_Reset before falling back to Close+Init
        on MFX_ERR_REALLOC_SURFACE / MFX_ERR_INCOMPATIBLE_VIDEO_PARAM. We
-       cannot Reset at pool-acquire time because caller hints only cover
-       dims + bd; leaving prior-stream SPS fields in dec->param makes
-       MFX happy at Reset but fails at the first DecodeFrameAsync. */
+       cannot Reset at vpl_decoder_reset() entry because the caller hint
+       only covers dims + bd; leaving prior-stream SPS fields in
+       dec->param makes MFX happy at Reset but fails at the first
+       DecodeFrameAsync. */
     int             reset_pending;
     mfxStatus       last_sts;
     char            last_error[128];
@@ -387,9 +388,9 @@ void vpl_decoder_release_surface(VPLDecoder *dec) {
 /* Reset dec->param to the same clean-start baseline vpl_decoder_create
    seeds. DecodeHeader on a prior stream may have mutated CodecProfile /
    ChromaFormat / Crop / VUI / FrameRate; leaving those in place makes
-   pooled reuse carry stale SPS fields forward — Reset will then either
-   fail INCOMPATIBLE_VIDEO_PARAM on the first DecodeFrameAsync, or
-   succeed with outdated metadata. */
+   reuse carry stale SPS fields forward — Reset will then either fail
+   INCOMPATIBLE_VIDEO_PARAM on the first DecodeFrameAsync, or succeed
+   with outdated metadata. */
 static void reset_param_baseline(VPLDecoder *dec, int width, int height,
                                   int bit_depth) {
     memset(&dec->param, 0, sizeof(dec->param));
@@ -485,10 +486,10 @@ VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
     }
 
     /* Don't clear reset_pending here — if it was set by a previous
-       fast-path-setup call (e.g. pool slot reacquired before any
-       frame arrived on the prior stream), rebuild_and_close's Close
-       gate needs to see it to avoid leaking the live MFX decoder.
-       rebuild_and_close clears both flags after closing. */
+       fast-path-setup call (e.g. the cached context was reused before
+       any frame arrived on the prior stream), rebuild_and_close's
+       Close gate needs to see it to avoid leaking the live MFX
+       decoder. rebuild_and_close clears both flags after closing. */
     return rebuild_and_close(dec, width, height, bit_depth);
 }
 

@@ -9,6 +9,7 @@
 #cython: wraparound=False
 
 import os
+from threading import Lock
 from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
@@ -20,16 +21,6 @@ from xpra.log import Logger
 log = Logger("decoder", "vpl")
 
 VPL_ENABLED = os.environ.get("XPRA_VPL", "1") != "0"
-# XPRA_VPL_POOL=0 forces direct create/destroy on every Decoder, bypassing
-# the decoder pool entirely. Rollback escape hatch for the pooling feature.
-# Cleared at init_module time if reaper scheduling fails, so we revert to
-# direct create/destroy rather than accumulating decoders without trimming.
-VPL_POOL_ENABLED = os.environ.get("XPRA_VPL_POOL", "1") != "0"
-
-# GLib source id of the scheduled reaper, so cleanup_module can remove it
-# cleanly and reconnect doesn't leave a ghost source ticking until the
-# next reap (which would no-op and self-drop on shutdown, but still).
-_reap_source_id = 0
 
 from libc.stdint cimport uint8_t, uintptr_t
 from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
@@ -88,72 +79,33 @@ cdef void _vpl_log_callback(const char *msg) noexcept with gil:
     log("%s", msg.decode("utf-8", "replace"))
 
 
-# ── raw C-level helpers exposed to xpra.codecs.vpl.pool ───────────────
-# The pool stores the integer address of the VPLDecoder pointer; Python
-# never dereferences it. All three helpers raise on VPL failure so
-# DecoderPool's reset-failure retry logic can trigger.
+# ── module-level VPLDecoder cache ─────────────────────────────────────
+# A single VPLDecoder* that survives Decoder Python-instance churn. The
+# consumer (paint_with_video_decoder.do_clean_video_decoder) destroys the
+# Python Decoder and creates a fresh one on first frame / encoding change
+# / dim change / colorspace change. Without a cache, MFXLoad +
+# MFXCreateSession + MFXVideoDECODE_Init (~90 ms) runs on every stream
+# change. Parking the underlying VPLDecoder* here lets the next
+# init_context reuse it via MFXVideoDECODE_Reset (~150 µs, see
+# vpl_decoder_reset).
 #
-# _vpl_pool_create raises VPLNotAvailable for the probe-miss case
-# (Intel iGPU absent, driver too old) so init_context can re-raise as
-# ImportError to let the codec dispatcher fall through to the next
-# decoder. Other failures surface as RuntimeError.
-
-
-class VPLNotAvailable(RuntimeError):
-    """Raised by _vpl_pool_create when the oneVPL runtime reports the
-    decoder is not available (typically no Intel GPU or RExt profile)."""
-
-
-# Bit-depth hint passed to the C layer on create/reset. lazy_init re-runs
-# DecodeHeader from the actual bitstream on every stream start, so this
-# value only controls the INITIAL surface allocation — a slot seeded here
-# as 8-bit decodes 10-bit streams fine (and vice versa) after the first
-# decode triggers re-Init with the real params.
-DEF VPL_POOL_BIT_DEPTH_HINT = 8
-
-
-def _vpl_pool_create(int width, int height, object key) -> int:
-    # ``key`` is a caller opaque (see xpra.codecs.vpl.pool.VPL_POOL_KEY);
-    # we don't partition by it here.
-    cdef VPLDecoder *dec = NULL
-    cdef VPLDecodeStatus status
-    cdef int bit_depth = VPL_POOL_BIT_DEPTH_HINT
-    with nogil:
-        status = vpl_decoder_create(&dec, width, height, 1, bit_depth)
-    if status == VPL_DEC_NOT_AVAILABLE:
-        raise VPLNotAvailable(
-            "oneVPL HEVC 444 decoder not available (no Intel GPU?)")
-    if status != VPL_DEC_OK or dec is NULL:
-        raise RuntimeError("vpl_decoder_create(%dx%d) failed: %s" %
-                           (width, height,
-                            vpl_decode_status_str(status).decode("latin-1")))
-    return <size_t>dec
-
-
-def _vpl_pool_reset(addr: int, int width, int height, object key) -> None:
-    # bit_depth is hardcoded to 8 because the only colorspace
-    # init_context accepts today is YUV444P (8-bit). The
-    # MFXVideoDECODE_Reset fast path inside vpl_decoder_reset trusts
-    # this hint as authoritative for new-stream params — adding 10-bit
-    # support (unblocking the Y410 path) requires plumbing real bit_depth
-    # through here AND partitioning the pool key on bit depth, otherwise
-    # a 10-bit stream would be decoded against an 8-bit AYUV slot.
-    # Tracked in memory/vpl_decoder_10bit_registration_gap.md.
-    cdef VPLDecoder *dec = <VPLDecoder*><size_t>addr
-    cdef VPLDecodeStatus status
-    cdef int bit_depth = VPL_POOL_BIT_DEPTH_HINT
-    with nogil:
-        status = vpl_decoder_reset(dec, width, height, bit_depth)
-    if status != VPL_DEC_OK:
-        raise RuntimeError("vpl_decoder_reset(%dx%d) failed: %s" %
-                           (width, height,
-                            vpl_decode_status_str(status).decode("latin-1")))
-
-
-def _vpl_pool_destroy(addr: int) -> None:
-    cdef VPLDecoder *dec = <VPLDecoder*><size_t>addr
-    with nogil:
-        vpl_decoder_destroy(dec)
+# Sized for one cached context because the typical workload is one
+# decoder per window with the occasional bust; concurrent multi-window
+# video is rare and each window still gets a fresh create.
+#
+# bit_depth=8 is hardcoded everywhere: only YUV444P is registered as an
+# input colorspace, and vpl_decoder_reset's deferred MFXVideoDECODE_Reset
+# trusts that hint as authoritative until DecodeHeader runs. Plumb real
+# bit_depth through and partition the cache on it before re-advertising
+# Y410 — see memory/vpl_decoder_10bit_registration_gap.md.
+cdef VPLDecoder *_cached_context = NULL
+_cache_lock = Lock()
+# Set True by cleanup_module so a Decoder.clean() running after teardown
+# (e.g. a still-held Decoder whose __dealloc__ fires later) destroys its
+# context rather than re-parking it into a now-orphaned cache. Cleared
+# by init_module so codec-reload across xpra client reconnect resumes
+# caching.
+_cache_shutdown = False
 
 
 def init_module(options: dict = None) -> None:
@@ -166,62 +118,32 @@ def init_module(options: dict = None) -> None:
         raise ImportError("oneVPL startup failed: %s" %
                           vpl_decode_status_str(status).decode("latin-1"))
     log("vpl: oneVPL startup ok")
-    global VPL_POOL_ENABLED
-    # Re-read the env var on every init_module call so a prior reaper-
-    # scheduling failure doesn't permanently disable pooling across
-    # client reconnects (unload_codecs keeps the module in sys.modules,
-    # so the flag would otherwise stick at False).
-    VPL_POOL_ENABLED = os.environ.get("XPRA_VPL_POOL", "1") != "0"
-    if VPL_POOL_ENABLED:
-        from xpra.codecs.vpl import pool as vpl_pool
-        vpl_pool.init_pool(_vpl_pool_create, _vpl_pool_reset, _vpl_pool_destroy)
-        # Schedule the reaper on the GLib main loop so idle decoders past
-        # XPRA_VPL_IDLE_TIMEOUT and slots over XPRA_VPL_POOL_SIZE actually
-        # get trimmed. Without this, the pool grows unbounded for the
-        # process lifetime.
-        global _reap_source_id
-        try:
-            from xpra.os_util import gi_import
-            glib = gi_import("GLib")
-            # Remove any stale source first (double-init without an
-            # intervening cleanup_module, e.g. codec selftest).
-            if _reap_source_id:
-                try:
-                    glib.source_remove(_reap_source_id)
-                except Exception:  # pylint: disable=broad-except
-                    pass
-                _reap_source_id = 0
-            _reap_source_id = glib.timeout_add(10 * 1000,
-                                               vpl_pool.get_pool().reap)
-            log("vpl: decoder pool initialized, reaper scheduled every 10s")
-        except Exception as e:
-            # No reaper means unbounded growth. Shut down the pool and
-            # fall back to direct create/destroy for every Decoder.
-            log.warn("Warning: failed to schedule VPL pool reaper: %s", e)
-            log.warn(" falling back to unpooled create/destroy")
-            vpl_pool.shutdown()
-            VPL_POOL_ENABLED = False
+    # Re-arm the cache on every init in case a previous reconnect cycle
+    # tripped the shutdown flag.
+    global _cache_shutdown
+    with _cache_lock:
+        _cache_shutdown = False
 
 
 def cleanup_module() -> None:
-    # Shut down the decoder pool first so cached/queued decoders destroy
-    # cleanly. Safe to call even if nothing has initialized the pool.
-    #
-    # Order note: vpl_decode_shutdown() is a no-op log line — there is no
-    # shared oneVPL runtime state. Each VPLDecoder owns its own MFXLoader
-    # and MFXSession, released by vpl_decoder_destroy() independently. So
-    # a pooled decoder that outlives cleanup_module (held across teardown
-    # then released) can still destroy correctly.
-    global _reap_source_id
-    if _reap_source_id:
-        try:
-            from xpra.os_util import gi_import
-            gi_import("GLib").source_remove(_reap_source_id)
-        except Exception as e:
-            log.warn("Warning: failed to remove VPL reaper source: %s", e)
-        _reap_source_id = 0
-    from xpra.codecs.vpl import pool as vpl_pool
-    vpl_pool.shutdown()
+    # Destroy the cached decoder, if any, and flip the shutdown flag so
+    # a later clean() (e.g. on a still-held Decoder whose __dealloc__
+    # fires after teardown) destroys instead of re-parking — otherwise
+    # the MFX session + DPB stay pinned until process exit. Note that
+    # vpl_decode_shutdown itself is a no-op log line: each VPLDecoder
+    # owns its own MFXLoader and MFXSession, released by
+    # vpl_decoder_destroy independently, so ordering vs. the (empty)
+    # global teardown does not matter.
+    global _cached_context, _cache_shutdown
+    cdef VPLDecoder *to_destroy = NULL
+    with _cache_lock:
+        _cache_shutdown = True
+        if _cached_context != NULL:
+            to_destroy = _cached_context
+            _cached_context = NULL
+    if to_destroy != NULL:
+        with nogil:
+            vpl_decoder_destroy(to_destroy)
     vpl_decode_shutdown()
 
 
@@ -259,10 +181,10 @@ def get_specs() -> Sequence[VideoSpec]:
     # decoder has been reliable enough that the added complexity isn't justified.
     #
     # 8-bit only for now. Y410 (10-bit) is deliberately not advertised:
-    # only YUV444P is registered at init time, and the pool reset path hardcodes
-    # bit_depth=8, so a 10-bit stream would be reconfigured against AYUV surfaces.
-    # Plumb bit_depth through the Cython wrapper and partition the pool key on
-    # bd before adding "Y410" here.
+    # only YUV444P is registered at init time, and both the create and the
+    # cached-reset paths hardcode bit_depth=8, so a 10-bit stream would be
+    # reconfigured against AYUV surfaces. Plumb bit_depth through the
+    # Cython wrapper and partition the cache on bd before adding "Y410".
     return (
         VideoSpec(
             encoding="h265",
@@ -295,12 +217,6 @@ cdef class Decoder:
     cdef int height
     cdef object colorspace
     cdef object encoding
-    # When pooling is enabled (XPRA_VPL_POOL=1), ``_slot`` holds the
-    # CachedDecoder this instance acquired from xpra.codecs.vpl.pool.
-    # ``clean`` returns it to the pool instead of destroying; the pool's
-    # reset_fn is called on the next init_context that hits this slot.
-    # None if pool is disabled or the slot has already been released.
-    cdef object _slot
 
     cdef object __weakref__
 
@@ -309,39 +225,64 @@ cdef class Decoder:
         assert encoding == "h265", "unsupported encoding: %s" % encoding
         # If/when 10-bit support lands (see memory/vpl_decoder_10bit_
         # registration_gap.md), this assertion MUST be updated together
-        # with _vpl_pool_reset's hardcoded VPL_POOL_BIT_DEPTH_HINT and
-        # the pool key partitioning — otherwise a 10-bit stream routed
-        # to an 8-bit-configured pool slot would be silently mis-decoded
-        # by the MFXVideoDECODE_Reset fast path.
+        # with the hardcoded bit_depth=8 below — otherwise a 10-bit
+        # stream reusing the cached 8-bit context would be silently
+        # mis-decoded by the MFXVideoDECODE_Reset fast path.
         assert colorspace == "YUV444P", "invalid colorspace: %s" % colorspace
         self.encoding = encoding
         self.colorspace = colorspace
         self.width = width
         self.height = height
         self.frames = 0
+
         cdef VPLDecodeStatus status
-        if VPL_POOL_ENABLED:
-            from xpra.codecs.vpl import pool as vpl_pool
-            # VPLNotAvailable inherits from RuntimeError, which
-            # paint_with_video_decoder catches to fall through to the
-            # next decoder in the dispatcher loop.
-            self._slot = vpl_pool.acquire(width, height)
-            self.context = <VPLDecoder*><size_t>self._slot.handle
-        else:
-            # bit_depth=8 is just a hint; lazy_init re-derives the real
+        cdef VPLDecoder *cached = NULL
+        cdef bint reused = False
+        global _cached_context
+
+        # Fast path: pop the cached context (parked by a previous
+        # Decoder.clean) and reconfigure it for this stream. The lock is
+        # only held across the pointer swap; the (potentially slow)
+        # Reset / Destroy / Create calls happen outside it.
+        with _cache_lock:
+            if _cached_context != NULL:
+                cached = _cached_context
+                _cached_context = NULL
+
+        if cached != NULL:
+            with nogil:
+                status = vpl_decoder_reset(cached, width, height, 8)
+            if status == VPL_DEC_OK:
+                self.context = cached
+                reused = True
+            else:
+                # Reset failed (REALLOC_SURFACE that the C fallback
+                # couldn't recover from, MFX_ERR_INCOMPATIBLE_VIDEO_PARAM,
+                # ...). Destroy and fall through to a fresh create.
+                log.warn("Warning: vpl cached reset(%dx%d) failed: %s",
+                         width, height,
+                         vpl_decode_status_str(status).decode("latin-1"))
+                with nogil:
+                    vpl_decoder_destroy(cached)
+
+        if not reused:
+            # Cold path: no cached context, or cached Reset failed.
+            # bit_depth=8 is a hint; lazy_init re-derives the real
             # value from the bitstream on first decode.
-            status = vpl_decoder_create(&self.context, width, height, 1, 8)
+            with nogil:
+                status = vpl_decoder_create(&self.context, width, height, 1, 8)
             if status != VPL_DEC_OK:
                 raise RuntimeError("failed to create VPL decoder (%dx%d): %s" % (
                     width, height, vpl_decode_status_str(status).decode("latin-1")))
+
         # The format here reflects the bit-depth HINT passed to create/
         # reset, not the actual stream. lazy_init will update it from
         # DecodeHeader on the first decode call.
-        log("vpl %s decoder initialized: hardware=%s, format=%s (hint), pooled=%s",
+        log("vpl %s decoder initialized: hardware=%s, format=%s (hint), reused=%s",
             encoding,
             vpl_decoder_is_hardware(self.context),
             "AYUV" if vpl_decoder_get_format(self.context) == VPL_FMT_AYUV else "Y410",
-            VPL_POOL_ENABLED)
+            reused)
 
     def get_encoding(self) -> str:
         return self.encoding
@@ -368,34 +309,34 @@ cdef class Decoder:
         # Early-return on second call: xpra typically calls clean()
         # explicitly on teardown, then Cython __dealloc__ calls it again
         # on GC. First call does the real work; skip the noisy repeat.
-        if self.context == NULL and self._slot is None:
+        if self.context == NULL:
             return
-        log("vpl close context %#x (pooled=%s)",
-            <uintptr_t> self.context, self._slot is not None)
         cdef VPLDecoder *context = self.context
+        cdef VPLDecoder *to_destroy = NULL
+        log("vpl close context %#x", <uintptr_t> context)
         self.context = NULL
-        slot = self._slot
-        self._slot = None
-        if slot is not None:
-            # Unmap any locked output surface from the last decode, but
-            # leave the decoder initialized (session + internal surface
-            # pool + DPB ~160 MB at 2880x1800 4:4:4 all stay alive). The
-            # next pool.acquire() calls vpl_decoder_reset() which uses
-            # MFXVideoDECODE_Reset to reconfigure in place — if we
-            # Close here, that fast path is forced to fall back to
-            # Close+Init on every reuse. The reaper reclaims the memory
-            # once the slot has been idle past XPRA_VPL_IDLE_TIMEOUT.
-            if context:
-                with nogil:
-                    vpl_decoder_release_surface(context)
-            # Return the decoder to the pool for reuse. The pool owns the
-            # VPLDecoder* handle now; don't destroy it here.
-            from xpra.codecs.vpl import pool as vpl_pool
-            vpl_pool.release(slot)
-        elif context:
-            # Non-pooled (XPRA_VPL_POOL=0): we own the handle, destroy it.
+        # Unmap any locked output surface from the last decode, but
+        # leave the decoder otherwise initialized: session + internal
+        # surface pool + DPB (~160 MB at 2880x1800 4:4:4) stay alive
+        # so the next init_context can reuse this context via
+        # vpl_decoder_reset (~150 µs) rather than going through Close +
+        # fresh Init (~25 ms).
+        with nogil:
+            vpl_decoder_release_surface(context)
+        global _cached_context
+        with _cache_lock:
+            if _cache_shutdown or _cached_context != NULL:
+                # Either the module is being torn down (cleanup_module
+                # ran first), or the cache already holds another
+                # context (concurrent stream restart on a second
+                # window). Both cases: destroy this one rather than
+                # leak it.
+                to_destroy = context
+            else:
+                _cached_context = context
+        if to_destroy != NULL:
             with nogil:
-                vpl_decoder_destroy(context)
+                vpl_decoder_destroy(to_destroy)
         self.frames = 0
         self.width = 0
         self.height = 0

@@ -64,8 +64,8 @@ VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
                                    int bit_depth);
 
 /* Unmap and release the last decoded output surface, if any. Called
-   before returning a pooled decoder to the cache so the mapped surface
-   does not stay pinned across idle time. */
+   before parking a decoder in the cache so the mapped surface does not
+   stay pinned across idle time. */
 void vpl_decoder_release_surface(VPLDecoder *dec);
 
 /* Decode one compressed HEVC access unit.
