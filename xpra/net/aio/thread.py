@@ -3,10 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import atexit
 import time
 import asyncio
 from typing import Any
-from threading import Lock
+from threading import Lock, Thread
 from collections.abc import Awaitable, Callable
 
 from queue import SimpleQueue
@@ -73,8 +74,57 @@ class ThreadedAsyncioLoop:
 
     def __init__(self):
         self.loop: asyncio.AbstractEventLoop | None = None
-        start_thread(self.run_forever, "asyncio-thread", True)
+        self._thread: Thread | None = start_thread(self.run_forever, "asyncio-thread", True)
         self.wait_for_loop()
+        # Stop the loop at interpreter shutdown so the daemon asyncio
+        # thread is gone before Py_FinalizeEx reaches _PyGILState_Fini.
+        # Without this, libuv can dispatch a callback into uvloop after
+        # autoInterpreterState has been zeroed, crashing in
+        # PyGILState_Ensure -> new_threadstate(NULL).
+        atexit.register(self.stop)
+
+    def stop(self, timeout: float = 1.0) -> None:
+        """Stop the loop and wait briefly for the daemon thread to exit.
+
+        Idempotent: registered as an atexit handler at construction and
+        safe to call again explicitly.
+
+        Guards on loop.is_closed() rather than loop.is_running() because
+        a freshly-constructed loop has is_running() == False until
+        run_forever() actually enters its main loop; if stop() were
+        called in that window with the is_running guard, we'd drop the
+        stop request and the thread would survive into finalization.
+        """
+        loop = self.loop
+        if loop is None:
+            log("stop(): loop=None, nothing to do")
+            atexit.unregister(self.stop)
+            return
+        if loop.is_closed():
+            log("stop(): loop already closed, nothing to do")
+            atexit.unregister(self.stop)
+            return
+        log("stop(): scheduling loop.stop on %s", loop)
+        try:
+            loop.call_soon_threadsafe(loop.stop)
+        except RuntimeError as e:
+            # Loop closed concurrently between the guard and the call.
+            log("stop(): call_soon_threadsafe failed: %s", e)
+            atexit.unregister(self.stop)
+            return
+        thread = self._thread
+        if thread is None or not thread.is_alive():
+            log("stop(): no live thread to join")
+            atexit.unregister(self.stop)
+            return
+        log("stop(): joining asyncio thread (timeout=%ss)", timeout)
+        thread.join(timeout=timeout)
+        if thread.is_alive():
+            log.warn("asyncio thread did not exit within %ss;"
+                     " daemon may race interpreter finalization", timeout)
+        else:
+            log("stop(): asyncio thread exited")
+            atexit.unregister(self.stop)
 
     def run_forever(self) -> None:
         if UVLOOP:
