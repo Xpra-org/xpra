@@ -20,7 +20,7 @@ class WaylandPointerManager(PointerManager):
     def cleanup(self) -> None:
         if device := self.pointer_device:
             device.cleanup()
-        self.pointer_device = None
+            self.pointer_device = None
         self.pointer_device_map = {}
 
     def set_pointer_focus(self, wid: int, pointer: Sequence) -> None:
