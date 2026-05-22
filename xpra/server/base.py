@@ -6,28 +6,20 @@
 # later version. See the file COPYING for details.
 
 import os
-from collections.abc import Sequence
 from time import monotonic
 from typing import Any
 
 from xpra.server.common import get_sources_by_type
 from xpra.server.core import ServerCore, SIGNALS as CORE_SIGNALS
 from xpra.server.source.events import EventConnection
-from xpra.util.background_worker import add_work_item
 from xpra.common import noop
-from xpra.net.constants import ConnectionMessage
 from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.os_util import gi_import
-from xpra.util.objects import typedict, merge_dicts
+from xpra.util.objects import merge_dicts
 from xpra.util.str_fn import Ellipsizer
 from xpra.os_util import POSIX
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
-
 log = Logger("server")
-netlog = Logger("network")
-authlog = Logger("auth")
 eventslog = Logger("events")
 
 SIGNALS: dict[str, int] = {
@@ -56,8 +48,6 @@ class ServerBase(ServerCore):
         for cls in self.get_subsystem_classes():
             self.subsystems[cls.PREFIX] = cls(self)
         log("ServerBase.__init__()")
-        self._server_sources: dict = {}
-        self.ui_driver = None
 
     def get_subsystem_classes(self) -> tuple[type, ...]:
         """
@@ -175,6 +165,8 @@ class ServerBase(ServerCore):
             classes.append(SystemTrayServer)
         from xpra.server.subsystem.sharing import SharingServer
         classes.append(SharingServer)
+        from xpra.server.subsystem.client_session import ClientSessionServer
+        classes.append(ClientSessionServer)
         from xpra.server.subsystem.shutdown import ShutdownServer
         classes.append(ShutdownServer)
         if features.cursor:
@@ -254,9 +246,6 @@ class ServerBase(ServerCore):
         dbus = self.subsystems.get("dbus")
         if dbus and dbus.service:
             dbus.service.Event(event_type, [str(x) for x in args[1:]])
-
-    def get_server_source(self, proto):
-        return self._server_sources.get(proto)
 
     def init(self, opts) -> None:
         # from now on, use the logger for parsing errors:
@@ -347,96 +336,6 @@ class ServerBase(ServerCore):
         from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra, matching_display=self.get_display_name())
 
-    ######################################################################
-    # handle new connections:
-
-    def hello_oked(self, proto, c: typedict, auth_caps: dict) -> None:
-        if self.get_server_source(proto):
-            log.warn("Warning: received another 'hello' packet")
-            log.warn(" from an existing connection: %s", proto)
-            return
-        if super().hello_oked(proto, c, auth_caps):
-            # has been handled
-            return
-        if not self.sanity_checks(proto, c):
-            log("client failed sanity checks")
-            return
-
-        def drop_client(reason="unknown", *args) -> None:
-            self.disconnect_client(proto, reason, *args)
-
-        cc_class = self.get_client_connection_class(c)
-        ss = cc_class(proto, drop_client, self, self.setting_changed)
-        log("process_hello clientconnection=%s", ss)
-        try:
-            ss.parse_hello(c)
-        except Exception:
-            # close it already
-            ss.close()
-            raise
-        self._server_sources[proto] = ss
-        self.accept_protocol(proto, c)
-        # process ui half in ui thread:
-        GLib.idle_add(self.process_hello_ui, ss, c, auth_caps)
-
-    def get_sources_by_type(self, atype=object, exclude=None) -> Sequence:
-        return tuple(ss for ss in self._server_sources.values() if isinstance(ss, atype) and (exclude is None or ss.uuid != exclude.uuid))
-
-    @staticmethod
-    def get_client_connection_class(caps: typedict) -> type:
-        # pylint: disable=import-outside-toplevel
-        from xpra.server.source.factory import get_client_connection_class
-        return get_client_connection_class(caps)
-
-    def process_hello_ui(self, ss, c: typedict, auth_caps: dict) -> None:
-        def reject(*args) -> None:
-            p = ss.protocol
-            if p:
-                self.disconnect_client(p, *args)
-
-        def closing() -> None:
-            reject(ConnectionMessage.CONNECTION_ERROR, "server is shutting down")
-
-        try:
-            if self._closing:
-                closing()
-                return
-
-            err = self.parse_hello(ss, c)
-            if err:
-                reject(*err.split(":"))
-                return
-
-            # send_hello will take care of sending the current and max screen resolutions
-            self.send_hello(ss, auth_caps)
-
-            log.info("Handshake complete; enabling connection")
-            self.server_event("handshake-complete")
-            self.notify_new_user(ss)
-
-            self.add_new_client(ss, c)
-            self.send_initial_data(ss)
-            self.client_startup_complete(ss)
-
-            if self._closing:
-                closing()
-                return
-        except Exception:
-            # log exception but don't disclose internal details to the client
-            log("process_hello_ui%s", (ss, c, auth_caps))
-            log.error("Error: processing new connection from %s:", ss.protocol or ss, exc_info=True)
-            reject("error accepting new connection")
-
-    def parse_hello(self, ss, c: typedict) -> str | ConnectionMessage:
-        return self._dispatch_first_truthy("parse_hello", ss, c) or ""
-
-    def add_new_client(self, ss, c: typedict) -> None:
-        self._dispatch_fire("add_new_client", ss, c)
-
-    def notify_new_user(self, ss) -> None:
-        if notifications := self.subsystems.get("notifications"):
-            notifications.notify_new_user(ss)
-
     def notify_setup_error(self, exception) -> None:
         log.warn("Warning: cannot forward notifications,")
         if str(exception).endswith("is already claimed on the session bus"):
@@ -447,24 +346,6 @@ class ServerBase(ServerCore):
                 log.warn(" %s", msg)
         log.warn(" if you do not have a dedicated dbus session for this xpra instance,")
         log.warn(" use the 'notifications=no' option")
-
-    def send_initial_data(self, ss) -> None:
-        self._dispatch_fire("send_initial_data", ss)
-
-    def client_startup_complete(self, ss) -> None:
-        ss.startup_complete()
-        self.server_event("startup-complete", ss.uuid)
-
-    def sanity_checks(self, proto, c: typedict) -> bool:
-        server_uuid = c.strget("server_uuid")
-        if server_uuid:
-            if server_uuid == self.subsystems["id"].uuid:
-                self.send_disconnect(proto, "cannot connect a client running on the same display"
-                                            " that the server it connects to is managing - this would create a loop!")
-                return False
-            log.warn("Warning: this client is running nested")
-            log.warn(f" in the Xpra server session {server_uuid!r}")
-        return True
 
     def update_all_server_settings(self, reset: bool = False) -> None:
         pass  # may be overridden in subclasses (ie: x11 server)
@@ -551,111 +432,9 @@ class ServerBase(ServerCore):
     def get_features_info(self) -> dict[str, Any]:
         return {}
 
-    def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
-        log("ServerBase.get_source_info%s", (proto, server_sources))
-        start = monotonic()
-        info: dict[str, Any] = {}
-
-        def up(prefix, d) -> None:
-            merge_dicts(info, {prefix: d})
-
-        info["clients"] = {
-            "": sum(1 for p in self._server_sources if p != proto),
-            "unauthenticated": sum(1 for p in self._potential_protocols
-                                   if ((p is not proto) and (p not in self._server_sources))),
-        }
-        log("unauthenticated protocols:")
-        for i, p in enumerate(self._potential_protocols):
-            log(f"{i:3} : {p}={p.get_info()}")
-        cinfo = {}
-        for i, ss in enumerate(server_sources):
-            sinfo = ss.get_info()
-            sinfo["ui-driver"] = self.ui_driver == ss.uuid
-            cinfo[i] = sinfo
-        up("client", cinfo)
-        log("ServerBase.get_source_info took %ims", (monotonic() - start) * 1000)
-        return info
-
     def _process_server_settings(self, proto, packet: Packet) -> None:
         # only used by x11 servers
         pass
-
-    def setting_changed(self, setting: str, value: Any) -> None:
-        """ broadcast a server setting change to all connected clients """
-        for ss in tuple(self._server_sources.values()):
-            ss.send_setting_change(setting, value)
-
-    ######################################################################
-    # client connections:
-    def disconnect_all(self) -> None:
-        protocols = self.get_all_protocols()
-        log("disconnect_all() all protocols=%s", protocols)
-        for protocol in protocols:
-            self.server.disconnect_client(protocol, ConnectionMessage.DETACH_REQUEST)
-
-    def cleanup_protocol(self, protocol):
-        netlog("cleanup_protocol(%s)", protocol)
-        # this ensures that from now on we ignore any incoming packets coming
-        # from this connection as these could potentially set some keys pressed, etc
-        try:
-            self._potential_protocols.remove(protocol)
-        except ValueError:
-            pass
-        if source := self._server_sources.pop(protocol, None):
-            self.cleanup_source(source)
-            if mdns := self.subsystems.get("mdns"):
-                add_work_item(mdns.mdns_update)
-        self._dispatch_fire("cleanup_protocol", protocol)
-        return source
-
-    def cleanup_source(self, source) -> None:
-        ptype = "xpra"
-        if FULL_INFO > 0:
-            ptype = getattr(source, "client_type", "") or "xpra"
-        self.server_event("connection-lost", source.uuid)
-        self.emit("client-exited", source)
-
-        remaining_sources = tuple(self._server_sources.values())
-        if self.ui_driver == source.uuid:
-            if len(remaining_sources) == 1:
-                self.set_ui_driver(remaining_sources[0])
-            else:
-                self.set_ui_driver(None)
-        source.close()
-        netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
-        netlog.info("%s client %i disconnected.", ptype, source.counter)
-        has_client = len(remaining_sources) > 0
-        if not has_client:
-            GLib.idle_add(self.last_client_exited)
-
-    def last_client_exited(self) -> None:
-        # must run from the UI thread (modifies focus and keys)
-        # `exit_with_client` is owned by `SharingServer`:
-        sharing = self.subsystems.get("sharing")
-        exit_with_client = bool(sharing and sharing.exit_with_client)
-        netlog("last_client_exited() exit_with_client=%s", exit_with_client)
-        self.emit("last-client-exited")
-        if exit_with_client and not self._closing:
-            netlog.info("Last client has disconnected, terminating")
-            self.clean_quit(False)
-
-    def set_ui_driver(self, source) -> None:
-        if source and self.ui_driver == source.uuid:
-            return
-        log("new ui driver: %s", source)
-        if not source:
-            self.ui_driver = None
-        else:
-            self.ui_driver = source.uuid
-        self.emit("new-ui-driver", source)
-
-    def get_all_protocols(self) -> list:
-        return list(self._potential_protocols) + list(self._server_sources.keys())
-
-    def is_timedout(self, protocol) -> bool:
-        v = super().is_timedout(protocol) and protocol not in self._server_sources
-        netlog("is_timedout(%s)=%s", protocol, v)
-        return v
 
     def _disconnect_proto_info(self, proto) -> str:
         # only log protocol info if there is more than one client:
@@ -672,18 +451,3 @@ class ServerBase(ServerCore):
             self.add_packet_handler("set_deflate", noop)  # removed in v6
             # now moved to XSettingsServer
             self.add_packets("server-settings", main_thread=True)
-
-    # override so we can set the 'authenticated' flag:
-    def process_packet(self, proto, packet: Packet) -> None:
-        authenticated = bool(self.get_server_source(proto))
-        return super().dispatch_packet(proto, packet, authenticated)
-
-    def handle_invalid_packet(self, proto, packet: Packet) -> None:
-        ss = self.get_server_source(proto)
-        if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
-            netlog("invalid packet: %s", packet)
-            packet_type = packet.get_type()
-            netlog.error(f"Error: unknown or invalid packet type {packet_type!r}")
-            netlog.error(f" received from {proto}")
-        if not ss:
-            proto.close()

@@ -348,6 +348,73 @@ class ServerCore(GLibServer):
     def get_subsystem(self, prefix: str):
         return self.subsystems.get(prefix)
 
+    @property
+    def _server_sources(self) -> dict:
+        client_session = self.get_subsystem("client-session")
+        return client_session.sources if client_session else {}
+
+    @property
+    def ui_driver(self):
+        client_session = self.get_subsystem("client-session")
+        return client_session.ui_driver if client_session else None
+
+    def get_server_source(self, proto):
+        if client_session := self.get_subsystem("client-session"):
+            return client_session.get_server_source(proto)
+        return None
+
+    def get_sources_by_type(self, atype=object, exclude=None) -> Sequence:
+        if client_session := self.get_subsystem("client-session"):
+            return client_session.get_sources_by_type(atype, exclude)
+        return ()
+
+    def set_ui_driver(self, source) -> None:
+        if client_session := self.get_subsystem("client-session"):
+            client_session.set_ui_driver(source)
+
+    def setting_changed(self, setting: str, value: Any) -> None:
+        if client_session := self.get_subsystem("client-session"):
+            client_session.setting_changed(setting, value)
+
+    def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
+        if client_session := self.get_subsystem("client-session"):
+            return client_session.dispatch_parse_hello(ss, caps)
+        return ""
+
+    def add_new_client(self, ss, caps: typedict) -> None:
+        if client_session := self.get_subsystem("client-session"):
+            client_session.dispatch_add_new_client(ss, caps)
+
+    def send_initial_data(self, ss) -> None:
+        if client_session := self.get_subsystem("client-session"):
+            client_session.dispatch_send_initial_data(ss)
+
+    def client_startup_complete(self, ss) -> None:
+        if client_session := self.get_subsystem("client-session"):
+            client_session.client_startup_complete(ss)
+
+    def sanity_checks(self, proto, caps: typedict) -> bool:
+        if client_session := self.get_subsystem("client-session"):
+            return client_session.sanity_checks(proto, caps)
+        return True
+
+    def disconnect_all(self) -> None:
+        if client_session := self.get_subsystem("client-session"):
+            client_session.disconnect_all()
+
+    def cleanup_source(self, source) -> None:
+        if client_session := self.get_subsystem("client-session"):
+            client_session.do_cleanup_source(source)
+
+    def last_client_exited(self) -> None:
+        if client_session := self.get_subsystem("client-session"):
+            client_session.last_client_exited()
+
+    def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
+        if client_session := self.get_subsystem("client-session"):
+            return client_session.get_sources_info(proto, server_sources)
+        return {}
+
     def _dispatch_fire(self, method: str, *args, reverse: bool = False) -> None:
         subs = list(self.subsystems.values())
         if reverse:
@@ -527,7 +594,8 @@ class ServerCore(GLibServer):
             log.info(run_info)
 
     def notify_new_user(self, ss) -> None:
-        pass
+        if notifications := self.get_subsystem("notifications"):
+            notifications.notify_new_user(ss)
 
     # #####################################################################
     # sockets / connections / packets:
@@ -663,7 +731,10 @@ class ServerCore(GLibServer):
         self.cleanup_protocols(protocols, reason=reason, force=force)
 
     def get_all_protocols(self) -> Sequence[SocketProtocol]:
-        return tuple(self._potential_protocols)
+        protocols = list(self._potential_protocols)
+        if client_session := self.get_subsystem("client-session"):
+            protocols += list(client_session.sources)
+        return tuple(protocols)
 
     def cleanup_protocols(self, protocols, reason: str | ConnectionMessage = "", force=False) -> None:
         if not reason:
@@ -1257,8 +1328,9 @@ class ServerCore(GLibServer):
         return getattr(self, "_http_scripts", {})
 
     def is_timedout(self, protocol: SocketProtocol) -> bool:
-        # subclasses may override this method (ServerBase does)
         v = not protocol.is_closed() and protocol in self._potential_protocols
+        if client_session := self.get_subsystem("client-session"):
+            v = v and not client_session.is_authenticated(protocol)
         netlog("is_timedout(%s)=%s", protocol, v)
         return v
 
@@ -1351,8 +1423,16 @@ class ServerCore(GLibServer):
             protocol.send_disconnect(reasons)
         self.cleanup_protocol(protocol)
 
-    def cleanup_protocol(self, protocol: SocketProtocol) -> None:
-        """ some subclasses perform extra cleanup here """
+    def cleanup_protocol(self, protocol: SocketProtocol):
+        try:
+            self._potential_protocols.remove(protocol)
+        except ValueError:
+            pass
+        source = None
+        if client_session := self.get_subsystem("client-session"):
+            source = client_session.cleanup_client_protocol(protocol)
+        self._dispatch_fire("cleanup_protocol", protocol)
+        return source
 
     def _process_connection_close(self, proto: SocketProtocol, packet: Packet) -> None:
         info = packet.get_str(1)
@@ -1513,13 +1593,15 @@ class ServerCore(GLibServer):
             log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
             self.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
 
-    def hello_oked(self, proto: SocketProtocol, c: typedict, _auth_caps: dict) -> bool:
+    def hello_oked(self, proto: SocketProtocol, c: typedict, auth_caps: dict) -> bool:
         if self._closing:
             self.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
             return True
         request = c.strget("request")
         if request and self.handle_hello_request(request, proto, c):
             return True
+        if client_session := self.get_subsystem("client-session"):
+            return client_session.hello_oked(proto, c, auth_caps)
         return False
 
     def handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
@@ -1719,7 +1801,18 @@ class ServerCore(GLibServer):
     ######################################################################
     # packet handling:
     def process_packet(self, proto, packet) -> None:
-        return super().dispatch_packet(proto, packet)
+        authenticated = bool(self.get_server_source(proto))
+        return super().dispatch_packet(proto, packet, authenticated)
+
+    def handle_invalid_packet(self, proto, packet: Packet) -> None:
+        ss = self.get_server_source(proto)
+        if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
+            netlog("invalid packet: %s", packet)
+            packet_type = packet.get_type()
+            netlog.error(f"Error: unknown or invalid packet type {packet_type!r}")
+            netlog.error(f" received from {proto}")
+        if not ss:
+            proto.close()
 
     def handle_rfb_connection(self, conn, data: bytes = b"") -> None:
         if rfb := self.subsystems.get("rfb"):
