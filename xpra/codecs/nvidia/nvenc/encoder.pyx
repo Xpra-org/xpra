@@ -1129,8 +1129,28 @@ cdef class Encoder:
         return bool(self.closed)
 
     def __dealloc__(self):
+        # When threaded_init is on (the default), clean() spawns
+        # threaded_clean via start_thread, whose Thread retains a bound
+        # method holding self. Cython's tp_dealloc for a cdef class then
+        # frees the struct after __dealloc__ returns regardless of
+        # refcount resurrection, so the spawned thread dereferences
+        # freed memory and SEGVs. Callers MUST call clean() before
+        # dropping the last reference in that mode; if they don't, leak
+        # GPU resources rather than crash.
+        # When threaded_init is off, clean() runs do_clean() inline (no
+        # thread spawn, no UAF risk), so it's still safe to do the
+        # cleanup here.
         if not self.closed:
-            self.clean()
+            if self.threaded_init:
+                try:
+                    log.warn("Warning: nvenc Encoder %s GC'd without clean()", self)
+                    log.warn(" leaking GPU resources to avoid use-after-free —")
+                    log.warn(" call clean() before dropping the last reference")
+                except Exception:
+                    pass
+                self.closed = 1
+            else:
+                self.clean()
 
     def clean(self) -> None:
         f = self.file

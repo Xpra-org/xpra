@@ -199,8 +199,22 @@ class EncoderServer(ServerBase):
                         log(f" supported pixel formats for {encoding!r}: %s", csv(input_cs_options))
                         raise ValueError(msg)
                 add_device_context(ss, options)
-                encoder.init_context(encoding, width, height, pixel_format, typedict(options))
-                bdata, client_options = encoder.compress_image(image, typedict(options))
+                try:
+                    encoder.init_context(encoding, width, height, pixel_format, typedict(options))
+                    bdata, client_options = encoder.compress_image(image, typedict(options))
+                finally:
+                    # Per-request one-shot encoder: clean explicitly so
+                    # GPU resources are released even if init_context or
+                    # compress_image raised. Relying on __dealloc__ is
+                    # unsafe — see nvenc Encoder.__dealloc__. Swallow
+                    # cleanup errors so we don't replace a successful
+                    # encode result (or mask the original exception).
+                    try:
+                        encoder.clean()
+                    except Exception:
+                        # NVENCException from raiseNVENC() inherits from
+                        # Exception (not RuntimeError), so catch broadly.
+                        log.error(f"Error cleaning one-shot encoder {encoder}", exc_info=True)
                 bpp = 24
                 stride = 0
                 coding = encoding
