@@ -1114,6 +1114,16 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     except OSError:
         cwd = os.path.expanduser("~")
         warn(f"current working directory does not exist, using {cwd!r}\n")
+    # Generate the script text now, because os.getcwd() will
+    # change if/when we daemonize:
+    run_xpra_script = env_script = ""
+    if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
+        from xpra.server.runner_script import xpra_runner_shell_script, xpra_env_shell_script
+        save_env = os.environ.copy()
+        save_env.update(parse_env(opts.env))
+        env_script = xpra_env_shell_script(opts.socket_dir, save_env)
+        run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
+
     validate_encryption(opts)
     if opts.encoding == "help" or "help" in opts.encodings:
         return show_encoding_help(opts)
@@ -1170,16 +1180,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                                      matching_display=display_name, query=True)
         session = sessions.get(display_name, {})
         use_display = request_upgrade_display(display_name, session) or use_display
-
-    # Generate the script text now, because os.getcwd() will
-    # change if/when we daemonize:
-    run_xpra_script = env_script = ""
-    if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
-        from xpra.server.runner_script import xpra_runner_shell_script, xpra_env_shell_script
-        save_env = os.environ.copy()
-        save_env.update(parse_env(opts.env))
-        env_script = xpra_env_shell_script(opts.socket_dir, save_env)
-        run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
 
     uid: int = int(opts.uid)
     gid: int = int(opts.gid)
