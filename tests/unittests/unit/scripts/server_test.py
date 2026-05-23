@@ -5,9 +5,20 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from xpra.scripts.server import is_splash_enabled
+from xpra.scripts.session import save_session_file
+from xpra.scripts.server import (
+    get_server_log_dir,
+    is_splash_enabled,
+    setup_xauthority,
+    start_server_vfb,
+    write_initial_session_files,
+)
 
 
 class TestMain(unittest.TestCase):
@@ -16,6 +27,48 @@ class TestMain(unittest.TestCase):
         assert is_splash_enabled("foo", True, True, ":10") is False, "splash should not be enabled for daemons"
         assert is_splash_enabled("foo", False, False, ":10") is False, "splash should not be enabled for splash=False"
         assert is_splash_enabled("foo", False, True, ":10") is True, "splash should be enabled for splash=True"
+
+    def test_write_initial_session_files(self):
+        with tempfile.TemporaryDirectory() as sessions_dir, patch.dict(os.environ, {}, clear=False):
+            session_dir = write_initial_session_files("seamless", sessions_dir, ":42", os.getuid(), os.getgid(),
+                                                      None, "SERVER_ENV=1", ("xpra", "start", ":42"))
+            assert session_dir == os.path.join(sessions_dir, "42")
+            assert os.environ["XPRA_SESSION_DIR"] == session_dir
+            with open(os.path.join(session_dir, "server.env"), encoding="utf8") as f:
+                assert f.read() == "SERVER_ENV=1"
+            with open(os.path.join(session_dir, "cmdline"), encoding="utf8") as f:
+                assert f.read() == "xpra\nstart\n:42\n"
+
+    def test_get_server_log_dir(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("XPRA_LOG_DIR", None)
+            assert get_server_log_dir(False, False, "auto", "/session") == "auto"
+            assert "XPRA_LOG_DIR" not in os.environ
+            assert get_server_log_dir(True, False, "auto", "/session") == "/session"
+            assert os.environ["XPRA_LOG_DIR"] == "/session"
+
+    def test_setup_xauthority_reuses_session_file(self):
+        with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:
+            with patch.dict(os.environ, {"XPRA_SESSION_DIR": session_dir}, clear=False):
+                os.environ.pop("XAUTHORITY", None)
+                save_session_file("xauthority", xauth_file.name)
+                xauthority = setup_xauthority(":42", "test", os.getuid(), os.getgid(), False, False,
+                                              lambda *_args: self.fail("existing xauthority must not be rewritten"),
+                                              lambda *_args: None)
+                assert xauthority == xauth_file.name
+                assert os.environ["XAUTHORITY"] == xauth_file.name
+
+    def test_start_server_vfb_noop_for_proxy(self):
+        result = start_server_vfb(SimpleNamespace(), "proxy", ":100", ":100", False, (), "", None,
+                                  "/tmp", os.getuid(), os.getgid(), "test", {}, None, False, True,
+                                  False, False, False, False, "/session", "/log", lambda *_args: "",
+                                  lambda *_args: None, lambda *_args: None)
+        assert result.xvfb is None
+        assert result.xvfb_pid == 0
+        assert result.devices == {}
+        assert result.display_name == ":100"
+        assert result.session_dir == "/session"
+        assert result.log_dir == "/log"
 
 
 def main():

@@ -11,6 +11,7 @@ import glob
 import shlex
 import os.path
 import datetime
+from dataclasses import dataclass
 from typing import Any, NoReturn, Final
 from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence, Callable
@@ -541,6 +542,262 @@ def get_splash_progress(mode: str, daemon: bool, splash: bool, display: str) -> 
     return splash_process, progress
 
 
+def write_initial_session_files(mode: str, sessions_dir: str, display_name: str,
+                                uid: int, gid: int, run_xpra_script: str | None,
+                                env_script: str | None, cmdline: Sequence[str]) -> str:
+    session_dir = make_session_dir(mode, sessions_dir, display_name, uid, gid)
+    os.environ["XPRA_SESSION_DIR"] = session_dir
+    if run_xpra_script:
+        # Write out a shell-script so that we can start our proxy in a clean
+        # environment:
+        assert BACKWARDS_COMPATIBLE
+        from xpra.server.runner_script import write_runner_shell_scripts
+        write_runner_shell_scripts(run_xpra_script)
+    if env_script:
+        save_session_file("server.env", env_script, uid, gid)
+    save_session_file("cmdline", "\n".join(cmdline) + "\n", uid, gid)
+    return session_dir
+
+
+def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str, session_dir: str) -> str:
+    if not (start_vfb or log_to_file):
+        return log_dir
+    if not log_dir or log_dir.lower() == "auto":
+        log_dir = session_dir
+    # This is used by Xdummy for the Xorg log file.
+    if "XPRA_LOG_DIR" not in os.environ:
+        os.environ["XPRA_LOG_DIR"] = log_dir
+    return log_dir
+
+
+def redirect_server_log(log_to_file: bool, log_dir: str, log_file: str, display_name: str,
+                        username: str, uid: int, gid: int, root: bool,
+                        extra_expand: dict[str, str], stdout, stderr) -> tuple[str, Any, Any]:
+    if not log_to_file:
+        os.environ.pop("XPRA_SERVER_LOG", None)
+        return "", stdout, stderr
+
+    from xpra.util.daemon import redirect_std_to_log, select_log_file, open_log_file
+    log_filename = osexpand(select_log_file(log_dir, log_file, display_name),
+                            username, uid, gid, extra_expand)
+    if os.path.exists(log_filename) and not display_name.startswith("S"):
+        # Don't overwrite the log file just yet, as we may still fail to start.
+        log_filename += ".new"
+    logfd = open_log_file(log_filename)
+    if POSIX:
+        os.fchmod(logfd, 0o640)
+        if root and (uid > 0 or gid > 0):
+            try:
+                os.fchown(logfd, uid, gid)
+            except OSError as e:
+                noerr(stderr.write, f"failed to chown the log file {log_filename!r}\n")
+                noerr(stderr.write, f" {e!r}\n")
+                noerr(stderr.flush)
+    stdout, stderr = redirect_std_to_log(logfd)
+    noerr(stderr.write, f"Entering daemon mode; any further errors will be reported to:\n  {log_filename!r}\n")
+    noerr(stderr.flush)
+    os.environ["XPRA_SERVER_LOG"] = log_filename
+    return log_filename, stdout, stderr
+
+
+def finalize_server_log(daemon: bool, log_dir: str, log_file: str, old_display_name: str,
+                        display_name: str, session_dir: str, log_filename: str,
+                        username: str, uid: int, gid: int, extra_expand: dict[str, str],
+                        stdout, stderr) -> None:
+    if WIN32 and os.environ.get("XPRA_LOG_FILENAME"):
+        os.environ["XPRA_SERVER_LOG"] = os.environ["XPRA_LOG_FILENAME"]
+    if not daemon:
+        return
+    if old_display_name != display_name:
+        # This may be used by scripts, let's try not to change it.
+        noerr(stderr.write, f"Actual display used: {display_name}\n")
+        noerr(stderr.flush)
+    from xpra.util.daemon import select_log_file
+    new_log_filename = osexpand(select_log_file(log_dir, log_file, display_name),
+                                username, uid, gid, extra_expand)
+    if log_filename != new_log_filename:
+        if not os.path.exists(log_filename) and os.path.exists(new_log_filename) and new_log_filename.startswith(
+                session_dir):  # noqa: E501
+            # The session dir was renamed with the log file inside it.
+            pass
+        else:
+            try:
+                os.rename(log_filename, new_log_filename)
+            except OSError:
+                pass
+        os.environ["XPRA_SERVER_LOG"] = new_log_filename
+        noerr(stderr.write, f"Actual log file name is now: {new_log_filename!r}\n")
+        noerr(stderr.flush)
+    noerr(stdout.close)
+    noerr(stderr.close)
+
+
+def setup_xauthority(display_name: str, username: str, uid: int, gid: int, root: bool,
+                     shadowing: bool, write_session_file: Callable[[str, str], str], log) -> str:
+    from xpra.x11.vfb_util import get_xauthority_path, valid_xauth
+    xauthority = valid_xauth((load_session_file("xauthority")).decode(), uid, gid)
+    if xauthority:
+        os.environ["XAUTHORITY"] = xauthority
+        return xauthority
+
+    if SHARED_XAUTHORITY:
+        # Re-using this value is not always safe, but users expect commands
+        # such as `DISPLAY=:10 xterm` to work in most cases.
+        xauthority = os.environ.get("XAUTHORITY", "")
+    if shadowing and not valid_xauth(xauthority, uid, gid):
+        # Look for xauth files in magic directories, see ticket #3917.
+        xauth_time = 0.0
+        candidates = (
+            "/tmp/xauth*",
+            "/tmp/.Xauth*",
+            "/var/run/*dm/xauth*",
+            "/var/run/lightdm/$USER/xauthority",
+            "$XDG_RUNTIME_DIR/xauthority",
+            "$XDG_RUNTIME_DIR/Xauthority",
+            "$XDG_RUNTIME_DIR/gdm/xauthority",
+            "$XDG_RUNTIME_DIR/gdm/Xauthority",
+        )
+        for globstr in candidates:
+            for filename in glob.glob(osexpand(globstr, actual_username=username, uid=uid, gid=gid)):
+                if not os.path.isfile(filename):
+                    continue
+                try:
+                    stat_info = os.stat(filename)
+                except OSError:
+                    continue
+                if not root and stat_info.st_uid != uid:
+                    continue
+                if xauth_time == 0.0 or stat_info.st_mtime > xauth_time:
+                    xauthority = filename
+                    xauth_time = stat_info.st_mtime
+    if not valid_xauth(xauthority, uid, gid):
+        xauthority = get_xauthority_path(display_name)
+        xauthority = osexpand(xauthority, actual_username=username, uid=uid, gid=gid)
+    assert xauthority
+    if not os.path.exists(xauthority):
+        if os.path.islink(xauthority):
+            # broken symlink
+            os.unlink(xauthority)
+        log(f"creating XAUTHORITY file {xauthority!r}")
+        with open(xauthority, "ab") as xauth_file:
+            os.fchmod(xauth_file.fileno(), 0o640)
+            if root and (uid != 0 or gid != 0):
+                os.fchown(xauth_file.fileno(), uid, gid)
+    elif not is_writable(xauthority, uid, gid) and not root:
+        log(f"chmoding XAUTHORITY file {xauthority!r}")
+        os.chmod(xauthority, 0o640)
+    write_session_file("xauthority", xauthority)
+    log(f"using XAUTHORITY file {xauthority!r}")
+    os.environ["XAUTHORITY"] = xauthority
+    return xauthority
+
+
+@dataclass
+class VFBStartResult:
+    xvfb: Popen | None
+    xvfb_pid: int
+    devices: dict
+    display_name: str
+    session_dir: str
+    log_dir: str
+
+
+def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, start_vfb: bool,
+                     xvfb_cmd: Sequence[str], xauth_data: str, xauthority: str | None,
+                     cwd: str, uid: int, gid: int, username: str, protected_env: dict,
+                     pam, shadowing: bool, proxying: bool, encoder: bool,
+                     runner: bool, starting_desktop: bool, starting_monitor: bool,
+                     session_dir: str, log_dir: str, write_session_file: Callable,
+                     progress: Callable, log) -> VFBStartResult:
+    xvfb = None
+    xvfb_pid = 0
+    devices = {}
+    if not POSIX or proxying or encoder or runner:
+        return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir)
+
+    create_input_devices = noop
+    uinput_uuid_len = 0
+    use_uinput = False
+    if opts.backend != "wayland":
+        try:
+            from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
+            uinput_uuid_len = UINPUT_UUID_LEN
+            use_uinput = not (shadowing or proxying or encoder or runner) and opts.input_devices.lower() in (
+                "uinput", "auto",
+            ) and has_uinput()
+        except ImportError:
+            use_uinput = False
+
+    uinput_uuid = ""
+    if start_vfb:
+        progress(40, "starting a virtual display")
+        from xpra.x11.vfb_util import start_Xvfb, xauth_add
+        assert not proxying and xauth_data
+        pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop or starting_monitor)
+        if use_uinput:
+            # This only needs to be fairly unique.
+            uinput_uuid = get_rand_chars(uinput_uuid_len).decode("latin1")
+            write_session_file("uinput-uuid", uinput_uuid)
+        vfb_geom: tuple | None = ()
+        resize = opts.resize_display.lower()
+        if resize not in ALL_BOOLEAN_OPTIONS and resize != "auto":
+            sizes = opts.resize_display.split(":", 1)[-1]
+            resolutions = parse_resolutions(sizes, opts.refresh_rate)
+            if resolutions:
+                vfb_geom = resolutions[0]
+        fps = get_refresh_rate_for_value(opts.refresh_rate, 60) if opts.refresh_rate else 0
+        xvfb, display_name = start_Xvfb(xvfb_cmd, vfb_geom, pixel_depth, fps, display_name, cwd,
+                                        uid, gid, username, uinput_uuid)
+        assert xauthority
+        xauth_add(xauthority, display_name, xauth_data, uid, gid)
+        xvfb_pid = xvfb.pid
+        xvfb_pidfile = write_session_file("xvfb.pid", str(xvfb.pid))
+        log(f"saved xvfb.pid={xvfb.pid}")
+
+        def xvfb_terminated() -> None:
+            log(f"xvfb_terminated() removing {xvfb_pidfile}")
+            if xvfb_pidfile:
+                os.unlink(xvfb_pidfile)
+
+        vfb_procinfo = get_child_reaper().add_process(xvfb, "xvfb", xvfb_cmd, ignore=True, callback=xvfb_terminated)
+        log("xvfb process info=%s", vfb_procinfo.get_info())
+        os.environ["DISPLAY"] = display_name
+        os.environ["CKCON_X11_DISPLAY"] = display_name
+        os.environ.update(protected_env)
+        if display_name != old_display_name:
+            if pam:
+                pam.set_items({"XDISPLAY": display_name})
+            if session_dir:
+                new_session_dir = get_session_dir(mode, opts.sessions_dir, display_name, uid)
+                if new_session_dir != session_dir:
+                    try:
+                        if os.path.exists(new_session_dir):
+                            for sess_e in os.listdir(session_dir):
+                                os.rename(os.path.join(session_dir, sess_e), os.path.join(new_session_dir, sess_e))
+                            os.rmdir(session_dir)
+                        else:
+                            os.rename(session_dir, new_session_dir)
+                    except OSError as e:
+                        log.error("Error moving the session directory")
+                        log.error(f" from {session_dir!r} to {new_session_dir!r}")
+                        log.error(f" {e}")
+                    session_dir = new_session_dir
+                    if not opts.log_dir or opts.log_dir.lower() == "auto":
+                        log_dir = session_dir
+                    os.environ["XPRA_SESSION_DIR"] = new_session_dir
+    elif not OSX and not shadowing and not proxying:
+        try:
+            xvfb_pid = int(load_session_file("xvfb.pid") or 0)
+        except ValueError:
+            pass
+        log(f"reloaded xvfb.pid={xvfb_pid} from session file")
+        if use_uinput:
+            uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
+    if uinput_uuid:
+        devices = create_input_devices(uinput_uuid, uid) or {}
+    return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir)
+
+
 def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts,
                   extra_args: list[str], full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
@@ -707,7 +964,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.util.daemon import daemonize, redirect_std_to_log, select_log_file, open_log_file
+    from xpra.util.daemon import daemonize
     run_xpra_script = None
     env_script = None
     if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
@@ -844,18 +1101,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         os.environ.pop("DISPLAY", None)
     os.environ.update(protected_env)
 
-    session_dir = make_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
-    os.environ["XPRA_SESSION_DIR"] = session_dir
-    # populate it:
-    if run_xpra_script:
-        # Write out a shell-script so that we can start our proxy in a clean
-        # environment:
-        assert BACKWARDS_COMPATIBLE
-        from xpra.server.runner_script import write_runner_shell_scripts
-        write_runner_shell_scripts(run_xpra_script)
-    if env_script:
-        write_session_file("server.env", env_script)
-    write_session_file("cmdline", "\n".join(cmdline) + "\n")
+    session_dir = write_initial_session_files(mode, opts.sessions_dir, display_name, uid, gid,
+                                              run_xpra_script, env_script, cmdline)
     upgrading_seamless = upgrading_desktop = upgrading_monitor = False
     if upgrading:
         # if we had saved the start / start-desktop config, reload it:
@@ -872,42 +1119,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
     log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "") == "1"
-    log_dir = opts.log_dir or ""
-    if start_vfb or log_to_file:
-        # we will probably need a log dir
-        # either for the vfb, or for our own log file
-        if not log_dir or log_dir.lower() == "auto":
-            log_dir = session_dir
-        # expose the log-dir as "XPRA_LOG_DIR",
-        # this is used by Xdummy for the Xorg log file
-        if "XPRA_LOG_DIR" not in os.environ:
-            os.environ["XPRA_LOG_DIR"] = log_dir
-
-    log_filename0 = ""
-    if log_to_file:
-        log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
-                                 username, uid, gid, extra_expand)
-        if os.path.exists(log_filename0) and not display_name.startswith("S"):
-            # don't overwrite the log file just yet,
-            # as we may still fail to start
-            log_filename0 += ".new"
-        logfd = open_log_file(log_filename0)
-        if POSIX:
-            os.fchmod(logfd, 0o640)
-            if ROOT and (uid > 0 or gid > 0):
-                try:
-                    os.fchown(logfd, uid, gid)
-                except OSError as e:
-                    noerr(stderr.write, f"failed to chown the log file {log_filename0!r}\n")
-                    noerr(stderr.write, f" {e!r}\n")
-                    noerr(stderr.flush)
-        stdout, stderr = redirect_std_to_log(logfd)
-        noerr(stderr.write, f"Entering daemon mode; any further errors will be reported to:\n  {log_filename0!r}\n")
-        noerr(stderr.flush)
-        os.environ["XPRA_SERVER_LOG"] = log_filename0
-    else:
-        # server log does not exist:
-        os.environ.pop("XPRA_SERVER_LOG", None)
+    log_dir = get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
+    log_filename0, stdout, stderr = redirect_server_log(log_to_file, log_dir, opts.log_file, display_name,
+                                                        username, uid, gid, ROOT, extra_expand, stdout, stderr)
 
     # warn early about this:
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
@@ -960,66 +1174,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     xvfb = None
     xauthority = None
     if POSIX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland") < 0:
-        # XAUTHORITY
-        from xpra.x11.vfb_util import get_xauthority_path, valid_xauth, xauth_add
-        xauthority = valid_xauth((load_session_file("xauthority")).decode(), uid, gid)
-        if not xauthority:
-            # from here on, we need to save the `xauthority` session file
-            # since there is no session file, or it isn't valid
-            if SHARED_XAUTHORITY:
-                # re-using the value from the environment may not always be safe
-                # as the file may be removed when the X11 session that created it is closed,
-                # but users expect things to "just work" in most cases,
-                # and be able to run commands such as `DISPLAY=:10 xterm`,
-                # so this is enabled by default
-                xauthority = os.environ.get("XAUTHORITY", "")
-            if shadowing and not valid_xauth(xauthority, uid, gid):
-                # look for xauth files in magic directories (yuk)
-                # matching this user, see ticket #3917
-                xauth_time = 0.0
-                candidates = [
-                    "/tmp/xauth*",
-                    "/tmp/.Xauth*",
-                    "/var/run/*dm/xauth*",
-                    "/var/run/lightdm/$USER/xauthority",
-                    "$XDG_RUNTIME_DIR/xauthority",
-                    "$XDG_RUNTIME_DIR/Xauthority",
-                    "$XDG_RUNTIME_DIR/gdm/xauthority",
-                    "$XDG_RUNTIME_DIR/gdm/Xauthority",
-                ]
-                for globstr in candidates:
-                    for filename in glob.glob(osexpand(globstr, actual_username=username, uid=uid, gid=gid)):
-                        if not os.path.isfile(filename):
-                            continue
-                        try:
-                            stat_info = os.stat(filename)
-                        except OSError:
-                            continue
-                        if not ROOT and stat_info.st_uid != uid:
-                            continue
-                        if xauth_time == 0.0 or stat_info.st_mtime > xauth_time:
-                            xauthority = filename
-                            xauth_time = stat_info.st_mtime
-            if not valid_xauth(xauthority, uid, gid):
-                # we can choose the path to use:
-                xauthority = get_xauthority_path(display_name)
-                xauthority = osexpand(xauthority, actual_username=username, uid=uid, gid=gid)
-            assert xauthority
-            if not os.path.exists(xauthority):
-                if os.path.islink(xauthority):
-                    # broken symlink
-                    os.unlink(xauthority)
-                log(f"creating XAUTHORITY file {xauthority!r}")
-                with open(xauthority, "ab") as xauth_file:
-                    os.fchmod(xauth_file.fileno(), 0o640)
-                    if ROOT and (uid != 0 or gid != 0):
-                        os.fchown(xauth_file.fileno(), uid, gid)
-            elif not is_writable(xauthority, uid, gid) and not ROOT:
-                log(f"chmoding XAUTHORITY file {xauthority!r}")
-                os.chmod(xauthority, 0o640)
-            write_session_file("xauthority", xauthority)
-            log(f"using XAUTHORITY file {xauthority!r}")
-        os.environ["XAUTHORITY"] = xauthority
+        xauthority = setup_xauthority(display_name, username, uid, gid, ROOT, shadowing, write_session_file, log)
+        from xpra.x11.vfb_util import xauth_add
         # resolve use-display='auto':
         if (use_display is None or upgrading) and not proxying and not encoder:
             # figure out if we have to start the vfb or not
@@ -1060,95 +1216,16 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                             # now OK!
                             start_vfb = False
 
-    xvfb_pid = 0
-    devices = {}
-    if POSIX and not (proxying or encoder or runner):
-        create_input_devices = noop
-        UINPUT_UUID_LEN = 0
-        use_uinput = False
-        if opts.backend != "wayland":
-            try:
-                from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
-                use_uinput = not (shadowing or proxying or encoder or runner) and opts.input_devices.lower() in (
-                    "uinput", "auto",
-                ) and has_uinput()
-            except ImportError:
-                use_uinput = False
-        uinput_uuid = ""
-        if start_vfb:
-            progress(40, "starting a virtual display")
-            from xpra.x11.vfb_util import start_Xvfb, xauth_add
-            assert not proxying and xauth_data
-            pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop or starting_monitor)
-            if use_uinput:
-                # this only needs to be fairly unique:
-                uinput_uuid = get_rand_chars(UINPUT_UUID_LEN).decode("latin1")
-                write_session_file("uinput-uuid", uinput_uuid)
-            vfb_geom: tuple | None = ()
-            resize = opts.resize_display.lower()
-            if resize not in ALL_BOOLEAN_OPTIONS and resize != "auto":
-                # "off:1080p" -> "1080p"
-                # "4k" -> "4k"
-                sizes = opts.resize_display.split(":", 1)[-1]
-                resolutions = parse_resolutions(sizes, opts.refresh_rate)
-                if resolutions:
-                    vfb_geom = resolutions[0]
-            fps = 0
-            if opts.refresh_rate:
-                fps = get_refresh_rate_for_value(opts.refresh_rate, 60)
-
-            xvfb, display_name = start_Xvfb(xvfb_cmd, vfb_geom, pixel_depth, fps, display_name, cwd,
-                                            uid, gid, username, uinput_uuid)
-            assert xauthority
-            xauth_add(xauthority, display_name, xauth_data, uid, gid)
-            xvfb_pid = xvfb.pid
-            xvfb_pidfile = write_session_file("xvfb.pid", str(xvfb.pid))
-            log(f"saved xvfb.pid={xvfb.pid}")
-
-            def xvfb_terminated() -> None:
-                log(f"xvfb_terminated() removing {xvfb_pidfile}")
-                if xvfb_pidfile:
-                    os.unlink(xvfb_pidfile)
-
-            vfb_procinfo = get_child_reaper().add_process(xvfb, "xvfb", xvfb_cmd, ignore=True, callback=xvfb_terminated)
-            log("xvfb process info=%s", vfb_procinfo.get_info())
-            # always update as we may now have the "real" display name:
-            os.environ["DISPLAY"] = display_name
-            os.environ["CKCON_X11_DISPLAY"] = display_name
-            os.environ.update(protected_env)
-            if display_name != odisplay_name:
-                # update with the real display value:
-                if pam:
-                    pam.set_items({"XDISPLAY": display_name})
-                if session_dir:
-                    new_session_dir = get_session_dir(mode, opts.sessions_dir, display_name, uid)
-                    if new_session_dir != session_dir:
-                        try:
-                            if os.path.exists(new_session_dir):
-                                for sess_e in os.listdir(session_dir):
-                                    os.rename(os.path.join(session_dir, sess_e), os.path.join(new_session_dir, sess_e))
-                                os.rmdir(session_dir)
-                            else:
-                                os.rename(session_dir, new_session_dir)
-                        except OSError as e:
-                            log.error("Error moving the session directory")
-                            log.error(f" from {session_dir!r} to {new_session_dir!r}")
-                            log.error(f" {e}")
-                        session_dir = new_session_dir
-                        # update session dir if needed:
-                        if not opts.log_dir or opts.log_dir.lower() == "auto":
-                            log_dir = session_dir
-                        os.environ["XPRA_SESSION_DIR"] = new_session_dir
-        elif POSIX and not OSX and not shadowing and not proxying:
-            try:
-                xvfb_pid = int(load_session_file("xvfb.pid") or 0)
-            except ValueError:
-                pass
-            log(f"reloaded xvfb.pid={xvfb_pid} from session file")
-            if use_uinput:
-                uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
-        if uinput_uuid:
-            devices = create_input_devices(uinput_uuid, uid) or {}
+    vfb_result = start_server_vfb(opts, mode, display_name, odisplay_name, start_vfb, xvfb_cmd,
+                                  xauth_data, xauthority, cwd, uid, gid, username, protected_env,
+                                  pam, shadowing, proxying, encoder, runner, starting_desktop,
+                                  starting_monitor, session_dir, log_dir, write_session_file, progress, log)
+    xvfb = vfb_result.xvfb
+    xvfb_pid = vfb_result.xvfb_pid
+    devices = vfb_result.devices
+    display_name = vfb_result.display_name
+    session_dir = vfb_result.session_dir
+    log_dir = vfb_result.log_dir
 
     def check_xvfb(timeout=0) -> bool:
         if xvfb is None:
@@ -1166,32 +1243,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         noerr(stderr.write, "vfb failed to start, exiting\n")
         return ExitCode.VFB_ERROR
 
-    if WIN32 and os.environ.get("XPRA_LOG_FILENAME"):
-        os.environ["XPRA_SERVER_LOG"] = os.environ["XPRA_LOG_FILENAME"]
-    if opts.daemon:
-        if odisplay_name != display_name:
-            # this may be used by scripts, let's try not to change it:
-            noerr(stderr.write, f"Actual display used: {display_name}\n")
-            noerr(stderr.flush)
-        log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
-                                 username, uid, gid, extra_expand)
-        if log_filename0 != log_filename1:
-            if not os.path.exists(log_filename0) and os.path.exists(log_filename1) and log_filename1.startswith(
-                    session_dir):  # noqa: E501
-                # the session dir was renamed with the log file inside it,
-                # so we don't need to rename the log file
-                pass
-            else:
-                # we now have the correct log filename, so use it:
-                try:
-                    os.rename(log_filename0, log_filename1)
-                except OSError:
-                    pass
-            os.environ["XPRA_SERVER_LOG"] = log_filename1
-            noerr(stderr.write, f"Actual log file name is now: {log_filename1!r}\n")
-            noerr(stderr.flush)
-        noerr(stdout.close)
-        noerr(stderr.close)
+    finalize_server_log(opts.daemon, log_dir, opts.log_file, odisplay_name, display_name, session_dir,
+                        log_filename0, username, uid, gid, extra_expand, stdout, stderr)
     # we should not be using stdout or stderr from this point on:
     del stdout
     del stderr
