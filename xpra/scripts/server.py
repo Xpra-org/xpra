@@ -897,6 +897,23 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
     return DisplayNameResult(display_name, display_options)
 
 
+def request_upgrade_display(display_name: str, session: dict) -> bool:
+    if not session:
+        return False
+    socket_path = session.get("socket-path")
+    uri = f"socket://{socket_path}" if socket_path else display_name
+    if request_exit(uri):
+        # the server has terminated as we had requested,
+        # but it may need a second to disconnect the clients
+        # and then close the sockets cleanly
+        # (so we can re-create them safely)
+        import time
+        time.sleep(1)
+        return True
+    warn(f"server for {display_name} is not exiting")
+    return False
+
+
 def resolve_x11_display(display_name: str, xauthority: str, xauth_data: str,
                         start_vfb: bool, use_display: bool | None, upgrading: bool,
                         shadowing: bool, proxying: bool, encoder: bool, pam,
@@ -1141,19 +1158,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         sessions = get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN, SocketState.DEAD),
                                      matching_display=display_name, query=True)
         session = sessions.get(display_name, {})
-        if session:
-            socket_path = session.get("socket-path")
-            uri = f"socket://{socket_path}" if socket_path else display_name
-            if request_exit(uri):
-                # the server has terminated as we had requested
-                use_display = True
-                # but it may need a second to disconnect the clients
-                # and then close the sockets cleanly
-                # (so we can re-create them safely)
-                import time
-                time.sleep(1)
-            else:
-                warn(f"server for {display_name} is not exiting")
+        use_display = request_upgrade_display(display_name, session) or use_display
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:

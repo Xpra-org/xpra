@@ -21,6 +21,7 @@ from xpra.scripts.server import (
     init_virtual_devices,
     is_splash_enabled,
     make_server_app,
+    request_upgrade_display,
     resolve_x11_display,
     resolve_server_display_name,
     sanitize_dbus_env,
@@ -187,6 +188,25 @@ class TestMain(unittest.TestCase):
                                                  True, False, None, self.fail)
         assert result.display_name == ":1001"
         assert result.display_options == ""
+
+    def test_request_upgrade_display(self):
+        with patch("xpra.scripts.server.request_exit", return_value=True) as request_exit, \
+                patch("time.sleep") as sleep:
+            assert request_upgrade_display(":42", {"socket-path": "/tmp/xpra/42"}) is True
+        request_exit.assert_called_once_with("socket:///tmp/xpra/42")
+        sleep.assert_called_once_with(1)
+
+    def test_request_upgrade_display_no_session(self):
+        with patch("xpra.scripts.server.request_exit") as request_exit:
+            assert request_upgrade_display(":42", {}) is False
+        request_exit.assert_not_called()
+
+    def test_request_upgrade_display_not_exiting(self):
+        with patch("xpra.scripts.server.request_exit", return_value=False) as request_exit, \
+                patch("xpra.scripts.server.warn") as warn:
+            assert request_upgrade_display(":42", {"socket-path": ""}) is False
+        request_exit.assert_called_once_with(":42")
+        warn.assert_called_once_with("server for :42 is not exiting")
 
     def test_setup_xauthority_reuses_session_file(self):
         with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:
