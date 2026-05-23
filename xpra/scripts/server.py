@@ -13,7 +13,7 @@ import os.path
 import datetime
 from dataclasses import dataclass
 from typing import Any, NoReturn, Final
-from subprocess import Popen  # pylint: disable=import-outside-toplevel
+from subprocess import Popen
 from collections.abc import Sequence, Callable
 
 from xpra import __version__
@@ -22,8 +22,10 @@ from xpra.scripts.session import (
     load_session_file, save_session_file
 )
 from xpra.util.io import info, warn, wait_for_socket, which
-from xpra.util.parsing import parse_str_dict, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, str_to_bool, parse_bool_or, \
-    parse_resolutions, get_refresh_rate_for_value
+from xpra.util.parsing import (
+    FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS,
+    parse_str_dict, str_to_bool, parse_bool_or, parse_resolutions, get_refresh_rate_for_value,
+)
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.common import no_gtk
 from xpra.scripts.main import (
@@ -39,9 +41,7 @@ from xpra.scripts.config import (
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     xvfb_command,
 )
-from xpra.common import (
-    noerr, noop,
-)
+from xpra.common import noerr, noop
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
 from xpra.net.constants import SocketState, ConnectionMessage
@@ -50,7 +50,8 @@ from xpra.os_util import (
     POSIX, WIN32, OSX,
     force_quit,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, find_group,
-    get_hex_uuid, )
+    get_hex_uuid,
+)
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr, csv
 from xpra.util.io import is_writable, stderr_print
@@ -1171,7 +1172,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     splash_process, progress = get_splash_progress(mode, opts.daemon, opts.splash, display_name)
 
     if upgrading:
-        assert display_name, "no display found to upgrade"
+        if not display_name:
+            noerr(sys.stderr.write, "no display found to upgrade\n")
+            return ExitCode.NO_DISPLAY
         if POSIX and not OSX and get_saved_env_var("DISPLAY", "") == display_name:
             warn("Warning: upgrading from an environment connected to the same display")
         # try to stop the existing server if it exists:
@@ -1279,6 +1282,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             get_logger().warn(f"Warning: bind-rdp sockets cannot be used with {mode!r} mode")
             opts.bind_rdp = []
 
+    from xpra.server.features import set_server_features
+    set_server_features(opts, mode)
+
     progress(30, "creating network sockets")
     from xpra.net.socket_util import parse_bind_options, create_sockets, check_ssh_upgrades
     opts.ssh_upgrade = check_ssh_upgrades(opts.ssh_upgrade)
@@ -1340,9 +1346,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             opts.chdir = home
     else:
         configure_env(opts.env)
-
-    from xpra.server.features import set_server_features
-    set_server_features(opts, mode)
+    if opts.chdir:
+        log(f"chdir({opts.chdir})")
+        os.chdir(osexpand(opts.chdir))
 
     progress(40, "initializing server")
     try:
@@ -1353,10 +1359,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         log.error(" some critical component is missing:")
         log.estr(e)
         return ExitCode.COMPONENT_MISSING
-
-    if opts.chdir:
-        log(f"chdir({opts.chdir})")
-        os.chdir(osexpand(opts.chdir))
 
     def server_not_started(msg="server not started") -> None:
         progress(100, msg)
