@@ -1128,9 +1128,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             else:
                 warn(f"server for {display_name} is not exiting")
 
-    if not (shadowing or proxying or upgrading or encoder or runner) and opts.exit_with_children and not has_child_arg:
-        error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
-
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
     from xpra.util.daemon import daemonize
