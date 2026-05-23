@@ -736,7 +736,7 @@ class DisplayNameResult:
 
 
 def setup_pam_session(username: str, display_name: str, xauth_data: str,
-                      root: bool, uid: int, stderr) -> PamStartupResult:
+                      root: bool, uid: int) -> PamStartupResult:
     # if pam is present, try to create a new session:
     pam = None
     pam_open = POSIX and envbool("XPRA_PAM_OPEN", root and uid != 0)
@@ -744,8 +744,8 @@ def setup_pam_session(username: str, display_name: str, xauth_data: str,
         try:
             from xpra.platform.pam import pam_session
         except ImportError as e:
-            stderr.write("Error: failed to import pam module\n")
-            stderr.write(f" {e}\n")
+            noerr(sys.stderr.write, "Error: failed to import pam module\n")
+            noerr(sys.stderr.write, f" {e}\n")
             del e
         else:
             pam = pam_session(username)
@@ -965,10 +965,18 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
                      pam, shadowing: bool, proxying: bool, encoder: bool,
                      runner: bool, starting: str,
                      session_dir: str, log_dir: str, write_session_file: Callable,
-                     progress: Callable, log, displayfd: int = 0) -> VFBStartResult:
+                     progress: Callable, log) -> VFBStartResult:
     xvfb = None
     xvfb_pid = 0
     devices = {}
+    displayfd = 0
+    if POSIX and getattr(opts, "displayfd", None):
+        try:
+            displayfd = int(opts.displayfd)
+        except ValueError as e:
+            noerr(sys.stderr.write, f"Error: invalid displayfd {opts.displayfd!r}:\n")
+            noerr(sys.stderr.write, f" {e}\n")
+            del e
     result_cmd = tuple(xvfb_cmd)
     if not POSIX or proxying or encoder or runner:
         return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir, result_cmd, displayfd)
@@ -1198,22 +1206,11 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         from xpra.util.daemon import daemonize
         daemonize()
 
-    stdout = sys.stdout
-    stderr = sys.stderr
-    displayfd = 0
-    if POSIX and opts.displayfd:
-        try:
-            displayfd = int(opts.displayfd)
-        except ValueError as e:
-            stderr.write(f"Error: invalid displayfd {opts.displayfd!r}:\n")
-            stderr.write(f" {e}\n")
-            del e
-
     clobber = int(upgrading) * CLOBBER_UPGRADE | int(use_display or 0) * CLOBBER_USE_DISPLAY
     start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
     xauth_data: str = get_hex_uuid() if start_vfb else ""
 
-    pam_result = setup_pam_session(username, display_name, xauth_data, ROOT, uid, stderr)
+    pam_result = setup_pam_session(username, display_name, xauth_data, ROOT, uid)
     pam = pam_result.pam
     if pam_result.protected_env:
         protected_env = pam_result.protected_env
@@ -1260,6 +1257,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
     log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "") == "1"
     log_dir = get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
+    stdout = sys.stdout
+    stderr = sys.stderr
     log_filename0, stdout, stderr = redirect_server_log(log_to_file, log_dir, opts.log_file, display_name,
                                                         username, uid, gid, ROOT, extra_expand, stdout, stderr)
 
@@ -1311,7 +1310,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     vfb_result = start_server_vfb(opts, mode, display_name, odisplay_name, start_vfb, xvfb_cmd,
                                   xauth_data, xauthority, cwd, uid, gid, username, protected_env,
                                   pam, shadowing, proxying, encoder, runner, starting,
-                                  session_dir, log_dir, write_session_file, progress, log, displayfd)
+                                  session_dir, log_dir, write_session_file, progress, log)
     display_name = vfb_result.display_name
     session_dir = vfb_result.session_dir
     log_dir = vfb_result.log_dir

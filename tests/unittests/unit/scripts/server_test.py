@@ -7,6 +7,7 @@
 
 import os
 import sys
+from io import StringIO
 import tempfile
 import unittest
 from types import ModuleType, SimpleNamespace
@@ -61,10 +62,9 @@ class TestMain(unittest.TestCase):
             assert os.environ["XPRA_LOG_DIR"] == "/session"
 
     def test_setup_pam_session_disabled(self):
-        stderr = SimpleNamespace(write=self.fail)
         with patch("xpra.scripts.server.POSIX", True), \
                 patch("xpra.scripts.server.envbool", return_value=False):
-            result = setup_pam_session("alice", ":42", "abc", True, 1000, stderr)
+            result = setup_pam_session("alice", ":42", "abc", True, 1000)
         assert result.pam is None
         assert result.protected_env == {}
 
@@ -92,13 +92,12 @@ class TestMain(unittest.TestCase):
         fake_pam = FakePam()
         pam_module = ModuleType("xpra.platform.pam")
         pam_module.pam_session = lambda username: fake_pam
-        stderr = SimpleNamespace(write=self.fail)
         with patch.dict(sys.modules, {"xpra.platform.pam": pam_module}), \
                 patch.dict(os.environ, {}, clear=False), \
                 patch("xpra.scripts.server.POSIX", True), \
                 patch("xpra.scripts.server.envbool", return_value=True):
             os.environ.pop("PAM_ENV", None)
-            result = setup_pam_session("alice", ":42", "abc", True, 1000, stderr)
+            result = setup_pam_session("alice", ":42", "abc", True, 1000)
             assert os.environ["PAM_ENV"] == "1"
         assert result.pam is fake_pam
         assert result.protected_env == {"PAM_ENV": "1"}
@@ -220,7 +219,7 @@ class TestMain(unittest.TestCase):
                 assert os.environ["XAUTHORITY"] == xauth_file.name
 
     def test_start_server_vfb_noop_for_proxy(self):
-        result = start_server_vfb(SimpleNamespace(), "proxy", ":100", ":100", False, (), "", None,
+        result = start_server_vfb(SimpleNamespace(displayfd="7"), "proxy", ":100", ":100", False, (), "", None,
                                   "/tmp", os.getuid(), os.getgid(), "test", {}, None, False, True,
                                   False, False, "", "/session", "/log", lambda *_args: "",
                                   lambda *_args: None, lambda *_args: None)
@@ -231,7 +230,19 @@ class TestMain(unittest.TestCase):
         assert result.session_dir == "/session"
         assert result.log_dir == "/log"
         assert result.xvfb_cmd == ()
+        assert result.displayfd == 7
+
+    def test_start_server_vfb_invalid_displayfd(self):
+        stderr = StringIO()
+        with patch("sys.stderr", stderr), \
+                patch("xpra.scripts.server.POSIX", True):
+            result = start_server_vfb(SimpleNamespace(displayfd="not-an-int"),
+                                      "proxy", ":100", ":100", False, (), "", None,
+                                      "/tmp", os.getuid(), os.getgid(), "test", {}, None, False, True,
+                                      False, False, "", "/session", "/log", lambda *_args: "",
+                                      lambda *_args: None, lambda *_args: None)
         assert result.displayfd == 0
+        assert "Error: invalid displayfd 'not-an-int':" in stderr.getvalue()
 
     def test_set_vfb_startup_state(self):
         state_calls = []
