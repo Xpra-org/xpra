@@ -14,6 +14,7 @@ from unittest.mock import patch
 from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
+    check_vfb_startup,
     get_server_log_dir,
     is_splash_enabled,
     resolve_x11_display,
@@ -72,14 +73,21 @@ class TestMain(unittest.TestCase):
         assert result.display_name == ":100"
         assert result.session_dir == "/session"
         assert result.log_dir == "/log"
+        assert result.xvfb_cmd == ()
 
     def test_set_vfb_startup_state(self):
         calls = []
-        state = VFBStartResult(None, 123, {}, ":42", "/session", "/log")
+        state = VFBStartResult(None, 123, {}, ":42", "/session", "/log", ("Xvfb",))
         display = SimpleNamespace(set_vfb_startup_state=calls.append)
         app = SimpleNamespace(get_subsystem=lambda name: display if name == "display" else None)
         set_vfb_startup_state(app, state)
         assert calls == [state]
+
+    def test_check_vfb_startup(self):
+        display = SimpleNamespace(check_vfb_process=lambda timeout=0: timeout == 7)
+        app = SimpleNamespace(get_subsystem=lambda name: display if name == "display" else None)
+        assert check_vfb_startup(app, timeout=7) is True
+        assert check_vfb_startup(app, timeout=1) is False
 
     def test_resolve_x11_display_missing_upgrade(self):
         errors = []

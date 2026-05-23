@@ -700,6 +700,7 @@ class VFBStartResult:
     display_name: str
     session_dir: str
     log_dir: str
+    xvfb_cmd: tuple[str, ...] = ()
 
 
 @dataclass
@@ -764,8 +765,9 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
     xvfb = None
     xvfb_pid = 0
     devices = {}
+    result_cmd = tuple(xvfb_cmd)
     if not POSIX or proxying or encoder or runner:
-        return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir)
+        return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir, result_cmd)
 
     create_input_devices = noop
     uinput_uuid_len = 0
@@ -847,13 +849,20 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
             uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
     if uinput_uuid:
         devices = create_input_devices(uinput_uuid, uid) or {}
-    return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir)
+    return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir, result_cmd)
 
 
 def set_vfb_startup_state(app, state: VFBStartResult) -> None:
     display = app.get_subsystem("display")
     if display and hasattr(display, "set_vfb_startup_state"):
         display.set_vfb_startup_state(state)
+
+
+def check_vfb_startup(app, timeout=0) -> bool:
+    display = app.get_subsystem("display")
+    if display and hasattr(display, "check_vfb_process"):
+        return display.check_vfb_process(timeout=timeout)
+    return True
 
 
 def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts,
@@ -1229,7 +1238,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     # Start the Xvfb server first to get the display_name if needed
     odisplay_name = display_name
-    xvfb = None
     xauthority = None
     if POSIX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland") < 0:
         xauthority = setup_xauthority(display_name, username, uid, gid, ROOT, shadowing, write_session_file, log)
@@ -1244,37 +1252,20 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                                   xauth_data, xauthority, cwd, uid, gid, username, protected_env,
                                   pam, shadowing, proxying, encoder, runner, starting_desktop,
                                   starting_monitor, session_dir, log_dir, write_session_file, progress, log)
-    xvfb = vfb_result.xvfb
     xvfb_pid = vfb_result.xvfb_pid
     devices = vfb_result.devices
     display_name = vfb_result.display_name
     session_dir = vfb_result.session_dir
     log_dir = vfb_result.log_dir
 
-    def check_xvfb(timeout=0) -> bool:
-        if xvfb is None:
-            return True
-        from xpra.x11.vfb_util import check_xvfb_process
-        if not check_xvfb_process(xvfb, timeout=timeout, command=xvfb_cmd):
-            progress(100, "xvfb failed")
-            return False
-        return True
-
     os.environ["XVFB_PID"] = str(xvfb_pid)
     write_displayfd(display_name, displayfd)
-
-    if not check_xvfb(1):
-        noerr(stderr.write, "vfb failed to start, exiting\n")
-        return ExitCode.VFB_ERROR
 
     finalize_server_log(opts.daemon, log_dir, opts.log_file, odisplay_name, display_name, session_dir,
                         log_filename0, username, uid, gid, extra_expand, stdout, stderr)
     # we should not be using stdout or stderr from this point on:
     del stdout
     del stderr
-
-    if not check_xvfb():
-        return ExitCode.VFB_ERROR
 
     if ROOT and (uid != 0 or gid != 0):
         log("root: switching to uid=%i, gid=%i", uid, gid)
@@ -1349,11 +1340,17 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     try:
         app.exec_cwd = opts.chdir or cwd
         set_vfb_startup_state(app, vfb_result)
+        if not check_vfb_startup(app, timeout=1):
+            progress(100, "xvfb failed")
+            noerr(sys.stderr.write, "vfb failed to start, exiting\n")
+            return ExitCode.VFB_ERROR
         if splash := app.get_subsystem("splash"):
             splash.splash_process = splash_process
         app.display_options = display_options
         app.original_desktop_display = desktop_display
         app.init(opts)
+        if not check_vfb_startup(app):
+            return ExitCode.VFB_ERROR
         progress(60, "creating local sockets")
         app.init_local_sockets(opts, display_name, clobber)
         app.init_sockets(sockets)

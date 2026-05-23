@@ -45,12 +45,12 @@ def x11_ungrab() -> None:
         core.UngrabPointer()
 
 
-def check_xvfb(xvfb: Popen | None, timeout=0) -> bool:
+def check_xvfb(xvfb: Popen | None, timeout=0, command=()) -> bool:
     if xvfb is None:
         return True
     assert POSIX
     from xpra.x11.vfb_util import check_xvfb_process
-    if not check_xvfb_process(xvfb, timeout=timeout):
+    if not check_xvfb_process(xvfb, timeout=timeout, command=command):
         return False
     return True
 
@@ -121,6 +121,7 @@ class X11DisplayManager(DisplayManager):
     def __init__(self, server=None):
         DisplayManager.__init__(self, server)
         self.xvfb: Popen | None = None
+        self.xvfb_cmd: tuple[str, ...] = ()
         self.vfb_startup_state = None
         self.display_pid: int = 0
         self.randr_sizes_added: list[tuple[int, int]] = []
@@ -147,6 +148,7 @@ class X11DisplayManager(DisplayManager):
     def set_vfb_startup_state(self, state) -> None:
         self.vfb_startup_state = state
         self.xvfb = state.xvfb
+        self.xvfb_cmd = state.xvfb_cmd
         self.display_pid = state.xvfb_pid
 
     def init(self, opts) -> None:
@@ -195,8 +197,11 @@ class X11DisplayManager(DisplayManager):
                 caps["screen-sizes"] = sizes
         return caps
 
+    def check_vfb_process(self, timeout=0) -> bool:
+        return check_xvfb(self.xvfb, timeout=timeout, command=self.xvfb_cmd)
+
     def check_xvfb(self) -> None:
-        if not check_xvfb(self.xvfb):
+        if not self.check_vfb_process():
             raise InitExit(ExitCode.NO_DISPLAY, "xvfb process has terminated")
 
     def setup(self) -> None:
