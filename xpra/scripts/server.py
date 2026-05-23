@@ -1052,7 +1052,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         if opts.backend.lower() in ("auto", "gtk"):
             os.environ["GDK_BACKEND"] = "x11"
 
-    has_child = has_child_arg(opts)
     if proxying or upgrading:
         # when proxying or upgrading, don't exec any plain start commands:
         opts.start = []
@@ -1060,7 +1059,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         opts.start_late = []
         opts.start_child_late = []
     elif opts.exit_with_children:
-        if not has_child:
+        if not has_child_arg(opts):
             msg = "exit-with-children was specified but start-child* is missing!"
             warn(msg)
             warn(" command line is: %r" % shlex.join(cmdline))
