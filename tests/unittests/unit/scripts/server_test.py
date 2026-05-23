@@ -143,7 +143,7 @@ class TestMain(unittest.TestCase):
         opts = self.make_greeter_opts()
         with patch("xpra.scripts.server.POSIX", True), \
                 patch("xpra.scripts.server.DESKTOP_GREETER", True):
-            add_desktop_greeter(opts, True, False)
+            add_desktop_greeter(opts, "desktop", False)
         assert opts.start == ["xpra desktop-greeter"]
 
     def test_add_desktop_greeter_preserves_existing_commands(self):
@@ -151,7 +151,7 @@ class TestMain(unittest.TestCase):
         opts.start_child.append("xterm")
         with patch("xpra.scripts.server.POSIX", True), \
                 patch("xpra.scripts.server.DESKTOP_GREETER", True):
-            add_desktop_greeter(opts, True, False)
+            add_desktop_greeter(opts, "desktop", False)
         assert opts.start == []
         assert opts.start_child == ["xterm"]
 
@@ -175,7 +175,7 @@ class TestMain(unittest.TestCase):
     def test_start_server_vfb_noop_for_proxy(self):
         result = start_server_vfb(SimpleNamespace(), "proxy", ":100", ":100", False, (), "", None,
                                   "/tmp", os.getuid(), os.getgid(), "test", {}, None, False, True,
-                                  False, False, False, False, "/session", "/log", lambda *_args: "",
+                                  False, False, "", "/session", "/log", lambda *_args: "",
                                   lambda *_args: None, lambda *_args: None)
         assert result.xvfb is None
         assert result.xvfb_pid == 0
@@ -232,7 +232,7 @@ class TestMain(unittest.TestCase):
         with patch("xpra.x11.subsystem.display.check_xvfb", return_value=False):
             with self.assertRaises(InitExit) as e:
                 X11DisplayManager.set_vfb_startup_state(display, state)
-        assert e.exception.status == ExitCode.VFB_ERROR
+        assert e.exception.status == ExitCode.NO_DISPLAY
 
     def test_make_server_app(self):
         opts = SimpleNamespace(backend="x11")

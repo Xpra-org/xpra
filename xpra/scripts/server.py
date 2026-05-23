@@ -87,7 +87,7 @@ def deadly_signal(signum, _frame=None) -> NoReturn:
     force_quit(128 + int(signum))
 
 
-def validate_pixel_depth(pixel_depth, starting_desktop=False) -> int:
+def validate_pixel_depth(pixel_depth, desktop_or_monitor=False) -> int:
     try:
         pixel_depth = int(pixel_depth)
     except ValueError:
@@ -96,7 +96,7 @@ def validate_pixel_depth(pixel_depth, starting_desktop=False) -> int:
         pixel_depth = 24
     if pixel_depth not in (8, 16, 24, 30):
         raise InitException(f"invalid pixel depth: {pixel_depth}")
-    if not starting_desktop and pixel_depth == 8:
+    if not desktop_or_monitor and pixel_depth == 8:
         raise InitException("pixel depth 8 is only supported in 'desktop' mode")
     return pixel_depth
 
@@ -800,8 +800,8 @@ def setup_runtime_dir(opts_env: Sequence[str], root: bool, uid: int, gid: int,
     return RuntimeDirResult(xrd, protected_env)
 
 
-def add_desktop_greeter(opts, starting_desktop: bool, use_display: bool | None) -> None:
-    if not POSIX or not starting_desktop or use_display or not DESKTOP_GREETER:
+def add_desktop_greeter(opts, starting: str, use_display: bool | None) -> None:
+    if not POSIX or starting != "desktop" or use_display or not DESKTOP_GREETER:
         return
     # if there are no start commands, auto-add a greeter:
     commands = []
@@ -877,7 +877,7 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
                      xvfb_cmd: Sequence[str], xauth_data: str, xauthority: str | None,
                      cwd: str, uid: int, gid: int, username: str, protected_env: dict,
                      pam, shadowing: bool, proxying: bool, encoder: bool,
-                     runner: bool, starting_desktop: bool, starting_monitor: bool,
+                     runner: bool, starting: str,
                      session_dir: str, log_dir: str, write_session_file: Callable,
                      progress: Callable, log, displayfd: int = 0) -> VFBStartResult:
     xvfb = None
@@ -905,7 +905,7 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
         progress(40, "starting a virtual display")
         from xpra.x11.vfb_util import start_Xvfb, xauth_add
         assert not proxying and xauth_data
-        pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop or starting_monitor)
+        pixel_depth = validate_pixel_depth(opts.pixel_depth, starting in ("desktop", "monitor"))
         if use_uinput:
             # This only needs to be fairly unique.
             uinput_uuid = get_rand_chars(uinput_uuid_len).decode("latin1")
@@ -1024,9 +1024,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         if k.startswith("DBUS_"):
             del os.environ[k]
 
-    starting = mode == "seamless"
-    starting_desktop = mode == "desktop"
-    starting_monitor = mode == "monitor"
+    starting = mode if mode in ("seamless", "desktop", "monitor") else ""
     expanding = mode == "expand"
     upgrading = mode.startswith("upgrade")
     shadowing = mode.startswith("shadow")
@@ -1219,7 +1217,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             os.environ["XDG_RUNTIME_DIR"] = xrd
         if not OSX:
             os.environ["XDG_SESSION_TYPE"] = "x11"
-        if not starting_desktop:
+        if starting != "desktop":
             os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
     if display_name[0] != "S":
         os.environ["DISPLAY"] = display_name
@@ -1248,14 +1246,14 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                                                         username, uid, gid, ROOT, extra_expand, stdout, stderr)
 
     # warn early about this:
-    if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
+    if starting in ("seamless", "desktop") and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
     if start_vfb and opts.sync_xvfb is None and any(xvfb_cmd[0].find(x) >= 0 for x in ("Xephyr", "Xnest")):
         # automatically enable sync-xvfb for Xephyr and Xnest:
         opts.sync_xvfb = 50
 
-    if not (shadowing or starting_desktop or (upgrading and mode in ("desktop", "monitor"))):
+    if not (shadowing or starting == "desktop" or (upgrading and mode in ("desktop", "monitor"))):
         opts.rfb_upgrade = 0
         if opts.bind_rfb:
             get_logger().warn(f"Warning: bind-rfb sockets cannot be used with {mode!r} mode")
@@ -1275,7 +1273,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     log = Logger("server")
     log("env=%s", os.environ)
 
-    add_desktop_greeter(opts, starting_desktop, use_display)
+    add_desktop_greeter(opts, starting, use_display)
     # make sure we don't start ibus in these modes:
     if POSIX and not OSX and (upgrading or shadowing):
         opts.input_method = "keep"
@@ -1294,8 +1292,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     vfb_result = start_server_vfb(opts, mode, display_name, odisplay_name, start_vfb, xvfb_cmd,
                                   xauth_data, xauthority, cwd, uid, gid, username, protected_env,
-                                  pam, shadowing, proxying, encoder, runner, starting_desktop,
-                                  starting_monitor, session_dir, log_dir, write_session_file, progress, log, displayfd)
+                                  pam, shadowing, proxying, encoder, runner, starting,
+                                  session_dir, log_dir, write_session_file, progress, log, displayfd)
     display_name = vfb_result.display_name
     session_dir = vfb_result.session_dir
     log_dir = vfb_result.log_dir
