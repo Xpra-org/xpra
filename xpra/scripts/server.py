@@ -980,13 +980,6 @@ def set_vfb_startup_state(app, state: VFBStartResult) -> None:
         display.publish_displayfd(state.display_name, state.displayfd)
 
 
-def check_vfb_startup(app, timeout=0) -> bool:
-    display = app.get_subsystem("display")
-    if display and hasattr(display, "check_vfb_process"):
-        return display.check_vfb_process(timeout=timeout)
-    return True
-
-
 def init_virtual_devices(app, devices: dict) -> None:
     if not devices:
         return
@@ -1365,17 +1358,11 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     try:
         app.exec_cwd = opts.chdir or cwd
         set_vfb_startup_state(app, vfb_result)
-        if not check_vfb_startup(app, timeout=1):
-            progress(100, "xvfb failed")
-            noerr(sys.stderr.write, "vfb failed to start, exiting\n")
-            return ExitCode.VFB_ERROR
         if splash := app.get_subsystem("splash"):
             splash.splash_process = splash_process
         app.display_options = display_options
         app.original_desktop_display = desktop_display
         app.init(opts)
-        if not check_vfb_startup(app):
-            return ExitCode.VFB_ERROR
         progress(60, "creating local sockets")
         app.init_local_sockets(opts, display_name, clobber)
         app.init_sockets(sockets)

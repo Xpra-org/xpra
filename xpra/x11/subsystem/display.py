@@ -151,6 +151,7 @@ class X11DisplayManager(DisplayManager):
         self.xvfb_cmd = state.xvfb_cmd
         self.display_pid = state.xvfb_pid
         self.publish_vfb_pid(state.xvfb_pid)
+        self.check_xvfb(1)
 
     @staticmethod
     def publish_vfb_pid(pid: int) -> None:
@@ -205,8 +206,8 @@ class X11DisplayManager(DisplayManager):
     def check_vfb_process(self, timeout=0) -> bool:
         return check_xvfb(self.xvfb, timeout=timeout, command=self.xvfb_cmd)
 
-    def check_xvfb(self) -> None:
-        if not self.check_vfb_process():
+    def check_xvfb(self, timeout=0) -> None:
+        if not self.check_vfb_process(timeout):
             raise InitExit(ExitCode.NO_DISPLAY, "xvfb process has terminated")
 
     def setup(self) -> None:

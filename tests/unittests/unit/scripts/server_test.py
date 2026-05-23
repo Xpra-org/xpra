@@ -16,7 +16,6 @@ from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
     add_desktop_greeter,
-    check_vfb_startup,
     get_server_log_dir,
     has_child_arg,
     init_virtual_devices,
@@ -224,6 +223,17 @@ class TestMain(unittest.TestCase):
         assert display.xvfb_cmd == ("Xvfb",)
         assert display.display_pid == 123
 
+    def test_x11_display_startup_state_checks_vfb(self):
+        from xpra.exit_codes import ExitCode
+        from xpra.scripts.config import InitExit
+        from xpra.x11.subsystem.display import X11DisplayManager
+        state = VFBStartResult(object(), 123, {}, ":42", "/session", "/log", ("Xvfb",), 7)
+        display = X11DisplayManager.__new__(X11DisplayManager)
+        with patch("xpra.x11.subsystem.display.check_xvfb", return_value=False):
+            with self.assertRaises(InitExit) as e:
+                X11DisplayManager.set_vfb_startup_state(display, state)
+        assert e.exception.status == ExitCode.VFB_ERROR
+
     def test_make_server_app(self):
         opts = SimpleNamespace(backend="x11")
         attrs = {}
@@ -242,12 +252,6 @@ class TestMain(unittest.TestCase):
         with patch("xpra.scripts.server.make_seamless_server", return_value="seamless"):
             app = make_server_app(attrs, opts, 0, "upgrade", ":42")
         assert app == "seamless"
-
-    def test_check_vfb_startup(self):
-        display = SimpleNamespace(check_vfb_process=lambda timeout=0: timeout == 7)
-        app = SimpleNamespace(get_subsystem=lambda name: display if name == "display" else None)
-        assert check_vfb_startup(app, timeout=7) is True
-        assert check_vfb_startup(app, timeout=1) is False
 
     def test_init_virtual_devices(self):
         calls = []
