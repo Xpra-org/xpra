@@ -15,8 +15,10 @@ from unittest.mock import patch
 from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
+    add_desktop_greeter,
     check_vfb_startup,
     get_server_log_dir,
+    has_child_arg,
     init_virtual_devices,
     is_splash_enabled,
     make_server_app,
@@ -121,6 +123,44 @@ class TestMain(unittest.TestCase):
         create_runtime_dir.assert_called_once_with("/tmp/fallback-runtime", 1000, 1000)
         assert result.xrd == "/tmp/fallback-runtime"
         assert result.protected_env == {"XDG_RUNTIME_DIR": "/tmp/fallback-runtime"}
+
+    def make_greeter_opts(self):
+        return SimpleNamespace(
+            start=[],
+            start_late=[],
+            start_child=[],
+            start_child_late=[],
+            start_after_connect=[],
+            start_child_after_connect=[],
+            start_on_connect=[],
+            start_child_on_connect=[],
+            start_on_disconnect=[],
+            start_child_on_disconnect=[],
+            start_on_last_client_exit=[],
+            start_child_on_last_client_exit=[],
+        )
+
+    def test_add_desktop_greeter(self):
+        opts = self.make_greeter_opts()
+        with patch("xpra.scripts.server.POSIX", True), \
+                patch("xpra.scripts.server.DESKTOP_GREETER", True):
+            add_desktop_greeter(opts, True, False)
+        assert opts.start == ["xpra desktop-greeter"]
+
+    def test_add_desktop_greeter_preserves_existing_commands(self):
+        opts = self.make_greeter_opts()
+        opts.start_child.append("xterm")
+        with patch("xpra.scripts.server.POSIX", True), \
+                patch("xpra.scripts.server.DESKTOP_GREETER", True):
+            add_desktop_greeter(opts, True, False)
+        assert opts.start == []
+        assert opts.start_child == ["xterm"]
+
+    def test_has_child_arg(self):
+        opts = self.make_greeter_opts()
+        assert has_child_arg(opts) is False
+        opts.start_child_on_last_client_exit.append("xterm")
+        assert has_child_arg(opts) is True
 
     def test_setup_xauthority_reuses_session_file(self):
         with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:

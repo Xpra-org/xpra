@@ -800,6 +800,34 @@ def setup_runtime_dir(opts_env: Sequence[str], root: bool, uid: int, gid: int,
     return RuntimeDirResult(xrd, protected_env)
 
 
+def add_desktop_greeter(opts, starting_desktop: bool, use_display: bool | None) -> None:
+    if not POSIX or not starting_desktop or use_display or not DESKTOP_GREETER:
+        return
+    # if there are no start commands, auto-add a greeter:
+    commands = []
+    for start_prop in (
+            "start", "start-late",
+            "start-child", "start-child-late",
+            "start-after-connect", "start-child-after-connect",
+            "start-on-connect", "start-child-on-connect",
+            "start-on-disconnect", "start-child-on-disconnect",
+            "start-on-last-client-exit", "start-child-on-last-client-exit",
+    ):
+        commands += list(getattr(opts, start_prop.replace("-", "_")))
+    if not commands:
+        opts.start.append("xpra desktop-greeter")
+
+
+def has_child_arg(opts) -> bool:
+    return any((
+        opts.start_child,
+        opts.start_child_late,
+        opts.start_child_on_connect,
+        opts.start_child_after_connect,
+        opts.start_child_on_last_client_exit,
+    ))
+
+
 def resolve_x11_display(display_name: str, xauthority: str, xauth_data: str,
                         start_vfb: bool, use_display: bool | None, upgrading: bool,
                         shadowing: bool, proxying: bool, encoder: bool, pam,
@@ -1027,13 +1055,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         if opts.backend.lower() in ("auto", "gtk"):
             os.environ["GDK_BACKEND"] = "x11"
 
-    has_child_arg = any((
-        opts.start_child,
-        opts.start_child_late,
-        opts.start_child_on_connect,
-        opts.start_child_after_connect,
-        opts.start_child_on_last_client_exit,
-    ))
+    has_child = has_child_arg(opts)
     if proxying or upgrading:
         # when proxying or upgrading, don't exec any plain start commands:
         opts.start = []
@@ -1041,7 +1063,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         opts.start_late = []
         opts.start_child_late = []
     elif opts.exit_with_children:
-        if not has_child_arg:
+        if not has_child:
             msg = "exit-with-children was specified but start-child* is missing!"
             warn(msg)
             warn(" command line is: %r" % shlex.join(cmdline))
@@ -1260,20 +1282,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     log = Logger("server")
     log("env=%s", os.environ)
 
-    if POSIX and starting_desktop and not use_display and DESKTOP_GREETER:
-        # if there are no start commands, auto-add a greeter:
-        commands = []
-        for start_prop in (
-                "start", "start-late",
-                "start-child", "start-child-late",
-                "start-after-connect", "start-child-after-connect",
-                "start-on-connect", "start-child-on-connect",
-                "start-on-disconnect", "start-child-on-disconnect",
-                "start-on-last-client-exit", "start-child-on-last-client-exit",
-        ):
-            commands += list(getattr(opts, start_prop.replace("-", "_")))
-        if not commands:
-            opts.start.append("xpra desktop-greeter")
+    add_desktop_greeter(opts, starting_desktop, use_display)
     # make sure we don't start ibus in these modes:
     if POSIX and not OSX and (upgrading or shadowing):
         opts.input_method = "keep"
