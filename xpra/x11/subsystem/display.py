@@ -150,6 +150,11 @@ class X11DisplayManager(DisplayManager):
         self.xvfb = state.xvfb
         self.xvfb_cmd = state.xvfb_cmd
         self.display_pid = state.xvfb_pid
+        self.publish_vfb_pid(state.xvfb_pid)
+
+    @staticmethod
+    def publish_vfb_pid(pid: int) -> None:
+        os.environ["XVFB_PID"] = str(pid)
 
     def init(self, opts) -> None:
         self.init_display_pid()

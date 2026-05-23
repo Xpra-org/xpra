@@ -94,6 +94,26 @@ class TestMain(unittest.TestCase):
             DisplayManager.publish_displayfd(":42", 7)
         write_displayfd.assert_called_once_with(7, "42")
 
+    def test_publish_vfb_pid(self):
+        from xpra.x11.subsystem.display import X11DisplayManager
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("XVFB_PID", None)
+            X11DisplayManager.publish_vfb_pid(123)
+            assert os.environ["XVFB_PID"] == "123"
+
+    def test_x11_display_startup_state_publishes_vfb_pid(self):
+        from xpra.x11.subsystem.display import X11DisplayManager
+        state = VFBStartResult(None, 123, {}, ":42", "/session", "/log", ("Xvfb",), 7)
+        display = X11DisplayManager.__new__(X11DisplayManager)
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("XVFB_PID", None)
+            X11DisplayManager.set_vfb_startup_state(display, state)
+            assert os.environ["XVFB_PID"] == "123"
+        assert display.vfb_startup_state is state
+        assert display.xvfb is None
+        assert display.xvfb_cmd == ("Xvfb",)
+        assert display.display_pid == 123
+
     def test_check_vfb_startup(self):
         display = SimpleNamespace(check_vfb_process=lambda timeout=0: timeout == 7)
         app = SimpleNamespace(get_subsystem=lambda name: display if name == "display" else None)

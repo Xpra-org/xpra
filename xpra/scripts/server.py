@@ -1247,12 +1247,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                                   xauth_data, xauthority, cwd, uid, gid, username, protected_env,
                                   pam, shadowing, proxying, encoder, runner, starting_desktop,
                                   starting_monitor, session_dir, log_dir, write_session_file, progress, log, displayfd)
-    xvfb_pid = vfb_result.xvfb_pid
     display_name = vfb_result.display_name
     session_dir = vfb_result.session_dir
     log_dir = vfb_result.log_dir
-
-    os.environ["XVFB_PID"] = str(xvfb_pid)
 
     finalize_server_log(opts.daemon, log_dir, opts.log_file, odisplay_name, display_name, session_dir,
                         log_filename0, username, uid, gid, extra_expand, stdout, stderr)
