@@ -729,6 +729,12 @@ class RuntimeDirResult:
     protected_env: dict
 
 
+@dataclass
+class DisplayNameResult:
+    display_name: str
+    display_options: str = ""
+
+
 def setup_pam_session(username: str, display_name: str, xauth_data: str,
                       root: bool, uid: int, stderr) -> PamStartupResult:
     # if pam is present, try to create a new session:
@@ -837,6 +843,58 @@ def sanitize_dbus_env(dbus: str) -> None:
     for k in tuple(os.environ.keys()):
         if k.startswith("DBUS_"):
             del os.environ[k]
+
+
+def resolve_server_display_name(opts, extra_args: list[str], desktop_display: str,
+                                shadowing: bool, expanding: bool, runner: bool,
+                                upgrading: bool, proxying: bool, encoder: bool,
+                                use_display: bool | None, error_cb: Callable) -> DisplayNameResult:
+    display_options = ""
+    if (shadowing or expanding or runner) and not extra_args:
+        if runner:
+            display_name = "runner-%i" % os.getpid()
+        elif WIN32 or OSX:
+            # just a virtual name for the only display available:
+            display_name = "Main"
+        else:
+            from xpra.scripts.display import guess_display
+            display_name = guess_display(desktop_display, sessions_dir=opts.sessions_dir)
+    elif upgrading and not extra_args:
+        display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
+    else:
+        if len(extra_args) > 1:
+            error_cb(f"too many extra arguments ({len(extra_args)}): only expected a display number")
+        if len(extra_args) == 1:
+            display_name = extra_args[0]
+            # look for display options:
+            # ie: ":1,DP-2" -> ":1" "DP-2"
+            if display_name and display_name.find(",") > 0:
+                display_name, display_options = display_name.split(",", 1)
+            if not shadowing and not upgrading and not use_display:
+                display_name_check(display_name)
+        else:
+            if proxying or encoder or runner:
+                # find a free display number:
+                dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+                all_displays = dotxpra.sockets()
+                # ie: [("LIVE", ":100"), ("LIVE", ":200"), ...]
+                displays = [v[1] for v in all_displays]
+                display_name = ""
+                for x in range(1000, 20000):
+                    v = f":{x}"
+                    if v not in displays:
+                        display_name = v
+                        break
+                if not display_name:
+                    error_cb("you must specify a free virtual display name to use with the proxy server")
+            elif use_display:
+                # only use automatic guess for xpra displays and not X11 displays:
+                display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
+            else:
+                # We will try to find one automatically
+                # Use the temporary magic value "S" as marker:
+                display_name = "S" + str(os.getpid())
+    return DisplayNameResult(display_name, display_options)
 
 
 def resolve_x11_display(display_name: str, xauthority: str, xauth_data: str,
@@ -1065,52 +1123,12 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         warn(" but 'exit-with-children' is not enabled,")
         warn(" you should just use 'start' instead")
 
-    display_options = ""
     # get the display name:
-    if (shadowing or expanding or runner) and not extra_args:
-        if runner:
-            display_name = "runner-%i" % os.getpid()
-        elif WIN32 or OSX:
-            # just a virtual name for the only display available:
-            display_name = "Main"
-        else:
-            from xpra.scripts.display import guess_display
-            display_name = guess_display(desktop_display, sessions_dir=opts.sessions_dir)
-    elif upgrading and not extra_args:
-        display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
-    else:
-        if len(extra_args) > 1:
-            error_cb(f"too many extra arguments ({len(extra_args)}): only expected a display number")
-        if len(extra_args) == 1:
-            display_name = extra_args[0]
-            # look for display options:
-            # ie: ":1,DP-2" -> ":1" "DP-2"
-            if display_name and display_name.find(",") > 0:
-                display_name, display_options = display_name.split(",", 1)
-            if not shadowing and not upgrading and not use_display:
-                display_name_check(display_name)
-        else:
-            if proxying or encoder or runner:
-                # find a free display number:
-                dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-                all_displays = dotxpra.sockets()
-                # ie: [("LIVE", ":100"), ("LIVE", ":200"), ...]
-                displays = [v[1] for v in all_displays]
-                display_name = ""
-                for x in range(1000, 20000):
-                    v = f":{x}"
-                    if v not in displays:
-                        display_name = v
-                        break
-                if not display_name:
-                    error_cb("you must specify a free virtual display name to use with the proxy server")
-            elif use_display:
-                # only use automatic guess for xpra displays and not X11 displays:
-                display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
-            else:
-                # We will try to find one automatically
-                # Use the temporary magic value "S" as marker:
-                display_name = "S" + str(os.getpid())
+    display_result = resolve_server_display_name(opts, extra_args, desktop_display,
+                                                 shadowing, expanding, runner, upgrading,
+                                                 proxying, encoder, use_display, error_cb)
+    display_name = display_result.display_name
+    display_options = display_result.display_options
 
     splash_process, progress = get_splash_progress(mode, opts.daemon, opts.splash, display_name)
 

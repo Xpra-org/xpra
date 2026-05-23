@@ -22,6 +22,7 @@ from xpra.scripts.server import (
     is_splash_enabled,
     make_server_app,
     resolve_x11_display,
+    resolve_server_display_name,
     sanitize_dbus_env,
     set_vfb_startup_state,
     setup_pam_session,
@@ -168,6 +169,24 @@ class TestMain(unittest.TestCase):
             assert os.environ == {"DBUS_SESSION_BUS_ADDRESS": "keep-me", "OTHER": "1"}
             sanitize_dbus_env("yes")
             assert os.environ == {"OTHER": "1"}
+
+    def test_resolve_server_display_name_with_options(self):
+        opts = SimpleNamespace(sessions_dir="/sessions", socket_dir="/socket", socket_dirs=())
+        with patch("xpra.scripts.server.display_name_check") as display_name_check:
+            result = resolve_server_display_name(opts, [":42,DP-1"], "", False, False, False, False,
+                                                 False, False, False, self.fail)
+        assert result.display_name == ":42"
+        assert result.display_options == "DP-1"
+        display_name_check.assert_called_once_with(":42")
+
+    def test_resolve_server_display_name_proxy(self):
+        opts = SimpleNamespace(sessions_dir="/sessions", socket_dir="/socket", socket_dirs=())
+        dotxpra = SimpleNamespace(sockets=lambda: [("LIVE", ":1000")])
+        with patch("xpra.scripts.server.DotXpra", return_value=dotxpra):
+            result = resolve_server_display_name(opts, [], "", False, False, False, False,
+                                                 True, False, None, self.fail)
+        assert result.display_name == ":1001"
+        assert result.display_options == ""
 
     def test_setup_xauthority_reuses_session_file(self):
         with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:
