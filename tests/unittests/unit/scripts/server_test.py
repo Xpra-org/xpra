@@ -75,14 +75,24 @@ class TestMain(unittest.TestCase):
         assert result.session_dir == "/session"
         assert result.log_dir == "/log"
         assert result.xvfb_cmd == ()
+        assert result.displayfd == 0
 
     def test_set_vfb_startup_state(self):
-        calls = []
-        state = VFBStartResult(None, 123, {}, ":42", "/session", "/log", ("Xvfb",))
-        display = SimpleNamespace(set_vfb_startup_state=calls.append)
+        state_calls = []
+        displayfd_calls = []
+        state = VFBStartResult(None, 123, {}, ":42", "/session", "/log", ("Xvfb",), 7)
+        display = SimpleNamespace(set_vfb_startup_state=state_calls.append,
+                                  publish_displayfd=lambda display_name, fd: displayfd_calls.append((display_name, fd)))
         app = SimpleNamespace(get_subsystem=lambda name: display if name == "display" else None)
         set_vfb_startup_state(app, state)
-        assert calls == [state]
+        assert state_calls == [state]
+        assert displayfd_calls == [(":42", 7)]
+
+    def test_publish_displayfd(self):
+        from xpra.server.subsystem.display import DisplayManager
+        with patch("xpra.platform.displayfd.write_displayfd", return_value=True) as write_displayfd:
+            DisplayManager.publish_displayfd(":42", 7)
+        write_displayfd.assert_called_once_with(7, "42")
 
     def test_check_vfb_startup(self):
         display = SimpleNamespace(check_vfb_process=lambda timeout=0: timeout == 7)

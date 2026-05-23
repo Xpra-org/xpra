@@ -297,24 +297,6 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     return True
 
 
-def write_displayfd(display_name: str, fd: int) -> None:
-    if OSX or not POSIX or fd <= 0:
-        return
-    from xpra.log import Logger
-    log = Logger("server")
-    try:
-        from xpra.platform import displayfd
-        display_no = display_name[1:]
-        # ensure it is a string containing the number:
-        display_no = str(int(display_no))
-        log(f"writing display_no={display_no} to displayfd={fd}")
-        assert displayfd.write_displayfd(fd, display_no), "timeout"
-    except Exception as e:
-        log.error("write_displayfd failed", exc_info=True)
-        log.error(f"Error: failed to write {display_name} to fd={fd}")
-        log.estr(e)
-
-
 SERVER_SAVE_SKIP_OPTIONS: Sequence[str] = (
     "systemd-run",
     "daemon",
@@ -701,6 +683,7 @@ class VFBStartResult:
     session_dir: str
     log_dir: str
     xvfb_cmd: tuple[str, ...] = ()
+    displayfd: int = 0
 
 
 @dataclass
@@ -761,13 +744,13 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
                      pam, shadowing: bool, proxying: bool, encoder: bool,
                      runner: bool, starting_desktop: bool, starting_monitor: bool,
                      session_dir: str, log_dir: str, write_session_file: Callable,
-                     progress: Callable, log) -> VFBStartResult:
+                     progress: Callable, log, displayfd: int = 0) -> VFBStartResult:
     xvfb = None
     xvfb_pid = 0
     devices = {}
     result_cmd = tuple(xvfb_cmd)
     if not POSIX or proxying or encoder or runner:
-        return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir, result_cmd)
+        return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir, result_cmd, displayfd)
 
     create_input_devices = noop
     uinput_uuid_len = 0
@@ -849,13 +832,17 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
             uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
     if uinput_uuid:
         devices = create_input_devices(uinput_uuid, uid) or {}
-    return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir, result_cmd)
+    return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir, result_cmd, displayfd)
 
 
 def set_vfb_startup_state(app, state: VFBStartResult) -> None:
     display = app.get_subsystem("display")
-    if display and hasattr(display, "set_vfb_startup_state"):
+    if not display:
+        return
+    if hasattr(display, "set_vfb_startup_state"):
         display.set_vfb_startup_state(state)
+    if hasattr(display, "publish_displayfd"):
+        display.publish_displayfd(state.display_name, state.displayfd)
 
 
 def check_vfb_startup(app, timeout=0) -> bool:
@@ -1259,14 +1246,13 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     vfb_result = start_server_vfb(opts, mode, display_name, odisplay_name, start_vfb, xvfb_cmd,
                                   xauth_data, xauthority, cwd, uid, gid, username, protected_env,
                                   pam, shadowing, proxying, encoder, runner, starting_desktop,
-                                  starting_monitor, session_dir, log_dir, write_session_file, progress, log)
+                                  starting_monitor, session_dir, log_dir, write_session_file, progress, log, displayfd)
     xvfb_pid = vfb_result.xvfb_pid
     display_name = vfb_result.display_name
     session_dir = vfb_result.session_dir
     log_dir = vfb_result.log_dir
 
     os.environ["XVFB_PID"] = str(xvfb_pid)
-    write_displayfd(display_name, displayfd)
 
     finalize_server_log(opts.daemon, log_dir, opts.log_file, odisplay_name, display_name, session_dir,
                         log_filename0, username, uid, gid, extra_expand, stdout, stderr)
