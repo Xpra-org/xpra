@@ -1402,19 +1402,11 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     if opts.attach is True:
         attach_client(opts, defaults)
 
-    try:
-        progress(100, "running")
-        log("%s()", app.run)
-        r = app.run()
-        log("%s()=%s", app.run, r)
-    except Exception:
-        log.error("server error", exc_info=True)
-        app.cleanup()
-        r = -128
-    else:
-        if r > 0:
-            r = 0
-    return r
+    progress(100, "running")
+    log("%s()", app.run)
+    r = app.run()
+    log("%s()=%s", app.run, r)
+    return r or 0
 
 
 def attach_client(options, defaults) -> None:

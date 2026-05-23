@@ -42,8 +42,12 @@ class GLibServer(SignalEmitter, PacketDispatcher):
         run()
         log("do_run() end of %()", run)
 
+    def cleanup(self) -> None:
+        """ subclasses will want to do something here """
+
     def do_quit(self) -> None:
         log("do_quit: calling main_loop.quit()")
+        self.cleanup()
         self.main_loop.quit()
         # from now on, we can't rely on the main loop:
         from xpra.util.system import register_SIGUSR_signals
@@ -65,8 +69,12 @@ class GLibServer(SignalEmitter, PacketDispatcher):
             log.info("stopping on KeyboardInterrupt")
             self.cleanup()
             return ExitCode.OK
+        except Exception:
+            log.error("server error", exc_info=True)
+            self.cleanup()
+            return -128
         log("run()")
-        return 0
+        return ExitCode.OK
 
     def server_is_ready(self) -> None:
         self.emit("running")
