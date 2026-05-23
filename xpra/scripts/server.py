@@ -702,6 +702,58 @@ class VFBStartResult:
     log_dir: str
 
 
+@dataclass
+class X11DisplayResolution:
+    start_vfb: bool
+    xauth_data: str
+    use_display: bool | None
+
+
+def resolve_x11_display(display_name: str, xauthority: str, xauth_data: str,
+                        start_vfb: bool, use_display: bool | None, upgrading: bool,
+                        shadowing: bool, proxying: bool, encoder: bool, pam,
+                        uid: int, gid: int, error_cb: Callable, progress: Callable, log) -> X11DisplayResolution:
+    if (use_display is not None and not upgrading) or proxying or encoder:
+        return X11DisplayResolution(start_vfb, xauth_data, use_display)
+
+    # Figure out if we have to start the vfb or not.
+    # Bail out if we need a display that is not running.
+    if not display_name:
+        if upgrading:
+            error_cb("no displays found to upgrade")
+        return X11DisplayResolution(start_vfb, xauth_data, False)
+
+    progress(40, "connecting to the display")
+    no_gtk()
+    if verify_display(None, display_name, log_errors=False, timeout=1):
+        progress(40, "connected to the display")
+        return X11DisplayResolution(False, xauth_data, use_display)
+
+    stat = {}
+    if display_name.startswith(":"):
+        x11_socket_path = os.path.join(X11_SOCKET_DIR, "X" + display_name[1:])
+        stat = stat_display_socket(x11_socket_path)
+        log(f"stat_display_socket({x11_socket_path})={stat}")
+        if not stat and (upgrading or shadowing):
+            error_cb(f"cannot access display {display_name!r}")
+        # No X11 socket to connect to, so we have to start one.
+        start_vfb = True
+    if stat:
+        # We can't connect to the X11 display, but we can still stat its socket.
+        # Perhaps we need to re-add an xauth entry.
+        if not xauth_data:
+            xauth_data = get_hex_uuid()
+            if pam:
+                pam.set_items({"XAUTHDATA": xauth_data})
+        from xpra.x11.vfb_util import xauth_add
+        xauth_add(xauthority, display_name, xauth_data, uid, gid)
+        if not verify_display(None, display_name, log_errors=False, timeout=1):
+            warn(f"display {display_name!r} is not accessible")
+        else:
+            start_vfb = False
+    return X11DisplayResolution(start_vfb, xauth_data, use_display)
+
+
 def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, start_vfb: bool,
                      xvfb_cmd: Sequence[str], xauth_data: str, xauthority: str | None,
                      cwd: str, uid: int, gid: int, username: str, protected_env: dict,
@@ -1175,46 +1227,12 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     xauthority = None
     if POSIX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland") < 0:
         xauthority = setup_xauthority(display_name, username, uid, gid, ROOT, shadowing, write_session_file, log)
-        from xpra.x11.vfb_util import xauth_add
-        # resolve use-display='auto':
-        if (use_display is None or upgrading) and not proxying and not encoder:
-            # figure out if we have to start the vfb or not
-            # bail out if we need a display that is not running
-            if not display_name:
-                if upgrading:
-                    error_cb("no displays found to upgrade")
-                use_display = False
-            else:
-                progress(40, "connecting to the display")
-                no_gtk()
-                if verify_display(None, display_name, log_errors=False, timeout=1):
-                    # accessed OK:
-                    progress(40, "connected to the display")
-                    start_vfb = False
-                else:
-                    stat = {}
-                    if display_name.startswith(":"):
-                        x11_socket_path = os.path.join(X11_SOCKET_DIR, "X" + display_name[1:])
-                        stat = stat_display_socket(x11_socket_path)
-                        log(f"stat_display_socket({x11_socket_path})={stat}")
-                        if not stat and (upgrading or shadowing):
-                            error_cb(f"cannot access display {display_name!r}")
-                        # no X11 socket to connect to, so we have to start one:
-                        start_vfb = True
-                    if stat:
-                        # we can't connect to the X11 display,
-                        # but we can still `stat` its socket...
-                        # perhaps we need to re-add an xauth entry
-                        if not xauth_data:
-                            xauth_data = get_hex_uuid()
-                            if pam:
-                                pam.set_items({"XAUTHDATA": xauth_data})
-                        xauth_add(xauthority, display_name, xauth_data, uid, gid)
-                        if not verify_display(None, display_name, log_errors=False, timeout=1):
-                            warn(f"display {display_name!r} is not accessible")
-                        else:
-                            # now OK!
-                            start_vfb = False
+        display_resolution = resolve_x11_display(display_name, xauthority, xauth_data, start_vfb, use_display,
+                                                 upgrading, shadowing, proxying, encoder, pam, uid, gid,
+                                                 error_cb, progress, log)
+        start_vfb = display_resolution.start_vfb
+        xauth_data = display_resolution.xauth_data
+        use_display = display_resolution.use_display
 
     vfb_result = start_server_vfb(opts, mode, display_name, odisplay_name, start_vfb, xvfb_cmd,
                                   xauth_data, xauthority, cwd, uid, gid, username, protected_env,
