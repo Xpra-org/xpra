@@ -1011,25 +1011,11 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         "runner"
     ):
         raise ValueError(f"unsupported server mode {mode}")
-
-    validate_encryption(opts)
-    if opts.encoding == "help" or "help" in opts.encodings:
-        return show_encoding_help(opts)
-
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     mode_attrs: dict[str, str] = {}
     if len(mode_parts) > 1:
         mode_attrs = parse_str_dict(mode_parts[1])
-    desktop_display = nox()
-    try:
-        cwd = os.getcwd()
-    except OSError:
-        cwd = os.path.expanduser("~")
-        warn(f"current working directory does not exist, using {cwd!r}\n")
-
-    sanitize_dbus_env(opts.dbus)
-
     starting = mode if mode in ("seamless", "desktop", "monitor") else ""
     expanding = mode == "expand"
     upgrading = mode.startswith("upgrade")
@@ -1037,9 +1023,22 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     proxying = mode == "proxy"
     encoder = mode == "encoder"
     runner = mode == "runner"
-    use_display = parse_bool_or("use-display", opts.use_display)
-    if shadowing or expanding:
-        use_display = True
+    use_display = shadowing or expanding or parse_bool_or("use-display", opts.use_display)
+
+    desktop_display = nox()
+    try:
+        cwd = os.getcwd()
+    except OSError:
+        cwd = os.path.expanduser("~")
+        warn(f"current working directory does not exist, using {cwd!r}\n")
+    validate_encryption(opts)
+    if opts.encoding == "help" or "help" in opts.encodings:
+        return show_encoding_help(opts)
+    sanitize_dbus_env(opts.dbus)
+    if (upgrading or shadowing) and opts.pulseaudio is None:
+        # there should already be one running
+        # so change None ('auto') to False
+        opts.pulseaudio = False
 
     # resolve `forward_xdg_open` to a boolean:
     if opts.forward_xdg_open is None:
@@ -1065,11 +1064,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         warn("Warning: the 'start-child' option is used,")
         warn(" but 'exit-with-children' is not enabled,")
         warn(" you should just use 'start' instead")
-
-    if (upgrading or shadowing) and opts.pulseaudio is None:
-        # there should already be one running
-        # so change None ('auto') to False
-        opts.pulseaudio = False
 
     display_options = ""
     # get the display name:
