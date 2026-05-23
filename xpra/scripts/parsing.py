@@ -834,7 +834,7 @@ def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, lis
         defaults.forward_xdg_open = False
         defaults.file_transfer = defaults.open_files = defaults.open_url = defaults.printing = "no"
         defaults.gstreamer = False
-        defaults.dbus = False
+        defaults.dbus = "no"
         defaults.dbus_control = "no"
         defaults.bandwidth_limit = 0
         defaults.bandwidth_detection = False
@@ -1111,10 +1111,11 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Allows proxy servers to start new sessions on demand."
                           " Default: %s." % enabled_str(defaults.proxy_start_sessions))
     legacy_bool_parse("dbus")
-    group.add_option("--dbus", action="store",
+    group.add_option("--dbus", action="store", metavar="yes|no|keep",
                      dest="dbus", default=defaults.dbus,
                      help="Enable or disable all dbus related functionality,"
                           " `dbus-launch`, `dbus-control` and any feature that might use dbus."
+                          " Use 'keep' to preserve existing DBUS_* environment variables."
                           " Default: %s." % nonedefault(defaults.dbus))
     group.add_option("--dbus-launch", action="store",
                      dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,

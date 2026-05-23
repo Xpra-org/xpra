@@ -22,6 +22,7 @@ from xpra.scripts.server import (
     is_splash_enabled,
     make_server_app,
     resolve_x11_display,
+    sanitize_dbus_env,
     set_vfb_startup_state,
     setup_pam_session,
     setup_runtime_dir,
@@ -160,6 +161,13 @@ class TestMain(unittest.TestCase):
         assert has_child_arg(opts) is False
         opts.start_child_on_last_client_exit.append("xterm")
         assert has_child_arg(opts) is True
+
+    def test_sanitize_dbus_env(self):
+        with patch.dict(os.environ, {"DBUS_SESSION_BUS_ADDRESS": "keep-me", "OTHER": "1"}, clear=True):
+            sanitize_dbus_env("keep")
+            assert os.environ == {"DBUS_SESSION_BUS_ADDRESS": "keep-me", "OTHER": "1"}
+            sanitize_dbus_env("yes")
+            assert os.environ == {"OTHER": "1"}
 
     def test_setup_xauthority_reuses_session_file(self):
         with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:

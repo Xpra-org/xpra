@@ -10,6 +10,7 @@ from collections.abc import Callable
 
 from xpra.server import features
 from xpra.util.pid import load_pid
+from xpra.util.parsing import str_to_bool
 from xpra.scripts.session import load_session_file, save_session_file
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
@@ -108,7 +109,7 @@ class DbusManager(StubSubsystem):
         self.service = None
 
     def init(self, opts) -> None:
-        self.enabled = opts.dbus
+        self.enabled = str_to_bool(opts.dbus)
         self.launch = opts.dbus_launch
         self.control = opts.dbus_control
 

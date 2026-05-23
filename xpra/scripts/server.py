@@ -828,6 +828,17 @@ def has_child_arg(opts) -> bool:
     ))
 
 
+def sanitize_dbus_env(dbus: str) -> None:
+    if str(dbus).lower() == "keep":
+        return
+    # remove anything pointing to dbus from the current env
+    # (so we only detect a dbus instance started by pam,
+    # and override everything else)
+    for k in tuple(os.environ.keys()):
+        if k.startswith("DBUS_"):
+            del os.environ[k]
+
+
 def resolve_x11_display(display_name: str, xauthority: str, xauth_data: str,
                         start_vfb: bool, use_display: bool | None, upgrading: bool,
                         shadowing: bool, proxying: bool, encoder: bool, pam,
@@ -1017,12 +1028,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         cwd = os.path.expanduser("~")
         warn(f"current working directory does not exist, using {cwd!r}\n")
 
-    # remove anything pointing to dbus from the current env
-    # (so we only detect a dbus instance started by pam,
-    # and override everything else)
-    for k in tuple(os.environ.keys()):
-        if k.startswith("DBUS_"):
-            del os.environ[k]
+    sanitize_dbus_env(opts.dbus)
 
     starting = mode if mode in ("seamless", "desktop", "monitor") else ""
     expanding = mode == "expand"
@@ -1162,7 +1168,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         gid = find_group(uid)
     protected_env = {}
 
-    if opts.dbus:
+    if str_to_bool(opts.dbus):
         start_dbus()
         os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
         protected_env["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"

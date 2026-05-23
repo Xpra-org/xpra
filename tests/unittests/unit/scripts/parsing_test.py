@@ -141,6 +141,17 @@ class TestParseURL(unittest.TestCase):
         self.assertIn("/tmp/mysocket", address)
 
 
+class TestParseCmdline(unittest.TestCase):
+
+    def test_dbus_keep(self):
+        opts, _args = parse_cmdline(["xpra", "start", "--dbus=keep"])
+        self.assertEqual(opts.dbus, "keep")
+
+    def test_dbus_legacy_bool(self):
+        opts, _args = parse_cmdline(["xpra", "start", "--no-dbus"])
+        self.assertEqual(opts.dbus, "no")
+
+
 class TestSepPos(unittest.TestCase):
 
     def test_colon_only(self):
