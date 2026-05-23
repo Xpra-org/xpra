@@ -18,6 +18,7 @@ from xpra.scripts.server import (
     get_server_log_dir,
     init_virtual_devices,
     is_splash_enabled,
+    make_server_app,
     resolve_x11_display,
     set_vfb_startup_state,
     setup_xauthority,
@@ -113,6 +114,25 @@ class TestMain(unittest.TestCase):
         assert display.xvfb is None
         assert display.xvfb_cmd == ("Xvfb",)
         assert display.display_pid == 123
+
+    def test_make_server_app(self):
+        opts = SimpleNamespace(backend="x11")
+        attrs = {}
+        with patch("xpra.scripts.server.make_proxy_server", return_value="proxy"):
+            app = make_server_app(attrs, opts, 0, "proxy", ":42")
+        assert app == "proxy"
+        assert attrs["backend"] == "x11"
+
+        attrs = {}
+        with patch("xpra.scripts.server.make_shadow_server", return_value="shadow") as make_shadow:
+            app = make_server_app(attrs, opts, 0, "shadow", ":42")
+        assert app == "shadow"
+        make_shadow.assert_called_once_with(":42", {"backend": "x11", "multi-window": "True"})
+
+        attrs = {}
+        with patch("xpra.scripts.server.make_seamless_server", return_value="seamless"):
+            app = make_server_app(attrs, opts, 0, "upgrade", ":42")
+        assert app == "seamless"
 
     def test_check_vfb_startup(self):
         display = SimpleNamespace(check_vfb_process=lambda timeout=0: timeout == 7)

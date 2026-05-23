@@ -283,6 +283,30 @@ def make_runner_server():
         return RunnerServer()
 
 
+def make_server_app(mode_attrs: dict[str, str], opts, clobber: int, mode: str,
+                    display_name: str):
+    if "backend" not in mode_attrs:
+        mode_attrs["backend"] = opts.backend
+    if mode.startswith("shadow"):
+        # "shadow" -> multi-window=True, "shadow-screen" -> multi-window=False
+        mode_attrs["multi-window"] = str(mode == "shadow")
+        return make_shadow_server(display_name, mode_attrs)
+    if mode == "proxy":
+        return make_proxy_server()
+    if mode == "expand":
+        return make_expand_server(mode_attrs)
+    if mode == "encoder":
+        return make_encoder_server()
+    if mode == "runner":
+        return make_runner_server()
+    if mode in ("seamless", "upgrade"):
+        return make_seamless_server(opts.backend, clobber)
+    if mode == "desktop":
+        return make_desktop_server()
+    assert mode == "monitor"
+    return make_monitor_server()
+
+
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> bool:
     # check that we can access the X11 display:
     from xpra.log import Logger
@@ -1165,7 +1189,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     session_dir = write_initial_session_files(mode, opts.sessions_dir, display_name, uid, gid,
                                               run_xpra_script, env_script, cmdline)
-    upgrading_seamless = upgrading_desktop = upgrading_monitor = False
     if upgrading:
         # if we had saved the start / start-desktop config, reload it:
         mode = apply_config(opts, mode, cmdline)
@@ -1173,9 +1196,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             mode = mode.removeprefix("upgrade-")
         if mode.startswith("start-"):
             mode = mode.removeprefix("start-")
-        upgrading_desktop = mode == "desktop"
-        upgrading_monitor = mode == "monitor"
-        upgrading_seamless = not (upgrading_desktop or upgrading_monitor)
 
     write_session_file("config", get_options_file_contents(opts, mode))
 
@@ -1193,7 +1213,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         # automatically enable sync-xvfb for Xephyr and Xnest:
         opts.sync_xvfb = 50
 
-    if not (shadowing or starting_desktop or upgrading_desktop or upgrading_monitor):
+    if not (shadowing or starting_desktop or (upgrading and mode in ("desktop", "monitor"))):
         opts.rfb_upgrade = 0
         if opts.bind_rfb:
             get_logger().warn(f"Warning: bind-rfb sockets cannot be used with {mode!r} mode")
@@ -1277,43 +1297,22 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     else:
         configure_env(opts.env)
 
-    if opts.chdir:
-        log(f"chdir({opts.chdir})")
-        os.chdir(osexpand(opts.chdir))
-
     from xpra.server.features import set_server_features
     set_server_features(opts, mode)
 
     progress(40, "initializing server")
-    if "backend" not in mode_attrs:
-        mode_attrs["backend"] = opts.backend
     try:
-        if shadowing:
-            # "shadow" -> multi-window=True, "shadow-screen" -> multi-window=False
-            mode_attrs["multi-window"] = str(mode == "shadow")
-            app = make_shadow_server(display_name, mode_attrs)
-        elif proxying:
-            app = make_proxy_server()
-        elif expanding:
-            app = make_expand_server(mode_attrs)
-        elif encoder:
-            app = make_encoder_server()
-        elif runner:
-            app = make_runner_server()
-        else:
-            if starting or upgrading_seamless:
-                app = make_seamless_server(opts.backend, clobber)
-            elif starting_desktop or upgrading_desktop:
-                app = make_desktop_server()
-            else:
-                assert starting_monitor or upgrading_monitor
-                app = make_monitor_server()
+        app = make_server_app(mode_attrs, opts, clobber, mode, display_name)
     except ImportError as e:
         log("failed to make server class", exc_info=True)
         log.error("Error: the server cannot be started,")
         log.error(" some critical component is missing:")
         log.estr(e)
         return ExitCode.COMPONENT_MISSING
+
+    if opts.chdir:
+        log(f"chdir({opts.chdir})")
+        os.chdir(osexpand(opts.chdir))
 
     def server_not_started(msg="server not started") -> None:
         progress(100, msg)
