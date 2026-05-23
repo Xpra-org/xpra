@@ -723,6 +723,12 @@ class PamStartupResult:
     protected_env: dict
 
 
+@dataclass
+class RuntimeDirResult:
+    xrd: str
+    protected_env: dict
+
+
 def setup_pam_session(username: str, display_name: str, xauth_data: str,
                       root: bool, uid: int, stderr) -> PamStartupResult:
     # if pam is present, try to create a new session:
@@ -763,6 +769,35 @@ def setup_pam_session(username: str, display_name: str, xauth_data: str,
                 os.environ.update(protected_env)
                 return PamStartupResult(pam, protected_env)
     return PamStartupResult(pam, {})
+
+
+def setup_runtime_dir(opts_env: Sequence[str], root: bool, uid: int, gid: int,
+                      protected_env: dict) -> RuntimeDirResult:
+    # get XDG_RUNTIME_DIR from env options,
+    # which may not have updated os.environ yet when running as root with "--uid="
+    xrd = parse_env(opts_env).get("XDG_RUNTIME_DIR", "")
+    if OSX and not xrd:
+        xrd = osexpand("~/.xpra", uid=uid, gid=gid)
+        os.environ["XDG_RUNTIME_DIR"] = xrd
+    xrd = os.path.abspath(xrd) if xrd else ""
+    if root and (uid > 0 or gid > 0):
+        # we're going to chown the directory if we create it,
+        # ensure this cannot be abused, only use "safe" paths:
+        if xrd == f"/run/user/{uid}":
+            pass  # OK!
+        elif not any(True for x in ("/tmp", "/var/tmp") if xrd.startswith(x)):
+            xrd = ""
+        # these paths could cause problems if we were to create and chown them:
+        elif xrd.startswith(X11_SOCKET_DIR) or xrd.startswith("/tmp/.XIM-unix"):
+            xrd = ""
+    if not xrd:
+        xrd = os.environ.get("XDG_RUNTIME_DIR", "")
+    xrd = create_runtime_dir(xrd, uid, gid)
+    if xrd:
+        # this may override the value we get from pam
+        # with the value supplied by the user:
+        protected_env["XDG_RUNTIME_DIR"] = xrd
+    return RuntimeDirResult(xrd, protected_env)
 
 
 def resolve_x11_display(display_name: str, xauthority: str, xauth_data: str,
@@ -1155,30 +1190,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     if pam_result.protected_env:
         protected_env = pam_result.protected_env
 
-    # get XDG_RUNTIME_DIR from env options,
-    # which may not have updated os.environ yet when running as root with "--uid="
-    xrd = parse_env(opts.env).get("XDG_RUNTIME_DIR", "")
-    if OSX and not xrd:
-        xrd = osexpand("~/.xpra", uid=uid, gid=gid)
-        os.environ["XDG_RUNTIME_DIR"] = xrd
-    xrd = os.path.abspath(xrd) if xrd else ""
-    if ROOT and (uid > 0 or gid > 0):
-        # we're going to chown the directory if we create it,
-        # ensure this cannot be abused, only use "safe" paths:
-        if xrd == f"/run/user/{uid}":
-            pass  # OK!
-        elif not any(True for x in ("/tmp", "/var/tmp") if xrd.startswith(x)):
-            xrd = ""
-        # these paths could cause problems if we were to create and chown them:
-        elif xrd.startswith(X11_SOCKET_DIR) or xrd.startswith("/tmp/.XIM-unix"):
-            xrd = ""
-    if not xrd:
-        xrd = os.environ.get("XDG_RUNTIME_DIR", "")
-    xrd = create_runtime_dir(xrd, uid, gid)
-    if xrd:
-        # this may override the value we get from pam
-        # with the value supplied by the user:
-        protected_env["XDG_RUNTIME_DIR"] = xrd
+    runtime_dir_result = setup_runtime_dir(opts.env, ROOT, uid, gid, protected_env)
+    xrd = runtime_dir_result.xrd
+    protected_env = runtime_dir_result.protected_env
 
     xvfb_cmd: list[str] = []
     if start_vfb:

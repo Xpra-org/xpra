@@ -23,6 +23,7 @@ from xpra.scripts.server import (
     resolve_x11_display,
     set_vfb_startup_state,
     setup_pam_session,
+    setup_runtime_dir,
     setup_xauthority,
     start_server_vfb,
     write_initial_session_files,
@@ -102,6 +103,24 @@ class TestMain(unittest.TestCase):
             "XDG_SESSION_DESKTOP": "xpra",
         }
         assert fake_pam.items == {"XDISPLAY": ":42", "XAUTHDATA": "abc"}
+
+    def test_setup_runtime_dir_from_env_options(self):
+        with patch("xpra.scripts.server.create_runtime_dir", return_value="/tmp/xpra-runtime") as create_runtime_dir:
+            result = setup_runtime_dir(("XDG_RUNTIME_DIR=/tmp/xpra-runtime",), True, 1000, 1000, {"PAM_ENV": "1"})
+        create_runtime_dir.assert_called_once_with("/tmp/xpra-runtime", 1000, 1000)
+        assert result.xrd == "/tmp/xpra-runtime"
+        assert result.protected_env == {
+            "PAM_ENV": "1",
+            "XDG_RUNTIME_DIR": "/tmp/xpra-runtime",
+        }
+
+    def test_setup_runtime_dir_filters_unsafe_root_path(self):
+        with patch.dict(os.environ, {"XDG_RUNTIME_DIR": "/tmp/fallback-runtime"}, clear=False), \
+                patch("xpra.scripts.server.create_runtime_dir", return_value="/tmp/fallback-runtime") as create_runtime_dir:
+            result = setup_runtime_dir(("XDG_RUNTIME_DIR=/run/unsafe",), True, 1000, 1000, {})
+        create_runtime_dir.assert_called_once_with("/tmp/fallback-runtime", 1000, 1000)
+        assert result.xrd == "/tmp/fallback-runtime"
+        assert result.protected_env == {"XDG_RUNTIME_DIR": "/tmp/fallback-runtime"}
 
     def test_setup_xauthority_reuses_session_file(self):
         with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:
