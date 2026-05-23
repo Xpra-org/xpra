@@ -1407,10 +1407,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         log("%s()", app.run)
         r = app.run()
         log("%s()=%s", app.run, r)
-    except KeyboardInterrupt:
-        log.info("stopping on KeyboardInterrupt")
-        app.cleanup()
-        r = ExitCode.OK
     except Exception:
         log.error("server error", exc_info=True)
         app.cleanup()

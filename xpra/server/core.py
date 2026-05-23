@@ -20,7 +20,7 @@ from collections.abc import Callable, Sequence, Iterable
 from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_CLOSE, CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.util.version import XPRA_VERSION, version_str, version_compat_check
 from xpra.scripts.server import deadly_signal
-from xpra.exit_codes import ExitValue, ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.server import ServerExitMode
 from xpra.server.glib_server import GLibServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
@@ -452,19 +452,6 @@ class ServerCore(GLibServer):
             if r:
                 return r
         return None
-
-    def run(self) -> ExitValue:
-        self.print_run_info()
-        self.install_signal_handlers(self.signal_quit)
-        GLib.idle_add(self.server_is_ready)
-        self.do_run()
-        log("run()")
-        return 0
-
-    def server_is_ready(self) -> None:
-        self.emit("running")
-        log.info("xpra is ready.")
-        noerr(sys.stdout.flush)
 
     def cleanup(self) -> None:
         self._dispatch_fire("cleanup", reverse=True)
