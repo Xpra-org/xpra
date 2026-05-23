@@ -717,6 +717,54 @@ class X11DisplayResolution:
     use_display: bool | None
 
 
+@dataclass
+class PamStartupResult:
+    pam: Any
+    protected_env: dict
+
+
+def setup_pam_session(username: str, display_name: str, xauth_data: str,
+                      root: bool, uid: int, stderr) -> PamStartupResult:
+    # if pam is present, try to create a new session:
+    pam = None
+    pam_open = POSIX and envbool("XPRA_PAM_OPEN", root and uid != 0)
+    if pam_open:
+        try:
+            from xpra.platform.pam import pam_session
+        except ImportError as e:
+            stderr.write("Error: failed to import pam module\n")
+            stderr.write(f" {e}\n")
+            del e
+        else:
+            pam = pam_session(username)
+    if pam:
+        env = {
+            # "XDG_SEAT"               : "seat1",
+            # "XDG_VTNR"               : "0",
+            "XDG_SESSION_TYPE": "x11",
+            # "XDG_SESSION_CLASS"      : "user",
+            "XDG_SESSION_DESKTOP": "xpra",
+        }
+        # maybe we should just bail out instead?
+        if pam.start():
+            pam.set_env(env)
+            items = {}
+            if display_name.startswith(":"):
+                items["XDISPLAY"] = display_name
+            if xauth_data:
+                items["XAUTHDATA"] = xauth_data
+            pam.set_items(items)
+            if pam.open():
+                # we can't close it, because we're not going to be root anymore,
+                # but since we're the process leader for the session,
+                # terminating will also close the session
+                # atexit.register(pam.close)
+                protected_env = pam.get_envlist()
+                os.environ.update(protected_env)
+                return PamStartupResult(pam, protected_env)
+    return PamStartupResult(pam, {})
+
+
 def resolve_x11_display(display_name: str, xauthority: str, xauth_data: str,
                         start_vfb: bool, use_display: bool | None, upgrading: bool,
                         shadowing: bool, proxying: bool, encoder: bool, pam,
@@ -1102,42 +1150,10 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
     xauth_data: str = get_hex_uuid() if start_vfb else ""
 
-    # if pam is present, try to create a new session:
-    pam = None
-    PAM_OPEN = POSIX and envbool("XPRA_PAM_OPEN", ROOT and uid != 0)
-    if PAM_OPEN:
-        try:
-            from xpra.platform.pam import pam_session
-        except ImportError as e:
-            stderr.write("Error: failed to import pam module\n")
-            stderr.write(f" {e}\n")
-            del e
-        else:
-            pam = pam_session(username)
-    if pam:
-        env = {
-            # "XDG_SEAT"               : "seat1",
-            # "XDG_VTNR"               : "0",
-            "XDG_SESSION_TYPE": "x11",
-            # "XDG_SESSION_CLASS"      : "user",
-            "XDG_SESSION_DESKTOP": "xpra",
-        }
-        # maybe we should just bail out instead?
-        if pam.start():
-            pam.set_env(env)
-            items = {}
-            if display_name.startswith(":"):
-                items["XDISPLAY"] = display_name
-            if xauth_data:
-                items["XAUTHDATA"] = xauth_data
-            pam.set_items(items)
-            if pam.open():
-                # we can't close it, because we're not going to be root anymore,
-                # but since we're the process leader for the session,
-                # terminating will also close the session
-                # atexit.register(pam.close)
-                protected_env = pam.get_envlist()
-                os.environ.update(protected_env)
+    pam_result = setup_pam_session(username, display_name, xauth_data, ROOT, uid, stderr)
+    pam = pam_result.pam
+    if pam_result.protected_env:
+        protected_env = pam_result.protected_env
 
     # get XDG_RUNTIME_DIR from env options,
     # which may not have updated os.environ yet when running as root with "--uid="

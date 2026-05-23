@@ -6,9 +6,10 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import tempfile
 import unittest
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from unittest.mock import patch
 
 from xpra.scripts.session import save_session_file
@@ -21,6 +22,7 @@ from xpra.scripts.server import (
     make_server_app,
     resolve_x11_display,
     set_vfb_startup_state,
+    setup_pam_session,
     setup_xauthority,
     start_server_vfb,
     write_initial_session_files,
@@ -52,6 +54,54 @@ class TestMain(unittest.TestCase):
             assert "XPRA_LOG_DIR" not in os.environ
             assert get_server_log_dir(True, False, "auto", "/session") == "/session"
             assert os.environ["XPRA_LOG_DIR"] == "/session"
+
+    def test_setup_pam_session_disabled(self):
+        stderr = SimpleNamespace(write=self.fail)
+        with patch("xpra.scripts.server.POSIX", True), \
+                patch("xpra.scripts.server.envbool", return_value=False):
+            result = setup_pam_session("alice", ":42", "abc", True, 1000, stderr)
+        assert result.pam is None
+        assert result.protected_env == {}
+
+    def test_setup_pam_session(self):
+        class FakePam:
+            def __init__(self):
+                self.env = {}
+                self.items = {}
+
+            def start(self):
+                return True
+
+            def set_env(self, env):
+                self.env = env
+
+            def set_items(self, items):
+                self.items = items
+
+            def open(self):
+                return True
+
+            def get_envlist(self):
+                return {"PAM_ENV": "1"}
+
+        fake_pam = FakePam()
+        pam_module = ModuleType("xpra.platform.pam")
+        pam_module.pam_session = lambda username: fake_pam
+        stderr = SimpleNamespace(write=self.fail)
+        with patch.dict(sys.modules, {"xpra.platform.pam": pam_module}), \
+                patch.dict(os.environ, {}, clear=False), \
+                patch("xpra.scripts.server.POSIX", True), \
+                patch("xpra.scripts.server.envbool", return_value=True):
+            os.environ.pop("PAM_ENV", None)
+            result = setup_pam_session("alice", ":42", "abc", True, 1000, stderr)
+            assert os.environ["PAM_ENV"] == "1"
+        assert result.pam is fake_pam
+        assert result.protected_env == {"PAM_ENV": "1"}
+        assert fake_pam.env == {
+            "XDG_SESSION_TYPE": "x11",
+            "XDG_SESSION_DESKTOP": "xpra",
+        }
+        assert fake_pam.items == {"XDISPLAY": ":42", "XAUTHDATA": "abc"}
 
     def test_setup_xauthority_reuses_session_file(self):
         with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:
