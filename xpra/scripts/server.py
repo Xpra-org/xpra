@@ -30,7 +30,7 @@ from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.common import no_gtk
 from xpra.scripts.main import (
     nox,
-    validate_encryption, parse_env, configure_env,
+    validate_encryption, parse_env,
     make_progress_process,
 )
 from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
@@ -49,7 +49,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import (
     POSIX, WIN32, OSX,
     force_quit,
-    get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, find_group,
+    get_username_for_uid, getuid, find_group,
     get_hex_uuid,
 )
 from xpra.util.system import SIGNAMES
@@ -1187,7 +1187,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     uid: int = int(opts.uid)
     gid: int = int(opts.gid)
     username = get_username_for_uid(uid)
-    home = get_home_for_uid(uid)
     ROOT: bool = POSIX and getuid() == 0
     if POSIX and uid and not gid:
         gid = find_group(uid)
@@ -1327,29 +1326,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     del stdout
     del stderr
 
-    if ROOT and (uid != 0 or gid != 0):
-        log("root: switching to uid=%i, gid=%i", uid, gid)
-        from xpra.util.daemon import setuidgid
-        setuidgid(uid, gid)
-        os.environ.update({
-            "HOME": home,
-            "USER": username,
-            "LOGNAME": username,
-        })
-        shell = get_shell_for_uid(uid)
-        if shell:
-            os.environ["SHELL"] = shell
-        # now we've changed uid, it is safe to honour all the env updates:
-        configure_env(opts.env)
-        os.environ.update(protected_env)
-        if not opts.chdir:
-            opts.chdir = home
-    else:
-        configure_env(opts.env)
-    if opts.chdir:
-        log(f"chdir({opts.chdir})")
-        os.chdir(osexpand(opts.chdir))
-
     progress(40, "initializing server")
     try:
         app = make_server_app(mode_attrs, opts, clobber, mode, display_name)
@@ -1359,6 +1335,14 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         log.error(" some critical component is missing:")
         log.estr(e)
         return ExitCode.COMPONENT_MISSING
+    app.protected_env = protected_env
+    # do this one early - because we want to change uid as early as possible:
+    from xpra.server.subsystem.process import ProcessServer
+    process = app.add_subsystem(ProcessServer)
+    process.init(opts)
+    process.setup()
+    opts.chdir = process.chdir
+    app.init_subsystems()
 
     def server_not_started(msg="server not started") -> None:
         progress(100, msg)

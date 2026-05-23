@@ -120,6 +120,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.id import IDServer
     from xpra.server.subsystem.sessionfiles import SessionFilesServer
     from xpra.server.subsystem.version import VersionServer
+    from xpra.server.subsystem.process import ProcessServer
     from xpra.server import features
     classes: list[type] = []
     # IDServer must come before any subsystem that reads `self.uuid`.
@@ -131,6 +132,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
         SplashServer,
         IDServer,
         SessionFilesServer,
+        ProcessServer,
         DaemonServer,
         InfoServer,
         VersionServer,
@@ -174,7 +176,7 @@ class ServerCore(GLibServer):
         GLibServer.__init__(self)
         # construct standalone instance-based subsystems and register them:
         for cls in INSTANCE_SUBSYSTEM_CLASSES:
-            self.subsystems[cls.PREFIX] = cls(self)
+            self.add_subsystem(cls)
         self.start_time = time()
         self.session_type: str = "unknown"
         self._closing: bool = False
@@ -209,6 +211,17 @@ class ServerCore(GLibServer):
         self.compression_level = 1
 
         self._default_packet_handlers: dict[str, Callable] = {}
+
+    def init_subsystems(self) -> None:
+        """
+        Hook for server variants that register backend-specific subsystems after
+        construction. Core subsystems are registered during __init__.
+        """
+
+    def add_subsystem(self, cls):
+        instance = cls(self)
+        self.subsystems[cls.PREFIX] = instance
+        return instance
 
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)

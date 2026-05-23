@@ -40,14 +40,11 @@ class ServerBase(ServerCore):
     """
     __signals__ = SIGNALS
 
-    def __init__(self):
-        ServerCore.__init__(self)
-        # Instantiate the standalone instance-based subsystems.
+    def init_subsystems(self) -> None:
         # Variant servers (seamless, desktop, monitor, shadow, ...) override the
         # `get_*_subsystem_class()` hooks to swap in their own subclasses.
         for cls in self.get_subsystem_classes():
-            self.subsystems[cls.PREFIX] = cls(self)
-        log("ServerBase.__init__()")
+            self.add_subsystem(cls)
 
     def get_subsystem_classes(self) -> tuple[type, ...]:
         """

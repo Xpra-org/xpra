@@ -28,9 +28,12 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         ServerBase.__init__(self)
         self.session_type: str = "wayland"
         self.compositor = WaylandCompositor()
+        self.wayland_fd_source = 0
+
+    def init_subsystems(self) -> None:
+        super().init_subsystems()
         self.get_subsystem("window").connect_compositor(self.compositor)
         self.get_subsystem("display").connect_compositor(self.compositor)
-        self.wayland_fd_source = 0
 
     def get_child_env(self) -> dict[str, str]:
         env: dict[str, str] = super().get_child_env()
