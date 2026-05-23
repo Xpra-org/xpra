@@ -14,6 +14,7 @@ import shlex
 import signal
 from time import monotonic
 from typing import NoReturn
+from collections.abc import Sequence
 from subprocess import Popen, PIPE, call
 import os.path
 
@@ -254,7 +255,7 @@ def mklogdir(xorg_log_file: str, uid: int, gid: int) -> None:
         raise InitException(f"failed to create the Xorg log directory {xorg_log_dir!r}: {e}") from None
 
 
-def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, display_name: str, cwd,
+def start_Xvfb(xvfb_cmd: Sequence[str], vfb_geom, pixel_depth: int, fps: int, display_name: str, cwd,
                uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")

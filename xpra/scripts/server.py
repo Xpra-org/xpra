@@ -890,7 +890,7 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
             if resolutions:
                 vfb_geom = resolutions[0]
         fps = get_refresh_rate_for_value(opts.refresh_rate, 60) if opts.refresh_rate else 0
-        xvfb, display_name = start_Xvfb(xvfb_cmd, vfb_geom, pixel_depth, fps, display_name, cwd,
+        xvfb, display_name = start_Xvfb(result_cmd, vfb_geom, pixel_depth, fps, display_name, cwd,
                                         uid, gid, username, uinput_uuid)
         assert xauthority
         xauth_add(xauthority, display_name, xauth_data, uid, gid)
