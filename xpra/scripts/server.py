@@ -850,6 +850,12 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
     return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir)
 
 
+def set_vfb_startup_state(app, state: VFBStartResult) -> None:
+    display = app.get_subsystem("display")
+    if display and hasattr(display, "set_vfb_startup_state"):
+        display.set_vfb_startup_state(state)
+
+
 def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts,
                   extra_args: list[str], full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
@@ -1342,7 +1348,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     try:
         app.exec_cwd = opts.chdir or cwd
-        app.xvfb = xvfb
+        set_vfb_startup_state(app, vfb_result)
         if splash := app.get_subsystem("splash"):
             splash.splash_process = splash_process
         app.display_options = display_options

@@ -121,6 +121,7 @@ class X11DisplayManager(DisplayManager):
     def __init__(self, server=None):
         DisplayManager.__init__(self, server)
         self.xvfb: Popen | None = None
+        self.vfb_startup_state = None
         self.display_pid: int = 0
         self.randr_sizes_added: list[tuple[int, int]] = []
         self.initial_resolutions: Sequence[tuple[int, int, int]] = ()
@@ -142,6 +143,11 @@ class X11DisplayManager(DisplayManager):
         # explicitly disable it because their virtual monitors are sized
         # by the user, not by the client's hardware.
         self.mirror_client_layout: bool = True
+
+    def set_vfb_startup_state(self, state) -> None:
+        self.vfb_startup_state = state
+        self.xvfb = state.xvfb
+        self.display_pid = state.xvfb_pid
 
     def init(self, opts) -> None:
         self.init_display_pid()
@@ -269,6 +275,7 @@ class X11DisplayManager(DisplayManager):
         pid = envint("XVFB_PID", 0)
         if not pid:
             log.info("xvfb pid not found")
+            pid = self.display_pid
         else:
             log.info(f"xvfb pid {pid}")
         self.display_pid = pid
