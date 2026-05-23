@@ -549,8 +549,8 @@ def get_splash_progress(mode: str, daemon: bool, splash: bool, display: str) -> 
 
 
 def write_initial_session_files(mode: str, sessions_dir: str, display_name: str,
-                                uid: int, gid: int, run_xpra_script: str | None,
-                                env_script: str | None, cmdline: Sequence[str]) -> str:
+                                uid: int, gid: int, run_xpra_script: str,
+                                env_script: str, cmdline: Sequence[str]) -> str:
     session_dir = make_session_dir(mode, sessions_dir, display_name, uid, gid)
     os.environ["XPRA_SESSION_DIR"] = session_dir
     if run_xpra_script:
@@ -1114,6 +1114,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         # there should already be one running
         # so change None ('auto') to False
         opts.pulseaudio = False
+    # daemonize will chdir to "/", so try to use an absolute path:
+    if opts.password_file:
+        opts.password_file = tuple(os.path.abspath(x) for x in opts.password_file)
 
     # resolve `forward_xdg_open` to a boolean:
     if opts.forward_xdg_open is None:
@@ -1162,9 +1165,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.util.daemon import daemonize
-    run_xpra_script = None
-    env_script = None
+    run_xpra_script = env_script = ""
     if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
         from xpra.server.runner_script import xpra_runner_shell_script, xpra_env_shell_script
         save_env = os.environ.copy()
@@ -1194,9 +1195,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     # Daemonize:
     if POSIX and opts.daemon:
-        # daemonize will chdir to "/", so try to use an absolute path:
-        if opts.password_file:
-            opts.password_file = tuple(os.path.abspath(x) for x in opts.password_file)
+        from xpra.util.daemon import daemonize
         daemonize()
 
     stdout = sys.stdout
