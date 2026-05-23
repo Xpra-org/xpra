@@ -865,6 +865,14 @@ def check_vfb_startup(app, timeout=0) -> bool:
     return True
 
 
+def init_virtual_devices(app, devices: dict) -> None:
+    if not devices:
+        return
+    pointer = app.get_subsystem("pointer")
+    if pointer and hasattr(pointer, "init_virtual_devices"):
+        pointer.init_virtual_devices(devices)
+
+
 def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts,
                   extra_args: list[str], full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
@@ -1253,7 +1261,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                                   pam, shadowing, proxying, encoder, runner, starting_desktop,
                                   starting_monitor, session_dir, log_dir, write_session_file, progress, log)
     xvfb_pid = vfb_result.xvfb_pid
-    devices = vfb_result.devices
     display_name = vfb_result.display_name
     session_dir = vfb_result.session_dir
     log_dir = vfb_result.log_dir
@@ -1356,8 +1363,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         app.init_sockets(sockets)
         progress(90, "finalizing")
         app.setup()
-        if devices and hasattr(app, "init_virtual_devices"):
-            app.init_virtual_devices(devices)
+        init_virtual_devices(app, vfb_result.devices)
     except InitInfo as e:
         for m in str(e).split("\n"):
             log.info("%s", m)

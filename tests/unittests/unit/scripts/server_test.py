@@ -16,6 +16,7 @@ from xpra.scripts.server import (
     VFBStartResult,
     check_vfb_startup,
     get_server_log_dir,
+    init_virtual_devices,
     is_splash_enabled,
     resolve_x11_display,
     set_vfb_startup_state,
@@ -88,6 +89,15 @@ class TestMain(unittest.TestCase):
         app = SimpleNamespace(get_subsystem=lambda name: display if name == "display" else None)
         assert check_vfb_startup(app, timeout=7) is True
         assert check_vfb_startup(app, timeout=1) is False
+
+    def test_init_virtual_devices(self):
+        calls = []
+        pointer = SimpleNamespace(init_virtual_devices=calls.append)
+        app = SimpleNamespace(get_subsystem=lambda name: pointer if name == "pointer" else None)
+        devices = {"pointer": {"device": "/dev/input/event0"}}
+        init_virtual_devices(app, {})
+        init_virtual_devices(app, devices)
+        assert calls == [devices]
 
     def test_resolve_x11_display_missing_upgrade(self):
         errors = []
