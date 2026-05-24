@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 from typing import Any
 
 from xpra.common import noerr
@@ -32,8 +33,8 @@ class DaemonServer(StubSubsystem):
         self.uid = 0
         self.gid = 0
         self.extra_expand: dict[str, str] = {}
-        self.stdout = None
-        self.stderr = None
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
 
     def init(self, opts) -> None:
         log("DaemonServer.init(%s)", opts)
@@ -47,11 +48,9 @@ class DaemonServer(StubSubsystem):
             self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
 
     def setup_log(self, start_vfb: bool, log_to_file: bool, display_name: str,
-                  extra_expand: dict[str, str], stdout, stderr) -> str:
+                  extra_expand: dict[str, str]) -> str:
         self.display_name = display_name
         self.extra_expand = extra_expand
-        self.stdout = stdout
-        self.stderr = stderr
         self.log_dir = self.get_server_log_dir(start_vfb, log_to_file, self.log_dir_option)
         if not log_to_file:
             os.environ.pop("XPRA_SERVER_LOG", None)
@@ -71,12 +70,12 @@ class DaemonServer(StubSubsystem):
                 try:
                     os.fchown(logfd, self.uid, self.gid)
                 except OSError as e:
-                    noerr(stderr.write, f"failed to chown the log file {self.log_filename!r}\n")
-                    noerr(stderr.write, f" {e!r}\n")
-                    noerr(stderr.flush)
+                    noerr(self.stderr.write, f"failed to chown the log file {self.log_filename!r}\n")
+                    noerr(self.stderr.write, f" {e!r}\n")
+                    noerr(self.stderr.flush)
         self.stdout, self.stderr = redirect_std_to_log(logfd)
-        noerr(stderr.write, f"Entering daemon mode; any further errors will be reported to:\n  {self.log_filename!r}\n")
-        noerr(stderr.flush)
+        noerr(self.stderr.write, f"Entering daemon mode; any further errors will be reported to:\n  {self.log_filename!r}\n")
+        noerr(self.stderr.flush)
         os.environ["XPRA_SERVER_LOG"] = self.log_filename
         return self.log_dir
 

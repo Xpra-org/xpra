@@ -1231,13 +1231,11 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         log.estr(e)
         return ExitCode.COMPONENT_MISSING
 
-    stdout = sys.stdout
-    stderr = sys.stderr
     daemon = app.get_subsystem("daemon")
     log_to_file = opts.daemon or envbool("XPRA_LOG_TO_FILE")
     if daemon:
         extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
-        log_dir = daemon.setup_log(start_vfb, log_to_file, display_name, extra_expand, stdout, stderr)
+        log_dir = daemon.setup_log(start_vfb, log_to_file, display_name, extra_expand)
     else:
         log_dir = get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
     log("env=%s", os.environ)
@@ -1269,9 +1267,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     if daemon:
         daemon.update_log_dir(log_dir)
         daemon.display_name_changed(display_name)
-    # we should not be using stdout or stderr from this point on:
-    del stdout
-    del stderr
 
     app.protected_env = protected_env
     # do this one early - because we want to change uid as early as possible:
