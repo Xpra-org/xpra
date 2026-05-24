@@ -15,8 +15,9 @@ log = Logger("server")
 class SessionFilesServer(StubSubsystem):
     PREFIX = "session-files"
 
-    def __init__(self, server=None):
+    def __init__(self, server):
         StubSubsystem.__init__(self, server)
+        self.config_contents = ""
         # canonical list of per-session files / glob patterns to clean up
         # at shutdown. Other subsystems append to this via `get_subsystem`.
         self.session_files: list[str] = [
@@ -24,6 +25,13 @@ class SessionFilesServer(StubSubsystem):
             # notifications may use a TMP dir:
             "tmp/*", "tmp",
         ]
+
+    def init(self, opts) -> None:
+        super().init(opts)
+        if not self.config_contents:
+            from xpra.scripts.server import get_options_file_contents
+            self.config_contents = get_options_file_contents(opts)
+            self.write_session_file("config", self.config_contents)
 
     def late_cleanup(self, stop=True) -> None:
         if stop:

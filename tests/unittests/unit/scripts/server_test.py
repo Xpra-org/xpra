@@ -32,7 +32,6 @@ from xpra.scripts.server import (
     setup_runtime_dir,
     start_server_vfb,
     update_session_dir_for_display,
-    write_initial_session_files,
 )
 
 
@@ -43,21 +42,11 @@ class TestMain(unittest.TestCase):
         assert is_splash_enabled("foo", False, False, ":10") is False, "splash should not be enabled for splash=False"
         assert is_splash_enabled("foo", False, True, ":10") is True, "splash should be enabled for splash=True"
 
-    def test_write_initial_session_files(self):
+    def test_setup_session_dir(self):
         with tempfile.TemporaryDirectory() as sessions_dir, patch.dict(os.environ, {}, clear=False):
             session_dir = setup_session_dir("seamless", sessions_dir, ":42", os.getuid(), os.getgid())
-            write_initial_session_files(os.getuid(), os.getgid(), None, "SERVER_ENV=1", ("xpra", "start", ":42"))
             assert session_dir == os.path.join(sessions_dir, "42")
             assert os.environ["XPRA_SESSION_DIR"] == session_dir
-            with open(os.path.join(session_dir, "server.env"), encoding="utf8") as f:
-                assert f.read() == "SERVER_ENV=1"
-            with open(os.path.join(session_dir, "cmdline"), encoding="utf8") as f:
-                assert f.read() == "xpra\nstart\n:42\n"
-
-    def test_write_initial_session_files_requires_session_dir(self):
-        with patch.dict(os.environ, {}, clear=True):
-            write_initial_session_files(os.getuid(), os.getgid(), None, "SERVER_ENV=1", ("xpra", "start", ":42"))
-            assert "XPRA_SESSION_DIR" not in os.environ
 
     def test_get_server_log_dir(self):
         with patch.dict(os.environ, {"XPRA_SESSION_DIR": "/session"}, clear=False):

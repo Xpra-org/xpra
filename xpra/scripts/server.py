@@ -338,14 +338,14 @@ SERVER_LOAD_SKIP_OPTIONS: Sequence[str] = (
 )
 
 
-def get_options_file_contents(opts, mode: str = "seamless") -> str:
+def get_options_file_contents(opts) -> str:
     defaults = make_defaults_struct()
     fixup_defaults(defaults)
     fixup_options(defaults)
     diff_contents = [
         f"# xpra server {__version__}",
         "",
-        f"mode={mode}",
+        f"mode={opts.mode}",
     ]
     for attr, dtype in OPTION_TYPES.items():
         if attr in CLIENT_ONLY_OPTIONS:
@@ -485,19 +485,6 @@ def setup_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int,
     session_dir = make_session_dir(mode, sessions_dir, display_name, uid, gid)
     os.environ["XPRA_SESSION_DIR"] = session_dir
     return session_dir
-
-
-def write_initial_session_files(uid: int, gid: int, run_xpra_script: str,
-                                env_script: str, cmdline: Sequence[str]) -> None:
-    if run_xpra_script:
-        # Write out a shell-script so that we can start our proxy in a clean
-        # environment:
-        assert BACKWARDS_COMPATIBLE
-        from xpra.server.runner_script import write_runner_shell_scripts
-        write_runner_shell_scripts(run_xpra_script)
-    if env_script:
-        save_session_file("server.env", env_script, uid, gid)
-    save_session_file("cmdline", "\n".join(cmdline) + "\n", uid, gid)
 
 
 def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str, session_dir: str) -> str:
@@ -1009,9 +996,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     if str_to_bool(opts.printing):
         start_cupsd()
 
-    def write_session_file(filename: str, contents) -> str:
-        return save_session_file(filename, contents, uid, gid)
-
     # Daemonize:
     if POSIX and opts.daemon:
         from xpra.util.daemon import daemonize
@@ -1059,9 +1043,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             mode = mode.removeprefix("start-")
         opts.mode = mode
 
-    write_initial_session_files(uid, gid, run_xpra_script, env_script, cmdline)
-    write_session_file("config", get_options_file_contents(opts, mode))
-
     # warn early about this:
     if starting in ("seamless", "desktop") and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
@@ -1106,6 +1087,20 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             splash.progress(pct, msg)
 
     progress(30, "initializing server")
+
+    session_files = app.get_subsystem("session-files")
+    if session_files:
+        session_files.init(opts)
+        session_files.write_session_file("cmdline", "\n".join(cmdline) + "\n")
+        if env_script:
+            save_session_file("server.env", env_script)
+    if run_xpra_script:
+        # Write out a shell-script so that we can start our proxy in a clean
+        # environment:
+        assert BACKWARDS_COMPATIBLE
+        from xpra.server.runner_script import write_runner_shell_scripts
+        write_runner_shell_scripts(run_xpra_script)
+
     daemon = app.get_subsystem("daemon")
     log_to_file = opts.daemon or envbool("XPRA_LOG_TO_FILE")
     if daemon:
@@ -1119,9 +1114,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     app.parse_socket_options(opts)
     app.init_sockets(retry=10 * int(upgrading))
 
-    session_files = app.get_subsystem("session-files")
-    if session_files:
-        session_files.init(opts)
     from xpra.server.subsystem.xvfb import XvfbManager
     xvfb = app.add_subsystem(XvfbManager)
     xvfb.init(opts)
