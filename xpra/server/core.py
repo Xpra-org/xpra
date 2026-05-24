@@ -602,6 +602,8 @@ class ServerCore(GLibServer):
     # #####################################################################
     # sockets / connections / packets:
     def parse_socket_options(self, opts) -> None:
+        from xpra.scripts.main import validate_encryption
+        validate_encryption(opts)
         opts.ssh_upgrade = check_ssh_upgrades(opts.ssh_upgrade)
         self.bind_options = parse_bind_options(opts)
 

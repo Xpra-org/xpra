@@ -829,7 +829,7 @@ def checkstate(sockpath: str, state: SocketState | str) -> None:
 
 
 def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
-                        display_name: str, clobber,
+                        display_name: str, clobber: bool,
                         mmap_group: str = "auto", socket_permissions: str = "600", username: str = "",
                         uid: int = 0, gid: int = 0) -> list[SocketListener]:
     log = get_network_logger()

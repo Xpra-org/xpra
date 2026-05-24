@@ -27,10 +27,7 @@ from xpra.util.parsing import (
 )
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.common import no_gtk
-from xpra.scripts.main import (
-    nox,
-    validate_encryption, parse_env,
-)
+from xpra.scripts.main import nox, parse_env
 from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
 from xpra.scripts.sessions import get_xpra_sessions
 from xpra.scripts.config import (
@@ -865,6 +862,9 @@ def init_virtual_devices(app, devices: dict) -> None:
 
 def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts,
                   extra_args: list[str], full_mode: str, defaults) -> ExitValue:
+    if opts.encoding == "help" or "help" in opts.encodings:
+        return show_encoding_help(opts)
+
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     if mode not in (
@@ -906,9 +906,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
         run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
 
-    validate_encryption(opts)
-    if opts.encoding == "help" or "help" in opts.encodings:
-        return show_encoding_help(opts)
     sanitize_dbus_env(opts.dbus)
     if (upgrading or shadowing) and opts.pulseaudio is None:
         # there should already be one running
