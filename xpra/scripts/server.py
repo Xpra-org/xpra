@@ -16,12 +16,9 @@ from subprocess import Popen
 from collections.abc import Sequence, Callable
 
 from xpra import __version__
-from xpra.scripts.session import get_session_dir, make_session_dir, session_file_path, load_session_file
+from xpra.scripts.session import get_session_dir, make_session_dir, session_file_path
 from xpra.util.io import info, warn, wait_for_socket, which
-from xpra.util.parsing import (
-    FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS,
-    parse_str_dict, str_to_bool, parse_bool_or, parse_resolutions, get_refresh_rate_for_value,
-)
+from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_bool_or
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.common import no_gtk
 from xpra.scripts.main import nox, parse_env
@@ -32,7 +29,7 @@ from xpra.scripts.config import (
     OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
 )
-from xpra.common import noerr, noop
+from xpra.common import noerr
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
 from xpra.net.constants import SocketState, ConnectionMessage
@@ -600,92 +597,6 @@ def resolve_x11_display(display_name: str, xauthority: str, xauth_data: str,
     return X11DisplayResolution(start_vfb, xauth_data, use_display)
 
 
-def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, start_vfb: bool,
-                     xvfb_cmd: Sequence[str], xauth_data: str, xauthority: str | None,
-                     cwd: str, uid: int, gid: int, username: str, protected_env: dict,
-                     pam, shadowing: bool, proxying: bool, encoder: bool,
-                     runner: bool, starting: str, write_session_file: Callable,
-                     progress: Callable, log) -> VFBStartResult:
-    xvfb = None
-    xvfb_pid = 0
-    devices = {}
-    displayfd = 0
-    if POSIX and getattr(opts, "displayfd", None):
-        try:
-            displayfd = int(opts.displayfd)
-        except ValueError as e:
-            noerr(sys.stderr.write, f"Error: invalid displayfd {opts.displayfd!r}:\n")
-            noerr(sys.stderr.write, f" {e}\n")
-            del e
-    result_cmd = tuple(xvfb_cmd)
-    if not POSIX or proxying or encoder or runner:
-        return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
-
-    create_input_devices = noop
-    uinput_uuid_len = 0
-    use_uinput = False
-    if opts.backend != "wayland":
-        try:
-            from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
-            uinput_uuid_len = UINPUT_UUID_LEN
-            use_uinput = not (shadowing or proxying or encoder or runner) and opts.input_devices.lower() in (
-                "uinput", "auto",
-            ) and has_uinput()
-        except ImportError:
-            use_uinput = False
-
-    uinput_uuid = ""
-    if start_vfb:
-        progress(40, "starting a virtual display")
-        from xpra.x11.vfb_util import start_Xvfb, xauth_add
-        assert not proxying and xauth_data
-        pixel_depth = validate_pixel_depth(opts.pixel_depth, starting in ("desktop", "monitor"))
-        if use_uinput:
-            # This only needs to be fairly unique.
-            uinput_uuid = get_rand_chars(uinput_uuid_len).decode("latin1")
-            write_session_file("uinput-uuid", uinput_uuid)
-        vfb_geom: tuple | None = ()
-        resize = opts.resize_display.lower()
-        if resize not in ALL_BOOLEAN_OPTIONS and resize != "auto":
-            sizes = opts.resize_display.split(":", 1)[-1]
-            resolutions = parse_resolutions(sizes, opts.refresh_rate)
-            if resolutions:
-                vfb_geom = resolutions[0]
-        fps = get_refresh_rate_for_value(opts.refresh_rate, 60) if opts.refresh_rate else 0
-        xvfb, display_name = start_Xvfb(result_cmd, vfb_geom, pixel_depth, fps, display_name, cwd,
-                                        uid, gid, username, uinput_uuid)
-        assert xauthority
-        xauth_add(xauthority, display_name, xauth_data, uid, gid)
-        xvfb_pid = xvfb.pid
-        xvfb_pidfile = write_session_file("xvfb.pid", str(xvfb.pid))
-        log(f"saved xvfb.pid={xvfb.pid}")
-
-        def xvfb_terminated() -> None:
-            log(f"xvfb_terminated() removing {xvfb_pidfile}")
-            if xvfb_pidfile:
-                os.unlink(xvfb_pidfile)
-
-        vfb_procinfo = get_child_reaper().add_process(xvfb, "xvfb", xvfb_cmd, ignore=True, callback=xvfb_terminated)
-        log("xvfb process info=%s", vfb_procinfo.get_info())
-        os.environ["DISPLAY"] = display_name
-        os.environ["CKCON_X11_DISPLAY"] = display_name
-        os.environ.update(protected_env)
-        if display_name != old_display_name:
-            if pam:
-                pam.set_items({"XDISPLAY": display_name})
-    elif not OSX and not shadowing and not proxying:
-        try:
-            xvfb_pid = int(load_session_file("xvfb.pid") or 0)
-        except ValueError:
-            pass
-        log(f"reloaded xvfb.pid={xvfb_pid} from session file")
-        if use_uinput:
-            uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
-    if uinput_uuid:
-        devices = create_input_devices(uinput_uuid, uid) or {}
-    return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
-
-
 def update_session_dir_for_display(mode: str, sessions_dir: str, log_dir_option: str,
                                    old_display_name: str, display_name: str,
                                    session_dir: str, log_dir: str, uid: int, log) -> str:
@@ -827,8 +738,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         session = sessions.get(display_name, {})
         use_display = request_upgrade_display(display_name, session) or use_display
 
-    uid: int = int(opts.uid)
-    gid: int = int(opts.gid)
     protected_env = {}
 
     if str_to_bool(opts.dbus):
@@ -925,7 +834,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     xvfb = app.add_subsystem(XvfbManager)
     xvfb.init(opts)
     odisplay_name = display_name
-    vfb_result = xvfb.setup_vfb(mode, display_name, start_vfb, xauth_data,
+    vfb_result = xvfb.setup_vfb(display_name, start_vfb, xauth_data,
                                 protected_env, pam, shadowing, proxying, encoder, runner, starting,
                                 clobber, use_display, upgrading,
                                 error_cb, progress, log)

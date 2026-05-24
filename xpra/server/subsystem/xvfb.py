@@ -8,18 +8,23 @@ from typing import Any
 
 import glob
 import os
+import sys
 
-from xpra.os_util import POSIX, getuid, get_username_for_uid, find_group
+from xpra.common import noerr, noop
+from xpra.os_util import POSIX, OSX, getuid, get_username_for_uid, find_group
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.scripts.server import (
     VFBStartResult,
+    get_rand_chars,
     resolve_x11_display,
-    start_server_vfb,
+    validate_pixel_depth,
 )
 from xpra.scripts.config import xvfb_command
 from xpra.scripts.session import load_session_file
+from xpra.util.child_reaper import get_child_reaper
 from xpra.util.env import envbool, osexpand
 from xpra.util.io import is_writable
+from xpra.util.parsing import ALL_BOOLEAN_OPTIONS, parse_resolutions, get_refresh_rate_for_value
 
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
 
@@ -66,7 +71,7 @@ class XvfbManager(StubSubsystem):
             self.gid = find_group(self.uid)
         self.username = get_username_for_uid(self.uid)
 
-    def setup_vfb(self, mode: str, display_name: str, start_vfb: bool,
+    def setup_vfb(self, display_name: str, start_vfb: bool,
                   xauth_data: str, protected_env: dict,
                   pam, shadowing: bool, proxying: bool, encoder: bool, runner: bool, starting: str,
                   clobber: int, use_display: bool | None, upgrading: bool,
@@ -88,10 +93,93 @@ class XvfbManager(StubSubsystem):
         self.start_vfb = start_vfb
         self.xauth_data = xauth_data
         self.use_display = use_display
-        return start_server_vfb(self, mode, display_name, old_display_name, start_vfb, self.xvfb_cmd,
-                                xauth_data, xauthority, self.cwd, self.uid, self.gid, self.username, protected_env,
-                                pam, shadowing, proxying, encoder, runner, starting,
-                                write_session_file, progress, log)
+        return self.start_server_vfb(display_name, old_display_name, xauthority, protected_env,
+                                     pam, shadowing, proxying, encoder, runner, starting,
+                                     write_session_file, progress, log)
+
+    def start_server_vfb(self, display_name: str, old_display_name: str, xauthority: str | None,
+                         protected_env: dict, pam, shadowing: bool, proxying: bool, encoder: bool,
+                         runner: bool, starting: str, write_session_file: Callable,
+                         progress: Callable, log) -> VFBStartResult:
+        xvfb = None
+        xvfb_pid = 0
+        devices = {}
+        displayfd = 0
+        if POSIX and self.displayfd:
+            try:
+                displayfd = int(self.displayfd)
+            except ValueError as e:
+                noerr(sys.stderr.write, f"Error: invalid displayfd {self.displayfd!r}:\n")
+                noerr(sys.stderr.write, f" {e}\n")
+                del e
+        result_cmd = tuple(self.xvfb_cmd)
+        if not POSIX or proxying or encoder or runner:
+            return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
+
+        create_input_devices = noop
+        uinput_uuid_len = 0
+        use_uinput = False
+        if self.backend != "wayland":
+            try:
+                from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
+                uinput_uuid_len = UINPUT_UUID_LEN
+                use_uinput = not (shadowing or proxying or encoder or runner) and self.input_devices.lower() in (
+                    "uinput", "auto",
+                ) and has_uinput()
+            except ImportError:
+                use_uinput = False
+
+        uinput_uuid = ""
+        if self.start_vfb:
+            progress(40, "starting a virtual display")
+            from xpra.x11.vfb_util import start_Xvfb, xauth_add
+            assert not proxying and self.xauth_data
+            pixel_depth = validate_pixel_depth(self.pixel_depth, starting in ("desktop", "monitor"))
+            if use_uinput:
+                # This only needs to be fairly unique.
+                uinput_uuid = get_rand_chars(uinput_uuid_len).decode("latin1")
+                write_session_file("uinput-uuid", uinput_uuid)
+            vfb_geom: tuple | None = ()
+            resize = self.resize_display.lower()
+            if resize not in ALL_BOOLEAN_OPTIONS and resize != "auto":
+                sizes = self.resize_display.split(":", 1)[-1]
+                resolutions = parse_resolutions(sizes, self.refresh_rate)
+                if resolutions:
+                    vfb_geom = resolutions[0]
+            fps = get_refresh_rate_for_value(self.refresh_rate, 60) if self.refresh_rate else 0
+            xvfb, display_name = start_Xvfb(result_cmd, vfb_geom, pixel_depth, fps, display_name, self.cwd,
+                                            self.uid, self.gid, self.username, uinput_uuid)
+            assert xauthority
+            xauth_add(xauthority, display_name, self.xauth_data, self.uid, self.gid)
+            xvfb_pid = xvfb.pid
+            xvfb_pidfile = write_session_file("xvfb.pid", str(xvfb.pid))
+            log(f"saved xvfb.pid={xvfb.pid}")
+
+            def xvfb_terminated() -> None:
+                log(f"xvfb_terminated() removing {xvfb_pidfile}")
+                if xvfb_pidfile:
+                    os.unlink(xvfb_pidfile)
+
+            vfb_procinfo = get_child_reaper().add_process(xvfb, "xvfb", self.xvfb_cmd, ignore=True,
+                                                          callback=xvfb_terminated)
+            log("xvfb process info=%s", vfb_procinfo.get_info())
+            os.environ["DISPLAY"] = display_name
+            os.environ["CKCON_X11_DISPLAY"] = display_name
+            os.environ.update(protected_env)
+            if display_name != old_display_name:
+                if pam:
+                    pam.set_items({"XDISPLAY": display_name})
+        elif not OSX and not shadowing and not proxying:
+            try:
+                xvfb_pid = int(load_session_file("xvfb.pid") or 0)
+            except ValueError:
+                pass
+            log(f"reloaded xvfb.pid={xvfb_pid} from session file")
+            if use_uinput:
+                uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
+        if uinput_uuid:
+            devices = create_input_devices(uinput_uuid, self.uid) or {}
+        return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
 
     def setup_xauthority(self, display_name: str, shadowing: bool, log) -> str:
         from xpra.x11.vfb_util import get_xauthority_path, valid_xauth

@@ -28,7 +28,6 @@ from xpra.scripts.server import (
     sanitize_dbus_env,
     set_vfb_startup_state,
     setup_session_dir,
-    start_server_vfb,
     update_session_dir_for_display,
 )
 from xpra.server.subsystem.process import setup_pam_session, setup_runtime_dir
@@ -225,10 +224,12 @@ class TestMain(unittest.TestCase):
                 assert os.environ["XAUTHORITY"] == xauth_file.name
 
     def test_start_server_vfb_noop_for_proxy(self):
-        result = start_server_vfb(SimpleNamespace(displayfd="7"), "proxy", ":100", ":100", False, (), "", None,
-                                  "/tmp", os.getuid(), os.getgid(), "test", {}, None, False, True,
-                                  False, False, "", lambda *_args: "",
-                                  lambda *_args: None, lambda *_args: None)
+        from xpra.server.subsystem.xvfb import XvfbManager
+        xvfb = XvfbManager(SimpleNamespace(subsystems={}))
+        xvfb.displayfd = "7"
+        result = xvfb.start_server_vfb(":100", ":100", None, {}, None, False, True,
+                                       False, False, "", lambda *_args: "",
+                                       lambda *_args: None, lambda *_args: None)
         assert result.xvfb is None
         assert result.xvfb_pid == 0
         assert result.devices == {}
@@ -237,14 +238,15 @@ class TestMain(unittest.TestCase):
         assert result.displayfd == 7
 
     def test_start_server_vfb_invalid_displayfd(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        xvfb = XvfbManager(SimpleNamespace(subsystems={}))
+        xvfb.displayfd = "not-an-int"
         stderr = StringIO()
         with patch("sys.stderr", stderr), \
-                patch("xpra.scripts.server.POSIX", True):
-            result = start_server_vfb(SimpleNamespace(displayfd="not-an-int"),
-                                      "proxy", ":100", ":100", False, (), "", None,
-                                      "/tmp", os.getuid(), os.getgid(), "test", {}, None, False, True,
-                                      False, False, "", lambda *_args: "",
-                                      lambda *_args: None, lambda *_args: None)
+                patch("xpra.server.subsystem.xvfb.POSIX", True):
+            result = xvfb.start_server_vfb(":100", ":100", None, {}, None, False, True,
+                                           False, False, "", lambda *_args: "",
+                                           lambda *_args: None, lambda *_args: None)
         assert result.displayfd == 0
         assert "Error: invalid displayfd 'not-an-int':" in stderr.getvalue()
 
