@@ -15,17 +15,16 @@ from typing import Any, NoReturn, Final
 from subprocess import Popen
 from collections.abc import Sequence, Callable
 
-from xpra import __version__
 from xpra.scripts.session import get_session_dir, make_session_dir, session_file_path
 from xpra.util.io import info, warn, wait_for_socket, which
 from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_bool_or
-from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
+from xpra.scripts.parsing import MODE_ALIAS
 from xpra.scripts.main import nox, parse_env
 from xpra.scripts.sessions import get_xpra_sessions
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
     OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
-    fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
+    fixup_options, read_config, dict_to_validated_config,
 )
 from xpra.common import noerr
 from xpra.net.common import BACKWARDS_COMPATIBLE
@@ -136,52 +135,6 @@ def show_encoding_help(opts) -> int:
     return 0
 
 
-def make_monitor_server():
-    from xpra.x11.desktop.monitor_server import XpraMonitorServer
-    return XpraMonitorServer()
-
-
-def make_desktop_server():
-    from xpra.x11.desktop.desktop_server import XpraDesktopServer
-    return XpraDesktopServer()
-
-
-def make_seamless_server(backend: str, clobber):
-    if backend == "wayland":
-        from xpra.wayland.server import WaylandSeamlessServer
-        return WaylandSeamlessServer()
-    from xpra.x11.server.seamless import SeamlessServer
-    return SeamlessServer(clobber)
-
-
-def make_shadow_server(display, attrs: dict[str, str]):
-    from xpra.platform.shadow_server import ShadowServer
-    return ShadowServer(display, attrs)
-
-
-def make_proxy_server():
-    from xpra.platform.proxy_server import ProxyServer
-    return ProxyServer()
-
-
-def make_expand_server(attrs: dict[str, str]):
-    from xpra.x11.server.expand import ExpandServer
-    return ExpandServer(attrs)
-
-
-def make_encoder_server():
-    from xpra.server.encoder.server import EncoderServer
-    return EncoderServer()
-
-
-def make_runner_server():
-    with OSEnvContext():
-        # unit test env var would inject SignalEmitter class twice:
-        os.environ.pop("XPRA_UNIT_TEST", None)
-        from xpra.server.runner.server import RunnerServer
-        return RunnerServer()
-
-
 def make_server_app(mode_attrs: dict[str, str], opts, clobber: int, mode: str,
                     display_name: str):
     if "backend" not in mode_attrs:
@@ -189,21 +142,35 @@ def make_server_app(mode_attrs: dict[str, str], opts, clobber: int, mode: str,
     if mode.startswith("shadow"):
         # "shadow" -> multi-window=True, "shadow-screen" -> multi-window=False
         mode_attrs["multi-window"] = str(mode == "shadow")
-        return make_shadow_server(display_name, mode_attrs)
+        from xpra.platform.shadow_server import ShadowServer
+        return ShadowServer(display_name, mode_attrs)
     if mode == "proxy":
-        return make_proxy_server()
+        from xpra.platform.proxy_server import ProxyServer
+        return ProxyServer()
     if mode == "expand":
-        return make_expand_server(mode_attrs)
+        from xpra.x11.server.expand import ExpandServer
+        return ExpandServer(mode_attrs)
     if mode == "encoder":
-        return make_encoder_server()
+        from xpra.server.encoder.server import EncoderServer
+        return EncoderServer()
     if mode == "runner":
-        return make_runner_server()
+        with OSEnvContext():
+            # unit test env var would inject SignalEmitter class twice:
+            os.environ.pop("XPRA_UNIT_TEST", None)
+            from xpra.server.runner.server import RunnerServer
+            return RunnerServer()
     if mode in ("seamless", "upgrade"):
-        return make_seamless_server(opts.backend, clobber)
+        if opts.backend == "wayland":
+            from xpra.wayland.server import WaylandSeamlessServer
+            return WaylandSeamlessServer()
+        from xpra.x11.server.seamless import SeamlessServer
+        return SeamlessServer(clobber)
     if mode == "desktop":
-        return make_desktop_server()
+        from xpra.x11.desktop.desktop_server import XpraDesktopServer
+        return XpraDesktopServer()
     assert mode == "monitor"
-    return make_monitor_server()
+    from xpra.x11.desktop.monitor_server import XpraMonitorServer
+    return XpraMonitorServer()
 
 
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> bool:
@@ -220,11 +187,6 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     return True
 
 
-SERVER_SAVE_SKIP_OPTIONS: Sequence[str] = (
-    "systemd-run",
-    "daemon",
-)
-
 SERVER_LOAD_SKIP_OPTIONS: Sequence[str] = (
     "systemd-run",
     "daemon",
@@ -239,36 +201,6 @@ SERVER_LOAD_SKIP_OPTIONS: Sequence[str] = (
     "start-on-last-client-exit",
     "start-child-on-last-client-exit",
 )
-
-
-def get_options_file_contents(opts) -> str:
-    defaults = make_defaults_struct()
-    fixup_defaults(defaults)
-    fixup_options(defaults)
-    diff_contents = [
-        f"# xpra server {__version__}",
-        "",
-        f"mode={opts.mode}",
-    ]
-    for attr, dtype in OPTION_TYPES.items():
-        if attr in CLIENT_ONLY_OPTIONS:
-            continue
-        if attr in SERVER_SAVE_SKIP_OPTIONS:
-            continue
-        aname = attr.replace("-", "_")
-        dval = getattr(defaults, aname, None)
-        cval = getattr(opts, aname, None)
-        if dval != cval:
-            if dtype is bool:
-                BOOL_STR = {True: "yes", False: "no"}
-                diff_contents.append(f"{attr}=" + BOOL_STR.get(cval, "auto"))
-            elif dtype in (tuple, list):
-                for x in cval or ():
-                    diff_contents.append(f"{attr}={x}")
-            else:
-                diff_contents.append(f"{attr}={cval}")
-    diff_contents.append("")
-    return "\n".join(diff_contents)
 
 
 def load_options() -> dict[str, Any]:

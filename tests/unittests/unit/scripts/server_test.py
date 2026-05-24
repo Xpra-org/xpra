@@ -316,21 +316,30 @@ class TestMain(unittest.TestCase):
     def test_make_server_app(self):
         opts = SimpleNamespace(backend="x11")
         attrs = {}
-        with patch("xpra.scripts.server.make_proxy_server", return_value="proxy"):
+        proxy_module = ModuleType("xpra.platform.proxy_server")
+        proxy_module.ProxyServer = lambda: "proxy"
+        with patch.dict(sys.modules, {"xpra.platform.proxy_server": proxy_module}):
             app = make_server_app(attrs, opts, 0, "proxy", ":42")
         assert app == "proxy"
         assert attrs["backend"] == "x11"
 
         attrs = {}
-        with patch("xpra.scripts.server.make_shadow_server", return_value="shadow") as make_shadow:
+        shadow_calls = []
+        shadow_module = ModuleType("xpra.platform.shadow_server")
+        shadow_module.ShadowServer = lambda display, attrs: shadow_calls.append((display, attrs)) or "shadow"
+        with patch.dict(sys.modules, {"xpra.platform.shadow_server": shadow_module}):
             app = make_server_app(attrs, opts, 0, "shadow", ":42")
         assert app == "shadow"
-        make_shadow.assert_called_once_with(":42", {"backend": "x11", "multi-window": "True"})
+        assert shadow_calls == [(":42", {"backend": "x11", "multi-window": "True"})]
 
         attrs = {}
-        with patch("xpra.scripts.server.make_seamless_server", return_value="seamless"):
+        seamless_calls = []
+        seamless_module = ModuleType("xpra.x11.server.seamless")
+        seamless_module.SeamlessServer = lambda clobber: seamless_calls.append(clobber) or "seamless"
+        with patch.dict(sys.modules, {"xpra.x11.server.seamless": seamless_module}):
             app = make_server_app(attrs, opts, 0, "upgrade", ":42")
         assert app == "seamless"
+        assert seamless_calls == [0]
 
     def test_init_virtual_devices(self):
         calls = []
