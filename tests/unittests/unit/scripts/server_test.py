@@ -59,7 +59,7 @@ class TestMain(unittest.TestCase):
     def test_setup_pam_session_disabled(self):
         with patch("xpra.scripts.server.POSIX", True), \
                 patch("xpra.scripts.server.envbool", return_value=False):
-            pam, protected_env = setup_pam_session("alice", ":42", "abc", 1000)
+            pam, protected_env = setup_pam_session(":42", "abc", 1000)
         assert pam is None
         assert protected_env == {}
 
@@ -85,17 +85,20 @@ class TestMain(unittest.TestCase):
                 return {"PAM_ENV": "1"}
 
         fake_pam = FakePam()
+        pam_usernames = []
         pam_module = ModuleType("xpra.platform.pam")
-        pam_module.pam_session = lambda username: fake_pam
+        pam_module.pam_session = lambda username: pam_usernames.append(username) or fake_pam
         with patch.dict(sys.modules, {"xpra.platform.pam": pam_module}), \
                 patch.dict(os.environ, {}, clear=False), \
                 patch("xpra.scripts.server.POSIX", True), \
-                patch("xpra.scripts.server.envbool", return_value=True):
+                patch("xpra.scripts.server.envbool", return_value=True), \
+                patch("xpra.scripts.server.get_username_for_uid", return_value="alice"):
             os.environ.pop("PAM_ENV", None)
-            pam, protected_env = setup_pam_session("alice", ":42", "abc", 1000)
+            pam, protected_env = setup_pam_session(":42", "abc", 1000)
             assert os.environ["PAM_ENV"] == "1"
         assert pam is fake_pam
         assert protected_env == {"PAM_ENV": "1"}
+        assert pam_usernames == ["alice"]
         assert fake_pam.env == {
             "XDG_SESSION_TYPE": "x11",
             "XDG_SESSION_DESKTOP": "xpra",

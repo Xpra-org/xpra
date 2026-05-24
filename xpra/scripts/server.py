@@ -507,7 +507,7 @@ class X11DisplayResolution:
     use_display: bool | None
 
 
-def setup_pam_session(username: str, display_name: str, xauth_data: str, uid: int) -> tuple[Any, dict]:
+def setup_pam_session(display_name: str, xauth_data: str, uid: int) -> tuple[Any, dict]:
     # if pam is present, try to create a new session:
     pam = None
     root = POSIX and getuid() == 0
@@ -520,6 +520,7 @@ def setup_pam_session(username: str, display_name: str, xauth_data: str, uid: in
             noerr(sys.stderr.write, f" {e}\n")
             del e
         else:
+            username = get_username_for_uid(uid)
             pam = pam_session(username)
     if pam:
         env = {
@@ -960,9 +961,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     uid: int = int(opts.uid)
     gid: int = int(opts.gid)
-    username = get_username_for_uid(uid)
     if POSIX and uid and not gid:
-        gid = find_group(uid)
+        opts.gid = gid = find_group(uid)
     protected_env = {}
 
     if str_to_bool(opts.dbus):
@@ -982,7 +982,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
     xauth_data: str = get_hex_uuid() if start_vfb else ""
 
-    pam, pam_protected_env = setup_pam_session(username, display_name, xauth_data, uid)
+    pam, pam_protected_env = setup_pam_session(display_name, xauth_data, uid)
     if pam_protected_env:
         protected_env = pam_protected_env
 
