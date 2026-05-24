@@ -916,12 +916,12 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         warn(f"current working directory does not exist, using {cwd!r}\n")
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    run_xpra_script = env_script = ""
+    from xpra.server.runner_script import xpra_runner_shell_script, xpra_env_shell_script
+    save_env = os.environ.copy()
+    save_env.update(parse_env(opts.env))
+    env_script = xpra_env_shell_script(opts.socket_dir, save_env)
+    run_xpra_script = ""
     if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
-        from xpra.server.runner_script import xpra_runner_shell_script, xpra_env_shell_script
-        save_env = os.environ.copy()
-        save_env.update(parse_env(opts.env))
-        env_script = xpra_env_shell_script(opts.socket_dir, save_env)
         run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
 
     validate_encryption(opts)
@@ -1092,8 +1092,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     if session_files:
         session_files.init(opts)
         session_files.write_session_file("cmdline", "\n".join(cmdline) + "\n")
-        if env_script:
-            save_session_file("server.env", env_script)
+        save_session_file("server.env", env_script)
     if run_xpra_script:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
