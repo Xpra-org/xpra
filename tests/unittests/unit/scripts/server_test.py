@@ -28,11 +28,10 @@ from xpra.scripts.server import (
     sanitize_dbus_env,
     set_vfb_startup_state,
     setup_session_dir,
-    setup_pam_session,
-    setup_runtime_dir,
     start_server_vfb,
     update_session_dir_for_display,
 )
+from xpra.server.subsystem.process import setup_pam_session, setup_runtime_dir
 
 
 class TestMain(unittest.TestCase):
@@ -57,8 +56,8 @@ class TestMain(unittest.TestCase):
             assert os.environ["XPRA_LOG_DIR"] == "/session"
 
     def test_setup_pam_session_disabled(self):
-        with patch("xpra.scripts.server.POSIX", True), \
-                patch("xpra.scripts.server.envbool", return_value=False):
+        with patch("xpra.server.subsystem.process.POSIX", True), \
+                patch("xpra.server.subsystem.process.envbool", return_value=False):
             pam, protected_env = setup_pam_session(":42", "abc", 1000)
         assert pam is None
         assert protected_env == {}
@@ -90,9 +89,9 @@ class TestMain(unittest.TestCase):
         pam_module.pam_session = lambda username: pam_usernames.append(username) or fake_pam
         with patch.dict(sys.modules, {"xpra.platform.pam": pam_module}), \
                 patch.dict(os.environ, {}, clear=False), \
-                patch("xpra.scripts.server.POSIX", True), \
-                patch("xpra.scripts.server.envbool", return_value=True), \
-                patch("xpra.scripts.server.get_username_for_uid", return_value="alice"):
+                patch("xpra.server.subsystem.process.POSIX", True), \
+                patch("xpra.server.subsystem.process.envbool", return_value=True), \
+                patch("xpra.server.subsystem.process.get_username_for_uid", return_value="alice"):
             os.environ.pop("PAM_ENV", None)
             pam, protected_env = setup_pam_session(":42", "abc", 1000)
             assert os.environ["PAM_ENV"] == "1"
@@ -106,8 +105,9 @@ class TestMain(unittest.TestCase):
         assert fake_pam.items == {"XDISPLAY": ":42", "XAUTHDATA": "abc"}
 
     def test_setup_runtime_dir_from_env_options(self):
-        with patch("xpra.scripts.server.getuid", return_value=0), \
-                patch("xpra.scripts.server.create_runtime_dir", return_value="/tmp/xpra-runtime") as create_runtime_dir:
+        with patch("xpra.server.subsystem.process.getuid", return_value=0), \
+                patch("xpra.server.subsystem.process.create_runtime_dir",
+                      return_value="/tmp/xpra-runtime") as create_runtime_dir:
             xrd, protected_env = setup_runtime_dir(("XDG_RUNTIME_DIR=/tmp/xpra-runtime",), 1000, 1000,
                                                    {"PAM_ENV": "1"})
         create_runtime_dir.assert_called_once_with("/tmp/xpra-runtime", 1000, 1000)
@@ -119,8 +119,9 @@ class TestMain(unittest.TestCase):
 
     def test_setup_runtime_dir_filters_unsafe_root_path(self):
         with patch.dict(os.environ, {"XDG_RUNTIME_DIR": "/tmp/fallback-runtime"}, clear=False), \
-                patch("xpra.scripts.server.getuid", return_value=0), \
-                patch("xpra.scripts.server.create_runtime_dir", return_value="/tmp/fallback-runtime") as create_runtime_dir:
+                patch("xpra.server.subsystem.process.getuid", return_value=0), \
+                patch("xpra.server.subsystem.process.create_runtime_dir",
+                      return_value="/tmp/fallback-runtime") as create_runtime_dir:
             xrd, protected_env = setup_runtime_dir(("XDG_RUNTIME_DIR=/run/unsafe",), 1000, 1000, {})
         create_runtime_dir.assert_called_once_with("/tmp/fallback-runtime", 1000, 1000)
         assert xrd == "/tmp/fallback-runtime"

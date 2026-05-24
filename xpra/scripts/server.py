@@ -43,13 +43,13 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import (
     POSIX, WIN32, OSX,
     force_quit,
-    get_username_for_uid, getuid, find_group,
+    getuid,
     get_hex_uuid,
 )
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr, csv
 from xpra.util.io import stderr_print
-from xpra.util.env import unsetenv, envbool, envint, osexpand, get_saved_env, get_saved_env_var, source_env, \
+from xpra.util.env import envbool, envint, get_saved_env, get_saved_env_var, \
     OSEnvContext
 from xpra.util.child_reaper import get_child_reaper
 from xpra.platform.dotxpra import DotXpra
@@ -124,63 +124,6 @@ def print_DE_warnings() -> None:
     log.warn(" notifications forwarding may not work")
     log.warn(" try using a clean environment, a dedicated user,")
     log.warn(" or disable xpra's notifications option")
-
-
-def sanitize_env() -> None:
-    # we don't want client apps to think these mean anything:
-    # (if set, they belong to the desktop the server was started from)
-    # TODO: simply whitelisting the env would be safer/better
-    unsetenv("DESKTOP_SESSION",
-             "GDMSESSION",
-             "GNOME_DESKTOP_SESSION_ID",
-             "SESSION_MANAGER",
-             "XDG_VTNR",
-             "XDG_MENU_PREFIX",
-             "XDG_CURRENT_DESKTOP",
-             "XDG_SESSION_DESKTOP",
-             "XDG_SESSION_TYPE",
-             "XDG_SESSION_ID",
-             "XDG_SEAT",
-             "XDG_VTNR",
-             "QT_GRAPHICSSYSTEM_CHECKED",
-             "CKCON_TTY",
-             "CKCON_X11_DISPLAY",
-             "CKCON_X11_DISPLAY_DEVICE",
-             "WINDOWPATH",
-             "VTE_VERSION",
-             "LS_COLORS",
-             )
-
-
-def create_runtime_dir(xrd: str, uid: int, gid: int) -> str:
-    if not POSIX or OSX or getuid() != 0:
-        return ""
-    # workarounds:
-    # * some distros don't set a correct value,
-    # * or they don't create the directory for us,
-    # * or pam_open is going to create the directory but needs time to do so..
-    if xrd and xrd.endswith("/user/0") and uid > 0:
-        # don't keep root's directory, as this would not work:
-        xrd = ""
-    if not xrd:
-        # find the "/run/user" directory:
-        run_user = "/run/user"
-        if not os.path.exists(run_user):
-            run_user = "/var/run/user"
-        if os.path.exists(run_user):
-            xrd = os.path.join(run_user, str(uid))
-    if not xrd:
-        return ""
-    if not os.path.exists(xrd):
-        os.mkdir(xrd, 0o700)
-        if POSIX:
-            os.lchown(xrd, uid, gid)
-    xpra_dir = os.path.join(xrd, "xpra")
-    if not os.path.exists(xpra_dir):
-        os.mkdir(xpra_dir, 0o700)
-        if POSIX:
-            os.lchown(xpra_dir, uid, gid)
-    return xrd
 
 
 def guess_xpra_display(socket_dir, socket_dirs) -> str:
@@ -505,78 +448,6 @@ class X11DisplayResolution:
     start_vfb: bool
     xauth_data: str
     use_display: bool | None
-
-
-def setup_pam_session(display_name: str, xauth_data: str, uid: int) -> tuple[Any, dict]:
-    # if pam is present, try to create a new session:
-    pam = None
-    root = POSIX and getuid() == 0
-    pam_open = POSIX and envbool("XPRA_PAM_OPEN", root and uid != 0)
-    if pam_open:
-        try:
-            from xpra.platform.pam import pam_session
-        except ImportError as e:
-            noerr(sys.stderr.write, "Error: failed to import pam module\n")
-            noerr(sys.stderr.write, f" {e}\n")
-            del e
-        else:
-            username = get_username_for_uid(uid)
-            pam = pam_session(username)
-    if pam:
-        env = {
-            # "XDG_SEAT"               : "seat1",
-            # "XDG_VTNR"               : "0",
-            "XDG_SESSION_TYPE": "x11",
-            # "XDG_SESSION_CLASS"      : "user",
-            "XDG_SESSION_DESKTOP": "xpra",
-        }
-        # maybe we should just bail out instead?
-        if pam.start():
-            pam.set_env(env)
-            items = {}
-            if display_name.startswith(":"):
-                items["XDISPLAY"] = display_name
-            if xauth_data:
-                items["XAUTHDATA"] = xauth_data
-            pam.set_items(items)
-            if pam.open():
-                # we can't close it, because we're not going to be root anymore,
-                # but since we're the process leader for the session,
-                # terminating will also close the session
-                # atexit.register(pam.close)
-                protected_env = pam.get_envlist()
-                os.environ.update(protected_env)
-                return pam, protected_env
-    return pam, {}
-
-
-def setup_runtime_dir(opts_env: Sequence[str], uid: int, gid: int, protected_env: dict) -> tuple[str, dict]:
-    # get XDG_RUNTIME_DIR from env options,
-    # which may not have updated os.environ yet when running as root with "--uid="
-    root = POSIX and getuid() == 0
-    xrd = parse_env(opts_env).get("XDG_RUNTIME_DIR", "")
-    if OSX and not xrd:
-        xrd = osexpand("~/.xpra", uid=uid, gid=gid)
-        os.environ["XDG_RUNTIME_DIR"] = xrd
-    xrd = os.path.abspath(xrd) if xrd else ""
-    if root and (uid > 0 or gid > 0):
-        # we're going to chown the directory if we create it,
-        # ensure this cannot be abused, only use "safe" paths:
-        if xrd == f"/run/user/{uid}":
-            pass  # OK!
-        elif not any(True for x in ("/tmp", "/var/tmp") if xrd.startswith(x)):
-            xrd = ""
-        # these paths could cause problems if we were to create and chown them:
-        elif xrd.startswith(X11_SOCKET_DIR) or xrd.startswith("/tmp/.XIM-unix"):
-            xrd = ""
-    if not xrd:
-        xrd = os.environ.get("XDG_RUNTIME_DIR", "")
-    xrd = create_runtime_dir(xrd, uid, gid)
-    if xrd:
-        # this may override the value we get from pam
-        # with the value supplied by the user:
-        protected_env["XDG_RUNTIME_DIR"] = xrd
-    return xrd, protected_env
 
 
 def add_desktop_greeter(opts, starting: str, use_display: bool | None) -> None:
@@ -961,8 +832,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     uid: int = int(opts.uid)
     gid: int = int(opts.gid)
-    if POSIX and uid and not gid:
-        opts.gid = gid = find_group(uid)
     protected_env = {}
 
     if str_to_bool(opts.dbus):
@@ -985,36 +854,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         # automatically enable sync-xvfb for Xephyr and Xnest:
         opts.sync_xvfb = 50
 
-    pam, pam_protected_env = setup_pam_session(display_name, xauth_data, uid)
-    if pam_protected_env:
-        protected_env = pam_protected_env
-
-    xrd, protected_env = setup_runtime_dir(opts.env, uid, gid, protected_env)
-
-    sanitize_env()
-    if not shadowing:
-        os.environ.pop("WAYLAND_DISPLAY", None)
-    os.environ.update(source_env(opts.source))
-    if POSIX:
-        if xrd:
-            os.environ["XDG_RUNTIME_DIR"] = xrd
-        if not OSX:
-            os.environ["XDG_SESSION_TYPE"] = "x11"
-        if starting != "desktop":
-            os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
-    if display_name[0] != "S":
-        os.environ["DISPLAY"] = display_name
-        if POSIX:
-            os.environ["CKCON_X11_DISPLAY"] = display_name
-    elif not start_vfb or "Xephyr" not in opts.xvfb:
-        os.environ.pop("DISPLAY", None)
-    os.environ.update(protected_env)
-
-    session_dir = setup_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
-    if upgrading:
-        # if we had saved the start / start-desktop config, reload it:
-        opts.mode = mode = apply_config(opts, mode, cmdline).removeprefix("upgrade-").removeprefix("start-")
-
     # warn early about this:
     if starting in ("seamless", "desktop", "monitor") and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
@@ -1036,6 +875,21 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         log.error(" some critical component is missing:")
         log.estr(e)
         return ExitCode.COMPONENT_MISSING
+
+    # do this early - because we want to prepare the runtime environment early,
+    # but only change uid after VFB setup:
+    process = app.get_subsystem("process")
+    assert process
+    process.init(opts)
+    uid, gid = process.uid, process.gid
+    process.prepare_environment(display_name, xauth_data, start_vfb, shadowing, starting, protected_env)
+    pam = process.pam
+    protected_env = process.protected_env
+
+    session_dir = setup_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
+    if upgrading:
+        # if we had saved the start / start-desktop config, reload it:
+        opts.mode = mode = apply_config(opts, mode, cmdline).removeprefix("upgrade-").removeprefix("start-")
 
     if splash := app.get_subsystem("splash"):
         splash.init(opts)
@@ -1090,10 +944,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         daemon.display_name_changed(display_name)
 
     app.protected_env = protected_env
-    # do this one early - because we want to change uid as early as possible:
-    from xpra.server.subsystem.process import ProcessServer
-    process = app.add_subsystem(ProcessServer)
-    process.init(opts)
+    # Change uid as early as possible, but after VFB setup:
     process.setup()
     app.init_subsystems()
 
