@@ -1018,7 +1018,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         opts.mode = mode
 
     # warn early about this:
-    if starting in ("seamless", "desktop") and desktop_display and opts.notifications and not opts.dbus_launch:
+    if starting in ("seamless", "desktop", "monitor") and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
     add_desktop_greeter(opts, starting, use_display)
     # make sure we don't start ibus in these modes:
