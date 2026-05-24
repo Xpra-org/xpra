@@ -61,7 +61,7 @@ class TestMain(unittest.TestCase):
             assert "XPRA_SESSION_DIR" not in os.environ
 
     def test_get_server_log_dir(self):
-        with patch.dict(os.environ, {}, clear=False):
+        with patch.dict(os.environ, {"XPRA_SESSION_DIR": "/session"}, clear=False):
             os.environ.pop("XPRA_LOG_DIR", None)
             assert get_server_log_dir(False, False, "auto", "/session") == "auto"
             assert "XPRA_LOG_DIR" not in os.environ

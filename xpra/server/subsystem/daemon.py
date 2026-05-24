@@ -7,7 +7,7 @@ import os
 from typing import Any
 
 from xpra.common import noerr
-from xpra.os_util import POSIX, WIN32
+from xpra.os_util import POSIX, WIN32, getuid, get_username_for_uid
 from xpra.util.pid import write_pidfile, rm_pidfile
 from xpra.util.env import osexpand
 from xpra.server.subsystem.stub import StubSubsystem
@@ -24,11 +24,11 @@ class DaemonServer(StubSubsystem):
         self.pidfile = ""
         self.pidinode: int = 0
         self.daemon = False
+        self.log_dir_option = ""
         self.log_file = ""
         self.log_dir = ""
         self.log_filename = ""
         self.display_name = ""
-        self.username = ""
         self.uid = 0
         self.gid = 0
         self.extra_expand: dict[str, str] = {}
@@ -38,38 +38,38 @@ class DaemonServer(StubSubsystem):
     def init(self, opts) -> None:
         log("DaemonServer.init(%s)", opts)
         self.pidfile = osexpand(opts.pidfile)
+        self.daemon = bool(opts.daemon)
+        self.log_dir_option = str(opts.log_dir or "")
+        self.log_file = str(opts.log_file or "")
+        self.uid = int(opts.uid)
+        self.gid = int(opts.gid)
         if self.pidfile:
             self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
 
-    def setup_log(self, daemon: bool, start_vfb: bool, log_to_file: bool, log_dir: str, log_file: str,
-                  display_name: str, session_dir: str, username: str, uid: int, gid: int, root: bool,
+    def setup_log(self, start_vfb: bool, log_to_file: bool, display_name: str,
                   extra_expand: dict[str, str], stdout, stderr) -> str:
-        self.daemon = daemon
-        self.log_file = log_file
         self.display_name = display_name
-        self.username = username
-        self.uid = uid
-        self.gid = gid
         self.extra_expand = extra_expand
         self.stdout = stdout
         self.stderr = stderr
-        self.log_dir = self.get_server_log_dir(start_vfb, log_to_file, log_dir, session_dir)
+        self.log_dir = self.get_server_log_dir(start_vfb, log_to_file, self.log_dir_option)
         if not log_to_file:
             os.environ.pop("XPRA_SERVER_LOG", None)
             return self.log_dir
 
         from xpra.util.daemon import redirect_std_to_log, select_log_file, open_log_file
-        self.log_filename = osexpand(select_log_file(self.log_dir, log_file, display_name),
-                                     username, uid, gid, extra_expand)
+        username = get_username_for_uid(self.uid)
+        self.log_filename = osexpand(select_log_file(self.log_dir, self.log_file, display_name),
+                                     username, self.uid, self.gid, extra_expand)
         if os.path.exists(self.log_filename) and not display_name.startswith("S"):
             # Don't overwrite the log file just yet, as we may still fail to start.
             self.log_filename += ".new"
         logfd = open_log_file(self.log_filename)
         if POSIX:
             os.fchmod(logfd, 0o640)
-            if root and (uid > 0 or gid > 0):
+            if getuid() == 0 and (self.uid > 0 or self.gid > 0):
                 try:
-                    os.fchown(logfd, uid, gid)
+                    os.fchown(logfd, self.uid, self.gid)
                 except OSError as e:
                     noerr(stderr.write, f"failed to chown the log file {self.log_filename!r}\n")
                     noerr(stderr.write, f" {e!r}\n")
@@ -81,11 +81,11 @@ class DaemonServer(StubSubsystem):
         return self.log_dir
 
     @staticmethod
-    def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str, session_dir: str) -> str:
+    def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str) -> str:
         if not (start_vfb or log_to_file):
             return log_dir
         if not log_dir or log_dir.lower() == "auto":
-            log_dir = session_dir
+            log_dir = os.environ.get("XPRA_SESSION_DIR", "")
         # This is used by Xdummy for the Xorg log file.
         if "XPRA_LOG_DIR" not in os.environ:
             os.environ["XPRA_LOG_DIR"] = log_dir
@@ -105,8 +105,9 @@ class DaemonServer(StubSubsystem):
             noerr(stderr.write, f"Actual display used: {display_name}\n")
             noerr(stderr.flush)
         from xpra.util.daemon import select_log_file
+        username = get_username_for_uid(self.uid)
         new_log_filename = osexpand(select_log_file(self.log_dir, self.log_file, display_name),
-                                    self.username, self.uid, self.gid, self.extra_expand)
+                                    username, self.uid, self.gid, self.extra_expand)
         if self.log_filename != new_log_filename:
             session_dir = os.environ.get("XPRA_SESSION_DIR", "")
             if not os.path.exists(self.log_filename) and os.path.exists(new_log_filename) and new_log_filename.startswith(

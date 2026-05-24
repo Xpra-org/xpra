@@ -570,12 +570,14 @@ def write_initial_session_files(uid: int, gid: int, run_xpra_script: str,
 
 def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str, session_dir: str) -> str:
     from xpra.server.subsystem.daemon import DaemonServer
-    return DaemonServer.get_server_log_dir(start_vfb, log_to_file, log_dir, session_dir)
+    assert session_dir
+    return DaemonServer.get_server_log_dir(start_vfb, log_to_file, log_dir)
 
 
-def setup_xauthority(display_name: str, username: str, uid: int, gid: int, root: bool,
+def setup_xauthority(display_name: str, username: str, uid: int, gid: int,
                      shadowing: bool, write_session_file: Callable[[str, str], str], log) -> str:
     from xpra.x11.vfb_util import get_xauthority_path, valid_xauth
+    root = POSIX and getuid() == 0
     xauthority = valid_xauth((load_session_file("xauthority")).decode(), uid, gid)
     if xauthority:
         os.environ["XAUTHORITY"] = xauthority
@@ -668,10 +670,10 @@ class DisplayNameResult:
     display_options: str = ""
 
 
-def setup_pam_session(username: str, display_name: str, xauth_data: str,
-                      root: bool, uid: int) -> PamStartupResult:
+def setup_pam_session(username: str, display_name: str, xauth_data: str, uid: int) -> PamStartupResult:
     # if pam is present, try to create a new session:
     pam = None
+    root = POSIX and getuid() == 0
     pam_open = POSIX and envbool("XPRA_PAM_OPEN", root and uid != 0)
     if pam_open:
         try:
@@ -710,10 +712,10 @@ def setup_pam_session(username: str, display_name: str, xauth_data: str,
     return PamStartupResult(pam, {})
 
 
-def setup_runtime_dir(opts_env: Sequence[str], root: bool, uid: int, gid: int,
-                      protected_env: dict) -> RuntimeDirResult:
+def setup_runtime_dir(opts_env: Sequence[str], uid: int, gid: int, protected_env: dict) -> RuntimeDirResult:
     # get XDG_RUNTIME_DIR from env options,
     # which may not have updated os.environ yet when running as root with "--uid="
+    root = POSIX and getuid() == 0
     xrd = parse_env(opts_env).get("XDG_RUNTIME_DIR", "")
     if OSX and not xrd:
         xrd = osexpand("~/.xpra", uid=uid, gid=gid)
@@ -1125,7 +1127,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     uid: int = int(opts.uid)
     gid: int = int(opts.gid)
     username = get_username_for_uid(uid)
-    ROOT: bool = POSIX and getuid() == 0
     if POSIX and uid and not gid:
         gid = find_group(uid)
     protected_env = {}
@@ -1150,12 +1151,12 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
     xauth_data: str = get_hex_uuid() if start_vfb else ""
 
-    pam_result = setup_pam_session(username, display_name, xauth_data, ROOT, uid)
+    pam_result = setup_pam_session(username, display_name, xauth_data, uid)
     pam = pam_result.pam
     if pam_result.protected_env:
         protected_env = pam_result.protected_env
 
-    runtime_dir_result = setup_runtime_dir(opts.env, ROOT, uid, gid, protected_env)
+    runtime_dir_result = setup_runtime_dir(opts.env, uid, gid, protected_env)
     xrd = runtime_dir_result.xrd
     protected_env = runtime_dir_result.protected_env
 
@@ -1236,8 +1237,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     log_to_file = opts.daemon or envbool("XPRA_LOG_TO_FILE")
     if daemon:
         extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
-        log_dir = daemon.setup_log(opts.daemon, start_vfb, log_to_file, opts.log_dir or "", opts.log_file,
-                                   display_name, session_dir, username, uid, gid, ROOT, extra_expand, stdout, stderr)
+        log_dir = daemon.setup_log(start_vfb, log_to_file, display_name, extra_expand, stdout, stderr)
     else:
         log_dir = get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
     log("env=%s", os.environ)
@@ -1250,7 +1250,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     odisplay_name = display_name
     xauthority = None
     if POSIX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland") < 0:
-        xauthority = setup_xauthority(display_name, username, uid, gid, ROOT, shadowing, write_session_file, log)
+        xauthority = setup_xauthority(display_name, username, uid, gid, shadowing, write_session_file, log)
         display_resolution = resolve_x11_display(display_name, xauthority, xauth_data, start_vfb, use_display,
                                                  upgrading, shadowing, proxying, encoder, pam, uid, gid,
                                                  error_cb, progress, log)
