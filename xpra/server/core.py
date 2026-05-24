@@ -34,6 +34,7 @@ from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     setup_local_sockets, add_listen_socket, accept_connection, guess_packet_type,
     peek_connection, close_sockets, SocketListener, socket_fast_read,
+    parse_bind_options, create_sockets, check_ssh_upgrades,
 )
 from xpra.net.bytestreams import (
     Connection, SSLSocketConnection, SocketConnection,
@@ -47,7 +48,7 @@ from xpra.platform import set_name, threaded_server_init
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
-    force_quit, POSIX, WIN32,
+    force_quit, POSIX, WIN32, OSX,
     get_username_for_uid, get_hex_uuid, getuid, gi_import,
 )
 from xpra.util.system import register_SIGUSR_signals, get_run_info
@@ -183,6 +184,7 @@ class ServerCore(GLibServer):
         self._exit_mode = ServerExitMode.UNSET
         # networking bits:
         self.sockets: list[SocketListener] = []
+        self.bind_options: dict[str, Any] = {}
         self._potential_protocols: list[SocketProtocol] = []
         self._ssl_attributes: dict = {}
         self._accept_timeout: int = SOCKET_TIMEOUT + 1
@@ -599,7 +601,12 @@ class ServerCore(GLibServer):
 
     # #####################################################################
     # sockets / connections / packets:
-    def init_sockets(self, sockets: list[SocketListener]) -> None:
+    def parse_socket_options(self, opts) -> None:
+        opts.ssh_upgrade = check_ssh_upgrades(opts.ssh_upgrade)
+        self.bind_options = parse_bind_options(opts)
+
+    def init_sockets(self, retry: int = 0) -> None:
+        sockets = create_sockets(self.bind_options, retry=retry, sd_listen=POSIX and not OSX)
         self.sockets += sockets
 
     def init_local_sockets(self, opts, display_name: str, clobber: bool) -> None:

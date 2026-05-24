@@ -32,6 +32,7 @@ from xpra.scripts.server import (
     setup_runtime_dir,
     setup_xauthority,
     start_server_vfb,
+    update_session_dir_for_display,
     write_initial_session_files,
 )
 
@@ -227,14 +228,12 @@ class TestMain(unittest.TestCase):
     def test_start_server_vfb_noop_for_proxy(self):
         result = start_server_vfb(SimpleNamespace(displayfd="7"), "proxy", ":100", ":100", False, (), "", None,
                                   "/tmp", os.getuid(), os.getgid(), "test", {}, None, False, True,
-                                  False, False, "", "/session", "/log", lambda *_args: "",
+                                  False, False, "", lambda *_args: "",
                                   lambda *_args: None, lambda *_args: None)
         assert result.xvfb is None
         assert result.xvfb_pid == 0
         assert result.devices == {}
         assert result.display_name == ":100"
-        assert result.session_dir == "/session"
-        assert result.log_dir == "/log"
         assert result.xvfb_cmd == ()
         assert result.displayfd == 7
 
@@ -245,7 +244,7 @@ class TestMain(unittest.TestCase):
             result = start_server_vfb(SimpleNamespace(displayfd="not-an-int"),
                                       "proxy", ":100", ":100", False, (), "", None,
                                       "/tmp", os.getuid(), os.getgid(), "test", {}, None, False, True,
-                                      False, False, "", "/session", "/log", lambda *_args: "",
+                                      False, False, "", lambda *_args: "",
                                       lambda *_args: None, lambda *_args: None)
         assert result.displayfd == 0
         assert "Error: invalid displayfd 'not-an-int':" in stderr.getvalue()
@@ -253,7 +252,7 @@ class TestMain(unittest.TestCase):
     def test_set_vfb_startup_state(self):
         state_calls = []
         displayfd_calls = []
-        state = VFBStartResult(None, 123, {}, ":42", "/session", "/log", ("Xvfb",), 7)
+        state = VFBStartResult(None, 123, {}, ":42", ("Xvfb",), 7)
         display = SimpleNamespace(set_vfb_startup_state=state_calls.append,
                                   publish_displayfd=lambda display_name, fd: displayfd_calls.append((display_name, fd)))
         app = SimpleNamespace(get_subsystem=lambda name: display if name == "display" else None)
@@ -276,7 +275,7 @@ class TestMain(unittest.TestCase):
 
     def test_x11_display_startup_state_publishes_vfb_pid(self):
         from xpra.x11.subsystem.display import X11DisplayManager
-        state = VFBStartResult(None, 123, {}, ":42", "/session", "/log", ("Xvfb",), 7)
+        state = VFBStartResult(None, 123, {}, ":42", ("Xvfb",), 7)
         display = X11DisplayManager.__new__(X11DisplayManager)
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("XVFB_PID", None)
@@ -291,12 +290,27 @@ class TestMain(unittest.TestCase):
         from xpra.exit_codes import ExitCode
         from xpra.scripts.config import InitExit
         from xpra.x11.subsystem.display import X11DisplayManager
-        state = VFBStartResult(object(), 123, {}, ":42", "/session", "/log", ("Xvfb",), 7)
+        state = VFBStartResult(object(), 123, {}, ":42", ("Xvfb",), 7)
         display = X11DisplayManager.__new__(X11DisplayManager)
         with patch("xpra.x11.subsystem.display.check_xvfb", return_value=False):
             with self.assertRaises(InitExit) as e:
                 X11DisplayManager.set_vfb_startup_state(display, state)
         assert e.exception.status == ExitCode.NO_DISPLAY
+
+    def test_update_session_dir_for_display(self):
+        with tempfile.TemporaryDirectory() as sessions_dir:
+            session_dir = setup_session_dir("seamless", sessions_dir, "S123", os.getuid(), os.getgid())
+            save_session_file("cmdline", "xpra\n")
+            with patch.dict(os.environ, {"XPRA_SESSION_DIR": session_dir}, clear=False):
+                new_session_dir, log_dir = update_session_dir_for_display(
+                    "seamless", sessions_dir, "auto", "S123", ":42", session_dir, session_dir, os.getuid(),
+                    lambda *_args: None,
+                )
+                assert os.environ["XPRA_SESSION_DIR"] == new_session_dir
+            assert new_session_dir == os.path.join(sessions_dir, "42")
+            assert log_dir == new_session_dir
+            with open(os.path.join(new_session_dir, "cmdline"), encoding="utf8") as f:
+                assert f.read() == "xpra\n"
 
     def test_make_server_app(self):
         opts = SimpleNamespace(backend="x11")

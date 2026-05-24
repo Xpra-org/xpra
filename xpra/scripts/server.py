@@ -569,76 +569,8 @@ def write_initial_session_files(uid: int, gid: int, run_xpra_script: str,
 
 
 def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str, session_dir: str) -> str:
-    if not (start_vfb or log_to_file):
-        return log_dir
-    if not log_dir or log_dir.lower() == "auto":
-        log_dir = session_dir
-    # This is used by Xdummy for the Xorg log file.
-    if "XPRA_LOG_DIR" not in os.environ:
-        os.environ["XPRA_LOG_DIR"] = log_dir
-    return log_dir
-
-
-def redirect_server_log(log_to_file: bool, log_dir: str, log_file: str, display_name: str,
-                        username: str, uid: int, gid: int, root: bool,
-                        extra_expand: dict[str, str], stdout, stderr) -> tuple[str, Any, Any]:
-    if not log_to_file:
-        os.environ.pop("XPRA_SERVER_LOG", None)
-        return "", stdout, stderr
-
-    from xpra.util.daemon import redirect_std_to_log, select_log_file, open_log_file
-    log_filename = osexpand(select_log_file(log_dir, log_file, display_name),
-                            username, uid, gid, extra_expand)
-    if os.path.exists(log_filename) and not display_name.startswith("S"):
-        # Don't overwrite the log file just yet, as we may still fail to start.
-        log_filename += ".new"
-    logfd = open_log_file(log_filename)
-    if POSIX:
-        os.fchmod(logfd, 0o640)
-        if root and (uid > 0 or gid > 0):
-            try:
-                os.fchown(logfd, uid, gid)
-            except OSError as e:
-                noerr(stderr.write, f"failed to chown the log file {log_filename!r}\n")
-                noerr(stderr.write, f" {e!r}\n")
-                noerr(stderr.flush)
-    stdout, stderr = redirect_std_to_log(logfd)
-    noerr(stderr.write, f"Entering daemon mode; any further errors will be reported to:\n  {log_filename!r}\n")
-    noerr(stderr.flush)
-    os.environ["XPRA_SERVER_LOG"] = log_filename
-    return log_filename, stdout, stderr
-
-
-def finalize_server_log(daemon: bool, log_dir: str, log_file: str, old_display_name: str,
-                        display_name: str, session_dir: str, log_filename: str,
-                        username: str, uid: int, gid: int, extra_expand: dict[str, str],
-                        stdout, stderr) -> None:
-    if WIN32 and os.environ.get("XPRA_LOG_FILENAME"):
-        os.environ["XPRA_SERVER_LOG"] = os.environ["XPRA_LOG_FILENAME"]
-    if not daemon:
-        return
-    if old_display_name != display_name:
-        # This may be used by scripts, let's try not to change it.
-        noerr(stderr.write, f"Actual display used: {display_name}\n")
-        noerr(stderr.flush)
-    from xpra.util.daemon import select_log_file
-    new_log_filename = osexpand(select_log_file(log_dir, log_file, display_name),
-                                username, uid, gid, extra_expand)
-    if log_filename != new_log_filename:
-        if not os.path.exists(log_filename) and os.path.exists(new_log_filename) and new_log_filename.startswith(
-                session_dir):  # noqa: E501
-            # The session dir was renamed with the log file inside it.
-            pass
-        else:
-            try:
-                os.rename(log_filename, new_log_filename)
-            except OSError:
-                pass
-        os.environ["XPRA_SERVER_LOG"] = new_log_filename
-        noerr(stderr.write, f"Actual log file name is now: {new_log_filename!r}\n")
-        noerr(stderr.flush)
-    noerr(stdout.close)
-    noerr(stderr.close)
+    from xpra.server.subsystem.daemon import DaemonServer
+    return DaemonServer.get_server_log_dir(start_vfb, log_to_file, log_dir, session_dir)
 
 
 def setup_xauthority(display_name: str, username: str, uid: int, gid: int, root: bool,
@@ -707,8 +639,6 @@ class VFBStartResult:
     xvfb_pid: int
     devices: dict
     display_name: str
-    session_dir: str
-    log_dir: str
     xvfb_cmd: tuple[str, ...] = ()
     displayfd: int = 0
 
@@ -966,8 +896,7 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
                      xvfb_cmd: Sequence[str], xauth_data: str, xauthority: str | None,
                      cwd: str, uid: int, gid: int, username: str, protected_env: dict,
                      pam, shadowing: bool, proxying: bool, encoder: bool,
-                     runner: bool, starting: str,
-                     session_dir: str, log_dir: str, write_session_file: Callable,
+                     runner: bool, starting: str, write_session_file: Callable,
                      progress: Callable, log) -> VFBStartResult:
     xvfb = None
     xvfb_pid = 0
@@ -982,7 +911,7 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
             del e
     result_cmd = tuple(xvfb_cmd)
     if not POSIX or proxying or encoder or runner:
-        return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir, result_cmd, displayfd)
+        return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
 
     create_input_devices = noop
     uinput_uuid_len = 0
@@ -1036,24 +965,6 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
         if display_name != old_display_name:
             if pam:
                 pam.set_items({"XDISPLAY": display_name})
-            if session_dir:
-                new_session_dir = get_session_dir(mode, opts.sessions_dir, display_name, uid)
-                if new_session_dir != session_dir:
-                    try:
-                        if os.path.exists(new_session_dir):
-                            for sess_e in os.listdir(session_dir):
-                                os.rename(os.path.join(session_dir, sess_e), os.path.join(new_session_dir, sess_e))
-                            os.rmdir(session_dir)
-                        else:
-                            os.rename(session_dir, new_session_dir)
-                    except OSError as e:
-                        log.error("Error moving the session directory")
-                        log.error(f" from {session_dir!r} to {new_session_dir!r}")
-                        log.error(f" {e}")
-                    session_dir = new_session_dir
-                    if not opts.log_dir or opts.log_dir.lower() == "auto":
-                        log_dir = session_dir
-                    os.environ["XPRA_SESSION_DIR"] = new_session_dir
     elif not OSX and not shadowing and not proxying:
         try:
             xvfb_pid = int(load_session_file("xvfb.pid") or 0)
@@ -1064,7 +975,32 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
             uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
     if uinput_uuid:
         devices = create_input_devices(uinput_uuid, uid) or {}
-    return VFBStartResult(xvfb, xvfb_pid, devices, display_name, session_dir, log_dir, result_cmd, displayfd)
+    return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
+
+
+def update_session_dir_for_display(mode: str, sessions_dir: str, log_dir_option: str,
+                                   old_display_name: str, display_name: str,
+                                   session_dir: str, log_dir: str, uid: int, log) -> tuple[str, str]:
+    if display_name == old_display_name or not session_dir:
+        return session_dir, log_dir
+    new_session_dir = get_session_dir(mode, sessions_dir, display_name, uid)
+    if new_session_dir == session_dir:
+        return session_dir, log_dir
+    try:
+        if os.path.exists(new_session_dir):
+            for sess_e in os.listdir(session_dir):
+                os.rename(os.path.join(session_dir, sess_e), os.path.join(new_session_dir, sess_e))
+            os.rmdir(session_dir)
+        else:
+            os.rename(session_dir, new_session_dir)
+    except OSError as e:
+        log.error("Error moving the session directory")
+        log.error(f" from {session_dir!r} to {new_session_dir!r}")
+        log.error(f" {e}")
+    if not log_dir_option or log_dir_option.lower() == "auto":
+        log_dir = new_session_dir
+    os.environ["XPRA_SESSION_DIR"] = new_session_dir
+    return new_session_dir, log_dir
 
 
 def set_vfb_startup_state(app, state: VFBStartResult) -> None:
@@ -1279,26 +1215,36 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             get_logger().warn(f"Warning: bind-rdp sockets cannot be used with {mode!r} mode")
             opts.bind_rdp = []
 
-    extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
-    log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "") == "1"
-    log_dir = get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
-    stdout = sys.stdout
-    stderr = sys.stderr
-    log_filename0, stdout, stderr = redirect_server_log(log_to_file, log_dir, opts.log_file, display_name,
-                                                        username, uid, gid, ROOT, extra_expand, stdout, stderr)
-    from xpra.log import Logger
-    log = Logger("server")
-    log("env=%s", os.environ)
-
     from xpra.server.features import set_server_features
     set_server_features(opts, mode)
 
+    progress(30, "initializing server")
+    from xpra.log import Logger
+    log = Logger("server")
+    try:
+        app = make_server_app(mode_attrs, opts, clobber, mode, display_name)
+    except ImportError as e:
+        log("failed to make server class", exc_info=True)
+        log.error("Error: the server cannot be started,")
+        log.error(" some critical component is missing:")
+        log.estr(e)
+        return ExitCode.COMPONENT_MISSING
+
+    stdout = sys.stdout
+    stderr = sys.stderr
+    daemon = app.get_subsystem("daemon")
+    log_to_file = opts.daemon or envbool("XPRA_LOG_TO_FILE")
+    if daemon:
+        extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
+        log_dir = daemon.setup_log(opts.daemon, start_vfb, log_to_file, opts.log_dir or "", opts.log_file,
+                                   display_name, session_dir, username, uid, gid, ROOT, extra_expand, stdout, stderr)
+    else:
+        log_dir = get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
+    log("env=%s", os.environ)
+
     progress(30, "creating network sockets")
-    from xpra.net.socket_util import parse_bind_options, create_sockets, check_ssh_upgrades
-    opts.ssh_upgrade = check_ssh_upgrades(opts.ssh_upgrade)
-    retry = 10 * int(mode.startswith("upgrade"))
-    bind_options = parse_bind_options(opts)
-    sockets = create_sockets(bind_options, retry=retry, sd_listen=POSIX and not OSX)
+    app.parse_socket_options(opts)
+    app.init_sockets(retry=10 * int(upgrading))
 
     # Start the Xvfb server first to get the display_name if needed
     odisplay_name = display_name
@@ -1315,33 +1261,24 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     vfb_result = start_server_vfb(opts, mode, display_name, odisplay_name, start_vfb, xvfb_cmd,
                                   xauth_data, xauthority, cwd, uid, gid, username, protected_env,
                                   pam, shadowing, proxying, encoder, runner, starting,
-                                  session_dir, log_dir, write_session_file, progress, log)
+                                  write_session_file, progress, log)
     display_name = vfb_result.display_name
-    session_dir = vfb_result.session_dir
-    log_dir = vfb_result.log_dir
-
-    finalize_server_log(opts.daemon, log_dir, opts.log_file, odisplay_name, display_name, session_dir,
-                        log_filename0, username, uid, gid, extra_expand, stdout, stderr)
+    session_dir, log_dir = update_session_dir_for_display(mode, opts.sessions_dir, opts.log_dir or "",
+                                                          odisplay_name, display_name,
+                                                          session_dir, log_dir, uid, log)
+    if daemon:
+        daemon.update_log_dir(log_dir)
+        daemon.display_name_changed(display_name)
     # we should not be using stdout or stderr from this point on:
     del stdout
     del stderr
 
-    progress(40, "initializing server")
-    try:
-        app = make_server_app(mode_attrs, opts, clobber, mode, display_name)
-    except ImportError as e:
-        log("failed to make server class", exc_info=True)
-        log.error("Error: the server cannot be started,")
-        log.error(" some critical component is missing:")
-        log.estr(e)
-        return ExitCode.COMPONENT_MISSING
     app.protected_env = protected_env
     # do this one early - because we want to change uid as early as possible:
     from xpra.server.subsystem.process import ProcessServer
     process = app.add_subsystem(ProcessServer)
     process.init(opts)
     process.setup()
-    opts.chdir = process.chdir
     app.init_subsystems()
 
     def server_not_started(msg="server not started") -> None:
@@ -1357,7 +1294,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         app.cleanup()
 
     try:
-        app.exec_cwd = opts.chdir or cwd
         set_vfb_startup_state(app, vfb_result)
         if splash := app.get_subsystem("splash"):
             splash.splash_process = splash_process
@@ -1366,7 +1302,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         app.init(opts)
         progress(60, "creating local sockets")
         app.init_local_sockets(opts, display_name, clobber)
-        app.init_sockets(sockets)
         progress(90, "finalizing")
         app.setup()
         init_virtual_devices(app, vfb_result.devices)
