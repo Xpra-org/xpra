@@ -27,6 +27,7 @@ from xpra.scripts.server import (
     resolve_server_display_name,
     sanitize_dbus_env,
     set_vfb_startup_state,
+    setup_session_dir,
     setup_pam_session,
     setup_runtime_dir,
     setup_xauthority,
@@ -44,14 +45,19 @@ class TestMain(unittest.TestCase):
 
     def test_write_initial_session_files(self):
         with tempfile.TemporaryDirectory() as sessions_dir, patch.dict(os.environ, {}, clear=False):
-            session_dir = write_initial_session_files("seamless", sessions_dir, ":42", os.getuid(), os.getgid(),
-                                                      None, "SERVER_ENV=1", ("xpra", "start", ":42"))
+            session_dir = setup_session_dir("seamless", sessions_dir, ":42", os.getuid(), os.getgid())
+            write_initial_session_files(os.getuid(), os.getgid(), None, "SERVER_ENV=1", ("xpra", "start", ":42"))
             assert session_dir == os.path.join(sessions_dir, "42")
             assert os.environ["XPRA_SESSION_DIR"] == session_dir
             with open(os.path.join(session_dir, "server.env"), encoding="utf8") as f:
                 assert f.read() == "SERVER_ENV=1"
             with open(os.path.join(session_dir, "cmdline"), encoding="utf8") as f:
                 assert f.read() == "xpra\nstart\n:42\n"
+
+    def test_write_initial_session_files_requires_session_dir(self):
+        with patch.dict(os.environ, {}, clear=True):
+            write_initial_session_files(os.getuid(), os.getgid(), None, "SERVER_ENV=1", ("xpra", "start", ":42"))
+            assert "XPRA_SESSION_DIR" not in os.environ
 
     def test_get_server_log_dir(self):
         with patch.dict(os.environ, {}, clear=False):

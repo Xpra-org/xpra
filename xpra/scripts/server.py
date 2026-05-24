@@ -549,11 +549,14 @@ def get_splash_progress(mode: str, daemon: bool, splash: bool, display: str) -> 
     return splash_process, progress
 
 
-def write_initial_session_files(mode: str, sessions_dir: str, display_name: str,
-                                uid: int, gid: int, run_xpra_script: str,
-                                env_script: str, cmdline: Sequence[str]) -> str:
+def setup_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int, gid: int) -> str:
     session_dir = make_session_dir(mode, sessions_dir, display_name, uid, gid)
     os.environ["XPRA_SESSION_DIR"] = session_dir
+    return session_dir
+
+
+def write_initial_session_files(uid: int, gid: int, run_xpra_script: str,
+                                env_script: str, cmdline: Sequence[str]) -> None:
     if run_xpra_script:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
@@ -563,7 +566,6 @@ def write_initial_session_files(mode: str, sessions_dir: str, display_name: str,
     if env_script:
         save_session_file("server.env", env_script, uid, gid)
     save_session_file("cmdline", "\n".join(cmdline) + "\n", uid, gid)
-    return session_dir
 
 
 def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str, session_dir: str) -> str:
@@ -1244,8 +1246,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         os.environ.pop("DISPLAY", None)
     os.environ.update(protected_env)
 
-    session_dir = write_initial_session_files(mode, opts.sessions_dir, display_name, uid, gid,
-                                              run_xpra_script, env_script, cmdline)
+    session_dir = setup_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
     if upgrading:
         # if we had saved the start / start-desktop config, reload it:
         mode = apply_config(opts, mode, cmdline)
@@ -1254,19 +1255,16 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         if mode.startswith("start-"):
             mode = mode.removeprefix("start-")
 
+    write_initial_session_files(uid, gid, run_xpra_script, env_script, cmdline)
     write_session_file("config", get_options_file_contents(opts, mode))
-
-    extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
-    log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "") == "1"
-    log_dir = get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
-    stdout = sys.stdout
-    stderr = sys.stderr
-    log_filename0, stdout, stderr = redirect_server_log(log_to_file, log_dir, opts.log_file, display_name,
-                                                        username, uid, gid, ROOT, extra_expand, stdout, stderr)
 
     # warn early about this:
     if starting in ("seamless", "desktop") and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
+    add_desktop_greeter(opts, starting, use_display)
+    # make sure we don't start ibus in these modes:
+    if POSIX and not OSX and (upgrading or shadowing):
+        opts.input_method = "keep"
 
     if start_vfb and opts.sync_xvfb is None and any(xvfb_cmd[0].find(x) >= 0 for x in ("Xephyr", "Xnest")):
         # automatically enable sync-xvfb for Xephyr and Xnest:
@@ -1281,6 +1279,17 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             get_logger().warn(f"Warning: bind-rdp sockets cannot be used with {mode!r} mode")
             opts.bind_rdp = []
 
+    extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
+    log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "") == "1"
+    log_dir = get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
+    stdout = sys.stdout
+    stderr = sys.stderr
+    log_filename0, stdout, stderr = redirect_server_log(log_to_file, log_dir, opts.log_file, display_name,
+                                                        username, uid, gid, ROOT, extra_expand, stdout, stderr)
+    from xpra.log import Logger
+    log = Logger("server")
+    log("env=%s", os.environ)
+
     from xpra.server.features import set_server_features
     set_server_features(opts, mode)
 
@@ -1290,15 +1299,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     retry = 10 * int(mode.startswith("upgrade"))
     bind_options = parse_bind_options(opts)
     sockets = create_sockets(bind_options, retry=retry, sd_listen=POSIX and not OSX)
-
-    from xpra.log import Logger
-    log = Logger("server")
-    log("env=%s", os.environ)
-
-    add_desktop_greeter(opts, starting, use_display)
-    # make sure we don't start ibus in these modes:
-    if POSIX and not OSX and (upgrading or shadowing):
-        opts.input_method = "keep"
 
     # Start the Xvfb server first to get the display_name if needed
     odisplay_name = display_name
