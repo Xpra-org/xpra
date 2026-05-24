@@ -981,6 +981,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     clobber = int(upgrading) * CLOBBER_UPGRADE | int(use_display or 0) * CLOBBER_USE_DISPLAY
     start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
     xauth_data: str = get_hex_uuid() if start_vfb else ""
+    if start_vfb and opts.sync_xvfb is None and any(x in opts.xvfb for x in ("Xephyr", "Xnest")):
+        # automatically enable sync-xvfb for Xephyr and Xnest:
+        opts.sync_xvfb = 50
 
     pam, pam_protected_env = setup_pam_session(display_name, xauth_data, uid)
     if pam_protected_env:
@@ -1010,12 +1013,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     session_dir = setup_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
     if upgrading:
         # if we had saved the start / start-desktop config, reload it:
-        mode = apply_config(opts, mode, cmdline)
-        if mode.startswith("upgrade-"):
-            mode = mode.removeprefix("upgrade-")
-        if mode.startswith("start-"):
-            mode = mode.removeprefix("start-")
-        opts.mode = mode
+        opts.mode = mode = apply_config(opts, mode, cmdline).removeprefix("upgrade-").removeprefix("start-")
 
     # warn early about this:
     if starting in ("seamless", "desktop", "monitor") and desktop_display and opts.notifications and not opts.dbus_launch:
@@ -1024,10 +1022,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     # make sure we don't start ibus in these modes:
     if POSIX and not OSX and (upgrading or shadowing):
         opts.input_method = "keep"
-
-    if start_vfb and opts.sync_xvfb is None and any(x in opts.xvfb for x in ("Xephyr", "Xnest")):
-        # automatically enable sync-xvfb for Xephyr and Xnest:
-        opts.sync_xvfb = 50
 
     from xpra.server.features import set_server_features
     set_server_features(opts, mode)
