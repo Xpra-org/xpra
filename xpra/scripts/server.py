@@ -30,7 +30,6 @@ from xpra.scripts.common import no_gtk
 from xpra.scripts.main import (
     nox,
     validate_encryption, parse_env,
-    make_progress_process,
 )
 from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
 from xpra.scripts.sessions import get_xpra_sessions
@@ -59,7 +58,6 @@ from xpra.util.child_reaper import get_child_reaper
 from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
-PROGRESS_TO_STDERR = envbool("XPRA_PROGRESS_TO_STDERR", False)
 SYSTEM_DBUS_SOCKET = "/run/dbus/system_bus_socket"
 
 
@@ -409,42 +407,8 @@ def apply_config(opts, mode: str, cmdline: list[str]) -> str:
 
 
 def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str) -> bool:
-    if daemon:
-        # daemon mode would have problems with the pipes
-        return False
-    if splash in (True, False):
-        return splash
-    # auto mode, figure out if we should show it:
-    if os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT"):
-        # don't show the splash screen over SSH forwarding
-        return False
-    xdisplay = os.environ.get("DISPLAY", "")
-    if xdisplay:
-        # make sure that the display isn't the one we're running against,
-        # unless we're shadowing it
-        return xdisplay != display or mode.startswith("shadow")
-    if mode in ("proxy", "encoder", "runner"):
-        return False
-    if os.environ.get("XDG_SESSION_DESKTOP"):
-        return True
-    if not POSIX:
-        return True
-    return False
-
-
-MODE_TO_NAME: dict[str, str] = {
-    "seamless": "Seamless",
-    "desktop": "Desktop",
-    "monitor": "Monitor",
-    "expand": "Expand",
-    "upgrade": "Upgrade",
-    "upgrade-seamless": "Seamless Upgrade",
-    "upgrade-desktop": "Desktop Upgrade",
-    "upgrade-monitor": "Monitor Upgrade",
-    "shadow": "Shadow",
-    "shadow-screen": "Shadow Screen",
-    "proxy": "Proxy",
-}
+    from xpra.server.subsystem.splash import is_splash_enabled as splash_enabled
+    return splash_enabled(mode, daemon, splash, display)
 
 
 def request_exit(uri: str) -> bool:
@@ -515,35 +479,6 @@ def start_cupsd() -> None:
                 warn("cupsd failed to start\n")
             else:
                 warn("started system cupsd daemon\n")
-
-
-def get_splash_progress(mode: str, daemon: bool, splash: bool, display: str) -> tuple[Popen | None, Callable]:
-    # this should be moved to the SplashServer class,
-    # once we initialize servers earlier
-    progress: Callable[[int, str], None] = noop
-    splash_process = None
-    use_stderr = PROGRESS_TO_STDERR
-    if is_splash_enabled(mode, daemon, splash, display):
-        # use splash screen to show server startup progress:
-        mode_str = MODE_TO_NAME.get(mode, "").split(" Upgrade")[0]
-        title = f"Xpra {mode_str} Server {__version__}"
-        splash_process = make_progress_process(title)
-        if splash_process:
-            progress = splash_process.progress
-            from atexit import register
-
-            def progress_exit() -> None:
-                progress(100, "exiting")
-            register(progress_exit)
-        else:
-            use_stderr = True
-    if progress == noop and use_stderr:
-        def progress_to_stderr(*args) -> None:
-            stderr_print(" ".join(str(x) for x in args))
-
-        progress = progress_to_stderr
-    progress(10, "initializing environment")
-    return splash_process, progress
 
 
 def setup_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int, gid: int) -> str:
@@ -973,6 +908,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         raise ValueError(f"unsupported server mode {mode}")
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
+    opts.mode = mode
     mode_attrs: dict[str, str] = {}
     if len(mode_parts) > 1:
         mode_attrs = parse_str_dict(mode_parts[1])
@@ -1044,8 +980,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                                                  proxying, encoder, use_display, error_cb)
     display_name = display_result.display_name
     display_options = display_result.display_options
-
-    splash_process, progress = get_splash_progress(mode, opts.daemon, opts.splash, display_name)
 
     if upgrading:
         if not display_name:
@@ -1123,6 +1057,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             mode = mode.removeprefix("upgrade-")
         if mode.startswith("start-"):
             mode = mode.removeprefix("start-")
+        opts.mode = mode
 
     write_initial_session_files(uid, gid, run_xpra_script, env_script, cmdline)
     write_session_file("config", get_options_file_contents(opts, mode))
@@ -1151,7 +1086,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     from xpra.server.features import set_server_features
     set_server_features(opts, mode)
 
-    progress(30, "initializing server")
     from xpra.log import Logger
     log = Logger("server")
     try:
@@ -1163,6 +1097,15 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         log.estr(e)
         return ExitCode.COMPONENT_MISSING
 
+    if splash := app.get_subsystem("splash"):
+        splash.init(opts)
+        splash.setup_splash(display_name)
+
+    def progress(pct: int, msg: str) -> None:
+        if splash := app.get_subsystem("splash"):
+            splash.progress(pct, msg)
+
+    progress(30, "initializing server")
     daemon = app.get_subsystem("daemon")
     log_to_file = opts.daemon or envbool("XPRA_LOG_TO_FILE")
     if daemon:
@@ -1218,8 +1161,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     try:
         set_vfb_startup_state(app, vfb_result)
-        if splash := app.get_subsystem("splash"):
-            splash.splash_process = splash_process
         app.display_options = display_options
         app.original_desktop_display = desktop_display
         app.init(opts)
