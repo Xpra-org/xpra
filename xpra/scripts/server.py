@@ -834,7 +834,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
             os.environ["XDG_RUNTIME_DIR"] = xrd
         if not OSX:
             os.environ["XDG_SESSION_TYPE"] = "x11"
-        if not starting_desktop:
+        if not (starting_desktop or starting_monitor):
             os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
     if display_name[0] != "S":
         os.environ["DISPLAY"] = display_name
@@ -910,14 +910,14 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         os.environ.pop("XPRA_SERVER_LOG", None)
 
     # warn early about this:
-    if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
+    if (starting or starting_desktop or starting_monitor) and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
     if start_vfb and opts.sync_xvfb is None and any(xvfb_cmd[0].find(x) >= 0 for x in ("Xephyr", "Xnest")):
         # automatically enable sync-xvfb for Xephyr and Xnest:
         opts.sync_xvfb = 50
 
-    if not (shadowing or starting_desktop or upgrading_desktop or upgrading_monitor):
+    if not (shadowing or starting_desktop or starting_monitor or upgrading_desktop or upgrading_monitor):
         opts.rfb_upgrade = 0
         if opts.bind_rfb:
             get_logger().warn(f"Warning: bind-rfb sockets cannot be used with {mode!r} mode")
