@@ -605,6 +605,15 @@ class ServerCore(GLibServer):
         from xpra.scripts.main import validate_encryption
         validate_encryption(opts)
         opts.ssh_upgrade = check_ssh_upgrades(opts.ssh_upgrade)
+        if opts.mode not in ("shadow", "desktop", "monitor"):
+            opts.rfb_upgrade = 0
+            if opts.bind_rfb:
+                log.warn(f"Warning: bind-rfb sockets cannot be used with {opts.mode!r} mode")
+                opts.bind_rfb = ()
+            if opts.bind_rdp:
+                log.warn(f"Warning: bind-rdp sockets cannot be used with {opts.mode!r} mode")
+                opts.bind_rdp = ()
+
         self.bind_options = parse_bind_options(opts)
 
     def init_sockets(self, retry: int = 0) -> None:

@@ -1029,15 +1029,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         # automatically enable sync-xvfb for Xephyr and Xnest:
         opts.sync_xvfb = 50
 
-    if not (shadowing or mode in ("desktop", "monitor")):
-        opts.rfb_upgrade = 0
-        if opts.bind_rfb:
-            get_logger().warn(f"Warning: bind-rfb sockets cannot be used with {mode!r} mode")
-            opts.bind_rfb = []
-        if opts.bind_rdp:
-            get_logger().warn(f"Warning: bind-rdp sockets cannot be used with {mode!r} mode")
-            opts.bind_rdp = []
-
     from xpra.server.features import set_server_features
     set_server_features(opts, mode)
 
