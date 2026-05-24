@@ -30,7 +30,6 @@ from xpra.scripts.server import (
     setup_session_dir,
     setup_pam_session,
     setup_runtime_dir,
-    setup_xauthority,
     start_server_vfb,
     update_session_dir_for_display,
     write_initial_session_files,
@@ -217,13 +216,17 @@ class TestMain(unittest.TestCase):
         warn.assert_called_once_with("server for :42 is not exiting")
 
     def test_setup_xauthority_reuses_session_file(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        session_files = SimpleNamespace(write_session_file=lambda *_args: self.fail("existing xauthority must not be rewritten"))
+        xvfb = XvfbManager(SimpleNamespace(subsystems={"session-files": session_files}))
+        xvfb.uid = os.getuid()
+        xvfb.gid = os.getgid()
+        xvfb.username = "test"
         with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:
             with patch.dict(os.environ, {"XPRA_SESSION_DIR": session_dir}, clear=False):
                 os.environ.pop("XAUTHORITY", None)
                 save_session_file("xauthority", xauth_file.name)
-                xauthority = setup_xauthority(":42", "test", os.getuid(), os.getgid(), False,
-                                              lambda *_args: self.fail("existing xauthority must not be rewritten"),
-                                              lambda *_args: None)
+                xauthority = xvfb.setup_xauthority(":42", False, lambda *_args: None)
                 assert xauthority == xauth_file.name
                 assert os.environ["XAUTHORITY"] == xauth_file.name
 
@@ -304,10 +307,11 @@ class TestMain(unittest.TestCase):
             session_dir = setup_session_dir("seamless", sessions_dir, "S123", os.getuid(), os.getgid())
             save_session_file("cmdline", "xpra\n")
             with patch.dict(os.environ, {"XPRA_SESSION_DIR": session_dir}, clear=False):
-                new_session_dir, log_dir = update_session_dir_for_display(
+                log_dir = update_session_dir_for_display(
                     "seamless", sessions_dir, "auto", "S123", ":42", session_dir, session_dir, os.getuid(),
                     lambda *_args: None,
                 )
+                new_session_dir = os.environ["XPRA_SESSION_DIR"]
                 assert os.environ["XPRA_SESSION_DIR"] == new_session_dir
             assert new_session_dir == os.path.join(sessions_dir, "42")
             assert log_dir == new_session_dir

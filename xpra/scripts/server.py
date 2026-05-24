@@ -7,7 +7,6 @@
 # pylint: disable=import-outside-toplevel
 
 import sys
-import glob
 import shlex
 import os.path
 import datetime
@@ -39,7 +38,6 @@ from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
     OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
-    xvfb_command,
 )
 from xpra.common import noerr, noop
 from xpra.net.common import BACKWARDS_COMPATIBLE
@@ -54,14 +52,13 @@ from xpra.os_util import (
 )
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr, csv
-from xpra.util.io import is_writable, stderr_print
+from xpra.util.io import stderr_print
 from xpra.util.env import unsetenv, envbool, envint, osexpand, get_saved_env, get_saved_env_var, source_env, \
     OSEnvContext
 from xpra.util.child_reaper import get_child_reaper
 from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
-SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
 PROGRESS_TO_STDERR = envbool("XPRA_PROGRESS_TO_STDERR", False)
 SYSTEM_DBUS_SOCKET = "/run/dbus/system_bus_socket"
 
@@ -574,67 +571,6 @@ def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str, session
     return DaemonServer.get_server_log_dir(start_vfb, log_to_file, log_dir)
 
 
-def setup_xauthority(display_name: str, username: str, uid: int, gid: int,
-                     shadowing: bool, write_session_file: Callable[[str, str], str], log) -> str:
-    from xpra.x11.vfb_util import get_xauthority_path, valid_xauth
-    root = POSIX and getuid() == 0
-    xauthority = valid_xauth((load_session_file("xauthority")).decode(), uid, gid)
-    if xauthority:
-        os.environ["XAUTHORITY"] = xauthority
-        return xauthority
-
-    if SHARED_XAUTHORITY:
-        # Re-using this value is not always safe, but users expect commands
-        # such as `DISPLAY=:10 xterm` to work in most cases.
-        xauthority = os.environ.get("XAUTHORITY", "")
-    if shadowing and not valid_xauth(xauthority, uid, gid):
-        # Look for xauth files in magic directories, see ticket #3917.
-        xauth_time = 0.0
-        candidates = (
-            "/tmp/xauth*",
-            "/tmp/.Xauth*",
-            "/var/run/*dm/xauth*",
-            "/var/run/lightdm/$USER/xauthority",
-            "$XDG_RUNTIME_DIR/xauthority",
-            "$XDG_RUNTIME_DIR/Xauthority",
-            "$XDG_RUNTIME_DIR/gdm/xauthority",
-            "$XDG_RUNTIME_DIR/gdm/Xauthority",
-        )
-        for globstr in candidates:
-            for filename in glob.glob(osexpand(globstr, actual_username=username, uid=uid, gid=gid)):
-                if not os.path.isfile(filename):
-                    continue
-                try:
-                    stat_info = os.stat(filename)
-                except OSError:
-                    continue
-                if not root and stat_info.st_uid != uid:
-                    continue
-                if xauth_time == 0.0 or stat_info.st_mtime > xauth_time:
-                    xauthority = filename
-                    xauth_time = stat_info.st_mtime
-    if not valid_xauth(xauthority, uid, gid):
-        xauthority = get_xauthority_path(display_name)
-        xauthority = osexpand(xauthority, actual_username=username, uid=uid, gid=gid)
-    assert xauthority
-    if not os.path.exists(xauthority):
-        if os.path.islink(xauthority):
-            # broken symlink
-            os.unlink(xauthority)
-        log(f"creating XAUTHORITY file {xauthority!r}")
-        with open(xauthority, "ab") as xauth_file:
-            os.fchmod(xauth_file.fileno(), 0o640)
-            if root and (uid != 0 or gid != 0):
-                os.fchown(xauth_file.fileno(), uid, gid)
-    elif not is_writable(xauthority, uid, gid) and not root:
-        log(f"chmoding XAUTHORITY file {xauthority!r}")
-        os.chmod(xauthority, 0o640)
-    write_session_file("xauthority", xauthority)
-    log(f"using XAUTHORITY file {xauthority!r}")
-    os.environ["XAUTHORITY"] = xauthority
-    return xauthority
-
-
 @dataclass
 class VFBStartResult:
     xvfb: Popen | None
@@ -982,12 +918,12 @@ def start_server_vfb(opts, mode: str, display_name: str, old_display_name: str, 
 
 def update_session_dir_for_display(mode: str, sessions_dir: str, log_dir_option: str,
                                    old_display_name: str, display_name: str,
-                                   session_dir: str, log_dir: str, uid: int, log) -> tuple[str, str]:
+                                   session_dir: str, log_dir: str, uid: int, log) -> str:
     if display_name == old_display_name or not session_dir:
-        return session_dir, log_dir
+        return log_dir
     new_session_dir = get_session_dir(mode, sessions_dir, display_name, uid)
     if new_session_dir == session_dir:
-        return session_dir, log_dir
+        return log_dir
     try:
         if os.path.exists(new_session_dir):
             for sess_e in os.listdir(session_dir):
@@ -1002,7 +938,7 @@ def update_session_dir_for_display(mode: str, sessions_dir: str, log_dir_option:
     if not log_dir_option or log_dir_option.lower() == "auto":
         log_dir = new_session_dir
     os.environ["XPRA_SESSION_DIR"] = new_session_dir
-    return new_session_dir, log_dir
+    return log_dir
 
 
 def set_vfb_startup_state(app, state: VFBStartResult) -> None:
@@ -1160,10 +1096,6 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     xrd = runtime_dir_result.xrd
     protected_env = runtime_dir_result.protected_env
 
-    xvfb_cmd: list[str] = []
-    if start_vfb:
-        xvfb_cmd = xvfb_command(opts.xvfb, opts.pixel_depth, opts.dpi)
-
     sanitize_env()
     if not shadowing:
         os.environ.pop("WAYLAND_DISPLAY", None)
@@ -1179,7 +1111,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         os.environ["DISPLAY"] = display_name
         if POSIX:
             os.environ["CKCON_X11_DISPLAY"] = display_name
-    elif not start_vfb or xvfb_cmd[0].find("Xephyr") < 0:
+    elif not start_vfb or "Xephyr" not in opts.xvfb:
         os.environ.pop("DISPLAY", None)
     os.environ.update(protected_env)
 
@@ -1203,7 +1135,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     if POSIX and not OSX and (upgrading or shadowing):
         opts.input_method = "keep"
 
-    if start_vfb and opts.sync_xvfb is None and any(xvfb_cmd[0].find(x) >= 0 for x in ("Xephyr", "Xnest")):
+    if start_vfb and opts.sync_xvfb is None and any(x in opts.xvfb for x in ("Xephyr", "Xnest")):
         # automatically enable sync-xvfb for Xephyr and Xnest:
         opts.sync_xvfb = 50
 
@@ -1244,26 +1176,22 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     app.parse_socket_options(opts)
     app.init_sockets(retry=10 * int(upgrading))
 
-    # Start the Xvfb server first to get the display_name if needed
+    session_files = app.get_subsystem("session-files")
+    if session_files:
+        session_files.init(opts)
+    from xpra.server.subsystem.xvfb import XvfbManager
+    xvfb = app.add_subsystem(XvfbManager)
+    xvfb.init(opts)
     odisplay_name = display_name
-    xauthority = None
-    if POSIX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland") < 0:
-        xauthority = setup_xauthority(display_name, username, uid, gid, shadowing, write_session_file, log)
-        display_resolution = resolve_x11_display(display_name, xauthority, xauth_data, start_vfb, use_display,
-                                                 upgrading, shadowing, proxying, encoder, pam, uid, gid,
-                                                 error_cb, progress, log)
-        start_vfb = display_resolution.start_vfb
-        xauth_data = display_resolution.xauth_data
-        use_display = display_resolution.use_display
-
-    vfb_result = start_server_vfb(opts, mode, display_name, odisplay_name, start_vfb, xvfb_cmd,
-                                  xauth_data, xauthority, cwd, uid, gid, username, protected_env,
-                                  pam, shadowing, proxying, encoder, runner, starting,
-                                  write_session_file, progress, log)
+    vfb_result = xvfb.setup_vfb(mode, display_name, start_vfb, xauth_data,
+                                protected_env, pam, shadowing, proxying, encoder, runner, starting,
+                                clobber, use_display, upgrading,
+                                error_cb, progress, log)
+    use_display = xvfb.use_display
     display_name = vfb_result.display_name
-    session_dir, log_dir = update_session_dir_for_display(mode, opts.sessions_dir, opts.log_dir or "",
-                                                          odisplay_name, display_name,
-                                                          session_dir, log_dir, uid, log)
+    log_dir = update_session_dir_for_display(mode, opts.sessions_dir, opts.log_dir or "",
+                                             odisplay_name, display_name,
+                                             session_dir, log_dir, uid, log)
     if daemon:
         daemon.update_log_dir(log_dir)
         daemon.display_name_changed(display_name)

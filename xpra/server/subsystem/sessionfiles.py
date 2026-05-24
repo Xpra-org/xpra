@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.scripts.session import clean_session_files, rm_session_dir
+from xpra.scripts.session import clean_session_files, rm_session_dir, save_session_file
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -31,6 +31,9 @@ class SessionFilesServer(StubSubsystem):
             clean_session_files(*self.session_files)
             if stop:
                 rm_session_dir()
+
+    def write_session_file(self, filename: str, contents) -> str:
+        return save_session_file(filename, contents, self.uid, self.gid)
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
