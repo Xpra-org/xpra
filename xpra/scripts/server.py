@@ -11,11 +11,11 @@ import shlex
 import os.path
 import datetime
 from dataclasses import dataclass
-from typing import Any, NoReturn, Final
+from typing import NoReturn, Final
 from subprocess import Popen
-from collections.abc import Sequence, Callable
+from collections.abc import Callable
 
-from xpra.scripts.session import get_session_dir, make_session_dir, session_file_path
+from xpra.scripts.session import get_session_dir, make_session_dir
 from xpra.util.io import info, warn, wait_for_socket, which
 from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_bool_or
 from xpra.scripts.parsing import MODE_ALIAS
@@ -23,8 +23,8 @@ from xpra.scripts.main import nox, parse_env
 from xpra.scripts.sessions import get_xpra_sessions
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
-    OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
-    fixup_options, read_config, dict_to_validated_config,
+    OPTION_TYPES, CLIENT_OPTIONS,
+    fixup_options,
 )
 from xpra.common import noerr
 from xpra.net.common import BACKWARDS_COMPATIBLE
@@ -185,60 +185,6 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
         return False
     log(f"X11 display {display_name!r} is ready")
     return True
-
-
-SERVER_LOAD_SKIP_OPTIONS: Sequence[str] = (
-    "systemd-run",
-    "daemon",
-    "start",
-    "start-child",
-    "start-after-connect",
-    "start-child-after-connect",
-    "start-on-connect",
-    "start-child-on-connect",
-    "start-on-disconnect",
-    "start-child-on-disconnect",
-    "start-on-last-client-exit",
-    "start-child-on-last-client-exit",
-)
-
-
-def load_options() -> dict[str, Any]:
-    config_file = session_file_path("config")
-    return read_config(config_file)
-
-
-def apply_config(opts, mode: str, cmdline: list[str]) -> str:
-    # if we had saved the start / start-desktop config, reload it:
-    options = load_options()
-    if not options:
-        return mode
-    if mode.find("upgrade") >= 0:
-        # unspecified upgrade, try to find the original mode used:
-        mode = options.pop("mode") or mode
-    upgrade_config = dict_to_validated_config(options)
-    # apply the previous session options:
-    for k in options:
-        if k in CLIENT_ONLY_OPTIONS:
-            continue
-        if k in SERVER_LOAD_SKIP_OPTIONS:
-            continue
-        incmdline = f"--{k}" in cmdline or f"--no-{k}" in cmdline or any(c.startswith(f"--{k}=") for c in cmdline)
-        if incmdline:
-            continue
-        dtype = OPTION_TYPES.get(k)
-        if not dtype:
-            continue
-        fn = k.replace("-", "_")
-        if not hasattr(upgrade_config, fn):
-            warn(f"{k!r} not found in saved config")
-            continue
-        if not hasattr(opts, fn):
-            warn(f"{k!r} not found in config")
-            continue
-        value = getattr(upgrade_config, fn)
-        setattr(opts, fn, value)
-    return mode
 
 
 def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str) -> bool:
@@ -642,9 +588,12 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     protected_env = process.protected_env
 
     session_dir = setup_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
+    session_files = app.get_subsystem("session-files")
+    assert session_files
     if upgrading:
         # if we had saved the start / start-desktop config, reload it:
-        opts.mode = mode = apply_config(opts, mode, cmdline).removeprefix("upgrade-").removeprefix("start-")
+        session_files.apply_config(opts, cmdline)
+        opts.mode = mode = opts.mode.removeprefix("upgrade-").removeprefix("start-")
 
     if splash := app.get_subsystem("splash"):
         splash.init(opts)
@@ -656,10 +605,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     progress(30, "initializing server")
 
-    if session_files := app.get_subsystem("session-files"):
-        session_files.init(opts)
-        session_files.write_session_file("cmdline", "\n".join(cmdline) + "\n")
-        session_files.write_session_file("server.env", env_script)
+    session_files.init(opts)
+    session_files.write_session_file("cmdline", "\n".join(cmdline) + "\n")
+    session_files.write_session_file("server.env", env_script)
     if run_xpra_script:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:

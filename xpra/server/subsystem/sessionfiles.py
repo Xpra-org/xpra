@@ -8,10 +8,11 @@ from typing import Any
 from xpra import __version__
 from xpra.scripts.config import (
     OPTION_TYPES, CLIENT_ONLY_OPTIONS,
-    fixup_options, make_defaults_struct,
+    fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
 )
 from xpra.scripts.parsing import fixup_defaults
-from xpra.scripts.session import clean_session_files, rm_session_dir, save_session_file
+from xpra.scripts.session import clean_session_files, rm_session_dir, save_session_file, session_file_path
+from xpra.util.io import warn
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -21,6 +22,21 @@ log = Logger("server")
 SERVER_SAVE_SKIP_OPTIONS: tuple[str, ...] = (
     "systemd-run",
     "daemon",
+)
+
+SERVER_LOAD_SKIP_OPTIONS: tuple[str, ...] = (
+    "systemd-run",
+    "daemon",
+    "start",
+    "start-child",
+    "start-after-connect",
+    "start-child-after-connect",
+    "start-on-connect",
+    "start-child-on-connect",
+    "start-on-disconnect",
+    "start-child-on-disconnect",
+    "start-on-last-client-exit",
+    "start-child-on-last-client-exit",
 )
 
 
@@ -54,6 +70,40 @@ def get_options_file_contents(opts) -> str:
     return "\n".join(diff_contents)
 
 
+def load_options() -> dict[str, Any]:
+    config_file = session_file_path("config")
+    return read_config(config_file)
+
+
+def apply_config(opts, options: dict[str, Any], cmdline: list[str]) -> None:
+    # if we had saved the start / start-desktop config, reload it:
+    if opts.mode.find("upgrade") >= 0:
+        # unspecified upgrade, try to find the original mode used:
+        opts.mode = options.pop("mode") or opts.mode
+    upgrade_config = dict_to_validated_config(options)
+    # apply the previous session options:
+    for k in options:
+        if k in CLIENT_ONLY_OPTIONS:
+            continue
+        if k in SERVER_LOAD_SKIP_OPTIONS:
+            continue
+        incmdline = f"--{k}" in cmdline or f"--no-{k}" in cmdline or any(c.startswith(f"--{k}=") for c in cmdline)
+        if incmdline:
+            continue
+        dtype = OPTION_TYPES.get(k)
+        if not dtype:
+            continue
+        fn = k.replace("-", "_")
+        if not hasattr(upgrade_config, fn):
+            warn(f"{k!r} not found in saved config")
+            continue
+        if not hasattr(opts, fn):
+            warn(f"{k!r} not found in config")
+            continue
+        value = getattr(upgrade_config, fn)
+        setattr(opts, fn, value)
+
+
 class SessionFilesServer(StubSubsystem):
     PREFIX = "session-files"
 
@@ -83,6 +133,14 @@ class SessionFilesServer(StubSubsystem):
 
     def write_session_file(self, filename: str, contents) -> str:
         return save_session_file(filename, contents, self.uid, self.gid)
+
+    def load_options(self) -> dict[str, Any]:
+        return load_options()
+
+    def apply_config(self, opts, cmdline: list[str]) -> None:
+        options = self.load_options()
+        if options:
+            apply_config(opts, options, cmdline)
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
