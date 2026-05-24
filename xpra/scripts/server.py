@@ -1032,7 +1032,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         # automatically enable sync-xvfb for Xephyr and Xnest:
         opts.sync_xvfb = 50
 
-    if not (shadowing or starting == "desktop" or (upgrading and mode in ("desktop", "monitor"))):
+    if not (shadowing or mode in ("desktop", "monitor")):
         opts.rfb_upgrade = 0
         if opts.bind_rfb:
             get_logger().warn(f"Warning: bind-rfb sockets cannot be used with {mode!r} mode")
