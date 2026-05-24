@@ -11,7 +11,7 @@ from collections.abc import Callable
 from xpra.server import features
 from xpra.util.pid import load_pid
 from xpra.util.parsing import str_to_bool
-from xpra.scripts.session import load_session_file, save_session_file
+from xpra.scripts.session import load_session_file
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -134,10 +134,10 @@ class DbusManager(StubSubsystem):
         if not self.env:
             return
         log(f"started new dbus instance: {self.env}")
-        save_session_file("dbus.pid", f"{self.pid}", self.uid, self.gid)
         dbus_env_data = "\n".join(f"{k}={v}" for k, v in self.env.items()) + "\n"
-        save_session_file("dbus.env", dbus_env_data.encode("utf8"), self.uid, self.gid)
         if sf := self.get_subsystem("session-files"):
+            sf.write_session_file("dbus.pid", f"{self.pid}")
+            sf.write_session_file("dbus.env", dbus_env_data.encode("utf8"))
             sf.session_files.extend(("dbus.pid", "dbus.env"))
         os.environ.update(self.env)
         if features.x11:

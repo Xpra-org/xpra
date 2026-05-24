@@ -351,9 +351,8 @@ class PulseaudioServer(StubSubsystem):
             return
         get_child_reaper().add_process(self.proc, "pulseaudio", cmd, ignore=True, callback=self.pulseaudio_ended)
         if self.proc:
-            from xpra.scripts.session import save_session_file
-            save_session_file("pulseaudio.pid", "%s" % self.proc.pid)
             if sf := self.get_subsystem("session-files"):
+                sf.write_session_file("pulseaudio.pid", "%s" % self.proc.pid)
                 sf.session_files.append("pulseaudio.pid")
             log.info("pulseaudio server started with pid %s", self.proc.pid)
             if self.server_socket:

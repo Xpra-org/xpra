@@ -97,7 +97,6 @@ class XvfbManager(StubSubsystem):
         xauthority = None
         session_files = self.get_subsystem("session-files")
         assert session_files
-        write_session_file = session_files.write_session_file
         if POSIX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and "wayland" not in display_name:
             xauthority = self.setup_xauthority(display_name, shadowing, log)
             start_vfb, xauth_data, use_display = self.resolve_x11_display(
@@ -110,7 +109,7 @@ class XvfbManager(StubSubsystem):
         self.use_display = use_display
         return self.start_server_vfb(display_name, old_display_name, xauthority, protected_env,
                                      pam, shadowing, proxying, encoder, runner, starting,
-                                     write_session_file, progress, log)
+                                     progress, log)
 
     def resolve_x11_display(self, display_name: str, xauthority: str, xauth_data: str,
                             start_vfb: bool, use_display: bool | None, upgrading: bool,
@@ -158,8 +157,7 @@ class XvfbManager(StubSubsystem):
 
     def start_server_vfb(self, display_name: str, old_display_name: str, xauthority: str | None,
                          protected_env: dict, pam, shadowing: bool, proxying: bool, encoder: bool,
-                         runner: bool, starting: str, write_session_file: Callable,
-                         progress: Callable, log) -> VFBStartResult:
+                         runner: bool, starting: str, progress: Callable, log) -> VFBStartResult:
         xvfb = None
         xvfb_pid = 0
         devices = {}
@@ -194,10 +192,12 @@ class XvfbManager(StubSubsystem):
             from xpra.x11.vfb_util import start_Xvfb, xauth_add
             assert not proxying and self.xauth_data
             pixel_depth = validate_pixel_depth(self.pixel_depth, starting in ("desktop", "monitor"))
+            session_files = self.get_subsystem("session-files")
             if use_uinput:
                 # This only needs to be fairly unique.
                 uinput_uuid = get_rand_chars(uinput_uuid_len).decode("latin1")
-                write_session_file("uinput-uuid", uinput_uuid)
+                if session_files:
+                    session_files.write_session_file("uinput-uuid", uinput_uuid)
             vfb_geom: tuple | None = ()
             resize = self.resize_display.lower()
             if resize not in ALL_BOOLEAN_OPTIONS and resize != "auto":
@@ -211,7 +211,9 @@ class XvfbManager(StubSubsystem):
             assert xauthority
             xauth_add(xauthority, display_name, self.xauth_data, self.uid, self.gid)
             xvfb_pid = xvfb.pid
-            xvfb_pidfile = write_session_file("xvfb.pid", str(xvfb.pid))
+            xvfb_pidfile = ""
+            if session_files:
+                xvfb_pidfile = session_files.write_session_file("xvfb.pid", str(xvfb.pid))
             log(f"saved xvfb.pid={xvfb.pid}")
 
             def xvfb_terminated() -> None:

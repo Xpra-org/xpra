@@ -227,8 +227,7 @@ class TestMain(unittest.TestCase):
         xvfb = XvfbManager(SimpleNamespace(subsystems={}))
         xvfb.displayfd = "7"
         result = xvfb.start_server_vfb(":100", ":100", None, {}, None, False, True,
-                                       False, False, "", lambda *_args: "",
-                                       lambda *_args: None, lambda *_args: None)
+                                       False, False, "", lambda *_args: None, lambda *_args: None)
         assert result.xvfb is None
         assert result.xvfb_pid == 0
         assert result.devices == {}
@@ -244,8 +243,7 @@ class TestMain(unittest.TestCase):
         with patch("sys.stderr", stderr), \
                 patch("xpra.server.subsystem.xvfb.POSIX", True):
             result = xvfb.start_server_vfb(":100", ":100", None, {}, None, False, True,
-                                           False, False, "", lambda *_args: "",
-                                           lambda *_args: None, lambda *_args: None)
+                                           False, False, "", lambda *_args: None, lambda *_args: None)
         assert result.displayfd == 0
         assert "Error: invalid displayfd 'not-an-int':" in stderr.getvalue()
 
