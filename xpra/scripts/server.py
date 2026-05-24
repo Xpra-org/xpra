@@ -16,10 +16,7 @@ from subprocess import Popen
 from collections.abc import Sequence, Callable
 
 from xpra import __version__
-from xpra.scripts.session import (
-    get_session_dir, make_session_dir, session_file_path,
-    load_session_file, save_session_file
-)
+from xpra.scripts.session import get_session_dir, make_session_dir, session_file_path, load_session_file
 from xpra.util.io import info, warn, wait_for_socket, which
 from xpra.util.parsing import (
     FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS,
@@ -901,11 +898,10 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     progress(30, "initializing server")
 
-    session_files = app.get_subsystem("session-files")
-    if session_files:
+    if session_files := app.get_subsystem("session-files"):
         session_files.init(opts)
         session_files.write_session_file("cmdline", "\n".join(cmdline) + "\n")
-        save_session_file("server.env", env_script)
+        session_files.write_session_file("server.env", env_script)
     if run_xpra_script:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
@@ -913,9 +909,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         from xpra.server.runner_script import write_runner_shell_scripts
         write_runner_shell_scripts(run_xpra_script)
 
-    daemon = app.get_subsystem("daemon")
     log_to_file = opts.daemon or envbool("XPRA_LOG_TO_FILE")
-    if daemon:
+    if daemon := app.get_subsystem("daemon"):
         extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
         log_dir = daemon.setup_log(start_vfb, log_to_file, display_name, extra_expand)
     else:
