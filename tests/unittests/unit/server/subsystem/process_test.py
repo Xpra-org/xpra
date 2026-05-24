@@ -14,9 +14,23 @@ from xpra.server.subsystem.process import ProcessServer
 
 class ProcessServerTest(unittest.TestCase):
 
+    @staticmethod
+    def make_opts(**kwargs):
+        opts = {
+            "uid": os.getuid(),
+            "gid": os.getgid(),
+            "env": (),
+            "source": (),
+            "wm_name": "",
+            "xvfb": "",
+            "chdir": "",
+        }
+        opts.update(kwargs)
+        return SimpleNamespace(**opts)
+
     def test_setup_configures_env_and_chdir(self):
         server = SimpleNamespace(protected_env={"PROTECTED": "1"})
-        opts = SimpleNamespace(uid=os.getuid(), gid=os.getgid(), env=("A=B",), chdir="/tmp")
+        opts = self.make_opts(env=("A=B",), chdir="/tmp")
         process = ProcessServer(server)
         with patch("xpra.server.subsystem.process.getuid", return_value=1), \
                 patch("xpra.server.subsystem.process.configure_env") as configure_env, \
@@ -29,7 +43,7 @@ class ProcessServerTest(unittest.TestCase):
 
     def test_setup_root_switches_user(self):
         server = SimpleNamespace(protected_env={"PROTECTED": "1"})
-        opts = SimpleNamespace(uid=1000, gid=1000, env=("A=B",), chdir="")
+        opts = self.make_opts(uid=1000, gid=1000, env=("A=B",))
         process = ProcessServer(server)
         with patch("xpra.server.subsystem.process.POSIX", True), \
                 patch("xpra.server.subsystem.process.getuid", return_value=0), \
@@ -55,7 +69,7 @@ class ProcessServerTest(unittest.TestCase):
 
     def test_get_info(self):
         server = SimpleNamespace(protected_env={})
-        opts = SimpleNamespace(uid=1000, gid=1000, env=(), chdir="/tmp")
+        opts = self.make_opts(uid=1000, gid=1000, chdir="/tmp")
         process = ProcessServer(server)
         process.init(opts)
         with patch("xpra.server.subsystem.process.POSIX", True), \
