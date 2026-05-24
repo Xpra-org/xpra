@@ -113,7 +113,7 @@ class SessionFilesServer(StubSubsystem):
         # canonical list of per-session files / glob patterns to clean up
         # at shutdown. Other subsystems append to this via `get_subsystem`.
         self.session_files: list[str] = [
-            "cmdline", "server.env", "config", "server.log*",
+            "server.log*",
             # notifications may use a TMP dir:
             "tmp/*", "tmp",
         ]
@@ -132,6 +132,8 @@ class SessionFilesServer(StubSubsystem):
                 rm_session_dir()
 
     def write_session_file(self, filename: str, contents) -> str:
+        if filename not in self.session_files:
+            self.session_files.append(filename)
         return save_session_file(filename, contents, self.uid, self.gid)
 
     def load_options(self) -> dict[str, Any]:
