@@ -12,6 +12,11 @@ from collections.abc import Callable, Mapping
 from xpra.util.env import envbool
 
 
+def get_rand_chars(length=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") -> bytes:
+    import random
+    return b"".join(chars[random.randint(0, len(chars) - 1):][:1] for _ in range(length))
+
+
 def std(v, extras="-+,./: ") -> str:
     def f(c):
         return str.isalnum(c) or c in extras

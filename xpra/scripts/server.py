@@ -20,9 +20,7 @@ from xpra.scripts.session import get_session_dir, make_session_dir, session_file
 from xpra.util.io import info, warn, wait_for_socket, which
 from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_bool_or
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
-from xpra.scripts.common import no_gtk
 from xpra.scripts.main import nox, parse_env
-from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
 from xpra.scripts.sessions import get_xpra_sessions
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
@@ -34,32 +32,16 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
 from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import (
-    POSIX, WIN32, OSX,
-    force_quit,
-    getuid,
-    get_hex_uuid,
-)
+from xpra.os_util import POSIX, WIN32, OSX, force_quit, getuid, get_hex_uuid
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr, csv
 from xpra.util.io import stderr_print
-from xpra.util.env import envbool, envint, get_saved_env, get_saved_env_var, \
-    OSEnvContext
+from xpra.util.env import envbool, envint, get_saved_env, get_saved_env_var, OSEnvContext
 from xpra.util.child_reaper import get_child_reaper
 from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 SYSTEM_DBUS_SOCKET = "/run/dbus/system_bus_socket"
-
-
-def get_logger():
-    from xpra.log import Logger
-    return Logger("util")
-
-
-def get_rand_chars(length=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") -> bytes:
-    import random
-    return b"".join(chars[random.randint(0, len(chars) - 1):][:1] for _ in range(length))
 
 
 def deadly_signal(signum, _frame=None) -> NoReturn:
@@ -72,20 +54,6 @@ def deadly_signal(signum, _frame=None) -> NoReturn:
     # signal.signal(signum, signal.SIG_DFL)
     # kill(os.getpid(), signum)
     force_quit(128 + int(signum))
-
-
-def validate_pixel_depth(pixel_depth, desktop_or_monitor=False) -> int:
-    try:
-        pixel_depth = int(pixel_depth)
-    except ValueError:
-        raise InitException(f"invalid value {pixel_depth} for pixel depth, must be a number") from None
-    if pixel_depth == 0:
-        pixel_depth = 24
-    if pixel_depth not in (8, 16, 24, 30):
-        raise InitException(f"invalid pixel depth: {pixel_depth}")
-    if not desktop_or_monitor and pixel_depth == 8:
-        raise InitException("pixel depth 8 is only supported in 'desktop' mode")
-    return pixel_depth
 
 
 def display_name_check(display_name: str) -> None:
@@ -112,7 +80,8 @@ def print_DE_warnings() -> None:
     de = os.environ.get("XDG_SESSION_DESKTOP", "") or os.environ.get("SESSION_DESKTOP", "")
     if not de:
         return
-    log = get_logger()
+    from xpra.log import Logger
+    log = Logger("server")
     log.warn(f"Warning: xpra start from an existing {de!r} desktop session")
     log.warn(" without using dbus-launch,")
     log.warn(" notifications forwarding may not work")
@@ -437,13 +406,6 @@ class VFBStartResult:
     displayfd: int = 0
 
 
-@dataclass
-class X11DisplayResolution:
-    start_vfb: bool
-    xauth_data: str
-    use_display: bool | None
-
-
 def add_desktop_greeter(opts, starting: str, use_display: bool | None) -> None:
     if not POSIX or starting != "desktop" or use_display or not DESKTOP_GREETER:
         return
@@ -550,51 +512,6 @@ def request_upgrade_display(display_name: str, session: dict) -> bool:
         return True
     warn(f"server for {display_name} is not exiting")
     return False
-
-
-def resolve_x11_display(display_name: str, xauthority: str, xauth_data: str,
-                        start_vfb: bool, use_display: bool | None, upgrading: bool,
-                        shadowing: bool, proxying: bool, encoder: bool, pam,
-                        uid: int, gid: int, error_cb: Callable, progress: Callable, log) -> X11DisplayResolution:
-    if (use_display is not None and not upgrading) or proxying or encoder:
-        return X11DisplayResolution(start_vfb, xauth_data, use_display)
-
-    # Figure out if we have to start the vfb or not.
-    # Bail out if we need a display that is not running.
-    if not display_name:
-        if upgrading:
-            error_cb("no displays found to upgrade")
-        return X11DisplayResolution(start_vfb, xauth_data, False)
-
-    progress(40, "connecting to the display")
-    no_gtk()
-    if verify_display(None, display_name, log_errors=False, timeout=1):
-        progress(40, "connected to the display")
-        return X11DisplayResolution(False, xauth_data, use_display)
-
-    stat = {}
-    if display_name.startswith(":"):
-        x11_socket_path = os.path.join(X11_SOCKET_DIR, "X" + display_name[1:])
-        stat = stat_display_socket(x11_socket_path)
-        log(f"stat_display_socket({x11_socket_path})={stat}")
-        if not stat and (upgrading or shadowing):
-            error_cb(f"cannot access display {display_name!r}")
-        # No X11 socket to connect to, so we have to start one.
-        start_vfb = True
-    if stat:
-        # We can't connect to the X11 display, but we can still stat its socket.
-        # Perhaps we need to re-add an xauth entry.
-        if not xauth_data:
-            xauth_data = get_hex_uuid()
-            if pam:
-                pam.set_items({"XAUTHDATA": xauth_data})
-        from xpra.x11.vfb_util import xauth_add
-        xauth_add(xauthority, display_name, xauth_data, uid, gid)
-        if not verify_display(None, display_name, log_errors=False, timeout=1):
-            warn(f"display {display_name!r} is not accessible")
-        else:
-            start_vfb = False
-    return X11DisplayResolution(start_vfb, xauth_data, use_display)
 
 
 def update_session_dir_for_display(mode: str, sessions_dir: str, log_dir_option: str,

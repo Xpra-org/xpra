@@ -23,7 +23,6 @@ from xpra.scripts.server import (
     is_splash_enabled,
     make_server_app,
     request_upgrade_display,
-    resolve_x11_display,
     resolve_server_display_name,
     sanitize_dbus_env,
     set_vfb_startup_state,
@@ -343,41 +342,57 @@ class TestMain(unittest.TestCase):
         assert calls == [devices]
 
     def test_resolve_x11_display_missing_upgrade(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        xvfb = XvfbManager(SimpleNamespace(subsystems={}))
+        xvfb.uid = os.getuid()
+        xvfb.gid = os.getgid()
         errors = []
-        result = resolve_x11_display("", "/xauth", "", True, None, True, False, False, False, None,
-                                     os.getuid(), os.getgid(), errors.append, lambda *_args: None,
-                                     lambda *_args: None)
-        assert result.start_vfb is True
-        assert result.xauth_data == ""
-        assert result.use_display is False
+        start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
+            "", "/xauth", "", True, None, True, False, False, False, None,
+            errors.append, lambda *_args: None, lambda *_args: None,
+        )
+        assert start_vfb is True
+        assert xauth_data == ""
+        assert use_display is False
         assert errors == ["no displays found to upgrade"]
 
     def test_resolve_x11_display_verified(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        xvfb = XvfbManager(SimpleNamespace(subsystems={}))
+        xvfb.uid = os.getuid()
+        xvfb.gid = os.getgid()
         progress = []
-        with patch("xpra.scripts.server.no_gtk") as no_gtk, \
-                patch("xpra.scripts.server.verify_display", return_value=True):
-            result = resolve_x11_display(":42", "/xauth", "abc", True, None, False, False, False, False, None,
-                                         os.getuid(), os.getgid(), self.fail, lambda *args: progress.append(args),
-                                         lambda *_args: None)
+        with patch("xpra.server.subsystem.xvfb.no_gtk") as no_gtk, \
+                patch("xpra.server.subsystem.xvfb.verify_display", return_value=True):
+            start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
+                ":42", "/xauth", "abc", True, None, False, False, False, False, None,
+                self.fail, lambda *args: progress.append(args), lambda *_args: None,
+            )
         no_gtk.assert_called_once()
-        assert result.start_vfb is False
-        assert result.xauth_data == "abc"
-        assert result.use_display is None
+        assert start_vfb is False
+        assert xauth_data == "abc"
+        assert use_display is None
         assert progress == [(40, "connecting to the display"), (40, "connected to the display")]
 
     def test_resolve_x11_display_readds_xauth(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        xvfb = XvfbManager(SimpleNamespace(subsystems={}))
+        xvfb.uid = os.getuid()
+        xvfb.gid = os.getgid()
         pam = SimpleNamespace(items=[])
         pam.set_items = pam.items.append
-        with patch("xpra.scripts.server.no_gtk"), \
-                patch("xpra.scripts.server.verify_display", side_effect=(False, True)), \
-                patch("xpra.scripts.server.stat_display_socket", return_value={"uid": os.getuid()}), \
-                patch("xpra.scripts.server.get_hex_uuid", return_value="uuid"), \
+        with patch("xpra.server.subsystem.xvfb.no_gtk"), \
+                patch("xpra.server.subsystem.xvfb.verify_display", side_effect=(False, True)), \
+                patch("xpra.server.subsystem.xvfb.stat_display_socket", return_value={"uid": os.getuid()}), \
+                patch("xpra.server.subsystem.xvfb.get_hex_uuid", return_value="uuid"), \
                 patch("xpra.x11.vfb_util.xauth_add") as xauth_add:
-            result = resolve_x11_display(":42", "/xauth", "", True, None, False, False, False, False, pam,
-                                         os.getuid(), os.getgid(), self.fail, lambda *_args: None,
-                                         lambda *_args: None)
-        assert result.start_vfb is False
-        assert result.xauth_data == "uuid"
+            start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
+                ":42", "/xauth", "", True, None, False, False, False, False, pam,
+                self.fail, lambda *_args: None, lambda *_args: None,
+            )
+        assert start_vfb is False
+        assert xauth_data == "uuid"
+        assert use_display is None
         assert pam.items == [{"XAUTHDATA": "uuid"}]
         xauth_add.assert_called_once_with("/xauth", ":42", "uuid", os.getuid(), os.getgid())
 
