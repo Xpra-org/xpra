@@ -59,9 +59,9 @@ class TestMain(unittest.TestCase):
     def test_setup_pam_session_disabled(self):
         with patch("xpra.scripts.server.POSIX", True), \
                 patch("xpra.scripts.server.envbool", return_value=False):
-            result = setup_pam_session("alice", ":42", "abc", 1000)
-        assert result.pam is None
-        assert result.protected_env == {}
+            pam, protected_env = setup_pam_session("alice", ":42", "abc", 1000)
+        assert pam is None
+        assert protected_env == {}
 
     def test_setup_pam_session(self):
         class FakePam:
@@ -92,10 +92,10 @@ class TestMain(unittest.TestCase):
                 patch("xpra.scripts.server.POSIX", True), \
                 patch("xpra.scripts.server.envbool", return_value=True):
             os.environ.pop("PAM_ENV", None)
-            result = setup_pam_session("alice", ":42", "abc", 1000)
+            pam, protected_env = setup_pam_session("alice", ":42", "abc", 1000)
             assert os.environ["PAM_ENV"] == "1"
-        assert result.pam is fake_pam
-        assert result.protected_env == {"PAM_ENV": "1"}
+        assert pam is fake_pam
+        assert protected_env == {"PAM_ENV": "1"}
         assert fake_pam.env == {
             "XDG_SESSION_TYPE": "x11",
             "XDG_SESSION_DESKTOP": "xpra",
@@ -105,10 +105,11 @@ class TestMain(unittest.TestCase):
     def test_setup_runtime_dir_from_env_options(self):
         with patch("xpra.scripts.server.getuid", return_value=0), \
                 patch("xpra.scripts.server.create_runtime_dir", return_value="/tmp/xpra-runtime") as create_runtime_dir:
-            result = setup_runtime_dir(("XDG_RUNTIME_DIR=/tmp/xpra-runtime",), 1000, 1000, {"PAM_ENV": "1"})
+            xrd, protected_env = setup_runtime_dir(("XDG_RUNTIME_DIR=/tmp/xpra-runtime",), 1000, 1000,
+                                                   {"PAM_ENV": "1"})
         create_runtime_dir.assert_called_once_with("/tmp/xpra-runtime", 1000, 1000)
-        assert result.xrd == "/tmp/xpra-runtime"
-        assert result.protected_env == {
+        assert xrd == "/tmp/xpra-runtime"
+        assert protected_env == {
             "PAM_ENV": "1",
             "XDG_RUNTIME_DIR": "/tmp/xpra-runtime",
         }
@@ -117,10 +118,10 @@ class TestMain(unittest.TestCase):
         with patch.dict(os.environ, {"XDG_RUNTIME_DIR": "/tmp/fallback-runtime"}, clear=False), \
                 patch("xpra.scripts.server.getuid", return_value=0), \
                 patch("xpra.scripts.server.create_runtime_dir", return_value="/tmp/fallback-runtime") as create_runtime_dir:
-            result = setup_runtime_dir(("XDG_RUNTIME_DIR=/run/unsafe",), 1000, 1000, {})
+            xrd, protected_env = setup_runtime_dir(("XDG_RUNTIME_DIR=/run/unsafe",), 1000, 1000, {})
         create_runtime_dir.assert_called_once_with("/tmp/fallback-runtime", 1000, 1000)
-        assert result.xrd == "/tmp/fallback-runtime"
-        assert result.protected_env == {"XDG_RUNTIME_DIR": "/tmp/fallback-runtime"}
+        assert xrd == "/tmp/fallback-runtime"
+        assert protected_env == {"XDG_RUNTIME_DIR": "/tmp/fallback-runtime"}
 
     def make_greeter_opts(self):
         return SimpleNamespace(
@@ -170,20 +171,20 @@ class TestMain(unittest.TestCase):
     def test_resolve_server_display_name_with_options(self):
         opts = SimpleNamespace(sessions_dir="/sessions", socket_dir="/socket", socket_dirs=())
         with patch("xpra.scripts.server.display_name_check") as display_name_check:
-            result = resolve_server_display_name(opts, [":42,DP-1"], "", False, False, False, False,
-                                                 False, False, False, self.fail)
-        assert result.display_name == ":42"
-        assert result.display_options == "DP-1"
+            display_name, display_options = resolve_server_display_name(opts, [":42,DP-1"], "", False, False,
+                                                                        False, False, False, False, False, self.fail)
+        assert display_name == ":42"
+        assert display_options == "DP-1"
         display_name_check.assert_called_once_with(":42")
 
     def test_resolve_server_display_name_proxy(self):
         opts = SimpleNamespace(sessions_dir="/sessions", socket_dir="/socket", socket_dirs=())
         dotxpra = SimpleNamespace(sockets=lambda: [("LIVE", ":1000")])
         with patch("xpra.scripts.server.DotXpra", return_value=dotxpra):
-            result = resolve_server_display_name(opts, [], "", False, False, False, False,
-                                                 True, False, None, self.fail)
-        assert result.display_name == ":1001"
-        assert result.display_options == ""
+            display_name, display_options = resolve_server_display_name(opts, [], "", False, False, False, False,
+                                                                        True, False, None, self.fail)
+        assert display_name == ":1001"
+        assert display_options == ""
 
     def test_request_upgrade_display(self):
         with patch("xpra.scripts.server.request_exit", return_value=True) as request_exit, \

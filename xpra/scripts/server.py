@@ -510,25 +510,7 @@ class X11DisplayResolution:
     use_display: bool | None
 
 
-@dataclass
-class PamStartupResult:
-    pam: Any
-    protected_env: dict
-
-
-@dataclass
-class RuntimeDirResult:
-    xrd: str
-    protected_env: dict
-
-
-@dataclass
-class DisplayNameResult:
-    display_name: str
-    display_options: str = ""
-
-
-def setup_pam_session(username: str, display_name: str, xauth_data: str, uid: int) -> PamStartupResult:
+def setup_pam_session(username: str, display_name: str, xauth_data: str, uid: int) -> tuple[Any, dict]:
     # if pam is present, try to create a new session:
     pam = None
     root = POSIX and getuid() == 0
@@ -566,11 +548,11 @@ def setup_pam_session(username: str, display_name: str, xauth_data: str, uid: in
                 # atexit.register(pam.close)
                 protected_env = pam.get_envlist()
                 os.environ.update(protected_env)
-                return PamStartupResult(pam, protected_env)
-    return PamStartupResult(pam, {})
+                return pam, protected_env
+    return pam, {}
 
 
-def setup_runtime_dir(opts_env: Sequence[str], uid: int, gid: int, protected_env: dict) -> RuntimeDirResult:
+def setup_runtime_dir(opts_env: Sequence[str], uid: int, gid: int, protected_env: dict) -> tuple[str, dict]:
     # get XDG_RUNTIME_DIR from env options,
     # which may not have updated os.environ yet when running as root with "--uid="
     root = POSIX and getuid() == 0
@@ -596,7 +578,7 @@ def setup_runtime_dir(opts_env: Sequence[str], uid: int, gid: int, protected_env
         # this may override the value we get from pam
         # with the value supplied by the user:
         protected_env["XDG_RUNTIME_DIR"] = xrd
-    return RuntimeDirResult(xrd, protected_env)
+    return xrd, protected_env
 
 
 def add_desktop_greeter(opts, starting: str, use_display: bool | None) -> None:
@@ -641,7 +623,7 @@ def sanitize_dbus_env(dbus: str) -> None:
 def resolve_server_display_name(opts, extra_args: list[str], desktop_display: str,
                                 shadowing: bool, expanding: bool, runner: bool,
                                 upgrading: bool, proxying: bool, encoder: bool,
-                                use_display: bool | None, error_cb: Callable) -> DisplayNameResult:
+                                use_display: bool | None, error_cb: Callable) -> tuple[str, str]:
     display_options = ""
     if (shadowing or expanding or runner) and not extra_args:
         if runner:
@@ -687,7 +669,7 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
                 # We will try to find one automatically
                 # Use the temporary magic value "S" as marker:
                 display_name = "S" + str(os.getpid())
-    return DisplayNameResult(display_name, display_options)
+    return display_name, display_options
 
 
 def request_upgrade_display(display_name: str, session: dict) -> bool:
@@ -962,11 +944,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         warn(" you should just use 'start' instead")
 
     # get the display name:
-    display_result = resolve_server_display_name(opts, extra_args, desktop_display,
-                                                 shadowing, expanding, runner, upgrading,
-                                                 proxying, encoder, use_display, error_cb)
-    display_name = display_result.display_name
-    display_options = display_result.display_options
+    display_name, display_options = resolve_server_display_name(opts, extra_args, desktop_display,
+                                                                shadowing, expanding, runner, upgrading,
+                                                                proxying, encoder, use_display, error_cb)
 
     if upgrading:
         if not display_name:
@@ -1005,14 +985,11 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
     xauth_data: str = get_hex_uuid() if start_vfb else ""
 
-    pam_result = setup_pam_session(username, display_name, xauth_data, uid)
-    pam = pam_result.pam
-    if pam_result.protected_env:
-        protected_env = pam_result.protected_env
+    pam, pam_protected_env = setup_pam_session(username, display_name, xauth_data, uid)
+    if pam_protected_env:
+        protected_env = pam_protected_env
 
-    runtime_dir_result = setup_runtime_dir(opts.env, uid, gid, protected_env)
-    xrd = runtime_dir_result.xrd
-    protected_env = runtime_dir_result.protected_env
+    xrd, protected_env = setup_runtime_dir(opts.env, uid, gid, protected_env)
 
     sanitize_env()
     if not shadowing:
