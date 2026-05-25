@@ -554,6 +554,14 @@ class SeamlessWindowServer(WindowServer):
         if update_geometry:
             win._update_client_geometry()
 
+    def get_info(self, proto) -> dict[str, Any]:
+        info = super().get_info(proto)
+        info.setdefault("window", {}).update({
+            "focused": self._has_focus,
+            "grabbed": self._has_grab,
+        })
+        return info
+
     def get_window_info(self, window) -> dict[str, Any]:
         info = super().get_window_info(window)
         info |= {
