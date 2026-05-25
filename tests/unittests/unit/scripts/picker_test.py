@@ -18,14 +18,7 @@ from xpra.scripts.picker import (
 )
 from xpra.net.constants import SocketState
 from xpra.scripts.config import InitException, InitExit
-
-
-def _error_cb(msg):
-    raise InitException(msg)
-
-
-def _noop_error_cb(msg):
-    pass
+from xpra.exit_codes import ExitCode
 
 
 def _make_opts(socket_dir="/tmp", socket_dirs=(), system_proxy_socket=""):
@@ -48,31 +41,33 @@ class TestSingleDisplayMatch(unittest.TestCase):
 
     def test_single_live_server(self):
         dir_servers = {"/tmp": [self._srv(SocketState.LIVE, ":10", "/tmp/xpra/:10")]}
-        sockdir, name, path = single_display_match(dir_servers, _error_cb)
+        sockdir, name, path = single_display_match(dir_servers)
         self.assertEqual(name, ":10")
         self.assertEqual(path, "/tmp/xpra/:10")
 
-    def test_no_servers_calls_error_cb(self):
-        with self.assertRaises(InitException):
-            single_display_match({}, _error_cb)
+    def test_no_servers_raises(self):
+        with self.assertRaises(InitExit) as e:
+            single_display_match({})
+        self.assertEqual(e.exception.status, ExitCode.SERVER_NOT_FOUND)
 
     def test_multiple_servers_same_display_picks_first(self):
         dir_servers = {
             "/tmp": [self._srv(SocketState.LIVE, ":10", "/tmp/a")],
             "/run": [self._srv(SocketState.LIVE, ":10", "/run/b")],
         }
-        sockdir, name, path = single_display_match(dir_servers, _error_cb)
+        sockdir, name, path = single_display_match(dir_servers)
         self.assertEqual(name, ":10")
 
-    def test_multiple_servers_different_displays_calls_error_cb(self):
+    def test_multiple_servers_different_displays_raises(self):
         dir_servers = {
             "/tmp": [
                 self._srv(SocketState.LIVE, ":10", "/tmp/a"),
                 self._srv(SocketState.LIVE, ":11", "/tmp/b"),
             ]
         }
-        with self.assertRaises(InitException):
-            single_display_match(dir_servers, _error_cb)
+        with self.assertRaises(InitExit) as e:
+            single_display_match(dir_servers)
+        self.assertEqual(e.exception.status, ExitCode.ARGUMENT_MISMATCH)
 
     def test_proxy_ignored_when_real_exists(self):
         dir_servers = {
@@ -81,42 +76,44 @@ class TestSingleDisplayMatch(unittest.TestCase):
                 self._srv(SocketState.LIVE, ":10", "/tmp/real"),
             ]
         }
-        sockdir, name, path = single_display_match(dir_servers, _error_cb)
+        sockdir, name, path = single_display_match(dir_servers)
         self.assertEqual(name, ":10")
 
     def test_unknown_state_used_when_no_live(self):
         dir_servers = {"/tmp": [self._srv(SocketState.UNKNOWN, ":10", "/tmp/xpra/:10")]}
-        sockdir, name, path = single_display_match(dir_servers, _error_cb)
+        sockdir, name, path = single_display_match(dir_servers)
         self.assertEqual(name, ":10")
 
     def test_custom_nomatch_message(self):
         try:
-            single_display_match({}, _error_cb, nomatch="custom error")
-        except InitException as e:
+            single_display_match({}, nomatch="custom error")
+        except InitExit as e:
+            self.assertEqual(e.status, ExitCode.SERVER_NOT_FOUND)
             self.assertIn("custom error", str(e))
 
 
 class TestPickVncDisplay(unittest.TestCase):
     def test_explicit_display_number(self):
-        result = pick_vnc_display(_error_cb, "vnc:5")
+        result = pick_vnc_display("vnc:5")
         self.assertEqual(result["display"], ":5")
         self.assertEqual(result["port"], 5905)
         self.assertEqual(result["host"], "localhost")
         self.assertEqual(result["type"], "tcp")
 
     def test_display_zero(self):
-        result = pick_vnc_display(_error_cb, "vnc:0")
+        result = pick_vnc_display("vnc:0")
         self.assertEqual(result["port"], 5900)
 
     def test_invalid_display_number(self):
-        with self.assertRaises(ValueError):
-            pick_vnc_display(_error_cb, "vnc:abc")
+        with self.assertRaises(InitExit) as e:
+            pick_vnc_display("vnc:abc")
+        self.assertEqual(e.exception.status, ExitCode.ARGUMENT_MISMATCH)
 
     def test_no_display_scans_ports(self):
-        # error_cb is called when no open ports are found; use a no-op to allow return {}
         with patch("xpra.scripts.picker.os.path.exists", return_value=False):
-            result = pick_vnc_display(_noop_error_cb, "vnc")
-        self.assertEqual(result, {})
+            with self.assertRaises(InitExit) as e:
+                pick_vnc_display("vnc")
+        self.assertEqual(e.exception.status, ExitCode.NO_DISPLAY)
 
     def test_no_display_finds_open_port(self):
         mock_sock = MagicMock()
@@ -128,7 +125,7 @@ class TestPickVncDisplay(unittest.TestCase):
             orig = su.socket_connect
             su.socket_connect = lambda *a, **kw: mock_sock
             try:
-                result = pick_vnc_display(_error_cb, "vnc")
+                result = pick_vnc_display("vnc")
             finally:
                 su.socket_connect = orig
         self.assertEqual(result.get("type"), "vnc")
@@ -146,7 +143,7 @@ class TestDoPickDisplay(unittest.TestCase):
         dotxpra = self._mock_dotxpra(dir_servers)
         opts = _make_opts()
         with patch("xpra.scripts.picker._DotXpra", return_value=dotxpra):
-            result = do_pick_display(_error_cb, opts, [])
+            result = do_pick_display(opts, [])
         self.assertEqual(result["display"], ":10")
         self.assertEqual(result["type"], "socket")
 
@@ -154,23 +151,25 @@ class TestDoPickDisplay(unittest.TestCase):
         dotxpra = self._mock_dotxpra({})
         opts = _make_opts()
         with patch("xpra.scripts.picker._DotXpra", return_value=dotxpra):
-            with self.assertRaises(InitException):
-                do_pick_display(_error_cb, opts, [])
+            with self.assertRaises(InitExit) as e:
+                do_pick_display(opts, [])
+        self.assertEqual(e.exception.status, ExitCode.SERVER_NOT_FOUND)
 
     def test_no_args_root_falls_back_to_proxy_socket(self):
         dotxpra = self._mock_dotxpra({})
         opts = _make_opts(system_proxy_socket="/run/xpra/proxy")
         with patch("xpra.scripts.picker._DotXpra", return_value=dotxpra), \
              patch("xpra.scripts.picker.getuid", return_value=0):
-            result = do_pick_display(_error_cb, opts, [])
+            result = do_pick_display(opts, [])
         self.assertEqual(result["display"], ":PROXY")
 
-    def test_too_many_args_calls_error_cb(self):
+    def test_too_many_args_raises(self):
         dotxpra = self._mock_dotxpra({})
         opts = _make_opts()
         with patch("xpra.scripts.picker._DotXpra", return_value=dotxpra):
-            with self.assertRaises((InitException, AssertionError)):
-                do_pick_display(_error_cb, opts, [":1", ":2"])
+            with self.assertRaises(InitExit) as e:
+                do_pick_display(opts, [":1", ":2"])
+        self.assertEqual(e.exception.status, ExitCode.ARGUMENT_MISMATCH)
 
     def test_single_arg_calls_parse_display_name(self):
         opts = _make_opts()
@@ -178,7 +177,7 @@ class TestDoPickDisplay(unittest.TestCase):
         dotxpra = self._mock_dotxpra({})
         with patch("xpra.scripts.picker._DotXpra", return_value=dotxpra), \
              patch("xpra.scripts.picker.parse_display_name", return_value=fake_desc) as mock_pdn:
-            result = do_pick_display(_error_cb, opts, ["tcp://host:10000"])
+            result = do_pick_display(opts, ["tcp://host:10000"])
         mock_pdn.assert_called_once()
         self.assertEqual(result, fake_desc)
 
@@ -187,22 +186,22 @@ class TestPickDisplay(unittest.TestCase):
     def test_vnc_arg_dispatches_to_pick_vnc(self):
         vnc_desc = {"type": "tcp", "host": "localhost", "port": 5905}
         with patch("xpra.scripts.picker.pick_vnc_display", return_value=vnc_desc) as mock_vnc:
-            result = pick_display(_error_cb, _make_opts(), ["vnc:5"])
-        mock_vnc.assert_called_once_with(_error_cb, "vnc:5")
+            result = pick_display(_make_opts(), ["vnc:5"])
+        mock_vnc.assert_called_once_with("vnc:5")
         self.assertEqual(result, vnc_desc)
 
     def test_vnc_empty_falls_through_to_do_pick(self):
         fake_desc = {"type": "socket", "display": ":10"}
         with patch("xpra.scripts.picker.pick_vnc_display", return_value={}), \
              patch("xpra.scripts.picker.do_pick_display", return_value=fake_desc) as mock_do:
-            result = pick_display(_error_cb, _make_opts(), ["vnc"])
+            result = pick_display(_make_opts(), ["vnc"])
         mock_do.assert_called_once()
         self.assertEqual(result, fake_desc)
 
     def test_non_vnc_goes_to_do_pick(self):
         fake_desc = {"type": "socket", "display": ":10"}
         with patch("xpra.scripts.picker.do_pick_display", return_value=fake_desc) as mock_do:
-            pick_display(_error_cb, _make_opts(), [":10"])
+            pick_display(_make_opts(), [":10"])
         mock_do.assert_called_once()
 
 
@@ -270,7 +269,7 @@ class TestGetSockpath(unittest.TestCase):
         return dotxpra
 
     def test_explicit_socket_path(self):
-        result = get_sockpath({"socket_path": "/tmp/mysock", "display": ":10"}, _error_cb)
+        result = get_sockpath({"socket_path": "/tmp/mysock", "display": ":10"})
         self.assertEqual(result, "/tmp/mysock")
 
     def test_finds_socket_via_dotxpra(self):
@@ -279,7 +278,7 @@ class TestGetSockpath(unittest.TestCase):
         desc = {"display": ":10", "socket_dir": "/tmp", "socket_dirs": []}
         with patch("xpra.scripts.picker._DotXpra", return_value=dotxpra), \
              patch("xpra.scripts.picker.get_username_for_uid", return_value="user"):
-            result = get_sockpath(desc, _error_cb, timeout=0)
+            result = get_sockpath(desc, timeout=0)
         self.assertEqual(result, "/tmp/xpra/:10")
 
     def test_dead_socket_no_timeout_raises(self):
@@ -287,8 +286,9 @@ class TestGetSockpath(unittest.TestCase):
         desc = {"display": ":10", "socket_dir": "/tmp", "socket_dirs": []}
         with patch("xpra.scripts.picker._DotXpra", return_value=dotxpra), \
              patch("xpra.scripts.picker.get_username_for_uid", return_value="user"):
-            with self.assertRaises(InitException):
-                get_sockpath(desc, _error_cb, timeout=0)
+            with self.assertRaises(InitExit) as e:
+                get_sockpath(desc, timeout=0)
+        self.assertEqual(e.exception.status, ExitCode.SERVER_NOT_FOUND)
 
     def test_dead_socket_with_timeout_waits(self):
         # After "waiting", the socket becomes LIVE
@@ -302,7 +302,7 @@ class TestGetSockpath(unittest.TestCase):
              patch("xpra.scripts.picker.get_username_for_uid", return_value="user"), \
              patch("xpra.scripts.picker.monotonic", side_effect=[0.0, 0.0, 100.0]), \
              patch("xpra.scripts.picker.time.sleep"):
-            result = get_sockpath(desc, _error_cb, timeout=1)
+            result = get_sockpath(desc, timeout=1)
         self.assertEqual(result, "/tmp/xpra/:10")
 
 

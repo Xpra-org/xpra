@@ -208,7 +208,7 @@ class TestParseDisplayNameSocket(unittest.TestCase):
         if WIN32:
             return
         opts = _make_opts()
-        desc = parse_display_name(lambda msg: None, opts, "@mysocket")
+        desc = parse_display_name(opts, "@mysocket")
         self.assertEqual(desc["type"], "socket")
         self.assertTrue(desc["local"])
         self.assertIn("socket_path", desc)
@@ -218,7 +218,7 @@ class TestParseDisplayNameSsh(unittest.TestCase):
 
     def test_ssh_without_display(self):
         opts = _make_opts()
-        desc = parse_display_name(lambda msg: None, opts, "ssh://somehost")
+        desc = parse_display_name(opts, "ssh://somehost")
         self.assertEqual(desc["type"], "ssh")
         self.assertEqual(desc["host"], "somehost")
         # no display specified → no "display" key in desc
@@ -226,7 +226,7 @@ class TestParseDisplayNameSsh(unittest.TestCase):
 
     def test_ssh_with_display(self):
         opts = _make_opts()
-        desc = parse_display_name(lambda msg: None, opts, "ssh://somehost/10")
+        desc = parse_display_name(opts, "ssh://somehost/10")
         self.assertEqual(desc["type"], "ssh")
         self.assertEqual(desc["host"], "somehost")
         self.assertEqual(desc.get("display"), "10")
@@ -247,7 +247,7 @@ class TestParseDisplayNameVsock(unittest.TestCase):
         vsock_mod = self._mock_vsock()
         with patch.dict(sys.modules, {"xpra.net.vsock.vsock": vsock_mod}):
             opts = _make_opts()
-            desc = parse_display_name(lambda msg: None, opts, "vsock://3:5000")
+            desc = parse_display_name(opts, "vsock://3:5000")
         self.assertEqual(desc["type"], "vsock")
         cid, port = desc["vsock"]
         self.assertEqual(cid, 3)
@@ -257,7 +257,7 @@ class TestParseDisplayNameVsock(unittest.TestCase):
         vsock_mod = self._mock_vsock()
         with patch.dict(sys.modules, {"xpra.net.vsock.vsock": vsock_mod}):
             opts = _make_opts()
-            desc = parse_display_name(lambda msg: None, opts, "vsock://3")
+            desc = parse_display_name(opts, "vsock://3")
         self.assertEqual(desc["type"], "vsock")
         _cid, port = desc["vsock"]
         self.assertEqual(port, vsock_mod.PORT_ANY)
@@ -284,7 +284,7 @@ class TestParseDisplayNameHyperV(unittest.TestCase):
         with patch.dict(sys.modules, {"xpra.net.common": common_mock}):
             with patch.multiple(_socket, **socket_patches, create=True):
                 opts = _make_opts()
-                desc = parse_display_name(lambda msg: None, opts, "hyperv://loopback:20000")
+                desc = parse_display_name(opts, "hyperv://loopback:20000")
         self.assertEqual(desc["type"], "hyperv")
         vmid, service = desc["hyperv"]
         self.assertIsNotNone(vmid)

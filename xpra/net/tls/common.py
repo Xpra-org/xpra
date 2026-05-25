@@ -9,7 +9,7 @@ from typing import Sequence, NoReturn
 
 from xpra.common import noerr
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.scripts.config import InitException, InitExit
+from xpra.scripts.config import InitExit
 
 SSL_VERIFY_EXPIRED = 10
 SSL_VERIFY_WRONG_HOST = 20
@@ -56,16 +56,12 @@ def get_ssl_logger():
     return logger
 
 
-def _error_handler(*args) -> NoReturn:
-    raise InitException(*args)
-
-
 def get_remote_proxy_command_output(options, args: list[str], cmdline: list[str], subcommand="setup-ssl") -> tuple[dict, bytes]:
     if len(args) != 1:
         raise InitExit(ExitCode.FAILURE, "a single optional argument may be specified")
     arg = args[0]
     from xpra.scripts.parsing import parse_display_name
-    disp = parse_display_name(_error_handler, options, arg, cmdline)
+    disp = parse_display_name(options, arg, cmdline)
     if disp.get("type", "") != "ssh":
         raise InitExit(ExitCode.FAILURE, "argument must be an ssh URL")
     disp["display_as_args"] = []
@@ -75,6 +71,7 @@ def get_remote_proxy_command_output(options, args: list[str], cmdline: list[str]
     util.LOG_EOF = False
 
     def ssh_fail(*_args) -> NoReturn:
+        import sys
         sys.exit(int(ExitCode.SSH_FAILURE))
 
     def ssh_log(*args) -> None:

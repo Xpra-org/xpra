@@ -13,17 +13,16 @@ import time
 from math import ceil
 from time import monotonic
 from subprocess import Popen, PIPE, TimeoutExpired
-from collections.abc import Callable
 from typing import Any
 
-from xpra.exit_codes import ExitValue
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import getuid, get_username_for_uid, WIN32
 from xpra.util.io import warn
 from xpra.util.str_fn import csv, sort_human
 from xpra.util.env import envint
 from xpra.net.constants import SocketState
 from xpra.log import Logger
-from xpra.scripts.config import InitException, InitInfo
+from xpra.scripts.config import InitException, InitInfo, InitExit
 
 # pylint: disable=import-outside-toplevel
 
@@ -160,11 +159,11 @@ def run_list_sessions(args, options) -> ExitValue:
     return 0
 
 
-def run_list(error_cb: Callable, opts, extra_args, clean: bool = True) -> ExitValue:
+def run_list(opts, extra_args, clean: bool = True) -> ExitValue:
     from xpra.scripts.common import no_gtk
     no_gtk()
     if extra_args:
-        error_cb("too many arguments for `list` mode")
+        raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list` mode")
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
     results = dotxpra.socket_details()
@@ -251,11 +250,11 @@ def exec_and_parse(subcommand="id", display="") -> dict[str, str]:
     return d
 
 
-def run_list_windows(error_cb: Callable, opts, extra_args) -> ExitValue:
+def run_list_windows(opts, extra_args) -> ExitValue:
     from xpra.scripts.common import no_gtk
     no_gtk()
     if extra_args:
-        error_cb("too many arguments for `list-windows` mode")
+        raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list-windows` mode")
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     displays = dotxpra.displays()
@@ -302,11 +301,11 @@ def run_list_windows(error_cb: Callable, opts, extra_args) -> ExitValue:
     return 0
 
 
-def run_list_clients(error_cb: Callable, opts, extra_args) -> ExitValue:
+def run_list_clients(opts, extra_args) -> ExitValue:
     from xpra.scripts.common import no_gtk
     no_gtk()
     if extra_args:
-        error_cb("too many arguments for `list-windows` mode")
+        raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list-windows` mode")
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(sockdirs=opts.client_socket_dirs)
     results = dotxpra.socket_details()

@@ -175,7 +175,7 @@ class RemoteServerAdapter(baseclass):
         try:
             self.connecting = True
             opts = make_defaults_struct()
-            desc = parse_display_name(ValueError, opts, uri)
+            desc = parse_display_name(opts, uri)
             if "timeout" not in desc:
                 desc["timeout"] = self.server_socket_timeout
             desc["quiet"] = True

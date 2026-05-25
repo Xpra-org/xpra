@@ -9,9 +9,11 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
 from xpra.exit_codes import ExitValue
+from xpra.exit_codes import ExitCode
+from xpra.scripts.config import InitExit
 
 
-def run_list_mdns(error_cb, extra_args) -> ExitValue:
+def run_list_mdns(extra_args) -> ExitValue:
     from xpra.scripts.common import no_gtk
     no_gtk()
     mdns_wait = 5
@@ -21,12 +23,12 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
         except (IndexError, ValueError):
             pass
     else:
-        error_cb("too many arguments for `list-mdns` mode")
+        raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list-mdns` mode")
     from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
     try:
         from xpra.net.mdns.zeroconf_listener import ZeroconfListener
     except ImportError:
-        error_cb("'list-mdns' requires python-zeroconf")
+        raise InitExit(ExitCode.COMPONENT_MISSING, "'list-mdns' requires python-zeroconf") from None
     from xpra.dbus.common import loop_init
     GLib = gi_import("GLib")
     loop_init()

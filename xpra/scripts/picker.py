@@ -76,14 +76,14 @@ def find_session_by_name(opts, session_name: str) -> str:
     return f"socket://{socket_path}"
 
 
-def pick_vnc_display(error_cb, vnc_arg: str) -> dict[str, Any]:
+def pick_vnc_display(vnc_arg: str) -> dict[str, Any]:
     assert vnc_arg.startswith("vnc")
     display = vnc_arg.split("vnc", 1)[1]
     if display.lstrip(":"):
         try:
             display_no = int(display.lstrip(":"))
         except (ValueError, TypeError):
-            raise ValueError(f"invalid vnc display number {display!r}") from None
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, f"invalid vnc display number {display!r}") from None
         return {
             "display": f":{display_no}",
             "display_name": display,
@@ -112,8 +112,7 @@ def pick_vnc_display(error_cb, vnc_arg: str) -> dict[str, Any]:
                 "display": f":{i}",
                 "display_name": f":{i}",
             }
-    error_cb("cannot find vnc displays yet")
-    return {}
+    raise InitExit(ExitCode.NO_DISPLAY, "cannot find vnc displays yet")
 
 
 def pick_shadow_display(args, uid=getuid(), gid=getgid(), sessions_dir="") -> str:
@@ -131,22 +130,27 @@ def pick_shadow_display(args, uid=getuid(), gid=getgid(), sessions_dir="") -> st
     return guess_display(None, uid, gid, sessions_dir)
 
 
-def pick_display(error_cb, opts, extra_args, cmdline: Sequence[str] = ()) -> dict[str, Any]:
+def pick_display(opts, extra_args, cmdline: Sequence[str] = ()) -> dict[str, Any]:
     if len(extra_args) == 1 and extra_args[0].startswith("vnc"):
-        vnc_display = pick_vnc_display(error_cb, extra_args[0])
-        if vnc_display:
-            return vnc_display
+        try:
+            vnc_display = pick_vnc_display(extra_args[0])
+        except InitExit as e:
+            if e.status != ExitCode.NO_DISPLAY:
+                raise
+        else:
+            if vnc_display:
+                return vnc_display
         # if not, then fall through and hope that the xpra server supports vnc:
-    return do_pick_display(error_cb, opts, extra_args, cmdline)
+    return do_pick_display(opts, extra_args, cmdline)
 
 
-def do_pick_display(error_cb, opts, extra_args, cmdline: Sequence[str] = ()) -> dict[str, Any]:
+def do_pick_display(opts, extra_args, cmdline: Sequence[str] = ()) -> dict[str, Any]:
     dotxpra = _DotXpra(opts.socket_dir, opts.socket_dirs)
     if not extra_args:
         # Pick a default server
         dir_servers = dotxpra.socket_details()
         try:
-            sockdir, display, sockpath = single_display_match(dir_servers, error_cb)
+            sockdir, display, sockpath = single_display_match(dir_servers)
         except Exception:
             if getuid() == 0 and opts.system_proxy_socket:
                 display = ":PROXY"
@@ -176,13 +180,11 @@ def do_pick_display(error_cb, opts, extra_args, cmdline: Sequence[str] = ()) -> 
             )
         return desc
     if len(extra_args) == 1:
-        return parse_display_name(error_cb, opts, extra_args[0], cmdline, find_session_by_name=find_session_by_name)
-    error_cb(f"too many arguments to choose a display ({len(extra_args)}): {extra_args}")
-    assert False
+        return parse_display_name(opts, extra_args[0], cmdline, find_session_by_name=find_session_by_name)
+    raise InitExit(ExitCode.ARGUMENT_MISMATCH, f"too many arguments to choose a display ({len(extra_args)}): {extra_args}")
 
 
-def single_display_match(dir_servers, error_cb,
-                         nomatch="cannot find any live servers to connect to") -> tuple[str, str, str]:
+def single_display_match(dir_servers, nomatch="cannot find any live servers to connect to") -> tuple[str, str, str]:
     # ie: {"/tmp" : [LIVE, "desktop-10", "/tmp/desktop-10"]}
     # aggregate all the different locations:
     allservers = []
@@ -202,7 +204,7 @@ def single_display_match(dir_servers, error_cb,
                     if not display.startswith(":proxy-"):
                         noproxy.append((sockdir, display, path))
     if not allservers:
-        error_cb(nomatch)
+        raise InitExit(ExitCode.SERVER_NOT_FOUND, nomatch)
     if len(allservers) > 1:
         # maybe the same server is available under multiple paths
         displays = set(v[1] for v in allservers)
@@ -216,7 +218,8 @@ def single_display_match(dir_servers, error_cb,
             # they all point to the same display, use the first one:
             allservers = noproxy[:1]
     if len(allservers) > 1:
-        error_cb("there are multiple servers running,\nplease specify.\nYou can see the list using `xpra list`")
+        raise InitExit(ExitCode.ARGUMENT_MISMATCH,
+                       "there are multiple servers running,\nplease specify.\nYou can see the list using `xpra list`")
     assert len(allservers) == 1
     sockdir, name, path = allservers[0]
     # ie: ("/tmp", "desktop-10", "/tmp/desktop-10")
@@ -242,7 +245,7 @@ def connect_or_fail(display_desc, opts):
         raise InitExit(ExitCode.CONNECTION_FAILED, f"connection failed: {einfo}") from None
 
 
-def get_sockpath(display_desc: dict[str, Any], error_cb, timeout=CONNECT_TIMEOUT) -> str:
+def get_sockpath(display_desc: dict[str, Any], timeout=CONNECT_TIMEOUT) -> str:
     # if the path was specified, use that:
     sockpath = display_desc.get("socket_path")
     if sockpath:
@@ -293,5 +296,4 @@ def get_sockpath(display_desc: dict[str, Any], error_cb, timeout=CONNECT_TIMEOUT
                 wait = 0.1 if state == SocketState.UNKNOWN else 1
                 time.sleep(wait)
             dir_servers = socket_details()
-    return single_display_match(dir_servers, error_cb,
-                                nomatch=f"cannot find live server for display {display}")[-1]
+    return single_display_match(dir_servers, nomatch=f"cannot find live server for display {display}")[-1]

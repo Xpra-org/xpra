@@ -6,7 +6,7 @@
 import socket
 import time
 from time import monotonic
-from typing import Any, NoReturn
+from typing import Any
 
 from xpra.common import noop, noerr
 from xpra.exit_codes import ExitCode
@@ -167,9 +167,6 @@ def connect_to_socket(display_desc: dict[str, Any]):
     if not hasattr(socket, "AF_UNIX"):  # pragma: no cover
         raise InitExit(ExitCode.UNSUPPORTED, "unix domain sockets are not available on this operating system")
 
-    def sockpathfail_cb(msg) -> NoReturn:
-        raise InitException(msg)
-
     sockpath = ""
     sock = None
     timeout = display_desc.get("timeout", SOCKET_TIMEOUT)
@@ -189,7 +186,7 @@ def connect_to_socket(display_desc: dict[str, Any]):
             sock = None
     if not sock:
         from xpra.scripts.picker import get_sockpath
-        sockpath = get_sockpath(display_desc, sockpathfail_cb)
+        sockpath = get_sockpath(display_desc, timeout=timeout)
         display_desc["socket_path"] = sockpath
         actual_path = "\0" + ABSTRACT_SOCKET_PREFIX + sockpath[1:] if sockpath.startswith("@") else sockpath
         sock = socket.socket(socket.AF_UNIX)

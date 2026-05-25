@@ -48,11 +48,7 @@ def _test_opts():
 
 def _test_parse_display_name(s, e=None):
     opts = _test_opts()
-
-    def err(*args):
-        raise Exception(*args)
-
-    r = parse_display_name(err, opts, s)
+    r = parse_display_name(opts, s)
     if e:
         for k, v in e.items():
             actual = r.get(k)

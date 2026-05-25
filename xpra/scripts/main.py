@@ -186,10 +186,6 @@ def werr(*msg) -> None:
         stderr_print(str(x))
 
 
-def error_handler(*args) -> NoReturn:
-    raise InitException(*args)
-
-
 def add_process(*args, **kwargs):
     from xpra.util.child_reaper import get_child_reaper
     return get_child_reaper().add_process(*args, **kwargs)
@@ -235,7 +231,7 @@ def main(script_file: str, cmdline: list[str]) -> ExitValue:
         mode = args.pop(0)
         mode = MODE_ALIAS.get(mode, mode)
 
-        return run_mode(script_file, cmdline, error_handler, options, args, mode, defaults)
+        return run_mode(script_file, cmdline, options, args, mode, defaults)
     except SystemExit:
         debug_exc()
         raise
@@ -492,7 +488,7 @@ def verify_gir() -> None:
         raise InitExit(ExitCode.FAILURE, f"the python gobject introspection bindings are missing: \n{e}")
 
 
-def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, args: list[str], full_mode: str, defaults) -> ExitValue:
+def run_mode(script_file: str, cmdline: list[str], options, args: list[str], full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",")
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
 
@@ -570,7 +566,7 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
     ) or mode.startswith("upgrade") or mode.startswith("request-"):
         options.encodings = validated_encodings(options.encodings)
     try:
-        return do_run_mode(script_file, cmdline, error_cb, options, args, full_mode, defaults)
+        return do_run_mode(script_file, cmdline, options, args, full_mode, defaults)
     except ValueError as e:
         info(f"{e}")
         return ExitCode.UNSUPPORTED
@@ -584,7 +580,7 @@ def DotXpra(*args, **kwargs):
     return dotxpra.DotXpra(*args, **kwargs)
 
 
-def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, args: list[str], full_mode: str, defaults) -> ExitValue:
+def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
@@ -620,12 +616,12 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen"):
         if display_is_remote:
             # ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
-            return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
+            return run_remote_server(script_file, cmdline, options, args, mode, defaults)
         elif args and str_to_bool(options.attach, False):
             # maybe the server is already running,
             # and we don't need to bother trying to start it:
             try:
-                display = pick_display(error_cb, options, args, cmdline)
+                display = pick_display(options, args, cmdline)
             except Exception:
                 pass
             else:
@@ -638,38 +634,38 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
                         # we're connecting locally, so no need for these:
                         options.csc_modules = ["none"]
                         options.video_decoders = ["none"]
-                        return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
+                        return do_run_mode(script_file, cmdline, options, args, "attach", defaults)
 
     if mode in SERVER_SUBCOMMANDS:
-        return run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
+        return run_server(script_file, cmdline, options, args, full_mode, defaults)
     if mode == "run" and args and args[0].startswith(":"):
         # for local displays, run via "_proxy_run"
         # which will use plain-X11 connections if needed:
-        return run_proxy_run(error_cb, options, script_file, cmdline, args)
+        return run_proxy_run(options, script_file, cmdline, args)
     if mode in CLIENT_SUBCOMMANDS or mode.startswith("request-"):
-        return run_client(script_file, cmdline, error_cb, options, args, mode)
+        return run_client(script_file, cmdline, options, args, mode)
     if mode in ("stop", "exit"):
         no_gtk()
-        return run_stopexit(mode, error_cb, options, args, cmdline)
+        return run_stopexit(mode, options, args, cmdline)
     if mode == "top":
         no_gtk()
-        return run_top(error_cb, options, args, cmdline)
+        return run_top(options, args, cmdline)
     if mode == "encode":
         no_gtk()
-        return run_encode(error_cb, options, args, cmdline)
+        return run_encode(options, args, cmdline)
     if mode == "list":
         no_gtk()
-        return run_list(error_cb, options, args)
+        return run_list(options, args)
     if mode == "list-windows":
         no_gtk()
-        return run_list_windows(error_cb, options, args)
+        return run_list_windows(options, args)
     if mode == "list-clients":
         no_gtk()
-        return run_list_clients(error_cb, options, args)
+        return run_list_clients(options, args)
     if mode == "list-mdns":
         no_gtk()
         from xpra.net.mdns.list import run_list_mdns
-        return run_list_mdns(error_cb, args)
+        return run_list_mdns(args)
     if mode == "mdns-gui":
         check_gtk_client()
         return run_mdns_gui(options)
@@ -692,7 +688,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         no_gtk()
         return run_clean(options, args)
     if mode == "recover":
-        return run_recover(script_file, cmdline, error_cb, options, args, defaults)
+        return run_recover(script_file, cmdline, options, args, defaults)
     if mode == "xwait":
         no_gtk()
         return run_xwait(args)
@@ -747,7 +743,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         from xpra.gtk.dialogs import bug_report
         return bug_report.main(["bug_report.py"] + args)
     if mode == "session-info":
-        return run_session_info(error_cb, options, args, cmdline)
+        return run_session_info(options, args, cmdline)
     if mode in ("docs", "documentation"):
         return run_docs()
     if mode == "about":
@@ -760,15 +756,15 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         return run_html5()
     if mode == "_proxy_run":
         nox()
-        return run_proxy_run(error_cb, options, script_file, cmdline, args)
+        return run_proxy_run(options, script_file, cmdline, args)
     if mode == "_proxy" or mode.startswith("_proxy_"):
         nox()
-        return run_proxy(error_cb, options, script_file, cmdline, args, mode, defaults)
+        return run_proxy(options, script_file, cmdline, args, mode, defaults)
     if mode in ("_audio_record", "_audio_play", "_audio_query"):
         if not has_audio_support():
-            error_cb("no audio support!")
+            raise InitExit(ExitCode.COMPONENT_MISSING, "no audio support!")
         from xpra.audio.wrapper import run_audio
-        return run_audio(mode, error_cb, args)
+        return run_audio(mode, args)
     if mode == "pinentry":
         check_gtk_client()
         from xpra.scripts.pinentry import run_pinentry
@@ -841,11 +837,11 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "webcam-client":
         check_gtk("webcam-client")
         if not args:
-            error_cb("webcam-client requires a server URI")
+            raise InitExit(ExitCode.SERVER_NOT_FOUND, "webcam-client requires a server URI")
         from xpra.client.base.features import set_client_features
         set_client_features(options)
         basic_client_features()
-        display_desc = parse_display_name(error_cb, options, args[0], cmdline)
+        display_desc = parse_display_name(options, args[0], cmdline)
         from xpra.client.gtk3.webcam_window import WebcamClient
         app = WebcamClient(display_desc)
         app.init(options)
@@ -1052,7 +1048,7 @@ def run_send_file(extra_args) -> ExitValue:
     return 0
 
 
-def run_client(script_file, cmdline: list[str], error_cb, opts, extra_args: list[str], mode: str) -> ExitValue:
+def run_client(script_file, cmdline: list[str], opts, extra_args: list[str], mode: str) -> ExitValue:
     if mode != "attach":
         opts.reconnect = False
     if mode in ("attach", "detach") and len(extra_args) == 1 and extra_args[0] == "all":
@@ -1083,7 +1079,7 @@ def run_client(script_file, cmdline: list[str], error_cb, opts, extra_args: list
             dcmd = cmd + [display] + ["--splash=no"]
             Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
         return ExitCode.OK
-    app = get_client_app(cmdline, error_cb, opts, extra_args, mode)
+    app = get_client_app(cmdline, opts, extra_args, mode)
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % exit_str(r))
@@ -1225,10 +1221,10 @@ def basic_client_features():
     return features
 
 
-def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: list[str], mode: str):
+def get_client_app(cmdline: list[str], opts, extra_args: list[str], mode: str):
     validate_encryption(opts)
     if not find_spec("xpra.client"):
-        error_cb("`xpra-client` is not installed")
+        raise InitExit(ExitCode.COMPONENT_MISSING, "`xpra-client` is not installed")
 
     basic = basic_client_features
 
@@ -1242,7 +1238,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
     if mode in ("screenshot", "icon"):
         basic()
         if not extra_args:
-            error_cb("invalid number of arguments for %s mode" % mode)
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, "invalid number of arguments for %s mode" % mode)
         if mode == "screenshot":
             from xpra.client.base.command import ScreenshotXpraClient as ImageClient
         else:
@@ -1290,21 +1286,21 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         basic()
         from xpra.client.base.command import ControlXpraClient
         if len(extra_args) < 1:
-            error_cb("not enough arguments for 'control' mode, try 'help'")
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, "not enough arguments for 'control' mode, try 'help'")
         extra_args, args = split_display_arg(extra_args)
         app = ControlXpraClient(opts, args)
     elif mode == "run":
         basic()
         from xpra.client.base.command import RunClient
         if len(extra_args) < 1:
-            error_cb("not enough arguments for 'run' mode, you must specify the command to execute")
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, "not enough arguments for 'run' mode, you must specify the command to execute")
         extra_args, run_args = split_display_arg(extra_args)
         app = RunClient(opts, run_args)
     elif mode == "print":
         basic()
         from xpra.client.base.command import PrintClient
         if len(extra_args) <= 1:
-            error_cb("not enough arguments for 'print' mode")
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, "not enough arguments for 'print' mode")
         extra_args, args = split_display_arg(extra_args)
         app = PrintClient(opts, args)
     elif mode == "qrcode":
@@ -1329,7 +1325,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         app.hello_extra = {"connect": False}
         app.start_new_session = sns
     else:
-        app = get_client_gui_app(error_cb, opts, request_mode, extra_args, mode)
+        app = get_client_gui_app(opts, request_mode, extra_args, mode)
     try:
         if mode != "listen":
             may_show_progress(app, 60, "connecting to server")
@@ -1338,7 +1334,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
             server_socket = os.environ.get("XPRA_SERVER_SOCKET", "")
             if server_socket:
                 extra_args = [f"socket://{server_socket}"]
-        display_desc = do_pick_display(error_cb, opts, extra_args, cmdline)
+        display_desc = do_pick_display(opts, extra_args, cmdline)
         if len(extra_args) == 1 and opts.password:
             uri = extra_args[0]
             if uri in cmdline and opts.password in uri:
@@ -1373,7 +1369,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
     return app
 
 
-def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: Sequence[str], mode: str):
+def get_client_gui_app(opts, request_mode: str, extra_args: Sequence[str], mode: str):
     try:
         app = make_client(opts)
     except RuntimeError as e:
@@ -1419,7 +1415,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
         if mode == "listen":
             if extra_args:
                 raise InitException("cannot specify extra arguments with 'listen' mode")
-            enable_listen_mode(app, error_cb, opts)
+            enable_listen_mode(app, opts)
 
     except Exception as e:
         may_show_progress(app, 100, f"failure: {e}")
@@ -1458,7 +1454,7 @@ def handle_client_encoding_option(app, encoding: str) -> str:
     return encoding
 
 
-def enable_listen_mode(app, error_cb: Callable, opts):
+def enable_listen_mode(app, opts):
     may_show_progress(app, 80, "listening for incoming connections")
     from xpra.net.socket_util import (
         setup_local_sockets, peek_connection,
@@ -1501,7 +1497,7 @@ def enable_listen_mode(app, error_cb: Callable, opts):
                 if uri.startswith(f"{socktype}://"):
                     run_socket_cleanups()
                     netlog.info(f"connecting to {uri}")
-                    display_desc = pick_display(error_cb, opts, [uri, ])
+                    display_desc = pick_display(opts, [uri, ])
                     connect_to_server(app, display_desc, opts)
                     return
         app.idle_add(do_handle_connection, conn)
@@ -1805,7 +1801,7 @@ def match_client_display_size(options, display_is_remote=True) -> None:
         options.resize_display = f"{scaled_w}x{scaled_h}"
 
 
-def run_server(script_file, cmdline: list[str], error_cb, options, args: list[str], full_mode: str, defaults) -> ExitValue:
+def run_server(script_file, cmdline: list[str], options, args: list[str], full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     if mode in (
@@ -1819,8 +1815,8 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args: list[st
         # maybe the server is already running for the display specified
         # then we don't even need to bother trying to start it:
         try:
-            display_desc = pick_display(error_cb, options, args, cmdline)
-        except (ValueError, InitException):
+            display_desc = pick_display(options, args, cmdline)
+        except (ValueError, InitException, InitExit):
             pass
         else:
             dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
@@ -1832,12 +1828,12 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args: list[st
                     # we're connecting locally, so no need for these:
                     options.csc_modules = ["none"]
                     options.video_decoders = ["none"]
-                    return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
+                    return do_run_mode(script_file, cmdline, options, args, "attach", defaults)
     if mode == "seamless":
         match_client_display_size(options, display_is_remote)
 
     if mode not in ("encoder", "runner"):
-        r = start_server_via_proxy(cmdline, error_cb, options, args, full_mode)
+        r = start_server_via_proxy(cmdline, options, args, full_mode)
         if isinstance(r, int):
             return r
 
@@ -1845,10 +1841,9 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args: list[st
         from xpra import server
         assert server
         from xpra.scripts.server import do_run_server
-        return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
+        return do_run_server(script_file, cmdline, options, args, full_mode, defaults)
     except ImportError:
-        error_cb("`xpra-server` is not installed")
-        sys.exit(1)
+        raise InitExit(ExitCode.COMPONENT_MISSING, "`xpra-server` is not installed") from None
 
 
 def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
@@ -1879,23 +1874,22 @@ def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
 
 
 # noinspection PySimplifyBooleanCheck
-def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> ExitValue | None:
+def start_server_via_proxy(cmdline, options, args, mode: str) -> ExitValue | None:
     start_via_proxy = parse_bool_or("start-via-proxy", options.start_via_proxy)
     if start_via_proxy is False:
         return None
     if not options.daemon:
         if start_via_proxy is True:
-            error_cb("cannot start-via-proxy without daemonizing")
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, "cannot start-via-proxy without daemonizing")
         return None
     if POSIX and getuid() == 0:
-        error_cb("cannot start via proxy for root")
-        return None
+        raise InitExit(ExitCode.ARGUMENT_MISMATCH, "cannot start via proxy for root")
     try:
         from xpra import client  # pylint: disable=import-outside-toplevel
         assert client
     except ImportError:
         if start_via_proxy is True:
-            error_cb("cannot start-via-proxy: `xpra-client` is not installed")
+            raise InitExit(ExitCode.COMPONENT_MISSING, "cannot start-via-proxy: `xpra-client` is not installed")
         return None
     ################################################################################
     try:
@@ -1904,7 +1898,7 @@ def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> ExitV
         if not args:
             from xpra.net.constants import SYSTEM_PROXY_SOCKET
             args = [SYSTEM_PROXY_SOCKET]
-        app = get_client_app(cmdline, error_cb, options, args, "request-%s" % mode)
+        app = get_client_app(cmdline, options, args, "request-%s" % mode)
         r = do_run_client(app)
         # OK or got a signal:
         NO_RETRY: list[int] = [int(ExitCode.OK)] + list(range(128, 128 + 16))
@@ -1929,8 +1923,7 @@ def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> ExitV
         log("failed to start via proxy", exc_info=True)
         err = str(e)
     if start_via_proxy is True:
-        error_cb(f"failed to start-via-proxy: {err}")
-        return None
+        raise InitExit(ExitCode.FAILURE, f"failed to start-via-proxy: {err}")
     # warn and fall through to regular server start:
     warn(f"Warning: cannot use the system proxy for {mode!r} subcommand,")
     warn(f" {err}")
@@ -1938,12 +1931,12 @@ def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> ExitV
     return None
 
 
-def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str, defaults) -> ExitValue:
+def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults) -> ExitValue:
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     if not args:
         raise RuntimeError("no remote server specified")
     display_name = args[0]
-    params = parse_display_name(error_cb, opts, display_name, cmdline)
+    params = parse_display_name(opts, display_name, cmdline)
     hello_extra = {}
     # strip defaults, only keep extra ones:
     for x in START_COMMAND_OPTIONS:  # ["start", "start-child", etc]
@@ -2342,7 +2335,7 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
     return proc, socket_path, display
 
 
-def run_proxy_run(error_cb: Callable, options, script_file: str, cmdline: list[str], args: list[str]) -> ExitValue:
+def run_proxy_run(options, script_file: str, cmdline: list[str], args: list[str]) -> ExitValue:
     display_args, cmd_args = split_display_arg(args)
     # print(f"{display_args=} {cmd_args=}")
 
@@ -2351,9 +2344,9 @@ def run_proxy_run(error_cb: Callable, options, script_file: str, cmdline: list[s
         return dotxpra.get_display_state(display) == SocketState.LIVE
 
     try:
-        display_desc = pick_display(error_cb, options, display_args, cmdline)
+        display_desc = pick_display(options, display_args, cmdline)
         # print(f"picked display: {display_desc}")
-    except InitException:
+    except (InitException, InitExit):
         if display_args:
             # the display was specified, so we can't continue:
             raise
@@ -2368,12 +2361,12 @@ def run_proxy_run(error_cb: Callable, options, script_file: str, cmdline: list[s
 
     display = display_desc.get("display_name", "") or display_desc.get("display", "")
     if not display:
-        error_cb("unable to locate the display to run on")
+        raise InitExit(ExitCode.NO_DISPLAY, "unable to locate the display to run on")
 
     # now let's decide how to run the command on this display:
     if is_live(display):
         # found a live xpra socket, use the `xpra run` client:
-        return run_client(script_file, cmdline, error_cb, options, args, "run")
+        return run_client(script_file, cmdline, options, args, "run")
 
     env = os.environ.copy()
     env["DISPLAY"] = display
@@ -2393,7 +2386,7 @@ def run_daemon(cmd: list[str], **kwargs):
     return proc
 
 
-def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], args: list[str], mode: str, defaults) -> ExitValue:
+def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode: str, defaults) -> ExitValue:
     no_gtk()
     display = None
     display_name = None
@@ -2416,7 +2409,7 @@ def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], ar
                     # failed to guess!
                     pass
             elif args:
-                display = pick_display(error_cb, opts, args, cmdline)
+                display = pick_display(opts, args, cmdline)
                 display_name = display.get("display")
             if display_name:
                 state = dotxpra.get_display_state(display_name)
@@ -2443,7 +2436,7 @@ def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], ar
                 uri = f"named-pipe://{display_name}"
             else:
                 uri = f"socket://{socket_path}"
-            display = parse_display_name(error_cb, opts, uri, cmdline)
+            display = parse_display_name(opts, uri, cmdline)
             if proc and proc.poll() is None:
                 # start a thread just to reap server startup process (yuk)
                 # (as the server process will exit as it daemonizes)
@@ -2451,7 +2444,7 @@ def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], ar
                 start_thread(proc.wait, "server-startup-reaper")
     if not display:
         # use display specified on command line:
-        display = pick_display(error_cb, opts, args, cmdline)
+        display = pick_display(opts, args, cmdline)
     delpath = ""
     if display and not server_mode.startswith("shadow"):
         display_name = display_name or display.get("display") or display.get("display_name")
@@ -2480,15 +2473,15 @@ def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], ar
             noerr(os.unlink, delpath)
 
 
-def show_final_state(error_cb, display_desc: dict[str, Any]) -> int:
+def show_final_state(display_desc: dict[str, Any]) -> int:
     # this is for local sockets only!
     display = display_desc["display"]
     sockdir = display_desc.get("socket_dir", "")
     sockdirs = display_desc.get("socket_dirs", ())
     sockdir = DotXpra(sockdir, sockdirs)
     try:
-        sockfile = get_sockpath(display_desc, error_cb, 0)
-    except InitException:
+        sockfile = get_sockpath(display_desc, 0)
+    except (InitException, InitExit):
         # could be a named-pipe:
         sockfile = display_desc.get("named-pipe", "")
     if sockfile and os.path.isabs(sockfile):
@@ -2519,7 +2512,7 @@ def show_final_state(error_cb, display_desc: dict[str, Any]) -> int:
     raise RuntimeError(f"invalid state: {final_state}")
 
 
-def run_stopexit(mode: str, error_cb: Callable, opts, extra_args: list[str], cmdline: list[str]) -> ExitValue:
+def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> ExitValue:
     assert mode in ("stop", "exit")
     no_gtk()
 
@@ -2560,7 +2553,7 @@ def run_stopexit(mode: str, error_cb: Callable, opts, extra_args: list[str], cmd
     elif len(extra_args) > 1:
         return multimode(extra_args)
 
-    display_desc = pick_display(error_cb, opts, extra_args, cmdline)
+    display_desc = pick_display(opts, extra_args, cmdline)
     app = None
     try:
         if mode == "stop":
@@ -2582,7 +2575,7 @@ def run_stopexit(mode: str, error_cb: Callable, opts, extra_args: list[str], cmd
             app.cleanup()
     if e == 0:
         if display_desc["local"] and display_desc.get("display"):
-            show_final_state(error_cb, display_desc)
+            show_final_state(display_desc)
         else:
             print(f"Sent {mode} command")
     return e
@@ -2595,7 +2588,7 @@ def _has_display() -> bool:
     return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
 
 
-def run_top(error_cb: Callable, options, args: list[str], cmdline: list[str]) -> ExitValue:
+def run_top(options, args: list[str], cmdline: list[str]) -> ExitValue:
     if not args and _has_display():
         from xpra.gtk.dialogs.top import main as run_top_gui
         run_top_gui(options)
@@ -2604,7 +2597,7 @@ def run_top(error_cb: Callable, options, args: list[str], cmdline: list[str]) ->
     if args:
         # try to show a specific session
         try:
-            display_desc = pick_display(error_cb, options, args, cmdline)
+            display_desc = pick_display(options, args, cmdline)
         except Exception:
             pass
         else:
@@ -2618,22 +2611,22 @@ def run_top(error_cb: Callable, options, args: list[str], cmdline: list[str]) ->
     return TopClient(options).run()
 
 
-def run_encode(error_cb: Callable, options, args: list[str], cmdline: list[str]) -> ExitValue:
+def run_encode(options, args: list[str], cmdline: list[str]) -> ExitValue:
     from xpra.client.base.features import set_client_features
     set_client_features(options)
     from xpra.client.base.encode import EncodeClient
     if not args:
         raise ValueError("please specify a display and at least one filename")
-    display_desc = pick_display(error_cb, options, args[:1], cmdline)
+    display_desc = pick_display(options, args[:1], cmdline)
     app = EncodeClient(options, args[1:])
     app.init(options)
     connect_to_server(app, display_desc, options)
     return app.run()
 
 
-def run_session_info(error_cb: Callable, options, args: list[str], cmdline: list[str]) -> ExitValue:
+def run_session_info(options, args: list[str], cmdline: list[str]) -> ExitValue:
     check_gtk_client()
-    display_desc = pick_display(error_cb, options, args, cmdline)
+    display_desc = pick_display(options, args, cmdline)
     from xpra.gtk.dialogs.session_info import SessionInfoClient
     app = SessionInfoClient(options)
     connect_to_server(app, display_desc, options)
@@ -2834,7 +2827,7 @@ def run_clean_sockets(opts, args) -> ExitValue:
     return ExitCode.OK
 
 
-def run_recover(script_file: str, cmdline: list[str], error_cb: Callable, options, args: list[str], defaults) -> ExitValue:
+def run_recover(script_file: str, cmdline: list[str], options, args: list[str], defaults) -> ExitValue:
     if not POSIX or OSX:
         raise InitExit(ExitCode.UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
     no_gtk()
@@ -2842,7 +2835,7 @@ def run_recover(script_file: str, cmdline: list[str], error_cb: Callable, option
     ALL = len(args) == 1 and args[0].lower() == "all"
     if not ALL and len(args) == 1:
         try:
-            display_descr = pick_display(error_cb, options, args, cmdline)
+            display_descr = pick_display(options, args, cmdline)
             args = []
         except Exception:
             pass
@@ -2888,7 +2881,7 @@ def run_recover(script_file: str, cmdline: list[str], error_cb: Callable, option
     # use the existing display:
     options.use_display = "yes"
     no_gtk()
-    return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
+    return run_server(script_file, cmdline, options, args, mode, defaults)
 
 
 def run_displays(options, args) -> ExitValue:

@@ -42,6 +42,7 @@ class ExitCode(IntEnum):
     COMPONENT_MISSING = 31
     WM_ERROR = 32
     SERVER_NOT_FOUND = 33
+    ARGUMENT_MISMATCH = 34
 
 
 ExitValue: TypeAlias = ExitCode | int

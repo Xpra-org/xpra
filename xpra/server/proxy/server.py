@@ -31,7 +31,7 @@ from xpra.auth.common import SessionData
 from xpra.util.child_reaper import get_child_reaper
 from xpra.scripts.parsing import MODE_ALIAS
 from xpra.util.parsing import str_to_bool
-from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
+from xpra.scripts.config import InitException, InitExit, make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
 from xpra.scripts.main import parse_display_name, start_server_subprocess
 from xpra.net.connect import connect_to
 from xpra.util.thread import start_thread
@@ -501,17 +501,17 @@ class ProxyServer(ServerCore):
 
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
 
-        def parse_error(*args) -> None:
+        opts = make_defaults_struct(username=username, uid=uid, gid=gid)
+        opts.username = username
+        try:
+            disp_desc = parse_display_name(opts, display)
+        except (InitException, InitExit, ValueError) as e:
             stop_server_subprocess()
             nosession("invalid display string")
             log.warn("Error: parsing failed for display string '%s':", display)
-            for arg in args:
-                log.warn(" %s", arg)
-            raise ValueError(f"parse error on {display!r} {args}")
-
-        opts = make_defaults_struct(username=username, uid=uid, gid=gid)
-        opts.username = username
-        disp_desc = parse_display_name(parse_error, opts, display)
+            for line in str(e).splitlines():
+                log.warn(" %s", line)
+            raise ValueError(f"parse error on {display!r}: {e}") from e
         if uid or gid:
             disp_desc["uid"] = uid
             disp_desc["gid"] = gid

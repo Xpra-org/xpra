@@ -13,7 +13,6 @@ import datetime
 from dataclasses import dataclass
 from typing import NoReturn, Final
 from subprocess import Popen
-from collections.abc import Callable
 
 from xpra.util.io import info, warn, wait_for_socket, which
 from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_bool_or
@@ -397,7 +396,7 @@ def init_virtual_devices(app, devices: dict) -> None:
         pointer.init_virtual_devices(devices)
 
 
-def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts,
+def do_run_server(script_file: str, cmdline: list[str], opts,
                   extra_args: list[str], full_mode: str, defaults) -> ExitValue:
     if opts.encoding == "help" or "help" in opts.encodings:
         return show_encoding_help(opts)

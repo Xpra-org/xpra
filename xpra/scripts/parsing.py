@@ -307,7 +307,7 @@ def normalize_display_name(display_name: str) -> str:
     return display_name
 
 
-def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
+def parse_display_name(opts, display_name: str, cmdline=(),
                        find_session_by_name: Callable | None = None) -> dict[str, Any]:
     display_name = normalize_display_name(display_name)
     # last chance to find it by name:
@@ -558,8 +558,7 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
         opts.display = display_name
         return desc
 
-    error_cb(f"unknown protocol {protocol!r} for display name: {display_name!r}")
-    assert False
+    raise InitExit(ExitCode.UNSUPPORTED, f"unknown protocol {protocol!r} for display name: {display_name!r}")
 
 
 def get_ssl_options(desc, opts, cmdline) -> dict[str, Any]:
