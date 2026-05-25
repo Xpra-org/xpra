@@ -436,6 +436,7 @@ class ServerCore(GLibServer):
         for sub in subs:
             fn = getattr(sub, method, None)
             if fn is None:
+                log.warn("Warning: no %r on %s", method, sub)
                 continue
             try:
                 fn(*args)
