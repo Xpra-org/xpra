@@ -59,6 +59,7 @@ class XvfbManager(StubSubsystem):
         self.sessions_dir = ""
         self.log_dir = ""
         self.xvfb_cmd: list[str] = []
+        self.xvfb_pidfile = ""
         self.cwd = ""
         self.uid = 0
         self.gid = 0
@@ -212,25 +213,18 @@ class XvfbManager(StubSubsystem):
             assert xauthority
             xauth_add(xauthority, display_name, self.xauth_data, self.uid, self.gid)
             xvfb_pid = xvfb.pid
-            xvfb_pidfile = ""
             if session_files:
-                xvfb_pidfile = session_files.write_session_file("xvfb.pid", str(xvfb.pid))
+                self.xvfb_pidfile = session_files.write_session_file("xvfb.pid", str(xvfb.pid))
             log(f"saved xvfb.pid={xvfb.pid}")
 
-            def xvfb_terminated() -> None:
-                log(f"xvfb_terminated() removing {xvfb_pidfile}")
-                if xvfb_pidfile:
-                    os.unlink(xvfb_pidfile)
-
             vfb_procinfo = get_child_reaper().add_process(xvfb, "xvfb", self.xvfb_cmd, ignore=True,
-                                                          callback=xvfb_terminated)
+                                                          callback=self.xvfb_terminated)
             log("xvfb process info=%s", vfb_procinfo.get_info())
             os.environ["DISPLAY"] = display_name
             os.environ["CKCON_X11_DISPLAY"] = display_name
             os.environ.update(protected_env)
-            if display_name != old_display_name:
-                if pam:
-                    pam.set_items({"XDISPLAY": display_name})
+            if display_name != old_display_name and pam:
+                pam.set_items({"XDISPLAY": display_name})
         elif not OSX and not shadowing and not proxying:
             try:
                 xvfb_pid = int(load_session_file("xvfb.pid") or 0)
@@ -242,6 +236,11 @@ class XvfbManager(StubSubsystem):
         if uinput_uuid:
             devices = create_input_devices(uinput_uuid, self.uid) or {}
         return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
+
+    def xvfb_terminated(self) -> None:
+        log(f"xvfb_terminated() removing {self.xvfb_pidfile!r}")
+        if self.xvfb_pidfile:
+            os.unlink(self.xvfb_pidfile)
 
     def setup_xauthority(self, display_name: str, shadowing: bool) -> str:
         from xpra.x11.vfb_util import get_xauthority_path, valid_xauth
