@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import datetime
+import socket
 from typing import Any
 
 from xpra import __version__
@@ -46,8 +48,11 @@ def get_options_file_contents(opts) -> str:
     defaults = make_defaults_struct()
     fixup_defaults(defaults)
     fixup_options(defaults)
+    now = datetime.datetime.now()
     diff_contents = [
         f"# xpra server {__version__}",
+        "# " + now.strftime("%Y-%m-%d %H:%M:%S"),
+        "# on %r" % socket.gethostname(),
         "",
         f"mode={opts.mode}",
     ]
