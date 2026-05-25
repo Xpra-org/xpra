@@ -1698,10 +1698,7 @@ class ServerCore(GLibServer):
             if not fn:
                 continue
             try:
-                if isinstance(sub, type):
-                    mixin_info = fn(self, proto, **kwargs)
-                else:
-                    mixin_info = fn(proto, **kwargs)
+                mixin_info = fn(proto, **kwargs)
             except Exception:
                 log.warn(f"Error: in {sub}.get_ui_info", exc_info=True)
                 continue
@@ -1732,13 +1729,15 @@ class ServerCore(GLibServer):
         for prefix, sub in self.subsystems.items():
             if subsystems and prefix not in subsystems:
                 continue
-            if isinstance(sub, type):
-                info.update(sub.get_info(self, proto))
-            else:
-                info.update(sub.get_info(proto))
+            with log.trap_error(f"Error collecting information from {prefix}"):
+                cstart = monotonic()
+                mixin_info = sub.get_info(proto)
+                # log("%s.get_info(%s)=%r", prefix, proto, Ellipsizer(mixin_info))
+                merge_dicts(info, mixin_info)
+                cend = monotonic()
+                log("%s.get_info(%s) took %ims", prefix, proto, int(1000 * (cend - cstart)))
 
-        # soft dependency on Info subsystem:
-        if hasattr(self, "get_server_info"):
+        if self.get_subsystem("info"):
             authenticated = bool(proto and proto.authenticators)
             socktype = getattr(getattr(proto, "_conn", None), "socktype", "")
             local = socktype in ("socket", "named-pipe")

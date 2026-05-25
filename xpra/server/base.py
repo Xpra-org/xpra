@@ -375,10 +375,7 @@ class ServerBase(ServerCore):
             if subsystems and prefix not in subsystems:
                 continue
             with log.trap_error("Error collecting UI info from %s", prefix):
-                if isinstance(sub, type):
-                    mixin_info = sub.get_ui_info(self, proto, **kwargs)
-                else:
-                    mixin_info = sub.get_ui_info(proto, **kwargs)
+                mixin_info = sub.get_ui_info(proto, **kwargs)
                 log("%s.get_ui_info(%s, ..)=%r", prefix, proto, Ellipsizer(mixin_info))
                 merge_dicts(info, mixin_info)
         return info
@@ -387,28 +384,6 @@ class ServerBase(ServerCore):
         log("ServerBase.get_threaded_info%s", (proto, kwargs))
         start = monotonic()
         info: dict[str, Any] = ServerCore.get_threaded_info(self, proto, **kwargs)
-        subsystems = kwargs.get("subsystems", ())
-
-        def up(prefix, d) -> None:
-            merge_dicts(info, {prefix: d})
-
-        for prefix, sub in self.subsystems.items():
-            if subsystems and prefix not in subsystems:
-                continue
-            with log.trap_error(f"Error collecting information from {prefix}"):
-                cstart = monotonic()
-                if isinstance(sub, type):
-                    mixin_info = sub.get_info(self, proto)
-                else:
-                    mixin_info = sub.get_info(proto)
-                log("%s.get_info(%s)=%r", prefix, proto, Ellipsizer(mixin_info))
-                merge_dicts(info, mixin_info)
-                cend = monotonic()
-                log("%s.get_info(%s) took %ims", prefix, proto, int(1000 * (cend - cstart)))
-
-        if not subsystems or "features" in subsystems:
-            up("features", self.get_features_info())
-
         sources = tuple(self._server_sources.values())
         client_uuids = kwargs.get("client_uuids", ())
         if client_uuids:
@@ -417,9 +392,6 @@ class ServerBase(ServerCore):
         info.update(self.get_sources_info(proto, sources))
         log("ServerBase.get_info took %.1fms", 1000.0 * (monotonic() - start))
         return info
-
-    def get_features_info(self) -> dict[str, Any]:
-        return {}
 
     def _process_server_settings(self, proto, packet: Packet) -> None:
         # only used by x11 servers
