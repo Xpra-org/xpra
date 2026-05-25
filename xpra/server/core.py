@@ -345,14 +345,14 @@ class ServerCore(GLibServer):
         threaded_server_init()
         self.emit("init-thread-ended")
 
-    def get_subsystems(self) -> list[str]:
-        return list(self.subsystems.keys())
-
     def get_child_env(self) -> dict[str, str]:
         # base child env: filtered os.environ with script-launcher overrides reverted.
         # `ServerBase.get_child_env` merges subsystem contributions on top of this.
         env = {k: v for k, v in os.environ.items() if k not in ENV_BLOCKLIST}
-        return restore_script_env(env)
+        if OSX:
+            env = restore_script_env(env)
+        env.update(self._dispatch_merge("get_child_env"))
+        return env
 
     # --------------------------------------------------------------------
     # subsystem lookup and dispatch helpers
@@ -446,10 +446,9 @@ class ServerCore(GLibServer):
         info: dict = {}
         for sub in self.subsystems.values():
             fn = getattr(sub, method, None)
-            if fn is None:
-                continue
             try:
                 d = fn(*args)
+                log("dispatch-merge: %s()=%s", fn, d)
             except Exception:
                 log.warn(f"Error: in {sub}.{method}", exc_info=True)
                 continue
@@ -1656,10 +1655,13 @@ class ServerCore(GLibServer):
         if not WIN32:
             set_socket_timeout(proto._conn, None)
 
+    def get_caps(self, source) -> dict:
+        return self._dispatch_merge("get_caps", source)
+
     def make_hello(self, source) -> dict[str, Any]:
         now = time()
         capabilities = get_network_caps(FULL_INFO)
-        capabilities |= self._dispatch_merge("get_caps", source)
+        capabilities |= self.get_caps(source)
         capabilities |= get_digest_caps()
         capabilities |= {
             "start_time": int(self.start_time),
@@ -1722,7 +1724,9 @@ class ServerCore(GLibServer):
         log("ServerCore.get_threaded_info(%s, %s)", proto, kwargs)
         start = monotonic()
         # this function is for non UI thread info, see also: `get_ui_info`
-        info = {}
+        info = {
+            "subsystems": tuple(self.subsystems.keys()),
+        }
         subsystems = kwargs.get("subsystems", ())
         for prefix, sub in self.subsystems.items():
             if subsystems and prefix not in subsystems:

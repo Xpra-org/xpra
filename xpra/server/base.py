@@ -257,11 +257,6 @@ class ServerBase(ServerCore):
         # ServerCore.setup dispatches `setup` to all subsystems:
         super().setup()
 
-    def get_child_env(self) -> dict[str, str]:
-        env = super().get_child_env()
-        env.update(self._dispatch_merge("get_child_env"))
-        return env
-
     def server_is_ready(self) -> None:
         super().server_is_ready()
         self.server_event("ready")
@@ -352,9 +347,7 @@ class ServerBase(ServerCore):
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         # these are flags that have been added over time with new versions
         # to expose new server features:
-        f: dict[str, Any] = {}
-        merge_dicts(f, self._dispatch_merge("get_server_features", server_source))
-        return f
+        return self._dispatch_merge("get_server_features", server_source)
 
     def make_hello(self, source) -> dict[str, Any]:
         # super().make_hello already merges get_caps() across subsystems,
@@ -415,7 +408,6 @@ class ServerBase(ServerCore):
 
         if not subsystems or "features" in subsystems:
             up("features", self.get_features_info())
-        info["subsystems"] = self.get_subsystems()
 
         sources = tuple(self._server_sources.values())
         client_uuids = kwargs.get("client_uuids", ())
