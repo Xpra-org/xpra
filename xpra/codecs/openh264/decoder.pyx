@@ -243,6 +243,10 @@ cdef class Decoder:
             msg = ERROR_STR.get(r, "unknown")
             raise RuntimeError(f"openh264 frame decoding error {msg!r}")
         end = monotonic()
+        if buf_info.iBufferStatus != 1:
+            log("openh264 decoded %8i bytes without producing a frame in %3ims",
+                src_len, int((end-start)*1000))
+            return None
         cdef int ystride = buf_info.UsrData.sSystemBuffer.iStride[0]
         cdef int uvstride = buf_info.UsrData.sSystemBuffer.iStride[1]
         strides = (ystride, uvstride, uvstride)
