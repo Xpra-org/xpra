@@ -124,6 +124,23 @@ class TestSocketPeekWrapper(unittest.TestCase):
         assert wrapper.peeked == b"LO"
         mock_sock.recv.assert_not_called()
 
+    def test_recv_into_consumes_peeked(self):
+        wrapper, mock_sock = self._make(b"HELLO")
+        buf = bytearray(3)
+        n = wrapper.recv_into(buf)
+        assert n == 3
+        assert bytes(buf) == b"HEL"
+        assert wrapper.peeked == b"LO"
+        mock_sock.recv_into.assert_not_called()
+
+    def test_recv_into_no_peeked_delegates(self):
+        wrapper, mock_sock = self._make(b"")
+        mock_sock.recv_into.return_value = 4
+        buf = bytearray(4)
+        n = wrapper.recv_into(buf)
+        assert n == 4
+        mock_sock.recv_into.assert_called_once_with(buf)
+
     def test_recv_no_peek_exhausts_peeked_then_reads(self):
         wrapper, mock_sock = self._make(b"AB")
         mock_sock.recv.return_value = b"CD"
@@ -174,6 +191,34 @@ class TestSocketPeekWrapper(unittest.TestCase):
         wrapper, _ = self._make(b"old")
         wrapper._update_peek(b"new")
         assert wrapper.peeked == b"new"
+
+
+# ---------------------------------------------------------------------------
+# Connection
+# ---------------------------------------------------------------------------
+
+class TestConnection(unittest.TestCase):
+
+    def test_recv_into_preserves_overread_data(self):
+        from xpra.net.bytestreams import Connection
+
+        class ChunkConnection(Connection):
+            def __init__(self):
+                super().__init__("local", "test")
+                self.chunks = [b"ABCDE"]
+
+            def read(self, _n):
+                return self.chunks.pop(0) if self.chunks else b""
+
+        conn = ChunkConnection()
+        buf = bytearray(3)
+        n = conn.recv_into(buf)
+        assert n == 3
+        assert bytes(buf) == b"ABC"
+        buf = bytearray(2)
+        n = conn.recv_into(buf)
+        assert n == 2
+        assert bytes(buf) == b"DE"
 
 
 # ---------------------------------------------------------------------------

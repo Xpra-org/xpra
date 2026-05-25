@@ -29,9 +29,9 @@ class WebSocketProtocol(SocketProtocol):
         super().__init__(*args, **kwargs)
         self.ws_data: bytes = b""
         self.ws_payload: list[SizedBuffer] = []
+        self.ws_xpra_data: list[SizedBuffer] = []
         self.ws_payload_opcode: int = 0
         self.ws_mask: bool = MASK
-        self._process_read = self.parse_ws_frame
         self.make_chunk_header: Callable = self.make_xpra_header
         self.make_frame_header: Callable = self.make_wsframe_header
 
@@ -46,6 +46,23 @@ class WebSocketProtocol(SocketProtocol):
         super().close(message)
         self.ws_data = b""
         self.ws_payload = []
+        self.ws_xpra_data = []
+
+    def recv_into(self, buf) -> int:
+        while not self.ws_xpra_data and not self._closed:
+            raw_buf = bytearray(self.read_buffer_size)
+            n = SocketProtocol.recv_into(self, raw_buf)
+            if not n:
+                return 0
+            self.parse_ws_frame(memoryview(raw_buf)[:n])
+        if not self.ws_xpra_data:
+            return 0
+        data = self.ws_xpra_data.pop(0)
+        n = min(len(data), len(buf))
+        buf[:n] = data[:n]
+        if n < len(data):
+            self.ws_xpra_data.insert(0, data[n:])
+        return n
 
     def send_ws_close(self, code: int = 1000, reason: str = "closing") -> None:
         data = close_packet(code, reason)
@@ -66,6 +83,7 @@ class WebSocketProtocol(SocketProtocol):
         return header
 
     def parse_ws_frame(self, buf: SizedBuffer) -> None:
+        buf = memoryview_to_bytes(buf)
         if self.ws_data:
             ws_data = b"".join((self.ws_data, buf))
             self.ws_data = b""
@@ -116,14 +134,14 @@ class WebSocketProtocol(SocketProtocol):
                 if not full_payload:
                     log.warn("Warning: empty websocket binary payload")
                     continue
-                self._read_queue_put(full_payload)
+                self.ws_xpra_data.append(full_payload)
             elif opcode == OPCODE.TEXT:
                 if first_time(f"ws-text-frame-from-{self._conn}"):
                     log.warn("Warning: handling text websocket frame as binary")
                 if not full_payload:
                     log.warn("Warning: empty websocket text payload")
                     continue
-                self._read_queue_put(full_payload)
+                self.ws_xpra_data.append(full_payload)
             elif opcode == OPCODE.CLOSE:
                 log.info("websocket close opcode received")
                 self._process_ws_close(full_payload)

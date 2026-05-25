@@ -115,6 +115,7 @@ class Connection:
         self.options = options or {}
         self.input_bytecount = 0
         self.input_readcount = 0
+        self._read_buffer = b""
         self.output_bytecount = 0
         self.output_writecount = 0
         self.filename = None  # only used for unix domain sockets!
@@ -159,6 +160,28 @@ class Connection:
         self.input_bytecount += len(r or b"")
         self.input_readcount += 1
         return r or b""
+
+    def _recv_into(self, *args) -> int:
+        """ wraps recv_into-style calls with packet accounting """
+        r = self.untilConcludes(*args)
+        n = r or 0
+        self.input_bytecount += n
+        self.input_readcount += int(r is not None)
+        return n
+
+    def recv_into(self, buf) -> int:
+        pending = self._read_buffer
+        bufsize = len(buf)
+        if pending:
+            n = min(len(pending), bufsize)
+            buf[:n] = pending[:n]
+            self._read_buffer = pending[n:]
+            return n
+        data = self.read(bufsize)
+        n = min(len(data), bufsize)
+        buf[:n] = data[:n]
+        self._read_buffer = data[n:]
+        return n
 
     def get_info(self) -> dict[str, Any]:
         info = self.info.copy()
@@ -354,6 +377,9 @@ class SocketConnection(Connection):
 
     def read(self, n: int) -> bytes:
         return self._read(self._socket.recv, n)
+
+    def recv_into(self, buf) -> int:
+        return self._recv_into(self._socket.recv_into, buf)
 
     def write(self, buf, _packet_type: str = "") -> int:
         return self._write(self._socket.send, buf)
@@ -593,6 +619,19 @@ class SocketPeekWrapper:
             log("patched_recv() non peek, returned already read data")
             return peeked
         return self.socket.recv(bufsize, flags)
+
+    def recv_into(self, buf, flags=0) -> int:
+        if flags:
+            data = self.recv(len(buf), flags)
+            buf[:len(data)] = data
+            return len(data)
+        if self.peeked:
+            n = min(len(self.peeked), len(buf))
+            buf[:n] = self.peeked[:n]
+            self.peeked = self.peeked[n:]
+            log("patched_recv_into() returned already read data")
+            return n
+        return self.socket.recv_into(buf)
 
 
 class SSLSocketConnection(SocketConnection):

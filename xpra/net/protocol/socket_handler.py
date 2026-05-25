@@ -9,8 +9,9 @@
 # but it works on win32, for whatever that's worth.
 
 import os
+from dataclasses import dataclass, field
 from enum import Enum, IntEnum
-from time import monotonic, sleep
+from time import monotonic
 from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue, SimpleQueue, Empty, Full
@@ -93,6 +94,21 @@ def no_packet() -> tuple[Packet, bool, bool]:
     return Packet("closed"), False, False
 
 
+@dataclass
+class PacketReadInfo:
+    protocol_flags: int
+    compression_level: int
+    packet_index: int
+    data_size: int
+    padding_size: int
+    payload_size: int
+
+
+@dataclass
+class ReceiveState:
+    raw_packets: dict[int, SizedBuffer] = field(default_factory=dict)
+
+
 class SocketProtocol:
     """
         This class handles sending and receiving packets,
@@ -111,7 +127,7 @@ class SocketProtocol:
         """
         if not conn:
             raise ValueError(f"missing connection: {conn}")
-        for fn in ("read", "write", "close", "peek"):
+        for fn in ("read", "write", "close", "peek", "recv_into"):
             if not hasattr(conn, fn):
                 raise ValueError(f"{conn} doesn't look like a connection object: no {fn!r}")
             if not callable(getattr(conn, fn)):
@@ -131,10 +147,7 @@ class SocketProtocol:
         self.make_chunk_header: Callable[[str | int, int, int, int, int], bytes] = self.make_xpra_header
         self.make_frame_header: Callable[[str | int, list[SizedBuffer]], SizedBuffer] = self.noframe_header
         self._write_queue: Queue[tuple[Sequence, str, bool, bool] | None] = Queue(1)
-        self._read_queue: Queue[SizedBuffer] = Queue(20)
-        self._pre_read = []
-        self._process_read: Callable[[SizedBuffer], None] = self.read_queue_put
-        self._read_queue_put: Callable[[SizedBuffer], None] = self.read_queue_put
+        self._pre_read: list[SizedBuffer] = []
         self._get_packet_cb: Callable[[], tuple[Packet, bool, bool]] = get_packet_cb
         # counters:
         self.input_stats: dict[str, int] = {}
@@ -186,12 +199,10 @@ class SocketProtocol:
         self._threading_lock = RLock()
         self._write_lock = Lock()
         self._write_thread: Thread | None = None
-        self._read_thread: Thread | None = make_thread(self._read_thread_loop, "read", daemon=True)
-        self._read_parser_thread: Thread | None = None  # started when needed
+        self._read_parser_thread: Thread | None = make_thread(self._read_parse_thread_loop, "parse", daemon=True)
         self._write_format_thread: Thread | None = None  # started when needed
         self._source_has_more = Event()
         self.receive_pending = False
-        self.eof_pending = False
         # ssh channel may contain garbage initially,
         # tell the protocol to wait for a valid header:
         self.wait_for_header = conn.socktype == "ssh"
@@ -240,7 +251,7 @@ class SocketProtocol:
         return bool(self.cipher_out_name) or self._conn.socktype in ("ssl", "wss", "ssh", "quic")
 
     def wait_for_io_threads_exit(self, timeout=None) -> bool:
-        io_threads = (self._read_thread, self._write_thread, self._read_parser_thread, self._read_parser_thread)
+        io_threads = (self._write_thread, self._read_parser_thread, self._write_format_thread)
         current = current_thread()
         for t in io_threads:
             if t and t != current and t.is_alive():
@@ -382,7 +393,6 @@ class SocketProtocol:
     def get_threads(self) -> Sequence[Thread]:
         return tuple(x for x in (
             self._write_thread,
-            self._read_thread,
             self._read_parser_thread,
             self._write_format_thread,
         ) if x is not None)
@@ -400,7 +410,6 @@ class SocketProtocol:
             "has_more": bool(shm) and shm.is_set(),
             "receive-pending": self.receive_pending,
             "closed": self._closed,
-            "eof-pending": self.eof_pending,
         }
         if comp := self.compressor:
             info["compressor"] = comp
@@ -435,19 +444,19 @@ class SocketProtocol:
             },
         }
         thread_info: dict[str, bool] = {}
-        for t in (self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread):
+        for t in (self._write_thread, self._read_parser_thread, self._write_format_thread):
             if t:
                 thread_info[t.name] = t.is_alive()
         info["thread"] = thread_info
         return info
 
     def start(self) -> None:
-        def start_network_read_thread() -> None:
-            eventlog(f"start_network_read_thread() closed={self._closed}")
+        def start_network_parse_thread() -> None:
+            eventlog(f"start_network_parse_thread() closed={self._closed}")
             if not self._closed:
-                self._read_thread.start()
+                self._read_parser_thread.start()
 
-        self.idle_add(start_network_read_thread)
+        self.idle_add(start_network_parse_thread)
         if SEND_INVALID_PACKET:
             self.timeout_add(SEND_INVALID_PACKET * 1000, self.raw_write, SEND_INVALID_PACKET_DATA)
 
@@ -855,49 +864,62 @@ class SocketProtocol:
                     self.output_raw_packetcount += 1
         self.output_packetcount += 1
 
-    def _read_thread_loop(self) -> None:
-        self._io_thread_loop("read", self._read)
-
-    def _read(self) -> bool:
-        buf = self.con_read()
-        # log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
-        # add to the read queue (or whatever takes its place - see steal_connection)
-        if not buf:
-            if self._closed:
-                return False
-            if self.eof_pending:
-                eventlog("read thread: %i eof already pending, ignoring", self.eof_pending)
-                sleep(0.001)
-            else:
-                socktype = getattr(self._conn, "socktype", "unknown")
-                is_ssl_socktype = socktype in ("ssl", "wss", "quic")
-                grace_period = envint(f"XPRA_{socktype.upper()}_EOF_GRACE_PERIOD", 10 + is_ssl_socktype * 2000)
-                eventlog(f"read thread: potential eof on {socktype!r} connection, using grace period={grace_period}ms")
-                self.timeout_add(grace_period, self.check_eof, self.input_raw_packetcount)
-                self.eof_pending = True
-        else:
-            self._process_read(buf)
-            self.input_raw_packetcount += 1
-        return True
-
-    def check_eof(self, raw_count=0) -> bool:
-        self.eof_pending = False
-        if self._closed:
-            return False
-        if self.input_raw_packetcount <= raw_count:
-            eventlog("check_eof: eof detected")
-            self._process_read(b"")
-            self.timeout_add(100, self.close)
-            return False
-        eventlog.warn("Warning: ignored stray eof reading from connection")
-        return False
-
-    def con_read(self) -> SizedBuffer:
+    def recv_into(self, buf) -> int:
         if self._pre_read:
-            r = self._pre_read.pop(0)
-            log("con_read() using pre_read value: %r", Ellipsizer(r))
-            return r
-        return self._conn.read(self.read_buffer_size)
+            data = self._pre_read.pop(0)
+            n = min(len(data), len(buf))
+            log("recv_into() using pre_read value: %r", Ellipsizer(data[:n]))
+            buf[:n] = data[:n]
+            if n < len(data):
+                self._pre_read.insert(0, data[n:])
+            return n
+        conn = self._conn
+        if not conn:
+            return 0
+        try:
+            n = conn.recv_into(buf)
+        except ConnectionClosedException as e:
+            eventlog("recv_into() connection closed: %s", e)
+            return 0
+        if n:
+            self.input_raw_packetcount += 1
+        return n
+
+    def read_exact(self, size: int) -> memoryview | None:
+        data = bytearray(size)
+        view = memoryview(data)
+        pos = 0
+        while pos < size and not self._closed:
+            n = self.recv_into(view[pos:])
+            if not n:
+                eventlog("read_exact(%i) eof at %i", size, pos)
+                return None
+            pos += n
+        return view
+
+    def read_header(self) -> bytes | None:
+        if self.wait_for_header:
+            data = bytearray()
+            buf = bytearray(self.read_buffer_size)
+            while not self._closed:
+                n = self.recv_into(buf)
+                if not n:
+                    return None
+                data += buf[:n]
+                pos = find_xpra_header(data)
+                eventlog("waiting for xpra header: pos=%i", pos)
+                if pos < 0:
+                    continue
+                end = pos + HEADER_SIZE
+                self.wait_for_header = False
+                if end < len(data):
+                    self._pre_read.insert(0, bytes(data[end:]))
+                return bytes(data[pos:end])
+            return None
+        header = self.read_exact(HEADER_SIZE)
+        if header is None:
+            return None
+        return bytes(header)
 
     def _internal_error(self, message="", exc=None, exc_info=False) -> None:
         eventlog("_internal_error(%r, %r, %r)", message, exc, exc_info)
@@ -947,26 +969,6 @@ class SocketProtocol:
                 err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
 
-    def process_read(self, data: SizedBuffer) -> None:
-        self._read_queue_put(data)
-
-    def read_queue_put(self, data: SizedBuffer) -> None:
-        # start the parse thread if needed:
-        if not self._read_parser_thread and not self._closed:
-            if data is None:
-                eventlog("empty marker in read queue, exiting")
-                self.idle_add(self.close)
-                return
-            self.start_read_parser_thread()
-        self._read_queue.put(data)
-        # from now on, take shortcut:
-        self._read_queue_put = self._read_queue.put
-
-    def start_read_parser_thread(self) -> None:
-        with self._threading_lock:
-            assert not self._read_parser_thread, "read parser thread already started"
-            self._read_parser_thread = start_thread(self._read_parse_thread_loop, "parse", daemon=True)
-
     def _read_parse_thread_loop(self) -> None:
         log("read_parse_thread_loop starting")
         try:
@@ -978,249 +980,182 @@ class SocketProtocol:
 
     def do_read_parse_thread_loop(self) -> None:
         """
-            Process the individual network packets placed in _read_queue.
-            Concatenate the raw packet data, then try to parse it.
-            Extract the individual packets from the potentially large buffer,
-            saving the rest of the buffer for later, and optionally decompress this data
-            and re-construct the one python-object-packet from potentially multiple packets (see packet_index).
+            Read and process individual network packets.
+            The packet header is read first, then the reception buffer is allocated
+            using the payload size from the header and filled using recv_into.
+            Optionally decrypt and decompress this data and re-construct the one
+            python-object-packet from potentially multiple packets (see packet_index).
             The 8 bytes packet header gives us information on the packet index, packet size and compression.
             The actual processing of the packet is done via the callback process_packet_cb,
             this will be called from this parsing thread so any calls that need to be made
             from the UI thread will need to use a callback (usually via 'idle_add')
         """
-        header = b""
-        read_buffers: list[SizedBuffer] = []
-        payload_size = -1
-        padding_size = 0
-        packet_index = 0
-        protocol_flags = 0
-        data_size = 0
-        compression_level = 0
-        raw_packets: dict[int, SizedBuffer] = {}
+        state = ReceiveState()
         while not self._closed:
-            # log("parse thread: %i items in read queue", self._read_queue.qsize())
-            buf = self._read_queue.get()
-            if not buf:
-                eventlog("parse thread: empty marker, exiting")
+            header = self.read_header()
+            if not header:
+                eventlog("parse thread: eof marker, exiting")
                 self.idle_add(self.close)
                 return
+            if header[0] != PACKET_HEADER_CHAR:
+                self.invalid_header(self, header, f"invalid packet header byte {hex(header[0])}")
+                return
+            info = self.parse_packet_header(header)
+            if info is None:
+                return
+            payload = self.read_exact(info.payload_size)
+            if payload is None:
+                eventlog("parse thread: eof during payload, exiting")
+                self.idle_add(self.close)
+                return
+            if not self.process_payload(state, info, payload):
+                return
 
-            read_buffers.append(buf)
-            if self.wait_for_header:
-                # we're waiting to see the first xpra packet header
-                # which may come after some random characters
-                # (ie: when connecting over ssh, the channel may contain some unexpected output)
-                # for this to work, we have to assume that the initial packet is smaller than 64KB:
-                joined = b"".join(read_buffers)
-                pos = find_xpra_header(joined)
-                eventlog("waiting for xpra header: pos=%i", pos)
-                if pos < 0:
-                    # wait some more:
-                    read_buffers = [joined]
-                    continue
-                # found it, so proceed:
-                read_buffers = [joined[pos:]]
-                self.wait_for_header = False
+    def parse_packet_header(self, header: bytes) -> PacketReadInfo | None:
+        # format: struct.pack(b'cBBBL', ...) - HEADER_SIZE bytes
+        _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
 
-            while read_buffers:
-                # have we read the header yet?
-                if payload_size < 0:
-                    # try to handle the first buffer:
-                    buf = read_buffers[0]
-                    if not header and buf[0] != PACKET_HEADER_CHAR:
-                        self.invalid_header(self, buf, f"invalid packet header byte {hex(buf[0])}")
-                        return
-                    # how much to we need to slice off to complete the header:
-                    read = min(len(buf), HEADER_SIZE - len(header))
-                    header += memoryview_to_bytes(buf[:read])
-                    if len(header) < HEADER_SIZE:
-                        # need to process more buffers to get a full header:
-                        read_buffers.pop(0)
-                        continue
-                    if len(buf) <= read:
-                        # we only got the header:
-                        assert len(buf) == read
-                        read_buffers.pop(0)
-                        continue
-                    # got the full header and more, keep the rest of the packet:
-                    read_buffers[0] = buf[read:]
-                    # parse the header:
-                    # format: struct.pack(b'cBBBL', ...) - HEADER_SIZE bytes
-                    _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
+        # sanity check size (will often fail if not an xpra client):
+        if data_size > self.abs_max_packet_size:
+            self.invalid_header(self, header, f"invalid size in packet header: {data_size}")
+            return None
 
-                    # sanity check size (will often fail if not an xpra client):
-                    if data_size > self.abs_max_packet_size:
-                        self.invalid_header(self, header, f"invalid size in packet header: {data_size}")
-                        return
+        if packet_index >= 16:
+            self.invalid_header(self, header, f"invalid packet index: {packet_index}")
+            return None
 
-                    if packet_index >= 16:
-                        self.invalid_header(self, header, f"invalid packet index: {packet_index}")
-                        return
+        if protocol_flags & FLAGS_CIPHER:
+            if not self.cipher_in_name:
+                cryptolog.warn("Warning: received cipher block,")
+                cryptolog.warn(" but we don't have a cipher to decrypt it with,")
+                cryptolog.warn(" not an xpra client?")
+                self.invalid_header(self, header, "invalid encryption packet flag (no cipher configured)")
+                return None
+            if self.cipher_in_block_size == 0:
+                padding_size = 0
+            else:
+                padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
+                if self.cipher_in_always_pad and padding_size == 0:
+                    padding_size = self.cipher_in_block_size
+            payload_size = data_size + padding_size
+        else:
+            padding_size = 0
+            payload_size = data_size
+        if payload_size <= 0:
+            raise ValueError(f"invalid payload size {payload_size} for header {header!r}")
 
-                    if protocol_flags & FLAGS_CIPHER:
-                        if not self.cipher_in_name:
-                            cryptolog.warn("Warning: received cipher block,")
-                            cryptolog.warn(" but we don't have a cipher to decrypt it with,")
-                            cryptolog.warn(" not an xpra client?")
-                            self.invalid_header(self, header, "invalid encryption packet flag (no cipher configured)")
-                            return
-                        if self.cipher_in_block_size == 0:
-                            padding_size = 0
-                        else:
-                            padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
-                            if self.cipher_in_always_pad and padding_size == 0:
-                                padding_size = self.cipher_in_block_size
-                        payload_size = data_size + padding_size
-                    else:
-                        # no cipher, no padding:
-                        padding_size = 0
-                        payload_size = data_size
-                    if payload_size <= 0:
-                        raise ValueError(f"invalid payload size {payload_size} for header {header!r}")
-
-                    if payload_size > self.max_packet_size:
-                        # this packet is seemingly too big, but check again from the main UI thread
-                        # this gives 'set_max_packet_size' a chance to run from "hello"
-
-                        def check_packet_size(size_to_check: int, packet_header) -> bool:
-                            if self._closed:
-                                return False
-                            eventlog("check_packet_size(%#x, %s) max=%#x",
-                                     size_to_check, hexstr(packet_header), self.max_packet_size)
-                            if size_to_check > self.max_packet_size:
-                                # pylint: disable=line-too-long
-                                err_msg = f"packet size requested is {size_to_check}"
-                                err_msg += f" but maximum allowed is {self.max_packet_size}"
-                                self.invalid(err_msg, packet_header)
-                            return False
-
-                        self.timeout_add(1000, check_packet_size, payload_size, header)
-
-                # how much data do we have?
-                bl = sum(len(v) for v in read_buffers)
-                if bl < payload_size:
-                    # incomplete packet, wait for the rest to arrive
-                    break
-
-                raw_data: SizedBuffer
-                buf = read_buffers[0]
-                if len(buf) == payload_size:
-                    # exact match, consume it all:
-                    raw_data = read_buffers.pop(0)
-                elif len(buf) > payload_size:
-                    # keep rest of packet for later:
-                    read_buffers[0] = buf[payload_size:]
-                    raw_data = buf[:payload_size]
-                else:
-                    # we need to aggregate chunks,
-                    # just concatenate them all:
-                    raw_data = b"".join(read_buffers)
-                    if bl == payload_size:
-                        # nothing left:
-                        read_buffers = []
-                    else:
-                        # keep the left over:
-                        read_buffers = [raw_data[payload_size:]]
-                        raw_data = raw_data[:payload_size]
-
-                data = raw_data
-                # decrypt if needed:
-                if self.cipher_in_name:
-                    if not protocol_flags & FLAGS_CIPHER:
-                        self.invalid("unencrypted packet dropped", data)
-                        return
-                    data = self.decrypt(raw_data, padding_size)
-                    if not data:
-                        return
-
-                # uncompress if needed:
-                if compression_level > 0:
-                    try:
-                        data = decompress(data, compression_level)
-                    except InvalidCompressionException as e:
-                        self.invalid(f"invalid compression: {e}", data)
-                        return
-                    except Exception as e:
-                        ctype = compression.get_compression_type(compression_level)
-                        msg = f"{ctype} packet decompression failed"
-                        log(msg, exc_info=True)
-                        if self.cipher_in:
-                            msg += " (invalid encryption key?)"
-                        else:
-                            # only include the exception text when not using encryption
-                            # as this may leak crypto information:
-                            msg += f" {e}"
-                        del e
-                        self.gibberish(msg, data)
-                        return
-
+        if payload_size > self.max_packet_size:
+            # this packet is seemingly too big, but check again from the main UI thread
+            # this gives 'set_max_packet_size' a chance to run from "hello"
+            def check_packet_size(size_to_check: int, packet_header) -> bool:
                 if self._closed:
-                    return
+                    return False
+                eventlog("check_packet_size(%#x, %s) max=%#x",
+                         size_to_check, hexstr(packet_header), self.max_packet_size)
+                if size_to_check > self.max_packet_size:
+                    err_msg = f"packet size requested is {size_to_check}"
+                    err_msg += f" but maximum allowed is {self.max_packet_size}"
+                    self.invalid(err_msg, packet_header)
+                return False
 
-                # we're processing this packet,
-                # make sure we get a new header next time
-                header = b""
-                if packet_index > 0:
-                    if packet_index in raw_packets:
-                        self.invalid(f"duplicate raw packet at index {packet_index}", data)
-                        return
-                    # raw packet, store it and continue:
-                    raw_packets[packet_index] = data
-                    payload_size = -1
-                    if len(raw_packets) >= 4:
-                        self.invalid(f"too many raw packets: {len(raw_packets)}", data)
-                        return
-                    # we know for sure that another packet should follow immediately
-                    # the one with packet_index=0 for this raw packet
-                    self.receive_pending = True
-                    continue
-                # final packet (packet_index==0), decode it:
-                try:
-                    packet = list(decode(data, protocol_flags))
-                except InvalidPacketEncodingException as e:
-                    self.invalid(f"invalid packet encoding: {e}", data)
-                    return
-                except (ValueError, TypeError, IndexError) as e:
-                    etype = packet_encoding.get_packet_encoding_type(protocol_flags)
-                    log.error(f"Error parsing {etype} packet:")
-                    log.estr(e)
-                    if self._closed:
-                        return
-                    eventlog(f"failed to parse {etype} packet: %s", hexstr(data[:128]), exc_info=True)
-                    data_str = memoryview_to_bytes(data)
-                    eventlog(" data: %s", repr_ellipsized(data_str))
-                    eventlog(f" packet_index={packet_index}, payload_size={payload_size}, buffer size={bl}")
-                    eventlog(" full data: %s", hexstr(data_str))
-                    self.may_log_stats()
-                    self.gibberish(f"failed to parse {etype} packet", data)
-                    return
+            self.timeout_add(1000, check_packet_size, payload_size, header)
+        return PacketReadInfo(protocol_flags, compression_level, packet_index,
+                              data_size, padding_size, payload_size)
 
-                if self._closed:
-                    return
-                payload_size = len(data)
-                # add any raw packets back into it:
-                if raw_packets:
-                    for index, raw_data in raw_packets.items():
-                        # replace placeholder with the raw_data packet data:
-                        packet[index] = raw_data
-                        payload_size += len(raw_data)
-                    raw_packets = {}
+    def process_payload(self, state: ReceiveState, info: PacketReadInfo, raw_data: SizedBuffer) -> bool:
+        data = raw_data
+        # decrypt if needed:
+        if self.cipher_in_name:
+            if not info.protocol_flags & FLAGS_CIPHER:
+                self.invalid("unencrypted packet dropped", data)
+                return False
+            data = self.decrypt(raw_data, info.padding_size)
+            if not data:
+                return False
 
-                packet_type = str(packet[0])
-                self.input_stats[packet_type] = self.output_stats.get(packet_type, 0) + 1
-                if LOG_RAW_PACKET_SIZE and packet_type != "logging":
-                    log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
-                payload_size = -1
-                self.input_packetcount += 1
-                self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
-                log("processing packet %s", packet_type)
-                try:
-                    wrapped = Packet(*packet)
-                except (TypeError, ValueError):
-                    log.error("Error parsing packet", exc_info=True)
+        # uncompress if needed:
+        if info.compression_level > 0:
+            try:
+                data = decompress(data, info.compression_level)
+            except InvalidCompressionException as e:
+                self.invalid(f"invalid compression: {e}", data)
+                return False
+            except Exception as e:
+                ctype = compression.get_compression_type(info.compression_level)
+                msg = f"{ctype} packet decompression failed"
+                log(msg, exc_info=True)
+                if self.cipher_in:
+                    msg += " (invalid encryption key?)"
                 else:
-                    self._process_packet_cb(self, wrapped)
-                del packet
+                    # only include the exception text when not using encryption
+                    # as this may leak crypto information:
+                    msg += f" {e}"
+                del e
+                self.gibberish(msg, data)
+                return False
+
+        if self._closed:
+            return False
+
+        if info.packet_index > 0:
+            if info.packet_index in state.raw_packets:
+                self.invalid(f"duplicate raw packet at index {info.packet_index}", data)
+                return False
+            # raw packet, store it and continue:
+            state.raw_packets[info.packet_index] = data
+            if len(state.raw_packets) >= 4:
+                self.invalid(f"too many raw packets: {len(state.raw_packets)}", data)
+                return False
+            # we know for sure that another packet should follow immediately
+            # the one with packet_index=0 for this raw packet
+            self.receive_pending = True
+            return True
+        # final packet (packet_index==0), decode it:
+        try:
+            packet = list(decode(data, info.protocol_flags))
+        except InvalidPacketEncodingException as e:
+            self.invalid(f"invalid packet encoding: {e}", data)
+            return False
+        except (ValueError, TypeError, IndexError) as e:
+            etype = packet_encoding.get_packet_encoding_type(info.protocol_flags)
+            log.error(f"Error parsing {etype} packet:")
+            log.estr(e)
+            if self._closed:
+                return False
+            eventlog(f"failed to parse {etype} packet: %s", hexstr(data[:128]), exc_info=True)
+            data_str = memoryview_to_bytes(data)
+            eventlog(" data: %s", repr_ellipsized(data_str))
+            eventlog(f" packet_index={info.packet_index}, payload_size={info.payload_size}")
+            eventlog(" full data: %s", hexstr(data_str))
+            self.may_log_stats()
+            self.gibberish(f"failed to parse {etype} packet", data)
+            return False
+
+        if self._closed:
+            return False
+        payload_size = len(data)
+        # add any raw packets back into it:
+        if state.raw_packets:
+            for index, raw_packet_data in state.raw_packets.items():
+                # replace placeholder with the raw_data packet data:
+                packet[index] = raw_packet_data
+                payload_size += len(raw_packet_data)
+            state.raw_packets = {}
+
+        packet_type = str(packet[0])
+        self.input_stats[packet_type] = self.output_stats.get(packet_type, 0) + 1
+        if LOG_RAW_PACKET_SIZE and packet_type != "logging":
+            log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
+        self.input_packetcount += 1
+        self.receive_pending = bool(info.protocol_flags & FLAGS_FLUSH)
+        log("processing packet %s", packet_type)
+        try:
+            wrapped = Packet(*packet)
+        except (TypeError, ValueError):
+            log.error("Error parsing packet", exc_info=True)
+        else:
+            self._process_packet_cb(self, wrapped)
+        return True
 
     def do_flush_then_close(self, encoder: Callable | None = None,
                             last_packet=None,
@@ -1386,11 +1321,13 @@ class SocketProtocol:
         # class is no longer reading from the connection before it can re-use it
         eventlog("steal_connection(%r)", read_callback)
         assert not self._closed, "cannot steal a closed connection"
-        if read_callback:
-            self._read_queue_put = read_callback
         conn = self._conn
         self._closed = True
         self._conn = None
+        if read_callback:
+            for data in self._pre_read:
+                read_callback(data)
+        self._pre_read = []
         if conn:
             # this ensures that we exit the untilConcludes() read/write loop
             conn.set_active(False)
@@ -1403,12 +1340,9 @@ class SocketProtocol:
         self._get_packet_cb = no_packet
         self._encoder = noop
         self._write_thread = None
-        self._read_thread = None
         self._read_parser_thread = None
         self._write_format_thread = None
         self._process_packet_cb = noop
-        self._process_read = noop
-        self._read_queue_put = noop
         self._compress = noop
         self._write_lock = None
         self._conn = None  # should be redundant
@@ -1424,9 +1358,5 @@ class SocketProtocol:
         owq = self._write_queue
         self._write_queue = exit_queue()
         force_flush_queue(owq)
-        # read queue:
-        orq = self._read_queue
-        self._read_queue = exit_queue()
-        force_flush_queue(orq)
         # just in case the read thread is waiting again:
         self._source_has_more.set()
