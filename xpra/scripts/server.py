@@ -63,7 +63,7 @@ def display_name_check(display_name: str) -> None:
     try:
         dno = int(n)
     except (ValueError, TypeError):
-        raise InitException(f"invalid display number {n}") from None
+        raise InitExit(ExitCode.NO_DISPLAY, f"invalid display number {n}") from None
     else:
         if 0 <= dno < 10:
             warn(f"WARNING: low display number: {dno}")
@@ -92,9 +92,9 @@ def guess_xpra_display(socket_dir, socket_dirs) -> str:
     results = dotxpra.sockets()
     live = [display for state, display in results if state == SocketState.LIVE]
     if not live:
-        raise InitException("no existing xpra servers found")
+        raise InitExit(ExitCode.SERVER_NOT_FOUND, "no existing xpra servers found")
     if len(live) > 1:
-        raise InitException("too many existing xpra servers found, cannot guess which one to use")
+        raise InitExit(ExitCode.SERVER_NOT_FOUND, "too many existing xpra servers found, cannot guess which one to use")
     return live[0]
 
 
@@ -313,7 +313,7 @@ def sanitize_dbus_env(dbus: str) -> None:
 def resolve_server_display_name(opts, extra_args: list[str], desktop_display: str,
                                 shadowing: bool, expanding: bool, runner: bool,
                                 upgrading: bool, proxying: bool, encoder: bool,
-                                use_display: bool | None, error_cb: Callable) -> tuple[str, str]:
+                                use_display: bool | None) -> tuple[str, str]:
     display_options = ""
     if (shadowing or expanding or runner) and not extra_args:
         if runner:
@@ -328,7 +328,7 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
         if len(extra_args) > 1:
-            error_cb(f"too many extra arguments ({len(extra_args)}): only expected a display number")
+            raise InitException(f"too many extra arguments ({len(extra_args)}): only expected a display number")
         if len(extra_args) == 1:
             display_name = extra_args[0]
             # look for display options:
@@ -351,7 +351,7 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
                         display_name = v
                         break
                 if not display_name:
-                    error_cb("you must specify a free virtual display name to use with the proxy server")
+                    raise InitException("you must specify a free virtual display name to use with the proxy server")
             elif use_display:
                 # only use automatic guess for xpra displays and not X11 displays:
                 display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
@@ -480,7 +480,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     # get the display name:
     display_name, display_options = resolve_server_display_name(opts, extra_args, desktop_display,
                                                                 shadowing, expanding, runner, upgrading,
-                                                                proxying, encoder, use_display, error_cb)
+                                                                proxying, encoder, use_display)
 
     if upgrading:
         if not display_name:
@@ -597,7 +597,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     vfb_result = xvfb.setup_vfb(display_name, start_vfb, xauth_data,
                                 protected_env, pam, shadowing, proxying, encoder, runner, starting,
                                 clobber, use_display, upgrading,
-                                error_cb, progress)
+                                progress)
     use_display = xvfb.use_display
     display_name = vfb_result.display_name
 

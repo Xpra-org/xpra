@@ -14,7 +14,7 @@ from xpra.common import noerr, noop
 from xpra.os_util import POSIX, OSX, getuid, get_username_for_uid, find_group
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.scripts.server import VFBStartResult, verify_display
-from xpra.scripts.config import InitException, xvfb_command
+from xpra.scripts.config import InitExit, xvfb_command
 from xpra.scripts.common import no_gtk
 from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
 from xpra.scripts.session import load_session_file
@@ -25,6 +25,7 @@ from xpra.util.parsing import ALL_BOOLEAN_OPTIONS, parse_resolutions, get_refres
 from xpra.util.str_fn import get_rand_chars
 from xpra.os_util import get_hex_uuid
 from xpra.log import Logger
+from xpra.exit_codes import ExitCode
 
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
 log = Logger("server")
@@ -34,13 +35,13 @@ def validate_pixel_depth(pixel_depth, desktop_or_monitor=False) -> int:
     try:
         pixel_depth = int(pixel_depth)
     except ValueError:
-        raise InitException(f"invalid value {pixel_depth} for pixel depth, must be a number") from None
+        raise InitExit(ExitCode.UNSUPPORTED, f"invalid value {pixel_depth} for pixel depth, must be a number") from None
     if pixel_depth == 0:
         pixel_depth = 24
     if pixel_depth not in (8, 16, 24, 30):
-        raise InitException(f"invalid pixel depth: {pixel_depth}")
+        raise InitExit(ExitCode.UNSUPPORTED, f"invalid pixel depth: {pixel_depth}")
     if not desktop_or_monitor and pixel_depth == 8:
-        raise InitException("pixel depth 8 is only supported in 'desktop' mode")
+        raise InitExit(ExitCode.UNSUPPORTED, "pixel depth 8 is only supported in 'desktop' mode")
     return pixel_depth
 
 
@@ -90,7 +91,7 @@ class XvfbManager(StubSubsystem):
                   xauth_data: str, protected_env: dict,
                   pam, shadowing: bool, proxying: bool, encoder: bool, runner: bool, starting: str,
                   clobber: int, use_display: bool | None, upgrading: bool,
-                  error_cb: Callable, progress: Callable) -> VFBStartResult:
+                  progress: Callable) -> VFBStartResult:
         old_display_name = display_name
         xauthority = None
         session_files = self.get_subsystem("session-files")
@@ -99,7 +100,7 @@ class XvfbManager(StubSubsystem):
             xauthority = self.setup_xauthority(display_name, shadowing)
             start_vfb, xauth_data, use_display = self.resolve_x11_display(
                 display_name, xauthority, xauth_data, start_vfb, use_display,
-                upgrading, shadowing, proxying, encoder, pam, error_cb, progress,
+                upgrading, shadowing, proxying, encoder, pam, progress,
             )
 
         self.start_vfb = start_vfb
@@ -114,7 +115,7 @@ class XvfbManager(StubSubsystem):
     def resolve_x11_display(self, display_name: str, xauthority: str, xauth_data: str,
                             start_vfb: bool, use_display: bool | None, upgrading: bool,
                             shadowing: bool, proxying: bool, encoder: bool, pam,
-                            error_cb: Callable, progress: Callable) -> tuple[bool, str, bool | None]:
+                            progress: Callable) -> tuple[bool, str, bool | None]:
         if (use_display is not None and not upgrading) or proxying or encoder:
             return start_vfb, xauth_data, use_display
 
@@ -122,7 +123,7 @@ class XvfbManager(StubSubsystem):
         # Bail out if we need a display that is not running.
         if not display_name:
             if upgrading:
-                error_cb("no displays found to upgrade")
+                raise InitExit(ExitCode.NO_DISPLAY, "no displays found to upgrade")
             return start_vfb, xauth_data, False
 
         progress(40, "connecting to the display")
@@ -137,7 +138,7 @@ class XvfbManager(StubSubsystem):
             stat = stat_display_socket(x11_socket_path)
             log(f"stat_display_socket({x11_socket_path})={stat}")
             if not stat and (upgrading or shadowing):
-                error_cb(f"cannot access display {display_name!r}")
+                raise InitExit(ExitCode.NO_DISPLAY, f"cannot access display {display_name!r}")
             # No X11 socket to connect to, so we have to start one.
             start_vfb = True
         if stat:

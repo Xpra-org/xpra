@@ -41,6 +41,7 @@ class ExitCode(IntEnum):
     OPENGL_UNSAFE = 30
     COMPONENT_MISSING = 31
     WM_ERROR = 32
+    SERVER_NOT_FOUND = 33
 
 
 ExitValue: TypeAlias = ExitCode | int

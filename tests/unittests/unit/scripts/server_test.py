@@ -175,7 +175,7 @@ class TestMain(unittest.TestCase):
         opts = SimpleNamespace(sessions_dir="/sessions", socket_dir="/socket", socket_dirs=())
         with patch("xpra.scripts.server.display_name_check") as display_name_check:
             display_name, display_options = resolve_server_display_name(opts, [":42,DP-1"], "", False, False,
-                                                                        False, False, False, False, False, self.fail)
+                                                                        False, False, False, False, False)
         assert display_name == ":42"
         assert display_options == "DP-1"
         display_name_check.assert_called_once_with(":42")
@@ -185,7 +185,7 @@ class TestMain(unittest.TestCase):
         dotxpra = SimpleNamespace(sockets=lambda: [("LIVE", ":1000")])
         with patch("xpra.scripts.server.DotXpra", return_value=dotxpra):
             display_name, display_options = resolve_server_display_name(opts, [], "", False, False, False, False,
-                                                                        True, False, None, self.fail)
+                                                                        True, False, None)
         assert display_name == ":1001"
         assert display_options == ""
 
@@ -255,7 +255,7 @@ class TestMain(unittest.TestCase):
         seen = []
         xvfb.connect("display-name", lambda _xvfb, display_name: seen.append(display_name))
         result = xvfb.setup_vfb(":100", False, "", {}, None, False, True, False, False, "",
-                                0, None, False, self.fail, lambda *_args: None)
+                                0, None, False, lambda *_args: None)
         assert result.display_name == ":100"
         assert seen == [":100"]
 
@@ -367,19 +367,19 @@ class TestMain(unittest.TestCase):
         assert calls == [devices]
 
     def test_resolve_x11_display_missing_upgrade(self):
+        from xpra.exit_codes import ExitCode
+        from xpra.scripts.config import InitExit
         from xpra.server.subsystem.xvfb import XvfbManager
         xvfb = XvfbManager(SimpleNamespace(subsystems={}))
         xvfb.uid = os.getuid()
         xvfb.gid = os.getgid()
-        errors = []
-        start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
-            "", "/xauth", "", True, None, True, False, False, False, None,
-            errors.append, lambda *_args: None,
-        )
-        assert start_vfb is True
-        assert xauth_data == ""
-        assert use_display is False
-        assert errors == ["no displays found to upgrade"]
+        with self.assertRaises(InitExit) as e:
+            xvfb.resolve_x11_display(
+                "", "/xauth", "", True, None, True, False, False, False, None,
+                lambda *_args: None,
+            )
+        assert e.exception.status == ExitCode.NO_DISPLAY
+        assert str(e.exception) == "no displays found to upgrade"
 
     def test_resolve_x11_display_verified(self):
         from xpra.server.subsystem.xvfb import XvfbManager
@@ -391,7 +391,7 @@ class TestMain(unittest.TestCase):
                 patch("xpra.server.subsystem.xvfb.verify_display", return_value=True):
             start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
                 ":42", "/xauth", "abc", True, None, False, False, False, False, None,
-                self.fail, lambda *args: progress.append(args),
+                lambda *args: progress.append(args),
             )
         no_gtk.assert_called_once()
         assert start_vfb is False
@@ -413,7 +413,7 @@ class TestMain(unittest.TestCase):
                 patch("xpra.x11.vfb_util.xauth_add") as xauth_add:
             start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
                 ":42", "/xauth", "", True, None, False, False, False, False, pam,
-                self.fail, lambda *_args: None,
+                lambda *_args: None,
             )
         assert start_vfb is False
         assert xauth_data == "uuid"
