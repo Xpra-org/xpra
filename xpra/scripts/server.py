@@ -15,7 +15,6 @@ from typing import NoReturn, Final
 from subprocess import Popen
 from collections.abc import Callable
 
-from xpra.scripts.session import get_session_dir, make_session_dir
 from xpra.util.io import info, warn, wait_for_socket, which
 from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_bool_or
 from xpra.scripts.parsing import MODE_ALIAS
@@ -262,12 +261,6 @@ def start_cupsd() -> None:
                 warn("started system cupsd daemon\n")
 
 
-def setup_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int, gid: int) -> str:
-    session_dir = make_session_dir(mode, sessions_dir, display_name, uid, gid)
-    os.environ["XPRA_SESSION_DIR"] = session_dir
-    return session_dir
-
-
 def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str, session_dir: str) -> str:
     from xpra.server.subsystem.daemon import DaemonServer
     assert session_dir
@@ -390,31 +383,6 @@ def request_upgrade_display(display_name: str, session: dict) -> bool:
         return True
     warn(f"server for {display_name} is not exiting")
     return False
-
-
-def update_session_dir_for_display(mode: str, sessions_dir: str, log_dir_option: str,
-                                   old_display_name: str, display_name: str,
-                                   session_dir: str, log_dir: str, uid: int, log) -> str:
-    if display_name == old_display_name or not session_dir:
-        return log_dir
-    new_session_dir = get_session_dir(mode, sessions_dir, display_name, uid)
-    if new_session_dir == session_dir:
-        return log_dir
-    try:
-        if os.path.exists(new_session_dir):
-            for sess_e in os.listdir(session_dir):
-                os.rename(os.path.join(session_dir, sess_e), os.path.join(new_session_dir, sess_e))
-            os.rmdir(session_dir)
-        else:
-            os.rename(session_dir, new_session_dir)
-    except OSError as e:
-        log.error("Error moving the session directory")
-        log.error(f" from {session_dir!r} to {new_session_dir!r}")
-        log.error(f" {e}")
-    if not log_dir_option or log_dir_option.lower() == "auto":
-        log_dir = new_session_dir
-    os.environ["XPRA_SESSION_DIR"] = new_session_dir
-    return log_dir
 
 
 def set_vfb_startup_state(app, state: VFBStartResult) -> None:
@@ -582,14 +550,14 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     process = app.get_subsystem("process")
     assert process
     process.init(opts)
-    uid, gid = process.uid, process.gid
     process.prepare_environment(display_name, xauth_data, start_vfb, shadowing, starting, protected_env)
     pam = process.pam
     protected_env = process.protected_env
 
-    session_dir = setup_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
     session_files = app.get_subsystem("session-files")
     assert session_files
+    session_files.init(opts)
+    session_dir = session_files.setup_session_dir(mode, opts.sessions_dir, display_name)
     if upgrading:
         # if we had saved the start / start-desktop config, reload it:
         session_files.apply_config(opts, cmdline)
@@ -605,7 +573,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
 
     progress(30, "initializing server")
 
-    session_files.init(opts)
+    session_files.write_config(opts)
     session_files.write_session_file("cmdline", "\n".join(cmdline) + "\n")
     session_files.write_session_file("server.env", env_script)
     if run_xpra_script:
@@ -618,9 +586,9 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     log_to_file = opts.daemon or envbool("XPRA_LOG_TO_FILE")
     if daemon := app.get_subsystem("daemon"):
         extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
-        log_dir = daemon.setup_log(start_vfb, log_to_file, display_name, extra_expand)
+        daemon.setup_log(start_vfb, log_to_file, display_name, extra_expand)
     else:
-        log_dir = get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
+        get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
     log("env=%s", os.environ)
 
     progress(30, "creating network sockets")
@@ -630,19 +598,13 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     from xpra.server.subsystem.xvfb import XvfbManager
     xvfb = app.add_subsystem(XvfbManager)
     xvfb.init(opts)
-    odisplay_name = display_name
+    xvfb.connect("display-name", session_files.display_name_changed)
     vfb_result = xvfb.setup_vfb(display_name, start_vfb, xauth_data,
                                 protected_env, pam, shadowing, proxying, encoder, runner, starting,
                                 clobber, use_display, upgrading,
                                 error_cb, progress, log)
     use_display = xvfb.use_display
     display_name = vfb_result.display_name
-    log_dir = update_session_dir_for_display(mode, opts.sessions_dir, opts.log_dir or "",
-                                             odisplay_name, display_name,
-                                             session_dir, log_dir, uid, log)
-    if daemon:
-        daemon.update_log_dir(log_dir)
-        daemon.display_name_changed(display_name)
 
     app.protected_env = protected_env
     # Change uid as early as possible, but after VFB setup:

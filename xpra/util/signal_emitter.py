@@ -32,13 +32,38 @@ class SignalEmitter:
         log("%s.emit(%s, %s)", self, signal, extra_args)
         self._fire_callback(signal, extra_args)
 
+    def _should_call_direct(self) -> bool:
+        """
+        Return True when callbacks can be invoked immediately.
+
+        SignalEmitter is mixed into both objects that own a GLib main loop
+        directly (for example GLibServer, via self.main_loop) and child objects
+        whose owning server has the loop (for example subsystems, via
+        self.server.main_loop). There is still only one relevant loop for a
+        server graph; the lookup varies because the emitter may be the owner or
+        one of its children.
+        """
+        main_loop = getattr(self, "main_loop", None)
+        if main_loop is None:
+            server = getattr(self, "server", None)
+            main_loop = getattr(server, "main_loop", None)
+        if main_loop is None:
+            return True
+        if not main_loop.is_running():
+            return True
+        return main_loop.get_context().is_owner()
+
     def _fire_callback(self, signal_name: str, extra_args=()) -> None:
         callbacks = self._signal_callbacks.get(signal_name, ())
         log("firing callback for '%s': %s", signal_name, callbacks)
         if not callbacks:
             return
         GLib = gi_import("GLib")
+        call_direct = self._should_call_direct()
         for cb, args in callbacks:
             with log.trap_error(f"Error processing callback {cb} for {signal_name} packet"):
                 all_args = [self] + list(args) + list(extra_args)
-                GLib.idle_add(cb, *all_args)
+                if call_direct:
+                    cb(*all_args)
+                else:
+                    GLib.idle_add(cb, *all_args)

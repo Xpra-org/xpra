@@ -11,7 +11,9 @@ from xpra.scripts.config import (
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
 )
 from xpra.scripts.parsing import fixup_defaults
-from xpra.scripts.session import clean_session_files, rm_session_dir, save_session_file, session_file_path
+from xpra.scripts.session import (
+    clean_session_files, get_session_dir, make_session_dir, rm_session_dir, save_session_file, session_file_path,
+)
 from xpra.util.io import warn
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
@@ -110,6 +112,10 @@ class SessionFilesServer(StubSubsystem):
     def __init__(self, server):
         StubSubsystem.__init__(self, server)
         self.config_contents = ""
+        self.mode = ""
+        self.sessions_dir = ""
+        self.display_name = ""
+        self.session_dir = ""
         # canonical list of per-session files / glob patterns to clean up
         # at shutdown. Other subsystems append to this via `get_subsystem`.
         self.session_files: list[str] = [
@@ -120,9 +126,6 @@ class SessionFilesServer(StubSubsystem):
 
     def init(self, opts) -> None:
         super().init(opts)
-        if not self.config_contents:
-            self.config_contents = get_options_file_contents(opts)
-            self.write_session_file("config", self.config_contents)
 
     def late_cleanup(self, stop=True) -> None:
         if stop:
@@ -135,6 +138,45 @@ class SessionFilesServer(StubSubsystem):
         if filename not in self.session_files:
             self.session_files.append(filename)
         return save_session_file(filename, contents, self.uid, self.gid)
+
+    def setup_session_dir(self, mode: str, sessions_dir: str, display_name: str) -> str:
+        self.mode = mode
+        self.sessions_dir = sessions_dir
+        self.display_name = display_name
+        self.session_dir = make_session_dir(mode, sessions_dir, display_name, self.uid, self.gid)
+        import os
+        os.environ["XPRA_SESSION_DIR"] = self.session_dir
+        return self.session_dir
+
+    def display_name_changed(self, _xvfb, display_name: str) -> None:
+        old_display_name = self.display_name
+        if display_name != old_display_name and self.session_dir:
+            new_session_dir = get_session_dir(self.mode, self.sessions_dir, display_name, self.uid)
+            if new_session_dir != self.session_dir:
+                import os
+                try:
+                    if os.path.exists(new_session_dir):
+                        for sess_e in os.listdir(self.session_dir):
+                            os.rename(os.path.join(self.session_dir, sess_e), os.path.join(new_session_dir, sess_e))
+                        os.rmdir(self.session_dir)
+                    else:
+                        os.rename(self.session_dir, new_session_dir)
+                except OSError as e:
+                    log.error("Error moving the session directory")
+                    log.error(f" from {self.session_dir!r} to {new_session_dir!r}")
+                    log.error(f" {e}")
+                os.environ["XPRA_SESSION_DIR"] = new_session_dir
+                self.session_dir = new_session_dir
+                if daemon := self.get_subsystem("daemon"):
+                    daemon.session_dir_changed(new_session_dir)
+        self.display_name = display_name
+        if daemon := self.get_subsystem("daemon"):
+            daemon.display_name_changed(display_name)
+
+    def write_config(self, opts) -> None:
+        if not self.config_contents:
+            self.config_contents = get_options_file_contents(opts)
+        self.write_session_file("config", self.config_contents)
 
     def load_options(self) -> dict[str, Any]:
         return load_options()

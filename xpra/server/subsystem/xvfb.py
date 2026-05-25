@@ -107,9 +107,11 @@ class XvfbManager(StubSubsystem):
         self.start_vfb = start_vfb
         self.xauth_data = xauth_data
         self.use_display = use_display
-        return self.start_server_vfb(display_name, old_display_name, xauthority, protected_env,
-                                     pam, shadowing, proxying, encoder, runner, starting,
-                                     progress, log)
+        vfb_result = self.start_server_vfb(display_name, old_display_name, xauthority, protected_env,
+                                           pam, shadowing, proxying, encoder, runner, starting,
+                                           progress, log)
+        self.emit("display-name", vfb_result.display_name)
+        return vfb_result
 
     def resolve_x11_display(self, display_name: str, xauthority: str, xauth_data: str,
                             start_vfb: bool, use_display: bool | None, upgrading: bool,

@@ -26,8 +26,6 @@ from xpra.scripts.server import (
     resolve_server_display_name,
     sanitize_dbus_env,
     set_vfb_startup_state,
-    setup_session_dir,
-    update_session_dir_for_display,
 )
 from xpra.server.subsystem.process import setup_pam_session, setup_runtime_dir
 
@@ -40,8 +38,11 @@ class TestMain(unittest.TestCase):
         assert is_splash_enabled("foo", False, True, ":10") is True, "splash should be enabled for splash=True"
 
     def test_setup_session_dir(self):
+        from xpra.server.subsystem.sessionfiles import SessionFilesServer
+        session_files = SessionFilesServer(SimpleNamespace(subsystems={}))
+        session_files.init(SimpleNamespace(uid=os.getuid(), gid=os.getgid()))
         with tempfile.TemporaryDirectory() as sessions_dir, patch.dict(os.environ, {}, clear=False):
-            session_dir = setup_session_dir("seamless", sessions_dir, ":42", os.getuid(), os.getgid())
+            session_dir = session_files.setup_session_dir("seamless", sessions_dir, ":42")
             assert session_dir == os.path.join(sessions_dir, "42")
             assert os.environ["XPRA_SESSION_DIR"] == session_dir
 
@@ -247,6 +248,17 @@ class TestMain(unittest.TestCase):
         assert result.displayfd == 0
         assert "Error: invalid displayfd 'not-an-int':" in stderr.getvalue()
 
+    def test_xvfb_setup_vfb_emits_display_name(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        session_files = SimpleNamespace()
+        xvfb = XvfbManager(SimpleNamespace(subsystems={"session-files": session_files}))
+        seen = []
+        xvfb.connect("display-name", lambda _xvfb, display_name: seen.append(display_name))
+        result = xvfb.setup_vfb(":100", False, "", {}, None, False, True, False, False, "",
+                                0, None, False, self.fail, lambda *_args: None, lambda *_args: None)
+        assert result.display_name == ":100"
+        assert seen == [":100"]
+
     def test_set_vfb_startup_state(self):
         state_calls = []
         displayfd_calls = []
@@ -295,19 +307,25 @@ class TestMain(unittest.TestCase):
                 X11DisplayManager.set_vfb_startup_state(display, state)
         assert e.exception.status == ExitCode.NO_DISPLAY
 
-    def test_update_session_dir_for_display(self):
+    def test_session_files_display_name_changed(self):
+        from xpra.server.subsystem.sessionfiles import SessionFilesServer
+        daemon_calls = []
+        daemon = SimpleNamespace(
+            session_dir_changed=lambda session_dir: daemon_calls.append(("session-dir", session_dir)),
+            display_name_changed=lambda display_name: daemon_calls.append(("display-name", display_name)),
+        )
+        session_files = SessionFilesServer(SimpleNamespace(subsystems={"daemon": daemon}))
+        session_files.init(SimpleNamespace(uid=os.getuid(), gid=os.getgid()))
         with tempfile.TemporaryDirectory() as sessions_dir:
-            session_dir = setup_session_dir("seamless", sessions_dir, "S123", os.getuid(), os.getgid())
-            save_session_file("cmdline", "xpra\n")
+            session_dir = session_files.setup_session_dir("seamless", sessions_dir, "S123")
+            session_files.write_session_file("cmdline", "xpra\n")
             with patch.dict(os.environ, {"XPRA_SESSION_DIR": session_dir}, clear=False):
-                log_dir = update_session_dir_for_display(
-                    "seamless", sessions_dir, "auto", "S123", ":42", session_dir, session_dir, os.getuid(),
-                    lambda *_args: None,
-                )
+                session_files.display_name_changed(None, ":42")
                 new_session_dir = os.environ["XPRA_SESSION_DIR"]
                 assert os.environ["XPRA_SESSION_DIR"] == new_session_dir
             assert new_session_dir == os.path.join(sessions_dir, "42")
-            assert log_dir == new_session_dir
+            assert session_files.session_dir == new_session_dir
+            assert daemon_calls == [("session-dir", new_session_dir), ("display-name", ":42")]
             with open(os.path.join(new_session_dir, "cmdline"), encoding="utf8") as f:
                 assert f.read() == "xpra\n"
 

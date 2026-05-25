@@ -93,6 +93,10 @@ class DaemonServer(StubSubsystem):
     def update_log_dir(self, log_dir: str) -> None:
         self.log_dir = log_dir
 
+    def session_dir_changed(self, session_dir: str) -> None:
+        if not self.log_dir_option or self.log_dir_option.lower() == "auto":
+            self.log_dir = session_dir
+
     def display_name_changed(self, display_name: str) -> None:
         if WIN32 and os.environ.get("XPRA_LOG_FILENAME"):
             os.environ["XPRA_SERVER_LOG"] = os.environ["XPRA_LOG_FILENAME"]
