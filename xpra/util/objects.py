@@ -326,7 +326,7 @@ def merge_dicts(a: dict[str, Any], b: dict[str, Any], path: list[str] | None = N
         if key in a:
             if isinstance(a[key], dict) and isinstance(b[key], dict):
                 if warn:
-                    get_util_logger().warn(f"Warning: merging dictionaries at path {path!r}", backtrace=True)
+                    get_util_logger().warn(f"Warning: merging dictionaries at path {path!r} for key {key!r}", backtrace=True)
                     get_util_logger().warn(" a=%s", repr_ellipsized(a))
                     get_util_logger().warn(" b=%s", repr_ellipsized(b))
                 merge_dicts(a[key], b[key], path + [str(key)])
