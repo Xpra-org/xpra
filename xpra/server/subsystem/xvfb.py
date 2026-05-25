@@ -13,10 +13,7 @@ import sys
 from xpra.common import noerr, noop
 from xpra.os_util import POSIX, OSX, getuid, get_username_for_uid, find_group
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.scripts.server import (
-    VFBStartResult,
-    verify_display,
-)
+from xpra.scripts.server import VFBStartResult, verify_display
 from xpra.scripts.config import InitException, xvfb_command
 from xpra.scripts.common import no_gtk
 from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
@@ -24,12 +21,13 @@ from xpra.scripts.session import load_session_file
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.env import envbool, osexpand
 from xpra.util.io import is_writable
-from xpra.util.io import warn
 from xpra.util.parsing import ALL_BOOLEAN_OPTIONS, parse_resolutions, get_refresh_rate_for_value
 from xpra.util.str_fn import get_rand_chars
 from xpra.os_util import get_hex_uuid
+from xpra.log import Logger
 
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
+log = Logger("server")
 
 
 def validate_pixel_depth(pixel_depth, desktop_or_monitor=False) -> int:
@@ -92,16 +90,16 @@ class XvfbManager(StubSubsystem):
                   xauth_data: str, protected_env: dict,
                   pam, shadowing: bool, proxying: bool, encoder: bool, runner: bool, starting: str,
                   clobber: int, use_display: bool | None, upgrading: bool,
-                  error_cb: Callable, progress: Callable, log) -> VFBStartResult:
+                  error_cb: Callable, progress: Callable) -> VFBStartResult:
         old_display_name = display_name
         xauthority = None
         session_files = self.get_subsystem("session-files")
         assert session_files
         if POSIX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and "wayland" not in display_name:
-            xauthority = self.setup_xauthority(display_name, shadowing, log)
+            xauthority = self.setup_xauthority(display_name, shadowing)
             start_vfb, xauth_data, use_display = self.resolve_x11_display(
                 display_name, xauthority, xauth_data, start_vfb, use_display,
-                upgrading, shadowing, proxying, encoder, pam, error_cb, progress, log,
+                upgrading, shadowing, proxying, encoder, pam, error_cb, progress,
             )
 
         self.start_vfb = start_vfb
@@ -109,14 +107,14 @@ class XvfbManager(StubSubsystem):
         self.use_display = use_display
         vfb_result = self.start_server_vfb(display_name, old_display_name, xauthority, protected_env,
                                            pam, shadowing, proxying, encoder, runner, starting,
-                                           progress, log)
+                                           progress)
         self.emit("display-name", vfb_result.display_name)
         return vfb_result
 
     def resolve_x11_display(self, display_name: str, xauthority: str, xauth_data: str,
                             start_vfb: bool, use_display: bool | None, upgrading: bool,
                             shadowing: bool, proxying: bool, encoder: bool, pam,
-                            error_cb: Callable, progress: Callable, log) -> tuple[bool, str, bool | None]:
+                            error_cb: Callable, progress: Callable) -> tuple[bool, str, bool | None]:
         if (use_display is not None and not upgrading) or proxying or encoder:
             return start_vfb, xauth_data, use_display
 
@@ -152,14 +150,14 @@ class XvfbManager(StubSubsystem):
             from xpra.x11.vfb_util import xauth_add
             xauth_add(xauthority, display_name, xauth_data, self.uid, self.gid)
             if not verify_display(None, display_name, log_errors=False, timeout=1):
-                warn(f"display {display_name!r} is not accessible")
+                log.warn(f"display {display_name!r} is not accessible")
             else:
                 start_vfb = False
         return start_vfb, xauth_data, use_display
 
     def start_server_vfb(self, display_name: str, old_display_name: str, xauthority: str | None,
                          protected_env: dict, pam, shadowing: bool, proxying: bool, encoder: bool,
-                         runner: bool, starting: str, progress: Callable, log) -> VFBStartResult:
+                         runner: bool, starting: str, progress: Callable) -> VFBStartResult:
         xvfb = None
         xvfb_pid = 0
         devices = {}
@@ -244,7 +242,7 @@ class XvfbManager(StubSubsystem):
             devices = create_input_devices(uinput_uuid, self.uid) or {}
         return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
 
-    def setup_xauthority(self, display_name: str, shadowing: bool, log) -> str:
+    def setup_xauthority(self, display_name: str, shadowing: bool) -> str:
         from xpra.x11.vfb_util import get_xauthority_path, valid_xauth
         session_files = self.get_subsystem("session-files")
         assert session_files

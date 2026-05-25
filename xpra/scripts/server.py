@@ -597,7 +597,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     vfb_result = xvfb.setup_vfb(display_name, start_vfb, xauth_data,
                                 protected_env, pam, shadowing, proxying, encoder, runner, starting,
                                 clobber, use_display, upgrading,
-                                error_cb, progress, log)
+                                error_cb, progress)
     use_display = xvfb.use_display
     display_name = vfb_result.display_name
 

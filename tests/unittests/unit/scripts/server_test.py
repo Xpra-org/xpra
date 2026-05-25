@@ -219,7 +219,7 @@ class TestMain(unittest.TestCase):
             with patch.dict(os.environ, {"XPRA_SESSION_DIR": session_dir}, clear=False):
                 os.environ.pop("XAUTHORITY", None)
                 save_session_file("xauthority", xauth_file.name)
-                xauthority = xvfb.setup_xauthority(":42", False, lambda *_args: None)
+                xauthority = xvfb.setup_xauthority(":42", False)
                 assert xauthority == xauth_file.name
                 assert os.environ["XAUTHORITY"] == xauth_file.name
 
@@ -228,7 +228,7 @@ class TestMain(unittest.TestCase):
         xvfb = XvfbManager(SimpleNamespace(subsystems={}))
         xvfb.displayfd = "7"
         result = xvfb.start_server_vfb(":100", ":100", None, {}, None, False, True,
-                                       False, False, "", lambda *_args: None, lambda *_args: None)
+                                       False, False, "", lambda *_args: None)
         assert result.xvfb is None
         assert result.xvfb_pid == 0
         assert result.devices == {}
@@ -244,7 +244,7 @@ class TestMain(unittest.TestCase):
         with patch("sys.stderr", stderr), \
                 patch("xpra.server.subsystem.xvfb.POSIX", True):
             result = xvfb.start_server_vfb(":100", ":100", None, {}, None, False, True,
-                                           False, False, "", lambda *_args: None, lambda *_args: None)
+                                           False, False, "", lambda *_args: None)
         assert result.displayfd == 0
         assert "Error: invalid displayfd 'not-an-int':" in stderr.getvalue()
 
@@ -255,7 +255,7 @@ class TestMain(unittest.TestCase):
         seen = []
         xvfb.connect("display-name", lambda _xvfb, display_name: seen.append(display_name))
         result = xvfb.setup_vfb(":100", False, "", {}, None, False, True, False, False, "",
-                                0, None, False, self.fail, lambda *_args: None, lambda *_args: None)
+                                0, None, False, self.fail, lambda *_args: None)
         assert result.display_name == ":100"
         assert seen == [":100"]
 
@@ -374,7 +374,7 @@ class TestMain(unittest.TestCase):
         errors = []
         start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
             "", "/xauth", "", True, None, True, False, False, False, None,
-            errors.append, lambda *_args: None, lambda *_args: None,
+            errors.append, lambda *_args: None,
         )
         assert start_vfb is True
         assert xauth_data == ""
@@ -391,7 +391,7 @@ class TestMain(unittest.TestCase):
                 patch("xpra.server.subsystem.xvfb.verify_display", return_value=True):
             start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
                 ":42", "/xauth", "abc", True, None, False, False, False, False, None,
-                self.fail, lambda *args: progress.append(args), lambda *_args: None,
+                self.fail, lambda *args: progress.append(args),
             )
         no_gtk.assert_called_once()
         assert start_vfb is False
@@ -413,7 +413,7 @@ class TestMain(unittest.TestCase):
                 patch("xpra.x11.vfb_util.xauth_add") as xauth_add:
             start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
                 ":42", "/xauth", "", True, None, False, False, False, False, pam,
-                self.fail, lambda *_args: None, lambda *_args: None,
+                self.fail, lambda *_args: None,
             )
         assert start_vfb is False
         assert xauth_data == "uuid"
