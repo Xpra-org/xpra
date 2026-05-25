@@ -167,7 +167,7 @@ class WindowsConnection(StubClientConnection):
     ######################################################################
     # info:
     def get_info(self) -> dict[str, Any]:
-        info = {
+        info: dict[str, Any] = {
             "windows": self.window_enabled,
             "bell": self.window_bell,
             "system-tray": self.system_tray,
@@ -179,9 +179,9 @@ class WindowsConnection(StubClientConnection):
         }
         if self.window_frame_sizes:
             wsize["frame-sizes"] = self.window_frame_sizes
-        info["window-size"] = wsize
+        info["size"] = wsize
         info.update(self.get_window_info())
-        return info
+        return {"window": info}
 
     def get_window_info(self) -> dict[str, Any]:
         """

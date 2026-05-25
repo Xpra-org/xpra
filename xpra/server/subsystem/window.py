@@ -153,11 +153,13 @@ class WindowServer(StubSubsystem):
         }
 
     def get_info(self, _proto) -> dict[str, Any]:
+        count = sum(int(window.is_managed()) for window in tuple(self._id_to_window.values()))
+        filter_info = tuple((uuid, repr(f)) for uuid, f in self.window_filters)
         return {
-            "state": {
-                "windows": sum(int(window.is_managed()) for window in tuple(self._id_to_window.values())),
-            },
-            "filters": tuple((uuid, repr(f)) for uuid, f in self.window_filters),
+            "window": {
+                "count": count,
+                "filters": filter_info,
+            }
         }
 
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
@@ -263,7 +265,7 @@ class WindowServer(StubSubsystem):
 
     def get_windows_info(self, window_ids=()) -> dict[int, dict[str, Any]]:
         copy = self._id_to_window.copy()
-        info = {
+        info: dict[str | int, Any] = {
             "count": len(copy),
             "total": self._counter,
         }
