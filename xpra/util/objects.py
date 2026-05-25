@@ -321,7 +321,7 @@ def merge_dicts(a: dict[str, Any], b: dict[str, Any], path: list[str] | None = N
     if path is None:
         path = []
     from xpra.util.env import envbool
-    warn = envbool("XPRA_DICTMERGE_WARNINGS", False)
+    warn = envbool("XPRA_DICTMERGE_WARNINGS", True)
     for key in b:
         if key in a:
             if isinstance(a[key], dict) and isinstance(b[key], dict):
