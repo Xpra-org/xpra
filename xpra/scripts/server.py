@@ -261,12 +261,6 @@ def start_cupsd() -> None:
                 warn("started system cupsd daemon\n")
 
 
-def get_server_log_dir(start_vfb: bool, log_to_file: bool, log_dir: str, session_dir: str) -> str:
-    from xpra.server.subsystem.daemon import DaemonServer
-    assert session_dir
-    return DaemonServer.get_server_log_dir(start_vfb, log_to_file, log_dir)
-
-
 @dataclass
 class VFBStartResult:
     xvfb: Popen | None
@@ -557,7 +551,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
     session_files = app.get_subsystem("session-files")
     assert session_files
     session_files.init(opts)
-    session_dir = session_files.setup_session_dir(mode, opts.sessions_dir, display_name)
+    session_files.setup_session_dir(mode, opts.sessions_dir, display_name)
     if upgrading:
         # if we had saved the start / start-desktop config, reload it:
         session_files.apply_config(opts, cmdline)
@@ -588,7 +582,8 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
         extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
         daemon.setup_log(start_vfb, log_to_file, display_name, extra_expand)
     else:
-        get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "", session_dir)
+        from xpra.server.subsystem.daemon import DaemonServer
+        DaemonServer.get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "")
     log("env=%s", os.environ)
 
     progress(30, "creating network sockets")

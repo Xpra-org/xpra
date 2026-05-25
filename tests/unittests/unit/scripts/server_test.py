@@ -17,7 +17,6 @@ from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
     add_desktop_greeter,
-    get_server_log_dir,
     has_child_arg,
     init_virtual_devices,
     is_splash_enabled,
@@ -47,11 +46,12 @@ class TestMain(unittest.TestCase):
             assert os.environ["XPRA_SESSION_DIR"] == session_dir
 
     def test_get_server_log_dir(self):
+        from xpra.server.subsystem.daemon import DaemonServer
         with patch.dict(os.environ, {"XPRA_SESSION_DIR": "/session"}, clear=False):
             os.environ.pop("XPRA_LOG_DIR", None)
-            assert get_server_log_dir(False, False, "auto", "/session") == "auto"
+            assert DaemonServer.get_server_log_dir(False, False, "auto") == "auto"
             assert "XPRA_LOG_DIR" not in os.environ
-            assert get_server_log_dir(True, False, "auto", "/session") == "/session"
+            assert DaemonServer.get_server_log_dir(True, False, "auto") == "/session"
             assert os.environ["XPRA_LOG_DIR"] == "/session"
 
     def test_setup_pam_session_disabled(self):
