@@ -196,7 +196,7 @@ class SocketProtocol:
         return bool(self.cipher_out) or self._conn.socktype in ("ssl", "wss", "ssh", "quic")
 
     def wait_for_io_threads_exit(self, timeout=None) -> bool:
-        io_threads = (self._read_thread, self._write_thread, self._read_parser_thread, self._read_parser_thread)
+        io_threads = (self._read_thread, self._write_thread, self._read_parser_thread, self._write_format_thread)
         current = current_thread()
         for t in io_threads:
             if t and t!=current and t.is_alive():
