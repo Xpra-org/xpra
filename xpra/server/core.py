@@ -19,7 +19,6 @@ from collections.abc import Callable, Sequence, Iterable
 
 from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_CLOSE, CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.util.version import XPRA_VERSION, version_str, version_compat_check
-from xpra.scripts.server import deadly_signal
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.server import ServerExitMode
 from xpra.server.glib_server import GLibServer
@@ -51,7 +50,7 @@ from xpra.os_util import (
     force_quit, POSIX, WIN32, OSX,
     get_username_for_uid, get_hex_uuid, getuid, gi_import,
 )
-from xpra.util.system import register_SIGUSR_signals, get_run_info
+from xpra.util.system import register_SIGUSR_signals, get_run_info, deadly_signal
 from xpra.util.io import load_binary_file, find_libexec_command
 from xpra.util.background_worker import quit_worker
 from xpra.util.thread import start_thread, check_main_thread

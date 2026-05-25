@@ -8,14 +8,14 @@ import os
 import re
 import sys
 import signal
-from typing import Any, Sequence, TYPE_CHECKING
+from typing import Any, Sequence, TYPE_CHECKING, NoReturn
 
-from xpra.os_util import POSIX, LINUX, OSX, WIN32
+from xpra.os_util import POSIX, LINUX, OSX, WIN32, force_quit
+
 if TYPE_CHECKING:
     from subprocess import Popen
 from xpra.util.env import _saved_env, envbool
-from xpra.util.io import load_binary_file, get_util_logger
-
+from xpra.util.io import load_binary_file, get_util_logger, info
 
 SIGNAMES: dict[int, str] = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
@@ -23,6 +23,18 @@ for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.
         SIGNAMES[int(getattr(signal, signame))] = signame
     except ValueError:
         pass
+
+
+def deadly_signal(signum, _frame=None) -> NoReturn:
+    signame = SIGNAMES.get(signum, signum)
+    info(f"got deadly signal {signame}, exiting\n")
+    # This works fine in tests, but for some reason if I use it here, then I
+    # get bizarre behavior where the signal handler runs, and then I get a
+    # KeyboardException (?!?), and the KeyboardException is handled normally
+    # and exits the program (causing the cleanup handlers to be run again):
+    # signal.signal(signum, signal.SIG_DFL)
+    # kill(os.getpid(), signum)
+    force_quit(128 + int(signum))
 
 
 def set_proc_title(title: str) -> None:

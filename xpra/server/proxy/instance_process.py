@@ -17,7 +17,6 @@ from xpra.server.proxy.instance_base import ProxyInstance
 from xpra.util.queue_scheduler import QueueScheduler
 from xpra.util.daemon import setuidgid
 from xpra.server.subsystem.control import ControlHandler
-from xpra.scripts.server import deadly_signal
 from xpra.net.protocol.factory import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE, create_unix_domain_socket, handle_socket_error
@@ -27,7 +26,7 @@ from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, get_machin
 from xpra.util.env import osexpand
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.util.parsing import str_to_bool
-from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
+from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title, deadly_signal
 from xpra.util.objects import typedict
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.version import XPRA_VERSION

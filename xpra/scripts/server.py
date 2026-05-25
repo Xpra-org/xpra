@@ -11,10 +11,10 @@ import shlex
 import os.path
 import datetime
 from dataclasses import dataclass
-from typing import NoReturn, Final
+from typing import Final
 from subprocess import Popen
 
-from xpra.util.io import info, warn, wait_for_socket, which
+from xpra.util.io import warn, wait_for_socket, which
 from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_bool_or
 from xpra.scripts.parsing import MODE_ALIAS
 from xpra.scripts.main import nox, parse_env
@@ -29,8 +29,7 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
 from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import POSIX, WIN32, OSX, force_quit, getuid, get_hex_uuid
-from xpra.util.system import SIGNAMES
+from xpra.os_util import POSIX, WIN32, OSX, getuid, get_hex_uuid
 from xpra.util.str_fn import nicestr, csv
 from xpra.util.io import stderr_print
 from xpra.util.env import envbool, envint, get_saved_env, get_saved_env_var, OSEnvContext
@@ -39,18 +38,6 @@ from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 SYSTEM_DBUS_SOCKET = "/run/dbus/system_bus_socket"
-
-
-def deadly_signal(signum, _frame=None) -> NoReturn:
-    signame = SIGNAMES.get(signum, signum)
-    info(f"got deadly signal {signame}, exiting\n")
-    # This works fine in tests, but for some reason if I use it here, then I
-    # get bizarre behavior where the signal handler runs, and then I get a
-    # KeyboardException (?!?), and the KeyboardException is handled normally
-    # and exits the program (causing the cleanup handlers to be run again):
-    # signal.signal(signum, signal.SIG_DFL)
-    # kill(os.getpid(), signum)
-    force_quit(128 + int(signum))
 
 
 def display_name_check(display_name: str) -> None:
