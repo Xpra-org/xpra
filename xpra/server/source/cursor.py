@@ -75,19 +75,7 @@ class CursorsConnection(StubClientConnection):
         log(f"parse_client_caps(..) cursors={self.send_cursors}, cursor encodings={self.cursor_encodings}")
 
     def get_caps(self) -> dict[str, Any]:
-        cd = self.get_cursor_data_cb()
-        if not cd:
-            return {}
-        sizes = cd[1]
-        log("cursor sizes: %s", sizes)
-        return {
-            "cursor": {
-                "size": {
-                    "default": sizes[0],
-                    "max": sizes[1],
-                }
-            }
-        }
+        return {}
 
     ######################################################################
     # info:
