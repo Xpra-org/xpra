@@ -87,8 +87,11 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
         return True
 
     def refresh_windows(self) -> None:
-        for window in self.subsystems["window"].models():
-            self.refresh_window(window)
+        window_sub = self.get_subsystem("window")
+        if not window_sub:
+            return
+        for window in window_sub.models():
+            window_sub.refresh_window(window)
 
     ############################################################################
     # handle monitor changes
@@ -239,9 +242,11 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
                 for ss in sources:
                     ss.resize_window(wid, window, window.geometry[2], window.geometry[3])
         # any models left are new windows:
+        window_sub = self.get_subsystem("window")
         for window in xid_to_window.values():
             self._add_new_window(window)
-            self.refresh_window(window)
+            if window_sub:
+                window_sub.refresh_window(window)
 
     def get_notification_tray(self):
         tray = self.get_subsystem("tray")
