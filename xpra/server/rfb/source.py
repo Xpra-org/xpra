@@ -7,7 +7,7 @@ import struct
 from threading import Event
 from typing import Any
 
-from xpra.net.rfb.const import RFBEncoding
+from xpra.net.rfb.const import RFBEncoding, RFBServerMessage
 from xpra.net.rfb.encode import make_header, raw_encode, tight_encode, tight_png, rgb222_encode, zlib_encode
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.net.common import PacketElement
@@ -47,6 +47,7 @@ class RFBSource:
         "encodings", "quality", "speed", "pixel_format",
         "get_cursor_data_cb", "last_cursor_sent",
         "zlib_compressor",
+        "continuous_updates", "cu_rect", "pending_request",
     )
 
     def __init__(self, protocol, share=False):
@@ -64,6 +65,12 @@ class RFBSource:
         self.get_cursor_data_cb = nocursordata
         self.last_cursor_sent = ()
         self.zlib_compressor = None
+        # default to push-mode: preserves prior behaviour for viewers that
+        # never send EnableContinuousUpdates. A viewer that opts out (by
+        # sending message 150 with enable=0) switches us to request-driven.
+        self.continuous_updates = True
+        self.cu_rect: tuple[int, int, int, int] | None = None
+        self.pending_request: tuple[int, int, int, int] | None = None
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -113,6 +120,35 @@ class RFBSource:
         log(" bigendian=%s, truecolor=%s", bool(bigendian), bool(truecolor))
         if truecolor:
             log(" RGB max: %s, shift: %s", (rmax, gmax, bmax), (rshift, bshift, gshift))
+
+    def set_continuous_updates(self, enabled: bool, x: int, y: int, w: int, h: int) -> None:
+        # RFB EnableContinuousUpdates (msg 150). When enabled, the server may push
+        # FramebufferUpdates inside the given rect without waiting for requests.
+        # When disabled, the server must reply with EndOfContinuousUpdates and
+        # revert to request-driven mode.
+        was_enabled = self.continuous_updates
+        if enabled:
+            self.continuous_updates = True
+            self.cu_rect = (x, y, w, h)
+            log("continuous updates enabled rect=%s", self.cu_rect)
+        else:
+            self.continuous_updates = False
+            self.cu_rect = None
+            log("continuous updates disabled")
+            if was_enabled and not self.is_closed():
+                self.send(struct.pack(b"!B", RFBServerMessage.ENDOFCONTINOUSUPDATES))
+
+    def request_update(self, x: int, y: int, w: int, h: int) -> None:
+        # incremental FramebufferUpdateRequest: record the rect so the next
+        # damage event can satisfy it. Union with any prior outstanding rect.
+        if self.pending_request is None:
+            self.pending_request = (x, y, w, h)
+            return
+        px, py, pw, ph = self.pending_request
+        nx, ny = min(px, x), min(py, y)
+        nw = max(px + pw, x + w) - nx
+        nh = max(py + ph, y + h) - ny
+        self.pending_request = (nx, ny, nw, nh)
 
     def get_window_info(self, _wids) -> dict:
         return {}
@@ -207,6 +243,14 @@ class RFBSource:
             return
         if self.is_closed():
             return
+        # gating for clients that opted out of continuous updates: only
+        # service unsolicited (polling) damage when a FramebufferUpdateRequest
+        # is outstanding. Direct calls from FramebufferUpdateRequest(inc=0)
+        # arrive without options.polling and always go through.
+        if polling and not self.continuous_updates:
+            if self.pending_request is None:
+                return
+            self.pending_request = None
         encode = raw_encode
         kwargs = {}
         if self.pixel_format[:2] != (32, 24):

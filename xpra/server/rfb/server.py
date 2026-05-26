@@ -276,16 +276,30 @@ class RFBServer(StubSubsystem):
             GLib.idle_add(source.send_cursor)
 
     def _process_rfb_FramebufferUpdateRequest(self, proto, packet):
-        # pressed, _, _, keycode = packet[1:5]
         inc, x, y, w, h = packet[1:6]
         log("RFB: FramebufferUpdateRequest inc=%s, geometry=%s", inc, (x, y, w, h))
+        model = self._get_rfb_desktop_model()
+        window = self.server.get_subsystem("window")
+        source = self.get_server_source(proto)
+        if not (window and source and model):
+            return
+        wid = window.get_wid(model)
         if not inc:
-            model = self._get_rfb_desktop_model()
-            window = self.server.get_subsystem("window")
-            source = self.get_server_source(proto)
-            if window and source and model:
-                wid = window.get_wid(model)
-                GLib.idle_add(source.damage, wid, model, x, y, w, h)
+            # full refresh: serve immediately and discard any pending incremental request
+            source.pending_request = None
+            GLib.idle_add(source.damage, wid, model, x, y, w, h)
+            return
+        # incremental request: record the rect; the next polling damage
+        # event will flush it. If continuous updates are enabled (the default)
+        # the polling damage path is already pushing, so this is a no-op.
+        source.request_update(x, y, w, h)
+
+    def _process_rfb_EnableContinuousUpdates(self, proto, packet):
+        enable, x, y, w, h = packet[1:6]
+        source = self.get_server_source(proto)
+        if not source:
+            return
+        source.set_continuous_updates(bool(enable), x, y, w, h)
 
     def _process_rfb_ClientCutText(self, _proto, packet):
         # l = packet[4]

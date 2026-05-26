@@ -56,6 +56,7 @@ for msg, fmt in {
     RFBClientMessage.KeyEvent: b"!BBBBi",
     RFBClientMessage.PointerEvent: b"!BBHH",
     RFBClientMessage.ClientCutText: b"!BBBBi",
+    RFBClientMessage.EnableContinuousUpdates: b"!BBHHHH",
 }.items():
     PACKET_STRUCT[msg] = Struct(fmt)
 
