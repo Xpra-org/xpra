@@ -183,7 +183,7 @@ void main()
     highp float g = y + {f} * u + {g} * v;
     highp float b = y + {d} * u;
 
-    frag_color = vec4(r, g, b, 1.0);
+    frag_color = vec4(r, g, b, t.a);
 }}
 """
 
