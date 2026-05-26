@@ -1527,8 +1527,7 @@ def make_progress_process(title="Xpra") -> Popen | None:
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command() + ["splash"]
-    debug_args = get_debug_args()
-    if debug_args:
+    if debug_args := get_debug_args():
         cmd.append("--debug=%s" % (",".join(debug_args)))
     try:
         progress_process = Popen(cmd, stdin=PIPE, env=env)
