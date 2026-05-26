@@ -28,12 +28,9 @@ GLib = gi_import("GLib")
 log = Logger("shadow")
 notifylog = Logger("notify")
 pointerlog = Logger("pointer")
-cursorlog = Logger("cursor")
 
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
-CURSORS = envbool("XPRA_CURSORS", True)
-SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 NOTIFY_STARTUP = envbool("XPRA_SHADOW_NOTIFY_STARTUP", True)
 
 
@@ -81,7 +78,6 @@ class ShadowServerBase(ServerBase):
         self.notifier = None
         self.pointer_last_position = None
         self.pointer_poll_timer = 0
-        self.last_cursor_data = None
         self.session_name = "shadow"
         self.session_type = "shadow"
         self.keyboard_config = None
@@ -103,6 +99,10 @@ class ShadowServerBase(ServerBase):
     def get_pointer_subsystem_class(self) -> type:
         from xpra.server.shadow.pointer import ShadowPointerManager
         return ShadowPointerManager
+
+    def get_cursor_subsystem_class(self) -> type:
+        from xpra.server.shadow.cursor import ShadowCursorManager
+        return ShadowCursorManager
 
     def init(self, opts) -> None:
         super().init(opts)
@@ -314,8 +314,10 @@ class ShadowServerBase(ServerBase):
 
     def poll_pointer(self) -> bool:
         self.poll_pointer_position()
-        if CURSORS:
-            self.poll_cursor()
+        cursor = self.get_subsystem("cursor")
+        poll_cursor = getattr(cursor, "poll_cursor", None)
+        if poll_cursor:
+            poll_cursor()
         return True
 
     def poll_pointer_position(self) -> None:
@@ -347,52 +349,6 @@ class ShadowServerBase(ServerBase):
         pointer_sources = get_sources_by_type(self, PointerConnection)
         for ss in pointer_sources:
             ss.update_mouse(wid, x, y, rx, ry)
-
-    def poll_cursor(self) -> None:
-        prev = self.last_cursor_data
-        curr = self.do_get_cursor_data()  # pylint: disable=assignment-from-none
-        self.last_cursor_data = curr
-
-        def cmpv(lcd: Sequence | None) -> tuple[Any, ...]:
-            if not lcd:
-                return ()
-            v = lcd[0]
-            if v and len(v) > 2:
-                return tuple(v[2:])
-            return ()
-
-        if cmpv(prev) != cmpv(curr):
-            fields = ("x", "y", "width", "height", "xhot", "yhot", "serial", "pixels", "name")
-            if len(prev or []) == len(curr or []) and len(prev or []) == len(fields):
-                diff = []
-                for i, prev_value in enumerate(prev):
-                    if prev_value != curr[i]:
-                        diff.append(fields[i])
-                cursorlog("poll_cursor() attributes changed: %s", diff)
-            if SAVE_CURSORS and curr:
-                ci = curr[0]
-                if ci:
-                    w = ci[2]
-                    h = ci[3]
-                    serial = ci[6]
-                    pixels = ci[7]
-                    cursorlog("saving cursor %#x with size %ix%i, %i bytes", serial, w, h, len(pixels))
-                    from PIL import Image
-                    img = Image.frombuffer("RGBA", (w, h), pixels, "raw", "BGRA", 0, 1)
-                    img.save("cursor-%#x.png" % serial, format="PNG")
-            for ss in tuple(self._server_sources.values()):
-                # not all client connections support `send_cursor`,
-                # only a CursorsConnection, or a RFBSource do:
-                if send_cursor := getattr(ss, "send_cursor", None):
-                    send_cursor()
-
-    def do_get_cursor_data(self):
-        # this method is overridden in subclasses with platform specific code
-        return None
-
-    def get_cursor_data(self):
-        # return cached value we get from polling:
-        return self.last_cursor_data
 
     ############################################################################
 

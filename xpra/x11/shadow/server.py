@@ -50,6 +50,10 @@ class ShadowX11Server(GTKShadowServerBase):
         from xpra.x11.shadow.pointer import X11ShadowPointerManager
         return X11ShadowPointerManager
 
+    def get_cursor_subsystem_class(self) -> type:
+        from xpra.x11.subsystem.cursor import XCursorServer
+        return XCursorServer
+
     def init(self, opts) -> None:
         GTKShadowServerBase.init(self, opts)
         if sf := self.get_subsystem("session-files"):
@@ -99,9 +103,6 @@ class ShadowX11Server(GTKShadowServerBase):
                               "This shadow session seems to be running under wayland,\n"
                               "the screen scraping will probably come up empty",
                               icon_name="unticked")
-
-    def do_get_cursor_data(self) -> tuple[Any, Any]:
-        return super().get_cursor_data()
 
     def send_initial_data(self, ss) -> None:
         super().send_initial_data(ss)

@@ -20,7 +20,7 @@ log = Logger("rfb")
 counter = AtomicInteger()
 
 
-def nocursordata() -> tuple:
+def nocursordata(*_args) -> tuple:
     return ()
 
 

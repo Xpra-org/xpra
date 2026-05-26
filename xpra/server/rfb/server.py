@@ -169,13 +169,9 @@ class RFBServer(StubSubsystem):
         # continue in the UI thread:
         GLib.idle_add(self._accept_rfb_source, source)
 
-    def get_rfb_cursor_data(self, skip_default=False):
-        if cursor := self.get_subsystem("cursor"):
-            return cursor.get_cursor_data(skip_default)
-        return None
-
     def _accept_rfb_source(self, source):
-        source.get_cursor_data_cb = self.get_rfb_cursor_data
+        if cursor := self.get_subsystem("cursor"):
+            source.get_cursor_data_cb = cursor.get_cursor_data
         source.send_cursor()
         if features.keyboard:
             keyboard = self.get_subsystem("keyboard")

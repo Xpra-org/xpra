@@ -170,12 +170,7 @@ class ServerBase(ServerCore):
         from xpra.server.subsystem.shutdown import ShutdownServer
         classes.append(ShutdownServer)
         if features.cursor:
-            if features.x11:
-                from xpra.x11.subsystem.cursor import XCursorServer
-                classes.append(XCursorServer)
-            else:
-                from xpra.server.subsystem.cursor import CursorManager
-                classes.append(CursorManager)
+            classes.append(self.get_cursor_subsystem_class())
         if features.x11 and features.display:
             from xpra.x11.subsystem.xsettings import XSettingsServer
             classes.append(XSettingsServer)
@@ -217,6 +212,14 @@ class ServerBase(ServerCore):
             return X11PointerManager
         from xpra.server.subsystem.pointer import PointerManager
         return PointerManager
+
+    def get_cursor_subsystem_class(self) -> type:
+        from xpra.server import features
+        if features.x11:
+            from xpra.x11.subsystem.cursor import XCursorServer
+            return XCursorServer
+        from xpra.server.subsystem.cursor import CursorManager
+        return CursorManager
 
     def get_clipboard_subsystem_class(self) -> type:
         from xpra.server.subsystem.clipboard import ClipboardManager

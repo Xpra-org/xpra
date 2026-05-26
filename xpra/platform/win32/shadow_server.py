@@ -7,7 +7,7 @@ import os
 import re
 from typing import Any
 from collections.abc import Sequence, Callable
-from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
+from ctypes import create_unicode_buffer, byref, c_ulong
 from ctypes.wintypes import RECT
 
 from xpra.util.env import envbool
@@ -17,10 +17,9 @@ from xpra.server.shadow.shadow_server_base import try_setup_capture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size, get_display_size
+from xpra.platform.win32.gui import get_desktop_name, get_display_size
 from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow.common import get_monitors
-from xpra.platform.win32.shadow.cursor import get_cursor_data
 from xpra.log import Logger
 
 # user32:
@@ -30,12 +29,10 @@ from xpra.platform.win32.common import (
     GetWindowRect,
     GetWindowThreadProcessId,
     GetSystemMetrics,
-    GetCursorInfo, CURSORINFO,
 )
 
 log = Logger("shadow", "win32")
 shapelog = Logger("shape")
-cursorlog = Logger("cursor")
 keylog = Logger("keyboard")
 screenlog = Logger("screen")
 
@@ -179,8 +176,6 @@ class ShadowServer(GTKShadowServerBase):
     def __init__(self, display, attrs: dict[str, str]):
         super().__init__(attrs)
         self.pixel_depth = 32
-        self.cursor_handle = None
-        self.cursor_data = None
         self.backend = attrs.get("backend", "auto")
 
     def get_keyboard_subsystem_class(self) -> type:
@@ -190,6 +185,11 @@ class ShadowServer(GTKShadowServerBase):
     def get_pointer_subsystem_class(self) -> type:
         from xpra.platform.win32.shadow_pointer import Win32ShadowPointerManager
         return Win32ShadowPointerManager
+
+    def get_cursor_subsystem_class(self) -> type:
+        from xpra.platform.win32.shadow_cursor import Win32ShadowCursorManager
+        return Win32ShadowCursorManager
+
         if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT) == 0:
             raise InitException("all the monitors must use the same display format")
         # TODO: deal with those messages?
@@ -328,31 +328,6 @@ class ShadowServer(GTKShadowServerBase):
                 rwm.refresh_shape()
         log("refresh()=%s", v)
         return v
-
-    def do_get_cursor_data(self) -> tuple | None:
-        ci = CURSORINFO()
-        ci.cbSize = sizeof(CURSORINFO)
-        GetCursorInfo(byref(ci))
-        # cursorlog("GetCursorInfo handle=%#x, last handle=%#x", ci.hCursor or 0, self.cursor_handle or 0)
-        if not (ci.flags & win32con.CURSOR_SHOWING):
-            # cursorlog("do_get_cursor_data() cursor not shown")
-            return None
-        handle = int(ci.hCursor)
-        if handle == self.cursor_handle and self.last_cursor_data:
-            # cursorlog("do_get_cursor_data() cursor handle unchanged")
-            return self.last_cursor_data
-        self.cursor_handle = handle
-        cd = get_cursor_data(handle)
-        if not cd:
-            cursorlog("do_get_cursor_data() no cursor data")
-            return self.last_cursor_data
-        cd[0] = ci.ptScreenPos.x
-        cd[1] = ci.ptScreenPos.y
-        w, h = get_fixed_cursor_size()
-        return (
-            cd,
-            ((w, h), [(w, h), ]),
-        )
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
