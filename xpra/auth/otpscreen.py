@@ -10,7 +10,7 @@ from subprocess import Popen
 from collections.abc import Sequence, Callable
 
 from xpra.util.system import stop_proc
-from xpra.auth.common import get_exec_env
+from xpra.auth.common import get_auth_exec_env
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.paths import get_nodock_command
 from xpra.util.objects import typedict
@@ -68,7 +68,7 @@ class Authenticator(SysAuthenticator):
         log(f"secret is {self.secret!r}")
         self.valid_until = monotonic() + self.timeout
         cmd = get_nodock_command() + ["otp", self.secret, str(self.timeout)]
-        env = get_exec_env(self.display)
+        env = get_auth_exec_env(self.display)
         log("otp dialog: Popen(%s, %s)", cmd, env)
         self.otp_dialog = Popen(cmd, env=env)
         from xpra.util.child_reaper import get_child_reaper

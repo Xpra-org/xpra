@@ -8,7 +8,7 @@ import shlex
 from subprocess import Popen
 from collections.abc import Sequence
 
-from xpra.auth.common import get_exec_env
+from xpra.auth.common import get_auth_exec_env
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, alnum, bytestostr
 from xpra.util.env import envint, shellsub, first_time
@@ -90,7 +90,7 @@ class Authenticator(SysAuthenticator):
             subs["password"] = bytestostr(self.unxor_response(caps))
         cmd = tuple(shellsub(v, subs) for v in self.command)
         log("authenticate(..) shellsub(%s)=%r", self.command, cmd)
-        env = get_exec_env(self.display)
+        env = get_auth_exec_env(self.display)
         log("authenticate(..) env=%s", env)
         # [self.command, info, str(self.timeout)]
         try:

@@ -48,7 +48,7 @@ def parse_gid(v) -> int:
     return -1
 
 
-def get_exec_env(display="auto") -> dict[str, str]:
+def get_auth_exec_env(display="auto") -> dict[str, str]:
     env = os.environ.copy()
     # remove usless vars:
     for k in ("LS_COLORS", ""):
