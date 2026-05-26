@@ -37,6 +37,10 @@ def make_header(encoding: int, x: int, y: int, w: int, h: int) -> bytes:
 def rgb222_encode(window: Any, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
+    return rgb222_encode_image(img, x, y, w, h)
+
+
+def rgb222_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
     header = make_header(RFBEncoding.RAW, x, y, w, h)
     if img.get_pixel_format() != "BGRX":
         log.warn("Warning: cannot convert %s to rgb222", img.get_pixel_format())
@@ -50,6 +54,10 @@ def rgb222_encode(window: Any, x: int, y: int, w: int, h: int) -> Sequence[bytes
 def raw_encode(window: Any, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
+    return raw_encode_image(img, x, y, w, h)
+
+
+def raw_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
     header = make_header(RFBEncoding.RAW, x, y, w, h)
     return header, raw_pixels(img)
 
@@ -71,6 +79,10 @@ def raw_pixels(img: ImageWrapper | None) -> bytes:
 def zlib_encode(window: Any, x: int, y: int, w: int, h: int, compressor: Any = None) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
+    return zlib_encode_image(img, x, y, w, h, compressor)
+
+
+def zlib_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int, compressor: Any = None) -> Sequence[bytes]:
     if not img:
         return []
     pixels = raw_pixels(img)
@@ -92,6 +104,11 @@ def zlib_encode(window: Any, x: int, y: int, w: int, h: int, compressor: Any = N
 def tight_encode(window: Any, x: int, y: int, w: int, h: int, quality: int = 0, speed: int = 0) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
+    return tight_encode_image(img, x, y, w, h, quality, speed)
+
+
+def tight_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int,
+                       quality: int = 0, speed: int = 0) -> Sequence[bytes]:
     if not img:
         return []
     data = pillow_encode("jpeg", img, quality, speed)
@@ -117,6 +134,10 @@ def tight_header(encoding: int, x: int, y: int, w: int, h: int, control: int, le
 def tight_png(window: Any, x: int, y: int, w: int, h: int, speed: int = 0) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
+    return tight_png_image(img, x, y, w, h, speed)
+
+
+def tight_png_image(img: ImageWrapper, x: int, y: int, w: int, h: int, speed: int = 0) -> Sequence[bytes]:
     if not img:
         return []
     data = pillow_encode("png", img, speed=speed)

@@ -4,21 +4,27 @@
 # later version. See the file COPYING for details.
 
 import struct
+from queue import SimpleQueue
 from threading import Event
 from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.rfb.const import RFBEncoding, RFBServerMessage
-from xpra.net.rfb.encode import make_header, raw_encode, tight_encode, tight_png, rgb222_encode, zlib_encode
+from xpra.net.rfb.encode import (
+    make_header, raw_encode_image, tight_encode_image, tight_png_image, rgb222_encode_image, zlib_encode_image,
+)
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.server.source.stub import PointerSource
 from xpra.util.objects import AtomicInteger
 from xpra.util.str_fn import csv, memoryview_to_bytes
+from xpra.util.thread import start_thread
 from xpra.log import Logger
 
 log = Logger("rfb")
 
 counter = AtomicInteger()
+
+RFB_ENCODE_QUEUE_MAX_SIZE = 2
 
 
 def nocursordata(*_args) -> tuple:
@@ -41,6 +47,16 @@ def rfb_compression_level_to_speed(level: int) -> int:
     return cap_pct(round(100 * (10 - level) / 9))
 
 
+def free_rfb_image(image) -> None:
+    if not getattr(image, "free", None):
+        return
+    if not getattr(image, "is_thread_safe", None):
+        image.free()
+        return
+    from xpra.server.window.compress import free_image_wrapper  # pylint: disable=import-outside-toplevel
+    free_image_wrapper(image)
+
+
 class RFBSource(PointerSource):
     __slots__ = (
         "protocol", "close_event",
@@ -50,6 +66,7 @@ class RFBSource(PointerSource):
         "zlib_compressor",
         "continuous_updates", "cu_rect", "pending_request",
         "last_pointer_pos",
+        "encode_queue", "encode_thread", "pixel_format_generation",
     )
 
     def __init__(self, protocol, share=False):
@@ -62,6 +79,7 @@ class RFBSource(PointerSource):
         self.keyboard_config = None
         self.encodings = [RFBEncoding.RAW]
         self.pixel_format = (32, 24, 0, 1, 255, 255, 255, 16, 8, 0)
+        self.pixel_format_generation = 0
         self.quality = 0
         self.speed = 0
         self.get_cursor_data_cb = nocursordata
@@ -74,6 +92,8 @@ class RFBSource(PointerSource):
         self.cu_rect: tuple[int, int, int, int] | None = None
         self.pending_request: tuple[int, int, int, int] | None = None
         self.last_pointer_pos: tuple[int, int] | None = None
+        self.encode_queue: SimpleQueue[None | tuple[int, int, Any, int, int, int, int]] = SimpleQueue()
+        self.encode_thread = start_thread(self.encode_loop, f"rfb-encode-{self.uuid}", daemon=True)
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -82,6 +102,7 @@ class RFBSource(PointerSource):
             "share": self.share,
             "quality": self.quality,
             "speed": self.speed,
+            "encode-queue": self.encode_queue.qsize(),
         }
 
     def set_encodings(self, encodings: Sequence) -> None:
@@ -117,6 +138,7 @@ class RFBSource(PointerSource):
             # the inflater on the client side won't benefit from history bytes
             # produced from a different format, so start a fresh compressor.
             self.zlib_compressor = None
+            self.pixel_format_generation += 1
         self.pixel_format = new_format
         bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = pixel_format
         log(" pixel depth %i, %i bits per pixel", depth, bpp)
@@ -160,7 +182,10 @@ class RFBSource(PointerSource):
         return True
 
     def close(self) -> None:
+        if self.close_event.is_set():
+            return
         self.close_event.set()
+        self.encode_queue.put(None)
 
     def set_default_keymap(self):
         log("set_default_keymap() keyboard_config=%s", self.keyboard_config)
@@ -224,7 +249,7 @@ class RFBSource(PointerSource):
     def damage(self, _wid: int, window, x: int, y: int, w: int, h: int, options=None) -> None:
         polling = options and options.get("polling", False)
         p = self.protocol
-        if polling and p is None or p.queue_size() >= 2:
+        if polling and (p is None or p.queue_size() >= 2 or self.encode_queue.qsize() >= RFB_ENCODE_QUEUE_MAX_SIZE):
             # very basic RFB update rate control,
             # if there are packets waiting already
             # we'll just process the next polling update instead:
@@ -239,28 +264,56 @@ class RFBSource(PointerSource):
             if self.pending_request is None:
                 return
             self.pending_request = None
-        encode = raw_encode
+        image = window.get_image(x, y, w, h)
+        window.acknowledge_changes()
+        if image is None:
+            return
+        self.encode_queue.put((self.pixel_format_generation, _wid, image, x, y, w, h))
+
+    def encode_loop(self) -> None:
+        while True:
+            item = self.encode_queue.get(True)
+            if item is None:
+                return
+            try:
+                generation, wid, image, x, y, w, h = item
+                if not self.is_closed() and generation == self.pixel_format_generation:
+                    self.encode_damage(wid, image, x, y, w, h)
+            except Exception as e:
+                if self.is_closed():
+                    log("ignoring RFB encoding error calling %s because the source is already closed:", item)
+                    log(" %s", e)
+                else:
+                    log.error("Error during RFB encoding:", exc_info=True)
+                del e
+            finally:
+                free_rfb_image(item[2])
+
+    def encode_damage(self, _wid: int, image, x: int, y: int, w: int, h: int) -> None:
+        if self.is_closed():
+            return
+        encode = raw_encode_image
         kwargs = {}
         if self.pixel_format[:2] != (32, 24):
             if self.pixel_format[:3] == (8, 6, 0):
                 # crappy initial format chosen by realvnc
-                encode = rgb222_encode
+                encode = rgb222_encode_image
             else:
                 log("damage: unsupported client pixel format: %s", self.pixel_format)
                 return
         elif RFBEncoding.TIGHT_PNG in self.encodings:
-            encode = tight_png
+            encode = tight_png_image
             kwargs = {"speed": self.speed}
         elif RFBEncoding.TIGHT in self.encodings:
-            encode = tight_encode
+            encode = tight_encode_image
             kwargs = {"quality": self.quality, "speed": self.speed}
         elif RFBEncoding.ZLIB in self.encodings:
-            encode = zlib_encode
+            encode = zlib_encode_image
             if self.zlib_compressor is None:
                 import zlib  # pylint: disable=import-outside-toplevel
                 self.zlib_compressor = zlib.compressobj(1)
             kwargs = {"compressor": self.zlib_compressor}
-        packets = encode(window, x, y, w, h, **kwargs)
+        packets = encode(image, x, y, w, h, **kwargs)
         if not packets:
             return
         self.send_many(*packets)
