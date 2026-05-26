@@ -8,7 +8,7 @@ from threading import Event
 from typing import Any
 
 from xpra.net.rfb.const import RFBEncoding
-from xpra.net.rfb.encode import make_header, raw_encode, tight_encode, tight_png, rgb222_encode
+from xpra.net.rfb.encode import make_header, raw_encode, tight_encode, tight_png, rgb222_encode, zlib_encode
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.net.common import PacketElement
 from xpra.util.objects import AtomicInteger
@@ -46,6 +46,7 @@ class RFBSource:
         "counter", "share", "uuid", "lock", "keyboard_config",
         "encodings", "quality", "speed", "pixel_format",
         "get_cursor_data_cb", "last_cursor_sent",
+        "zlib_compressor",
     )
 
     def __init__(self, protocol, share=False):
@@ -62,6 +63,7 @@ class RFBSource:
         self.speed = 0
         self.get_cursor_data_cb = nocursordata
         self.last_cursor_sent = ()
+        self.zlib_compressor = None
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -99,7 +101,13 @@ class RFBSource:
 
     def set_pixel_format(self, pixel_format) -> None:
         # bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
-        self.pixel_format = tuple(pixel_format)
+        new_format = tuple(pixel_format)
+        if new_format != self.pixel_format:
+            # the byte layout of pixels fed into the zlib stream is about to change;
+            # the inflater on the client side won't benefit from history bytes
+            # produced from a different format, so start a fresh compressor.
+            self.zlib_compressor = None
+        self.pixel_format = new_format
         bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = pixel_format
         log(" pixel depth %i, %i bits per pixel", depth, bpp)
         log(" bigendian=%s, truecolor=%s", bool(bigendian), bool(truecolor))
@@ -214,9 +222,12 @@ class RFBSource:
         elif RFBEncoding.TIGHT in self.encodings:
             encode = tight_encode
             kwargs = {"quality": self.quality, "speed": self.speed}
-        # doesn't work
-        # elif RFBEncoding.ZLIB in self.encodings:
-        #    encode = zlib_encode
+        elif RFBEncoding.ZLIB in self.encodings:
+            encode = zlib_encode
+            if self.zlib_compressor is None:
+                import zlib  # pylint: disable=import-outside-toplevel
+                self.zlib_compressor = zlib.compressobj(1)
+            kwargs = {"compressor": self.zlib_compressor}
         packets = encode(window, x, y, w, h, **kwargs)
         if not packets:
             return

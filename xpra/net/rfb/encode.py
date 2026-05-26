@@ -65,7 +65,7 @@ def raw_pixels(img):
     return pixels[:Bpp * w * h]
 
 
-def zlib_encode(window, x, y, w, h):
+def zlib_encode(window, x, y, w, h, compressor=None):
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     if not img:
@@ -74,7 +74,13 @@ def zlib_encode(window, x, y, w, h):
     import zlib  # pylint: disable=import-outside-toplevel
     if isinstance(pixels, memoryview):
         pixels = pixels.tobytes()
-    data = zlib.compress(pixels, 1)
+    # the RFB Zlib pseudo-encoding requires a single zlib stream maintained
+    # across all rectangles of a connection - the caller is expected to pass
+    # in a persistent compressor and we flush with Z_SYNC_FLUSH so the stream
+    # stays open for subsequent rectangles.
+    if compressor is None:
+        compressor = zlib.compressobj(1)
+    data = compressor.compress(pixels) + compressor.flush(zlib.Z_SYNC_FLUSH)
     log("zlib compressed %i down to %i", len(pixels), len(data))
     header = make_header(RFBEncoding.ZLIB, x, y, w, h) + struct.pack(b"!I", len(data))
     return [header, data]
