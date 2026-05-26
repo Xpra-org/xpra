@@ -203,6 +203,8 @@ class XpraDesktopWindowServer(DesktopWindowServer):
         for ss in self.window_sources():
             ss.resize_window(wid, model, w, h)
             ss.damage(wid, model, 0, 0, w, h)
+        if display := self.get_subsystem("display"):
+            display.emit("display-geometry-changed")
 
 
 class MonitorWindowServer(DesktopWindowServer):

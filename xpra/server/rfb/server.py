@@ -56,6 +56,18 @@ class RFBServer(StubSubsystem):
                 log("RFBServer", exc_info=True)
                 log.warn("Warning: no x11 bindings")
                 log.warn(" some RFB keyboard events may be missing")
+        if display := self.get_subsystem("display"):
+            display.connect("display-geometry-changed", self._on_display_geometry_changed)
+
+    def _on_display_geometry_changed(self, _display) -> None:
+        display = self.get_subsystem("display")
+        size = display.get_display_size() if display else None
+        if not size:
+            return
+        w, h = size
+        for source in self.server._server_sources.values():
+            if isinstance(source, RFBSource):
+                source.updated_desktop_size(w, h)
 
     def cleanup_protocol(self, protocol) -> None:
         self.cancel_upgrade_to_rfb_timer(protocol)

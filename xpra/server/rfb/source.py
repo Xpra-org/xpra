@@ -217,6 +217,15 @@ class RFBSource:
         msg = struct.pack(b"!B", 2)
         self.send(msg)
 
+    def updated_desktop_size(self, root_w: int, root_h: int, _max_w: int = 0, _max_h: int = 0) -> bool:
+        if RFBEncoding.DESKTOPSIZE not in self.encodings:
+            return False
+        if self.is_closed():
+            return False
+        log("send DesktopSize %ix%i", root_w, root_h)
+        self.send(make_header(RFBEncoding.DESKTOPSIZE, 0, 0, root_w, root_h))
+        return True
+
     def send(self, msg) -> None:
         if p := self.protocol:
             p.send(msg)
