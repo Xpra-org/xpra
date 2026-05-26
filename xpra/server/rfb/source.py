@@ -74,6 +74,9 @@ class RFBSource:
     def is_closed(self) -> bool:
         return self.close_event.is_set()
 
+    def requires_sharing(self) -> bool:
+        return True
+
     def close(self) -> None:
         self.close_event.set()
 

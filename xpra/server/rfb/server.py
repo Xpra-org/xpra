@@ -7,6 +7,7 @@
 from weakref import WeakKeyDictionary
 
 from xpra.os_util import gi_import
+from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.util.system import is_X11
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -157,12 +158,13 @@ class RFBServer(StubSubsystem):
         if not model:
             proto.close()
             return
-        self.server.accept_connection(proto)
-        accepted, share_count, disconnected = self.server.handle_sharing(proto, share=proto.share)
-        log("RFB handle sharing: accepted=%s, share count=%s, disconnected=%s", accepted, share_count, disconnected)
-        if not accepted:
-            return
         source = RFBSource(proto, proto.share)
+        if sharing := self.get_subsystem("sharing"):
+            if err := sharing.parse_hello(source, typedict({"share": proto.share})):
+                source.close()
+                self.server.disconnect_client(proto, *err.split(":"))
+                return
+        self.server.accept_connection(proto)
         self.server._server_sources[proto] = source
         # continue in the UI thread:
         GLib.idle_add(self._accept_rfb_source, source)
