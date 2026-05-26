@@ -54,6 +54,7 @@ from xpra.wayland.wlroots cimport (
     wlr_output_init_render, wlr_output_layout,
     wlr_xdg_output_manager_v1, wlr_xdg_output_manager_v1_create,
     wlr_primary_selection_v1_device_manager, wlr_primary_selection_v1_device_manager_create,
+    wlr_data_source, wlr_seat_request_set_selection_event, wlr_seat_set_selection,
     wlr_primary_selection_source, wlr_seat_request_set_primary_selection_event,
     wlr_seat_set_primary_selection,
     wlr_headless_add_output,
@@ -84,6 +85,8 @@ cdef enum:
     L_NEW_TOPLEVEL
     L_NEW_POPUP
     L_NEW_OUTPUT
+    L_REQUEST_SET_SELECTION
+    L_SET_SELECTION
     L_REQUEST_SET_PRIMARY_SELECTION
     L_SET_PRIMARY_SELECTION
     L_REQUEST_ACTIVATE
@@ -140,6 +143,10 @@ cdef class WaylandCompositor(ListenerObject):
             # Called by wlroots from within wl_event_loop_dispatch, which is invoked
             # from Python-side WaylandCompositor.process_events() — so the GIL is held.
             self.new_output(<wlr_output*> data)
+        elif slot == L_REQUEST_SET_SELECTION:
+            self.request_set_selection(<wlr_seat_request_set_selection_event*> data)
+        elif slot == L_SET_SELECTION:
+            self.set_selection()
         elif slot == L_REQUEST_SET_PRIMARY_SELECTION:
             self.request_set_primary_selection(<wlr_seat_request_set_primary_selection_event*> data)
         elif slot == L_SET_PRIMARY_SELECTION:
@@ -246,6 +253,8 @@ cdef class WaylandCompositor(ListenerObject):
             self.primary_selection_manager = wlr_primary_selection_v1_device_manager_create(self.display_ptr)
             if not self.primary_selection_manager:
                 raise RuntimeError("Failed to create primary selection manager")
+            self.add_listener(L_REQUEST_SET_SELECTION, &self.seat.events.request_set_selection)
+            self.add_listener(L_SET_SELECTION, &self.seat.events.set_selection)
             self.add_listener(L_REQUEST_SET_PRIMARY_SELECTION, &self.seat.events.request_set_primary_selection)
             self.add_listener(L_SET_PRIMARY_SELECTION, &self.seat.events.set_primary_selection)
 
@@ -284,6 +293,17 @@ cdef class WaylandCompositor(ListenerObject):
                 log.warn("Warning: cannot apply decoration mode before xdg surface is initialized")
             self.emit("ssd", <uintptr_t> toplevel, bool(ssd))
 
+    cdef void request_set_selection(self, wlr_seat_request_set_selection_event *event) noexcept:
+        if event == NULL:
+            return
+        wlr_seat_set_selection(self.seat, event.source, event.serial)
+
+    cdef void set_selection(self) noexcept:
+        if self.seat == NULL:
+            self.emit("selection", 0)
+            return
+        self.emit("selection", <uintptr_t> self.seat.selection_source)
+
     cdef void request_set_primary_selection(self, wlr_seat_request_set_primary_selection_event *event) noexcept:
         if event == NULL:
             return
@@ -318,6 +338,11 @@ cdef class WaylandCompositor(ListenerObject):
 
     def get_seat_ptr(self) -> int:
         return <uintptr_t> self.seat
+
+    def get_selection_source_ptr(self) -> int:
+        if self.seat == NULL:
+            return 0
+        return <uintptr_t> self.seat.selection_source
 
     def get_primary_selection_source_ptr(self) -> int:
         if self.seat == NULL:

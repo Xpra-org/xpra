@@ -133,7 +133,7 @@ cdef extern from "wayland-util.h":
         wl_list *prev
         wl_list *next
 
-    ctypedef struct wl_array:
+    cdef struct wl_array:
         size_t size
         size_t alloc
         void *data
@@ -627,6 +627,7 @@ cdef extern from "wlr/types/wlr_input_device.h":
 
 
 cdef extern from "wlr/types/wlr_seat.h":
+    cdef struct wlr_data_source
     cdef struct wlr_primary_selection_source
 
     cdef struct wlr_seat_client:
@@ -639,15 +640,23 @@ cdef extern from "wlr/types/wlr_seat.h":
         wl_list touches
 
     cdef struct wlr_seat_events:
+        wl_signal request_set_selection
+        wl_signal set_selection
         wl_signal request_set_primary_selection
         wl_signal set_primary_selection
 
     cdef struct wlr_seat:
         wl_list clients  # wlr_seat_client list
         char *name
+        wlr_data_source *selection_source
+        uint32_t selection_serial
         wlr_primary_selection_source *primary_selection_source
         uint32_t primary_selection_serial
         wlr_seat_events events
+
+    cdef struct wlr_seat_request_set_selection_event:
+        wlr_data_source *source
+        uint32_t serial
 
     cdef struct wlr_seat_request_set_primary_selection_event:
         wlr_primary_selection_source *source
@@ -1295,7 +1304,29 @@ cdef extern from "wlr/types/wlr_subcompositor.h":
 cdef extern from "wlr/types/wlr_data_device.h":
     ctypedef struct wlr_data_device_manager:
         pass
+
+    cdef struct wlr_data_source_impl:
+        void (*send)(wlr_data_source *source, const char *mime_type, int fd) noexcept
+        void (*accept)(wlr_data_source *source, uint32_t serial, const char *mime_type) noexcept
+        void (*destroy)(wlr_data_source *source) noexcept
+        void (*dnd_drop)(wlr_data_source *source) noexcept
+        void (*dnd_finish)(wlr_data_source *source) noexcept
+        void (*dnd_action)(wlr_data_source *source, int action) noexcept
+
+    cdef struct wlr_data_source_events:
+        wl_signal destroy
+
+    cdef struct wlr_data_source:
+        const wlr_data_source_impl *impl
+        wl_array mime_types
+        int32_t actions
+        wlr_data_source_events events
+
     wlr_data_device_manager *wlr_data_device_manager_create(wl_display *display)
+    void wlr_data_source_init(wlr_data_source *source, const wlr_data_source_impl *impl)
+    void wlr_data_source_destroy(wlr_data_source *source)
+    void wlr_data_source_send(wlr_data_source *source, const char *mime_type, int fd)
+    void wlr_seat_set_selection(wlr_seat *seat, wlr_data_source *source, uint32_t serial)
 
 
 cdef extern from "wlr/types/wlr_data_control_v1.h":

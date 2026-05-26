@@ -25,6 +25,10 @@ from xpra.log import Logger
 from xpra.wayland.wlroots cimport (
     wl_array_add,
     wl_display, wl_display_next_serial,
+    wl_array,
+    wlr_data_source, wlr_data_source_impl,
+    wlr_data_source_init, wlr_data_source_destroy, wlr_data_source_send,
+    wlr_seat_set_selection,
     wlr_seat, wlr_seat_set_primary_selection,
     wlr_primary_selection_source, wlr_primary_selection_source_impl,
     wlr_primary_selection_source_init, wlr_primary_selection_source_destroy,
@@ -37,10 +41,12 @@ GObject = gi_import("GObject")
 
 log = Logger("wayland", "clipboard")
 
-WAYLAND_CLIPBOARDS = ("PRIMARY",)
+WAYLAND_CLIPBOARDS = ("CLIPBOARD", "PRIMARY")
 
 
+cdef wlr_data_source_impl DATA_SOURCE_IMPL
 cdef wlr_primary_selection_source_impl PRIMARY_SOURCE_IMPL
+DATA_SOURCE_OWNERS = {}
 
 
 cdef bytes bstr(value):
@@ -51,34 +57,59 @@ cdef bytes bstr(value):
     return str(value).encode("utf8")
 
 
-cdef void add_mime_type(wlr_primary_selection_source *source, bytes mime):
+cdef void add_mime_type(wl_array *mime_types, bytes mime):
     cdef char **slot
     cdef char *value
     cdef size_t size
-    if source == NULL or not mime:
+    if mime_types == NULL or not mime:
         return
     size = len(mime) + 1
     value = <char*> malloc(size)
     if value == NULL:
-        raise MemoryError("failed to allocate primary selection mime type")
+        raise MemoryError("failed to allocate selection mime type")
     memcpy(value, <const char*> mime, size - 1)
     value[size - 1] = 0
-    slot = <char**> wl_array_add(&source.mime_types, sizeof(char*))
+    slot = <char**> wl_array_add(mime_types, sizeof(char*))
     if slot == NULL:
         free(value)
-        raise MemoryError("failed to append primary selection mime type")
+        raise MemoryError("failed to append selection mime type")
     slot[0] = value
 
 
-cdef tuple source_mime_types(wlr_primary_selection_source *source):
+cdef tuple source_mime_types(wl_array *mime_types):
     cdef char **values
     cdef size_t count
     cdef size_t i
-    if source == NULL:
+    if mime_types == NULL:
         return ()
-    values = <char**> source.mime_types.data
-    count = source.mime_types.size // sizeof(char*)
+    values = <char**> mime_types.data
+    count = mime_types.size // sizeof(char*)
     return tuple(values[i].decode("utf8", "replace") for i in range(count) if values[i] != NULL)
+
+
+cdef void data_source_send(wlr_data_source *source, const char *mime_type, int fd) noexcept:
+    try:
+        owner = DATA_SOURCE_OWNERS.get(<uintptr_t> source) if source != NULL else None
+        if owner is None:
+            os.close(fd)
+            return
+        owner.send(mime_type.decode("utf8", "replace") if mime_type != NULL else "", fd)
+    except Exception:
+        log.error("Error sending selection contents", exc_info=True)
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+
+
+cdef void data_source_destroy(wlr_data_source *source) noexcept:
+    try:
+        owner = DATA_SOURCE_OWNERS.pop(<uintptr_t> source, None) if source != NULL else None
+        if owner is not None:
+            owner.destroyed()
+    except Exception:
+        log.error("Error destroying selection source", exc_info=True)
+    free(source)
 
 
 cdef void primary_source_send(wlr_primary_selection_source *source, const char *mime_type, int fd) noexcept:
@@ -108,6 +139,56 @@ cdef void primary_source_destroy(wlr_primary_selection_source *source) noexcept:
     free(source)
 
 
+cdef class WaylandSelectionSource:
+    cdef wlr_data_source *source
+    cdef object proxy
+    cdef object target_data
+
+    def __cinit__(self):
+        self.source = NULL
+        self.proxy = None
+        self.target_data = {}
+
+    def __init__(self, proxy, targets, target_data=None):
+        cdef bytes mime
+        if DATA_SOURCE_IMPL.send == NULL:
+            DATA_SOURCE_IMPL.send = data_source_send
+            DATA_SOURCE_IMPL.destroy = data_source_destroy
+        self.proxy = proxy
+        self.target_data = target_data or {}
+        self.source = <wlr_data_source*> calloc(1, sizeof(wlr_data_source))
+        if self.source == NULL:
+            raise MemoryError("failed to allocate selection source")
+        wlr_data_source_init(self.source, &DATA_SOURCE_IMPL)
+        DATA_SOURCE_OWNERS[self.ptr()] = self
+        for target in targets or ():
+            mime = bstr(target)
+            add_mime_type(&self.source.mime_types, mime)
+
+    def ptr(self) -> int:
+        return <uintptr_t> self.source
+
+    def destroy(self) -> None:
+        cdef wlr_data_source *source = self.source
+        if source != NULL:
+            self.source = NULL
+            wlr_data_source_destroy(source)
+
+    def destroyed(self) -> None:
+        proxy = self.proxy
+        self.source = NULL
+        self.proxy = None
+        if proxy is not None:
+            proxy.primary_source_destroyed(self)
+
+    def send(self, mime_type: str, fd: int) -> None:
+        proxy = self.proxy
+        if proxy is None:
+            os.close(fd)
+            return
+        proxy.send_remote_contents(mime_type, fd, self.target_data)
+
+
 cdef class WaylandPrimarySource:
     cdef wlr_primary_selection_source *source
     cdef object proxy
@@ -133,7 +214,7 @@ cdef class WaylandPrimarySource:
         self.source.data = <void*> self
         for target in targets or ():
             mime = bstr(target)
-            add_mime_type(self.source, mime)
+            add_mime_type(&self.source.mime_types, mime)
 
     def ptr(self) -> int:
         return <uintptr_t> self.source
@@ -159,6 +240,43 @@ cdef class WaylandPrimarySource:
         proxy.send_remote_contents(mime_type, fd, self.target_data)
 
 
+cdef class WaylandSelection:
+    cdef wlr_seat *seat
+    cdef wl_display *display
+
+    def __init__(self, uintptr_t display_ptr, uintptr_t seat_ptr):
+        self.display = <wl_display*> display_ptr
+        self.seat = <wlr_seat*> seat_ptr
+
+    def set_source(self, WaylandSelectionSource source) -> None:
+        cdef uint32_t serial
+        if self.display == NULL or self.seat == NULL:
+            return
+        serial = wl_display_next_serial(self.display)
+        wlr_seat_set_selection(self.seat, source.source, serial)
+
+    def clear(self) -> None:
+        cdef uint32_t serial
+        if self.display == NULL or self.seat == NULL:
+            return
+        serial = wl_display_next_serial(self.display)
+        wlr_seat_set_selection(self.seat, NULL, serial)
+
+    def source_targets(self, uintptr_t source_ptr) -> tuple:
+        cdef wlr_data_source *source = <wlr_data_source*> source_ptr
+        if source == NULL:
+            return ()
+        return source_mime_types(&source.mime_types)
+
+    def send_source(self, uintptr_t source_ptr, str target, int fd) -> None:
+        cdef bytes mime = bstr(target)
+        cdef wlr_data_source *source = <wlr_data_source*> source_ptr
+        if source == NULL:
+            os.close(fd)
+            return
+        wlr_data_source_send(source, <const char*> mime, fd)
+
+
 cdef class WaylandPrimarySelection:
     cdef wlr_seat *seat
     cdef wl_display *display
@@ -182,7 +300,10 @@ cdef class WaylandPrimarySelection:
         wlr_seat_set_primary_selection(self.seat, NULL, serial)
 
     def source_targets(self, uintptr_t source_ptr) -> tuple:
-        return source_mime_types(<wlr_primary_selection_source*> source_ptr)
+        cdef wlr_primary_selection_source *source = <wlr_primary_selection_source*> source_ptr
+        if source == NULL:
+            return ()
+        return source_mime_types(&source.mime_types)
 
     def send_source(self, uintptr_t source_ptr, str target, int fd) -> None:
         cdef bytes mime = bstr(target)
@@ -203,7 +324,7 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
         ClipboardProxyCore.__init__(self, selection)
         GObject.GObject.__init__(self)
         self.compositor = compositor
-        self.primary = WaylandPrimarySelection(compositor.get_display_ptr(), compositor.get_seat_ptr())
+        self.selection_api = WaylandPrimarySelection(compositor.get_display_ptr(), compositor.get_seat_ptr())
         self.local_source_ptr = 0
         self.remote_source = None
         self.remote_source_ptr = 0
@@ -246,7 +367,7 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.targets = ()
             self.target_data = {}
             return
-        self.targets = self.primary.source_targets(source_ptr)
+        self.targets = self.selection_api.source_targets(source_ptr)
         self.target_data = {}
         self.do_owner_changed()
 
@@ -301,7 +422,7 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
         source_id = GLib.io_add_watch(rfd, GLib.IO_IN | GLib.IO_HUP | GLib.IO_ERR, io_callback)
         self.pending_reads[rfd] = (data, source_id, got_contents)
-        self.primary.send_source(source_ptr, target, wfd)
+        self.selection_api.send_source(source_ptr, target, wfd)
         try:
             os.close(wfd)
         except OSError:
@@ -327,7 +448,7 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
         source = WaylandPrimarySource(self, self.targets or self.target_data.keys(), self.target_data)
         self.remote_source = source
         self.remote_source_ptr = source.ptr()
-        self.primary.set_source(source)
+        self.selection_api.set_source(source)
         self._have_token = True
 
     def send_remote_contents(self, target: str, fd: int, target_data=None) -> None:
@@ -362,7 +483,64 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 pass
 
 
+class WaylandClipboardProxy(WaylandPrimaryClipboardProxy):
+
+    def __init__(self, selection, compositor):
+        ClipboardProxyCore.__init__(self, selection)
+        GObject.GObject.__init__(self)
+        self.compositor = compositor
+        self.selection_api = WaylandSelection(compositor.get_display_ptr(), compositor.get_seat_ptr())
+        self.local_source_ptr = 0
+        self.remote_source = None
+        self.remote_source_ptr = 0
+        self.targets = ()
+        self.target_data = {}
+        self.pending_reads = {}
+        self.pending_writes = defaultdict(list)
+        compositor.connect("selection", self.selection_changed)
+
+    def __repr__(self):
+        return "WaylandClipboardProxy(%s)" % self._selection
+
+    def selection_changed(self, source_ptr: int) -> None:
+        log("selection_changed(%#x) remote=%#x", source_ptr, self.remote_source_ptr)
+        self.local_source_ptr = source_ptr
+        if source_ptr == self.remote_source_ptr:
+            return
+        if source_ptr == 0:
+            self.targets = ()
+            self.target_data = {}
+            return
+        self.targets = self.selection_api.source_targets(source_ptr)
+        self.target_data = {}
+        self.do_owner_changed()
+
+    def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
+        self.cancel_emit_token()
+        if not self._enabled:
+            return
+        self._got_token_events += 1
+        log("got_token(%s, %s, claim=%s)", targets, Ellipsizer(target_data), claim)
+        self.targets = tuple(bytestostr(x) for x in (targets or ()))
+        self.target_data = target_data or {}
+        if not claim or not self._can_receive:
+            return
+        if not self.targets and not self.target_data:
+            if self.remote_source:
+                self.remote_source.destroy()
+                self.remote_source = None
+                self.remote_source_ptr = 0
+            self._have_token = False
+            return
+        source = WaylandSelectionSource(self, self.targets or self.target_data.keys(), self.target_data)
+        self.remote_source = source
+        self.remote_source_ptr = source.ptr()
+        self.selection_api.set_source(source)
+        self._have_token = True
+
+
 GObject.type_register(WaylandPrimaryClipboardProxy)
+GObject.type_register(WaylandClipboardProxy)
 
 
 class WaylandClipboard(ClipboardTimeoutHelper):
@@ -381,7 +559,9 @@ class WaylandClipboard(ClipboardTimeoutHelper):
         return "WaylandClipboard"
 
     def make_proxy(self, selection):
-        if selection == "PRIMARY" and self.compositor is not None:
+        if selection == "CLIPBOARD" and self.compositor is not None:
+            proxy = WaylandClipboardProxy(selection, self.compositor)
+        elif selection == "PRIMARY" and self.compositor is not None:
             proxy = WaylandPrimaryClipboardProxy(selection, self.compositor)
         else:
             raise RuntimeError(f"unsupported Wayland clipboard selection: {selection!r}")
