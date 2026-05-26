@@ -83,14 +83,12 @@ class RFBServer(StubSubsystem):
             return None
         if len(models) != 1:
             log.error("RFB can only handle a single desktop window, found %i", len(models))
-            return None
         return models[0]
 
     def _get_rfb_desktop_wid(self):
         ids = tuple(self._get_window_models().values())
         if len(ids) != 1:
             log.error("RFB can only handle a single desktop window, found %i", len(ids))
-            return None
         return ids[0]
 
     def handle_rfb_connection(self, conn, data=b"") -> None:
