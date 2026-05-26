@@ -16,7 +16,7 @@ from cpython.ref cimport Py_INCREF, Py_DECREF
 
 from xpra.clipboard.common import ClipboardCallback
 from xpra.clipboard.proxy import ClipboardProxyCore
-from xpra.gtk.clipboard import GTK_Clipboard, GTKClipboardProxy
+from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.os_util import gi_import
 from xpra.util.gobject import n_arg_signal, one_arg_signal
 from xpra.util.str_fn import Ellipsizer, bytestostr
@@ -36,6 +36,8 @@ GLib = gi_import("GLib")
 GObject = gi_import("GObject")
 
 log = Logger("wayland", "clipboard")
+
+WAYLAND_CLIPBOARDS = ("PRIMARY",)
 
 
 cdef wlr_primary_selection_source_impl PRIMARY_SOURCE_IMPL
@@ -363,13 +365,17 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
 GObject.type_register(WaylandPrimaryClipboardProxy)
 
 
-class WaylandClipboard(GTK_Clipboard):
+class WaylandClipboard(ClipboardTimeoutHelper):
 
     def __init__(self, *args, compositor=None, **kwargs):
         self.compositor = compositor
+        kwargs["clipboards.local"] = WAYLAND_CLIPBOARDS
+        kwargs["clipboards.remote"] = WAYLAND_CLIPBOARDS
         super().__init__(*args, **kwargs)
-        if compositor is not None:
-            self.local_want_targets = tuple(dict.fromkeys((*self.local_want_targets, "PRIMARY")))
+        self.local_selections = WAYLAND_CLIPBOARDS
+        self.remote_clipboards = WAYLAND_CLIPBOARDS
+        self.local_want_targets = WAYLAND_CLIPBOARDS
+        self.local_greedy = True
 
     def __repr__(self):
         return "WaylandClipboard"
@@ -378,7 +384,7 @@ class WaylandClipboard(GTK_Clipboard):
         if selection == "PRIMARY" and self.compositor is not None:
             proxy = WaylandPrimaryClipboardProxy(selection, self.compositor)
         else:
-            proxy = GTKClipboardProxy(selection)
+            raise RuntimeError(f"unsupported Wayland clipboard selection: {selection!r}")
         proxy.set_want_targets(self.proxy_want_targets(selection))
         proxy.set_direction(self.can_send, self.can_receive)
         proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)

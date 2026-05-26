@@ -11,6 +11,11 @@ log = Logger("wayland", "clipboard")
 
 class WaylandClipboardManager(ClipboardManager):
 
+    def init_clipboard(self) -> None:
+        super().init_clipboard()
+        if self.helper:
+            self.selections = self.helper.local_selections
+
     def get_clipboard_class(self):
         try:
             from xpra.wayland.clipboard import WaylandClipboard
