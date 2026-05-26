@@ -152,6 +152,17 @@ cdef class WaylandCompositor(ListenerObject):
             log.error("Error: unexpected compositor event slot %i", slot)
 
     def initialize(self) -> str:
+        # one-shot: add the display socket and start the backend.
+        # Callers that need the socket name (and the rest of the subsystems
+        # connected via `connect("new-output", ...)` etc.) *before* the
+        # backend is started should call `add_socket()` and `start_backend()`
+        # separately - otherwise `new-output` fires during start_backend()
+        # with no Python listener attached and the event is lost.
+        self.add_socket()
+        self.start_backend()
+        return self.socket_name
+
+    def add_socket(self) -> str:
         log("starting headless wayland compositor")
 
         self.display_ptr = wl_display_create()
@@ -244,12 +255,13 @@ cdef class WaylandCompositor(ListenerObject):
         if not bname:
             raise RuntimeError("Failed to add socket")
         self.socket_name = bname.decode("utf8")
+        log("wayland display socket added: %s", self.socket_name)
+        return self.socket_name
 
+    def start_backend(self) -> None:
         if not wlr_backend_start(self.backend):
             raise RuntimeError("Failed to start backend")
-
         log.info("compositor running on WAYLAND_DISPLAY=%s", self.socket_name)
-        return self.socket_name
 
     def get_event_loop_fd(self) -> int:
         return wl_event_loop_get_fd(self.event_loop)

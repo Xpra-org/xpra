@@ -587,9 +587,10 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         # setup needs root, and the runtime dir was already provisioned (and
         # chowned) by process.prepare_environment():
         process.setup()
-        # connect the display/window subsystems to the compositor *before* it is
-        # started, so they receive its initial `new-output` events:
-        app.init_subsystems()
+        # setup_display() binds the wayland socket and emits "display-name"
+        # (renaming the session dir), but does NOT start the backend yet -
+        # the backend is started in WaylandSeamlessServer.setup(), after
+        # init_subsystems() has connected the display/window subsystems:
         vfb_result = wm.setup_display(progress)
     else:
         from xpra.server.subsystem.xvfb import XvfbManager
@@ -603,8 +604,8 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         use_display = xvfb.use_display
         # Change uid as early as possible, but after VFB setup:
         process.setup()
-        app.init_subsystems()
     display_name = vfb_result.display_name
+    app.init_subsystems()
 
     def server_not_started(msg="server not started") -> None:
         progress(100, msg)
