@@ -150,6 +150,16 @@ class SSHSocketConnection(SocketConnection):
             return b""
         return self._raw_socket.recv(n, socket.MSG_PEEK)
 
+    def recv_into(self, buf) -> int:
+        return self._recv_into(self._channel_recv_into, buf)
+
+    def _channel_recv_into(self, buf) -> int:
+        data = self._socket.recv(len(buf))
+        n = len(data)
+        if n:
+            buf[:n] = data
+        return n
+
     def get_socket_info(self) -> dict[str, Any]:
         if not self._raw_socket:
             return {}
