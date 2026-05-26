@@ -10,10 +10,11 @@ from xpra.net.compression import Compressed
 from xpra.server.common import make_icon_packet
 from xpra.util.system import get_platform_icon_name
 from xpra.x11.error import xsync
-from xpra.x11.subsystem.display import X11DisplayManager
+from xpra.x11.subsystem.display import X11DisplayManager, get_root_size
 from xpra.log import Logger
 
 log = Logger("server")
+screenlog = Logger("screen")
 
 
 class XpraDesktopDisplayManager(X11DisplayManager):
@@ -30,6 +31,30 @@ class XpraDesktopDisplayManager(X11DisplayManager):
 
     def parse_screen_info(self, ss):
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)
+
+    def configure_best_screen_size(self) -> tuple[int, int]:
+        """For the first client, honour desktop_mode_size if it is set."""
+        root_w, root_h = get_root_size()
+        if not self.randr:
+            screenlog("configure_best_screen_size() no randr")
+            return root_w, root_h
+        from xpra.server.source.display import DisplayConnection
+        display_sources = self.get_sources_by_type(DisplayConnection)
+        if len(display_sources) != 1:
+            screenlog.info(f"screen used by {len(display_sources)} clients:")
+            return root_w, root_h
+        ss = display_sources[0]
+        requested_size = ss.desktop_mode_size
+        if not requested_size:
+            screenlog("configure_best_screen_size() client did not request a specific desktop mode size")
+            return root_w, root_h
+        w, h = requested_size
+        screenlog("client requested desktop mode resolution is %sx%s (current server resolution is %sx%s)",
+                  w, h, root_w, root_h)
+        if w <= 0 or h <= 0 or w >= 32768 or h >= 32768:
+            screenlog("configure_best_screen_size() client requested an invalid desktop mode size: %s", requested_size)
+            return root_w, root_h
+        return self.set_screen_size(w, h)
 
     def notify_dpi_warning(self, body) -> None:
         """ ignore DPI warnings in desktop mode """

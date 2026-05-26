@@ -8,7 +8,6 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.bindings.randr import RandRBindings
-from xpra.server.common import get_sources_by_type
 from xpra.server import features
 from xpra.x11.error import xlog
 from xpra.log import Logger
@@ -53,31 +52,6 @@ class XpraDesktopServer(DesktopServerBase):
             log.warn(f" using {res!r}")
         with xlog:
             set_initial_resolution(res, self.dpi or self.default_dpi)
-
-    def configure_best_screen_size(self) -> tuple[int, int]:
-        """ for the first client, honour desktop_mode_size if set """
-        from xpra.x11.subsystem.display import get_root_size
-        root_w, root_h = get_root_size()
-        if not self.randr:
-            screenlog("configure_best_screen_size() no randr")
-            return root_w, root_h
-        from xpra.server.source.display import DisplayConnection
-        sss = get_sources_by_type(self, DisplayConnection)
-        if len(sss) != 1:
-            screenlog.info(f"screen used by {len(sss)} clients:")
-            return root_w, root_h
-        ss = sss[0]
-        requested_size = ss.desktop_mode_size
-        if not requested_size:
-            screenlog("configure_best_screen_size() client did not request a specific desktop mode size")
-            return root_w, root_h
-        w, h = requested_size
-        screenlog("client requested desktop mode resolution is %sx%s (current server resolution is %sx%s)",
-                  w, h, root_w, root_h)
-        if w <= 0 or h <= 0 or w >= 32768 or h >= 32768:
-            screenlog("configure_best_screen_size() client requested an invalid desktop mode size: %s", requested_size)
-            return root_w, root_h
-        return self.set_screen_size(w, h)
 
     def resize(self, w: int, h: int) -> None:
         geomlog("resize(%i, %i)", w, h)
