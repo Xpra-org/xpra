@@ -21,6 +21,13 @@ class XpraDesktopDisplayManager(X11DisplayManager):
     X11 display subsystem for desktop and monitor servers.
     """
 
+    def __init__(self, server=None):
+        super().__init__(server)
+        # Desktop variants expose a fixed virtual monitor meant to match a real
+        # display, not the giant seamless canvas used as the X11 default.
+        self.default_resolution = "1920x1080"
+        self.mirror_client_layout = False
+
     def parse_screen_info(self, ss):
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)
 

@@ -79,14 +79,6 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
         self.session_type = "X11 desktop"
-        # Desktop servers expose a fixed virtual monitor meant to match a
-        # real display, so a single sensible default beats the 8K seamless
-        # default. The display subsystem reads this in `get_default_initial_res`.
-        display = self.subsystems["display"]
-        display.default_resolution = "1920x1080"
-        # Desktop variants present a fixed virtual monitor; never reshape
-        # the screen layout to match the client's monitors.
-        display.mirror_client_layout = False
 
     def get_display_subsystem_class(self) -> type:
         from xpra.x11.desktop.display import XpraDesktopDisplayManager
