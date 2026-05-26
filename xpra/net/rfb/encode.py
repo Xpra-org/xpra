@@ -4,8 +4,11 @@
 # later version. See the file COPYING for details.
 
 import struct
+from typing import Any
+from collections.abc import Sequence
 
 from xpra.net.rfb.const import RFBEncoding
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.pillow.encoder import encode
 from xpra.util.objects import typedict
 from xpra.util.str_fn import hexstr
@@ -16,7 +19,7 @@ log = Logger("rfb")
 PILLOW_OPTIONS = typedict({"alpha": False})
 
 
-def pillow_encode(encoding, img, quality=0, speed=0):
+def pillow_encode(encoding: str, img: ImageWrapper, quality: int = 0, speed: int = 0) -> bytes:
     options = typedict(PILLOW_OPTIONS)
     if quality > 0:
         options["quality"] = min(100, max(0, int(quality)))
@@ -25,13 +28,13 @@ def pillow_encode(encoding, img, quality=0, speed=0):
     return encode(encoding, img, options)[1].data
 
 
-def make_header(encoding, x, y, w, h):
+def make_header(encoding: int, x: int, y: int, w: int, h: int) -> bytes:
     fbupdate = struct.pack(b"!BBH", 0, 0, 1)
     rect = struct.pack(b"!HHHHi", x, y, w, h, encoding)
     return fbupdate + rect
 
 
-def rgb222_encode(window, x, y, w, h):
+def rgb222_encode(window: Any, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     header = make_header(RFBEncoding.RAW, x, y, w, h)
@@ -41,19 +44,19 @@ def rgb222_encode(window, x, y, w, h):
     pixels = img.get_pixels()
     from xpra.codecs.argb.argb import bgra_to_rgb222  # pylint: disable=no-name-in-module
     data = bgra_to_rgb222(pixels)
-    return [header, data]
+    return header, data
 
 
-def raw_encode(window, x, y, w, h):
+def raw_encode(window: Any, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     header = make_header(RFBEncoding.RAW, x, y, w, h)
-    return [header, raw_pixels(img)]
+    return header, raw_pixels(img)
 
 
-def raw_pixels(img):
+def raw_pixels(img: ImageWrapper | None) -> bytes:
     if not img:
-        return []
+        return b""
     w = img.get_width()
     h = img.get_height()
     Bpp = len(img.get_pixel_format())  # ie: BGRX -> 4
@@ -65,7 +68,7 @@ def raw_pixels(img):
     return pixels[:Bpp * w * h]
 
 
-def zlib_encode(window, x, y, w, h, compressor=None):
+def zlib_encode(window: Any, x: int, y: int, w: int, h: int, compressor: Any = None) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     if not img:
@@ -83,20 +86,20 @@ def zlib_encode(window, x, y, w, h, compressor=None):
     data = compressor.compress(pixels) + compressor.flush(zlib.Z_SYNC_FLUSH)
     log("zlib compressed %i down to %i", len(pixels), len(data))
     header = make_header(RFBEncoding.ZLIB, x, y, w, h) + struct.pack(b"!I", len(data))
-    return [header, data]
+    return header, data
 
 
-def tight_encode(window, x, y, w, h, quality=0, speed=0):
+def tight_encode(window: Any, x: int, y: int, w: int, h: int, quality: int = 0, speed: int = 0) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     if not img:
         return []
     data = pillow_encode("jpeg", img, quality, speed)
     header = tight_header(RFBEncoding.TIGHT, x, y, w, h, 0x90, len(data))
-    return [header, data]
+    return header, data
 
 
-def tight_header(encoding, x, y, w, h, control, length):
+def tight_header(encoding: int, x: int, y: int, w: int, h: int, control: int, length: int) -> bytes:
     header = make_header(encoding, x, y, w, h)
     header += struct.pack(b"!B", control)
     # the length header is in a weird format:
@@ -111,11 +114,11 @@ def tight_header(encoding, x, y, w, h, control, length):
     return header
 
 
-def tight_png(window, x, y, w, h, speed=0):
+def tight_png(window: Any, x: int, y: int, w: int, h: int, speed: int = 0) -> Sequence[bytes]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     if not img:
         return []
     data = pillow_encode("png", img, speed=speed)
     header = tight_header(RFBEncoding.TIGHT_PNG, x, y, w, h, 0x80 + 0x20, len(data))
-    return [header, data]
+    return header, data
