@@ -6,13 +6,14 @@
 import struct
 from threading import Event
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.net.rfb.const import RFBEncoding, RFBServerMessage
 from xpra.net.rfb.encode import make_header, raw_encode, tight_encode, tight_png, rgb222_encode, zlib_encode
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
-from xpra.net.common import PacketElement
+from xpra.server.source.stub import PointerSource
 from xpra.util.objects import AtomicInteger
-from xpra.util.str_fn import csv, strtobytes, memoryview_to_bytes
+from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.log import Logger
 
 log = Logger("rfb")
@@ -40,7 +41,7 @@ def rfb_compression_level_to_speed(level: int) -> int:
     return cap_pct(round(100 * (10 - level) / 9))
 
 
-class RFBSource:
+class RFBSource(PointerSource):
     __slots__ = (
         "protocol", "close_event",
         "counter", "share", "uuid", "lock", "keyboard_config",
@@ -48,6 +49,7 @@ class RFBSource:
         "get_cursor_data_cb", "last_cursor_sent",
         "zlib_compressor",
         "continuous_updates", "cu_rect", "pending_request",
+        "last_pointer_pos",
     )
 
     def __init__(self, protocol, share=False):
@@ -71,6 +73,7 @@ class RFBSource:
         self.continuous_updates = True
         self.cu_rect: tuple[int, int, int, int] | None = None
         self.pending_request: tuple[int, int, int, int] | None = None
+        self.last_pointer_pos: tuple[int, int] | None = None
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -81,7 +84,7 @@ class RFBSource:
             "speed": self.speed,
         }
 
-    def set_encodings(self, encodings) -> None:
+    def set_encodings(self, encodings: Sequence) -> None:
         known_encodings = []
         unknown_encodings = []
         for v in encodings:
@@ -106,7 +109,7 @@ class RFBSource:
         if unknown_encodings:
             log("RFB %i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
 
-    def set_pixel_format(self, pixel_format) -> None:
+    def set_pixel_format(self, pixel_format: Sequence[int]) -> None:
         # bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
         new_format = tuple(pixel_format)
         if new_format != self.pixel_format:
@@ -150,9 +153,6 @@ class RFBSource:
         nh = max(py + ph, y + h) - ny
         self.pending_request = (nx, ny, nw, nh)
 
-    def get_window_info(self, _wids) -> dict:
-        return {}
-
     def is_closed(self) -> bool:
         return self.close_event.is_set()
 
@@ -161,12 +161,6 @@ class RFBSource:
 
     def close(self) -> None:
         self.close_event.set()
-
-    def ping(self) -> None:
-        """ ignore as there are no equivalent messages in RFB """
-
-    def keys_changed(self) -> None:
-        """ not implemented yet """
 
     def set_default_keymap(self):
         log("set_default_keymap() keyboard_config=%s", self.keyboard_config)
@@ -179,9 +173,6 @@ class RFBSource:
         kc.keys_pressed = keys_pressed
         kc.set_keymap(True)
         kc.owner = self.uuid
-
-    def send_server_event(self, _event_type: str, *_args: PacketElement) -> None:
-        """ ignore as there are no equivalent messages in RFB """
 
     def send_cursor(self) -> None:
         if RFBEncoding.CURSOR not in self.encodings:
@@ -230,9 +221,6 @@ class RFBSource:
                 mask[row * ((w + 7) // 8) + col // 8] |= 0x80 >> (col % 8)
         return bytes(cursor_pixels) + bytes(mask)
 
-    def update_mouse(self, *args) -> None:
-        log("update_mouse%s", args)
-
     def damage(self, _wid: int, window, x: int, y: int, w: int, h: int, options=None) -> None:
         polling = options and options.get("polling", False)
         p = self.protocol
@@ -277,13 +265,13 @@ class RFBSource:
             return
         self.send_many(*packets)
 
-    def send_many(self, *packets):
+    def send_many(self, *packets: bytes):
         # merge small packets together:
         joined = []
 
         def send_joined() -> None:
             if joined:
-                self.send(b"".join(memoryview_to_bytes(p) for p in joined))
+                self.send(b"".join(joined))
                 joined[:] = []
 
         for packet in packets:
@@ -295,14 +283,28 @@ class RFBSource:
                 self.send(packet)
         send_joined()
 
-    def send_clipboard(self, text) -> None:
-        nocr = strtobytes(text.replace("\r", ""))
+    def send_clipboard(self, text: str) -> None:
+        nocr = text.replace("\r", "").encode("latin1")
         msg = struct.pack(b"!BBBBI", 3, 0, 0, 0, len(nocr)) + nocr
         self.send(msg)
 
     def bell(self, *_args) -> None:
         msg = struct.pack(b"!B", 2)
         self.send(msg)
+
+    def update_mouse(self, _wid: int, x: int, y: int, _rx: int = 0, _ry: int = 0) -> bool:
+        # RFB Cursor Position pseudo-encoding (-232): the rect's x,y carry the
+        # server-side pointer position; no payload follows. Used to "warp" the
+        # viewer's local cursor when something other than this viewer moves it.
+        if RFBEncoding.POINTER_POS not in self.encodings:
+            return False
+        if self.is_closed():
+            return False
+        if self.last_pointer_pos == (x, y):
+            return False
+        self.last_pointer_pos = (x, y)
+        self.send(make_header(RFBEncoding.POINTER_POS, x, y, 0, 0))
+        return True
 
     def updated_desktop_size(self, root_w: int, root_h: int, _max_w: int = 0, _max_h: int = 0) -> bool:
         if RFBEncoding.DESKTOPSIZE not in self.encodings:
@@ -313,6 +315,6 @@ class RFBSource:
         self.send(make_header(RFBEncoding.DESKTOPSIZE, 0, 0, root_w, root_h))
         return True
 
-    def send(self, msg) -> None:
+    def send(self, msg: bytes) -> None:
         if p := self.protocol:
             p.send(msg)

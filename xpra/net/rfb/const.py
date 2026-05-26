@@ -109,6 +109,7 @@ class RFBEncoding(IntEnum):
     VAH264 = 23
     ZRLE2 = 24
     HITACHI_ZYWRLE = 17
+    POINTER_POS = -232
     DESKTOPSIZE = -223
     LASTRECT = -224
     CURSOR = -239

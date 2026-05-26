@@ -27,6 +27,21 @@ def is_recording_allowed(server_source, subsystem: str) -> bool:
     return False
 
 
+class PointerSource:
+    """
+    Marker base for any server-side source that can receive server-driven
+    pointer-position updates.
+
+    Lives in this always-importable module so the shadow polling loop can
+    iterate by base class without importing the pointer or rfb subsystems
+    directly (either may be disabled by `enforce_features`).
+    """
+    __slots__ = ()
+
+    def update_mouse(self, wid: int, x: int, y: int, rx: int, ry: int) -> None:
+        """ Override to push the new pointer position to the client. """
+
+
 class StubClientConnection(SignalEmitter):
     """
     Base class for client-connection subsystem.

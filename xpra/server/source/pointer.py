@@ -7,14 +7,14 @@
 from typing import Any
 
 from xpra.net.common import BACKWARDS_COMPATIBLE
-from xpra.server.source.stub import StubClientConnection
+from xpra.server.source.stub import StubClientConnection, PointerSource
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("pointer")
 
 
-class PointerConnection(StubClientConnection):
+class PointerConnection(StubClientConnection, PointerSource):
     """
     Manage pointer devices (mouse, etc)
     """

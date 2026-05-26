@@ -342,12 +342,8 @@ class ShadowServerBase(ServerBase):
             pointerlog("poll_pointer_position() model not found for position=%s", (x, y))
             return
         pointerlog("poll_pointer_position() wid=%#x, position=%s, relative=%s", wid, (x, y), (rx, ry))
-        try:
-            from xpra.server.source.pointer import PointerConnection
-        except ImportError:
-            return
-        pointer_sources = get_sources_by_type(self, PointerConnection)
-        for ss in pointer_sources:
+        from xpra.server.source.stub import PointerSource
+        for ss in get_sources_by_type(self, PointerSource):
             ss.update_mouse(wid, x, y, rx, ry)
 
     ############################################################################
