@@ -380,13 +380,11 @@ class ShadowServerBase(ServerBase):
                     from PIL import Image
                     img = Image.frombuffer("RGBA", (w, h), pixels, "raw", "BGRA", 0, 1)
                     img.save("cursor-%#x.png" % serial, format="PNG")
-            try:
-                from xpra.server.source.cursor import CursorsConnection
-            except ImportError:
-                pass
-            else:
-                for ss in get_sources_by_type(self, CursorsConnection):
-                    ss.send_cursor()
+            for ss in tuple(self._server_sources.values()):
+                # not all client connections support `send_cursor`,
+                # only a CursorsConnection, or a RFBSource do:
+                if send_cursor := getattr(ss, "send_cursor", None):
+                    send_cursor()
 
     def do_get_cursor_data(self):
         # this method is overridden in subclasses with platform specific code

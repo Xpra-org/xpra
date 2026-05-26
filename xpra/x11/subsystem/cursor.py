@@ -111,7 +111,8 @@ class XCursorServer(CursorManager):
             return
         log("cursor_event: %s", event)
         self.last_cursor_serial = event.cursor_serial
-        for ss in self.server.window_sources():
-            # not all client connections support `send_cursor`:
+        for ss in tuple(self.server._server_sources.values()):
+            # not all client connections support `send_cursor`,
+            # only a CursorsConnection, or a RFBSource do:
             send_cursor: Callable = getattr(ss, "send_cursor", noop)
             send_cursor()

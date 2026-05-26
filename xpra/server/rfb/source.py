@@ -8,7 +8,7 @@ from threading import Event
 from typing import Any
 
 from xpra.net.rfb.const import RFBEncoding
-from xpra.net.rfb.encode import raw_encode, tight_encode, tight_png, rgb222_encode
+from xpra.net.rfb.encode import make_header, raw_encode, tight_encode, tight_png, rgb222_encode
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.net.common import PacketElement
 from xpra.util.objects import AtomicInteger
@@ -20,11 +20,16 @@ log = Logger("rfb")
 counter = AtomicInteger()
 
 
+def nocursordata() -> tuple:
+    return ()
+
+
 class RFBSource:
     __slots__ = (
         "protocol", "close_event",
         "counter", "share", "uuid", "lock", "keyboard_config",
-        "encodings", "quality", "pixel_format"
+        "encodings", "quality", "pixel_format",
+        "get_cursor_data_cb", "last_cursor_sent",
     )
 
     def __init__(self, protocol, share=False):
@@ -38,6 +43,8 @@ class RFBSource:
         self.encodings = [RFBEncoding.RAW]
         self.pixel_format = (32, 24, 0, 1, 255, 255, 255, 16, 8, 0)
         self.quality = 0
+        self.get_cursor_data_cb = nocursordata
+        self.last_cursor_sent = ()
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -102,7 +109,51 @@ class RFBSource:
         """ ignore as there are no equivalent messages in RFB """
 
     def send_cursor(self) -> None:
-        """ not implemented yet """
+        if RFBEncoding.CURSOR not in self.encodings:
+            return
+        if not self.get_cursor_data_cb:
+            return
+        cursor_info = self.get_cursor_data_cb(False)
+        if not cursor_info:
+            return
+        cursor_data = cursor_info[0]
+        if not cursor_data:
+            return
+        w, h, xhot, yhot, serial, pixels, name = cursor_data[2:9]
+        cursor_key = tuple(cursor_data[2:9])
+        if self.last_cursor_sent == cursor_key:
+            return
+        log("send_cursor() %sx%s hotspot=%s,%s serial=%s name=%r", w, h, xhot, yhot, serial, name)
+        cursor = self.make_rfb_cursor(w, h, pixels)
+        if not cursor:
+            return
+        self.last_cursor_sent = cursor_key
+        # In RFB cursor pseudo-encoding, x/y carry the cursor hotspot.
+        self.send(make_header(RFBEncoding.CURSOR, xhot, yhot, w, h) + cursor)
+
+    def make_rfb_cursor(self, w: int, h: int, pixels) -> bytes:
+        bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = self.pixel_format
+        if (bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift) != (
+                32, 24, 0, 1, 255, 255, 255, 16, 8, 0):
+            log("cursor: unsupported client pixel format: %s", self.pixel_format)
+            return b""
+        rgba = memoryview_to_bytes(pixels)
+        if len(rgba) < w * h * 4:
+            log.warn("Warning: not enough cursor pixels: expected %i bytes, got %i", w * h * 4, len(rgba))
+            return b""
+        cursor_pixels = bytearray(w * h * 4)
+        mask = bytearray(((w + 7) // 8) * h)
+        for i in range(w * h):
+            si = i * 4
+            r, g, b, a = rgba[si:si + 4]
+            # Default RFB server pixel format is little-endian 32-bit RGB:
+            # memory order is B, G, R, unused.
+            cursor_pixels[si:si + 4] = bytes((b, g, r, 0))
+            if a:
+                row = i // w
+                col = i % w
+                mask[row * ((w + 7) // 8) + col // 8] |= 0x80 >> (col % 8)
+        return bytes(cursor_pixels) + bytes(mask)
 
     def update_mouse(self, *args) -> None:
         log("update_mouse%s", args)

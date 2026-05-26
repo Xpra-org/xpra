@@ -11,7 +11,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.util.system import is_X11
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.rfb.const import RFB_KEYNAMES
+from xpra.net.rfb.const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.protocol import RFBServerProtocol
 from xpra.server.rfb.source import RFBSource
 from xpra.server.subsystem.stub import StubSubsystem
@@ -169,7 +169,14 @@ class RFBServer(StubSubsystem):
         # continue in the UI thread:
         GLib.idle_add(self._accept_rfb_source, source)
 
+    def get_rfb_cursor_data(self, skip_default=False):
+        if cursor := self.get_subsystem("cursor"):
+            return cursor.get_cursor_data(skip_default)
+        return None
+
     def _accept_rfb_source(self, source):
+        source.get_cursor_data_cb = self.get_rfb_cursor_data
+        source.send_cursor()
         if features.keyboard:
             keyboard = self.get_subsystem("keyboard")
             if keyboard:
@@ -214,7 +221,7 @@ class RFBServer(StubSubsystem):
     def _process_rfb_KeyEvent(self, proto, packet):
         if not features.keyboard or self.server.readonly:
             return
-        source = self.server.get_server_source(proto)
+        source = self.get_server_source(proto)
         if not source:
             return
         pressed, p1, p2, key = packet[1:5]
@@ -243,11 +250,22 @@ class RFBServer(StubSubsystem):
 
     def _process_rfb_SetEncodings(self, proto, packet):
         encodings = packet[3]
-        self.server._server_sources[proto].set_encodings(encodings)
+        source = self.get_server_source(proto)
+        if not source:
+            return
+        source.set_encodings(encodings)
+        if RFBEncoding.CURSOR in source.encodings:
+            GLib.idle_add(source.send_cursor)
 
     def _process_rfb_SetPixelFormat(self, proto, packet):
         pixel_format = packet[4:14]
-        self.server._server_sources[proto].set_pixel_format(pixel_format)
+        source = self.get_server_source(proto)
+        if not source:
+            return
+        source.set_pixel_format(pixel_format)
+        source.last_cursor_sent = ()
+        if RFBEncoding.CURSOR in source.encodings:
+            GLib.idle_add(source.send_cursor)
 
     def _process_rfb_FramebufferUpdateRequest(self, proto, packet):
         # pressed, _, _, keycode = packet[1:5]
