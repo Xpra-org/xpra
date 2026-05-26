@@ -135,6 +135,9 @@ class ServerBase(ServerCore):
             classes.append(EncodingServer)
         if features.display:
             classes.append(self.get_display_subsystem_class())
+        if features.rfb:
+            from xpra.server.rfb.server import RFBServer
+            classes.append(RFBServer)
         if features.window:
             classes.append(self.get_window_subsystem_class())
         if features.keyboard:

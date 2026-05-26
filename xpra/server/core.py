@@ -142,9 +142,6 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     if features.mdns:
         from xpra.server.subsystem.mdns import MdnsServer
         classes.append(MdnsServer)
-    if features.rfb:
-        from xpra.server.rfb.server import RFBServer
-        classes.append(RFBServer)
     return tuple(classes)
 
 
