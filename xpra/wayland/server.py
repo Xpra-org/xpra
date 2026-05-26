@@ -9,7 +9,6 @@ import os
 from xpra.os_util import gi_import
 from xpra.server.base import ServerBase
 from xpra.util.gobject import to_gsignals
-from xpra.wayland.compositor import WaylandCompositor
 from xpra.log import Logger
 
 log = Logger("server", "wayland")
@@ -27,8 +26,13 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         GObject.GObject.__init__(self)
         ServerBase.__init__(self)
         self.session_type: str = "wayland"
-        self.compositor = WaylandCompositor()
         self.wayland_fd_source = 0
+
+    @property
+    def compositor(self):
+        # owned by the WaylandManager subsystem (created during its `init`):
+        wm = self.get_subsystem("wayland")
+        return wm.compositor if wm else None
 
     def init_subsystems(self) -> None:
         super().init_subsystems()
@@ -89,8 +93,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.wayland_fd_source = GLib.unix_fd_add_full(GLib.PRIORITY_DEFAULT, fd, conditions, self.wayland_io_callback)
 
     def setup(self) -> None:
-        socket_name = self.compositor.initialize()
-        os.environ["WAYLAND_DISPLAY"] = socket_name
+        # the display is normally bound earlier by WaylandManager.setup_display;
+        # this is an idempotent fallback for any path that skips it:
+        if wm := self.get_subsystem("wayland"):
+            wm.bind_display()
         super().setup()
 
     def do_run(self) -> None:
@@ -99,13 +105,12 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         super().do_run()
 
     def cleanup(self):
+        # remove the event source before the compositor is destroyed
+        # (WaylandManager.cleanup handles the compositor itself):
         if fd := self.wayland_fd_source:
             self.wayland_fd_source = 0
             GLib.source_remove(fd)
         super().cleanup()
-        if c := self.compositor:
-            self.compositor = None
-            c.cleanup()
 
 
 GObject.type_register(WaylandSeamlessServer)

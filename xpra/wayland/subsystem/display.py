@@ -43,6 +43,15 @@ class WaylandDisplayManager(DisplayManager):
             return parts[1]
         return wd
 
+    def publish_displayfd(self, display_name: str, fd: int) -> None:
+        # the base implementation writes a numeric X11 display number;
+        # wayland names like "wayland-1" are not numeric, so write them verbatim:
+        from xpra.os_util import POSIX, OSX
+        if not POSIX or OSX or fd <= 0:
+            return
+        from xpra.platform import displayfd
+        displayfd.write_displayfd(fd, display_name)
+
     def get_display_description(self) -> str:
         details = ""
         outputs = list(self.outputs)

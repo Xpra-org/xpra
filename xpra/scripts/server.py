@@ -576,21 +576,35 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     app.parse_socket_options(opts)
     app.init_sockets(retry=10 * int(upgrading))
 
-    from xpra.server.subsystem.xvfb import XvfbManager
-    xvfb = app.add_subsystem(XvfbManager)
-    xvfb.init(opts)
-    xvfb.connect("display-name", session_files.display_name_changed)
-    vfb_result = xvfb.setup_vfb(display_name, start_vfb, xauth_data,
-                                protected_env, pam, shadowing, proxying, encoder, runner, starting,
-                                clobber, use_display, upgrading,
-                                progress)
-    use_display = xvfb.use_display
-    display_name = vfb_result.display_name
-
     app.protected_env = protected_env
-    # Change uid as early as possible, but after VFB setup:
-    process.setup()
-    app.init_subsystems()
+    if opts.backend == "wayland":
+        from xpra.wayland.subsystem.manager import WaylandManager
+        wm = app.add_subsystem(WaylandManager)
+        wm.init(opts)
+        wm.connect("display-name", session_files.display_name_changed)
+        # the wayland compositor creates its display socket inside the user's
+        # XDG_RUNTIME_DIR, so drop privileges first: nothing in the wayland vfb
+        # setup needs root, and the runtime dir was already provisioned (and
+        # chowned) by process.prepare_environment():
+        process.setup()
+        # connect the display/window subsystems to the compositor *before* it is
+        # started, so they receive its initial `new-output` events:
+        app.init_subsystems()
+        vfb_result = wm.setup_display(progress)
+    else:
+        from xpra.server.subsystem.xvfb import XvfbManager
+        xvfb = app.add_subsystem(XvfbManager)
+        xvfb.init(opts)
+        xvfb.connect("display-name", session_files.display_name_changed)
+        vfb_result = xvfb.setup_vfb(display_name, start_vfb, xauth_data,
+                                    protected_env, pam, shadowing, proxying, encoder, runner, starting,
+                                    clobber, use_display, upgrading,
+                                    progress)
+        use_display = xvfb.use_display
+        # Change uid as early as possible, but after VFB setup:
+        process.setup()
+        app.init_subsystems()
+    display_name = vfb_result.display_name
 
     def server_not_started(msg="server not started") -> None:
         progress(100, msg)
