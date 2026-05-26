@@ -47,6 +47,19 @@ class DesktopWindowServer(WindowServer):
         ss.new_window(WINDOW_CREATE, wid, model, x, y, w, h, wprops)
         ss.damage(wid, model, 0, 0, w, h)
 
+    def rfb_sources(self, exclude=None) -> tuple:
+        try:
+            from xpra.server.rfb.source import RFBSource
+        except ImportError:
+            return ()
+        return self.get_sources_by_type(RFBSource, exclude=exclude)
+
+    def refresh_window_area(self, window, x, y, width, height, options=None) -> None:
+        super().refresh_window_area(window, x, y, width, height, options)
+        wid = self._window_to_id[window]
+        for ss in self.rfb_sources():
+            ss.damage(wid, window, x, y, width, height, options)
+
     def _lost_window(self, window, wm_exiting=False) -> None:
         """ could be used to slow down the refresh rate? """
 

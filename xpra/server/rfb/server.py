@@ -249,15 +249,17 @@ class RFBServer(StubSubsystem):
         pixel_format = packet[4:14]
         self.server._server_sources[proto].set_pixel_format(pixel_format)
 
-    def _process_rfb_FramebufferUpdateRequest(self, _proto, packet):
+    def _process_rfb_FramebufferUpdateRequest(self, proto, packet):
         # pressed, _, _, keycode = packet[1:5]
         inc, x, y, w, h = packet[1:6]
         log("RFB: FramebufferUpdateRequest inc=%s, geometry=%s", inc, (x, y, w, h))
         if not inc:
             model = self._get_rfb_desktop_model()
             window = self.server.get_subsystem("window")
-            if window:
-                GLib.idle_add(window.refresh_window_area, model, x, y, w, h)
+            source = self.get_server_source(proto)
+            if window and source and model:
+                wid = window.get_wid(model)
+                GLib.idle_add(source.damage, wid, model, x, y, w, h)
 
     def _process_rfb_ClientCutText(self, _proto, packet):
         # l = packet[4]
