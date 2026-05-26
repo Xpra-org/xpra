@@ -1,7 +1,11 @@
 # Changelog
 
-## [6.6] 2026-05-14
-* TODO
+## [6.6] 2026-05-26
+* 🖧 Network:
+  * [zero copy network reception](https://github.com/Xpra-org/xpra/issues/4873)
+* ✨ Features:
+  * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885)
+  * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
