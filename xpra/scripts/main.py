@@ -26,7 +26,7 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import csv, print_nested_dict, sorted_nicely, bytestostr
-from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, get_saved_env_var, OSEnvContext
+from xpra.util.env import envint, envbool, osexpand, filter_env, save_env, get_saved_env, OSEnvContext
 from xpra.util.parsing import (
     ALL_BOOLEAN_OPTIONS,
     parse_scaling, str_to_bool, parse_bool_or,
@@ -1523,15 +1523,12 @@ def enable_listen_mode(app, error_cb: Callable, opts):
 
 
 def make_progress_process(title="Xpra") -> Popen | None:
-    # start the splash subprocess
+    # start the splash subprocess using the saved environment,
+    # not the new one which may point the X11 / Wayland display to our virtual one
     log = Logger("splash")
-    env = get_exec_env()
+    env = filter_env(get_saved_env())
     env["XPRA_LOG_PREFIX"] = "splash: "
     env["XPRA_WAIT_FOR_INPUT"] = "0"
-    if POSIX:
-        display = get_saved_env_var("DISPLAY")
-        if display:
-            env["DISPLAY"] = display
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command() + ["splash"]
     debug_args = get_debug_args()

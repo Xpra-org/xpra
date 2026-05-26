@@ -395,8 +395,14 @@ def get_saved_env_var(var, default="") -> str:
 
 def get_exec_env(remove: Sequence[str] = ("LS_COLORS", "LESSOPEN", "HISTCONTROL", "HISTSIZE", ),
                  keep: Sequence[str] = ()) -> dict[str, str]:
-    env: dict[str, str] = {}
-    for k, v in os.environ.items():
+    return filter_env(os.environ.copy(), remove, keep)
+
+
+def filter_env(env: dict[str, str],
+               remove: Sequence[str] = ("LS_COLORS", "LESSOPEN", "HISTCONTROL", "HISTSIZE", ),
+               keep: Sequence[str] = ()) -> dict[str, str]:
+    new_env = {}
+    for k, v in sorted(env.items()):
         # anything matching `remove` is dropped:
         if any(re.match(pattern, k) for pattern in remove):
             continue
@@ -406,12 +412,12 @@ def get_exec_env(remove: Sequence[str] = ("LS_COLORS", "LESSOPEN", "HISTCONTROL"
         # let's make things more complicated than they should be:
         # on win32, the environment can end up containing unicode, and subprocess chokes on it:
         try:
-            env[k] = v.encode("utf8").decode("latin1")
+            new_env[k] = v.encode("utf8").decode("latin1")
         except UnicodeError:
-            env[k] = str(v)
-    env["XPRA_SKIP_UI"] = "1"
-    env["XPRA_FORCE_COLOR_LOG"] = "1"
-    return env
+            new_env[k] = str(v)
+    new_env["XPRA_SKIP_UI"] = "1"
+    new_env["XPRA_FORCE_COLOR_LOG"] = "1"
+    return new_env
 
 
 class SilenceWarningsContext(AbstractContextManager):
