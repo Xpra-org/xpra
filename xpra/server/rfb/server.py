@@ -7,10 +7,8 @@
 from weakref import WeakKeyDictionary
 
 from xpra.os_util import gi_import
-from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.util.system import is_X11
-from xpra.net.bytestreams import set_socket_timeout
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.rfb.const import RFB_KEYNAMES
 from xpra.server.rfb.protocol import RFBServerProtocol
@@ -159,9 +157,7 @@ class RFBServer(StubSubsystem):
         if not model:
             proto.close()
             return
-        self.server.accept_protocol(proto, typedict())
-        # use blocking sockets from now on:
-        set_socket_timeout(proto._conn, None)
+        self.server.accept_connection(proto)
         accepted, share_count, disconnected = self.server.handle_sharing(proto, share=proto.share)
         log("RFB handle sharing: accepted=%s, share count=%s, disconnected=%s", accepted, share_count, disconnected)
         if not accepted:

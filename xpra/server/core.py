@@ -1642,13 +1642,17 @@ class ServerCore(GLibServer):
 
     def accept_protocol(self, proto: SocketProtocol, c: typedict) -> None:
         netlog("accept_protocol(%s, %s)", proto, c)
+        self.accept_connection(proto)
+        proto.parse_remote_caps(c)
+
+    def accept_connection(self, proto: SocketProtocol) -> None:
+        netlog("accept_connection(%s)", proto)
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
         self.cancel_verify_connection_accepted(proto)
         self.cancel_upgrade_to_rfb_timer(proto)
         # note: when uploading files, we send them in chunks smaller than this size
         proto.max_packet_size = MAX_PACKET_SIZE
-        proto.parse_remote_caps(c)
         # use blocking sockets from now on:
         if not WIN32:
             set_socket_timeout(proto._conn, None)
