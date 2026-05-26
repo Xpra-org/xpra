@@ -329,7 +329,7 @@ cdef uintptr_t cmalloc(size_t size, what) except 0:
     return <uintptr_t> ptr
 
 
-class NVENCException(Exception):
+class NVENCException(RuntimeError):
     def __init__(self, code, fn):
         self.function = fn
         self.code = code
