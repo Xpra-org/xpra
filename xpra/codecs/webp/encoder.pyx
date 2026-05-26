@@ -452,7 +452,7 @@ cdef class Encoder:
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
         self.alpha = src_format.find("A")>=0
-        self.content_types = options.get("content-types", "")
+        self.content_types = options.strtupleget("content-types", "")
         self.configure_encoder()
 
     cdef void configure_encoder(self):
@@ -523,7 +523,7 @@ cdef class Encoder:
             self.alpha = pixel_format.find("A")>=0
             reconfigure = True
         if options.get("content-types", ()) != self.content_types:
-            self.content_types = options.get("content-types", ())
+            self.content_types = options.strtupleget("content-types", ())
             reconfigure = True
         if reconfigure:
             log("webp reconfigure")
@@ -610,7 +610,7 @@ cdef void configure_encoder(WebPConfig *config,
     #so only use method=1 when speed is already very low
     config.method = int(speed<10)
     config.alpha_compression = alpha
-    config.alpha_filtering = MAX(0, MIN(2, speed/50)) * alpha
+    config.alpha_filtering = MAX(0, MIN(2, speed//50)) * alpha
     config.alpha_quality = quality * alpha
     config.emulate_jpeg_size = 1
     config._pass = MAX(1, MIN(10, (40-speed)//10))

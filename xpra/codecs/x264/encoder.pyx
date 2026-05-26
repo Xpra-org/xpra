@@ -916,7 +916,7 @@ cdef class Encoder:
             self.need_reconfig = 1
 
         options = typedict(options or {})
-        content_types = options.strget("content-types", ()) or self.content_types
+        content_types = options.strtupleget("content-types", ()) or self.content_types
         b_frames = options.intget("b-frames", 0)
         if content_types!=self.content_types or self.b_frames!=b_frames:
             #some options have changed:
