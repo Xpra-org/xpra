@@ -236,7 +236,10 @@ class RFBSource(PointerSource):
         mask = bytearray(((w + 7) // 8) * h)
         for i in range(w * h):
             si = i * 4
-            r, g, b, a = rgba[si:si + 4]
+            r = rgba[si]
+            g = rgba[si + 1]
+            b = rgba[si + 2]
+            a = rgba[si + 3]
             # Default RFB server pixel format is little-endian 32-bit RGB:
             # memory order is B, G, R, unused.
             cursor_pixels[si:si + 4] = bytes((b, g, r, 0))
