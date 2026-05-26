@@ -24,11 +24,27 @@ def nocursordata(*_args) -> tuple:
     return ()
 
 
+def cap_pct(v: int) -> int:
+    return max(0, min(100, int(v)))
+
+
+def rfb_level_to_pct(level: int) -> int:
+    if level <= 0:
+        return 0
+    return cap_pct(round(100 * level / 9))
+
+
+def rfb_compression_level_to_speed(level: int) -> int:
+    if level <= 0:
+        return 0
+    return cap_pct(round(100 * (10 - level) / 9))
+
+
 class RFBSource:
     __slots__ = (
         "protocol", "close_event",
         "counter", "share", "uuid", "lock", "keyboard_config",
-        "encodings", "quality", "pixel_format",
+        "encodings", "quality", "speed", "pixel_format",
         "get_cursor_data_cb", "last_cursor_sent",
     )
 
@@ -43,6 +59,7 @@ class RFBSource:
         self.encodings = [RFBEncoding.RAW]
         self.pixel_format = (32, 24, 0, 1, 255, 255, 255, 16, 8, 0)
         self.quality = 0
+        self.speed = 0
         self.get_cursor_data_cb = nocursordata
         self.last_cursor_sent = ()
 
@@ -51,18 +68,32 @@ class RFBSource:
             "protocol": "rfb",
             "uuid": self.uuid,
             "share": self.share,
+            "quality": self.quality,
+            "speed": self.speed,
         }
 
     def set_encodings(self, encodings) -> None:
         known_encodings = []
         unknown_encodings = []
         for v in encodings:
+            if -32 <= v <= -23:
+                # JPEG Quality Level pseudo-encoding: 0 means automatic, 9 means best quality.
+                self.quality = rfb_level_to_pct(v + 32)
+                continue
+            if -512 <= v <= -412:
+                # JPEG Fine-Grained Quality Level pseudo-encoding: direct 0..100 quality.
+                self.quality = cap_pct(v + 512)
+                continue
+            if -256 <= v <= -247:
+                # Compression Level pseudo-encoding: 0 means automatic, 9 means most compression / lowest speed.
+                self.speed = rfb_compression_level_to_speed(v + 256)
+                continue
             try:
                 known_encodings.append(RFBEncoding(v))
             except ValueError:
                 unknown_encodings.append(v)
         self.encodings = known_encodings
-        log("RFB encodings: %s", csv(self.encodings))
+        log("RFB encodings: %s, quality=%i, speed=%i", csv(self.encodings), self.quality, self.speed)
         if unknown_encodings:
             log("RFB %i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
 
@@ -179,9 +210,10 @@ class RFBSource:
                 return
         elif RFBEncoding.TIGHT_PNG in self.encodings:
             encode = tight_png
+            kwargs = {"speed": self.speed}
         elif RFBEncoding.TIGHT in self.encodings:
             encode = tight_encode
-            kwargs = {"quality": self.quality}
+            kwargs = {"quality": self.quality, "speed": self.speed}
         # doesn't work
         # elif RFBEncoding.ZLIB in self.encodings:
         #    encode = zlib_encode

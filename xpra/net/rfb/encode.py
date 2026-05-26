@@ -6,7 +6,6 @@
 import struct
 
 from xpra.net.rfb.const import RFBEncoding
-from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.pillow.encoder import encode
 from xpra.util.objects import typedict
 from xpra.util.str_fn import hexstr
@@ -17,8 +16,13 @@ log = Logger("rfb")
 PILLOW_OPTIONS = typedict({"alpha": False})
 
 
-def pillow_encode(encoding, img):
-    return encode(encoding, img, PILLOW_OPTIONS)[1].data
+def pillow_encode(encoding, img, quality=0, speed=0):
+    options = typedict(PILLOW_OPTIONS)
+    if quality > 0:
+        options["quality"] = min(100, max(0, int(quality)))
+    if speed > 0:
+        options["speed"] = min(100, max(0, int(speed)))
+    return encode(encoding, img, options)[1].data
 
 
 def make_header(encoding, x, y, w, h):
@@ -76,22 +80,12 @@ def zlib_encode(window, x, y, w, h):
     return [header, data]
 
 
-def tight_encode(window, x, y, w, h, quality=0):
+def tight_encode(window, x, y, w, h, quality=0, speed=0):
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     if not img:
         return []
-    if quality == 10:
-        # Fill Compression
-        header = make_header(RFBEncoding.TIGHT, x, y, w, h)
-        header += struct.pack(b"!B", 0x80)
-        pixel_format = img.get_pixel_format()
-        log.warn("fill compression of %s", pixel_format)
-        if not rgb_reformat(img, ("RGB",), False):
-            log.error("Error: cannot convert %s to RGB", pixel_format)
-        return [header, raw_pixels(img)]
-    # try jpeg:
-    data = pillow_encode("jpeg", img)
+    data = pillow_encode("jpeg", img, quality, speed)
     header = tight_header(RFBEncoding.TIGHT, x, y, w, h, 0x90, len(data))
     return [header, data]
 
@@ -111,11 +105,11 @@ def tight_header(encoding, x, y, w, h, control, length):
     return header
 
 
-def tight_png(window, x, y, w, h):
+def tight_png(window, x, y, w, h, speed=0):
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     if not img:
         return []
-    data = pillow_encode("png", img)
+    data = pillow_encode("png", img, speed=speed)
     header = tight_header(RFBEncoding.TIGHT_PNG, x, y, w, h, 0x80 + 0x20, len(data))
     return [header, data]
