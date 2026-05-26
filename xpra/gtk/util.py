@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 from collections.abc import Sequence
 
@@ -13,6 +14,36 @@ from xpra.log import Logger
 from xpra.util.thread import check_main_thread
 
 Gdk = gi_import("Gdk")
+
+
+def display_name(display) -> str:
+    if display is None:
+        return "None"
+    try:
+        return display.get_name()
+    except Exception:
+        log = Logger("gtk", "screen")
+        log("failed to query Gdk display name for %s", display, exc_info=True)
+        return str(display)
+
+
+def display_info(window=None) -> dict[str, str]:
+    manager = Gdk.DisplayManager.get()
+    manager_display = manager.get_default_display() if manager else None
+    default_display = Gdk.Display.get_default()
+    screen = Gdk.Screen.get_default()
+    screen_display = screen.get_display() if screen else None
+    window_display = window.get_display() if window else None
+    return {
+        "default display": display_name(default_display),
+        "manager display": display_name(manager_display),
+        "screen display": display_name(screen_display),
+        "window display": display_name(window_display),
+        "DISPLAY": os.environ.get("DISPLAY"),
+        "WAYLAND_DISPLAY": os.environ.get("WAYLAND_DISPLAY"),
+        "GDK_BACKEND": os.environ.get("GDK_BACKEND"),
+        "XDG_SESSION_TYPE": os.environ.get("XDG_SESSION_TYPE"),
+    }
 
 
 def get_default_root_window() -> Gdk.Window | None:

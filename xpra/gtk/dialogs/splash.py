@@ -19,7 +19,7 @@ from xpra.scripts.main import SPLASH_EXIT_DELAY
 from xpra.gtk.widget import label
 from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.util import quit_on_signals, gtk_main
+from xpra.gtk.util import quit_on_signals, gtk_main, display_info
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.util.glib import install_signal_handlers, uninstall_signal_handlers
 from xpra.platform.gui import force_focus, set_window_progress
@@ -106,6 +106,7 @@ class SplashScreen(Gtk.Window):
     def __init__(self, title=TITLE, icon_name=ICON):
         self.exit_code = None
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        log("splash screen display info: %s", display_info(self))
         self.connect("delete_event", self.exit)
         self.add_events(Gdk.EventType.BUTTON_PRESS)
         self.connect("button-press-event", self.exit)
@@ -209,6 +210,7 @@ class SplashScreen(Gtk.Window):
     def run(self) -> ExitValue:
         start_thread(self.read_thread, "read-thread", True)
         self.show_all()
+        log("splash screen shown, display info: %s", display_info(self))
         force_focus()
         self.present()
         self.timeout_timer = GLib.timeout_add(TIMEOUT * 1000, self.timeout)
