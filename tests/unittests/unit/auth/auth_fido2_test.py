@@ -8,6 +8,7 @@ import json
 import base64
 import binascii
 import unittest
+from unittest.mock import patch
 from hashlib import sha256
 from struct import pack
 
@@ -67,6 +68,11 @@ def _sign_challenge(private_key, salt: bytes, app_id: str = "Xpra",
 
 
 class Fido2AuthTest(unittest.TestCase):
+
+    def setUp(self):
+        self.conf_dirs_patch = patch("xpra.auth.fido2.get_user_conf_dirs", return_value=())
+        self.conf_dirs_patch.start()
+        self.addCleanup(self.conf_dirs_patch.stop)
 
     def _caps(self, response: bytes, origin: str) -> typedict:
         return typedict({
