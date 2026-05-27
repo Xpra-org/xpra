@@ -579,7 +579,7 @@ cdef class Encoder:
         self.speed = options.intget("speed", 50)
         self.full_range = 0
         #self.opencl = USE_OPENCL and width>=32 and height>=32
-        self.content_types = options.strget("content-types", ())      #ie: ("video", )
+        self.content_types = options.strtupleget("content-types", ())      #ie: ("video", )
         self.b_frames = 0 if MB_INFO else options.intget("b-frames", 0)
         self.fast_decode = options.boolget("h264.fast-decode", False)
         self.max_delayed = options.intget("max-delayed", MAX_DELAYED_FRAMES) * int(not self.fast_decode) * int(self.b_frames)

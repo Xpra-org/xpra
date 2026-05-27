@@ -667,7 +667,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> Tuple:
     cdef WebPConfig config
     config_init(&config)
 
-    content_types = options.strget("content-types", ())
+    content_types = options.strtupleget("content-types", ())
     cdef WebPPreset preset = get_preset(width, height, content_types)
     configure_preset(&config, preset, quality)
     configure_encoder(&config, quality, speed, alpha)
