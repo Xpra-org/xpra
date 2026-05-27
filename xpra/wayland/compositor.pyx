@@ -5,12 +5,16 @@
 
 # cython: language_level=3
 
+import glob
+import os
+
 from typing import Dict, List
 from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.server import features
 from xpra.util.str_fn import Ellipsizer
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 
 from libc.stdint cimport uintptr_t
 
@@ -48,6 +52,7 @@ from xpra.wayland.wlroots cimport (
     wl_display_add_socket_auto,
     wl_event_loop, wl_display_get_event_loop, wl_event_loop_get_fd, wl_event_loop_dispatch,
     wlr_renderer, wlr_renderer_autocreate, wlr_renderer_destroy, wlr_renderer_init_wl_display,
+    wlr_renderer_get_drm_fd, wlr_gles2_renderer_create_with_drm_fd,
     wlr_headless_backend_create,
     wlr_texture, wlr_client_buffer, wlr_box, wlr_output,
     wlr_output_layout_add, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
@@ -76,6 +81,28 @@ def add_event_listener(event_name: str, callback: Callable) -> None:
 
 
 log = Logger("wayland")
+
+
+def get_gpu_mode() -> str:
+    mode = os.environ.get("XPRA_WAYLAND_GPU", "auto").strip().lower()
+    if mode == "auto":
+        return "auto"
+    if mode in TRUE_OPTIONS:
+        return "yes"
+    if mode in FALSE_OPTIONS:
+        return "no"
+    log.warn("Warning: invalid XPRA_WAYLAND_GPU=%r, using 'auto'", mode)
+    return "auto"
+
+
+def get_render_node() -> str:
+    device = os.environ.get("XPRA_WAYLAND_DRM_DEVICE", "").strip()
+    if not device:
+        device = os.environ.get("WLR_RENDER_DRM_DEVICE", "").strip()
+    if device:
+        return device
+    devices = sorted(glob.glob("/dev/dri/renderD*"))
+    return devices[0] if devices else ""
 
 
 # Listener slot indices for WaylandCompositor; N_LISTENERS sizes the listeners array.
@@ -116,12 +143,14 @@ cdef class WaylandCompositor(ListenerObject):
     cdef char *seat_name
     cdef Display display
     cdef str socket_name
+    cdef str drm_device
     cdef wl_event_loop *event_loop
     cdef dict event_listeners
 
     def __cinit__(self):
         # All cdef pointer fields are zero-initialised by Cython's tp_alloc.
         self.socket_name = ""
+        self.drm_device = ""
         self.event_listeners = {}
 
     def __init__(self):
@@ -168,11 +197,12 @@ cdef class WaylandCompositor(ListenerObject):
 
         wlr_headless_add_output(self.backend, 1920, 1080)
 
-        self.renderer = wlr_renderer_autocreate(self.backend)
+        self.renderer = self.create_renderer()
         if not self.renderer:
             raise RuntimeError("Failed to create renderer")
 
-        wlr_renderer_init_wl_display(self.renderer, self.display_ptr)
+        if not wlr_renderer_init_wl_display(self.renderer, self.display_ptr):
+            raise RuntimeError("Failed to initialize wayland renderer display")
 
         self.allocator = wlr_allocator_autocreate(self.backend, self.renderer)
         if not self.allocator:
@@ -250,6 +280,57 @@ cdef class WaylandCompositor(ListenerObject):
 
         log.info("compositor running on WAYLAND_DISPLAY=%s", self.socket_name)
         return self.socket_name
+
+    cdef wlr_renderer *create_renderer(self) except NULL:
+        cdef wlr_renderer *renderer = NULL
+        cdef int drm_fd = -1
+        cdef int renderer_drm_fd = -1
+        mode = get_gpu_mode()
+        if mode != "no":
+            device = get_render_node()
+            if not device:
+                message = "no DRM render node found for wayland GPU renderer"
+                if mode == "yes":
+                    raise RuntimeError(message)
+                log.warn("Warning: %s", message)
+            else:
+                try:
+                    flags = os.O_RDWR
+                    if hasattr(os, "O_CLOEXEC"):
+                        flags |= os.O_CLOEXEC
+                    drm_fd = os.open(device, flags)
+                    log("opened DRM render node %r: fd=%i", device, drm_fd)
+                    renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd)
+                except OSError as e:
+                    message = "failed to open DRM render node %r: %s" % (device, e)
+                    if mode == "yes":
+                        raise RuntimeError(message) from e
+                    log.warn("Warning: %s", message)
+                finally:
+                    if drm_fd >= 0:
+                        os.close(drm_fd)
+                        drm_fd = -1
+
+                if renderer != NULL:
+                    self.drm_device = device
+                    renderer_drm_fd = wlr_renderer_get_drm_fd(renderer)
+                    log.info("wayland GPU renderer enabled using %s, renderer DRM fd=%i",
+                             device, renderer_drm_fd)
+                    return renderer
+
+                message = "failed to create GLES2 renderer for DRM render node %r" % device
+                if mode == "yes":
+                    raise RuntimeError(message)
+                log.warn("Warning: %s", message)
+
+        renderer = wlr_renderer_autocreate(self.backend)
+        if renderer != NULL:
+            renderer_drm_fd = wlr_renderer_get_drm_fd(renderer)
+            if renderer_drm_fd >= 0:
+                log.info("wayland renderer has DRM fd=%i", renderer_drm_fd)
+            else:
+                log("wayland renderer has no DRM fd")
+        return renderer
 
     def get_event_loop_fd(self) -> int:
         return wl_event_loop_get_fd(self.event_loop)

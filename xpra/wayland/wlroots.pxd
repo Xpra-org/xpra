@@ -1134,9 +1134,14 @@ cdef extern from "wlr/render/wlr_renderer.h":
     ctypedef struct wlr_renderer:
         pass
     wlr_renderer *wlr_renderer_autocreate(wlr_backend *backend)
-    void wlr_renderer_init_wl_display(wlr_renderer *renderer, wl_display *wl_display)
+    bint wlr_renderer_init_wl_display(wlr_renderer *renderer, wl_display *wl_display)
+    int wlr_renderer_get_drm_fd(wlr_renderer *renderer)
     void wlr_renderer_destroy(wlr_renderer *renderer)
     const wlr_drm_format_set *wlr_renderer_get_texture_formats(wlr_renderer *r, uint32_t buffer_caps)
+
+
+cdef extern from "wlr/render/gles2.h":
+    wlr_renderer *wlr_gles2_renderer_create_with_drm_fd(int drm_fd)
 
 
 cdef extern from "wlr/render/drm_format_set.h":
