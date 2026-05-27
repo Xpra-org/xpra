@@ -6,7 +6,6 @@
 
 import unittest
 
-from xpra.util.objects import typedict
 from xpra.client.gui.window_base import do_get_window_title
 
 
@@ -24,7 +23,7 @@ class WindowTitleTest(unittest.TestCase):
 
     def _title(self, template, metadata=None, wid=1, **client_kwargs):
         client = FakeClient(title=template, **client_kwargs)
-        md = typedict(metadata or {})
+        md = dict(metadata or {})
         return do_get_window_title(client, wid, md)
 
     def test_no_at_returns_literal(self):
