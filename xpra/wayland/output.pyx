@@ -11,9 +11,9 @@ from xpra.wayland.events cimport ListenerObject
 
 from xpra.wayland.wlroots cimport (
     wlr_output, wlr_output_layout, wlr_box, wl_signal,
-    wlr_scene_output_commit, wlr_output_schedule_frame,
+    wlr_scene_output_commit,
     wlr_output_state, wlr_output_state_init, wlr_output_commit_state, wlr_output_state_finish,
-    wlr_output_state_set_scale,
+    wlr_output_state_set_enabled, wlr_output_state_set_scale,
     wlr_output_layout_get_box,
     WL_OUTPUT_TRANSFORM_NORMAL, WL_OUTPUT_TRANSFORM_90, WL_OUTPUT_TRANSFORM_180, WL_OUTPUT_TRANSFORM_270,
     WL_OUTPUT_TRANSFORM_FLIPPED, WL_OUTPUT_TRANSFORM_FLIPPED_90, WL_OUTPUT_TRANSFORM_FLIPPED_180, WL_OUTPUT_TRANSFORM_FLIPPED_270,
@@ -170,8 +170,10 @@ cdef class Output(ListenerObject):
     cdef void initialize(self):
         cdef wlr_output_state state
         wlr_output_state_init(&state)
+        wlr_output_state_set_enabled(&state, True)
         wlr_output_state_set_scale(&state, 1.0)
-        wlr_output_commit_state(self.wlr_output, &state)
+        if not wlr_output_commit_state(self.wlr_output, &state):
+            log.warn("Warning: failed to enable output %s", istr(self.wlr_output.name))
         wlr_output_state_finish(&state)
 
         name = self.wlr_output.name.decode()
@@ -200,7 +202,6 @@ cdef class Output(ListenerObject):
             with gil:
                 log("output_frame()")
         wlr_scene_output_commit(self.scene_output, NULL)
-        wlr_output_schedule_frame(self.wlr_output)
 
     cdef void destroy(self) noexcept nogil:
         if debug:
