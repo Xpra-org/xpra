@@ -19,7 +19,7 @@ from xpra.codecs.gstreamer.common import (
 )
 from xpra.codecs.constants import VideoSpec
 from xpra.codecs.image import ImageWrapper
-from xpra.common import roundup
+from xpra.common import roundup, SizedBuffer
 from xpra.os_util import WIN32, gi_import
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -222,7 +222,7 @@ class Decoder(VideoPipeline):
             self.frame_queue.put(image)
         return GST_FLOW_OK
 
-    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper | None:
+    def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper | None:
         log(f"decompress_image(.., {options}) state={self.state} data size={len(data)}")
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")

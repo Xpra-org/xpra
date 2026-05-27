@@ -15,6 +15,7 @@ log = Logger("decoder", "vpx")
 
 from xpra.codecs.constants import VideoSpec, get_subsampling_divs
 from xpra.codecs.image import ImageWrapper
+from xpra.common import SizedBuffer
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 
@@ -272,7 +273,7 @@ cdef class Decoder:
             self.file = None
             f.close()
 
-    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
+    def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         cdef vpx_codec_iter_t citer = NULL
         cdef MemBuf output_buf
         cdef void *output

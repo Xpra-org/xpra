@@ -131,7 +131,7 @@ def get_info() -> dict[str, Any]:
     }
 
 
-def decompress(coding: str, img_data: bytes, options: typedict) -> tuple[str, bytes, int, int, int]:
+def decompress(coding: str, img_data: SizedBuffer, options: typedict) -> tuple[str, bytes, int, int, int]:
     # can be called from any thread
     actual = get_image_type(img_data)
     if not actual or not coding.startswith(actual):

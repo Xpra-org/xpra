@@ -7,6 +7,7 @@ from typing import Tuple, Dict
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
+from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs
 from xpra.codecs.debug import may_save_image
@@ -73,11 +74,11 @@ cdef inline void check(avifResult r, message: str):
         raise RuntimeError("%s : %s" % (message, err))
 
 
-def decompress_to_yuv(data: bytes, options: typedict) -> ImageWrapper:
+def decompress_to_yuv(data: SizedBuffer, options: typedict) -> ImageWrapper:
     return decompress(data, options, True)
 
 
-def decompress(data: bytes, options: typedict, yuv=False) -> ImageWrapper:
+def decompress(data: SizedBuffer, options: typedict, yuv=False) -> ImageWrapper:
     cdef avifRGBImage rgb
     memset(&rgb, 0, sizeof(avifRGBImage))
     cdef avifDecoder * decoder = avifDecoderCreate()

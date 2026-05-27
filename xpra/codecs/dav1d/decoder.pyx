@@ -12,6 +12,7 @@ from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
 from xpra.util.objects import typedict
+from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
@@ -436,7 +437,7 @@ cdef class Decoder:
         }
         return info
 
-    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
+    def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         log("decompress_image(%i bytes, %s)", len(data), options)
         cdef Dav1dData input
         memset(&input, 0, sizeof(Dav1dData))

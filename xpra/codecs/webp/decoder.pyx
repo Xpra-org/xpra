@@ -11,6 +11,7 @@ log = Logger("encoder", "webp")
 
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
+from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.debug import may_save_image
 from xpra.buffers.membuf cimport memalign, memfree, buffer_context
@@ -174,7 +175,7 @@ cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
 
 
-def decompress_to_rgb(data: bytes, options: typedict) -> ImageWrapper:
+def decompress_to_rgb(data: SizedBuffer, options: typedict) -> ImageWrapper:
     cdef int has_alpha = options.boolget("has_alpha", False)
     rgb_format = options.strget("rgb_format", "BGRA" if has_alpha else "BGRX")
     if rgb_format not in ("RGBX", "RGBA", "BGRA", "BGRX", "RGB", "BGR"):
@@ -237,7 +238,7 @@ class WebpImageWrapper(ImageWrapper):
             memfree(<void *> buf)
 
 
-def decompress_to_yuv(data: bytes, options: typedict) -> WebpImageWrapper:
+def decompress_to_yuv(data: SizedBuffer, options: typedict) -> WebpImageWrapper:
     """
         This returns a WebpBufferWrapper, you MUST call free() on it
         once the pixel buffer can be freed.

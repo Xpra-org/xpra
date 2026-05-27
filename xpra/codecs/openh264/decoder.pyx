@@ -11,6 +11,7 @@ from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
 from xpra.util.objects import typedict
+from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
@@ -227,7 +228,7 @@ cdef class Decoder:
         }
         return info
 
-    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
+    def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         cdef SBufferInfo buf_info
         cdef long r = 0
         cdef unsigned char* src

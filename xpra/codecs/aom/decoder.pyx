@@ -14,6 +14,7 @@ from xpra.codecs.constants import VideoSpec
 from xpra.util.env import envbool
 from xpra.util.str_fn import hexstr
 from xpra.util.objects import typedict
+from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
@@ -208,7 +209,7 @@ cdef class Decoder:
             sleep(i / 1000)  # wait a bit for the image wrapper to be released
         raise RuntimeError("ImageWrapper is still in use, cannot decode new image")
 
-    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
+    def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         log("decompress_image(%i bytes, %s)", len(data), options)
         cdef aom_codec_err_t r = AOM_CODEC_OK
 

@@ -14,6 +14,7 @@ from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec, EncodingNotSupported
 from xpra.util.objects import typedict
+from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 log = Logger("decoder", "mf")
@@ -220,7 +221,7 @@ cdef class Decoder:
             info["hardware"] = bool(mf_decoder_is_hardware(self.context))
         return info
 
-    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
+    def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         cdef MFDecodedFrame frame
         cdef MFDecodeStatus status
         cdef const uint8_t *src

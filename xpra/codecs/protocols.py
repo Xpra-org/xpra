@@ -6,6 +6,7 @@
 from typing import Protocol, Any
 
 from xpra.codecs.image import ImageWrapper
+from xpra.common import SizedBuffer
 from xpra.util.objects import typedict
 
 
@@ -51,7 +52,7 @@ class VideoDecoder(VideoCodec):
     def is_closed(self) -> bool:
         raise NotImplementedError()
 
-    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
+    def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         raise NotImplementedError()
 
 
