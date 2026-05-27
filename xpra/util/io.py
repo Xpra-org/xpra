@@ -386,7 +386,7 @@ def osclose(*fds: int) -> None:
         except OSError as e:
             log = get_util_logger()
             log("os.close(%s)", fd, exc_info=True)
-            log.error("Error closing file download:")
+            log.error("Error closing file descriptor: %i", fd)
             log.estr(e)
 
 
