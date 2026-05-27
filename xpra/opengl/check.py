@@ -430,6 +430,12 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         return props
     # '4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
     log("GL_VERSION=%s", gl_version_str)
+    # The full string carries driver name + driver version (e.g. "Mesa
+    # 26.2.0-devel (git-...)" or "NVIDIA 440.59"), which is often what
+    # you actually need when diagnosing a driver-specific issue. The
+    # parsed (major, minor) tuple alone collapses every driver to the
+    # same value. Store both.
+    props["version"] = gl_version_str.strip()
     vparts = gl_version_str.split(" ", 1)[0].split(".")
     try:
         gl_major = int(vparts[0])
