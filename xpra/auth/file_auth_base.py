@@ -11,6 +11,7 @@ from xpra.auth.sys_auth_base import SysAuthenticator
 from xpra.log import Logger
 
 log = Logger("auth")
+PasswordFileData = str | dict
 
 
 def stat_filetime(full_path) -> float:
@@ -40,7 +41,7 @@ class FileAuthenticatorBase(SysAuthenticator):
         self.digest: str = ""
         self.challenge_sent = False
         self.password_filename = password_file
-        self.password_filedata = None
+        self.password_filedata: PasswordFileData | None = None
         self.password_filetime = 0.0
         self.authenticate_check = self.authenticate_hmac
 
@@ -64,10 +65,10 @@ class FileAuthenticatorBase(SysAuthenticator):
             return ""
         return file_data
 
-    def parse_filedata(self, data: str):  # pragma: no cover
+    def parse_filedata(self, data: str) -> PasswordFileData:  # pragma: no cover
         raise NotImplementedError()
 
-    def load_password_file(self) -> str:
+    def load_password_file(self) -> PasswordFileData:
         if not self.password_filename:
             return ""
         full_path = os.path.abspath(self.password_filename)
