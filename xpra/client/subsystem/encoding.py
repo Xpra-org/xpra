@@ -268,7 +268,15 @@ class Encodings(StubClientMixin):
         # opengl_enabled lives on the Display mixin; guard for test
         # harnesses that instantiate Encodings without Display.
         if getattr(self, "opengl_enabled", False):
-            # GL shaders can render packed YUV formats directly (no CSC needed)
+            # GL shaders render packed YUV formats directly (no CSC needed).
+            # This connection-level exposure can't be removed even though
+            # per-window negotiation also surfaces AYUV via
+            # WindowBackingBase.OPAQUE_FORMATS_WITH_A: the Wayland server
+            # (xpra/wayland/subsystem/window.py::_process_window_map)
+            # ignores per-window encoding properties on the map packet,
+            # so caps["full_csc_modes"] from hello is the only signal it
+            # sees. Y410 deliberately omitted - the VPL decoder no longer
+            # advertises it until 10-bit is plumbed.
             rgb_formats += ["AYUV"]
         caps["rgb_formats"] = rgb_formats
         # figure out which CSC modes (usually YUV) can give us those RGB modes:
