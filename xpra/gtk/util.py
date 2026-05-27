@@ -97,10 +97,11 @@ for mask in dir(Gdk.EventMask):
         EVENT_MASK_STRS[value] = mask
 
 
-def event_mask_strs(mask: int) -> Sequence[str]:
+def event_mask_strs(mask: int | Gdk.EventMask) -> Sequence[str]:
     masks = []
+    imask = int(mask)
     for tmask, name in EVENT_MASK_STRS.items():
-        if mask & tmask == tmask:
+        if imask & tmask == tmask:
             masks.append(name)
     return masks
 

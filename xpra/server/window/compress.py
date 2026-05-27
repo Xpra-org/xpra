@@ -1967,12 +1967,12 @@ class WindowSource(WindowIconSource):
             dr = delayed_regions
             self.send_regions(dr.damage_time, dr.regions, dr.encoding, dr.options)
 
-    def send_regions(self, damage_time: float, regions: list[rectangle], coding: str, options: dict) -> None:
+    def send_regions(self, damage_time: float, regions: Sequence[rectangle], coding: str, options: dict) -> None:
         # window video source overrides this method
         # in order to filter out the video region
         self.do_send_regions(damage_time, regions, coding, options)
 
-    def do_send_regions(self, damage_time: float, regions: list[rectangle], coding: str, options: dict,
+    def do_send_regions(self, damage_time: float, regions: Sequence[rectangle], coding: str, options: dict,
                         exclude_region=None, get_best_encoding: Callable | None = None) -> None:
         ww, wh = self.window_dimensions
         options = self.assign_sq_options(options)
