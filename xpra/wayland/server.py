@@ -39,6 +39,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         super().init_subsystems()
         self.get_subsystem("window").connect_compositor(self.compositor)
         self.get_subsystem("display").connect_compositor(self.compositor)
+        if cursor := self.get_subsystem("cursor"):
+            cursor.connect_compositor(self.compositor)
 
     def get_child_env(self) -> dict[str, str]:
         env: dict[str, str] = super().get_child_env()

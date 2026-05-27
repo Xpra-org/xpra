@@ -666,6 +666,13 @@ cdef extern from "wlr/types/wlr_seat.h":
         wlr_primary_selection_source *source
         uint32_t serial
 
+    cdef struct wlr_seat_pointer_request_set_cursor_event:
+        wlr_seat_client *seat_client
+        wlr_surface *surface
+        uint32_t serial
+        int32_t hotspot_x
+        int32_t hotspot_y
+
     cdef enum wlr_button_state:
         WLR_BUTTON_RELEASED
         WLR_BUTTON_PRESSED
@@ -696,6 +703,53 @@ cdef extern from "wlr/types/wlr_seat.h":
 
     wlr_keyboard* wlr_seat_get_keyboard(wlr_seat *seat)
     wlr_seat_client* wlr_seat_client_for_wl_client(wlr_seat *seat, wl_client *client)
+
+
+cdef extern from *:
+    """
+    #include <wlr/types/wlr_seat.h>
+
+    static inline struct wl_signal *xpra_wlr_seat_request_set_cursor_signal(struct wlr_seat *seat) {
+        return &seat->events.request_set_cursor;
+    }
+
+    static inline struct wl_signal *xpra_wlr_seat_request_set_selection_signal(struct wlr_seat *seat) {
+        return &seat->events.request_set_selection;
+    }
+
+    static inline struct wl_signal *xpra_wlr_seat_set_selection_signal(struct wlr_seat *seat) {
+        return &seat->events.set_selection;
+    }
+
+    static inline struct wl_signal *xpra_wlr_seat_request_set_primary_selection_signal(struct wlr_seat *seat) {
+        return &seat->events.request_set_primary_selection;
+    }
+
+    static inline struct wl_signal *xpra_wlr_seat_set_primary_selection_signal(struct wlr_seat *seat) {
+        return &seat->events.set_primary_selection;
+    }
+
+    static inline struct wlr_data_source *xpra_wlr_seat_selection_source(struct wlr_seat *seat) {
+        return seat->selection_source;
+    }
+
+    static inline struct wlr_primary_selection_source *xpra_wlr_seat_primary_selection_source(struct wlr_seat *seat) {
+        return seat->primary_selection_source;
+    }
+
+    static inline bool xpra_wlr_seat_cursor_event_is_focused(struct wlr_seat *seat,
+            struct wlr_seat_pointer_request_set_cursor_event *event) {
+        return event->seat_client == seat->pointer_state.focused_client;
+    }
+    """
+    wl_signal *xpra_wlr_seat_request_set_cursor_signal(wlr_seat *seat)
+    wl_signal *xpra_wlr_seat_request_set_selection_signal(wlr_seat *seat)
+    wl_signal *xpra_wlr_seat_set_selection_signal(wlr_seat *seat)
+    wl_signal *xpra_wlr_seat_request_set_primary_selection_signal(wlr_seat *seat)
+    wl_signal *xpra_wlr_seat_set_primary_selection_signal(wlr_seat *seat)
+    wlr_data_source *xpra_wlr_seat_selection_source(wlr_seat *seat)
+    wlr_primary_selection_source *xpra_wlr_seat_primary_selection_source(wlr_seat *seat)
+    bint xpra_wlr_seat_cursor_event_is_focused(wlr_seat *seat, wlr_seat_pointer_request_set_cursor_event *event)
 
 
 cdef extern from "wlr/types/wlr_primary_selection.h":

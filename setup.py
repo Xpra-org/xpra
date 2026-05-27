@@ -3122,6 +3122,7 @@ if wayland_server_ENABLED:
     ace("xpra.wayland.keyboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.clipboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.wayland_surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.cursor","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.subsurface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.popup","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)

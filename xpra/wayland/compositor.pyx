@@ -62,6 +62,9 @@ from xpra.wayland.wlroots cimport (
     wlr_data_source, wlr_seat_request_set_selection_event, wlr_seat_set_selection,
     wlr_primary_selection_source, wlr_seat_request_set_primary_selection_event,
     wlr_seat_set_primary_selection,
+    xpra_wlr_seat_request_set_selection_signal, xpra_wlr_seat_set_selection_signal,
+    xpra_wlr_seat_request_set_primary_selection_signal, xpra_wlr_seat_set_primary_selection_signal,
+    xpra_wlr_seat_selection_source, xpra_wlr_seat_primary_selection_source,
     wlr_headless_add_output,
     wlr_data_device_manager_create,
     wlr_data_control_manager_v1, wlr_data_control_manager_v1_create,
@@ -283,10 +286,10 @@ cdef class WaylandCompositor(ListenerObject):
             self.primary_selection_manager = wlr_primary_selection_v1_device_manager_create(self.display_ptr)
             if not self.primary_selection_manager:
                 raise RuntimeError("Failed to create primary selection manager")
-            self.add_listener(L_REQUEST_SET_SELECTION, &self.seat.events.request_set_selection)
-            self.add_listener(L_SET_SELECTION, &self.seat.events.set_selection)
-            self.add_listener(L_REQUEST_SET_PRIMARY_SELECTION, &self.seat.events.request_set_primary_selection)
-            self.add_listener(L_SET_PRIMARY_SELECTION, &self.seat.events.set_primary_selection)
+            self.add_listener(L_REQUEST_SET_SELECTION, xpra_wlr_seat_request_set_selection_signal(self.seat))
+            self.add_listener(L_SET_SELECTION, xpra_wlr_seat_set_selection_signal(self.seat))
+            self.add_listener(L_REQUEST_SET_PRIMARY_SELECTION, xpra_wlr_seat_request_set_primary_selection_signal(self.seat))
+            self.add_listener(L_SET_PRIMARY_SELECTION, xpra_wlr_seat_set_primary_selection_signal(self.seat))
 
         self.add_listener(L_NEW_OUTPUT, &self.backend.events.new_output)
 
@@ -383,7 +386,7 @@ cdef class WaylandCompositor(ListenerObject):
         if self.seat == NULL:
             self.emit("selection", 0)
             return
-        self.emit("selection", <uintptr_t> self.seat.selection_source)
+        self.emit("selection", <uintptr_t> xpra_wlr_seat_selection_source(self.seat))
 
     cdef void request_set_primary_selection(self, wlr_seat_request_set_primary_selection_event *event) noexcept:
         if event == NULL:
@@ -394,7 +397,7 @@ cdef class WaylandCompositor(ListenerObject):
         if self.seat == NULL:
             self.emit("primary-selection", 0)
             return
-        self.emit("primary-selection", <uintptr_t> self.seat.primary_selection_source)
+        self.emit("primary-selection", <uintptr_t> xpra_wlr_seat_primary_selection_source(self.seat))
 
     cdef void request_activate(self, wlr_xdg_activation_v1_request_activate_event *event) noexcept:
         log("request_activate(%#x)", <uintptr_t> event)
@@ -423,12 +426,12 @@ cdef class WaylandCompositor(ListenerObject):
     def get_selection_source_ptr(self) -> int:
         if self.seat == NULL:
             return 0
-        return <uintptr_t> self.seat.selection_source
+        return <uintptr_t> xpra_wlr_seat_selection_source(self.seat)
 
     def get_primary_selection_source_ptr(self) -> int:
         if self.seat == NULL:
             return 0
-        return <uintptr_t> self.seat.primary_selection_source
+        return <uintptr_t> xpra_wlr_seat_primary_selection_source(self.seat)
 
     cdef void new_toplevel(self, wlr_xdg_toplevel *toplevel) noexcept:
         cdef wlr_xdg_surface *xdg_surf = NULL
