@@ -13,7 +13,8 @@ from xpra.wayland.wlroots cimport (
     wlr_output, wlr_output_layout, wlr_box, wl_signal,
     wlr_scene_output_commit,
     wlr_output_state, wlr_output_state_init, wlr_output_commit_state, wlr_output_state_finish,
-    wlr_output_state_set_scale,
+    wlr_output_state_set_enabled, wlr_output_state_set_scale, wlr_output_state_set_custom_mode,
+    wlr_output_schedule_frame,
     wlr_output_layout_get_box,
     WL_OUTPUT_TRANSFORM_NORMAL, WL_OUTPUT_TRANSFORM_90, WL_OUTPUT_TRANSFORM_180, WL_OUTPUT_TRANSFORM_270,
     WL_OUTPUT_TRANSFORM_FLIPPED, WL_OUTPUT_TRANSFORM_FLIPPED_90, WL_OUTPUT_TRANSFORM_FLIPPED_180, WL_OUTPUT_TRANSFORM_FLIPPED_270,
@@ -170,13 +171,37 @@ cdef class Output(ListenerObject):
     cdef void initialize(self):
         cdef wlr_output_state state
         wlr_output_state_init(&state)
+        wlr_output_state_set_enabled(&state, True)
         wlr_output_state_set_scale(&state, 1.0)
-        wlr_output_commit_state(self.wlr_output, &state)
+        if not wlr_output_commit_state(self.wlr_output, &state):
+            log.warn("Warning: failed to enable output %s", istr(self.wlr_output.name))
         wlr_output_state_finish(&state)
 
-        name = self.wlr_output.name.decode()
-        log("new output: %r", name)
-        log(" virtual output %r initialized with scale %.1f", name, self.wlr_output.scale)
+        self.name = self.wlr_output.name.decode()
+        log("new output: %r", self.name)
+        log(" virtual output %r initialized with scale %.1f", self.name, self.wlr_output.scale)
+
+    def resize(self, int width, int height, int refresh=0) -> tuple[int, int]:
+        cdef wlr_output_state state
+        if width <= 0 or height <= 0:
+            raise ValueError(f"invalid output size {width}x{height}")
+        if self.wlr_output.width == width and self.wlr_output.height == height:
+            return width, height
+
+        wlr_output_state_init(&state)
+        try:
+            wlr_output_state_set_enabled(&state, True)
+            wlr_output_state_set_custom_mode(&state, width, height, refresh)
+            wlr_output_state_set_scale(&state, 1.0)
+            if not wlr_output_commit_state(self.wlr_output, &state):
+                raise RuntimeError(f"failed to resize wayland output to {width}x{height}")
+        finally:
+            wlr_output_state_finish(&state)
+
+        wlr_output_schedule_frame(self.wlr_output)
+        log.info("wayland virtual display now set to %ix%i",
+                 self.wlr_output.width, self.wlr_output.height)
+        return self.wlr_output.width, self.wlr_output.height
 
     def get_description(self):
         name = istr(self.wlr_output.name)

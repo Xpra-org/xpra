@@ -5,6 +5,7 @@
 
 import os
 
+from xpra.server.source.display import DisplayConnection
 from xpra.server.subsystem.display import DisplayManager
 from xpra.log import Logger
 
@@ -23,6 +24,42 @@ class WaylandDisplayManager(DisplayManager):
     def new_output(self, output) -> None:
         log("new output %r=%r", output.name, output.get_info())
         self.outputs.append(output)
+
+    def configure_best_screen_size(self) -> tuple[int, int]:
+        max_w = max_h = 0
+        client_sizes = {}
+        for ss in self.get_sources_by_type(DisplayConnection):
+            client_size = ss.desktop_size
+            if client_size:
+                w, h = client_size
+                max_w = max(max_w, w)
+                max_h = max(max_h, h)
+                client_sizes[ss.uuid] = "%ix%i" % (w, h)
+        if len(client_sizes) > 1:
+            log.info("wayland screen used by %i clients:", len(client_sizes))
+            for uuid, size in client_sizes.items():
+                log.info("* %s: %s", uuid, size)
+        if max_w <= 0 or max_h <= 0:
+            return self.get_display_size()
+        return self.set_screen_size(max_w, max_h)
+
+    def set_screen_size(self, width: int, height: int) -> tuple[int, int]:
+        log("set_screen_size%s", (width, height))
+        if not self.outputs:
+            return width, height
+        output = self.outputs[0]
+        try:
+            root_w, root_h = output.resize(width, height)
+        except Exception as e:
+            log("output.resize%s", (width, height), exc_info=True)
+            log.warn("Warning: failed to resize wayland output to %ix%i:", width, height)
+            log.warn(" %s", e)
+            return self.get_display_size()
+        if len(self.outputs) > 1:
+            log.warn("Warning: ignoring %i extra wayland outputs for simple resize",
+                     len(self.outputs) - 1)
+        self.notify_screen_changed()
+        return root_w, root_h
 
     def get_display_size(self) -> tuple[int, int]:
         width = height = 0

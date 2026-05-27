@@ -582,7 +582,11 @@ cdef extern from "wlr/types/wlr_output.h":
     void wlr_output_state_init(wlr_output_state *state) nogil
     int wlr_output_commit_state(wlr_output *output, const wlr_output_state *state) nogil
     void wlr_output_state_finish(wlr_output_state *state) nogil
+    void wlr_output_state_set_enabled(wlr_output_state *state, bint enabled) nogil
     void wlr_output_state_set_scale(wlr_output_state *state, float scale) nogil
+    void wlr_output_state_set_custom_mode(wlr_output_state *state,
+                                          int32_t width, int32_t height,
+                                          int32_t refresh) nogil
 
 
 cdef extern from "wlr/types/wlr_output_layout.h":
