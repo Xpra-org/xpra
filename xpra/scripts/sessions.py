@@ -143,10 +143,10 @@ def get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN,), matching_dis
 
 
 def run_list_sessions(args, options) -> ExitValue:
-    from xpra.platform.dotxpra import DotXpra
-    dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
     if args:
         raise InitInfo("too many arguments for 'list-sessions' mode")
+    from xpra.platform.dotxpra import DotXpra
+    dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
     sessions = get_xpra_sessions(dotxpra)
     print(f"Found {len(sessions)} xpra sessions:")
     for display, attrs in sessions.items():
