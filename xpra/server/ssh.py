@@ -317,7 +317,7 @@ class SSHServer(paramiko.ServerInterface):
                 from xpra.net.ssh.agent import setup_proxy_ssh_socket
                 setup_proxy_ssh_socket(cmd, auth_sock=auth_sock)
 
-    def check_channel_exec_request(self, channel, command: str) -> bool:
+    def check_channel_exec_request(self, channel, command: str | bytes) -> bool:
         def fail(*messages) -> bool:
             for m in messages:
                 log.warn(m)
