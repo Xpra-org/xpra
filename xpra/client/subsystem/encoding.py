@@ -265,20 +265,6 @@ class Encodings(StubClientMixin):
         # we can send different values as part of the map event
         # these are the RGB modes we want (the ones we are expected to be able to paint with):
         rgb_formats = ["RGB", "RGBX", "RGBA"]
-        # opengl_enabled lives on the Display mixin; guard for test
-        # harnesses that instantiate Encodings without Display.
-        if getattr(self, "opengl_enabled", False):
-            # GL shaders render packed YUV formats directly (no CSC needed).
-            # This connection-level exposure can't be removed even though
-            # per-window negotiation also surfaces AYUV (AYUV isn't in
-            # xpra.codecs.constants.ALPHA_FORMATS, so it survives the
-            # non-alpha-window filter in WindowBackingBase): the Wayland
-            # server (xpra/wayland/subsystem/window.py::_process_window_map)
-            # ignores per-window encoding properties on the map packet,
-            # so caps["full_csc_modes"] from hello is the only signal it
-            # sees. Y410 deliberately omitted - the VPL decoder no longer
-            # advertises it until 10-bit is plumbed.
-            rgb_formats += ["AYUV"]
         caps["rgb_formats"] = rgb_formats
         # figure out which CSC modes (usually YUV) can give us those RGB modes:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
