@@ -71,20 +71,14 @@ def restore_script_env(env):
 
 def shellsub(s: str, subs: dict) -> str:
     """ shell style string substitution using the dictionary given """
-    if subs:
-        for var, value in subs.items():
-            try:
-                if isinstance(s, bytes):
-                    vbin = str(value).encode()
-                    s = s.replace(f"${var}".encode(), vbin)
-                    s = s.replace(("${%s}" % var).encode(), vbin)
-                else:
-                    vstr = str(value)
-                    s = s.replace(f"${var}", vstr)
-                    s = s.replace("${%s}" % var, vstr)
-            except (TypeError, ValueError):
-                msg = f"failed to substitute {var!r} with value {value!r} ({type(value)}) in {s!r}"
-                raise ValueError(msg) from None
+    for var, value in subs.items():
+        try:
+            vstr = str(value)
+            s = s.replace(f"${var}", vstr)
+            s = s.replace("${%s}" % var, vstr)
+        except (TypeError, ValueError):
+            msg = f"failed to substitute {var!r} with value {value!r} ({type(value)}) in {s!r}"
+            raise ValueError(msg) from None
     return s
 
 

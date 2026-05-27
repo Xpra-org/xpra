@@ -139,15 +139,6 @@ class TestShellsub(unittest.TestCase):
 
     def test_empty_subs(self):
         self.assertEqual(shellsub("no vars here", {}), "no vars here")
-        self.assertEqual(shellsub("$KEEP", None), "$KEEP")
-
-    def test_bytes_string(self):
-        result = shellsub(b"$VAR/path", {"VAR": "val"})
-        self.assertEqual(result, b"val/path")
-
-    def test_bytes_braced(self):
-        result = shellsub(b"${VAR}/path", {"VAR": "val"})
-        self.assertEqual(result, b"val/path")
 
     def test_unknown_var_unchanged(self):
         self.assertEqual(shellsub("$UNKNOWN", {"OTHER": "x"}), "$UNKNOWN")
