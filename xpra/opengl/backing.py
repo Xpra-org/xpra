@@ -254,10 +254,6 @@ class GLWindowBackingBase(WindowBackingBase):
         "RGB", "BGR",
     )
     HAS_ALPHA: bool = GL_ALPHA_SUPPORTED
-    # AYUV from VPL HEVC RExt 4:4:4 carries A=0xFF (always opaque) —
-    # available on non-alpha windows via the base-class OPAQUE_FORMATS_WITH_A
-    # exemption applied at all name-based filter sites.
-    OPAQUE_FORMATS_WITH_A: frozenset = frozenset({"AYUV"})
     _is_intel: bool | None = None  # cached across all windows
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):

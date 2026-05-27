@@ -21,7 +21,7 @@ from xpra.util.thread import check_main_thread
 from xpra.codecs.loader import get_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
-from xpra.codecs.constants import TransientCodecException, CodecStateException
+from xpra.codecs.constants import ALPHA_FORMATS, TransientCodecException, CodecStateException
 from xpra.codecs.protocols import VideoDecoder, ColorspaceConverter
 from xpra.constants import Gravity
 from xpra.log import Logger
@@ -167,15 +167,6 @@ class WindowBackingBase:
     see CairoBackingBase and GTKWindowBacking subclasses for actual implementations
     """
     RGB_MODES: Sequence[str] = ()
-    # Formats whose name contains "A" but whose alpha byte is padding/0xFF
-    # for the source surface format (e.g., AYUV from HEVC RExt 4:4:4 via
-    # the Intel oneVPL decoder — the bitstream is YUV-only and the
-    # hardware fills A with 0xFF). The name-based "strip A-formats from
-    # non-alpha windows" filter at get_rgb_formats(),
-    # _get_full_csc_modes(), and paint_with_pixel_format() consults this
-    # set so these formats stay available on non-alpha windows.
-    # Subclasses declare membership for the formats they can render.
-    OPAQUE_FORMATS_WITH_A: frozenset = frozenset()
     alert_icon = ()
 
     def __init__(self, wid: int, window_alpha: bool):
@@ -234,8 +225,7 @@ class WindowBackingBase:
         if self._alpha_enabled:
             return self.RGB_MODES
         # remove modes with alpha:
-        return tuple(x for x in self.RGB_MODES
-                     if x.find("A") < 0 or x in self.OPAQUE_FORMATS_WITH_A)
+        return tuple(x for x in self.RGB_MODES if x not in ALPHA_FORMATS)
 
     def get_info(self) -> dict[str, Any]:
         info = {
@@ -511,7 +501,7 @@ class WindowBackingBase:
         target_rgb_modes = tuple(rgb_modes)
         if not self._alpha_enabled:
             target_rgb_modes = tuple(x for x in target_rgb_modes
-                                     if x.find("A") < 0 or x in self.OPAQUE_FORMATS_WITH_A)
+                                     if x not in ALPHA_FORMATS)
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
         full_csc_modes["webp"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA")]
         full_csc_modes["jpeg"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA", "YUV420P")]
@@ -634,8 +624,7 @@ class WindowBackingBase:
         if pixel_format not in self.get_rgb_formats():
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.rgb_transform import rgb_reformat
-            has_alpha = (pixel_format.find("A") >= 0 and self._alpha_enabled
-                         and pixel_format not in self.OPAQUE_FORMATS_WITH_A)
+            has_alpha = pixel_format in ALPHA_FORMATS and self._alpha_enabled
             rgb_reformat(img, self.get_rgb_formats(), has_alpha)
             pixel_format = img.get_pixel_format()
         # replace with the actual rgb format we get from the decoder / rgb_reformat:
