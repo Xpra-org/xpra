@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.log import Logger
 from xpra.util.env import envbool
@@ -14,6 +14,7 @@ from xpra.scripts.config import InitExit
 
 
 GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = ("ximagesrc", "pipewiresrc")
+ShadowServerFactory = Callable[[dict[str, str]], object]
 
 XSHM: bool = envbool("XPRA_SHADOW_XSHM", True)
 NVFBC: bool = envbool("XPRA_SHADOW_NVFBC", True)
@@ -32,7 +33,7 @@ def debug_error(message: str) -> None:
     log(message, exc_info=True)
 
 
-def load_screencast(display: str = "") -> type | None:
+def load_screencast(display: str = "") -> ShadowServerFactory | None:
     try:
         from xpra.platform.posix import screencast
         return screencast.ScreenCast
@@ -42,7 +43,7 @@ def load_screencast(display: str = "") -> type | None:
     return None
 
 
-def load_remotedesktop(display: str = "") -> type | None:
+def load_remotedesktop(display: str = "") -> ShadowServerFactory | None:
     try:
         from xpra.platform.posix import remotedesktop
         return remotedesktop.RemoteDesktop
@@ -52,11 +53,11 @@ def load_remotedesktop(display: str = "") -> type | None:
     return None
 
 
-def load_pipewire(_display: str = "") -> type | None:
+def load_pipewire(_display: str = "") -> ShadowServerFactory | None:
     return load_remotedesktop() or load_screencast()
 
 
-def load_wayland(display: str = "") -> type | None:
+def load_wayland(display: str = "") -> ShadowServerFactory | None:
     c = load_remotedesktop() or load_screencast()
     if c:
         os.environ["GDK_BACKEND"] = "wayland"
@@ -67,7 +68,7 @@ def load_wayland(display: str = "") -> type | None:
     return c
 
 
-def load_x11(display: str = "") -> type | None:
+def load_x11(display: str = "") -> ShadowServerFactory | None:
     gdkb = os.environ.get("GDK_BACKEND", "")
     try:
         os.environ["GDK_BACKEND"] = "x11"
@@ -81,7 +82,7 @@ def load_x11(display: str = "") -> type | None:
     return None
 
 
-def load_gstreamer(display: str = "") -> type | None:
+def load_gstreamer(display: str = "") -> ShadowServerFactory | None:
     os.environ["XPRA_STREAM_MODE"] = "gstreamer"
     os.environ["XPRA_SHADOW_GSTREAMER"] = "1"
     return load_x11()
@@ -93,8 +94,8 @@ load_xshm = load_x11
 load_gtk = load_x11
 
 
-def load_auto(display: str = "") -> type | None:
-    c: type | None = None
+def load_auto(display: str = "") -> ShadowServerFactory | None:
+    c: ShadowServerFactory | None = None
     if display.startswith("wayland-") or os.path.isabs(display):
         c = load_wayland(display)
     elif display.startswith(":"):
