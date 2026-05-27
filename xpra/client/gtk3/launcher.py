@@ -137,7 +137,9 @@ def get_connection_modes() -> list[str]:
     modes = [MODE_SSH, MODE_NESTED_SSH]
     try:
         import ssl
-        assert ssl
+        if not ssl:
+            # cythonized code can bind None for missing imports
+            raise ImportError("ssl")
         modes.append(MODE_SSL)
         modes.append(MODE_QUIC)
     except ImportError:

@@ -57,7 +57,9 @@ def gi_import(mod="Gtk", version="") -> ModuleType:
             # before we can load any gi bindings,
             # this is done as a side-effect of loading the darwin module:
             import xpra.platform.darwin
-            assert xpra.platform.darwin
+            if not xpra.platform.darwin:
+                # cythonized code can bind None for missing imports
+                raise ImportError("xpra.platform.darwin")
         import gi
         try:
             gi.require_version(mod, version)

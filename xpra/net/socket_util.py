@@ -599,7 +599,8 @@ def setup_quic_socket(host: str, port: int, options: dict[str, Any]) -> SocketLi
     try:
         from xpra.net.quic import common
         import aioquic
-        assert common and aioquic
+        if not (common and aioquic):
+            raise ImportError("aioquic or xpra.net.quic.common is unavailable")
     except ImportError as e:
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"cannot use quic sockets: {e}") from None

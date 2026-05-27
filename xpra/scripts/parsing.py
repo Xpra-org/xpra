@@ -593,7 +593,9 @@ def parse_ssh_option(ssh_setting: str) -> list[str]:
         from xpra.log import is_debug_enabled, Logger
         try:
             import paramiko
-            assert paramiko, "paramiko not found"
+            if not paramiko:
+                # cythonized code can bind None for missing imports
+                raise ImportError("paramiko not found")
             if is_debug_enabled("ssh"):
                 Logger("ssh").info("using paramiko ssh backend")
             return ["paramiko"]

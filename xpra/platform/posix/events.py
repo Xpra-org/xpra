@@ -28,7 +28,9 @@ def load_dbus() -> bool:
     loaded = "xpra.dbus" in sys.modules
     try:
         import xpra.dbus
-        assert xpra.dbus
+        if not xpra.dbus:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.dbus")
     except ImportError:
         log("load_dbus()", exc_info=True)
         if not loaded:
@@ -47,7 +49,9 @@ def load_dbus() -> bool:
 
     try:
         import dbus
-        assert dbus
+        if not dbus:
+            # cythonized code can bind None for missing imports
+            raise ImportError("dbus")
         return True
     except ImportError as e:
         log("system_bus()", exc_info=True)

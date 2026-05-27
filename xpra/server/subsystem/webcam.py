@@ -28,7 +28,9 @@ def init_virtual_video_devices() -> int:
     # pylint: disable=import-outside-toplevel
     try:
         from xpra.codecs.v4l2.virtual import VirtualWebcam
-        assert VirtualWebcam
+        if not VirtualWebcam:
+            # cythonized code can bind None for missing imports
+            raise ImportError("VirtualWebcam")
     except ImportError:
         log("failed to import the virtual video module", exc_info=True)
         log.info("webcam forwarding requires the v4l2 virtual video module")

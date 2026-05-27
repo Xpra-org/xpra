@@ -60,7 +60,9 @@ def has_uinput() -> bool:
         return False
     try:
         import uinput
-        assert uinput
+        if not uinput:
+            # cythonized code can bind None for missing imports
+            raise ImportError("uinput")
     except ImportError:
         log = get_logger()
         log("has_uinput()", exc_info=True)
@@ -153,7 +155,9 @@ def create_uinput_devices(uinput_uuid: str, uid: int) -> dict[str, Any]:
     log = get_logger()
     try:
         import uinput  # @UnresolvedImport
-        assert uinput
+        if not uinput:
+            # cythonized code can bind None for missing imports
+            raise ImportError("uinput")
     except (ImportError, NameError) as e:
         log.error("Error: cannot access python uinput module:")
         log.estr(e)

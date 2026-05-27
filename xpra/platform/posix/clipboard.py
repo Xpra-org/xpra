@@ -9,7 +9,9 @@ def get_backend_module() -> str:
     if x11_bindings():
         try:
             from xpra import x11
-            assert x11
+            if not x11:
+                # cythonized code can bind None for missing imports
+                raise ImportError("xpra.x11")
             return "xpra.x11.selection.clipboard.X11Clipboard"
         except ImportError:
             pass

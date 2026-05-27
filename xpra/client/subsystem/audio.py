@@ -47,7 +47,9 @@ def init_audio_tagging(icon: str) -> None:
         return
     try:
         from xpra import audio
-        assert audio
+        if not audio:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.audio")
     except ImportError:
         log("no audio module, skipping pulseaudio tagging setup")
         return

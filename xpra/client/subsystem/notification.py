@@ -49,7 +49,9 @@ class NotificationClient(StubClientMixin):
             return
         try:
             from xpra import notification
-            assert notification
+            if not notification:
+                # cythonized code can bind None for missing imports
+                raise ImportError("xpra.notification")
         except ImportError:
             log.warn("Warning: notification module not found")
             self.notifications_enabled = False

@@ -162,7 +162,9 @@ def check_xdg() -> bool:
     try:
         # pylint: disable=import-outside-toplevel
         from xdg.Menu import Menu, MenuEntry
-        assert Menu and MenuEntry
+        if not (Menu and MenuEntry):
+            # cythonized code can bind None for missing imports
+            raise ImportError("xdg.Menu")
         return True
     except ImportError as e:
         if first_time("load-xdg"):

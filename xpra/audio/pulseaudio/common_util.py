@@ -22,7 +22,9 @@ def get_x11_property(atom_name: str) -> str:
         return ""
     try:
         from xpra.x11 import bindings
-        assert bindings
+        if not bindings:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.x11.bindings")
     except ImportError:
         from xpra.util.env import envint
         if first_time("pulse-x11-bindings") and not envint("XPRA_SKIP_UI", 0):

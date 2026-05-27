@@ -98,7 +98,9 @@ def do_crypto_backend_init():
         log("backends=%s", getattr(backend, "_backends", []))
         from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
         from cryptography.hazmat.primitives import hashes
-        assert Cipher and algorithms and modes and hashes  # type: ignore[truthy-function]
+        if not (Cipher and algorithms and modes and hashes):
+            # cythonized code can bind None for missing imports
+            raise ImportError("cryptography submodules")
         validate_backend()
         name = getattr(backend, "name", "")
         if name:

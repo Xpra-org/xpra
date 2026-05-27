@@ -88,7 +88,9 @@ def check_nvfbc() -> bool:
     if not NVFBC:
         return False
     from xpra.codecs.nvidia.nvfbc.capture import get_capture_instance
-    assert get_capture_instance
+    if not get_capture_instance:
+        # cythonized code can bind None for missing imports
+        raise ImportError("get_capture_instance")
     return NVFBC
 
 
@@ -98,7 +100,9 @@ def check_gdi() -> bool:
 
 def check_gtk() -> bool:
     from xpra.gtk import signals
-    assert signals
+    if not signals:
+        # cythonized code can bind None for missing imports
+        raise ImportError("xpra.gtk.signals")
     return True
 
 

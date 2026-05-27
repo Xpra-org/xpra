@@ -86,7 +86,9 @@ class KeyboardClient(StubClientMixin):
             self.keyboard_helper.send = noop
         try:
             from xpra import keyboard
-            assert keyboard
+            if not keyboard:
+                # cythonized code can bind None for missing imports
+                raise ImportError("xpra.keyboard")
         except ImportError:
             log.warn("Warning: keyboard module is missing")
             self.keyboard_enabled = False

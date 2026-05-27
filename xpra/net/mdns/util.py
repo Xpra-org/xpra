@@ -22,7 +22,9 @@ def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
     log("mdns_publish%s", (display_name, listen_on, text_dict))
     try:
         from xpra.net import mdns
-        assert mdns
+        if not mdns:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.net.mdns")
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, RFB_MDNS_TYPE
     except ImportError as e:
         log(f"mdns support is not installed: {e}")

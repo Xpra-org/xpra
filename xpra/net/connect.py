@@ -112,7 +112,9 @@ def connect_to_quic(display_desc: dict[str, Any], opts):
     try:
         from xpra.net.quic.client import quic_connect, WebSocketClient, WebTransportClient, FAST_OPEN
         import aioquic
-        assert aioquic
+        if not aioquic:
+            # cythonized code can bind None for missing imports
+            raise ImportError("aioquic")
     except ImportError as e:
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR, f"cannot use quic sockets: {e}") from None
     fast_open = bool(display_desc.get("fast-open", FAST_OPEN))

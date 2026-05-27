@@ -38,7 +38,9 @@ def get_digests() -> Sequence[str]:
     digests = ["xor"] + _get_hmac_digests()
     try:
         from xpra.net.rfb import d3des  # pylint: disable=import-outside-toplevel
-        assert d3des
+        if not d3des:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.net.rfb.d3des")
         digests.append("des")
     except (ImportError, TypeError):  # pragma: no cover
         pass

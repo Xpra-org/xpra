@@ -141,13 +141,17 @@ def check_pipewire() -> bool:
 
 def check_x11() -> bool:
     from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
-    assert XImageBindings
+    if not XImageBindings:
+        # cythonized code can bind None for missing imports
+        raise ImportError("XImageBindings")
     return True
 
 
 def check_xshm() -> bool:
     from xpra.x11.bindings.shm import XShmBindings
-    assert XShmBindings
+    if not XShmBindings:
+        # cythonized code can bind None for missing imports
+        raise ImportError("XShmBindings")
     return XShmBindings().has_XShm()
 
 

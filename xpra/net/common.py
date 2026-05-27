@@ -315,7 +315,9 @@ def get_ssh_port() -> int:
 def has_websocket_handler() -> bool:
     try:
         from xpra.net.websockets.handler import WebSocketRequestHandler
-        assert WebSocketRequestHandler
+        if not WebSocketRequestHandler:
+            # cythonized code can bind None for missing imports
+            raise ImportError("WebSocketRequestHandler")
         return True
     except ImportError:
         get_logger().debug("importing WebSocketRequestHandler", exc_info=True)

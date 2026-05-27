@@ -34,7 +34,9 @@ class Authenticator(SysAuthenticator):
         self.uid = -1
         self.gid = -1
         import pyotp  # @UnresolvedImport
-        assert pyotp
+        if not pyotp:
+            # cythonized code can bind None for missing imports
+            raise ImportError("pyotp")
         self.issuer_name = kwargs.pop("issuer-name", "Xpra")
         self.secret = b32(kwargs.pop("secret", pyotp.random_hex()))
         self.valid_window = int(kwargs.pop("valid-window", 0))

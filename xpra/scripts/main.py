@@ -173,7 +173,9 @@ def reqx11(mode: str) -> None:
     if OSX:
         # need to import gtk module early, not sure why!
         import xpra.gtk.util
-        assert xpra.gtk.util
+        if not xpra.gtk.util:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.gtk.util")
     if find_spec("xpra.x11"):
         return
     if OSX or WIN32:
@@ -483,7 +485,9 @@ def use_systemd_run(s) -> bool:
 def verify_gir() -> None:
     try:
         from gi import repository
-        assert repository
+        if not repository:
+            # cythonized code can bind None for missing imports
+            raise ImportError("gi.repository")
     except ImportError as e:
         raise InitExit(ExitCode.FAILURE, f"the python gobject introspection bindings are missing: \n{e}")
 
@@ -1838,7 +1842,9 @@ def run_server(script_file, cmdline: list[str], options, args: list[str], full_m
 
     try:
         from xpra import server
-        assert server
+        if not server:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.server")
         from xpra.scripts.server import do_run_server
         return do_run_server(script_file, cmdline, options, args, full_mode, defaults)
     except ImportError as e:
@@ -1885,7 +1891,9 @@ def start_server_via_proxy(cmdline, options, args, mode: str) -> ExitValue | Non
         raise InitExit(ExitCode.ARGUMENT_MISMATCH, "cannot start via proxy for root")
     try:
         from xpra import client  # pylint: disable=import-outside-toplevel
-        assert client
+        if not client:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.client")
     except ImportError:
         if start_via_proxy is True:
             raise InitExit(ExitCode.COMPONENT_MISSING, "cannot start-via-proxy: `xpra-client` is not installed")

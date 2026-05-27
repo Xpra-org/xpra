@@ -317,7 +317,9 @@ def is_X11() -> bool:
         return False
     try:
         from xpra import x11
-        assert x11
+        if not x11:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.x11")
     except ImportError:
         get_util_logger().debug("failed to load x11 bindings", backtrace=True)
         # x11 is not installed, so assume it isn't used

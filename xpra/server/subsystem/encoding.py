@@ -210,7 +210,9 @@ class EncodingServer(StubSubsystem):
         add_encodings("rgb24", "rgb32")
         try:
             from xpra.server.window.motion import ScrollData  # @UnresolvedImport
-            assert ScrollData
+            if not ScrollData:
+                # cythonized code can bind None for missing imports
+                raise ImportError("ScrollData")
             add_encoding("scroll")
         except (ImportError, TypeError) as e:
             log.error("Error: 'scroll' encoding is not available")

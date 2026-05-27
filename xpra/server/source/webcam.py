@@ -91,7 +91,9 @@ class WebcamConnection(StubClientConnection):
             return False
         try:
             from xpra.codecs.pillow.decoder import HEADERS  # pylint: disable=import-outside-toplevel
-            assert HEADERS
+            if not HEADERS:
+                # cythonized code can bind None for missing imports
+                raise ImportError("xpra.codecs.pillow.decoder.HEADERS")
         except ImportError:
             return False
         return True

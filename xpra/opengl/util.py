@@ -39,7 +39,9 @@ zerocopy_upload = False
 if envbool("XPRA_OPENGL_ZEROCOPY_UPLOAD", True):
     try:
         import OpenGL_accelerate  # @UnresolvedImport
-        assert OpenGL_accelerate
+        if not OpenGL_accelerate:
+            # cythonized code can bind None for missing imports
+            raise ImportError("OpenGL_accelerate")
     except ImportError:
         log("import OpenGL_accelerate", exc_info=True)
         if envbool("XPRA_OPENGL_ZEROCOPY_UPLOAD_WARNING", True):

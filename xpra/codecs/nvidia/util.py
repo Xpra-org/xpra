@@ -58,7 +58,9 @@ def _has_nvidia_hardware() -> bool | None:
             log(f"has_nvidia_hardware() cannot use drm module: {e}")
     try:
         import pynvml
-        assert pynvml
+        if not pynvml:
+            # cythonized code can bind None for missing imports
+            raise ImportError("pynvml")
         from pynvml import nvmlInit, nvmlShutdown, nvmlDeviceGetCount, NVMLError_DriverNotLoaded
     except ImportError as e:
         log(f"has_nvidia_hardware() cannot use pynvml module: {e}")
@@ -374,7 +376,9 @@ def main() -> int:
             log.info(f"  {k}")
         try:
             import pynvml
-            assert pynvml
+            if not pynvml:
+                # cythonized code can bind None for missing imports
+                raise ImportError("pynvml")
         except ImportError:
             log.warn("Warning: the pynvml library is missing")
             log.warn(" cannot identify the GPUs installed")
