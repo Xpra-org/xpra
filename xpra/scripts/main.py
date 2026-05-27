@@ -1842,8 +1842,8 @@ def run_server(script_file, cmdline: list[str], error_cb, options, args: list[st
         assert server
         from xpra.scripts.server import do_run_server
         return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
-    except ImportError:
-        error_cb("`xpra-server` is not installed")
+    except ImportError as e:
+        error_cb("`xpra-server` is not installed: %s" % e)
         sys.exit(1)
 
 
