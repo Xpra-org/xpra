@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import NoReturn
 
 from xpra.os_util import gi_import
 from xpra.server.base import ServerBase
@@ -50,9 +51,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return WaylandClipboardManager
 
     @staticmethod
-    def get_gtk_subsystem_class() -> type | None:
-        # GTK may be enabled for clipboard, but it must not manage this display.
-        return None
+    def get_gtk_subsystem_class() -> NoReturn:
+        raise RuntimeError("Gtk should not be enabled with Wayland seamless server")
 
     def get_display_subsystem_class(self) -> type:
         from xpra.wayland.subsystem.display import WaylandDisplayManager
