@@ -17,6 +17,7 @@ from xpra.util.thread import check_main_thread
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.constants import (
     TransientCodecException, get_subsampling,
+    ALPHA_FORMATS,
     RGB_FORMATS, PIXEL_SUBSAMPLING, COMPRESS_FMT_PREFIX,
     COMPRESS_FMT_SUFFIX, COMPRESS_FMT,
 )
@@ -2453,7 +2454,7 @@ class WindowVideoSource(WindowSource):
 
         # if the client doesn't support alpha,
         # use an rgb input format that ignores the alpha channel:
-        if not self.supports_transparency and src_format.find("A") >= 0:
+        if not self.supports_transparency and src_format in ALPHA_FORMATS:
             # ie: "BGRA" -> "BGRX"
             src_format = src_format.replace("A", "X")
 
