@@ -165,6 +165,20 @@ RGB_FORMATS: Sequence[str] = (
 )
 
 
+# Pixel formats that actually carry meaningful alpha in their A channel.
+# Used by the client backing classes and server-side compress code to filter
+# out alpha-bearing formats from non-alpha windows. Distinct from "formats
+# whose name happens to contain the letter A" — AYUV / Y410 are packed YUV
+# formats where the A byte is producer padding (Intel oneVPL fills 0xFF
+# for HEVC RExt 4:4:4) and must NOT be stripped from non-alpha windows.
+ALPHA_FORMATS: frozenset[str] = frozenset({
+    "BGRA",
+    "RGBA",
+    "ABGR",
+    "ARGB",
+})
+
+
 class TransientCodecException(RuntimeError):
     pass
 
