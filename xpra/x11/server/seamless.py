@@ -100,12 +100,12 @@ class SeamlessServer(GObject.GObject, ServerBase):
         # because we need it ready before the main loop starts (which
         # drives load_existing_windows etc.), but after super().setup()
         # has constructed the subsystem instance.
-        window_sub = self.subsystems["window"]
-        from xpra.x11.wm import Wm
-        window_sub._wm = Wm(window_sub.wm_name)
-        window_sub._wm.init_atoms()
-        self.receive_root_events()
-        self.init_wm()
+        if window_sub := self.get_subsystem("window"):
+            from xpra.x11.wm import Wm
+            window_sub._wm = Wm(window_sub.wm_name)
+            window_sub._wm.init_atoms()
+            self.receive_root_events()
+            self.init_wm()
 
     def get_child_env(self) -> dict[str, str]:
         env: dict[str, str] = super().get_child_env()
