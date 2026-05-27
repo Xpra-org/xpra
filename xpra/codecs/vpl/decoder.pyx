@@ -106,6 +106,42 @@ _cache_lock = Lock()
 # by init_module so codec-reload across xpra client reconnect resumes
 # caching.
 _cache_shutdown = False
+# Set by init_module after probing a real VPL decoder. Returned via
+# get_specs() so the encoder picker knows whether VPL is actually GPU-
+# accelerated on this machine. Mirrors the MF HARDWARE_DECODERS pattern
+# documented in memory/mf_hardware_decoders_scoring_bug.md.
+_HARDWARE_ACCEL = False
+
+
+cdef void _probe_hardware_accel():
+    """Create a tiny probe decoder to determine if VPL is GPU-accelerated
+    on this machine. Result cached in _HARDWARE_ACCEL for get_specs().
+    Failure is non-fatal: we keep _HARDWARE_ACCEL=False and let the spec
+    reflect software-fallback scoring.
+
+    Reset _HARDWARE_ACCEL=False at the start so a failed re-probe (e.g.,
+    second init_module() call after a hardware change or driver issue)
+    does NOT leave a stale True value from a previous successful probe.
+
+    Limitation: vpl_decoder_is_hardware() reads dec->is_hw immediately
+    after vpl_decoder_create, before lazy_init runs on first decode. A
+    stream that downgrades to MFX_WRN_PARTIAL_ACCELERATION mid-lazy_init
+    would still register as hardware here.
+    """
+    global _HARDWARE_ACCEL
+    _HARDWARE_ACCEL = False
+    cdef VPLDecoder *probe = NULL
+    cdef VPLDecodeStatus status
+    with nogil:
+        status = vpl_decoder_create(&probe, 64, 64, 1, 8)
+    if status != VPL_DEC_OK or probe == NULL:
+        log.warn("vpl: hardware probe failed: %s",
+                 vpl_decode_status_str(status).decode("latin-1"))
+        return
+    _HARDWARE_ACCEL = bool(vpl_decoder_is_hardware(probe))
+    with nogil:
+        vpl_decoder_destroy(probe)
+    log("vpl: hardware probe: hardware_accel=%s", _HARDWARE_ACCEL)
 
 
 def init_module(options: dict = None) -> None:
@@ -123,6 +159,7 @@ def init_module(options: dict = None) -> None:
     global _cache_shutdown
     with _cache_lock:
         _cache_shutdown = False
+    _probe_hardware_accel()
 
 
 def cleanup_module() -> None:
@@ -199,13 +236,8 @@ def get_specs() -> Sequence[VideoSpec]:
             min_w=64, min_h=64,
             width_mask=0xFFFE, height_mask=0xFFFE,
             max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
-            # gpu_cost hardcoded since the session is pinned to
-            # MFX_IMPL_TYPE_HARDWARE at create time. When adding more
-            # codecs (av1/vp9/h264), restructure the startup probe to
-            # record per-(codec, profile) hardware status and have this
-            # value reflect the actual probe result, since older iGPUs
-            # may support some codecs in software only.
-            cpu_cost=10, gpu_cost=50,
+            cpu_cost=10 if _HARDWARE_ACCEL else 100,
+            gpu_cost=50 if _HARDWARE_ACCEL else 0,
         ),
     )
 
