@@ -29,6 +29,10 @@ class MixinsTest(ClientMixinTest):
             })
         assert len(self.packets)==0
         logger = Logger("util")
+        # Logger construction may emit a "debug enabled for ..." message
+        # if the category has XPRA_<CAT>_DEBUG=1 set in the environment,
+        # which is the default in tests/unittests/run - discard it:
+        self.packets = []
         message = "hello"
         logger.info(message)
         assert len(self.packets)==1
