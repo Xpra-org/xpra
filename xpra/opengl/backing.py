@@ -254,7 +254,6 @@ class GLWindowBackingBase(WindowBackingBase):
         "RGB", "BGR",
     )
     HAS_ALPHA: bool = GL_ALPHA_SUPPORTED
-    _is_intel: bool | None = None  # cached across all windows
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
         self.wid: int = wid
