@@ -335,6 +335,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "webcam"        : "webcam access",
         "evdi"          : "evdi virtual monitor",
         "drm"           : "direct rendering manager",
+        "dmabuf"        : "dmabuf image",
         "remote"        : "remote server codec",
     },
     "Pointer": {

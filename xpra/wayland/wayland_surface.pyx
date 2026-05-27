@@ -10,6 +10,7 @@ from typing import Dict
 from xpra.log import Logger
 from xpra.util.str_fn import Ellipsizer
 from xpra.codecs.image import ImageWrapper
+from xpra.codecs.dmabuf.image import DMABufImageWrapper
 
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t, uint32_t
@@ -24,8 +25,9 @@ cdef extern from "time.h":
 
 
 from xpra.wayland.wlroots cimport (
-    wlr_surface, wlr_texture, wlr_client_buffer, wlr_box,
+    wlr_surface, wlr_buffer, wlr_texture, wlr_client_buffer, wlr_box,
     wlr_texture_read_pixels_options, wlr_texture_read_pixels,
+    wlr_dmabuf_attributes, wlr_buffer_get_dmabuf,
     wlr_surface_send_frame_done,
     DRM_FORMAT_ABGR8888,
 )
@@ -114,6 +116,32 @@ cdef class WaylandSurface(ListenerObject):
     def capture_pixels(self, int x=0, int y=0):
         """Copy the current buffer's pixels out as an ImageWrapper.
         Returns None if the surface is destroyed or has no committed buffer."""
+        if self.wlr_surface == NULL:
+            return None
+        cdef wlr_client_buffer *client_buffer = self.wlr_surface.buffer
+        if not client_buffer:
+            return None
+
+        cdef wlr_buffer *source = client_buffer.source
+        cdef wlr_dmabuf_attributes dmabuf
+        if source != NULL and wlr_buffer_get_dmabuf(source, &dmabuf):
+            if debug:
+                log("%s.capture_pixels: dmabuf %dx%d format=%#x modifier=%#x planes=%i",
+                    self, dmabuf.width, dmabuf.height, dmabuf.format, dmabuf.modifier, dmabuf.n_planes)
+            fds = tuple(dmabuf.fd[i] for i in range(dmabuf.n_planes))
+            strides = tuple(dmabuf.stride[i] for i in range(dmabuf.n_planes))
+            offsets = tuple(dmabuf.offset[i] for i in range(dmabuf.n_planes))
+            image = DMABufImageWrapper(0, 0, dmabuf.width, dmabuf.height,
+                                       dmabuf.format, dmabuf.modifier,
+                                       fds, strides, offsets,
+                                       lambda: self.download_texture_pixels(x, y))
+            image.may_download()
+            return image
+
+        return self.download_texture_pixels(x, y)
+
+    def download_texture_pixels(self, int x=0, int y=0):
+        """Copy the current texture's pixels out as a CPU ImageWrapper."""
         if self.wlr_surface == NULL:
             return None
         cdef wlr_client_buffer *client_buffer = self.wlr_surface.buffer

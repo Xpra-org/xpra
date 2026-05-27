@@ -306,6 +306,7 @@ aom_ENABLED             = DEFAULT and pkg_config_version("3.0", "aom")
 pillow_ENABLED          = DEFAULT
 pillow_encoder_ENABLED  = pillow_ENABLED
 pillow_decoder_ENABLED  = pillow_ENABLED
+dmabuf_ENABLED          = DEFAULT and POSIX
 argb_ENABLED            = DEFAULT
 argb_encoder_ENABLED    = argb_ENABLED
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
@@ -389,6 +390,7 @@ CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "v4l2", "evdi", "drm",
     "csc_cython", "csc_libyuv", "pytorch",
     "gstreamer", "gstreamer_audio", "gstreamer_video",
+    "dmabuf",
 ]
 # some switches can control multiple switches:
 SWITCH_ALIAS = {
@@ -3003,6 +3005,7 @@ tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.nvencode", "nvenc")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.api", "nvenc")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 
+toggle_packages(dmabuf_ENABLED, "xpra.codecs.dmabuf")
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 toggle_packages(argb_encoder_ENABLED, "xpra.codecs.argb.encoder")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
@@ -3156,6 +3159,8 @@ if cythonize_more_ENABLED:
         ax("xpra.clipboard")
     if codecs_ENABLED:
         ax("xpra.codecs")
+        if dmabuf_ENABLED:
+            ax("xpra.codecs.dmabuf")
         if pillow_encoder_ENABLED or pillow_decoder_ENABLED:
             ax("xpra.codecs.pillow")
             if pillow_encoder_ENABLED:

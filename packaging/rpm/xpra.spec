@@ -791,6 +791,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/gstreamer/
 %{python3_sitearch}/xpra/notification/
 %{python3_sitearch}/xpra/codecs/argb/
+%{python3_sitearch}/xpra/codecs/dmabuf/
 %{python3_sitearch}/xpra/codecs/pillow/
 %{python3_sitearch}/xpra/util/
 %{python3_sitearch}/xpra/cyshared.*
