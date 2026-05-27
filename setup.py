@@ -2775,8 +2775,12 @@ if cython_ENABLED:
         cs_cmd = [cython_exe, "--generate-shared", CYSHARED]
         if cython_freethreading_ENABLED:
             cs_cmd += ["-X", "freethreading_compatible=True"]
-        subprocess.run(cs_cmd)
-        print("generating shared cython runtime: ", " ".join(cs_cmd))
+        deps_mtime = os.path.getmtime(__file__)
+        if os.path.exists(cython_exe):
+            deps_mtime = max(deps_mtime, os.path.getmtime(cython_exe))
+        if not os.path.exists(CYSHARED) or os.path.getmtime(CYSHARED) < deps_mtime:
+            print("generating shared cython runtime: ", " ".join(cs_cmd))
+            subprocess.run(cs_cmd)
         if os.path.exists(CYSHARED):
             cythonize_kwargs["shared_utility_qualified_name"] = CYSHARED_EXT
             add_cython_ext(CYSHARED_EXT, sources=[CYSHARED])
