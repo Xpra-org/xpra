@@ -50,6 +50,10 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         from xpra.wayland.subsystem.clipboard import WaylandClipboardManager
         return WaylandClipboardManager
 
+    def get_cursor_subsystem_class(self) -> type:
+        from xpra.wayland.subsystem.cursor import WaylandCursorManager
+        return WaylandCursorManager
+
     @staticmethod
     def get_gtk_subsystem_class() -> NoReturn:
         raise RuntimeError("Gtk should not be enabled with Wayland seamless server")
