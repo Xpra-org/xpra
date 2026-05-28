@@ -306,8 +306,8 @@ def check_gtk_client() -> None:
     try:
         from xpra.client import gui, gtk3
         assert gui, gtk3
-    except ImportError:
-        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
+    except ImportError as e:
+        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed: %s" % e) from None
 
 def check_gtk() -> None:
     import gi
@@ -1426,8 +1426,8 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
     try:
         from xpra import client
         assert client
-    except ImportError:
-        error_cb("Xpra client is not installed")
+    except ImportError as e:
+        error_cb("Xpra client is not installed: %s" % e)
 
     if opts.compression_level < 0 or opts.compression_level > 9:
         error_cb("Compression level must be between 0 and 9 inclusive.")
@@ -1960,8 +1960,8 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
         from xpra import server
         assert server
         from xpra.scripts.server import do_run_server
-    except ImportError:
-        error_cb("Xpra server is not installed")
+    except ImportError as e:
+        error_cb("Xpra server is not installed: %s" % e)
         sys.exit(1)
     return do_run_server(script_file, cmdline, error_cb, options, args, mode, display_name, defaults)
 
