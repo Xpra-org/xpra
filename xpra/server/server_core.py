@@ -601,8 +601,8 @@ class ServerCore:
 
     def open_html_url(self, html:str="open", mode:str="tcp", bind:str="127.0.0.1") -> None:
         httplog("open_html_url%s", (html, mode, bind))
-        import urllib
-        result = urllib.parse.urlsplit(f"//{bind}")
+        from urllib.parse import urlsplit
+        result = urlsplit(f"//{bind}")
         host = result.hostname
         if host in ("0.0.0.0", "*"):
             host = "localhost"
