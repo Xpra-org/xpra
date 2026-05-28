@@ -198,7 +198,6 @@ class DesktopServerBase(DesktopServerBaseClass):
         wid = self._window_to_id[model]
         wprops = self.client_properties.get(wid, {}).get(ss.uuid)
         ss.new_window("new-window", wid, model, x, y, w, h, wprops)
-        wid = self._window_to_id[model]
         ss.damage(wid, model, 0, 0, w, h)
 
 
