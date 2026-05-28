@@ -424,8 +424,8 @@ def check_gtk_client() -> None:
     try:
         find_spec("xpra.client.gui")
         find_spec("xpra.client.gtk3")
-    except ImportError:
-        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
+    except ImportError as e:
+        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed: %s" % e) from None
 
 
 def gtk_init_check() -> bool:
@@ -1848,7 +1848,7 @@ def run_server(script_file, cmdline: list[str], options, args: list[str], full_m
         from xpra.scripts.server import do_run_server
         return do_run_server(script_file, cmdline, options, args, full_mode, defaults)
     except ImportError as e:
-        raise InitExit(ExitCode.COMPONENT_MISSING, "`xpra-server` is not installed: %s" % e) from None
+        raise InitExit(ExitCode.COMPONENT_MISSING, f"`xpra-server` is not installed: {e}") from None
 
 
 def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
@@ -1894,9 +1894,9 @@ def start_server_via_proxy(cmdline, options, args, mode: str) -> ExitValue | Non
         if not client:
             # cythonized code can bind None for missing imports
             raise ImportError("xpra.client")
-    except ImportError:
+    except ImportError as e:
         if start_via_proxy is True:
-            raise InitExit(ExitCode.COMPONENT_MISSING, "cannot start-via-proxy: `xpra-client` is not installed")
+            raise InitExit(ExitCode.COMPONENT_MISSING, f"cannot start-via-proxy: `xpra-client` is not installed: {e}") from None
         return None
     ################################################################################
     try:
@@ -2573,9 +2573,9 @@ def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> 
         app.display_desc = display_desc
         connect_to_server(app, display_desc, opts)
         e = app.run()
-    except ImportError:
+    except ImportError as e:
         sys.stderr.write(f"Error: unable to use the {mode!r} subcommand:\n")
-        sys.stderr.write(" the 'xpra-client' component is not installed\n")
+        sys.stderr.write(f" the 'xpra-client' component is not installed: {e}\n")
         return ExitCode.COMPONENT_MISSING
     finally:
         if app:
