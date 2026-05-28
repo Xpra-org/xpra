@@ -6,8 +6,6 @@
 from typing import Any
 from collections.abc import Callable
 
-from xpra.server.shadow.common import parse_geometries
-from xpra.util.str_fn import csv
 from xpra.util.gobject import to_gsignals
 from xpra.os_util import gi_import
 from xpra.server import features
@@ -67,70 +65,6 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
             monitors.append((plug_name, geom.x, geom.y, geom.width, geom.height, scale_factor))
         screenlog("get_shadow_monitors()=%s", monitors)
         return monitors
-
-    def make_capture_window_models(self) -> list:
-        screenlog("make_capture_window_models() display_options=%s", self.display_options)
-        self.capture = self.setup_capture()
-        if not self.capture:
-            raise RuntimeError("failed to instantiate a capture backend")
-        log.info(f"capture using {self.capture.get_type()}")
-        model_class = self.get_root_window_model_class()
-        models = []
-        Gdk = gi_import("Gdk")
-        manager = Gdk.DisplayManager.get()
-        display = manager.get_default_display()
-        from xpra.util.screen import prettify_plug_name
-        display_name = prettify_plug_name(display.get_name())
-        match_str = None
-        geometries = ()
-        if "=" in self.display_options:
-            # parse the display options as a dictionary:
-            from xpra.util.parsing import parse_simple_dict
-            opt_dict = parse_simple_dict(self.display_options)
-            windows = opt_dict.get("windows")
-            if windows:
-                self.window_matches = windows.split("/")
-                return self.makeDynamicWindowModels()
-            match_str = opt_dict.get("plug")
-            geometries_str = opt_dict.get("geometry", "")
-            if geometries_str:
-                geometries = parse_geometries(geometries_str)
-        else:
-            try:
-                geometries = parse_geometries(self.display_options)
-            except ValueError:
-                match_str = self.display_options
-        log(f"make_capture_window_models() multi_window={self.multi_window}")
-        if not self.multi_window or geometries:
-            if not geometries:
-                from xpra.gtk.util import get_root_size
-                rw, rh = get_root_size()
-                geometries = ((0, 0, rw, rh), )
-            for geometry in geometries:
-                model = model_class(self.capture, display_name, geometry)
-                models.append(model)
-            return models
-        found = []
-        screenlog("capture inputs matching %r", match_str or "all")
-        monitors = self.get_shadow_monitors()
-        for i, monitor in enumerate(monitors):
-            plug_name, x, y, width, height, scale_factor = monitor
-            title = display_name
-            if plug_name or i > 1:
-                title = plug_name or str(i)
-            found.append(plug_name or title)
-            if match_str and not (title in match_str or plug_name in match_str):
-                screenlog.info(" skipped monitor %s", plug_name or title)
-                continue
-            geometry = (x, y, width, height)
-            model = model_class(self.capture, title, geometry)
-            models.append(model)
-            screenlog("monitor %i: %10s geometry=%s, scale factor=%s", i, title, geometry, scale_factor)
-        screenlog("make_capture_window_models()=%s", models)
-        if not models and match_str:
-            screenlog.warn("Warning: no monitors found matching %r", match_str)
-            screenlog.warn(" only found: %s", csv(found))
-        return models
 
     def get_notification_tray(self):
         tray = self.get_subsystem("tray")

@@ -9,6 +9,7 @@ from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.server.common import get_sources_by_type
+from xpra.server.shadow.common import parse_geometries
 from xpra.server.window import batch_config
 from xpra.server.base import ServerBase
 from xpra.scripts.config import InitExit
@@ -29,6 +30,7 @@ GLib = gi_import("GLib")
 log = Logger("shadow")
 notifylog = Logger("notify")
 pointerlog = Logger("pointer")
+screenlog = Logger("screen")
 
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
@@ -477,8 +479,70 @@ class ShadowServerBase(ServerBase):
             ss.set_screen_sizes(packet[3])
 
     def make_capture_window_models(self) -> list:
-        from xpra.server.shadow.root_window_model import CaptureWindowModel
-        return [CaptureWindowModel()]
+        screenlog("make_capture_window_models() display_options=%s", self.display_options)
+        self.capture = self.setup_capture()
+        if not self.capture:
+            raise RuntimeError("failed to instantiate a capture backend")
+        log.info(f"capture using {self.capture.get_type()}")
+        model_class = self.get_root_window_model_class()
+        models = []
+        display_name = self.get_display_name()
+        match_str = None
+        geometries = ()
+        if "=" in self.display_options:
+            # parse the display options as a dictionary:
+            from xpra.util.parsing import parse_simple_dict
+            opt_dict = parse_simple_dict(self.display_options)
+            windows = opt_dict.get("windows")
+            if windows:
+                self.window_matches = windows.split("/")
+                return self.makeDynamicWindowModels()
+            match_str = opt_dict.get("plug")
+            geometries_str = opt_dict.get("geometry", "")
+            if geometries_str:
+                geometries = parse_geometries(geometries_str)
+        else:
+            try:
+                geometries = parse_geometries(self.display_options)
+            except ValueError:
+                match_str = self.display_options
+        log(f"make_capture_window_models() multi_window={self.multi_window}")
+        if not self.multi_window or geometries:
+            if not geometries:
+                rw, rh = self.get_display_size()
+                geometries = ((0, 0, rw, rh), )
+            for geometry in geometries:
+                model = model_class(self.capture, display_name, geometry)
+                models.append(model)
+            return models
+        found = []
+        screenlog("capture inputs matching %r", match_str or "all")
+        monitors = self.get_shadow_monitors()
+        for i, monitor in enumerate(monitors):
+            plug_name, x, y, width, height, scale_factor = monitor
+            title = display_name
+            if plug_name or i > 1:
+                title = plug_name or str(i)
+            found.append(plug_name or title)
+            if match_str and not (title in match_str or plug_name in match_str):
+                screenlog.info(" skipped monitor %s", plug_name or title)
+                continue
+            geometry = (x, y, width, height)
+            model = model_class(self.capture, title, geometry)
+            models.append(model)
+            screenlog("monitor %i: %10s geometry=%s, scale factor=%s", i, title, geometry, scale_factor)
+        screenlog("make_capture_window_models()=%s", models)
+        if not models and match_str:
+            screenlog.warn("Warning: no monitors found matching %r", match_str)
+            screenlog.warn(" only found: %s", csv(found))
+        return models
+
+    def get_shadow_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
+        raise NotImplementedError()
+
+    def get_display_size(self) -> tuple[int, int]:
+        display = self.get_subsystem("display")
+        return display.get_display_size() if display else (0, 0)
 
     def make_dbus_server(self):
         from xpra.server.dbus.shadow_server import Shadow_DBUS_Server
