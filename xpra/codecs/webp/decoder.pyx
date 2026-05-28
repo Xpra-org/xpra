@@ -180,30 +180,36 @@ def decompress_to_rgb(data: SizedBuffer, options: typedict) -> ImageWrapper:
     rgb_format = options.strget("rgb_format", "BGRA" if has_alpha else "BGRX")
     if rgb_format not in ("RGBX", "RGBA", "BGRA", "BGRX", "RGB", "BGR"):
         raise ValueError(f"unsupported rgb format {rgb_format!r}")
+    cdef int stride = 0
+    cdef size_t size = 0
+    cdef VP8StatusCode ret = 0
+    cdef size_t data_len = 0
+    cdef const uint8_t* data_buf = NULL
+    cdef uint8_t *buf = NULL
+
     cdef WebPDecoderConfig config
     config.options.use_threads = 1
     WebPInitDecoderConfig(&config)
-    webp_check(WebPGetFeatures(data, len(data), &config.input))
-    log("webp decompress_to_rgb found features: width=%4i, height=%4i, has_alpha=%-5s, input rgb_format=%s",
-        config.input.width, config.input.height, bool(config.input.has_alpha), rgb_format)
 
-    config.output.colorspace = MODE_BGRA
-    cdef int stride = 4 * config.input.width
-    cdef size_t size = stride * config.input.height
-    #allocate the buffer:
-    cdef uint8_t *buf = <uint8_t*> memalign(size + stride)      #add one line of padding
-    config.output.u.RGBA.rgba   = buf
-    config.output.u.RGBA.stride = stride
-    config.output.u.RGBA.size   = size
-    config.output.is_external_memory = 1
-
-    cdef VP8StatusCode ret = 0
-    cdef size_t data_len
-    cdef const uint8_t* data_buf
     with buffer_context(data) as bc:
-        data_len = len(bc)
         data_buf = <const uint8_t*> (<uintptr_t> int(bc))
+        data_len = len(bc)
+
+        webp_check(WebPGetFeatures(data_buf, data_len, &config.input))
+        log("webp decompress_to_rgb found features: width=%4i, height=%4i, has_alpha=%-5s, input rgb_format=%s",
+            config.input.width, config.input.height, bool(config.input.has_alpha), rgb_format)
+
         with nogil:
+            config.output.colorspace = MODE_BGRA
+            stride = 4 * config.input.width
+            size = stride * config.input.height
+            #allocate the buffer:
+            buf = <uint8_t*> memalign(size + stride)      #add one line of padding
+            config.output.u.RGBA.rgba   = buf
+            config.output.u.RGBA.stride = stride
+            config.output.u.RGBA.size   = size
+            config.output.is_external_memory = 1
+
             ret = WebPDecode(data_buf, data_len, &config)
     webp_check(ret)
     #we use external memory, so this is not needed:
