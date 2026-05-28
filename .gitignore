@@ -49,6 +49,14 @@ packaging/MSWindows/mingw-w64-pdfium-bin/pdfium-win-x64.tgz
 packaging/MSWindows/mingw-w64-pdfium-bin/pkg/
 packaging/MSWindows/mingw-w64-pdfium-bin/src/
 
+packaging/MSWindows/service/DesktopLogon/.vs/
+packaging/MSWindows/service/DesktopLogon/DllExport.bat
+packaging/MSWindows/service/DesktopLogon/Properties/
+packaging/MSWindows/service/DesktopLogon/app.config
+packaging/MSWindows/service/DesktopLogon/bin/
+packaging/MSWindows/service/DesktopLogon/obj/
+packaging/MSWindows/service/DesktopLogon/packages/
+
 # generated during build:
 /build
 /install
