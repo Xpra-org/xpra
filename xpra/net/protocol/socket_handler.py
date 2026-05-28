@@ -18,6 +18,7 @@ from queue import Queue, SimpleQueue, Empty, Full
 from typing import Any
 from collections.abc import Callable, Iterable, Sequence, Mapping
 
+from xpra.exit_codes import ExitCode
 from xpra.net.packet_type import CONNECTION_CLOSE, CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.util.objects import typedict, Scheduler
 from xpra.util.str_fn import (
@@ -143,6 +144,7 @@ class SocketProtocol:
         self.read_buffer_size: int = READ_BUFFER_SIZE
         self.hangup_delay: int = 1000
         self._conn = conn
+        self.error: ExitCode = ExitCode.OK
         self._process_packet_cb: Callable[[Any, Packet], None] = process_packet_cb
         self.make_chunk_header: Callable[[str | int, int, int, int, int], bytes] = self.make_xpra_header
         self.make_frame_header: Callable[[str | int, list[SizedBuffer]], SizedBuffer] = self.noframe_header
@@ -1268,6 +1270,10 @@ class SocketProtocol:
         if self._closed:
             return
         self._closed = True
+        if self.error == ExitCode.OK:
+            # mirror any transport-supplied exit code onto the protocol so the
+            # connection-lost handler can still read it after _conn is cleared:
+            self.error = getattr(c, "error", ExitCode.OK)
         packet_data = []
         if message:
             packet_data.append(message)

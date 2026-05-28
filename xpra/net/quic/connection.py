@@ -14,10 +14,10 @@ from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
 from aioquic.quic.packet import QuicErrorCode
 
+from xpra.exit_codes import ExitCode
 from xpra.net.aio.thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
 from xpra.net.quic.common import binary_headers, override_aioquic_logger
-from xpra.scripts.config import InitExit
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.version import parse_version, vtrim
 from xpra.util.env import envbool
@@ -50,7 +50,6 @@ class XpraQuicConnection(Connection):
         self.transmit: Callable[[], None] = transmit
         self.accepted: bool = False
         self.closed: bool = False
-        self._error: InitExit | None = None
 
     def __repr__(self):
         return f"XpraQuicConnection<{self.socktype}:{self.stream_id}>"
@@ -157,19 +156,17 @@ class XpraQuicConnection(Connection):
     def read(self, n: int) -> bytes:
         log("quic.read(%s)", n)
         data = self.read_queue.get()
-        if not data and self._error is not None:
-            raise self._error
         self.input_bytecount += len(data)
         self.input_readcount += 1
         return data
 
-    def handshake_failed(self, exit_code: int, message: str) -> None:
+    def handshake_failed(self, exit_code: ExitCode, message: str) -> None:
         # Called by the client-side handshake watcher when the QUIC/TLS handshake
-        # fails after a fast-open transmit. Unblocks any pending read() with the
-        # appropriate InitExit so the user gets a meaningful exit code instead of
-        # the higher-level read timeout.
+        # fails after a fast-open transmit. Records the exit code on the connection
+        # (consumed by the client's connection-lost handler) and unblocks any
+        # pending read() with EOF so the existing close path runs.
         log(f"quic.handshake_failed({exit_code}, {message!r})")
-        if self._error is None:
-            self._error = InitExit(exit_code, message)
+        if self.error == ExitCode.OK:
+            self.error = exit_code
         self.closed = True
         self.read_queue.put(b"")
