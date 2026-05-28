@@ -740,6 +740,8 @@ def can_use_socket_path(path: str, uid: int, gid: int) -> bool:
     sockdir = os.path.dirname(path)
     if os.path.exists(sockdir):
         return is_writable(sockdir, uid, gid)
+    if sockdir == path:
+        return False
     # recurse until we find a directory:
     return can_use_socket_path(sockdir, uid, gid)
 
