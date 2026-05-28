@@ -17,9 +17,6 @@ log = Logger("shadow")
 
 class GTKShadowServerBase(ShadowServerBase):
 
-    def __init__(self, attrs: dict[str, str]):
-        ShadowServerBase.__init__(self, attrs)
-
     def add_tray_menu_items(self, tray_menu):
         if features.window:
             def readonly_toggled(menuitem) -> None:
@@ -60,10 +57,6 @@ class GTKShadowServerBase(ShadowServerBase):
             monitors.append((plug_name, geom.x, geom.y, geom.width, geom.height, scale_factor))
         screenlog("get_shadow_monitors()=%s", monitors)
         return monitors
-
-    def get_notification_tray(self):
-        tray = self.get_subsystem("tray")
-        return getattr(tray, "widget", None)
 
     def get_notifier_classes(self) -> list[Callable]:
         ncs: list[Callable] = list(super().get_notifier_classes())

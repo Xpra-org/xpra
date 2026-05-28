@@ -238,7 +238,8 @@ class ShadowServerBase(ServerBase):
             self.notifier.show_notify("", tray, nid, "Xpra", 0, "", title, body, actions, hints, 10 * 1000, icon)
 
     def get_notification_tray(self):
-        return None
+        tray = self.get_subsystem("tray")
+        return getattr(tray, "widget", None)
 
     def notify_startup_complete(self) -> None:
         self.do_notify_startup("Xpra shadow server is ready", replaces_nid=NotificationID.STARTUP)
