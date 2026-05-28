@@ -48,6 +48,13 @@ def noerr(fn: Callable, *args):
         return None
 
 
+def stop_asyncio_loop() -> None:
+    """Stop the optional threaded asyncio loop if it has already been loaded."""
+    import sys
+    if module := sys.modules.get("xpra.net.aio.thread"):
+        module.stop_threaded_loop()
+
+
 def is_covered_by_opaque_region(opaque_region: Sequence[tuple], w: int, h: int) -> bool:
     """Check if any opaque-region rectangle fully covers a window of size w x h.
 

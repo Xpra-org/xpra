@@ -14,7 +14,7 @@ from types import FrameType
 from collections.abc import Callable, Sequence
 
 from xpra.scripts.config import InitExit
-from xpra.common import noerr, noop, may_show_progress
+from xpra.common import noerr, noop, may_show_progress, stop_asyncio_loop
 from xpra.net.constants import ConnectionMessage
 from xpra.net import compression
 from xpra.net.common import (
@@ -369,6 +369,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             self._protocol = None
             log("calling %s", p.close)
             p.close()
+        stop_asyncio_loop()
         log("cleanup done")
 
     def quit(self, exit_code: ExitValue = 0) -> None:

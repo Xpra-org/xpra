@@ -54,7 +54,7 @@ from xpra.util.system import register_SIGUSR_signals, get_run_info, deadly_signa
 from xpra.util.io import load_binary_file, find_libexec_command
 from xpra.util.background_worker import quit_worker
 from xpra.util.thread import start_thread, check_main_thread
-from xpra.common import noop, noerr
+from xpra.common import noop, noerr, stop_asyncio_loop
 from xpra.util.objects import merge_dicts
 from xpra.constants import DEFAULT_XDG_DATA_DIRS
 from xpra.util.pysystem import dump_all_frames
@@ -470,6 +470,7 @@ class ServerCore(GLibServer):
         self.cleanup_all_protocols()
         self.do_cleanup()
         self.cleanup_sockets()
+        stop_asyncio_loop()
         netlog("cleanup() done for server core")
 
     def do_cleanup(self) -> None:
