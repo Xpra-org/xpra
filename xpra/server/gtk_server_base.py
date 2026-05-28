@@ -61,6 +61,8 @@ class GTKServerBase(ServerBase):
             log.warn("Warning: no default Gdk Display!")
             return
         keymap = Gdk.Keymap.get_for_display(display)
+        if not keymap:
+            return
         #this event can fire many times in succession
         #throttle how many times we call self._keys_changed()
         def keys_changed(*_args):
