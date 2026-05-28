@@ -6,23 +6,18 @@
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util.gobject import to_gsignals
 from xpra.os_util import gi_import
 from xpra.server import features
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.log import Logger
 
-GObject = gi_import("GObject")
-
 screenlog = Logger("screen")
 log = Logger("shadow")
 
 
-class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
-    __gsignals__ = to_gsignals(ShadowServerBase.SIGNALS)
+class GTKShadowServerBase(ShadowServerBase):
 
     def __init__(self, attrs: dict[str, str]):
-        GObject.GObject.__init__(self)
         ShadowServerBase.__init__(self, attrs)
 
     def add_tray_menu_items(self, tray_menu):
@@ -81,6 +76,3 @@ class GTKShadowServerBase(GObject.GObject, ShadowServerBase):
             notifylog.warn("Warning: cannot load GTK notifier:")
             notifylog.warn(" %s", e)
         return ncs
-
-
-GObject.type_register(GTKShadowServerBase)

@@ -10,10 +10,10 @@ from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.os_util import gi_import
 from xpra.server.common import get_sources_by_type
-from xpra.util.gobject import one_arg_signal
+from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
-from xpra.server.shadow.shadow_server_base import try_setup_capture
+from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.x11.shadow.filter import window_matches
 from xpra.x11.shadow.model import X11ShadowModel
 from xpra.log import Logger
@@ -23,17 +23,17 @@ log = Logger("x11", "shadow")
 GObject = gi_import("GObject")
 
 
-class ShadowX11Server(GTKShadowServerBase):
+class ShadowX11Server(GObject.GObject, GTKShadowServerBase):
     # X11 dispatch signals consumed by the bell / cursor subsystems.
     # Declared here (not on the subsystems) because X11 dispatch requires
     # a GObject receiver - see `BellServer` / `XCursorServer` docstrings.
-    __gsignals__ = dict(GTKShadowServerBase.__gsignals__)
-    __gsignals__.update({
+    __gsignals__ = to_gsignals(ShadowServerBase.SIGNALS) | {
         "x11-xkb-event": one_arg_signal,
         "x11-cursor-event": one_arg_signal,
-    })
+    }
 
     def __init__(self, attrs: dict[str, str]):
+        GObject.GObject.__init__(self)
         GTKShadowServerBase.__init__(self, attrs)
         self.session_type = "X11 shadow"
         self.backend = attrs.get("backend", "x11")
@@ -149,3 +149,6 @@ class ShadowX11Server(GTKShadowServerBase):
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/bindings/x11-shadow"
         return info
+
+
+GObject.type_register(ShadowX11Server)
