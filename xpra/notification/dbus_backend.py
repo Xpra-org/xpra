@@ -127,7 +127,7 @@ class DBUSNotifier(NotifierBase):
                     image_attr = "icon_data"
                 from dbus import Struct
                 elements = [native_to_dbus(x, intsize=32) for x in args]
-                log.info("elements=%s", elements)
+                log("elements=%s", elements)
                 dbus_hints[image_attr] = Struct(elements, signature="iiibiiay")
         log("to_dbus_hints(%s)=%s", h, dbus_hints)
         return dbus.types.Dictionary(dbus_hints, signature="sv")
