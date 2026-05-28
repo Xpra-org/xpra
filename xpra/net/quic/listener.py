@@ -4,6 +4,8 @@
 # later version. See the file COPYING for details.
 
 import asyncio
+from collections.abc import Callable
+
 from aioquic.asyncio import QuicConnectionProtocol
 from aioquic.asyncio.server import QuicServer
 from aioquic.quic.configuration import QuicConfiguration
@@ -209,7 +211,7 @@ async def do_listen(sock, xpra_server, cert: str, key: str | None, retry: bool):
         raise
 
 
-def listen_quic(sock, xpra_server, socket_options: dict) -> None:
+def listen_quic(sock, xpra_server, socket_options: dict) -> Callable[[], None]:
     from xpra.net.tls.file import find_ssl_cert
     from xpra.net.tls.common import SSL_CERT_FILENAME
     from xpra.net.tls.common import KEY_FILENAME
@@ -223,4 +225,30 @@ def listen_quic(sock, xpra_server, socket_options: dict) -> None:
         raise InitExit(ExitCode.SSL_FAILURE, "missing ssl key")
     retry = socket_options.get("retry", False)
     t = get_threaded_loop()
-    t.call(do_listen(sock, xpra_server, cert, key, retry))
+    endpoint = None
+    closing = False
+
+    def close_endpoint() -> None:
+        nonlocal endpoint, closing
+        closing = True
+        if not endpoint:
+            return
+        transport, protocol = endpoint
+        endpoint = None
+        log(f"closing QUIC listener {protocol}")
+        with log.trap_error(f"Error closing QUIC listener {protocol}"):
+            protocol.close()
+        if not transport.is_closing():
+            transport.close()
+
+    async def start_listener() -> None:
+        nonlocal endpoint
+        endpoint = await do_listen(sock, xpra_server, cert, key, retry)
+        if closing:
+            close_endpoint()
+
+    def cleanup() -> None:
+        t.call(close_endpoint)
+
+    t.call(start_listener())
+    return cleanup

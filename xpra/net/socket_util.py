@@ -209,7 +209,7 @@ def add_listen_socket(listener: SocketListener, server, new_connection_cb: Calla
         if socktype == "quic":
             from xpra.net.quic.listener import listen_quic
             assert server, "cannot use quic sockets without a server"
-            listen_quic(listener.socket, server, listener.options)
+            listener.close = listen_quic(listener.socket, server, listener.options)
             return None
         listener.socket.listen(5)
 
