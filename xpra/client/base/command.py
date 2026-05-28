@@ -82,6 +82,8 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
 
     def _process_connection_lost(self, packet: Packet) -> None:
         log("_process_connection_lost%s", packet)
+        if self.exit_code is not None:
+            return
         # override so we don't log a warning
         # "command clients" are meant to exit quickly by losing the connection
         p = self._protocol
