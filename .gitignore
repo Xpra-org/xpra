@@ -43,6 +43,12 @@ packaging/MacOS/html5
 packaging/MacOS/image
 packaging/MacOS/xpra-html5
 
+packaging/MSWindows/mingw-w64-pdfium-bin/mingw-w64-pdfium-*-package.log.*
+packaging/MSWindows/mingw-w64-pdfium-bin/mingw-w64-x86_64-pdfium-bin-*-any.pkg.tar.zst
+packaging/MSWindows/mingw-w64-pdfium-bin/pdfium-win-x64.tgz
+packaging/MSWindows/mingw-w64-pdfium-bin/pkg/
+packaging/MSWindows/mingw-w64-pdfium-bin/src/
+
 # generated during build:
 /build
 /install
