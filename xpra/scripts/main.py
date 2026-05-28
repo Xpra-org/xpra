@@ -1675,6 +1675,9 @@ def make_progress_process(title="Xpra") -> Optional[Popen]:
     env = os.environ.copy()
     env["XPRA_LOG_PREFIX"] = "splash: "
     env["XPRA_WAIT_FOR_INPUT"] = "0"
+    # prevent Gtk from choosing a Wayland display instead of our local X11 display:
+    if env.get("DISPLAY") and env.get("XDG_SESSION_TYPE") == "x11":
+        env["GDK_BACKEND"] = "x11"
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command()+["splash"]
     try:
