@@ -5,6 +5,7 @@
 
 import re
 import os
+import asyncio
 import socket
 import ipaddress
 from queue import SimpleQueue
@@ -349,6 +350,38 @@ def pyopenssl_ca_certs(ca_certs: str) -> str:
     return ""
 
 
+async def _watch_handshake(protocol: QuicConnectionProtocol, conn, timeout: float) -> None:
+    # Background watcher for fast-open connects: wait for the QUIC/TLS handshake
+    # to complete (or fail) without blocking the caller, so the first user write
+    # still rides the same flight as the ClientHello (preserving the fast-open RTT
+    # saving). If the handshake fails — either by timeout or by the server sending
+    # a CRYPTO_ERROR (e.g. cert hostname mismatch) — we surface a meaningful
+    # ExitCode via conn.handshake_failed() so the blocked read() raises InitExit
+    # instead of timing out at the higher layer.
+    try:
+        await asyncio.wait_for(protocol.wait_connected(), timeout=timeout)
+        log("fast-open handshake watcher: connected")
+        return
+    except asyncio.TimeoutError:
+        log("fast-open handshake watcher: timed out")
+    except Exception as e:
+        log(f"fast-open handshake watcher: wait_connected raised {e!r}")
+    quic_conn = getattr(protocol, "_quic", None)
+    close_event = getattr(quic_conn, "_close_event", None) if quic_conn else None
+    if close_event is not None:
+        err = close_event.error_code
+        msg = close_event.reason_phrase or ""
+        log(f"fast-open handshake watcher: close_event error=0x{err:x} reason={msg!r}")
+        if err & QuicErrorCode.CRYPTO_ERROR:
+            conn.handshake_failed(ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE,
+                                  msg or "SSL certificate verification failed")
+            return
+        conn.handshake_failed(ExitCode.CONNECTION_FAILED,
+                              msg or f"QUIC connection closed with error 0x{err:x}")
+        return
+    conn.handshake_failed(ExitCode.CONNECTION_FAILED, "QUIC handshake timed out")
+
+
 def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: bool):
     tl = get_threaded_loop()
     log(f"getting the list of address options for {host!r}:{port}")
@@ -373,12 +406,12 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
         try:
             if not fast_open:
                 await protocol.wait_connected()
-            else:
-                from xpra.scripts.picker import CONNECT_TIMEOUT
-                tl.call_later(CONNECT_TIMEOUT, verify_connected, protocol)
             log(f"{protocol}.open({host!r}, {port}, {path!r})")
             conn = protocol.open(host, port, path)
             log(f"quic connection {conn}")
+            if fast_open:
+                from xpra.scripts.picker import CONNECT_TIMEOUT
+                asyncio.ensure_future(_watch_handshake(protocol, conn, CONNECT_TIMEOUT))
             return conn
         except Exception as e:
             log("connect()", exc_info=True)
@@ -429,10 +462,3 @@ def quic_connect(host: str, port: int, path: str, fast_open: bool,
         return client_class(QuicConnection(configuration=configuration))
 
     return _quic_connect(create_protocol, host, port, path, fast_open)
-
-
-def verify_connected(protocol) -> None:
-    # this is only useful for debugging,
-    # as we have no way to send a message to the main thread,
-    # I guess it may still show up in some debug log?
-    log("verify_connect(%s) connected=%s", protocol, protocol._connected)
