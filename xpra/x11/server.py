@@ -818,8 +818,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def _set_window_state(self, proto, wid:int, window, new_window_state) -> Tuple[str,...]:
-        if proto not in self._server_sources:
-            return ()
         if not new_window_state:
             return ()
         nws = typedict(new_window_state)
@@ -1132,8 +1130,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def _process_close_window(self, proto, packet : PacketType) -> None:
-        if proto not in self._server_sources:
-            return
         wid = packet[1]
         window = self._lookup_window(wid)
         windowlog("client closed window %s - %s", wid, window)
@@ -1145,8 +1141,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def _process_window_signal(self, proto, packet : PacketType) -> None:
-        if proto not in self._server_sources:
-            return
         wid = packet[1]
         sig = bytestostr(packet[2])
         if sig not in WINDOW_SIGNALS:

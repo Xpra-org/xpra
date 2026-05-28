@@ -984,7 +984,7 @@ class ServerBase(ServerBaseClass):
             def call_handler():
                 may_log_packet(False, packet_type, packet)
                 handler(proto, packet)
-            if proto in self._server_sources:
+            if proto in self._server_sources and not proto.is_closed():
                 handler = self._authenticated_ui_packet_handlers.get(packet_type)
                 if handler:
                     netlog("process ui packet %s", packet_type)
