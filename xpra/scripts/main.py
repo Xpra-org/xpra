@@ -3692,9 +3692,9 @@ def get_displays(dotxpra=None, display_names=None) -> Dict[str,Any]:
     return displays
 
 def run_list_sessions(args, options) -> int:
-    dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
     if args:
         raise InitInfo("too many arguments for 'list-sessions' mode")
+    dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
     sessions = get_xpra_sessions(dotxpra)
     print(f"Found {len(sessions)} xpra sessions:")
     for display, attrs in sessions.items():
