@@ -385,6 +385,8 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     def _process_connection_close(self, packet: Packet) -> None:
         # ie: ("disconnect", "version error", "incompatible version")
         netlog("%s", packet)
+        if self.exit_code is not None:
+            return
         info = tuple(str(x) for x in packet[1:])
         reason = info[0]
         if not self.connection_established:
@@ -515,6 +517,8 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
 
     def _process_gibberish(self, packet: Packet) -> None:
         log("process_gibberish(%s)", Ellipsizer(packet))
+        if self.exit_code is not None:
+            return
         message = packet.get_str(1)
         bdata = packet.get_bytes(2)
         from xpra.net.socket_util import guess_packet_type  # pylint: disable=import-outside-toplevel
@@ -559,6 +563,9 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.quit(exit_code)
 
     def _process_invalid(self, packet: Packet) -> None:
+        log("process-invalid: %s", packet)
+        if self.exit_code is not None:
+            return
         message = packet.get_str(1)
         data = packet.get_bytes(2)
         netlog.info(f"Received invalid packet: {message}")
