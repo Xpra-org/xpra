@@ -14,12 +14,127 @@ Most modules are optional, see [security considerations](../Usage/Security.md).
 * Server Module: feature implemented by the server, it may interact with multiple "Client Connection Modules"
 
 
-Most subsystems are independent of each other, except for:
-* the `Display` subsystem is required by `Windows`
-* the `Windows` subsystem is required by the `Keyboard`, `Pointer` and `Cursors` subsystems
-
 A client or server may choose to completely disable a subsystem.\
 When this is the case, it will not load the module into memory and will not know how to handle requests for this feature.
+
+Most subsystems are independent of each other. The diagram below shows the dependencies enforced at subsystem load time (see [`xpra/server/features.py`](https://github.com/Xpra-org/xpra/blob/master/xpra/server/features.py)).
+Solid arrows mark a *hard* requirement &mdash; the dependent subsystem cannot be enabled unless its parent is also enabled.
+Dashed arrows mark *soft* or alternative dependencies &mdash; the subsystem can use the parent if it is available, or has an alternative code path on some platforms.
+
+```mermaid
+graph LR
+    classDef core fill:#fde,stroke:#a04,stroke-width:2px,color:#000;
+    classDef group fill:#eef,stroke:#446,color:#000;
+
+    Core["Server core<br/>(sockets, auth, dispatch)"]:::core
+
+    subgraph Backend["Display backend (mutually exclusive)"]
+        X11[x11]
+        Wayland[wayland]
+    end
+
+    subgraph Surface["Display surface"]
+        Window[window]
+        Keyboard[keyboard]
+        Pointer[pointer]
+        Display[display]
+        Cursor[cursor]
+        OpenGL[opengl]
+        Bell[bell]
+    end
+    Window --> Display
+    Keyboard --> Display
+    Pointer --> Display
+    Display --> Cursor
+    Display --> OpenGL
+    Display --> Bell
+
+    subgraph Media["Media pipeline"]
+        GStreamer[gstreamer]
+        Audio[audio]
+        Pulseaudio[pulseaudio]
+        AVSync[av_sync]
+        Webcam[webcam]
+        Encoding[encoding]
+    end
+    GStreamer --> Audio
+    Audio --> Pulseaudio
+    Audio --> AVSync
+    GStreamer -.-> Webcam
+    GStreamer -.-> Encoding
+
+    subgraph X11Ext["X11-only extensions"]
+        ICC[icc]
+        BellSrv[bell server]
+        SysTray[systray]
+    end
+    X11 --> ICC
+    Display --> ICC
+    X11 --> BellSrv
+    Bell --> BellSrv
+    X11 --> SysTray
+
+    subgraph UI["UI / lifecycle"]
+        GTK[gtk]
+        Tray[tray]
+        Watcher[watcher]
+        Power[power]
+        Suspend[suspend]
+        Idle[idle]
+        Debug[debug]
+        Splash[splash]
+    end
+    GTK --> Tray
+    SysTray -.-> Tray
+
+    subgraph Net["Network / transport"]
+        SSL[ssl]
+        SSH[ssh]
+        HTTP[http]
+        MDNS[mdns]
+        RFB[rfb]
+        Control[control]
+        SSHAgent[ssh_agent]
+    end
+    SSL -.-> HTTP
+    SSH --> SSHAgent
+
+    subgraph Session["Session features"]
+        Clipboard[clipboard]
+        FileT[file]
+        Printer[printer]
+        Notification[notification]
+        Command[command]
+        Logging[logging]
+        Ping[ping]
+        Bandwidth[bandwidth]
+        Shell[shell]
+        MMap[mmap]
+        DBus[dbus]
+        Encryption[encryption]
+        Sharing[sharing]
+        ClientSession[client_session]
+    end
+    Printer --> FileT
+    DBus --> Notification
+    DBus -.-> Tray
+
+    Core --> Backend
+    Core --> Surface
+    Core --> Media
+    Core --> UI
+    Core --> Net
+    Core --> Session
+
+    class Backend,Surface,Media,X11Ext,UI,Net,Session group;
+```
+
+Notes:
+* `display` is auto-enabled when any of `window`, `keyboard` or `pointer` is enabled &mdash; it is the union of those features rather than a prerequisite.
+* `notification` requires `dbus` on Linux, but has native code paths on Windows and macOS (shown as dashed via `DBus`).
+* `tray` requires `gtk` and (for the system tray icon on X11) the `systray` extension.
+* The `ICC`, `bell server` and `systray` subsystems are loaded only on X11 sessions, and require both `x11` and the corresponding feature flag.
+* `pulseaudio` and `av_sync` are strict refinements of `audio`, which itself requires `gstreamer`.
 
 
 ## Protocol Subsystems
@@ -63,6 +178,7 @@ These subsystems handle server-side infrastructure and have no corresponding cli
 | Subsystem      | [Server Module](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem)                | User Documentation                               |
 |----------------|----------------------------------------------------------------------------------------------------|--------------------------------------------------|
 | Auth           | [auth](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth.py)                           | [authentication](../Usage/Authentication.md)     |
+| ClientSession  | [client_session](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/client_session.py) | n/a                                          |
 | Control        | [control](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/control.py)           | n/a                                              |
 | Daemon         | [daemon](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/daemon.py)             | n/a                                              |
 | DBUS           | [dbus](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/dbus.py)                 | n/a                                              |
@@ -75,10 +191,13 @@ These subsystems handle server-side infrastructure and have no corresponding cli
 | MDNS           | [mdns](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/mdns.py)                 | [multicast DNS](../Network/Multicast-DNS.md)     |
 | OpenGL         | [opengl](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/opengl.py)             | [OpenGL usage](../Usage/OpenGL.md)               |
 | Platform       | [platform](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/platform.py)         | n/a                                              |
+| Process        | [process](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/process.py)           | n/a                                              |
 | PulseAudio     | [pulseaudio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/pulseaudio.py)     | [audio feature](../Features/Audio.md)            |
 | RFB            | [rfb](https://github.com/Xpra-org/xpra/blob/master/xpra/server/rfb/server.py)                      | n/a                                              |
 | SessionFiles   | [sessionfiles](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/sessionfiles.py) | n/a                                              |
+| Shutdown       | [shutdown](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/shutdown.py)         | n/a                                              |
 | Splash         | [splash](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/splash.py)             | n/a                                              |
 | Suspend        | [suspend](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/suspend.py)           | n/a                                              |
 | Version        | [version](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/version.py)           | n/a                                              |
 | Watcher        | [watcher](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/watcher.py)           | n/a                                              |
+| Xvfb           | [xvfb](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/xvfb.py)                 | n/a                                              |
