@@ -140,6 +140,7 @@ tests/unittests/test-file*
 /xpra/client/gtk3/opengl/*.c
 /xpra/client/gtk3/window/*.c
 /xpra/client/gui/window/*.c
+/xpra/client/subsystem/window/*.c
 /xpra/clipboard/*.c
 /xpra/cairo/*.c
 /xpra/codecs/nvidia/*/*.c
