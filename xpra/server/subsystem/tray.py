@@ -136,7 +136,10 @@ class TrayMenu(StubSubsystem):
         return tray_menu
 
     def add_tray_menu_items(self, tray_menu):
-        """ subclasses will add their menu items here """
+        # the server class is the override point (e.g. `GTKShadowServerBase`)
+        add_items = getattr(self.server, "add_tray_menu_items", None)
+        if add_items:
+            add_items(tray_menu)
 
     def make_tray_widget(self):
         # pylint: disable=import-outside-toplevel
