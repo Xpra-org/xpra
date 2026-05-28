@@ -511,7 +511,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     # screenshot
     def do_make_screenshot_packet(self):
         assert len(self._id_to_window)==1, "multi root window screenshot not implemented yet"
-        rwm = self._id_to_window.values()[0]
+        rwm = tuple(self._id_to_window.values())[0]
         w, h, encoding, rowstride, data = rwm.take_screenshot()
         assert encoding=="png"  #use fixed encoding for now
         return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
