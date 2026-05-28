@@ -384,7 +384,7 @@ class WaylandWindowServer(WindowServer):
     def resize(self, wid: int, serial: int, moveresize: int) -> None:
         log.info(f"resize wid {wid:#x}, serial={serial:#x}, moveresize={moveresize}")
 
-    def _process_window_map(self, _proto, packet: Packet) -> None:
+    def _process_window_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         surface = self.get_surface(wid)
@@ -392,6 +392,9 @@ class WaylandWindowServer(WindowServer):
             return
         w = packet.get_i16(4)
         h = packet.get_i16(5)
+        cp = packet.get_dict(6) if len(packet) >= 7 else {}
+        cp["event"] = "map"
+        self._set_client_properties(proto, wid, window, cp)
         surface.resize(w, h)
         self.server.compositor.flush()
         self.refresh_window(window)
