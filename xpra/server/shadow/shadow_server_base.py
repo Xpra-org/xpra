@@ -15,6 +15,7 @@ from xpra.scripts.config import InitExit
 from xpra.platform.paths import get_icon_dir
 from xpra.server import features
 from xpra.exit_codes import ExitCode
+from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
@@ -122,6 +123,15 @@ class ShadowServerBase(ServerBase):
         if not self.session_name:
             GLib.idle_add(self.guess_session_name)
         super().setup()
+        self.connect("last-client-exited", self.stop_all_refresh)
+
+    def stop_all_refresh(self, *args) -> None:
+        log("stop_all_refresh%s mapped=%s", args, self.mapped)
+        for wid in tuple(self.mapped):
+            self.stop_refresh(wid)
+
+    def accept_client_ssh_agent(self, uuid: str, ssh_auth_sock: str) -> None:
+        log(f"accept_client_ssh_agent({uuid}, {ssh_auth_sock}) not setting up ssh agent forwarding for shadow servers")
 
     def cleanup(self) -> None:
         for wid in self.mapped:
@@ -288,7 +298,104 @@ class ShadowServerBase(ServerBase):
             GLib.source_remove(t)
 
     def refresh(self) -> bool:
+        log("refresh() mapped=%s, capture=%s", self.mapped, self.capture)
+        if not self.mapped:
+            self.refresh_timer = 0
+            return False
+        self.refresh_window_models()
+        if self.capture:
+            try:
+                if not self.capture.refresh():
+                    # capture doesn't have any screen updates,
+                    # so we can skip calling damage
+                    # (this shortcut is only used with nvfbc)
+                    return True
+            except TransientCodecException as tce:
+                log("refresh()", exc_info=True)
+                log.warn("Warning: transient codec exception:")
+                log.warn(" %s", tce)
+                self.recreate_window_models()
+                return False
+            except CodecStateException as cse:
+                log("refresh()", exc_info=True)
+                log.warn("Warning: codec state exception:")
+                log.warn(" %s", cse)
+                self.recreate_window_models()
+                return False
+        self.refresh_windows()
+        return True
+
+    def refresh_windows(self) -> None:
+        window_sub = self.get_subsystem("window")
+        if not window_sub:
+            return
+        for window in window_sub.models():
+            window_sub.refresh_window(window)
+
+    def refresh_window_models(self) -> None:
+        if not self.window_matches or not features.window:
+            return
+        # update the window models which may have changed,
+        # some may have disappeared, new ones created,
+        # or they may just have changed their geometry:
+        try:
+            windows = self.makeDynamicWindowModels()
+        except Exception as e:
+            log("refresh_window_models()", exc_info=True)
+            log.error("Error refreshing window models")
+            log.estr(e)
+            return
+        # build a map of window identifier -> window model:
+        xid_to_window = {window.get_id(): window for window in windows}
+        log("xid_to_window(%s)=%s", windows, xid_to_window)
+        sources = self.window_sources()
+        window_sub = self.subsystems["window"]
+        for wid, window in tuple(window_sub._id_to_window.items()):
+            xid = window.get_id()
+            new_model = xid_to_window.pop(xid, None)
+            if new_model is None:
+                # window no longer exists:
+                self._remove_window(window)
+                continue
+            resized = window.geometry[2:] != new_model.geometry[2:]
+            window.geometry = new_model.geometry
+            if resized:
+                # it has been resized:
+                window.geometry = new_model.geometry
+                window.notify("size-constraints")
+                for ss in sources:
+                    ss.resize_window(wid, window, window.geometry[2], window.geometry[3])
+        # any models left are new windows:
+        window_sub = self.get_subsystem("window")
+        for window in xid_to_window.values():
+            self._add_new_window(window)
+            if window_sub:
+                window_sub.refresh_window(window)
+
+    def recreate_window_models(self) -> None:
+        # remove all existing models and re-create them:
+        for model in self.subsystems["window"].models():
+            self._remove_window(model)
+        self.cleanup_capture()
+        for model in self.make_capture_window_models():
+            self._add_new_window(model)
+
+    def send_updated_screen_size(self) -> None:
+        log("send_updated_screen_size")
+        super().send_updated_screen_size()
+        if features.window:
+            self.recreate_window_models()
+
+    def setup_capture(self):
         raise NotImplementedError()
+
+    def get_root_window_model_class(self) -> type:
+        from xpra.server.shadow.root_window_model import CaptureWindowModel
+        return CaptureWindowModel
+
+    def makeDynamicWindowModels(self):
+        assert self.window_matches
+        raise NotImplementedError("dynamic window shadow is not implemented on this platform")
 
     ############################################################################
     # pointer polling
