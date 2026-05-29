@@ -716,6 +716,19 @@ If the file has not been replaced,
 it will be deleted when the server exits.
 .TP
 
+\fB\-\-log\-dir\fP=\fIDIR\fP
+The directory where server log files are placed when
+daemonizing.
+.TP
+
+\fB\-\-log\-file\fP=\fIFILENAME\fP
+When daemonizing, this is where the log messages will go.
+If a relative filename is specified then it is relative to
+\fB\-\-log\-dir\fP.
+The value of \fB$DISPLAY\fP will be substituted with the
+actual display used.
+.TP
+
 \fB\-\-challenge\-handlers\fP=\fIMODULE:options\fP
 Configures which challenge handlers are used by the client and in
 which order. This option may be repeated to specify multiple handlers,
@@ -1041,6 +1054,15 @@ start multiple commands.
 Identical to \fB\-\-start\fP, except that the commands are taken into
 account by \fB\-\-exit\-with\-children\fP.
 .TP
+\fB\-\-start\-late\fP=\fICMD\fP
+Like \fB\-\-start\fP, but the command is only spawned once server
+initialization is complete.
+.TP
+\fB\-\-start\-child\-late\fP=\fICMD\fP
+Like \fB\-\-start\-child\fP, but the command is only spawned once
+server initialization is complete.
+Taken into account by \fB\-\-exit\-with\-children\fP.
+.TP
 \fB\-\-start\-after\-connect\fP=\fICMD\fP
 Wait for the first client to connect before starting the command.
 .TP
@@ -1053,6 +1075,13 @@ Execute this command every time a client connects.
 .TP
 \fB\-\-start\-child\-on\-connect\fP=\fICMD\fP
 Execute this child command every time a client connects.
+See \fIstart-child\fP.
+.TP
+\fB\-\-start\-on\-disconnect\fP=\fICMD\fP
+Execute this command every time a client disconnects.
+.TP
+\fB\-\-start\-child\-on\-disconnect\fP=\fICMD\fP
+Execute this child command every time a client disconnects.
 See \fIstart-child\fP.
 .TP
 \fB\-\-start\-on\-last\-client\-exit\fP=\fICMD\fP
@@ -1088,6 +1117,21 @@ The server will terminate when the last client disconnects.
 \fB\-\-env\fP=\fIKEY=VALUE\fP
 Extra environment variables which will only affect commands started using
 \fB\-\-start\fP or \fB\-\-start\-child\fP.
+.TP
+\fB\-\-start\-env\fP=\fIKEY=VALUE\fP
+Define environment variables used by commands started via
+\fB\-\-start\fP and \fB\-\-start\-child\fP.
+May be specified multiple times.
+.TP
+\fB\-\-source\fP=\fIFILE\fP
+Shell script to source into the server environment before
+the server starts.
+May be specified multiple times.
+.TP
+\fB\-\-source\-start\fP=\fIFILE\fP
+Shell script to source into the environment used for spawning
+\fB\-\-start\fP and \fB\-\-start\-child\fP commands.
+May be specified multiple times.
 .TP
 \fB\-\-start\-new\-commands\fP=\fIyes\fP|\fIno\fP
 Allow clients to ask the server to execute new commands.
