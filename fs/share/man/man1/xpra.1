@@ -637,14 +637,21 @@ These files describe each running xpra session.
 The socket path to use to contact the system-wide proxy server.
 .TP
 
-\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP
+\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP|\fIask\fP
 Enable file transfers.
 .TP
-\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP
+\fB\-\-file\-size\-limit\fP=\fISIZE\fP
+Maximum size of file transfers (ie: \fI100M\fP, \fI1G\fP).
+.TP
+\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP|\fIask\fP
 This option may be used to allow the remote end to automatically
 open files after they have been uploaded.
 This may be a security risk if you are using xpra to constrain
 what the clients can execute on the server.
+.TP
+\fB\-\-open\-url\fP=\fIyes\fP|\fIno\fP|\fIask\fP
+Allow the remote end to ask for URLs to be opened on the local
+side. This may be a security risk.
 .TP
 
 \fB\-\-forward\-xdg\-open\fP=\fIon\fP|\fIoff\fP|\fIauto\fP
