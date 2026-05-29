@@ -1196,6 +1196,9 @@ will be delegated to the system wide proxy server instance.
 With \fIauto\fP mode, this delegation will only occur if the
 system wide proxy server is found.
 .TP
+\fB\-\-proxy\-start\-sessions\fP=\fIyes\fP|\fIno\fP
+Use the proxy server to start new sessions.
+.TP
 \fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Wrap server start commands with systemd-run.
 .TP
@@ -1523,6 +1526,10 @@ acceleration on MS Windows.
 Supply the password to be used for connecting to a server that
 uses authentication.
 Deprecated, use per-socket authentication options.
+.TP
+\fB\-\-username\fP=\fIUSERNAME\fP
+The username supplied by the client for authentication.
+By default the current OS username is used.
 .TP
 \fB\-\-opengl\fP=(\fIyes\fP|\fIno\fP|\fIauto\fP)[:\fIbackend\fP]
 Use OpenGL accelerated rendering on the client.
