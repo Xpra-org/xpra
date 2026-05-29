@@ -2691,7 +2691,7 @@ class WindowSource(WindowIconSource):
         elif decode_time == WINDOW_DECODE_SKIPPED:
             log(f"client skipped decoding sequence {damage_packet_sequence} for window {self.wid:#x}")
         elif decode_time == WINDOW_NOT_FOUND:
-            log.warn("Warning: client cannot find window %i", self.wid)
+            log.warn("Warning: client cannot find window %#x", self.wid)
         elif decode_time == WINDOW_DECODE_ERROR:
             self.client_decode_error(decode_time, message)
         pending = self.statistics.damage_ack_pending.pop(damage_packet_sequence, None)
