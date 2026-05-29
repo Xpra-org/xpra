@@ -8,10 +8,14 @@
 
 from xpra.os_util import gi_import
 from xpra.x11.common import Unmanageable
+from xpra.x11.error import xsync, xswallow
 from xpra.x11.models.base import BaseWindowModel
+from xpra.x11.bindings.core import constants
 from xpra.x11.bindings.window import X11WindowBindings
 
 X11Window = X11WindowBindings()
+
+CWBorderWidth: int = constants["CWBorderWidth"]
 
 GObject = gi_import("GObject")
 
@@ -32,6 +36,17 @@ class OverrideRedirectWindowModel(BaseWindowModel):
 
     def __init__(self, xid: int):
         super().__init__(xid)
+        # Squash the X11 border to 0 before compositing is set up.
+        # The composite pixmap returned by `XCompositeNameWindowPixmap` includes the
+        # border, so a non-zero border_width offsets the inner content within the
+        # pixmap. CompositeHelper.do_x11_damage_event shifts damage coords by
+        # border_width to read from the right pixmap origin, but the same coords end
+        # up as the client-side draw target — producing a `border_width`-pixel black
+        # gap at the top-left of the OR window (e.g. xterm popups with border_width=2).
+        # Managed windows already have this squashed via the `configure()` helper.
+        with xswallow:
+            with xsync:
+                X11Window.ConfigureWindow(xid, 0, 0, 0, 0, border=0, value_mask=CWBorderWidth)
         self._updateprop("override-redirect", True)
 
     def setup(self) -> None:
