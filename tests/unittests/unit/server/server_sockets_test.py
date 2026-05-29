@@ -29,7 +29,7 @@ NOHOSTNAME = "--ssl-check-hostname=no"
 
 def get_openssl_command(keyfile: str, outfile: str) -> list[str]:
     return [
-        "openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
+        "openssl", "req", "-new", "-newkey", "rsa:2048", "-days", "2", "-nodes", "-x509",
         "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
         "-addext", "subjectAltName=DNS:localhost,IP:127.0.0.1",
         "-keyout", keyfile, "-out", outfile,
@@ -196,7 +196,6 @@ class ServerSocketsTest(ServerTestUtil):
         env = self.get_run_env()
         env["XPRA_CONNECT_TIMEOUT"] = str(CONNECT_WAIT)
         env["XPRA_UNIT_TEST"] = "0"
-        env["SSL_RETRY"] = "0"
         client = self.run_xpra(cmd, env=env)
         r = pollwait(client, CONNECT_WAIT)
         if client.poll() is None:
