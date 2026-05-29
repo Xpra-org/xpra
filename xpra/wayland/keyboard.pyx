@@ -19,7 +19,11 @@ from xpra.wayland.wlroots cimport (
     WL_KEYBOARD_KEY_STATE_PRESSED, WL_KEYBOARD_KEY_STATE_RELEASED,
     xkb_context, xkb_context_new, xkb_context_unref,
     xkb_keymap, xkb_keymap_unref, wlr_keyboard_set_keymap, xkb_rule_names, xkb_keymap_new_from_names,
-    XKB_CONTEXT_NO_FLAGS, XKB_KEYMAP_COMPILE_NO_FLAGS,
+    XKB_CONTEXT_NO_FLAGS, XKB_KEYMAP_COMPILE_NO_FLAGS, XKB_KEYSYM_NO_FLAGS,
+    xkb_keycode_t, xkb_keysym_t, xkb_layout_index_t, xkb_level_index_t,
+    xkb_keymap_min_keycode, xkb_keymap_max_keycode,
+    xkb_keymap_num_layouts_for_key, xkb_keymap_num_levels_for_key,
+    xkb_keymap_key_get_syms_by_level, xkb_keysym_from_name,
 )
 
 log = Logger("wayland", "keyboard")
@@ -60,11 +64,13 @@ cdef class WaylandKeyboard:
     cdef wlr_keyboard_impl keyboard_impl
     cdef object modifiers
     cdef int group
+    cdef dict keysym_to_keycode
 
     def __init__(self, uintptr_t seat_ptr):
         self.seat = <wlr_seat*>seat_ptr
         self.modifiers = ()
         self.group = 0
+        self.keysym_to_keycode = {}
         if not seat_ptr:
             raise ValueError("seat pointer is NULL")
         self.keyboard = <wlr_keyboard*> calloc(1, sizeof(wlr_keyboard))
@@ -109,8 +115,44 @@ cdef class WaylandKeyboard:
         if keymap == NULL:
             raise RuntimeError(f"failed to set keymap layout {layout!r}")
         wlr_keyboard_set_keymap(self.keyboard, keymap)
+        self._build_keysym_map(keymap)
         xkb_keymap_unref(keymap)
         xkb_context_unref(context)
+
+    cdef void _build_keysym_map(self, xkb_keymap *keymap) noexcept:
+        cdef xkb_keycode_t min_kc = xkb_keymap_min_keycode(keymap)
+        cdef xkb_keycode_t max_kc = xkb_keymap_max_keycode(keymap)
+        cdef xkb_keycode_t kc
+        cdef xkb_layout_index_t layout, n_layouts
+        cdef xkb_level_index_t level, n_levels
+        cdef const xkb_keysym_t *syms
+        cdef int n_syms, i
+        cdef dict mapping = {}
+        for kc in range(min_kc, max_kc + 1):
+            n_layouts = xkb_keymap_num_layouts_for_key(keymap, kc)
+            for layout in range(n_layouts):
+                n_levels = xkb_keymap_num_levels_for_key(keymap, kc, layout)
+                for level in range(n_levels):
+                    n_syms = xkb_keymap_key_get_syms_by_level(keymap, kc, layout, level, &syms)
+                    for i in range(n_syms):
+                        # Prefer the first (lowest keycode/layout/level) mapping for each keysym:
+                        mapping.setdefault(<unsigned int> syms[i], <unsigned int> kc)
+        self.keysym_to_keycode = mapping
+        log("built keysym->keycode map with %i entries (keycodes %i..%i)",
+            len(mapping), min_kc, max_kc)
+
+    def get_keycode_for_keysym(self, keysym: int) -> int:
+        return self.keysym_to_keycode.get(int(keysym), -1)
+
+    def get_keycode_for_keyname(self, name: str) -> int:
+        cdef xkb_keysym_t sym
+        if not name:
+            return -1
+        bname = name.encode("latin1")
+        sym = xkb_keysym_from_name(bname, XKB_KEYSYM_NO_FLAGS)
+        if sym == 0:
+            return -1
+        return self.keysym_to_keycode.get(int(sym), -1)
 
     def press_key(self, keycode: int, press: bool) -> None:
         cdef uint32_t time_msec = get_time_msec()
