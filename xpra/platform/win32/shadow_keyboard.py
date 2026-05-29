@@ -3,8 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from ctypes import byref, sizeof
+
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import keybd_event
+from xpra.platform.win32.common import INPUT, SendInput
 from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.server.shadow.keyboard import ShadowKeyboardManager
 from xpra.util.objects import typedict
@@ -49,7 +51,13 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
             flags |= win32con.KEYEVENTF_EXTENDEDKEY
         log("native_key_event: vk=%#x, scancode=%#x, extended=%s, pressed=%s, keyname=%r",
             vk_code, scancode, extended, pressed, keyname)
-        keybd_event(vk_code, scancode, flags, 0)
+        inp = INPUT(type=win32con.INPUT_KEYBOARD)
+        inp.ki.wVk = vk_code
+        inp.ki.wScan = scancode
+        inp.ki.dwFlags = flags
+        inp.ki.time = 0
+        inp.ki.dwExtraInfo = 0
+        SendInput(1, byref(inp), sizeof(INPUT))
         if pressed:
             self.keys_pressed[vk_code] = keyname
         else:

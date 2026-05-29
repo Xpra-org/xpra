@@ -8,7 +8,7 @@ from typing import Any
 
 from ctypes import (
     WinDLL, WINFUNCTYPE, GetLastError,  # @UnresolvedImport
-    POINTER, Structure,
+    POINTER, Structure, Union,
     c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_ssize_t, c_char,
     byref, sizeof,
 )
@@ -480,6 +480,58 @@ GetAsyncKeyState.restype = SHORT
 VkKeyScanW = user32.VkKeyScanW
 VkKeyScanW.argtypes = [WCHAR]
 keybd_event = user32.keybd_event
+
+ULONG_PTR = c_size_t
+
+
+class MOUSEINPUT(Structure):
+    _fields_ = [
+        ("dx", LONG),
+        ("dy", LONG),
+        ("mouseData", DWORD),
+        ("dwFlags", DWORD),
+        ("time", DWORD),
+        ("dwExtraInfo", ULONG_PTR),
+    ]
+
+
+class KEYBDINPUT(Structure):
+    _fields_ = [
+        ("wVk", WORD),
+        ("wScan", WORD),
+        ("dwFlags", DWORD),
+        ("time", DWORD),
+        ("dwExtraInfo", ULONG_PTR),
+    ]
+
+
+class HARDWAREINPUT(Structure):
+    _fields_ = [
+        ("uMsg", DWORD),
+        ("wParamL", WORD),
+        ("wParamH", WORD),
+    ]
+
+
+class _INPUT_UNION(Union):
+    _fields_ = [
+        ("mi", MOUSEINPUT),
+        ("ki", KEYBDINPUT),
+        ("hi", HARDWAREINPUT),
+    ]
+
+
+class INPUT(Structure):
+    _anonymous_ = ("u",)
+    _fields_ = [
+        ("type", DWORD),
+        ("u", _INPUT_UNION),
+    ]
+
+
+SendInput = user32.SendInput
+SendInput.argtypes = [UINT, POINTER(INPUT), INT]
+SendInput.restype = UINT
 GetKeyState = user32.GetKeyState
 GetKeyState.restype = SHORT
 GetKeyboardLayout = user32.GetKeyboardLayout
