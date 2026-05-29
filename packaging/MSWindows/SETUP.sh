@@ -19,6 +19,8 @@ $PACMAN ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plug
 $PACMAN ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium
 #pinentry is not available for aarch64 yet:
 $PACMAN ${XPKG}pinentry
+#make qr codes:
+$PACMAN ${XPKG}qrencode
 #not strictly needed:
 $PACMAN ${XPKG}dbus-glib
 #python GStreamer bindings:
