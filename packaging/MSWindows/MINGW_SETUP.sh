@@ -23,6 +23,8 @@ $PACMAN --noconfirm --needed -S ${XPKG}ffmpeg ${XPKG}libavif ${XPKG}libyuv-git $
 $PACMAN --noconfirm --needed -S ${XPKG}lz4 heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
 #python GStreamer bindings:
 $PACMAN --noconfirm --needed -S ${XPKG}gst-python
+#make qr codes:
+$PACMAN --noconfirm --needed -S ${XPKG}qrencode
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm gcc subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
 for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks pyopenssl; do
