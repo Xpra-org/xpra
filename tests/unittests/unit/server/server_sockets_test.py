@@ -38,7 +38,7 @@ class GenSSLCertContext:
         self.keyfile = os.path.join(self.tmpdir, "key.pem")
         self.outfile = os.path.join(self.tmpdir, "out.pem")
         openssl_command = [
-            "openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
+            "openssl", "req", "-new", "-newkey", "rsa:2048", "-days", "2", "-nodes", "-x509",
             "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
             "-keyout", self.keyfile, "-out", self.outfile,
             ]
@@ -184,7 +184,6 @@ class ServerSocketsTest(ServerTestUtil):
     def verify_connect(self, uri, exit_code=ExitCode.OK, *client_args):
         cmd = ["info", uri] + list(client_args)
         env = self.get_run_env()
-        env["SSL_RETRY"] = "0"
         client = self.run_xpra(cmd, env=env)
         r = pollwait(client, CONNECT_WAIT)
         if client.poll() is None:
