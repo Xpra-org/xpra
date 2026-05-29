@@ -1,10 +1,15 @@
 # Changelog
 
 ## [6.6] 2026-05-26
+* 🔧 Platforms, build and packaging:
+  * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
 * 🖧 Network:
   * [zero copy network reception](https://github.com/Xpra-org/xpra/issues/4873)
+  * [use `TCP_INFO` to drive batch delay](https://github.com/Xpra-org/xpra/issues/2421)
+  * [`asyncio` loop exit fix](https://github.com/Xpra-org/xpra/pull/4891)
 * ✨ Features:
   * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885)
+  * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)
   * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256)
 
 ## [6.5] 2026-05-06
