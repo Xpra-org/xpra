@@ -24,6 +24,14 @@ cdef extern from "xkbcommon/xkbcommon.h":
 
     ctypedef uint32_t xkb_led_index_t
     ctypedef uint32_t xkb_mod_index_t
+    ctypedef uint32_t xkb_keycode_t
+    ctypedef uint32_t xkb_keysym_t
+    ctypedef uint32_t xkb_layout_index_t
+    ctypedef uint32_t xkb_level_index_t
+
+    cdef enum xkb_keysym_flags:
+        XKB_KEYSYM_NO_FLAGS
+        XKB_KEYSYM_CASE_INSENSITIVE
 
     cdef enum xkb_context_flags:
         XKB_CONTEXT_NO_FLAGS
@@ -74,6 +82,16 @@ cdef extern from "xkbcommon/xkbcommon.h":
     void xkb_keymap_unref(xkb_keymap *keymap)
 
     char *xkb_keymap_get_as_string(xkb_keymap *keymap, xkb_keymap_format format)
+
+    xkb_keycode_t xkb_keymap_min_keycode(xkb_keymap *keymap)
+    xkb_keycode_t xkb_keymap_max_keycode(xkb_keymap *keymap)
+    xkb_layout_index_t xkb_keymap_num_layouts(xkb_keymap *keymap)
+    xkb_layout_index_t xkb_keymap_num_layouts_for_key(xkb_keymap *keymap, xkb_keycode_t key)
+    xkb_level_index_t xkb_keymap_num_levels_for_key(xkb_keymap *keymap, xkb_keycode_t key, xkb_layout_index_t layout)
+    int xkb_keymap_key_get_syms_by_level(xkb_keymap *keymap, xkb_keycode_t key,
+                                         xkb_layout_index_t layout, xkb_level_index_t level,
+                                         const xkb_keysym_t **syms_out)
+    xkb_keysym_t xkb_keysym_from_name(const char *name, xkb_keysym_flags flags)
 
 
 cdef extern from "linux/input-event-codes.h":

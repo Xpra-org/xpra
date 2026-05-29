@@ -96,6 +96,27 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         log("get_keyboard_config(..)=%s", keyboard_config)
         return keyboard_config
 
+    def get_keycode(self, ss, client_keycode: int, keyname: str,
+                    pressed: bool, modifiers: list, keyval: int, keystr: str, group: int):
+        # The Wayland virtual keyboard uses its own xkb keymap, so the client's keycode
+        # (from a foreign keymap, e.g. Win32 VK codes) is not meaningful here.
+        # The xkb keymap uses X11-style keycodes (evdev + 8) and `press_key` subtracts 8
+        # before handing them to wlroots, so we just return what the keymap gives us.
+        keycode = -1
+        kd = self.keyboard_device
+        if kd:
+            if keyval > 0:
+                keycode = kd.get_keycode_for_keysym(keyval)
+            if keycode < 0 and keyname:
+                keycode = kd.get_keycode_for_keyname(keyname)
+        if keycode > 0:
+            log("get_keycode: keyname=%r keyval=%i client_keycode=%i -> xkb keycode=%i",
+                keyname, keyval, client_keycode, keycode)
+            return keycode, group
+        log("get_keycode: no xkb mapping for keyname=%r keyval=%i, falling back",
+            keyname, keyval)
+        return super().get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
+
     def make_pointer_device(self):
         return self.compositor.get_pointer_device()
 
