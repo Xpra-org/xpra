@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.server import features
@@ -57,15 +56,3 @@ class GTKShadowServerBase(ShadowServerBase):
             monitors.append((plug_name, geom.x, geom.y, geom.width, geom.height, scale_factor))
         screenlog("get_shadow_monitors()=%s", monitors)
         return monitors
-
-    def get_notifier_classes(self) -> list[Callable]:
-        ncs: list[Callable] = list(super().get_notifier_classes())
-        try:
-            from xpra.gtk.notifier import GTKNotifier  # pylint: disable=import-outside-toplevel
-            ncs.append(GTKNotifier)
-        except Exception as e:
-            notifylog = Logger("notify")
-            notifylog("get_notifier_classes()", exc_info=True)
-            notifylog.warn("Warning: cannot load GTK notifier:")
-            notifylog.warn(" %s", e)
-        return ncs

@@ -219,7 +219,18 @@ class ShadowServerBase(ServerBase):
         if not NATIVE_NOTIFIER:
             return []
         from xpra.platform.notification import get_backends
-        return get_backends()
+        ncs: list[Callable] = list(get_backends())
+        if self.server.get_subsystem("gtk"):
+            # if the gtk subsystem is already loaded, we can load GTKNotifier safely:
+            try:
+                from xpra.gtk.notifier import GTKNotifier  # pylint: disable=import-outside-toplevel
+                ncs.append(GTKNotifier)
+            except Exception as e:
+                notifylog = Logger("notify")
+                notifylog("get_notifier_classes()", exc_info=True)
+                notifylog.warn("Warning: cannot load GTK notifier:")
+                notifylog.warn(" %s", e)
+        return ncs
 
     def notify_new_user(self, ss) -> None:
         # overridden here so that we can show the notification
