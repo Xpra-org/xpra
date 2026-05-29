@@ -584,14 +584,14 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     # packets:
     def init_packet_handlers(self) -> None:
         self.add_packets("hello")
-        # lifecycle packets are registered as default handlers so they bypass the
-        # is_closed() gate in dispatch_packet (CONNECTION_LOST is synthesized by
-        # Protocol.close() after it sets _closed=True; the others are dispatched
-        # via idle_add from the read thread):
-        self._default_packet_handlers["connection-close"] = self._process_connection_close
-        self._default_packet_handlers[CONNECTION_LOST] = self._process_connection_lost
-        self._default_packet_handlers[GIBBERISH] = self._process_gibberish
-        self._default_packet_handlers[INVALID] = self._process_invalid
+        # lifecycle packets are registered as default UI handlers so they bypass the
+        # is_closed() gate in dispatch_packet but still run on the UI thread
+        # (they tear down GTK/X11 resources via cleanup(), which must not happen
+        # from the network parse thread):
+        self._default_ui_packet_handlers["connection-close"] = self._process_connection_close
+        self._default_ui_packet_handlers[CONNECTION_LOST] = self._process_connection_lost
+        self._default_ui_packet_handlers[GIBBERISH] = self._process_gibberish
+        self._default_ui_packet_handlers[INVALID] = self._process_invalid
         self.add_legacy_alias("disconnect", "connection-close")
         for bc in CLIENT_BASES:
             bc.init_packet_handlers(self)

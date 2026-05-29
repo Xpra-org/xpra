@@ -20,6 +20,7 @@ class PacketDispatcher:
         self._authenticated_packet_handlers: dict[str, Callable] = {}
         self._authenticated_ui_packet_handlers: dict[str, Callable] = {}
         self._default_packet_handlers: dict[str, Callable] = {}
+        self._default_ui_packet_handlers: dict[str, Callable] = {}
         self.packet_alias: dict[str, str] = {}
 
     def get_info(self) -> dict[str, Any]:
@@ -36,6 +37,7 @@ class PacketDispatcher:
                     self._authenticated_packet_handlers,
                     self._authenticated_ui_packet_handlers,
                     self._default_packet_handlers,
+                    self._default_ui_packet_handlers,
             ):
                 d.pop(k, None)
 
@@ -84,6 +86,10 @@ class PacketDispatcher:
                     log("process non-ui packet %s", packet_type)
                     call_handler(False)
                     return
+            if handler := self._default_ui_packet_handlers.get(packet_type):
+                log("process default ui packet %s", packet_type)
+                call_handler(True)
+                return
             if handler := self._default_packet_handlers.get(packet_type):
                 log("process default packet %s", packet_type)
                 call_handler(False)
