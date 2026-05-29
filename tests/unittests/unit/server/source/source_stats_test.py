@@ -19,6 +19,7 @@ class TestSafeint(unittest.TestCase):
     def test_invalid(self):
         self.assertEqual(safeint("bad"), 0)
         self.assertEqual(safeint("bad", 99), 99)
+        self.assertEqual(safeint(None, 99), 99)
 
 
 class TestGlobalPerformanceStatistics(unittest.TestCase):
@@ -105,6 +106,33 @@ class TestGlobalPerformanceStatistics(unittest.TestCase):
         s.update_averages()
         self.assertGreater(s.avg_frame_total_latency, 0)
 
+    def test_get_recent_output_rate(self):
+        s = self.stats
+        now = monotonic()
+        s.bytes_sent.append((now - 1, 1000))
+        s.bytes_sent.append((now, 11000))
+        self.assertEqual(s.get_recent_output_rate(), 10000)
+
+    def test_record_tcp_info_uses_delivery_rate(self):
+        s = self.stats
+        now = monotonic()
+        s.record_tcp_info(now, {"notsent_bytes": 20000, "delivery_rate": 100000})
+        self.assertEqual(len(s.tcp_notsent), 1)
+        _event_time, notsent, queued_time = s.tcp_notsent[-1]
+        self.assertEqual(notsent, 20000)
+        self.assertAlmostEqual(queued_time, 0.2)
+
+    def test_record_tcp_info_uses_output_rate_fallback(self):
+        s = self.stats
+        now = monotonic()
+        s.bytes_sent.append((now - 2, 0))
+        s.bytes_sent.append((now, 200000))
+        s.record_tcp_info(now, {"notsent_bytes": 50000})
+        self.assertEqual(len(s.tcp_notsent), 1)
+        _event_time, notsent, queued_time = s.tcp_notsent[-1]
+        self.assertEqual(notsent, 50000)
+        self.assertAlmostEqual(queued_time, 0.5)
+
     def test_get_factors_empty(self):
         factors = self.stats.get_factors(1000)
         self.assertIsInstance(factors, list)
@@ -138,6 +166,15 @@ class TestGlobalPerformanceStatistics(unittest.TestCase):
         factors = s.get_factors(1000)
         metrics = [f[0] for f in factors]
         self.assertIn("congestion", metrics)
+
+    def test_get_factors_tcp_notsent(self):
+        s = self.stats
+        now = monotonic()
+        s.record_tcp_info(now - 1, {"notsent_bytes": 10000, "delivery_rate": 100000})
+        s.record_tcp_info(now, {"notsent_bytes": 30000, "delivery_rate": 100000})
+        factors = s.get_factors(1000)
+        metrics = [f[0] for f in factors]
+        self.assertIn("tcp-notsent", metrics)
 
     def test_get_connection_info_structure(self):
         info = self.stats.get_connection_info()

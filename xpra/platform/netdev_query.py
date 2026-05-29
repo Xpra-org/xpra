@@ -17,8 +17,13 @@ def get_tcp_info(_sock) -> dict[str, Any]:  # pylint: disable=unused-argument
     return {}
 
 
+def get_socket_tcp_info(_sock) -> dict[str, Any]:  # pylint: disable=unused-argument
+    return {}
+
+
 platform_import(globals(), "netdev_query", False,
                 "get_tcp_info",
+                "get_socket_tcp_info",
                 "get_interface_info",
                 )
 

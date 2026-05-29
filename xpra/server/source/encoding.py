@@ -12,6 +12,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.constants import TCP_SOCKTYPES
 from xpra.server.common import may_update_bandwidth_limits
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.window import batch_config
@@ -178,6 +179,18 @@ class EncodingsConnection(StubClientConnection):
         stats = getattr(self, "statistics", None)
         if stats:
             stats.bytes_sent.append((now, conn.output_bytecount))
+            if getattr(conn, "socktype_wrapped", "") in TCP_SOCKTYPES:
+                try:
+                    from xpra.platform.netdev_query import get_socket_tcp_info
+                except ImportError:
+                    pass
+                else:
+                    get_raw_socket = getattr(conn, "get_raw_socket", None)
+                    try:
+                        if get_raw_socket and (sock := get_raw_socket()):
+                            stats.record_tcp_info(now, get_socket_tcp_info(sock))
+                    except (OSError, ValueError):
+                        log("failed to query TCP_INFO for %s", conn, exc_info=True)
             stats.update_averages()
         may_update_bandwidth_limits(self)
         wids = tuple(self.calculate_window_ids)  # make a copy so we don't clobber new wids

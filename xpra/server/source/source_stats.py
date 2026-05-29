@@ -21,12 +21,14 @@ from xpra.log import Logger
 log = Logger("network", "stats")
 
 NRECS = 500
+TCP_NOTSENT_MIN_TARGET = 0.010
+TCP_NOTSENT_MAX_TARGET = 0.250
 
 
 def safeint(v, default: int = 0) -> int:
     try:
         return int(v)
-    except ValueError:
+    except (TypeError, ValueError):
         return default
 
 
@@ -71,6 +73,8 @@ class GlobalPerformanceStatistics:
         # last NRECS: (event_time, lateness_pct, duration)
         self.bytes_sent = d(NRECS // 4)  # how much bandwidth we are using
         # last NRECS: (sample_time, bytes)
+        self.tcp_notsent = d(NRECS // 4)  # kernel-side TCP write queue delay
+        # last NRECS: (sample_time, notsent_bytes, queued_time)
         self.quality = d()  # quality used for sending updates:
         # (event_time, no of pixels, quality)
         self.speed = d()  # speed used for sending updates:
@@ -96,6 +100,31 @@ class GlobalPerformanceStatistics:
         self.recent_server_ping_latency = self.DEFAULT_LATENCY
         self.avg_congestion_send_speed = 0
         self.avg_frame_total_latency = 0
+
+    def get_recent_output_rate(self) -> int:
+        """ Returns the recent connection output rate in bytes per second. """
+        data = tuple(self.bytes_sent)
+        if len(data) < 2:
+            return 0
+        latest_time, latest_bytes = data[-1]
+        for sample_time, sample_bytes in reversed(data[:-1]):
+            elapsed = latest_time - sample_time
+            sent = latest_bytes - sample_bytes
+            if elapsed > 0 and sent > 0:
+                return int(sent / elapsed)
+        return 0
+
+    def record_tcp_info(self, event_time: float, info: dict[str, Any]) -> None:
+        notsent = safeint(info.get("notsent_bytes", 0))
+        if notsent <= 0:
+            self.tcp_notsent.append((event_time, 0, 0.0))
+            return
+        delivery_rate = safeint(info.get("delivery_rate", 0))
+        if delivery_rate <= 0:
+            delivery_rate = self.get_recent_output_rate()
+        if delivery_rate <= 0:
+            return
+        self.tcp_notsent.append((event_time, notsent, notsent / delivery_rate))
 
     def record_latency(self, wid: int, damage_packet_sequence: int, decode_time: int,
                        queued_at: float, pixels: int, bytecount: int, latency: int) -> None:
@@ -209,6 +238,18 @@ class GlobalPerformanceStatistics:
             mayaddfac("mmap-area", {"full-pct": int(100 * full)}, logp(3 * full), (3 * full) ** 2)
         if self.congestion_value > 0:
             mayaddfac("congestion", {}, 1 + self.congestion_value, self.congestion_value * 10)
+        if self.tcp_notsent:
+            tcp_notsent_values = tuple((event_time, queued_time)
+                                       for event_time, _, queued_time in tuple(self.tcp_notsent))
+            avg, recent = calculate_time_weighted_average(tcp_notsent_values)
+            if max(avg, recent) > 0:
+                target = max(TCP_NOTSENT_MIN_TARGET,
+                             min(TCP_NOTSENT_MAX_TARGET, self.avg_client_latency or self.DEFAULT_LATENCY))
+                weight_multiplier = sqrt(max(avg, recent) / target)
+                metric = "tcp-notsent"
+                mayaddfac(*calculate_for_target(metric, target, avg, recent,
+                                                aim=0.25, slope=0.005, smoothing=sqrt,
+                                                weight_multiplier=weight_multiplier))
         return factors
 
     def get_connection_info(self) -> dict[str, Any]:
@@ -228,6 +269,13 @@ class GlobalPerformanceStatistics:
                 "elapsed-time": int(now - self.last_congestion_time),
             },
         }
+        if self.tcp_notsent:
+            notsent = tuple(int(x[1]) for x in tuple(self.tcp_notsent))
+            queued = tuple(int(1000 * x[2]) for x in tuple(self.tcp_notsent))
+            info["tcp-notsent"] = {
+                "bytes": get_list_stats(notsent),
+                "queue-time": get_list_stats(queued),
+            }
         if self.min_client_latency is not None:
             info["latency"] = {"absmin": int(self.min_client_latency * 1000)}
         return info

@@ -24,6 +24,16 @@ class TestNetdevQuery(unittest.TestCase):
         result = get_tcp_info(None)
         assert isinstance(result, dict)
 
+    def test_get_socket_tcp_info(self):
+        import socket
+        from xpra.platform.netdev_query import get_socket_tcp_info
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            result = get_socket_tcp_info(sock)
+            assert isinstance(result, dict)
+        finally:
+            sock.close()
+
     def test_get_tcp_info_with_socket(self):
         import socket
         from xpra.platform.netdev_query import get_tcp_info
