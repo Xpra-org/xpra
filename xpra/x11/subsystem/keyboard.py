@@ -150,6 +150,7 @@ def may_start_ibus(env: dict[str, str]):
 
 
 class X11KeyboardManager(KeyboardManager):
+    BACKEND = "x11"
 
     def __init__(self, server=None):
         KeyboardManager.__init__(self, server)

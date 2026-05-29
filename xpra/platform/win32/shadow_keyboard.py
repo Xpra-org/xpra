@@ -19,6 +19,7 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
     """
     Win32 keyboard subsystem for shadow servers.
     """
+    BACKEND = "win32"
 
     def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()

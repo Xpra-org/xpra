@@ -29,6 +29,7 @@ class KeyboardManager(StubSubsystem):
     Mixin for servers that handle keyboards
     """
     PREFIX = "keyboard"
+    BACKEND = ""
 
     def __init__(self, server=None):
         StubSubsystem.__init__(self, server)
@@ -116,6 +117,8 @@ class KeyboardManager(StubSubsystem):
         caps: dict[str, Any] = {
             "key_repeat": (self.key_repeat_delay, self.key_repeat_interval),
         }
+        if self.BACKEND:
+            caps["backend"] = self.BACKEND
         if BACKWARDS_COMPATIBLE:
             caps["key_repeat_modifiers"] = True
             caps["keyboard.fast-switching"] = True
