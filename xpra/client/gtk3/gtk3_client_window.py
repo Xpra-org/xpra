@@ -98,7 +98,8 @@ class GTK3ClientWindow(GTKClientWindowBase):
         super().init_window(metadata)
         self.header_bar_image = None
         if self.can_use_header_bar(metadata):
-            self.add_header_bar()
+            title = metadata.strget("title", "")
+            self.add_header_bar(title)
 
     def _icon_size(self) -> int:
         tb = self.get_titlebar()
@@ -140,10 +141,10 @@ class GTK3ClientWindow(GTKClientWindowBase):
             return True
         return False
 
-    def add_header_bar(self) -> None:
-        log("add_header_bar()")
+    def add_header_bar(self, title) -> None:
+        log("add_header_bar(%s)", title)
         self.header_bar_image = get_header_bar_image(self._icon_size())
-        hb = make_header_bar(self.get_title(), self.header_bar_image, self.show_window_menu, self.show_xpra_menu)
+        hb = make_header_bar(title, self.header_bar_image, self.show_window_menu, self.show_xpra_menu)
         self.set_titlebar(hb)
 
     def add_header_bar(self) -> None:
