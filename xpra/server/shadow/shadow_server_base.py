@@ -220,7 +220,7 @@ class ShadowServerBase(ServerBase):
             return []
         from xpra.platform.notification import get_backends
         ncs: list[Callable] = list(get_backends())
-        if self.server.get_subsystem("gtk"):
+        if self.get_subsystem("gtk"):
             # if the gtk subsystem is already loaded, we can load GTKNotifier safely:
             try:
                 from xpra.gtk.notifier import GTKNotifier  # pylint: disable=import-outside-toplevel
