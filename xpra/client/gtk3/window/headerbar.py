@@ -68,7 +68,8 @@ class HeaderBarWindow(GtkStubWindow):
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.header_bar_image: Gtk.Image | None = None
         if self.can_use_header_bar(metadata):
-            self.add_header_bar()
+            title = metadata.strget("title", "")
+            self.add_header_bar(title)
 
     def can_use_header_bar(self, metadata: typedict) -> bool:
         if self.is_OR() or not self.get_decorated() or OSX:
@@ -93,13 +94,13 @@ class HeaderBarWindow(GtkStubWindow):
             return False
         return True
 
-    def add_header_bar(self) -> None:
+    def add_header_bar(self, title: str) -> None:
         log("add_header_bar()")
         self.header_bar_image = get_header_bar_image(self._icon_size())
         # soft dependency on window methods:
         show_window_menu = getattr(self, "show_window_menu", noop)
         show_xpra_menu = getattr(self, "show_xpra_menu", noop)
-        hb = make_header_bar(self.get_title(), self.header_bar_image, show_window_menu, show_xpra_menu)
+        hb = make_header_bar(title, self.header_bar_image, show_window_menu, show_xpra_menu)
         self.set_titlebar(hb)
 
     def _icon_size(self) -> int:
