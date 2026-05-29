@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any
-
 from xpra.os_util import gi_import
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.log import Logger
@@ -13,12 +11,6 @@ screenlog = Logger("screen")
 
 
 class GTKShadowServerBase(ShadowServerBase):
-
-    def get_server_features(self, source=None) -> dict[str, Any]:
-        caps = super().get_server_features(source)
-        from xpra.gtk.info import get_screen_sizes
-        caps["screen_sizes"] = get_screen_sizes()
-        return caps
 
     def get_shadow_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
         Gdk = gi_import("Gdk")
