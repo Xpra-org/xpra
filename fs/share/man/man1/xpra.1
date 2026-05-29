@@ -537,12 +537,38 @@ OSX specific clipboard
 \fB\-\-clipboard\-direction\fP=\fIto-server\fP|\fIto-client\fP|\fIboth\fP|\fIdisabled\fP
 Choose the direction of the clipboard synchronization.
 .TP
+\fB\-\-local\-clipboard\fP=\fISELECTION\fP
+Name of the local clipboard selection to be synchronized when using
+the translated clipboard.
+.TP
+\fB\-\-remote\-clipboard\fP=\fISELECTION\fP
+Name of the remote clipboard selection to be synchronized when using
+the translated clipboard.
+.TP
+\fB\-\-audio\fP=\fIyes\fP|\fIno\fP
+Enable or disable all audio support (both speaker and microphone
+forwarding).
+.TP
 \fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP
 Enable or disable the starting of a pulseaudio server with the session.
 .TP
 \fB\-\-pulseaudio\-command\fP=\fISERVER-START-COMMAND\fP
 Specifies the pulseaudio command to use to start the pulseaudio
 server, unless disabled with \fBpulseaudio=no\fP.
+.TP
+\fB\-\-pulseaudio\-configure\-commands\fP=\fICOMMAND\fP
+Commands used to configure the pulseaudio server after it has
+been started. May be specified multiple times.
+.TP
+\fB\-\-video\fP=\fIyes\fP|\fIno\fP
+Enable or disable all video encoding support.
+.TP
+\fB\-\-video\-decoders\fP=\fIDECODERS\fP
+Specify which video decoders to enable.
+Use the special value \fIhelp\fP to get a list of options.
+.TP
+\fB\-\-gstreamer\fP=\fIyes\fP|\fIno\fP
+Enable GStreamer audio and video support.
 .TP
 \fB\-\-session\-name\fP=\fIVALUE\fP
 Sets the name of this session. This value may be used in
@@ -627,6 +653,20 @@ Intercept execution of \fIxdg-open\fP and forward the request to the client.
 
 \fB\-\-open\-command\fP=\fICOMMAND\fP
 The command to use for opening files and URLs.
+.TP
+
+\fB\-\-printing\fP=\fIyes\fP|\fIno\fP|\fIask\fP
+Support printer forwarding from the server to the client.
+.TP
+
+\fB\-\-lpadmin\fP=\fICOMMAND\fP
+Specify the \fBlpadmin\fP command to use when configuring
+forwarded printers.
+.TP
+
+\fB\-\-lpinfo\fP=\fICOMMAND\fP
+Specify the \fBlpinfo\fP command to use when querying available
+printer drivers.
 .TP
 
 \fB\-\-bandwidth\-limit\fP=\fIBITSPERSECOND\fP
@@ -770,6 +810,12 @@ The default value is 1024 which is the standard value for privileged ports.
 .TP
 \fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
 Enable or disable the publication of new sessions via mDNS.
+.TP
+\fB\-\-dbus\fP=\fIyes\fP|\fIno\fP|\fIkeep\fP
+Enable or disable all dbus related functionality including
+\fBdbus-launch\fP, \fBdbus-control\fP and any feature that
+might use dbus. Use \fBkeep\fP to preserve existing \fIDBUS_*\fP
+environment variables.
 .TP
 \fB\-\-dbus\-launch\fP=\fICOMMAND\fP|\fIno\fP
 Start the session within a dbus-launch context, you can specify
