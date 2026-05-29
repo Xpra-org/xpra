@@ -602,6 +602,15 @@ The paths will be expanded.
 (ie: \fI\-\-socket\-dirs=~/.xpra:/tmp\fP)
 .TP
 
+\fB\-\-sessions\-dir\fP=\fIDIR\fP
+Directory to place and look for the session files in.
+These files describe each running xpra session.
+.TP
+
+\fB\-\-system\-proxy\-socket\fP=\fIPATH\fP
+The socket path to use to contact the system-wide proxy server.
+.TP
+
 \fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP
 Enable file transfers.
 .TP
@@ -628,6 +637,42 @@ The value may be specified using standard units, ie:
 In \fIauto\fP mode, the client will set the bandwidth limit
 value to 80% of the maximum speed of the network interface
 it is using to connect to the server.
+.TP
+
+\fB\-\-bandwidth\-detection\fP=\fIyes\fP|\fIno\fP
+Automatically detect runtime bandwidth limits and adjust
+the encoding parameters accordingly.
+.TP
+
+\fB\-\-refresh\-rate\fP=\fIVREFRESH\fP
+The vertical refresh rate to use, which is the target
+number of frames per second.
+The value may be specified in absolute form (ie: \fI60\fP),
+as a percentage of the display's refresh rate (ie: \fI50%\fP),
+or as \fIauto\fP to follow the display.
+.TP
+
+\fB\-\-reconnect\fP=\fIyes\fP|\fIno\fP
+Automatically reconnect to the server if the connection
+is lost.
+.TP
+
+\fB\-\-pings\fP=\fISECONDS\fP
+How often to exchange ping and echo packets between client
+and server (in seconds, use zero to disable).
+The resulting latency statistics can be seen using
+\fBxpra info\fP.
+.TP
+
+\fB\-\-compressors\fP=\fILIST\fP
+The packet compressors to enable, as a comma separated list
+(ie: \fBlz4,brotli,none\fP).
+.TP
+
+\fB\-\-packet\-encoders\fP=\fILIST\fP
+The packet encoders to enable, as a comma separated list
+(ie: \fBrencodeplus,bencode\fP).
+.TP
 
 \fB\-\-splash\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Show a splash screen during client or server startup.
@@ -799,6 +844,21 @@ These sockets are only supported with the \fBdesktop\fP and
 \fB\-\-bind\-vsock\fP=\fICID:PORT[,PROPERTIES]\fP
 Create a VSOCK socket for each \fB\-\-bind\-vsock\fP option specified.
 .TP
+\fB\-\-bind\-ssh\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
+Listen for connections using the SSH transport.
+See \fBbind-tcp\fP for host restrictions,
+use the \fBssh-auth\fP option to secure access.
+.TP
+\fB\-\-bind\-rdp\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
+Listen for RDP connections.
+See \fBbind-tcp\fP for host restrictions,
+use the \fBrdp-auth\fP option to secure access.
+.TP
+\fB\-\-bind\-quic\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
+Listen for QUIC HTTP/3 or WebTransport connections.
+See \fBbind-tcp\fP for host restrictions,
+use the \fBquic-auth\fP option to secure access.
+.TP
 \fB\-\-auth\fP=\fIMODULE[:OPTION=VALUE]\fP
 Specifies the authentication module to use for all unix domain sockets
 created using the \fBbind\fP switch. Authentication modules can
@@ -945,6 +1005,23 @@ Deprecated, use per-socket authentication options.
 \fB\-\-vsock\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to VSOCK sockets (sockets defined using the \fBbind-vsock\fP switch).
+Deprecated, use per-socket authentication options.
+.TP
+\fB\-\-ssh\-auth\fP=\fIMODULE\fP
+Just like the \fBauth\fP switch, except this one only applies
+to SSH sockets (sockets defined using the \fBbind-ssh\fP switch,
+or TCP sockets upgraded via the \fBssh-upgrade\fP option).
+Deprecated, use per-socket authentication options.
+.TP
+\fB\-\-rdp\-auth\fP=\fIMODULE\fP
+Just like the \fBauth\fP switch, except this one only applies
+to RDP sockets (sockets defined using the \fBbind-rdp\fP switch,
+or TCP sockets upgraded via the \fBrdp-upgrade\fP option).
+Deprecated, use per-socket authentication options.
+.TP
+\fB\-\-quic\-auth\fP=\fIMODULE\fP
+Just like the \fBauth\fP switch, except this one only applies
+to QUIC sockets (sockets defined using the \fBbind-quic\fP switch).
 Deprecated, use per-socket authentication options.
 
 
@@ -1097,6 +1174,19 @@ If no data is received after \fIDELAY\fP seconds, the server
 will send a RFB handshake.
 This option is only applicable to servers started in
 \fIdesktop\fP or \fIshadow\fP modes.
+.TP
+
+\fB\-\-ssl\-upgrade\fP=\fIyes\fP|\fIno\fP
+Upgrade WebSocket and TCP sockets to handle SSL connections.
+.TP
+\fB\-\-websocket\-upgrade\fP=\fIyes\fP|\fIno\fP
+Upgrade TCP and SSL sockets to handle Websocket connections.
+.TP
+\fB\-\-ssh\-upgrade\fP=\fIyes\fP|\fIno\fP
+Upgrade TCP sockets to handle SSH connections.
+.TP
+\fB\-\-rdp\-upgrade\fP=\fIyes\fP|\fIno\fP
+Upgrade TCP sockets to handle RDP connections.
 .TP
 
 \fB\-\-video\-encoders\fP=\fIENCODERS\fP
@@ -1294,6 +1384,11 @@ heuristics or specified using the dbus interface.
 
 
 .SS Options for attach
+.TP
+\fB\-\-client\-socket\-dirs\fP=\fIDIR\fP
+Directories where the client creates its control socket.
+The path separator (\fB:\fP on Posix) may be used to specify
+multiple directories.
 .TP
 \fB\-\-modal\-windows\fP=\fIyes\fP|\fIno\fP
 Honour modal windows.
@@ -1654,11 +1749,6 @@ showing the system tray. (posix only)
 Specifies the icon shown in the dock/tray.
 By default it uses a simple default 'xpra' icon.
 (On Microsoft Windows, the icon must be in \fBico\fP format.)
-.TP
-\fB\-\-enable\-pings\fP
-The client and server will exchange ping and echo packets
-which are used to gather latency statistics.
-Those statistics can be seen using the \fBxpra info\fP command.
 
 
 .SS Options for attach, stop, info, screenshot, version
@@ -1744,6 +1834,9 @@ Summary:
 \fB\-\-ssl\-key\fP=\fIKEYFILE\fP
 The key file to use.
 .TP
+\fB\-\-ssl\-key\-password\fP=\fIPASSWORD\fP
+Password to use for decrypting the SSL key file.
+.TP
 \fB\-\-ssl\-cert\fP=\fICERTFILEORDIR\fP
 Certificate file, required for server SSL support.
 .TP
@@ -1772,6 +1865,10 @@ The flags for certificate verification operations.
 .TP
 \fB\-\-ssl\-check\-hostname\fP=\fIyes\fP|\fIno\fP
 Whether to match the peer cert's hostname.
+.TP
+\fB\-\-ssl\-server\-hostname\fP=\fIHOSTNAME\fP
+The server hostname to match against the certificate
+when connecting to an SSL server.
 .TP
 \fB\-\-ssl\-options\fP=\fIoptions\fP
 Set of SSL options enabled on this context.
