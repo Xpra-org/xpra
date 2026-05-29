@@ -12,7 +12,6 @@ from xpra.os_util import gi_import
 from xpra.server.common import get_sources_by_type
 from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
-from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.x11.shadow.filter import window_matches
 from xpra.x11.shadow.model import X11ShadowModel
@@ -23,7 +22,7 @@ log = Logger("x11", "shadow")
 GObject = gi_import("GObject")
 
 
-class ShadowX11Server(GObject.GObject, GTKShadowServerBase):
+class ShadowX11Server(GObject.GObject, ShadowServerBase):
     # X11 dispatch signals consumed by the bell / cursor subsystems.
     # Declared here (not on the subsystems) because X11 dispatch requires
     # a GObject receiver - see `BellServer` / `XCursorServer` docstrings.
@@ -34,7 +33,7 @@ class ShadowX11Server(GObject.GObject, GTKShadowServerBase):
 
     def __init__(self, attrs: dict[str, str]):
         GObject.GObject.__init__(self)
-        GTKShadowServerBase.__init__(self, attrs)
+        ShadowServerBase.__init__(self, attrs)
         self.session_type = "X11 shadow"
         self.backend = attrs.get("backend", "x11")
 
@@ -55,7 +54,7 @@ class ShadowX11Server(GObject.GObject, GTKShadowServerBase):
         return XCursorServer
 
     def init(self, opts) -> None:
-        GTKShadowServerBase.init(self, opts)
+        ShadowServerBase.init(self, opts)
         if sf := self.get_subsystem("session-files"):
             sf.session_files.append("xauthority")
 
@@ -64,7 +63,7 @@ class ShadowX11Server(GObject.GObject, GTKShadowServerBase):
         pass
 
     def cleanup(self) -> None:
-        GTKShadowServerBase.cleanup(self)
+        ShadowServerBase.cleanup(self)
         from xpra.x11.xroot_props import root_del
         for prop in ("XPRA_SERVER_UUID", "XPRA_SERVER_MODE"):
             try:

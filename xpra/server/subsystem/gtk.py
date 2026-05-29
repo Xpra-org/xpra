@@ -92,6 +92,26 @@ class GTKServer(StubSubsystem):
         display = manager.get_default_display()
         return prettify_plug_name(display.get_name())
 
+    def get_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
+        Gdk = gi_import("Gdk")
+        manager = Gdk.DisplayManager.get()
+        display = manager.get_default_display()
+        if not display:
+            return []
+        monitors = []
+        for i in range(display.get_n_monitors()):
+            m = display.get_monitor(i)
+            geom = m.get_geometry()
+            try:
+                scale_factor = m.get_scale_factor()
+            except Exception as e:
+                log("no scale factor: %s", e)
+                scale_factor = 1
+            plug_name = m.get_model()
+            monitors.append((plug_name, geom.x, geom.y, geom.width, geom.height, scale_factor))
+        log("GTKServer.get_monitors()=%s", monitors)
+        return monitors
+
     def watch_keymap_changes(self) -> None:
         # Set up keymap change notification:
         keyboard = self.get_subsystem("keyboard")

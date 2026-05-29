@@ -15,7 +15,7 @@ from xpra.scripts.config import InitExit
 from xpra.scripts.main import check_display
 from xpra.exit_codes import ExitCode
 from xpra.codecs.image import ImageWrapper
-from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
+from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 from xpra.log import Logger
 
@@ -102,7 +102,7 @@ class OSXRootCapture:
         return take_screenshot()
 
 
-class ShadowServer(GTKShadowServerBase):
+class ShadowServer(ShadowServerBase):
 
     def __init__(self, display: str, attrs: dict[str, str]):
         super().__init__(attrs)

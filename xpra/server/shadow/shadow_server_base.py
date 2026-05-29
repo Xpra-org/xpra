@@ -550,7 +550,8 @@ class ShadowServerBase(ServerBase):
         return models
 
     def get_shadow_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
-        raise NotImplementedError()
+        gtk = self.get_subsystem("gtk")
+        return gtk.get_monitors() if gtk else []
 
     def get_display_size(self) -> tuple[int, int]:
         display = self.get_subsystem("display")

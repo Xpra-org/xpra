@@ -13,8 +13,7 @@ from ctypes.wintypes import RECT
 from xpra.util.env import envbool
 from xpra.constants import XPRA_APP_ID
 from xpra.scripts.config import InitException
-from xpra.server.shadow.shadow_server_base import try_setup_capture
-from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
+from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_display_size
@@ -175,7 +174,7 @@ CAPTURE_BACKENDS: dict[str, Callable] = {
 }
 
 
-class ShadowServer(GTKShadowServerBase):
+class ShadowServer(ShadowServerBase):
 
     def __init__(self, display, attrs: dict[str, str]):
         super().__init__(attrs)
@@ -313,7 +312,7 @@ class ShadowServer(GTKShadowServerBase):
         return models
 
     def get_shadow_monitors(self) -> list:
-        # convert to the format expected by GTKShadowServerBase:
+        # convert to the format expected by ShadowServerBase:
         monitors = []
         for i, monitor in enumerate(get_monitors()):
             geom = monitor["Monitor"]

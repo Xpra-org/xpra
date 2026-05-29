@@ -23,7 +23,7 @@ from xpra.codecs.gstreamer.capture import Capture, capture_and_encode
 from xpra.gstreamer.common import get_element_str
 from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.root_window_model import CaptureWindowModel
-from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
+from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.platform.posix.fd_portal import (
     SCREENCAST_IFACE, PORTAL_SESSION_INTERFACE,
     dbus_sender_name,
@@ -50,12 +50,12 @@ class PipewireWindowModel(CaptureWindowModel):
         self.pipewire_props = props
 
 
-class PortalShadow(GTKShadowServerBase):
+class PortalShadow(ShadowServerBase):
     def __init__(self, attrs: dict[str, str]):
         # we're not using X11, so no need for this check:
         os.environ["XPRA_UI_THREAD_CHECK"] = "0"
         os.environ["XPRA_NOX11"] = "1"
-        GTKShadowServerBase.__init__(self, attrs)
+        ShadowServerBase.__init__(self, attrs)
         self.session = None
         self.session_type = "portal shadow"
         self.session_path: str = ""
@@ -113,7 +113,7 @@ class PortalShadow(GTKShadowServerBase):
             c.clean()
 
     def cleanup(self) -> None:
-        GTKShadowServerBase.cleanup(self)
+        ShadowServerBase.cleanup(self)
         self.portal_interface = None
 
     def stop_session(self) -> None:
