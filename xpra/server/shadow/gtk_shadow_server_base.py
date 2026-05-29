@@ -6,27 +6,13 @@
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.server import features
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.log import Logger
 
 screenlog = Logger("screen")
-log = Logger("shadow")
 
 
 class GTKShadowServerBase(ShadowServerBase):
-
-    def add_tray_menu_items(self, tray_menu):
-        if features.window:
-            def readonly_toggled(menuitem) -> None:
-                log("readonly_toggled(%s)", menuitem)
-                ro = menuitem.get_active()
-                if ro != self.readonly:
-                    self.readonly = ro
-                    self.setting_changed("readonly", ro)
-
-            from xpra.gtk.widget import checkitem
-            tray_menu.append(checkitem("Read-only", cb=readonly_toggled, active=self.readonly))
 
     def get_server_features(self, source=None) -> dict[str, Any]:
         caps = super().get_server_features(source)

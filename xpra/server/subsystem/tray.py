@@ -6,6 +6,7 @@
 import os
 from collections.abc import Callable
 
+from xpra.server import features
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.env import SilenceWarningsContext
 from xpra.common import noop
@@ -136,10 +137,18 @@ class TrayMenu(StubSubsystem):
         return tray_menu
 
     def add_tray_menu_items(self, tray_menu):
-        # the server class is the override point (e.g. `GTKShadowServerBase`)
-        add_items = getattr(self.server, "add_tray_menu_items", None)
-        if add_items:
-            add_items(tray_menu)
+        if not features.window:
+            return
+
+        def readonly_toggled(menuitem) -> None:
+            log("readonly_toggled(%s)", menuitem)
+            ro = menuitem.get_active()
+            if ro != self.server.readonly:
+                self.server.readonly = ro
+                self.server.setting_changed("readonly", ro)
+
+        from xpra.gtk.widget import checkitem
+        tray_menu.append(checkitem("Read-only", cb=readonly_toggled, active=self.server.readonly))
 
     def make_tray_widget(self):
         # pylint: disable=import-outside-toplevel
