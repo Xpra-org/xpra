@@ -84,7 +84,7 @@ class GTKServer(StubServerMixin):
         Gdk = gi_import("Gdk")
         manager = Gdk.DisplayManager.get()
         display = manager.get_default_display()
-        return prettify_plug_name(display.get_name())
+        return prettify_plug_name(display.get_name()) if display else ""
 
     def watch_keymap_changes(self) -> None:
         # Set up keymap change notification:

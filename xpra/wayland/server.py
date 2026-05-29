@@ -76,11 +76,25 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.compositor.connect("ssd", self._ssd)
         self.compositor.connect("activate-request", self._activate_request)
         self.wayland_fd_source = 0
-        os.environ.pop("DISPLAY", None)
-        os.environ["GDK_BACKEND"] = "wayland"
+        self.wayland_socket_name: str = ""
+        # Block our own process from accidentally becoming a wayland *client*
+        # of the compositor we are about to start: gdk's wayland backend
+        # defaults to "wayland-0" when WAYLAND_DISPLAY is unset, which is
+        # exactly the socket our compositor exports. Any later Gtk.init_check()
+        # in this process would then wl_display_roundtrip() forever, since the
+        # thread that would have to service it is the one waiting on it.
+        # Children get the correct wayland env via get_child_env().
+        os.environ["GDK_BACKEND"] = "x11"
+        # belt and braces in case something forces the wayland backend anyway:
+        os.environ["WAYLAND_DISPLAY"] = "/nonexistent/xpra-blocks-self-connect"
 
     def get_child_env(self) -> dict[str, str]:
         env: dict[str, str] = super().get_child_env()
+        # spawned children (guest apps, weston-terminal, etc) talk to *our* compositor:
+        if self.wayland_socket_name:
+            env["WAYLAND_DISPLAY"] = self.wayland_socket_name
+            env["GDK_BACKEND"] = "wayland"
+            env.pop("DISPLAY", None)
         if os.environ.get("NO_AT_BRIDGE") is None:
             env["NO_AT_BRIDGE"] = "1"
         return env
@@ -657,8 +671,13 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         return GLib.SOURCE_CONTINUE
 
     def setup(self) -> None:
-        socket_name = self.compositor.initialize()
-        os.environ["WAYLAND_DISPLAY"] = socket_name
+        # Compositor exports a wayland socket for our guest apps. Do NOT
+        # propagate WAYLAND_DISPLAY to our own process env: subsystems that
+        # later call Gtk.init_check() would otherwise try to connect to
+        # this compositor as a client and deadlock on wl_display_roundtrip,
+        # since we're the single thread that would have to service them.
+        # Children see it via get_child_env().
+        self.wayland_socket_name = self.compositor.initialize()
         super().setup()
 
     def do_run(self) -> None:
@@ -667,6 +686,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         conditions = GLib.IO_IN | GLib.IO_ERR
         log("wayland compositor event loop fd=%i", fd)
         self.wayland_fd_source = GLib.unix_fd_add_full(GLib.PRIORITY_DEFAULT, fd, conditions, self.wayland_io_callback)
+        os.environ["GDK_BACKEND"] = "wayland"
+        os.environ["WAYLAND_DISPLAY"] = self.wayland_socket_name
         super().do_run()
 
     def cleanup(self):
