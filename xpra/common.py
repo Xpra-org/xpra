@@ -121,7 +121,7 @@ class KeyEvent:
         self.pressed : bool = True
 
     def __repr__(self):
-        strattrs = csv(f"{k}="+str(getattr(self, k)) for k in KeyEvent.__slots__)
+        strattrs = csv(f"{k}="+repr(getattr(self, k)) for k in KeyEvent.__slots__)
         return f"KeyEvent({strattrs})"
 
 
