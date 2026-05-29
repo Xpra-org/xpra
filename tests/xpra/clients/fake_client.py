@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.log import Logger
@@ -133,8 +134,8 @@ class FakeClient(FileTransferHandler):
     def mask_to_names(self, *_args):
         return []
 
-    def get_current_modifiers(self, *_args):
-        return []
+    def get_current_modifiers(self, *_args) -> Sequence[str]:
+        return ()
 
     def get_mouse_position(self):
         return 0, 0

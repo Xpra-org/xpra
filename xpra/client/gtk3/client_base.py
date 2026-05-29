@@ -931,10 +931,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         p = self.get_raw_mouse_position()
         return self.cp(p[0], p[1])
 
-    def get_current_modifiers(self) -> list[str]:
+    def get_current_modifiers(self) -> Sequence[str]:
         root = self.get_root_window()
         if root is None:
-            return []
+            return ()
         modifiers_mask = root.get_pointer()[-1]
         return self.mask_to_names(modifiers_mask)
 
