@@ -47,7 +47,7 @@ def setup_ssh_auth_sock(session_dir: str) -> str:
 
 def get_ssh_agent_path(filename: str, session_dir: str = os.environ.get("XPRA_SESSION_DIR", "")) -> str:
     ssh_dir = ssh_dir_path(session_dir)
-    if "/" in filename or ".." in filename:
+    if any((c and c in filename) for c in (os.path.sep, os.path.altsep, ":", "..", "~")) or filename == ".":
         raise ValueError(f"illegal characters found in ssh agent filename {filename!r}")
     return os.path.join(ssh_dir, filename or "agent.default")
 
