@@ -3,9 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.platform.win32 import constants as win32con
+from xpra.platform.win32.common import keybd_event
 from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.server.shadow.keyboard import ShadowKeyboardManager
 from xpra.util.objects import typedict
+from xpra.log import Logger
+
+log = Logger("keyboard")
 
 
 class Win32ShadowKeyboardManager(ShadowKeyboardManager):
@@ -16,8 +21,37 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
     def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()
 
-    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, attrs: dict) -> None:
-        vk_code = typedict(attrs).intget("vk-code", 0)
-        if vk_code:
-            pass  # todo!
-        super().do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
+    def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, kattrs: dict) -> None:
+        if self.server.readonly:
+            return
+        attrs = typedict(kattrs)
+        if attrs.strget("backend") == "win32":
+            vk_code = attrs.intget("vk-code", 0)
+            if vk_code:
+                self._native_key_event(proto, wid, keyname, pressed, attrs, vk_code)
+                return
+        super().do_process_keyboard_event(proto, wid, keyname, pressed, kattrs)
+
+    def _native_key_event(self, proto, wid: int, keyname: str, pressed: bool,
+                          attrs: typedict, vk_code: int) -> None:
+        scancode = attrs.intget("scancode", 0)
+        extended = attrs.boolget("extended", False)
+        ss = self.get_server_source(proto)
+        if ss is None:
+            return
+        self.server.set_ui_driver(ss)
+        if window := self.get_subsystem("window"):
+            window._focus(ss, wid, None)
+        flags = 0
+        if not pressed:
+            flags |= win32con.KEYEVENTF_KEYUP
+        if extended:
+            flags |= win32con.KEYEVENTF_EXTENDEDKEY
+        log("native_key_event: vk=%#x, scancode=%#x, extended=%s, pressed=%s, keyname=%r",
+            vk_code, scancode, extended, pressed, keyname)
+        keybd_event(vk_code, scancode, flags, 0)
+        if pressed:
+            self.keys_pressed[vk_code] = keyname
+        else:
+            self.keys_pressed.pop(vk_code, None)
+        ss.emit("user-event", "key-action")
