@@ -472,6 +472,20 @@ MOD_KEYS = {
     win32con.VK_RMENU: "mod1",  # Alt_R
     win32con.VK_NUMLOCK: "num",
 }
+
+
+# Native modifier VK codes shared between the win32 client and shadow server
+# for the `native-modifiers` field of `keyboard-event` packets:
+NATIVE_HELD_VKS: Sequence[int] = (
+    win32con.VK_LSHIFT, win32con.VK_RSHIFT,
+    win32con.VK_LCONTROL, win32con.VK_RCONTROL,
+    win32con.VK_LMENU, win32con.VK_RMENU,
+    win32con.VK_LWIN, win32con.VK_RWIN,
+)
+NATIVE_TOGGLED_VKS: Sequence[int] = (
+    win32con.VK_CAPITAL, win32con.VK_NUMLOCK, win32con.VK_SCROLL,
+)
+
 VIRTUAL_KEYS = [
     # "Mappable" codes
     ("EXECUTE", "Execute"),

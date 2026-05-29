@@ -6,13 +6,17 @@
 from ctypes import byref, sizeof
 
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import INPUT, SendInput
+from xpra.platform.win32.common import INPUT, SendInput, GetAsyncKeyState, GetKeyState
+from xpra.platform.win32.keyboard import VK_NAMES, NATIVE_HELD_VKS, NATIVE_TOGGLED_VKS, fake_key
 from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.server.shadow.keyboard import ShadowKeyboardManager
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("keyboard")
+
+
+VK_BY_NAME: dict[str, int] = {name: vk for vk, name in VK_NAMES.items()}
 
 
 class Win32ShadowKeyboardManager(ShadowKeyboardManager):
@@ -45,6 +49,7 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
         self.server.set_ui_driver(ss)
         if window := self.get_subsystem("window"):
             window._focus(ss, wid, None)
+        self._sync_native_modifiers(ss, attrs, vk_code)
         flags = 0
         if not pressed:
             flags |= win32con.KEYEVENTF_KEYUP
@@ -64,3 +69,36 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
         else:
             self.keys_pressed.pop(vk_code, None)
         ss.emit("user-event", "key-action")
+
+    @staticmethod
+    def _sync_native_modifiers(ss, attrs: typedict, ignore_vk: int) -> None:
+        native_raw = attrs.dictget("native-modifiers")
+        if native_raw is None:
+            # Older client without native modifiers: use the existing X11 sync path
+            kc = getattr(ss, "keyboard_config", None)
+            if kc:
+                modifiers = list(attrs.strtupleget("modifiers"))
+                kc.make_keymask_match(modifiers, ignored_modifier_keycode=ignore_vk)
+            return
+        native = typedict(native_raw)
+        wanted_held = {VK_BY_NAME[n] for n in native.strtupleget("held") if n in VK_BY_NAME}
+        wanted_toggled = {VK_BY_NAME[n] for n in native.strtupleget("toggled") if n in VK_BY_NAME}
+        log("sync_native_modifiers: wanted held=%s, toggled=%s, ignore_vk=%#x",
+            wanted_held, wanted_toggled, ignore_vk)
+        for vk in NATIVE_HELD_VKS:
+            if vk == ignore_vk:
+                continue
+            is_held = bool(GetAsyncKeyState(vk) & 0x8000)
+            want = vk in wanted_held
+            if is_held != want:
+                log("sync_native_modifiers: %s held %s -> %s", VK_NAMES.get(vk, vk), is_held, want)
+                fake_key(vk, want)
+        for vk in NATIVE_TOGGLED_VKS:
+            if vk == ignore_vk:
+                continue
+            is_on = bool(GetKeyState(vk) & 0x0001)
+            want = vk in wanted_toggled
+            if is_on != want:
+                log("sync_native_modifiers: %s toggle %s -> %s", VK_NAMES.get(vk, vk), is_on, want)
+                fake_key(vk, True)
+                fake_key(vk, False)

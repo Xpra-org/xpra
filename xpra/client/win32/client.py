@@ -17,6 +17,7 @@ from xpra.util.gobject import no_arg_signal
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
+from xpra.platform.win32.keyboard import VK_NAMES, NATIVE_HELD_VKS, NATIVE_TOGGLED_VKS
 from xpra.log import Logger
 
 log = Logger("client")
@@ -48,6 +49,18 @@ def get_modifiers() -> list[str]:
     if GetKeyState(win32con.VK_SCROLL) & 0x0001:
         modifiers.append("mod3")  # Scroll Lock
     return modifiers
+
+
+def get_native_modifiers() -> dict[str, list[str]]:
+    held: list[str] = []
+    for vk in NATIVE_HELD_VKS:
+        if GetKeyState(vk) & 0x8000:
+            held.append(VK_NAMES.get(vk, f"VK_{vk:#04x}"))
+    toggled: list[str] = []
+    for vk in NATIVE_TOGGLED_VKS:
+        if GetKeyState(vk) & 0x0001:
+            toggled.append(VK_NAMES.get(vk, f"VK_{vk:#04x}"))
+    return {"held": held, "toggled": toggled}
 
 
 class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
@@ -227,6 +240,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         else:
             self.send("keyboard-event", window.wid, keyname, pressed, {
                 "modifiers": mods,
+                "native-modifiers": get_native_modifiers(),
                 "string": string,
                 "keyval": scancode,
                 "keycode": vk_code,
