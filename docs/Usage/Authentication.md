@@ -47,8 +47,8 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [win32](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/win32.py)                         | win32security authentication                                                            | MS Windows system authentication                                                    |
 | `sys`                                                                                            | system authentication                                                                   | virtual module which will choose win32 or pam authentication automatically          |
 | [sqlite](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/sqlite.py)                       | sqlite database authentication                                                          | [#1488](https://github.com/Xpra-org/xpra/issues/1488#issuecomment-765477498)        |
-| [sql](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/sqlite.py)                          | sqlalchemy database authentication                                                      | [#2288](https://github.com/Xpra-org/xpra/issues/2288)                               |
-| [mysql](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/sqlite.py)                        | MySQL database authentication                                                           | [#2287](https://github.com/Xpra-org/xpra/issues/2287)                               |
+| [sql](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/sql.py)                             | sqlalchemy database authentication                                                      | [#2288](https://github.com/Xpra-org/xpra/issues/2288)                               |
+| [mysql](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/mysql.py)                         | MySQL database authentication                                                           | [#2287](https://github.com/Xpra-org/xpra/issues/2287)                               |
 | [capability](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/capability.py)               | matches values in the capabilities supplied by the client                               | [#3575](https://github.com/Xpra-org/xpra/issues/3575#issuecomment-1183292333)       |
 | [peercred](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/peercred.py)                   | `SO_PEERCRED` authentication                                                            | [#1524](https://github.com/Xpra-org/xpra/issues/issues/1524)                        |
 | [hosts](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/hosts.py)                         | [TCP Wrapper](https://en.wikipedia.org/wiki/TCP_Wrapper)                                | [#1730](https://github.com/Xpra-org/xpra/issues/issues/1730#issuecomment-765492022) |
@@ -62,7 +62,8 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/u2f.py)                             | [Universal 2nd Factor](https://en.wikipedia.org/wiki/Universal_2nd_Factor)              | [#1789](https://github.com/Xpra-org/xpra/issues/1789)                               |
 | [fido2](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/fido2.py)                         | [FIDO Alliance](https://en.wikipedia.org/wiki/FIDO_Alliance)                            | [#1789](https://github.com/Xpra-org/xpra/issues/4516)                               |
 | [otp](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otp.py)                             | One Time Password                                                                       | [pyotp](https://github.com/pyauth/pyotp)                                            |
-| [http-header](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/http-header.py)             | validate websocket http headers                                                         | [#4438](https://github.com/Xpra-org/xpra/issues/4438)                               |
+| [otpscreen](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otpscreen.py)                 | Generates a one-time secret and shows it in a local GUI dialog for the user to type     | local secondary-channel confirmation (distinct from `otp`)                          |
+| [http-header](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/http_header.py)             | validate websocket http headers                                                         | [#4438](https://github.com/Xpra-org/xpra/issues/4438)                               |
 </details>
 
 <details>
@@ -73,8 +74,11 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 * `xpra seamless --bind-tcp=0.0.0.0:10000,auth=password,value=mysecret`
 * `xpra seamless --bind-tcp=0.0.0.0:10000,auth=file,filename=/path/to/mypasswordfile.txt`
 * `xpra seamless --bind-tcp=0.0.0.0:10000,auth=sqlite,filename=/path/to/userlist.sdb`
+* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=otpscreen,mode=alphanumeric,count=8,timeout=60`
 
 Beware when mixing environment variables and password files as the latter may contain a trailing newline character whereas the former often do not.
+
+The `otpscreen` module accepts the following options: `mode` (`digits`, `alpha` or `alphanumeric`, default `digits`), `count` (number of characters in the generated secret, default `6`), `timeout` (how long the dialog stays up, in seconds, default `120`), and `display` (which display to open the dialog on, default `auto` which reuses the server's saved `DISPLAY` / `WAYLAND_DISPLAY`).
 </details>
 
 <details>
@@ -156,10 +160,43 @@ xpra attach tcp://foobar:password@host:port/
 ```
 </details>
 
-Only the following modules will make use of both the username and password to authenticate against their respective backend: `kerberos-password`, `ldap`, `ldap3`, `sys` (`pam` and `win32`), `sqlite`, `multifile` and `u2f`.
+Only the following modules will make use of both the username and password to authenticate against their respective backend: `kerberos-password`, `ldap`, `ldap3`, `sys` (`pam` and `win32`), `sqlite`, `sql`, `mysql`, `multifile` and `u2f`.
 In this case, using an invalid username will cause the authentication to fail.
 
 The username is usually more relevant when authenticating against a [proxy server](Proxy-Server.md) (see authentication details there).
+
+
+***
+
+## Session lookup and the proxy server
+
+The [proxy server](Proxy-Server.md) needs more than a yes/no answer from authentication: it also needs to know **which xpra sessions** the authenticated client may reach, and **as which uid/gid** to spawn (or connect to) the proxy instance.
+
+Today, that lookup is bundled into the authentication module via the `get_sessions()` method on `SysAuthenticatorBase`, which returns a 5-tuple:
+
+```
+(uid, gid, displays, env_options, session_options)
+```
+
+* `uid`, `gid`: the system identity the proxy instance runs as
+* `displays`: the list of display names the user may attach to (e.g. `[":10", ":11"]`)
+* `env_options`: extra environment variables applied to the proxy instance process
+* `session_options`: extra session-level options passed to the proxy instance
+
+The proxy server iterates over the protocol's authenticator chain after the challenge passes and uses the first non-empty result (see [`xpra/server/proxy/server.py`](https://github.com/Xpra-org/xpra/blob/master/xpra/server/proxy/server.py)).
+
+The default implementation in `SysAuthenticatorBase.get_sessions()` performs a `DotXpra` socket-directory scan for the authenticated `uid`, listing every live xpra socket owned by the user. **Most modules use this default** (`pam`, `ldap`, `ldap3`, `password`, `peercred`, `keycloak`, `kerberos-*`, `gss`, `u2f`, `fido2`, `otp`, `otpscreen`, `capability`, `env`, `exec`, `hosts`, `http-header`, `allow`, `none`, `win32`, `file`).
+
+Three families override it to return data they already store per user:
+
+| Module      | Source of session data                                                                                                  |
+|-------------|-------------------------------------------------------------------------------------------------------------------------|
+| `multifile` | Extra columns in the password file (see the `multifile` format in [Proxy-Server.md](Proxy-Server.md))                   |
+| `sqlite`    | Columns `uid, gid, displays, env_options, session_options` of the `users` table (see `xpra/auth/sqlauthbase.py` schema) |
+| `sql`       | Same schema, via SQLAlchemy                                                                                             |
+| `mysql`     | Same schema, against MySQL                                                                                              |
+
+The `fail` and `reject` modules deny authentication outright and therefore never reach session lookup.
 
 
 ***
@@ -188,6 +225,34 @@ The steps below assume that the client and server have been configured to use au
 * if you are concerned about security, use [SSH](../Network/SSH.md) as transport instead
 
 For more information on packets, see [network](../Network/README.md).
+</details>
+<details>
+  <summary>Writing a new authentication module</summary>
+
+A new server-side authentication module is a Python file in [`xpra/auth/`](https://github.com/Xpra-org/xpra/tree/master/xpra/auth) that defines a class named `Authenticator`. Two base classes are provided:
+
+* [`SysAuthenticatorBase`](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/sys_auth_base.py) — the minimal base. Use this when the username does not need to map to a local system account (e.g. token-based or capability-based authenticators).
+* `SysAuthenticator` (in the same file) — extends the base by loading the local `pwd` entry for `self.username` on POSIX. Use this when the module is tied to system users (`pam`, `peercred`, `exec`, etc.).
+
+The methods most commonly overridden:
+
+| Method                                  | Default                                                                                                  | When to override                                                                                                       |
+|-----------------------------------------|----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `requires_challenge()`                  | returns `True`                                                                                           | Return `False` for modules that authenticate out of band (e.g. `peercred`, `hosts`, `http-header`).                    |
+| `get_passwords()` / `get_password()`    | `get_passwords` returns `(get_password(),)`; `get_password` returns `""`                                 | Override one of them to provide the expected password(s) — used by HMAC challenge verification.                        |
+| `do_authenticate(caps)`                 | Validates the challenge response and calls `authenticate_check`                                          | Override for non-HMAC flows (e.g. challenge/response over a different transport, third-party token verification).      |
+| `authenticate_hmac(caps)`               | Verifies the HMAC challenge against `get_passwords()` results                                            | Override if you need to perform extra checks after a successful HMAC match.                                            |
+| `get_uid()` / `get_gid()`               | `NotImplementedError`                                                                                    | Always override. Return the uid/gid the proxy instance should run as. Use `parse_uid` / `parse_gid` from `common.py`.  |
+| `get_sessions()`                        | Performs a `DotXpra` socket scan for the authenticated uid                                               | Leave alone unless your backend stores per-user session metadata (see [`multifile`](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/multifile.py) and [`sqlauthbase.py`](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/sqlauthbase.py) for examples). |
+
+Helpers in [`xpra/auth/common.py`](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/common.py):
+
+* `SessionData` — the `(uid, gid, displays, env_options, session_options)` 5-tuple returned by `get_sessions()`
+* `parse_uid(v)` / `parse_gid(v)` — accept either a numeric string or a username/group name, with safe defaults
+* `get_auth_exec_env(display="auto")` — environment dictionary suitable for spawning helper processes (used by `exec` and `otpscreen`)
+
+Authenticator instances are constructed by [`auth_helper.get_auth_module()`](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/auth_helper.py), which parses the `auth=NAME(opt=value,...)` syntax and imports `xpra.auth.<name>`. Each socket can chain multiple authenticators; the first one to require a challenge issues it and subsequent ones either verify additional caps or contribute to `get_sessions()`.
+
 </details>
 <details>
   <summary>Salt handling is important</summary>
