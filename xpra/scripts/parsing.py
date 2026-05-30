@@ -1116,7 +1116,14 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="The proxy server's source of truth for which xpra sessions an authenticated"
                           " client may reach. 'auth' (default) delegates to the authenticator's"
                           " get_sessions(); other backends include 'socket', 'multifile', 'sqlite',"
-                          " 'sql' and 'mysql'. Default: '%default'.")
+                          " 'sql', 'mysql' and 'live'. Default: '%default'.")
+    group.add_option("--register", action="append",
+                     dest="register", default=mlist(defaults.register),
+                     metavar="URI",
+                     help="register this server with a proxy at startup."
+                          " URI is a connection string like"
+                          " tcp://[user[:password]@]host:port/?session-name=NAME."
+                          " May be specified multiple times to register with multiple proxies.")
     legacy_bool_parse("dbus")
     group.add_option("--dbus", action="store", metavar="yes|no|keep",
                      dest="dbus", default=defaults.dbus,

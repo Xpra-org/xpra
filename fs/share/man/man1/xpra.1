@@ -1207,7 +1207,16 @@ authenticated client may reach. Supported backends:
 \fImultifile\fP reads a pipe-delimited file (\fIfilename\fP option),
 \fIsqlite\fP reads an sqlite database (\fIfilename\fP option),
 \fIsql\fP reads via SQLAlchemy (\fIuri\fP option),
-\fImysql\fP reads from MySQL (\fIuri\fP option).
+\fImysql\fP reads from MySQL (\fIuri\fP option),
+\fIlive\fP holds a runtime map of sessions populated by servers that dial in
+with \fB\-\-register\fP.
+.TP
+\fB\-\-register\fP=\fIURI\fP
+Register this server with a proxy at startup. \fIURI\fP is a connection
+string like \fItcp://[user[:password]@]host:port/?session-name=NAME\fP. The
+server dials the URI, authenticates, and announces itself to the proxy's
+\fIlive\fP session registry by uuid, session-name and display. May be
+specified multiple times to register with multiple proxies.
 .TP
 \fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Wrap server start commands with systemd-run.

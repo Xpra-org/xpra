@@ -31,7 +31,7 @@ class Registry(SessionRegistry):
             socket_dirs = [d for d in socket_dirs.split(":") if d]
         self.socket_dirs: list[str] = socket_dirs or list(get_socket_dirs())
 
-    def lookup(self, authenticator) -> Session | None:
+    def lookup(self, authenticator, client_caps=None) -> Session | None:
         username = getattr(authenticator, "username", "")
         try:
             uid = authenticator.get_uid()

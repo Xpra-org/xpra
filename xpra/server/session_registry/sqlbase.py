@@ -54,7 +54,7 @@ class SQLRegistry(SessionRegistry):
         return Session(uid=uid, gid=gid, displays=displays,
                        env_options=env_options, session_options=session_options)
 
-    def lookup(self, authenticator) -> Session | None:
+    def lookup(self, authenticator, client_caps=None) -> Session | None:
         username = getattr(authenticator, "username", "")
         if not username:
             return None

@@ -21,7 +21,7 @@ log = Logger("auth")
 class Registry(SessionRegistry):
     NAME = "auth"
 
-    def lookup(self, authenticator) -> Session | None:
+    def lookup(self, authenticator, client_caps=None) -> Session | None:
         data = authenticator.get_sessions()
         log("%s.lookup(%s) authenticator.get_sessions()=%s", self, authenticator, data)
         return Session.from_tuple(data)

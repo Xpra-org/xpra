@@ -33,6 +33,7 @@ dbus = True
 encoding = True
 logging = True
 ping = True
+register = True
 bandwidth = True
 shell = False
 display = True
@@ -123,6 +124,7 @@ def set_server_features(opts, mode: str) -> None:
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb") and mode in ("desktop", "shadow")
         features.ssh = b(opts.ssh) and impcheck("net.ssh", "server.ssh") and bool(find_spec("paramiko"))
         features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
+        features.register = bool(getattr(opts, "register", None))
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
@@ -180,6 +182,7 @@ def enforce_server_features() -> None:
         "encoding": "xpra.server.subsystem.encoding,xpra.server.source.encodings",
         "logging": "xpra.server.subsystem.logging",
         "ping": "xpra.server.subsystem.ping,xpra.server.source.ping",
+        "register": "xpra.server.subsystem.register",
         "bandwidth": "xpra.server.subsystem.bandwidth,xpra.server.source.bandwidth",
         "shell": "xpra.server.subsystem.shell,xpra.server.source.shell",
         "display": "xpra.server.subsystem.display,xpra.server.source.display",

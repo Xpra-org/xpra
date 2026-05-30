@@ -172,6 +172,7 @@ class ProxyServer(ServerCore):
         for cls in INSTANCE_SUBSYSTEM_CLASSES:
             self.subsystems[cls.PREFIX] = cls(self)
         self.hello_request_handlers["stop"] = self._handle_hello_request_stop
+        self.hello_request_handlers["register"] = self._handle_hello_request_register
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False
         self.session_type = "proxy"
@@ -187,6 +188,9 @@ class ProxyServer(ServerCore):
         self.instances = {}
         # connections used exclusively for requests:
         self._requests = set()
+        # protocols holding live session registrations, mapped to the Session
+        # they registered so we can `unregister` them on disconnect:
+        self._registered_protos: dict = {}
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
         self._ws_timeout = PROXY_WS_TIMEOUT
 
@@ -342,6 +346,57 @@ class ProxyServer(ServerCore):
         self.handle_stop_request(proto)
         return True
 
+    def _handle_hello_request_register(self, proto, caps: typedict) -> bool:
+        registry = self.session_registry
+        if registry is None or registry.NAME != "live":
+            authlog.error("Error: rejecting register request from %s", proto)
+            authlog.error(" the session registry is %r, register requires 'live'",
+                          registry.NAME if registry else None)
+            self.send_disconnect(proto, "register requires --session-registry=live")
+            return True
+        uuid = caps.strget("uuid")
+        session_name = caps.strget("session-name")
+        if not uuid:
+            authlog.error("Error: rejecting register request: missing 'uuid'")
+            self.send_disconnect(proto, "register: missing uuid")
+            return True
+        displays = list(caps.strtupleget("displays"))
+        if not displays:
+            display = caps.strget("display")
+            if display:
+                displays = [display]
+        uid = gid = -1
+        if proto.authenticators:
+            try:
+                uid = proto.authenticators[0].get_uid()
+                gid = proto.authenticators[0].get_gid()
+            except NotImplementedError:
+                pass
+        session = Session(uid=uid, gid=gid, displays=displays,
+                          uuid=uuid, session_name=session_name,
+                          endpoint=proto, server_caps=dict(caps))
+        try:
+            registry.register(session)
+        except Exception as e:
+            authlog("registry.register(%s) failed", session, exc_info=True)
+            self.send_disconnect(proto, f"register failed: {e}")
+            return True
+        self._registered_protos[proto] = session
+        # acknowledge — keep the connection alive (no 10s timeout)
+        proto.send_now(Packet("hello", self.make_hello(None)))
+        authlog.info("registered session %r (uuid=%s) from %s",
+                     session_name or "<unnamed>", uuid, getattr(proto._conn, "target", proto))
+        return True
+
+    def cleanup_protocol(self, protocol):
+        session = self._registered_protos.pop(protocol, None)
+        if session is not None and self.session_registry is not None:
+            try:
+                self.session_registry.unregister(session)
+            except Exception:
+                authlog("unregister(%s) failed", session, exc_info=True)
+        return super().cleanup_protocol(protocol)
+
     def handle_stop_request(self, proto) -> None:
         socktype = get_socktype(proto)
         default_can_stop = CAN_STOP_PROXY
@@ -386,7 +441,7 @@ class ProxyServer(ServerCore):
             log.error(" use 'none' to disable authentication")
             nosession("no sessions found")
             return
-        sessions: Session | None = self._lookup_sessions(client_proto)
+        sessions: Session | None = self._lookup_sessions(client_proto, c)
         if sessions is False:
             disconnect(ConnectionMessage.AUTHENTICATION_ERROR, "cannot access sessions")
             return
@@ -396,7 +451,7 @@ class ProxyServer(ServerCore):
             return
         self.proxy_session(client_proto, c, auth_caps, sessions)
 
-    def _lookup_sessions(self, proto):
+    def _lookup_sessions(self, proto, client_caps: typedict | None = None):
         """
         Walk the protocol's authenticator chain and return the first non-None
         Session the configured registry returns. Returns False on registry
@@ -406,7 +461,7 @@ class ProxyServer(ServerCore):
         registry = self.session_registry
         for authenticator in proto.authenticators:
             try:
-                session = registry.lookup(authenticator)
+                session = registry.lookup(authenticator, client_caps=client_caps)
             except Exception as e:
                 authlog("registry %s lookup(%s) failed", registry, authenticator, exc_info=True)
                 authlog.error("Error: failed to look up sessions for %s via %s", authenticator, registry)
@@ -745,5 +800,15 @@ class ProxyServer(ServerCore):
                         i += 1
                     info["instances"] = instances_info
                     info["proxies"] = len(instances)
+        registry = self.session_registry
+        if registry is not None and registry.NAME == "live":
+            registered = {}
+            for i, s in enumerate(registry.list_sessions()):
+                registered[i] = {
+                    "uuid": s.uuid,
+                    "session-name": s.session_name,
+                    "displays": list(s.displays),
+                }
+            info["registered"] = registered
         info.setdefault("server", {})["type"] = "Python/GLib/proxy"
         return info

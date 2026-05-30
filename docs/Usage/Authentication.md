@@ -210,6 +210,7 @@ The proxy server lets you pick the session registry independently of the authent
 | `sqlite`    | Looks up `(uid, gid, displays, env_options, session_options)` from the `users` table of an sqlite database (`filename` option). |
 | `sql`       | Same schema, via SQLAlchemy (`uri` option).                                                                           |
 | `mysql`     | Same schema, against MySQL (`uri` option).                                                                            |
+| `live`      | Runtime map of sessions populated by xpra servers that dial out to the proxy at startup with `--register=URI`. See below. |
 
 Example: use `pam` to authenticate but read the per-user session mapping from an sqlite file:
 
@@ -218,6 +219,22 @@ xpra proxy --bind-tcp=0.0.0.0:14500,auth=pam --session-registry=sqlite(filename=
 ```
 
 Registry modules live under [`xpra/server/session_registry/`](https://github.com/Xpra-org/xpra/tree/master/xpra/server/session_registry).
+
+### The `live` backend and `--register`
+
+A server can announce itself to a proxy at startup with the `--register=URI` option (repeatable). For each URI the server dials the proxy, authenticates as a client, and sends a hello packet carrying `request=register` along with its `uuid`, `session-name` and `display`.
+
+```shell
+# proxy side:
+xpra proxy --bind-tcp=0.0.0.0:14500 --session-registry=live --auth=password,value=secret
+
+# server side:
+xpra seamless --start=xterm --register=tcp://:secret@proxy.example.com:14500/?session-name=demo
+```
+
+The proxy stores the registration in its in-memory map (keyed by `uuid`) and exposes it under the `registered` key in `xpra info`. By default the live backend matches a client's requested session-name, falling back to uuid or display; the `lookup-by` option (`session-name` / `uuid` / `display`) constrains the match.
+
+Phase 3a — this milestone — only implements the registration handshake and the proxy-side listing: clients cannot yet attach to a registered server through the proxy. That brokering step is the next phase.
 
 
 ***

@@ -61,7 +61,7 @@ class Registry(SessionRegistry):
             out[entry[0]] = entry
         return out
 
-    def lookup(self, authenticator) -> Session | None:
+    def lookup(self, authenticator, client_caps=None) -> Session | None:
         username = getattr(authenticator, "username", "")
         if not username:
             return None

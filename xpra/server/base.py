@@ -64,6 +64,9 @@ class ServerBase(ServerCore):
         if features.ping:
             from xpra.server.subsystem.ping import PingServer
             classes.append(PingServer)
+        if features.register:
+            from xpra.server.subsystem.register import RegisterSubsystem
+            classes.append(RegisterSubsystem)
         if features.bandwidth:
             from xpra.server.subsystem.bandwidth import BandwidthManager
             classes.append(BandwidthManager)
