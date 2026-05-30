@@ -78,9 +78,6 @@ class AudioServer(StubSubsystem):
                 "": self.av_sync,
                 "enabled": self.av_sync,
             },
-            "audio": {
-                "async": True,
-            }
         }
         log("get_server_features(%s)=%s", source, d)
         return d
