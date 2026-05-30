@@ -219,7 +219,7 @@ xpra (6.4.1-1) UNRELEASED; urgency=low
     debug logging record misformed
     invalid type hint
 
- -- Antoine Martin <antoine@xpra.org>  Sun  11 Jan 2026 15:44:42 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 11 Jan 2026 15:44:42 +0700
 
 xpra (6.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
