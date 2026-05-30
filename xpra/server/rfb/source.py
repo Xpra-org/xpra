@@ -15,6 +15,7 @@ from xpra.net.rfb.encode import (
 )
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.server.source.stub import PointerSource
+from xpra.server.window.compress import free_image_wrapper  # pylint: disable=import-outside-toplevel
 from xpra.util.objects import AtomicInteger
 from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.thread import start_thread
@@ -53,7 +54,6 @@ def free_rfb_image(image) -> None:
     if not getattr(image, "is_thread_safe", None):
         image.free()
         return
-    from xpra.server.window.compress import free_image_wrapper  # pylint: disable=import-outside-toplevel
     free_image_wrapper(image)
 
 
