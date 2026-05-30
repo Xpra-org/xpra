@@ -198,6 +198,27 @@ Three families override it to return data they already store per user:
 
 The `fail` and `reject` modules deny authentication outright and therefore never reach session lookup.
 
+### The `--session-registry` proxy option
+
+The proxy server lets you pick the session registry independently of the authenticator with `--session-registry=NAME[(opt=val,...)]` (default `auth`):
+
+| Registry    | Behaviour                                                                                                            |
+|-------------|----------------------------------------------------------------------------------------------------------------------|
+| `auth`      | Delegates to `authenticator.get_sessions()` — the historical behaviour. `multifile`/`sql*` setups need no changes.   |
+| `socket`    | Performs a `DotXpra` socket-directory scan for the authenticated uid — pairs any authenticator with socket discovery. |
+| `multifile` | Reads `username\|password\|uid\|gid\|displays\|env\|session_options` from a file (`filename` option). Lookup is by username. |
+| `sqlite`    | Looks up `(uid, gid, displays, env_options, session_options)` from the `users` table of an sqlite database (`filename` option). |
+| `sql`       | Same schema, via SQLAlchemy (`uri` option).                                                                           |
+| `mysql`     | Same schema, against MySQL (`uri` option).                                                                            |
+
+Example: use `pam` to authenticate but read the per-user session mapping from an sqlite file:
+
+```shell
+xpra proxy --bind-tcp=0.0.0.0:14500,auth=pam --session-registry=sqlite(filename=/etc/xpra/users.sdb)
+```
+
+Registry modules live under [`xpra/server/session_registry/`](https://github.com/Xpra-org/xpra/tree/master/xpra/server/session_registry).
+
 
 ***
 

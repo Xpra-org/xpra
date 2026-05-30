@@ -1111,6 +1111,12 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="proxy_start_sessions", default=defaults.proxy_start_sessions,
                      help="Allows proxy servers to start new sessions on demand."
                           " Default: %s." % enabled_str(defaults.proxy_start_sessions))
+    group.add_option("--session-registry", action="store", metavar="NAME[(opt=val,...)]",
+                     dest="session_registry", default=defaults.session_registry,
+                     help="The proxy server's source of truth for which xpra sessions an authenticated"
+                          " client may reach. 'auth' (default) delegates to the authenticator's"
+                          " get_sessions(); other backends include 'socket', 'multifile', 'sqlite',"
+                          " 'sql' and 'mysql'. Default: '%default'.")
     legacy_bool_parse("dbus")
     group.add_option("--dbus", action="store", metavar="yes|no|keep",
                      dest="dbus", default=defaults.dbus,

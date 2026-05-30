@@ -1199,6 +1199,16 @@ system wide proxy server is found.
 \fB\-\-proxy\-start\-sessions\fP=\fIyes\fP|\fIno\fP
 Use the proxy server to start new sessions.
 .TP
+\fB\-\-session\-registry\fP=\fINAME\fP[\fI(opt=val,...)\fP]
+The source the proxy server uses to look up which xpra sessions an
+authenticated client may reach. Supported backends:
+\fIauth\fP (default) delegates to the authenticator's get_sessions(),
+\fIsocket\fP scans the DotXpra socket directories for the authenticated uid,
+\fImultifile\fP reads a pipe-delimited file (\fIfilename\fP option),
+\fIsqlite\fP reads an sqlite database (\fIfilename\fP option),
+\fIsql\fP reads via SQLAlchemy (\fIuri\fP option),
+\fImysql\fP reads from MySQL (\fIuri\fP option).
+.TP
 \fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Wrap server start commands with systemd-run.
 .TP

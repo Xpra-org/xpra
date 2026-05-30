@@ -27,7 +27,8 @@ from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.server import features
 from xpra.server.core import ServerCore
 from xpra.net.control.common import ArgsControlCommand, ControlError
-from xpra.auth.common import SessionData
+from xpra.server.session_registry import Session
+from xpra.server.session_registry.helper import load_session_registry
 from xpra.util.child_reaper import get_child_reaper
 from xpra.scripts.parsing import MODE_ALIAS
 from xpra.util.parsing import str_to_bool
@@ -157,9 +158,10 @@ INSTANCE_SUBSYSTEM_CLASSES = get_proxy_instance_subsystem_classes()
 class ProxyServer(ServerCore):
     """
         This is the proxy server you can launch with "xpra proxy",
-        once authenticated, it will dispatch the connection
-        to the session found using the authenticator's
-        get_sessions() function.
+        once authenticated, it will dispatch the connection to the session
+        found via the configured session registry (see --session-registry).
+        The default registry, "auth", preserves the historical behaviour of
+        asking the authenticator via its get_sessions() method.
     """
     def __init__(self):
         log("ProxyServer.__init__()")
@@ -178,6 +180,7 @@ class ProxyServer(ServerCore):
         self._accept_timeout += 10
         self.pings = 0
         self._start_sessions = False
+        self.session_registry = None
         # keep track of the proxy process instances
         # the display they're on and the message queue we can
         # use to communicate with them
@@ -191,6 +194,8 @@ class ProxyServer(ServerCore):
         log("ProxyServer.init(%s)", opts)
         self.pings = int(opts.pings)
         self._start_sessions = opts.proxy_start_sessions
+        self.session_registry = load_session_registry(getattr(opts, "session_registry", "") or "auth")
+        authlog("proxy session registry: %s", self.session_registry)
         # super().init runs ServerCore.init which handles connection setup and
         # dispatches `init` to every subsystem registered in self.subsystems:
         super().init(opts)
@@ -381,27 +386,38 @@ class ProxyServer(ServerCore):
             log.error(" use 'none' to disable authentication")
             nosession("no sessions found")
             return
-        sessions : SessionData | None = None
-        for authenticator in client_proto.authenticators:
-            try:
-                auth_sessions = authenticator.get_sessions()
-                authlog("proxy_auth %s.get_sessions()=%s", authenticator, auth_sessions)
-                if auth_sessions:
-                    sessions = auth_sessions
-                    break
-            except Exception as e:
-                authlog("failed to get the list of sessions from %s", authenticator, exc_info=True)
-                authlog.error("Error: failed to get the list of sessions using '%s' authenticator", authenticator)
-                authlog.estr(e)
-                disconnect(ConnectionMessage.AUTHENTICATION_ERROR, "cannot access sessions")
-                return
+        sessions: Session | None = self._lookup_sessions(client_proto)
+        if sessions is False:
+            disconnect(ConnectionMessage.AUTHENTICATION_ERROR, "cannot access sessions")
+            return
         authlog("proxy_auth(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         if sessions is None:
             nosession("no sessions found")
             return
         self.proxy_session(client_proto, c, auth_caps, sessions)
 
-    def proxy_session(self, client_proto, c: typedict, auth_caps: dict, sessions: SessionData) -> None:
+    def _lookup_sessions(self, proto):
+        """
+        Walk the protocol's authenticator chain and return the first non-None
+        Session the configured registry returns. Returns False on registry
+        error (caller should disconnect with AUTHENTICATION_ERROR), or None
+        when no authenticator yielded a session.
+        """
+        registry = self.session_registry
+        for authenticator in proto.authenticators:
+            try:
+                session = registry.lookup(authenticator)
+            except Exception as e:
+                authlog("registry %s lookup(%s) failed", registry, authenticator, exc_info=True)
+                authlog.error("Error: failed to look up sessions for %s via %s", authenticator, registry)
+                authlog.estr(e)
+                return False
+            authlog("%s.lookup(%s)=%s", registry, authenticator, session)
+            if session:
+                return session
+        return None
+
+    def proxy_session(self, client_proto, c: typedict, auth_caps: dict, sessions: Session) -> None:
         def disconnect(reason, *extras) -> None:
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
@@ -705,14 +721,9 @@ class ProxyServer(ServerCore):
             # only show more info if we have authenticated
             # as the user running the proxy server process:
             info = super().get_threaded_info(proto, **kwargs)
-            sessions = ()
-            for authenticator in proto.authenticators:
-                auth_sessions = authenticator.get_sessions()
-                if auth_sessions:
-                    sessions = auth_sessions
-                    break
-            if sessions:
-                uid, gid = sessions[:2]
+            sessions = self._lookup_sessions(proto)
+            if sessions and sessions is not False:
+                uid, gid = sessions.uid, sessions.gid
                 if not POSIX or (uid == getuid() and gid == getgid()):
                     self.reap()
                     i = 0
