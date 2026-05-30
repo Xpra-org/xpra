@@ -191,6 +191,7 @@ class AudioConnection(StubClientConnection):
             "decoders": self.microphone_codecs,
             "send": self.supports_speaker and len(self.speaker_codecs) > 0,
             "receive": self.supports_microphone and len(self.microphone_codecs) > 0,
+            "async": True,
         })
         log("get_audio_caps()=%s", audio_caps)
         return audio_caps
