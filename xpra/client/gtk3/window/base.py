@@ -244,6 +244,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
         def configure_event(_w, event) -> bool:
             geomlog("widget configure_event: new size=%ix%i", event.width, event.height)
+            if self._override_redirect or self._iconified or not self._been_mapped:
+                return True
+            x, y = self.get_drawing_area_geometry()[:2]
+            geometry = x, y, max(1, event.width), max(1, event.height)
+            if self._pos != (x, y) or self._size != geometry[2:4]:
+                self.update_configure_geometry("widget configure event", geometry)
             return True
 
         widget.connect("configure-event", configure_event)
@@ -1340,14 +1346,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._override_redirect or self._iconified:
             # don't send configure packet for OR windows or iconified windows
             return
-        x, y, w, h = self.get_drawing_area_geometry()
-        w = max(1, w)
-        h = max(1, h)
-        ox, oy = self._pos
-        dx, dy = x - ox, y - oy
-        skip_geometry = dx == 0 and dy == 0 and self._size == (w, h)
-        self._pos = (x, y)
-        self.update_relative_position()
         gdkwin = self.get_window()
         screen = gdkwin.get_screen()
         display = screen.get_display()
@@ -1356,22 +1354,40 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if self._monitor is not None:
                 self.monitor_changed(monitor)
             self._monitor = monitor
-        geomlog("configure event: current size=%s, new size=%s, moved by=%s, backing=%s, iconified=%s",
-                self._size, (w, h), (dx, dy), self._backing, self._iconified)
+        self.update_configure_geometry("configure event")
+
+    def update_configure_geometry(self, source: str,
+                                  geometry: tuple[int, int, int, int] | None = None) -> None:
+        if geometry is None:
+            geometry = self.get_drawing_area_geometry()
+        x, y, w, h = geometry
+        w = max(1, w)
+        h = max(1, h)
+        ox, oy = self._pos
+        dx, dy = x - ox, y - oy
+        skip_geometry = dx == 0 and dy == 0 and self._size == (w, h)
+        self._pos = (x, y)
+        self.update_relative_position()
+        geomlog("%s: current size=%s, new size=%s, moved by=%s, backing=%s, iconified=%s",
+                source, self._size, (w, h), (dx, dy), self._backing, self._iconified)
         self._size = (w, h)
         self._set_backing_size(w, h)
-        self.send_configure_event(skip_geometry)
+        self.send_configure_event(skip_geometry, (x, y, w, h))
         if self._backing and not self._iconified:
-            geomlog("configure event: queueing redraw")
+            geomlog("%s: queueing redraw", source)
             self.repaint(0, 0, w, h)
 
     def get_configure_client_properties(self) -> dict[str, Any]:
         return self._client_properties.copy()
 
-    def send_configure_event(self, skip_geometry=False) -> None:
+    def send_configure_event(self, skip_geometry=False,
+                             geometry: tuple[int, int, int, int] | None = None) -> None:
         metalog("send_configure_event(%s)", skip_geometry)
         assert skip_geometry or not self.is_OR()
-        x, y, w, h = self.get_drawing_area_geometry()
+        if geometry is None:
+            x, y, w, h = self.get_drawing_area_geometry()
+        else:
+            x, y, w, h = geometry
         w = max(1, w)
         h = max(1, h)
         state = self._window_state
