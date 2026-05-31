@@ -129,7 +129,7 @@ cdef extern from "webp/decode.h":
     VP8StatusCode WebPGetFeatures(const uint8_t* data, size_t data_size,
                                   WebPBitstreamFeatures* features)
 
-    int WebPInitDecoderConfig(WebPDecoderConfig* config)
+    int WebPInitDecoderConfig(WebPDecoderConfig* config) nogil
     VP8StatusCode WebPDecode(const uint8_t* data, size_t data_size,
                                       WebPDecoderConfig* config) nogil
     void WebPFreeDecBuffer(WebPDecBuffer* buffer)
@@ -250,61 +250,69 @@ def decompress_to_yuv(data: SizedBuffer, options: typedict) -> WebpImageWrapper:
         once the pixel buffer can be freed.
     """
     cdef WebPDecoderConfig config
-    config.options.use_threads = 1
-    WebPInitDecoderConfig(&config)
-    webp_check(WebPGetFeatures(data, len(data), &config.input))
-    log("webp decompress_to_yuv found features: width=%4i, height=%4i, has_alpha=%-5s", config.input.width, config.input.height, bool(config.input.has_alpha))
-
-    config.output.colorspace = MODE_YUV
-    cdef int has_alpha = options.boolget("has_alpha", False)
-    cdef int alpha = has_alpha and config.input.has_alpha
-    if alpha:
-        log.warn("Warning: webp YUVA colorspace not supported yet")
-        alpha = 0
-        #config.output.colorspace = MODE_YUVA
-
-    cdef int w = config.input.width
-    cdef int h = config.input.height
-    cdef WebPYUVABuffer *YUVA = &config.output.u.YUVA
-    YUVA.y_stride = roundup(w, ALIGN)
-    YUVA.u_stride = roundup((w+1)//2, ALIGN)
-    YUVA.v_stride = roundup((w+1)//2, ALIGN)
-    if alpha:
-        YUVA.a_stride = w
-    else:
-        YUVA.a_stride = 0
-    cdef size_t y_size = YUVA.y_stride * h
-    cdef size_t u_size = YUVA.u_stride * ((h+1)//2)
-    cdef size_t v_size = YUVA.v_stride * ((h+1)//2)
-    cdef size_t a_size = YUVA.a_stride * h
-    YUVA.y_size = y_size
-    YUVA.u_size = u_size
-    YUVA.v_size = v_size
-    YUVA.a_size = a_size
-    #allocate a buffer big enough for all planes with 1 stride of padding after each:
-    cdef uint8_t *buf = <uint8_t*> memalign(y_size + u_size + v_size + a_size + YUVA.y_stride + YUVA.u_stride + YUVA.v_stride + YUVA.a_stride)
-    YUVA.y = buf
-    YUVA.u = <uint8_t*> (<uintptr_t> buf + y_size + YUVA.y_stride)
-    YUVA.v = <uint8_t*> (<uintptr_t> buf + y_size + YUVA.y_stride + u_size + YUVA.u_stride)
-    if alpha:
-        YUVA.a = <uint8_t*> (<uintptr_t> buf + y_size + YUVA.y_stride + u_size + YUVA.u_stride + v_size + YUVA.v_stride)
-        strides = (YUVA.y_stride, YUVA.u_stride, YUVA.v_stride, YUVA.a_stride)
-    else:
-        YUVA.a = NULL
-        strides = (YUVA.y_stride, YUVA.u_stride, YUVA.v_stride)
-    config.output.is_external_memory = 1
-    log("WebPDecode: image size %ix%i : buffer=%#x, strides=%s",
-        w, h, <uintptr_t> buf, strides)
     cdef VP8StatusCode ret = 0
     cdef size_t data_len
     cdef const uint8_t* data_buf
+    cdef size_t y_size = 0
+    cdef size_t u_size = 0
+    cdef size_t v_size = 0
+    cdef size_t a_size = 0
+    cdef int w = 0
+    cdef int h = 0
+    cdef WebPYUVABuffer *YUVA
+    cdef int has_alpha
+    cdef int alpha = 0
+    cdef uint8_t *buf = NULL
+
     with buffer_context(data) as bc:
         data_len = len(bc)
         data_buf = <const uint8_t*> (<uintptr_t> int(bc))
         with nogil:
+            config.options.use_threads = 1
+            WebPInitDecoderConfig(&config)
+
+        webp_check(WebPGetFeatures(data_buf, data_len, &config.input))
+        log("webp decompress_to_yuv found features: width=%4i, height=%4i, has_alpha=%-5s", config.input.width, config.input.height, bool(config.input.has_alpha))
+
+        config.output.colorspace = MODE_YUV
+        has_alpha = options.boolget("has_alpha", False)
+        alpha = int(has_alpha and config.input.has_alpha)
+        if alpha:
+            log.warn("Warning: webp YUVA colorspace not supported yet")
+            alpha = 0
+        #config.output.colorspace = MODE_YUVA
+
+        w = config.input.width
+        h = config.input.height
+        YUVA = &config.output.u.YUVA
+        YUVA.y_stride = roundup(w, ALIGN)
+        YUVA.u_stride = roundup((w+1)//2, ALIGN)
+        YUVA.v_stride = roundup((w+1)//2, ALIGN)
+        YUVA.a_stride = YUVA.y_stride if alpha else 0
+        y_size = YUVA.y_stride * h
+        u_size = YUVA.u_stride * ((h + 1) // 2)
+        v_size = YUVA.v_stride * ((h + 1) // 2)
+        a_size = YUVA.a_stride * h
+        YUVA.y_size = y_size
+        YUVA.u_size = u_size
+        YUVA.v_size = v_size
+        YUVA.a_size = a_size
+        # allocate a buffer big enough for all planes with 1 stride of padding after each:
+        buf = <uint8_t*> memalign(y_size + u_size + v_size + a_size + YUVA.y_stride + YUVA.u_stride + YUVA.v_stride + YUVA.a_stride)
+        YUVA.y = buf
+        YUVA.u = <uint8_t*> (<uintptr_t> buf + y_size + YUVA.y_stride)
+        YUVA.v = <uint8_t*> (<uintptr_t> buf + y_size + YUVA.y_stride + u_size + YUVA.u_stride)
+        if alpha:
+            YUVA.a = <uint8_t*> (<uintptr_t> buf + y_size + YUVA.y_stride + u_size + YUVA.u_stride + v_size + YUVA.v_stride)
+        else:
+            YUVA.a = NULL
+        config.output.is_external_memory = 1
+        log("WebPDecode: image size %ix%i : buffer=%#x", w, h, <uintptr_t> buf)
+        with nogil:
             ret = WebPDecode(data_buf, data_len, &config)
     webp_check(ret)
     if alpha:
+        strides = (YUVA.y_stride, YUVA.u_stride, YUVA.v_stride, YUVA.a_stride)
         planes = (
             PyMemoryView_FromMemory(<char *> YUVA.y, y_size, PyBUF_WRITE),
             PyMemoryView_FromMemory(<char *> YUVA.u, u_size, PyBUF_WRITE),
@@ -312,6 +320,7 @@ def decompress_to_yuv(data: SizedBuffer, options: typedict) -> WebpImageWrapper:
             PyMemoryView_FromMemory(<char *> YUVA.a, a_size, PyBUF_WRITE),
         )
     else:
+        strides = (YUVA.y_stride, YUVA.u_stride, YUVA.v_stride)
         planes = (
             PyMemoryView_FromMemory(<char *> YUVA.y, y_size, PyBUF_WRITE),
             PyMemoryView_FromMemory(<char *> YUVA.u, u_size, PyBUF_WRITE),
