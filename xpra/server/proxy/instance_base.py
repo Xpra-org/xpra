@@ -456,7 +456,11 @@ class ProxyInstance:
             info.update(self.get_proxy_info(proto))
         elif packet_type == "draw":
             pixel_data = packet.get_buffer(7)
-            if pixel_data and len(pixel_data) > 1024:
+            try:
+                size = len(pixel_data)
+            except (TypeError, ValueError):
+                size = 0
+            if size > 1024:
                 packet = self.compressed_marker(packet, 7, "pixel-data")
         elif packet_type == AUDIO_DATA_PACKET:
             if packet[2]:
