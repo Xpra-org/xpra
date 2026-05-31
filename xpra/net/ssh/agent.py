@@ -89,9 +89,11 @@ def clean_agent_socket(uuid: str = "") -> None:
 
 def setup_proxy_ssh_socket(
         cmdline: Iterable[str],
-        auth_sock: str = os.environ.get("SSH_AUTH_SOCK", ""),
-        session_dir: str = os.environ.get("XPRA_SESSION_DIR", ""),
-) -> str:
+        auth_sock: str = "",
+        session_dir: str = "") -> str:
+    # evaluate the environment at call time, not at import time:
+    auth_sock = auth_sock or os.environ.get("SSH_AUTH_SOCK", "")
+    session_dir = session_dir or os.environ.get("XPRA_SESSION_DIR", "")
     log(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")
     # this is the socket path that the ssh client wants us to use:
     # ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
