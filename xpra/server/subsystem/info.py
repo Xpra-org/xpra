@@ -207,7 +207,8 @@ class InfoServer(StubSubsystem):
         }
 
     def get_full_server_info(self) -> dict[str, Any]:
-        info = self.get_base_server_info()
+        info = self.get_minimal_server_info()
+        info.update(self.get_base_server_info())
         info.update(get_server_load_info())
         info.update(get_server_exec_info())
         if SYSCONFIG:
