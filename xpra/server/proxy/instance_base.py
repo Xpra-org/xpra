@@ -97,7 +97,7 @@ def replace_packet_item(packet: Packet,
     lpacket = list(packet)
     lpacket[index] = new_value
     # noinspection PyTypeChecker
-    return Packet(lpacket)
+    return Packet(*lpacket)
 
 
 # noinspection PyMethodMayBeStatic
