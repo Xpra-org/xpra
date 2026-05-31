@@ -146,7 +146,6 @@ class ShadowX11Server(GObject.GObject, ShadowServerBase):
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         info = super().get_threaded_info(proto, **kwargs)
         info.setdefault("features", {})["shadow"] = True
-        info.setdefault("server", {})["type"] = "Python/bindings/x11-shadow"
         return info
 
 
