@@ -18,6 +18,10 @@ class X11ShadowDisplayManager(ShadowDisplayMixin, X11DisplayManager):
     X11 display subsystem for shadow servers.
     """
 
+    def set_initial_resolution(self) -> None:
+        # shadow servers must not change the host display resolution
+        pass
+
     def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
         from xpra.x11.shadow.backends import setup_gtk_capture
         capture = setup_gtk_capture()
