@@ -584,7 +584,7 @@ class WindowBackingBase:
         self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
 
     def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,
-                  options, callbacks: PaintCallbacks) -> None:
+                  options: typedict, callbacks: PaintCallbacks) -> None:
         """ can be called from a non-UI thread """
         # was a compressor used?
         comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
