@@ -9,8 +9,9 @@
 from typing import Any
 from importlib.util import find_spec
 
+from xpra.common import SizedBuffer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.util.str_fn import Ellipsizer
+from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.client.base.stub import StubClientMixin
@@ -21,9 +22,9 @@ log = Logger("cursor")
 SAVE_CURSORS: bool = envbool("XPRA_SAVE_CURSORS", False)
 
 
-def decompress_cursor_data(encoding: str, cpixels, serial: int) -> bytes:
+def decompress_cursor_data(encoding: str, cpixels: SizedBuffer, serial: int) -> bytes:
     if encoding == "raw":
-        return cpixels
+        return memoryview_to_bytes(cpixels)
     if encoding == "png":
         if SAVE_CURSORS:
             with open(f"raw-cursor-{serial:x}.png", "wb") as f:
