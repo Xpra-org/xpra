@@ -269,6 +269,7 @@ class ProxyInstance:
         si = {
             "session-type": "proxy",
             "machine-id": get_machine_id(),
+            "version": vparts(XPRA_VERSION, FULL_INFO + 1),
         }
         if FULL_INFO > 0:
             si["hostname"] = socket.gethostname()
