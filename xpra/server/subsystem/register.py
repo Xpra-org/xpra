@@ -25,6 +25,7 @@ from xpra.net.common import Packet, FULL_INFO
 from xpra.net.connect import connect_to
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
 from xpra.net.net_util import get_network_caps
+from xpra.net.packet_type import INFO_RESPONSE
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.parsing import parse_display_name
@@ -200,6 +201,7 @@ class RegisterSubsystem(StubSubsystem):
             proto.enable_default_compressor()
         with self._active_lock:
             self._active[uri] = proto
+        proto.large_packets.append(INFO_RESPONSE)
         handed_off = False
         try:
             proto.start()
