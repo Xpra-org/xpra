@@ -424,7 +424,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     from xpra.server.runner_script import xpra_runner_shell_script, xpra_env_shell_script
     save_env = os.environ.copy()
     save_env.update(parse_env(opts.env))
-    env_script = xpra_env_shell_script(opts.socket_dir, save_env)
+    env_script = xpra_env_shell_script(opts.socket_dirs, save_env)
     run_xpra_script = ""
     if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
         run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)

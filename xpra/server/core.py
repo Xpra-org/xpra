@@ -198,7 +198,6 @@ class ServerCore(GLibServer):
         self._max_connections: int = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout: float = SERVER_SOCKET_TIMEOUT
         self._ws_timeout: float = 5.0
-        self._socket_dir: str = ""
         self.dotxpra: DotXpra | None = None
         self.unix_socket_paths: list[str] = []
         self.touch_timer: int = 0
@@ -226,7 +225,6 @@ class ServerCore(GLibServer):
         self.session_name = str(opts.session_name)
         set_name("Xpra", self.session_name or "Xpra")
         self.unix_socket_paths = []
-        self._socket_dir = opts.socket_dirs[0] if opts.socket_dirs else ""
         self.dotxpra = DotXpra(opts.socket_dirs + opts.client_socket_dirs)
         self.compression_level = opts.compression_level
         self.readonly = opts.readonly
@@ -624,7 +622,7 @@ class ServerCore(GLibServer):
         # setup unix domain socket:
         local_sockets = setup_local_sockets(
             opts.bind,  # noqa: F821
-            opts.socket_dir, opts.socket_dirs, session_dir,  # noqa: F821
+            opts.socket_dirs, session_dir,  # noqa: F821
             display_name, clobber,  # noqa: F821
             opts.mmap_group, opts.socket_permissions,  # noqa: F821
             username, uid, gid)

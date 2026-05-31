@@ -95,7 +95,7 @@ class NetworkListener(StubClientMixin):
             # (as these may collide with display numbers)
             bind = ["noabstract"] if csv(self.local_bind) == "auto" else self.local_bind
             local_sockets = setup_local_sockets(bind,
-                                                "", self.client_socket_dirs, "",
+                                                self.client_socket_dirs, "",
                                                 str(os.getpid()), True,
                                                 self.mmap_group, self.socket_permissions,
                                                 uid=getuid(), gid=getgid())

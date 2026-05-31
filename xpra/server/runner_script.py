@@ -17,7 +17,7 @@ def sh_quotemeta(s: str) -> str:
     return "'" + s.replace("'", "'\\''") + "'"
 
 
-def xpra_env_shell_script(socket_dir: str, env: dict[str, str]) -> str:
+def xpra_env_shell_script(socket_dirs: list[str] | tuple[str, ...], env: dict[str, str]) -> str:
     script = ["#!/bin/sh", ""]
     for var, value in env.items():
         if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
@@ -41,6 +41,7 @@ def xpra_env_shell_script(socket_dir: str, env: dict[str, str]) -> str:
         script.append(f"{var}={qval}; export {var}")
     # XPRA_SOCKET_DIR is a special case, we want to honour it
     # when it is specified, but the client may override it:
+    socket_dir = socket_dirs[0] if socket_dirs else ""
     if socket_dir:
         script.append('if [ -z "${XPRA_SOCKET_DIR}" ]; then')
         qdir = sh_quotemeta(os.path.expanduser(socket_dir))

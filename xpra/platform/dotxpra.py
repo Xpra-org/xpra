@@ -40,16 +40,13 @@ class DotXpra:
         self.uid = uid or os.getuid()
         self.gid = gid or os.getgid()
         self.username = actual_username
-        sockdirs = list(sockdirs)
-        sockdir = sockdirs[0] if sockdirs else "undefined"
-        self._sockdir = self.osexpand(sockdir)
         self._sockdirs: list[str] = [self.osexpand(x) for x in sockdirs]
 
     def osexpand(self, v: str) -> str:
         return osexpand(v, self.username, self.uid, self.gid)
 
     def __repr__(self):
-        return f"DotXpra({self._sockdir}, {self._sockdirs} - {self.uid}:{self.gid} - {self.username})"
+        return f"DotXpra({self._sockdirs} - {self.uid}:{self.gid} - {self.username})"
 
     def mksockdir(self, d: str, mode=0o700, uid=None, gid=None) -> None:
         if not d:
@@ -92,7 +89,8 @@ class DotXpra:
         return [norm_makepath(x, local_display_name) for x in self._sockdirs]
 
     def socket_path(self, local_display_name: str) -> str:
-        return norm_makepath(self._sockdir, local_display_name)
+        sockdir = self._sockdirs[0] if self._sockdirs else "undefined"
+        return norm_makepath(sockdir, local_display_name)
 
     def get_server_state(self, sockpath: str, timeout=5) -> SocketState:
         saved_sockpath = sockpath
@@ -146,12 +144,8 @@ class DotXpra:
         return paths
 
     def _unique_sock_dirs(self) -> Iterator[str]:
-        dirs = []
-        if self._sockdir != "undefined":
-            dirs.append(self._sockdir)
-        dirs += [x for x in self._sockdirs if x not in dirs]
         seen = set()
-        for d in dirs:
+        for d in self._sockdirs:
             if d in seen or not d:
                 continue
             seen.add(d)
@@ -194,8 +188,8 @@ class DotXpra:
     def socket_details(self, check_uid=-1, matching_state=None, matching_display="") \
             -> dict[str, list[tuple[SocketState, str, str]]]:
         sd: dict[str, list[tuple[SocketState, str, str]]] = {}
-        debug("socket_details%s sockdir=%s, sockdirs=%s",
-              (check_uid, matching_state, matching_display), self._sockdir, self._sockdirs)
+        debug("socket_details%s sockdirs=%s",
+              (check_uid, matching_state, matching_display), self._sockdirs)
 
         def add_result(d: str, item: tuple[SocketState, str, str]) -> None:
             results: list[tuple[SocketState, str, str]] = sd.setdefault(d, [])

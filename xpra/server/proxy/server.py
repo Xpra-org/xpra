@@ -182,6 +182,7 @@ class ProxyServer(ServerCore):
         self.pings = 0
         self._start_sessions = False
         self.session_registry = None
+        self.socket_dirs: tuple[str, ...] = ()
         # keep track of the proxy process instances
         # the display they're on and the message queue we can
         # use to communicate with them
@@ -198,6 +199,7 @@ class ProxyServer(ServerCore):
         log("ProxyServer.init(%s)", opts)
         self.pings = int(opts.pings)
         self._start_sessions = opts.proxy_start_sessions
+        self.socket_dirs = tuple(opts.socket_dirs)
         self.session_registry = load_session_registry(opts.session_registry or "auth")
         authlog("proxy session registry: %s", self.session_registry)
         # super().init runs ServerCore.init which handles connection setup and
@@ -667,7 +669,8 @@ class ProxyServer(ServerCore):
                     return
                 client_conn.set_active(True)
                 from xpra.server.proxy.instance_process import ProxyInstanceProcess
-                process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
+                socket_dir = self.socket_dirs[0] if self.socket_dirs else ""
+                process = ProxyInstanceProcess(uid, gid, env_options, session_options, socket_dir,
                                                self.pings,
                                                client_conn, disp_desc, client_state,
                                                cipher, cipher_mode, encryption_key, server_conn, c, message_queue)

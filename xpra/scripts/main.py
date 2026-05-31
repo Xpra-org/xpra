@@ -1475,7 +1475,7 @@ def enable_listen_mode(app, opts):
     if opts.bind:
         from xpra.platform.info import get_username
         local_sockets = setup_local_sockets(opts.bind,
-                                            opts.socket_dir, opts.socket_dirs, "",
+                                            opts.socket_dirs, "",
                                             "", False,
                                             opts.mmap_group, opts.socket_permissions,
                                             get_username(), getuid(), getgid())
@@ -2533,6 +2533,7 @@ def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> 
         from xpra.platform.paths import get_nodock_command
         cmd = get_nodock_command() + [mode]
         socket_dirs = list(opts.socket_dirs)
+        # TODO: this still relies on the deprecated primary socket-dir value.
         if opts.socket_dir and opts.socket_dir not in socket_dirs:
             socket_dirs.insert(0, opts.socket_dir)
         for x in socket_dirs:
