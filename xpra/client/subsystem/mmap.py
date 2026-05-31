@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import csv
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
@@ -20,6 +20,8 @@ from xpra.log import Logger
 log = Logger("mmap")
 
 KEEP_MMAP_FILE = envbool("XPRA_KEEP_MMAP_FILE", False)
+MIN_SIZE = envint("XPRA_MMAP_MAX_SIZE", 2048 * 1024 * 1024)
+MAX_SIZE = envint("XPRA_MMAP_MAX_SIZE", 2048 * 1024 * 1024)
 
 
 class MmapArea(BaseMmapArea):
@@ -119,10 +121,7 @@ class MmapClient(StubClientMixin):
             write = len(filenames) == 2
         group = self.mmap_group
         root_w, root_h = self.get_root_size()
-        # at least 256MB, or 8 fullscreen RGBX frames:
-        size = max(512 * 1024 * 1024, root_w * root_h * 4 * 8)
-        # but no more than 2GB:
-        size = min(2048 * 1024 * 1024, size)
+        size = min(MAX_SIZE, max(MIN_SIZE, root_w * root_h * 4 * 8))
         if read:
             self.mmap_read_area = MmapArea("read", group, filenames[0], size)
         if write:
