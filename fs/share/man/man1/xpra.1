@@ -1213,10 +1213,14 @@ with \fB\-\-register\fP.
 .TP
 \fB\-\-register\fP=\fIURI\fP
 Register this server with a proxy at startup. \fIURI\fP is a connection
-string like \fItcp://[user[:password]@]host:port/?session-name=NAME\fP. The
-server dials the URI, authenticates, and announces itself to the proxy's
-\fIlive\fP session registry by uuid, session-name and display. May be
-specified multiple times to register with multiple proxies.
+string like \fItcp://[user[:password]@]host:port/\fP. The server dials the
+URI, authenticates, and announces itself to the proxy's \fIlive\fP session
+registry by uuid, session-name (from this server's \fB\-\-session-name\fP)
+and display. May be specified multiple times to register with multiple
+proxies. Clients then attach via the proxy and pick a registered session
+by passing \fB\-\-display=\fP\fINAME\fP (the session-name) on the
+\fBxpra attach\fP command line; if exactly one session is registered, the
+proxy auto-selects it.
 .TP
 \fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Wrap server start commands with systemd-run.

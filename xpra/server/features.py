@@ -124,7 +124,7 @@ def set_server_features(opts, mode: str) -> None:
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb") and mode in ("desktop", "shadow")
         features.ssh = b(opts.ssh) and impcheck("net.ssh", "server.ssh") and bool(find_spec("paramiko"))
         features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
-        features.register = bool(getattr(opts, "register", None))
+        features.register = bool(opts.register)
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)

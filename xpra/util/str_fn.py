@@ -43,6 +43,32 @@ def obsc(v) -> str:
     return v
 
 
+def redact_uri(uri: str) -> str:
+    """
+    Return a copy of `uri` with credentials and the query string redacted —
+    the password in the userinfo is replaced with `***`, and the entire
+    query string (which may carry `password=`, `token=`, etc.) is replaced
+    with `?<redacted>`. Suitable for logging and `xpra info` output when
+    the caller doesn't have FULL_INFO > 1 clearance.
+    """
+    if not uri:
+        return uri
+    from urllib.parse import urlsplit, urlunsplit  # pylint: disable=import-outside-toplevel
+    try:
+        parts = urlsplit(uri)
+    except ValueError:
+        return "<redacted>"
+    netloc = parts.netloc
+    if "@" in netloc:
+        userinfo, _, hostpart = netloc.rpartition("@")
+        if ":" in userinfo:
+            user, _, _ = userinfo.partition(":")
+            userinfo = f"{user}:***"
+        netloc = f"{userinfo}@{hostpart}"
+    query = "<redacted>" if parts.query else ""
+    return urlunsplit((parts.scheme, netloc, parts.path, query, parts.fragment))
+
+
 def convert(text: str) -> float | str:
     return float(text) if text.isdigit() else text
 

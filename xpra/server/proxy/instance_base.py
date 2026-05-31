@@ -21,13 +21,12 @@ from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.constants import MAX_PACKET_SIZE, ConnectionMessage
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
 from xpra.util.parsing import str_to_bool, parse_number
-from xpra.os_util import get_hex_uuid, gi_import
+from xpra.os_util import get_hex_uuid, gi_import, get_machine_id
 from xpra.exit_codes import ExitValue
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, strtobytes, nicestr
 from xpra.util.env import envint, envbool
 from xpra.util.version import XPRA_VERSION, vparts
-from xpra.server.core import get_server_info, proto_crypto_caps
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -69,26 +68,6 @@ def sanitize_session_options(options: dict[str, str]) -> dict[str, Any]:
     return d
 
 
-def filter_caps(caps: typedict, prefixes: Iterable[str], proto=None) -> dict:
-    # removes caps that overrides / does not use:
-    pcaps = {}
-    removed = []
-    for k in caps.keys():
-        if any(e for e in prefixes if str(k).startswith(e)):
-            removed.append(k)
-        else:
-            pcaps[k] = caps[k]
-    log("filtered out %s matching %s", removed, prefixes)
-    # replace the network caps with the proxy's own:
-    pcaps |= get_network_caps() | proto_crypto_caps(proto) | get_digest_caps()
-    # then add the proxy info:
-    si = get_server_info()
-    if FULL_INFO > 0:
-        si["hostname"] = socket.gethostname()
-    pcaps["proxy"] = si
-    return pcaps
-
-
 def replace_packet_item(packet: Packet,
                         index: int,
                         new_value: Compressed | str | dict | int) -> Packet:
@@ -96,8 +75,9 @@ def replace_packet_item(packet: Packet,
     assert index > 0
     lpacket = list(packet)
     lpacket[index] = new_value
-    # noinspection PyTypeChecker
-    return Packet(lpacket)
+    # Packet(packet_type, *data) — unpack rather than passing the list as
+    # a single argument (which would bind it to packet_type and fail).
+    return Packet(*lpacket)
 
 
 # noinspection PyMethodMayBeStatic
@@ -223,7 +203,6 @@ class ProxyInstance:
     ################################################################################
 
     def get_proxy_info(self, proto) -> dict[str, Any]:
-        sinfo = get_server_info()
         linfo = {}
         if self.client_last_ping_latency:
             linfo["client"] = round(self.client_last_ping_latency)
@@ -232,7 +211,6 @@ class ProxyInstance:
         return {
             "proxy": {
                 "version": vparts(XPRA_VERSION, FULL_INFO + 1),
-                "": sinfo,
                 "latency": linfo,
             },
         }
@@ -259,7 +237,7 @@ class ProxyInstance:
         self.queue_server_packet(Packet("hello", hello))
 
     def filter_client_caps(self, remove=CLIENT_REMOVE_CAPS) -> dict:
-        fc = filter_caps(self.caps, remove, self.server_protocol)
+        fc = self.filter_caps(self.caps, remove, self.server_protocol)
         # the display string may override the username:
         if username := self.disp_desc.get("username"):
             fc["username"] = username
@@ -269,7 +247,32 @@ class ProxyInstance:
 
     def filter_server_caps(self, caps: typedict) -> dict:
         self.server_protocol.enable_encoder_from_caps(caps)
-        return filter_caps(caps, ("aliases",), self.client_protocol)
+        return self.filter_caps(caps, ("aliases",), self.client_protocol)
+
+    def filter_caps(self, caps: typedict, prefixes: Iterable[str], proto=None) -> dict:
+        # removes caps that overrides / does not use:
+        pcaps = {}
+        removed = []
+        for k in caps.keys():
+            if any(e for e in prefixes if str(k).startswith(e)):
+                removed.append(k)
+            else:
+                pcaps[k] = caps[k]
+        log("filtered out %s matching %s", removed, prefixes)
+        # replace the network caps with the proxy's own:
+        pcaps |= get_network_caps() | get_digest_caps()
+        if self.cipher_mode:
+            from xpra.server.subsystem.encryption import proto_crypto_caps
+            pcaps |= proto_crypto_caps(proto)
+            # then add the proxy info:
+        si = {
+            "session-type": "proxy",
+            "machine-id": get_machine_id(),
+        }
+        if FULL_INFO > 0:
+            si["hostname"] = socket.gethostname()
+        pcaps["proxy"] = si
+        return pcaps
 
     ################################################################################
 
@@ -455,8 +458,16 @@ class ProxyInstance:
             info = packet.get_dict(1)
             info.update(self.get_proxy_info(proto))
         elif packet_type == "draw":
-            pixel_data = packet.get_buffer(7)
-            if pixel_data and len(pixel_data) > 1024:
+            size = 0
+            if BACKWARDS_COMPATIBLE:
+                # older servers can have mmap offsets or scroll data sent as `pixel_data`:
+                pixel_data = packet[7]
+                if isinstance(pixel_data, (bytes, bytearray, memoryview)):
+                    size = len(pixel_data)
+            else:
+                pixel_data = packet.get_buffer(7)
+                size = len(pixel_data)
+            if size > 1024:
                 packet = self.compressed_marker(packet, 7, "pixel-data")
         elif packet_type == AUDIO_DATA_PACKET:
             if packet[2]:

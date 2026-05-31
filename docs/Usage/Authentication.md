@@ -228,13 +228,25 @@ A server can announce itself to a proxy at startup with the `--register=URI` opt
 # proxy side:
 xpra proxy --bind-tcp=0.0.0.0:14500 --session-registry=live --auth=password,value=secret
 
-# server side:
-xpra seamless --start=xterm --register=tcp://:secret@proxy.example.com:14500/?session-name=demo
+# server side (--session-name names the registered session):
+xpra seamless --start=xterm --session-name=demo --register=tcp://:secret@proxy.example.com:14500/
 ```
 
-The proxy stores the registration in its in-memory map (keyed by `uuid`) and exposes it under the `registered` key in `xpra info`. By default the live backend matches a client's requested session-name, falling back to uuid or display; the `lookup-by` option (`session-name` / `uuid` / `display`) constrains the match.
+The proxy exposes the registered sessions under the `registered` key in `xpra info`.
 
-Phase 3a — this milestone — only implements the registration handshake and the proxy-side listing: clients cannot yet attach to a registered server through the proxy. That brokering step is the next phase.
+#### Picking a session from the client
+
+To address a specific registered session, pass `--display=NAME` to `xpra attach`:
+
+```shell
+xpra attach tcp://proxy.example.com:14500/ --display=demo
+```
+
+When exactly one session is registered, `xpra attach tcp://proxy.example.com:14500/` is enough — the proxy auto-selects it.
+
+By default the name supplied by `--display` is matched against each registered session's `session-name` (and then its registered displays). The match policy can be changed on the proxy with the `lookup-by` option (`session-name`, `uuid` or `display`).
+
+The proxy never dials out — it only ever accepts inbound connections, which makes it usable in front of NAT-ed servers. After each client is brokered, the server re-registers automatically so the slot stays warm for the next one.
 
 
 ***

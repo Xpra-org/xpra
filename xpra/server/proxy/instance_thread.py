@@ -19,26 +19,45 @@ class ProxyInstanceThread(ProxyInstance, GLibScheduler):
     def __init__(self, session_options: dict[str, str], pings: int,
                  client_proto, server_conn,
                  disp_desc: dict[str, Any],
-                 cipher: str, cipher_mode: str, encryption_key: bytes, caps: typedict):
+                 cipher: str, cipher_mode: str, encryption_key: bytes, caps: typedict,
+                 server_protocol=None):
         super().__init__(session_options, pings,
                          disp_desc, cipher, cipher_mode, encryption_key, caps)
         self.client_protocol = client_proto
         self.server_conn = server_conn
+        # Optional `live` brokering mode: an already-running server protocol
+        # whose initial registration exchange already happened. When set,
+        # run() adopts this protocol instead of creating a fresh one. The
+        # subsequent flow is the same as the normal proxy path: send_hello
+        # forwards the filtered client caps to the server, and the server
+        # produces its real hello in reply.
+        self._adopted_server_protocol = server_protocol
 
     def __repr__(self):
         return "threaded proxy instance"
 
     def run(self) -> None:
-        log("ProxyInstanceThread.run()")
-        server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
-        self.server_protocol = server_protocol_class(self.server_conn,
-                                                     self.process_server_packet, self.get_server_packet)
+        log("ProxyInstanceThread.run() adopted=%s", self._adopted_server_protocol is not None)
+        if self._adopted_server_protocol is not None:
+            self.server_protocol = self._adopted_server_protocol
+        else:
+            server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
+            self.server_protocol = server_protocol_class(self.server_conn,
+                                                         self.process_server_packet, self.get_server_packet)
         self.log_start()
         super().run()
 
     def start_network_threads(self) -> None:
         log("start_network_threads()")
-        self.server_protocol.start()
+        if self._adopted_server_protocol is None:
+            # only start a freshly-created protocol; an adopted one is
+            # already running (it was started during registration).
+            self.server_protocol.start()
+        # rewire the server protocol's callbacks regardless of how it was
+        # created — registration installed its own inbox handler that we
+        # must displace before packets start flowing.
+        self.server_protocol._process_packet_cb = self.process_server_packet
+        self.server_protocol.set_packet_source(self.get_server_packet)
         self.client_protocol._process_packet_cb = self.process_client_packet
         self.client_protocol.set_packet_source(self.get_client_packet)
         # no need to start the client protocol,

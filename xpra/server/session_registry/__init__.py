@@ -37,10 +37,6 @@ class Session:
     uuid: str = ""
     session_name: str = ""
     endpoint: Any = None
-    # the full server caps from the registration hello, stashed for the
-    # phase-3b brokering layer (which adopts the registration connection and
-    # therefore must not re-hello with the server):
-    server_caps: dict = field(default_factory=dict)
 
     @classmethod
     def from_tuple(cls, data: SessionData | None) -> "Session | None":
@@ -103,6 +99,14 @@ class SessionRegistry:
 
     def list_sessions(self) -> list[Session]:
         raise NotImplementedError(f"{self.NAME!r} registry does not support enumeration")
+
+    def get_info(self) -> dict:
+        """
+        Backend-specific info to expose under the proxy server's `xpra info`
+        output. Default returns an empty dict; backends that hold runtime
+        state (e.g. `live`) override this to publish what they hold.
+        """
+        return {}
 
     def __repr__(self):
         return f"SessionRegistry({self.NAME!r})"

@@ -198,7 +198,7 @@ class ProxyServer(ServerCore):
         log("ProxyServer.init(%s)", opts)
         self.pings = int(opts.pings)
         self._start_sessions = opts.proxy_start_sessions
-        self.session_registry = load_session_registry(getattr(opts, "session_registry", "") or "auth")
+        self.session_registry = load_session_registry(opts.session_registry or "auth")
         authlog("proxy session registry: %s", self.session_registry)
         # super().init runs ServerCore.init which handles connection setup and
         # dispatches `init` to every subsystem registered in self.subsystems:
@@ -347,8 +347,7 @@ class ProxyServer(ServerCore):
         return True
 
     def _handle_hello_request_register(self, proto, caps: typedict) -> bool:
-        registry = self.session_registry
-        if registry is None or registry.NAME != "live":
+        if not (registry := self.session_registry) or registry.NAME != "live":
             authlog.error("Error: rejecting register request from %s", proto)
             authlog.error(" the session registry is %r, register requires 'live'",
                           registry.NAME if registry else None)
@@ -374,7 +373,7 @@ class ProxyServer(ServerCore):
                 pass
         session = Session(uid=uid, gid=gid, displays=displays,
                           uuid=uuid, session_name=session_name,
-                          endpoint=proto, server_caps=dict(caps))
+                          endpoint=proto)
         try:
             registry.register(session)
         except Exception as e:
@@ -389,13 +388,18 @@ class ProxyServer(ServerCore):
         return True
 
     def cleanup_protocol(self, protocol):
-        session = self._registered_protos.pop(protocol, None)
-        if session is not None and self.session_registry is not None:
-            try:
-                self.session_registry.unregister(session)
-            except Exception:
-                authlog("unregister(%s) failed", session, exc_info=True)
+        if session := self._registered_protos.pop(protocol, None):
+            self._unregister_session(session)
         return super().cleanup_protocol(protocol)
+
+    def _unregister_session(self, session: Session) -> None:
+        if registry := self.session_registry:
+            try:
+                registry.unregister(session)
+            except Exception as e:
+                authlog("unregister(%s) failed", session, exc_info=True)
+                authlog.error("Error: session could not be unregistered")
+                authlog.estr(e)
 
     def handle_stop_request(self, proto) -> None:
         socktype = get_socktype(proto)
@@ -441,7 +445,7 @@ class ProxyServer(ServerCore):
             log.error(" use 'none' to disable authentication")
             nosession("no sessions found")
             return
-        sessions: Session | None = self._lookup_sessions(client_proto, c)
+        sessions: Session | bool | None = self._lookup_sessions(client_proto, c)
         if sessions is False:
             disconnect(ConnectionMessage.AUTHENTICATION_ERROR, "cannot access sessions")
             return
@@ -480,6 +484,11 @@ class ProxyServer(ServerCore):
         def nosession(*extras) -> None:
             disconnect(ConnectionMessage.SESSION_NOT_FOUND, *extras)
 
+        # `live` brokering: hand the existing registration connection over
+        # to a ProxyInstance instead of dialing the server.
+        if sessions.endpoint:
+            self._broker_live_session(client_proto, c, auth_caps, sessions)
+            return
         uid, gid, displays, env_options, session_options = sessions
         if POSIX:
             if getuid() == 0:
@@ -688,6 +697,57 @@ class ProxyServer(ServerCore):
 
         start_thread(start_proxy_process, f"start_proxy({client_proto})")
 
+    def _broker_live_session(self, client_proto, c: typedict, auth_caps: dict, session: Session) -> None:
+        """
+        Hand the existing registration connection over to a brokering thread.
+        The proxy stops processing packets on the registration proto,
+        signals the server with a `handover` packet so it can hand its end
+        to its local accept loop and immediately re-register,
+        then runs a ProxyInstanceThread that adopts the existing proto.
+        The client's hello is forwarded to the server through normal
+        proxy mechanics, so the server produces a real hello response.
+        """
+        endpoint = session.endpoint
+        if not endpoint or endpoint.is_closed():
+            authlog.error("Error: live session %r has no usable endpoint", session.uuid)
+            self.send_disconnect(client_proto, ConnectionMessage.SESSION_NOT_FOUND, "registered session is gone")
+            return
+        # Pop atomically so a second client cannot grab the same session
+        # while we're brokering it. The server is expected to re-register
+        # itself for the next client; if it never does, this session simply
+        # disappears.
+        self._unregister_session(session)
+        self._registered_protos.pop(endpoint, None)
+
+        authlog.info("brokering live session %r to %s",
+                     session.session_name or session.uuid, get_socktype(client_proto))
+
+        cipher = cipher_mode = ""
+        encryption_key = b""
+        if auth_caps:
+            cipher = auth_caps.get("cipher")
+            if cipher:
+                from xpra.net.crypto import DEFAULT_MODE  # pylint: disable=import-outside-toplevel
+                cipher_mode = auth_caps.get("cipher.mode", DEFAULT_MODE)
+                encryption_key = self.get_encryption_key(client_proto.authenticators, client_proto.keyfile)
+
+        # Signal the registered server that this connection is being
+        # repurposed before we start splicing packets through it.
+        try:
+            endpoint.send_now(Packet("handover"))
+        except Exception:
+            authlog("failed to notify %s of handover", endpoint, exc_info=True)
+
+        from xpra.server.proxy.instance_thread import ProxyInstanceThread
+        disp_desc = {"type": get_socktype(endpoint), "display": session.session_name or session.uuid}
+        pit = ProxyInstanceThread(session.session_options, self.pings,
+                                  client_proto, endpoint._conn,
+                                  disp_desc, cipher, cipher_mode, encryption_key, c,
+                                  server_protocol=endpoint)
+        pit.stopped = self.reap
+        pit.run()
+        self.instances[pit] = (False, session.session_name or session.uuid, None)
+
     def start_new_session(self, username: str, _password, uid: int, gid: int,
                           sess_options: dict, displays=()) -> tuple[Any, str, str]:
         log("start_new_session%s", (username, "..", uid, gid, sess_options, displays))
@@ -800,15 +860,7 @@ class ProxyServer(ServerCore):
                         i += 1
                     info["instances"] = instances_info
                     info["proxies"] = len(instances)
-        registry = self.session_registry
-        if registry is not None and registry.NAME == "live":
-            registered = {}
-            for i, s in enumerate(registry.list_sessions()):
-                registered[i] = {
-                    "uuid": s.uuid,
-                    "session-name": s.session_name,
-                    "displays": list(s.displays),
-                }
-            info["registered"] = registered
+        if registry := self.session_registry:
+            info.update(registry.get_info())
         info.setdefault("server", {})["type"] = "Python/GLib/proxy"
         return info
