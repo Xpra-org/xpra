@@ -340,6 +340,9 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         "cmdline": cmdline,
         "type": protocol,
     }
+    socket_dirs_in_cmdline = ("--socket-dir" in cmdline or "--socket-dirs" in cmdline or any(
+        c.startswith("--socket-dir=") or c.startswith("--socket-dirs=") for c in cmdline)
+    )
 
     def add_credentials() -> None:
         username = parsed.username or opts.username
@@ -407,8 +410,6 @@ def parse_display_name(opts, display_name: str, cmdline=(),
             display = parsed.path.lstrip(":")
             if opts.socket_dirs:
                 desc["socket_dirs"] = opts.socket_dirs
-            if opts.socket_dir:
-                desc["socket_dir"] = opts.socket_dir
         opts.display = display
         desc.update({
             "type": "socket",
@@ -457,8 +458,8 @@ def parse_display_name(opts, display_name: str, cmdline=(),
                 "exit_ssh": opts.exit_ssh,
             }
         )
-        if opts.socket_dir:
-            desc["socket_dir"] = opts.socket_dir
+        if socket_dirs_in_cmdline and opts.socket_dirs:
+            desc["socket_dirs"] = opts.socket_dirs
         if opts.remote_xpra:
             desc["remote_xpra"] = opts.remote_xpra
         add_credentials()
@@ -1837,10 +1838,11 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="socket_dirs", default=defaults.socket_dirs,
                      help="Directories to look for the socket files in."
                           " Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.socket_dirs))
-    default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or the first valid directory in socket-dirs"
+    default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or socket-dirs"
     group.add_option("--socket-dir", action="store",
                      dest="socket_dir", default=defaults.socket_dir,
-                     help="Directory to place/look for the socket files in. Default: '%s'." % default_socket_dir_str)
+                     help="Deprecated alias for prepending a directory to socket-dirs. Default: '%s'."
+                          % default_socket_dir_str)
     group.add_option("--system-proxy-socket", action="store",
                      dest="system_proxy_socket", default=defaults.system_proxy_socket,
                      help="The socket path to use to contact the system-wide proxy server. Default: '%default'.")

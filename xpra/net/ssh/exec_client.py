@@ -67,7 +67,10 @@ def get_win32_kwargs() -> dict[str, Any]:
 def get_ssh_command(display_desc: dict) -> list[str]:
     remote_xpra: list[str] = display_desc["remote_xpra"]
     assert remote_xpra
+    socket_dirs = list(display_desc.get("socket_dirs", ()))
     socket_dir = display_desc.get("socket_dir", "")
+    if socket_dir and socket_dir not in socket_dirs:
+        socket_dirs.insert(0, socket_dir)
     proxy_command: list[str] = display_desc["proxy_command"]  # ie: ["_proxy_start"]
     # display_as_args ie: ["--start=xterm", "--env=SSH_AGENT_UUID={uuid}", ":10"]
     display_as_args: list[str] = display_desc["display_as_args"]
@@ -80,8 +83,8 @@ def get_ssh_command(display_desc: dict) -> list[str]:
         else:
             pc = [f'{check} [ -x {x} ]; then']
         pc += [x] + proxy_command + [shellquote(x) for x in display_as_args]
-        if socket_dir:
-            pc.append(f"--socket-dir={socket_dir}")
+        for socket_dir in socket_dirs:
+            pc.append(f"--socket-dirs={socket_dir}")
         remote_cmd += " ".join(pc) + ";"
     remote_cmd += "else echo \"no xpra command found\"; exit 1; fi"
     # how many times we need to escape the remote command string

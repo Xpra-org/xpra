@@ -343,8 +343,7 @@ class ServerSocketsTest(ServerTestUtil):
         # hide sessions dir and use a single socket dir location:
         ServerSocketsTest.default_xpra_args = list(filter(lambda x: not x.startswith("--socket-dir"), saved_args))
         server_args = (
-            "--socket-dir=%s" % tmpsocketdir1,
-            "--socket-dirs=%s" % tmpsocketdir2,
+            "--socket-dirs=%s" % os.path.pathsep.join((tmpsocketdir1, tmpsocketdir2)),
             "--sessions-dir=%s" % tmpsessionsdir,
             "--bind=noabstract",
         )
@@ -360,7 +359,6 @@ class ServerSocketsTest(ServerTestUtil):
             t(exit_code=ExitCode.CONNECTION_FAILED)
             # specifying the socket-dir(s) should work:
             for d in (tmpsocketdir1, tmpsocketdir2):
-                t(("--socket-dir=%s" % d,))
                 t(("--socket-dirs=%s" % d,))
         finally:
             ServerSocketsTest.default_xpra_args = saved_args

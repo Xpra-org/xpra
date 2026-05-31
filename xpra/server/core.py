@@ -226,10 +226,8 @@ class ServerCore(GLibServer):
         self.session_name = str(opts.session_name)
         set_name("Xpra", self.session_name or "Xpra")
         self.unix_socket_paths = []
-        self._socket_dir = opts.socket_dir or ""
-        if not self._socket_dir and opts.socket_dirs:
-            self._socket_dir = opts.socket_dirs[0]
-        self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
+        self._socket_dir = opts.socket_dirs[0] if opts.socket_dirs else ""
+        self.dotxpra = DotXpra(opts.socket_dirs + opts.client_socket_dirs)
         self.compression_level = opts.compression_level
         self.readonly = opts.readonly
         self.http = opts.http

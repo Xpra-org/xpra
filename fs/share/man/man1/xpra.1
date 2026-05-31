@@ -281,8 +281,7 @@ similarly attach to the lone xpra session on a remote machine.
 Connecting using the display number assumes that the client and server
 use the same configuration for socket directories, or at least that
 the client can find at least one of the directories used by
-the unix domain sockets (see \fIbind\fP, \fIsocket-dir\fP and
-\fIsocket-dirs\fP).
+the unix domain sockets (see \fIbind\fP and \fIsocket-dirs\fP).
 
 If the xpra server was given the \fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP
 (or \fB\-\-bind\-ssl\fP, \fB\-\-bind\-ws\fP, \fB\-\-bind\-wss\fP, \fB\-\-bind\-vsock\fP)
@@ -604,14 +603,15 @@ useful on video content where it saves a considerable amount of bandwidth.
 .TP
 
 \fB\-\-socket\-dir\fP=\fIDIR\fP
-Location where to write and look for the Xpra socket files.
+Deprecated alias for prepending a directory to \fBsocket-dirs\fP.
+Use \fB\-\-socket\-dirs\fP instead.
 The default location varies from platform to platform
 ("\fI~/.xpra\fP" and "\fI$XDG_RUNTIME_DIR/xpra\fP" on most Posix systems).
-If unspecified, the first value from \fBsocket-dirs\fP will be used.
+If unspecified, the \fBsocket-dirs\fP values will be used.
 It may also be specified using the XPRA_SOCKET_DIR environment variable.
 
-When using the socket-dir option, it is generally necessary to specify
-\fBsocket-dir\fP or \fBsocket-dirs\fP on all following commands,
+When using custom socket directories, it is generally necessary to specify
+\fBsocket-dirs\fP on all following commands,
 for xpra to work with the open sessions.
 
 By specifying a shared directory this can be coupled with the
@@ -620,8 +620,8 @@ Xpra sessions across user accounts with shared memory acceleration.
 .TP
 
 \fB\-\-socket\-dirs\fP=\fIDIR\fP
-Specifies the directories where to look for existing sockets if
-a specific one was not set using \fBsocket-dir\fP.
+Specifies the directories where to create and look for sockets.
+All configured directories are used.
 You may specify each directory using a new \fB\-\-socket\-dirs\fP
 command line argument, or joined together by the path separator (\fB:\fP on Posix).
 The paths will be expanded.
@@ -862,7 +862,7 @@ The location can take the form:
 .IP \fBnone\fP
 do not create a socket
 .IP \fBauto\fP
-backwards compatible default which uses the current \fIsocket-dir\fP
+backwards compatible default which uses the configured \fIsocket-dirs\fP entries
 .IP \fBDIRECTORY/\fP
 create a socket in the directory specified, if the directory does
 not exist then it will be created - you should include the trailing

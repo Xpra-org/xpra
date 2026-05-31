@@ -146,7 +146,7 @@ def run_list_sessions(args, options) -> ExitValue:
     if args:
         raise InitInfo("too many arguments for 'list-sessions' mode")
     from xpra.platform.dotxpra import DotXpra
-    dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+    dotxpra = DotXpra(options.socket_dirs)
     sessions = get_xpra_sessions(dotxpra)
     print(f"Found {len(sessions)} xpra sessions:")
     for display, attrs in sessions.items():
@@ -165,7 +165,7 @@ def run_list(opts, extra_args, clean: bool = True) -> ExitValue:
     if extra_args:
         raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list` mode")
     from xpra.platform.dotxpra import DotXpra
-    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
+    dotxpra = DotXpra(opts.socket_dirs + opts.client_socket_dirs)
     results = dotxpra.socket_details()
     if not results:
         sys.stdout.write("No xpra sessions found\n")
@@ -256,7 +256,7 @@ def run_list_windows(opts, extra_args) -> ExitValue:
     if extra_args:
         raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list-windows` mode")
     from xpra.platform.dotxpra import DotXpra
-    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+    dotxpra = DotXpra(opts.socket_dirs)
     displays = dotxpra.displays()
     if not displays:
         sys.stdout.write("No xpra sessions found\n")

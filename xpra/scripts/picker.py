@@ -41,7 +41,7 @@ def _werr(*msg) -> None:
 
 def find_session_by_name(opts, session_name: str) -> str:
     from xpra.platform.paths import get_nodock_command
-    dotxpra = _DotXpra(opts.socket_dir, opts.socket_dirs)
+    dotxpra = _DotXpra(opts.socket_dirs)
     socket_paths = dotxpra.socket_paths(check_uid=getuid(), matching_state=SocketState.LIVE)
     if not socket_paths:
         return ""
@@ -145,7 +145,7 @@ def pick_display(opts, extra_args, cmdline: Sequence[str] = ()) -> dict[str, Any
 
 
 def do_pick_display(opts, extra_args, cmdline: Sequence[str] = ()) -> dict[str, Any]:
-    dotxpra = _DotXpra(opts.socket_dir, opts.socket_dirs)
+    dotxpra = _DotXpra(opts.socket_dirs)
     if not extra_args:
         # Pick a default server
         dir_servers = dotxpra.socket_details()
@@ -260,13 +260,11 @@ def get_sockpath(display_desc: dict[str, Any], timeout=CONNECT_TIMEOUT) -> str:
         uid = getuid()
         gid = getgid()
         username = get_username_for_uid(uid)
-    dotxpra = _DotXpra(
-        display_desc.get("socket_dir"),
-        display_desc.get("socket_dirs", ()),
-        username,
-        uid,
-        gid,
-    )
+    socket_dirs = list(display_desc.get("socket_dirs", ()))
+    socket_dir = display_desc.get("socket_dir")
+    if socket_dir and socket_dir not in socket_dirs:
+        socket_dirs.insert(0, socket_dir)
+    dotxpra = _DotXpra(socket_dirs, username, uid, gid)
     display = display_desc["display"]
 
     def socket_details(state=SocketState.LIVE) -> dict:

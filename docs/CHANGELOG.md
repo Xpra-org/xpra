@@ -4,6 +4,7 @@
 * 🔧 Platforms, build and packaging:
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
 * 🖧 Network:
+  * [proxy registration](https://github.com/Xpra-org/xpra/issues/2125)
   * [zero copy network reception](https://github.com/Xpra-org/xpra/issues/4873)
   * [use `TCP_INFO` to drive batch delay](https://github.com/Xpra-org/xpra/issues/2421)
   * [`asyncio` loop exit fix](https://github.com/Xpra-org/xpra/pull/4891)

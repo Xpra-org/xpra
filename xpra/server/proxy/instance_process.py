@@ -200,7 +200,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
             self.stop(None, f"cannot create the proxy control socket: {msg}")
 
         username = get_username_for_uid(self.uid)
-        dotxpra = DotXpra(self.socket_dir, actual_username=username, uid=self.uid, gid=self.gid)
+        dotxpra = DotXpra([self.socket_dir], actual_username=username, uid=self.uid, gid=self.gid)
         sockname = f":proxy-{os.getpid()}"
         sockpath = dotxpra.socket_path(sockname)
         log("%s.socket_path(%s)=%s", dotxpra, sockname, sockpath)

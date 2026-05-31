@@ -8,6 +8,7 @@ Command-line argument parsing utilities extracted from xpra.scripts.main.
 Pure functions with no GTK/platform dependencies.
 """
 
+import os
 from typing import Any
 from collections.abc import Sequence
 
@@ -135,12 +136,19 @@ def get_command_args(opts, uid: int, gid: int, option_types: dict[str, Any],
     fixup_options(fdefaults)
     args = []
     for x, ftype in option_types.items():
-        if x in NON_COMMAND_LINE_OPTIONS:
+        if x in NON_COMMAND_LINE_OPTIONS or x == "socket-dir":
             continue
         if compat and x in OPTIONS_ADDED_SINCE_V5:
             continue
         fn = x.replace("-", "_")
         ov = getattr(opts, fn)
+        if x == "socket-dirs":
+            socket_dir = getattr(opts, "socket_dir", "")
+            if isinstance(ov, str):
+                ov = ov.split(os.path.pathsep)
+            if socket_dir:
+                ov = [v for v in ov if v != socket_dir]
+                ov.insert(0, socket_dir)
         dv = getattr(defaults, fn)
         fv = getattr(fdefaults, fn)
         incmdline = (f"--{x}" in cmdline or f"--no-{x}" in cmdline or any(c.startswith(f"--{x}=") for c in cmdline))

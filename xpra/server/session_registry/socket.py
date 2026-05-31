@@ -42,7 +42,7 @@ class Registry(SessionRegistry):
         socket_dirs = self.socket_dirs or list(getattr(authenticator, "socket_dirs", ()) or get_socket_dirs())
         displays: list[str] = []
         try:
-            sockdir = DotXpra(None, socket_dirs, actual_username=username, uid=uid, gid=gid)
+            sockdir = DotXpra(socket_dirs, actual_username=username, uid=uid, gid=gid)
             for state, display in sockdir.sockets(check_uid=uid):
                 if state == SocketState.LIVE and display not in displays:
                     displays.append(display)

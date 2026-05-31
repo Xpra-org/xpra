@@ -192,7 +192,7 @@ class TopClient:
         self.selected_session = None
         self.message = None
         self.exit_code : ExitValue | None = None
-        self.dotxpra = DotXpra(self.socket_dir, self.socket_dirs)
+        self.dotxpra = DotXpra(self.socket_dirs)
         self.last_getch = 0
         self.psprocess = {}
 

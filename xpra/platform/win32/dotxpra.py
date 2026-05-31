@@ -23,7 +23,7 @@ def norm_makepath(dirpath: str, name: str):
 
 
 class DotXpra:
-    def __init__(self, sockdir=None, sockdirs=(), actual_username="", *_args, **_kwargs):
+    def __init__(self, sockdirs=(), actual_username="", *_args, **_kwargs):
         self.username = actual_username
 
     def __repr__(self):

@@ -421,6 +421,15 @@ class TestSafeLookup(unittest.TestCase):
         result = safe_lookup(config, "*")
         assert isinstance(result, dict)
 
+    def test_channel_run_factory_uses_socket_dirs(self):
+        from xpra.net.ssh.paramiko.client import ChannelRunFactory
+        crf = ChannelRunFactory(MagicMock(), ["_proxy"], ["xpra"], ["/tmp/a", "/tmp/b"], [":10"], {})
+        crf.find_remote_xpra = lambda: "xpra"
+        cmd = crf.get_xpra_command()
+        self.assertIn('"--socket-dirs=/tmp/a"', cmd)
+        self.assertIn('"--socket-dirs=/tmp/b"', cmd)
+        self.assertNotIn("--socket-dir=", cmd)
+
 
 # ---------------------------------------------------------------------------
 # 4. xpra/net/ssh/exec_client.py  –  unit tests
@@ -451,6 +460,20 @@ class TestExecClientUnit(unittest.TestCase):
         last = cmd[-1]
         assert "xpra" in last
         assert "_proxy" in last
+
+    def test_get_ssh_command_uses_socket_dirs(self):
+        from xpra.net.ssh.exec_client import get_ssh_command
+        desc = {
+            "remote_xpra": ["xpra"],
+            "socket_dirs": ["/tmp/a", "/tmp/b"],
+            "proxy_command": ["_proxy"],
+            "display_as_args": [":10"],
+            "full_ssh": ["ssh", "-p", "22", "user@host"],
+        }
+        last = get_ssh_command(desc)[-1]
+        self.assertIn("--socket-dirs=/tmp/a", last)
+        self.assertIn("--socket-dirs=/tmp/b", last)
+        self.assertNotIn("--socket-dir=", last)
 
     def test_get_ssh_command_non_string_raises(self):
         from xpra.net.ssh.exec_client import get_ssh_command

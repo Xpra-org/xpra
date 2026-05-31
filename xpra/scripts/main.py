@@ -629,7 +629,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             except Exception:
                 pass
             else:
-                dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+                dotxpra = DotXpra(options.socket_dirs)
                 display_name = display.get("display_name")
                 if display_name:
                     state = dotxpra.get_display_state(display_name)
@@ -1057,7 +1057,7 @@ def run_client(script_file, cmdline: list[str], opts, extra_args: list[str], mod
         opts.reconnect = False
     if mode in ("attach", "detach") and len(extra_args) == 1 and extra_args[0] == "all":
         # run this command for each display:
-        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+        dotxpra = DotXpra(opts.socket_dirs)
         displays = dotxpra.displays(check_uid=getuid(), matching_state=SocketState.LIVE)
         if not displays:
             sys.stdout.write("No xpra sessions found\n")
@@ -1822,7 +1822,7 @@ def run_server(script_file, cmdline: list[str], options, args: list[str], full_m
         except (ValueError, InitException, InitExit):
             pass
         else:
-            dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+            dotxpra = DotXpra(options.socket_dirs)
             display = display_desc.get("display_name")
             if display:
                 state = dotxpra.get_display_state(display)
@@ -2263,7 +2263,7 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
         else:
             matching_display = display_name
 
-    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
+    dotxpra = DotXpra(opts.socket_dirs, username, uid=uid, gid=gid)
     if WIN32:
         if not mode.startswith("shadow"):
             raise ValueError(f"invalid mode {mode!r} for MS Windows")
@@ -2347,7 +2347,7 @@ def run_proxy_run(options, script_file: str, cmdline: list[str], args: list[str]
     # print(f"{display_args=} {cmd_args=}")
 
     def is_live(display: str) -> bool:
-        dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+        dotxpra = DotXpra(options.socket_dirs)
         return dotxpra.get_display_state(display) == SocketState.LIVE
 
     try:
@@ -2407,7 +2407,7 @@ def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode:
         state = None
         if attach is not False:
             # maybe this server already exists?
-            dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+            dotxpra = DotXpra(opts.socket_dirs)
             if not args and server_mode in ("shadow", "shadow-screen", "expand"):
                 try:
                     display_name = pick_shadow_display(args, sessions_dir=opts.sessions_dir)
@@ -2483,9 +2483,11 @@ def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode:
 def show_final_state(display_desc: dict[str, Any]) -> int:
     # this is for local sockets only!
     display = display_desc["display"]
+    sockdirs = list(display_desc.get("socket_dirs", ()))
     sockdir = display_desc.get("socket_dir", "")
-    sockdirs = display_desc.get("socket_dirs", ())
-    sockdir = DotXpra(sockdir, sockdirs)
+    if sockdir and sockdir not in sockdirs:
+        sockdirs.insert(0, sockdir)
+    sockdir = DotXpra(sockdirs)
     try:
         sockfile = get_sockpath(display_desc, 0)
     except (InitException, InitExit):
@@ -2529,8 +2531,11 @@ def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> 
         procs = []
         # ["xpra", "stop", ..]
         from xpra.platform.paths import get_nodock_command
-        cmd = get_nodock_command() + [mode, f"--socket-dir={opts.socket_dir}"]
-        for x in opts.socket_dirs:
+        cmd = get_nodock_command() + [mode]
+        socket_dirs = list(opts.socket_dirs)
+        if opts.socket_dir and opts.socket_dir not in socket_dirs:
+            socket_dirs.insert(0, opts.socket_dir)
+        for x in socket_dirs:
             if x:
                 cmd.append(f"--socket-dirs={x}")
         # use a subprocess per display:
@@ -2546,7 +2551,7 @@ def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> 
 
     if len(extra_args) == 1 and extra_args[0] == "all":
         # stop or exit all
-        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+        dotxpra = DotXpra(opts.socket_dirs)
         displays = dotxpra.displays(check_uid=getuid(), matching_state=SocketState.LIVE)
         if not displays:
             sys.stdout.write("No xpra sessions found\n")
@@ -2774,7 +2779,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
         return load_pid(os.path.join(session_dir, pidfile))
 
     # also clean client sockets?
-    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+    dotxpra = DotXpra(opts.socket_dirs)
     for display, session_dir in clean.items():
         if not os.path.exists(session_dir):
             print(f"session {display} not found")
@@ -2824,7 +2829,7 @@ def run_clean_sockets(opts, args) -> ExitValue:
             matching_display = args[0]
         else:
             raise InitInfo("too many arguments for 'clean' mode")
-    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
+    dotxpra = DotXpra(opts.socket_dirs + opts.client_socket_dirs)
     results = dotxpra.socket_details(check_uid=getuid(),
                                      matching_state=SocketState.UNKNOWN,
                                      matching_display=matching_display)
@@ -2892,7 +2897,7 @@ def run_recover(script_file: str, cmdline: list[str], options, args: list[str], 
 
 
 def run_displays(options, args) -> ExitValue:
-    # dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
+    # dotxpra = DotXpra(opts.socket_dirs+opts.client_socket_dirs)
     displays = get_displays_info(display_names=args if args else None, sessions_dir=options.sessions_dir)
     print(f"Found {len(displays)} displays:")
     if args:

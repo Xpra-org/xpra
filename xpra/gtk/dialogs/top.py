@@ -75,7 +75,9 @@ class TopGUI(BaseGUIWindow):
         self.opts = opts
         socket_dirs = getattr(opts, "socket_dirs", None) or get_socket_dirs()
         socket_dir = getattr(opts, "socket_dir", None) or ""
-        self.dotxpra = DotXpra(socket_dir, socket_dirs)
+        if socket_dir and socket_dir not in socket_dirs:
+            socket_dirs = [socket_dir] + list(socket_dirs)
+        self.dotxpra = DotXpra(socket_dirs)
         self.selected_display: str | None = None
         self.psprocess: dict[int, object] = {}
         self._refresh_timer = 0

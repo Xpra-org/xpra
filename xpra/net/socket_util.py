@@ -851,7 +851,10 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
             raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                            "at least one socket directory must be set to use unix domain sockets")
     from xpra.platform.dotxpra import DotXpra
-    dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
+    socket_dirs = list(socket_dirs)
+    if socket_dir and socket_dir not in socket_dirs:
+        socket_dirs.insert(0, socket_dir)
+    dotxpra = DotXpra(socket_dirs, username, uid, gid)
     if display_name and not WIN32:
         display_name = normalize_local_display_name(display_name)
     sockpaths = get_bind_sockpaths(bind, session_dir, display_name, dotxpra, uid, gid)

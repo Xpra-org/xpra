@@ -73,8 +73,8 @@ def print_DE_warnings() -> None:
     log.warn(" or disable xpra's notifications option")
 
 
-def guess_xpra_display(socket_dir, socket_dirs) -> str:
-    dotxpra = DotXpra(socket_dir, socket_dirs)
+def guess_xpra_display(socket_dirs) -> str:
+    dotxpra = DotXpra(socket_dirs)
     results = dotxpra.sockets()
     live = [display for state, display in results if state == SocketState.LIVE]
     if not live:
@@ -311,7 +311,7 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
             from xpra.scripts.display import guess_display
             display_name = guess_display(desktop_display, sessions_dir=opts.sessions_dir)
     elif upgrading and not extra_args:
-        display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
+        display_name = guess_xpra_display(opts.socket_dirs)
     else:
         if len(extra_args) > 1:
             raise InitException(f"too many extra arguments ({len(extra_args)}): only expected a display number")
@@ -326,7 +326,7 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
         else:
             if proxying or encoder or runner:
                 # find a free display number:
-                dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+                dotxpra = DotXpra(opts.socket_dirs)
                 all_displays = dotxpra.sockets()
                 # ie: [("LIVE", ":100"), ("LIVE", ":200"), ...]
                 displays = [v[1] for v in all_displays]
@@ -340,7 +340,7 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
                     raise InitException("you must specify a free virtual display name to use with the proxy server")
             elif use_display:
                 # only use automatic guess for xpra displays and not X11 displays:
-                display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
+                display_name = guess_xpra_display(opts.socket_dirs)
             else:
                 # We will try to find one automatically
                 # Use the temporary magic value "S" as marker:
@@ -475,7 +475,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         if POSIX and not OSX and get_saved_env_var("DISPLAY", "") == display_name:
             warn("Warning: upgrading from an environment connected to the same display")
         # try to stop the existing server if it exists:
-        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+        dotxpra = DotXpra(opts.socket_dirs)
         sessions = get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN, SocketState.DEAD),
                                      matching_display=display_name, query=True)
         session = sessions.get(display_name, {})

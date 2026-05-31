@@ -39,10 +39,9 @@ lock = auto
 #socket-dirs = /run/xpra
 %(socket_dirs)s
 
-# Where to create new sockets
-# (otherwise the first "socket-dirs" is used)
-#socket-dir = /tmp
-#socket-dir = ~/.xpra
+# Where to create and look for sockets:
+# all "socket-dirs" entries are used.
+# "socket-dir" is deprecated.
 
 # Session idle timeout in seconds:
 #idle-timeout = 120

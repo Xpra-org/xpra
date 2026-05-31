@@ -115,7 +115,7 @@ def xpra_print(socket_path: str, socket_dir: str, password_file: str, encryption
         # use the display and hope we can find its corresponding socket:
         command = ["xpra", "print", display]
         if socket_dir:
-            command.append("--socket-dir=%s" % socket_dir)
+            command.append("--socket-dirs=%s" % socket_dir)
     if encryption:
         command += ["--encryption=%s" % encryption,
                     "--encryption-keyfile=%s" % encryption_keyfile]

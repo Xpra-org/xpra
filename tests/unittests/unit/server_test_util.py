@@ -49,7 +49,7 @@ class ServerTestUtil(ProcessTestUtil):
     def setUpClass(cls):
         ProcessTestUtil.setUpClass()
         tmpdir = tempfile.gettempdir()
-        cls.dotxpra = DotXpra(tmpdir, [tmpdir])
+        cls.dotxpra = DotXpra([tmpdir])
         cls.default_xpra_args: list[str] = ["--speaker=no", "--microphone=no"]
         if not WIN32:
             cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no"]

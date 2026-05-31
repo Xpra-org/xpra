@@ -8,6 +8,7 @@
 import os
 import sys
 import unittest
+import warnings
 from unittest.mock import patch, MagicMock
 
 from xpra.os_util import WIN32, POSIX, OSX
@@ -17,9 +18,51 @@ from xpra.scripts.parsing import (
     audio_option, parse_env, parse_URL, _sep_pos, normalize_display_name,
     parse_display_name, parse_cmdline,
 )
+from xpra.scripts.args import get_start_server_args
 
 
 class TestParsing(unittest.TestCase):
+
+    def test_socket_dir_is_deprecated(self):
+        with warnings.catch_warnings(record=True) as records:
+            warnings.simplefilter("always", DeprecationWarning)
+            opts, _args = parse_cmdline([
+                "xpra", "start",
+                "--socket-dir=/tmp/a",
+                "--socket-dirs=/tmp/b:/tmp/c",
+            ])
+        self.assertEqual(opts.socket_dir, "/tmp/a")
+        self.assertEqual(opts.socket_dirs, ["/tmp/a", "/tmp/b", "/tmp/c"])
+        self.assertEqual(len(records), 1)
+        self.assertIs(records[0].category, DeprecationWarning)
+        self.assertIn("socket-dir", str(records[0].message))
+        self.assertIn("socket-dirs", str(records[0].message))
+
+    def test_socket_dir_deduplicates_socket_dirs(self):
+        with warnings.catch_warnings(record=True) as records:
+            warnings.simplefilter("always", DeprecationWarning)
+            opts, _args = parse_cmdline([
+                "xpra", "start",
+                "--socket-dir=/tmp/a",
+                "--socket-dirs=/tmp/b:/tmp/a:/tmp/c",
+            ])
+        self.assertEqual(opts.socket_dirs, ["/tmp/a", "/tmp/b", "/tmp/c"])
+        self.assertEqual(len(records), 1)
+
+    def test_socket_dir_is_not_serialized(self):
+        cmdline = [
+            "xpra", "start",
+            "--socket-dir=/tmp/a",
+            "--socket-dirs=/tmp/b:/tmp/c",
+        ]
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            opts, _args = parse_cmdline(cmdline)
+        args = get_start_server_args(opts, cmdline=cmdline)
+        self.assertNotIn("--socket-dir=/tmp/a", args)
+        self.assertIn("--socket-dirs=/tmp/a", args)
+        self.assertIn("--socket-dirs=/tmp/b", args)
+        self.assertIn("--socket-dirs=/tmp/c", args)
 
     def test_ssh_parsing(self):
         assert parse_ssh_option("auto")[0] in ("paramiko", "ssh")

@@ -6,6 +6,7 @@
 
 import sys
 import os
+import warnings
 from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
@@ -1487,6 +1488,15 @@ def fixup_socketdirs(options) -> None:
             assert isinstance(getattr(options, option_name), (list, tuple))
             value = [v for x in value for v in x.split(os.path.pathsep)]
         setattr(options, option_name, value)
+    socket_dir = getattr(options, "socket_dir", "")
+    if socket_dir:
+        warnings.warn(
+            "the 'socket-dir' option is deprecated, use 'socket-dirs' instead",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        options.socket_dirs = [x for x in options.socket_dirs if x != socket_dir]
+        options.socket_dirs.insert(0, socket_dir)
 
 
 def fixup_pings(options) -> None:

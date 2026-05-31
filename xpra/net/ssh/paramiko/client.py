@@ -210,7 +210,10 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     password: str = display_desc.get("password", "")
     remote_xpra = display_desc["remote_xpra"]
     proxy_command: Sequence[str] = display_desc["proxy_command"]  # ie: ["_proxy_start"]
+    socket_dirs: list[str] = list(display_desc.get("socket_dirs", ()))
     socket_dir: str = display_desc.get("socket_dir", "")
+    if socket_dir and socket_dir not in socket_dirs:
+        socket_dirs.insert(0, socket_dir)
     display: str = display_desc.get("display", "")
     display_as_args: list[str] = display_desc["display_as_args"]  # ie: "--start=xterm :10"
     paramiko_config: dict = display_desc.copy()
@@ -296,7 +299,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
                           host_config,
                           proxy_keys,
                           paramiko_config)
-            chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
+            chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config)
             peername = (host, port)
             conn = SSHProxyCommandConnection(chan, peername, peername, {"host": host, "port": port})
             conn.target = host_target_string("ssh", username, host, port or 22, display)
@@ -330,7 +333,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
                                host_config,
                                keys,
                                paramiko_config)
-        chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
+        chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config)
         peername = (proxy_host, proxy_port)
         conn = SSHProxyCommandConnection(chan, peername, peername, {"host": proxy_host, "port": proxy_port})
         to_str = host_target_string("ssh", username or default_username, host, port, display)
@@ -396,7 +399,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         log(f"direct channel to remote port {remote_port} : {chan}")
     else:
         chan = run_remote_xpra(transport, proxy_command, remote_xpra,
-                               socket_dir, display_as_args, paramiko_config)
+                               socket_dirs, display_as_args, paramiko_config)
     conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), {"host": host, "port": port})
     conn.target = host_target_string("ssh", username, host, port, display)
     conn.timeout = SOCKET_TIMEOUT
@@ -902,21 +905,21 @@ def run_test_command(transport, cmd: str) -> tuple[list[str], list[str], int]:
 
 
 def run_remote_xpra(transport, xpra_proxy_command: Sequence[str], remote_xpra: Sequence[str],
-                    socket_dir: str, display_as_args: Sequence[str], paramiko_config: dict):
+                    socket_dirs: Sequence[str], display_as_args: Sequence[str], paramiko_config: dict):
     log("run_remote_xpra%s", (transport, xpra_proxy_command, remote_xpra,
-                              socket_dir, display_as_args, paramiko_config))
-    crf = ChannelRunFactory(transport, xpra_proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
+                              socket_dirs, display_as_args, paramiko_config))
+    crf = ChannelRunFactory(transport, xpra_proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config)
     return crf.open()
 
 
 class ChannelRunFactory:
 
     def __init__(self, transport, xpra_proxy_command: Sequence[str], remote_xpra: Sequence[str],
-                 socket_dir: str, display_as_args: Sequence[str], paramiko_config: dict):
+                 socket_dirs: Sequence[str], display_as_args: Sequence[str], paramiko_config: dict):
         self.transport = transport
         self.xpra_proxy_command = xpra_proxy_command
         self.remote_xpra = remote_xpra
-        self.socket_dir = socket_dir
+        self.socket_dirs = socket_dirs
         self.display_as_args = display_as_args
         self.paramiko_config = paramiko_config
 
@@ -1025,12 +1028,12 @@ class ChannelRunFactory:
         xpra_cmd = self.find_remote_xpra() or "xpra"
         log(f"adding {xpra_cmd=!r}")
         cmd = '"' + xpra_cmd + '" ' + ' '.join(shellquote(x) for x in self.xpra_proxy_command)
-        if self.socket_dir:
-            cmd += f" \"--socket-dir={self.socket_dir}\""
+        for socket_dir in self.socket_dirs:
+            cmd += f" \"--socket-dirs={socket_dir}\""
         if self.display_as_args:
             cmd += " "
             cmd += " ".join(shellquote(x) for x in self.display_as_args)
-        log(f"cmd({self.xpra_proxy_command}, {self.socket_dir}, {self.display_as_args})={cmd}")
+        log(f"cmd({self.xpra_proxy_command}, {self.socket_dirs}, {self.display_as_args})={cmd}")
         return cmd
 
     def open(self):

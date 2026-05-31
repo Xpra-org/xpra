@@ -203,7 +203,7 @@ class SessionsGUI(Gtk.Window):
         except OSError:
             username = ""
         self.local_info_cache = {}
-        self.dotxpra = DotXpra(options.socket_dir, options.socket_dirs, username)
+        self.dotxpra = DotXpra(options.socket_dirs, username)
         self.poll_local_sessions()
         self.populate()
         GLib.timeout_add(5 * 1000, self.update)

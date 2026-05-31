@@ -36,18 +36,12 @@ def debug(msg: str, *args, **kwargs) -> None:
 
 
 class DotXpra:
-    def __init__(self, sockdir="", sockdirs: Sequence[str] = (), actual_username="", uid=0, gid=0):
+    def __init__(self, sockdirs: Sequence[str] = (), actual_username="", uid=0, gid=0):
         self.uid = uid or os.getuid()
         self.gid = gid or os.getgid()
         self.username = actual_username
         sockdirs = list(sockdirs)
-        if not sockdir:
-            if sockdirs:
-                sockdir = sockdirs[0]
-            else:
-                sockdir = "undefined"
-        elif sockdir not in sockdirs:
-            sockdirs.insert(0, sockdir)
+        sockdir = sockdirs[0] if sockdirs else "undefined"
         self._sockdir = self.osexpand(sockdir)
         self._sockdirs: list[str] = [self.osexpand(x) for x in sockdirs]
 
