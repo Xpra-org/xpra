@@ -129,6 +129,7 @@ class ProxyInstance:
         # server connection tweaks:
         self.server_protocol.large_packets += ["input-devices", "draw", WINDOW_ICON,
                                                "keymap-changed", "server-settings"]
+        self.client_protocol.large_packets.append(INFO_RESPONSE)
         if self.caps.boolget("file-transfer"):
             self.server_protocol.large_packets += ["send-file", "send-file-chunk"]
             self.client_protocol.large_packets += ["send-file", "send-file-chunk"]
