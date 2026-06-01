@@ -63,6 +63,14 @@ static long long usec_now(void) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 }
+
+static void sleep_1ms(void) {
+    const struct timespec ts = {
+        .tv_sec = 0,
+        .tv_nsec = 1000 * 1000,
+    };
+    nanosleep(&ts, NULL);
+}
 #endif
 
 /* ── decoder state ──────────────────────────────────────────────────── */
@@ -714,7 +722,7 @@ retry:
 #ifdef _WIN32
             Sleep(1);
 #else
-            usleep(1000);
+            sleep_1ms();
 #endif
             goto retry;
         }

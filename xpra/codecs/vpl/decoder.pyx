@@ -392,9 +392,9 @@ cdef class Decoder:
 
     def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
         cdef VPLDecodedFrame frame
-        cdef VPLDecodeStatus status
+        cdef VPLDecodeStatus status = VPL_DEC_ERROR
         cdef const uint8_t *src
-        cdef int src_len
+        cdef int src_len = 0
         cdef int new_w, new_h
 
         assert self.context != NULL, "decoder is closed"
