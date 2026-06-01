@@ -21,7 +21,7 @@ from xpra.util.thread import check_main_thread
 from xpra.codecs.loader import get_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
-from xpra.codecs.constants import TransientCodecException, CodecStateException
+from xpra.codecs.constants import ALPHA_FORMATS, TransientCodecException, CodecStateException
 from xpra.codecs.protocols import VideoDecoder, ColorspaceConverter
 from xpra.constants import Gravity
 from xpra.log import Logger
@@ -225,7 +225,7 @@ class WindowBackingBase:
         if self._alpha_enabled:
             return self.RGB_MODES
         # remove modes with alpha:
-        return tuple(x for x in self.RGB_MODES if x.find("A") < 0)
+        return tuple(x for x in self.RGB_MODES if x not in ALPHA_FORMATS)
 
     def get_info(self) -> dict[str, Any]:
         info = {
@@ -500,7 +500,8 @@ class WindowBackingBase:
         # and trim the transparency if we cannot handle it
         target_rgb_modes = tuple(rgb_modes)
         if not self._alpha_enabled:
-            target_rgb_modes = tuple(x for x in target_rgb_modes if x.find("A") < 0)
+            target_rgb_modes = tuple(x for x in target_rgb_modes
+                                     if x not in ALPHA_FORMATS)
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
         full_csc_modes["webp"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA")]
         full_csc_modes["jpeg"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA", "YUV420P")]
@@ -623,7 +624,7 @@ class WindowBackingBase:
         if pixel_format not in self.get_rgb_formats():
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.rgb_transform import rgb_reformat
-            has_alpha = pixel_format.find("A") >= 0 and self._alpha_enabled
+            has_alpha = pixel_format in ALPHA_FORMATS and self._alpha_enabled
             rgb_reformat(img, self.get_rgb_formats(), has_alpha)
             pixel_format = img.get_pixel_format()
         # replace with the actual rgb format we get from the decoder / rgb_reformat:
