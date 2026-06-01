@@ -32,16 +32,20 @@ def may_update_bandwidth_limits(server) -> None:
 
 
 def make_icon_packet(*names: str) -> tuple[str, int, int, str, int, Compressed]:
-    import os
     from xpra.codecs.image import to_png
     from xpra.platform.paths import get_icon_filename
     from xpra.util.io import load_binary_file
     from xpra.codecs.pillow.decoder import open_only
     from xpra.net.packet_type import DISPLAY_ICON
     for icon_name in names:
-        filename = get_icon_filename(icon_name)
-        if not os.path.exists(filename):
+        if not icon_name:
             continue
+        if os.path.isabs(icon_name) and os.path.exists(icon_name):
+            filename = icon_name
+        else:
+            filename = get_icon_filename(icon_name)
+            if not os.path.exists(filename):
+                continue
         fdata = load_binary_file(filename)
         if not fdata:
             continue
