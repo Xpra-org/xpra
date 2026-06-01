@@ -430,25 +430,14 @@ class PointerManager(StubSubsystem):
         only works when this mixin is composed with :class:`WindowServer`
         (i.e. on the X11 server) and the window model is reachable.
         """
-        try:
-            from xpra.server.subsystem.window import WindowServer
-        except ImportError:
+        if not (ws := self.get_subsystem("window")):
             return None
-        if not isinstance(self, WindowServer):
+        if not (model := ws.get_window(wid)):
             return None
-        try:
-            model = self.get_window(wid)
-            if not model:
-                return None
-            geom = model.get_geometry()
-        except Exception:
-            return None
+        geom = model.get_geometry()
         if not geom or len(geom) < 4:
             return None
-        try:
-            return int(geom[2])
-        except (TypeError, ValueError):
-            return None
+        return int(geom[2])
 
     def _maybe_record_drag_scroll(self, wid: int, pdata: Sequence[int]) -> None:
         """Treat sustained button-1 + near-vertical motion as a scroll event.
