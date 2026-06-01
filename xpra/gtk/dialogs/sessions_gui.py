@@ -6,6 +6,7 @@
 import os
 import sys
 import socket
+import shlex
 import subprocess
 
 from xpra.platform.paths import get_xpra_command, get_nodock_command
@@ -425,10 +426,18 @@ class SessionsGUI(Gtk.Window):
             option_types=option_types,
             cmdline=sys.argv,
         )
+        cmd_str = shlex.join(cmd)
         env = os.environ.copy()
         env["XPRA_NOTTY"] = "1"
-        proc = subprocess.Popen(cmd, env=env)
-        log("attach() Popen(%s)=%s", cmd, proc)
+        try:
+            proc = subprocess.Popen(cmd, env=env)
+        except OSError as e:
+            log.error("Error: failed to launch client command:")
+            log.error(" %s", cmd_str)
+            log.estr(e)
+            self.warning.set_text(str(e))
+            return
+        log("attach() %s=%s", cmd_str, proc)
 
         def proc_exit(*args) -> None:
             log("proc_exit%s", args)
@@ -436,6 +445,8 @@ class SessionsGUI(Gtk.Window):
             if key in self.clients_disconnecting:
                 self.clients_disconnecting.remove(key)
             elif c not in (0, None):
+                log.warn("Warning: client command exited with code %s:", c)
+                log.warn(" %s", cmd_str)
                 self.warning.set_text(exit_str(c).replace("_", " "))
             if self.clients.pop(key, None):
                 def update() -> None:
