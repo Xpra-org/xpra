@@ -446,6 +446,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         for k, v in r.items():
             if k in desc:
                 warn(f"ignoring {k} override from query string")
+                continue
             if len(v)==1:
                 desc[k] = v[0]
             else:
