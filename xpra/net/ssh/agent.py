@@ -85,7 +85,8 @@ def clean_agent_socket(uuid:str="") -> None:
         log.estr(e)
 
 
-def setup_proxy_ssh_socket(cmdline:Iterable[str], auth_sock:str=os.environ.get("SSH_AUTH_SOCK", "")) -> str:
+def setup_proxy_ssh_socket(cmdline:Iterable[str], auth_sock:str="") -> str:
+    auth_sock = auth_sock or os.environ.get("SSH_AUTH_SOCK", "")
     log(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")
     #this is the socket path that the ssh client wants us to use:
     #ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
