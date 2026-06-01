@@ -297,8 +297,30 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         # difficult to move this attribute:
         if self.display:
             capabilities["display"] = self.display
+        session = self.get_session_caps()
+        if session:
+            capabilities["session"] = session
         capabilities.update(self.hello_extra)
         return capabilities
+
+    def get_session_caps(self) -> dict[str, str]:
+        """
+        Identifying hints used by intermediaries (e.g. a proxy server with
+        --session-registry=mdns) to pick the target session. Populated from
+        --session-name and from the parsed display description.
+        """
+        session: dict[str, str] = {}
+        desc = self.display_desc
+        name = getattr(self, "session_name", "") or desc.get("session-name", "")
+        if name:
+            session["name"] = name
+        if self.display or desc.get("display"):
+            session["display"] = self.display or desc.get("display", "")
+        uuid = desc.get("uuid", "")
+        if uuid:
+            session["uuid"] = str(uuid)
+        log("get_session_caps()=%s from %s", session, (desc, self.display))
+        return session
 
     @staticmethod
     def get_version_info() -> dict[str, Any]:
