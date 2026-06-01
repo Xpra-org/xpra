@@ -4,7 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import unittest
+from types import ModuleType
 from unittest.mock import patch
 
 from xpra.net.mdns.util import mdns_publish
@@ -27,12 +29,11 @@ class TestMdnsUtil(unittest.TestCase):
         FakeZeroconfPublishers.instances = []
 
     def test_uuid_makes_service_name_unique(self):
-        patches = (
-            patch("xpra.net.mdns.util.socket.gethostname", return_value="host"),
-            patch("xpra.net.mdns.zeroconf_publisher.get_interface_index", side_effect=lambda host: host),
-            patch("xpra.net.mdns.zeroconf_publisher.ZeroconfPublishers", FakeZeroconfPublishers),
-        )
-        with patches[0], patches[1], patches[2]:
+        publisher_module = ModuleType("xpra.net.mdns.zeroconf_publisher")
+        publisher_module.get_interface_index = lambda host: host
+        publisher_module.ZeroconfPublishers = FakeZeroconfPublishers
+        with patch("xpra.net.mdns.util.socket.gethostname", return_value="host"), \
+                patch.dict(sys.modules, {"xpra.net.mdns.zeroconf_publisher": publisher_module}):
             mdns_publish("", (("192.0.2.1", 22),), {"mode": "ssh", "uuid": "abcdef123456"})
             mdns_publish("", (("192.0.2.1", 22),), {"mode": "ssh", "uuid": "123456789abc"})
 
