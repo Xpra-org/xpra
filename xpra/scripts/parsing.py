@@ -728,9 +728,9 @@ def get_usage() -> list[str]:
     SDISPLAY = "REMOTE-DISPLAY" if not supports_shadow() else "DISPLAY"
     command_options = [
         "",
-        f"start [{RDISPLAY}]",
-        f"start-desktop [{RDISPLAY}]",
-        f"start-monitor [{RDISPLAY}]",
+        f"seamless [{RDISPLAY}]",
+        f"desktop [{RDISPLAY}]",
+        f"monitor [{RDISPLAY}]",
         f"shadow [{SDISPLAY}]",
         f"shadow-screen [{SDISPLAY}]",
     ]
