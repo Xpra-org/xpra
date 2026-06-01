@@ -289,7 +289,10 @@ class ProxyServer(ServerCore):
         if isprocess:
             # send message:
             if force:
-                instance.terminate()
+                try:
+                    instance.terminate()
+                except (OSError, AttributeError) as e:
+                    log.error("Error stopping %s: %s", instance, e)
             else:
                 mq.put_nowait("stop")
                 try:
@@ -664,6 +667,8 @@ class ProxyServer(ServerCore):
             log("start_proxy_process()")
             message_queue = MQueue()
             client_conn = None
+            process = None
+            started = False
             try:
                 # no other packets should be arriving until the proxy instance responds to the initial hello packet
                 def unexpected_packet(packet) -> None:
@@ -693,6 +698,7 @@ class ProxyServer(ServerCore):
                 log("starting %s from pid=%s", process, os.getpid())
                 self.instances[process] = (True, display, message_queue)
                 process.start()
+                started = True
                 log("ProxyInstanceProcess started")
                 popen = process._popen
                 assert popen
@@ -703,16 +709,24 @@ class ProxyServer(ServerCore):
                 log("start_proxy_process() failed", exc_info=True)
                 log.error("Error starting proxy instance process:")
                 log.estr(pie)
-                message_queue.put(f"error: {pie}")
-                message_queue.put("stop")
+                # the child never started: drop the instance entry, no handover to signal
+                if process is not None:
+                    self.instances.pop(process, None)
             finally:
-                # now we can close our handle on the connection:
-                log("handover complete: closing connection from proxy server")
-                if client_conn:
-                    client_conn.close()
-                server_conn.close()
-                log("sending socket-handover-complete")
-                message_queue.put("socket-handover-complete")
+                # release our handle on the connections (the child has its own copy on success)
+                if started:
+                    log("handover complete: closing connection from proxy server")
+                else:
+                    log("closing connections after failed proxy instance startup")
+                for conn in (client_conn, server_conn):
+                    if conn:
+                        try:
+                            conn.close()
+                        except OSError:
+                            log("error closing %s", conn, exc_info=True)
+                if started:
+                    log("sending socket-handover-complete")
+                    message_queue.put("socket-handover-complete")
 
         start_thread(start_proxy_process, f"start_proxy({client_proto})")
 
