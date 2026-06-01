@@ -128,12 +128,15 @@ class Registry(SessionRegistry):
         groups = self._groups()
         if not groups:
             return None
-        requested = self._request_hint(client_caps)
-        log("%s.lookup(%s) requested=%r among %i mdns session(s)", self, authenticator, requested, len(groups))
-        if requested:
+        hints = self._request_hints(client_caps)
+        log("%s.lookup(%s) hints=%r among %i mdns session(s)", self, authenticator, hints, len(groups))
+        for i, group in enumerate(groups.values()):
+            log("%i: %r, %r: %s", i, group.session_name, group.display, group.endpoints)
+        for requested in hints:
             for group in groups.values():
                 if self._matches(group, requested):
                     return self._session_from_group(group, authenticator, self._selected_display(group, requested))
+        if hints:
             return None
         for group in groups.values():
             session = self._session_from_group(group, authenticator, self._selected_display(group))
@@ -163,15 +166,30 @@ class Registry(SessionRegistry):
         return group_session_endpoints(endpoints)
 
     @staticmethod
-    def _request_hint(client_caps: Optional[typedict]) -> str:
+    def _request_hints(client_caps: Optional[typedict]) -> list[str]:
+        """
+        Identifying hints sent by the client to pick a target session,
+        in priority order. Each will be tried against every known group.
+        """
+        hints: list[str] = []
+
+        def add(v: str) -> None:
+            if v and v not in hints:
+                hints.append(v)
         if client_caps is None:
-            return ""
-        if v := client_caps.strget("session-name"):
-            return v
+            return hints
+        # new-style: a top-level "session" sub-dict from `XpraClientBase.get_session_caps`
+        session = client_caps.dictget("session")
+        if session:
+            sd = typedict(session)
+            for key in ("name", "uuid", "display"):
+                add(sd.strget(key))
+        # legacy: top-level "session-name", and "display" as a string
+        add(client_caps.strget("session-name"))
         raw = client_caps.get("display")
         if BACKWARDS_COMPATIBLE and isinstance(raw, str):
-            return str(raw)
-        return ""
+            add(str(raw))
+        return hints
 
     @staticmethod
     def _matches(group: SessionGroup, requested: str) -> bool:
