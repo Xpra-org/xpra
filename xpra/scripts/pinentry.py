@@ -93,8 +93,13 @@ def do_run_pinentry(proc, get_input: Callable, process_output: Callable) -> int:
     while proc.poll() is None:
         try:
             line = proc.stdout.readline()
+            # process_output returns True to request more output (e.g. on
+            # intermediate `S ...` status lines). We need to actually read the
+            # next line — without this we would spin on the same buffer.
             while process_output(message, line):
-                "process_output should eventually return False or None"
+                line = proc.stdout.readline()
+                if not line:
+                    break
             message = get_input()
             if message is None:
                 break
