@@ -321,8 +321,6 @@ class RegisterSubsystem(StubSubsystem):
 
     def make_proxy_hello(self) -> dict[str, Any]:
         srv = self.server
-        id_sub = srv.subsystems.get("id")
-        uuid = getattr(id_sub, "uuid", "")
         try:
             display = srv.get_display_name() or ""
         except AttributeError:
@@ -334,13 +332,14 @@ class RegisterSubsystem(StubSubsystem):
         # against the actual client at brokering time.
         hello: dict[str, Any] = {
             "request": "register",
-            "uuid": uuid,
             "session-name": srv.session_name,
             "display": display,
             "displays": [display] if display else [],
-            "username": "",
             "client_type": "xpra-register",
         }
+        id_sub = srv.subsystems.get("id")
+        if id_sub:
+            hello["uuid"] = id_sub.uuid
         hello.update(get_version_info(0))
         hello.update(get_network_caps())
         hello.update(get_digest_caps())
