@@ -31,7 +31,7 @@ from xpra.util.thread import start_thread
 from xpra.util.pysystem import get_frame_info
 from xpra.util.objects import typedict, notypedict, merge_dicts
 from xpra.util.env import envbool
-from xpra.log import Logger, get_info as get_log_info
+from xpra.log import Logger
 
 # pylint: disable=import-outside-toplevel
 
@@ -222,7 +222,6 @@ class InfoServer(StubSubsystem):
             },
         }
         info["network"] = ni
-        info["logging"] = get_log_info()
         from xpra.platform.info import get_sys_info
         info["sys"] = get_sys_info()
         info["env"] = get_env_info()
