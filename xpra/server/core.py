@@ -1089,11 +1089,14 @@ class ServerCore(GLibServer):
                         return False
             return True
 
+        display = self.get_subsystem("display")
+        display_name = display.get_display_name() if display else os.environ.get("DISPLAY", "")
+
         return make_ssh_server_connection(
             conn, socket_options,
             none_auth=none_auth,
             password_auth=ssh_password_authenticate,
-            display_name=self.display,
+            display_name=display_name,
         )
 
     def cancel_upgrade_to_rfb_timer(self, protocol) -> None:
