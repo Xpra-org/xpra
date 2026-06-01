@@ -7,7 +7,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from xpra.os_util import WIN32
+from xpra.os_util import POSIX, WIN32
 from xpra.util.objects import typedict
 from xpra.util.io import pollwait
 from unit.server_test_util import ServerTestUtil, log
@@ -28,6 +28,8 @@ class ProxyServerTest(ServerTestUtil):
 
         self.assertIs(instance.server, instance)
         self.assertIn("command", instance.hello_request_handlers)
+        if POSIX:
+            self.assertEqual(instance._start_method, "fork")
 
     def test_proxy_start_stop(self):
         display = self.find_free_display()

@@ -130,6 +130,11 @@ def make_server_app(mode_attrs: dict[str, str], opts, clobber: int, mode: str,
         from xpra.platform.shadow_server import ShadowServer
         return ShadowServer(display_name, mode_attrs)
     if mode == "proxy":
+        # the proxy server is non-interactive: ensure no dialogs (pinentry, GUI prompts,
+        # challenge prompts) can be triggered by anything we import or call below.
+        # Set this before any xpra import so module-level reads (e.g. SKIP_UI in
+        # xpra.scripts.pinentry) see it.
+        os.environ.setdefault("XPRA_SKIP_UI", "1")
         from xpra.platform.proxy_server import ProxyServer
         return ProxyServer()
     if mode == "expand":

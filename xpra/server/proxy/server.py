@@ -8,13 +8,14 @@ import os
 import sys
 import time
 from time import monotonic
-from multiprocessing import Queue as MQueue, freeze_support
+from multiprocessing import Queue as DefaultQueue, freeze_support, get_context
 from typing import Any
 from collections.abc import Callable
 
+from xpra.common import noerr
 from xpra.util.system import stop_proc
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
+from xpra.util.str_fn import repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import (
@@ -44,6 +45,7 @@ authlog = Logger("auth")
 GLib = gi_import("GLib")
 
 freeze_support()
+MQueue = get_context("fork").Queue if POSIX else DefaultQueue
 
 PROXY_SOCKET_TIMEOUT = envfloat("XPRA_PROXY_SOCKET_TIMEOUT", 0.1)
 PROXY_WS_TIMEOUT = envfloat("XPRA_PROXY_WS_TIMEOUT", 1.0)
@@ -294,7 +296,7 @@ class ProxyServer(ServerCore):
                 except (OSError, AttributeError) as e:
                     log.error("Error stopping %s: %s", instance, e)
             else:
-                mq.put_nowait("stop")
+                noerr(mq.put_nowait, "stop")
                 try:
                     mq.close()
                 except Exception as e:
@@ -535,6 +537,15 @@ class ProxyServer(ServerCore):
             displays.remove(proxy_virtual_display)
         # remove proxy instance virtual displays:
         displays = [x for x in displays if not x.startswith(":proxy-")]
+        # proxy sessions are non-interactive: prefer transports that don't
+        # prompt (socket, then plain network), with ssh last since it may
+        # require a password or a pinentry dialog.
+        proxy_mode_order = {"socket": 0, "tcp": 1, "ssl": 2, "ws": 3, "wss": 4, "ssh": 5}
+
+        def _mode_key(uri: str) -> tuple[int, int]:
+            mode = uri.split(":", 1)[0] if "://" in uri else "socket"
+            return proxy_mode_order.get(mode, 100), len(uri)
+        displays = sorted(displays, key=_mode_key)
         # log("unused options: %s, %s", env_options, session_options)
         proc = None
         socket_path = None
@@ -558,10 +569,9 @@ class ProxyServer(ServerCore):
         if display is None:
             display = c.strget("display")
             selected_display = sessions.selected_display
-            if not display and selected_display in displays:
-                display = selected_display
-            authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s",
-                    proxy_virtual_display, display, displays)
+            authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, "
+                    "selected=%s, found displays=%s",
+                    proxy_virtual_display, display, selected_display, displays)
             if display == proxy_virtual_display:
                 nosession("invalid display: proxy display")
                 return
@@ -575,9 +585,8 @@ class ProxyServer(ServerCore):
                         nosession(f"display {display!r} not found")
                         return
             else:
-                if len(displays) != 1:
-                    nosession("please specify a display, more than one is available: " + csv(sorted(displays)))
-                    return
+                # client did not request a specific display: pick the best
+                # transport from the proxy-preferred ordering above.
                 display = displays[0]
 
         connect = c.boolget("connect", True)
