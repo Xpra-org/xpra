@@ -48,7 +48,7 @@ from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
     force_quit, POSIX, WIN32, OSX,
-    get_username_for_uid, get_hex_uuid, getuid, gi_import,
+    get_username_for_uid, getuid, gi_import,
 )
 from xpra.util.system import register_SIGUSR_signals, get_run_info, deadly_signal
 from xpra.util.io import load_binary_file, find_libexec_command
@@ -123,7 +123,7 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.process import ProcessServer
     from xpra.server import features
     classes: list[type] = []
-    # IDServer must come before any subsystem that reads `self.uuid`.
+    # IDServer must come before any subsystem that reads the server uuid.
     # SessionFilesServer must come before any subsystem that appends to
     # its `session_files` list during init().
     classes.extend((
@@ -251,7 +251,6 @@ class ServerCore(GLibServer):
         log("ssl-upgrade(%s, %s)=%s", opts.ssl, opts.ssl_upgrade, self.ssl_upgrade)
 
     def setup(self) -> None:
-        self.init_uuid()
         self._dispatch_fire("setup")
         self.start_listen_sockets()
         self.init_packet_handlers()
@@ -484,15 +483,6 @@ class ServerCore(GLibServer):
         sockets = self.sockets
         self.sockets = []
         close_sockets(sockets)
-
-    def init_uuid(self) -> None:
-        # `IDServer` owns the server uuid.
-        uuid = os.environ.get("XPRA_PROXY_START_UUID", "") or self.get_server_uuid() or get_hex_uuid()
-        self.subsystems["id"].uuid = uuid
-        log(f"server uuid is {uuid}")
-
-    def get_server_uuid(self) -> str:
-        return ""
 
     def init_html_proxy(self, opts) -> None:
         httplog(f"init_html_proxy(..) options: html={opts.html!r}")
@@ -1742,7 +1732,9 @@ class ServerCore(GLibServer):
             log("get_threaded_info(%s, %s) authenticated=%s, subsystems=%s, local=%s",
                 proto, kwargs, authenticated, subsystems, local)
             full = FULL_INFO > 0 or authenticated or local
-            info = self.get_server_info(full)
+            server_info = self.get_server_info(full)
+            merge_dicts(server_info, info)
+            info = server_info
             if full and (not subsystems or "threads" in subsystems):
                 from xpra.server.subsystem.info import get_thread_info
                 info["threads"] = get_thread_info(proto)
@@ -1754,6 +1746,11 @@ class ServerCore(GLibServer):
     def get_server_info(self, full=False) -> dict[str, Any]:
         if info := self.get_subsystem("info"):
             return info.get_server_info(full)
+        return {}
+
+    def get_session_id_info(self) -> dict[str, Any]:
+        if id_subsystem := self.get_subsystem("id"):
+            return id_subsystem.get_session_id_info()
         return {}
 
     def get_minimal_server_info(self) -> dict[str, Any]:

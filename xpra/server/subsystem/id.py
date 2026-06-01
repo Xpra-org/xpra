@@ -10,7 +10,8 @@ from typing import Any
 from xpra.net.common import Packet, FULL_INFO
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.os_util import get_machine_id, gi_import
+from xpra.os_util import get_hex_uuid, get_machine_id, gi_import
+from xpra.scripts.session import load_session_file
 from xpra.util.version import XPRA_NUMERIC_VERSION
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -20,6 +21,8 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("server")
+
+SERVER_UUID_FILE = "server.uuid"
 
 
 # noinspection PyMethodMayBeStatic
@@ -32,8 +35,17 @@ class IDServer(StubSubsystem):
     def __init__(self, server=None):
         StubSubsystem.__init__(self, server)
         self.server.hello_request_handlers["id"] = self._handle_hello_request_id
-        # populated by `ServerCore.init_uuid` during setup:
         self.uuid = ""
+
+    def setup(self) -> None:
+        if not self.uuid:
+            file_uuid = ""
+            if os.environ.get("XPRA_SESSION_DIR"):
+                file_uuid = load_session_file(SERVER_UUID_FILE).decode("latin1").strip()
+            self.uuid = os.environ.get("XPRA_PROXY_START_UUID", "") or file_uuid or get_hex_uuid()
+            if session_files := self.get_subsystem("session-files"):
+                session_files.write_session_file(SERVER_UUID_FILE, self.uuid)
+        log(f"server uuid is {self.uuid}")
 
     def get_caps(self, source):
         caps = {}
@@ -43,6 +55,11 @@ class IDServer(StubSubsystem):
             if mid:
                 caps["machine_id"] = mid
         return caps
+
+    def get_info(self, _proto) -> dict[str, Any]:
+        return {
+            "uuid": self.uuid,
+        }
 
     def _handle_hello_request_id(self, proto, _caps: typedict) -> bool:
         self.send_id_info(proto)

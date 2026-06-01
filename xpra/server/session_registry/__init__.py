@@ -16,8 +16,8 @@ of which authenticator was used.
 The `Session` data carrier is iterable as a 5-tuple
 `(uid, gid, displays, env_options, session_options)` so existing call sites
 that destructure the tuple keep working. Optional fields (`uuid`,
-`session_name`, `endpoint`) leave room for a future `live` backend where
-xpra servers register themselves with the proxy at startup.
+`session_name`, `endpoint`, `selected_display`) leave room for dynamic
+backends where the lookup may resolve an alias to a concrete target.
 """
 
 from dataclasses import dataclass, field
@@ -37,6 +37,8 @@ class Session:
     uuid: str = ""
     session_name: str = ""
     endpoint: Any = None
+    # concrete display selected by lookup when the client used an alias:
+    selected_display: str = ""
 
     @classmethod
     def from_tuple(cls, data: SessionData | None) -> "Session | None":

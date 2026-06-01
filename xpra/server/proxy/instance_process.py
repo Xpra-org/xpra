@@ -65,7 +65,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
                                pings,
                                disp_desc, cipher, cipher_mode, encryption_key, caps)
         QueueScheduler.__init__(self)
-        ControlHandler.__init__(self)
+        self.hello_request_handlers = {}
+        ControlHandler.__init__(self, self)
         self.enabled = True
         Process.__init__(self, name=str(client_conn), daemon=False)
         self.client_conn = client_conn

@@ -5,12 +5,29 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import MagicMock
+
 from xpra.os_util import WIN32
+from xpra.util.objects import typedict
 from xpra.util.io import pollwait
 from unit.server_test_util import ServerTestUtil, log
 
 
 class ProxyServerTest(ServerTestUtil):
+
+    def test_proxy_instance_process_control_handler_init(self):
+        from xpra.server.proxy.instance_process import ProxyInstanceProcess
+        client_conn = MagicMock()
+        client_conn.socktype = "tcp"
+        server_conn = MagicMock()
+        server_conn.socktype = "tcp"
+
+        instance = ProxyInstanceProcess(1000, 1000, {}, {}, "/tmp", 0,
+                                        client_conn, {"type": "tcp"}, {},
+                                        "", "", b"", server_conn, typedict({}), MagicMock())
+
+        self.assertIs(instance.server, instance)
+        self.assertIn("command", instance.hello_request_handlers)
 
     def test_proxy_start_stop(self):
         display = self.find_free_display()

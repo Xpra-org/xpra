@@ -194,14 +194,14 @@ class ProxyServer(ServerCore):
         self._registered_protos: dict = {}
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
         self._ws_timeout = PROXY_WS_TIMEOUT
+        self.session_registry_name = "auth"
 
     def init(self, opts) -> None:
         log("ProxyServer.init(%s)", opts)
         self.pings = int(opts.pings)
         self._start_sessions = opts.proxy_start_sessions
         self.socket_dirs = tuple(opts.socket_dirs)
-        self.session_registry = load_session_registry(opts.session_registry or "auth")
-        authlog("proxy session registry: %s", self.session_registry)
+        self.session_registry_name = opts.session_registry or "auth"
         # super().init runs ServerCore.init which handles connection setup and
         # dispatches `init` to every subsystem registered in self.subsystems:
         super().init(opts)
@@ -210,6 +210,15 @@ class ProxyServer(ServerCore):
         from xpra.util.version import get_platform_info
         get_platform_info()
         create_system_dir(opts.system_proxy_socket)
+
+    def setup(self) -> None:
+        super().setup()
+        id_subsystem = self.get_subsystem("id")
+        self.session_registry = load_session_registry(
+            self.session_registry_name,
+            uuid=id_subsystem.uuid if id_subsystem else "",
+        )
+        authlog("proxy session registry: %s", self.session_registry)
 
     def init_control_commands(self) -> None:
         super().init_control_commands()
@@ -545,6 +554,9 @@ class ProxyServer(ServerCore):
                 return
         if display is None:
             display = c.strget("display")
+            selected_display = sessions.selected_display
+            if not display and selected_display in displays:
+                display = selected_display
             authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s",
                     proxy_virtual_display, display, displays)
             if display == proxy_virtual_display:
@@ -552,7 +564,9 @@ class ProxyServer(ServerCore):
                 return
             if display:
                 if display not in displays:
-                    if f":{display}" in displays:
+                    if selected_display in displays:
+                        display = selected_display
+                    elif f":{display}" in displays:
                         display = f":{display}"
                     else:
                         nosession(f"display {display!r} not found")

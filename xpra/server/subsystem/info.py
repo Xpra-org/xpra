@@ -198,9 +198,6 @@ class InfoServer(StubSubsystem):
         return info
 
     def get_minimal_server_info(self) -> dict[str, Any]:
-        # `uuid` belongs to the IDServer subsystem (see id.py) and is intentionally
-        # excluded here so callers that compose `get_minimal_server_info` into
-        # capabilities don't collide with IDServer.get_caps.
         return {
             "session-type": self.server.session_type,
             "machine-id": get_machine_id(),

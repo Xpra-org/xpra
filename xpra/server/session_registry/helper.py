@@ -34,9 +34,10 @@ def parse_session_registry_string(value: str) -> tuple[str, dict]:
     return name, options
 
 
-def load_session_registry(value: str, cwd: str = "") -> SessionRegistry:
+def load_session_registry(value: str, cwd: str = "", **extra_options) -> SessionRegistry:
     name, options = parse_session_registry_string(value or "auth")
     options["exec_cwd"] = cwd or os.getcwd()
+    options.update(extra_options)
     modname = name.replace("-", "_")
     try:
         module = import_module("xpra.server.session_registry." + modname)

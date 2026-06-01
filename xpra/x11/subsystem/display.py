@@ -56,13 +56,11 @@ def check_xvfb(xvfb: Popen | None, timeout=0, command=()) -> bool:
 
 
 def _get_root_int(prop: str) -> int:
-    from xpra.x11.xroot_props import root_get
     with xsync:
         return root_get(prop, "u32") or 0
 
 
 def _set_root_int(prop: str = "_XPRA_RANDR_EXACT_SIZE", i: int = 0) -> None:
-    from xpra.x11.xroot_props import root_set
     with xsync:
         root_set(prop, "u32", i)
 
@@ -89,14 +87,6 @@ def save_server_pid() -> None:
 
 def save_server_mode(session_type: str) -> None:
     root_set("XPRA_SERVER_MODE", "latin1", session_type)
-
-
-def save_server_uuid(uuid: str) -> None:
-    root_set("XPRA_SERVER_UUID", "latin1", uuid)
-
-
-def get_server_uuid() -> str:
-    return root_get("XPRA_SERVER_UUID", "latin1") or ""
 
 
 def save_server_version():
@@ -232,8 +222,6 @@ class X11DisplayManager(DisplayManager):
         with xsync:
             save_server_pid()
             save_server_mode(self.server.session_type)
-            id_subsystem = self.get_subsystem("id")
-            save_server_uuid(id_subsystem.uuid if id_subsystem else "")
             save_server_version()
 
     def init_randr(self) -> bool:

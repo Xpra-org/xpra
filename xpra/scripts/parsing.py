@@ -1118,7 +1118,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="The proxy server's source of truth for which xpra sessions an authenticated"
                           " client may reach. 'auth' (default) delegates to the authenticator's"
                           " get_sessions(); other backends include 'socket', 'multifile', 'sqlite',"
-                          " 'sql', 'mysql' and 'live'. Default: '%default'.")
+                          " 'sql', 'mysql', 'live' and 'mdns'. Default: '%default'.")
     group.add_option("--register", action="append",
                      dest="register", default=mlist(defaults.register),
                      metavar="URI",

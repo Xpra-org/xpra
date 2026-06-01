@@ -126,7 +126,7 @@ def clean_session_dir(session_dir: str) -> bool:
     KNOWN_SERVER_FILES = [
         "cmdline", "config",
         "dbus.env", "dbus.pid",
-        "server.env", "server.pid", "server.log",
+        "server.env", "server.pid", "server.log", "server.uuid",
         "socket", "xauthority", "Xorg.log", "xvfb.pid",
         "pulseaudio.pid",
         "ibus-daemon.pid",

@@ -88,6 +88,7 @@ class TestSessionTuple(unittest.TestCase):
         self.assertEqual(s.uuid, "")
         self.assertEqual(s.session_name, "")
         self.assertIsNone(s.endpoint)
+        self.assertEqual(s.selected_display, "")
 
 
 def main():
