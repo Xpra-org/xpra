@@ -134,7 +134,14 @@ def pinentry_getpin(pinentry_proc, title: str, description: str, pin_cb: Callabl
         # log(f"process_output({message}, {output})")
         if message == "GETPIN":
             if output.startswith(b"S "):
-                log("getpin message: %s", output[2:].decode())
+                status = output[2:].decode().rstrip("\n\r")
+                log("getpin message: %s", status)
+                # `S ERROR ...` means pinentry cannot show its dialog
+                # (e.g. pinentry-gnome3 with no usable tty/display).
+                # No `D ...` will ever follow — bail out now.
+                if status.startswith("ERROR"):
+                    err_cb(status)
+                    return False
                 # ie: 'S PASSWORD_FROM_CACHE'
                 return True  # read more data
             if output.startswith(b"D "):
