@@ -1178,9 +1178,9 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
             if not conn:
                 raise RuntimeError("not connected")
             log("do_setup_connection() conn=%s", conn)
-            # UGLY warning: connect_or_fail() will parse the display string,
-            # which may change the username and password..
-            app.username = opts.username or os.environ.get("XPRA_USERNAME", "")
+            # source the credentials from `display_desc` since `parse_display_name`
+            # merges URL / opts / env / password-file into it during connect:
+            app.username = display_desc.get("username", "")
             app.password = display_desc.get("password", "")
             app.display = opts.display
             app.display_desc = display_desc

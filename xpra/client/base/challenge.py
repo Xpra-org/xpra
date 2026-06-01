@@ -50,7 +50,9 @@ class ChallengeClient(StubClientMixin):
         self.challenge_handlers = []
 
     def init(self, opts) -> None:
-        self.username = opts.username or os.environ.get("XPRA_USERNAME", "")
+        # `app.username` is overwritten post-connect from `display_desc["username"]`
+        # (which folds in the URL / opts / XPRA_USERNAME env merge done by parse_display_name)
+        self.username = opts.username or ""
         self.password = opts.password
         self.password_file = opts.password_file
         self.challenge_handlers_option = opts.challenge_handlers

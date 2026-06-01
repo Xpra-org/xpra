@@ -344,8 +344,8 @@ def parse_display_name(opts, display_name: str, cmdline=(),
     )
 
     def add_credentials() -> None:
-        username = parsed.username or opts.username
-        if username is not None:
+        username = parsed.username or opts.username or os.environ.get("XPRA_USERNAME", "")
+        if username:
             desc["username"] = username
             opts.username = username
         password = parsed.password or opts.password
