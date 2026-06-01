@@ -323,7 +323,6 @@ class RegisterSubsystem(StubSubsystem):
         srv = self.server
         id_sub = srv.subsystems.get("id")
         uuid = getattr(id_sub, "uuid", "")
-        session_name = getattr(srv, "session_name", "") or ""
         try:
             display = srv.get_display_name() or ""
         except AttributeError:
@@ -336,7 +335,7 @@ class RegisterSubsystem(StubSubsystem):
         hello: dict[str, Any] = {
             "request": "register",
             "uuid": uuid,
-            "session-name": session_name,
+            "session-name": srv.session_name,
             "display": display,
             "displays": [display] if display else [],
             "username": "",
