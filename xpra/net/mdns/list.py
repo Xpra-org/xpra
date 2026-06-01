@@ -6,8 +6,13 @@
 import socket
 
 from xpra.os_util import gi_import
-from xpra.util.objects import typedict
-from xpra.util.str_fn import bytestostr
+from xpra.net.session_discovery import (
+    SessionEndpoint,
+    endpoint_uri,
+    group_session_endpoints,
+    mdns_txt_to_dict,
+    normalize_mdns_host,
+)
 from xpra.exit_codes import ExitValue
 from xpra.exit_codes import ExitCode
 from xpra.scripts.config import InitExit
@@ -32,49 +37,53 @@ def run_list_mdns(extra_args) -> ExitValue:
     from xpra.dbus.common import loop_init
     GLib = gi_import("GLib")
     loop_init()
-    found: dict[tuple[str, str, str], list] = {}
+    endpoints: list[SessionEndpoint] = []
     shown = set()
 
     def show_new_found() -> None:
-        new_found = [x for x in found.keys() if x not in shown]
-        for uq in new_found:
-            recs = found[uq]
-            for i, rec in enumerate(recs):
-                iface, _, _, host, address, port, text = rec
-                uuid = text.strget("uuid")
-                display = text.strget("display")
-                mode = text.strget("mode")
-                username = text.strget("username")
-                session = text.strget("session")
-                dtype = text.strget("type")
+        groups = group_session_endpoints(endpoints)
+        new_found = [x for x in groups if x not in shown]
+        for key in new_found:
+            group = groups[key]
+            for i, endpoint in enumerate(group.endpoints):
+                uuid = endpoint.uuid
+                mode = endpoint.mode
+                username = endpoint.username
                 if i == 0:
-                    print(f"* user {username!r} on {host!r}")
-                    if session:
-                        print(f" {dtype} session {session!r}, {uuid=!r}")
+                    print(f"* user {username!r} on {group.host!r}")
+                    if group.session_name:
+                        print(f" {group.session_type} session {group.session_name!r}, {uuid=!r}")
                     elif uuid:
                         print(f" {uuid=!r}")
                 iinfo = ""
-                if iface:
-                    iinfo = f", interface {iface}"
-                print(f" + {mode} endpoint on host {address}, port {port}{iinfo}")
-                dstr = ""
-                if display.startswith(":"):
-                    dstr = display[1:]
-                uri = f"{mode}://{username}@{address}:{port}/{dstr}"
+                if endpoint.interface:
+                    iinfo = f", interface {endpoint.interface}"
+                print(f" + {mode} endpoint on host {endpoint.address}, port {endpoint.port}{iinfo}")
+                uri = endpoint_uri("", endpoint)
                 print("   \"%s\"" % uri)
-            shown.add(uq)
+            shown.add(key)
 
-    def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text) -> None:
-        text = typedict((bytestostr(k), bytestostr(v)) for k, v in (text or {}).items())
+    def mdns_add(interface, protocol, name, stype, domain, host, address, port, text) -> None:
+        text_rec = mdns_txt_to_dict(text)
         iface = interface
         if iface is not None:
             try:
                 iface = socket.if_indextoname(interface)
             except OSError:
                 pass
-        username = text.strget("username")
-        uq = text.strget("uuid", str(len(found))), username, host
-        found.setdefault(uq, []).append((iface or "", name, domain, host, address, port, text))
+        host = normalize_mdns_host(host, stype, domain, text_rec.get("mode", ""))
+        endpoints.append(SessionEndpoint(
+            source="mdns",
+            interface=iface or "",
+            protocol=protocol,
+            name=name,
+            stype=stype,
+            domain=domain,
+            host=host,
+            address=address,
+            port=port,
+            text=text_rec,
+        ))
         GLib.timeout_add(1000, show_new_found)
 
     listeners = []
@@ -98,8 +107,9 @@ def run_list_mdns(extra_args) -> ExitValue:
     finally:
         for listener in listeners:
             listener.stop()
-    if not found:
+    groups = group_session_endpoints(endpoints)
+    if not groups:
         print("no services found")
     else:
-        print(f"{len(found)} services found")
+        print(f"{len(groups)} services found")
     return 0

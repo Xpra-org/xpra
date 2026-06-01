@@ -7,10 +7,10 @@ import sys
 
 from xpra.exit_codes import ExitValue
 from xpra.scripts.config import XpraConfig
-from xpra.gtk.dialogs.sessions_gui import SessionEndpoint, SessionsGUI
+from xpra.gtk.dialogs.sessions_gui import SessionsGUI
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
+from xpra.net.session_discovery import SessionEndpoint, mdns_txt_to_dict, normalize_mdns_host
 from xpra.util.env import envbool
-from xpra.util.str_fn import bytestostr
 from xpra.os_util import gi_import
 from xpra.log import Logger, consume_verbose_argv
 
@@ -72,22 +72,10 @@ class mdns_sessions(SessionsGUI):
         if HIDE_IPV6 and address.find(":") >= 0:
             return
         # text record may be received as byte strings...
-        text_rec = {}
-        if text:
-            for key, value in text.items():
-                text_rec[bytestostr(key)] = bytestostr(value)
+        text_rec = mdns_txt_to_dict(text)
         # strip service from hostname:
         # (win32 servers add it? why!?)
-        if host:
-            if stype and host.endswith(stype):
-                host = host[:-len(stype)]
-            elif stype and domain and host.endswith(stype + "." + domain):
-                host = host[:-len(stype + "." + domain)]
-            mode = text_rec.get("mode")
-            if mode and host.endswith(mode + "."):
-                host = host[:-len(mode + ".")]
-            if host.endswith(".local."):
-                host = host[:-len(".local.")]
+        host = normalize_mdns_host(host, stype, domain, text_rec.get("mode", ""))
         self.endpoints.append(SessionEndpoint(
             source="mdns",
             interface=interface,
