@@ -323,7 +323,7 @@ vpx_decoder_ENABLED     = vpx_ENABLED
 amf_ENABLED             = pkg_config_version("1.0", "amf") or has_header_file("AMF/components/VideoEncoderVCE.h")
 amf_encoder_ENABLED     = amf_ENABLED
 mf_decoder_ENABLED      = DEFAULT and WIN32
-vpl_decoder_ENABLED     = DEFAULT and WIN32 and has_header_file("vpl/mfxvideo.h")
+vpl_decoder_ENABLED     = DEFAULT and has_header_file("vpl/mfxvideo.h")
 remote_encoder_ENABLED  = DEFAULT
 # opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
