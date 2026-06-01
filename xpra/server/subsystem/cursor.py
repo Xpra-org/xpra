@@ -94,15 +94,6 @@ class CursorManager(StubSubsystem):
         log("cursor caps=%s", caps)
         return caps
 
-    def get_info(self, _proto) -> dict[str, Any]:
-        return {
-            CursorManager.PREFIX: {
-                "": self.enabled,
-                "size": self.size,
-                "current": self.get_cursor_info(),
-            },
-        }
-
     def get_cursor_info(self) -> dict[str, Any]:
         # (NOT from UI thread)
         # copy to prevent race:
@@ -122,7 +113,11 @@ class CursorManager(StubSubsystem):
 
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         # (from UI thread)
-        info: dict[str, Any] = {}
+        info: dict[str, Any] = {
+            "": self.enabled,
+            "size": self.size,
+            "current": self.get_cursor_info(),
+        }
         for name, size in {
             "default": self.get_default_cursor_size(),
             "max": self.get_max_cursor_size(),
