@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from PIL import Image
-
 from xpra.net.common import Packet
 from xpra.net.compression import Compressed
 from xpra.net.packet_type import DISPLAY_ICON
@@ -65,17 +63,22 @@ class X11SeamlessDisplayManager(X11DisplayManager):
         windows = self.get_subsystem("window").models()
         log("do_make_icon_packet() windows=%s", windows)
         size = 128
-        pil_icons: list[Image.Image] = []
-        for window in windows:
-            icons = window.get_property("icons")
-            if not icons:
-                continue
-            w, h, fmt, data = max(icons, key=lambda i: i[0] * i[1])
-            log("got %s icon %ix%i for %s", fmt, w, h, window)
-            if fmt != "BGRA":
-                continue
-            img = Image.frombytes("RGBA", (w, h), memoryview_to_bytes(data), "raw", "BGRA", w * 4, 1)
-            pil_icons.append(img)
+        pil_icons = []
+        try:
+            from PIL import Image
+        except ImportError:
+            pass
+        else:
+            for window in windows:
+                icons = window.get_property("icons")
+                if not icons:
+                    continue
+                w, h, fmt, data = max(icons, key=lambda i: i[0] * i[1])
+                log("got %s icon %ix%i for %s", fmt, w, h, window)
+                if fmt != "BGRA":
+                    continue
+                img = Image.frombytes("RGBA", (w, h), memoryview_to_bytes(data), "raw", "BGRA", w * 4, 1)
+                pil_icons.append(img)
 
         if not pil_icons:
             return make_icon_packet(
