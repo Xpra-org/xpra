@@ -450,7 +450,7 @@ class PointerManager(StubSubsystem):
         except (TypeError, ValueError):
             return None
 
-    def _maybe_record_drag_scroll(self, device_id: int, wid: int, pdata) -> None:
+    def _maybe_record_drag_scroll(self, wid: int, pdata: Sequence[int]) -> None:
         """Treat sustained button-1 + near-vertical motion as a scroll event.
 
         Distinguishes scrollbar-thumb drags from text-selection drags using
@@ -548,7 +548,7 @@ class PointerManager(StubSubsystem):
             modifiers = props.get("modifiers")
             if modifiers is not None:
                 self._update_modifiers(proto, wid, modifiers)
-        self._maybe_record_drag_scroll(device_id, wid, pdata)
+        self._maybe_record_drag_scroll(wid, pdata)
 
     def _process_pointer_position(self, proto, packet: Packet) -> None:
         log("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
@@ -574,7 +574,7 @@ class PointerManager(StubSubsystem):
             device_id = packet[5]
         if self.process_mouse_common(proto, device_id, wid, pdata, props):
             self._update_modifiers(proto, wid, modifiers)
-        self._maybe_record_drag_scroll(device_id, wid, pdata)
+        self._maybe_record_drag_scroll(wid, pdata)
 
     def _process_pointer_wheel(self, proto, packet: Packet) -> None:
         assert self.pointer_device.has_precise_wheel()
