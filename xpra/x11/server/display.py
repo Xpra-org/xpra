@@ -8,7 +8,7 @@ from PIL import Image
 from xpra.net.common import Packet
 from xpra.net.compression import Compressed
 from xpra.net.packet_type import DISPLAY_ICON
-from xpra.server.common import make_icon_packet
+from xpra.server.common import make_icon_packet, find_session_icon_filename
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.x11.error import xsync, XError
 from xpra.x11.subsystem.display import X11DisplayManager
@@ -79,7 +79,10 @@ class X11SeamlessDisplayManager(X11DisplayManager):
             pil_icons.append(img)
 
         if not pil_icons:
-            return make_icon_packet("server.png", "xpra.png")
+            return make_icon_packet(
+                find_session_icon_filename(self.server),
+                "server.png", "xpra.png",
+            )
 
         def fit(img: Image.Image, box: int) -> Image.Image:
             iw, ih = img.size

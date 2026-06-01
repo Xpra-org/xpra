@@ -31,6 +31,17 @@ def may_update_bandwidth_limits(server) -> None:
     update_bandwidth_limits()
 
 
+def find_session_icon_filename(server) -> str:
+    """Look up a desktop icon by the server's session name (POSIX only)."""
+    if not server.session_name:
+        return ""
+    try:
+        from xpra.platform.posix.menu_helper import find_icon
+    except ImportError:
+        return ""
+    return find_icon(server.session_name) or ""
+
+
 def make_icon_packet(*names: str) -> tuple[str, int, int, str, int, Compressed]:
     from xpra.codecs.image import to_png
     from xpra.platform.paths import get_icon_filename

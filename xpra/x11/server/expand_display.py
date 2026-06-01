@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.net.compression import Compressed
-from xpra.server.common import make_icon_packet
+from xpra.server.common import make_icon_packet, find_session_icon_filename
 from xpra.x11.shadow.display import X11ShadowDisplayManager
 
 
@@ -16,6 +16,8 @@ class ExpandDisplayManager(X11ShadowDisplayManager):
     def do_make_screenshot_packet(self):
         raise NotImplementedError()
 
-    @staticmethod
-    def do_make_icon_packet() -> tuple[str, int, int, str, int, Compressed]:
-        return make_icon_packet("scaling.png", "shadow.png", "server.png", "xpra.png")
+    def do_make_icon_packet(self) -> tuple[str, int, int, str, int, Compressed]:
+        return make_icon_packet(
+            find_session_icon_filename(self.server),
+            "scaling.png", "shadow.png", "server.png", "xpra.png",
+        )

@@ -7,7 +7,7 @@ import os
 import sys
 
 from xpra.net.compression import Compressed
-from xpra.server.common import make_icon_packet
+from xpra.server.common import make_icon_packet, find_session_icon_filename
 from xpra.server.source.display import DisplayConnection
 from xpra.server.subsystem.display import DisplayManager
 from xpra.util.system import get_platform_icon_name
@@ -104,17 +104,10 @@ class WaylandDisplayManager(DisplayManager):
         return "xpra on wayland"
 
     def do_make_icon_packet(self) -> tuple[str, int, int, str, int, Compressed]:
-        names: list[str] = []
-        session_name = getattr(self.server, "session_name", "")
-        if session_name:
-            try:
-                from xpra.platform.posix.menu_helper import find_icon
-                if filename := find_icon(session_name):
-                    names.append(filename)
-            except ImportError:
-                log("find_icon not available", exc_info=True)
-        names += [get_platform_icon_name(sys.platform), "server.png", "xpra.png"]
-        return make_icon_packet(*names)
+        return make_icon_packet(
+            find_session_icon_filename(self.server),
+            get_platform_icon_name(sys.platform), "server.png", "xpra.png",
+        )
 
     def get_ui_info(self, proto, **kwargs) -> dict:
         info = super().get_ui_info(proto, **kwargs)

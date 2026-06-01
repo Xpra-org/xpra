@@ -7,7 +7,7 @@ import sys
 
 from xpra.net.common import Packet
 from xpra.net.compression import Compressed
-from xpra.server.common import make_icon_packet
+from xpra.server.common import make_icon_packet, find_session_icon_filename
 from xpra.util.system import get_platform_icon_name
 from xpra.x11.error import xsync
 from xpra.x11.subsystem.display import X11DisplayManager, get_root_size
@@ -90,6 +90,8 @@ class XpraDesktopDisplayManager(X11DisplayManager):
         from xpra.codecs.screenshot import make_screenshot_packet_from_regions
         return Packet(*make_screenshot_packet_from_regions(regions))
 
-    @staticmethod
-    def do_make_icon_packet() -> tuple[str, int, int, str, int, Compressed]:
-        return make_icon_packet(get_platform_icon_name(sys.platform), "display.png", "server.png", "xpra.png")
+    def do_make_icon_packet(self) -> tuple[str, int, int, str, int, Compressed]:
+        return make_icon_packet(
+            find_session_icon_filename(self.server),
+            get_platform_icon_name(sys.platform), "display.png", "server.png", "xpra.png",
+        )

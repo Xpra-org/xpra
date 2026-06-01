@@ -7,7 +7,7 @@ import sys
 
 from xpra.net.packet_type import DISPLAY_SCREENSHOT
 from xpra.net.compression import Compressed
-from xpra.server.common import make_icon_packet
+from xpra.server.common import make_icon_packet, find_session_icon_filename
 from xpra.server.subsystem.display import DisplayManager
 from xpra.util.system import get_platform_icon_name
 from xpra.log import Logger
@@ -39,7 +39,10 @@ class ShadowDisplayMixin:
         return DISPLAY_SCREENSHOT, w, h, encoding, rowstride, Compressed(encoding, data)
 
     def do_make_icon_packet(self) -> tuple[str, int, int, str, int, Compressed]:
-        return make_icon_packet(get_platform_icon_name(sys.platform), "shadow.png", "server.png", "xpra.png")
+        return make_icon_packet(
+            find_session_icon_filename(self.server),
+            get_platform_icon_name(sys.platform), "shadow.png", "server.png", "xpra.png",
+        )
 
 
 class ShadowDisplayManager(ShadowDisplayMixin, DisplayManager):
