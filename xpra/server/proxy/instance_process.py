@@ -9,11 +9,11 @@ import sys
 import signal
 import socket
 from typing import Any
-from queue import SimpleQueue
-from multiprocessing import Process
+from queue import Queue, SimpleQueue
+from multiprocessing import Process as DefaultProcess, get_context
 
 from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST
-from xpra.server.proxy.instance_base import ProxyInstance
+from xpra.server.proxy.instance_base import ProxyInstance, PROXY_QUEUE_SIZE
 from xpra.util.queue_scheduler import QueueScheduler
 from xpra.util.daemon import setuidgid
 from xpra.server.subsystem.control import ControlHandler
@@ -40,6 +40,7 @@ from xpra.log import Logger
 log = Logger("proxy")
 
 MAX_CONCURRENT_CONNECTIONS = 20
+Process = get_context("fork").Process if POSIX else DefaultProcess
 
 
 def set_blocking(conn) -> None:
@@ -66,6 +67,10 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
                                disp_desc, cipher, cipher_mode, encryption_key, caps)
         QueueScheduler.__init__(self)
         self.hello_request_handlers = {}
+        # the proxy instance is its own "server" (ControlHandler.__init__
+        # sets self.server = self); expose itself as the `control` subsystem
+        # so StubSubsystem.args_control / get_subsystem can find it.
+        self.subsystems: dict = {"control": self}
         ControlHandler.__init__(self, self)
         self.enabled = True
         Process.__init__(self, name=str(client_conn), daemon=False)
@@ -91,6 +96,23 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
 
     def __repr__(self):
         return f"proxy instance pid {os.getpid()}"
+
+    def __getstate__(self):
+        # Non-fork multiprocessing contexts pickle this instance to launch the
+        # child. queue.Queue contains a `_thread.lock` (its internal mutex), and
+        # the QueueScheduler slots carry similar threading objects.
+        state = self.__dict__.copy()
+        state.pop("server_packets", None)
+        state.pop("client_packets", None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        # Re-initialize the slot-backed scheduler state (RLocks, SimpleQueue,
+        # AtomicInteger) that was dropped during pickling.
+        QueueScheduler.__init__(self)
+        self.server_packets = Queue(PROXY_QUEUE_SIZE)
+        self.client_packets = Queue(PROXY_QUEUE_SIZE)
 
     def server_message_queue(self) -> None:
         while not self.exit and self.message_queue:
