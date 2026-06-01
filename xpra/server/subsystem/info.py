@@ -25,7 +25,6 @@ from xpra.net.constants import ConnectionMessage
 from xpra.common import noop
 from xpra.util.parsing import str_to_bool
 from xpra.os_util import get_machine_id, POSIX, gi_import
-from xpra.util.child_reaper import get_child_reaper
 from xpra.util.system import get_env_info, get_sysconfig_info
 from xpra.util.thread import start_thread
 from xpra.util.pysystem import get_frame_info
@@ -225,7 +224,6 @@ class InfoServer(StubSubsystem):
         from xpra.platform.info import get_sys_info
         info["sys"] = get_sys_info()
         info["env"] = get_env_info()
-        info.update(get_child_reaper().get_info())
         return info
 
     def get_base_server_info(self) -> dict[str, Any]:
