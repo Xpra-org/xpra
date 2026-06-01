@@ -323,7 +323,9 @@ vpx_decoder_ENABLED     = vpx_ENABLED
 amf_ENABLED             = pkg_config_version("1.0", "amf") or has_header_file("AMF/components/VideoEncoderVCE.h")
 amf_encoder_ENABLED     = amf_ENABLED
 mf_decoder_ENABLED      = DEFAULT and WIN32
-vpl_decoder_ENABLED     = DEFAULT and has_header_file("vpl/mfxvideo.h")
+vpl_ENABLED             = DEFAULT and has_header_file("vpl/mfxvideo.h")
+vpl_decoder_ENABLED     = vpl_ENABLED
+vpl_encoder_ENABLED     = vpl_ENABLED
 remote_encoder_ENABLED  = DEFAULT
 # opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
@@ -370,6 +372,7 @@ ENCODER_SWITCHES = [
     "enc_x264", "openh264_encoder", "nvenc", "nvjpeg_encoder",
     "vpx_encoder", "webp_encoder", "pillow_encoder",
     "amf_encoder",
+    "vpl_encoder",
     "jpeg_encoder", "avif_encoder",
     "argb_encoder",
     "remote_encoder",
@@ -406,6 +409,7 @@ SWITCH_ALIAS = {
     "webp": ("webp_encoder", "webp_decoder"),
     "avif": ("avif_encoder", "avif_decoder"),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
+    "vpl": ("vpl_decoder", "vpl_encoder"),
     "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels"),
     "gstreamer": ("gstreamer_audio", "gstreamer_video"),
     "cython": (
@@ -1754,6 +1758,7 @@ def clean() -> None:
         "xpra/buffers/memalign.c",
         "xpra/codecs/mf/mf_decode.c",
         "xpra/codecs/vpl/vpl_decode.c",
+        "xpra/codecs/vpl/vpl_encode.c",
         "xpra/platform/win32/setappid.cpp",
         "xpra/x11/gtk/gdk_x11_macros.c",
     ]
@@ -3073,9 +3078,12 @@ toggle_packages(mf_decoder_ENABLED, "xpra.codecs.mf")
 if mf_decoder_ENABLED:
     ace("xpra.codecs.mf.decoder,xpra/codecs/mf/mf_decode.c",
         extra_link_args=("-lmfplat", "-lmfuuid", "-lole32", "-ld3d11", "-ldxguid"))
-toggle_packages(vpl_decoder_ENABLED, "xpra.codecs.vpl")
+toggle_packages(vpl_decoder_ENABLED or vpl_encoder_ENABLED, "xpra.codecs.vpl")
 if vpl_decoder_ENABLED:
     ace("xpra.codecs.vpl.decoder,xpra/codecs/vpl/vpl_decode.c",
+        extra_link_args=("-lvpl", ))
+if vpl_encoder_ENABLED:
+    ace("xpra.codecs.vpl.encoder,xpra/codecs/vpl/vpl_encode.c",
         extra_link_args=("-lvpl", ))
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
 toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
