@@ -63,7 +63,6 @@ class X11SeamlessDisplayManager(X11DisplayManager):
 
     def do_make_icon_packet(self) -> tuple[str, int, int, str, int, Compressed]:
         windows = self.get_subsystem("window").models()
-        log.enable_debug()
         log("do_make_icon_packet() windows=%s", windows)
         size = 128
         pil_icons: list[Image.Image] = []
