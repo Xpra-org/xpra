@@ -48,6 +48,9 @@ def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
         name = "Xpra"
     if display_name and not (OSX or WIN32):
         name += f" {display_name}"
+    uuid = str(d.get("uuid") or "")
+    if uuid:
+        name += f" {uuid}"
     mode = d.get("mode", "tcp")
     service_type = {
         "rfb": RFB_MDNS_TYPE,
