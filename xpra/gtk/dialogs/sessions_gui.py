@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import sys
 import socket
 import shlex
@@ -26,7 +25,7 @@ from xpra.net.session_discovery import SessionEndpoint, SessionGroup, endpoint_u
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.system import stop_proc, get_platform_icon_name
 from xpra.os_util import gi_import, WIN32, getuid, getgid
-from xpra.util.env import IgnoreWarningsContext
+from xpra.util.env import IgnoreWarningsContext, get_saved_env
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -348,7 +347,7 @@ class SessionsGUI(Gtk.Window):
             cmdline=sys.argv,
         )
         cmd_str = shlex.join(cmd)
-        env = os.environ.copy()
+        env = get_saved_env()
         env["XPRA_NOTTY"] = "1"
         try:
             proc = subprocess.Popen(cmd, env=env)
