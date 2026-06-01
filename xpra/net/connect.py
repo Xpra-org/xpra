@@ -27,6 +27,19 @@ def debug(msg: str, *args) -> None:
 
 
 def connect_to_ssh(display_desc: dict[str, Any], debug_cb=noop, ssh_fail_cb=noop):
+    """
+    Open an ssh tunnel and return a connection wrapping it.
+
+    `debug_cb(message)` is called with progress messages during connection setup, so UI clients
+    can surface them (e.g. the GTK launcher displays them in its status area).
+
+    `ssh_fail_cb(message)` is the side-channel for *asynchronous* tunnel failures: when the ssh
+    subprocess dies after the initial connect, the failure is detected by a read/write on the
+    network I/O thread (see `xpra.net.ssh.exec_client.abort_test`) and cannot be raised back to
+    whoever called `connect_to_ssh`. The callback lets GUI clients surface the error in their
+    own UI; the default `noop` is fine for CLI clients that rely on the `log.error` output.
+    Synchronous failures during connect are still raised normally.
+    """
     if display_desc.get("is_paramiko", False):
         from xpra.net.ssh.paramiko.client import connect_to
         conn = connect_to(display_desc)

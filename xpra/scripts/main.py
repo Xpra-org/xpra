@@ -1136,6 +1136,15 @@ def win32_reconnect(script_file: str, cmdline: list[str]) -> ExitCode:
 
 
 def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
+    """
+    Client-side entry point: dial the xpra server described by `display_desc` and hand the connection to `app`.
+
+    Most backends run the connect step on a background thread so the GUI main loop stays responsive
+    (and so Gdk doesn't lock up when `connect_to` spawns an ssh subprocess on win32).
+
+    Synchronous failures (parse errors, refused connections, ssl errors, ...) raise `InitExit`/`InitException`
+    and are routed to `app.quit` below.
+    """
     log = Logger("network")
     backend = opts.backend or "gtk"
     log("connect_to_server(%s, %s, ..) backend=%s", app, display_desc, backend)
