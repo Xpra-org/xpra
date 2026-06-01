@@ -11,6 +11,7 @@ from time import monotonic
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import
 from xpra.server.source.keyboard import KeyboardConnection
+from xpra.util.env import envbool
 from xpra.util.str_fn import Ellipsizer, csv
 from xpra.util.objects import typedict
 from xpra.keyboard.common import DELAY_KEYBOARD_DATA
@@ -22,6 +23,23 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("keyboard")
+
+# Keyboard-as-scroll heuristic: certain keypresses (PageDown, arrow keys, etc.)
+# almost always cause the focused window's content to scroll vertically.
+# Treat their press as a scroll event for downstream consumers (chiefly image
+# filters that want to learn about scrolls beyond wheel events).
+# Auto-repeat naturally re-emits while the key is held.
+#
+#   XPRA_KEYBOARD_SCROLL_ENABLED  master switch
+#
+# Conservative key set: avoids Space (typing collisions) and Left/Right
+# (rare for vertical scrolling, common in text editing).
+KEYBOARD_SCROLL_ENABLED = envbool("XPRA_KEYBOARD_SCROLL_ENABLED", False)
+KEYBOARD_SCROLL_KEYNAMES: frozenset[str] = frozenset({
+    "Page_Up", "Page_Down", "Prior", "Next",
+    "Home", "End",
+    "Up", "Down",
+})
 
 
 class KeyboardManager(StubSubsystem):
@@ -291,6 +309,18 @@ class KeyboardManager(StubSubsystem):
                 log.estr(e)
                 log.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
         ss.emit("user-event", "key-action")
+        # Keyboard-as-scroll: notify window sources that the user just triggered
+        # a scroll-equivalent keypress.
+        if KEYBOARD_SCROLL_ENABLED and pressed and wid and keyname in KEYBOARD_SCROLL_KEYNAMES:
+            log("keyboard-as-scroll: wid=%i keyname=%r", wid, keyname)
+            try:
+                window_sources = self.window_sources()
+            except AttributeError:
+                window_sources = ()
+            for ws in window_sources:
+                rec = getattr(ws, "record_scroll_event", None)
+                if rec:
+                    rec(wid)
 
     def get_keycode(self, ss, client_keycode: int, keyname: str,
                     pressed: bool, modifiers: list[str], keyval: int, keystr: str, group: int):

@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from typing import Any, Sequence
 
 from xpra.util.objects import typedict
@@ -103,6 +104,29 @@ def torch_init() -> None:
             cuda_info["devices"] = devices
 
 
+def _load_py_transform(transform_str: str) -> tuple[Any, dict]:
+    """Load an external callable via 'py:<module>:<Class>(kwargs...)'."""
+    import importlib
+    rest = transform_str[len("py:"):]
+    if ":" not in rest:
+        raise ValueError(
+            f"Invalid py: transform {transform_str!r}. "
+            "Expected format: py:<module>:<callable>(kwargs...)"
+        )
+    module_path, callable_part = rest.split(":", 1)
+    callable_name, kwargs = parse_function_call(callable_part)
+    log.info("py: loader: importing %r.%r kwargs=%s", module_path, callable_name, kwargs)
+    try:
+        mod = importlib.import_module(module_path)
+    except ImportError as exc:
+        raise ImportError(
+            f"Cannot import {module_path!r} for py: transform. "
+            f"Install the package or set PYTHONPATH. Error: {exc}"
+        ) from exc
+    factory = getattr(mod, callable_name)
+    return factory(**kwargs), {}
+
+
 class Filter:
     __slots__ = ("closed", "width", "height", "device", "transform", "kwargs")
 
@@ -124,7 +148,11 @@ class Filter:
         self.width = src_width
         self.height = src_height
         self.device = "cuda"
-        transform_str = options.strget("transform", "functional.invert")
+        transform_str = options.strget("transform") or os.environ.get("XPRA_IMAGEFILTER_TRANSFORM", "functional.invert")
+        if transform_str.startswith("py:"):
+            self.transform, self.kwargs = _load_py_transform(transform_str)
+            log("init_context: loaded py: transform %r", self.transform)
+            return
         import torchvision.transforms.v2 as transforms
         if transform_str.startswith("functional."):
             functional = transforms.functional
@@ -187,6 +215,27 @@ class Filter:
         bgrx_array = np.frombuffer(bgrx, dtype=np.uint8)
         bgrx_array = bgrx_array.reshape(height, rowstride)
         bgrx_array = bgrx_array[:, :width * 4].reshape(height, width, 4)
+
+        if getattr(self.transform, "supports_numpy", False):
+            bgr_np = bgrx_array[:, :, :3].copy()
+            bgr_result = self.transform.process_numpy(
+                bgr_np,
+                target_x=image.get_target_x(),
+                target_y=image.get_target_y(),
+                window_width=self.width,
+                window_height=self.height,
+            )
+            result = np.concatenate([bgr_result, bgrx_array[:, :, 3:4]], axis=2)
+            bgrx = result.tobytes()
+            filtered = ImageWrapper(
+                image.get_x(), image.get_y(), width, height,
+                bgrx, image.get_pixel_format(), image.get_depth(),
+                width * 4, 4, planes=ImageWrapper.PACKED, thread_safe=True,
+            )
+            filtered.set_target_x(image.get_target_x())
+            filtered.set_target_y(image.get_target_y())
+            return filtered
+
         pixels_gpu = torch.tensor(bgrx_array, device=self.device, dtype=torch.uint8)
         # Separate BGR and X channels
         bgr = pixels_gpu[:, :, :3]          # (H, W, 3)
@@ -202,9 +251,14 @@ class Filter:
         # Download to CPU
         result_cpu = result_gpu.cpu().numpy()
         bgrx = result_cpu.tobytes()
-        image.set_pixels(bgrx)
-        image.set_rowstride(width * 4)
-        return image
+        filtered = ImageWrapper(
+            image.get_x(), image.get_y(), width, height,
+            bgrx, image.get_pixel_format(), image.get_depth(),
+            width * 4, 4, planes=ImageWrapper.PACKED, thread_safe=True,
+        )
+        filtered.set_target_x(image.get_target_x())
+        filtered.set_target_y(image.get_target_y())
+        return filtered
 
 
 def selftest(full=False):
