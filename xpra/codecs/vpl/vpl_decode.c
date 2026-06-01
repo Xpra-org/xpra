@@ -3,7 +3,7 @@
  * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
  * later version. See the file COPYING for details.
  * ABOUTME: Intel oneVPL HEVC 4:4:4 hardware decoder — C implementation.
- * ABOUTME: Manages VPL session, HEVC RExt decode, and AYUV/Y410 frame extraction. */
+ * ABOUTME: Manages VPL session, HEVC RExt decode, and XYUV/AYUV/Y410 frame extraction. */
 
 #include "vpl_decode.h"
 
@@ -14,6 +14,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+
+#define XPRA_MFX_FOURCC_XYUV MFX_MAKEFOURCC('X','Y','U','V')
 
 /* ── logging ────────────────────────────────────────────────────────── */
 
@@ -42,6 +44,29 @@ static void vpl_log(const char *fmt, ...) {
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     g_log_fn(buf);
+}
+
+static VPLPixelFormat format_from_fourcc(mfxU32 fourcc) {
+    if (fourcc == MFX_FOURCC_AYUV)
+        return VPL_FMT_AYUV;
+    if (fourcc == XPRA_MFX_FOURCC_XYUV)
+        return VPL_FMT_XYUV;
+    if (fourcc == MFX_FOURCC_Y410)
+        return VPL_FMT_Y410;
+    return VPL_FMT_UNKNOWN;
+}
+
+static const char *format_name(VPLPixelFormat format) {
+    switch (format) {
+    case VPL_FMT_AYUV:
+        return "AYUV";
+    case VPL_FMT_XYUV:
+        return "XYUV";
+    case VPL_FMT_Y410:
+        return "Y410";
+    default:
+        return "unknown";
+    }
 }
 
 /* ── timing (Windows QPC) ───────────────────────────────────────────── */
@@ -255,7 +280,7 @@ VPLDecodeStatus vpl_decoder_create(VPLDecoder **out, int width, int height,
 
     /* determine output format */
     if (chroma444) {
-        dec->format = (bit_depth >= 10) ? VPL_FMT_Y410 : VPL_FMT_AYUV;
+        dec->format = (bit_depth >= 10) ? VPL_FMT_Y410 : VPL_FMT_XYUV;
     } else {
         dec->format = VPL_FMT_UNKNOWN;
         free(dec);
@@ -346,7 +371,7 @@ VPLDecodeStatus vpl_decoder_create(VPLDecoder **out, int width, int height,
         dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_Y410;
         dec->param.mfx.FrameInfo.Shift = 0;
     } else {
-        dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_AYUV;
+        dec->param.mfx.FrameInfo.FourCC = XPRA_MFX_FOURCC_XYUV;
     }
 
     dec->is_hw = 1;  /* we filtered for hardware; will verify after init */
@@ -414,7 +439,7 @@ static void reset_param_baseline(VPLDecoder *dec, int width, int height,
     dec->param.mfx.FrameInfo.BitDepthLuma = bit_depth;
     dec->param.mfx.FrameInfo.BitDepthChroma = bit_depth;
     dec->param.mfx.FrameInfo.FourCC = (bit_depth >= 10) ? MFX_FOURCC_Y410
-                                                         : MFX_FOURCC_AYUV;
+                                                         : XPRA_MFX_FOURCC_XYUV;
     dec->param.mfx.FrameInfo.Shift = 0;
 }
 
@@ -459,7 +484,7 @@ VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
     dec->width = width;
     dec->height = height;
     dec->bit_depth = bit_depth;
-    dec->format = (bit_depth >= 10) ? VPL_FMT_Y410 : VPL_FMT_AYUV;
+    dec->format = (bit_depth >= 10) ? VPL_FMT_Y410 : VPL_FMT_XYUV;
     dec->last_sts = MFX_ERR_NONE;
     dec->last_error[0] = '\0';
     /* Restore the optimistic HW default. A prior stream that hit
@@ -526,22 +551,25 @@ static VPLDecodeStatus lazy_init(VPLDecoder *dec, mfxBitstream *bs) {
         return VPL_DEC_ERROR;
     }
 
-    /* update format based on what DecodeHeader found */
+    /* DecodeHeader fills the stream parameters. Request the output surface
+       format we want before Init/Reset, then validate the actual surface
+       format in extract_frame. oneVPL uses XYUV for opaque 8-bit 4:4:4;
+       AYUV remains accepted if an implementation returns an alpha-bearing
+       8-bit surface. */
     mfxU32 fourcc = dec->param.mfx.FrameInfo.FourCC;
-    if (fourcc == MFX_FOURCC_AYUV) {
-        dec->format = VPL_FMT_AYUV;
-    } else if (fourcc == MFX_FOURCC_Y410) {
+    if (dec->param.mfx.FrameInfo.BitDepthLuma > 0) {
+        dec->bit_depth = dec->param.mfx.FrameInfo.BitDepthLuma;
+    }
+    if (dec->bit_depth >= 10 || fourcc == MFX_FOURCC_Y410) {
+        dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_Y410;
         dec->format = VPL_FMT_Y410;
     } else {
-        vpl_log("vpl lazy_init: unexpected FourCC 0x%x from DecodeHeader", fourcc);
-        /* try to override to our preferred format */
-        if (dec->bit_depth >= 10) {
-            dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_Y410;
-            dec->format = VPL_FMT_Y410;
-        } else {
-            dec->param.mfx.FrameInfo.FourCC = MFX_FOURCC_AYUV;
-            dec->format = VPL_FMT_AYUV;
+        if (fourcc != MFX_FOURCC_AYUV && fourcc != XPRA_MFX_FOURCC_XYUV) {
+            vpl_log("vpl lazy_init: unexpected FourCC 0x%x from DecodeHeader, requesting XYUV",
+                    fourcc);
         }
+        dec->param.mfx.FrameInfo.FourCC = XPRA_MFX_FOURCC_XYUV;
+        dec->format = VPL_FMT_XYUV;
     }
 
     /* Keep the caller-supplied dimensions from vpl_decoder_create — they are
@@ -616,6 +644,10 @@ static VPLDecodeStatus extract_frame(VPLDecoder *dec, mfxFrameSurface1 *surface,
 
     mfxFrameData *data = &surface->Data;
     mfxFrameInfo *info = &surface->Info;
+    VPLPixelFormat surface_format = format_from_fourcc(info->FourCC);
+    if (surface_format != VPL_FMT_UNKNOWN) {
+        dec->format = surface_format;
+    }
 
     /* Pitch is the row stride in bytes */
     int pitch = data->PitchLow + ((int)data->PitchHigh << 16);
@@ -629,18 +661,19 @@ static VPLDecodeStatus extract_frame(VPLDecoder *dec, mfxFrameSurface1 *surface,
     frame->us_map = (int)(t1 - t0);
 
     /* For packed formats, the pixel data starts at the crop origin.
-       AYUV: 4 bytes/pixel, Y410: 4 bytes/pixel. */
+       AYUV/XYUV/Y410 are all 4 bytes/pixel. */
     int crop_x = info->CropX;
     int crop_y = info->CropY;
-    int bpp = 4;  /* both AYUV and Y410 are 32 bpp */
+    int bpp = 4;
 
-    if (dec->format == VPL_FMT_AYUV) {
-        /* AYUV packed: V,U,Y,A per pixel in data->V (or data->B) */
+    if (dec->format == VPL_FMT_AYUV || dec->format == VPL_FMT_XYUV) {
+        /* AYUV/XYUV packed: V,U,Y,A/X per pixel in data->V (or data->B) */
         uint8_t *base = data->V ? data->V : data->Y;
         if (!base) base = data->B;
         if (!base) {
             surface->FrameInterface->Unmap(surface);
-            snprintf(dec->last_error, sizeof(dec->last_error), "AYUV: no pixel pointer");
+            snprintf(dec->last_error, sizeof(dec->last_error), "%s: no pixel pointer",
+                     format_name(dec->format));
             dec->last_sts = MFX_ERR_NULL_PTR;
             return VPL_DEC_ERROR;
         }
@@ -672,7 +705,7 @@ static VPLDecodeStatus extract_frame(VPLDecoder *dec, mfxFrameSurface1 *surface,
 
     vpl_log("vpl extract: %dx%d stride=%d fmt=%s map=%dus",
             frame->width, frame->height, pitch,
-            dec->format == VPL_FMT_AYUV ? "AYUV" : "Y410",
+            format_name(dec->format),
             frame->us_map);
 
     return VPL_DEC_OK;

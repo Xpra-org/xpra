@@ -28,7 +28,8 @@ typedef enum {
 typedef enum {
     VPL_FMT_UNKNOWN = 0,
     VPL_FMT_AYUV    = 1,   /* 8-bit 4:4:4 packed (V,U,Y,A per pixel) */
-    VPL_FMT_Y410    = 2,   /* 10-bit 4:4:4 packed (U10:Y10:V10:A2)   */
+    VPL_FMT_XYUV    = 2,   /* 8-bit 4:4:4 packed (V,U,Y,X per pixel) */
+    VPL_FMT_Y410    = 3,   /* 10-bit 4:4:4 packed (U10:Y10:V10:A2)   */
 } VPLPixelFormat;
 
 typedef struct {
@@ -50,7 +51,7 @@ void            vpl_decode_shutdown(void);
 
 /* Lifecycle.
    chroma444:  1 = request HEVC RExt 4:4:4, 0 = request HEVC Main/Main10 4:2:0.
-   bit_depth:  8 or 10 (selects AYUV vs Y410 for 444, NV12 vs P010 for 420). */
+   bit_depth:  8 or 10 (selects XYUV vs Y410 for 444, NV12 vs P010 for 420). */
 VPLDecodeStatus vpl_decoder_create(VPLDecoder **out, int width, int height,
                                     int chroma444, int bit_depth);
 void            vpl_decoder_destroy(VPLDecoder *dec);
