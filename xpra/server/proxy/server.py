@@ -253,7 +253,10 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
         if isprocess:
             # send message:
             if force:
-                instance.terminate()
+                try:
+                    instance.terminate()
+                except (OSError, AttributeError) as e:
+                    log.error("Error stopping %s: %s", instance, e)
             else:
                 mq.put_nowait("stop")
                 try:
