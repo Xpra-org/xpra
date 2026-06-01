@@ -83,6 +83,7 @@ def get_plane_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
     return ({
         "NV12": ("Y", "UV"),
         "AYUV": ("AYUV", ),
+        "XYUV": ("XYUV", ),
         "Y410": ("Y410", ),
     }.get(pixel_format, list(pixel_format))[index])
 
@@ -102,6 +103,7 @@ PIXEL_SUBSAMPLING : dict[str, Sequence[tuple[int, int]]] = {
     "GBRP"      : ((1, 1), (1, 1), (1, 1)),
     "GBRP9LE"   : ((1, 1), (1, 1), (1, 1)),
     "AYUV"      : ((1, 1), ),
+    "XYUV"      : ((1, 1), ),
     "Y410"      : ((1, 1), ),
 }
 
@@ -163,20 +165,6 @@ RGB_FORMATS: Sequence[str] = (
     "BGR",
     "r210",
 )
-
-
-# Pixel formats that actually carry meaningful alpha in their A channel.
-# Used by the client backing classes and server-side compress code to filter
-# out alpha-bearing formats from non-alpha windows. Distinct from "formats
-# whose name happens to contain the letter A" — AYUV / Y410 are packed YUV
-# formats where the A byte is producer padding (Intel oneVPL fills 0xFF
-# for HEVC RExt 4:4:4) and must NOT be stripped from non-alpha windows.
-ALPHA_FORMATS: frozenset[str] = frozenset({
-    "BGRA",
-    "RGBA",
-    "ABGR",
-    "ARGB",
-})
 
 
 class TransientCodecException(RuntimeError):

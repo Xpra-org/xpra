@@ -152,29 +152,32 @@ void main()
 """
 
 
-def gen_AYUV_to_RGB(cs="bt601", full_range=True) -> str:
-    """Packed AYUV → RGB conversion.
-    AYUV memory order is V,U,Y,A which maps to R,G,B,A in GL_RGBA8."""
+def gen_AYUV_to_RGB(cs="bt601", full_range=True, fmt="AYUV") -> str:
+    """Packed AYUV / XYUV -> RGB conversion.
+    Memory order is V,U,Y,A-or-X, which maps to R,G,B,A in GL_RGBA8."""
     if cs not in CS_MULTIPLIERS:
         raise ValueError(f"unsupported colorspace {cs}")
+    if fmt not in ("AYUV", "XYUV"):
+        raise ValueError(f"unsupported packed YUV format {fmt}")
     a, b, c, d, e = CS_MULTIPLIERS[cs]
     f = - c * d / b
     g = - a * e / b
     ymult = "" if full_range else " * 1.1643835616438356"
     uvmult = "" if full_range else " * 1.1383928571428572"
     yoffset = "" if full_range else " - 0.062745098"
+    alpha = "t.a" if fmt == "AYUV" else "1.0"
     return f"""
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
 uniform vec2 viewport_pos;
 uniform vec2 scaling;
-uniform sampler2DRect AYUV;
+uniform sampler2DRect {fmt};
 layout(location = 0) out vec4 frag_color;
 
 void main()
 {{
     vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
-    vec4 t = texture(AYUV, pos);
+    vec4 t = texture({fmt}, pos);
     highp float y = (t.b{yoffset}){ymult};
     highp float u = (t.g - 0.5){uvmult};
     highp float v = (t.r - 0.5){uvmult};
@@ -183,7 +186,7 @@ void main()
     highp float g = y + {f} * u + {g} * v;
     highp float b = y + {d} * u;
 
-    frag_color = vec4(r, g, b, t.a);
+    frag_color = vec4(r, g, b, {alpha});
 }}
 """
 
@@ -390,7 +393,8 @@ SOURCE: dict[str, str] = {
 for full in (False, True):
     suffix = "_FULL" if full else ""
     SOURCE[f"NV12_to_RGB{suffix}"] = gen_NV12_to_RGB(full_range=full)
-    SOURCE[f"AYUV_to_RGB{suffix}"] = gen_AYUV_to_RGB(full_range=full)
+    SOURCE[f"AYUV_to_RGB{suffix}"] = gen_AYUV_to_RGB(full_range=full, fmt="AYUV")
+    SOURCE[f"XYUV_to_RGB{suffix}"] = gen_AYUV_to_RGB(full_range=full, fmt="XYUV")
     SOURCE[f"Y410_to_RGB{suffix}"] = gen_Y410_to_RGB(full_range=full)
 
     for fmt in (

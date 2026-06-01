@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 # ABOUTME: Intel oneVPL HEVC 4:4:4 hardware decoder for Windows.
-# ABOUTME: Wraps the C vpl_decode API; outputs AYUV for the GL shader pipeline.
+# ABOUTME: Wraps the C vpl_decode API; outputs XYUV for the GL shader pipeline.
 
 #cython: wraparound=False
 
@@ -220,13 +220,13 @@ def get_specs() -> Sequence[VideoSpec]:
     # 8-bit only for now. Y410 (10-bit) is deliberately not advertised:
     # only YUV444P is registered at init time, and both the create and the
     # cached-reset paths hardcode bit_depth=8, so a 10-bit stream would be
-    # reconfigured against AYUV surfaces. Plumb bit_depth through the
+    # reconfigured against XYUV surfaces. Plumb bit_depth through the
     # Cython wrapper and partition the cache on bd before adding "Y410".
     return (
         VideoSpec(
             encoding="h265",
             input_colorspace="YUV444P",
-            output_colorspaces=("AYUV", ),
+            output_colorspaces=("XYUV", ),
             has_lossless_mode=False,
             codec_class=Decoder,
             codec_type=get_type(),
@@ -313,7 +313,7 @@ cdef class Decoder:
         log("vpl %s decoder initialized: hardware=%s, format=%s (hint), reused=%s",
             encoding,
             vpl_decoder_is_hardware(self.context),
-            "AYUV" if vpl_decoder_get_format(self.context) == VPL_FMT_AYUV else "Y410",
+            "XYUV" if vpl_decoder_get_format(self.context) == VPL_FMT_AYUV else "Y410",
             reused)
 
     def get_encoding(self) -> str:
@@ -387,7 +387,7 @@ cdef class Decoder:
         if self.context:
             info["hardware"] = bool(vpl_decoder_is_hardware(self.context))
             fmt = vpl_decoder_get_format(self.context)
-            info["pixel_format"] = "AYUV" if fmt == VPL_FMT_AYUV else "Y410" if fmt == VPL_FMT_Y410 else "unknown"
+            info["pixel_format"] = "XYUV" if fmt == VPL_FMT_AYUV else "Y410" if fmt == VPL_FMT_Y410 else "unknown"
         return info
 
     def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
@@ -427,10 +427,10 @@ cdef class Decoder:
         self.width = frame.width
         self.height = frame.height
 
-        # Both AYUV and Y410 are packed 32 bpp — pass directly to the GL shader
+        # Both XYUV and Y410 are packed 32 bpp — pass directly to the GL shader
         cdef int w = frame.width
         cdef int h = frame.height
-        cdef int bpp = 4  # both AYUV and Y410 are 32 bits per pixel
+        cdef int bpp = 4  # both XYUV and Y410 are 32 bits per pixel
 
         # extract_frame() advances frame.data to the crop origin, so the
         # mapped surface beyond the last visible pixel is not guaranteed
@@ -443,7 +443,7 @@ cdef class Decoder:
         pixels = frame.data[:payload_bytes]
         copy_end = monotonic()
 
-        pixel_format = "Y410" if frame.format == VPL_FMT_Y410 else "AYUV"
+        pixel_format = "Y410" if frame.format == VPL_FMT_Y410 else "XYUV"
 
         self.frames += 1
         cdef int us_copy = int((copy_end - copy_start) * 1000000)

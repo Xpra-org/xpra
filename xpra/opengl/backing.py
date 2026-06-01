@@ -104,7 +104,7 @@ OPENGL_SCALING_FILTER = os.environ.get("XPRA_OPENGL_SCALING_FILTER", "").lower()
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
 PLANAR_FORMATS = (
-    "YUV420P", "YUV422P", "YUV444P", "NV12", "AYUV", "Y410",
+    "YUV420P", "YUV422P", "YUV444P", "NV12", "AYUV", "XYUV", "Y410",
     "YUV420P16", "YUV422P16", "YUV444P16",
     "YUVA420P", "YUVA422P", "YUVA444P",
     "GBRP", "GBRP16",
@@ -128,6 +128,7 @@ PIXEL_INTERNAL_FORMAT: dict[str, Sequence[IntConstant]] = {
     # override for formats that use 16 bit per channel:
     "NV12": (GL_R8, GL_RG8),
     "AYUV": (GL_RGBA8, ),
+    "XYUV": (GL_RGBA8, ),
     "Y410": (GL_RGB10_A2, ),
     "GBRP": (GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE),  # invalid according to the spec! (only value that works)
     "GBRP16": (GL_R16, GL_R16, GL_R16),
@@ -141,6 +142,7 @@ PIXEL_DATA_FORMAT: dict[str, Sequence[IntConstant]] = {
     # (meaning: uploading one channel at a time)
     "NV12": (GL_RED, GL_RG),  # Y is one channel, UV contains two channels
     "AYUV": (GL_RGBA, ),  # packed V,U,Y,A mapped to R,G,B,A
+    "XYUV": (GL_RGBA, ),  # packed V,U,Y,X mapped to R,G,B,A
     "Y410": (GL_RGBA, ),  # packed U10:Y10:V10:A2 mapped to R,G,B,A
 }
 PIXEL_UPLOAD_FORMAT: dict[str, Sequence[IntConstant] | IntConstant] = {
@@ -157,6 +159,7 @@ PIXEL_UPLOAD_FORMAT: dict[str, Sequence[IntConstant] | IntConstant] = {
     # planar formats:
     "NV12": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
     "AYUV": (GL_UNSIGNED_BYTE, ),
+    "XYUV": (GL_UNSIGNED_BYTE, ),
     "Y410": (GL_UNSIGNED_INT_2_10_10_10_REV, ),
     "YUV420P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
     "YUV422P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
@@ -256,7 +259,7 @@ class GLWindowBackingBase(WindowBackingBase):
     """
 
     RGB_MODES: Sequence[str] = (
-        "YUV420P", "YUV422P", "YUV444P", "NV12", "AYUV",
+        "YUV420P", "YUV422P", "YUV444P", "NV12", "AYUV", "XYUV",
         "YUV420P16",
         "GBRP", "BGRA", "BGRX", "RGBA", "RGBX",
         "RGB", "BGR",
@@ -1476,7 +1479,7 @@ class GLWindowBackingBase(WindowBackingBase):
                                options: typedict, callbacks: PaintCallbacks) -> None:
         # overridden to handle YUV using shaders:
         pixel_format = img.get_pixel_format()
-        if pixel_format.startswith("YUV") or pixel_format in ("NV12", "AYUV", "Y410"):
+        if pixel_format.startswith("YUV") or pixel_format in ("NV12", "AYUV", "XYUV", "Y410"):
             w = img.get_width()
             h = img.get_height()
             shader = f"{pixel_format}_to_RGB"
@@ -1735,7 +1738,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.planar_pixel_format not in (
             "YUV420P", "YUV422P", "YUV444P",
             "YUVA420P", "YUVA422P", "YUVA444P",
-            "GBRP", "NV12", "GBRP16", "AYUV", "Y410",
+            "GBRP", "NV12", "GBRP16", "AYUV", "XYUV", "Y410",
             "YUV420P16", "YUV422P16", "YUV444P16",
         ):
             # not ready to render yet
