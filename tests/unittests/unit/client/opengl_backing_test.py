@@ -125,9 +125,7 @@ class TestInitFormats(unittest.TestCase):
 
 
 class TestGetRgbFormatsAlphaFilter(unittest.TestCase):
-    """Verify get_rgb_formats() strips real alpha formats from non-alpha
-    windows but lets AYUV pass through (it's a YUV format with padding A,
-    not a real alpha-bearing RGB format)."""
+    """Verify get_rgb_formats() strips alpha formats from non-alpha windows."""
 
     def _make(self, window_alpha):
         return _make_mock_backing(1, window_alpha, 0)
@@ -144,10 +142,9 @@ class TestGetRgbFormatsAlphaFilter(unittest.TestCase):
         b = self._make(window_alpha=False)
         self.assertNotIn("BGRA", b.get_rgb_formats())
 
-    def test_non_alpha_window_keeps_ayuv(self):
-        # AYUV is YUV-with-padding-A; must NOT be stripped on non-alpha windows
+    def test_non_alpha_window_strips_ayuv(self):
         b = self._make(window_alpha=False)
-        self.assertIn("AYUV", b.get_rgb_formats())
+        self.assertNotIn("AYUV", b.get_rgb_formats())
 
 
 class TestGetInfo(unittest.TestCase):
