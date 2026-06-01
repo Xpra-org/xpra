@@ -1,0 +1,158 @@
+# bash completion for xpra
+#
+# This file is part of Xpra.
+# Copyright (C) Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+_xpra_displays() {
+    local IFS=$'\n'
+    COMPREPLY+=( $(compgen -W "$(xpra list 2>/dev/null \
+        | awk '/^[[:space:]]+(LIVE|DEAD) session/ {print $NF}')" -- "$1") )
+}
+
+_xpra() {
+    local cur prev words cword
+    _init_completion || return
+
+    local modes="seamless desktop monitor shadow shadow-screen
+        upgrade upgrade-seamless upgrade-desktop upgrade-monitor upgrade-shadow
+        start start-desktop start-monitor start-shadow start-shadow-screen
+        attach detach info id version stop exit connect-test screenshot
+        control print shell send-file configure
+        sessions launcher gui start-gui bug-report toolbox about example
+        encoder encode
+        clean clean-sockets clean-displays autostart
+        list list-sessions list-windows list-mdns list-clients
+        mdns-gui displays showconfig showsetting setup-ssl show-ssl
+        encoding path-info html5 docs help recover top proxy
+        opengl opengl-probe opengl-test
+        gtk-info gui-info network-info crypto-info monitor-info nvinfo
+        keyboard webcam video sbom"
+
+    local opts="--attach --audio --audio-source --auth --auto-refresh-delay
+        --av-sync --backend --bandwidth-detection --bandwidth-limit --bell
+        --bind --bind-quic --bind-rdp --bind-rfb --bind-ssh --bind-ssl
+        --bind-tcp --bind-vsock --bind-ws --bind-wss --border --bwlimit
+        --challenge-handlers --chdir --client-socket-dirs --clipboard
+        --clipboard-direction --clipboard-filter-file --commands --compress
+        --compression-level --compressors --control --csc-modules --cursors
+        --daemon --dbus --dbus-control --dbus-launch --debug --delay-tray
+        --desktop-fullscreen --desktop-scaling --displayfd --dock-icon --dpi
+        --enable-pings --enable-sharing --encoding --encodings --encryption
+        --encryption-keyfile --env --exec-wrapper --exit-ssh
+        --exit-with-children --exit-with-client --exit-with-windows
+        --file-size-limit --file-transfer --forward-xdg-open --gid --gstreamer
+        --headerbar --html --http --http-scripts --idle-timeout
+        --input-devices --input-method --keyboard-backend --keyboard-layout
+        --keyboard-layouts --keyboard-model --keyboard-options --keyboard-raw
+        --keyboard-sync --keyboard-variant --keyboard-variants --key-shortcut
+        --local-clipboard --lock --log-dir --log-file --lpadmin --lpinfo
+        --max-size --mdns --microphone --microphone-codec --middle-click
+        --minimal --min-port --min-quality --min-size --min-speed --mmap
+        --mmap-group --modal-windows --mousewheel --notifications
+        --open-command --open-files --opengl --open-url --packet-encoders
+        --password-file --pidfile --pings --pixel-depth --pointer --printing
+        --proxy-start-sessions --pulseaudio --pulseaudio-command
+        --pulseaudio-configure-commands --quality --quic-auth --rdp-auth
+        --rdp-upgrade --readonly --readwrite --reconnect --refresh-rate
+        --remote-clipboard --remote-logging --remote-xpra --resize-display
+        --rfb-auth --rfb-upgrade --server-idle-timeout --session-name
+        --session-registry --sessions-dir --sharing --shell
+        --shortcut-modifiers --socket-dir --socket-dirs --socket-permissions
+        --source --source-start --speaker --speaker-codec --speed --splash
+        --ssh --ssh-auth --ssh-upgrade --ssl --ssl-auth --ssl-ca-certs
+        --ssl-ca-data --ssl-cert --ssl-check-hostname --ssl-ciphers
+        --ssl-client-verify-mode --ssl-key --ssl-key-password --ssl-options
+        --ssl-protocol --ssl-server-hostname --ssl-server-verify-mode
+        --ssl-upgrade --ssl-verify-flags --start --start-after-connect
+        --start-child --start-child-after-connect --start-child-late
+        --start-child-on-connect --start-child-on-disconnect
+        --start-child-on-last-client-exit --start-env --start-late
+        --start-new-commands --start-on-connect --start-on-disconnect
+        --start-on-last-client-exit --start-via-proxy --swap-keys --sync-xvfb
+        --systemd-run --systemd-run-args --system-proxy-socket --system-tray
+        --tcp-auth --tcp-encryption --tcp-encryption-keyfile
+        --terminate-children --title --tray --tray-icon --uid --use-display
+        --username --video --video-decoders --video-encoders --video-scaling
+        --vsock-auth --webcam --websocket-upgrade --window-close --window-icon
+        --windows --ws-auth --wss-auth --xsettings --xvfb"
+
+    # options that take a file or directory path
+    case "$prev" in
+        --password-file|--encryption-keyfile|--tcp-encryption-keyfile|\
+        --ssl-cert|--ssl-key|--ssl-ca-certs|--ssl-ca-data|\
+        --clipboard-filter-file|--pidfile|--log-file|--tray-icon|\
+        --window-icon|--dock-icon|--exec-wrapper|--xvfb)
+            _filedir
+            return 0
+            ;;
+        --log-dir|--chdir|--socket-dir|--socket-dirs|--client-socket-dirs|\
+        --sessions-dir|--session-registry)
+            _filedir -d
+            return 0
+            ;;
+        --encoding)
+            COMPREPLY=( $(compgen -W "auto rgb rgb24 rgb32 png png/L png/P \
+                jpeg webp avif h264 vp8 vp9 h265 av1 mpeg4 mjpeg scroll" \
+                -- "$cur") )
+            return 0
+            ;;
+        --speaker|--microphone|--clipboard|--notifications|--bell|--cursors|\
+        --mmap|--system-tray|--tray|--readonly|--sharing|--lock|--daemon|\
+        --html|--mdns|--pulseaudio|--dbus|--opengl|--audio|--video|--printing|\
+        --file-transfer|--open-files|--open-url|--forward-xdg-open|\
+        --resize-display|--keyboard-sync|--xsettings|--swap-keys|\
+        --headerbar|--modal-windows|--desktop-fullscreen|--ssl|--ssh-upgrade|\
+        --ssl-upgrade|--rfb-upgrade|--rdp-upgrade|--websocket-upgrade|\
+        --exit-with-client|--exit-with-children|--exit-with-windows|\
+        --start-new-commands|--proxy-start-sessions|--bandwidth-detection|\
+        --av-sync|--reconnect|--use-display|--enable-pings|--enable-sharing|\
+        --commands|--control|--shell|--register|--terminate-children|\
+        --keyboard-raw|--input-devices)
+            COMPREPLY=( $(compgen -W "yes no auto" -- "$cur") )
+            return 0
+            ;;
+        --clipboard-direction)
+            COMPREPLY=( $(compgen -W "both to-server to-client disabled" -- "$cur") )
+            return 0
+            ;;
+        --debug)
+            COMPREPLY=( $(compgen -W "all auth audio clipboard codec compress \
+                crypto dbus encoding events exec file focus gl gstreamer http \
+                keyboard menu mmap mouse network notify opengl paint platform \
+                pointer printing protocol proxy quic refresh rdp rfb screen \
+                scroll server shadow socket source ssh ssl state subprocess \
+                tray ui util video webcam window x11 xkb xpra xshape xsync" \
+                -- "$cur") )
+            return 0
+            ;;
+    esac
+
+    # complete the subcommand at position 1
+    if [[ $cword -eq 1 ]]; then
+        COMPREPLY=( $(compgen -W "$modes" -- "$cur") )
+        return 0
+    fi
+
+    # complete long options
+    if [[ "$cur" == --* ]]; then
+        COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+        return 0
+    fi
+
+    # for modes that take a display name as a positional argument,
+    # complete from active sessions
+    local mode="${words[1]}"
+    case "$mode" in
+        attach|detach|info|id|version|stop|exit|connect-test|control|\
+        screenshot|print|shell|upgrade|upgrade-seamless|upgrade-desktop|\
+        upgrade-monitor|upgrade-shadow)
+            _xpra_displays "$cur"
+            return 0
+            ;;
+    esac
+
+    return 0
+} &&
+complete -F _xpra xpra

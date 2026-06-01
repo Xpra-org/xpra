@@ -2418,6 +2418,7 @@ else:
         add_data_files("share/mime/packages", ["fs/share/mime/packages/application-x-xpraconfig.xml"])
         add_data_files(f"share/{icons_dir}", glob("fs/share/icons/*.png"))
         add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
+        add_data_files("share/bash-completion/completions", ["fs/share/bash-completion/completions/xpra"])
 
     # here, we override build and install so we can
     # generate /etc/xpra/conf.d/*.conf

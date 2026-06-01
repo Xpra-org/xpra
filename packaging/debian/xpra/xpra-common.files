@@ -6,6 +6,7 @@ usr/share/xpra/images/
 usr/share/xpra/*.wav
 usr/share/man/man1/xpra.1*
 usr/share/metainfo/xpra.appdata.xml
+usr/share/bash-completion/completions/xpra
 usr/share/icons/xpra*png
 usr/share/doc/xpra/
 etc/default/xpra
