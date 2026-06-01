@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+# This file is part of Xpra.
+# Copyright (C) 2026 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+import unittest
+from unittest.mock import patch
+
+from xpra.net.mdns.util import mdns_publish
+
+
+class FakeZeroconfPublishers:
+    instances = []
+
+    def __init__(self, listen_on, service_name, service_type, text_dict):
+        self.listen_on = listen_on
+        self.service_name = service_name
+        self.service_type = service_type
+        self.text_dict = text_dict
+        FakeZeroconfPublishers.instances.append(self)
+
+
+class TestMdnsUtil(unittest.TestCase):
+
+    def setUp(self):
+        FakeZeroconfPublishers.instances = []
+
+    def test_uuid_makes_service_name_unique(self):
+        patches = (
+            patch("xpra.net.mdns.util.socket.gethostname", return_value="host"),
+            patch("xpra.net.mdns.zeroconf_publisher.get_interface_index", side_effect=lambda host: host),
+            patch("xpra.net.mdns.zeroconf_publisher.ZeroconfPublishers", FakeZeroconfPublishers),
+        )
+        with patches[0], patches[1], patches[2]:
+            mdns_publish("", (("192.0.2.1", 22),), {"mode": "ssh", "uuid": "abcdef123456"})
+            mdns_publish("", (("192.0.2.1", 22),), {"mode": "ssh", "uuid": "123456789abc"})
+
+        names = [publisher.service_name for publisher in FakeZeroconfPublishers.instances]
+        self.assertEqual(names, ["host abcdef123456 (ssh)", "host 123456789abc (ssh)"])
+
+
+def main():
+    unittest.main()
+
+
+if __name__ == "__main__":
+    main()
