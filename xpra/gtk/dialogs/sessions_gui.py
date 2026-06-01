@@ -8,6 +8,9 @@ import sys
 import socket
 import subprocess
 
+from dataclasses import dataclass, field
+from typing import Any
+
 from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
@@ -136,6 +139,134 @@ def get_uri(password: str, interface, protocol, name: str, stype: str, domain, h
     return uri
 
 
+@dataclass(frozen=True)
+class SessionEndpoint:
+    source: str
+    interface: Any = None
+    protocol: Any = None
+    name: str = ""
+    stype: str = ""
+    domain: str = ""
+    host: str = ""
+    address: str = ""
+    port: int = 0
+    text: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def typed_text(self) -> typedict:
+        return typedict(self.text)
+
+    @property
+    def uuid(self) -> str:
+        return self.typed_text.strget("uuid")
+
+    @property
+    def display(self) -> str:
+        return self.typed_text.strget("display")
+
+    @property
+    def session_name(self) -> str:
+        return self.typed_text.strget("name")
+
+    @property
+    def platform(self) -> str:
+        return self.typed_text.strget("platform")
+
+    @property
+    def session_type(self) -> str:
+        return self.typed_text.strget("type")
+
+    @property
+    def mode(self) -> str:
+        return self.typed_text.strget("mode")
+
+    @property
+    def icon(self):
+        return self.text.get("icon")
+
+    def as_record_tuple(self) -> tuple[Any, Any, str, str, str, str, str, int, dict[str, Any]]:
+        return (
+            self.interface,
+            self.protocol,
+            self.name,
+            self.stype,
+            self.domain,
+            self.host,
+            self.address,
+            self.port,
+            self.text,
+        )
+
+
+@dataclass
+class SessionGroup:
+    key: object
+    endpoints: list[SessionEndpoint] = field(default_factory=list)
+    host: str = ""
+    display: str = ""
+    uuid: str = ""
+    session_name: str = ""
+    platform: str = ""
+    session_type: str = ""
+    icon: Any = None
+
+
+def normalized_session_host(endpoint: SessionEndpoint) -> str:
+    host = endpoint.host
+    if endpoint.domain == "local" and host.endswith(".local"):
+        host = host[:-len(".local")]
+    return host
+
+
+def session_group_key(endpoint: SessionEndpoint) -> object:
+    if endpoint.uuid:
+        return endpoint.uuid
+    return normalized_session_host(endpoint).rstrip("."), endpoint.display
+
+
+def group_session_endpoints(endpoints: list[SessionEndpoint]) -> dict[object, SessionGroup]:
+    grouped: dict[object, list[SessionEndpoint]] = {}
+    for endpoint in endpoints:
+        grouped.setdefault(session_group_key(endpoint), []).append(endpoint)
+    session_groups: dict[object, SessionGroup] = {}
+    for key, recs in grouped.items():
+        group = SessionGroup(key=key, endpoints=recs)
+        if isinstance(key, tuple):
+            host, display = key
+            group.host = str(host)
+            group.display = str(display)
+            group.uuid = str(display)
+        else:
+            group.uuid = str(key)
+            hosts = [
+                normalized_session_host(rec) for rec in recs
+                if not normalized_session_host(rec).startswith("local")
+            ]
+            if not hosts:
+                hosts = [normalized_session_host(rec) for rec in recs]
+            group.host = hosts[0] if hosts else ""
+        for endpoint in recs:
+            if not group.platform:
+                group.platform = endpoint.platform
+            if not group.session_type:
+                group.session_type = endpoint.session_type
+            if not group.display:
+                group.display = endpoint.display
+            if not group.session_name:
+                group.session_name = endpoint.session_name
+            if group.icon is None:
+                group.icon = endpoint.icon
+        if not isinstance(key, tuple) and group.host in (
+                "localhost", "localhost.localdomain", "127.0.0.1", "::1", local_host_name):
+            group.host = "local"
+        session_groups[key] = group
+    return session_groups
+
+
+def endpoint_uri(password: str, endpoint: SessionEndpoint) -> str:
+    return get_uri(password, *endpoint.as_record_tuple())
+
+
 class SessionsGUI(Gtk.Window):
 
     def __init__(self, options, title="Xpra Session Browser"):
@@ -196,7 +327,7 @@ class SessionsGUI(Gtk.Window):
         self.vbox.add(self.password_box)
 
         self.contents = None
-        self.records = []
+        self.endpoints: list[SessionEndpoint] = []
         try:
             from xpra.platform.info import get_username
             username = get_username()
@@ -300,26 +431,35 @@ class SessionsGUI(Gtk.Window):
         # first remove any records that are no longer found:
         for key in self.local_info_cache:
             if key not in info_cache:
-                display, sockpath = key
-                self.records = [(interface, protocol, name, stype, domain, host, address, port, text) for
-                                (interface, protocol, name, stype, domain, host, address, port, text) in self.records
-                                if (protocol != "socket" or domain != "local" or address != sockpath)]
+                _display, sockpath = key
+                self.endpoints = [
+                    endpoint for endpoint in self.endpoints
+                    if endpoint.protocol != "socket" or endpoint.domain != "local" or endpoint.address != sockpath
+                ]
         # add the new ones:
         for key, info in info_cache.items():
             if key not in self.local_info_cache:
-                display, sockpath = key
-                self.records.append(("", "socket", "", "", "local", socket.gethostname(), sockpath, 0, make_text(info)))
+                _display, sockpath = key
+                self.endpoints.append(SessionEndpoint(
+                    source="local",
+                    interface="",
+                    protocol="socket",
+                    domain="local",
+                    host=socket.gethostname(),
+                    address=sockpath,
+                    text=make_text(info),
+                ))
         log("poll_local_sessions() info_cache=%s", info_cache)
         changed = self.local_info_cache != info_cache
         self.local_info_cache = info_cache
         return changed
 
     def populate_table(self) -> None:
-        log("populate_table: %i records", len(self.records))
+        log("populate_table: %i endpoints", len(self.endpoints))
         if self.contents:
             self.vbox.remove(self.contents)
             self.contents = None
-        if not self.records:
+        if not self.endpoints:
             self.contents = label("No sessions found")
             self.vbox.add(self.contents)
             self.contents.show()
@@ -338,76 +478,38 @@ class SessionsGUI(Gtk.Window):
 
         for i, text in enumerate(("Host", "Display", "Name", "Icon", "Type", "URI", "Connect", "Open in Browser")):
             grid.attach(l(text), i, 1, 1, 1)
-        # group them by uuid
-        d = {}
-        session_names = {}
-        address = ""
-        port = 0
         row = 2
-        for i, record in enumerate(self.records):
-            interface, protocol, name, stype, domain, host, address, port, text = record
-            td = typedict(text)
-            log("populate_table: record[%i]=%s", i, record)
-            uuid = td.strget("uuid")
-            display = td.strget("display")
-            if domain == "local" and host.endswith(".local"):
-                host = host[:-len(".local")]
-            if uuid:
-                key = uuid
-            else:
-                key = (host.rstrip("."), display)
-            log("populate_table: key[%i]=%s", i, key)
-            d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
-            td = typedict(text)
-            session_name = td.strget("name")
-            if session_name:
-                session_names[key] = session_name
-        for key, recs in d.items():
+        for key, session in group_session_endpoints(self.endpoints).items():
             if isinstance(key, tuple):
-                host, display = key
-                uuid = str(display)
-                title = f"{host} : {display}"
+                title = f"{session.host} : {session.display}"
             else:
-                display = ""
-                uuid = str(key)
-                # try to find a valid host name:
-                hosts = [rec[5] for rec in recs if not rec[5].startswith("local")]
-                if not hosts:
-                    hosts = [rec[5] for rec in recs]
-                host = hosts[0]
-                title = str(host)
-            platform, dtype = None, None
-            session_icon = None
-            for rec in recs:
-                td = typedict(rec[-1])
-                if not platform:
-                    platform = td.strget("platform")
-                if not dtype:
-                    dtype = td.strget("type")
-                if not display:
-                    display = td.strget("display")
-                if session_icon is None:
-                    session_icon = rec[-1].get("icon")
-            if title in ("localhost", "localhost.localdomain", "127.0.0.1", "::1", local_host_name):
-                title = "local"
+                title = session.host
             host_label = l(title)
-            if uuid != title:
-                host_label.set_tooltip_text(uuid)
+            if session.uuid != title:
+                host_label.set_tooltip_text(session.uuid)
             pwidget = None
-            if session_icon is not None:
-                pwidget = scaled_image(pil_image_to_pixbuf(session_icon), 28)
+            if session.icon is not None:
+                pwidget = scaled_image(pil_image_to_pixbuf(session.icon), 28)
             if not pwidget:
                 # try to use an icon for the platform:
-                platform_icon_name = get_platform_icon_name(platform)
+                platform_icon_name = get_platform_icon_name(session.platform)
                 if platform_icon_name:
                     pwidget = scaled_image(get_icon_pixbuf("%s.png" % platform_icon_name), 28)
                     if pwidget:
                         pwidget.set_tooltip_text(platform_icon_name)
             if not pwidget:
-                pwidget = l(platform)
-            w, c, b = self.make_connect_widgets(key, recs, address, port, display)
-            session_name = session_names.get(key, "")
-            widgets = host_label, l(display), l(session_name), pwidget, l(dtype), w, c, b
+                pwidget = l(session.platform)
+            w, c, b = self.make_connect_widgets(session)
+            widgets = (
+                host_label,
+                l(session.display),
+                l(session.session_name),
+                pwidget,
+                l(session.session_type),
+                w,
+                c,
+                b,
+            )
             for x, widget in enumerate(widgets):
                 grid.attach(widget, x, row, 1, 1)
             row += 1
@@ -448,10 +550,10 @@ class SessionsGUI(Gtk.Window):
         self.clients[key] = proc
         self.populate()
 
-    def browser_open(self, rec) -> None:
+    def browser_open(self, endpoint: SessionEndpoint) -> None:
         import webbrowser
         password = self.password_entry.get_text()
-        url = get_uri(password, *rec)
+        url = endpoint_uri(password, endpoint)
         if url.startswith("wss"):
             url = "https" + url[3:]
         else:
@@ -462,7 +564,9 @@ class SessionsGUI(Gtk.Window):
         url = url[:url.rfind("/")]
         webbrowser.open_new_tab(url)
 
-    def make_connect_widgets(self, key, recs, address, port: int, display) -> tuple:
+    def make_connect_widgets(self, session: SessionGroup) -> tuple:
+        key = session.key
+        endpoints = session.endpoints
         d = {}
         proc = self.clients.get(key)
         if proc and proc.poll() is None:
@@ -481,21 +585,21 @@ class SessionsGUI(Gtk.Window):
         bopen = imagebutton("Open", icon)
 
         icon = get_icon_pixbuf("connect.png")
-        if len(recs) == 1:
+        if len(endpoints) == 1:
             # single record, single uri:
-            rec = recs[0]
-            uri = get_uri("", *rec)
+            endpoint = endpoints[0]
+            uri = endpoint_uri("", endpoint)
             bopen.set_sensitive(uri.startswith("ws"))
 
             def browser_open(*_args) -> None:
-                self.browser_open(rec)
+                self.browser_open(endpoint)
 
             bopen.connect("clicked", browser_open)
-            d[uri] = rec
+            d[uri] = endpoint
 
             def clicked(*_args) -> None:
                 password = self.password_entry.get_text()
-                uri = get_uri(password, *rec)
+                uri = endpoint_uri(password, endpoint)
                 self.attach(key, uri)
 
             btn = imagebutton("Connect", icon, clicked_callback=clicked)
@@ -511,29 +615,28 @@ class SessionsGUI(Gtk.Window):
             # and entering the password:
             order["ssh"] = 0
 
-        def cmp_key(v) -> str:
-            text = v[-1]  # the text record
-            mode = (text or {}).get("mode", "")
-            host = v[6]
+        def cmp_key(endpoint: SessionEndpoint) -> str:
+            mode = endpoint.mode
+            host = endpoint.address
             host_len = len(host)
             # log("cmp_key(%s) text=%s, mode=%s, host=%s, host_len=%s", v, text, mode, host, host_len)
             # prefer order (from mode), then shorter host string:
             return "%s-%s" % (order.get(mode, mode), host_len)
 
-        srecs = sorted(recs, key=cmp_key)
+        sendpoints = sorted(endpoints, key=cmp_key)
         has_ws = False
-        for rec in srecs:
-            uri = get_uri("", *rec)
+        for endpoint in sendpoints:
+            uri = endpoint_uri("", endpoint)
             uri_menu.append_text(uri)
-            d[uri] = rec
+            d[uri] = endpoint
             if uri.startswith("ws"):
                 has_ws = True
 
         def connect(*_args) -> None:
             uri = uri_menu.get_active_text()
-            rec = d[uri]
+            endpoint = d[uri]
             password = self.password_entry.get_text()
-            uri = get_uri(password, *rec)
+            uri = endpoint_uri(password, endpoint)
             self.attach(key, uri)
 
         uri_menu.set_active(0)
@@ -555,8 +658,8 @@ class SessionsGUI(Gtk.Window):
 
         def browser_open_option(*_args) -> None:
             uri = uri_menu.get_active_text()
-            rec = d[uri]
-            self.browser_open(rec)
+            endpoint = d[uri]
+            self.browser_open(endpoint)
 
         bopen.connect("clicked", browser_open_option)
         return uri_menu, btn, bopen

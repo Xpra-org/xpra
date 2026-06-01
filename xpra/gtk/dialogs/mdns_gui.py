@@ -7,7 +7,7 @@ import sys
 
 from xpra.exit_codes import ExitValue
 from xpra.scripts.config import XpraConfig
-from xpra.gtk.dialogs.sessions_gui import SessionsGUI
+from xpra.gtk.dialogs.sessions_gui import SessionEndpoint, SessionsGUI
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr
@@ -53,9 +53,18 @@ class mdns_sessions(SessionsGUI):
     def mdns_remove(self, r_interface, r_protocol, r_name, r_stype, r_domain, r_flags) -> None:
         log("mdns_remove%s", (r_interface, r_protocol, r_name, r_stype, r_domain, r_flags))
         cmp = (r_interface, r_protocol, r_name, r_stype, r_domain)
-        updated_recs = [rec for rec in self.records if rec[:5] != cmp]
-        if self.records != updated_recs:
-            self.records = updated_recs
+        updated_endpoints = [
+            endpoint for endpoint in self.endpoints
+            if (
+                endpoint.interface,
+                endpoint.protocol,
+                endpoint.name,
+                endpoint.stype,
+                endpoint.domain,
+            ) != cmp
+        ]
+        if self.endpoints != updated_endpoints:
+            self.endpoints = updated_endpoints
             GLib.idle_add(self.populate_table)
 
     def mdns_add(self, interface, protocol, name, stype, domain, host, address, port, text) -> None:
@@ -74,12 +83,23 @@ class mdns_sessions(SessionsGUI):
                 host = host[:-len(stype)]
             elif stype and domain and host.endswith(stype + "." + domain):
                 host = host[:-len(stype + "." + domain)]
-            mode = text.get("mode")
+            mode = text_rec.get("mode")
             if mode and host.endswith(mode + "."):
                 host = host[:-len(mode + ".")]
             if host.endswith(".local."):
                 host = host[:-len(".local.")]
-        self.records.append((interface, protocol, name, stype, domain, host, address, port, text_rec))
+        self.endpoints.append(SessionEndpoint(
+            source="mdns",
+            interface=interface,
+            protocol=protocol,
+            name=name,
+            stype=stype,
+            domain=domain,
+            host=host,
+            address=address,
+            port=port,
+            text=text_rec,
+        ))
         GLib.idle_add(self.populate_table)
 
 
