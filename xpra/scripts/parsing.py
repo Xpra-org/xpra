@@ -380,6 +380,7 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
         for k, v in r.items():
             if k in desc:
                 warn(f"ignoring {k} override from query string")
+                continue
             if len(v) == 1:
                 desc[k] = v[0]
             else:
