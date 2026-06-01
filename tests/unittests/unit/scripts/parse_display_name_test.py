@@ -30,6 +30,7 @@ def _test_opts():
     opts.password = ""
     opts.password_file = None
     opts.ssl = "auto"
+    opts.ssl_upgrade = None
     opts.ssl_server_hostname = ""
     opts.ssl_cert = ""
     opts.ssl_key = ""
