@@ -9,10 +9,13 @@
   * [zero copy network reception](https://github.com/Xpra-org/xpra/issues/4873)
   * [use `TCP_INFO` to drive batch delay](https://github.com/Xpra-org/xpra/issues/2421)
   * [`asyncio` loop exit fix](https://github.com/Xpra-org/xpra/pull/4891)
+* 🌈 Encodings:
+  * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
 * ✨ Features:
   * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885)
   * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)
   * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256)
+  * [basic bash shell completion](https://github.com/Xpra-org/xpra/issues/2375)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
