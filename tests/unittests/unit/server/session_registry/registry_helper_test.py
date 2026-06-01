@@ -53,6 +53,10 @@ class TestRegistryHelper(unittest.TestCase):
         r = load_session_registry("socket")
         self.assertEqual(r.NAME, "socket")
 
+    def test_base_cleanup_is_noop(self):
+        r = SessionRegistry()
+        self.assertIsNone(r.cleanup())
+
 
 class TestSessionTuple(unittest.TestCase):
 

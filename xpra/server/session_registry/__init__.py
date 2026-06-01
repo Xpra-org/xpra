@@ -108,5 +108,14 @@ class SessionRegistry:
         """
         return {}
 
+    def cleanup(self) -> None:
+        """
+        Release backend resources.
+
+        Most registries are passive and have nothing to clean up. Active
+        registries, such as an mDNS listener backend, can override this to
+        stop listeners or close background resources when the proxy exits.
+        """
+
     def __repr__(self):
         return f"SessionRegistry({self.NAME!r})"

@@ -293,6 +293,8 @@ class ProxyServer(ServerCore):
 
     def cleanup(self) -> None:
         self.stop_all_proxies()
+        if registry := self.session_registry:
+            registry.cleanup()
         # super().cleanup runs ServerCore.cleanup which dispatches `cleanup` to
         # every subsystem and then closes protocols and sockets:
         super().cleanup()
