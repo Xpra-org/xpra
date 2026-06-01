@@ -120,7 +120,6 @@ class TestMain(unittest.TestCase):
             fd(kwargs)
 
         def fd(d):
-            opts = AdHocStruct()
             try:
                 #silence errors since we're expecting them:
                 from xpra.scripts import main as xpra_main
@@ -130,13 +129,13 @@ class TestMain(unittest.TestCase):
                 try:
                     xpra_connect.CONNECT_TIMEOUT = 5
                     xpra_main.werr = noop
-                    conn = connect_to(d, opts)
+                    conn = connect_to(d)
                 finally:
                     xpra_main.werr = saved_werr
                     xpra_connect.CONNECT_TIMEOUT = saved_timeout
             except Exception:
                 #from xpra.util import get_util_logger
-                #get_util_logger().error("connect_to(%s, %s)", d, opts, exc_info=True)
+                #get_util_logger().error("connect_to(%s)", d, exc_info=True)
                 pass
             else:
                 try:

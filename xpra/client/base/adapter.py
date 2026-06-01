@@ -180,7 +180,7 @@ class RemoteServerAdapter(baseclass):
                 desc["timeout"] = self.server_socket_timeout
             desc["quiet"] = True
             log(f"EncoderClient.do_connect() server desc={desc!r}")
-            conn = connect_to(desc, opts)
+            conn = connect_to(desc)
             super().setup_connection(conn)
             self.protocol = self.make_protocol(conn)
             self.send_hello()

@@ -599,7 +599,7 @@ class ProxyServer(ServerCore):
             disp_desc["gid"] = gid
         log("display description(%s) = %s", display, disp_desc)
         try:
-            server_conn = connect_to(disp_desc, opts)
+            server_conn = connect_to(disp_desc)
         except Exception as e:
             log("cannot connect", exc_info=True)
             log.error("Error: cannot start proxy connection:")

@@ -27,7 +27,7 @@ from xpra.gtk.widget import (
     set_widget_bg_color, set_widget_fg_color, red, black,
 )
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.util.str_fn import csv, repr_ellipsized
+from xpra.util.str_fn import csv
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.env import IgnoreWarningsContext
 from xpra.net.constants import DEFAULT_PORT
@@ -875,8 +875,8 @@ class ApplicationWindow:
         may_show_progress(self.client, 60, "connecting")
         try:
             log("calling %s%s", connect_to,
-                (display_desc, repr_ellipsized(str(self.config)), self.set_info_text, self.ssh_failed))
-            conn = connect_to(display_desc, opts=self.config,
+                (display_desc, self.set_info_text, self.ssh_failed))
+            conn = connect_to(display_desc,
                               debug_cb=self.set_info_text, ssh_fail_cb=self.ssh_failed)
         except Exception as e:
             log("do_connect_builtin(%s) failed to connect", display_desc, exc_info=True)
@@ -900,8 +900,9 @@ class ApplicationWindow:
         self.set_info_text("Network connection established")
         log("start_XpraClient() client initialized")
 
-        if self.config.password:
-            self.client.password = self.config.password
+        password = display_desc.get("password", "")
+        if password:
+            self.client.password = password
 
         def do_quit(*args) -> None:
             log("do_quit%s", args)

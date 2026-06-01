@@ -230,7 +230,7 @@ def connect_or_fail(display_desc, opts):
     from xpra.net.bytestreams import ConnectionClosedException
     from xpra.net.connect import connect_to
     try:
-        return connect_to(display_desc, opts)
+        return connect_to(display_desc)
     except ConnectionClosedException as e:
         raise InitExit(ExitCode.CONNECTION_FAILED, str(e)) from None
     except InitException:

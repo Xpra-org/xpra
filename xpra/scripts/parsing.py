@@ -21,8 +21,7 @@ from importlib.util import find_spec
 
 from xpra.util.str_fn import csv
 from xpra.util.version import full_version_str
-from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool, parse_bool_or, parse_number, \
-    print_number
+from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool, parse_bool_or, parse_number, print_number
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, SOCKET_TYPES, IP_SOCKTYPES, URL_MODES
@@ -524,8 +523,10 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         host, port = add_host_port(DEFAULT_PORTS.get(protocol, DEFAULT_PORT))
         add_path()
         add_query()
-        if opts.ssl.lower() not in FALSE_OPTIONS:
-            # always parse ssl options so we can auto-upgrade:
+        # parse ssl options when ssl is mandatory for this protocol,
+        # or when the connection may be auto-upgraded to ssl;
+        # avoid importing the ssl libraries otherwise:
+        if protocol in ("ssl", "wss", "quic") or str(opts.ssl_upgrade).lower() not in FALSE_OPTIONS:
             desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
         if protocol in ("ssl", "wss", "quic"):
             alt_scheme = "https"

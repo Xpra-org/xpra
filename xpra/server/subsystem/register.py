@@ -27,7 +27,6 @@ from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
 from xpra.net.net_util import get_network_caps
 from xpra.net.packet_type import INFO_RESPONSE
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.scripts.config import make_defaults_struct
 from xpra.scripts.parsing import parse_display_name
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.str_fn import redact_uri
@@ -169,7 +168,7 @@ class RegisterSubsystem(StubSubsystem):
 
     def _attempt_registration(self, uri: str, desc: dict) -> tuple[bool, bool]:
         log("register: dialling %r (%s)", uri, desc)
-        conn = connect_to(desc, make_defaults_struct())
+        conn = connect_to(desc)
         if conn is None:
             log.warn("Warning: register failed: cannot connect to %r", uri)
             return False, False

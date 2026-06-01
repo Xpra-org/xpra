@@ -79,7 +79,7 @@ def get_remote_proxy_command_output(options, args: list[str], cmdline: list[str]
         Logger("ssh").debug(*args)
 
     from xpra.net.connect import connect_to_ssh
-    conn = connect_to_ssh(disp, options, debug_cb=ssh_log, ssh_fail_cb=ssh_fail)
+    conn = connect_to_ssh(disp, debug_cb=ssh_log, ssh_fail_cb=ssh_fail)
     data = b""
     until = monotonic() + 30
     while monotonic() < until:

@@ -120,14 +120,14 @@ def get_ssh_kwargs(exit_ssh=False) -> dict:
     return kwargs
 
 
-def connect_to(display_desc: dict, opts=None, debug_cb: Callable = noop, ssh_fail_cb=connect_failed):
+def connect_to(display_desc: dict, debug_cb: Callable = noop, ssh_fail_cb=connect_failed):
     if display_desc.get("is_putty"):
         # special env used by plink:
         env = os.environ.copy()
         env["PLINK_PROTOCOL"] = "ssh"
     else:
         env = display_desc.get("env", get_saved_env())
-    kwargs = get_ssh_kwargs(opts and opts.exit_ssh)
+    kwargs = get_ssh_kwargs(display_desc.get("exit_ssh", False))
     cmd = get_ssh_command(display_desc)
     try:
         debug_cb(f"starting {cmd[0]} tunnel")
@@ -145,7 +145,6 @@ def connect_to(display_desc: dict, opts=None, debug_cb: Callable = noop, ssh_fai
                 # don't try to authenticate again over the ssh-proxy connection,
                 # which would trigger warnings if the server does not require
                 # authentication over unix-domain-sockets:
-                opts.password = None
                 del display_desc["password"]
 
         kwargs["env"] = restore_script_env(env)

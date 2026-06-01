@@ -26,13 +26,13 @@ def debug(msg: str, *args) -> None:
     Logger("network").debug(msg, *args)
 
 
-def connect_to_ssh(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=noop):
+def connect_to_ssh(display_desc: dict[str, Any], debug_cb=noop, ssh_fail_cb=noop):
     if display_desc.get("is_paramiko", False):
         from xpra.net.ssh.paramiko.client import connect_to
         conn = connect_to(display_desc)
     else:
         from xpra.net.ssh import exec_client
-        conn = exec_client.connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
+        conn = exec_client.connect_to(display_desc, debug_cb, ssh_fail_cb)
     dtype = display_desc["type"]
     if dtype == "vnc+ssh":
         conn.socktype = "vnc"
@@ -97,18 +97,19 @@ def connect_to_hyperv(display_desc: dict[str, Any]):
     return conn
 
 
-def connect_to_quic(display_desc: dict[str, Any], opts):
-    dtype = display_desc["type"]
-    host = display_desc["host"]
-    port = display_desc["port"]
-    path = "/" + display_desc.get("display", "")
-    ssl_options = display_desc.get("ssl-options", {})
-    ssl_server_verify_mode = ssl_options.get("server-verify-mode", opts.ssl_server_verify_mode)
-    ssl_ca_certs = ssl_options.get("ca-certs", opts.ssl_ca_certs)
-    ssl_cert = ssl_options.get("cert", opts.ssl_cert)
-    ssl_key = ssl_options.get("key", opts.ssl_key)
-    ssl_key_password = ssl_options.get("key-password", opts.ssl_key_password)
-    ssl_server_name = ssl_options.get("server-hostname")
+def connect_to_quic(display_desc: dict[str, Any]):
+    desc = typedict(display_desc)
+    dtype = desc.strget("type")
+    host = desc.strget("host")
+    port = desc.intget("port")
+    path = "/" + desc.strget("display", "")
+    ssl_options = typedict(desc.dictget("ssl-options", {}))
+    ssl_server_verify_mode = ssl_options.strget("server-verify-mode")
+    ssl_ca_certs = ssl_options.strget("ca-certs")
+    ssl_cert = ssl_options.strget("cert")
+    ssl_key = ssl_options.strget("key")
+    ssl_key_password = ssl_options.strget("key-password")
+    ssl_server_name = ssl_options.strget("server-hostname")
     try:
         from xpra.net.quic.client import quic_connect, WebSocketClient, WebTransportClient, FAST_OPEN
         import aioquic
@@ -223,10 +224,10 @@ def connect_to_socket(display_desc: dict[str, Any]):
         raise
 
 
-def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=noop):
+def connect_to(display_desc: dict[str, Any], debug_cb=noop, ssh_fail_cb=noop):
     dtype = display_desc["type"]
     if dtype in ("ssh", "vnc+ssh"):
-        return connect_to_ssh(display_desc, opts, debug_cb, ssh_fail_cb)
+        return connect_to_ssh(display_desc, debug_cb, ssh_fail_cb)
     if dtype == "socket":
         return connect_to_socket(display_desc)
     if dtype == "named-pipe":  # pragma: no cover
@@ -236,7 +237,7 @@ def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=no
     if dtype == "hyperv":
         return connect_to_hyperv(display_desc)
     if dtype in ("quic", "wt"):
-        return connect_to_quic(display_desc, opts)
+        return connect_to_quic(display_desc)
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
         return connect_to_tcp(display_desc)
     raise InitException(f"unsupported display type: {dtype}")

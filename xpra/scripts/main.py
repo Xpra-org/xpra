@@ -1172,7 +1172,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
             # UGLY warning: connect_or_fail() will parse the display string,
             # which may change the username and password..
             app.username = opts.username or os.environ.get("XPRA_USERNAME", "")
-            app.password = opts.password
+            app.password = display_desc.get("password", "")
             app.display = opts.display
             app.display_desc = display_desc
             protocol = app.make_protocol(conn)
