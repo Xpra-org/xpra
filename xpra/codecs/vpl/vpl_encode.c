@@ -95,6 +95,8 @@ struct VPLEncoder {
     int             frames;
     int             quality;
     int             speed;
+    int             use_icq;        /* 1 if ICQ rate-control is in use; 0 = CQP */
+    int             next_qp;        /* per-frame mfxEncodeCtrl.QP override (CQP only); 0 = use configured */
     int             is_hw;
     mfxStatus       last_sts;
     char            last_error[128];
@@ -306,6 +308,7 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
     }
 
     use_icq = query_icq(enc);
+    enc->use_icq = use_icq;
     fill_params(enc, &enc->param, use_icq);
     vpl_log("vpl encoder create: %dx%d quality=%d speed=%d rc=%s",
             width, height, quality, speed, use_icq ? "ICQ" : "CQP");
@@ -401,6 +404,13 @@ static VPLEncodeStatus do_encode(VPLEncoder *enc, mfxFrameSurface1 *surface,
         ctrl.FrameType = MFX_FRAMETYPE_I | MFX_FRAMETYPE_IDR | MFX_FRAMETYPE_REF;
         ctrlp = &ctrl;
     }
+    /* Per-frame QP override is only honoured in CQP mode; in ICQ the driver
+       silently ignores ctrl.QP. set_quality() refuses to populate next_qp
+       when use_icq is set, so we don't need to re-check the mode here. */
+    if (enc->next_qp > 0) {
+        ctrl.QP = (mfxU16)enc->next_qp;
+        ctrlp = &ctrl;
+    }
 
     t0 = usec_now();
 retry:
@@ -468,6 +478,21 @@ VPLEncodeStatus vpl_encoder_flush(VPLEncoder *enc, VPLEncodedFrame *frame) {
     if (!enc || !frame)
         return VPL_ENC_ERROR;
     return do_encode(enc, NULL, 0, frame);
+}
+
+/* Update the per-frame QP override from an xpra quality percentage (0..100).
+   Only effective in CQP mode; in ICQ mode the call is a no-op and returns
+   VPL_ENC_NOT_AVAILABLE so the caller can fall back to a Reset path later. */
+VPLEncodeStatus vpl_encoder_set_quality(VPLEncoder *enc, int quality) {
+    int q;
+    if (!enc)
+        return VPL_ENC_ERROR;
+    enc->quality = clamp_int(quality, 0, 100);
+    if (enc->use_icq)
+        return VPL_ENC_NOT_AVAILABLE;
+    q = 51 - (enc->quality * 50 + 50) / 100;
+    enc->next_qp = clamp_int(q, 1, 51);
+    return VPL_ENC_OK;
 }
 
 int vpl_encoder_is_hardware(VPLEncoder *enc) {

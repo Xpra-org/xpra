@@ -65,6 +65,7 @@ cdef extern from "vpl_encode.h":
                                         const uint8_t *uv, int uv_stride,
                                         VPLEncodedFrame *frame) nogil
     VPLEncodeStatus vpl_encoder_flush(VPLEncoder *enc, VPLEncodedFrame *frame) nogil
+    VPLEncodeStatus vpl_encoder_set_quality(VPLEncoder *enc, int quality)
     int             vpl_encoder_is_hardware(VPLEncoder *enc)
     int             vpl_encoder_get_width(VPLEncoder *enc)
     int             vpl_encoder_get_height(VPLEncoder *enc)
@@ -217,6 +218,24 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
+    def set_encoding_quality(self, int pct) -> None:
+        # Per-frame mfxEncodeCtrl.QP override. Only effective in CQP mode;
+        # ICQ-driven sessions fall through silently (set_quality returns
+        # VPL_ENC_NOT_AVAILABLE) — speed/quality reconfig for ICQ needs
+        # the heavier MFXVideoENCODE_Reset path that pass 2 will add.
+        if pct < 0 or pct > 100:
+            raise ValueError("invalid quality percentage: %s" % pct)
+        if self.context == NULL:
+            return
+        if pct == self.quality:
+            return
+        # Mirror x264: ignore sub-5pt jitter, but always honour transitions
+        # to/from the boundary so a user-pinned high or low quality lands.
+        if abs(self.quality - pct) <= 4 and pct not in (0, 100) and self.quality not in (0, 100):
+            return
+        self.quality = pct
+        vpl_encoder_set_quality(self.context, pct)
+
     def __repr__(self):
         if not self.ready:
             return "vpl_encoder(uninitialized)"
@@ -288,6 +307,10 @@ cdef class Encoder:
         assert image.get_height() >= self.height
         if image.get_pixel_format() != "NV12":
             raise ValueError("expected NV12 but got %s" % image.get_pixel_format())
+
+        cdef int requested_quality = options.intget("quality", -1)
+        if requested_quality >= 0:
+            self.set_encoding_quality(requested_quality)
 
         pixels = image.get_pixels()
         strides = image.get_rowstride()

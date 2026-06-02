@@ -54,6 +54,11 @@ VPLEncodeStatus vpl_encoder_encode(VPLEncoder *enc,
                                    VPLEncodedFrame *frame);
 VPLEncodeStatus vpl_encoder_flush(VPLEncoder *enc, VPLEncodedFrame *frame);
 
+/* Update the per-frame QP override from an xpra quality percentage (0..100).
+   Effective in CQP mode only. Returns VPL_ENC_NOT_AVAILABLE in ICQ mode so
+   the caller can either ignore or defer to a Reset-based reconfig path. */
+VPLEncodeStatus vpl_encoder_set_quality(VPLEncoder *enc, int quality);
+
 int             vpl_encoder_is_hardware(VPLEncoder *enc);
 int             vpl_encoder_get_width(VPLEncoder *enc);
 int             vpl_encoder_get_height(VPLEncoder *enc);
