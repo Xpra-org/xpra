@@ -11,6 +11,49 @@ from xpra.log import Logger
 log = Logger("webcam")
 
 
+def get_directshow_devices() -> dict[int, dict]:
+    """
+    Return a dict of {device_index: info_dict} for all DirectShow video input
+    devices, delegating to comtypes_webcam.  Returns an empty dict if
+    comtypes or DirectShow.tlb is unavailable.
+    """
+    try:
+        from xpra.platform.win32.comtypes_util import COMTYPES_ENABLED
+        if COMTYPES_ENABLED:
+            from xpra.platform.win32.comtypes_webcam import get_video_devices
+            return get_video_devices()
+    except Exception as e:
+        log("get_directshow_devices() error: %s", e)
+    return {}
+
+
+def _get_directshow_devices() -> dict[int, dict]:
+    return get_directshow_devices()
+
+
+def _find_directshow_index(device_str: str, ds_devices: dict[int, dict]) -> int:
+    """
+    Map *device_str* to a DirectShow device index.
+
+    Matches against:
+    - a bare integer index ("0", "1", ...)
+    - the "device" path stored in the device info dict (DevicePath)
+    - automatic device selection values
+    """
+    if device_str in ("auto", "on", "yes", "true"):
+        return next(iter(ds_devices), 0)
+    try:
+        idx = int(device_str)
+        if idx in ds_devices:
+            return idx
+    except ValueError:
+        pass
+    for idx, info in ds_devices.items():
+        if info.get("device") == device_str:
+            return idx
+    return 0
+
+
 def get_all_video_devices(capture_only=True):
     try:
         from xpra.platform.win32.comtypes_util import COMTYPES_ENABLED

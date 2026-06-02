@@ -25,6 +25,7 @@ Usage::
         csc.clean()
 """
 
+import sys
 from collections.abc import Sequence
 from typing import Any
 
@@ -100,14 +101,27 @@ def open_camera(device_str: str) -> CameraDevice | None:
     device should not be used.
 
     Selection priority:
-    1. If libcamera is available and *device_str* matches a known camera ID
-       (or is an AUTO_OPTIONS value), use LibcameraCamera.
-    2. Otherwise fall back to CV2Camera.
+    1. (Windows) If DirectShow devices are available, use DirectShowCamera.
+    2. (Linux) If libcamera is available and *device_str* matches a known
+       camera ID (or is an AUTO_OPTIONS value), use LibcameraCamera.
+    3. Otherwise fall back to CV2Camera.
 
     When a CV2Camera lands on a virtual v4l2 device number, a warning is
     logged and None is returned unless XPRA_WEBCAM_ALLOW_VIRTUAL is set.
     """
     log("open_camera(%s)", device_str)
+
+    if sys.platform == "win32":
+        from xpra.platform.win32.webcam import _get_directshow_devices, _find_directshow_index
+
+        ds_devices = _get_directshow_devices()
+        log("directshow_devices=%s", ds_devices)
+        if ds_devices:
+            device_index = _find_directshow_index(device_str, ds_devices)
+            log("using DirectShow backend for %r (device_index=%i)", device_str, device_index)
+            from xpra.platform.win32.directshow_camera import DirectShowCamera
+            return DirectShowCamera(device_index)
+
     lc_devices = _get_libcamera_devices()
     log("libcamera_devices=%s", lc_devices)
     if lc_devices:
