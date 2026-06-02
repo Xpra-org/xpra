@@ -641,7 +641,7 @@ def delete_dlls(light: bool) -> None:
         "p11-kit*", "lz4",
     )
     # remove codecs we don't need:
-    delete_libs("libx265*", "libjxl*", "libde265*", "libkvazaar*")
+    delete_libs("libx265*", "libjxl*", "libkvazaar*")
     if light:
         # let's keep kerberos / gss libs because clients can use them:
         # "libshishi*", "libgss*"
