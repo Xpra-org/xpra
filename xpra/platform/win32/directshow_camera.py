@@ -16,7 +16,7 @@ supported Windows versions.
 
 import ctypes
 import threading
-from ctypes import POINTER, byref, c_long, c_int, c_wchar_p, c_ulong, c_void_p, c_ushort, c_longlong, c_ulonglong, Structure
+from ctypes import POINTER, byref, c_long, c_int, c_wchar_p, c_ulong, c_void_p, c_ushort, c_longlong, c_ulonglong, Structure, addressof
 
 import comtypes
 import comtypes.client
@@ -127,7 +127,9 @@ class _AM_MEDIA_TYPE(Structure):
         ("bTemporalCompression", c_int),
         ("lSampleSize",          c_ulong),
         ("formattype",           GUID),
-        ("pUnk",                 POINTER(IUnknown)),
+        # Use c_void_p, not POINTER(IUnknown), to prevent comtypes from
+        # attempting COM reference-counting on this typically-NULL field.
+        ("pUnk",                 c_void_p),
         ("cbFormat",             c_ulong),
         ("pbFormat",             c_void_p),
     ]
@@ -167,13 +169,13 @@ class IFilterGraph(IUnknown):
                   (["in"], c_wchar_p, "pName"),
                   (["out"], POINTER(POINTER(IBaseFilter)), "ppFilter")),
         COMMETHOD([], HRESULT, "ConnectDirect",
-                  (["in"], POINTER(IPin), "ppinOut"),
-                  (["in"], POINTER(IPin), "ppinIn"),
-                  (["in"], POINTER(_AM_MEDIA_TYPE), "pmt")),
+                  (["in"], c_void_p, "ppinOut"),
+                  (["in"], c_void_p, "ppinIn"),
+                  (["in"], c_void_p, "pmt")),
         COMMETHOD([], HRESULT, "Reconnect",
-                  (["in"], POINTER(IPin), "ppin")),
+                  (["in"], c_void_p, "ppin")),
         COMMETHOD([], HRESULT, "Disconnect",
-                  (["in"], POINTER(IPin), "ppin")),
+                  (["in"], c_void_p, "ppin")),
         COMMETHOD([], HRESULT, "SetDefaultSyncSource"),
     ]
 
@@ -182,10 +184,10 @@ class IGraphBuilder(IFilterGraph):
     _iid_ = GUID("{56A868A9-0AD4-11CE-B03A-0020AF0BA770}")
     _methods_ = [
         COMMETHOD([], HRESULT, "Connect",
-                  (["in"], POINTER(IPin), "ppinOut"),
-                  (["in"], POINTER(IPin), "ppinIn")),
+                  (["in"], c_void_p, "ppinOut"),
+                  (["in"], c_void_p, "ppinIn")),
         COMMETHOD([], HRESULT, "Render",
-                  (["in"], POINTER(IPin), "ppinOut")),
+                  (["in"], c_void_p, "ppinOut")),
         COMMETHOD([], HRESULT, "RenderFile",
                   (["in"], c_wchar_p, "lpcwstrFile"),
                   (["in"], c_wchar_p, "lpcwstrPlayList")),
@@ -255,18 +257,23 @@ class ISampleGrabber(IUnknown):
     _methods_ = [
         COMMETHOD([], HRESULT, "SetOneShot",
                   (["in"], c_int, "OneShot")),
+        # Use c_void_p for AM_MEDIA_TYPE* to avoid comtypes inspecting the struct
+        # for embedded COM interface pointers (pUnk field) and attempting
+        # reference-counting on a typically-NULL pointer.
         COMMETHOD([], HRESULT, "SetMediaType",
-                  (["in"], POINTER(_AM_MEDIA_TYPE), "pType")),
+                  (["in"], c_void_p, "pType")),
+        # ["in"] only (not ["in","out"]) – caller pre-allocates the struct and
+        # passes its address; comtypes must not auto-create or post-process it.
         COMMETHOD([], HRESULT, "GetConnectedMediaType",
-                  (["in", "out"], POINTER(_AM_MEDIA_TYPE), "pType")),
+                  (["in"], c_void_p, "pType")),
         COMMETHOD([], HRESULT, "SetBufferSamples",
                   (["in"], c_int, "BufferThem")),
-        # pBuffer is long* per IDL, but treated as a raw byte buffer;
-        # use c_void_p so callers can pass a ctypes array directly
+        # pBufferSize is long* (in/out by IDL) but we manage the byref ourselves;
+        # use plain ["in"] POINTER so comtypes does not wrap the argument.
         COMMETHOD([], HRESULT, "GetCurrentBuffer",
-                  (["in", "out"], POINTER(c_long), "pBufferSize"),
+                  (["in"], POINTER(c_long), "pBufferSize"),
                   (["in"], c_void_p, "pBuffer")),
-        # GetCurrentSample – deprecated, keep slot
+        # GetCurrentSample – deprecated, keep slot intact
         COMMETHOD([], HRESULT, "GetCurrentSample",
                   (["out"], POINTER(c_void_p), "ppSample")),
         COMMETHOD([], HRESULT, "SetCallback",
@@ -341,7 +348,8 @@ def _request_format(grabber: ISampleGrabber, subtype: GUID) -> bool:
     mt.majortype = MEDIATYPE_Video
     mt.subtype = subtype
     try:
-        hr = grabber.SetMediaType(byref(mt))
+        # Pass the struct address as c_void_p to avoid comtypes inspecting its fields.
+        hr = grabber.SetMediaType(addressof(mt))
         return hr >= 0
     except Exception:
         return False
@@ -354,7 +362,7 @@ def _read_connected_format(grabber: ISampleGrabber) -> tuple[str, int, int, int]
     """
     mt = _AM_MEDIA_TYPE()
     try:
-        grabber.GetConnectedMediaType(byref(mt))
+        grabber.GetConnectedMediaType(addressof(mt))
     except Exception as e:
         log("GetConnectedMediaType failed: %s", e)
         return "", 0, 0, 0
@@ -437,8 +445,11 @@ class DirectShowCamera(CameraDevice):
         log("capture_filter=%s", capture_filter)
 
         # Sample grabber filter
+        log("creating SampleGrabber filter")
         grabber_filter = comtypes.CoCreateInstance(CLSID_SampleGrabber, interface=IBaseFilter)
+        log("grabber_filter=%s", grabber_filter)
         grabber = grabber_filter.QueryInterface(ISampleGrabber)
+        log("grabber=%s", grabber)
 
         # Negotiate an uncompressed pixel format
         chosen = None
@@ -450,16 +461,22 @@ class DirectShowCamera(CameraDevice):
         if chosen is None:
             log("DirectShowCamera: no preferred subtype accepted; using default")
 
-        grabber.SetBufferSamples(1)   # TRUE  – enable GetCurrentBuffer
-        grabber.SetOneShot(0)         # FALSE – continuous delivery
+        log("calling SetBufferSamples")
+        _hr_check(grabber.SetBufferSamples(1), "SetBufferSamples")   # TRUE
+        log("calling SetOneShot")
+        _hr_check(grabber.SetOneShot(0), "SetOneShot")               # FALSE
 
+        log("adding SampleGrabber to graph")
         _hr_check(graph.AddFilter(grabber_filter, "SampleGrabber"), "AddFilter(SampleGrabber)")
 
         # Null renderer (absorbs rendered output)
+        log("creating NullRenderer filter")
         null_filter = comtypes.CoCreateInstance(CLSID_NullRenderer, interface=IBaseFilter)
+        log("null_filter=%s", null_filter)
         _hr_check(graph.AddFilter(null_filter, "NullRenderer"), "AddFilter(NullRenderer)")
 
         # Wire: Capture -> SampleGrabber -> NullRenderer
+        log("calling RenderStream")
         cat = PIN_CATEGORY_CAPTURE
         mtype = MEDIATYPE_Video
         capture_unk = capture_filter.QueryInterface(IUnknown)
@@ -469,6 +486,7 @@ class DirectShowCamera(CameraDevice):
         )
 
         # Read back the negotiated format from the connected pin
+        log("reading connected format")
         pixel_format, width, height, stride = _read_connected_format(grabber)
         if not pixel_format:
             pixel_format = "BGR"
