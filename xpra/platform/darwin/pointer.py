@@ -12,6 +12,7 @@ from xpra.log import Logger
 log = Logger("osx", "pointer")
 
 POSTMOUSEEVENT = envbool("XPRA_MACOS_POSTMOUSEEVENT", False)
+POSTSCROLLWHEELEVENT = envbool("XPRA_MACOS_POSTSCROLLWHEELEVENT", False)
 
 # maps an xpra button (1=left, 2=middle, 3=right) to the
 # macOS event type (down, up) and the CGMouseButton for CGEventCreateMouseEvent:
@@ -49,6 +50,28 @@ def create_mouse_event(x, y, button: int, pressed: bool) -> None:
     log("CG.CGEventCreateMouseEvent(None, %s, %s, %s) post=%s", evtype, (x, y), mouse_button, r)
 
 
+def get_wheel_deltas(button: int) -> list[int]:
+    # buttons 4/5 scroll the first wheel (vertical), 6/7 the second (horizontal), etc.
+    # only the last axis carries the direction (+1 / -1), the others are left at 0
+    wheel = (button - 2) // 2
+    direction = 1 - (((button - 2) % 2) * 2)
+    return [direction if i == (wheel - 1) else 0 for i in range(wheel)]
+
+
+def post_scroll_wheel_event(button: int) -> None:
+    deltas = get_wheel_deltas(button)
+    event = [len(deltas)] + deltas
+    r = CG.CGPostScrollWheelEvent(*event)
+    log("CG.CGPostScrollWheelEvent%s=%s", event, r)
+
+
+def create_scroll_wheel_event(button: int) -> None:
+    deltas = get_wheel_deltas(button)
+    event = CG.CGEventCreateScrollWheelEvent(None, CG.kCGScrollEventUnitLine, len(deltas), *deltas)
+    r = CG.CGEventPost(CG.kCGHIDEventTap, event)
+    log("CG.CGEventCreateScrollWheelEvent(None, line, %s, %s) post=%s", len(deltas), deltas, r)
+
+
 def click(x, y, button: int, pressed: bool):
     if button <= 3:
         if POSTMOUSEEVENT:
@@ -60,16 +83,10 @@ def click(x, y, button: int, pressed: bool):
         # we don't simulate press/unpress
         # so just ignore unpressed events
         return
-    wheel = (button - 2) // 2
-    direction = 1 - (((button - 2) % 2) * 2)
-    event = [wheel]
-    for i in range(wheel):
-        if i != (wheel - 1):
-            event.append(0)
-        else:
-            event.append(direction)
-    r = CG.CGPostScrollWheelEvent(*event)
-    log("CG.CGPostScrollWheelEvent%s=%s", event, r)
+    if POSTSCROLLWHEELEVENT:
+        post_scroll_wheel_event(button)
+    else:
+        create_scroll_wheel_event(button)
 
 
 class MacOSPointer:
