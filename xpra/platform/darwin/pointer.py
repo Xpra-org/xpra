@@ -6,9 +6,20 @@
 from AppKit import NSEvent
 import Quartz.CoreGraphics as CG
 
+from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("osx", "pointer")
+
+POSTMOUSEEVENT = envbool("XPRA_MACOS_POSTMOUSEEVENT", False)
+
+# maps an xpra button (1=left, 2=middle, 3=right) to the
+# macOS event type (down, up) and the CGMouseButton for CGEventCreateMouseEvent:
+BUTTON_EVENTS = {
+    1: (CG.kCGEventLeftMouseDown, CG.kCGEventLeftMouseUp, CG.kCGMouseButtonLeft),
+    2: (CG.kCGEventOtherMouseDown, CG.kCGEventOtherMouseUp, CG.kCGMouseButtonCenter),
+    3: (CG.kCGEventRightMouseDown, CG.kCGEventRightMouseUp, CG.kCGMouseButtonRight),
+}
 
 
 def get_position() -> tuple[int, int]:
@@ -20,15 +31,30 @@ def move_pointer(x: int, y: int) -> None:
     CG.CGWarpMouseCursorPosition((x, y))
 
 
+def post_mouse_event(x, y, button: int, pressed: bool) -> None:
+    # legacy CGPostMouseEvent: takes the state of all buttons at once,
+    # so we clear previous clicks when a "higher" button is pressed... oh well
+    event = [(x, y), 1, button]
+    for i in range(button):
+        event.append(i == (button - 1) and pressed)
+    r = CG.CGPostMouseEvent(*event)
+    log("CG.CGPostMouseEvent%s=%s", event, r)
+
+
+def create_mouse_event(x, y, button: int, pressed: bool) -> None:
+    down, up, mouse_button = BUTTON_EVENTS[button]
+    evtype = down if pressed else up
+    event = CG.CGEventCreateMouseEvent(None, evtype, (x, y), mouse_button)
+    r = CG.CGEventPost(CG.kCGHIDEventTap, event)
+    log("CG.CGEventCreateMouseEvent(None, %s, %s, %s) post=%s", evtype, (x, y), mouse_button, r)
+
+
 def click(x, y, button: int, pressed: bool):
     if button <= 3:
-        # we should be using CGEventCreateMouseEvent
-        # instead we clear previous clicks when a "higher" button is pressed... oh well
-        event = [(x, y), 1, button]
-        for i in range(button):
-            event.append(i == (button - 1) and pressed)
-        r = CG.CGPostMouseEvent(*event)
-        log("CG.CGPostMouseEvent%s=%s", event, r)
+        if POSTMOUSEEVENT:
+            post_mouse_event(x, y, button, pressed)
+        else:
+            create_mouse_event(x, y, button, pressed)
         return
     if not pressed:
         # we don't simulate press/unpress
