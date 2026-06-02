@@ -2230,7 +2230,7 @@ if WIN32:
                 add_console_exe("xpra/opengl/check.py",   "opengl.ico",       "OpenGL_check")
             if webcam_ENABLED:
                 add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
-                add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
+                add_console_exe("xpra/gtk/dialogs/show_webcam.py",          "webcam.ico",    "Webcam_Test")
             if printing_ENABLED:
                 add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             if nvenc_ENABLED or nvdec_ENABLED:
