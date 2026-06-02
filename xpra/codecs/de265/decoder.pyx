@@ -73,9 +73,10 @@ cdef extern from "libde265/de265.h":
     void de265_reset(de265_decoder_context *)
 
 
-COLORSPACES: Sequence[str] = ("YUV444P", "YUV420P")
+COLORSPACES: Sequence[str] = ("YUV444P", "YUV422P", "YUV420P")
 CHROMA_TO_PIXEL_FORMAT: dict[int, str] = {
     de265_chroma_420: "YUV420P",
+    de265_chroma_422: "YUV422P",
     de265_chroma_444: "YUV444P",
 }
 
