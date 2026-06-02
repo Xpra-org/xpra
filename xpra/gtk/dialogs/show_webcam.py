@@ -95,45 +95,27 @@ class WebcamWindow(Gtk.Window):
 
     @staticmethod
     def bgr_to_rgb(image):
+        from xpra.codecs.image import ImageWrapper
+        from xpra.codecs.argb.argb import bgrx_to_rgb
         pixel_format = image.get_pixel_format()
         w, h = image.get_width(), image.get_height()
         src = pixels_to_bytes(image.get_pixels())
-        src_stride = image.get_rowstride()
         if pixel_format == "BGR":
-            dst = bytearray(w * h * 3)
+            # bgr_to_rgb not available directly; pad to BGRX first then convert
+            from xpra.codecs.argb.argb import rgb_to_bgrx
+            # src is BGR – treat as RGB (same channel order trick: B,G,R → R,G,B is
+            # the same reorder as R,G,B → B,G,R, so convert as rgb→bgrx then bgrx→rgb)
+            bgrx = rgb_to_bgrx(src)
+            rgb = bgrx_to_rgb(bgrx)
             dst_stride = w * 3
-            depth = 24
-            bytesperpixel = 3
-            for y in range(h):
-                src_pos = y * src_stride
-                dst_pos = y * dst_stride
-                for x in range(w):
-                    b = src[src_pos]
-                    g = src[src_pos + 1]
-                    r = src[src_pos + 2]
-                    dst[dst_pos:dst_pos + 3] = r, g, b
-                    src_pos += 3
-                    dst_pos += 3
-            dst_format = "RGB"
+            return ImageWrapper(0, 0, w, h, rgb, "RGB", 24, dst_stride, 3,
+                                planes=ImageWrapper.PACKED)
         else:
-            dst = bytearray(w * h * 4)
-            dst_stride = w * 4
-            depth = 32
-            bytesperpixel = 4
-            for y in range(h):
-                src_pos = y * src_stride
-                dst_pos = y * dst_stride
-                for x in range(w):
-                    b = src[src_pos]
-                    g = src[src_pos + 1]
-                    r = src[src_pos + 2]
-                    dst[dst_pos:dst_pos + 4] = r, g, b, 255
-                    src_pos += 4
-                    dst_pos += 4
-            dst_format = "RGBX"
-        from xpra.codecs.image import ImageWrapper
-        return ImageWrapper(0, 0, w, h, bytes(dst), dst_format, depth, dst_stride, bytesperpixel,
-                            planes=ImageWrapper.PACKED)
+            # BGRX or BGRA → RGB  (bgrx_to_rgb ignores the X/A byte)
+            rgb = bgrx_to_rgb(src)
+            dst_stride = w * 3
+            return ImageWrapper(0, 0, w, h, rgb, "RGB", 24, dst_stride, 3,
+                                planes=ImageWrapper.PACKED)
 
     def update_frame(self) -> bool:
         try:
