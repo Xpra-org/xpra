@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include "vpl_log.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -88,7 +90,6 @@ int             vpl_decoder_get_last_status(VPLDecoder *dec);
 const char*     vpl_decoder_get_last_error(VPLDecoder *dec);
 
 /* Logging callback — set before calling any other functions. */
-typedef void (*vpl_log_fn)(const char *msg);
 void            vpl_decode_set_log(vpl_log_fn fn);
 
 #ifdef __cplusplus

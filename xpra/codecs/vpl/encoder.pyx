@@ -22,6 +22,7 @@ log = Logger("encoder", "vpl")
 
 from libc.stdint cimport uint8_t, uintptr_t
 from libc.string cimport memset
+from xpra.codecs.vpl.common cimport vpl_log_fn, vpl_log_callback
 
 
 cdef extern from "Python.h":
@@ -71,12 +72,7 @@ cdef extern from "vpl_encode.h":
     const char*     vpl_encoder_get_last_error(VPLEncoder *enc)
     const char*     vpl_encode_status_str(VPLEncodeStatus status)
 
-    ctypedef void (*vpl_encode_log_fn)(const char *msg)
-    void            vpl_encode_set_log(vpl_encode_log_fn fn)
-
-
-cdef void _vpl_log_callback(const char *msg) noexcept with gil:
-    log("%s", msg.decode("utf-8", "replace"))
+    void            vpl_encode_set_log(vpl_log_fn fn)
 
 
 cdef str frame_type_name(VPLEncodeFrameType frame_type):
@@ -94,7 +90,7 @@ generation = AtomicInteger()
 
 def init_module(options: dict = None) -> None:
     log("vpl.encoder.init_module()")
-    vpl_encode_set_log(_vpl_log_callback)
+    vpl_encode_set_log(vpl_log_callback)
     cdef VPLEncodeStatus status = vpl_encode_startup()
     if status != VPL_ENC_OK:
         raise ImportError("oneVPL H.264 encoder startup failed: %s" %

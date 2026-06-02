@@ -3089,6 +3089,8 @@ if mf_decoder_ENABLED:
     ace("xpra.codecs.mf.decoder,xpra/codecs/mf/mf_decode.c",
         extra_link_args=("-lmfplat", "-lmfuuid", "-lole32", "-ld3d11", "-ldxguid"))
 toggle_packages(vpl_decoder_ENABLED or vpl_encoder_ENABLED, "xpra.codecs.vpl")
+if vpl_decoder_ENABLED or vpl_encoder_ENABLED:
+    ace("xpra.codecs.vpl.common")
 if vpl_decoder_ENABLED:
     ace("xpra.codecs.vpl.decoder,xpra/codecs/vpl/vpl_decode.c",
         extra_link_args=("-lvpl", ))

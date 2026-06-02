@@ -20,9 +20,9 @@
 #include <malloc.h>
 #endif
 
-static vpl_encode_log_fn g_log_fn = NULL;
+static vpl_log_fn g_log_fn = NULL;
 
-void vpl_encode_set_log(vpl_encode_log_fn fn) {
+void vpl_encode_set_log(vpl_log_fn fn) {
     g_log_fn = fn;
 }
 

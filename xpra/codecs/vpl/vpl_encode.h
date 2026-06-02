@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include "vpl_log.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,8 +61,7 @@ int             vpl_encoder_get_last_status(VPLEncoder *enc);
 const char*     vpl_encoder_get_last_error(VPLEncoder *enc);
 const char*     vpl_encode_status_str(VPLEncodeStatus status);
 
-typedef void (*vpl_encode_log_fn)(const char *msg);
-void            vpl_encode_set_log(vpl_encode_log_fn fn);
+void            vpl_encode_set_log(vpl_log_fn fn);
 
 #ifdef __cplusplus
 }

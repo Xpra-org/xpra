@@ -149,6 +149,7 @@ tests/unittests/test-file*
 /xpra/codecs/*/*.c
 !/xpra/codecs/mf/mf_decode.c
 !/xpra/codecs/vpl/vpl_encode.c
+!/xpra/codecs/vpl/vpl_decode.c
 /xpra/codecs/*.c
 /xpra/gtk/*.c
 /xpra/gtk/dialogs/*.c

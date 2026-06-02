@@ -8,7 +8,6 @@
 
 #cython: wraparound=False
 
-import os
 from threading import Lock
 from time import monotonic
 from typing import Any, Dict, Tuple
@@ -23,6 +22,7 @@ log = Logger("decoder", "vpl")
 
 from libc.stdint cimport uint8_t, uintptr_t
 from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
+from xpra.codecs.vpl.common cimport vpl_log_fn, vpl_log_callback
 
 
 cdef extern from "vpl_decode.h":
@@ -71,7 +71,6 @@ cdef extern from "vpl_decode.h":
     int             vpl_decoder_get_last_status(VPLDecoder *dec)
     const char*     vpl_decoder_get_last_error(VPLDecoder *dec)
 
-    ctypedef void (*vpl_log_fn)(const char *msg)
     void            vpl_decode_set_log(vpl_log_fn fn)
 
 
@@ -83,10 +82,6 @@ cdef str vpl_pixel_format(VPLPixelFormat fmt):
     if fmt == VPL_FMT_Y410:
         return "Y410"
     return "unknown"
-
-
-cdef void _vpl_log_callback(const char *msg) noexcept with gil:
-    log("%s", msg.decode("utf-8", "replace"))
 
 
 # ── module-level VPLDecoder cache ─────────────────────────────────────
@@ -156,7 +151,7 @@ cdef void _probe_hardware_accel():
 
 def init_module(options: dict = None) -> None:
     log("vpl.init_module()")
-    vpl_decode_set_log(_vpl_log_callback)
+    vpl_decode_set_log(vpl_log_callback)
     cdef VPLDecodeStatus status = vpl_decode_startup()
     if status != VPL_DEC_OK:
         raise ImportError("oneVPL startup failed: %s" %
