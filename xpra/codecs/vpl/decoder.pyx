@@ -18,9 +18,8 @@ from xpra.codecs.constants import VideoSpec
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
-log = Logger("decoder", "vpl")
 
-VPL_ENABLED = os.environ.get("XPRA_VPL", "1") != "0"
+log = Logger("decoder", "vpl")
 
 from libc.stdint cimport uint8_t, uintptr_t
 from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
@@ -157,8 +156,6 @@ cdef void _probe_hardware_accel():
 
 def init_module(options: dict = None) -> None:
     log("vpl.init_module()")
-    if not VPL_ENABLED:
-        raise ImportError("oneVPL disabled via XPRA_VPL=0")
     vpl_decode_set_log(_vpl_log_callback)
     cdef VPLDecodeStatus status = vpl_decode_startup()
     if status != VPL_DEC_OK:

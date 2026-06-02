@@ -17,9 +17,8 @@ from xpra.codecs.constants import VideoSpec
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.log import Logger
-log = Logger("encoder", "vpl")
 
-VPL_ENABLED = os.environ.get("XPRA_VPL", "1") != "0"
+log = Logger("encoder", "vpl")
 
 from libc.stdint cimport uint8_t, uintptr_t
 from libc.string cimport memset
@@ -95,8 +94,6 @@ generation = AtomicInteger()
 
 def init_module(options: dict = None) -> None:
     log("vpl.encoder.init_module()")
-    if not VPL_ENABLED:
-        raise ImportError("oneVPL disabled via XPRA_VPL=0")
     vpl_encode_set_log(_vpl_log_callback)
     cdef VPLEncodeStatus status = vpl_encode_startup()
     if status != VPL_ENC_OK:
