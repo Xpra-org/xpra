@@ -76,7 +76,7 @@ class WindowPointer(StubClientMixin):
                 if i == wid:
                     value = rx, ry, size, start_time
                 else:
-                    value = None
+                    value = ()
                 show_pointer_overlay(value)
 
     def send_button(self, device_id: int, wid: int, button: int, pressed: bool,

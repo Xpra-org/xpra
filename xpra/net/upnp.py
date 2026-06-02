@@ -6,15 +6,16 @@
 import socket
 from typing import Any
 
+from xpra.util.env import envbool
 from xpra.util.str_fn import csv
 
 from xpra.log import Logger
 log = Logger("network", "upnp")
 
-UPNP_IPV6 = False
 INET = {
     "INET": socket.AF_INET,  # @UndefinedVariable
 }
+UPNP_IPV6 = envbool("XPRA_UPNP_IPV6", False)
 if UPNP_IPV6:
     INET["INET6"] = socket.AF_INET6  # @UndefinedVariable
 

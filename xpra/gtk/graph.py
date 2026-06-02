@@ -160,7 +160,7 @@ def make_graph_imagesurface(data, labels=None, width=320, height=200, title=None
     if title:
         context.set_source_rgb(0.2, 0.2, 0.2)
         layout.set_font_description(title_font)
-        tw, th = _text_size(layout, title)
+        tw, _ = _text_size(layout, title)
         context.move_to(x_offset + (w - tw) / 2, 1)
         PangoCairo.show_layout(context, layout)
         context.stroke()

@@ -156,6 +156,7 @@ class SharingServer(StubSubsystem):
                     log("auto-sharing for %s", ss)
                     share_count += 1
 
+        log("sharing checked - share_count=%s", share_count)
         # don't accept this connection if we're going to exit-with-client:
         if disconnected and self.exit_with_client:
             live = tuple(ss for ss in self.server._server_sources.values() if ss != source and ss not in disconnected)

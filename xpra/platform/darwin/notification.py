@@ -24,7 +24,7 @@ def get_backends() -> Sequence[Callable]:
                 return (UN_Notifier, )
             else:
                 nomod("UNUserNotification", "no current notification center")
-        except (ImportError, Exception) as e:
+        except ImportError as e:
             nomod("UNUserNotification", e)
     else:
         nomod("UNUserNotification", "not an app bundle")
@@ -36,6 +36,6 @@ def get_backends() -> Sequence[Callable]:
             return (OSX_Notifier, )
         else:
             nomod("OSX_Notifier", "no default user notification center")
-    except (ImportError, Exception) as e:
+    except ImportError as e:
         nomod("NSUserNotification", e)
     return ()

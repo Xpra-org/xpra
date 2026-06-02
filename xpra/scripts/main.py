@@ -2120,11 +2120,10 @@ def run_autostart(script_file, args) -> ExitValue:
         return 1
 
     # no CLI argument: show the GUI
-    if not args or WIN32:
-        if WIN32 or gtk_init_check():
-            check_display()
-            from xpra.gtk.dialogs.autostart import main as autostart_main
-            return autostart_main(args)
+    if not args or WIN32 or gtk_init_check():
+        check_display()
+        from xpra.gtk.dialogs.autostart import main as autostart_main
+        return autostart_main(args)
 
     if len(args) != 1:
         return err("invalid number of arguments")

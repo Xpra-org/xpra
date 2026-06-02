@@ -345,7 +345,7 @@ class WindowModel:
     def set_cursor_data(self, data):
         pass
 
-    def show_pointer_overlay(self, position):
+    def show_pointer_overlay(self, position=()):
         pass
 
     def resize(self, *size):

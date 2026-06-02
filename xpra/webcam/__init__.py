@@ -45,9 +45,13 @@ def _get_libcamera_devices() -> dict[str, dict[str, Any]]:
     """
     try:
         from xpra.platform.posix.webcam import get_libcamera_devices
+    except ImportError as e:
+        log("libcamera not available: %s", e)
+        return {}
+    try:
         return get_libcamera_devices()
-    except (ImportError, Exception) as e:
-        log("libcamera devices not available: %s", e)
+    except Exception:
+        log.error("Error querying libcamera devices", exc_info=True)
         return {}
 
 

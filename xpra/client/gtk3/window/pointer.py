@@ -144,13 +144,13 @@ class PointerWindow(GtkStubWindow):
             self.show_pointer_overlay_timer = 0
             self.source_remove(rsot)
 
-    def show_pointer_overlay(self, pos: Sequence[int]) -> None:
+    def show_pointer_overlay(self, pos: Sequence = ()) -> None:
         # schedule do_show_pointer_overlay if needed
         b = self._backing
         if not b:
             return
         prev = b.pointer_overlay
-        if pos is None:
+        if not pos:
             if not prev:
                 return
             value = None
@@ -165,7 +165,7 @@ class PointerWindow(GtkStubWindow):
         if not self.show_pointer_overlay_timer:
             self.show_pointer_overlay_timer = self.timeout_add(10, self.do_show_pointer_overlay, prev)
 
-    def do_show_pointer_overlay(self, prev) -> None:
+    def do_show_pointer_overlay(self, prev: Sequence | None) -> None:
         # queue a draw event at the previous and current position of the pointer
         # (so the backend will repaint / overlay the cursor image there)
         self.show_pointer_overlay_timer = 0
@@ -192,12 +192,10 @@ class PointerWindow(GtkStubWindow):
         log("do_show_pointer_overlay: value=%s", value)
         if value:
             # repaint the scale value (in window coordinates):
-            x, y, w, h = abs_coords(*value[2:5])
             self.redraw()
             # clear it shortly after:
             self.schedule_remove_pointer_overlay()
         if prev:
-            x, y, w, h = abs_coords(*prev[2:5])
             self.redraw()
 
     def schedule_remove_pointer_overlay(self, delay: int = CURSOR_IDLE_TIMEOUT * 1000) -> None:
@@ -208,7 +206,7 @@ class PointerWindow(GtkStubWindow):
     def remove_pointer_overlay(self) -> None:
         log("remove_pointer_overlay()")
         self.remove_pointer_overlay_timer = 0
-        self.show_pointer_overlay(None)
+        self.show_pointer_overlay()
 
     def _do_button_press_event(self, event) -> None:
         # Gtk.Window.do_button_press_event(self, event)
