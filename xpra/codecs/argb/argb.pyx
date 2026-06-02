@@ -82,6 +82,32 @@ cdef memoryview bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     return memoryview(output_buf)
 
 
+def bgr_to_rgb(buf: SizedBuffer) -> memoryview:
+    assert len(buf) % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % len(buf)
+    cdef const unsigned char* bgr
+    with buffer_context(buf) as bc:
+        bgr = <const unsigned char*> (<uintptr_t> int(bc))
+        return bgrdata_to_rgb(bgr, len(bc))
+
+
+cdef memoryview bgrdata_to_rgb(const unsigned char* bgr, const int bgr_len):
+    if bgr_len <= 0:
+        return emptymem
+    assert bgr_len % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % bgr_len
+    cdef int mi = bgr_len // 3
+    cdef MemBuf output_buf = getbuf(bgr_len, 0)
+    cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
+    cdef int i = 0
+    with nogil:
+        for i in range(mi):
+            rgb[0] = bgr[2]     #R
+            rgb[1] = bgr[1]     #G
+            rgb[2] = bgr[0]     #B
+            rgb += 3
+            bgr += 3
+    return memoryview(output_buf)
+
+
 def r210_to_rgba(buf: SizedBuffer,
                  const unsigned int w, const unsigned int h,
                  const unsigned int src_stride, const unsigned int dst_stride) -> memoryview:
