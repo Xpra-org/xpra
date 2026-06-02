@@ -362,9 +362,10 @@ class WindowBackingBase:
         elif g == Gravity.SouthEast:
             sx, dx = east_x()
             sy, dy = south_y()
-        elif g == Gravity.Static and first_time(f"Gravity.Static-{self.wid:#x}"):
-            log.warn(f"Warning: window {self.wid:#x} requested static gravity")
-            log.warn(" this is not implemented yet")
+        # Gravity.Static: pixels stay anchored to the screen, not the window.
+        # Without frame decorations on the server side (xpra's frame extents are 0),
+        # this is indistinguishable from NorthWest within the backing buffer,
+        # so the default sx=sy=dx=dy=0 above is correct.
         w = min(bw, oldw)
         h = min(bh, oldh)
         return sx, sy, dx, dy, w, h
@@ -427,8 +428,8 @@ class WindowBackingBase:
             return center_x(), south_y()
         if g == Gravity.SouthEast:
             return east_x(), south_y()
-        # if self.gravity==Gravity.Static:
-        #    pass
+        # Gravity.Static: position is relative to the screen, not the window frame.
+        # xpra publishes no server-side frame extents, so (x, y) needs no adjustment.
         return x, y
 
     def assign_cuda_context(self, opengl=False):
