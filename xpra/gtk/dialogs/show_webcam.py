@@ -7,10 +7,169 @@
 
 import sys
 
+from xpra.os_util import gi_import
+from xpra.util.str_fn import memoryview_to_bytes
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GdkPixbuf = gi_import("GdkPixbuf")
+GLib = gi_import("GLib")
+
+
+DISPLAY_FORMATS = ("RGB", "RGBX")
+PACKED_BGR_FORMATS = ("BGR", "BGRX")
+CSC_FORMATS = DISPLAY_FORMATS + ("BGRX",)
+FRAME_DELAY = 30
+
+
+def pixels_to_bytes(pixels) -> bytes:
+    if isinstance(pixels, bytes):
+        return pixels
+    if isinstance(pixels, bytearray):
+        return bytes(pixels)
+    try:
+        return memoryview(pixels).tobytes()
+    except TypeError:
+        return memoryview_to_bytes(pixels)
+
+
+class WebcamWindow(Gtk.Window):
+
+    def __init__(self, camera, device_str: str):
+        super().__init__(title=f"Webcam ({device_str})")
+        self.camera = camera
+        self.csc = None
+        self.csc_key = None
+        self.pixbuf = None
+        self.timer = 0
+
+        self.set_default_size(640, 480)
+        self.connect("delete-event", self.close)
+        self.area = Gtk.DrawingArea()
+        self.area.set_app_paintable(True)
+        self.area.connect("draw", self.draw)
+        self.add(self.area)
+
+    def start(self) -> None:
+        self.timer = GLib.timeout_add(FRAME_DELAY, self.update_frame)
+
+    def close(self, *_args) -> bool:
+        if self.timer:
+            GLib.source_remove(self.timer)
+            self.timer = 0
+        if self.csc:
+            self.csc.clean()
+            self.csc = None
+        self.camera.release()
+        Gtk.main_quit()
+        return False
+
+    def stop(self) -> None:
+        self.timer = 0
+        if self.csc:
+            self.csc.clean()
+            self.csc = None
+        self.camera.release()
+        Gtk.main_quit()
+
+    def get_display_image(self, image):
+        pixel_format = image.get_pixel_format()
+        if pixel_format in DISPLAY_FORMATS:
+            return image
+        if pixel_format in PACKED_BGR_FORMATS:
+            return self.bgr_to_rgb(image)
+        w, h = image.get_width(), image.get_height()
+        key = pixel_format, w, h
+        if key != self.csc_key:
+            if self.csc:
+                self.csc.clean()
+            from xpra.webcam import make_csc
+            self.csc = make_csc(pixel_format, w, h, CSC_FORMATS)
+            self.csc_key = key
+        if self.csc:
+            csc_image = self.csc.convert_image(image)
+            if csc_image.get_pixel_format() in PACKED_BGR_FORMATS:
+                return self.bgr_to_rgb(csc_image)
+            return csc_image
+        return None
+
+    @staticmethod
+    def bgr_to_rgb(image):
+        pixel_format = image.get_pixel_format()
+        w, h = image.get_width(), image.get_height()
+        src = pixels_to_bytes(image.get_pixels())
+        src_stride = image.get_rowstride()
+        if pixel_format == "BGR":
+            dst = bytearray(w * h * 3)
+            dst_stride = w * 3
+            depth = 24
+            bytesperpixel = 3
+            for y in range(h):
+                src_pos = y * src_stride
+                dst_pos = y * dst_stride
+                for x in range(w):
+                    b = src[src_pos]
+                    g = src[src_pos + 1]
+                    r = src[src_pos + 2]
+                    dst[dst_pos:dst_pos + 3] = r, g, b
+                    src_pos += 3
+                    dst_pos += 3
+            dst_format = "RGB"
+        else:
+            dst = bytearray(w * h * 4)
+            dst_stride = w * 4
+            depth = 32
+            bytesperpixel = 4
+            for y in range(h):
+                src_pos = y * src_stride
+                dst_pos = y * dst_stride
+                for x in range(w):
+                    b = src[src_pos]
+                    g = src[src_pos + 1]
+                    r = src[src_pos + 2]
+                    dst[dst_pos:dst_pos + 4] = r, g, b, 255
+                    src_pos += 4
+                    dst_pos += 4
+            dst_format = "RGBX"
+        from xpra.codecs.image import ImageWrapper
+        return ImageWrapper(0, 0, w, h, bytes(dst), dst_format, depth, dst_stride, bytesperpixel,
+                            planes=ImageWrapper.PACKED)
+
+    def update_frame(self) -> bool:
+        try:
+            image = self.camera.read()
+            if image is None:
+                return True
+            image = self.get_display_image(image)
+            if image is None:
+                return True
+
+            pixel_format = image.get_pixel_format()
+            w, h = image.get_width(), image.get_height()
+            rowstride = image.get_rowstride()
+            pixels = pixels_to_bytes(image.get_pixels())
+            has_alpha = pixel_format == "RGBX"
+            raw = GLib.Bytes.new(pixels)
+            self.pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(raw, GdkPixbuf.Colorspace.RGB,
+                                                          has_alpha, 8, w, h, rowstride)
+            self.resize(w, h)
+            self.area.queue_draw()
+            return True
+        except Exception as e:
+            from xpra.log import Logger
+            Logger("webcam").error("Error updating webcam frame: %s", e, exc_info=True)
+            self.stop()
+            return False
+
+    def draw(self, _widget, ctx) -> None:
+        if self.pixbuf:
+            Gdk.cairo_set_source_pixbuf(ctx, self.pixbuf, 0, 0)
+            ctx.paint()
+
 
 def main(argv: list[str]) -> int:
     from xpra.platform import program_context, command_error
-    from xpra.platform.gui import init, set_default_icon
+    from xpra.platform.gui import init, ready, set_default_icon
     with program_context("Webcam", "Webcam"):
         from xpra.log import Logger, consume_verbose_argv
         consume_verbose_argv(argv, "webcam")
@@ -18,36 +177,29 @@ def main(argv: list[str]) -> int:
         set_default_icon("webcam.png")
         init()
 
-        log("importing opencv")
-        try:
-            import cv2
-        except ImportError as e:
-            command_error("Error: no opencv support module: %s" % e)
-            return 1
-        log("cv2=%s", cv2)
-        device = 0
+        device_str = "auto"
         if len(argv) == 2:
-            try:
-                device = int(argv[1])
-            except ValueError:
-                command_error("Warning: failed to parse value as a device number: '%s'" % argv[1])
-        log("opening %s with device=%s", cv2.VideoCapture, device)  # @UndefinedVariable
-        try:
-            cap = cv2.VideoCapture(device)  # @UndefinedVariable
-        except Exception as e:
-            command_error(f"Error: failed to capture video using device {device}:\n{e}")
+            device_str = argv[1]
+        elif len(argv) > 2:
+            command_error("Error: too many arguments")
             return 1
-        log.info("capture device for %i: %s", device, cap)
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                command_error("Error: frame capture failed using device %s" % device)
-                return 1
-            cv2.imshow('frame', frame)  # @UndefinedVariable
-            if cv2.waitKey(10) & 0xFF in (ord('q'), 27):  # @UndefinedVariable
-                break
-        cap.release()
-        cv2.destroyAllWindows()
+
+        log("opening webcam device %r", device_str)
+        from xpra.webcam import open_camera
+        try:
+            camera = open_camera(device_str)
+        except Exception as e:
+            command_error(f"Error: failed to open webcam device {device_str!r}:\n{e}")
+            return 1
+        if camera is None:
+            command_error(f"Error: failed to open webcam device {device_str!r}")
+            return 1
+
+        window = WebcamWindow(camera, device_str)
+        window.show_all()
+        window.start()
+        ready()
+        Gtk.main()
     return 0
 
 
