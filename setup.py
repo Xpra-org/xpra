@@ -303,6 +303,8 @@ openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
 openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
 aom_ENABLED             = DEFAULT and pkg_config_version("3.0", "aom")
+de265_ENABLED           = DEFAULT and pkg_config_version("1.0", "libde265")
+de265_decoder_ENABLED   = de265_ENABLED
 pillow_ENABLED          = DEFAULT
 pillow_encoder_ENABLED  = pillow_ENABLED
 pillow_decoder_ENABLED  = pillow_ENABLED
@@ -382,6 +384,7 @@ DECODER_SWITCHES = [
     "nvdec", "nvjpeg_decoder",
     "mf_decoder",
     "vpl_decoder",
+    "de265_decoder",
     "vpx_decoder", "webp_decoder", "pillow_decoder",
     "jpeg_decoder", "avif_decoder",
 ]
@@ -392,6 +395,7 @@ CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "vpx", "webp",
     "pillow",
     "avif", "argb",
+    "de265",
     "v4l2", "evdi", "drm",
     "csc_cython", "csc_libyuv", "pytorch",
     "gstreamer", "gstreamer_audio", "gstreamer_video",
@@ -408,6 +412,7 @@ SWITCH_ALIAS = {
     "amf": ("amf_encoder", ),
     "webp": ("webp_encoder", "webp_decoder"),
     "avif": ("avif_encoder", "avif_decoder"),
+    "de265": ("de265_decoder", ),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
     "vpl": ("vpl_decoder", "vpl_encoder"),
     "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels"),
@@ -768,6 +773,7 @@ def install_dev_env_command() -> list[str]:
             "jpeg_decoder|jpeg_encoder": ("pkgconfig(libturbojpeg)", ),
             "csc_libyuv": ("pkgconfig(libyuv)", ),
             "openh264": ("pkgconfig(openh264)", ),
+            "de265": ("pkgconfig(libde265)", ),
             "evdi": ("libevdi-devel", ),
             "enc_x264": ("pkgconfig(x264)", ),
             "avif": ("pkgconfig(libavif)", ),
@@ -804,6 +810,7 @@ def install_dev_env_command() -> list[str]:
             "vpx": ("libvpx-dev", ),
             "enc_x264": ("libx264-dev", ),
             "openh264": ("libopenh264-dev", ),
+            "de265": ("libde265-dev", ),
             "webp": ("libwebp-dev", ),
             "jpeg_decoder|jpeg_encoder": ("libturbojpeg-dev", ),
             "gtk3": ("libgtk-3-dev", "python-gi-dev"),
@@ -840,6 +847,7 @@ def install_dev_env_command() -> list[str]:
             "jpeg_decoder|jpeg_encoder": ("libjpeg-turbo", ),
             "csc_libyuv": ("libyuv", ),
             "openh264": ("openh264", ),
+            "de265": ("libde265", ),
             "evdi": ("evdi", ),
             "enc_x264": ("x264", ),
             "avif": ("libavif", ),
@@ -3036,6 +3044,8 @@ tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", "openh264", langu
 toggle_packages(aom_ENABLED, "xpra.codecs.aom")
 tace(aom_ENABLED, "xpra.codecs.aom.api", "aom", language="c++")
 tace(aom_ENABLED, "xpra.codecs.aom.decoder", "aom", language="c++")
+toggle_packages(de265_decoder_ENABLED, "xpra.codecs.de265")
+tace(de265_decoder_ENABLED, "xpra.codecs.de265.decoder", "libde265")
 toggle_packages(pillow_encoder_ENABLED or pillow_decoder_ENABLED, "xpra.codecs.pillow")
 toggle_packages(pillow_encoder_ENABLED, "xpra.codecs.pillow.encoder")
 toggle_packages(pillow_decoder_ENABLED, "xpra.codecs.pillow.decoder")

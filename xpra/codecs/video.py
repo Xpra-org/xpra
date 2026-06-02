@@ -27,6 +27,7 @@ CODEC_TO_MODULE: dict[str, str] = {
     "enc_vpx"       : "vpx.encoder",
     "dec_vpx"       : "vpx.decoder",
     "dec_aom"       : "aom.decoder",
+    "dec_de265"     : "de265.decoder",
     "enc_x264"      : "x264.encoder",
     "enc_openh264"  : "openh264.encoder",
     "nvenc"         : "nvidia.nvenc",
@@ -73,7 +74,7 @@ ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("amf", "x264", "openh264", "vpx",
                                             "nvenc", "vpl", "nvjpeg", "jpeg", "webp", "gstreamer", "remote")
 HARDWARE_ENCODER_OPTIONS: Sequence[str] = ("nvenc", "vpl", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS: Sequence[str] = ("cython", "libyuv")
-ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("vpl", "mf", "nvdec", "openh264", "vpx", "gstreamer", "aom")
+ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("vpl", "mf", "nvdec", "openh264", "vpx", "gstreamer", "aom", "de265")
 
 PREFERRED_ENCODER_ORDER: Sequence[str] = tuple(
     autoprefix("enc", x) for x in (

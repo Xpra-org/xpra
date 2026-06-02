@@ -38,6 +38,7 @@ NOWARN = [
     "enc_amf",
     "dec_mf",
     "dec_vpl", "enc_vpl",
+    "dec_de265",
 ]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
@@ -83,7 +84,7 @@ DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
     "pillow", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
 ))
 DECODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("dec", x) for x in (
-    "vpl", "mf", "nvdec", "vpx", "openh264", "aom",
+    "vpl", "mf", "nvdec", "vpx", "openh264", "aom", "de265",
 ))
 SOURCES: Sequence[str] = filt("v4l2", "evdi", "drm", "nvfbc")
 
@@ -283,6 +284,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "nvdec"         : ("nvdec decoder",     "nvidia.nvdec", "decoder", "Decoder"),
     "dec_gstreamer" : ("gstreamer decoder", "gstreamer",    "decoder", "Decoder"),
     "dec_aom"       : ("aom decoder",       "aom",          "decoder", "Decoder"),
+    "dec_de265"     : ("de265 decoder",     "de265",        "decoder", "Decoder"),
     "dec_mf"        : ("mf decoder",        "mf",           "decoder", "Decoder"),
     "dec_vpl"       : ("vpl decoder",       "vpl",          "decoder", "Decoder"),
     # sources:
