@@ -329,8 +329,7 @@ vpl_ENABLED             = DEFAULT and has_header_file("vpl/mfxvideo.h")
 vpl_decoder_ENABLED     = vpl_ENABLED
 vpl_encoder_ENABLED     = vpl_ENABLED
 remote_encoder_ENABLED  = DEFAULT
-# opencv currently broken on 32-bit windows (crashes on load):
-webcam_ENABLED          = DEFAULT and not OSX and not WIN32
+webcam_ENABLED          = DEFAULT and not OSX
 notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
@@ -1714,7 +1713,7 @@ def build_xpra_conf(install_dir: str) -> None:
             print(f"could not probe for pdf/postscript printers: {e}")
 
     # OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
-    webcam = webcam_ENABLED and not (OSX or WIN32)
+    webcam = webcam_ENABLED and not OSX
     # no python-avahi on RH / CentOS, need dbus module on *nix:
     is_RH = is_RPM() and not (is_openSUSE() or is_Fedora())
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH and dbus_ENABLED))
@@ -2288,6 +2287,8 @@ if WIN32:
         add_data_files("lib/tlb", ["packaging/MSWindows/TaskbarLib.tlb"])
         if webcam_ENABLED:
             add_data_files("lib/tlb", ["packaging/MSWindows/DirectShow.tlb"])
+    # we now have a DirectShow backend, ensure cv2 is never included:
+    remove_packages("cv2")
 
     remove_packages(*external_excludes)
     external_includes += [
@@ -2312,11 +2313,6 @@ if WIN32:
     if quic_ENABLED:
         external_includes += ["pyasn1", "winloop", "winloop._noop", "aioquic", "pylsqpack"]
         add_modules("aioquic._buffer")
-
-    if webcam_ENABLED:
-        external_includes.append("cv2")
-    else:
-        remove_packages("cv2")
 
     if client_ENABLED:
         external_includes.append("pyvda")

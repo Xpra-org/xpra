@@ -146,7 +146,6 @@ def get_build_args(args) -> list[str]:
             "encoders", "avif",
             "nvfbc", "cuda_kernels",
             "csc_cython",
-            "webcam",
             "win32_tools",
             "docs",
             "qt6_client",
