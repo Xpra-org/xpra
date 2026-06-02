@@ -10,6 +10,7 @@ from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
+from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper, PlanarFormat
@@ -20,6 +21,8 @@ log = Logger("decoder", "de265")
 from libc.stdint cimport int64_t, uint8_t, uintptr_t
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
+
+THREADS = envint("XPRA_DE265_THREADS", 0)
 
 
 cdef extern from "libde265/de265.h":
@@ -154,7 +157,7 @@ cdef class Decoder:
         self.context = de265_new_decoder()
         if self.context == NULL:
             raise RuntimeError("failed to create libde265 decoder")
-        threads = options.intget("threads", 0)
+        threads = options.intget("threads", THREADS)
         if threads > 0:
             check(de265_start_worker_threads(self.context, threads), "start worker threads")
 
