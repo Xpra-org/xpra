@@ -305,6 +305,12 @@ cdef extern from "wlr/util/box.h":
         int width
         int height
 
+    cdef struct wlr_fbox:
+        double x
+        double y
+        double width
+        double height
+
 
 cdef extern from "wlr/util/addon.h":
     cdef struct wlr_addon_set:
@@ -1342,6 +1348,15 @@ cdef extern from "wlr/types/wlr_compositor.h":
 
     wlr_compositor *wlr_compositor_create(wl_display *display, int version, wlr_renderer *renderer)
     void wlr_surface_send_frame_done(wlr_surface *surface, const timespec *when)
+    void wlr_surface_get_buffer_source_box(wlr_surface *surface, wlr_fbox *box)
+
+
+cdef extern from "wlr/types/wlr_viewporter.h":
+
+    cdef struct wlr_viewporter:
+        pass
+
+    wlr_viewporter *wlr_viewporter_create(wl_display *display)
 
 
 cdef extern from "wlr/types/wlr_subcompositor.h":

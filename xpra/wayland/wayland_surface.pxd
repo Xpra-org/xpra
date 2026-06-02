@@ -30,5 +30,9 @@ cdef class WaylandSurface(ListenerObject):
 
     cdef void register(self)              # add self to module-level `surfaces`
     cdef void unregister(self)            # remove from `surfaces`; safe to call twice
+    cdef tuple get_surface_size(self)
+    cdef tuple get_buffer_source_geometry(self)
+    cdef tuple get_buffer_source_geometry_for_surface_rect(self, int surface_x, int surface_y,
+                                                           int surface_width, int surface_height)
 
     cdef _emit_args(self, str event, tuple args)

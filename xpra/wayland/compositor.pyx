@@ -42,6 +42,7 @@ from xpra.wayland.wlroots cimport (
     wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
     wlr_compositor, wlr_compositor_create,
     wlr_subcompositor, wlr_subcompositor_create,
+    wlr_viewporter, wlr_viewporter_create,
     wlr_xdg_toplevel,
     wlr_xdg_decoration_manager_v1, wlr_xdg_toplevel_decoration_v1, wlr_xdg_decoration_manager_v1_create,
     wlr_xdg_toplevel_decoration_v1_set_mode, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
@@ -134,6 +135,7 @@ cdef class WaylandCompositor(ListenerObject):
     cdef wlr_allocator *allocator
     cdef wlr_compositor *wlr_compositor
     cdef wlr_subcompositor *subcompositor
+    cdef wlr_viewporter *viewporter
     cdef wlr_xdg_shell *xdg_shell
     cdef wlr_scene *scene
     cdef wlr_seat *seat
@@ -231,6 +233,11 @@ cdef class WaylandCompositor(ListenerObject):
 
         self.wlr_compositor = wlr_compositor_create(self.display_ptr, 5, self.renderer)
         self.subcompositor = wlr_subcompositor_create(self.display_ptr)
+        if not self.subcompositor:
+            raise RuntimeError("Failed to create subcompositor")
+        self.viewporter = wlr_viewporter_create(self.display_ptr)
+        if not self.viewporter:
+            raise RuntimeError("Failed to create viewporter")
         wlr_data_device_manager_create(self.display_ptr)
 
         self.xdg_shell = wlr_xdg_shell_create(self.display_ptr, 3)

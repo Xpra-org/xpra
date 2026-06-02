@@ -6,6 +6,7 @@
 # cython: language_level=3
 
 from typing import Dict
+from math import ceil, floor
 
 from xpra.log import Logger
 from xpra.util.str_fn import Ellipsizer
@@ -25,10 +26,10 @@ cdef extern from "time.h":
 
 
 from xpra.wayland.wlroots cimport (
-    wlr_surface, wlr_buffer, wlr_texture, wlr_client_buffer, wlr_box,
+    wlr_surface, wlr_buffer, wlr_texture, wlr_client_buffer, wlr_box, wlr_fbox,
     wlr_texture_read_pixels_options, wlr_texture_read_pixels,
     wlr_dmabuf_attributes, wlr_buffer_get_dmabuf,
-    wlr_surface_send_frame_done,
+    wlr_surface_send_frame_done, wlr_surface_get_buffer_source_box,
     DRM_FORMAT_ABGR8888,
 )
 
@@ -113,7 +114,54 @@ cdef class WaylandSurface(ListenerObject):
         clock_gettime(CLOCK_MONOTONIC, &now)
         wlr_surface_send_frame_done(self.wlr_surface, &now)
 
-    def capture_pixels(self, int x=0, int y=0):
+    cdef tuple get_surface_size(self):
+        if self.wlr_surface == NULL:
+            return 0, 0
+        return self.wlr_surface.current.width, self.wlr_surface.current.height
+
+    def get_size(self) -> tuple[int, int]:
+        return self.get_surface_size()
+
+    cdef tuple get_buffer_source_geometry(self):
+        return self.get_buffer_source_geometry_for_surface_rect(0, 0, 0, 0)
+
+    cdef tuple get_buffer_source_geometry_for_surface_rect(self, int surface_x, int surface_y,
+                                                           int surface_width, int surface_height):
+        """Map a surface-local rectangle to the native buffer source rectangle.
+
+        `wp_viewport.set_destination` changes surface-local dimensions while
+        keeping the attached buffer at its native size; wlroots exposes that
+        native source box here.
+        """
+        if self.wlr_surface == NULL:
+            return 0, 0, 0, 0
+        cdef wlr_fbox source_box
+        wlr_surface_get_buffer_source_box(self.wlr_surface, &source_box)
+        cdef double x1 = source_box.x
+        cdef double y1 = source_box.y
+        cdef double x2 = source_box.x + source_box.width
+        cdef double y2 = source_box.y + source_box.height
+        cdef int total_width = self.wlr_surface.current.width
+        cdef int total_height = self.wlr_surface.current.height
+        if surface_width > 0 and surface_height > 0 and total_width > 0 and total_height > 0:
+            x1 = source_box.x + (source_box.width * surface_x / total_width)
+            y1 = source_box.y + (source_box.height * surface_y / total_height)
+            x2 = source_box.x + (source_box.width * (surface_x + surface_width) / total_width)
+            y2 = source_box.y + (source_box.height * (surface_y + surface_height) / total_height)
+            x1 = max(source_box.x, x1)
+            y1 = max(source_box.y, y1)
+            x2 = min(source_box.x + source_box.width, x2)
+            y2 = min(source_box.y + source_box.height, y2)
+        cdef int x = <int> floor(x1)
+        cdef int y = <int> floor(y1)
+        cdef int width = <int> ceil(x2) - x
+        cdef int height = <int> ceil(y2) - y
+        return x, y, max(0, width), max(0, height)
+
+    def get_buffer_source_size(self) -> tuple[int, int]:
+        return self.get_buffer_source_geometry()[2:4]
+
+    def capture_pixels(self, int x=-1, int y=-1, int width=0, int height=0):
         """Copy the current buffer's pixels out as an ImageWrapper.
         Returns None if the surface is destroyed or has no committed buffer."""
         if self.wlr_surface == NULL:
@@ -122,9 +170,25 @@ cdef class WaylandSurface(ListenerObject):
         if not client_buffer:
             return None
 
+        source_geometry = None
+        if x < 0 or y < 0 or width <= 0 or height <= 0:
+            source_geometry = self.get_buffer_source_geometry()
+            if x < 0:
+                x = source_geometry[0]
+            if y < 0:
+                y = source_geometry[1]
+            if width <= 0:
+                width = source_geometry[2]
+            if height <= 0:
+                height = source_geometry[3]
+        if width <= 0 or height <= 0:
+            return None
+
         cdef wlr_buffer *source = client_buffer.source
         cdef wlr_dmabuf_attributes dmabuf
         if source != NULL and wlr_buffer_get_dmabuf(source, &dmabuf):
+            if x != 0 or y != 0 or width != dmabuf.width or height != dmabuf.height:
+                return self.download_texture_pixels(x, y, width, height)
             if debug:
                 log("%s.capture_pixels: dmabuf %dx%d format=%#x modifier=%#x planes=%i",
                     self, dmabuf.width, dmabuf.height, dmabuf.format, dmabuf.modifier, dmabuf.n_planes)
@@ -134,13 +198,13 @@ cdef class WaylandSurface(ListenerObject):
             image = DMABufImageWrapper(0, 0, dmabuf.width, dmabuf.height,
                                        dmabuf.format, dmabuf.modifier,
                                        fds, strides, offsets,
-                                       lambda: self.download_texture_pixels(x, y))
+                                       lambda: self.download_texture_pixels(x, y, width, height))
             image.may_download()
             return image
 
-        return self.download_texture_pixels(x, y)
+        return self.download_texture_pixels(x, y, width, height)
 
-    def download_texture_pixels(self, int x=0, int y=0):
+    def download_texture_pixels(self, int x=-1, int y=-1, int width=0, int height=0):
         """Copy the current texture's pixels out as a CPU ImageWrapper."""
         if self.wlr_surface == NULL:
             return None
@@ -151,13 +215,32 @@ cdef class WaylandSurface(ListenerObject):
         if not texture:
             return None
 
-        cdef uint32_t width = texture.width
-        cdef uint32_t height = texture.height
-        cdef uint32_t stride = width * 4
+        if x < 0 or y < 0 or width <= 0 or height <= 0:
+            source_geometry = self.get_buffer_source_geometry()
+            if x < 0:
+                x = source_geometry[0]
+            if y < 0:
+                y = source_geometry[1]
+            if width <= 0:
+                width = source_geometry[2]
+            if height <= 0:
+                height = source_geometry[3]
+        if width <= 0 or height <= 0:
+            return None
+        cdef int texture_width = texture.width
+        cdef int texture_height = texture.height
+        if x < 0 or y < 0 or x >= texture_width or y >= texture_height:
+            return None
+        width = min(width, texture_width - x)
+        height = min(height, texture_height - y)
+
+        cdef uint32_t read_width = width
+        cdef uint32_t read_height = height
+        cdef uint32_t stride = read_width * 4
         cdef uint32_t texture_size = stride * height
         cdef MemBuf texture_buffer = getbuf(texture_size, 0)
         if debug:
-            log("%s.capture_pixels: %dx%d (%d bytes)", self, width, height, texture_size)
+            log("%s.capture_pixels: %i,%i %dx%d (%d bytes)", self, x, y, read_width, read_height, texture_size)
 
         cdef wlr_texture_read_pixels_options opts
         opts.data = <void*> texture_buffer.get_mem()
@@ -174,9 +257,9 @@ cdef class WaylandSurface(ListenerObject):
         iptr = <int*> &opts.src_box.y
         iptr[0] = y
         iptr = <int*> &opts.src_box.width
-        iptr[0] = width
+        iptr[0] = read_width
         iptr = <int*> &opts.src_box.height
-        iptr[0] = height
+        iptr[0] = read_height
 
         cdef bint success
         with nogil:
@@ -186,4 +269,4 @@ cdef class WaylandSurface(ListenerObject):
             return None
 
         pixels = memoryview(texture_buffer)
-        return ImageWrapper(0, 0, width, height, pixels, "BGRA", 32, stride)
+        return ImageWrapper(0, 0, read_width, read_height, pixels, "BGRA", 32, stride)

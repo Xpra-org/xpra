@@ -79,7 +79,10 @@ cdef class Subsurface(WaylandSurface):
         if image is None:
             return
         log("%s commit: %s", self, image)
-        self._emit("subsurface-image", self.wid, image)
+        size = self.get_surface_size()
+        source_size = self.get_buffer_source_size()
+        self._emit("subsurface-image", self.wid, image,
+                   size[0], size[1], source_size[0], source_size[1])
 
     cdef void destroy(self) noexcept:
         if self.wlr_surface == NULL:

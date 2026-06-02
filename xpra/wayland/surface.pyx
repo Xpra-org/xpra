@@ -25,6 +25,7 @@ from xpra.wayland.wlroots cimport (
     wlr_subsurface, wlr_surface_for_each_surface,
     wlr_scene_tree,
     wlr_surface,
+    wlr_fbox, wlr_surface_get_buffer_source_box,
     wlr_xdg_toplevel, wlr_xdg_surface,
     wlr_xdg_toplevel_decoration_v1,
     wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event, wlr_xdg_toplevel_show_window_menu_event,
@@ -355,15 +356,17 @@ cdef class Surface(WaylandSurface):
         self._emit("commit", self.wid, bool(wlr_surf.mapped), size, rects, subsurfaces)
 
     cdef void capture_surface_pixels(self) noexcept:
-        # xdg-surfaces have a `geometry` rect that's the visible area inside
-        # the wl_surface's buffer (excludes shadows/CSD margins). Use that as
-        # the source origin for the pixel read; base capture_pixels handles
-        # the rest. Cdef methods can't call cpdef Python attrs cleanly so we
-        # go through a Python-style call here.
+        # xdg-surfaces have a `geometry` rect that's the visible area in
+        # surface-local coordinates (excludes shadows/CSD margins). Map it
+        # through wlroots' buffer source box before reading native pixels.
         if self.wlr_xdg_surface == NULL:
             return
-        image = self.capture_pixels(self.wlr_xdg_surface.geometry.x,
-                                    self.wlr_xdg_surface.geometry.y)
+        source_geometry = self.get_buffer_source_geometry_for_surface_rect(self.wlr_xdg_surface.geometry.x,
+                                                                           self.wlr_xdg_surface.geometry.y,
+                                                                           self.wlr_xdg_surface.geometry.width,
+                                                                           self.wlr_xdg_surface.geometry.height)
+        image = self.capture_pixels(source_geometry[0], source_geometry[1],
+                                    source_geometry[2], source_geometry[3])
         if image is None:
             return
         self._emit("surface-image", self.wid, image)
@@ -378,7 +381,8 @@ cdef class Surface(WaylandSurface):
         sub.attach(self, subsurface)
         cdef int width = subsurface.surface.current.width
         cdef int height = subsurface.surface.current.height
-        self._emit("new-subsurface", self.wid, sub, width, height)
+        cdef tuple source_size = sub.get_buffer_source_size()
+        self._emit("new-subsurface", self.wid, sub, width, height, source_size[0], source_size[1])
 
     cdef void unregister_toplevel_handlers(self) noexcept nogil:
         # Toplevel slots are contiguous: L_REQUEST_MOVE..L_REQUEST_SHOW_WINDOW_MENU.
@@ -445,6 +449,24 @@ cdef struct collect_ctx:
     void *result_list
 
 
+cdef void get_surface_source_size(wlr_surface *surface, int *width, int *height) noexcept:
+    """Return the native buffer source size for a surface.
+
+    This can differ from `surface.current.width/height` when `wp_viewport`
+    scales a native-size buffer to a smaller surface-local destination.
+    """
+    width[0] = 0
+    height[0] = 0
+    if surface == NULL:
+        return
+    cdef wlr_fbox source_box
+    wlr_surface_get_buffer_source_box(surface, &source_box)
+    cdef int x = int(source_box.x)
+    cdef int y = int(source_box.y)
+    width[0] = max(0, int(source_box.x + source_box.width + 0.999999) - x)
+    height[0] = max(0, int(source_box.y + source_box.height + 0.999999) - y)
+
+
 cdef void collect_surface_callback(wlr_surface *surface, int sx, int sy, void *user_data) noexcept:
     """Callback for each surface in the tree. Resolves the wl_surface
     pointer to the registered WaylandSurface wid and skips the root
@@ -457,16 +479,21 @@ cdef void collect_surface_callback(wlr_surface *surface, int sx, int sy, void *u
     if sub is None:
         # subsurface not yet registered (shouldn't happen in steady state)
         return
-    result.append((sub.wid, sx, sy))
+    cdef int source_width = 0
+    cdef int source_height = 0
+    get_surface_source_size(surface, &source_width, &source_height)
+    result.append((sub.wid, sx, sy,
+                   surface.current.width, surface.current.height,
+                   source_width, source_height))
 
 
 cdef list collect_surfaces(wlr_surface *surface):
     """
     Collect all subsurfaces of the given root surface (excluding the root).
 
-    Returns a list of `(wid, sx, sy)` tuples — `wid` is the registered
-    `WaylandSurface` wid for the subsurface, `(sx, sy)` is its offset
-    relative to `surface`.
+    Returns a list of `(wid, sx, sy, logical_w, logical_h, native_w, native_h)`
+    tuples — `wid` is the registered `WaylandSurface` wid for the subsurface,
+    `(sx, sy)` is its offset relative to `surface`.
     """
     result = []
     cdef collect_ctx ctx

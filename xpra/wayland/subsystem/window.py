@@ -48,8 +48,8 @@ class WaylandWindowServer(WindowServer):
         self.pointer_focus = 0
         self.toplevel_wid: dict[int, int] = {}
         self.pending_popups: dict[int, tuple[int, Popup]] = {}
-        # subsurface wid -> (parent_wid, offset_x, offset_y), updated on each parent commit
-        self.subsurface_info: dict[int, tuple[int, int, int]] = {}
+        # subsurface wid -> (parent_wid, offset_x, offset_y, logical_w, logical_h, native_w, native_h)
+        self.subsurface_info: dict[int, tuple[int, int, int, int, int, int, int]] = {}
         # subsurface wid -> SubsurfaceWindow facade kept alive across the subsurface lifetime.
         self.subsurface_facades: dict[int, SubsurfaceWindow] = {}
 
@@ -229,43 +229,54 @@ class WaylandWindowServer(WindowServer):
     def commit(self, wid: int, mapped: bool,
                size: tuple[int, int],
                rects: Sequence[tuple[int, int, int, int]],
-               subsurfaces: list[tuple[int, int, int]]) -> None:
+               subsurfaces: list[tuple[int, int, int, int, int, int, int]]) -> None:
         log(f"commit wid {wid} {mapped=}, {size=}, {rects=}, {subsurfaces=}")
         window = self.get_window(wid)
         if not window:
             return
         self.track_toplevel(self.get_surface(wid))
         self.update_size(window, size)
-        for sub_wid, sx, sy in subsurfaces:
-            self.subsurface_info[sub_wid] = (wid, sx, sy)
+        for sub_wid, sx, sy, logical_w, logical_h, native_w, native_h in subsurfaces:
+            self.subsurface_info[sub_wid] = (wid, sx, sy, logical_w, logical_h, native_w, native_h)
+            facade = self.subsurface_facades.get(sub_wid)
+            if facade:
+                facade.update_dimensions(logical_w, logical_h)
             for ss in self.window_sources():
                 sub_ws = ss.subsurface_sources.get(sub_wid)
                 if sub_ws:
-                    sub_ws.update_geometry(wid, sx, sy)
+                    sub_ws.update_geometry(wid, sx, sy, logical_w, logical_h, native_w, native_h)
         options = {"damage": True}
         last = len(rects) - 1
         for i, (x, y, w, h) in enumerate(rects):
             options["more"] = i != last
             self.refresh_window_area(window, x, y, w, h, options=options)
 
-    def subsurface_image(self, wid: int, image: ImageWrapper) -> None:
+    def subsurface_image(self, wid: int, image: ImageWrapper,
+                         logical_w: int, logical_h: int, native_w: int, native_h: int) -> None:
         info = self.subsurface_info.get(wid)
         if not info:
             log("subsurface-image: no parent info for wid=%i, dropping", wid)
             return
-        parent_wid, ox, oy = info
+        parent_wid, ox, oy, old_logical_w, old_logical_h, old_native_w, old_native_h = info
         if not self.get_window(parent_wid):
             log("subsurface-image: no parent window for wid=%i (parent=%i)", wid, parent_wid)
             return
-        w, h = image.get_width(), image.get_height()
+        native_w = native_w or old_native_w or image.get_width()
+        native_h = native_h or old_native_h or image.get_height()
+        logical_w = logical_w or old_logical_w or native_w
+        logical_h = logical_h or old_logical_h or native_h
+        self.subsurface_info[wid] = (parent_wid, ox, oy, logical_w, logical_h, native_w, native_h)
         facade = self.subsurface_facades.get(wid)
         if facade is None:
-            facade = SubsurfaceWindow(w, h, has_alpha=True, depth=32)
+            facade = SubsurfaceWindow(logical_w, logical_h, has_alpha=True, depth=32)
             self.subsurface_facades[wid] = facade
+        else:
+            facade.update_dimensions(logical_w, logical_h)
         facade.set_image(image)
         for ss in self.window_sources():
-            sub_ws = ss.make_subsurface_source(wid, parent_wid, ox, oy, facade)
-            sub_ws.damage(0, 0, w, h, {})
+            sub_ws = ss.make_subsurface_source(wid, parent_wid, ox, oy, facade,
+                                               logical_w, logical_h, native_w, native_h)
+            sub_ws.damage(0, 0, logical_w, logical_h, {})
 
     def update_size(self, window, size: tuple[int, int]) -> None:
         old_geom = window.get_property("geometry")
@@ -362,8 +373,10 @@ class WaylandWindowServer(WindowServer):
         window._updateprop("parent", parent_wid)
         window._updateprop("transient-for", parent_wid)
 
-    def new_subsurface(self, wid: int, subsurface: Subsurface, width: int, height: int) -> None:
-        log.info("new subsurface of %i: %s %ix%i", wid, subsurface, width, height)
+    def new_subsurface(self, wid: int, subsurface: Subsurface,
+                       width: int, height: int, native_width: int = 0, native_height: int = 0) -> None:
+        log.info("new subsurface of %i: %s %ix%i native=%ix%i",
+                 wid, subsurface, width, height, native_width, native_height)
         self._register_surface_events(subsurface, PER_SUBSURFACE_EVENTS)
 
     def move(self, wid: int, serial: int) -> None:

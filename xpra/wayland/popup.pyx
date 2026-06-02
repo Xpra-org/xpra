@@ -10,7 +10,7 @@ from libc.stdint cimport uintptr_t
 from xpra.log import Logger
 from xpra.wayland.wayland_surface cimport WaylandSurface, next_wid
 from xpra.wayland.wlroots cimport (
-    wl_listener,
+    wl_listener, wlr_box,
     wlr_xdg_popup,
     wlr_xdg_popup_get_position,
     wlr_xdg_surface_schedule_configure,
@@ -126,9 +126,11 @@ cdef class Popup(WaylandSurface):
         cdef int width = self.wlr_xdg_surface.geometry.width
         cdef int height = self.wlr_xdg_surface.geometry.height
         image = None
+        cdef wlr_box *geom = NULL
         if self.wlr_surface.mapped:
-            image = self.capture_pixels(self.wlr_xdg_surface.geometry.x,
-                                        self.wlr_xdg_surface.geometry.y)
+            geom = &self.wlr_xdg_surface.geometry
+            source_geometry = self.get_buffer_source_geometry_for_surface_rect(geom.x, geom.y, geom.width, geom.height)
+            image = self.capture_pixels(source_geometry[0], source_geometry[1], source_geometry[2], source_geometry[3])
         self._emit("commit", self.wid, bool(self.wlr_surface.mapped),
                    (self.x, self.y), (width, height), image is not None)
         if image is not None:

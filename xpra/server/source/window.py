@@ -512,10 +512,11 @@ class WindowsConnection(StubClientConnection):
         self.emit("new-window-source", ws)
         return ws
 
-    def make_subsurface_source(self, wid: int, parent_wid: int,
-                               offset_x: int, offset_y: int, window):
+    def make_subsurface_source(self, wid: int, parent_wid: int, offset_x: int, offset_y: int, window,
+                               logical_width: int, logical_height: int, native_width: int, native_height: int):
         if ws := self.subsurface_sources.get(wid):
-            ws.update_geometry(parent_wid, offset_x, offset_y)
+            ws.update_geometry(parent_wid, offset_x, offset_y,
+                               logical_width, logical_height, native_width, native_height)
             return ws
         batch_config = self.make_batch_config(wid, window)
         ww, wh = window.get_dimensions()
@@ -549,6 +550,8 @@ class WindowsConnection(StubClientConnection):
             self.default_encoding_options,
             mmap_write_area, bandwidth_limit, jitter, datagram,
             parent_wid=parent_wid, offset_x=offset_x, offset_y=offset_y,
+            logical_width=logical_width, logical_height=logical_height,
+            native_width=native_width, native_height=native_height,
         )
         self.subsurface_sources[wid] = ws
         ws.init_encoders()

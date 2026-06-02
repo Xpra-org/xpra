@@ -42,8 +42,6 @@ class SubsurfaceWindow(WindowModelStub):
 
     def set_image(self, image: ImageWrapper) -> None:
         self._image = image
-        self._width = image.get_width()
-        self._height = image.get_height()
 
     def update_dimensions(self, width: int, height: int) -> None:
         self._width = width
@@ -60,6 +58,12 @@ class SubsurfaceWindow(WindowModelStub):
         if image is None:
             return None
         if x == 0 and y == 0 and width == self._width and height == self._height:
+            return image
+        # Viewport-scaled subsurfaces deliberately keep a native-size image
+        # while exposing logical dimensions. Partial logical damage needs
+        # proportional source mapping; for now callers send full subsurface
+        # damage, so return the native image as the conservative fallback.
+        if image.get_width() != self._width or image.get_height() != self._height:
             return image
         iw = min(width, self._width - x)
         ih = min(height, self._height - y)
