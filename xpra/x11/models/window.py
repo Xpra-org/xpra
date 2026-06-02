@@ -10,7 +10,7 @@ from math import ceil, floor
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.constants import MAX_WINDOW_SIZE
+from xpra.constants import MAX_WINDOW_SIZE, Gravity
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import XError, xsync, xswallow, xlog
 from xpra.x11.prop import prop_set
@@ -761,26 +761,49 @@ class WindowModel(BaseWindowModel):
 
     def process_client_message_event(self, event: X11Event) -> bool:
         if event.message_type == "_NET_MOVERESIZE_WINDOW":
-            # TODO: honour gravity, show source indication
+            # data[0]: bits 0-7 gravity, 8-11 value flags, 12-15 source indication
             with xsync:
                 geom = X11Window.getGeometry(self.corral_xid)
                 x, y, w, h, _ = geom
-                if event.data[0] & 0x100:
+                flags = event.data[0]
+                if flags & 0x100:
                     x = event.data[1]
-                if event.data[0] & 0x200:
+                if flags & 0x200:
                     y = event.data[2]
-                if event.data[0] & 0x400:
+                if flags & 0x400:
                     w = event.data[3]
-                if event.data[0] & 0x800:
+                if flags & 0x800:
                     h = event.data[4]
-                if (event.data[0] & 0x100) or (event.data[0] & 0x200):
+                # apply size constraints before computing the gravity offset,
+                # so the reference point is relative to the final size:
+                hints = self.get_property("size-constraints") or {}
+                w, h = self.calc_constrained_size(w, h, hints)
+                # gravity 0 means: use the WM_NORMAL_HINTS win_gravity
+                g = flags & 0xFF
+                if g == 0:
+                    g = hints.get("gravity", Gravity.NorthWest)
+                # (x, y) is the reference point on the window named by gravity;
+                # convert it to the window's top-left:
+                if g in (Gravity.North, Gravity.Center, Gravity.South):
+                    x -= w // 2
+                elif g in (Gravity.NorthEast, Gravity.East, Gravity.SouthEast):
+                    x -= w
+                if g in (Gravity.West, Gravity.Center, Gravity.East):
+                    y -= h // 2
+                elif g in (Gravity.SouthWest, Gravity.South, Gravity.SouthEast):
+                    y -= h
+                # Gravity.Static / NorthWest: no offset
+                # (xpra publishes no server-side frame extents)
+                if flags & 0x300:
                     self._internal_set_property("set-initial-position", True)
                     self._internal_set_property("requested-position", (x, y))
-                # honour hints:
-                hints = self.get_property("size-constraints")
-                w, h = self.calc_constrained_size(w, h, hints)
-                geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)",
-                        self, event.data, geom, (x, y, w, h))
+                try:
+                    gname = Gravity(g).name
+                except ValueError:
+                    gname = str(g)
+                geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, gravity=%s, source=%i,"
+                        " current geometry=%s, new geometry=%s)",
+                        self, event.data, gname, (flags >> 12) & 0xF, geom, (x, y, w, h))
                 X11Window.configure(self.xid, x, y, w, h)
                 X11Window.sendConfigureNotify(self.xid)
             return True
