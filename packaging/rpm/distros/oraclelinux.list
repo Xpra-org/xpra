@@ -6,7 +6,7 @@ nasm
 openh264
 
 
-PYTHON3=python3.11
+PYTHON3=python3.12
 python3-setuptools
 python3-cython
 python3-numpy
