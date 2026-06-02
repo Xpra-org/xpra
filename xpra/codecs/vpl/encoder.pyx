@@ -218,6 +218,35 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
+    # ── why there is no set_encoding_speed() ───────────────────────────
+    # xpra's "speed" maps to MFX mfx.TargetUsage (1..7), which is *not*
+    # a per-frame knob — it's a preset selected at Init that picks an
+    # entire encoding pipeline. Changing it at runtime touches:
+    #
+    #  - VME (motion estimation) hardware: search pattern, range, sub-pel
+    #    refinement — programmed into GPU register state and LUTs at Init.
+    #  - RDO depth: TU=1 walks every CU/PU partition, TU=7 uses early
+    #    termination. Scratch buffers are sized for the chosen depth.
+    #  - Reference topology (NumRefFrame, GopRefDist). A change invalidates
+    #    the DPB and any in-flight async frames, and forces new SPS/PPS —
+    #    so an IDR is unavoidable for the decoder to pick up the headers.
+    #  - BRC internal state, which gets reseeded.
+    #  - The command-buffer template the driver "compiles" at Init.
+    #
+    # In practice this means MFXVideoENCODE_Reset (when accepted) does the
+    # same teardown/rebuild as Close+Init, and many drivers just refuse
+    # with MFX_ERR_INCOMPATIBLE_VIDEO_PARAM. By contrast QP is a single
+    # integer fed to the quantizer per macroblock — no search/partition/
+    # ref/buffer state depends on it, which is why per-frame
+    # mfxEncodeCtrl.QP works with no IDR and no driver round-trip.
+    #
+    # A future set_encoding_speed() should therefore:
+    #   1. Batch — don't honour every small delta.
+    #   2. Coincide with an IDR you'd send anyway (keyframe interval,
+    #      scene change, explicit client request).
+    #   3. Fall back to destroy+create when Reset is refused — at that
+    #      point the cost is dominated by the pipeline rebuild, not by
+    #      which API was used.
     def set_encoding_quality(self, int pct) -> None:
         # Per-frame mfxEncodeCtrl.QP override. Only effective in CQP mode;
         # ICQ-driven sessions fall through silently (set_quality returns
