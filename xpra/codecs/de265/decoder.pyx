@@ -245,6 +245,9 @@ cdef class Decoder:
             if decode_runs > 64:
                 raise RuntimeError("libde265 decode did not produce a picture")
 
+        if image == NULL and options.intget("delayed", 0) > 0:
+            log("libde265 did not return a decoded picture, delayed=%i", options.intget("delayed", 0))
+            return None
         if image == NULL:
             raise RuntimeError("libde265 did not return a decoded picture")
 
