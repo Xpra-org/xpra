@@ -27,6 +27,7 @@ Build-Depends: debhelper (>= 8)
               ,libyuv-dev
               ,libvpx-dev
               ,libx264-dev
+              ,libde265-dev
               ,libopenh264-dev
               ,libwebp-dev
               ,libturbojpeg-dev
@@ -353,6 +354,7 @@ Depends: xpra-codecs (= ${binary:Version})
 #trixie:              ,libavif16
 #forky:              ,libavif16
 #sid:              ,libavif16
+              ,libde265-0
 Recommends:
         ,gstreamer-plugins-ugly
         ,gstreamer1.0-vaapi

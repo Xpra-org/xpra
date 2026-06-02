@@ -293,6 +293,10 @@ Requires:			libavif
 BuildRequires:		pkgconfig(libavif)
 %endif
 %endif
+%if 0%{?fedora}
+BuildRequires:		pkgconfig(libde265)
+Requires:			libde265
+%endif
 #for gstreamer video encoder and decoder:
 Recommends:			gstreamer1
 Recommends:			python3-gstreamer1
@@ -845,6 +849,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/x26?
 %{python3_sitearch}/xpra/codecs/avif
 %endif
+%endif
+%if 0%{?fedora}
+%{python3_sitearch}/xpra/codecs/de265
 %endif
 %{python3_sitearch}/xpra/codecs/gstreamer
 %if 0%{amf_codecs}
