@@ -125,7 +125,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def GetServerInformation(self) -> tuple[str, str, str, str]:
         # name, vendor, version, spec-version
         from xpra import __version__
-        v = ["xpra-notification-proxy", "xpra", __version__, "1.2"]
+        v = ("xpra-notification-proxy", "xpra", __version__, "1.2")
         log("GetServerInformation()=%s", v)
         return v
 
