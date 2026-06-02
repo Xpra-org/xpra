@@ -27,7 +27,7 @@ class BandwidthManager(StubSubsystem):
     PREFIX = "bandwidth"
 
     @classmethod
-    def is_needed(caps: typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         if BACKWARDS_COMPATIBLE and caps.boolget("network-state"):
             return True
         return caps.boolget("bandwidth")
