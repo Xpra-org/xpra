@@ -27,10 +27,10 @@ cdef extern from "time.h":
 
 from xpra.wayland.wlroots cimport (
     wlr_surface, wlr_buffer, wlr_texture, wlr_client_buffer, wlr_box, wlr_fbox,
-    wlr_texture_read_pixels_options, wlr_texture_read_pixels,
+    wlr_texture_read_pixels_options, wlr_texture_read_pixels, wlr_texture_preferred_read_format,
     wlr_dmabuf_attributes, wlr_buffer_get_dmabuf,
     wlr_surface_send_frame_done, wlr_surface_get_buffer_source_box,
-    DRM_FORMAT_ABGR8888,
+    DRM_FORMAT_ARGB8888, DRM_FORMAT_ABGR8888, DRM_FORMAT_XRGB8888, DRM_FORMAT_XBGR8888,
 )
 
 
@@ -242,9 +242,22 @@ cdef class WaylandSurface(ListenerObject):
         if debug:
             log("%s.capture_pixels: %i,%i %dx%d (%d bytes)", self, x, y, read_width, read_height, texture_size)
 
+        cdef uint32_t read_format = wlr_texture_preferred_read_format(texture)
+        cdef str pixel_format
+        if read_format == DRM_FORMAT_ABGR8888 or read_format == DRM_FORMAT_XBGR8888:
+            pixel_format = "RGBA"
+        elif read_format == DRM_FORMAT_ARGB8888 or read_format == DRM_FORMAT_XRGB8888:
+            pixel_format = "BGRA"
+        else:
+            if debug:
+                log("%s.capture_pixels: unsupported preferred read format %#x, using ABGR8888",
+                    self, read_format)
+            read_format = DRM_FORMAT_ABGR8888
+            pixel_format = "RGBA"
+
         cdef wlr_texture_read_pixels_options opts
         opts.data = <void*> texture_buffer.get_mem()
-        opts.format = DRM_FORMAT_ABGR8888
+        opts.format = read_format
         opts.stride = stride
         opts.dst_x = 0
         opts.dst_y = 0
@@ -269,4 +282,4 @@ cdef class WaylandSurface(ListenerObject):
             return None
 
         pixels = memoryview(texture_buffer)
-        return ImageWrapper(0, 0, read_width, read_height, pixels, "RGBA", 32, stride)
+        return ImageWrapper(0, 0, read_width, read_height, pixels, pixel_format, 32, stride)
