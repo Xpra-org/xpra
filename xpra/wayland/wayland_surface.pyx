@@ -269,4 +269,4 @@ cdef class WaylandSurface(ListenerObject):
             return None
 
         pixels = memoryview(texture_buffer)
-        return ImageWrapper(0, 0, read_width, read_height, pixels, "BGRA", 32, stride)
+        return ImageWrapper(0, 0, read_width, read_height, pixels, "RGBA", 32, stride)
