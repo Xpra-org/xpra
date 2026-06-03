@@ -273,8 +273,8 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if geometry:
             w, h = geometry[2:4]
             surface.resize(w, h)
+            surface.frame_done()
             self.compositor.flush()
-            self.refresh_window(window)
 
     def _register_surface_events(self, surface, events: Sequence[str]) -> None:
         for event in events:
