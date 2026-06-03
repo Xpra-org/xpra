@@ -100,7 +100,7 @@ class BaseMmapArea:
     def write_token(self) -> None:
         write_mmap_token(self.mmap, self.token, self.token_index, self.token_bytes)
 
-    def write_data(self, data) -> list[tuple[int, int]]:
+    def write_data(self, data) -> tuple[tuple[int, int], ...]:
         return mmap_write(self.mmap, self.size, data)
 
     def mmap_read(self, *descr_data: tuple[int, int]) -> tuple[bytes | memoryview, PaintCallback]:
