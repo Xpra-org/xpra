@@ -630,6 +630,18 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
 
     def _resize(self, wid: int, serial: int, moveresize: int) -> None:
         log.info(f"resize wid {wid:#x}, serial={serial:#x}, moveresize={moveresize}")
+        window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: cannot resize window %i: not found!", wid)
+            return
+        wsources = self.window_sources()
+        if not wsources:
+            return
+        driversources = [ss for ss in wsources if self.ui_driver == ss.uuid]
+        source = driversources[0] if driversources else wsources[0]
+        x_root, y_root = self.pointer_device.get_position()
+        source.initiate_moveresize(wid, window, x_root, y_root, int(moveresize), 1,
+                                   SOURCE_INDICATION_NORMAL)
 
     def _new_output(self, output: Output) -> None:
         log("new output %r=%r", output.name, output.get_info())
