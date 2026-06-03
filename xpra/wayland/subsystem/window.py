@@ -396,7 +396,7 @@ class WaylandWindowServer(WindowServer):
                                    SOURCE_INDICATION_NORMAL)
 
     def resize(self, wid: int, serial: int, moveresize: int) -> None:
-        log.info(f"resize wid {wid:#x}, serial={serial:#x}, moveresize={moveresize}")
+        log(f"resize wid {wid:#x}, serial={serial:#x}, moveresize={moveresize}")
         window = self.get_window(wid)
         if not window:
             log.warn("Warning: cannot resize window %i: not found!", wid)
