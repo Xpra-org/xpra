@@ -329,7 +329,7 @@ vpl_ENABLED             = DEFAULT and has_header_file("vpl/mfxvideo.h")
 vpl_decoder_ENABLED     = vpl_ENABLED
 vpl_encoder_ENABLED     = vpl_ENABLED
 remote_encoder_ENABLED  = DEFAULT
-webcam_ENABLED          = DEFAULT and not OSX
+webcam_ENABLED          = DEFAULT
 notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
@@ -1712,8 +1712,7 @@ def build_xpra_conf(install_dir: str) -> None:
         except Exception as e:
             print(f"could not probe for pdf/postscript printers: {e}")
 
-    # OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
-    webcam = webcam_ENABLED and not OSX
+    webcam = webcam_ENABLED
     # no python-avahi on RH / CentOS, need dbus module on *nix:
     is_RH = is_RPM() and not (is_openSUSE() or is_Fedora())
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH and dbus_ENABLED))
@@ -2631,6 +2630,8 @@ else:
         external_includes += ["kerberos", "future", "pyu2f", "paramiko", "nacl"]
         if yaml_ENABLED:
             external_includes.append("yaml")
+        if webcam_ENABLED:
+            external_includes += ["AVFoundation", "CoreMedia", "Quartz", "libdispatch"]
         # OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         add_packages("xpra.platform.darwin")
         remove_packages("xpra.platform.win32", "xpra.platform.posix")

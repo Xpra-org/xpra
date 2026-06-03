@@ -106,9 +106,10 @@ def open_camera(device_str: str) -> CameraDevice | None:
 
     Selection priority:
     1. (Windows) If DirectShow devices are available, use DirectShowCamera.
-    2. (Linux) If libcamera is available and *device_str* matches a known
+    2. (macOS) If AVFoundation devices are available, use AVFoundationCamera.
+    3. (Linux) If libcamera is available and *device_str* matches a known
        camera ID (or is an AUTO_OPTIONS value), use LibcameraCamera.
-    3. Otherwise fall back to CV2Camera.
+    4. Otherwise fall back to CV2Camera.
 
     When a CV2Camera lands on a virtual v4l2 device number, a warning is
     logged and None is returned unless XPRA_WEBCAM_ALLOW_VIRTUAL is set.
@@ -125,6 +126,18 @@ def open_camera(device_str: str) -> CameraDevice | None:
             log("using DirectShow backend for %r (device_index=%i)", device_str, device_index)
             from xpra.platform.win32.directshow_camera import DirectShowCamera
             return DirectShowCamera(device_index)
+
+    if sys.platform == "darwin":
+        from xpra.platform.darwin.webcam import _get_avfoundation_devices, _find_avfoundation_id
+
+        avf_devices = _get_avfoundation_devices()
+        log("avfoundation_devices=%s", avf_devices)
+        if avf_devices:
+            unique_id = _find_avfoundation_id(device_str, avf_devices)
+            if unique_id:
+                log("using AVFoundation backend for %r (uniqueID=%r)", device_str, unique_id)
+                from xpra.platform.darwin.avfoundation_camera import AVFoundationCamera
+                return AVFoundationCamera(unique_id)
 
     lc_devices = _get_libcamera_devices()
     log("libcamera_devices=%s", lc_devices)
