@@ -341,7 +341,7 @@ cdef get_output_info(Display *display, XRRScreenResources *rsc, RROutput output)
         if so and so!="unknown":
             info["subpixel-order"] = so
         if oi.nclone:
-            info["clones"] = tuple(int(oi.clones[i] for i in range(oi.nclone)))
+            info["clones"] = tuple(int(oi.clones[i]) for i in range(oi.nclone))
         info["properties"] = get_output_properties(display, output)
     if oi.name and oi.nameLen:
         info["name"] = bytestostr(oi.name[:oi.nameLen])
