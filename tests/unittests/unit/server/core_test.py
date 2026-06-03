@@ -14,12 +14,9 @@ from xpra.server.core import ServerCore
 class TestServerCore(unittest.TestCase):
 
     def test_handle_ssh_connection_uses_display_name_api(self):
-        class TestServer(ServerCore):
-            def get_display_name(self) -> str:
-                return ":42"
-
-        server = ServerCore.__new__(TestServer)
-        server.subsystems = {}
+        server = ServerCore.__new__(ServerCore)
+        display = SimpleNamespace(get_display_name=lambda: ":42")
+        server.subsystems = {"display": display}
         conn = SimpleNamespace(socktype_wrapped="tcp")
         with patch("xpra.server.ssh.make_ssh_server_connection", return_value="ssh-conn") as make_ssh:
             result = server.handle_ssh_connection(conn, {})
