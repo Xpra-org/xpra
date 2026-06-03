@@ -3,6 +3,7 @@
 ## [6.6] 2026-05-26
 * 🔧 Platforms, build and packaging:
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
+  * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
 * 🖧 Network:
   * [proxy registration](https://github.com/Xpra-org/xpra/issues/2125)
   * [automatic session proxying](https://github.com/Xpra-org/xpra/issues/4902)
@@ -11,11 +12,14 @@
   * [`asyncio` loop exit fix](https://github.com/Xpra-org/xpra/pull/4891)
 * 🌈 Encodings:
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
+  * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)
+  * [native MS Windows DirectShow webcam support](https://github.com/Xpra-org/xpra/issues/3336)
 * ✨ Features:
   * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885)
   * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)
   * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256)
   * [basic bash shell completion](https://github.com/Xpra-org/xpra/issues/2375)
+  * [Wayland scaled subsurfaces](https://github.com/Xpra-org/xpra/issues/4878)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
