@@ -1,0 +1,54 @@
+# Maintainer: Antoine Martin <totaam@xpra.org>
+
+_realname=pycuda
+pkgbase=mingw-w64-python-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-python-${_realname}")
+pkgver=2026.1
+pkgrel=1
+pkgdesc="a wrapper around the cuda library"
+arch=('any')
+mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
+msys2_references=(
+  'pypi: pycuda'
+)
+url='https://github.com/inducer/pycuda'
+license=('spdx:MIT')
+depends=("${MINGW_PACKAGE_PREFIX}-python")
+makedepends=("${MINGW_PACKAGE_PREFIX}-python-build"
+             "${MINGW_PACKAGE_PREFIX}-python-installer"
+             "${MINGW_PACKAGE_PREFIX}-python-setuptools"
+             "${MINGW_PACKAGE_PREFIX}-python-mako"
+             "${MINGW_PACKAGE_PREFIX}-python-platformdirs"
+#             "${MINGW_PACKAGE_PREFIX}-python-pytools"
+             "${MINGW_PACKAGE_PREFIX}-python-typing_extensions"
+             "${MINGW_PACKAGE_PREFIX}-python-markupsafe"
+             "${MINGW_PACKAGE_PREFIX}-cc")
+source=("https://pypi.io/packages/source/${_realname:0:1}/${_realname}/${_realname}-${pkgver}.tar.gz")
+sha256sums=('759516160628ba06f32ce7e563e3f5b9214691dc9528a03ea99ea1073f4e14ba')
+
+prepare() {
+  cd "${srcdir}"
+  rm -rf python-build-${MSYSTEM} | true
+  cp -r "${_realname}-${pkgver}" "python-build-${MSYSTEM}"
+}
+
+build() {
+  cd "${srcdir}/python-build-${MSYSTEM}"
+  python ./configure.py \
+	--cuda-root="C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.1" \
+	--no-use-shipped-boost \
+	--boost-python-libname=libboost_python314-mt \
+	--boost-thread-libname=libboost_thread-mt
+  python3 setup.py build -c mingw32
+}
+
+package() {
+  cd "${srcdir}/python-build-${MSYSTEM}"
+
+  python ./setup.py install --root=${pkgdir} --single-version-externally-managed
+  # don't ask
+  mv ${pkgdir}/msys64/${MSYSTEM} ${pkgdir}/${MSYSTEM}
+  rmdir ${pkgdir}/msys64
+
+  install -Dm644 LICENSE "${pkgdir}${MINGW_PREFIX}/share/licenses/python-${_realname}/LICENSE"
+}
