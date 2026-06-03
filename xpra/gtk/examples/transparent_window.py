@@ -45,14 +45,13 @@ class TransparentWindow(Gtk.Window):
         self.show_all()
         super().present()
 
-    def area_draw(self, _area, cr) -> None:
+    def area_draw(self, area, cr) -> None:
         cr.set_source_rgba(1.0, 1.0, 1.0, 0.0)  # Transparent
         # Draw the background
         cr.set_operator(OPERATOR_SOURCE)
         cr.paint()
         # Draw a circle
-        alloc = self.get_allocated_size()[0]
-        width, height = alloc.width, alloc.height
+        width, height = area.get_allocated_width(), area.get_allocated_height()
         cr.set_source_rgba(1.0, 0.2, 0.2, 0.6)
         radius = min(width, height) / 2 - 0.8
         cr.arc(width / 2, height / 2, radius, 0, 2.0 * 3.14)

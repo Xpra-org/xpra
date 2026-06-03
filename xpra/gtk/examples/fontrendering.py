@@ -51,7 +51,7 @@ class FontWindow(Gtk.Window):
         self.show_all()
         super().present()
 
-    def area_draw(self, _area, cr) -> None:
+    def area_draw(self, area, cr) -> None:
         layout = PangoCairo.create_layout(cr)
         pctx = layout.get_context()
         if envbool("XPRA_LOG_PANGO", False):
@@ -63,17 +63,16 @@ class FontWindow(Gtk.Window):
             print(" language=%s" % pctx.get_language())
             print(" get_base_dir=%s" % pctx.get_base_dir())
 
+        w, h = area.get_allocated_width(), area.get_allocated_height()
         for y in range(2):
             for x in range(2):
                 cr.save()
                 antialias = tuple(ANTIALIAS.keys())[y * 2 + x]
                 label = ANTIALIAS[antialias]
-                self.paint_pattern(cr, x, y, antialias, label, BLACK, WHITE)
-                self.paint_pattern(cr, x, y + 2, antialias, label, WHITE, BLACK)
+                self.paint_pattern(cr, w, h, x, y, antialias, label, BLACK, WHITE)
+                self.paint_pattern(cr, w, h, x, y + 2, antialias, label, WHITE, BLACK)
                 cr.restore()
 
-        alloc = self.get_allocated_size()[0]
-        w, h = alloc.width, alloc.height
         bw = w // 4
         bh = h // 4
         # copy ANTIALIAS_NONE to right hand side,
@@ -105,7 +104,7 @@ class FontWindow(Gtk.Window):
     def paint_to_image(self, bw: int, bh: int, background, foreground, antialias=Antialias.NONE) -> ImageSurface:
         img = ImageSurface(Format.RGB24, bw, bh)
         icr = Context(img)
-        self.paint_pattern(icr, 0, 0, antialias, "", background, foreground)
+        self.paint_pattern(icr, bw * 4, bh * 4, 0, 0, antialias, "", background, foreground)
         img.flush()
         return img
 
@@ -114,8 +113,7 @@ class FontWindow(Gtk.Window):
         # desc = pango.font_description_from_string(FONT)
         # layout.set_font_description( desc)
 
-    def paint_pattern(self, cr, x, y, antialias, label="", background=WHITE, foreground=BLACK) -> None:
-        w, h = self.get_size()
+    def paint_pattern(self, cr, w, h, x, y, antialias, label="", background=WHITE, foreground=BLACK) -> None:
         bw = w // 4
         bh = h // 4
         FONT_SIZE = w // 8
