@@ -396,6 +396,18 @@ class WaylandWindowServer(WindowServer):
 
     def resize(self, wid: int, serial: int, moveresize: int) -> None:
         log.info(f"resize wid {wid:#x}, serial={serial:#x}, moveresize={moveresize}")
+        window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: cannot resize window %i: not found!", wid)
+            return
+        wsources = self.window_sources()
+        if not wsources:
+            return
+        driversources = [ss for ss in wsources if self.server.ui_driver == ss.uuid]
+        source = driversources[0] if driversources else wsources[0]
+        x_root, y_root = self.server.subsystems["pointer"].pointer_device.get_position()
+        source.initiate_moveresize(wid, window, x_root, y_root, int(moveresize), 1,
+                                   SOURCE_INDICATION_NORMAL)
 
     def _process_window_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
