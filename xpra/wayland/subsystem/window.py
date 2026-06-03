@@ -89,6 +89,7 @@ class WaylandWindowServer(WindowServer):
             "geometry": geom,
             "image": None,
             "depth": 32,
+            "has-alpha": True,
             "decorations": False,
         })
         window.setup()
