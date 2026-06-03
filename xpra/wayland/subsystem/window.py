@@ -433,8 +433,8 @@ class WaylandWindowServer(WindowServer):
         if geometry:
             w, h = geometry[2:4]
             surface.resize(w, h)
+            surface.frame_done()
             self.server.compositor.flush()
-            self.refresh_window(window)
 
     def _focus(self, _server_source, wid: int, modifiers) -> None:
         server = self.server
