@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.util.env import IgnoreWarningsContext
+from xpra.util.env import IgnoreWarningsContext, envbool
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -12,10 +12,28 @@ from xpra.platform import program_context
 from xpra.log import consume_verbose_argv
 
 Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
+
+# by default we use the backend-agnostic GDK move/resize calls,
+# which delegate to `_NET_WM_MOVERESIZE` on X11 and to the xdg-shell protocol on Wayland.
+# set `XPRA_MOVERESIZE_X11=1` to force the pure X11 `_NET_WM_MOVERESIZE` implementation instead:
+USE_X11 = envbool("XPRA_MOVERESIZE_X11", False)
 
 width = 400
 height = 400
+
+# `MoveResize` follows the `_NET_WM_MOVERESIZE` ordering, which differs from `Gdk.WindowEdge`:
+GDK_EDGE = {
+    MoveResize.SIZE_TOPLEFT:     Gdk.WindowEdge.NORTH_WEST,
+    MoveResize.SIZE_TOP:         Gdk.WindowEdge.NORTH,
+    MoveResize.SIZE_TOPRIGHT:    Gdk.WindowEdge.NORTH_EAST,
+    MoveResize.SIZE_RIGHT:       Gdk.WindowEdge.EAST,
+    MoveResize.SIZE_BOTTOMRIGHT: Gdk.WindowEdge.SOUTH_EAST,
+    MoveResize.SIZE_BOTTOM:      Gdk.WindowEdge.SOUTH,
+    MoveResize.SIZE_BOTTOMLEFT:  Gdk.WindowEdge.SOUTH_WEST,
+    MoveResize.SIZE_LEFT:        Gdk.WindowEdge.WEST,
+}
 
 
 def make_window() -> Gtk.Window:
@@ -27,18 +45,21 @@ def make_window() -> Gtk.Window:
     if icon:
         window.set_icon(icon)
 
-    try:
-        from xpra.x11.gtk.display_source import init_gdk_display_source
-        can_move = True
-    except ImportError as e:
-        print("cannot initiate move without gtk x11: %s" % e)
-        can_move = False
+    can_move = True
+    if USE_X11:
+        try:
+            from xpra.x11.gtk.display_source import init_gdk_display_source
+            assert init_gdk_display_source
+        except ImportError as e:
+            print("cannot initiate move without gtk x11: %s" % e)
+            can_move = False
 
     def get_pointer():
         with IgnoreWarningsContext():
             return window.get_window().get_screen().get_root_window().get_pointer()
 
-    def initiate(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int) -> None:
+    def initiate_x11(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int) -> None:
+        from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
         from xpra.x11.bindings.core import constants, get_root_xid, X11CoreBindings
         from xpra.x11.bindings.window import X11WindowBindings
@@ -50,6 +71,24 @@ def make_window() -> Gtk.Window:
         X11Window = X11WindowBindings()
         X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",
                                     int(x_root), int(y_root), int(direction), button, source_indication)
+
+    def initiate_gdk(x_root: float, y_root: float, direction: MoveResize, button: int) -> None:
+        # GDK move/resize drags hold their own pointer grab and end on button release,
+        # so there is nothing to do for an explicit CANCEL:
+        if direction == MoveResize.CANCEL:
+            return
+        gdkwin = window.get_window()
+        timestamp = Gtk.get_current_event_time()
+        if direction == MoveResize.MOVE:
+            gdkwin.begin_move_drag(button, int(x_root), int(y_root), timestamp)
+        else:
+            gdkwin.begin_resize_drag(GDK_EDGE[direction], button, int(x_root), int(y_root), timestamp)
+
+    def initiate(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int) -> None:
+        if USE_X11:
+            initiate_x11(x_root, y_root, direction, button, source_indication)
+        else:
+            initiate_gdk(x_root, y_root, direction, button)
 
     def cancel() -> None:
         initiate(0, 0, MoveResize.CANCEL, 0, 1)
