@@ -146,6 +146,7 @@ cdef class WaylandCompositor(ListenerObject):
     cdef str drm_device
     cdef wl_event_loop *event_loop
     cdef dict event_listeners
+    cdef bint processing_events
 
     def __cinit__(self):
         # All cdef pointer fields are zero-initialised by Cython's tp_alloc.
@@ -471,13 +472,26 @@ cdef class WaylandCompositor(ListenerObject):
     def get_display(self) -> Display:
         return self.display
 
+    cdef void dispatch_pending(self):
+        if self.event_loop == NULL or self.processing_events:
+            return
+        self.processing_events = True
+        try:
+            wl_event_loop_dispatch(self.event_loop, 0)
+        finally:
+            self.processing_events = False
+
     def process_events(self) -> None:
-        wl_event_loop_dispatch(self.event_loop, 0)
-        self.flush()
+        self.dispatch_pending()
+        self.flush_clients()
+
+    cdef void flush_clients(self):
+        if self.display is not None:
+            self.display.flush_clients()
 
     def flush(self) -> None:
-        if display := self.display:
-            display.flush_clients()
+        self.dispatch_pending()
+        self.flush_clients()
 
     def run(self) -> None:
         """Run the compositor event loop"""
