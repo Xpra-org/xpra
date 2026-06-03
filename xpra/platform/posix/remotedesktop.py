@@ -34,7 +34,7 @@ class RemoteDesktop(PortalShadow):
         keylog.info("key mapping not implemented - YMMV")
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        if self.readonly or not self.input_devices_count:
+        if self.is_readonly(proto) or not self.input_devices_count:
             return False
         win = self.get_window(wid)
         if not win:
@@ -71,7 +71,7 @@ class RemoteDesktop(PortalShadow):
             dbus_interface=REMOTEDESKTOP_IFACE)
 
     def _process_keyboard_event(self, proto, packet: Packet) -> None:
-        if self.readonly or not self.input_devices_count or not self.keymap:
+        if self.is_readonly(proto) or not self.input_devices_count or not self.keymap:
             return
         keyname = packet.get_str(2)
         pressed = packet.get_bool(3)

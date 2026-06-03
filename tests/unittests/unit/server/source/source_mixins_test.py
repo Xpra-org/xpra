@@ -110,6 +110,23 @@ class SourceMixinsTest(unittest.TestCase):
         from xpra.server.source.stub import StubClientConnection
         self._test_mixin_class(StubClientConnection)
 
+    def test_readonly(self):
+        from xpra.server.source.readonly import ReadonlyConnection
+        protocol = AdHocStruct()
+        protocol._conn = AdHocStruct()
+        protocol._conn.options = {"readonly": "yes"}
+        source = self._test_mixin_class(ReadonlyConnection, {"readonly": False}, {"readonly": True}, protocol)
+        self.assertTrue(source.client_readonly)
+        self.assertTrue(source.connection_readonly)
+        self.assertTrue(source.effective_readonly())
+        self.assertTrue(source.server_enforced_readonly())
+        source.set_client_readonly(False)
+        self.assertTrue(source.effective_readonly())
+        source.connection_readonly = False
+        self.assertFalse(source.effective_readonly())
+        source.server.readonly = True
+        self.assertTrue(source.effective_readonly())
+
     #############################################################################
     # The following tests are incomplete:
     def test_audio(self):

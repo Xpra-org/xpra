@@ -475,19 +475,29 @@ class WindowServer(StubSubsystem):
             ss.unmap_window(wid, window)
 
     def _process_window_close(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         log.info("_process_window_close(%s, %s)", proto, packet)
 
     def _process_window_map(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         log.info("_process_window_map(%s, %s)", proto, packet)
 
     def _process_window_unmap(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         log.info("_process_window_unmaps, %s)", proto, packet)
 
     def _process_close_window(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         log.info("_process_close_window(%s, %s)", proto, packet)
 
     def _process_configure_window(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
+        if self.is_readonly(proto):
+            return
         wid = packet.get_wid()
         window = self.get_window(wid)
         if not window:
@@ -521,6 +531,8 @@ class WindowServer(StubSubsystem):
         self.do_process_window_configure(proto, wid, typedict(config))
 
     def _process_window_configure(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         wid = packet.get_wid()
         config = typedict(packet.get_dict(2))
         self.do_process_window_configure(proto, wid, config)
@@ -529,6 +541,8 @@ class WindowServer(StubSubsystem):
         log.info("do_process_window_configure(%s, %i, %s)", proto, wid, config)
 
     def _process_window_action(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         wid = packet.get_wid()
         action = packet.get_str(2)
         window = self.get_window(wid)
@@ -579,7 +593,7 @@ class WindowServer(StubSubsystem):
         self._focus(None, 0, [])
 
     def _process_window_focus(self, proto, packet: Packet) -> None:
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not ss:

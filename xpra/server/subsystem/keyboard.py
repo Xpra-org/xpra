@@ -185,7 +185,7 @@ class KeyboardManager(StubSubsystem):
     def _process_layout_changed(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
         log(f"layout-changed: {packet}")
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not ss:
@@ -207,7 +207,7 @@ class KeyboardManager(StubSubsystem):
 
     def _process_keymap_changed(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         props = typedict(packet.get_dict(1))
         force = True
@@ -227,7 +227,7 @@ class KeyboardManager(StubSubsystem):
             ss.make_keymask_match(props.strtupleget("modifiers"))
 
     def _process_keyboard_config(self, proto, packet: Packet) -> None:
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         props = typedict(packet.get_dict(1))
         ss = self.get_server_source(proto)
@@ -274,7 +274,7 @@ class KeyboardManager(StubSubsystem):
         self.do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
 
     def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, kattrs: dict) -> None:
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         attrs = typedict(kattrs)
         # `get_keycode` may have to change modifiers to match the key, so we need a mutable list:
@@ -417,7 +417,7 @@ class KeyboardManager(StubSubsystem):
         assert BACKWARDS_COMPATIBLE
 
     def _process_keyboard_sync(self, proto, packet: Packet) -> None:
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "keyboard_config"):

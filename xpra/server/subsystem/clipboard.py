@@ -212,7 +212,7 @@ class ClipboardManager(StubSubsystem):
 
     def _process_clipboard_packet(self, proto, packet: Packet) -> None:
         assert self.enabled
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not ss:
@@ -239,7 +239,7 @@ class ClipboardManager(StubSubsystem):
 
     def _process_clipboard_status(self, proto, packet: Packet) -> None:
         assert self.enabled
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         clipboard_enabled = packet.get_bool(1)
         if ss := self.get_server_source(proto):

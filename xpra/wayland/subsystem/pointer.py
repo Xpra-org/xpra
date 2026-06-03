@@ -50,7 +50,7 @@ class WaylandPointerManager(PointerManager):
         self.set_pointer_focus(wid, pointer)
         log("pointer: %r", pointer)
         try:
-            if self.server.readonly:
+            if self.is_readonly(proto):
                 return False
             if pointer:
                 if len(pointer) >= 4:

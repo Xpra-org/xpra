@@ -47,6 +47,16 @@ class StubSubsystem(SignalEmitter):
         from xpra.server.common import get_sources_by_type
         return get_sources_by_type(self.server, subsystem_type, exclude)
 
+    def is_readonly(self, proto=None) -> bool:
+        if getattr(self.server, "readonly", False):
+            return True
+        if proto is None:
+            return False
+        ss = self.get_server_source(proto)
+        if ss and hasattr(ss, "effective_readonly"):
+            return ss.effective_readonly()
+        return False
+
     def add_packets(self, *packet_types: str, main_thread: bool = False) -> None:
         """
         Register packet handlers for this subsystem. Handlers

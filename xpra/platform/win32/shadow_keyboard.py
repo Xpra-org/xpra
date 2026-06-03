@@ -29,7 +29,7 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
         return KeyboardConfig()
 
     def do_process_keyboard_event(self, proto, wid: int, keyname: str, pressed: bool, kattrs: dict) -> None:
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         attrs = typedict(kattrs)
         if attrs.strget("backend") == "win32":

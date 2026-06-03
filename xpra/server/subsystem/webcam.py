@@ -191,7 +191,7 @@ class WebcamServer(StubSubsystem):
     # Packet handlers
 
     def _process_webcam_start(self, proto, packet: Packet) -> None:
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         assert self.enabled
         ss = self.get_server_source(proto)
@@ -242,7 +242,7 @@ class WebcamServer(StubSubsystem):
             ss.send_webcam_stop(device_id, f"spawn failed: {e}")
 
     def _process_webcam_stop(self, proto, packet: Packet) -> None:
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not ss:
@@ -265,7 +265,7 @@ class WebcamServer(StubSubsystem):
                 pass
 
     def _process_webcam_frame(self, proto, packet: Packet) -> None:
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not ss:

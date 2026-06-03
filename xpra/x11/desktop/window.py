@@ -87,6 +87,8 @@ class DesktopWindowServer(WindowServer):
         return 0, 0
 
     def _process_window_map(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -107,6 +109,8 @@ class DesktopWindowServer(WindowServer):
         self.refresh_window_area(window, 0, 0, w, h)
 
     def _process_window_unmap(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         wid = packet.get_wid()
         window = self.get_window(wid)
         if not window:
@@ -122,13 +126,15 @@ class DesktopWindowServer(WindowServer):
         # TODO: handle iconification?
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
+        if self.is_readonly(proto):
+            return
         window = self.get_window(wid)
         if not window:
             geomlog("cannot configure window %s: already removed!", wid)
             return
 
         pointer = self.get_subsystem("pointer")
-        if pointer and "pointer" in config and not self.server.readonly:
+        if pointer and "pointer" in config and not self.is_readonly(proto):
             pointer_data = typedict(config.dictget("pointer"))
             pwid = pointer_data.intget("wid", 0)
             position = pointer_data.inttupleget("position")
@@ -145,7 +151,7 @@ class DesktopWindowServer(WindowServer):
         geometry = config.inttupleget("geometry")
         if geometry:
             self._window_mapped_at(proto, wid, window, geometry)
-            if not self.server.readonly:
+            if not self.is_readonly(proto):
                 w, h = geometry[2:4]
                 oww, owh = window.get_geometry()[2:4]
                 geomlog("do_process_window_configure size was: %s, now %s", (oww, owh), (w, h))

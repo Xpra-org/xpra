@@ -577,6 +577,8 @@ class SeamlessWindowServer(WindowServer):
     # --------------------------------------------------------------------
 
     def _process_window_map(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         if not (ss := self.get_server_source(proto)):
             return  # should not happen
         wid = packet.get_wid()
@@ -609,6 +611,8 @@ class SeamlessWindowServer(WindowServer):
         self.refresh_window_area(window, 0, 0, w, h)
 
     def _process_window_unmap(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         wid = packet.get_wid()
         window = self.get_window(wid)
         if not window:
@@ -645,6 +649,8 @@ class SeamlessWindowServer(WindowServer):
         return geom
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
+        if self.is_readonly(proto):
+            return
         window = self.get_window(wid)
         if not window:
             geomlog("cannot configure window %#x: not found, already removed?", wid)
@@ -667,7 +673,7 @@ class SeamlessWindowServer(WindowServer):
             geomlog("window %i at %s for %s", wid, geometry, proto)
             self._window_mapped_at(proto, wid, window, geometry)
 
-        if "pointer" in config and is_ui_driver and features.pointer and not self.server.readonly:
+        if "pointer" in config and is_ui_driver and features.pointer and not self.is_readonly(proto):
             pointer_data = typedict(config.dictget("pointer"))
             pointerlog("configure pointer data: %s", pointer_data)
             pwid = pointer_data.intget("wid", 0)
@@ -682,7 +688,7 @@ class SeamlessWindowServer(WindowServer):
                     pointer._update_modifiers(proto, pwid, modifiers)
 
         if window.is_tray():
-            if geometry and is_ui_driver and not self.server.readonly:
+            if geometry and is_ui_driver and not self.is_readonly(proto):
                 traylog(f"systray {window} configured to: %s", geometry)
                 with xlog:
                     window.move_resize(*geometry)
@@ -693,7 +699,7 @@ class SeamlessWindowServer(WindowServer):
             state = config.dictget("state")
             self._set_window_state(proto, wid, window, state)
 
-        if geometry and not window.is_OR() and not self.server.readonly:
+        if geometry and not window.is_OR() and not self.is_readonly(proto):
             damage = not window.get_property("shown")
 
             x, y, w, h = geometry

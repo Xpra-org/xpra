@@ -17,6 +17,7 @@ from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.server.source.stub import PointerSource
 from xpra.server.window.compress import free_image_wrapper  # pylint: disable=import-outside-toplevel
 from xpra.util.objects import AtomicInteger
+from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.thread import start_thread
 from xpra.log import Logger
@@ -61,6 +62,7 @@ class RFBSource(PointerSource):
     __slots__ = (
         "protocol", "close_event",
         "counter", "share", "uuid", "lock", "keyboard_config",
+        "connection_readonly", "control_readonly", "client_readonly",
         "encodings", "quality", "speed", "pixel_format",
         "get_cursor_data_cb", "last_cursor_sent",
         "zlib_compressor",
@@ -76,6 +78,11 @@ class RFBSource(PointerSource):
         self.share = share
         self.uuid = "RFB%5i" % counter.increase()
         self.lock = False
+        conn = getattr(protocol, "_conn", None)
+        options = getattr(conn, "options", None) or {}
+        self.connection_readonly = bool(str_to_bool(options.get("readonly", False)))
+        self.control_readonly = False
+        self.client_readonly = False
         self.keyboard_config = None
         self.encodings = [RFBEncoding.RAW]
         self.pixel_format = (32, 24, 0, 1, 255, 255, 255, 16, 8, 0)
@@ -100,10 +107,24 @@ class RFBSource(PointerSource):
             "protocol": "rfb",
             "uuid": self.uuid,
             "share": self.share,
+            "readonly": self.effective_readonly(),
             "quality": self.quality,
             "speed": self.speed,
             "encode-queue": self.encode_queue.qsize(),
         }
+
+    def effective_readonly(self) -> bool:
+        return self.connection_readonly or self.control_readonly or self.client_readonly
+
+    def server_enforced_readonly(self) -> bool:
+        return self.connection_readonly or self.control_readonly
+
+    def set_control_readonly(self, readonly: bool) -> None:
+        self.control_readonly = bool(readonly)
+
+    def send_setting_change(self, *_args) -> None:
+        # RFB clients do not understand Xpra setting-change packets.
+        return None
 
     def set_encodings(self, encodings: Sequence) -> None:
         known_encodings = []

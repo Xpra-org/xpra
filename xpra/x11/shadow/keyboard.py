@@ -21,7 +21,7 @@ class X11ShadowKeyboardManager(ShadowKeyboardMixin, X11KeyboardManager):
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
 
     def set_keymap(self, server_source, force=False) -> None:
-        if self.server.readonly:
+        if server_source and getattr(server_source, "effective_readonly", lambda: self.server.readonly)():
             return
         if self.modify_keymap:
             X11KeyboardManager.set_keymap(self, server_source, force)

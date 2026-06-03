@@ -16,6 +16,8 @@ from xpra.log import Logger
 
 log = Logger("command")
 
+READONLY_CONTROL_COMMANDS = frozenset(("hello", "help"))
+
 
 class ControlHandler(StubSubsystem):
     PREFIX = "control"
@@ -55,6 +57,11 @@ class ControlHandler(StubSubsystem):
         self.commands[name] = control
 
     def process_control_command(self, proto, *args) -> tuple[ControlCode | int, str]:
+        if args:
+            name = str(args[0])
+            ss = self.get_server_source(proto)
+            if ss and getattr(ss, "effective_readonly", lambda: False)() and name not in READONLY_CONTROL_COMMANDS:
+                return ControlCode.FAILED, f"control command {name!r} denied by readonly mode"
         from xpra.net.control.common import process_control_command
         return process_control_command(proto, self.commands, *args)
 

@@ -322,7 +322,7 @@ class X11KeyboardManager(KeyboardManager):
             log.estr(e)
 
     def set_keymap(self, server_source, force=False) -> None:
-        if self.server.readonly:
+        if server_source and getattr(server_source, "effective_readonly", lambda: self.server.readonly)():
             return
 
         def reenable_keymap_changes(*args) -> bool:

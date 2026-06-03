@@ -168,7 +168,19 @@ class ClientSessionServer(StubSubsystem):
 
     def setting_changed(self, setting: str, value: Any) -> None:
         for ss in tuple(self.sources.values()):
+            if setting == "readonly" and hasattr(ss, "server_enforced_readonly"):
+                value = ss.server_enforced_readonly()
             ss.send_setting_change(setting, value)
+
+    def _process_readonly_toggled(self, proto, packet) -> None:
+        ss = self.get_server_source(proto)
+        if not ss or not hasattr(ss, "set_client_readonly"):
+            return
+        ss.set_client_readonly(packet.get_bool(1))
+        log("client %s toggled readonly=%s", ss, ss.client_readonly)
+
+    def init_packet_handlers(self) -> None:
+        self.add_packets("readonly-toggled")
 
     def disconnect_all(self) -> None:
         protocols = self.server.get_all_protocols()

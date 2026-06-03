@@ -255,7 +255,7 @@ class PointerManager(StubSubsystem):
 
     def _process_pointer_button(self, proto, packet: Packet) -> None:
         log("process_pointer_button(%s, %s)", proto, packet)
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
@@ -280,7 +280,7 @@ class PointerManager(StubSubsystem):
 
     def _process_button_action(self, proto, packet: Packet) -> None:
         log("process_button_action(%s, %s)", proto, packet)
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
@@ -355,7 +355,7 @@ class PointerManager(StubSubsystem):
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
         log("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return False
         pos = self.get_pointer_device(device_id).get_position()
         if (pointer and pos != pointer[:2]) or self.input_devices == "xi":
@@ -363,7 +363,7 @@ class PointerManager(StubSubsystem):
         return True
 
     def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
-        if self.server.readonly:
+        if self.is_readonly(proto):
             return
         if ss := self.get_server_source(proto):
             if self.server.ui_driver and self.server.ui_driver != ss.uuid:
@@ -509,8 +509,8 @@ class PointerManager(StubSubsystem):
     def _process_pointer_motion(self, proto, packet: Packet) -> None:
         # v5 packet format
         log("_process_pointer_motion(%s, %s) readonly=%s, ui_driver=%s",
-            proto, packet, self.server.readonly, self.server.ui_driver)
-        if self.server.readonly:
+            proto, packet, self.is_readonly(proto), self.server.ui_driver)
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
@@ -541,8 +541,8 @@ class PointerManager(StubSubsystem):
 
     def _process_pointer_position(self, proto, packet: Packet) -> None:
         log("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
-            proto, packet, self.server.readonly, self.server.ui_driver)
-        if self.server.readonly:
+            proto, packet, self.is_readonly(proto), self.server.ui_driver)
+        if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
@@ -567,6 +567,8 @@ class PointerManager(StubSubsystem):
 
     def _process_pointer_wheel(self, proto, packet: Packet) -> None:
         assert self.pointer_device.has_precise_wheel()
+        if self.is_readonly(proto):
+            return
         ss = self.get_server_source(proto)
         if not ss:
             return

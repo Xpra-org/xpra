@@ -330,7 +330,7 @@ class WindowsConnection(StubClientConnection):
             metalog("make_metadata: client does not support %r", propname)
             return {}
         metadata = make_window_metadata(window, propname, skip_defaults=skip_defaults)
-        if self.readonly:
+        if getattr(self, "effective_readonly", lambda: self.readonly)():
             metalog("overriding size-constraints for readonly mode")
             size = window.get_dimensions()
             metadata["size-constraints"] = force_size_constraint(*size)

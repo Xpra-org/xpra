@@ -21,8 +21,15 @@ def get_enabled_mixins() -> Sequence[type]:
     from xpra.server.source.clientid import ClientIDConnection
     from xpra.server.source.clientinfo import ClientInfoConnection
     from xpra.server.source.events import EventConnection
+    from xpra.server.source.readonly import ReadonlyConnection
     from xpra.server.source.sharing import SharingConnection
-    mixins: list[type] = [ClientIDConnection, ClientInfoConnection, EventConnection, SharingConnection]
+    mixins: list[type] = [
+        ReadonlyConnection,
+        ClientIDConnection,
+        ClientInfoConnection,
+        EventConnection,
+        SharingConnection,
+    ]
     if features.ssh:
         from xpra.server.source.ssh_agent import SSHAgentConnection
         mixins.append(SSHAgentConnection)

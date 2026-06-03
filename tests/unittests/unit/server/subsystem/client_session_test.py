@@ -7,6 +7,7 @@
 import unittest
 from unittest.mock import patch
 
+from xpra.net.common import Packet
 from xpra.server.subsystem.client_session import ClientSessionServer
 from xpra.util.objects import typedict
 
@@ -16,9 +17,17 @@ class FakeSource:
     def __init__(self, uuid: str):
         self.uuid = uuid
         self.settings = []
+        self.client_readonly = False
+        self.enforced_readonly = False
 
     def send_setting_change(self, setting: str, value) -> None:
         self.settings.append((setting, value))
+
+    def server_enforced_readonly(self) -> bool:
+        return self.enforced_readonly
+
+    def set_client_readonly(self, readonly: bool) -> None:
+        self.client_readonly = readonly
 
 
 class FakeConnection(FakeSource):
@@ -117,9 +126,15 @@ class ClientSessionTest(unittest.TestCase):
         self.assertEqual(self.session.ui_driver, source1.uuid)
         self.assertEqual(self.server.emitted, [("new-ui-driver", (source1,))])
 
+        source1.enforced_readonly = True
+        source2.enforced_readonly = False
         self.session.setting_changed("readonly", True)
         self.assertEqual(source1.settings, [("readonly", True)])
-        self.assertEqual(source2.settings, [("readonly", True)])
+        self.assertEqual(source2.settings, [("readonly", False)])
+
+        self.session._process_readonly_toggled(proto1, Packet("readonly-toggled", True))
+        self.assertTrue(source1.client_readonly)
+        self.assertFalse(source2.client_readonly)
 
         self.assertIs(self.session.cleanup_client_protocol(proto1), source1)
         self.assertNotIn(proto1, self.session.sources)

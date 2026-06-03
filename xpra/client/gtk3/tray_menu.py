@@ -296,6 +296,7 @@ class GTKTrayMenu(GTKMenuHelper):
         def readonly_toggled(*args) -> None:
             v = readonly.get_active()
             self.client.readonly = v
+            self.client.send("readonly-toggled", v)
             log("readonly_toggled(%s) readonly=%s", args, self.client.readonly)
         readonly = checkitem("Read-only", readonly_toggled)
         set_sensitive(readonly, False)

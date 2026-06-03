@@ -200,7 +200,9 @@ class RFBServer(StubSubsystem):
                 start_refresh(wid)  # pylint: disable=not-callable
 
     def _process_rfb_PointerEvent(self, _proto, packet):
-        if not features.pointer or self.server.readonly:
+        source = self.get_server_source(_proto)
+        readonly = self.server.readonly or bool(source and source.effective_readonly())
+        if not features.pointer or readonly:
             return
         buttons, x, y = packet[1:4]
         wid = self._get_rfb_desktop_wid()
@@ -225,9 +227,10 @@ class RFBServer(StubSubsystem):
         GLib.idle_add(process_pointer_event)
 
     def _process_rfb_KeyEvent(self, proto, packet):
-        if not features.keyboard or self.server.readonly:
-            return
         source = self.get_server_source(proto)
+        readonly = self.server.readonly or bool(source and source.effective_readonly())
+        if not features.keyboard or readonly:
+            return
         if not source:
             return
         pressed, p1, p2, key = packet[1:5]

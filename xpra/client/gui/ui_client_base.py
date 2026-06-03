@@ -226,6 +226,7 @@ class UIXpraClient(ClientBaseClass):
             "server-features": True,
             "versions": True,
             # generic server flags:
+            "readonly": self.readonly,
             "share": self.client_supports_sharing,
             "lock": self.client_lock,
         }
@@ -319,12 +320,15 @@ class UIXpraClient(ClientBaseClass):
                 "bell", "randr", "cursors", "notifications", "clipboard",
                 "clipboard-direction", "session_name",
                 "sharing", "sharing-toggle", "lock", "lock-toggle",
+                "readonly",
                 "start-new-commands", "client-shutdown", "webcam",
                 "bandwidth-limit", "clipboard-limits",
                 "menu", "monitors",
                 "ibus-layouts",
         ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
+            if setting == "readonly" and value:
+                self.readonly = True
         else:
             log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(value))
             return

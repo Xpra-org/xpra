@@ -258,8 +258,10 @@ class ServerCore(GLibServer):
 
     def add_core_control_commands(self) -> None:
         from xpra.net.control.common import parse_boolean_value
-        self.args_control("readonly", "set readonly state for client(s)", min_args=1, max_args=1,
+        self.args_control("readonly", "set global readonly state", min_args=1, max_args=1,
                           validation=[parse_boolean_value]),
+        self.args_control("client-readonly", "set readonly state for client(s)", min_args=2, max_args=2,
+                          validation=[str, parse_boolean_value])
 
     def args_control(self, name: str, descr: str, **kwargs) -> None:
         control = self.subsystems.get("control")
@@ -1696,10 +1698,13 @@ class ServerCore(GLibServer):
             merge_dicts(info, mixin_info)
         return info
 
-    def get_server_features(self, _source=None) -> dict[str, Any]:
+    def get_server_features(self, source=None) -> dict[str, Any]:
+        readonly = self.readonly
+        if source and hasattr(source, "server_enforced_readonly"):
+            readonly = source.server_enforced_readonly()
         caps: dict[str, Any] = {
             "readonly-server": True,
-            "readonly": self.readonly,
+            "readonly": readonly,
         }
         if FULL_INFO:
             from xpra.scripts.parsing import get_subcommands
@@ -1855,6 +1860,24 @@ class ServerCore(GLibServer):
     def control_command_readonly(self, onoff) -> str:
         log("control_command_readonly(%s)", onoff)
         self.readonly = onoff
+        self.setting_changed("readonly", onoff)
         msg = f"server readonly: {onoff}"
+        log.info(msg)
+        return msg
+
+    def control_command_client_readonly(self, client_uuids: str, onoff) -> str:
+        log("control_command_client_readonly(%s, %s)", client_uuids, onoff)
+        sources = self.get_sources_by_type()
+        if client_uuids != "*":
+            uuids = tuple(x.strip() for x in client_uuids.split(",") if x.strip())
+            sources = tuple(ss for ss in sources if getattr(ss, "uuid", "") in uuids)
+        count = 0
+        for ss in sources:
+            if not hasattr(ss, "set_control_readonly"):
+                continue
+            ss.set_control_readonly(onoff)
+            ss.send_setting_change("readonly", ss.server_enforced_readonly())
+            count += 1
+        msg = f"set client readonly={onoff} for {count} client(s)"
         log.info(msg)
         return msg
