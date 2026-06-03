@@ -419,6 +419,7 @@ cdef extern from "wlr/render/wlr_texture.h":
         const wlr_box src_box
 
     bint wlr_texture_read_pixels(wlr_texture *texture, wlr_texture_read_pixels_options *options) nogil
+    uint32_t wlr_texture_preferred_read_format(wlr_texture *texture) nogil
     void wlr_texture_destroy(wlr_texture *texture)
 
     wlr_texture *wlr_texture_from_buffer(wlr_renderer *renderer, wlr_buffer *buffer)
