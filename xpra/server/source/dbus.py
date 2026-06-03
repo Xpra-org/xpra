@@ -26,9 +26,11 @@ class DBUS_Connection(StubClientConnection):
         super().__init__()
         self.dbus_control = False
         self.dbus_server = None
+        self.dbus_get_window = None
 
     def init_from(self, _protocol, server) -> None:
         self.dbus_control = server.dbus_control
+        self.dbus_get_window = getattr(server, "get_window", None)
 
     def init_state(self) -> None:
         if self.dbus_control:

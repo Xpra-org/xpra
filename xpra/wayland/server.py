@@ -386,13 +386,14 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             focuslog("activate-request: no surface for %#x", surface_ptr)
             return
         wid = getattr(wsurface, "wid", 0)
-        if not wid or not self.get_window(wid):
+        window = self.get_window(wid)
+        if not wid or not window:
             focuslog("activate-request: no window for wid=%s", wid)
             return
         self._focus(None, wid, None)
         window_sources = get_sources_by_type(self, WindowsConnection)
         for ss in window_sources:
-            ss.raise_window(wid)
+            ss.raise_window(wid, window)
 
     def _surface_image(self, wid: int, image: ImageWrapper) -> None:
         window = self.get_window(wid)
