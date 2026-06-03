@@ -118,7 +118,13 @@ class DBUS_Source(dbus.service.Object):
     def RaiseWindow(self, wid):
         wid = ni(wid)
         self.log(".RaiseWindow(%s)", wid)
-        self.source.raise_window(wid)
+        window_subsystem = getattr(self.source, "dbus_window", None)
+        if not window_subsystem:
+            raise DBusException("window forwarding is not available")
+        window = window_subsystem.get_window(wid)
+        if not window:
+            raise DBusException("window not found")
+        self.source.raise_window(wid, window)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def ResetWindowFilters(self):
