@@ -2155,6 +2155,11 @@ class WindowSource(WindowIconSource):
         if image is None:
             log("process_damage_region: no pixel data for window %s, wid=%#x", self.window, self.wid)
             return
+        if x == 0 and y == 0 and (image.get_width(), image.get_height()) != (w, h):
+            # Some backends can return native-size pixels for a logical
+            # full-window damage region. Preserve the requested destination
+            # size so the draw packet can carry `scaled_size` metadata.
+            options["scaled-damage-size"] = (w, h)
 
         def process_damage_image(img: ImageWrapper) -> None:
             self.process_damage_image(damage_time, rgb_request_time, img, coding, sequence, options, flush)
@@ -2860,6 +2865,7 @@ class WindowSource(WindowIconSource):
         client_options["flush"] = flush
         if self.send_timetamps:
             client_options["ts"] = image.get_timestamp()
+        outw, outh = self.scaled_damage_packet_size(outw, outh, client_options, options)
         end = monotonic()
         compresslog(COMPRESS_FMT,
                     (end-start) * 1000.0, outw, outh, x, y, self.wid, coding,
@@ -2873,6 +2879,16 @@ class WindowSource(WindowIconSource):
         # Subclasses may shift to retarget into a parent window.
         return self.wid, x, y
 
+    @staticmethod
+    def scaled_damage_packet_size(outw: int, outh: int, client_options, options) -> tuple[int, int]:
+        if target_size := options.get("scaled-damage-size"):
+            target_w, target_h = target_size
+            if target_w > 0 and target_h > 0 and (outw, outh) != (target_w, target_h):
+                if "scaled_size" not in client_options:
+                    client_options["scaled_size"] = (outw, outh)
+                outw, outh = target_w, target_h
+        return outw, outh
+
     def make_draw_packet(self, x: int, y: int, outw: int, outh: int,
                          coding: str, data, outstride: int, client_options, options) -> Packet:
         if not isinstance(coding, str):
@@ -2883,6 +2899,7 @@ class WindowSource(WindowIconSource):
         ws = options.get("window-size")
         if ws:
             client_options["window-size"] = ws
+        outw, outh = self.scaled_damage_packet_size(outw, outh, client_options, options)
         pwid, px, py = self._draw_packet_target(x, y)
         packet = Packet(WINDOW_DRAW, pwid, px, py, outw, outh, coding, data,
                         self._damage_packet_sequence, outstride, client_options)
