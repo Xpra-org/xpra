@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.client.base.client import EXTRA_TIMEOUT
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.util.env import SilenceWarningsContext
 from xpra.util.glib_scheduler import GLibScheduler
@@ -22,7 +21,7 @@ class GObjectClientAdapter(GObject.GObject, GLibScheduler):
         Utility mixin for GObject clients
         adds the main loop.
     """
-    COMMAND_TIMEOUT = EXTRA_TIMEOUT
+    COMMAND_TIMEOUT = 0
 
     def __init__(self):
         self.exit_code = None

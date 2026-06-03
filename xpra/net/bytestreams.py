@@ -36,6 +36,8 @@ if hasenv("XPRA_SOCKET_NODELAY"):
 SOCKET_KEEPALIVE: bool = envbool("XPRA_SOCKET_KEEPALIVE", True)
 VSOCK_TIMEOUT: int = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT: int = envint("XPRA_SOCKET_TIMEOUT", 20)
+CONNECTION_DELAY: int = envint("XPRA_CONNECTION_DELAY", 10)
+SSH_CONNECTION_DELAY: int = envint("XPRA_SSH_CONNECTION_DELAY", 30)
 # this is more proper but would break the proxy server:
 SOCKET_SHUTDOWN: bool = envbool("XPRA_SOCKET_SHUTDOWN", False)
 LOG_TIMEOUTS: int = envint("XPRA_LOG_TIMEOUTS", 1)
@@ -122,6 +124,7 @@ class Connection:
         self.filename = None  # only used for unix domain sockets!
         self.active = True
         self.timeout = 0
+        self.connection_delay = SSH_CONNECTION_DELAY if socktype == "ssh" else CONNECTION_DELAY
         # transports can set this when a connection-fatal error is detected
         # so the connection's owner can report the right exit code:
         self.error: ExitCode = ExitCode.OK

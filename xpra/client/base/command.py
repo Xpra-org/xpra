@@ -20,7 +20,7 @@ from xpra.util.io import stderr_print, load_binary_file
 from xpra.net.common import Packet, PacketElement, disconnect_is_an_error, BACKWARDS_COMPATIBLE
 from xpra.util.stats import std_unit
 from xpra.client.base.gobject import GObjectClientAdapter
-from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
+from xpra.client.base.client import XpraClientBase
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger
 
@@ -61,7 +61,7 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         protocol = super().make_protocol(conn)
         protocol._log_stats = False
         if conn.timeout > 0:
-            self.command_timeout = self.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
+            self.command_timeout = self.timeout_add((conn.timeout + conn.connection_delay + self.COMMAND_TIMEOUT) * 1000, self.timeout)
         return protocol
 
     def run(self) -> ExitValue:
@@ -804,7 +804,7 @@ class RequestStartClient(HelloRequestClient):
     """ request the system proxy server to start a new session for us """
     # wait longer for this command to return:
     from xpra.scripts.sessions import WAIT_SERVER_TIMEOUT
-    COMMAND_TIMEOUT = EXTRA_TIMEOUT + WAIT_SERVER_TIMEOUT
+    COMMAND_TIMEOUT = WAIT_SERVER_TIMEOUT
 
     def dots(self) -> bool:
         errwrite(".")

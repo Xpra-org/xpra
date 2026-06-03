@@ -208,7 +208,7 @@ class RemoteServerAdapter(baseclass):
         protocol.large_packets += ["encodings", "context-compress", "context-data"]
         # self.add_packet_handler("setting-change", noop)
         # if conn.timeout > 0:
-        #    self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
+        #    self.timeout_add((conn.timeout + conn.connection_delay) * 1000, self.verify_connected)
         return protocol
 
     def is_connected(self) -> bool:
