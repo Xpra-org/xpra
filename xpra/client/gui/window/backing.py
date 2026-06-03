@@ -913,7 +913,8 @@ class WindowBackingBase:
         rgb_format = options.strget("rgb_format", "RGB")
         # Note: BGR(A) is only handled by gl.backing
         x, y = self.gravity_adjust(x, y, options)
-        self.ui_paint_rgb("mmap", rgb_format, data, x, y, width, height, width, height, rowstride,
+        enc_width, enc_height = options.intpair("scaled_size", (width, height))
+        self.ui_paint_rgb("mmap", rgb_format, data, x, y, enc_width, enc_height, width, height, rowstride,
                           options, callbacks)
 
     def paint_scroll(self, img_data, options: typedict, callbacks: PaintCallbacks) -> None:
