@@ -10,6 +10,7 @@ from math import ceil, floor
 
 from xpra.log import Logger
 from xpra.util.str_fn import Ellipsizer
+from xpra.util.env import first_time
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.dmabuf.image import DMABufImageWrapper
 
@@ -253,9 +254,8 @@ cdef class WaylandSurface(ListenerObject):
         elif read_format == DRM_FORMAT_XRGB8888:
             pixel_format = "BGRX"
         else:
-            if debug:
-                log("%s.capture_pixels: unsupported preferred read format %#x, using ABGR8888",
-                    self, read_format)
+            if first_time("read-format-%#x" % read_format):
+                log.warn("Warning: unsupported preferred pixel read format %#x, using ABGR8888", read_format)
             read_format = DRM_FORMAT_ABGR8888
             pixel_format = "RGBA"
 
