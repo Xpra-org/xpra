@@ -102,19 +102,6 @@ def make_window() -> Gtk.Window:
     grid.set_row_homogeneous(True)
     grid.set_column_homogeneous(True)
 
-    btn = Gtk.Button(label="initiate move")
-    grid.attach(expand(btn), 2, 2, 1, 1)
-
-    def initiate_move(*_args) -> None:
-        cancel()
-        pos = get_pointer()
-        source_indication = 1  # normal
-        button = 1
-        initiate(pos.x, pos.y, MoveResize.MOVE, button, source_indication)
-        GLib.timeout_add(5 * 1000, cancel)
-
-    btn.connect('button-press-event', initiate_move)
-
     def btn_callback(_btn, _event, direction: MoveResize) -> None:
         cancel()
         pos = get_pointer()
