@@ -4,12 +4,15 @@
 * 🔧 Platforms, build and packaging:
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
+  * [setup scripts for pycuda](https://github.com/Xpra-org/xpra/issues/2400)
 * 🖧 Network:
   * [proxy registration](https://github.com/Xpra-org/xpra/issues/2125)
   * [automatic session proxying](https://github.com/Xpra-org/xpra/issues/4902)
+  * [simplified mDNS for multiple addresses](https://github.com/Xpra-org/xpra/issues/3045)
   * [zero copy network reception](https://github.com/Xpra-org/xpra/issues/4873)
   * [use `TCP_INFO` to drive batch delay](https://github.com/Xpra-org/xpra/issues/2421)
   * [`asyncio` loop exit fix](https://github.com/Xpra-org/xpra/pull/4891)
+  * [longer session connection timeout for ssh sessions](https://github.com/Xpra-org/xpra/issues/4904)
 * 🌈 Encodings:
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
   * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)
@@ -20,6 +23,7 @@
   * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256)
   * [basic bash shell completion](https://github.com/Xpra-org/xpra/issues/2375)
   * [Wayland scaled subsurfaces](https://github.com/Xpra-org/xpra/issues/4878)
+  * [per-client readonly sessions](https://github.com/Xpra-org/xpra/issues/3468)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
