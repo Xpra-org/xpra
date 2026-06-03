@@ -370,7 +370,7 @@ cdef dict get_output_info(Display *display, XRRScreenResources *rsc, RROutput ou
         if so and so!="unknown":
             info["subpixel-order"] = so
         if oi.nclone:
-            info["clones"] = tuple(int(oi.clones[i] for i in range(oi.nclone)))
+            info["clones"] = tuple(int(oi.clones[i]) for i in range(oi.nclone))
         info["properties"] = get_output_properties(display, output)
     if oi.name and oi.nameLen:
         info["name"] = s(oi.name[:oi.nameLen])
