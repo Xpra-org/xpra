@@ -41,12 +41,11 @@ class ColorPlainWindow(Gtk.Window):
         self.show_all()
         super().present()
 
-    def area_draw(self, _area, cr) -> None:
+    def area_draw(self, area, cr) -> None:
         cr.set_font_size(32)
         # Clear everything:
         cr.set_operator(OPERATOR_CLEAR)
-        alloc = self.get_allocated_size()[0]
-        w, h = alloc.width, alloc.height
+        w, h = area.get_allocated_width(), area.get_allocated_height()
         cr.rectangle(0, 0, w, h)
         cr.fill()
 
