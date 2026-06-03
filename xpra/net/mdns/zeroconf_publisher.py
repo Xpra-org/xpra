@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
+from dataclasses import dataclass, field
 from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version
 
 from xpra.log import Logger
@@ -50,14 +51,30 @@ def txt_rec(text_dict) -> dict:
     return new_dict
 
 
-class ZeroconfPublishers:
+@dataclass
+class Service:
     """
-    Expose services via python zeroconf
+    A single mDNS record bound to one address,
+    with the `Zeroconf` instance created when it is started.
+    """
+    host: str
+    kwargs: dict
+    service: ServiceInfo
+    zeroconf: Zeroconf | None = field(default=None)
+    registered: bool = field(default=False)
+
+
+class ZeroconfMulticast:
+    """
+    Expose services via python zeroconf.
+
+    A single ``listen_on`` entry using a wildcard address (``0.0.0.0`` / ``::``)
+    is expanded into one `Service` record per interface address.
     """
 
     def __init__(self, listen_on, service_name: str, service_type: str = XPRA_TCP_MDNS_TYPE, text_dict=None):
-        log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
-        self.services: list[ZeroconfPublisher] = []
+        log("ZeroconfMulticast%s", (listen_on, service_name, service_type, text_dict))
+        self.services: list[Service] = []
         self.ports: dict[str, set[int]] = {}
 
         def add_address(host: str, port: int, af: socket.AddressFamily) -> None:
@@ -125,52 +142,15 @@ class ZeroconfPublishers:
             log.warn(f"Warning: cannot publish {service_name} records on {host!r}:")
             log.warn(" %s", e)
             return
-        sn = service_name
         ports = set(self.ports.get(service_name, ()))
         log("add_address(%s, %s, %s, %s) ports=%s", service_name, host, port, af, ports)
         ports.add(port)
+        sn = service_name
         if len(ports) > 1:
             sn += f"-{len(ports)}"
         try:
-            zp = ZeroconfPublisher(address, host, port, sn, service_type, text_dict)
-        except Exception as e:
-            log.warn(f"Warning: zeroconf API error for {service_name} on {host!r}:{port}:")
-            log.warn(" %s", e)
-        else:
-            self.services.append(zp)
-            self.ports[service_name] = ports
-
-    def start(self) -> None:
-        for s in self.services:
-            s.start()
-
-    def stop(self) -> None:
-        for s in self.services:
-            s.stop()
-
-    def update_txt(self, txt) -> None:
-        for s in self.services:
-            try:
-                s.update_txt(txt)
-            except TimeoutError:
-                log(f"update_txt({txt})", exc_info=True)
-
-
-class ZeroconfPublisher:
-    def __init__(self, address, host: str, port: int,
-                 service_name: str, service_type=XPRA_TCP_MDNS_TYPE,
-                 text_dict=None):
-        log("ZeroconfPublisher%s", (address, host, port, service_name, service_type, text_dict))
-        self.address = address
-        self.host = host
-        self.port = port
-        self.zeroconf = None
-        self.service = None
-        self.kwargs = {}
-        self.registered = False
-        try:
-            # ie: service_name = localhost.localdomain :2 (ssl)
-            parts = service_name.split(" ", 1)
+            # ie: sn = localhost.localdomain :2 (ssl)
+            parts = sn.split(" ", 1)
             regname = parts[0].split(".")[0]
             if len(parts) == 2:
                 regname += parts[1]
@@ -181,60 +161,67 @@ class ZeroconfPublisher:
             # ie: regname = localhost-2-ssl
             st = service_type + "local."
             regname += "." + st
-            td = txt_rec(text_dict or {})
-            self.kwargs = {
+            kwargs = {
                 "type_": st,  # "_xpra._tcp.local."
                 "name": regname,
                 "server": regname,
                 "port": port,
-                "properties": td,
-                "addresses": [self.address],
+                "properties": txt_rec(text_dict or {}),
+                "addresses": [address],
             }
-            service = ServiceInfo(**self.kwargs)
-            log("ServiceInfo(%s)=%s", self.kwargs, service)
-            self.service = service
+            service = ServiceInfo(**kwargs)
+            log("ServiceInfo(%s)=%s", kwargs, service)
         except Exception as e:
             log("zeroconf ServiceInfo", exc_info=True)
-            log.error(" for port %i", port)
-            log.estr(e)
+            log.warn(f"Warning: zeroconf API error for {service_name} on {host!r}:{port}:")
+            log.warn(" %s", e)
+            return
+        self.services.append(Service(host, kwargs, service))
+        self.ports[service_name] = ports
 
     def start(self) -> None:
-        try:
-            self.zeroconf = Zeroconf(interfaces=[self.host])
-        except OSError:
-            log("start()", exc_info=True)
-            log.error("Error: failed to create Zeroconf instance for address '%s'", self.host)
-            return
-        try:
-            self.zeroconf.register_service(self.service)
-        except Exception:
-            log("start failed on %s", self.service, exc_info=True)
-        else:
-            self.registered = True
+        for s in self.services:
+            try:
+                s.zeroconf = Zeroconf(interfaces=[s.host])
+            except OSError:
+                log("start()", exc_info=True)
+                log.error("Error: failed to create Zeroconf instance for address '%s'", s.host)
+                continue
+            try:
+                s.zeroconf.register_service(s.service)
+            except Exception:
+                log("start failed on %s", s.service, exc_info=True)
+            else:
+                s.registered = True
 
     def stop(self) -> None:
-        log("ZeroConfPublishers.stop(): %s", self.service)
-        if self.registered:
-            self.zeroconf.unregister_service(self.service)
-        self.zeroconf = None
+        for s in self.services:
+            log("ZeroconfMulticast.stop(): %s", s.service)
+            if s.registered:
+                s.zeroconf.unregister_service(s.service)
+            s.zeroconf = None
+            s.registered = False
 
     def update_txt(self, txt) -> None:
         props = txt_rec(txt)
-        zc = self.zeroconf
-        if not zc:
-            return
-        self.kwargs["properties"] = props
-        si = ServiceInfo(**self.kwargs)
-        try:
-            zc.update_service(si)
-            self.service = si
-        except KeyError as e:
-            # probably a race condition with cleanup
-            log("update_txt(%s)", txt, exc_info=True)
-            log.warn("Warning: failed to update service")
-            log.warn(" %s", e)
-        except Exception:
-            log.error("Error: failed to update service", exc_info=True)
+        for s in self.services:
+            zc = s.zeroconf
+            if not zc:
+                continue
+            s.kwargs["properties"] = props
+            si = ServiceInfo(**s.kwargs)
+            try:
+                zc.update_service(si)
+                s.service = si
+            except TimeoutError:
+                log(f"update_txt({txt})", exc_info=True)
+            except KeyError as e:
+                # probably a race condition with cleanup
+                log("update_txt(%s)", txt, exc_info=True)
+                log.warn("Warning: failed to update service")
+                log.warn(" %s", e)
+            except Exception:
+                log.error("Error: failed to update service", exc_info=True)
 
 
 def main() -> None:
@@ -249,7 +236,7 @@ def main() -> None:
     publishers = []
 
     def add(service_type):
-        publisher = ZeroconfPublishers(host_ports, service_name, service_type, {"somename": "somevalue"})
+        publisher = ZeroconfMulticast(host_ports, service_name, service_type, {"somename": "somevalue"})
         GLib.idle_add(publisher.start)
         publishers.append(publisher)
 

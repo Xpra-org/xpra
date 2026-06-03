@@ -12,7 +12,7 @@ from unittest.mock import patch
 from xpra.net.mdns.util import mdns_publish
 
 
-class FakeZeroconfPublishers:
+class FakeZeroconfMulticast:
     instances = []
 
     def __init__(self, listen_on, service_name, service_type, text_dict):
@@ -20,24 +20,24 @@ class FakeZeroconfPublishers:
         self.service_name = service_name
         self.service_type = service_type
         self.text_dict = text_dict
-        FakeZeroconfPublishers.instances.append(self)
+        FakeZeroconfMulticast.instances.append(self)
 
 
 class TestMdnsUtil(unittest.TestCase):
 
     def setUp(self):
-        FakeZeroconfPublishers.instances = []
+        FakeZeroconfMulticast.instances = []
 
     def test_uuid_makes_service_name_unique(self):
         publisher_module = ModuleType("xpra.net.mdns.zeroconf_publisher")
         publisher_module.get_interface_index = lambda host: host
-        publisher_module.ZeroconfPublishers = FakeZeroconfPublishers
+        publisher_module.ZeroconfMulticast = FakeZeroconfMulticast
         with patch("xpra.net.mdns.util.socket.gethostname", return_value="host"), \
                 patch.dict(sys.modules, {"xpra.net.mdns.zeroconf_publisher": publisher_module}):
             mdns_publish("", (("192.0.2.1", 22),), {"mode": "ssh", "uuid": "abcdef123456"})
             mdns_publish("", (("192.0.2.1", 22),), {"mode": "ssh", "uuid": "123456789abc"})
 
-        names = [publisher.service_name for publisher in FakeZeroconfPublishers.instances]
+        names = [publisher.service_name for publisher in FakeZeroconfMulticast.instances]
         self.assertEqual(names, ["host abcdef123456 (ssh)", "host 123456789abc (ssh)"])
 
 

@@ -30,7 +30,7 @@ def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
         log(f"mdns support is not installed: {e}")
         return ()
     try:
-        from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers, get_interface_index
+        from xpra.net.mdns.zeroconf_publisher import ZeroconfMulticast, get_interface_index
     except ImportError:
         MDNS_WARNING = True
         log.warn("Warning: failed to load the mdns module")
@@ -68,5 +68,5 @@ def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
             sn += f" ({mode_str})"
         listen = ((host, port),)
         index += 1
-        aps.append(ZeroconfPublishers(listen, sn, service_type=service_type, text_dict=d))
+        aps.append(ZeroconfMulticast(listen, sn, service_type=service_type, text_dict=d))
     return aps
