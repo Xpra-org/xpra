@@ -36,7 +36,7 @@ from xpra.util.str_fn import (
     Ellipsizer, repr_ellipsized, print_nested_dict,
     bytestostr, hexstr,
 )
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger
 
@@ -47,7 +47,7 @@ log = Logger("client")
 netlog = Logger("network")
 sublog = Logger("subsystems")
 
-EXTRA_TIMEOUT = 10
+EXTRA_TIMEOUT = envint("XPRA_EXTRA_TIMEOUT", 20)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 
 sublog("Client base classes: %s", CLIENT_BASES)
