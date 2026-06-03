@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.common import noop
 from xpra.os_util import gi_import, WIN32, OSX
-from xpra.util.system import is_X11
+from xpra.util.system import is_Wayland, is_X11
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
@@ -58,7 +58,7 @@ class FocusWindow(GtkStubWindow):
     def do_init_focus(self) -> None:
         # hook up the X11 gdk event notifications,
         # so we can get focus-out when grabs are active:
-        if not (WIN32 or OSX) and is_X11():
+        if not (WIN32 or OSX) and is_X11() and not is_Wayland():
             try:
                 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
             except ImportError as e:
@@ -68,13 +68,16 @@ class FocusWindow(GtkStubWindow):
                     log.warn(" %s", e)
                     log.warn(" you may experience window focus issues")
             else:
-                log("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
-                xid = self.get_window().get_xid()
-                add_event_receiver(xid, self)
+                gdkwindow = self.get_window()
+                get_xid = getattr(gdkwindow, "get_xid", None)
+                if get_xid:
+                    log("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
+                    xid = get_xid()
+                    add_event_receiver(xid, self)
 
-                def remove_hook() -> None:
-                    remove_event_receiver(xid, self)
-                self.remove_event_receiver = remove_hook
+                    def remove_hook() -> None:
+                        remove_event_receiver(xid, self)
+                    self.remove_event_receiver = remove_hook
 
         # other platforms should be getting regular focus events instead:
 
