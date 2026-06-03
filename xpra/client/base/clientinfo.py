@@ -18,9 +18,6 @@ class InfoClient(StubClientMixin):
     Adds extra information about the client
     """
 
-    def __init__(self):
-        pass
-
     def get_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {}
         if FULL_INFO > 1:
