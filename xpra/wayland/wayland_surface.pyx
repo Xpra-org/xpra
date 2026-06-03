@@ -244,10 +244,14 @@ cdef class WaylandSurface(ListenerObject):
 
         cdef uint32_t read_format = wlr_texture_preferred_read_format(texture)
         cdef str pixel_format
-        if read_format == DRM_FORMAT_ABGR8888 or read_format == DRM_FORMAT_XBGR8888:
+        if read_format == DRM_FORMAT_ABGR8888:
             pixel_format = "RGBA"
-        elif read_format == DRM_FORMAT_ARGB8888 or read_format == DRM_FORMAT_XRGB8888:
+        elif read_format == DRM_FORMAT_XBGR8888:
+            pixel_format = "RGBX"
+        elif read_format == DRM_FORMAT_ARGB8888:
             pixel_format = "BGRA"
+        elif read_format == DRM_FORMAT_XRGB8888:
+            pixel_format = "BGRX"
         else:
             if debug:
                 log("%s.capture_pixels: unsupported preferred read format %#x, using ABGR8888",
