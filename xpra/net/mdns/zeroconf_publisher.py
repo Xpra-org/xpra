@@ -54,10 +54,11 @@ def txt_rec(text_dict) -> dict:
 @dataclass
 class Service:
     """
-    A single mDNS record bound to one address,
+    A single mDNS record, which may advertise more than one address
+    (ie: one per interface for a wildcard listen address),
     with the `Zeroconf` instance created when it is started.
     """
-    host: str
+    hosts: list[str]
     kwargs: dict
     service: ServiceInfo
     zeroconf: Zeroconf | None = field(default=None)
@@ -76,6 +77,8 @@ class ZeroconfMulticast:
         log("ZeroconfMulticast%s", (listen_on, service_name, service_type, text_dict))
         self.services: list[Service] = []
         self.ports: dict[str, set[int]] = {}
+        # group addresses that only differ by their interface into a single record:
+        self.services_by_name: dict[str, Service] = {}
 
         def add_address(host: str, port: int, af: socket.AddressFamily) -> None:
             self.add_address(host, port, af, service_name, service_type, text_dict)
@@ -145,30 +148,43 @@ class ZeroconfMulticast:
         ports = set(self.ports.get(service_name, ()))
         log("add_address(%s, %s, %s, %s) ports=%s", service_name, host, port, af, ports)
         ports.add(port)
+        self.ports[service_name] = ports
         sn = service_name
         if len(ports) > 1:
             sn += f"-{len(ports)}"
+        # ie: sn = localhost.localdomain :2 (ssl)
+        parts = sn.split(" ", 1)
+        regname = parts[0].split(".")[0]
+        if len(parts) == 2:
+            regname += parts[1]
+        regname = regname.replace(":", "-")
+        regname = regname.replace(" ", "-")
+        regname = regname.replace("(", "")
+        regname = regname.replace(")", "")
+        # ie: regname = localhost-2-ssl
+        st = service_type + "local."
+        regname += "." + st
+
+        # all the addresses for the same name are advertised by a single record:
+        existing = self.services_by_name.get(regname)
+        if existing:
+            if address not in existing.kwargs["addresses"]:
+                existing.kwargs["addresses"].append(address)
+            if host not in existing.hosts:
+                existing.hosts.append(host)
+            existing.service = ServiceInfo(**existing.kwargs)
+            log("updated %s: %s", regname, existing.service)
+            return
+
+        kwargs = {
+            "type_": st,  # "_xpra._tcp.local."
+            "name": regname,
+            "server": regname,
+            "port": port,
+            "properties": txt_rec(text_dict or {}),
+            "addresses": [address],
+        }
         try:
-            # ie: sn = localhost.localdomain :2 (ssl)
-            parts = sn.split(" ", 1)
-            regname = parts[0].split(".")[0]
-            if len(parts) == 2:
-                regname += parts[1]
-            regname = regname.replace(":", "-")
-            regname = regname.replace(" ", "-")
-            regname = regname.replace("(", "")
-            regname = regname.replace(")", "")
-            # ie: regname = localhost-2-ssl
-            st = service_type + "local."
-            regname += "." + st
-            kwargs = {
-                "type_": st,  # "_xpra._tcp.local."
-                "name": regname,
-                "server": regname,
-                "port": port,
-                "properties": txt_rec(text_dict or {}),
-                "addresses": [address],
-            }
             service = ServiceInfo(**kwargs)
             log("ServiceInfo(%s)=%s", kwargs, service)
         except Exception as e:
@@ -176,16 +192,17 @@ class ZeroconfMulticast:
             log.warn(f"Warning: zeroconf API error for {service_name} on {host!r}:{port}:")
             log.warn(" %s", e)
             return
-        self.services.append(Service(host, kwargs, service))
-        self.ports[service_name] = ports
+        s = Service([host], kwargs, service)
+        self.services.append(s)
+        self.services_by_name[regname] = s
 
     def start(self) -> None:
         for s in self.services:
             try:
-                s.zeroconf = Zeroconf(interfaces=[s.host])
+                s.zeroconf = Zeroconf(interfaces=s.hosts)
             except OSError:
                 log("start()", exc_info=True)
-                log.error("Error: failed to create Zeroconf instance for address '%s'", s.host)
+                log.error("Error: failed to create Zeroconf instance for addresses %s", s.hosts)
                 continue
             try:
                 s.zeroconf.register_service(s.service)
