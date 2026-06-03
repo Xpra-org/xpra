@@ -4,9 +4,6 @@ warn_unused_configs = True
 [mypy-gi.*]
 ignore_missing_imports = True
 
-[mypy-cv2.*]
-ignore_missing_imports = True
-
 [mypy-psutil.*]
 ignore_missing_imports = True
 

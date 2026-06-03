@@ -31,17 +31,24 @@ PIL_FORMATS = ("RGB", "RGBX", "RGBA", "BGRX")
 
 def is_available() -> bool:
     with OSEnvContext(LANG="C", LC_ALL="C"):
-        if POSIX and not OSX:
+        if WIN32:
+            try:
+                from xpra.platform.win32.webcam import get_directshow_devices
+                return bool(get_directshow_devices())
+            except ImportError as e:
+                log("is_available() no DirectShow: %s", e)
+        elif OSX:
+            try:
+                from xpra.platform.darwin.webcam import get_avfoundation_devices
+                return bool(get_avfoundation_devices())
+            except ImportError as e:
+                log("is_available() no AVFoundation: %s", e)
+        elif POSIX:
             try:
                 import libcamera  # noqa: F401
                 return True
             except ImportError as e:
                 log("is_available() no libcamera: %s", e)
-        try:
-            import cv2  # noqa: F401
-            return True
-        except ImportError as e:
-            log("is_available() no opencv: %s", e)
         return False
 
 
@@ -142,9 +149,8 @@ class WebcamForwarder(StubClientMixin):
             return
         with self.webcam_lock:
             if not is_available():
-                log("init webcam failure: neither cv2 nor libcamera found")
-                if WIN32 or OSX:
-                    log.info("opencv not found, webcam forwarding is not available")
+                log("init webcam failure: no webcam capture backend found")
+                log.info("no webcam capture backend available, webcam forwarding is not available")
                 self.webcam_forwarding = False
                 return
             if not self.webcam_send_timer:

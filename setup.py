@@ -2286,7 +2286,7 @@ if WIN32:
         add_data_files("lib/tlb", ["packaging/MSWindows/TaskbarLib.tlb"])
         if webcam_ENABLED:
             add_data_files("lib/tlb", ["packaging/MSWindows/DirectShow.tlb"])
-    # we now have a DirectShow backend, ensure cv2 is never included:
+    # we use a DirectShow backend, ensure cv2 is never bundled in:
     remove_packages("cv2")
 
     remove_packages(*external_excludes)

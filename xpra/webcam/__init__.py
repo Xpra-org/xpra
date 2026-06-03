@@ -6,8 +6,9 @@
 """
 Webcam capture abstraction.
 
-Provides a unified factory (open_camera) that selects between libcamera
-(preferred on Linux when available) and cv2 (OpenCV) backends, plus CSC helpers.
+Provides a unified factory (open_camera) that selects a platform capture
+backend (DirectShow on Windows, AVFoundation on macOS, libcamera on Linux),
+plus CSC helpers.
 
 Usage::
 
@@ -76,43 +77,16 @@ def _find_libcamera_id(device_str: str, lc_devices: dict[str, dict[str, Any]]) -
     return ""
 
 
-def _parse_device_no(device_str: str, non_virtual: dict[int, Any]) -> int:
-    """
-    Convert a device string such as "auto", "0", or "/dev/video2"
-    to an integer device number for cv2.VideoCapture.
-    """
-    if device_str in AUTO_OPTIONS:
-        if non_virtual:
-            return next(iter(non_virtual))
-        return 0
-    try:
-        return int(device_str)
-    except ValueError:
-        pass
-    # Try to extract the number from paths like "/dev/video2"
-    p = device_str.find("video")
-    if p >= 0:
-        try:
-            return int(device_str[p + len("video"):])
-        except ValueError:
-            pass
-    return 0
-
-
 def open_camera(device_str: str) -> CameraDevice | None:
     """
-    Open a camera device appropriate for *device_str*, or return None if the
-    device should not be used.
+    Open a camera device appropriate for *device_str*, or return None if no
+    capture backend is available.
 
     Selection priority:
     1. (Windows) If DirectShow devices are available, use DirectShowCamera.
     2. (macOS) If AVFoundation devices are available, use AVFoundationCamera.
     3. (Linux) If libcamera is available and *device_str* matches a known
        camera ID (or is an AUTO_OPTIONS value), use LibcameraCamera.
-    4. Otherwise fall back to CV2Camera.
-
-    When a CV2Camera lands on a virtual v4l2 device number, a warning is
-    logged and None is returned unless XPRA_WEBCAM_ALLOW_VIRTUAL is set.
     """
     log("open_camera(%s)", device_str)
 
@@ -151,34 +125,8 @@ def open_camera(device_str: str) -> CameraDevice | None:
             from xpra.webcam.libcamera_camera import LibcameraCamera
             return LibcameraCamera(camera_id)
 
-    virt_devices: dict[int, Any] = {}
-    non_virtual: dict[int, Any] = {}
-    try:
-        from xpra.platform.webcam import get_virtual_video_devices, get_all_video_devices
-        virt_devices = get_virtual_video_devices()
-        all_video_devices = get_all_video_devices()  # pylint: disable=assignment-from-none
-        non_virtual = {k: v for k, v in all_video_devices.items() if k not in virt_devices}
-        log("virtual video devices=%s", virt_devices)
-        log("all video devices=%s", all_video_devices)
-        log("found %s non-virtual video devices: %s", len(non_virtual), non_virtual)
-    except ImportError as e:
-        log("no webcam_util: %s", e)
-
-    device_no = _parse_device_no(device_str, non_virtual)
-    log("using cv2 backend for %r (device_no=%i)", device_str, device_no)
-    from xpra.webcam.cv2_camera import CV2Camera
-    from xpra.util.env import envbool
-    webcam_device = CV2Camera(device_no)
-    if virt_devices and device_no in virt_devices:
-        log.warn("Warning: video device %s is a virtual device", virt_devices.get(device_no, device_no))
-        if envbool("XPRA_WEBCAM_ALLOW_VIRTUAL", False):
-            log.warn(" environment override - this may hang..")
-        else:
-            log.warn(" cowardly refusing to use it")
-            log.warn(" set XPRA_WEBCAM_ALLOW_VIRTUAL=1 to force enable it")
-            webcam_device.release()
-            return None
-    return webcam_device
+    log.warn("Warning: no webcam capture backend available for %r", device_str)
+    return None
 
 
 def make_csc(src_format: str, w: int, h: int, dst_formats: Sequence[str]):

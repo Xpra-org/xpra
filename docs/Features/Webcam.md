@@ -6,7 +6,8 @@ The webcam is not forwarded by default unless the webcam command line option ena
 
 
 ## Installation
-Clients only rely on [opencv](http://opencv.org/) and its python bindings.
+Clients use a platform capture backend: DirectShow on MS Windows, AVFoundation on MacOS,
+and [libcamera](https://libcamera.org/) on Linux.
 
 The server side is only supported on Linux. It relies on a virtual video device, you must install the [v4l2loopback](https://github.com/umlaeute/v4l2loopback) kernel module from and load it:
 ```shell
