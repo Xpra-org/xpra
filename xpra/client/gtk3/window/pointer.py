@@ -172,22 +172,6 @@ class PointerWindow(GtkStubWindow):
         b = self._backing
         if not b:
             return
-        cursor_data = b.cursor_data
-
-        def abs_coords(x, y, size) -> tuple[int, int, int, int]:
-            if self.window_offset:
-                x += self.window_offset[0]
-                y += self.window_offset[1]
-            w, h = size, size
-            if cursor_data:
-                w = cursor_data[3]
-                h = cursor_data[4]
-                xhot = cursor_data[5]
-                yhot = cursor_data[6]
-                x = x - xhot
-                y = y - yhot
-            return x, y, w, h
-
         value = b.pointer_overlay
         log("do_show_pointer_overlay: value=%s", value)
         if value:
