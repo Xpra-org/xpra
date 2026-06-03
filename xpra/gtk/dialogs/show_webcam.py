@@ -9,12 +9,15 @@ import sys
 
 from xpra.os_util import gi_import
 from xpra.util.str_fn import memoryview_to_bytes
+from xpra.codecs.image import ImageWrapper
+from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 GdkPixbuf = gi_import("GdkPixbuf")
 GLib = gi_import("GLib")
 
+log = Logger("webcam")
 
 DISPLAY_FORMATS = ("RGB", "RGBX")
 PACKED_BGR_FORMATS = ("BGR", "BGRX")
@@ -31,6 +34,23 @@ def pixels_to_bytes(pixels) -> bytes:
         return memoryview(pixels).tobytes()
     except TypeError:
         return memoryview_to_bytes(pixels)
+
+
+def to_rgb(image: ImageWrapper) -> ImageWrapper:
+    pixel_format = image.get_pixel_format()
+    w, h = image.get_width(), image.get_height()
+    src = pixels_to_bytes(image.get_pixels())
+    if pixel_format == "BGR":
+        from xpra.codecs.argb.argb import bgr_to_rgb
+        rgb = bgr_to_rgb(src)
+    elif pixel_format in ("BGRX", "BGRA"):
+        # BGRX / BGRA: drop the X/A byte and swap B↔R
+        from xpra.codecs.argb.argb import bgra_to_rgb
+        rgb = bgra_to_rgb(src)
+    else:
+        raise RuntimeError("unsupported pixel format %r" % pixel_format)
+    return ImageWrapper(0, 0, w, h, rgb, "RGB", 24, w * 3, 3,
+                        planes=ImageWrapper.PACKED)
 
 
 class WebcamWindow(Gtk.Window):
@@ -72,12 +92,12 @@ class WebcamWindow(Gtk.Window):
         self.camera.release()
         Gtk.main_quit()
 
-    def get_display_image(self, image):
+    def get_display_image(self, image: ImageWrapper):
         pixel_format = image.get_pixel_format()
         if pixel_format in DISPLAY_FORMATS:
             return image
         if pixel_format in PACKED_BGR_FORMATS:
-            return self.bgr_to_rgb(image)
+            return to_rgb(image)
         w, h = image.get_width(), image.get_height()
         key = pixel_format, w, h
         if key != self.csc_key:
@@ -89,51 +109,9 @@ class WebcamWindow(Gtk.Window):
         if self.csc:
             csc_image = self.csc.convert_image(image)
             if csc_image.get_pixel_format() in PACKED_BGR_FORMATS:
-                return self.bgr_to_rgb(csc_image)
+                return to_rgb(csc_image)
             return csc_image
         return None
-
-    @staticmethod
-    def bgr_to_rgb(image):
-        pixel_format = image.get_pixel_format()
-        w, h = image.get_width(), image.get_height()
-        src = pixels_to_bytes(image.get_pixels())
-        src_stride = image.get_rowstride()
-        if pixel_format == "BGR":
-            dst = bytearray(w * h * 3)
-            dst_stride = w * 3
-            depth = 24
-            bytesperpixel = 3
-            for y in range(h):
-                src_pos = y * src_stride
-                dst_pos = y * dst_stride
-                for x in range(w):
-                    b = src[src_pos]
-                    g = src[src_pos + 1]
-                    r = src[src_pos + 2]
-                    dst[dst_pos:dst_pos + 3] = r, g, b
-                    src_pos += 3
-                    dst_pos += 3
-            dst_format = "RGB"
-        else:
-            dst = bytearray(w * h * 4)
-            dst_stride = w * 4
-            depth = 32
-            bytesperpixel = 4
-            for y in range(h):
-                src_pos = y * src_stride
-                dst_pos = y * dst_stride
-                for x in range(w):
-                    b = src[src_pos]
-                    g = src[src_pos + 1]
-                    r = src[src_pos + 2]
-                    dst[dst_pos:dst_pos + 4] = r, g, b, 255
-                    src_pos += 4
-                    dst_pos += 4
-            dst_format = "RGBX"
-        from xpra.codecs.image import ImageWrapper
-        return ImageWrapper(0, 0, w, h, bytes(dst), dst_format, depth, dst_stride, bytesperpixel,
-                            planes=ImageWrapper.PACKED)
 
     def update_frame(self) -> bool:
         try:
@@ -156,8 +134,7 @@ class WebcamWindow(Gtk.Window):
             self.area.queue_draw()
             return True
         except Exception as e:
-            from xpra.log import Logger
-            Logger("webcam").error("Error updating webcam frame: %s", e, exc_info=True)
+            log.error("Error updating webcam frame: %s", e, exc_info=True)
             self.stop()
             return False
 
@@ -171,9 +148,8 @@ def main(argv: list[str]) -> int:
     from xpra.platform import program_context, command_error
     from xpra.platform.gui import init, ready, set_default_icon
     with program_context("Webcam", "Webcam"):
-        from xpra.log import Logger, consume_verbose_argv
+        from xpra.log import consume_verbose_argv
         consume_verbose_argv(argv, "webcam")
-        log = Logger("webcam")
         set_default_icon("webcam.png")
         init()
 
