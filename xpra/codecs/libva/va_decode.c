@@ -7,6 +7,7 @@
 
 #include "va_decode.h"
 #include "va_common.h"
+#include "va_vpx_tables.h"
 
 #include <va/va.h>
 #include <va/va_dec_vp8.h>
@@ -38,6 +39,7 @@ static int g_vp9_420_supported = 0;
 static int g_vp9_444_supported = 0;
 
 struct H264Params;
+struct VP8State;
 
 struct LibVADecoder {
     int             fd;
@@ -60,6 +62,16 @@ struct LibVADecoder {
     int             ref_frame_num;
     int             ref_poc_lsb;
     struct H264Params *h264_params;
+    struct VP8State *vp8_state;
+    int             vpx_last_surface;
+    int             vpx_golden_surface;
+    int             vpx_alt_surface;
+    VASurfaceID     vp9_refs[8];
+    int             vp9_loop_filter_ref_deltas[4];
+    int             vp9_loop_filter_mode_deltas[2];
+    int             vp9_segmentation_abs_or_delta_update;
+    int             vp9_feature_enabled[8][4];
+    int             vp9_feature_data[8][4];
     uint8_t        *planes[3];
     size_t          plane_caps[3];
     int             last_status;
@@ -138,6 +150,125 @@ struct H264SliceInfo {
     int16_t chroma_offset_l0[32][2];
     int bit_offset;
 };
+
+struct VP8State {
+    uint8_t token_probs[4][8][3][11];
+    uint8_t mv_probs[2][19];
+    uint8_t y_mode_probs[4];
+    uint8_t uv_mode_probs[3];
+    int segmentation_enabled;
+    int update_mb_segmentation_map;
+    int update_segment_feature_data;
+    int segment_feature_mode;
+    int quantizer_update_value[4];
+    int lf_update_value[4];
+    uint8_t segment_prob[3];
+    int loop_filter_adj_enable;
+    int mode_ref_lf_delta_update;
+    int ref_frame_delta[4];
+    int mb_mode_delta[4];
+};
+
+struct VP8BoolReader {
+    const uint8_t *data;
+    int size;
+    int pos;
+    unsigned int range;
+    unsigned int value;
+    int count;
+};
+
+struct VP8FrameInfo {
+    int key_frame;
+    int version;
+    int show_frame;
+    int first_part_size;
+    int data_chunk_size;
+    int width;
+    int height;
+    int filter_type;
+    int loop_filter_level;
+    int sharpness_level;
+    int log2_partitions;
+    int y_ac_qi;
+    int y_dc_delta;
+    int y2_dc_delta;
+    int y2_ac_delta;
+    int uv_dc_delta;
+    int uv_ac_delta;
+    int refresh_entropy_probs;
+    int refresh_last;
+    int refresh_golden_frame;
+    int refresh_alternate_frame;
+    int copy_buffer_to_golden;
+    int copy_buffer_to_alternate;
+    int sign_bias_golden;
+    int sign_bias_alternate;
+    int mb_no_coeff_skip;
+    int prob_skip_false;
+    int prob_intra;
+    int prob_last;
+    int prob_gf;
+    int header_bits;
+    uint32_t partition_size[8];
+    struct VP8State probs;
+    struct VP8BoolReader bool_state;
+};
+
+struct VP9BitReader {
+    const uint8_t *data;
+    int size;
+    int bit_pos;
+};
+
+struct VP9FrameInfo {
+    int profile;
+    int bit_depth;
+    int subsampling_x;
+    int subsampling_y;
+    int frame_type;
+    int show_frame;
+    int error_resilient_mode;
+    int intra_only;
+    int reset_frame_context;
+    int refresh_frame_flags;
+    int ref_frame_idx[3];
+    int ref_frame_sign_bias[4];
+    int allow_high_precision_mv;
+    int interpolation_filter;
+    int refresh_frame_context;
+    int frame_parallel_decoding_mode;
+    int frame_context_idx;
+    int frame_width;
+    int frame_height;
+    int render_width;
+    int render_height;
+    int base_q_idx;
+    int delta_q_y_dc;
+    int delta_q_uv_dc;
+    int delta_q_uv_ac;
+    int lossless;
+    int loop_filter_level;
+    int loop_filter_sharpness;
+    int loop_filter_delta_enabled;
+    int loop_filter_ref_deltas[4];
+    int loop_filter_mode_deltas[2];
+    int segmentation_enabled;
+    int segmentation_update_map;
+    int segmentation_temporal_update;
+    uint8_t segmentation_tree_probs[7];
+    uint8_t segmentation_pred_probs[3];
+    int segmentation_abs_or_delta_update;
+    int feature_enabled[8][4];
+    int feature_data[8][4];
+    int tile_cols_log2;
+    int tile_rows_log2;
+    int uncompressed_header_bytes;
+    int first_partition_size;
+};
+
+static void init_vp8_state(struct VP8State *state);
+static void init_vp9_state(LibVADecoder *dec);
 
 void libva_decode_set_log(libva_log_fn fn) {
     g_log_fn = fn;
@@ -368,8 +499,14 @@ int libva_decode_supports(const char *encoding, const char *colorspace) {
         if (strcmp(colorspace, "YUV444P") == 0)
             return g_h264_444_supported;
     }
-    /* VP8/VP9 VLD probing is kept visible in get_info(), but v1 does not
-     * advertise specs until their probability/header parser is complete. */
+    if (codec == LIBVA_CODEC_VP8 && strcmp(colorspace, "YUV420P") == 0)
+        return g_vp8_420_supported;
+    if (codec == LIBVA_CODEC_VP9) {
+        if (strcmp(colorspace, "YUV420P") == 0)
+            return g_vp9_420_supported;
+        if (strcmp(colorspace, "YUV444P") == 0)
+            return g_vp9_444_supported;
+    }
     return 0;
 }
 
@@ -418,11 +555,24 @@ LibVADecodeStatus libva_decoder_create(LibVADecoder **out, const char *encoding,
         return LIBVA_DEC_ERROR;
     }
     init_h264_params(dec->h264_params);
+    dec->vp8_state = (struct VP8State *)calloc(1, sizeof(*dec->vp8_state));
+    if (!dec->vp8_state) {
+        free(dec->h264_params);
+        free(dec);
+        return LIBVA_DEC_ERROR;
+    }
+    init_vp8_state(dec->vp8_state);
     dec->fd = -1;
     dec->config = VA_INVALID_ID;
     dec->context = VA_INVALID_ID;
     for (int i = 0; i < 4; i++)
         dec->surfaces[i] = VA_INVALID_SURFACE;
+    for (int i = 0; i < 8; i++)
+        dec->vp9_refs[i] = VA_INVALID_SURFACE;
+    dec->vpx_last_surface = -1;
+    dec->vpx_golden_surface = -1;
+    dec->vpx_alt_surface = -1;
+    init_vp9_state(dec);
     dec->width = width;
     dec->height = height;
     dec->surface_width = roundup(width, 16);
@@ -430,9 +580,17 @@ LibVADecodeStatus libva_decoder_create(LibVADecoder **out, const char *encoding,
     dec->codec = codec;
     dec->rt_format = VA_RT_FORMAT_YUV420;
     dec->profile = g_h264_420_profile;
-    if (strcmp(colorspace, "YUV444P") == 0) {
+    if (codec == LIBVA_CODEC_VP8) {
+        dec->profile = VAProfileVP8Version0_3;
+    } else if (codec == LIBVA_CODEC_VP9) {
+        dec->profile = strcmp(colorspace, "YUV444P") == 0 ? VAProfileVP9Profile1 : VAProfileVP9Profile0;
+    } else if (strcmp(colorspace, "YUV444P") == 0) {
         dec->rt_format = VA_RT_FORMAT_YUV444;
         dec->profile = g_h264_444_profile;
+        dec->output_444 = 1;
+    }
+    if (codec == LIBVA_CODEC_VP9 && strcmp(colorspace, "YUV444P") == 0) {
+        dec->rt_format = VA_RT_FORMAT_YUV444;
         dec->output_444 = 1;
     }
     dec->last_status = VA_STATUS_SUCCESS;
@@ -508,6 +666,7 @@ void libva_decoder_destroy(LibVADecoder *dec) {
     for (int i = 0; i < 3; i++)
         free(dec->planes[i]);
     free(dec->h264_params);
+    free(dec->vp8_state);
     free(dec);
 }
 
@@ -1044,6 +1203,847 @@ static LibVADecodeStatus map_output(LibVADecoder *dec, VASurfaceID surface,
     return LIBVA_DEC_OK;
 }
 
+static void init_vp8_state(struct VP8State *state) {
+    static const uint8_t nk_y[4] = {112, 86, 140, 37};
+    static const uint8_t nk_uv[3] = {162, 101, 204};
+    memset(state, 0, sizeof(*state));
+    memcpy(state->token_probs, vp8_default_token_probs, sizeof(state->token_probs));
+    memcpy(state->mv_probs, vp8_default_mv_probs, sizeof(state->mv_probs));
+    memcpy(state->y_mode_probs, nk_y, sizeof(state->y_mode_probs));
+    memcpy(state->uv_mode_probs, nk_uv, sizeof(state->uv_mode_probs));
+}
+
+static void vp8_bool_fill(struct VP8BoolReader *br) {
+    int shift = 16 - br->count;
+    while (shift >= 0 && br->pos < br->size) {
+        br->value |= (unsigned int)br->data[br->pos++] << shift;
+        br->count += 8;
+        shift -= 8;
+    }
+    if (shift >= 0)
+        br->count += 0x40000000;
+}
+
+static void vp8_bool_init(struct VP8BoolReader *br, const uint8_t *data, int size) {
+    memset(br, 0, sizeof(*br));
+    br->data = data;
+    br->size = size;
+    br->range = 255;
+    br->count = -8;
+    vp8_bool_fill(br);
+}
+
+static int vp8_norm_shift(unsigned int range) {
+    int shift = 0;
+    while (range < 128) {
+        range <<= 1;
+        shift++;
+    }
+    return shift;
+}
+
+static int vp8_bool_read(struct VP8BoolReader *br, int probability) {
+    unsigned int split = 1 + (((br->range - 1) * (unsigned int)probability) >> 8);
+    unsigned int bigsplit = split << 24;
+    int bit = 0;
+    int shift;
+    if (br->count < 0)
+        vp8_bool_fill(br);
+    if (br->value >= bigsplit) {
+        br->range -= split;
+        br->value -= bigsplit;
+        bit = 1;
+    } else {
+        br->range = split;
+    }
+    shift = vp8_norm_shift(br->range);
+    br->range <<= shift;
+    br->value <<= shift;
+    br->count -= shift;
+    return bit;
+}
+
+static int vp8_bool_bits(struct VP8BoolReader *br, int bits) {
+    int v = 0;
+    for (int i = bits - 1; i >= 0; i--)
+        v |= vp8_bool_read(br, 128) << i;
+    return v;
+}
+
+static int vp8_bool_sint(struct VP8BoolReader *br, int bits) {
+    int v = vp8_bool_bits(br, bits);
+    return vp8_bool_read(br, 128) ? -v : v;
+}
+
+static int vp8_bool_pos(const struct VP8BoolReader *br) {
+    return br->pos * 8 - (8 + br->count);
+}
+
+static void vp8_bool_state(struct VP8BoolReader *br, VABoolCoderContextVPX *ctx) {
+    if (br->count < 0)
+        vp8_bool_fill(br);
+    ctx->range = (uint8_t)br->range;
+    ctx->value = (uint8_t)(br->value >> 24);
+    ctx->count = (uint8_t)((8 + br->count) & 7);
+}
+
+static void vp8_parse_segmentation(struct VP8BoolReader *br, struct VP8State *state) {
+    state->update_mb_segmentation_map = 0;
+    state->update_segment_feature_data = 0;
+    if (!vp8_bool_read(br, 128)) {
+        state->segmentation_enabled = 0;
+        return;
+    }
+    state->segmentation_enabled = 1;
+    state->update_mb_segmentation_map = vp8_bool_read(br, 128);
+    state->update_segment_feature_data = vp8_bool_read(br, 128);
+    if (state->update_segment_feature_data) {
+        state->segment_feature_mode = vp8_bool_read(br, 128);
+        for (int i = 0; i < 4; i++)
+            state->quantizer_update_value[i] = vp8_bool_read(br, 128) ? vp8_bool_sint(br, 7) : 0;
+        for (int i = 0; i < 4; i++)
+            state->lf_update_value[i] = vp8_bool_read(br, 128) ? vp8_bool_sint(br, 6) : 0;
+    }
+    if (state->update_mb_segmentation_map) {
+        for (int i = 0; i < 3; i++)
+            state->segment_prob[i] = vp8_bool_read(br, 128) ? (uint8_t)vp8_bool_bits(br, 8) : 255;
+    }
+}
+
+static void vp8_parse_lf_adjust(struct VP8BoolReader *br, struct VP8State *state) {
+    state->mode_ref_lf_delta_update = 0;
+    state->loop_filter_adj_enable = vp8_bool_read(br, 128);
+    if (!state->loop_filter_adj_enable)
+        return;
+    state->mode_ref_lf_delta_update = vp8_bool_read(br, 128);
+    if (!state->mode_ref_lf_delta_update)
+        return;
+    for (int i = 0; i < 4; i++)
+        if (vp8_bool_read(br, 128))
+            state->ref_frame_delta[i] = vp8_bool_sint(br, 6);
+    for (int i = 0; i < 4; i++)
+        if (vp8_bool_read(br, 128))
+            state->mb_mode_delta[i] = vp8_bool_sint(br, 6);
+}
+
+static void vp8_parse_quant(struct VP8BoolReader *br, struct VP8FrameInfo *info) {
+    info->y_ac_qi = vp8_bool_bits(br, 7);
+    info->y_dc_delta = vp8_bool_read(br, 128) ? vp8_bool_sint(br, 4) : 0;
+    info->y2_dc_delta = vp8_bool_read(br, 128) ? vp8_bool_sint(br, 4) : 0;
+    info->y2_ac_delta = vp8_bool_read(br, 128) ? vp8_bool_sint(br, 4) : 0;
+    info->uv_dc_delta = vp8_bool_read(br, 128) ? vp8_bool_sint(br, 4) : 0;
+    info->uv_ac_delta = vp8_bool_read(br, 128) ? vp8_bool_sint(br, 4) : 0;
+}
+
+static int parse_vp8_frame(LibVADecoder *dec, const uint8_t *data, int size,
+                           struct VP8FrameInfo *info) {
+    static const uint8_t kf_y[4] = {145, 156, 163, 128};
+    static const uint8_t kf_uv[3] = {142, 114, 183};
+    uint32_t tag;
+    const uint8_t *part0;
+    int part0_size;
+    struct VP8BoolReader br;
+    if (size < 3)
+        return 0;
+    memset(info, 0, sizeof(*info));
+    tag = (uint32_t)data[0] | ((uint32_t)data[1] << 8) | ((uint32_t)data[2] << 16);
+    info->key_frame = !(tag & 1);
+    info->version = (tag >> 1) & 7;
+    info->show_frame = (tag >> 4) & 1;
+    info->first_part_size = (tag >> 5) & 0x7ffff;
+    info->data_chunk_size = info->key_frame ? 10 : 3;
+    if (info->data_chunk_size >= size || info->first_part_size <= 0)
+        return 0;
+    if (info->key_frame) {
+        if (size < 10 || data[3] != 0x9d || data[4] != 0x01 || data[5] != 0x2a)
+            return 0;
+        info->width = (int)(data[6] | (data[7] << 8)) & 0x3fff;
+        info->height = (int)(data[8] | (data[9] << 8)) & 0x3fff;
+        init_vp8_state(dec->vp8_state);
+    }
+    info->probs = *dec->vp8_state;
+    part0 = data + info->data_chunk_size;
+    part0_size = info->first_part_size;
+    if (info->data_chunk_size + part0_size > size)
+        return 0;
+    vp8_bool_init(&br, part0, part0_size);
+    if (info->key_frame) {
+        vp8_bool_bits(&br, 1);         /* color_space */
+        vp8_bool_bits(&br, 1);         /* clamping_type */
+    }
+    vp8_parse_segmentation(&br, &info->probs);
+    info->filter_type = vp8_bool_bits(&br, 1);
+    info->loop_filter_level = vp8_bool_bits(&br, 6);
+    info->sharpness_level = vp8_bool_bits(&br, 3);
+    vp8_parse_lf_adjust(&br, &info->probs);
+    info->log2_partitions = vp8_bool_bits(&br, 2);
+    vp8_parse_quant(&br, info);
+    if (info->key_frame) {
+        info->refresh_entropy_probs = vp8_bool_read(&br, 128);
+        info->refresh_last = 1;
+        info->refresh_golden_frame = 1;
+        info->refresh_alternate_frame = 1;
+        memcpy(info->probs.y_mode_probs, kf_y, sizeof(kf_y));
+        memcpy(info->probs.uv_mode_probs, kf_uv, sizeof(kf_uv));
+    } else {
+        info->refresh_golden_frame = vp8_bool_read(&br, 128);
+        info->refresh_alternate_frame = vp8_bool_read(&br, 128);
+        if (!info->refresh_golden_frame)
+            info->copy_buffer_to_golden = vp8_bool_bits(&br, 2);
+        if (!info->refresh_alternate_frame)
+            info->copy_buffer_to_alternate = vp8_bool_bits(&br, 2);
+        info->sign_bias_golden = vp8_bool_bits(&br, 1);
+        info->sign_bias_alternate = vp8_bool_bits(&br, 1);
+        info->refresh_entropy_probs = vp8_bool_read(&br, 128);
+        info->refresh_last = vp8_bool_read(&br, 128);
+    }
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 8; j++)
+            for (int k = 0; k < 3; k++)
+                for (int l = 0; l < 11; l++)
+                    if (vp8_bool_read(&br, vp8_token_update_probs[i][j][k][l]))
+                        info->probs.token_probs[i][j][k][l] = (uint8_t)vp8_bool_bits(&br, 8);
+    info->mb_no_coeff_skip = vp8_bool_read(&br, 128);
+    if (info->mb_no_coeff_skip)
+        info->prob_skip_false = vp8_bool_bits(&br, 8);
+    if (!info->key_frame) {
+        info->prob_intra = vp8_bool_bits(&br, 8);
+        info->prob_last = vp8_bool_bits(&br, 8);
+        info->prob_gf = vp8_bool_bits(&br, 8);
+        if (vp8_bool_read(&br, 128))
+            for (int i = 0; i < 4; i++)
+                info->probs.y_mode_probs[i] = (uint8_t)vp8_bool_bits(&br, 8);
+        if (vp8_bool_read(&br, 128))
+            for (int i = 0; i < 3; i++)
+                info->probs.uv_mode_probs[i] = (uint8_t)vp8_bool_bits(&br, 8);
+        for (int i = 0; i < 2; i++)
+            for (int j = 0; j < 19; j++)
+                if (vp8_bool_read(&br, vp8_mv_update_probs[i][j])) {
+                    int prob = vp8_bool_bits(&br, 7);
+                    info->probs.mv_probs[i][j] = (uint8_t)(prob ? (prob << 1) : 1);
+                }
+    }
+    info->header_bits = vp8_bool_pos(&br);
+    info->bool_state = br;
+    int n_parts = 1 << info->log2_partitions;
+    int offset = info->data_chunk_size + info->first_part_size + 3 * (n_parts - 1);
+    if (offset > size)
+        return 0;
+    for (int i = 0; i < n_parts - 1; i++) {
+        const uint8_t *p = data + info->data_chunk_size + info->first_part_size + 3 * i;
+        info->partition_size[i + 1] = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
+        offset += (int)info->partition_size[i + 1];
+    }
+    if (offset > size)
+        return 0;
+    info->partition_size[n_parts] = (uint32_t)(size - offset);
+    if (info->refresh_entropy_probs)
+        *dec->vp8_state = info->probs;
+    return 1;
+}
+
+static VASurfaceID vpx_ref_surface(LibVADecoder *dec, int index) {
+    return index >= 0 ? dec->surfaces[index & 3] : VA_INVALID_SURFACE;
+}
+
+static void fill_vp8_iq(const struct VP8FrameInfo *info, VAIQMatrixBufferVP8 *iq) {
+    memset(iq, 0, sizeof(*iq));
+    for (int i = 0; i < 4; i++) {
+        int base = info->probs.segmentation_enabled ? info->probs.quantizer_update_value[i] : info->y_ac_qi;
+        if (info->probs.segmentation_enabled && !info->probs.segment_feature_mode)
+            base += info->y_ac_qi;
+        iq->quantization_index[i][0] = (uint16_t)clamp_int(base, 0, 127);
+        iq->quantization_index[i][1] = (uint16_t)clamp_int(base + info->y_dc_delta, 0, 127);
+        iq->quantization_index[i][2] = (uint16_t)clamp_int(base + info->y2_dc_delta, 0, 127);
+        iq->quantization_index[i][3] = (uint16_t)clamp_int(base + info->y2_ac_delta, 0, 127);
+        iq->quantization_index[i][4] = (uint16_t)clamp_int(base + info->uv_dc_delta, 0, 127);
+        iq->quantization_index[i][5] = (uint16_t)clamp_int(base + info->uv_ac_delta, 0, 127);
+    }
+}
+
+static LibVADecodeStatus vp8_decoder_decode(LibVADecoder *dec,
+                                            const uint8_t *data, int data_len,
+                                            LibVADecodedFrame *frame) {
+    VABufferID buffers[5];
+    int nbuf = 0;
+    struct VP8FrameInfo info;
+    VAPictureParameterBufferVP8 pic;
+    VAProbabilityDataBufferVP8 prob;
+    VAIQMatrixBufferVP8 iq;
+    VASliceParameterBufferVP8 slice;
+    int surface_index;
+    VASurfaceID surface;
+    VAStatus status;
+    LibVADecodeStatus dstatus;
+    long long t0, t1, t2;
+
+    if (!parse_vp8_frame(dec, data, data_len, &info))
+        return set_message(dec, LIBVA_DEC_UNSUPPORTED, "unsupported VP8 frame header");
+    for (int i = 0; i < (int)(sizeof(buffers) / sizeof(buffers[0])); i++)
+        buffers[i] = VA_INVALID_ID;
+    surface_index = dec->surface_index++ & 3;
+    surface = dec->surfaces[surface_index];
+
+    memset(&pic, 0, sizeof(pic));
+    pic.frame_width = (uint32_t)dec->width;
+    pic.frame_height = (uint32_t)dec->height;
+    pic.last_ref_frame = vpx_ref_surface(dec, dec->vpx_last_surface);
+    pic.golden_ref_frame = vpx_ref_surface(dec, dec->vpx_golden_surface);
+    pic.alt_ref_frame = vpx_ref_surface(dec, dec->vpx_alt_surface);
+    pic.out_of_loop_frame = VA_INVALID_SURFACE;
+    pic.pic_fields.bits.key_frame = !info.key_frame;
+    pic.pic_fields.bits.version = (uint32_t)info.version;
+    pic.pic_fields.bits.segmentation_enabled = (uint32_t)info.probs.segmentation_enabled;
+    pic.pic_fields.bits.update_mb_segmentation_map = (uint32_t)info.probs.update_mb_segmentation_map;
+    pic.pic_fields.bits.update_segment_feature_data = (uint32_t)info.probs.update_segment_feature_data;
+    pic.pic_fields.bits.filter_type = (uint32_t)info.filter_type;
+    pic.pic_fields.bits.sharpness_level = (uint32_t)info.sharpness_level;
+    pic.pic_fields.bits.loop_filter_adj_enable = (uint32_t)info.probs.loop_filter_adj_enable;
+    pic.pic_fields.bits.mode_ref_lf_delta_update = (uint32_t)info.probs.mode_ref_lf_delta_update;
+    pic.pic_fields.bits.sign_bias_golden = (uint32_t)info.sign_bias_golden;
+    pic.pic_fields.bits.sign_bias_alternate = (uint32_t)info.sign_bias_alternate;
+    pic.pic_fields.bits.mb_no_coeff_skip = (uint32_t)info.mb_no_coeff_skip;
+    pic.pic_fields.bits.loop_filter_disable = (uint32_t)(info.loop_filter_level == 0);
+    memcpy(pic.mb_segment_tree_probs, info.probs.segment_prob, sizeof(pic.mb_segment_tree_probs));
+    for (int i = 0; i < 4; i++) {
+        int level = info.probs.segmentation_enabled ? info.probs.lf_update_value[i] : info.loop_filter_level;
+        if (info.probs.segmentation_enabled && !info.probs.segment_feature_mode)
+            level += info.loop_filter_level;
+        pic.loop_filter_level[i] = (uint8_t)clamp_int(level, 0, 63);
+        pic.loop_filter_deltas_ref_frame[i] = (int8_t)info.probs.ref_frame_delta[i];
+        pic.loop_filter_deltas_mode[i] = (int8_t)info.probs.mb_mode_delta[i];
+    }
+    pic.prob_skip_false = (uint8_t)info.prob_skip_false;
+    pic.prob_intra = (uint8_t)info.prob_intra;
+    pic.prob_last = (uint8_t)info.prob_last;
+    pic.prob_gf = (uint8_t)info.prob_gf;
+    memcpy(pic.y_mode_probs, info.probs.y_mode_probs, sizeof(pic.y_mode_probs));
+    memcpy(pic.uv_mode_probs, info.probs.uv_mode_probs, sizeof(pic.uv_mode_probs));
+    memcpy(pic.mv_probs, info.probs.mv_probs, sizeof(pic.mv_probs));
+    vp8_bool_state(&info.bool_state, &pic.bool_coder_ctx);
+
+    memset(&prob, 0, sizeof(prob));
+    memcpy(prob.dct_coeff_probs, info.probs.token_probs, sizeof(prob.dct_coeff_probs));
+    fill_vp8_iq(&info, &iq);
+    memset(&slice, 0, sizeof(slice));
+    slice.slice_data_size = (uint32_t)data_len;
+    slice.slice_data_offset = (uint32_t)info.data_chunk_size;
+    slice.slice_data_flag = VA_SLICE_DATA_FLAG_ALL;
+    slice.macroblock_offset = (uint32_t)info.header_bits;
+    slice.num_of_partitions = (uint8_t)((1 << info.log2_partitions) + 1);
+    slice.partition_size[0] = (uint32_t)(info.first_part_size - ((info.header_bits + 7) >> 3));
+    for (int i = 1; i < slice.num_of_partitions && i < 9; i++)
+        slice.partition_size[i] = info.partition_size[i];
+
+    status = vaCreateBuffer(dec->display, dec->context, VAPictureParameterBufferType,
+                            sizeof(pic), 1, &pic, &buffers[nbuf++]);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaCreateBuffer(dec->display, dec->context, VAProbabilityBufferType,
+                                sizeof(prob), 1, &prob, &buffers[nbuf++]);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaCreateBuffer(dec->display, dec->context, VAIQMatrixBufferType,
+                                sizeof(iq), 1, &iq, &buffers[nbuf++]);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaCreateBuffer(dec->display, dec->context, VASliceParameterBufferType,
+                                sizeof(slice), 1, &slice, &buffers[nbuf++]);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaCreateBuffer(dec->display, dec->context, VASliceDataBufferType,
+                                (unsigned int)data_len, 1, (void *)data, &buffers[nbuf++]);
+    if (status != VA_STATUS_SUCCESS) {
+        destroy_buffers(dec, buffers, nbuf);
+        return set_error(dec, status, "vaCreateBuffer(VP8)");
+    }
+
+    t0 = usec_now();
+    status = vaBeginPicture(dec->display, dec->context, surface);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaRenderPicture(dec->display, dec->context, buffers, nbuf);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaEndPicture(dec->display, dec->context);
+    t1 = usec_now();
+    destroy_buffers(dec, buffers, nbuf);
+    if (status != VA_STATUS_SUCCESS)
+        return set_error(dec, status, "VA VP8 decode submit");
+    status = vaSyncSurface(dec->display, surface);
+    t2 = usec_now();
+    if (status != VA_STATUS_SUCCESS)
+        return set_error(dec, status, "vaSyncSurface");
+    dstatus = map_output(dec, surface, frame);
+    if (dstatus != LIBVA_DEC_OK)
+        return dstatus;
+    if (info.copy_buffer_to_golden == 1)
+        dec->vpx_golden_surface = dec->vpx_last_surface;
+    else if (info.copy_buffer_to_golden == 2)
+        dec->vpx_golden_surface = dec->vpx_alt_surface;
+    if (info.copy_buffer_to_alternate == 1)
+        dec->vpx_alt_surface = dec->vpx_last_surface;
+    else if (info.copy_buffer_to_alternate == 2)
+        dec->vpx_alt_surface = dec->vpx_golden_surface;
+    if (info.refresh_golden_frame)
+        dec->vpx_golden_surface = surface_index;
+    if (info.refresh_alternate_frame)
+        dec->vpx_alt_surface = surface_index;
+    if (info.refresh_last || info.key_frame)
+        dec->vpx_last_surface = surface_index;
+    frame->us_submit = (int)(t1 - t0);
+    frame->us_sync = (int)(t2 - t1);
+    dec->frames++;
+    return LIBVA_DEC_OK;
+}
+
+static void vp9_br_init(struct VP9BitReader *br, const uint8_t *data, int size) {
+    br->data = data;
+    br->size = size;
+    br->bit_pos = 0;
+}
+
+static int vp9_bit(struct VP9BitReader *br) {
+    int pos = br->bit_pos++;
+    if (pos >= br->size * 8)
+        return 0;
+    return (br->data[pos >> 3] >> (7 - (pos & 7))) & 1;
+}
+
+static int vp9_bits(struct VP9BitReader *br, int bits) {
+    int v = 0;
+    for (int i = 0; i < bits; i++)
+        v = (v << 1) | vp9_bit(br);
+    return v;
+}
+
+static int vp9_sbits(struct VP9BitReader *br, int bits) {
+    int v = vp9_bits(br, bits);
+    return vp9_bit(br) ? -v : v;
+}
+
+static int vp9_read_delta_q(struct VP9BitReader *br) {
+    return vp9_bit(br) ? vp9_sbits(br, 4) : 0;
+}
+
+static int vp9_read_profile(struct VP9BitReader *br) {
+    int profile = vp9_bit(br);
+    profile |= vp9_bit(br) << 1;
+    if (profile > 2)
+        vp9_bit(br);
+    return profile;
+}
+
+static int vp9_read_sync_code(struct VP9BitReader *br) {
+    return vp9_bits(br, 8) == 0x49 && vp9_bits(br, 8) == 0x83 && vp9_bits(br, 8) == 0x42;
+}
+
+static void vp9_read_frame_size(struct VP9BitReader *br, int *w, int *h) {
+    *w = vp9_bits(br, 16) + 1;
+    *h = vp9_bits(br, 16) + 1;
+}
+
+static void vp9_read_render_size(struct VP9BitReader *br, struct VP9FrameInfo *info) {
+    if (vp9_bit(br))
+        vp9_read_frame_size(br, &info->render_width, &info->render_height);
+    else {
+        info->render_width = info->frame_width;
+        info->render_height = info->frame_height;
+    }
+}
+
+static int vp9_read_color_config(struct VP9BitReader *br, struct VP9FrameInfo *info) {
+    int color_space;
+    info->bit_depth = 8;
+    info->subsampling_x = 1;
+    info->subsampling_y = 1;
+    if (info->profile >= 2)
+        info->bit_depth = vp9_bit(br) ? 12 : 10;
+    color_space = vp9_bits(br, 3);
+    if (color_space != 7) {
+        vp9_bit(br);                  /* color_range */
+        if (info->profile == 1 || info->profile == 3) {
+            info->subsampling_x = vp9_bit(br);
+            info->subsampling_y = vp9_bit(br);
+            vp9_bit(br);              /* reserved */
+        }
+    } else if (info->profile == 1 || info->profile == 3) {
+        info->subsampling_x = 0;
+        info->subsampling_y = 0;
+        vp9_bit(br);                  /* reserved */
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+static void vp9_init_lf_deltas(struct VP9FrameInfo *info) {
+    info->loop_filter_ref_deltas[0] = 1;
+    info->loop_filter_ref_deltas[1] = 0;
+    info->loop_filter_ref_deltas[2] = -1;
+    info->loop_filter_ref_deltas[3] = -1;
+    info->loop_filter_mode_deltas[0] = 0;
+    info->loop_filter_mode_deltas[1] = 0;
+}
+
+static void init_vp9_state(LibVADecoder *dec) {
+    dec->vp9_loop_filter_ref_deltas[0] = 1;
+    dec->vp9_loop_filter_ref_deltas[1] = 0;
+    dec->vp9_loop_filter_ref_deltas[2] = -1;
+    dec->vp9_loop_filter_ref_deltas[3] = -1;
+    dec->vp9_loop_filter_mode_deltas[0] = 0;
+    dec->vp9_loop_filter_mode_deltas[1] = 0;
+    dec->vp9_segmentation_abs_or_delta_update = 0;
+    memset(dec->vp9_feature_enabled, 0, sizeof(dec->vp9_feature_enabled));
+    memset(dec->vp9_feature_data, 0, sizeof(dec->vp9_feature_data));
+}
+
+static void load_vp9_state(LibVADecoder *dec, struct VP9FrameInfo *info) {
+    memcpy(info->loop_filter_ref_deltas, dec->vp9_loop_filter_ref_deltas,
+           sizeof(info->loop_filter_ref_deltas));
+    memcpy(info->loop_filter_mode_deltas, dec->vp9_loop_filter_mode_deltas,
+           sizeof(info->loop_filter_mode_deltas));
+    info->segmentation_abs_or_delta_update = dec->vp9_segmentation_abs_or_delta_update;
+    memcpy(info->feature_enabled, dec->vp9_feature_enabled, sizeof(info->feature_enabled));
+    memcpy(info->feature_data, dec->vp9_feature_data, sizeof(info->feature_data));
+}
+
+static void save_vp9_state(LibVADecoder *dec, const struct VP9FrameInfo *info) {
+    memcpy(dec->vp9_loop_filter_ref_deltas, info->loop_filter_ref_deltas,
+           sizeof(dec->vp9_loop_filter_ref_deltas));
+    memcpy(dec->vp9_loop_filter_mode_deltas, info->loop_filter_mode_deltas,
+           sizeof(dec->vp9_loop_filter_mode_deltas));
+    if (info->segmentation_enabled) {
+        dec->vp9_segmentation_abs_or_delta_update = info->segmentation_abs_or_delta_update;
+        memcpy(dec->vp9_feature_enabled, info->feature_enabled, sizeof(dec->vp9_feature_enabled));
+        memcpy(dec->vp9_feature_data, info->feature_data, sizeof(dec->vp9_feature_data));
+    }
+}
+
+static void vp9_read_loop_filter(struct VP9BitReader *br, struct VP9FrameInfo *info) {
+    info->loop_filter_level = vp9_bits(br, 6);
+    info->loop_filter_sharpness = vp9_bits(br, 3);
+    info->loop_filter_delta_enabled = vp9_bit(br);
+    if (info->loop_filter_delta_enabled && vp9_bit(br)) {
+        for (int i = 0; i < 4; i++)
+            if (vp9_bit(br))
+                info->loop_filter_ref_deltas[i] = vp9_sbits(br, 6);
+        for (int i = 0; i < 2; i++)
+            if (vp9_bit(br))
+                info->loop_filter_mode_deltas[i] = vp9_sbits(br, 6);
+    }
+}
+
+static void vp9_read_quant(struct VP9BitReader *br, struct VP9FrameInfo *info) {
+    info->base_q_idx = vp9_bits(br, 8);
+    info->delta_q_y_dc = vp9_read_delta_q(br);
+    info->delta_q_uv_dc = vp9_read_delta_q(br);
+    info->delta_q_uv_ac = vp9_read_delta_q(br);
+    info->lossless = info->base_q_idx == 0 && info->delta_q_y_dc == 0 &&
+                     info->delta_q_uv_dc == 0 && info->delta_q_uv_ac == 0;
+}
+
+static int vp9_seg_signed(int feature) {
+    return feature == 0 || feature == 1;
+}
+
+static int vp9_seg_bits(int feature) {
+    static const int bits[4] = {8, 6, 2, 0};
+    return bits[feature];
+}
+
+static void vp9_read_segmentation(struct VP9BitReader *br, struct VP9FrameInfo *info) {
+    info->segmentation_enabled = vp9_bit(br);
+    if (!info->segmentation_enabled)
+        return;
+    info->segmentation_update_map = vp9_bit(br);
+    if (info->segmentation_update_map) {
+        for (int i = 0; i < 7; i++)
+            info->segmentation_tree_probs[i] = vp9_bit(br) ? (uint8_t)vp9_bits(br, 8) : 255;
+        info->segmentation_temporal_update = vp9_bit(br);
+        if (info->segmentation_temporal_update) {
+            for (int i = 0; i < 3; i++)
+                info->segmentation_pred_probs[i] = vp9_bit(br) ? (uint8_t)vp9_bits(br, 8) : 255;
+        } else {
+            memset(info->segmentation_pred_probs, 255, sizeof(info->segmentation_pred_probs));
+        }
+    }
+    if (vp9_bit(br)) {
+        info->segmentation_abs_or_delta_update = vp9_bit(br);
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 4; j++) {
+                info->feature_enabled[i][j] = vp9_bit(br);
+                if (info->feature_enabled[i][j]) {
+                    info->feature_data[i][j] = vp9_bits(br, vp9_seg_bits(j));
+                    if (vp9_seg_signed(j) && vp9_bit(br))
+                        info->feature_data[i][j] = -info->feature_data[i][j];
+                }
+            }
+        }
+    }
+}
+
+static void vp9_read_tiles(struct VP9BitReader *br, struct VP9FrameInfo *info) {
+    int sb64_cols = (info->frame_width + 63) / 64;
+    int min_log2 = 0, max_log2 = 0;
+    while ((64 << min_log2) < sb64_cols)
+        min_log2++;
+    while ((sb64_cols >> max_log2) >= 4)
+        max_log2++;
+    info->tile_cols_log2 = min_log2;
+    while (info->tile_cols_log2 < max_log2 && vp9_bit(br))
+        info->tile_cols_log2++;
+    info->tile_rows_log2 = vp9_bit(br);
+    if (info->tile_rows_log2)
+        info->tile_rows_log2 += vp9_bit(br);
+}
+
+static int parse_vp9_frame(LibVADecoder *dec, const uint8_t *data, int size,
+                           struct VP9FrameInfo *info) {
+    struct VP9BitReader br;
+    int marker;
+    memset(info, 0, sizeof(*info));
+    load_vp9_state(dec, info);
+    vp9_br_init(&br, data, size);
+    marker = vp9_bits(&br, 2);
+    if (marker != 2)
+        return 0;
+    info->profile = vp9_read_profile(&br);
+    if (info->profile > 1 && !dec->output_444)
+        return 0;
+    if (vp9_bit(&br)) {               /* show_existing_frame */
+        int ref = vp9_bits(&br, 3);
+        (void)ref;
+        return 0;
+    }
+    info->frame_type = vp9_bit(&br);
+    info->show_frame = vp9_bit(&br);
+    info->error_resilient_mode = vp9_bit(&br);
+    if (info->frame_type == 0) {
+        if (!vp9_read_sync_code(&br) || !vp9_read_color_config(&br, info))
+            return 0;
+        vp9_read_frame_size(&br, &info->frame_width, &info->frame_height);
+        vp9_read_render_size(&br, info);
+        info->refresh_frame_flags = 0xff;
+    } else {
+        if (!info->show_frame)
+            info->intra_only = vp9_bit(&br);
+        if (!info->error_resilient_mode)
+            info->reset_frame_context = vp9_bits(&br, 2);
+        if (info->intra_only) {
+            if (!vp9_read_sync_code(&br))
+                return 0;
+            if (info->profile > 0) {
+                if (!vp9_read_color_config(&br, info))
+                    return 0;
+            } else {
+                info->bit_depth = 8;
+                info->subsampling_x = 1;
+                info->subsampling_y = 1;
+            }
+            info->refresh_frame_flags = vp9_bits(&br, 8);
+            vp9_read_frame_size(&br, &info->frame_width, &info->frame_height);
+            vp9_read_render_size(&br, info);
+        } else {
+            info->refresh_frame_flags = vp9_bits(&br, 8);
+            for (int i = 0; i < 3; i++) {
+                info->ref_frame_idx[i] = vp9_bits(&br, 3);
+                info->ref_frame_sign_bias[i + 1] = vp9_bit(&br);
+            }
+            for (int i = 0; i < 3; i++) {
+                if (vp9_bit(&br)) {
+                    info->frame_width = dec->width;
+                    info->frame_height = dec->height;
+                    break;
+                }
+            }
+            if (!info->frame_width)
+                vp9_read_frame_size(&br, &info->frame_width, &info->frame_height);
+            vp9_read_render_size(&br, info);
+            info->allow_high_precision_mv = vp9_bit(&br);
+            info->interpolation_filter = vp9_bit(&br) ? 4 : vp9_bits(&br, 2);
+        }
+    }
+    if (info->frame_type == 0 || info->intra_only || info->error_resilient_mode) {
+        vp9_init_lf_deltas(info);
+        info->segmentation_abs_or_delta_update = 0;
+        memset(info->feature_enabled, 0, sizeof(info->feature_enabled));
+        memset(info->feature_data, 0, sizeof(info->feature_data));
+    }
+    if (!info->error_resilient_mode) {
+        info->refresh_frame_context = vp9_bit(&br);
+        info->frame_parallel_decoding_mode = vp9_bit(&br);
+    } else {
+        info->refresh_frame_context = 0;
+        info->frame_parallel_decoding_mode = 1;
+    }
+    info->frame_context_idx = vp9_bits(&br, 2);
+    vp9_read_loop_filter(&br, info);
+    vp9_read_quant(&br, info);
+    vp9_read_segmentation(&br, info);
+    vp9_read_tiles(&br, info);
+    info->first_partition_size = vp9_bits(&br, 16);
+    info->uncompressed_header_bytes = (br.bit_pos + 7) / 8;
+    if (info->frame_width <= 0)
+        info->frame_width = dec->width;
+    if (info->frame_height <= 0)
+        info->frame_height = dec->height;
+    return info->uncompressed_header_bytes <= size;
+}
+
+static int vp9_dc_quant(int q, int delta) {
+    return vp9_dc_qlookup[clamp_int(q + delta, 0, 255)];
+}
+
+static int vp9_ac_quant(int q, int delta) {
+    return vp9_ac_qlookup[clamp_int(q + delta, 0, 255)];
+}
+
+static int vp9_seg_qindex(const struct VP9FrameInfo *info, int segment) {
+    int q = info->base_q_idx;
+    if (info->segmentation_enabled && info->feature_enabled[segment][0]) {
+        if (info->segmentation_abs_or_delta_update)
+            q = info->feature_data[segment][0];
+        else
+            q += info->feature_data[segment][0];
+    }
+    return clamp_int(q, 0, 255);
+}
+
+static void fill_vp9_segment(const struct VP9FrameInfo *info, int segment,
+                             VASegmentParameterVP9 *seg) {
+    int q = vp9_seg_qindex(info, segment);
+    int lvl = info->loop_filter_level;
+    int scale = 1 << (lvl >> 5);
+    memset(seg, 0, sizeof(*seg));
+    seg->segment_flags.fields.segment_reference_enabled =
+        (uint16_t)info->feature_enabled[segment][2];
+    seg->segment_flags.fields.segment_reference =
+        (uint16_t)info->feature_data[segment][2];
+    seg->segment_flags.fields.segment_reference_skipped =
+        (uint16_t)info->feature_enabled[segment][3];
+    seg->luma_dc_quant_scale = (int16_t)vp9_dc_quant(q, info->delta_q_y_dc);
+    seg->luma_ac_quant_scale = (int16_t)vp9_ac_quant(q, 0);
+    seg->chroma_dc_quant_scale = (int16_t)vp9_dc_quant(q, info->delta_q_uv_dc);
+    seg->chroma_ac_quant_scale = (int16_t)vp9_ac_quant(q, info->delta_q_uv_ac);
+    if (info->segmentation_enabled && info->feature_enabled[segment][1]) {
+        lvl = info->segmentation_abs_or_delta_update ?
+              info->feature_data[segment][1] : lvl + info->feature_data[segment][1];
+    }
+    lvl = clamp_int(lvl, 0, 63);
+    for (int ref = 0; ref < 4; ref++) {
+        for (int mode = 0; mode < 2; mode++) {
+            int fl = lvl;
+            if (info->loop_filter_delta_enabled)
+                fl += (info->loop_filter_ref_deltas[ref] + info->loop_filter_mode_deltas[mode]) * scale;
+            seg->filter_level[ref][mode] = (uint8_t)clamp_int(fl, 0, 63);
+        }
+    }
+}
+
+static LibVADecodeStatus vp9_decoder_decode(LibVADecoder *dec,
+                                            const uint8_t *data, int data_len,
+                                            LibVADecodedFrame *frame) {
+    VABufferID buffers[3];
+    int nbuf = 0;
+    struct VP9FrameInfo info;
+    VADecPictureParameterBufferVP9 pic;
+    VASliceParameterBufferVP9 slice;
+    int surface_index;
+    VASurfaceID surface;
+    VAStatus status;
+    LibVADecodeStatus dstatus;
+    long long t0, t1, t2;
+
+    if (!parse_vp9_frame(dec, data, data_len, &info))
+        return set_message(dec, LIBVA_DEC_UNSUPPORTED, "unsupported VP9 frame header");
+    for (int i = 0; i < (int)(sizeof(buffers) / sizeof(buffers[0])); i++)
+        buffers[i] = VA_INVALID_ID;
+    surface_index = dec->surface_index++ & 3;
+    surface = dec->surfaces[surface_index];
+
+    memset(&pic, 0, sizeof(pic));
+    pic.frame_width = (uint16_t)info.frame_width;
+    pic.frame_height = (uint16_t)info.frame_height;
+    for (int i = 0; i < 8; i++)
+        pic.reference_frames[i] = dec->vp9_refs[i];
+    pic.pic_fields.bits.subsampling_x = (uint32_t)info.subsampling_x;
+    pic.pic_fields.bits.subsampling_y = (uint32_t)info.subsampling_y;
+    pic.pic_fields.bits.frame_type = (uint32_t)info.frame_type;
+    pic.pic_fields.bits.show_frame = (uint32_t)info.show_frame;
+    pic.pic_fields.bits.error_resilient_mode = (uint32_t)info.error_resilient_mode;
+    pic.pic_fields.bits.intra_only = (uint32_t)info.intra_only;
+    pic.pic_fields.bits.allow_high_precision_mv = (uint32_t)info.allow_high_precision_mv;
+    pic.pic_fields.bits.mcomp_filter_type = (uint32_t)info.interpolation_filter;
+    pic.pic_fields.bits.frame_parallel_decoding_mode = (uint32_t)info.frame_parallel_decoding_mode;
+    pic.pic_fields.bits.reset_frame_context = (uint32_t)info.reset_frame_context;
+    pic.pic_fields.bits.refresh_frame_context = (uint32_t)info.refresh_frame_context;
+    pic.pic_fields.bits.frame_context_idx = (uint32_t)info.frame_context_idx;
+    pic.pic_fields.bits.segmentation_enabled = (uint32_t)info.segmentation_enabled;
+    pic.pic_fields.bits.segmentation_temporal_update = (uint32_t)info.segmentation_temporal_update;
+    pic.pic_fields.bits.segmentation_update_map = (uint32_t)info.segmentation_update_map;
+    pic.pic_fields.bits.last_ref_frame = (uint32_t)info.ref_frame_idx[0];
+    pic.pic_fields.bits.last_ref_frame_sign_bias = (uint32_t)info.ref_frame_sign_bias[1];
+    pic.pic_fields.bits.golden_ref_frame = (uint32_t)info.ref_frame_idx[1];
+    pic.pic_fields.bits.golden_ref_frame_sign_bias = (uint32_t)info.ref_frame_sign_bias[2];
+    pic.pic_fields.bits.alt_ref_frame = (uint32_t)info.ref_frame_idx[2];
+    pic.pic_fields.bits.alt_ref_frame_sign_bias = (uint32_t)info.ref_frame_sign_bias[3];
+    pic.pic_fields.bits.lossless_flag = (uint32_t)info.lossless;
+    pic.filter_level = (uint8_t)info.loop_filter_level;
+    pic.sharpness_level = (uint8_t)info.loop_filter_sharpness;
+    pic.log2_tile_rows = (uint8_t)info.tile_rows_log2;
+    pic.log2_tile_columns = (uint8_t)info.tile_cols_log2;
+    pic.frame_header_length_in_bytes = (uint8_t)info.uncompressed_header_bytes;
+    pic.first_partition_size = (uint16_t)info.first_partition_size;
+    memcpy(pic.mb_segment_tree_probs, info.segmentation_tree_probs, sizeof(pic.mb_segment_tree_probs));
+    if (info.segmentation_temporal_update)
+        memcpy(pic.segment_pred_probs, info.segmentation_pred_probs, sizeof(pic.segment_pred_probs));
+    else
+        memset(pic.segment_pred_probs, 255, sizeof(pic.segment_pred_probs));
+    pic.profile = (uint8_t)info.profile;
+    pic.bit_depth = (uint8_t)info.bit_depth;
+
+    memset(&slice, 0, sizeof(slice));
+    slice.slice_data_size = (uint32_t)data_len;
+    slice.slice_data_offset = 0;
+    slice.slice_data_flag = VA_SLICE_DATA_FLAG_ALL;
+    for (int i = 0; i < 8; i++)
+        fill_vp9_segment(&info, i, &slice.seg_param[i]);
+
+    status = vaCreateBuffer(dec->display, dec->context, VAPictureParameterBufferType,
+                            sizeof(pic), 1, &pic, &buffers[nbuf++]);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaCreateBuffer(dec->display, dec->context, VASliceParameterBufferType,
+                                sizeof(slice), 1, &slice, &buffers[nbuf++]);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaCreateBuffer(dec->display, dec->context, VASliceDataBufferType,
+                                (unsigned int)data_len, 1, (void *)data, &buffers[nbuf++]);
+    if (status != VA_STATUS_SUCCESS) {
+        destroy_buffers(dec, buffers, nbuf);
+        return set_error(dec, status, "vaCreateBuffer(VP9)");
+    }
+    t0 = usec_now();
+    status = vaBeginPicture(dec->display, dec->context, surface);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaRenderPicture(dec->display, dec->context, buffers, nbuf);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaEndPicture(dec->display, dec->context);
+    t1 = usec_now();
+    destroy_buffers(dec, buffers, nbuf);
+    if (status != VA_STATUS_SUCCESS)
+        return set_error(dec, status, "VA VP9 decode submit");
+    status = vaSyncSurface(dec->display, surface);
+    t2 = usec_now();
+    if (status != VA_STATUS_SUCCESS)
+        return set_error(dec, status, "vaSyncSurface");
+    dstatus = map_output(dec, surface, frame);
+    if (dstatus != LIBVA_DEC_OK)
+        return dstatus;
+    save_vp9_state(dec, &info);
+    for (int i = 0; i < 8; i++) {
+        if (info.refresh_frame_flags & (1 << i))
+            dec->vp9_refs[i] = surface;
+    }
+    frame->us_submit = (int)(t1 - t0);
+    frame->us_sync = (int)(t2 - t1);
+    dec->frames++;
+    return LIBVA_DEC_OK;
+}
+
 static LibVADecodeStatus h264_decoder_decode(LibVADecoder *dec,
                                              const uint8_t *data, int data_len,
                                              LibVADecodedFrame *frame) {
@@ -1231,7 +2231,11 @@ LibVADecodeStatus libva_decoder_decode(LibVADecoder *dec,
         return LIBVA_DEC_ERROR;
     if (dec->codec == LIBVA_CODEC_H264)
         return h264_decoder_decode(dec, data, data_len, frame);
-    return set_message(dec, LIBVA_DEC_UNSUPPORTED, "VP8/VP9 VA decode parser is not implemented yet");
+    if (dec->codec == LIBVA_CODEC_VP8)
+        return vp8_decoder_decode(dec, data, data_len, frame);
+    if (dec->codec == LIBVA_CODEC_VP9)
+        return vp9_decoder_decode(dec, data, data_len, frame);
+    return set_message(dec, LIBVA_DEC_UNSUPPORTED, "unknown VA decode codec");
 }
 
 int libva_decoder_get_width(LibVADecoder *dec) {
