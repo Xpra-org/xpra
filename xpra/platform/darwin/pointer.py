@@ -13,7 +13,7 @@ log = Logger("osx", "pointer")
 
 def get_position() -> tuple[int, int]:
     location = NSEvent.mouseLocation()
-    return location.x, location.y
+    return round(location.x), round(location.y)
 
 
 def move_pointer(x: int, y: int) -> None:
