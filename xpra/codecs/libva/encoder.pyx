@@ -3,10 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-# ABOUTME: libva H.264 hardware encoder.
+# ABOUTME: libva hardware encoder.
 # ABOUTME: Wraps the C va_encode API; accepts NV12 system-memory frames.
 # accepts NV12 system-memory frames only
-# emits periodic IDR frames and P frames
+# emits periodic key frames and P frames
 # copies into VA surfaces; direct dmabuf/VA surface import is future work
 # future work: more encodings/profiles, async queues, set_speed, set_quality
 
@@ -73,7 +73,8 @@ cdef extern from "va_encode.h":
     int               libva_encode_get_major()
     int               libva_encode_get_minor()
 
-    LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, int width, int height,
+    LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
+                                           int width, int height,
                                            int quality, int speed) nogil
     void              libva_encoder_destroy(LibVAEncoder *enc) nogil
     LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
@@ -100,7 +101,7 @@ cdef str frame_type_name(LibVAEncodeFrameType frame_type):
 
 generation = AtomicInteger()
 
-ENCODINGS: list[str] = ["h264"]
+ENCODINGS: list[str] = ["h264", "vp8"]
 
 
 def init_module(options: dict = None) -> None:
@@ -110,7 +111,7 @@ def init_module(options: dict = None) -> None:
     cdef LibVAEncodeStatus status = libva_encode_startup()
     if status != LIBVA_ENC_OK:
         detail = libva_encode_get_last_error().decode("utf-8", "replace")
-        msg = "libva H.264 encoder startup failed: %s" % libva_encode_status_str(status).decode("latin-1")
+        msg = "libva encoder startup failed: %s" % libva_encode_status_str(status).decode("latin-1")
         if detail:
             msg += " (%s)" % detail
         raise ImportError(msg)
@@ -199,22 +200,25 @@ cdef class Encoder:
         self.speed = options.intget("speed", 50)
         self.frames = 0
 
+        cdef bytes encoding_bytes = encoding.encode("latin-1")
+        cdef const char *encoding_name = encoding_bytes
         cdef LibVAEncodeStatus status
         with nogil:
-            status = libva_encoder_create(&self.context, width, height, self.quality, self.speed)
+            status = libva_encoder_create(&self.context, encoding_name,
+                                          width, height, self.quality, self.speed)
         if status != LIBVA_ENC_OK:
-            raise RuntimeError("failed to create libva encoder (%dx%d): %s" % (
-                width, height, libva_encode_status_str(status).decode("latin-1")))
+            raise RuntimeError("failed to create libva %s encoder (%dx%d): %s" % (
+                encoding, width, height, libva_encode_status_str(status).decode("latin-1")))
 
         self.file = None
         save_to_file = os.environ.get("XPRA_SAVE_TO_FILE", "")
         if save_to_file:
-            filename = save_to_file + "libva-" + str(generation.increase()) + ".h264"
+            filename = save_to_file + "libva-" + str(generation.increase()) + "." + encoding
             self.file = open(filename, "wb")
-            log.info("saving h264 stream to %r", filename)
+            log.info("saving %s stream to %r", encoding, filename)
 
         self.ready = 1
-        log("libva h264 encoder initialized")
+        log("libva %s encoder initialized", encoding)
 
     def is_ready(self) -> bool:
         return bool(self.ready)
