@@ -170,6 +170,10 @@ def _get_xpra_runtime_dir() -> str:
     return os.path.join(runtime_dir, "xpra")
 
 
+def do_get_xpra_runtime_dir() -> str:
+    return _get_xpra_runtime_dir()
+
+
 def do_get_socket_dirs() -> list[str]:
     SOCKET_DIRS = []
     from xpra.util.env import envbool

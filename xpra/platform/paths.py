@@ -153,6 +153,14 @@ def do_get_sessions_dir() -> str:
     return "$XDG_RUNTIME_DIR/xpra"
 
 
+def get_xpra_runtime_dir() -> str:
+    return env_or_delegate("XPRA_RUNTIME_DIR", do_get_xpra_runtime_dir)
+
+
+def do_get_xpra_runtime_dir() -> str:
+    return tempfile.gettempdir()
+
+
 def get_socket_dirs() -> list[str]:
     return envaslist_or_delegate("XPRA_SOCKET_DIRS", do_get_socket_dirs)
 
@@ -439,6 +447,7 @@ platform_import(globals(), "paths", False,
                 "do_get_user_conf_dirs",
                 "do_get_state_dir",
                 "do_get_sessions_dir",
+                "do_get_xpra_runtime_dir",
                 "do_get_socket_dirs",
                 "do_get_client_socket_dirs",
                 "do_get_default_log_dirs",
@@ -472,6 +481,7 @@ def get_info() -> dict[str, Any]:
         "user_conf": {"dirs": get_user_conf_dirs()},
         "state": {"dir": get_state_dir()},
         "sessions": {"dir": get_sessions_dir()},
+        "xpra-runtime": {"dir": get_xpra_runtime_dir()},
         "socket": {"dirs": get_socket_dirs()},
         "client-socket": {"dirs": get_client_socket_dirs()},
         "log": {"dirs": get_default_log_dirs()},

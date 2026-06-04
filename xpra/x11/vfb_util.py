@@ -110,13 +110,12 @@ def valid_xauth(filename: str, uid: int = getuid(), gid: int = getgid()) -> str:
 
 
 def get_xauthority_path(display_name: str) -> str:
-    assert POSIX
     # pylint: disable=import-outside-toplevel
-    from xpra.platform.posix.paths import _get_xpra_runtime_dir
+    from xpra.platform.paths import get_xpra_runtime_dir
     expanded_home = os.path.expanduser("~")
     has_home = os.path.exists(expanded_home) and is_writable(expanded_home, getuid(), getgid())
     if PRIVATE_XAUTH or (not has_home and os.environ.get("XDG_RUNTIME_DIR")):
-        d = _get_xpra_runtime_dir()
+        d = get_xpra_runtime_dir()
         if XAUTH_PER_DISPLAY:
             filename = "Xauthority-" + display_name.lstrip(":")
         else:

@@ -7,6 +7,7 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 class TestVfbUtil(unittest.TestCase):
@@ -26,6 +27,16 @@ class TestVfbUtil(unittest.TestCase):
             result = valid_xauth(tf.name)
             # result is either the path (writable) or "" (not writable)
             assert result in (tf.name, "")
+
+    # get_xauthority_path
+    def test_get_xauthority_path_private_runtime_dir(self):
+        from xpra.util.env import OSEnvContext
+        from xpra.x11.vfb_util import get_xauthority_path
+        with tempfile.TemporaryDirectory() as runtime_dir:
+            with OSEnvContext(XPRA_RUNTIME_DIR=runtime_dir):
+                with patch("xpra.x11.vfb_util.PRIVATE_XAUTH", True):
+                    with patch("xpra.x11.vfb_util.XAUTH_PER_DISPLAY", True):
+                        assert get_xauthority_path(":7") == os.path.join(runtime_dir, "Xauthority-7")
 
     # save_input_conf
     def test_save_input_conf_pointer(self):
