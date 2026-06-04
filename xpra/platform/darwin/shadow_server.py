@@ -24,6 +24,7 @@ GLib = gi_import("GLib")
 log = Logger("shadow", "osx")
 
 USE_TIMER = envbool("XPRA_OSX_SHADOW_USE_TIMER", False)
+HIGHDPI = envbool("XPRA_AVFOUNDATION_HIGHDPI", False)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
 GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = ("avfvideosrc", )
@@ -120,6 +121,11 @@ class ShadowServer(ShadowServerBase):
         self.refresh_count = 0
         self.refresh_rectangle_count = 0
         self.refresh_registered = False
+        # set when the AVFoundation streaming capture backend is in use
+        # (push-based whole-frame capture) rather than the CoreGraphics
+        # damage-callback backend:
+        self._streaming = False
+        self._stream_refresh_pending = False
         super().__init__(attrs)
 
     def get_keyboard_subsystem_class(self) -> type:
@@ -140,8 +146,36 @@ class ShadowServer(ShadowServerBase):
         return GTKStatusIconTray(self, 0, self.tray, "Xpra Shadow Server",
                                  click_cb=self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
 
-    def setup_capture(self) -> OSXRootCapture:
+    def setup_capture(self):
+        # AVCaptureScreenInput delivers whole frames (no damage rectangles), so it
+        # suits full-frame streaming; use it for "stream" encoding and for the
+        # default multi-window shadow mode. Otherwise keep the CoreGraphics
+        # damage-callback backend.
+        encoding_subsystem = self.get_subsystem("encoding")
+        encoding = getattr(encoding_subsystem, "encoding", "") if encoding_subsystem else ""
+        if encoding == "stream" or self.multi_window:
+            from xpra.platform.darwin.avfoundation_screen import AVFShadowCapture
+            self._streaming = True
+            return AVFShadowCapture(on_frame=self._screen_frame, get_fps=self._capture_fps)
+        self._streaming = False
         return OSXRootCapture()
+
+    def _capture_fps(self) -> int:
+        delay = self.refresh_delay or (1000 // self.DEFAULT_REFRESH_RATE)
+        return max(1, round(1000 / max(1, delay)))
+
+    def _screen_frame(self) -> None:
+        # called from the capture dispatch queue (a background thread):
+        # coalesce bursts of frames into a single main-loop refresh.
+        if not self._stream_refresh_pending:
+            self._stream_refresh_pending = True
+            GLib.idle_add(self._do_stream_refresh)
+
+    def _do_stream_refresh(self) -> bool:
+        self._stream_refresh_pending = False
+        if self.mapped:
+            self.refresh_windows()
+        return False
 
     def screen_refresh_callback(self, count, rects, info) -> None:
         log("screen_refresh_callback%s mapped=%s", (count, rects, info), self.mapped)
@@ -175,6 +209,12 @@ class ShadowServer(ShadowServerBase):
         # don't use the timer, get damage notifications:
         if wid not in self.mapped:
             self.mapped.append(wid)
+        if self._streaming:
+            # push-based capture: refreshes are driven by frame delivery
+            if self.capture:
+                self.capture.start()
+            self.start_poll_pointer()
+            return
         if self.refresh_registered:
             return
         if not USE_TIMER:
@@ -189,6 +229,16 @@ class ShadowServer(ShadowServerBase):
 
     def stop_refresh(self, wid: int) -> None:
         log("stop_refresh(%i) mapped=%s, timer=%s", wid, self.mapped, self.refresh_timer)
+        if self._streaming:
+            try:
+                self.mapped.remove(wid)
+            except ValueError:
+                pass
+            if not self.mapped:
+                if self.capture:
+                    self.capture.stop()
+                self.cancel_poll_pointer()
+            return
         # may stop the timer fallback:
         super().stop_refresh(wid)
         if self.refresh_registered and not self.mapped:
@@ -202,6 +252,32 @@ class ShadowServer(ShadowServerBase):
                 log.warn(" %s", e)
             self.refresh_registered = False
 
+    def set_refresh_delay(self, v: int) -> None:
+        super().set_refresh_delay(v)
+        if self._streaming and self.capture:
+            self.capture.set_fps(self._capture_fps())
+
+    def get_shadow_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
+        monitors = super().get_shadow_monitors()
+        if not (self._streaming and HIGHDPI):
+            return monitors
+        # high-dpi: the AVFoundation capture delivers native pixels, so size the
+        # window models in pixels too by scaling each monitor by its backing factor:
+        scaled = []
+        for plug_name, x, y, width, height, scale_factor in monitors:
+            sf = scale_factor or 1
+            scaled.append((plug_name, round(x * sf), round(y * sf),
+                           round(width * sf), round(height * sf), scale_factor))
+        return scaled
+
+    def get_display_size(self) -> tuple[int, int]:
+        w, h = super().get_display_size()
+        if self._streaming and HIGHDPI:
+            from xpra.platform.darwin.avfoundation_screen import get_display_scale
+            sf = get_display_scale(CG.CGMainDisplayID())
+            return round(w * sf), round(h * sf)
+        return w, h
+
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         capabilities["shadow"] = True
@@ -213,11 +289,14 @@ class ShadowServer(ShadowServerBase):
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk2/osx-shadow"
         info.setdefault("damage", {}).update({
+            "streaming": self._streaming,
             "use-timer": USE_TIMER,
             "notifications": self.refresh_registered,
             "count": self.refresh_count,
             "rectangles": self.refresh_rectangle_count,
         })
+        if self._streaming and self.capture:
+            info["damage"]["backend"] = self.capture.get_type()
         return info
 
 

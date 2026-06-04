@@ -16,12 +16,9 @@ and ``read()`` returns and clears it.
 
 import os
 import time
-import ctypes
 import threading
 from typing import Any
 
-import objc
-from Foundation import NSObject
 from AVFoundation import (
     AVCaptureSession, AVCaptureDevice, AVCaptureDeviceInput,
     AVCaptureVideoDataOutput,
@@ -31,17 +28,12 @@ from AVFoundation import (
 from Quartz.CoreVideo import (
     kCVPixelFormatType_32BGRA,
     kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
-    CVPixelBufferLockBaseAddress, CVPixelBufferUnlockBaseAddress,
-    CVPixelBufferGetBaseAddress, CVPixelBufferGetBytesPerRow,
-    CVPixelBufferGetWidth, CVPixelBufferGetHeight,
-    CVPixelBufferGetPixelFormatType, CVPixelBufferIsPlanar,
-    CVPixelBufferGetPlaneCount, CVPixelBufferGetBaseAddressOfPlane,
-    CVPixelBufferGetHeightOfPlane, CVPixelBufferGetBytesPerRowOfPlane,
 )
 from CoreMedia import CMSampleBufferGetImageBuffer
 
 from xpra.codecs.image import ImageWrapper
 from xpra.webcam.base import CameraDevice
+from xpra.platform.darwin.avfoundation_common import get_dispatch_queue, copy_pixel_buffer, SampleBufferDelegate
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -52,7 +44,6 @@ AVFOUNDATION_READ_TIMEOUT = 3
 # read() never blocks the UI thread, which on macOS GTK could otherwise starve
 # the initial window paint and leave it black.
 AVFOUNDATION_FIRST_FRAME_TIMEOUT = 5
-kCVPixelBufferLock_ReadOnly = 1
 
 # CVPixelBuffer videoSettings keys (string-valued in PyObjC)
 kCVPixelBufferPixelFormatTypeKey = "PixelFormatType"
@@ -76,129 +67,24 @@ PREFERRED_AVF_FORMATS: tuple[int, ...] = (
 STALL_WARN = 0.2
 
 PRESETS: dict[str, str] = {
-    "320x240":   AVCaptureSessionPreset320x240,
-    "640x480":   AVCaptureSessionPreset640x480,
-    "1280x720":  AVCaptureSessionPreset1280x720,
+    "320x240": AVCaptureSessionPreset320x240,
+    "640x480": AVCaptureSessionPreset640x480,
+    "VGA": AVCaptureSessionPreset640x480,
+    "1280x720": AVCaptureSessionPreset1280x720,
+    "720p": AVCaptureSessionPreset1280x720,
     "1920x1080": AVCaptureSessionPreset1920x1080,
+    "1080p": AVCaptureSessionPreset1920x1080,
 }
 
 # Modern / Continuity cameras frequently ignore the session preset and deliver
 # their native resolution (e.g. 1920x1080), so we also constrain the output
 # size explicitly via the CoreVideo Width/Height keys in videoSettings.
 PRESET_SIZES: dict[str, tuple[int, int]] = {
-    "320x240":   (320, 240),
-    "640x480":   (640, 480),
-    "1280x720":  (1280, 720),
-    "1920x1080": (1920, 1080),
+    AVCaptureSessionPreset320x240: (320, 240),
+    AVCaptureSessionPreset640x480: (640, 480),
+    AVCaptureSessionPreset1280x720: (1280, 720),
+    AVCaptureSessionPreset1920x1080: (1920, 1080),
 }
-
-
-def _get_dispatch_queue(label: bytes):
-    """
-    Return a serial dispatch queue suitable for sample-buffer delivery.
-
-    AVFoundation needs a real ``dispatch_queue_t``; PyObjC exposes one via
-    the ``libdispatch`` framework binding. If unavailable, fall back to a
-    global concurrent queue, which still serialises per-delegate calls.
-    """
-    try:
-        from libdispatch import dispatch_queue_create   # type: ignore[import-not-found]
-        return dispatch_queue_create(label, None)
-    except ImportError:
-        pass
-    try:
-        from libdispatch import dispatch_get_global_queue   # type: ignore[import-not-found]
-        return dispatch_get_global_queue(0, 0)
-    except ImportError as e:
-        raise RuntimeError(
-            "AVFoundation backend requires pyobjc-framework-libdispatch"
-        ) from e
-
-
-class _FrameDelegate(NSObject):
-    """
-    AVCaptureVideoDataOutputSampleBufferDelegate stub.
-
-    Receives every delivered sample buffer on the capture queue and hands it
-    off to the owning ``AVFoundationCamera``.
-    """
-
-    # noinspection PyTypeHints
-    def initWithCamera_(self, camera):
-        objc_self = objc.super(_FrameDelegate, self).init()
-        if objc_self is None:
-            return None
-        objc_self._camera_ref = camera
-        return objc_self
-
-    @objc.typedSelector(b'v@:@@@')
-    def captureOutput_didOutputSampleBuffer_fromConnection_(self, output, sample_buffer, conn):
-        camera = self._camera_ref
-        if camera is None:
-            log("captureOutput: no camera ref (delegate orphaned)")
-            return
-        try:
-            camera._on_frame(sample_buffer)
-        except Exception:
-            log.error("Error: AVFoundation _on_frame failed", exc_info=True)
-
-    @objc.typedSelector(b'v@:@@@')
-    def captureOutput_didDropSampleBuffer_fromConnection_(self, output, sample_buffer, conn):
-        camera = self._camera_ref
-        if camera is not None:
-            camera._on_drop()
-
-
-def _addr_to_bytes(addr, length: int) -> bytes:
-    """
-    Copy *length* bytes out of a base address returned by CoreVideo.
-
-    PyObjC types ``CVPixelBufferGetBaseAddress`` results as an ``objc.varlist``
-    (a typed pointer view), which exposes the underlying memory via
-    ``as_buffer(length)``. Older bindings may hand back a plain integer pointer.
-    """
-    as_buffer = getattr(addr, "as_buffer", None)
-    if as_buffer is not None:
-        return bytes(as_buffer(length))
-    return ctypes.string_at(int(addr), length)
-
-
-def _copy_pixel_buffer(pb) -> tuple[bytes, int, int, int, int]:
-    """
-    Lock *pb*, copy its bytes into a Python ``bytes`` object, and return
-    ``(raw, width, height, stride, pixel_format_int)``.
-
-    For planar buffers (NV12), planes are concatenated in their natural order
-    so the result is a single PACKED blob whose first ``stride*height`` bytes
-    are the Y plane.
-    """
-    fmt_int = CVPixelBufferGetPixelFormatType(pb)
-    width = CVPixelBufferGetWidth(pb)
-    height = CVPixelBufferGetHeight(pb)
-
-    CVPixelBufferLockBaseAddress(pb, kCVPixelBufferLock_ReadOnly)
-    try:
-        if CVPixelBufferIsPlanar(pb):
-            n_planes = CVPixelBufferGetPlaneCount(pb)
-            stride = CVPixelBufferGetBytesPerRowOfPlane(pb, 0)
-            chunks: list[bytes] = []
-            for i in range(n_planes):
-                addr = CVPixelBufferGetBaseAddressOfPlane(pb, i)
-                plane_h = CVPixelBufferGetHeightOfPlane(pb, i)
-                plane_stride = CVPixelBufferGetBytesPerRowOfPlane(pb, i)
-                if addr is None or plane_h <= 0 or plane_stride <= 0:
-                    return b"", 0, 0, 0, fmt_int
-                chunks.append(_addr_to_bytes(addr, plane_stride * plane_h))
-            raw = b"".join(chunks)
-        else:
-            stride = CVPixelBufferGetBytesPerRow(pb)
-            addr = CVPixelBufferGetBaseAddress(pb)
-            if addr is None:
-                return b"", 0, 0, 0, fmt_int
-            raw = _addr_to_bytes(addr, stride * height)
-    finally:
-        CVPixelBufferUnlockBaseAddress(pb, kCVPixelBufferLock_ReadOnly)
-    return raw, width, height, stride, fmt_int
 
 
 class AVFoundationCamera(CameraDevice):
@@ -252,7 +138,7 @@ class AVFoundationCamera(CameraDevice):
             log(" preset=%s", preset)
         else:
             log.warn("Warning: AVFoundation preset %r not supported, using default", preset_name)
-        target_size = PRESET_SIZES.get(preset_name, (640, 480))
+        target_size = PRESET_SIZES.get(preset, (640, 480))
 
         input_, err = AVCaptureDeviceInput.deviceInputWithDevice_error_(device, None)
         if input_ is None:
@@ -286,10 +172,10 @@ class AVFoundationCamera(CameraDevice):
             raise RuntimeError("AVFoundation: cannot add video data output")
         session.addOutput_(output)
 
-        delegate = _FrameDelegate.alloc().initWithCamera_(self)
+        delegate = SampleBufferDelegate.alloc().initWithOwner_(self)
         if delegate is None:
             raise RuntimeError("AVFoundation: failed to create frame delegate")
-        queue = _get_dispatch_queue(b"xpra.webcam.avfoundation")
+        queue = get_dispatch_queue(b"xpra.webcam.avfoundation")
         log(" dispatch queue=%s", queue)
         output.setSampleBufferDelegate_queue_(delegate, queue)
 
@@ -340,7 +226,7 @@ class AVFoundationCamera(CameraDevice):
         if pb is None:
             log("_on_frame: no image buffer in sample (frame #%i)", self._frames + 1)
             return
-        raw, w, h, stride, fmt_int = _copy_pixel_buffer(pb)
+        raw, w, h, stride, fmt_int = copy_pixel_buffer(pb)
         if not raw or not w or not h:
             log("_on_frame: empty/invalid buffer raw=%i w=%i h=%i fmt=0x%08X",
                 len(raw), w, h, fmt_int)
