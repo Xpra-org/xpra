@@ -30,6 +30,7 @@ Build-Depends: debhelper (>= 8)
               ,libde265-dev
               ,libopenh264-dev
               ,libvpl-dev
+              ,libva-dev
               ,libwebp-dev
               ,libturbojpeg-dev
               ,libdav1d-dev
@@ -330,6 +331,7 @@ Depends: xpra-common (= ${binary:Version})
 #sid:              ,libdav1d7
               ,libaom3
               ,libvpl2
+              ,libva2
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia (= ${binary:Version})
           ,xpra-codecs-amd (= ${binary:Version})
