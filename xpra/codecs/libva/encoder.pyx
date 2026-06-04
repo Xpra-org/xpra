@@ -17,7 +17,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, EncodingNotSupported
 from xpra.codecs.vacommon import config_libva_logging
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict, AtomicInteger
@@ -207,8 +207,15 @@ cdef class Encoder:
             status = libva_encoder_create(&self.context, encoding_name,
                                           width, height, self.quality, self.speed)
         if status != LIBVA_ENC_OK:
-            raise RuntimeError("failed to create libva %s encoder (%dx%d): %s" % (
-                encoding, width, height, libva_encode_status_str(status).decode("latin-1")))
+            status_str = libva_encode_status_str(status).decode("latin-1")
+            detail = libva_encode_get_last_error().decode("utf-8", "replace")
+            msg = "failed to create libva %s encoder (%dx%d): %s" % (
+                encoding, width, height, status_str)
+            if detail:
+                msg += " (%s)" % detail
+            if status == LIBVA_ENC_NOT_AVAILABLE:
+                raise EncodingNotSupported(msg)
+            raise RuntimeError(msg)
 
         self.file = None
         save_to_file = os.environ.get("XPRA_SAVE_TO_FILE", "")
