@@ -47,6 +47,7 @@ PaintCallbacks: TypeAlias = MutableSequence[PaintCallback]
 
 
 _PIL_font = None
+FONT_SIZE = envint("XPRA_FPS_FONT_SIZE", 32)
 
 
 def load_pillow_font():
@@ -58,15 +59,16 @@ def load_pillow_font():
         return _PIL_font
     from PIL import ImageFont  # pylint: disable=import-outside-toplevel
     for font_file in (
-            "/usr/share/fonts/gnu-free/FreeMono.ttf",
-            "/usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf",
+            "/usr/share/fonts/gnu-free/FreeSans.ttf",
+            "/usr/share/fonts/liberation-mono-fonts/LiberationMono-Regular.ttf",
     ):
         if os.path.exists(font_file):
             try:
-                _PIL_font = ImageFont.load_path(font_file)
+                _PIL_font = ImageFont.truetype(font_file, FONT_SIZE)
                 return _PIL_font
-            except OSError:
-                pass
+            except OSError as e:
+                log.error("Error loading font %r", font_file)
+                log.estr(e)
     _PIL_font = ImageFont.load_default()
     return _PIL_font
 
@@ -256,7 +258,7 @@ class WindowBackingBase:
         self.fps_value = self.calculate_fps()
         if self.is_show_fps():
             text = f"{self.fps_value} fps"
-            width, height = 64, 32
+            width, height = FONT_SIZE * 6, FONT_SIZE * 3 // 2
             self.fps_buffer_size = (width, height)
             pixels = rgba_text(text, width, height)
             if pixels:
@@ -281,7 +283,7 @@ class WindowBackingBase:
         return count
 
     def is_show_fps(self) -> bool:
-        if not SHOW_FPS and self.paint_box_line_width <= 0:
+        if not SHOW_FPS:
             return False
         # show fps if the value is non-zero:
         if self.fps_value > 0:
