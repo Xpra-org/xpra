@@ -3,7 +3,7 @@
  * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
  * later version. See the file COPYING for details.
  * ABOUTME: libva encoder - C implementation.
- * ABOUTME: Minimal VA-API H.264/VP8 encoder using NV12 staging copies and key/P frames. */
+ * ABOUTME: Minimal VA-API H.264/VP8/VP9 encoder using NV12 staging copies and key/P frames. */
 
 #include "va_encode.h"
 
@@ -11,6 +11,7 @@
 #include <va/va_drm.h>
 #include <va/va_enc_h264.h>
 #include <va/va_enc_vp8.h>
+#include <va/va_enc_vp9.h>
 
 #include <dirent.h>
 #include <errno.h>
@@ -45,12 +46,15 @@ static VAProfile g_h264_profile = VAProfileH264ConstrainedBaseline;
 static VAEntrypoint g_h264_entrypoint = VAEntrypointEncSlice;
 static int g_vp8_supported = 0;
 static VAEntrypoint g_vp8_entrypoint = VAEntrypointEncSlice;
+static int g_vp9_supported = 0;
+static VAEntrypoint g_vp9_entrypoint = VAEntrypointEncSlice;
 static int g_major = 0;
 static int g_minor = 0;
 
 typedef enum {
     LIBVA_CODEC_H264 = 0,
     LIBVA_CODEC_VP8 = 1,
+    LIBVA_CODEC_VP9 = 2,
 } LibVACodec;
 
 void libva_encode_set_log(libva_log_fn fn) {
@@ -93,11 +97,13 @@ struct LibVAEncoder {
     int             height;
     int             width_mbs;
     int             height_mbs;
+    int             surface_width;
+    int             surface_height;
     int             frames;
     int             quality;
     int             speed;
     int             qp;
-    int             vp8_qindex;
+    int             vp_qindex;
     LibVACodec      codec;
     VAProfile       profile;
     VAEntrypoint    entrypoint;
@@ -128,7 +134,7 @@ static int quality_to_qp(int quality) {
     return clamp_int(q, 1, 51);
 }
 
-static int quality_to_vp8_qindex(int quality) {
+static int quality_to_vp_qindex(int quality) {
     int q = 127 - (clamp_int(quality, 0, 100) * 123 + 50) / 100;
     return clamp_int(q, 4, 127);
 }
@@ -144,6 +150,10 @@ static int codec_from_name(const char *encoding, LibVACodec *codec) {
         *codec = LIBVA_CODEC_VP8;
         return 1;
     }
+    if (strcmp(encoding, "vp9") == 0) {
+        *codec = LIBVA_CODEC_VP9;
+        return 1;
+    }
     return 0;
 }
 
@@ -153,6 +163,8 @@ static const char *codec_name(LibVACodec codec) {
             return "H.264";
         case LIBVA_CODEC_VP8:
             return "VP8";
+        case LIBVA_CODEC_VP9:
+            return "VP9";
         default:
             return "unknown";
     }
@@ -518,7 +530,8 @@ static int h264_encode_supported(VADisplay display) {
     return 0;
 }
 
-static int vp8_encode_supported(VADisplay display) {
+static int vpx_encode_supported(VADisplay display, VAProfile profile, const char *name,
+                                VAEntrypoint *selected_entrypoint) {
     static const VAEntrypoint candidate_entrypoints[] = {
         VAEntrypointEncSlice,
         VAEntrypointEncSliceLP,
@@ -536,14 +549,14 @@ static int vp8_encode_supported(VADisplay display) {
                  vaErrorStr(status), (int)status);
         return 0;
     }
-    if (!profile_supported(profiles, nprofiles, VAProfileVP8Version0_3)) {
-        snprintf(g_error, sizeof(g_error), "VAProfileVP8Version0_3 is not supported");
+    if (!profile_supported(profiles, nprofiles, profile)) {
+        snprintf(g_error, sizeof(g_error), "%s profile is not supported", name);
         return 0;
     }
-    status = vaQueryConfigEntrypoints(display, VAProfileVP8Version0_3, entrypoints, &nentrypoints);
+    status = vaQueryConfigEntrypoints(display, profile, entrypoints, &nentrypoints);
     if (status != VA_STATUS_SUCCESS) {
-        snprintf(g_error, sizeof(g_error), "vaQueryConfigEntrypoints(VP8) failed: %s (%d)",
-                 vaErrorStr(status), (int)status);
+        snprintf(g_error, sizeof(g_error), "vaQueryConfigEntrypoints(%s) failed: %s (%d)",
+                 name, vaErrorStr(status), (int)status);
         return 0;
     }
     for (unsigned int e = 0; e < sizeof(candidate_entrypoints) / sizeof(candidate_entrypoints[0]); e++) {
@@ -559,48 +572,58 @@ static int vp8_encode_supported(VADisplay display) {
             continue;
         attrs[0].type = VAConfigAttribRTFormat;
         attrs[1].type = VAConfigAttribRateControl;
-        status = vaGetConfigAttributes(display, VAProfileVP8Version0_3, entrypoint, attrs, 2);
+        status = vaGetConfigAttributes(display, profile, entrypoint, attrs, 2);
         if (status != VA_STATUS_SUCCESS) {
-            snprintf(g_error, sizeof(g_error), "vaGetConfigAttributes(VP8, %s) failed: %s (%d)",
-                     entrypoint_name(entrypoint), vaErrorStr(status), (int)status);
+            snprintf(g_error, sizeof(g_error), "vaGetConfigAttributes(%s, %s) failed: %s (%d)",
+                     name, entrypoint_name(entrypoint), vaErrorStr(status), (int)status);
             continue;
         }
         if (!(attrs[0].value & VA_RT_FORMAT_YUV420)) {
-            snprintf(g_error, sizeof(g_error), "VP8/%s does not support VA_RT_FORMAT_YUV420 encode surfaces",
-                     entrypoint_name(entrypoint));
+            snprintf(g_error, sizeof(g_error), "%s/%s does not support VA_RT_FORMAT_YUV420 encode surfaces",
+                     name, entrypoint_name(entrypoint));
             continue;
         }
         if (!(attrs[1].value & VA_RC_CQP)) {
-            snprintf(g_error, sizeof(g_error), "VP8/%s does not support VA_RC_CQP rate control",
-                     entrypoint_name(entrypoint));
+            snprintf(g_error, sizeof(g_error), "%s/%s does not support VA_RC_CQP rate control",
+                     name, entrypoint_name(entrypoint));
             continue;
         }
-        g_vp8_entrypoint = entrypoint;
+        *selected_entrypoint = entrypoint;
         return 1;
     }
-    snprintf(g_error, sizeof(g_error), "VAEntrypointEncSlice/EncSliceLP is not supported for VP8");
+    snprintf(g_error, sizeof(g_error), "VAEntrypointEncSlice/EncSliceLP is not supported for %s", name);
     return 0;
+}
+
+static int vp8_encode_supported(VADisplay display) {
+    return vpx_encode_supported(display, VAProfileVP8Version0_3, "VP8", &g_vp8_entrypoint);
+}
+
+static int vp9_encode_supported(VADisplay display) {
+    return vpx_encode_supported(display, VAProfileVP9Profile0, "VP9 profile 0", &g_vp9_entrypoint);
 }
 
 static int try_device(const char *device) {
     int fd = -1, major = 0, minor = 0;
     VADisplay display = NULL;
     char vendor[256] = "";
-    int h264_ok, vp8_ok;
+    int h264_ok, vp8_ok, vp9_ok;
 
     if (!open_display(device, &fd, &display, &major, &minor, vendor, sizeof(vendor)))
         return 0;
     h264_ok = h264_encode_supported(display);
     vp8_ok = vp8_encode_supported(display);
+    vp9_ok = vp9_encode_supported(display);
     vaTerminate(display);
     close(fd);
-    if (h264_ok || vp8_ok) {
+    if (h264_ok || vp8_ok || vp9_ok) {
         snprintf(g_device, sizeof(g_device), "%s", device);
         snprintf(g_vendor, sizeof(g_vendor), "%s", vendor);
         g_major = major;
         g_minor = minor;
         g_h264_supported = h264_ok;
         g_vp8_supported = vp8_ok;
+        g_vp9_supported = vp9_ok;
         if (h264_ok) {
             libva_log("libva encode: selected H.264 %s profile with %s",
                       h264_profile_name(g_h264_profile), entrypoint_name(g_h264_entrypoint));
@@ -609,8 +632,12 @@ static int try_device(const char *device) {
             libva_log("libva encode: selected VP8 profile with %s",
                       entrypoint_name(g_vp8_entrypoint));
         }
+        if (vp9_ok) {
+            libva_log("libva encode: selected VP9 profile 0 with %s",
+                      entrypoint_name(g_vp9_entrypoint));
+        }
     }
-    return h264_ok || vp8_ok;
+    return h264_ok || vp8_ok || vp9_ok;
 }
 
 LibVAEncodeStatus libva_encode_startup(void) {
@@ -624,7 +651,7 @@ LibVAEncodeStatus libva_encode_startup(void) {
             libva_log("libva encode startup: using %s (%s)", g_device, g_vendor);
             return LIBVA_ENC_OK;
         }
-        libva_log("libva encode startup: %s does not provide H.264 or VP8 CQP encode: %s",
+        libva_log("libva encode startup: %s does not provide H.264, VP8 or VP9 CQP encode: %s",
                   env_device, g_error);
         return LIBVA_ENC_NOT_AVAILABLE;
     }
@@ -651,7 +678,7 @@ LibVAEncodeStatus libva_encode_startup(void) {
     }
     if (!g_error[0])
         snprintf(g_error, sizeof(g_error), "no VA-API render node found");
-    libva_log("libva encode startup: no VA-API H.264 or VP8 CQP encoder found: %s", g_error);
+    libva_log("libva encode startup: no VA-API H.264, VP8 or VP9 CQP encoder found: %s", g_error);
     return LIBVA_ENC_NOT_AVAILABLE;
 }
 
@@ -738,7 +765,8 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
     if (!g_device[0] && libva_encode_startup() != LIBVA_ENC_OK)
         return LIBVA_ENC_NOT_AVAILABLE;
     if ((codec == LIBVA_CODEC_H264 && !g_h264_supported) ||
-        (codec == LIBVA_CODEC_VP8 && !g_vp8_supported))
+        (codec == LIBVA_CODEC_VP8 && !g_vp8_supported) ||
+        (codec == LIBVA_CODEC_VP9 && !g_vp9_supported))
         return LIBVA_ENC_NOT_AVAILABLE;
 
     enc = (LibVAEncoder *)calloc(1, sizeof(LibVAEncoder));
@@ -755,17 +783,22 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
     enc->height = height;
     enc->width_mbs = roundup(width, 16) / 16;
     enc->height_mbs = roundup(height, 16) / 16;
+    enc->surface_width = codec == LIBVA_CODEC_VP9 ? roundup(width, 64) : enc->width_mbs * 16;
+    enc->surface_height = codec == LIBVA_CODEC_VP9 ? roundup(height, 64) : enc->height_mbs * 16;
     enc->quality = quality;
     enc->speed = speed;
     enc->qp = quality_to_qp(quality);
-    enc->vp8_qindex = quality_to_vp8_qindex(quality);
+    enc->vp_qindex = quality_to_vp_qindex(quality);
     enc->codec = codec;
     if (codec == LIBVA_CODEC_H264) {
         enc->profile = g_h264_profile;
         enc->entrypoint = g_h264_entrypoint;
-    } else {
+    } else if (codec == LIBVA_CODEC_VP8) {
         enc->profile = VAProfileVP8Version0_3;
         enc->entrypoint = g_vp8_entrypoint;
+    } else {
+        enc->profile = VAProfileVP9Profile0;
+        enc->entrypoint = g_vp9_entrypoint;
     }
     enc->have_reference = 0;
     enc->ref_surface_index = 0;
@@ -808,8 +841,8 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
     surface_attrs[1].value.type = VAGenericValueTypeInteger;
     surface_attrs[1].value.value.i = VA_SURFACE_ATTRIB_USAGE_HINT_ENCODER;
     status = vaCreateSurfaces(enc->display, VA_RT_FORMAT_YUV420,
-                              (unsigned int)enc->width_mbs * 16,
-                              (unsigned int)enc->height_mbs * 16,
+                              (unsigned int)enc->surface_width,
+                              (unsigned int)enc->surface_height,
                               surfaces, 3, surface_attrs, 2);
     if (status != VA_STATUS_SUCCESS) {
         set_error(enc, status, "vaCreateSurfaces");
@@ -821,7 +854,7 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
     enc->recon_surfaces[1] = surfaces[2];
 
     status = vaCreateContext(enc->display, enc->config,
-                             enc->width_mbs * 16, enc->height_mbs * 16,
+                             enc->surface_width, enc->surface_height,
                              VA_PROGRESSIVE, surfaces, 3, &enc->context);
     if (status != VA_STATUS_SUCCESS) {
         set_error(enc, status, "vaCreateContext");
@@ -829,7 +862,7 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         return LIBVA_ENC_ERROR;
     }
 
-    enc->bitstream_size = (size_t)enc->width_mbs * enc->height_mbs * 16 * 16 * 3 / 2 + 1024 * 1024;
+    enc->bitstream_size = (size_t)enc->surface_width * enc->surface_height * 3 / 2 + 1024 * 1024;
     enc->bitstream_data = (uint8_t *)malloc(enc->bitstream_size);
     if (!enc->bitstream_data) {
         snprintf(enc->last_error, sizeof(enc->last_error), "failed to allocate encoded buffer");
@@ -837,9 +870,9 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         return LIBVA_ENC_ERROR;
     }
 
-    libva_log("libva %s encoder create: %dx%d quality=%d speed=%d qp=%d qindex=%d device=%s vendor=%s",
-              codec_name(enc->codec), width, height, quality, speed,
-              enc->qp, enc->vp8_qindex, enc->device, enc->vendor);
+    libva_log("libva %s encoder create: %dx%d surface=%dx%d quality=%d speed=%d qp=%d qindex=%d device=%s vendor=%s",
+              codec_name(enc->codec), width, height, enc->surface_width, enc->surface_height,
+              quality, speed, enc->qp, enc->vp_qindex, enc->device, enc->vendor);
     *out = enc;
     return LIBVA_ENC_OK;
 }
@@ -1220,8 +1253,8 @@ static LibVAEncodeStatus vp8_encoder_encode(LibVAEncoder *enc,
     pic.loop_filter_level[2] = 16;
     pic.loop_filter_level[3] = 16;
     pic.sharpness_level = 0;
-    pic.clamp_qindex_high = (uint8_t)enc->vp8_qindex;
-    pic.clamp_qindex_low = (uint8_t)enc->vp8_qindex;
+    pic.clamp_qindex_high = (uint8_t)enc->vp_qindex;
+    pic.clamp_qindex_low = (uint8_t)enc->vp_qindex;
     status = vaCreateBuffer(enc->display, enc->context, VAEncPictureParameterBufferType,
                             sizeof(pic), 1, &pic, &buffers[nbuf++]);
     if (status != VA_STATUS_SUCCESS) {
@@ -1231,7 +1264,7 @@ static LibVAEncodeStatus vp8_encoder_encode(LibVAEncoder *enc,
 
     memset(&qmatrix, 0, sizeof(qmatrix));
     for (int i = 0; i < 4; i++)
-        qmatrix.quantization_index[i] = (uint16_t)enc->vp8_qindex;
+        qmatrix.quantization_index[i] = (uint16_t)enc->vp_qindex;
     status = vaCreateBuffer(enc->display, enc->context, VAQMatrixBufferType,
                             sizeof(qmatrix), 1, &qmatrix, &buffers[nbuf++]);
     if (status != VA_STATUS_SUCCESS) {
@@ -1270,6 +1303,145 @@ static LibVAEncodeStatus vp8_encoder_encode(LibVAEncoder *enc,
     return LIBVA_ENC_OK;
 }
 
+static LibVAEncodeStatus vp9_encoder_encode(LibVAEncoder *enc,
+                                            const uint8_t *y, int y_stride,
+                                            const uint8_t *uv, int uv_stride,
+                                            LibVAEncodedFrame *frame) {
+    VABufferID buffers[4];
+    int nbuf = 0;
+    VABufferID coded_buf = VA_INVALID_ID;
+    VAEncSequenceParameterBufferVP9 seq;
+    VAEncPictureParameterBufferVP9 pic;
+    VAEncMiscParameterTypeVP9PerSegmantParam seg;
+    int gop_frame, is_key, recon_index;
+    VASurfaceID recon_surface;
+    VAStatus status;
+    LibVAEncodeStatus estatus;
+    long long t0, t1, t2;
+
+    if (!enc || !y || !uv || !frame)
+        return LIBVA_ENC_ERROR;
+    memset(frame, 0, sizeof(*frame));
+    for (int i = 0; i < (int)(sizeof(buffers) / sizeof(buffers[0])); i++)
+        buffers[i] = VA_INVALID_ID;
+
+    estatus = upload_nv12(enc, y, y_stride, uv, uv_stride, &frame->us_copy);
+    if (estatus != LIBVA_ENC_OK)
+        return estatus;
+    gop_frame = enc->frames % LIBVA_IDR_INTERVAL;
+    is_key = !enc->have_reference || gop_frame == 0;
+    recon_index = enc->frames & 1;
+    recon_surface = enc->recon_surfaces[recon_index];
+
+    status = vaCreateBuffer(enc->display, enc->context, VAEncCodedBufferType,
+                            (unsigned int)enc->bitstream_size, 1, NULL, &coded_buf);
+    if (status != VA_STATUS_SUCCESS)
+        return set_error(enc, status, "vaCreateBuffer(coded)");
+    buffers[nbuf++] = coded_buf;
+
+    memset(&seq, 0, sizeof(seq));
+    seq.max_frame_width = (uint32_t)enc->surface_width;
+    seq.max_frame_height = (uint32_t)enc->surface_height;
+    seq.kf_auto = 0;
+    seq.kf_min_dist = LIBVA_IDR_INTERVAL;
+    seq.kf_max_dist = LIBVA_IDR_INTERVAL;
+    seq.bits_per_second = 0;
+    seq.intra_period = LIBVA_IDR_INTERVAL;
+    status = vaCreateBuffer(enc->display, enc->context, VAEncSequenceParameterBufferType,
+                            sizeof(seq), 1, &seq, &buffers[nbuf++]);
+    if (status != VA_STATUS_SUCCESS) {
+        destroy_buffers(enc, buffers, nbuf);
+        return set_error(enc, status, "vaCreateBuffer(VP9 sequence)");
+    }
+
+    memset(&pic, 0, sizeof(pic));
+    pic.frame_width_src = (uint32_t)enc->width;
+    pic.frame_height_src = (uint32_t)enc->height;
+    pic.frame_width_dst = (uint32_t)enc->width;
+    pic.frame_height_dst = (uint32_t)enc->height;
+    pic.reconstructed_frame = recon_surface;
+    for (int i = 0; i < 8; i++)
+        pic.reference_frames[i] = VA_INVALID_SURFACE;
+    if (!is_key)
+        pic.reference_frames[0] = enc->recon_surfaces[enc->ref_surface_index];
+    pic.coded_buf = coded_buf;
+    pic.ref_flags.bits.force_kf = is_key;
+    pic.ref_flags.bits.ref_frame_ctrl_l0 = is_key ? 0 : 1;
+    pic.ref_flags.bits.ref_frame_ctrl_l1 = 0;
+    pic.ref_flags.bits.ref_last_idx = 0;
+    pic.ref_flags.bits.ref_gf_idx = 0;
+    pic.ref_flags.bits.ref_arf_idx = 0;
+    pic.pic_flags.bits.frame_type = is_key ? 0 : 1;
+    pic.pic_flags.bits.show_frame = 1;
+    pic.pic_flags.bits.error_resilient_mode = 0;
+    pic.pic_flags.bits.intra_only = 0;
+    pic.pic_flags.bits.allow_high_precision_mv = !is_key;
+    pic.pic_flags.bits.mcomp_filter_type = 0;
+    pic.pic_flags.bits.frame_parallel_decoding_mode = 1;
+    pic.pic_flags.bits.reset_frame_context = is_key ? 3 : 0;
+    pic.pic_flags.bits.refresh_frame_context = 1;
+    pic.pic_flags.bits.frame_context_idx = 0;
+    pic.pic_flags.bits.segmentation_enabled = 0;
+    pic.pic_flags.bits.lossless_mode = 0;
+    pic.pic_flags.bits.comp_prediction_mode = 0;
+    pic.pic_flags.bits.auto_segmentation = 0;
+    pic.pic_flags.bits.super_frame_flag = 0;
+    pic.refresh_frame_flags = is_key ? 0xff : 0x01;
+    pic.luma_ac_qindex = (uint8_t)enc->vp_qindex;
+    pic.luma_dc_qindex_delta = 0;
+    pic.chroma_ac_qindex_delta = 0;
+    pic.chroma_dc_qindex_delta = 0;
+    pic.filter_level = 16;
+    pic.sharpness_level = 0;
+    pic.log2_tile_rows = 0;
+    pic.log2_tile_columns = 0;
+    pic.skip_frame_flag = 0;
+    status = vaCreateBuffer(enc->display, enc->context, VAEncPictureParameterBufferType,
+                            sizeof(pic), 1, &pic, &buffers[nbuf++]);
+    if (status != VA_STATUS_SUCCESS) {
+        destroy_buffers(enc, buffers, nbuf);
+        return set_error(enc, status, "vaCreateBuffer(VP9 picture)");
+    }
+
+    memset(&seg, 0, sizeof(seg));
+    status = vaCreateBuffer(enc->display, enc->context, VAQMatrixBufferType,
+                            sizeof(seg), 1, &seg, &buffers[nbuf++]);
+    if (status != VA_STATUS_SUCCESS) {
+        destroy_buffers(enc, buffers, nbuf);
+        return set_error(enc, status, "vaCreateBuffer(VP9 segment)");
+    }
+
+    t0 = usec_now();
+    status = vaBeginPicture(enc->display, enc->context, enc->src_surface);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaRenderPicture(enc->display, enc->context, buffers + 1, nbuf - 1);
+    if (status == VA_STATUS_SUCCESS)
+        status = vaEndPicture(enc->display, enc->context);
+    t1 = usec_now();
+    if (status != VA_STATUS_SUCCESS) {
+        destroy_buffers(enc, buffers, nbuf);
+        return set_error(enc, status, "VA VP9 encode submit");
+    }
+
+    status = vaSyncSurface(enc->display, enc->src_surface);
+    t2 = usec_now();
+    if (status != VA_STATUS_SUCCESS) {
+        destroy_buffers(enc, buffers, nbuf);
+        return set_error(enc, status, "vaSyncSurface");
+    }
+    estatus = append_coded_buffer(enc, coded_buf, frame);
+    destroy_buffers(enc, buffers, nbuf);
+    if (estatus != LIBVA_ENC_OK)
+        return estatus;
+    frame->us_submit = (int)(t1 - t0);
+    frame->us_sync = (int)(t2 - t1);
+    frame->frame_type = is_key ? LIBVA_ENC_FRAME_I : LIBVA_ENC_FRAME_P;
+    enc->have_reference = 1;
+    enc->ref_surface_index = recon_index;
+    enc->frames++;
+    return LIBVA_ENC_OK;
+}
+
 LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
                                        const uint8_t *y, int y_stride,
                                        const uint8_t *uv, int uv_stride,
@@ -1281,6 +1453,8 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
             return h264_encoder_encode(enc, y, y_stride, uv, uv_stride, frame);
         case LIBVA_CODEC_VP8:
             return vp8_encoder_encode(enc, y, y_stride, uv, uv_stride, frame);
+        case LIBVA_CODEC_VP9:
+            return vp9_encoder_encode(enc, y, y_stride, uv, uv_stride, frame);
         default:
             return LIBVA_ENC_ERROR;
     }

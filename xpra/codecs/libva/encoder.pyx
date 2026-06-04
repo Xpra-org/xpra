@@ -101,7 +101,7 @@ cdef str frame_type_name(LibVAEncodeFrameType frame_type):
 
 generation = AtomicInteger()
 
-ENCODINGS: list[str] = ["h264", "vp8"]
+ENCODINGS: list[str] = ["h264", "vp8", "vp9"]
 
 
 def init_module(options: dict = None) -> None:
@@ -242,7 +242,7 @@ cdef class Encoder:
         return self.src_format
 
     # Follow-up work intentionally deferred from the first incarnation:
-    # - H.265/AV1/VP9 profile probing and more VideoSpec entries.
+    # - H.265/AV1 and additional VP9 profile probing / VideoSpec entries.
     # - RGB/YUV420P upload paths, or a direct dependency on libyuv CSC.
     # - dmabuf / VA surface import to avoid CPU staging copies.
     # - persistent VA buffers and async surface queues.
