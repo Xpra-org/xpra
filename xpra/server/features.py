@@ -96,7 +96,7 @@ def set_server_features(opts, mode: str) -> None:
         if opts.backend == "x11" or mode in ("desktop", "monitor", "expand"):
             x11 = True
         elif mode == "shadow":
-            x11 = POSIX
+            x11 = POSIX and not OSX
         elif mode == "seamless":
             x11 = opts.backend in ("auto", "gtk")
         else:
