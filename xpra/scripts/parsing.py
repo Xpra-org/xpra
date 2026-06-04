@@ -398,9 +398,9 @@ def parse_display_name(opts, display_name: str, cmdline=(),
     if display_name.startswith(":") or display_name.startswith("wayland-") or display_name.startswith("@"):
         if display_name.startswith("@"):
             if WIN32:
-                raise ValueError("abstract sockets are not supported on MS Windows")
+                raise ValueError("abstract sockets are not supported on MS Windows: %r" % (display_name,))
         elif WIN32 or OSX:
-            raise RuntimeError("X11 / Wayland display names are not supported on this platform")
+            raise RuntimeError("X11 / Wayland display names are not supported on this platform: %r" % (display_name, ))
         add_credentials()
         add_query()
         if display_name.startswith("@"):
