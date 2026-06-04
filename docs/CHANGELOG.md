@@ -16,7 +16,9 @@
 * 🌈 Encodings:
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
   * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)
-  * [native MS Windows DirectShow webcam support](https://github.com/Xpra-org/xpra/issues/3336)
+  * [`libva` encoder](https://github.com/Xpra-org/xpra/issues/4628)
+  * [native MS Windows DirectShow webcam backend](https://github.com/Xpra-org/xpra/issues/3336)
+  * [native MAcOS CoreMedia webcam backend](https://github.com/Xpra-org/xpra/issues/1231)
 * ✨ Features:
   * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885)
   * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)
