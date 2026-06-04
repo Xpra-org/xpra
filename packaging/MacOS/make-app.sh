@@ -572,6 +572,11 @@ find "${PYDIR}/" "${FRAMEWORKS_DIR}/lib-dynload/" -name "*.so" -print0 | while I
       # Change to @rpath
       install_name_tool -change "$dep" "@rpath/$libname" "${file}"
     done
+    # Catch bare relative install names (ie: jhbuild's libxxhash.0.dylib),
+    # which a hardened binary refuses to load - rewrite them to @rpath:
+    otool -L "${file}" | tail -n +2 | awk '{print $1}' | grep -E '^[^/@]+\.dylib$' | while read dep; do
+      install_name_tool -change "$dep" "@rpath/$(basename "$dep")" "${file}"
+    done
 done
 popd > /dev/null || exit 1
 
