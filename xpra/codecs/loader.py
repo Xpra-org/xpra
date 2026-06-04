@@ -497,10 +497,12 @@ def main(args: list[str]) -> int:
         main_loop = GLib.MainLoop()
 
         def load_in_thread() -> None:
-            codecs = do_main_load(args)
-            print_codecs(codecs)
-            unload_codecs()
-            main_loop.quit()
+            try:
+                codecs = do_main_load(args)
+                print_codecs(codecs)
+                unload_codecs()
+            finally:
+                GLib.idle_add(main_loop.quit)
 
         from xpra.util.thread import start_thread
         start_thread(load_in_thread, "threaded loader")
