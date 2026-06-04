@@ -38,6 +38,7 @@ NOWARN = [
     "enc_amf",
     "dec_mf",
     "dec_vpl", "enc_vpl",
+    "enc_libva",
     "dec_de265",
 ]
 
@@ -78,7 +79,7 @@ ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "webp", "jpeg", "nvjpeg", "avif",
 ))
 ENCODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("enc", x) for x in (
-    "vpx", "x264", "openh264", "nvenc", "vpl", "gstreamer", "amf", "remote",
+    "vpx", "x264", "openh264", "nvenc", "vpl", "libva", "gstreamer", "amf", "remote",
 ))
 DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
     "pillow", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
@@ -263,6 +264,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "enc_openh264"  : ("openh264 encoder",  "openh264",     "encoder", "Encoder"),
     "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
     "enc_vpl"       : ("vpl encoder",       "vpl",          "encoder", "Encoder"),
+    "enc_libva"     : ("libva encoder",     "libva",        "encoder", "Encoder"),
     "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),
     "enc_amf"       : ("amf encoder",       "amf",          "encoder", "Encoder"),
     "enc_remote"    : ("remote encoder",    "remote",       "encoder", "Encoder"),

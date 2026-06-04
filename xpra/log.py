@@ -330,6 +330,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "openh264"      : "openh264 decoder",
         "mf"            : "MediaFoundation hardware decoder",
         "vpl"           : "Intel oneVPL hardware codec",
+        "libva"         : "libva video hardware encoder",
         "aom"           : "aom codec",
         "de265"         : "libde265 decoder",
         "webp"          : "libwebp encoder and decoder",
