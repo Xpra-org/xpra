@@ -214,13 +214,6 @@ def do_get_xpra_command() -> list[str]:
     return ["xpra"]
 
 
-def _get_helpers_dir() -> str:
-    from xpra.platform.paths import get_app_dir
-    base = get_app_dir()
-    p = os.path.join(base, "Helpers")
-    return p
-
-
 def do_get_nodock_command() -> list[str]:
     # try to use the sub-app:
     from xpra.platform.paths import get_app_dir
@@ -244,9 +237,20 @@ def do_get_audio_command() -> list[str]:
     return do_get_nodock_command()
 
 
+def _get_python_exec() -> str:
+    # the real interpreter binary lives in `Contents/Frameworks/bin/Python`
+    # (the `Helpers/*` entries are launcher hardlinks, not a usable interpreter):
+    from xpra.platform.paths import get_app_dir
+    python = os.path.join(get_app_dir(), "Frameworks", "bin", "Python")
+    if os.path.exists(python):
+        return python
+    # not running from an app bundle (ie: source checkout):
+    return sys.executable or "python3"
+
+
 def do_get_python_exec_command() -> list[str]:
-    return [os.path.join(_get_helpers_dir(), "Python"), "-c"]
+    return [_get_python_exec(), "-c"]
 
 
 def do_get_python_execfile_command() -> list[str]:
-    return [os.path.join(_get_helpers_dir(), "Python")]
+    return [_get_python_exec()]
