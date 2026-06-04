@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.platform.darwin.pointer import move_pointer
 from xpra.server.shadow.pointer import ShadowPointerManager
 
 
@@ -16,7 +15,10 @@ class DarwinShadowPointerManager(ShadowPointerManager):
         if not self.get_server_source(proto):
             return False
         x, y = pointer[:2]
-        move_pointer(x, y)
+        # route through the device so it records the position,
+        # otherwise button clicks would be sent to the last known
+        # position (0, 0 by default):
+        self.get_pointer_device(device_id).move_pointer(x, y, props or {})
         return True
 
     def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool, pointer, props):
