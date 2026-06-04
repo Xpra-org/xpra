@@ -29,9 +29,11 @@ def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
         return ()
     try:
         from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers, get_interface_index
-    except ImportError:
+    except ImportError as e:
         MDNS_WARNING = True
+        log("zeroconf import error", exc_info=True)
         log.warn("Warning: failed to load the mdns module")
+        log.warn(" %s", str(e) or type(e))
         log.warn(" install 'python-zeroconf'")
         log.warn(" or use the 'mdns=no' option")
         return ()
