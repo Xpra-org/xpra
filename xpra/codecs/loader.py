@@ -38,7 +38,7 @@ NOWARN = [
     "enc_amf",
     "dec_mf",
     "dec_vpl", "enc_vpl",
-    "enc_libva",
+    "dec_libva", "enc_libva",
     "dec_de265",
 ]
 
@@ -85,7 +85,7 @@ DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
     "pillow", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
 ))
 DECODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("dec", x) for x in (
-    "vpl", "mf", "nvdec", "vpx", "openh264", "aom", "de265",
+    "vpl", "mf", "nvdec", "libva", "vpx", "openh264", "aom", "de265",
 ))
 SOURCES: Sequence[str] = filt("v4l2", "evdi", "drm", "nvfbc")
 
@@ -289,6 +289,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "dec_de265"     : ("de265 decoder",     "de265",        "decoder", "Decoder"),
     "dec_mf"        : ("mf decoder",        "mf",           "decoder", "Decoder"),
     "dec_vpl"       : ("vpl decoder",       "vpl",          "decoder", "Decoder"),
+    "dec_libva"     : ("libva decoder",     "libva",        "decoder", "Decoder"),
     # sources:
     "v4l2"          : ("v4l2 source",       "v4l2",         "virtual", "VirtualWebcam"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),

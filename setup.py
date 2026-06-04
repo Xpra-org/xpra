@@ -330,6 +330,7 @@ vpl_decoder_ENABLED     = vpl_ENABLED
 vpl_encoder_ENABLED     = vpl_ENABLED
 libva_ENABLED           = DEFAULT and LINUX and pkg_config_version("1.0", "libva") and pkg_config_exists("libva-drm")
 libva_encoder_ENABLED   = libva_ENABLED
+libva_decoder_ENABLED   = libva_ENABLED
 remote_encoder_ENABLED  = DEFAULT
 webcam_ENABLED          = DEFAULT
 notifications_ENABLED   = DEFAULT
@@ -386,6 +387,7 @@ DECODER_SWITCHES = [
     "nvdec", "nvjpeg_decoder",
     "mf_decoder",
     "vpl_decoder",
+    "libva_decoder",
     "de265_decoder",
     "vpx_decoder", "webp_decoder", "pillow_decoder",
     "jpeg_decoder", "avif_decoder",
@@ -417,7 +419,7 @@ SWITCH_ALIAS = {
     "de265": ("de265_decoder", ),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
     "vpl": ("vpl_decoder", "vpl_encoder"),
-    "libva": ("libva_encoder", ),
+    "libva": ("libva_encoder", "libva_decoder"),
     "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels"),
     "gstreamer": ("gstreamer_audio", "gstreamer_video"),
     "cython": (
@@ -3101,6 +3103,9 @@ if vpl_encoder_ENABLED:
 toggle_packages(libva_ENABLED, "xpra.codecs.libva")
 if libva_encoder_ENABLED:
     ace("xpra.codecs.libva.encoder,xpra/codecs/libva/va_encode.c",
+        "libva,libva-drm")
+if libva_decoder_ENABLED:
+    ace("xpra.codecs.libva.decoder,xpra/codecs/libva/va_decode.c",
         "libva,libva-drm")
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
 toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")

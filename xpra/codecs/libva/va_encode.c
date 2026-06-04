@@ -6,6 +6,7 @@
  * ABOUTME: Minimal VA-API H.264/VP8/VP9 encoder using NV12 staging copies and key/P frames. */
 
 #include "va_encode.h"
+#include "va_common.h"
 
 #include <va/va.h>
 #include <va/va_drm.h>
@@ -30,13 +31,6 @@
 #define LIBVA_FRAME_NUM_BITS (LIBVA_LOG2_MAX_FRAME_NUM_MINUS4 + 4)
 #define LIBVA_POC_LSB_BITS (LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 + 4)
 
-#ifndef VA_CHECK_VERSION
-#define VA_CHECK_VERSION(major, minor, micro) \
-    ((VA_MAJOR_VERSION > (major)) || \
-     (VA_MAJOR_VERSION == (major) && VA_MINOR_VERSION > (minor)) || \
-     (VA_MAJOR_VERSION == (major) && VA_MINOR_VERSION == (minor) && VA_MICRO_VERSION >= (micro)))
-#endif
-
 static libva_log_fn g_log_fn = NULL;
 static char g_device[256] = "";
 static char g_vendor[256] = "";
@@ -50,12 +44,6 @@ static int g_vp9_supported = 0;
 static VAEntrypoint g_vp9_entrypoint = VAEntrypointEncSlice;
 static int g_major = 0;
 static int g_minor = 0;
-
-typedef enum {
-    LIBVA_CODEC_H264 = 0,
-    LIBVA_CODEC_VP8 = 1,
-    LIBVA_CODEC_VP9 = 2,
-} LibVACodec;
 
 void libva_encode_set_log(libva_log_fn fn) {
     g_log_fn = fn;
@@ -117,18 +105,6 @@ struct LibVAEncoder {
     char            vendor[256];
 };
 
-static int roundup(int n, int m) {
-    return (n + m - 1) & ~(m - 1);
-}
-
-static int clamp_int(int value, int low, int high) {
-    if (value < low)
-        return low;
-    if (value > high)
-        return high;
-    return value;
-}
-
 static int quality_to_qp(int quality) {
     int q = 51 - (clamp_int(quality, 0, 100) * 50 + 50) / 100;
     return clamp_int(q, 1, 51);
@@ -137,50 +113,6 @@ static int quality_to_qp(int quality) {
 static int quality_to_vp_qindex(int quality) {
     int q = 127 - (clamp_int(quality, 0, 100) * 123 + 50) / 100;
     return clamp_int(q, 4, 127);
-}
-
-static int codec_from_name(const char *encoding, LibVACodec *codec) {
-    if (!encoding)
-        return 0;
-    if (strcmp(encoding, "h264") == 0) {
-        *codec = LIBVA_CODEC_H264;
-        return 1;
-    }
-    if (strcmp(encoding, "vp8") == 0) {
-        *codec = LIBVA_CODEC_VP8;
-        return 1;
-    }
-    if (strcmp(encoding, "vp9") == 0) {
-        *codec = LIBVA_CODEC_VP9;
-        return 1;
-    }
-    return 0;
-}
-
-static const char *codec_name(LibVACodec codec) {
-    switch (codec) {
-        case LIBVA_CODEC_H264:
-            return "H.264";
-        case LIBVA_CODEC_VP8:
-            return "VP8";
-        case LIBVA_CODEC_VP9:
-            return "VP9";
-        default:
-            return "unknown";
-    }
-}
-
-static const char *h264_profile_name(VAProfile profile) {
-    switch (profile) {
-        case VAProfileH264ConstrainedBaseline:
-            return "constrained-baseline";
-        case VAProfileH264Main:
-            return "main";
-        case VAProfileH264High:
-            return "high";
-        default:
-            return "unknown";
-    }
 }
 
 static int h264_profile_idc(VAProfile profile) {
@@ -201,17 +133,6 @@ static int h264_constraint_flags(VAProfile profile) {
             return 0xc0;
         default:
             return 0;
-    }
-}
-
-static const char *entrypoint_name(VAEntrypoint entrypoint) {
-    switch (entrypoint) {
-        case VAEntrypointEncSlice:
-            return "EncSlice";
-        case VAEntrypointEncSliceLP:
-            return "EncSliceLP";
-        default:
-            return "unknown";
     }
 }
 
@@ -407,45 +328,6 @@ static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size,
     return off + bytes;
 }
 
-static int open_display(const char *device, int *fd_out, VADisplay *display_out,
-                        int *major_out, int *minor_out, char *vendor, size_t vendor_size) {
-    int fd = open(device, O_RDWR | O_CLOEXEC);
-    VADisplay display;
-    VAStatus status;
-    const char *vstr;
-
-    *fd_out = -1;
-    *display_out = NULL;
-    if (fd < 0)
-        return 0;
-    display = vaGetDisplayDRM(fd);
-    if (!display) {
-        snprintf(g_error, sizeof(g_error), "vaGetDisplayDRM failed for %.200s", device);
-        close(fd);
-        return 0;
-    }
-    status = vaInitialize(display, major_out, minor_out);
-    if (status != VA_STATUS_SUCCESS) {
-        snprintf(g_error, sizeof(g_error), "vaInitialize failed for %.160s: %s (%d)",
-                 device, vaErrorStr(status), (int)status);
-        close(fd);
-        return 0;
-    }
-    vstr = vaQueryVendorString(display);
-    snprintf(vendor, vendor_size, "%s", vstr ? vstr : "");
-    *fd_out = fd;
-    *display_out = display;
-    return 1;
-}
-
-static int profile_supported(const VAProfile *profiles, int nprofiles, VAProfile profile) {
-    for (int i = 0; i < nprofiles; i++) {
-        if (profiles[i] == profile)
-            return 1;
-    }
-    return 0;
-}
-
 static int h264_encode_supported(VADisplay display) {
     static const VAProfile candidate_profiles[] = {
         VAProfileH264ConstrainedBaseline,
@@ -609,7 +491,8 @@ static int try_device(const char *device) {
     char vendor[256] = "";
     int h264_ok, vp8_ok, vp9_ok;
 
-    if (!open_display(device, &fd, &display, &major, &minor, vendor, sizeof(vendor)))
+    if (!libva_open_display(device, &fd, &display, &major, &minor, vendor, sizeof(vendor),
+                            g_error, sizeof(g_error)))
         return 0;
     h264_ok = h264_encode_supported(display);
     vp8_ok = vp8_encode_supported(display);
@@ -807,7 +690,9 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
     enc->last_status = VA_STATUS_SUCCESS;
     snprintf(enc->device, sizeof(enc->device), "%s", g_device);
 
-    if (!open_display(enc->device, &enc->fd, &enc->display, &major, &minor, enc->vendor, sizeof(enc->vendor))) {
+    if (!libva_open_display(enc->device, &enc->fd, &enc->display, &major, &minor,
+                            enc->vendor, sizeof(enc->vendor),
+                            g_error, sizeof(g_error))) {
         snprintf(enc->last_error, sizeof(enc->last_error), "failed to open VA display for %.200s", enc->device);
         libva_encoder_destroy(enc);
         return LIBVA_ENC_NOT_AVAILABLE;
