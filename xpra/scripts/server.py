@@ -597,6 +597,8 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         # the backend is started in WaylandSeamlessServer.setup(), after
         # init_subsystems() has connected the display/window subsystems:
         vfb_result = wm.setup_display(progress)
+    elif (OSX or WIN32) and opts.backend != "x11":
+        vfb_result = VFBStartResult(None, 0, {}, "Main", (), 0)
     else:
         from xpra.server.subsystem.xvfb import XvfbManager
         xvfb = app.add_subsystem(XvfbManager)
