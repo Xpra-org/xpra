@@ -178,6 +178,7 @@ class ShadowServer(ShadowServerBase):
 
     def __init__(self, display, attrs: dict[str, str]):
         super().__init__(attrs)
+        self.session_type = "win32 shadow"
         self.pixel_depth = 32
         self.backend = attrs.get("backend", "auto")
 
@@ -331,12 +332,6 @@ class ShadowServer(ShadowServerBase):
                 rwm.refresh_shape()
         log("refresh()=%s", v)
         return v
-
-    def make_hello(self, source) -> dict[str, Any]:
-        capabilities = super().make_hello(source)
-        capabilities["shadow"] = True
-        capabilities["server_type"] = "Python/Win32-Shadow"
-        return capabilities
 
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         info = super().get_threaded_info(proto, **kwargs)

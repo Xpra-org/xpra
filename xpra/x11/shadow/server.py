@@ -138,11 +138,6 @@ class ShadowX11Server(GObject.GObject, ShadowServerBase):
         except Exception as e:
             may_notify_client(ss, nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
 
-    def make_hello(self, source) -> dict[str, Any]:
-        capabilities = super().make_hello(source)
-        capabilities["server_type"] = "X11 Shadow"
-        return capabilities
-
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         info = super().get_threaded_info(proto, **kwargs)
         info.setdefault("features", {})["shadow"] = True

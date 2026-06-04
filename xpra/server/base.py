@@ -358,13 +358,6 @@ class ServerBase(ServerCore):
         # to expose new server features:
         return self._dispatch_merge("get_server_features", server_source)
 
-    def make_hello(self, source) -> dict[str, Any]:
-        # super().make_hello already merges get_caps() across subsystems,
-        # so the result is complete:
-        capabilities = super().make_hello(source)
-        capabilities["server_type"] = "base"
-        return capabilities
-
     def send_hello(self, server_source, server_cipher: dict) -> None:
         capabilities = self.make_hello(server_source)
         if server_cipher:

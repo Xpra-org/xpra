@@ -1661,7 +1661,6 @@ class ServerCore(GLibServer):
             "start_time": int(self.start_time),
             "current_time": int(now),
             "elapsed_time": int(now - self.start_time),
-            "server_type": "core",
             "server.mode": self.session_type,
         }
         if FULL_INFO > 0:

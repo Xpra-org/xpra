@@ -118,6 +118,7 @@ class ShadowServer(ShadowServerBase):
             raise InitExit(ExitCode.FAILURE,
                            "cannot grab pixels from the screen, make sure this command is launched from a GUI session")
         patch_pixels_to_bytes()
+        self.session_type = "macOS shadow"
         self.refresh_count = 0
         self.refresh_rectangle_count = 0
         self.refresh_registered = False
@@ -278,16 +279,9 @@ class ShadowServer(ShadowServerBase):
             return round(w * sf), round(h * sf)
         return w, h
 
-    def make_hello(self, source) -> dict[str, Any]:
-        capabilities = super().make_hello(source)
-        capabilities["shadow"] = True
-        capabilities["server_type"] = "Python/MacOS-Shadow"
-        return capabilities
-
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         info = super().get_threaded_info(proto, **kwargs)
         info.setdefault("features", {})["shadow"] = True
-        info.setdefault("server", {})["type"] = "Python/gtk2/osx-shadow"
         info.setdefault("damage", {}).update({
             "streaming": self._streaming,
             "use-timer": USE_TIMER,
