@@ -232,8 +232,17 @@ def env_from_sourcing(file_to_source_path: str, include_unexported_variables: bo
         return ""
 
     env: dict[str, str] = {}
-    env.update(decode(proc_str(out, "stdout")))
-    env.update(decode_dict(proc_str(err, "stderr")))
+    out_str = proc_str(out, "stdout")
+    err_str = proc_str(err, "stderr")
+    try:
+        env.update(decode(out_str))
+        env.update(decode_dict(err_str))
+    except ValueError as e:
+        log("out=%r", out_str)
+        log("err=%r", err_str)
+        log.err("Error: failed to decode %r output", file_to_source_path)
+        log.estr(e)
+
     log("env_from_sourcing%s=%s", (file_to_source_path, include_unexported_variables), env)
     # ensure we never expose empty keys:
     # (see ticket #4485)
