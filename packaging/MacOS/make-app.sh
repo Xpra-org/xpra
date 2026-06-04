@@ -610,7 +610,7 @@ rm "${RSCDIR}/__boot__.py" "${RSCDIR}/__error__.sh"
 if [ "$STRIP_GSTREAMER" == "1" ]; then
 	echo "- extra gstreamer dylib deps"
 	# we always need 'video' because pbutils links with it...
-	GST_DYLIBS="app audio base codecparsers codecs gl net pbutils reamer riff tag video"
+	GST_DYLIBS="app audio base codecparsers codecs gl net pbutils reamer riff rtp tag video"
 	# not sure: allocators mse play player rtp rtsp sctp sdp webrtc
 	if [ "${GSTREAMER_VIDEO}" == "1" ]; then
     GST_DYLIBS="${GST_DYLIBS} mpegts stmse"
