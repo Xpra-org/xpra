@@ -3,7 +3,7 @@
  * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
  * later version. See the file COPYING for details.
  * ABOUTME: libva H.264 encoder - C implementation.
- * ABOUTME: Minimal VA-API AVC encoder using NV12 staging copies and IDR frames. */
+ * ABOUTME: Minimal VA-API AVC encoder using NV12 staging copies and IDR/P frames. */
 
 #include "va_encode.h"
 
@@ -22,6 +22,11 @@
 #include <unistd.h>
 
 #define LIBVA_H264_LEVEL_IDC 51
+#define LIBVA_IDR_INTERVAL 60
+#define LIBVA_LOG2_MAX_FRAME_NUM_MINUS4 4
+#define LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 4
+#define LIBVA_FRAME_NUM_BITS (LIBVA_LOG2_MAX_FRAME_NUM_MINUS4 + 4)
+#define LIBVA_POC_LSB_BITS (LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 + 4)
 
 #ifndef VA_CHECK_VERSION
 #define VA_CHECK_VERSION(major, minor, micro) \
@@ -72,7 +77,7 @@ struct LibVAEncoder {
     VAConfigID      config;
     VAContextID     context;
     VASurfaceID     src_surface;
-    VASurfaceID     recon_surface;
+    VASurfaceID     recon_surfaces[2];
     uint8_t        *bitstream_data;
     size_t          bitstream_size;
     int             width;
@@ -85,6 +90,10 @@ struct LibVAEncoder {
     int             qp;
     VAProfile       profile;
     VAEntrypoint    entrypoint;
+    int             have_reference;
+    int             ref_surface_index;
+    int             ref_frame_num;
+    int             ref_poc_lsb;
     int             last_status;
     char            last_error[256];
     char            device[256];
@@ -219,6 +228,14 @@ static int bw_finish(struct BitWriter *bw) {
     return bw->byte_pos;
 }
 
+static int bw_bit_length(const struct BitWriter *bw) {
+    return bw->byte_pos * 8 + bw->bit_pos;
+}
+
+static int bw_byte_length(const struct BitWriter *bw) {
+    return bw->byte_pos + (bw->bit_pos ? 1 : 0);
+}
+
 static int write_start_code(uint8_t *dst, uint8_t nal) {
     dst[0] = 0;
     dst[1] = 0;
@@ -249,9 +266,9 @@ static int make_sps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
         bw_bit(&bw, 0);               /* qpprime_y_zero_transform_bypass_flag */
         bw_bit(&bw, 0);               /* seq_scaling_matrix_present_flag */
     }
-    bw_ue(&bw, 0);                    /* log2_max_frame_num_minus4 */
+    bw_ue(&bw, LIBVA_LOG2_MAX_FRAME_NUM_MINUS4);
     bw_ue(&bw, 0);                    /* pic_order_cnt_type */
-    bw_ue(&bw, 0);                    /* log2_max_pic_order_cnt_lsb_minus4 */
+    bw_ue(&bw, LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4);
     bw_ue(&bw, 1);                    /* max_num_ref_frames */
     bw_bit(&bw, 0);                   /* gaps_in_frame_num_value_allowed_flag */
     bw_ue(&bw, (unsigned int)enc->width_mbs - 1);
@@ -300,27 +317,40 @@ static int make_pps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     return off + bytes;
 }
 
-static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
+static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size,
+                             int is_idr, int frame_num, int poc_lsb, int *bit_length) {
     struct BitWriter bw;
     int off, bytes;
 
     (void)enc;
     if (dst_size < 32)
         return 0;
-    off = write_start_code(dst, 0x65); /* IDR, nal_ref_idc=3 */
+    off = write_start_code(dst, is_idr ? 0x65 : 0x41);
     bw_init(&bw);
     bw_ue(&bw, 0);                    /* first_mb_in_slice */
-    bw_ue(&bw, 2);                    /* slice_type: I */
+    bw_ue(&bw, is_idr ? 2 : 0);       /* I or P */
     bw_ue(&bw, 0);                    /* pic_parameter_set_id */
-    bw_bits(&bw, 0, 4);               /* frame_num */
-    bw_ue(&bw, 0);                    /* idr_pic_id */
-    bw_bits(&bw, 0, 4);               /* pic_order_cnt_lsb */
+    bw_bits(&bw, (unsigned int)frame_num, LIBVA_FRAME_NUM_BITS);
+    if (is_idr)
+        bw_ue(&bw, 0);                /* idr_pic_id */
+    bw_bits(&bw, (unsigned int)poc_lsb, LIBVA_POC_LSB_BITS);
+    if (!is_idr) {
+        bw_bit(&bw, 0);               /* num_ref_idx_active_override_flag */
+        bw_bit(&bw, 0);               /* ref_pic_list_modification_flag_l0 */
+    }
+    if (is_idr) {
+        bw_bit(&bw, 0);               /* no_output_of_prior_pics_flag */
+        bw_bit(&bw, 0);               /* long_term_reference_flag */
+    } else {
+        bw_bit(&bw, 0);               /* adaptive_ref_pic_marking_mode_flag */
+    }
     bw_se(&bw, 0);                    /* slice_qp_delta */
     bw_ue(&bw, 0);                    /* disable_deblocking_filter_idc */
     bw_se(&bw, 0);                    /* slice_alpha_c0_offset_div2 */
     bw_se(&bw, 0);                    /* slice_beta_offset_div2 */
-    bytes = bw_finish(&bw);
+    bytes = bw_byte_length(&bw);
     memcpy(dst + off, bw.data, bytes);
+    *bit_length = off * 8 + bw_bit_length(&bw);
     return off + bytes;
 }
 
@@ -541,14 +571,14 @@ static void fill_invalid_picture(VAPictureH264 *pic) {
 }
 
 static LibVAEncodeStatus create_packed_header(LibVAEncoder *enc, uint32_t type,
-                                              const uint8_t *data, int size,
+                                              const uint8_t *data, int size, int bit_length,
                                               VABufferID *param_out, VABufferID *data_out) {
     VAEncPackedHeaderParameterBuffer param;
     VAStatus status;
 
     memset(&param, 0, sizeof(param));
     param.type = type;
-    param.bit_length = (uint32_t)size * 8;
+    param.bit_length = (uint32_t)bit_length;
     param.has_emulation_bytes = 1;
     status = vaCreateBuffer(enc->display, enc->context,
                             VAEncPackedHeaderParameterBufferType,
@@ -578,7 +608,7 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, int width, int height
     VAStatus status;
     VAConfigAttrib attrs[3];
     VASurfaceAttrib surface_attrs[2];
-    VASurfaceID surfaces[2];
+    VASurfaceID surfaces[3];
     int major = 0, minor = 0;
 
     if (!out)
@@ -597,7 +627,8 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, int width, int height
     enc->config = VA_INVALID_ID;
     enc->context = VA_INVALID_ID;
     enc->src_surface = VA_INVALID_SURFACE;
-    enc->recon_surface = VA_INVALID_SURFACE;
+    enc->recon_surfaces[0] = VA_INVALID_SURFACE;
+    enc->recon_surfaces[1] = VA_INVALID_SURFACE;
     enc->width = width;
     enc->height = height;
     enc->width_mbs = roundup(width, 16) / 16;
@@ -607,6 +638,10 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, int width, int height
     enc->qp = quality_to_qp(quality);
     enc->profile = g_profile;
     enc->entrypoint = g_entrypoint;
+    enc->have_reference = 0;
+    enc->ref_surface_index = 0;
+    enc->ref_frame_num = 0;
+    enc->ref_poc_lsb = 0;
     enc->last_status = VA_STATUS_SUCCESS;
     snprintf(enc->device, sizeof(enc->device), "%s", g_device);
 
@@ -644,18 +679,19 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, int width, int height
     status = vaCreateSurfaces(enc->display, VA_RT_FORMAT_YUV420,
                               (unsigned int)enc->width_mbs * 16,
                               (unsigned int)enc->height_mbs * 16,
-                              surfaces, 2, surface_attrs, 2);
+                              surfaces, 3, surface_attrs, 2);
     if (status != VA_STATUS_SUCCESS) {
         set_error(enc, status, "vaCreateSurfaces");
         libva_encoder_destroy(enc);
         return LIBVA_ENC_ERROR;
     }
     enc->src_surface = surfaces[0];
-    enc->recon_surface = surfaces[1];
+    enc->recon_surfaces[0] = surfaces[1];
+    enc->recon_surfaces[1] = surfaces[2];
 
     status = vaCreateContext(enc->display, enc->config,
                              enc->width_mbs * 16, enc->height_mbs * 16,
-                             VA_PROGRESSIVE, surfaces, 2, &enc->context);
+                             VA_PROGRESSIVE, surfaces, 3, &enc->context);
     if (status != VA_STATUS_SUCCESS) {
         set_error(enc, status, "vaCreateContext");
         libva_encoder_destroy(enc);
@@ -684,8 +720,10 @@ void libva_encoder_destroy(LibVAEncoder *enc) {
             vaDestroyContext(enc->display, enc->context);
         if (enc->src_surface != VA_INVALID_SURFACE)
             vaDestroySurfaces(enc->display, &enc->src_surface, 1);
-        if (enc->recon_surface != VA_INVALID_SURFACE)
-            vaDestroySurfaces(enc->display, &enc->recon_surface, 1);
+        if (enc->recon_surfaces[0] != VA_INVALID_SURFACE)
+            vaDestroySurfaces(enc->display, &enc->recon_surfaces[0], 1);
+        if (enc->recon_surfaces[1] != VA_INVALID_SURFACE)
+            vaDestroySurfaces(enc->display, &enc->recon_surfaces[1], 1);
         if (enc->config != VA_INVALID_ID)
             vaDestroyConfig(enc->display, enc->config);
         vaTerminate(enc->display);
@@ -769,7 +807,6 @@ static LibVAEncodeStatus append_coded_buffer(LibVAEncoder *enc, VABufferID coded
     vaUnmapBuffer(enc->display, coded_buf);
     frame->data = enc->bitstream_data;
     frame->size = (int)offset;
-    frame->frame_type = LIBVA_ENC_FRAME_IDR;
     return LIBVA_ENC_OK;
 }
 
@@ -785,6 +822,9 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
     VAEncSliceParameterBufferH264 slice;
     uint8_t sps[128], pps[64], sh[64];
     int sps_size, pps_size, sh_size;
+    int sh_bits;
+    int gop_frame, is_idr, frame_num, poc_lsb, recon_index;
+    VASurfaceID recon_surface;
     VAStatus status;
     LibVAEncodeStatus estatus;
     long long t0, t1, t2;
@@ -798,6 +838,12 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
     estatus = upload_nv12(enc, y, y_stride, uv, uv_stride, &frame->us_copy);
     if (estatus != LIBVA_ENC_OK)
         return estatus;
+    gop_frame = enc->frames % LIBVA_IDR_INTERVAL;
+    is_idr = !enc->have_reference || gop_frame == 0;
+    frame_num = is_idr ? 0 : gop_frame;
+    poc_lsb = (frame_num * 2) & ((1 << LIBVA_POC_LSB_BITS) - 1);
+    recon_index = enc->frames & 1;
+    recon_surface = enc->recon_surfaces[recon_index];
 
     status = vaCreateBuffer(enc->display, enc->context, VAEncCodedBufferType,
                             (unsigned int)enc->bitstream_size, 1, NULL, &coded_buf);
@@ -808,8 +854,8 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
     memset(&seq, 0, sizeof(seq));
     seq.seq_parameter_set_id = 0;
     seq.level_idc = LIBVA_H264_LEVEL_IDC;
-    seq.intra_period = 1;
-    seq.intra_idr_period = 1;
+    seq.intra_period = LIBVA_IDR_INTERVAL;
+    seq.intra_idr_period = LIBVA_IDR_INTERVAL;
     seq.ip_period = 1;
     seq.bits_per_second = 0;
     seq.max_num_ref_frames = 1;
@@ -818,9 +864,9 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
     seq.seq_fields.bits.chroma_format_idc = 1;
     seq.seq_fields.bits.frame_mbs_only_flag = 1;
     seq.seq_fields.bits.direct_8x8_inference_flag = 1;
-    seq.seq_fields.bits.log2_max_frame_num_minus4 = 0;
+    seq.seq_fields.bits.log2_max_frame_num_minus4 = LIBVA_LOG2_MAX_FRAME_NUM_MINUS4;
     seq.seq_fields.bits.pic_order_cnt_type = 0;
-    seq.seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4 = 0;
+    seq.seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4 = LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4;
     seq.bit_depth_luma_minus8 = 0;
     seq.bit_depth_chroma_minus8 = 0;
     if (enc->width_mbs * 16 != enc->width || enc->height_mbs * 16 != enc->height) {
@@ -835,7 +881,7 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
         return set_error(enc, status, "vaCreateBuffer(sequence)");
     }
     sps_size = make_sps(enc, sps, sizeof(sps));
-    if (create_packed_header(enc, VAEncPackedHeaderSequence, sps, sps_size,
+    if (create_packed_header(enc, VAEncPackedHeaderSequence, sps, sps_size, sps_size * 8,
                              &buffers[nbuf], &buffers[nbuf + 1]) != LIBVA_ENC_OK) {
         destroy_buffers(enc, buffers, nbuf + 2);
         return LIBVA_ENC_ERROR;
@@ -843,24 +889,31 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
     nbuf += 2;
 
     memset(&pic, 0, sizeof(pic));
-    pic.CurrPic.picture_id = enc->recon_surface;
-    pic.CurrPic.frame_idx = 0;
+    pic.CurrPic.picture_id = recon_surface;
+    pic.CurrPic.frame_idx = (uint32_t)frame_num;
     pic.CurrPic.flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
-    pic.CurrPic.TopFieldOrderCnt = 0;
-    pic.CurrPic.BottomFieldOrderCnt = 0;
+    pic.CurrPic.TopFieldOrderCnt = poc_lsb;
+    pic.CurrPic.BottomFieldOrderCnt = poc_lsb;
     for (int i = 0; i < 16; i++)
         fill_invalid_picture(&pic.ReferenceFrames[i]);
+    if (!is_idr) {
+        pic.ReferenceFrames[0].picture_id = enc->recon_surfaces[enc->ref_surface_index];
+        pic.ReferenceFrames[0].frame_idx = (uint32_t)enc->ref_frame_num;
+        pic.ReferenceFrames[0].flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
+        pic.ReferenceFrames[0].TopFieldOrderCnt = enc->ref_poc_lsb;
+        pic.ReferenceFrames[0].BottomFieldOrderCnt = enc->ref_poc_lsb;
+    }
     pic.coded_buf = coded_buf;
     pic.pic_parameter_set_id = 0;
     pic.seq_parameter_set_id = 0;
     pic.last_picture = 0;
-    pic.frame_num = 0;
+    pic.frame_num = (uint16_t)frame_num;
     pic.pic_init_qp = (uint8_t)enc->qp;
     pic.num_ref_idx_l0_active_minus1 = 0;
     pic.num_ref_idx_l1_active_minus1 = 0;
     pic.chroma_qp_index_offset = 0;
     pic.second_chroma_qp_index_offset = 0;
-    pic.pic_fields.bits.idr_pic_flag = 1;
+    pic.pic_fields.bits.idr_pic_flag = is_idr;
     pic.pic_fields.bits.reference_pic_flag = 1;
     pic.pic_fields.bits.entropy_coding_mode_flag = 0;
     pic.pic_fields.bits.deblocking_filter_control_present_flag = 1;
@@ -871,7 +924,7 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
         return set_error(enc, status, "vaCreateBuffer(picture)");
     }
     pps_size = make_pps(enc, pps, sizeof(pps));
-    if (create_packed_header(enc, VAEncPackedHeaderPicture, pps, pps_size,
+    if (create_packed_header(enc, VAEncPackedHeaderPicture, pps, pps_size, pps_size * 8,
                              &buffers[nbuf], &buffers[nbuf + 1]) != LIBVA_ENC_OK) {
         destroy_buffers(enc, buffers, nbuf + 2);
         return LIBVA_ENC_ERROR;
@@ -882,15 +935,22 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
     slice.macroblock_address = 0;
     slice.num_macroblocks = (uint32_t)(enc->width_mbs * enc->height_mbs);
     slice.macroblock_info = VA_INVALID_ID;
-    slice.slice_type = 2;
+    slice.slice_type = is_idr ? 2 : 0;
     slice.pic_parameter_set_id = 0;
     slice.idr_pic_id = 0;
-    slice.pic_order_cnt_lsb = 0;
+    slice.pic_order_cnt_lsb = (uint16_t)poc_lsb;
     slice.num_ref_idx_l0_active_minus1 = 0;
     slice.num_ref_idx_l1_active_minus1 = 0;
     for (int i = 0; i < 32; i++) {
         fill_invalid_picture(&slice.RefPicList0[i]);
         fill_invalid_picture(&slice.RefPicList1[i]);
+    }
+    if (!is_idr) {
+        slice.RefPicList0[0].picture_id = enc->recon_surfaces[enc->ref_surface_index];
+        slice.RefPicList0[0].frame_idx = (uint32_t)enc->ref_frame_num;
+        slice.RefPicList0[0].flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
+        slice.RefPicList0[0].TopFieldOrderCnt = enc->ref_poc_lsb;
+        slice.RefPicList0[0].BottomFieldOrderCnt = enc->ref_poc_lsb;
     }
     slice.slice_qp_delta = 0;
     slice.disable_deblocking_filter_idc = 0;
@@ -902,8 +962,8 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
         destroy_buffers(enc, buffers, nbuf);
         return set_error(enc, status, "vaCreateBuffer(slice)");
     }
-    sh_size = make_slice_header(enc, sh, sizeof(sh));
-    if (create_packed_header(enc, VAEncPackedHeaderSlice, sh, sh_size,
+    sh_size = make_slice_header(enc, sh, sizeof(sh), is_idr, frame_num, poc_lsb, &sh_bits);
+    if (create_packed_header(enc, VAEncPackedHeaderSlice, sh, sh_size, sh_bits,
                              &buffers[nbuf], &buffers[nbuf + 1]) != LIBVA_ENC_OK) {
         destroy_buffers(enc, buffers, nbuf + 2);
         return LIBVA_ENC_ERROR;
@@ -934,6 +994,11 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
         return estatus;
     frame->us_submit = (int)(t1 - t0);
     frame->us_sync = (int)(t2 - t1);
+    frame->frame_type = is_idr ? LIBVA_ENC_FRAME_IDR : LIBVA_ENC_FRAME_P;
+    enc->have_reference = 1;
+    enc->ref_surface_index = recon_index;
+    enc->ref_frame_num = frame_num;
+    enc->ref_poc_lsb = poc_lsb;
     enc->frames++;
     return LIBVA_ENC_OK;
 }

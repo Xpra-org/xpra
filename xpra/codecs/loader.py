@@ -18,7 +18,7 @@ from xpra.util.env import envbool, numpy_import_context
 from xpra.os_util import OSX, WIN32
 from xpra.util.version import parse_version
 from xpra.codecs.constants import HELP_ORDER
-from xpra.log import Logger, enable_color, LOG_FORMAT, NOPREFIX_FORMAT
+from xpra.log import Logger, enable_color, LOG_FORMAT, NOPREFIX_FORMAT, add_debug_category
 
 log = Logger("codec", "loader")
 
@@ -497,6 +497,7 @@ def main(args: list[str]) -> int:
             log.enable_debug()
             from xpra.codecs.checks import log as check_log
             check_log.enable_debug()
+            add_debug_category("codec")
         enable_color(format_string=format_string)
 
         from xpra.os_util import gi_import

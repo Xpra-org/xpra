@@ -6,9 +6,9 @@
 # ABOUTME: libva H.264 hardware encoder.
 # ABOUTME: Wraps the C va_encode API; accepts NV12 system-memory frames.
 # accepts NV12 system-memory frames only
-# emits IDR/I frames only
+# emits periodic IDR frames and P frames
 # copies into VA surfaces; direct dmabuf/VA surface import is future work
-# future work: more encodings/profiles, P-frames, async queues, set_speed, set_quality
+# future work: more encodings/profiles, async queues, set_speed, set_quality
 
 #cython: wraparound=False
 
@@ -18,6 +18,7 @@ from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
+from xpra.codecs.vacommon import config_libva_logging
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.log import Logger
@@ -51,6 +52,7 @@ cdef extern from "va_encode.h":
         LIBVA_ENC_FRAME_UNKNOWN
         LIBVA_ENC_FRAME_IDR
         LIBVA_ENC_FRAME_I
+        LIBVA_ENC_FRAME_P
 
     ctypedef struct LibVAEncodedFrame:
         uint8_t *data
@@ -91,6 +93,8 @@ cdef str frame_type_name(LibVAEncodeFrameType frame_type):
         return "IDR"
     if frame_type == LIBVA_ENC_FRAME_I:
         return "I"
+    if frame_type == LIBVA_ENC_FRAME_P:
+        return "P"
     return ""
 
 
@@ -99,6 +103,7 @@ generation = AtomicInteger()
 
 def init_module(options: dict = None) -> None:
     log("libva.encoder.init_module()")
+    config_libva_logging()
     libva_encode_set_log(libva_log_callback)
     cdef LibVAEncodeStatus status = libva_encode_startup()
     if status != LIBVA_ENC_OK:
@@ -230,7 +235,6 @@ cdef class Encoder:
         return self.src_format
 
     # Follow-up work intentionally deferred from the first incarnation:
-    # - P-frame/reference tracking and delayed frame flushing.
     # - H.265/AV1/VP9 profile probing and more VideoSpec entries.
     # - RGB/YUV420P upload paths, or a direct dependency on libyuv CSC.
     # - dmabuf / VA surface import to avoid CPU staging copies.

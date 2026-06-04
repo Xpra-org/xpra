@@ -26,6 +26,7 @@ typedef enum {
     LIBVA_ENC_FRAME_UNKNOWN = 0,
     LIBVA_ENC_FRAME_IDR     = 1,
     LIBVA_ENC_FRAME_I       = 2,
+    LIBVA_ENC_FRAME_P       = 3,
 } LibVAEncodeFrameType;
 
 typedef struct {
