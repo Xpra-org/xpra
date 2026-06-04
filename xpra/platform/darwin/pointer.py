@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from AppKit import NSEvent
 import Quartz.CoreGraphics as CG
 
 from xpra.util.env import envbool
@@ -24,7 +23,12 @@ BUTTON_EVENTS = {
 
 
 def get_position() -> tuple[int, int]:
-    location = NSEvent.mouseLocation()
+    # use CoreGraphics rather than `NSEvent.mouseLocation()`:
+    # CGEventGetLocation returns the cursor in Quartz global display
+    # coordinates (top-left origin, Y down), matching the coordinate
+    # space used by the screen capture, window geometry and the warp /
+    # click events - whereas NSEvent uses Cocoa coordinates (Y inverted)
+    location = CG.CGEventGetLocation(CG.CGEventCreate(None))
     return round(location.x), round(location.y)
 
 
