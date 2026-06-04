@@ -100,6 +100,8 @@ cdef str frame_type_name(LibVAEncodeFrameType frame_type):
 
 generation = AtomicInteger()
 
+ENCODINGS: list[str] = ["h264"]
+
 
 def init_module(options: dict = None) -> None:
     log("libva.encoder.init_module()")
@@ -138,16 +140,16 @@ def get_info() -> Dict[str, Any]:
 
 
 def get_encodings() -> Sequence[str]:
-    return ("h264", )
+    return tuple(ENCODINGS)
 
 
 MAX_WIDTH, MAX_HEIGHT = 4096, 4096
 
 
 def get_specs() -> Sequence[VideoSpec]:
-    return (
+    return tuple(
         VideoSpec(
-            encoding="h264",
+            encoding=encoding,
             input_colorspace="NV12",
             output_colorspaces=("YUV420P", ),
             has_lossless_mode=False,
@@ -160,7 +162,8 @@ def get_specs() -> Sequence[VideoSpec]:
             max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
             cpu_cost=35,
             gpu_cost=50,
-        ),
+        )
+        for encoding in ENCODINGS
     )
 
 
@@ -181,7 +184,7 @@ cdef class Encoder:
     def init_context(self, encoding: str, int width, int height, src_format: str,
                      options: typedict) -> None:
         log("libva.encoder.init_context%s", (encoding, width, height, src_format, options))
-        assert encoding == "h264", "unsupported encoding: %s" % encoding
+        assert encoding in ENCODINGS, "unsupported encoding: %s" % encoding
         assert src_format == "NV12", "invalid source format: %s" % src_format
         assert options.intget("scaled-width", width) == width, "libva encoder does not handle scaling"
         assert options.intget("scaled-height", height) == height, "libva encoder does not handle scaling"
@@ -353,4 +356,5 @@ def selftest(full=False) -> None:
     log("libva encoder selftest: %s", get_info())
     from xpra.codecs.checks import testencoder
     from xpra.codecs.libva import encoder
-    assert testencoder(encoder, full, typedict())
+    ENCODINGS[:] = testencoder(encoder, full, typedict())
+    assert ENCODINGS
