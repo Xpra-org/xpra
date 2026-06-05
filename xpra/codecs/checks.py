@@ -387,12 +387,14 @@ def testdecoder(decoder_module, full: bool) -> Sequence[str]:
             testdecoding(decoder_module, encoding, in_cs, full)
         except EncodingNotSupported:
             log(f"{dtype}: {encoding} decoding failed", exc_info=True)
-            codecs.remove(encoding)
+            if encoding in codecs:
+                codecs.remove(encoding)
         except Exception as e:
             log(f"{dtype}: {encoding} decoding failed", exc_info=True)
             log.warn(f"{dtype}: {encoding} decoding failed: {e}")
             del e
-            codecs.remove(encoding)
+            if encoding in codecs:
+                codecs.remove(encoding)
     if not codecs:
         log.error(f"{dtype}: all the codecs have failed! {csv(decoder_module.get_encodings())}")
     return tuple(codecs)
