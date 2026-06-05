@@ -141,6 +141,10 @@ class ShadowServer(ShadowServerBase):
         from xpra.platform.darwin.shadow_pointer import DarwinShadowPointerManager
         return DarwinShadowPointerManager
 
+    def get_cursor_subsystem_class(self) -> type:
+        from xpra.platform.darwin.shadow_cursor import DarwinShadowCursorManager
+        return DarwinShadowCursorManager
+
     def init(self, opts) -> None:
         super().init(opts)
         # printing fails silently on OSX
@@ -220,6 +224,9 @@ class ShadowServer(ShadowServerBase):
                 self.capture.start()
             self.start_poll_pointer()
             return
+        # the CoreGraphics backend drives screen refreshes via damage callbacks,
+        # but we still need to poll for the pointer position and cursor pixels:
+        self.start_poll_pointer()
         if self.refresh_registered:
             return
         if not USE_TIMER:
