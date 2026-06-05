@@ -5,7 +5,6 @@
 
 import os
 import re
-from typing import Any
 from collections.abc import Sequence, Callable
 from ctypes import create_unicode_buffer, byref, c_ulong
 from ctypes.wintypes import RECT
@@ -418,18 +417,6 @@ class ShadowServer(ShadowServerBase):
                 rwm.refresh_shape()
         log("refresh()=%s", v)
         return v
-
-    def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
-        info = super().get_threaded_info(proto, **kwargs)
-        info.setdefault("features", {})["shadow"] = True
-        tray = self.get_subsystem("tray")
-        info.setdefault("server", {
-            "pixel-depth": self.pixel_depth,
-            "type": "Python/Win32-Shadow",
-            "tray": bool(tray and tray.enabled),
-            "tray-icon": (tray and tray.icon) or ""
-        })
-        return info
 
 
 def main() -> None:
