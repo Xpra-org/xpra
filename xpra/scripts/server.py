@@ -402,7 +402,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     if mode not in (
-        "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
+        "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen", "shadow-device",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "proxy",
         "encoder",
@@ -548,7 +548,10 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     session_files = app.get_subsystem("session-files")
     assert session_files
     session_files.init(opts)
-    session_files.setup_session_dir(mode, opts.sessions_dir, display_name)
+    # For shadow-device the display_name is the device specifier (e.g. "vdd:0").
+    # Colons are invalid in Windows paths so sanitize before using as a dir name.
+    session_display_name = display_name.replace(":", "_") if mode == "shadow-device" else display_name
+    session_files.setup_session_dir(mode, opts.sessions_dir, session_display_name)
     if upgrading:
         # if we had saved the start / start-desktop config, reload it:
         session_files.apply_config(opts, cmdline)
