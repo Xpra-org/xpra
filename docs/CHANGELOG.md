@@ -4,6 +4,7 @@
 * 🔧 Platforms, build and packaging:
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
+  * [new macOS screen capture backend](https://github.com/Xpra-org/xpra/issues/1872)
   * [setup scripts for pycuda](https://github.com/Xpra-org/xpra/issues/2400)
 * 🖧 Network:
   * [proxy registration](https://github.com/Xpra-org/xpra/issues/2125)
