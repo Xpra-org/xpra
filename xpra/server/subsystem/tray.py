@@ -154,7 +154,7 @@ class TrayMenu(StubServerMixin):
         for c in classes:
             try:
                 w = c(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server",
-                      icon_filename="server-notconnected.png",
+                      icon_filename="server-notconnected",
                       click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
                 if w:
                     log(f"server system tray widget using {c}(..)={w}")
