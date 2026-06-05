@@ -324,6 +324,8 @@ vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
 amf_ENABLED             = pkg_config_version("1.0", "amf") or has_header_file("AMF/components/VideoEncoderVCE.h")
 amf_encoder_ENABLED     = amf_ENABLED
+vt_ENABLED              = OSX
+vt_encoder_ENABLED      = vt_ENABLED
 mf_decoder_ENABLED      = DEFAULT and WIN32
 vpl_ENABLED             = DEFAULT and has_header_file("vpl/mfxvideo.h")
 vpl_decoder_ENABLED     = vpl_ENABLED
@@ -376,6 +378,7 @@ ENCODER_SWITCHES = [
     "enc_x264", "openh264_encoder", "nvenc", "nvjpeg_encoder",
     "vpx_encoder", "webp_encoder", "pillow_encoder",
     "amf_encoder",
+    "vt_encoder",
     "vpl_encoder",
     "libva_encoder",
     "jpeg_encoder", "avif_encoder",
@@ -414,6 +417,7 @@ SWITCH_ALIAS = {
     "pillow": ("pillow_encoder", "pillow_decoder"),
     "vpx": ("vpx_encoder", "vpx_decoder"),
     "amf": ("amf_encoder", ),
+    "vt": ("vt_encoder", ),
     "webp": ("webp_encoder", "webp_decoder"),
     "avif": ("avif_encoder", "avif_decoder"),
     "de265": ("de265_decoder", ),
@@ -3089,6 +3093,15 @@ if amf_ENABLED:
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
     toggle_packages(WIN32, "xpra.platform.win32.d3d11")
     tace(WIN32, "xpra.platform.win32.d3d11.device")
+toggle_packages(vt_ENABLED, "xpra.codecs.vt")
+if vt_encoder_ENABLED:
+    ace("xpra.codecs.vt.encoder",
+        extra_link_args=(
+            "-framework", "VideoToolbox",
+            "-framework", "CoreMedia",
+            "-framework", "CoreVideo",
+            "-framework", "CoreFoundation",
+        ))
 toggle_packages(mf_decoder_ENABLED, "xpra.codecs.mf")
 if mf_decoder_ENABLED:
     ace("xpra.codecs.mf.decoder,xpra/codecs/mf/mf_decode.c",

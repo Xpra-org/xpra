@@ -36,6 +36,7 @@ NOWARN = [
     "filter_pillow",
     "dec_avif", "enc_avif",
     "enc_amf",
+    "enc_vt",
     "dec_mf",
     "dec_vpl", "enc_vpl",
     "dec_libva", "enc_libva",
@@ -79,7 +80,7 @@ ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "webp", "jpeg", "nvjpeg", "avif",
 ))
 ENCODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("enc", x) for x in (
-    "vpx", "x264", "openh264", "nvenc", "vpl", "libva", "gstreamer", "amf", "remote",
+    "vpx", "x264", "openh264", "nvenc", "vpl", "libva", "gstreamer", "amf", "vt", "remote",
 ))
 DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
     "pillow", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
@@ -267,6 +268,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "enc_libva"     : ("libva encoder",     "libva",        "encoder", "Encoder"),
     "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),
     "enc_amf"       : ("amf encoder",       "amf",          "encoder", "Encoder"),
+    "enc_vt"        : ("VideoToolbox encoder", "vt",        "encoder", "Encoder"),
     "enc_remote"    : ("remote encoder",    "remote",       "encoder", "Encoder"),
     # csc:
     "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "converter", "Converter"),
