@@ -24,6 +24,7 @@ log = Logger("codec", "video")
 # noinspection PyPep8
 CODEC_TO_MODULE: dict[str, str] = {
     "enc_amf"       : "amf.encoder",
+    "enc_vt"        : "vt.encoder",
     "enc_vpx"       : "vpx.encoder",
     "dec_vpx"       : "vpx.decoder",
     "dec_aom"       : "aom.decoder",
@@ -71,15 +72,15 @@ def try_import_modules(prefix: str, *codec_names: str) -> list[str]:
 
 
 # all the codecs we know about:
-ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("amf", "x264", "openh264", "vpx",
+ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("amf", "vt", "x264", "openh264", "vpx",
                                             "nvenc", "vpl", "libva", "nvjpeg", "jpeg", "webp", "gstreamer", "remote")
-HARDWARE_ENCODER_OPTIONS: Sequence[str] = ("nvenc", "vpl", "libva", "nvjpeg")
+HARDWARE_ENCODER_OPTIONS: Sequence[str] = ("nvenc", "vpl", "libva", "nvjpeg", "vt")
 ALL_CSC_MODULE_OPTIONS: Sequence[str] = ("cython", "libyuv")
 ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("vpl", "mf", "nvdec", "openh264", "vpx", "gstreamer", "aom", "de265")
 
 PREFERRED_ENCODER_ORDER: Sequence[str] = tuple(
     autoprefix("enc", x) for x in (
-        "nvenc", "vpl", "libva", "nvjpeg", "x264", "vpx", "jpeg", "webp", "gstreamer")
+        "nvenc", "vpl", "libva", "vt", "nvjpeg", "x264", "vpx", "jpeg", "webp", "gstreamer")
 )
 log("video: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
