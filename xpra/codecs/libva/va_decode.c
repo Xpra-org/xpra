@@ -67,6 +67,9 @@ struct LibVADecoder {
     int             vpx_golden_surface;
     int             vpx_alt_surface;
     VASurfaceID     vp9_refs[8];
+    int             vp9_bit_depth;
+    int             vp9_subsampling_x;
+    int             vp9_subsampling_y;
     int             vp9_loop_filter_ref_deltas[4];
     int             vp9_loop_filter_mode_deltas[2];
     int             vp9_segmentation_abs_or_delta_update;
@@ -612,6 +615,20 @@ LibVADecodeStatus libva_decoder_create(LibVADecoder **out, const char *encoding,
         return LIBVA_DEC_ERROR;
     }
 
+    {
+        VASurfaceAttrib qattrs[32];
+        unsigned int nq = 32;
+        VAStatus qst = vaQuerySurfaceAttributes(dec->display, dec->config, qattrs, &nq);
+        libva_log("VP9 dbg: vaQuerySurfaceAttributes status=%d nattrs=%u", (int)qst, nq);
+        for (unsigned int i = 0; i < nq && qst == VA_STATUS_SUCCESS; i++) {
+            if (qattrs[i].type == VASurfaceAttribPixelFormat) {
+                unsigned int fourcc = (unsigned int)qattrs[i].value.value.i;
+                libva_log("VP9 dbg:   supported pixel format: %c%c%c%c (0x%08x)",
+                          fourcc & 0xff, (fourcc >> 8) & 0xff,
+                          (fourcc >> 16) & 0xff, (fourcc >> 24) & 0xff, fourcc);
+            }
+        }
+    }
     memset(surface_attrs, 0, sizeof(surface_attrs));
     surface_attrs[0].type = VASurfaceAttribPixelFormat;
     surface_attrs[0].flags = VA_SURFACE_ATTRIB_SETTABLE;
@@ -1681,6 +1698,9 @@ static void vp9_init_lf_deltas(struct VP9FrameInfo *info) {
 }
 
 static void init_vp9_state(LibVADecoder *dec) {
+    dec->vp9_bit_depth = 8;
+    dec->vp9_subsampling_x = 1;
+    dec->vp9_subsampling_y = 1;
     dec->vp9_loop_filter_ref_deltas[0] = 1;
     dec->vp9_loop_filter_ref_deltas[1] = 0;
     dec->vp9_loop_filter_ref_deltas[2] = -1;
@@ -1693,6 +1713,11 @@ static void init_vp9_state(LibVADecoder *dec) {
 }
 
 static void load_vp9_state(LibVADecoder *dec, struct VP9FrameInfo *info) {
+    /* color_config (bit depth / chroma subsampling) is only signalled in key and
+     * intra-only frames; inter frames inherit it from the previous decoded frame. */
+    info->bit_depth = dec->vp9_bit_depth;
+    info->subsampling_x = dec->vp9_subsampling_x;
+    info->subsampling_y = dec->vp9_subsampling_y;
     memcpy(info->loop_filter_ref_deltas, dec->vp9_loop_filter_ref_deltas,
            sizeof(info->loop_filter_ref_deltas));
     memcpy(info->loop_filter_mode_deltas, dec->vp9_loop_filter_mode_deltas,
@@ -1703,6 +1728,9 @@ static void load_vp9_state(LibVADecoder *dec, struct VP9FrameInfo *info) {
 }
 
 static void save_vp9_state(LibVADecoder *dec, const struct VP9FrameInfo *info) {
+    dec->vp9_bit_depth = info->bit_depth;
+    dec->vp9_subsampling_x = info->subsampling_x;
+    dec->vp9_subsampling_y = info->subsampling_y;
     memcpy(dec->vp9_loop_filter_ref_deltas, info->loop_filter_ref_deltas,
            sizeof(dec->vp9_loop_filter_ref_deltas));
     memcpy(dec->vp9_loop_filter_mode_deltas, info->loop_filter_mode_deltas,
@@ -2016,6 +2044,21 @@ static LibVADecodeStatus vp9_decoder_decode(LibVADecoder *dec,
         destroy_buffers(dec, buffers, nbuf);
         return set_error(dec, status, "vaCreateBuffer(VP9)");
     }
+    libva_log("VP9 dbg: STORED bitdepth=%d ss=%d,%d", dec->vp9_bit_depth, dec->vp9_subsampling_x, dec->vp9_subsampling_y);
+    libva_log("VP9 dbg: profile=%d type=%d show=%d errres=%d intra_only=%d bitdepth=%d ss=%d,%d "
+              "size=%dx%d refidx=%d,%d,%d refresh=0x%02x reffrm=%u,%u,%u,%u,%u,%u,%u,%u "
+              "lf_level=%d lf_sharp=%d base_q=%d lossless=%d seg_en=%d tile=%d,%d fhlen=%d fps=%d datalen=%d",
+              info.profile, info.frame_type, info.show_frame, info.error_resilient_mode, info.intra_only,
+              info.bit_depth, info.subsampling_x, info.subsampling_y,
+              info.frame_width, info.frame_height,
+              info.ref_frame_idx[0], info.ref_frame_idx[1], info.ref_frame_idx[2],
+              info.refresh_frame_flags,
+              (unsigned)dec->vp9_refs[0], (unsigned)dec->vp9_refs[1], (unsigned)dec->vp9_refs[2],
+              (unsigned)dec->vp9_refs[3], (unsigned)dec->vp9_refs[4], (unsigned)dec->vp9_refs[5],
+              (unsigned)dec->vp9_refs[6], (unsigned)dec->vp9_refs[7],
+              info.loop_filter_level, info.loop_filter_sharpness, info.base_q_idx, info.lossless,
+              info.segmentation_enabled, info.tile_cols_log2, info.tile_rows_log2,
+              info.uncompressed_header_bytes, info.first_partition_size, data_len);
     t0 = usec_now();
     status = vaBeginPicture(dec->display, dec->context, surface);
     if (status == VA_STATUS_SUCCESS)
