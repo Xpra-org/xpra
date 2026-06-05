@@ -129,6 +129,10 @@ class ShadowServer(ShadowServerBase):
         self._stream_refresh_pending = False
         super().__init__(attrs)
 
+    def get_display_subsystem_class(self) -> type:
+        from xpra.platform.darwin.shadow_display import DarwinShadowDisplayManager
+        return DarwinShadowDisplayManager
+
     def get_keyboard_subsystem_class(self) -> type:
         from xpra.platform.darwin.shadow_keyboard import DarwinShadowKeyboardManager
         return DarwinShadowKeyboardManager
@@ -270,14 +274,6 @@ class ShadowServer(ShadowServerBase):
             scaled.append((plug_name, round(x * sf), round(y * sf),
                            round(width * sf), round(height * sf), scale_factor))
         return scaled
-
-    def get_display_size(self) -> tuple[int, int]:
-        w, h = super().get_display_size()
-        if self._streaming and HIGHDPI:
-            from xpra.platform.darwin.avfoundation_screen import get_display_scale
-            sf = get_display_scale(CG.CGMainDisplayID())
-            return round(w * sf), round(h * sf)
-        return w, h
 
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         info = super().get_threaded_info(proto, **kwargs)
