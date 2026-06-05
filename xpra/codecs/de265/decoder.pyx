@@ -87,7 +87,7 @@ cdef inline str error_text(de265_error err):
     return de265_get_error_text(err).decode("latin1")
 
 
-cdef int check(de265_error err, str action) except -1:
+cdef inline int check(de265_error err, str action) except -1:
     if de265_isOK(err):
         return 0
     if err == DE265_ERROR_OUT_OF_MEMORY:
@@ -185,7 +185,7 @@ cdef class Decoder:
 
     def clean(self) -> None:
         log("de265 close context %#x", <uintptr_t> self.context)
-        cdef de265_error r
+        cdef de265_error r = DE265_OK
         if self.context != NULL:
             r = de265_free_decoder(self.context)
             if not de265_isOK(r):
@@ -212,7 +212,7 @@ cdef class Decoder:
         cdef double start = monotonic()
         cdef const uint8_t *src
         cdef Py_ssize_t src_len
-        cdef de265_error r
+        cdef de265_error r = DE265_OK
         with buffer_context(data) as bc:
             src = <const uint8_t*> (<uintptr_t> int(bc))
             src_len = len(bc)
