@@ -23,9 +23,6 @@ class ReadonlyConnection(StubClientConnection):
         options = getattr(conn, "options", None) or {}
         self.connection_readonly = bool(str_to_bool(options.get("readonly", False)))
 
-    def init_state(self) -> None:
-        pass
-
     def parse_client_caps(self, c: typedict) -> None:
         self.client_readonly = c.boolget("readonly", self.client_readonly)
         window = typedict(c.dictget("window", {}))

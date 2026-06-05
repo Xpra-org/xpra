@@ -212,6 +212,7 @@ def create_user_winsta(username: str, token: HANDLE) -> str:
     # Build a null-DACL security descriptor so the window station and desktop
     # are accessible by everyone (suitable for testing).
     sa, sd_buf = _make_null_dacl_sa()
+    log("null dacl: %s, %s", sa, sd_buf)
 
     # --- Create window station with open security ----------------------------
     winsta = _CreateWindowStationA(sta_name, 0, WINSTA_ALL_ACCESS, byref(sa))

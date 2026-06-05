@@ -39,7 +39,7 @@ class NoFilter:
         callback(image)
 
     def clean(self) -> None:
-        pass
+        """ this filter does nothing """
 
 
 class ImageFilter:

@@ -151,7 +151,7 @@ class FileSource:
         raise NotImplementedError
 
     def close(self) -> None:
-        pass
+        """ CheckoutSource overrides this method """
 
 
 class GitTreeSource(FileSource):
