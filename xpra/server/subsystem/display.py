@@ -111,7 +111,10 @@ class DisplayManager(StubSubsystem):
     def get_display_description(self) -> str:
         dinfo = self.get_display_name()
         dtype = get_display_type()
-        dinfo = f"{dtype} display {dinfo}"      #ie: "X11 display :0"
+        if dinfo == "Main":
+            dinfo = f"{dtype} display"              #ie: "Main display" on macOS and win32
+        else:
+            dinfo = f"{dtype} display {dinfo}"      #ie: "X11 display :0"
         if size := self.get_display_size():
             w, h = size
             dinfo += f" size {w}x{h}"
