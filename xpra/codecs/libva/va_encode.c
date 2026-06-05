@@ -29,6 +29,7 @@
 #define LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 4
 #define LIBVA_FRAME_NUM_BITS (LIBVA_LOG2_MAX_FRAME_NUM_MINUS4 + 4)
 #define LIBVA_POC_LSB_BITS (LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 + 4)
+#define LIBVA_H264_POC_TYPE 2
 
 static libva_log_fn g_log_fn = NULL;
 static char g_device[256] = "";
@@ -234,6 +235,39 @@ static int write_start_code(uint8_t *dst, uint8_t nal) {
     return 5;
 }
 
+static int append_ebsp(uint8_t *dst, int dst_size, const uint8_t *src, int src_size) {
+    int off = 0;
+    int zeros = 0;
+
+    for (int i = 0; i < src_size; i++) {
+        uint8_t b = src[i];
+        if (zeros >= 2 && b <= 3) {
+            if (off >= dst_size)
+                return 0;
+            dst[off++] = 3;
+            zeros = 0;
+        }
+        if (off >= dst_size)
+            return 0;
+        dst[off++] = b;
+        zeros = (b == 0) ? zeros + 1 : 0;
+    }
+    return off;
+}
+
+static int write_escaped_nal(uint8_t *dst, int dst_size, uint8_t nal,
+                             const uint8_t *rbsp, int rbsp_size) {
+    int off, bytes;
+
+    if (dst_size < 6)
+        return 0;
+    off = write_start_code(dst, nal);
+    bytes = append_ebsp(dst + off, dst_size - off, rbsp, rbsp_size);
+    if (!bytes)
+        return 0;
+    return off + bytes;
+}
+
 static int make_aud(uint8_t *dst, int dst_size, int is_idr) {
     int off;
 
@@ -246,13 +280,12 @@ static int make_aud(uint8_t *dst, int dst_size, int is_idr) {
 
 static int make_sps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     struct BitWriter bw;
-    int off, bytes;
+    int bytes;
     int crop_right = (enc->width_mbs * 16 - enc->width) / 2;
     int crop_bottom = (enc->height_mbs * 16 - enc->height) / 2;
 
     if (dst_size < 64)
         return 0;
-    off = write_start_code(dst, 0x67);
     bw_init(&bw);
     bw_bits(&bw, (unsigned int)h264_profile_idc(enc->profile), 8);
     bw_bits(&bw, (unsigned int)h264_constraint_flags(enc->profile), 8);
@@ -266,8 +299,9 @@ static int make_sps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
         bw_bit(&bw, 0);               /* seq_scaling_matrix_present_flag */
     }
     bw_ue(&bw, LIBVA_LOG2_MAX_FRAME_NUM_MINUS4);
-    bw_ue(&bw, 0);                    /* pic_order_cnt_type */
-    bw_ue(&bw, LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4);
+    bw_ue(&bw, LIBVA_H264_POC_TYPE);  /* pic_order_cnt_type */
+    if (LIBVA_H264_POC_TYPE == 0)
+        bw_ue(&bw, LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4);
     bw_ue(&bw, 1);                    /* max_num_ref_frames */
     bw_bit(&bw, 0);                   /* gaps_in_frame_num_value_allowed_flag */
     bw_ue(&bw, (unsigned int)enc->width_mbs - 1);
@@ -281,20 +315,37 @@ static int make_sps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
         bw_ue(&bw, 0);
         bw_ue(&bw, (unsigned int)crop_bottom);
     }
-    bw_bit(&bw, 0);                   /* vui_parameters_present_flag */
+    bw_bit(&bw, 1);                   /* vui_parameters_present_flag */
+    bw_bit(&bw, 0);                   /* aspect_ratio_info_present_flag */
+    bw_bit(&bw, 0);                   /* overscan_info_present_flag */
+    bw_bit(&bw, 0);                   /* video_signal_type_present_flag */
+    bw_bit(&bw, 0);                   /* chroma_loc_info_present_flag */
+    bw_bit(&bw, 1);                   /* timing_info_present_flag */
+    bw_bits(&bw, 1, 32);              /* num_units_in_tick */
+    bw_bits(&bw, 60, 32);             /* time_scale */
+    bw_bit(&bw, 1);                   /* fixed_frame_rate_flag */
+    bw_bit(&bw, 0);                   /* nal_hrd_parameters_present_flag */
+    bw_bit(&bw, 0);                   /* vcl_hrd_parameters_present_flag */
+    bw_bit(&bw, 0);                   /* pic_struct_present_flag */
+    bw_bit(&bw, 1);                   /* bitstream_restriction_flag */
+    bw_bit(&bw, 1);                   /* motion_vectors_over_pic_boundaries_flag */
+    bw_ue(&bw, 0);                    /* max_bytes_per_pic_denom */
+    bw_ue(&bw, 0);                    /* max_bits_per_mb_denom */
+    bw_ue(&bw, 16);                   /* log2_max_mv_length_horizontal */
+    bw_ue(&bw, 16);                   /* log2_max_mv_length_vertical */
+    bw_ue(&bw, 0);                    /* max_num_reorder_frames */
+    bw_ue(&bw, 1);                    /* max_dec_frame_buffering */
     bytes = bw_finish(&bw);
-    memcpy(dst + off, bw.data, bytes);
-    return off + bytes;
+    return write_escaped_nal(dst, dst_size, 0x67, bw.data, bytes);
 }
 
 static int make_pps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     struct BitWriter bw;
-    int off, bytes;
+    int bytes;
 
     (void)enc;
     if (dst_size < 32)
         return 0;
-    off = write_start_code(dst, 0x68);
     bw_init(&bw);
     bw_ue(&bw, 0);                    /* pic_parameter_set_id */
     bw_ue(&bw, 0);                    /* seq_parameter_set_id */
@@ -312,17 +363,12 @@ static int make_pps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     bw_bit(&bw, 0);                   /* constrained_intra_pred_flag */
     bw_bit(&bw, 0);                   /* redundant_pic_cnt_present_flag */
     bytes = bw_finish(&bw);
-    memcpy(dst + off, bw.data, bytes);
-    return off + bytes;
+    return write_escaped_nal(dst, dst_size, 0x68, bw.data, bytes);
 }
 
 static int make_h264_sequence_header(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     int off = 0, bytes;
 
-    bytes = make_aud(dst + off, dst_size - off, 1);
-    if (!bytes)
-        return 0;
-    off += bytes;
     bytes = make_sps(enc, dst + off, dst_size - off);
     if (!bytes)
         return 0;
@@ -336,20 +382,21 @@ static int make_h264_sequence_header(LibVAEncoder *enc, uint8_t *dst, int dst_si
 static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size,
                              int is_idr, int frame_num, int poc_lsb, int *bit_length) {
     struct BitWriter bw;
-    int off, bytes;
+    int off = 0, bytes;
 
     (void)enc;
     if (dst_size < 32)
         return 0;
-    off = write_start_code(dst, is_idr ? 0x65 : 0x41);
+    off += write_start_code(dst + off, is_idr ? 0x65 : 0x41);
     bw_init(&bw);
     bw_ue(&bw, 0);                    /* first_mb_in_slice */
-    bw_ue(&bw, is_idr ? 2 : 0);       /* I or P */
+    bw_ue(&bw, is_idr ? 7 : 5);       /* all slices are I or P */
     bw_ue(&bw, 0);                    /* pic_parameter_set_id */
     bw_bits(&bw, (unsigned int)frame_num, LIBVA_FRAME_NUM_BITS);
     if (is_idr)
         bw_ue(&bw, 0);                /* idr_pic_id */
-    bw_bits(&bw, (unsigned int)poc_lsb, LIBVA_POC_LSB_BITS);
+    if (LIBVA_H264_POC_TYPE == 0)
+        bw_bits(&bw, (unsigned int)poc_lsb, LIBVA_POC_LSB_BITS);
     if (!is_idr) {
         bw_bit(&bw, 0);               /* num_ref_idx_active_override_flag */
         bw_bit(&bw, 0);               /* ref_pic_list_modification_flag_l0 */
@@ -365,8 +412,10 @@ static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size,
     bw_se(&bw, 0);                    /* slice_alpha_c0_offset_div2 */
     bw_se(&bw, 0);                    /* slice_beta_offset_div2 */
     bytes = bw_byte_length(&bw);
-    memcpy(dst + off, bw.data, bytes);
-    *bit_length = off * 8 + bw_bit_length(&bw);
+    bytes = append_ebsp(dst + off, dst_size - off, bw.data, bytes);
+    if (!bytes)
+        return 0;
+    *bit_length = off * 8 + bw_bit_length(&bw) + (bytes - bw_byte_length(&bw)) * 8;
     return off + bytes;
 }
 
@@ -794,9 +843,11 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         return LIBVA_ENC_ERROR;
     }
 
-    libva_log("libva %s encoder create: %dx%d surface=%dx%d level=%d quality=%d speed=%d qp=%d qindex=%d device=%s vendor=%s",
+    libva_log("libva %s encoder create: %dx%d surface=%dx%d level=%d poc=%d aud-tail=%d quality=%d speed=%d qp=%d qindex=%d device=%s vendor=%s",
               codec_name(enc->codec), width, height, enc->surface_width, enc->surface_height,
               enc->codec == LIBVA_CODEC_H264 ? h264_level_idc(enc) : 0,
+              enc->codec == LIBVA_CODEC_H264 ? LIBVA_H264_POC_TYPE : 0,
+              enc->codec == LIBVA_CODEC_H264,
               quality, speed, enc->qp, enc->vp_qindex, enc->device, enc->vendor);
     *out = enc;
     return LIBVA_ENC_OK;
@@ -900,6 +951,96 @@ static LibVAEncodeStatus append_coded_buffer(LibVAEncoder *enc, VABufferID coded
     return LIBVA_ENC_OK;
 }
 
+static LibVAEncodeStatus append_h264_trailing_aud(LibVAEncoder *enc, LibVAEncodedFrame *frame, int next_is_idr) {
+    uint8_t aud[8];
+    int aud_size;
+
+    if (!enc || enc->codec != LIBVA_CODEC_H264 || !frame || !frame->data)
+        return LIBVA_ENC_OK;
+    aud_size = make_aud(aud, sizeof(aud), next_is_idr);
+    if (aud_size <= 0)
+        return LIBVA_ENC_ERROR;
+    if ((size_t)frame->size + (size_t)aud_size > enc->bitstream_size) {
+        snprintf(enc->last_error, sizeof(enc->last_error),
+                 "not enough room for trailing H.264 AUD: %d + %d > %zu",
+                 frame->size, aud_size, enc->bitstream_size);
+        return LIBVA_ENC_ERROR;
+    }
+    memcpy(enc->bitstream_data + frame->size, aud, (size_t)aud_size);
+    frame->size += aud_size;
+    return LIBVA_ENC_OK;
+}
+
+static int h264_start_code_size(const uint8_t *data, int size, int pos) {
+    if (pos + 3 <= size && data[pos] == 0 && data[pos + 1] == 0 && data[pos + 2] == 1)
+        return 3;
+    if (pos + 4 <= size && data[pos] == 0 && data[pos + 1] == 0 &&
+        data[pos + 2] == 0 && data[pos + 3] == 1)
+        return 4;
+    return 0;
+}
+
+static int h264_find_start_code(const uint8_t *data, int size, int pos, int *start_code_size) {
+    for (int i = pos; i + 3 <= size; i++) {
+        int sc_size = h264_start_code_size(data, size, i);
+        if (sc_size) {
+            *start_code_size = sc_size;
+            return i;
+        }
+    }
+    *start_code_size = 0;
+    return -1;
+}
+
+static const char *h264_nal_type_name(int nal_type) {
+    switch (nal_type) {
+        case 1:  return "slice";
+        case 5:  return "IDR";
+        case 6:  return "SEI";
+        case 7:  return "SPS";
+        case 8:  return "PPS";
+        case 9:  return "AUD";
+        case 10: return "EOSEQ";
+        case 11: return "EOSTREAM";
+        default: return "NAL";
+    }
+}
+
+static void log_h264_nals(LibVAEncoder *enc, const LibVAEncodedFrame *frame) {
+    char summary[512];
+    int pos, sc_size, count = 0;
+    size_t off = 0;
+
+    if (!enc || enc->codec != LIBVA_CODEC_H264 || !frame || !frame->data || frame->size <= 0)
+        return;
+    if (enc->frames >= 5 && getenv("XPRA_LIBVA_H264_NAL_DEBUG") == NULL)
+        return;
+    summary[0] = 0;
+    pos = h264_find_start_code(frame->data, frame->size, 0, &sc_size);
+    while (pos >= 0) {
+        int nal_start = pos + sc_size;
+        int next_sc_size = 0;
+        int next = h264_find_start_code(frame->data, frame->size, nal_start, &next_sc_size);
+        int nal_end = next >= 0 ? next : frame->size;
+        int nal_size = nal_end - nal_start;
+        int nal_type = nal_size > 0 ? frame->data[nal_start] & 0x1f : -1;
+
+        if (nal_size > 0) {
+            int written = snprintf(summary + off, sizeof(summary) - off, "%s%d:%s/%d",
+                                   count ? " " : "", nal_type, h264_nal_type_name(nal_type), nal_size);
+            if (written < 0 || (size_t)written >= sizeof(summary) - off)
+                break;
+            off += (size_t)written;
+            count++;
+        }
+        if (next < 0)
+            break;
+        pos = next;
+        sc_size = next_sc_size;
+    }
+    libva_log("libva h264 frame %d nals: %s", enc->frames + 1, summary[0] ? summary : "none");
+}
+
 static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
                                              const uint8_t *y, int y_stride,
                                              const uint8_t *uv, int uv_stride,
@@ -912,7 +1053,7 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     VAEncSliceParameterBufferH264 slice;
     uint8_t seq_header[256], sh[64];
     int seq_header_size, sh_size;
-    int sh_bits;
+    int sh_bits = 0;
     int gop_frame, is_idr, frame_num, poc_lsb, recon_index;
     VASurfaceID recon_surface;
     VAStatus status;
@@ -955,10 +1096,20 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     seq.seq_fields.bits.frame_mbs_only_flag = 1;
     seq.seq_fields.bits.direct_8x8_inference_flag = 1;
     seq.seq_fields.bits.log2_max_frame_num_minus4 = LIBVA_LOG2_MAX_FRAME_NUM_MINUS4;
-    seq.seq_fields.bits.pic_order_cnt_type = 0;
-    seq.seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4 = LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4;
+    seq.seq_fields.bits.pic_order_cnt_type = LIBVA_H264_POC_TYPE;
+    if (LIBVA_H264_POC_TYPE == 0)
+        seq.seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4 = LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4;
     seq.bit_depth_luma_minus8 = 0;
     seq.bit_depth_chroma_minus8 = 0;
+    seq.vui_parameters_present_flag = 1;
+    seq.vui_fields.bits.timing_info_present_flag = 1;
+    seq.vui_fields.bits.fixed_frame_rate_flag = 1;
+    seq.vui_fields.bits.bitstream_restriction_flag = 1;
+    seq.vui_fields.bits.motion_vectors_over_pic_boundaries_flag = 1;
+    seq.vui_fields.bits.log2_max_mv_length_horizontal = 16;
+    seq.vui_fields.bits.log2_max_mv_length_vertical = 16;
+    seq.num_units_in_tick = 1;
+    seq.time_scale = 60;
     if (enc->width_mbs * 16 != enc->width || enc->height_mbs * 16 != enc->height) {
         seq.frame_cropping_flag = 1;
         seq.frame_crop_right_offset = (uint32_t)(enc->width_mbs * 16 - enc->width) / 2;
@@ -972,6 +1123,11 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     }
     if (is_idr) {
         seq_header_size = make_h264_sequence_header(enc, seq_header, sizeof(seq_header));
+        if (seq_header_size <= 0) {
+            destroy_buffers(enc, buffers, nbuf);
+            snprintf(enc->last_error, sizeof(enc->last_error), "failed to create H.264 sequence header");
+            return LIBVA_ENC_ERROR;
+        }
         if (create_packed_header(enc, VAEncPackedHeaderSequence,
                                  seq_header, seq_header_size, seq_header_size * 8,
                                  &buffers[nbuf], &buffers[nbuf + 1]) != LIBVA_ENC_OK) {
@@ -1020,10 +1176,10 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     slice.macroblock_address = 0;
     slice.num_macroblocks = (uint32_t)(enc->width_mbs * enc->height_mbs);
     slice.macroblock_info = VA_INVALID_ID;
-    slice.slice_type = is_idr ? 2 : 0;
+    slice.slice_type = is_idr ? 7 : 5;
     slice.pic_parameter_set_id = 0;
     slice.idr_pic_id = 0;
-    slice.pic_order_cnt_lsb = (uint16_t)poc_lsb;
+    slice.pic_order_cnt_lsb = LIBVA_H264_POC_TYPE == 0 ? (uint16_t)poc_lsb : 0;
     slice.num_ref_idx_l0_active_minus1 = 0;
     slice.num_ref_idx_l1_active_minus1 = 0;
     for (int i = 0; i < 32; i++) {
@@ -1042,6 +1198,11 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     slice.slice_alpha_c0_offset_div2 = 0;
     slice.slice_beta_offset_div2 = 0;
     sh_size = make_slice_header(enc, sh, sizeof(sh), is_idr, frame_num, poc_lsb, &sh_bits);
+    if (sh_size <= 0 || sh_bits <= 0) {
+        destroy_buffers(enc, buffers, nbuf);
+        snprintf(enc->last_error, sizeof(enc->last_error), "failed to create H.264 slice header");
+        return LIBVA_ENC_ERROR;
+    }
     if (create_packed_header(enc, VAEncPackedHeaderSlice, sh, sh_size, sh_bits,
                              &buffers[nbuf], &buffers[nbuf + 1]) != LIBVA_ENC_OK) {
         destroy_buffers(enc, buffers, nbuf + 2);
@@ -1077,6 +1238,10 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     destroy_buffers(enc, buffers, nbuf);
     if (estatus != LIBVA_ENC_OK)
         return estatus;
+    estatus = append_h264_trailing_aud(enc, frame, (enc->frames + 1) % LIBVA_IDR_INTERVAL == 0);
+    if (estatus != LIBVA_ENC_OK)
+        return estatus;
+    log_h264_nals(enc, frame);
     frame->us_submit = (int)(t1 - t0);
     frame->us_sync = (int)(t2 - t1);
     frame->frame_type = is_idr ? LIBVA_ENC_FRAME_IDR : LIBVA_ENC_FRAME_P;
