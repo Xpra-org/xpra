@@ -37,6 +37,11 @@ CODEC_ROLE_NAMES = {
     "api", "argb", "capture", "converter", "decoder", "drm", "encoder", "filter", "nvencode", "virtual",
 }
 DEFAULT_PATHS = ("xpra",)
+BRANCH_DATE_OVERRIDES = {
+    "v1.0.x": "2016",
+    "v3.1.x": "2019",
+    "v5.1.x": "2023",
+}
 TYPE_ORDER = {
     ".py": 0,
     ".pyx": 1,
@@ -520,6 +525,9 @@ def git_report(repo: Path, ref: str, base: str = "") -> dict[str, Any]:
     if base_commit:
         commits_since_base = int(git_text(repo, ("rev-list", "--count", f"{base_commit}..{ref}")))
     branch_creation_commit, branch_creation_date = infer_branch_creation(repo, ref, base_commit)
+    override_ref = branch or ref
+    if override_ref in BRANCH_DATE_OVERRIDES:
+        branch_creation_date = BRANCH_DATE_OVERRIDES[override_ref]
     return {
         "ref": ref,
         "branch": branch,
