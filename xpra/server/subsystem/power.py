@@ -46,7 +46,6 @@ class PowerEventServer(StubServerMixin):
                 may_notify_client(source, NotificationID.IDLE, NOTIFY_MESSAGE_TITLE, NOTIFY_MESSAGE_BODY,
                                   expire_timeout=10 * 1000, icon_name="shutdown")
 
-    @staticmethod
     def resume_event(self, *args) -> None:
         log("resume_event%s", args)
         log.info("resuming")
