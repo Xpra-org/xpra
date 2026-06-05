@@ -145,6 +145,7 @@ cdef class XImageWrapper:
         self.thread_safe = thread_safe
         self.sub = sub
         self.pixels = <void *> pixels
+        self.parent = None
         self.timestamp = int(monotonic()*1000)
         self.palette = palette
         self.full_range = int(full_range)
@@ -248,6 +249,11 @@ cdef class XImageWrapper:
         return self.pixel_format
 
     def get_pixels(self):
+        if self.sub:
+            #we don't own the pixel buffer, our parent does:
+            #ensure it is still alive and hasn't been freed from under us
+            assert self.parent is not None, "sub-image is missing its parent reference"
+            assert (<XImageWrapper> self.parent).has_pixels(), "sub-image parent buffer has been freed"
         cdef void *pix_ptr = self.get_pixels_ptr()
         if pix_ptr==NULL:
             return None
@@ -257,6 +263,24 @@ cdef class XImageWrapper:
         return PyMemoryView_FromMemory(<char *> pix_ptr, self.get_size(), PyBUF_READ)
 
     def get_sub_image(self, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
+        """
+        Return a zero-copy view onto a rectangular region of this image.
+
+        Unlike the generic `ImageWrapper.get_sub_image`, this does *not* copy
+        the pixel data: the returned wrapper points directly into this image's
+        pixel buffer (`sub_ptr = src + x*Bpp + y*rowstride`) and keeps the same
+        `rowstride`, so its rows index back into the parent allocation.
+
+        Because the buffer is shared:
+        - the sub-image is created with `sub=True`, so `free_pixels` will never
+          free the buffer (only the owning parent does) - this avoids a double free;
+        - the sub-image holds a reference to its parent (`image.parent = self`)
+          so that the parent - and therefore the shared buffer - cannot be
+          garbage collected while the sub-image is still alive. Note that this
+          does *not* protect against an explicit `parent.free()`: the caller
+          must still ensure the parent outlives every sub-image it hands out
+          (see the asserts in `get_pixels` / `get_pixels_ptr`).
+        """
         if w<=0 or h<=0:
             raise ValueError(f"invalid sub-image size: {w}x{h}")
         if x+w>self.width:
@@ -268,14 +292,20 @@ cdef class XImageWrapper:
             raise ValueError("source image does not have any pixels!")
         cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
-        image = XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
+        cdef XImageWrapper image = XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
                              self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True,
                              self.palette, self.full_range)
+        #keep the parent (and so its pixel buffer) alive for as long as this sub-image is:
+        image.parent = self
         image.set_target_x(self.target_x+x)
         image.set_target_y(self.target_y+y)
         return image
 
     cdef void* get_pixels_ptr(self) noexcept:
+        if self.sub and (self.parent is None or not (<XImageWrapper> self.parent).has_pixels()):
+            #our pixels point into a parent buffer that no longer exists:
+            log.error("Error: sub-image parent buffer has been freed")
+            return NULL
         if self.pixels!=NULL:
             return self.pixels
         cdef XImage *image = self.image
@@ -341,8 +371,11 @@ cdef class XImageWrapper:
         self.aligned = True
         #from now on, we own the buffer,
         #so we're no longer a direct sub-image,
-        #and we must free the buffer later:
+        #and we must free the buffer later.
+        #we can also drop the reference to our parent
+        #since we no longer point into its buffer:
         self.sub = False
+        self.parent = None
         if self.image==NULL:
             self.thread_safe = 1
             #we can now mark this object as thread safe
@@ -377,6 +410,8 @@ cdef class XImageWrapper:
                 else:
                     free(self.pixels)
             self.pixels = NULL
+        #release our parent (if any) so its buffer can be freed:
+        self.parent = None
 
     def freeze(self) -> bool:
         #we don't need to do anything here because the non-XShm version

@@ -54,6 +54,7 @@ cdef class XImageWrapper:
     cdef unsigned char sub
     cdef object pixel_format
     cdef void *pixels
+    cdef object parent
     cdef object del_callback
     cdef uint64_t timestamp
     cdef object palette
