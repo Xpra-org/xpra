@@ -92,7 +92,7 @@ ENCODINGS: Sequence[str] = ("h264", "vp8", "vp9")
 COLORSPACES: dict[str, tuple[str, ...]] = {
     "h264": ("YUV420P", "YUV444P"),
     "vp8": ("YUV420P", ),
-    "vp9": ("YUV420P", "YUV444P"),
+    "vp9": ("YUV420P", ),
 }
 
 
@@ -159,12 +159,12 @@ def get_specs() -> Sequence[VideoSpec]:
         for colorspace in colorspaces:
             if not supports(encoding, colorspace):
                 continue
-            output_colorspaces = ("NV12", ) if colorspace == "YUV420P" else ("YUV444P", "XYUV", "AYUV")
+            output_colorspaces = ("NV12", ) if colorspace == "YUV420P" else ("XYUV", "AYUV")
             specs.append(VideoSpec(
                 encoding=encoding,
                 input_colorspace=colorspace,
                 output_colorspaces=output_colorspaces,
-                has_lossless_mode=colorspace == "YUV444P",
+                has_lossless_mode=False,
                 codec_class=Decoder,
                 codec_type=get_type(),
                 quality=80, speed=90,
