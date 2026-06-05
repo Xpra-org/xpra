@@ -132,7 +132,7 @@ def set_server_features(opts, mode: str) -> None:
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
         features.idle = opts.server_idle_timeout > 0 or opts.idle_timeout > 0
         features.gtk = mode not in ("desktop", "monitor", "seamless") or opts.backend.lower() == "gtk"
-        features.tray = features.gtk and b(opts.tray) and mode == "shadow"
+        features.tray = features.gtk and b(opts.tray) and mode in ("shadow", "expand")
         features.opengl = features.display and b(opts.opengl) and impcheck("opengl")
         features.bell = features.display and b(opts.bell)
         features.systray = b(opts.system_tray) and mode == "seamless"
