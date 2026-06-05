@@ -486,14 +486,14 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             caps = typedict(hello_data)
             netlog("processing hello from server: %s", Ellipsizer(caps))
             if not self.server_connection_established(caps):
-                self.warn_and_quit(ExitCode.FAILURE, "failed to establish connection")
+                self.idle_add(self.warn_and_quit, ExitCode.FAILURE, "failed to establish connection")
                 return
             self.cancel_verify_connected_timer()
             self.connection_accepted(caps)
         except Exception as e:
             netlog.error("Error processing hello packet from server", exc_info=True)
             netlog("hello data: %s", packet)
-            self.warn_and_quit(ExitCode.FAILURE, f"error processing hello packet from server: {e}")
+            self.idle_add(self.warn_and_quit, ExitCode.FAILURE, f"error processing hello packet from server: {e}")
 
     def server_connection_established(self, caps: typedict) -> bool:
         assert caps and self._protocol
