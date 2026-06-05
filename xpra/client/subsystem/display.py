@@ -76,6 +76,8 @@ class DisplayClient(StubClientMixin):
         self.server_opengl = None
         self.server_multi_monitors = False
         self.server_monitors = {}
+        self.server_new_monitor_resolutions = ()
+        self.server_add_monitor_label = ""
         self.server_is_desktop = False
         self.server_is_monitor = False
         self.log_screen_info = True
@@ -272,7 +274,13 @@ class DisplayClient(StubClientMixin):
         Logger("screen", "opengl")("server opengl=%s", self.server_opengl)
         self.server_multi_monitors = c.boolget("multi-monitors", False)
         self.server_monitors = c.dictget("monitors")
-        log("server multi-monitors=%s, monitors=%s", self.server_multi_monitors, self.server_monitors)
+        # resolutions the server allows for new monitors (ie: parsec-vdd EDID modes);
+        # falls back to the client's own list when the server does not provide one:
+        self.server_new_monitor_resolutions = c.strtupleget("monitors.add-resolutions")
+        # optional label for the "add monitor" menu entry (ie: "Add a virtual monitor"):
+        self.server_add_monitor_label = c.strget("monitors.add-label")
+        log("server multi-monitors=%s, monitors=%s, new-monitor-resolutions=%s",
+            self.server_multi_monitors, self.server_monitors, self.server_new_monitor_resolutions)
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")
         self.server_is_monitor = c.boolget("monitor")
         self.print_desktop_size(c)

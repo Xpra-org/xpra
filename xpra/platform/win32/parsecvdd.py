@@ -26,14 +26,14 @@ from ctypes import (
     Structure, POINTER,
     WinDLL, WinError, get_last_error,
     byref, sizeof, cast, create_string_buffer,
-    c_void_p, c_char,
+    c_void_p, c_char, c_short,
 )
-from ctypes.wintypes import HANDLE, DWORD, BOOL, WORD
+from ctypes.wintypes import HANDLE, DWORD, BOOL, WORD, LONG
 from enum import IntEnum
 
 from xpra.log import Logger
 
-log = Logger("win32", "display")
+log = Logger("vdd")
 
 # ---------------------------------------------------------------------------
 # Windows API helpers
@@ -615,6 +615,159 @@ _EnumDisplayDevicesA.restype  = BOOL
 _EnumDisplayDevicesA.argtypes = [c_void_p, DWORD, POINTER(_DISPLAY_DEVICE), DWORD]
 
 _DISPLAY_DEVICE_ACTIVE = 0x00000001   # adapter is part of the desktop
+
+
+# ---------------------------------------------------------------------------
+# Display mode enumeration / change  (EnumDisplaySettingsExA / ChangeDisplaySettingsExA)
+# ---------------------------------------------------------------------------
+
+class DEVMODEA(Structure):
+    """Standard fixed-layout DEVMODEA — only the display fields are used here."""
+    _fields_ = [
+        ("dmDeviceName", c_char * 32),
+        ("dmSpecVersion", WORD),
+        ("dmDriverVersion", WORD),
+        ("dmSize", WORD),
+        ("dmDriverExtra", WORD),
+        ("dmFields", DWORD),
+        ("dmOrientation", c_short),
+        ("dmPaperSize", c_short),
+        ("dmPaperLength", c_short),
+        ("dmPaperWidth", c_short),
+        ("dmScale", c_short),
+        ("dmCopies", c_short),
+        ("dmDefaultSource", c_short),
+        ("dmPrintQuality", c_short),
+        ("dmColor", c_short),
+        ("dmDuplex", c_short),
+        ("dmYResolution", c_short),
+        ("dmTTOption", c_short),
+        ("dmCollate", c_short),
+        ("dmFormName", c_char * 32),
+        ("dmLogPixels", WORD),
+        ("dmBitsPerPel", DWORD),
+        ("dmPelsWidth", DWORD),
+        ("dmPelsHeight", DWORD),
+        ("dmDisplayFlags", DWORD),
+        ("dmDisplayFrequency", DWORD),
+        ("dmICMMethod", DWORD),
+        ("dmICMIntent", DWORD),
+        ("dmMediaType", DWORD),
+        ("dmDitherType", DWORD),
+        ("dmReserved1", DWORD),
+        ("dmReserved2", DWORD),
+        ("dmPanningWidth", DWORD),
+        ("dmPanningHeight", DWORD),
+    ]
+
+
+ENUM_CURRENT_SETTINGS = 0xFFFFFFFF
+DM_BITSPERPEL        = 0x00040000
+DM_PELSWIDTH         = 0x00080000
+DM_PELSHEIGHT        = 0x00100000
+DM_DISPLAYFREQUENCY  = 0x00400000
+CDS_UPDATEREGISTRY   = 0x00000001
+DISP_CHANGE_SUCCESSFUL = 0
+
+_EnumDisplaySettingsExA = _user32.EnumDisplaySettingsExA
+_EnumDisplaySettingsExA.restype  = BOOL
+_EnumDisplaySettingsExA.argtypes = [c_void_p, DWORD, POINTER(DEVMODEA), DWORD]
+
+_ChangeDisplaySettingsExA = _user32.ChangeDisplaySettingsExA
+_ChangeDisplaySettingsExA.restype  = LONG
+_ChangeDisplaySettingsExA.argtypes = [c_void_p, POINTER(DEVMODEA), HANDLE, DWORD, c_void_p]
+
+
+def _device_path(device: str) -> bytes:
+    """Normalise a 'DISPLAYn' or '\\\\.\\DISPLAYn' name to the bytes form the API expects."""
+    name = device if device.startswith("\\\\.\\") else "\\\\.\\" + device
+    return name.encode("ascii")
+
+
+def set_resolution(device: str, width: int, height: int, refresh: int = 0) -> bool:
+    """
+    Change the resolution of the display *device* (e.g. "DISPLAY3").
+    The requested mode must be advertised by the monitor's EDID.
+    Returns True on success.
+    """
+    bname = _device_path(device)
+    devmode = DEVMODEA()
+    devmode.dmSize = sizeof(DEVMODEA)
+    if not _EnumDisplaySettingsExA(bname, ENUM_CURRENT_SETTINGS, byref(devmode), 0):
+        log.warn("Warning: cannot read current display settings for %r", device)
+        return False
+    devmode.dmPelsWidth = width
+    devmode.dmPelsHeight = height
+    devmode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT
+    if refresh > 0:
+        devmode.dmDisplayFrequency = refresh
+        devmode.dmFields |= DM_DISPLAYFREQUENCY
+    r = _ChangeDisplaySettingsExA(bname, byref(devmode), None, CDS_UPDATEREGISTRY, None)
+    if r != DISP_CHANGE_SUCCESSFUL:
+        log.warn("Warning: failed to set %s to %ix%i (ChangeDisplaySettingsEx returned %i)",
+                 device, width, height, r)
+        return False
+    log("set_resolution(%s, %i, %i) -> ok", device, width, height)
+    return True
+
+
+def get_supported_resolutions(device: str) -> list[tuple[int, int]]:
+    """
+    Enumerate the distinct (width, height) modes advertised by *device*,
+    sorted largest first.  Used to probe a live VDD monitor's EDID.
+    """
+    bname = _device_path(device)
+    devmode = DEVMODEA()
+    devmode.dmSize = sizeof(DEVMODEA)
+    seen: set[tuple[int, int]] = set()
+    i = 0
+    while _EnumDisplaySettingsExA(bname, i, byref(devmode), 0):
+        i += 1
+        seen.add((int(devmode.dmPelsWidth), int(devmode.dmPelsHeight)))
+    res = sorted(seen, reverse=True)
+    log("get_supported_resolutions(%s)=%s", device, res)
+    return res
+
+
+def list_vdd_monitors() -> list[str]:
+    """
+    Return the ``DISPLAYn`` names (without prefix) of every *active*
+    parsec-vdd virtual monitor, in enumeration order.
+    """
+    adapter = _DISPLAY_DEVICE()
+    out: list[str] = []
+    i = 0
+    while _EnumDisplayDevicesA(None, i, byref(adapter), 0):
+        i += 1
+        if adapter.DeviceString != VDD_ADAPTER_NAME:
+            continue
+        if not (adapter.StateFlags & _DISPLAY_DEVICE_ACTIVE):
+            continue
+        raw = adapter.DeviceName.decode("ascii", errors="replace")
+        out.append(raw.lstrip("\\\\.\\"))
+    return out
+
+
+# A short, curated subset of the resolutions advertised by the parsec-vdd EDID,
+# used to populate the client's "add monitor" menu before any VDD monitor exists.
+# The driver actually advertises ~27 modes (retrievable from a live monitor via
+# get_supported_resolutions()); we only offer the common ones here to keep the
+# menu manageable. Every entry below has been confirmed present in the EDID, so
+# ChangeDisplaySettings() will accept them.
+VDD_DEFAULT_RESOLUTIONS: tuple[tuple[int, int], ...] = (
+    (3840, 2160),   # 4K UHD
+    (2560, 1440),   # QHD
+    (1920, 1200),   # WUXGA (16:10)
+    (1920, 1080),   # FHD
+    (1600, 900),
+    (1366, 768),
+    (1280, 720),    # HD
+)
+
+
+def get_vdd_resolutions() -> list[str]:
+    """Return the parsec-vdd default resolutions as ``"WxH"`` strings."""
+    return ["%ix%i" % (w, h) for w, h in VDD_DEFAULT_RESOLUTIONS]
 
 
 def find_monitor_by_slot(slot_index: int) -> str:

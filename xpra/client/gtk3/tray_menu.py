@@ -1456,10 +1456,15 @@ class GTKTrayMenu(GTKMenuHelper):
                 mitem = Gtk.CheckMenuItem(label=monitor.get("name", "VFB-%i" % i))
                 mitem.set_active(True)
                 mitem.set_draw_as_radio(True)
-                mitem.connect("toggled", monitor_changed, i)
+                if monitor.get("dynamic", True):
+                    mitem.connect("toggled", monitor_changed, i)
+                else:
+                    # physical monitors cannot be removed:
+                    mitem.set_sensitive(False)
                 menu.append(mitem)
-            # and finally, an entry for adding a new monitor:
-            add_monitor_item = self.menuitem("Add a monitor")
+            # and finally, an entry for adding a new monitor
+            # (the server can override the label, ie: "Add a virtual monitor"):
+            add_monitor_item = self.menuitem(self.client.server_add_monitor_label or "Add a monitor")
             resolutions_menu = Gtk.Menu()
             add_monitor_item.set_submenu(resolutions_menu)
 
@@ -1470,7 +1475,10 @@ class GTKTrayMenu(GTKMenuHelper):
                     resolution = RESOLUTION_ALIASES.get(resolution, resolution)
                 self.client.send_add_monitor(resolution)
 
-            for resolution in NEW_MONITOR_RESOLUTIONS:
+            # prefer the resolutions advertised by the server (ie: parsec-vdd
+            # EDID modes), which may be more restrictive than xrandr:
+            resolutions = self.client.server_new_monitor_resolutions or NEW_MONITOR_RESOLUTIONS
+            for resolution in resolutions:
                 mitem = self.menuitem(resolution)
                 mitem.connect("activate", add_monitor, resolution)
                 resolutions_menu.append(mitem)

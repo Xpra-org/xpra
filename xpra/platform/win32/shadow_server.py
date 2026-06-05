@@ -5,12 +5,15 @@
 
 import os
 import re
+from typing import Any
 from collections.abc import Sequence, Callable
 from ctypes import create_unicode_buffer, byref, c_ulong
 from ctypes.wintypes import RECT
 
+from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.constants import XPRA_APP_ID
+from xpra.net.common import Packet
 from xpra.scripts.config import InitException
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.server.shadow.root_window_model import CaptureWindowModel
@@ -29,10 +32,13 @@ from xpra.platform.win32.common import (
     GetSystemMetrics,
 )
 
+GLib = gi_import("GLib")
+
 log = Logger("shadow", "win32")
 shapelog = Logger("shape")
 keylog = Logger("keyboard")
 screenlog = Logger("screen")
+vddlog = Logger("vdd")
 
 
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
@@ -187,6 +193,16 @@ class ShadowServer(ShadowServerBase):
         # Current \\.\DISPLAYn name without the prefix, e.g. "DISPLAY3".
         # Empty string means "capture all monitors" (normal shadow mode).
         self.monitor_device: str = ""
+        # Runtime VDD multi-monitor support (regular shadow only): when the
+        # Parsec VDD driver is present, clients can add/remove virtual monitors
+        # from the tray menu. The shadow server owns the device handle and a
+        # keep-alive ping for as long as it has plugged in any virtual display.
+        self._vdd_multimonitor: bool = False
+        self._vdd_handle = None
+        self._vdd_keepalive = None
+        # maps DISPLAYn name -> VDD slot, for monitors this server plugged in:
+        self._vdd_displays: dict[str, int] = {}
+        self._monitors_changed_timer: int = 0
         device = attrs.get("device", "")
         if device:
             self._init_device(device)
@@ -244,12 +260,39 @@ class ShadowServer(ShadowServerBase):
         if self._vdd_slot >= 0:
             el = get_win32_event_listener(True)
             el.add_event_callback(win32con.WM_DISPLAYCHANGE, self._on_display_change)
+        elif not self.monitor_device and self.multi_window:
+            self._init_vdd_multimonitor()
+
+    def _init_vdd_multimonitor(self) -> None:
+        """
+        Enable runtime monitor add/remove for a regular multi-window shadow
+        server when the Parsec VDD driver is installed.  Detection is best
+        effort: if anything is missing we silently stay in plain shadow mode.
+        """
+        try:
+            from xpra.platform.win32.parsecvdd import query_device_status, DeviceStatus
+            status = query_device_status()
+        except Exception:
+            screenlog("VDD availability probe failed", exc_info=True)
+            return
+        if status != DeviceStatus.OK:
+            vddlog("Parsec VDD not available (status=%s), monitor add/remove disabled", status.name)
+            return
+        self._vdd_multimonitor = True
+        vddlog.info("Parsec VDD detected: clients can add and remove virtual monitors")
+        el = get_win32_event_listener(True)
+        el.add_event_callback(win32con.WM_DISPLAYCHANGE, self._on_monitors_changed)
 
     def cleanup(self) -> None:
-        if self._vdd_slot >= 0:
+        if self._monitors_changed_timer:
+            GLib.source_remove(self._monitors_changed_timer)
+            self._monitors_changed_timer = 0
+        if self._vdd_slot >= 0 or self._vdd_multimonitor:
             el = get_win32_event_listener(False)
             if el:
                 el.remove_event_callback(win32con.WM_DISPLAYCHANGE, self._on_display_change)
+                el.remove_event_callback(win32con.WM_DISPLAYCHANGE, self._on_monitors_changed)
+        self._vdd_cleanup()
         super().cleanup()
 
     def _on_display_change(self, *_args) -> None:
@@ -276,6 +319,207 @@ class ShadowServer(ShadowServerBase):
         display_subsystem = self.get_subsystem("display")
         if display_subsystem:
             display_subsystem.notify_screen_changed()
+
+    # ------------------------------------------------------------------
+    # VDD runtime multi-monitor support
+    # ------------------------------------------------------------------
+
+    def get_server_features(self, server_source=None) -> dict[str, Any]:
+        features = super().get_server_features(server_source)
+        if self._vdd_multimonitor:
+            from xpra.platform.win32.parsecvdd import get_vdd_resolutions
+            features |= {
+                "multi-monitors": True,
+                "monitors": self.get_monitor_config(),
+                "monitors.min-size": (640, 480),
+                "monitors.max-size": (3840, 2160),
+                "monitors.add-resolutions": get_vdd_resolutions(),
+                # these are virtual displays, so make the client's menu say so:
+                "monitors.add-label": "Add a virtual monitor",
+            }
+        return features
+
+    def get_monitor_config(self) -> dict[int, dict]:
+        """
+        Describe the currently shadowed monitors for the client's monitor menu.
+        Physical monitors are flagged ``dynamic=False`` so they can never be
+        removed; parsec-vdd monitors are ``dynamic=True``.
+        """
+        vdd_set: set[str] = set()
+        if self._vdd_multimonitor:
+            from xpra.platform.win32.parsecvdd import list_vdd_monitors
+            vdd_set = set(list_vdd_monitors())
+        config: dict[int, dict] = {}
+        for i, monitor in enumerate(self.get_shadow_monitors()):
+            plug_name, x, y, width, height = monitor[:5]
+            config[i] = {
+                "index": i,
+                "name": plug_name or f"Monitor-{i}",
+                "x": x,
+                "y": y,
+                "width": width,
+                "height": height,
+                "dynamic": plug_name in vdd_set,
+            }
+        return config
+
+    def _vdd_ensure_open(self) -> None:
+        if self._vdd_handle is not None:
+            return
+        from xpra.platform.win32.parsecvdd import open_device, VddKeepAlive
+        self._vdd_handle = open_device()
+        self._vdd_keepalive = VddKeepAlive(self._vdd_handle)
+        self._vdd_keepalive.start()
+        vddlog("VDD device opened by shadow server: handle=%#x", self._vdd_handle.value)
+
+    def _vdd_cleanup(self) -> None:
+        if self._vdd_handle is not None:
+            from xpra.platform.win32.parsecvdd import remove_display, close_device
+            for plug, slot in list(self._vdd_displays.items()):
+                try:
+                    vddlog.info("removing virtual monitor %r (vdd slot %i) on exit", plug, slot)
+                    remove_display(self._vdd_handle, slot)
+                except Exception:
+                    vddlog("error removing VDD slot %i (%r)", slot, plug, exc_info=True)
+            if self._vdd_keepalive:
+                self._vdd_keepalive.stop()
+                self._vdd_keepalive = None
+            close_device(self._vdd_handle)
+            self._vdd_handle = None
+        self._vdd_displays.clear()
+
+    def add_monitor(self, width: int, height: int) -> None:
+        vddlog.info("adding virtual monitor %ix%i", width, height)
+        from xpra.platform.win32.parsecvdd import add_display, list_vdd_monitors, VDD_MAX_DISPLAYS
+        if len(self._vdd_displays) >= VDD_MAX_DISPLAYS:
+            raise RuntimeError(f"too many virtual monitors (maximum is {VDD_MAX_DISPLAYS})")
+        self._vdd_ensure_open()
+        before = set(list_vdd_monitors())
+        slot = add_display(self._vdd_handle)
+        if slot < 0:
+            raise RuntimeError("VDD add_display() failed")
+        vddlog("add_display() returned slot %i, waiting for the monitor to appear", slot)
+        # the new monitor appears asynchronously; poll for it without blocking the main loop:
+        GLib.timeout_add(100, self._finish_add_monitor, slot, width, height, before, 0)
+
+    def _finish_add_monitor(self, slot: int, width: int, height: int, before: set, attempt: int) -> bool:
+        from xpra.platform.win32.parsecvdd import list_vdd_monitors, set_resolution
+        new = set(list_vdd_monitors()) - before
+        if not new:
+            if attempt < 30:
+                GLib.timeout_add(100, self._finish_add_monitor, slot, width, height, before, attempt + 1)
+            else:
+                vddlog.warn("Warning: VDD slot %i added but no new monitor appeared", slot)
+            return False
+        plug = sorted(new)[0]
+        self._vdd_displays[plug] = slot
+        vddlog.info("virtual monitor %r added (vdd slot %i), setting resolution to %ix%i",
+                    plug, slot, width, height)
+        try:
+            set_resolution(plug, width, height)
+        except Exception:
+            vddlog("set_resolution(%r, %i, %i) failed", plug, width, height, exc_info=True)
+        self._on_monitors_changed()
+        return False
+
+    def remove_monitor(self, index: int) -> None:
+        from xpra.platform.win32.parsecvdd import remove_display
+        config = self.get_monitor_config()
+        mdef = config.get(index)
+        if not mdef:
+            raise ValueError(f"monitor index {index} not found")
+        if not mdef.get("dynamic"):
+            raise ValueError(f"monitor {mdef.get('name')!r} is not removable")
+        plug = mdef["name"]
+        slot = self._vdd_displays.pop(plug, None)
+        if slot is None:
+            raise ValueError(f"no VDD slot tracked for monitor {plug!r}")
+        vddlog.info("removing virtual monitor %r (vdd slot %i)", plug, slot)
+        remove_display(self._vdd_handle, slot)
+        self._on_monitors_changed()
+
+    def _on_monitors_changed(self, *_args) -> None:
+        # coalesce bursts of WM_DISPLAYCHANGE / add / remove into a single refresh:
+        if self._monitors_changed_timer:
+            return
+        self._monitors_changed_timer = GLib.timeout_add(200, self._do_monitors_changed)
+
+    def _do_monitors_changed(self) -> bool:
+        self._monitors_changed_timer = 0
+        config = self.get_monitor_config()
+        vddlog("monitors changed, current config=%s", config)
+        # add/remove the capture window models so the client gets new-window
+        # and lost-window packets for the monitors that appeared / disappeared:
+        self._sync_monitor_windows()
+        # push the updated virtual-screen size to clients:
+        display = self.get_subsystem("display")
+        if display:
+            display.notify_screen_changed()
+        # update the client's monitor menu:
+        self.setting_changed("monitors", config)
+        return False
+
+    def _sync_monitor_windows(self) -> None:
+        """
+        Reconcile the shadow capture window models with the current set of
+        monitors: create a window for each new monitor (so the client receives
+        a new-window packet) and remove the window for any monitor that is gone.
+
+        The shared GDI capture covers the whole virtual desktop and adapts to
+        its size automatically, so newly added monitors need no separate capture.
+        """
+        window_sub = self.get_subsystem("window")
+        if not window_sub:
+            return
+        monitors = {m[0]: m for m in self.get_shadow_monitors()}     # plug name -> (plug, x, y, w, h, scale)
+        existing = {getattr(model, "title", ""): model for model in tuple(window_sub.models())}
+        vddlog("sync_monitor_windows() monitors=%s, existing windows=%s",
+               list(monitors.keys()), list(existing.keys()))
+        # remove windows whose monitor no longer exists:
+        for title, model in existing.items():
+            if title not in monitors:
+                vddlog.info("removing shadow window for monitor %r", title)
+                window_sub._remove_window(model)
+        # add windows for monitors that don't have one yet:
+        model_class = self.get_root_window_model_class()
+        for plug, monitor in monitors.items():
+            if plug in existing:
+                continue
+            x, y, width, height = monitor[1:5]
+            vddlog.info("adding shadow window for monitor %r at %ix%i+%i+%i", plug, width, height, x, y)
+            model = model_class(self.capture, plug, (x, y, width, height))
+            window_sub._add_new_window(model)
+
+    def _process_configure_monitor(self, _proto, packet: Packet) -> None:
+        if not self._vdd_multimonitor:
+            raise RuntimeError("this shadow server does not support monitor configuration")
+        action = packet.get_str(1)
+        if action == "add":
+            resolution = packet[2]
+            if isinstance(resolution, str):
+                from xpra.util.parsing import parse_resolution
+                # the refresh-rate may be a string like "auto" or a range;
+                # parse_resolution() handles those via get_refresh_rate_for_value():
+                display = self.get_subsystem("display")
+                default_rr = getattr(display, "refresh_rate", "auto") if display else "auto"
+                resolution = parse_resolution(resolution, default_rr)
+            if not isinstance(resolution, (tuple, list)) or len(resolution) < 2:
+                raise ValueError(f"invalid resolution: {resolution!r}")
+            width, height = int(resolution[0]), int(resolution[1])
+            self.add_monitor(width, height)
+        elif action == "remove":
+            identifier = packet.get_str(2)
+            if identifier == "index":
+                index = packet.get_u32(3)
+            else:
+                raise ValueError(f"unsupported monitor identifier {identifier!r}")
+            self.remove_monitor(index)
+        else:
+            raise ValueError(f"unsupported 'configure-monitor' action {action!r}")
+
+    def init_packet_handlers(self) -> None:
+        super().init_packet_handlers()
+        self.add_packets("configure-monitor", main_thread=True)
 
     def guess_session_name(self, _procs=()) -> None:
         desktop_name = get_desktop_name()

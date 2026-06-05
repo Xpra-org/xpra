@@ -417,6 +417,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "posix"         : "Posix platform",
         "d3d11"         : "Microsoft Direct 3D 11",
         "wayland"       : "Wayland",
+        "vdd"           : "Parsec Virtual Display Driver",
     },
 }
 
