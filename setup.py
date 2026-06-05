@@ -1771,6 +1771,8 @@ def clean() -> None:
         "xpra/codecs/mf/mf_decode.c",
         "xpra/codecs/vpl/vpl_decode.c",
         "xpra/codecs/vpl/vpl_encode.c",
+        "xpra/codecs/libva/va_decode.c",
+        "xpra/codecs/libva/va_encode.c",
         "xpra/platform/win32/setappid.cpp",
         "xpra/x11/gtk/gdk_x11_macros.c",
     ]
