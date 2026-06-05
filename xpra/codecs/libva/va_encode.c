@@ -24,7 +24,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#define LIBVA_H264_LEVEL_IDC 51
 #define LIBVA_IDR_INTERVAL 60
 #define LIBVA_LOG2_MAX_FRAME_NUM_MINUS4 4
 #define LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 4
@@ -136,6 +135,22 @@ static int h264_constraint_flags(VAProfile profile) {
     }
 }
 
+static int h264_level_idc(const LibVAEncoder *enc) {
+    int mbs = enc->width_mbs * enc->height_mbs;
+
+    if (mbs <= 3600)
+        return 31;
+    if (mbs <= 5120)
+        return 32;
+    if (mbs <= 8192)
+        return 41;
+    if (mbs <= 8704)
+        return 42;
+    if (mbs <= 22080)
+        return 50;
+    return 51;
+}
+
 static LibVAEncodeStatus set_error(LibVAEncoder *enc, VAStatus status, const char *context) {
     if (enc) {
         enc->last_status = (int)status;
@@ -219,6 +234,16 @@ static int write_start_code(uint8_t *dst, uint8_t nal) {
     return 5;
 }
 
+static int make_aud(uint8_t *dst, int dst_size, int is_idr) {
+    int off;
+
+    if (dst_size < 6)
+        return 0;
+    off = write_start_code(dst, 0x09);
+    dst[off++] = is_idr ? 0x10 : 0x30;
+    return off;
+}
+
 static int make_sps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     struct BitWriter bw;
     int off, bytes;
@@ -231,7 +256,7 @@ static int make_sps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     bw_init(&bw);
     bw_bits(&bw, (unsigned int)h264_profile_idc(enc->profile), 8);
     bw_bits(&bw, (unsigned int)h264_constraint_flags(enc->profile), 8);
-    bw_bits(&bw, LIBVA_H264_LEVEL_IDC, 8);
+    bw_bits(&bw, (unsigned int)h264_level_idc(enc), 8);
     bw_ue(&bw, 0);                    /* seq_parameter_set_id */
     if (enc->profile == VAProfileH264High) {
         bw_ue(&bw, 1);                /* chroma_format_idc: 4:2:0 */
@@ -288,6 +313,23 @@ static int make_pps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     bw_bit(&bw, 0);                   /* redundant_pic_cnt_present_flag */
     bytes = bw_finish(&bw);
     memcpy(dst + off, bw.data, bytes);
+    return off + bytes;
+}
+
+static int make_h264_sequence_header(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
+    int off = 0, bytes;
+
+    bytes = make_aud(dst + off, dst_size - off, 1);
+    if (!bytes)
+        return 0;
+    off += bytes;
+    bytes = make_sps(enc, dst + off, dst_size - off);
+    if (!bytes)
+        return 0;
+    off += bytes;
+    bytes = make_pps(enc, dst + off, dst_size - off);
+    if (!bytes)
+        return 0;
     return off + bytes;
 }
 
@@ -392,10 +434,8 @@ static int h264_encode_supported(VADisplay display) {
                 continue;
             }
             if ((attrs[2].value & (VA_ENC_PACKED_HEADER_SEQUENCE |
-                                   VA_ENC_PACKED_HEADER_PICTURE |
                                    VA_ENC_PACKED_HEADER_SLICE)) !=
                 (VA_ENC_PACKED_HEADER_SEQUENCE |
-                 VA_ENC_PACKED_HEADER_PICTURE |
                  VA_ENC_PACKED_HEADER_SLICE)) {
                 snprintf(g_error, sizeof(g_error),
                          "%s/%s does not support required packed H.264 headers: %#x",
@@ -705,7 +745,6 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
     if (enc->codec == LIBVA_CODEC_H264) {
         attrs[2].type = VAConfigAttribEncPackedHeaders;
         attrs[2].value = VA_ENC_PACKED_HEADER_SEQUENCE |
-                         VA_ENC_PACKED_HEADER_PICTURE |
                          VA_ENC_PACKED_HEADER_SLICE;
     }
     status = vaCreateConfig(enc->display, enc->profile,
@@ -755,8 +794,9 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         return LIBVA_ENC_ERROR;
     }
 
-    libva_log("libva %s encoder create: %dx%d surface=%dx%d quality=%d speed=%d qp=%d qindex=%d device=%s vendor=%s",
+    libva_log("libva %s encoder create: %dx%d surface=%dx%d level=%d quality=%d speed=%d qp=%d qindex=%d device=%s vendor=%s",
               codec_name(enc->codec), width, height, enc->surface_width, enc->surface_height,
+              enc->codec == LIBVA_CODEC_H264 ? h264_level_idc(enc) : 0,
               quality, speed, enc->qp, enc->vp_qindex, enc->device, enc->vendor);
     *out = enc;
     return LIBVA_ENC_OK;
@@ -864,14 +904,14 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
                                              const uint8_t *y, int y_stride,
                                              const uint8_t *uv, int uv_stride,
                                              LibVAEncodedFrame *frame) {
-    VABufferID buffers[11];
+    VABufferID buffers[9];
     int nbuf = 0;
     VABufferID coded_buf = VA_INVALID_ID;
     VAEncSequenceParameterBufferH264 seq;
     VAEncPictureParameterBufferH264 pic;
     VAEncSliceParameterBufferH264 slice;
-    uint8_t sps[128], pps[64], sh[64];
-    int sps_size, pps_size, sh_size;
+    uint8_t seq_header[256], sh[64];
+    int seq_header_size, sh_size;
     int sh_bits;
     int gop_frame, is_idr, frame_num, poc_lsb, recon_index;
     VASurfaceID recon_surface;
@@ -903,7 +943,7 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
 
     memset(&seq, 0, sizeof(seq));
     seq.seq_parameter_set_id = 0;
-    seq.level_idc = LIBVA_H264_LEVEL_IDC;
+    seq.level_idc = (uint8_t)h264_level_idc(enc);
     seq.intra_period = LIBVA_IDR_INTERVAL;
     seq.intra_idr_period = LIBVA_IDR_INTERVAL;
     seq.ip_period = 1;
@@ -930,13 +970,16 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
         destroy_buffers(enc, buffers, nbuf);
         return set_error(enc, status, "vaCreateBuffer(sequence)");
     }
-    sps_size = make_sps(enc, sps, sizeof(sps));
-    if (create_packed_header(enc, VAEncPackedHeaderSequence, sps, sps_size, sps_size * 8,
-                             &buffers[nbuf], &buffers[nbuf + 1]) != LIBVA_ENC_OK) {
-        destroy_buffers(enc, buffers, nbuf + 2);
-        return LIBVA_ENC_ERROR;
+    if (is_idr) {
+        seq_header_size = make_h264_sequence_header(enc, seq_header, sizeof(seq_header));
+        if (create_packed_header(enc, VAEncPackedHeaderSequence,
+                                 seq_header, seq_header_size, seq_header_size * 8,
+                                 &buffers[nbuf], &buffers[nbuf + 1]) != LIBVA_ENC_OK) {
+            destroy_buffers(enc, buffers, nbuf + 2);
+            return LIBVA_ENC_ERROR;
+        }
+        nbuf += 2;
     }
-    nbuf += 2;
 
     memset(&pic, 0, sizeof(pic));
     pic.CurrPic.picture_id = recon_surface;
@@ -973,14 +1016,6 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
         destroy_buffers(enc, buffers, nbuf);
         return set_error(enc, status, "vaCreateBuffer(picture)");
     }
-    pps_size = make_pps(enc, pps, sizeof(pps));
-    if (create_packed_header(enc, VAEncPackedHeaderPicture, pps, pps_size, pps_size * 8,
-                             &buffers[nbuf], &buffers[nbuf + 1]) != LIBVA_ENC_OK) {
-        destroy_buffers(enc, buffers, nbuf + 2);
-        return LIBVA_ENC_ERROR;
-    }
-    nbuf += 2;
-
     memset(&slice, 0, sizeof(slice));
     slice.macroblock_address = 0;
     slice.num_macroblocks = (uint32_t)(enc->width_mbs * enc->height_mbs);
@@ -1006,12 +1041,6 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     slice.disable_deblocking_filter_idc = 0;
     slice.slice_alpha_c0_offset_div2 = 0;
     slice.slice_beta_offset_div2 = 0;
-    status = vaCreateBuffer(enc->display, enc->context, VAEncSliceParameterBufferType,
-                            sizeof(slice), 1, &slice, &buffers[nbuf++]);
-    if (status != VA_STATUS_SUCCESS) {
-        destroy_buffers(enc, buffers, nbuf);
-        return set_error(enc, status, "vaCreateBuffer(slice)");
-    }
     sh_size = make_slice_header(enc, sh, sizeof(sh), is_idr, frame_num, poc_lsb, &sh_bits);
     if (create_packed_header(enc, VAEncPackedHeaderSlice, sh, sh_size, sh_bits,
                              &buffers[nbuf], &buffers[nbuf + 1]) != LIBVA_ENC_OK) {
@@ -1019,6 +1048,12 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
         return LIBVA_ENC_ERROR;
     }
     nbuf += 2;
+    status = vaCreateBuffer(enc->display, enc->context, VAEncSliceParameterBufferType,
+                            sizeof(slice), 1, &slice, &buffers[nbuf++]);
+    if (status != VA_STATUS_SUCCESS) {
+        destroy_buffers(enc, buffers, nbuf);
+        return set_error(enc, status, "vaCreateBuffer(slice)");
+    }
 
     t0 = usec_now();
     status = vaBeginPicture(enc->display, enc->context, enc->src_surface);
