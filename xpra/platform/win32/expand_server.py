@@ -47,9 +47,11 @@ class ExpandServer(ShadowServer):
         if not self._vdd_multimonitor:
             raise InitException("the 'expand' server requires the Parsec VDD driver to be installed")
 
-    def setup(self) -> None:
-        super().setup()
-        # start with a single virtual monitor so the session is not empty:
+    def add_new_client(self, ss, caps) -> None:
+        super().add_new_client(ss, caps)
+        # create a virtual monitor when a client connects, rather than plugging
+        # in a display while nobody is watching. The guard makes this a no-op
+        # when monitors already exist (extra clients, or a still-live session):
         GLib.idle_add(self._add_initial_monitor)
 
     def _add_initial_monitor(self) -> bool:
