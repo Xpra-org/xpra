@@ -257,8 +257,13 @@ if [ "${GSTREAMER_VIDEO}" == "0" ]; then
 	rm -fr "${PYDIR}/xpra/codecs/gstreamer"
 fi
 
-for module in "AVFoundation" "pkg_resources" "gi" "cffi" "OpenGL"; do
+for module in "AVFoundation" "pkg_resources" "gi" "cffi" "OpenGL" "zeroconf"; do
   echo "- ${module}"
+  # py2app mishandles sub-packages whose '__init__' is a compiled extension
+  # (ie: 'zeroconf._services', whose '__init__.cpython-*.so' makes py2app emit a
+  #  flat '_services.pyc' and drop 'zeroconf._services.info' and its siblings),
+  # so wipe py2app's copy and bring in the source package verbatim instead:
+  rm -fr "${PYDIR}/${module}"
 	rsync -rplt "${SITELIB}/${module}" "${PYDIR}/"
 done
 if [ "$STRIP_OPENGL" == "1" ]; then
