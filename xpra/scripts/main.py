@@ -148,7 +148,7 @@ CLIENT_SUBCOMMANDS = (
     "record",
 )
 SERVER_SUBCOMMANDS = (
-    "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
+    "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen", "shadow-device",
     "upgrade", "upgrade-seamless", "upgrade-desktop",
     "proxy",
     "encoder",

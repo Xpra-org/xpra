@@ -125,8 +125,14 @@ def make_server_app(mode_attrs: dict[str, str], opts, clobber: int, mode: str,
     if "backend" not in mode_attrs:
         mode_attrs["backend"] = opts.backend
     if mode.startswith("shadow"):
-        # "shadow" -> multi-window=True, "shadow-screen" -> multi-window=False
-        mode_attrs["multi-window"] = str(mode == "shadow")
+        # "shadow"        -> multi-window=True,  capture all monitors
+        # "shadow-screen" -> multi-window=False, capture all monitors as one surface
+        # "shadow-device" -> multi-window=True,  display_name is a device spec e.g. "vdd:0"
+        if mode == "shadow-device":
+            mode_attrs["device"] = display_name
+            mode_attrs["multi-window"] = "True"
+        else:
+            mode_attrs["multi-window"] = str(mode == "shadow")
         from xpra.platform.shadow_server import ShadowServer
         return ShadowServer(display_name, mode_attrs)
     if mode == "proxy":

@@ -589,6 +589,67 @@ def remove_display(handle: HANDLE, index: int) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Monitor resolution by VDD slot  (used by shadow-device and WM_DISPLAYCHANGE)
+# ---------------------------------------------------------------------------
+
+class _DISPLAY_DEVICE(Structure):
+    """DISPLAY_DEVICEA — passed to EnumDisplayDevicesA."""
+    _fields_ = [
+        ("cb", DWORD),
+        ("DeviceName", c_char * 32),
+        ("DeviceString", c_char * 128),
+        ("StateFlags", DWORD),
+        ("DeviceID", c_char * 128),
+        ("DeviceKey", c_char * 128),
+    ]
+
+    def __init__(self):
+        super().__init__()
+        self.cb = sizeof(self)
+
+
+# user32 — EnumDisplayDevicesA lives there, not in setupapi
+_user32 = WinDLL("user32", use_last_error=True)
+_EnumDisplayDevicesA = _user32.EnumDisplayDevicesA
+_EnumDisplayDevicesA.restype  = BOOL
+_EnumDisplayDevicesA.argtypes = [c_void_p, DWORD, POINTER(_DISPLAY_DEVICE), DWORD]
+
+_DISPLAY_DEVICE_ACTIVE = 0x00000001   # adapter is part of the desktop
+
+
+def find_monitor_by_slot(slot_index: int) -> str:
+    """
+    Return the current ``DISPLAYn`` name (without any ``\\\\.\\`` prefix) for
+    the parsec-vdd virtual display at *slot_index*.
+
+    Iterates all display adapters via ``EnumDisplayDevicesA``, counts those
+    whose ``DeviceString`` matches ``VDD_ADAPTER_NAME`` and are currently
+    active (``DISPLAY_DEVICE_ACTIVE``), and returns the *slot_index*-th one.
+
+    Returns an empty string when the slot has no active display (driver not
+    running, or that slot not yet plugged in via ``add_display``).
+    """
+    adapter = _DISPLAY_DEVICE()
+    vdd_count = 0
+    i = 0
+    while _EnumDisplayDevicesA(None, i, byref(adapter), 0):
+        i += 1
+        if adapter.DeviceString != VDD_ADAPTER_NAME:
+            continue
+        if not (adapter.StateFlags & _DISPLAY_DEVICE_ACTIVE):
+            # Slot exists in the driver but no display is currently plugged in.
+            continue
+        if vdd_count == slot_index:
+            raw = adapter.DeviceName.decode("ascii", errors="replace")
+            device = raw.lstrip("\\\\.\\")
+            log("find_monitor_by_slot(%d) -> %r (enum index %d)", slot_index, device, i - 1)
+            return device
+        vdd_count += 1
+    log("find_monitor_by_slot(%d): not found (%d active vdd adapters seen)", slot_index, vdd_count)
+    return ""
+
+
+# ---------------------------------------------------------------------------
 # Keep-alive thread
 # ---------------------------------------------------------------------------
 

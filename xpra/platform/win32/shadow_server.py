@@ -181,6 +181,35 @@ class ShadowServer(ShadowServerBase):
         self.session_type = "win32 shadow"
         self.pixel_depth = 32
         self.backend = attrs.get("backend", "auto")
+        # Parsec VDD slot index (-1 = not a shadow-device session).
+        # This is the stable identity used to re-resolve the \\.\DISPLAYn
+        # name after a WM_DISPLAYCHANGE event.
+        self._vdd_slot: int = -1
+        # Current \\.\DISPLAYn name without the prefix, e.g. "DISPLAY3".
+        # Empty string means "capture all monitors" (normal shadow mode).
+        self.monitor_device: str = ""
+        device = attrs.get("device", "")
+        if device:
+            self._init_device(device)
+
+    def _init_device(self, device: str) -> None:
+        """Parse a device specifier (e.g. 'vdd:3') and resolve to a monitor name."""
+        if not device.startswith("vdd:"):
+            raise InitException(f"Unknown device specifier {device!r} — expected 'vdd:<slot>'")
+        try:
+            slot = int(device[4:])
+        except ValueError:
+            raise InitException(f"Invalid vdd slot in {device!r} — expected integer after 'vdd:'")
+        from xpra.platform.win32.parsecvdd import find_monitor_by_slot, DeviceStatus, query_device_status
+        status = query_device_status()
+        if status != DeviceStatus.OK:
+            raise InitException(f"Parsec VDD driver not ready (status: {status.name})")
+        monitor = find_monitor_by_slot(slot)
+        if not monitor:
+            raise InitException(f"Parsec VDD slot {slot} has no active display")
+        self._vdd_slot = slot
+        self.monitor_device = monitor
+        log.info("shadow-device vdd:%i -> monitor %r", slot, monitor)
 
     def get_keyboard_subsystem_class(self) -> type:
         from xpra.platform.win32.shadow_keyboard import Win32ShadowKeyboardManager
@@ -213,6 +242,41 @@ class ShadowServer(ShadowServerBase):
         if self.pixel_depth not in (24, 30, 32):
             raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
         super().init(opts)
+        if self._vdd_slot >= 0:
+            el = get_win32_event_listener(True)
+            el.add_event_callback(win32con.WM_DISPLAYCHANGE, self._on_display_change)
+
+    def cleanup(self) -> None:
+        if self._vdd_slot >= 0:
+            el = get_win32_event_listener(False)
+            if el:
+                el.remove_event_callback(win32con.WM_DISPLAYCHANGE, self._on_display_change)
+        super().cleanup()
+
+    def _on_display_change(self, *_args) -> None:
+        """
+        Windows fires WM_DISPLAYCHANGE whenever a monitor is added, removed,
+        or its resolution changes.  Re-resolve our vdd slot to the current
+        DISPLAYn name (it may have been renumbered) and refresh the capture
+        geometry so the next frame is taken from the right screen region.
+        """
+        from xpra.platform.win32.parsecvdd import find_monitor_by_slot
+        new_device = find_monitor_by_slot(self._vdd_slot)
+        if not new_device:
+            screenlog.warn("Warning: vdd slot %i has no active display after WM_DISPLAYCHANGE", self._vdd_slot)
+            return
+        if new_device != self.monitor_device:
+            screenlog.info("vdd slot %i renamed: %r -> %r", self._vdd_slot, self.monitor_device, new_device)
+            self.monitor_device = new_device
+        x, y, w, h = self.get_monitor_geometry()
+        screenlog("_on_display_change() vdd:%i %r -> (%i,%i,%ix%i)", self._vdd_slot, self.monitor_device, x, y, w, h)
+        window_subsystem = self.get_subsystem("window")
+        if window_subsystem:
+            for model in window_subsystem.models():
+                model.geometry = (x, y, w, h)
+        display_subsystem = self.get_subsystem("display")
+        if display_subsystem:
+            display_subsystem.notify_screen_changed()
 
     def guess_session_name(self, _procs=()) -> None:
         desktop_name = get_desktop_name()
@@ -230,10 +294,26 @@ class ShadowServer(ShadowServerBase):
         return Win32Tray(self, XPRA_APP_ID, menu, "Xpra Shadow Server", "server-notconnected",
                          click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
 
+    def get_monitor_geometry(self) -> tuple[int, int, int, int]:
+        """
+        Return ``(x, y, w, h)`` for the target monitor, or the full virtual
+        screen when no specific monitor is selected.
+        """
+        if self.monitor_device:
+            for monitor in get_monitors():
+                plug_name = monitor["Device"].lstrip("\\\\.\\")
+                if plug_name == self.monitor_device:
+                    x1, y1, x2, y2 = monitor["Monitor"]
+                    return x1, y1, x2 - x1, y2 - y1
+            screenlog.warn("Warning: monitor %r not found, falling back to full screen", self.monitor_device)
+        w, h = get_display_size()
+        return 0, 0, w, h
+
     def setup_capture(self):
-        w, h = self.get_display_size()
+        x, y, w, h = self.get_monitor_geometry()
         capture = try_setup_capture(CAPTURE_BACKENDS, self.backend, w, h, self.pixel_depth)
-        log(f"setup_capture() {self.backend} : {capture}")
+        log("setup_capture() %s monitor=%r origin=(%i,%i) size=%ix%i: %s",
+            self.backend, self.monitor_device or "all", x, y, w, h, capture)
         return capture
 
     def get_root_window_model_class(self) -> type:
@@ -313,13 +393,19 @@ class ShadowServer(ShadowServerBase):
         return models
 
     def get_shadow_monitors(self) -> list:
-        # convert to the format expected by ShadowServerBase:
+        # Convert to the format expected by ShadowServerBase:
+        #   (plug_name, x, y, width, height, scale_factor)
+        # When self.monitor_device is set we only expose that one monitor,
+        # which is the case for "shadow-device vdd:N" sessions.
         monitors = []
         for i, monitor in enumerate(get_monitors()):
             geom = monitor["Monitor"]
             x1, y1, x2, y2 = geom
             assert x1 < x2 and y1 < y2
             plug_name = monitor["Device"].lstrip("\\\\.\\")
+            if self.monitor_device and plug_name != self.monitor_device:
+                screenlog("monitor %i: %10s skipped (target is %r)", i, plug_name, self.monitor_device)
+                continue
             monitors.append((plug_name, x1, y1, x2 - x1, y2 - y1, 1))
             screenlog("monitor %i: %10s coordinates: %s", i, plug_name, geom)
         log("get_shadow_monitors()=%s", monitors)
