@@ -129,15 +129,19 @@ def get_info() -> Dict[str, Any]:
         "vendor": libva_decode_get_vendor().decode("utf-8", "replace"),
         "libva": (libva_decode_get_major(), libva_decode_get_minor()),
     }
-    for encoding, colorspaces in COLORSPACES.items():
-        info["%s.colorspaces" % encoding] = tuple(
-            cs for cs in colorspaces if supports(encoding, cs)
-        )
+    for encoding in ENCODINGS:
+        colorspaces = COLORSPACES.get(encoding, ())
+        supported = tuple(cs for cs in colorspaces if supports(encoding, cs))
+        if supported:
+            info.setdefault(encoding, {})["colorspaces"] = supported
     return info
 
 
 def get_encodings() -> Sequence[str]:
-    return tuple(ENCODINGS)
+    return tuple(
+        encoding for encoding in ENCODINGS
+        if any(supports(encoding, cs) for cs in COLORSPACES.get(encoding, ()))
+    )
 
 
 def get_min_size(encoding) -> Tuple[int, int]:
