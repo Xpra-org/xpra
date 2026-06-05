@@ -144,6 +144,10 @@ def make_server_app(mode_attrs: dict[str, str], opts, clobber: int, mode: str,
         from xpra.platform.proxy_server import ProxyServer
         return ProxyServer()
     if mode == "expand":
+        if WIN32:
+            # win32 expand re-uses the shadow server scaffolding (parsec-vdd):
+            from xpra.platform.win32.expand_server import ExpandServer as Win32ExpandServer
+            return Win32ExpandServer(display_name, mode_attrs)
         from xpra.x11.server.expand import ExpandServer
         return ExpandServer(mode_attrs)
     if mode == "encoder":
