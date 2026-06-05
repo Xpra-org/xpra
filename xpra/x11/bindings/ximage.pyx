@@ -264,12 +264,12 @@ cdef class XImageWrapper:
 
     def get_sub_image(self, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
         """
-        Return a zero-copy view onto a rectangular region of this image.
+        Return a wrapper for a rectangular region of this image.
 
-        Unlike the generic `ImageWrapper.get_sub_image`, this does *not* copy
-        the pixel data: the returned wrapper points directly into this image's
-        pixel buffer (`sub_ptr = src + x*Bpp + y*rowstride`) and keeps the same
-        `rowstride`, so its rows index back into the parent allocation.
+        For most regions this is a zero-copy view: the returned wrapper points
+        directly into this image's pixel buffer (`sub_ptr = src + x*Bpp + y*rowstride`)
+        and keeps the same `rowstride`, so its rows index back into the parent
+        allocation.
 
         Because the buffer is shared:
         - the sub-image is created with `sub=True`, so `free_pixels` will never
@@ -280,6 +280,13 @@ cdef class XImageWrapper:
           does *not* protect against an explicit `parent.free()`: the caller
           must still ensure the parent outlives every sub-image it hands out
           (see the asserts in `get_pixels` / `get_pixels_ptr`).
+
+        Exception: when the region reaches the bottom row (`y+h == height`) at a
+        horizontal offset (`x > 0`), a zero-copy view would over-read the parent
+        buffer by `x*Bpp` bytes on its last row (since `get_size()` reports
+        `rowstride*h` using the parent's stride). In that single case we instead
+        make a tightly packed copy and return a self-owning image (`sub=False`),
+        which is both safe and independent of the parent's lifetime.
         """
         if w<=0 or h<=0:
             raise ValueError(f"invalid sub-image size: {w}x{h}")
@@ -292,11 +299,36 @@ cdef class XImageWrapper:
             raise ValueError("source image does not have any pixels!")
         cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
-        cdef XImageWrapper image = XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
-                             self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True,
-                             self.palette, self.full_range)
-        #keep the parent (and so its pixel buffer) alive for as long as this sub-image is:
-        image.parent = self
+        cdef XImageWrapper image
+        cdef unsigned int newstride
+        cdef void *new_buf
+        cdef void *to
+        cdef uintptr_t row
+        cdef unsigned int i
+        if y+h==self.height and x>0:
+            #a zero-copy view would over-read the parent buffer on the last row,
+            #so copy the region into a tightly packed, self-owned buffer instead:
+            newstride = roundup(w*Bpp, 4)
+            new_buf = memalign(newstride*h)
+            if new_buf==NULL:
+                raise MemoryError("memalign failed for %i bytes!" % (newstride*h))
+            to = new_buf
+            row = sub_ptr
+            for i in range(h):
+                memcpy(to, <void *> row, w*Bpp)
+                to += newstride
+                row += self.rowstride
+            image = XImageWrapper(self.x+x, self.y+y, w, h, <uintptr_t> new_buf, self.pixel_format,
+                                 self.depth, newstride, self.planes, self.bytesperpixel, True, False,
+                                 self.palette, self.full_range)
+            #we used memalign, so free_pixels must use memfree:
+            image.aligned = True
+        else:
+            image = XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
+                                 self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True,
+                                 self.palette, self.full_range)
+            #keep the parent (and so its pixel buffer) alive for as long as this sub-image is:
+            image.parent = self
         image.set_target_x(self.target_x+x)
         image.set_target_y(self.target_y+y)
         return image
