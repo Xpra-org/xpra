@@ -44,6 +44,23 @@ class ShadowDisplayMixin:
             get_platform_icon_name(sys.platform), "shadow.png", "server.png", "xpra.png",
         )
 
+    def get_display_description(self) -> str:
+        descr = super().get_display_description()
+        if self.window_matches:
+            return descr
+        try:
+            models = self.subsystems["window"].models()
+        except (AttributeError, KeyError) as e:
+            log(f"no screen info: {e}")
+            return descr
+        if len(models) > 1:
+            descr += f"\n with {len(models)} monitors:"
+            for window in models:
+                title = window.get_property("title")
+                x, y, w, h = window.geometry
+                descr += "\n  %-16s %4ix%-4i at %4i,%-4i" % (title, w, h, x, y)
+        return descr
+
 
 class ShadowDisplayManager(ShadowDisplayMixin, DisplayManager):
     """

@@ -152,23 +152,6 @@ class ShadowServerBase(ServerBase):
         self.session_name = display.get_wm_name() if display else ""
         log("get_wm_name()=%s", self.session_name)
 
-    def get_display_description(self) -> None:
-        descr = super().get_display_description()
-        if self.window_matches:
-            return descr
-        try:
-            models = self.subsystems["window"].models()
-        except (AttributeError, KeyError) as e:
-            log(f"no screen info: {e}")
-            return descr
-        if len(models) > 1:
-            descr += f"\n with {len(models)} monitors:"
-            for window in models:
-                title = window.get_property("title")
-                x, y, w, h = window.geometry
-                descr += "\n  %-16s %4ix%-4i at %4i,%-4i" % (title, w, h, x, y)
-        return descr
-
     @staticmethod
     def set_desktop_geometry(w: int, h: int) -> None:
         """ shadow servers don't modify the existing resolution """
