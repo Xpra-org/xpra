@@ -22,6 +22,8 @@
   * [native MS Windows DirectShow webcam backend](https://github.com/Xpra-org/xpra/issues/3336)
   * [native macOS CoreMedia webcam backend](https://github.com/Xpra-org/xpra/issues/1231)
 * ✨ Features:
+  * [virtual monitors for MS Windows shadow servers](https://github.com/Xpra-org/xpra/issues/4909)
+  * [`expand` server for MS Windows](https://github.com/Xpra-org/xpra/issues/4911)
   * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885)
   * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)
   * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256)
