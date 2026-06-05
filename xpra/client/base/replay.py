@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from typing import NoReturn
 
 from xpra.client.base.gobject import GObjectClientAdapter
+from xpra.common import noop
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.platform.paths import initial_cwd
 from xpra.util.io import load_binary_file
@@ -335,27 +336,8 @@ class WindowModel:
 
     def __init__(self, wid: int, *args):
         self.wid = wid
-
-    def show(self):
-        pass
-
-    def draw_region(self, x, y, width, height, coding, data, rowstride, options, callbacks):
-        pass
-
-    def set_cursor_data(self, data):
-        pass
-
-    def show_pointer_overlay(self, position=()):
-        pass
-
-    def resize(self, *size):
-        pass
-
-    def move_resize(self, *geometry):
-        pass
-
-    def update_metadata(self, metadata):
-        pass
+        self.show = self.draw_region = self.set_cursor_data = self.show_pointer_overlay = noop
+        self.resize = self.move_resize = self.update_metadata = noop
 
 
 def log_notable_event(etype: str, msg: str) -> None:
