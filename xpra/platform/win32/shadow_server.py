@@ -32,13 +32,13 @@ from xpra.platform.win32.common import (
     GetSystemMetrics,
 )
 
-GLib = gi_import("GLib")
-
 log = Logger("shadow", "win32")
 shapelog = Logger("shape")
 keylog = Logger("keyboard")
 screenlog = Logger("screen")
 vddlog = Logger("vdd")
+
+GLib = gi_import("GLib")
 
 
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
@@ -283,6 +283,20 @@ class ShadowServer(ShadowServerBase):
         el = get_win32_event_listener(True)
         el.add_event_callback(win32con.WM_DISPLAYCHANGE, self._on_monitors_changed)
 
+    def setup(self) -> None:
+        super().setup()
+        if self._vdd_multimonitor:
+            # tear down any virtual monitors we created once nobody is watching:
+            self.connect("last-client-exited", self._remove_all_virtual_monitors)
+
+    def _remove_all_virtual_monitors(self, *_args) -> None:
+        if self._vdd_displays:
+            vddlog.info("last client exited, removing all %i virtual monitor(s)", len(self._vdd_displays))
+        # remove the displays and release the device handle (a reconnecting
+        # client will re-open it on demand). The resulting WM_DISPLAYCHANGE
+        # cleans up the capture window models if the server keeps running:
+        self._vdd_cleanup()
+
     def cleanup(self) -> None:
         if self._monitors_changed_timer:
             GLib.source_remove(self._monitors_changed_timer)
@@ -377,7 +391,7 @@ class ShadowServer(ShadowServerBase):
             from xpra.platform.win32.parsecvdd import remove_display, close_device
             for plug, slot in list(self._vdd_displays.items()):
                 try:
-                    vddlog.info("removing virtual monitor %r (vdd slot %i) on exit", plug, slot)
+                    vddlog.info("removing virtual monitor %r (vdd slot %i)", plug, slot)
                     remove_display(self._vdd_handle, slot)
                 except Exception:
                     vddlog("error removing VDD slot %i (%r)", slot, plug, exc_info=True)
@@ -462,8 +476,11 @@ class ShadowServer(ShadowServerBase):
     def _sync_monitor_windows(self) -> None:
         """
         Reconcile the shadow capture window models with the current set of
-        monitors: create a window for each new monitor (so the client receives
-        a new-window packet) and remove the window for any monitor that is gone.
+        monitors. For each monitor we:
+          - create a window when it is new (the client gets a new-window packet),
+          - remove the window when the monitor is gone (lost-window packet),
+          - update the capture geometry (and resize the client window) when an
+            existing monitor moved or changed resolution.
 
         The shared GDI capture covers the whole virtual desktop and adapts to
         its size automatically, so newly added monitors need no separate capture.
@@ -472,23 +489,42 @@ class ShadowServer(ShadowServerBase):
         if not window_sub:
             return
         monitors = {m[0]: m for m in self.get_shadow_monitors()}     # plug name -> (plug, x, y, w, h, scale)
-        existing = {getattr(model, "title", ""): model for model in tuple(window_sub.models())}
+        # existing capture windows keyed by monitor name, keeping their wid:
+        existing: dict[str, tuple[int, Any]] = {}
+        for wid, model in tuple(window_sub._id_to_window.items()):
+            existing[getattr(model, "title", "")] = (wid, model)
         vddlog("sync_monitor_windows() monitors=%s, existing windows=%s",
                list(monitors.keys()), list(existing.keys()))
         # remove windows whose monitor no longer exists:
-        for title, model in existing.items():
+        for title, (wid, model) in existing.items():
             if title not in monitors:
                 vddlog.info("removing shadow window for monitor %r", title)
                 window_sub._remove_window(model)
-        # add windows for monitors that don't have one yet:
+        # add new monitors, and update the geometry of existing ones:
         model_class = self.get_root_window_model_class()
         for plug, monitor in monitors.items():
-            if plug in existing:
-                continue
             x, y, width, height = monitor[1:5]
-            vddlog.info("adding shadow window for monitor %r at %ix%i+%i+%i", plug, width, height, x, y)
-            model = model_class(self.capture, plug, (x, y, width, height))
-            window_sub._add_new_window(model)
+            geometry = (x, y, width, height)
+            if plug not in existing:
+                vddlog.info("adding shadow window for monitor %r at %ix%i+%i+%i", plug, width, height, x, y)
+                model = model_class(self.capture, plug, geometry)
+                window_sub._add_new_window(model)
+                continue
+            wid, model = existing[plug]
+            old = tuple(model.geometry)
+            if old == geometry:
+                continue
+            if old[2:4] == (width, height):
+                # position-only change: the client shows shadow windows at 0,0,
+                # so we only need to move the capture origin (no client update):
+                vddlog("monitor %r moved: %s -> %s", plug, old, geometry)
+                model.geometry = geometry
+            else:
+                # resolution change: recreate the window so the new size and its
+                # size-constraints reach the client cleanly:
+                vddlog.info("monitor %r resolution changed: %s -> %s, recreating window", plug, old, geometry)
+                window_sub._remove_window(model)
+                window_sub._add_new_window(model_class(self.capture, plug, geometry))
 
     def _process_configure_monitor(self, _proto, packet: Packet) -> None:
         if not self._vdd_multimonitor:
