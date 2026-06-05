@@ -62,7 +62,7 @@ mouselog = Logger("mouse")
 cryptolog = Logger("crypto")
 bandwidthlog = Logger("bandwidth")
 
-EXTRA_TIMEOUT = 10
+EXTRA_TIMEOUT = 20
 ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
 ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
