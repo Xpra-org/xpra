@@ -218,7 +218,7 @@ def get_workareas() -> Sequence[tuple[int, int, int, int]]:
 
 def get_display_size() -> tuple[int, int]:
     Gdk = gi_import("Gdk")
-    screen = Gdk.Screen.get_default
+    screen = Gdk.Screen.get_default()
     if not screen:
         raise RuntimeError("unable to access the screen via Gdk")
     return screen.get_width(), screen.get_height()
