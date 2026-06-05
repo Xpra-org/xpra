@@ -247,7 +247,7 @@ class XpraQt6Client(Qt6Client):
         """ we don't handle any options yet! """
 
     def load(self):
-        pass
+        """ nothing to do here """
 
     def cleanup(self) -> None:
         """ client classes must define this method """

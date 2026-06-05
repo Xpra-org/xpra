@@ -689,10 +689,10 @@ class TopSessionClient(InfoTimerClient):
         return super().server_connection_established(caps)
 
     def print_desktop_size(self, c: typedict) -> None:
-        pass
+        """ do not print anything which could break the curses output """
 
     def print_server_info(self, c: typedict) -> None:
-        pass
+        """ do not print anything which could break the curses output """
 
     def update_screen(self) -> None:
         if gui := getattr(self, "_gui", None):

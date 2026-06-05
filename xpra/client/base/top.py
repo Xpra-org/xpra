@@ -439,8 +439,7 @@ class TopSessionClient(InfoTimerClient):
         return super().server_connection_established(caps)
 
     def print_desktop_size(self, c: typedict) -> None:
-        # skip this as it would interfere with curses
-        pass
+        """ skip this as it would interfere with curses """
 
     def print_server_info(self, c: typedict) -> None:
         # skip this as it would interfere with curses

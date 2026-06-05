@@ -362,7 +362,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             self.refresh_needed.add(wid)
 
     def _process_eos(self, packet: Packet) -> None:
-        pass
+        """ safe to ignore - we don't have streams to replay """
 
     def _process_keyboard_record(self, packet: Packet) -> None:
         wid = packet.get_wid()
