@@ -46,8 +46,6 @@ class ShadowDisplayMixin:
 
     def get_display_description(self) -> str:
         descr = super().get_display_description()
-        if self.window_matches:
-            return descr
         try:
             models = self.subsystems["window"].models()
         except (AttributeError, KeyError) as e:
