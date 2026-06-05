@@ -312,15 +312,8 @@ cdef class Decoder:
 
 
 def selftest(full=False) -> None:
+    global ENCODINGS
     log("libva decoder selftest: %s", get_info())
-    from xpra.codecs.checks import testdecoding
+    from xpra.codecs.checks import testdecoder
     from xpra.codecs.libva import decoder
-    failed = set()
-    for spec in decoder.get_specs():
-        if spec.encoding in failed:
-            continue
-        try:
-            testdecoding(decoder, spec.encoding, spec.input_colorspace, full)
-        except Exception as e:
-            failed.add(spec.encoding)
-            log.warn(f"libva: {spec.encoding} decoding failed: {e}")
+    ENCODINGS = testdecoder(decoder, full)
