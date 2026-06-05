@@ -217,7 +217,7 @@ class GDICapture:
         # noinspection PyCallingNonCallable
         buf = buftype()
         buf.value = b""
-        log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, byref(buf))
+        log("GetBitmapBits(%#x, %#x, %s)", bitmap, buf_size, byref(buf))
         r = GetBitmapBits(bitmap, buf_size, byref(buf))
         if not r:
             log.error("Error: failed to copy screen bitmap data")
