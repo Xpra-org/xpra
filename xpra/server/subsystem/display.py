@@ -386,6 +386,17 @@ class DisplayManager(StubSubsystem):
     def set_screen_size(self, width: int, height: int):
         """ subclasses should override this method if they support resizing """
 
+    def _apply_desktop_size(self, ss, width: int, height: int) -> None:
+        log("client requesting new size: %sx%s", width, height)
+        # variant servers wrap `set_screen_size` (see SeamlessServer); route
+        # through self.server so the wrapper fires:
+        self.server.set_screen_size(width, height)
+        log.info("received updated display dimensions")
+        log.info(f"client display size is {width}x{height}")
+        log_screen_sizes(width, height, ss.screen_sizes)
+        self.calculate_workarea(width, height)
+        self.set_desktop_geometry_attributes(width, height)
+
     def _process_display_configure(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if ss is None:
@@ -405,16 +416,7 @@ class DisplayManager(StubSubsystem):
         if monitors:
             ss.set_monitors(monitors)
         if desktop_size:
-            width, height = desktop_size
-            log("client requesting new size: %sx%s", width, height)
-            # variant servers wrap `set_screen_size` (see SeamlessServer); route
-            # through self.server so the wrapper fires:
-            self.server.set_screen_size(width, height)
-            log.info("received updated display dimensions")
-            log.info(f"client display size is {width}x{height}")
-            log_screen_sizes(width, height, ss.screen_sizes)
-            self.calculate_workarea(width, height)
-            self.set_desktop_geometry_attributes(width, height)
+            self._apply_desktop_size(ss, *desktop_size)
         # DPI
         dpi = 0
         dpi_caps = attrs.get("dpi")

@@ -24,6 +24,9 @@ class ShadowDisplayMixin:
         self.apply_refresh_rate(ss)
         return self.get_display_size()
 
+    def _apply_desktop_size(self, ss, width: int, height: int) -> None:
+        log("ignoring client resize request %sx%s (shadow server)", width, height)
+
     def apply_refresh_rate(self, ss) -> int:
         rrate = super().apply_refresh_rate(ss)
         if rrate > 0:
