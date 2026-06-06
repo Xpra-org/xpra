@@ -429,23 +429,22 @@ def testdecoding(decoder_module, encoding: str, cs: str, full: bool) -> None:
                 log.error(f"Error creating context {encoding} {w}x{h} {cs}")
                 raise
             try:
-                if frames:
-                    log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with {len(frames)} frames of size {w}x{h}, {test_run+1} of {times}")
-                    for i, (data, options) in enumerate(frames):
-                        try:
-                            log(f"frame {i+1} is {len(data or ()):5} bytes")
-                            image = decoder.decompress_image(data, typedict(options))
-                            if image is None:
-                                raise RuntimeError(f"failed to decode test data for encoding {encoding!r} with colorspace {cs!r}")
-                            if image.get_width()!=w:
-                                raise RuntimeError(f"expected image of width {w} but got {image.get_width()}")
-                            if image.get_height()!=h:
-                                raise RuntimeError(f"expected image of height {h} but got {image.get_height()}")
-                            log(f" test passed for {w}x{h} {encoding} - {cs}")
-                            image.free()
-                        except Exception:
-                            log.error(f"Error on {encoding} {w}x{h} test {cs} frame {i}")
-                            raise
+                log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with {len(frames)} frames of size {w}x{h}, {test_run+1} of {times}")
+                for i, (data, options) in enumerate(frames):
+                    try:
+                        log(f"frame {i+1} is {len(data or ()):5} bytes")
+                        image = decoder.decompress_image(data, typedict(options))
+                        if image is None:
+                            raise RuntimeError(f"failed to decode test data for encoding {encoding!r} with colorspace {cs!r}")
+                        if image.get_width()!=w:
+                            raise RuntimeError(f"expected image of width {w} but got {image.get_width()}")
+                        if image.get_height()!=h:
+                            raise RuntimeError(f"expected image of height {h} but got {image.get_height()}")
+                        log(f" test passed for {w}x{h} {encoding} - {cs}")
+                        image.free()
+                    except Exception:
+                        log.error(f"Error on {encoding} {w}x{h} test {cs} frame {i}")
+                        raise
                 if full:
                     log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with junk data, {test_run+1} of {times}")
                     # test failures:
