@@ -7,11 +7,11 @@
 
 from typing import Any
 
-from xpra.os_util import gi_import, WIN32, OSX, POSIX
-from xpra.util.system import is_Wayland, is_X11
+from xpra.os_util import gi_import, WIN32
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
+from xpra.client.gtk3.window.common import use_x11_bindings
 from xpra.common import noop
 from xpra.constants import WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.gtk.util import get_default_root_window
@@ -31,21 +31,6 @@ WIN32_WORKSPACE = WIN32 and envbool("XPRA_WIN32_WORKSPACE", False)
 
 def wn(w) -> str:
     return WORKSPACE_NAMES.get(w, str(w))
-
-
-def use_x11_bindings() -> bool:
-    if not POSIX or OSX:
-        return False
-    if not is_X11() or is_Wayland():
-        return False
-    if envbool("XPRA_USE_X11_BINDINGS", False):
-        return True
-    try:
-        from xpra.x11.bindings.xwayland_info import isxwayland
-    except ImportError:
-        log("no xwayland bindings", exc_info=True)
-        return False
-    return not isxwayland()
 
 
 if use_x11_bindings():
