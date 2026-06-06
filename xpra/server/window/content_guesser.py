@@ -51,7 +51,7 @@ def _load_dict_file(filename: str, parser: ConfParser) -> ConfDict:
     return parser(lines)
 
 
-def _merge_defs(target: ConfDict, source: ConfDict) -> None:
+def _merge_defs(target: ConfDict, source: ConfDict, source_first: bool = False) -> None:
     # merge source into target, recursing one level for nested dicts.
     # parsers like parse_content_types return {prop_name: {regex: ...}};
     # a plain dict.update() at the top level would discard target[prop_name]
@@ -60,7 +60,13 @@ def _merge_defs(target: ConfDict, source: ConfDict) -> None:
     for k, v in source.items():
         existing = target.get(k)
         if isinstance(v, dict) and isinstance(existing, dict):
-            existing.update(v)
+            if source_first:
+                merged = dict(v)
+                for ik, iv in existing.items():
+                    merged.setdefault(ik, iv)
+                target[k] = merged
+            else:
+                existing.update(v)
         else:
             target[k] = v
 
@@ -81,7 +87,7 @@ def _load_dict_dir(d: str, parser: ConfParser) -> ConfDict:
             cc_file = os.path.join(d, f)
             if os.path.isfile(cc_file):
                 try:
-                    _merge_defs(v, _load_dict_file(cc_file, parser))
+                    _merge_defs(v, _load_dict_file(cc_file, parser), source_first=True)
                 except Exception as e:
                     log("_load_dict_dir(%s)", cc_file, exc_info=True)
                     log.error("Error loading file data from '%s'", cc_file)

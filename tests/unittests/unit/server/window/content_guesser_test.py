@@ -137,6 +137,31 @@ class TestContentGuesser(unittest.TestCase):
             patterns = {regex_str for regex_str, _ in defs["role"].values()}
             self.assertEqual(patterns, {"gimp-dock", "gimp-toolbox", "browser"})
 
+    def test_load_dict_dirs_later_file_rules_take_precedence(self):
+        # Same-directory files are loaded in filename order; later files must be
+        # evaluated first so 99_overrides.conf can override 10_role.conf.
+        with tempfile.TemporaryDirectory() as sysdir:
+            os.makedirs(os.path.join(sysdir, "content-type"))
+            with open(os.path.join(sysdir, "content-type", "10_role.conf"), "w") as f:
+                f.write("role:vlc-main=audio+video\n")
+            with open(os.path.join(sysdir, "content-type", "99_overrides.conf"), "w") as f:
+                f.write("role:vlc-main=text\n")
+
+            with patch.object(content_guesser, "get_system_conf_dirs", return_value=[sysdir]), \
+                    patch.object(content_guesser, "get_user_conf_dirs", return_value=[]), \
+                    patch.object(content_guesser, "POSIX", False):
+                defs = _load_dict_dirs("content-type", parse_content_types)
+
+            class FakeWindow:
+                def get_property_names(self):
+                    return ("role",)
+
+                def get_property(self, name):
+                    return "vlc-main"
+
+            with patch.object(content_guesser, "content_type_defs", defs):
+                self.assertEqual(guess_content_type_from_defs(FakeWindow()), "text")
+
     @unittest.skipUnless(POSIX, "do_get_user_conf_dirs only returns literal '~' paths on POSIX")
     def test_load_dict_dirs_expands_tilde_in_user_dirs(self):
         # regression: do_get_user_conf_dirs returns paths with literal '~' (so multi-user
