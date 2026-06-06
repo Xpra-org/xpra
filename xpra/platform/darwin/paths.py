@@ -222,15 +222,15 @@ def do_get_nodock_command() -> list[str]:
     if os.path.exists(subapp) and os.path.isdir(subapp):
         base = subapp
     # AppStore builds have script wrappers:
-    helper = os.path.join(base, "Resources", "scripts", "Xpra")
-    if not os.path.exists(helper):
-        helper = os.path.join(base, "Helpers", "Xpra")
-    if not os.path.exists(helper):
+    exe = os.path.join(base, "MacOS", "Xpra")
+    if not os.path.exists(exe):
+        exe = os.path.join(base, "Helpers", "Xpra")
+    if not os.path.exists(exe):
         # having a dock is still better than
         # trying to run a command that does not exist!
         from xpra.platform.paths import get_xpra_command
         return get_xpra_command()
-    return [helper]
+    return [exe]
 
 
 def do_get_audio_command() -> list[str]:
