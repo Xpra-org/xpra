@@ -7,14 +7,14 @@
 import sys
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("SystemTray-Test", "SystemTray Test"):
         from xpra.gtk.examples import tray
-        return tray.main()
+        return tray.main(argv)
 
 
 if __name__ == "__main__":
-    v = main()
+    v = main(sys.argv)
     sys.exit(v)

@@ -7,14 +7,14 @@
 import sys
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("GTK-Keyboard-Test", "GTK Keyboard Test"):
         from xpra.gtk.dialogs import view_keyboard
-        return view_keyboard.main()
+        return view_keyboard.main(argv)
 
 
 if __name__ == "__main__":
-    v = main()
+    v = main(sys.argv)
     sys.exit(v)

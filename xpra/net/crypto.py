@@ -12,6 +12,7 @@ from typing import Any
 from threading import Lock
 from collections.abc import Iterable, Sequence
 
+from xpra.exit_codes import ExitCode
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv, print_nested_dict, strtobytes, hexstr
 from xpra.util.env import envint, envbool, first_time
@@ -287,12 +288,13 @@ def get_key(key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iter
     return key
 
 
-def main() -> None:
+def main() -> ExitCode:
     from xpra.platform import program_context
     with program_context("Encryption Properties"):
         consume_verbose_argv(sys.argv, "crypto")
         crypto_backend_init()
         print_nested_dict(get_crypto_caps())
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

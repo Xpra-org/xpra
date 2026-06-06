@@ -415,16 +415,16 @@ def get_info() -> dict[str, Any]:
     return i
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
     try:
         from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
     except ImportError:
         pass
     from xpra.platform.gui import main as gui_main
-    gui_main()
+    gui_main(argv)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))

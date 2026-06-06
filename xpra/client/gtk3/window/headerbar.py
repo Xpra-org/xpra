@@ -25,7 +25,7 @@ WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", True)
 WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
-def make_header_bar(title: str, image, show_window_menu=noop, show_xpra_menu=noop) -> None:
+def make_header_bar(title: str, image, show_window_menu=noop, show_xpra_menu=noop):
     hb = Gtk.HeaderBar()
     hb.set_has_subtitle(False)
     hb.set_show_close_button(True)
