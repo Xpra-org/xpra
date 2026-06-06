@@ -434,6 +434,11 @@ def gtk_init_check() -> bool:
         r = Gtk.init_check()
     else:
         r = Gtk.init_check(argv=None)[0]
+    if OSX:
+        # `Gtk.init_check()` resets the macOS application activation policy
+        # (it would show a dock icon): re-apply the `XPRA_HIDE_DOCK` preference
+        from xpra.platform.darwin import hide_dock
+        hide_dock()
     return bool(r)
 
 
