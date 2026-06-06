@@ -14,6 +14,7 @@
   * [use `TCP_INFO` to drive batch delay](https://github.com/Xpra-org/xpra/issues/2421)
   * [`asyncio` loop exit fix](https://github.com/Xpra-org/xpra/pull/4891)
   * [longer session connection timeout for ssh sessions](https://github.com/Xpra-org/xpra/issues/4904)
+  * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
 * 🌈 Encodings:
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
   * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)
