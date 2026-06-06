@@ -6,6 +6,7 @@
 
 import base64
 import os
+import time
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
@@ -39,6 +40,32 @@ def _make_handler(path="/", headers=None, web_root=None, script_paths=None,
     h.send_header = MagicMock()
     h.send_error = MagicMock()
     return h
+
+
+def _make_digest_header(username="user", password="secret", path="/", method="GET",
+                        realm=None, nonce=None, algorithm="SHA-256", qop="auth",
+                        nc="00000001", cnonce="0123456789abcdef", response=None,
+                        include_algorithm=True):
+    from xpra.net.http import handler
+    realm = realm or handler.AUTH_REALM
+    nonce = nonce or handler.make_digest_nonce()
+    if response is None:
+        ha1 = handler.digest_hash(algorithm, f"{username}:{realm}:{password}")
+        ha2 = handler.digest_hash(algorithm, f"{method}:{path}")
+        response = handler.digest_hash(algorithm, f"{ha1}:{nonce}:{nc}:{cnonce}:{qop}:{ha2}")
+    fields = [
+        f'username="{username}"',
+        f'realm="{realm}"',
+        f'nonce="{nonce}"',
+        f'uri="{path}"',
+        f'response="{response}"',
+        f'qop={qop}',
+        f'nc={nc}',
+        f'cnonce="{cnonce}"',
+    ]
+    if include_algorithm:
+        fields.append(f"algorithm={algorithm}")
+    return "Digest " + ", ".join(fields)
 
 
 class TestLogError(unittest.TestCase):
@@ -124,6 +151,90 @@ class TestHandleAuthentication(unittest.TestCase):
         result = h.handle_authentication()
         assert result is False
 
+    def test_valid_digest_sha256_credentials_returns_true(self):
+        path = "/index.html?x=1"
+        auth = _make_digest_header(path=path)
+        h = _make_handler(path=path, password="secret", username="user",
+                          headers={"Authorization": auth})
+        result = h.handle_authentication()
+        assert result is True
+
+    def test_valid_digest_md5_credentials_returns_true(self):
+        path = "/index.html"
+        auth = _make_digest_header(path=path, algorithm="MD5")
+        h = _make_handler(path=path, password="secret", username="user",
+                          headers={"Authorization": auth})
+        result = h.handle_authentication()
+        assert result is True
+
+    def test_valid_digest_default_md5_credentials_returns_true(self):
+        path = "/index.html"
+        auth = _make_digest_header(path=path, algorithm="MD5", include_algorithm=False)
+        h = _make_handler(path=path, password="secret", username="user",
+                          headers={"Authorization": auth})
+        result = h.handle_authentication()
+        assert result is True
+
+    def test_wrong_digest_password_returns_false(self):
+        auth = _make_digest_header(password="wrong")
+        h = _make_handler(password="secret", username="user",
+                          headers={"Authorization": auth})
+        h.do_AUTHHEAD = MagicMock()
+        result = h.handle_authentication()
+        assert result is False
+
+    def test_wrong_digest_realm_returns_false(self):
+        auth = _make_digest_header(realm="wrong")
+        h = _make_handler(password="secret", username="user",
+                          headers={"Authorization": auth})
+        h.do_AUTHHEAD = MagicMock()
+        result = h.handle_authentication()
+        assert result is False
+
+    def test_wrong_digest_nonce_returns_false(self):
+        auth = _make_digest_header(nonce="unknown")
+        h = _make_handler(password="secret", username="user",
+                          headers={"Authorization": auth})
+        h.do_AUTHHEAD = MagicMock()
+        result = h.handle_authentication()
+        assert result is False
+
+    def test_wrong_digest_uri_returns_false(self):
+        auth = _make_digest_header(path="/other")
+        h = _make_handler(path="/", password="secret", username="user",
+                          headers={"Authorization": auth})
+        h.do_AUTHHEAD = MagicMock()
+        result = h.handle_authentication()
+        assert result is False
+
+    def test_unsupported_digest_qop_returns_false(self):
+        auth = _make_digest_header(qop="auth-int")
+        h = _make_handler(password="secret", username="user",
+                          headers={"Authorization": auth})
+        h.do_AUTHHEAD = MagicMock()
+        result = h.handle_authentication()
+        assert result is False
+
+    def test_malformed_digest_returns_false(self):
+        h = _make_handler(password="secret", username="user",
+                          headers={"Authorization": "Digest username"})
+        h.do_AUTHHEAD = MagicMock()
+        result = h.handle_authentication()
+        assert result is False
+
+    def test_expired_digest_nonce_returns_stale_challenge(self):
+        from xpra.net.http import handler
+        nonce = handler.make_digest_nonce()
+        auth = _make_digest_header(nonce=nonce)
+        with handler.lock:
+            handler.auth_digest_nonces[nonce] = time.monotonic() - 1
+        h = _make_handler(password="secret", username="user",
+                          headers={"Authorization": auth})
+        h.do_AUTHHEAD = MagicMock()
+        result = h.handle_authentication()
+        assert result is False
+        h.do_AUTHHEAD.assert_called_once_with(stale=True)
+
 
 class TestDoAuthHead(unittest.TestCase):
 
@@ -142,6 +253,30 @@ class TestDoAuthHead(unittest.TestCase):
         headers_sent = [call[0] for call in h.send_header.call_args_list]
         keys = [k for k, _ in headers_sent]
         assert "WWW-Authenticate" in keys
+
+    def test_sends_digest_before_basic_when_password_set(self):
+        h = _make_handler(password="mypwd")
+        h.end_headers = MagicMock()
+        h.do_AUTHHEAD()
+        www_authenticate = [
+            value for key, value in (call[0] for call in h.send_header.call_args_list)
+            if key == "WWW-Authenticate"
+        ]
+        assert len(www_authenticate) == 2
+        assert www_authenticate[0].startswith("Digest ")
+        assert "algorithm=SHA-256" in www_authenticate[0]
+        assert 'qop="auth"' in www_authenticate[0]
+        assert www_authenticate[1].startswith("Basic ")
+
+    def test_sends_stale_digest_challenge(self):
+        h = _make_handler(password="mypwd")
+        h.end_headers = MagicMock()
+        h.do_AUTHHEAD(stale=True)
+        www_authenticate = [
+            value for key, value in (call[0] for call in h.send_header.call_args_list)
+            if key == "WWW-Authenticate"
+        ]
+        assert "stale=true" in www_authenticate[0]
 
     def test_no_www_authenticate_without_password(self):
         h = _make_handler(password="")

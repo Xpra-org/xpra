@@ -6,9 +6,13 @@
 import os
 import sys
 import glob
+import hmac
+import time
+import hashlib
 import posixpath
 import socket
 from urllib.parse import unquote
+from urllib.request import parse_http_list, parse_keqv_list
 from http.server import BaseHTTPRequestHandler
 from typing import Any
 from threading import Lock
@@ -19,7 +23,7 @@ from xpra.net.http.common import EXTENSION_TO_MIMETYPE
 from xpra.util.io import load_binary_file
 from xpra.util.objects import AdHocStruct
 from xpra.util.str_fn import std, csv, obsc, repr_ellipsized
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.log import Logger
 
 log = Logger("http")
@@ -30,10 +34,14 @@ DIRECTORY_LISTING = envbool("XPRA_HTTP_DIRECTORY_LISTING", False)
 AUTH_REALM = os.environ.get("XPRA_HTTP_AUTH_REALM", "Xpra")
 AUTH_USERNAME = os.environ.get("XPRA_HTTP_AUTH_USERNAME", "")
 AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD", "")
+AUTH_DIGEST_ALGORITHM = "SHA-256"
+AUTH_DIGEST_QOP = "auth"
+AUTH_DIGEST_NONCE_TTL = envint("XPRA_HTTP_AUTH_DIGEST_NONCE_TTL", 300)
 
 
 http_headers_cache: dict[str, str] = {}
 http_headers_time: dict[str, float] = {}
+auth_digest_nonces: dict[str, float] = {}
 lock = Lock()
 
 
@@ -83,6 +91,62 @@ def locked_reload_headers(http_headers_dirs: Iterable[str]) -> dict[str, str]:
     log(f"may_reload_headers() headers={headers!r}, mtime={mtimes}")
     http_headers_cache = headers
     return headers.copy()
+
+
+def digest_hash(algorithm: str, value: str) -> str:
+    alg = (algorithm or "MD5").lower()
+    if alg == "sha-256":
+        alg = "sha256"
+    if alg not in ("md5", "sha256"):
+        raise ValueError(f"unsupported HTTP digest algorithm: {algorithm!r}")
+    h = hashlib.new(alg)
+    h.update(value.encode("utf-8"))
+    return h.hexdigest()
+
+
+def make_digest_nonce() -> str:
+    now = time.monotonic()
+    nonce = os.urandom(24).hex()
+    with lock:
+        # opportunistic cleanup avoids unbounded cache growth
+        for value, expires in tuple(auth_digest_nonces.items()):
+            if expires <= now:
+                auth_digest_nonces.pop(value, None)
+        auth_digest_nonces[nonce] = now + AUTH_DIGEST_NONCE_TTL
+    return nonce
+
+
+def validate_digest_nonce(nonce: str) -> tuple[bool, bool]:
+    now = time.monotonic()
+    with lock:
+        expires = auth_digest_nonces.get(nonce, 0)
+        if expires > now:
+            return True, False
+        if nonce in auth_digest_nonces:
+            auth_digest_nonces.pop(nonce, None)
+            return False, True
+    return False, False
+
+
+def parse_digest_authorization(auth: str) -> dict[str, str]:
+    if not auth.startswith("Digest "):
+        return {}
+    try:
+        return parse_keqv_list(parse_http_list(auth.split("Digest ", 1)[1]))
+    except (IndexError, ValueError):
+        return {}
+
+
+def make_digest_challenge(stale: bool = False) -> str:
+    fields = [
+        f'realm="{AUTH_REALM}"',
+        f'nonce="{make_digest_nonce()}"',
+        f'algorithm={AUTH_DIGEST_ALGORITHM}',
+        f'qop="{AUTH_DIGEST_QOP}"',
+    ]
+    if stale:
+        fields.append("stale=true")
+    return "Digest " + ", ".join(fields)
 
 
 def translate_path(path: str, web_root: str = "/usr/share/xpra/www") -> str:
@@ -310,8 +374,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             return True
         authlog = Logger("auth")
 
-        def auth_err(msg: str) -> bool:
-            self.do_AUTHHEAD()
+        def auth_err(msg: str, stale: bool = False) -> bool:
+            self.do_AUTHHEAD(stale=stale)
             self.wfile.write(msg.encode("latin1"))
             authlog.warn(f"http authentication failed: {msg}")
             try:
@@ -325,24 +389,85 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         authlog("handle_request() auth header=%s", auth)
         if not auth:
             return auth_err("missing authentication header")
-        # ie: auth = 'Basic dGVzdDp0ZXN0'
-        if not auth.startswith("Basic "):
-            return auth_err("invalid authentication header")
+        if auth.startswith("Digest "):
+            valid, msg, stale = self.verify_digest_authentication(auth)
+            if valid:
+                authlog("http digest authentication passed")
+                return True
+            return auth_err(msg, stale)
+        if auth.startswith("Basic "):
+            valid, msg = self.verify_basic_authentication(auth)
+            if valid:
+                authlog("http basic authentication passed")
+                return True
+            return auth_err(msg)
+        return auth_err("invalid authentication header")
+
+    def verify_basic_authentication(self, auth: str) -> tuple[bool, str]:
         b64str = auth.split("Basic ", 1)[1]
         import base64
+        import binascii
         try:
             s = base64.b64decode(b64str).decode("utf8")
-        except ValueError:
+        except (ValueError, UnicodeDecodeError, binascii.Error):
             s = ""
         if s.find(":") < 0:
-            return auth_err("invalid authentication format")
+            return False, "invalid authentication format"
         username, password = s.split(":", 1)
+        if not self.check_http_credentials(username, password):
+            return False, "invalid credentials"
+        return True, ""
+
+    def check_http_credentials(self, username: str, password: str) -> bool:
         if (self.username and username != self.username) or password != self.password:
+            authlog = Logger("auth")
             authlog("http authentication: expected %s:%s but received %s:%s",
                     self.username or "", obsc(self.password), username, obsc(password))
-            return auth_err("invalid credentials")
-        authlog("http authentication passed")
+            return False
         return True
+
+    def verify_digest_authentication(self, auth: str) -> tuple[bool, str, bool]:
+        fields = parse_digest_authorization(auth)
+        if not fields:
+            return False, "invalid digest authentication format", False
+        username = fields.get("username", "")
+        realm = fields.get("realm", "")
+        nonce = fields.get("nonce", "")
+        uri = fields.get("uri", "")
+        response = fields.get("response", "")
+        qop = fields.get("qop", "")
+        nc = fields.get("nc", "")
+        cnonce = fields.get("cnonce", "")
+        algorithm = fields.get("algorithm", "MD5")
+        if not all((username, realm, nonce, uri, response, qop, nc, cnonce)):
+            return False, "missing digest authentication field", False
+        if self.username and username != self.username:
+            return False, "invalid credentials", False
+        if realm != AUTH_REALM:
+            return False, "invalid digest authentication realm", False
+        if qop != AUTH_DIGEST_QOP:
+            return False, "invalid digest authentication qop", False
+        if uri != self.path:
+            return False, "invalid digest authentication uri", False
+        try:
+            if int(nc, 16) <= 0:
+                return False, "invalid digest authentication nonce-count", False
+        except ValueError:
+            return False, "invalid digest authentication nonce-count", False
+        nonce_valid, stale = validate_digest_nonce(nonce)
+        if not nonce_valid:
+            if stale:
+                return False, "stale digest authentication nonce", True
+            return False, "invalid digest authentication nonce", False
+        try:
+            ha1 = digest_hash(algorithm, f"{username}:{realm}:{self.password}")
+            ha2 = digest_hash(algorithm, f"{self.command}:{uri}")
+            expected = digest_hash(algorithm, f"{ha1}:{nonce}:{nc}:{cnonce}:{qop}:{ha2}")
+        except ValueError:
+            return False, "unsupported digest authentication algorithm", False
+        if not hmac.compare_digest(expected, response):
+            return False, "invalid credentials", False
+        return True, "", False
 
     def handle_request(self) -> None:
         if not self.handle_authentication():
@@ -367,9 +492,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def do_HEAD(self) -> None:
         self.send_head()
 
-    def do_AUTHHEAD(self) -> None:
+    def do_AUTHHEAD(self, stale: bool = False) -> None:
         self.send_response(401)
         if self.password:
+            self.send_header("WWW-Authenticate", make_digest_challenge(stale))
             self.send_header("WWW-Authenticate", f"Basic realm=\"{AUTH_REALM}\"")
         self.send_header("Content-type", "text/html")
         self.end_headers()
